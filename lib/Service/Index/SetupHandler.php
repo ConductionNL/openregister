@@ -552,7 +552,9 @@ class SetupHandler
                                 'successful_operations' => $propagationResult['successful_operations'] ?? 0,
                                 'total_operations'      => $propagationResult['total_operations'] ?? 0,
                                 'operations_attempted'  => $propagationResult['operations'] ?? [],
-                                'api_calls'             => $this->getApiCallsFromResult(propagationResult: $propagationResult),
+                                'api_calls'             => $this->getApiCallsFromResult(
+                                    propagationResult: $propagationResult
+                                ),
                                 'detailed_operations'   => $propagationResult['operations'] ?? [],
                             ],
                         ]
@@ -584,7 +586,9 @@ class SetupHandler
                                 'operations_performed'  => $propagationResult['operations'] ?? [],
                                 'cluster_sync_status'   => $propagationResult['cluster_sync'] ?? 'unknown',
                                 'cache_refresh_status'  => $propagationResult['cache_refresh'] ?? 'unknown',
-                                'api_calls'             => $this->getApiCallsFromResult(propagationResult: $propagationResult),
+                                'api_calls'             => $this->getApiCallsFromResult(
+                                    propagationResult: $propagationResult
+                                ),
                                 'detailed_operations'   => $propagationResult['operations'] ?? [],
                             ],
                         ]
@@ -937,7 +941,9 @@ class SetupHandler
                     'line'                      => __LINE__,
                     'test_message'              => $connectionTest['message'] ?? 'Connection test passed',
                     'components_tested'         => array_keys($connectionTest['components'] ?? []),
-                    'all_components_successful' => $this->allComponentsSuccessful(components: $connectionTest['components'] ?? []),
+                    'all_components_successful' => $this->allComponentsSuccessful(
+                        components: $connectionTest['components'] ?? []
+                    ),
                 ]
             );
             return true;

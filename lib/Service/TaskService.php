@@ -20,6 +20,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service;
 
+use DateTime;
 use Exception;
 use OCA\DAV\CalDAV\CalDavBackend;
 use OCP\IUserSession;
@@ -34,6 +35,8 @@ use Sabre\VObject\Reader;
  *
  * @category Service
  * @package  OCA\OpenRegister\Service
+ *
+ * @SuppressWarnings(PHPMD.ExcessiveClassComplexity) Task orchestration requires coordination across multiple services
  */
 class TaskService
 {
@@ -119,7 +122,11 @@ class TaskService
             }
 
             try {
-                $taskArray = $this->vtodoToArray(calendarData: $calendarData, calendarId: (string) $calendarId, uri: $calendarObject['uri']);
+                $taskArray = $this->vtodoToArray(
+                    calendarData: $calendarData,
+                    calendarId: (string) $calendarId,
+                    uri: $calendarObject['uri']
+                );
 
                 // Only include tasks that match our object UUID.
                 if ($taskArray !== null && $taskArray['objectUuid'] === $objectUuid) {
@@ -186,7 +193,7 @@ class TaskService
         $lines[] = 'PRIORITY:'.$priority;
 
         if (empty($data['due']) === false) {
-            $dueDate = new \DateTime($data['due']);
+            $dueDate = new DateTime($data['due']);
             $lines[] = 'DUE:'.$dueDate->format('Ymd\THis\Z');
         }
 
@@ -266,7 +273,7 @@ class TaskService
             if (empty($data['due']) === true) {
                 unset($vtodo->DUE);
             } else {
-                $vtodo->DUE = new \DateTime($data['due']);
+                $vtodo->DUE = new DateTime($data['due']);
             }
         }
 
@@ -388,6 +395,37 @@ class TaskService
         }
 
         // Extract X-OPENREGISTER properties.
+        $linkData = $this->extractOpenRegisterProperties(vtodo: $vtodo);
+
+        // Extract standard VTODO fields.
+        $fields = $this->extractVtodoFields(vtodo: $vtodo);
+
+        return [
+            'id'          => $uri,
+            'uid'         => $fields['uid'],
+            'calendarId'  => $calendarId,
+            'summary'     => $fields['summary'],
+            'description' => $fields['description'],
+            'status'      => $fields['status'],
+            'priority'    => $fields['priority'],
+            'due'         => $fields['due'],
+            'completed'   => $fields['completed'],
+            'created'     => $fields['created'],
+            'objectUuid'  => $linkData['objectUuid'],
+            'registerId'  => $linkData['registerId'],
+            'schemaId'    => $linkData['schemaId'],
+        ];
+    }//end vtodoToArray()
+
+    /**
+     * Extract X-OPENREGISTER-* properties from a VTODO component.
+     *
+     * @param mixed $vtodo The VTODO component from the parsed iCalendar.
+     *
+     * @return array{objectUuid: string|null, registerId: int|null, schemaId: int|null}
+     */
+    private function extractOpenRegisterProperties(mixed $vtodo): array
+    {
         $objectUuid = null;
         $registerId = null;
         $schemaId   = null;
@@ -404,7 +442,24 @@ class TaskService
             $schemaId = (int) (string) $vtodo->{'X-OPENREGISTER-SCHEMA'};
         }
 
-        // Extract standard fields.
+        return [
+            'objectUuid' => $objectUuid,
+            'registerId' => $registerId,
+            'schemaId'   => $schemaId,
+        ];
+    }//end extractOpenRegisterProperties()
+
+    /**
+     * Extract standard VTODO fields from a VTODO component.
+     *
+     * @param mixed $vtodo The VTODO component from the parsed iCalendar.
+     *
+     * @return array{uid: string|null, summary: string, description: string,
+     *     status: string, priority: int, due: string|null,
+     *     completed: string|null, created: string|null}
+     */
+    private function extractVtodoFields(mixed $vtodo): array
+    {
         $due = null;
         if (isset($vtodo->DUE) === true) {
             $due = $vtodo->DUE->getDateTime()->format('c');
@@ -423,16 +478,15 @@ class TaskService
         // Map STATUS to lowercase.
         $status = 'needs-action';
         if (isset($vtodo->STATUS) === true) {
-            $status = strtolower(str_replace('-', '-', (string) $vtodo->STATUS));
-            // Normalize: NEEDS-ACTION → needs-action, IN-PROCESS → in-process, etc.
+            // Normalize: NEEDS-ACTION -> needs-action, IN-PROCESS -> in-process, etc.
             $status = strtolower((string) $vtodo->STATUS);
         }
 
-        // Extract UID, SUMMARY, DESCRIPTION, PRIORITY.
         $taskUid         = null;
         $taskSummary     = '';
         $taskDescription = '';
         $taskPriority    = 0;
+
         if (isset($vtodo->UID) === true) {
             $taskUid = (string) $vtodo->UID;
         }
@@ -450,9 +504,7 @@ class TaskService
         }
 
         return [
-            'id'          => $uri,
             'uid'         => $taskUid,
-            'calendarId'  => $calendarId,
             'summary'     => $taskSummary,
             'description' => $taskDescription,
             'status'      => $status,
@@ -460,11 +512,8 @@ class TaskService
             'due'         => $due,
             'completed'   => $completed,
             'created'     => $created,
-            'objectUuid'  => $objectUuid,
-            'registerId'  => $registerId,
-            'schemaId'    => $schemaId,
         ];
-    }//end vtodoToArray()
+    }//end extractVtodoFields()
 
     /**
      * Escape text for use in iCalendar property values.

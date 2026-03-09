@@ -301,8 +301,9 @@ class FolderManagementHandler
 
         // Handle legacy cases where folder might be null, empty string, or a non-numeric string path.
         if ($folderProperty === null || $folderProperty === '') {
+            $regId = $register->getId();
             $this->logger->info(
-                message: "[FolderManagementHandler] Register {$register->getId()} has legacy folder property, creating new folder",
+                message: "[FolderManagementHandler] Register $regId has legacy folder property, creating new folder",
                 context: ['file' => __FILE__, 'line' => __LINE__]
             );
             return $this->createRegisterFolderById(register: $register);
@@ -312,7 +313,7 @@ class FolderManagementHandler
         // Check if it's a numeric string (folder ID) or a legacy path.
         if (is_numeric($folderProperty) === false) {
             $this->logger->warning(
-                message: "[FolderManagementHandler] Invalid folder ID type for register {$register->getId()}, creating new folder",
+                message: '[FolderManagementHandler] Invalid folder ID type for register '.$register->getId().', creating new folder',
                 context: ['file' => __FILE__, 'line' => __LINE__]
             );
             return $this->createRegisterFolderById(register: $register);

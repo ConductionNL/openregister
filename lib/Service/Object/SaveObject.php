@@ -719,6 +719,8 @@ class SaveObject
      * @param Schema       $schema      The schema the saved entity belongs to
      *
      * @return void
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity) Inverse relation handling requires per-type branching
      */
     private function updateInverseRelations(ObjectEntity $savedEntity, Register $register, Schema $schema): void
     {
@@ -847,7 +849,7 @@ class SaveObject
                 // Add this object's UUID to the related object's relations.
                 $relatedRelations[] = $savedUuid;
                 $relatedObject->setRelations($relatedRelations);
-                $relatedObject->setUpdated(new \DateTime());
+                $relatedObject->setUpdated(new DateTime());
 
                 // Save the related object.
                 $this->objectEntityMapper->update($relatedObject);
@@ -1272,6 +1274,8 @@ class SaveObject
      * @param array  $data   The object data to transform.
      *
      * @return array The transformed data with "always" defaults applied.
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity) Default value resolution requires template + type branching
      */
     public function applyAlwaysDefaults(Schema $schema, array $data): array
     {
@@ -1301,47 +1305,17 @@ class SaveObject
             return $data;
         }
 
-        // Use the data itself as Twig context (no existing object at this point).
-        $twigContext = $data;
-
         // Render twig templated default values.
+        // Use the data itself as Twig context (no existing object at this point).
         foreach ($alwaysDefaults as $key => $defaultValue) {
-            try {
-                if (is_string($defaultValue) === true
-                    && str_contains(haystack: $defaultValue, needle: '{{') === true
-                    && str_contains(haystack: $defaultValue, needle: '}}') === true
-                ) {
-                    // Check if this is a simple property reference like "{{ propertyName }}"
-                    // to preserve array values instead of converting to string.
-                    $simpleRefPattern = '/^\{\{\s*([a-zA-Z_][a-zA-Z0-9_]*)\s*\}\}$/';
-                    if (preg_match($simpleRefPattern, $defaultValue, $matches) === 1) {
-                        $sourceProperty = $matches[1];
-                        if (isset($twigContext[$sourceProperty]) === true) {
-                            // Direct copy preserves arrays and other types.
-                            $data[$key] = $twigContext[$sourceProperty];
-                        }
-
-                        // If source property not found, skip (don't overwrite with null).
-                    } else {
-                        // Complex template, use MetadataHydrationHandler which supports
-                        // pipe-based filters (| map:) and fallback syntax (| field2).
-                        $rendered = $this->metaHydrationHandler->processTwigLikeTemplate(
-                            data: $twigContext,
-                            template: $defaultValue,
-                            schemaProperties: $schemaObject['properties'] ?? []
-                        );
-                        if ($rendered !== null) {
-                            $data[$key] = $rendered;
-                        }
-                    }
-                } else {
-                    // Non-template value, use directly.
-                    $data[$key] = $defaultValue;
-                }//end if
-            } catch (Exception $e) {
-                // Template failed, skip this default.
-                continue;
-            }//end try
+            $resolved = $this->resolveDefaultTemplateValue(
+                defaultValue: $defaultValue,
+                context: $data,
+                schemaProperties: $schemaObject['properties'] ?? []
+            );
+            if ($resolved !== null) {
+                $data[$key] = $resolved;
+            }
         }//end foreach
 
         return $data;
@@ -1379,56 +1353,109 @@ class SaveObject
 
             $defaultBehavior = $property['defaultBehavior'] ?? 'false';
 
-            // Determine if default should be applied.
-            $shouldApply = isset($data[$key]) === false || $data[$key] === null;
-            if ($defaultBehavior === 'falsy') {
-                $shouldApply = isset($data[$key]) === false
-                    || $data[$key] === null
-                    || $data[$key] === ''
-                    || (is_array($data[$key]) === true && empty($data[$key]));
-            } else if ($defaultBehavior === 'always') {
-                $shouldApply = true;
-            }
-
-            if ($shouldApply === false) {
+            // Determine if default should be applied based on behavior setting.
+            if ($this->shouldApplyDefault(behavior: $defaultBehavior, data: $data, key: $key) === false) {
                 continue;
             }
 
             // Render templates using MetadataHydrationHandler (supports | map: syntax).
-            try {
-                if (is_string($defaultValue) === true
-                    && str_contains(haystack: $defaultValue, needle: '{{') === true
-                    && str_contains(haystack: $defaultValue, needle: '}}') === true
-                ) {
-                    // Simple property reference: preserve arrays.
-                    $simpleRefPattern = '/^\{\{\s*([a-zA-Z_][a-zA-Z0-9_]*)\s*\}\}$/';
-                    if (preg_match($simpleRefPattern, $defaultValue, $matches) === 1) {
-                        $sourceProperty = $matches[1];
-                        if (isset($data[$sourceProperty]) === true) {
-                            $data[$key] = $data[$sourceProperty];
-                        }
-                    } else {
-                        // Complex template with map/fallback support.
-                        $rendered = $this->metaHydrationHandler->processTwigLikeTemplate(
-                            data: $data,
-                            template: $defaultValue,
-                            schemaProperties: $schemaObject['properties'] ?? []
-                        );
-                        if ($rendered !== null) {
-                            $data[$key] = $rendered;
-                        }
-                    }
-                } else {
-                    $data[$key] = $defaultValue;
-                }//end if
-            } catch (Exception $e) {
-                // Template failed, skip this default.
-                continue;
-            }//end try
+            $resolved = $this->resolveDefaultTemplateValue(
+                defaultValue: $defaultValue,
+                context: $data,
+                schemaProperties: $schemaObject['properties'] ?? []
+            );
+            if ($resolved !== null) {
+                $data[$key] = $resolved;
+            }
         }//end foreach
 
         return $data;
     }//end applyPropertyDefaults()
+
+    /**
+     * Determines whether a default value should be applied based on the behavior setting.
+     *
+     * Evaluates the defaultBehavior setting against the current data to decide
+     * if the default should override or fill in the value:
+     * - "always": always apply the default
+     * - "falsy": apply when the value is missing, null, empty string, or empty array
+     * - default: apply only when the value is missing or null
+     *
+     * @param string $behavior The defaultBehavior setting from the schema property.
+     * @param array  $data     The current object data.
+     * @param string $key      The property key to check.
+     *
+     * @return bool True if the default should be applied.
+     */
+    private function shouldApplyDefault(string $behavior, array $data, string $key): bool
+    {
+        if ($behavior === 'always') {
+            return true;
+        }
+
+        if ($behavior === 'falsy') {
+            return isset($data[$key]) === false
+                || $data[$key] === null
+                || $data[$key] === ''
+                || (is_array($data[$key]) === true && empty($data[$key]));
+        }
+
+        // Default behavior: apply only when missing or null.
+        return isset($data[$key]) === false || $data[$key] === null;
+    }//end shouldApplyDefault()
+
+    /**
+     * Resolves a default value, rendering templates if the value contains Twig-like syntax.
+     *
+     * Handles three cases:
+     * - Simple property reference (e.g., "{{ propertyName }}"): copies the value directly,
+     *   preserving arrays and other non-string types.
+     * - Complex template (e.g., "{{ items | map:name }}"): renders via MetadataHydrationHandler.
+     * - Non-template value: returns the value as-is.
+     *
+     * @param mixed $defaultValue     The default value to resolve (may contain templates).
+     * @param array $context          The data context for template rendering.
+     * @param array $schemaProperties The schema properties for template rendering.
+     *
+     * @return mixed The resolved value, or null if resolution failed.
+     */
+    private function resolveDefaultTemplateValue($defaultValue, array $context, array $schemaProperties)
+    {
+        try {
+            if (is_string($defaultValue) === true
+                && str_contains(haystack: $defaultValue, needle: '{{') === true
+                && str_contains(haystack: $defaultValue, needle: '}}') === true
+            ) {
+                // Check if this is a simple property reference like "{{ propertyName }}"
+                // to preserve array values instead of converting to string.
+                $simpleRefPattern = '/^\{\{\s*([a-zA-Z_][a-zA-Z0-9_]*)\s*\}\}$/';
+                if (preg_match($simpleRefPattern, $defaultValue, $matches) === 1) {
+                    $sourceProperty = $matches[1];
+                    if (isset($context[$sourceProperty]) === true) {
+                        // Direct copy preserves arrays and other types.
+                        return $context[$sourceProperty];
+                    }
+
+                    // If source property not found, skip (don't overwrite with null).
+                    return null;
+                }
+
+                // Complex template, use MetadataHydrationHandler which supports
+                // pipe-based filters (| map:) and fallback syntax (| field2).
+                return $this->metaHydrationHandler->processTwigLikeTemplate(
+                    data: $context,
+                    template: $defaultValue,
+                    schemaProperties: $schemaProperties
+                );
+            }//end if
+
+            // Non-template value, use directly.
+            return $defaultValue;
+        } catch (Exception $e) {
+            // Template failed, return null to skip this default.
+            return null;
+        }//end try
+    }//end resolveDefaultTemplateValue()
 
     /**
      * Generates a slug for an object based on its data and schema configuration.
@@ -1683,7 +1710,11 @@ class SaveObject
                         $subRegister = null;
                     }
 
-                    $this->deleteOrphanedRelatedObjects(orphanedUuids: $oldUuids, register: $subRegister, schema: $subSchema);
+                    $this->deleteOrphanedRelatedObjects(
+                        orphanedUuids: $oldUuids,
+                        register: $subRegister,
+                        schema: $subSchema
+                    );
                 }//end if
 
                 $data[$property] = [];
@@ -1712,7 +1743,8 @@ class SaveObject
                             }
 
                             // Standard UUID with dashes.
-                            if (preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i', $item) === 1) {
+                            $uuidPattern = '/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i';
+                            if (preg_match($uuidPattern, $item) === 1) {
                                 return true;
                             }
 
@@ -1722,7 +1754,8 @@ class SaveObject
                             }
 
                             // Prefixed UUID (e.g., "id-uuid" with or without dashes).
-                            if (preg_match('/^[a-z]+-([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}|[0-9a-f]{32})$/i', $item) === 1) {
+                            $prefixedPattern = '/^[a-z]+-([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}|[0-9a-f]{32})$/i';
+                            if (preg_match($prefixedPattern, $item) === 1) {
                                 return true;
                             }
 
@@ -1835,15 +1868,19 @@ class SaveObject
         $validObjects = array_filter(
             $propData,
             function ($object) {
-                if (is_array($object) === true && empty($object) === false
-                    && (count($object) === 1 && (($object['id'] ?? null) !== null) && empty($object['id']) === true) === false
+                if (is_array($object) === true
+                    && empty($object) === false
+                    && (count($object) === 1
+                    && (($object['id'] ?? null) !== null)
+                    && empty($object['id']) === true) === false
                 ) {
                     return true;
                 }
 
                 if (is_string($object) === true) {
                     // Standard UUID with dashes.
-                    if (preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i', $object) === 1) {
+                    $uuidPattern = '/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i';
+                    if (preg_match($uuidPattern, $object) === 1) {
                         return true;
                     }
 
@@ -1853,7 +1890,8 @@ class SaveObject
                     }
 
                     // Prefixed UUID (e.g., "id-uuid" with or without dashes).
-                    if (preg_match('/^[a-z]+-([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}|[0-9a-f]{32})$/i', $object) === 1) {
+                    $prefixedPattern = '/^[a-z]+-([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}|[0-9a-f]{32})$/i';
+                    if (preg_match($prefixedPattern, $object) === 1) {
                         return true;
                     }
 
@@ -2148,7 +2186,7 @@ class SaveObject
             return $data;
         }
 
-        foreach ($properties as $propertyName => $propertyDef) {
+        foreach (array_keys($properties) as $propertyName) {
             if (array_key_exists($propertyName, $data) === false) {
                 $data[$propertyName] = null;
             }
@@ -2301,7 +2339,8 @@ class SaveObject
                     }
 
                     // Prefixed UUID (e.g., "id-uuid" with or without dashes).
-                    if (preg_match('/^[a-z]+-([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}|[0-9a-f]{32})$/i', $uuid) === 1) {
+                    $prefixedPattern = '/^[a-z]+-([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}|[0-9a-f]{32})$/i';
+                    if (preg_match($prefixedPattern, $uuid) === 1) {
                         return true;
                     }
 
@@ -3045,7 +3084,12 @@ class SaveObject
                 // DEBUG: About to call update.
                 $this->logger->error(
                     message: '[SaveObject] DEBUG: About to call objectEntityMapper->update()',
-                    context: ['file' => __FILE__, 'line' => __LINE__, 'app' => 'openregister', 'uuid' => $savedEntity->getUuid()]
+                    context: [
+                        'file' => __FILE__,
+                        'line' => __LINE__,
+                        'app'  => 'openregister',
+                        'uuid' => $savedEntity->getUuid(),
+                    ]
                 );
 
                 // Clear image metadata if objectImageField is a file property.
@@ -3165,6 +3209,9 @@ class SaveObject
         // Prepare the data.
         $preparedData = $this->prepareObjectData(objectEntity: $objectEntity, schema: $schema, data: $data);
 
+        // Validate reference existence for properties with validateReference: true.
+        $this->validateReferences(schema: $schema, data: $preparedData, register: $objectEntity->getRegister());
+
         // Set the prepared data.
         $objectEntity->setObject($preparedData);
 
@@ -3270,6 +3317,16 @@ class SaveObject
 
         // Prepare the data.
         $preparedData = $this->prepareObjectData(objectEntity: $existingObject, schema: $schema, data: $data);
+
+        // Validate reference existence for properties with validateReference: true.
+        // On updates, skip validation for unchanged values to avoid re-validating existing references.
+        $oldData = $existingObject->getObject();
+        $this->validateReferences(
+            schema: $schema,
+            data: $preparedData,
+            register: $existingObject->getRegister(),
+            oldData: $oldData
+        );
 
         // PUT semantics: fill missing schema properties with null to ensure complete replacement.
         // For magic-mapped objects, the MagicMapper generates SET clauses only for properties
@@ -3415,6 +3472,184 @@ class SaveObject
             $objectEntity->setOrganisation($selfData['organisation']);
         }
     }//end setSelfMetadata()
+
+    /**
+     * Validate reference existence for all properties with validateReference: true.
+     *
+     * Iterates schema properties, finds those with $ref and validateReference enabled,
+     * and checks that referenced object UUIDs exist in the target schema.
+     *
+     * @param Schema      $schema   The schema containing property definitions.
+     * @param array       $data     The object data to validate.
+     * @param string|null $register The object's register ID (fallback for target register).
+     * @param array|null  $oldData  Previous object data (for update skip-unchanged logic).
+     *
+     * @return void
+     *
+     * @throws ValidationException If a referenced object does not exist.
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity) Multiple property type checks
+     */
+    private function validateReferences(
+        Schema $schema,
+        array $data,
+        ?string $register,
+        ?array $oldData=null
+    ): void {
+        $properties = $schema->getProperties();
+        if ($properties === null) {
+            return;
+        }
+
+        foreach ($properties as $propertyName => $property) {
+            // Check if validateReference is enabled for this property.
+            if (($property['validateReference'] ?? false) !== true) {
+                continue;
+            }
+
+            // Determine the $ref target.
+            $ref     = $property['$ref'] ?? $property['items']['$ref'] ?? null;
+            $isArray = isset($property['type']) && $property['type'] === 'array';
+
+            if ($ref === null) {
+                continue;
+            }
+
+            // Get the value from data.
+            $value = $data[$propertyName] ?? null;
+
+            // Skip null or empty values (non-required property).
+            if ($value === null || $value === '') {
+                continue;
+            }
+
+            // On updates, skip validation for unchanged values.
+            if ($oldData !== null && array_key_exists($propertyName, $oldData) === true) {
+                if ($oldData[$propertyName] === $value) {
+                    continue;
+                }
+            }
+
+            // Resolve the target register: property-level config or object's register.
+            $targetRegister = $property['register'] ?? $register;
+
+            if ($isArray === true && is_array($value) === true) {
+                // Validate each UUID in the array.
+                foreach ($value as $uuid) {
+                    if (empty($uuid) === true) {
+                        continue;
+                    }
+
+                    $this->validateReferenceExists(
+                        propertyName: $propertyName,
+                        uuid: (string) $uuid,
+                        schemaRef: $ref,
+                        register: $targetRegister
+                    );
+                }
+            } else {
+                // Validate single-value reference.
+                $this->validateReferenceExists(
+                    propertyName: $propertyName,
+                    uuid: (string) $value,
+                    schemaRef: $ref,
+                    register: $targetRegister
+                );
+            }//end if
+        }//end foreach
+    }//end validateReferences()
+
+    /**
+     * Validate that a referenced object exists in the target schema.
+     *
+     * @param string      $propertyName The property name holding the reference.
+     * @param string      $uuid         The UUID to validate.
+     * @param string      $schemaRef    The $ref value pointing to the target schema.
+     * @param string|null $register     The register ID to search in.
+     *
+     * @return void
+     *
+     * @throws ValidationException If the referenced object does not exist (HTTP 422).
+     */
+    private function validateReferenceExists(
+        string $propertyName,
+        string $uuid,
+        string $schemaRef,
+        ?string $register
+    ): void {
+        // Resolve the target schema ID.
+        $targetSchemaId = $this->resolveSchemaReference(reference: $schemaRef);
+        if ($targetSchemaId === null) {
+            $this->logger->warning(
+                message: '[SaveObject] Could not resolve schema reference for reference validation',
+                context: [
+                    'file'     => __FILE__,
+                    'line'     => __LINE__,
+                    'property' => $propertyName,
+                    'ref'      => $schemaRef,
+                ]
+            );
+            return;
+        }
+
+        // Get the target schema for the error message.
+        $targetSchemaSlug = $schemaRef;
+        try {
+            $targetSchema     = $this->getCachedSchema(schemaId: $targetSchemaId);
+            $targetSchemaSlug = $targetSchema->getSlug() ?? $schemaRef;
+        } catch (DoesNotExistException $e) {
+            // Use the raw reference as the slug in the error message.
+        }
+
+        // Resolve register and schema to entity objects for UnifiedObjectMapper.
+        $registerEntity = null;
+        if ($register !== null) {
+            try {
+                $registerEntity = $this->getCachedRegister(registerId: $register);
+            } catch (DoesNotExistException $e) {
+                $this->logger->warning(
+                    message: '[SaveObject] Could not resolve register for reference validation',
+                    context: [
+                        'file'     => __FILE__,
+                        'line'     => __LINE__,
+                        'property' => $propertyName,
+                        'register' => $register,
+                    ]
+                );
+                return;
+            }
+        }
+
+        $targetSchemaEntity = $targetSchema ?? null;
+
+        // Check if the object exists.
+        try {
+            $this->unifiedObjectMapper->find(
+                identifier: $uuid,
+                register: $registerEntity,
+                schema: $targetSchemaEntity,
+                rbac: false,
+                multitenancy: false
+            );
+        } catch (DoesNotExistException $e) {
+            throw new ValidationException(
+                message: "Referenced object '{$uuid}' not found in schema '{$targetSchemaSlug}' for property '{$propertyName}'",
+                code: 422
+            );
+        } catch (Exception $e) {
+            // Non-existence errors (e.g., database errors) — log warning but don't block.
+            $this->logger->warning(
+                message: '[SaveObject] Reference validation lookup failed',
+                context: [
+                    'file'     => __FILE__,
+                    'line'     => __LINE__,
+                    'property' => $propertyName,
+                    'uuid'     => $uuid,
+                    'error'    => $e->getMessage(),
+                ]
+            );
+        }//end try
+    }//end validateReferenceExists()
 
     /**
      * Prepares object data by applying all necessary transformations.
@@ -3606,7 +3841,12 @@ class SaveObject
         // Save the object to database using UnifiedObjectMapper.
         // This ensures proper event dispatching for both magic-mapped and blob storage objects.
         // Pass the oldObject to ensure accurate status change detection in events.
-        $updatedEntity = $this->unifiedObjectMapper->update(entity: $preparedObject, register: $register, schema: $schema, oldEntity: $oldObject);
+        $updatedEntity = $this->unifiedObjectMapper->update(
+            entity: $preparedObject,
+            register: $register,
+            schema: $schema,
+            oldEntity: $oldObject
+        );
 
         $this->logger->info(
             message: '[SaveObject] Object updated successfully',

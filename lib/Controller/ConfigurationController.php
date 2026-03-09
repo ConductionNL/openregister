@@ -360,6 +360,8 @@ class ConfigurationController extends Controller
      * @NoCSRFRequired
      *
      * @return JSONResponse JSON response with updated configuration
+     *
+     * @SuppressWarnings(PHPMD.NPathComplexity) Already refactored — NPath from try/catch + field mapping
      */
     public function update(int $id): JSONResponse
     {

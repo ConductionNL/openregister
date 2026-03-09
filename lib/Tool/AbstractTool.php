@@ -20,6 +20,7 @@
 
 namespace OCA\OpenRegister\Tool;
 
+use ReflectionClass;
 use ReflectionMethod;
 use BadMethodCallException;
 use InvalidArgumentException;
@@ -245,7 +246,7 @@ abstract class AbstractTool implements ToolInterface
         }
 
         // Format log message with class name, tool name, function name, and message text.
-        $className  = (new \ReflectionClass($this))->getShortName();
+        $className  = (new ReflectionClass($this))->getShortName();
         $toolName   = $this->getName();
         $logMessage = sprintf(
             '[%s] %s: %s: %s',

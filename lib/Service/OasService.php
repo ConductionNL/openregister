@@ -1694,9 +1694,11 @@ class OasService
                     if (isset($operation['responses']) === true) {
                         $statusCodes = array_keys($operation['responses']);
                         foreach ($statusCodes as $statusCode) {
-                            if (isset($operation['responses'][$statusCode]['content']['application/json']['schema']) === true) {
+                            $respContent = ($operation['responses'][$statusCode]['content'] ?? []);
+                            $respSchema  = ($respContent['application/json']['schema'] ?? null);
+                            if ($respSchema !== null) {
                                 $this->validateSchemaReferences(
-                                    schema: $operation['responses'][$statusCode]['content']['application/json']['schema'],
+                                    schema: $respSchema,
                                     context: "path:{$pathName}:{$method}:response:{$statusCode}"
                                 );
                             }
@@ -1705,7 +1707,7 @@ class OasService
 
                     unset($operation);
                 }
-            }
+            }//end foreach
         }//end if
     }//end validateOasIntegrity()
 

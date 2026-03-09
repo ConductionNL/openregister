@@ -405,7 +405,7 @@ class OptimizedBulkOperations
 
         // Determine database platform for proper quoting.
         $platform   = $this->db->getDatabasePlatform();
-        $isPostgres = $platform->getName() === 'postgresql';
+        $isPostgres = $platform instanceof \Doctrine\DBAL\Platforms\PostgreSQLPlatform;
 
         // Build INSERT portion with proper column quoting.
         $columnList = '`'.implode('`, `', $columns).'`';
@@ -436,7 +436,7 @@ class OptimizedBulkOperations
         // Add ON DUPLICATE KEY UPDATE portion for unified insert/update behavior.
         // Note: Use database-specific syntax (MySQL vs PostgreSQL).
         $platform   = $this->db->getDatabasePlatform();
-        $isPostgres = $platform->getName() === 'postgresql';
+        $isPostgres = $platform instanceof \Doctrine\DBAL\Platforms\PostgreSQLPlatform;
 
         // MySQL/MariaDB uses ON DUPLICATE KEY UPDATE.
         $sql .= ' ON DUPLICATE KEY UPDATE ';

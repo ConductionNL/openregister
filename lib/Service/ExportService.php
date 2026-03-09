@@ -244,8 +244,6 @@ class ExportService
      * @param IUser|null    $currentUser Current user for permission checks
      *
      * @return void
-     *
-     * @SuppressWarnings(PHPMD.CyclomaticComplexity) Sheet population has multiple filter and data conditions
      */
     private function populateSheet(
         Spreadsheet $spreadsheet,
@@ -273,7 +271,40 @@ class ExportService
 
         $row++;
 
-        // Export data using optimized ObjectEntityMapper query for raw ObjectEntity objects.
+        // Query all matching objects.
+        $objects = $this->fetchObjectsForExport(register: $register, schema: $schema, filters: $filters);
+
+        // Identify which headers are name-companion columns (prefixed with _).
+        $nameColumns = $this->identifyNameCompanionColumns(headers: $headers);
+
+        // Bulk resolve UUIDs to names if there are relation columns.
+        $uuidToNameMap = $this->resolveUuidNameMap(objects: $objects, nameColumns: $nameColumns);
+
+        // Populate the sheet with data and resolved names.
+        $this->writeObjectRows(
+            sheet: $sheet,
+            objects: $objects,
+            headers: $headers,
+            nameColumns: $nameColumns,
+            uuidToNameMap: $uuidToNameMap,
+            startRow: $row
+        );
+    }//end populateSheet()
+
+    /**
+     * Fetch all objects matching the given register, schema and filters for export.
+     *
+     * Builds the query with RBAC, multi-tenancy and metadata filters, then returns
+     * the full result set (high limit, no pagination).
+     *
+     * @param Register|null $register Optional register to filter by.
+     * @param Schema|null   $schema   Optional schema to filter by.
+     * @param array         $filters  Additional filters from the request.
+     *
+     * @return ObjectEntity[] Array of matching object entities.
+     */
+    private function fetchObjectsForExport(?Register $register, ?Schema $schema, array $filters): array
+    {
         // Build filters for ObjectEntityMapper->findAll() method.
         $objectFilters = [];
 
@@ -320,7 +351,7 @@ class ExportService
             '_multitenancy_explicit' => $multiExplicitlySet,
         ];
 
-        $objects = $this->objectService->searchObjects(
+        return $this->objectService->searchObjects(
             query: $query,
             _rbac: true,
             // Apply RBAC filtering.
@@ -329,8 +360,17 @@ class ExportService
             ids: null,
             uses: null
         );
+    }//end fetchObjectsForExport()
 
-        // Identify which headers are name-companion columns (prefixed with _).
+    /**
+     * Identify which header columns are name-companion columns (prefixed with _).
+     *
+     * @param array $headers The header map keyed by column letter.
+     *
+     * @return array Map of column letter to source property name for companion columns.
+     */
+    private function identifyNameCompanionColumns(array $headers): array
+    {
         $nameColumns = [];
         foreach ($headers as $col => $header) {
             if (str_starts_with($header, '_') === true && str_starts_with($header, '@') === false) {
@@ -339,43 +379,85 @@ class ExportService
             }
         }
 
-        // Bulk resolve UUIDs to names if there are relation columns.
+        return $nameColumns;
+    }//end identifyNameCompanionColumns()
+
+    /**
+     * Bulk resolve UUIDs to human-readable names for relation columns.
+     *
+     * Pre-seeds the map from already-loaded objects, collects all referenced UUIDs
+     * from relation columns, and resolves any remaining via the cache handler.
+     *
+     * @param ObjectEntity[] $objects     The full set of exported objects.
+     * @param array          $nameColumns Map of column letter to source property name.
+     *
+     * @return array Map of UUID string to human-readable name.
+     */
+    private function resolveUuidNameMap(array $objects, array $nameColumns): array
+    {
+        if (empty($nameColumns) === true) {
+            return [];
+        }
+
         $uuidToNameMap = [];
-        if (empty($nameColumns) === false) {
-            // Pre-seed name map from already-loaded objects (saves DB lookups for self-references).
-            foreach ($objects as $object) {
-                $uuid = $object->getUuid();
-                $name = $object->getName();
-                if ($uuid !== null && $name !== null) {
-                    $uuidToNameMap[$uuid] = $name;
+
+        // Pre-seed name map from already-loaded objects (saves DB lookups for self-references).
+        foreach ($objects as $object) {
+            $uuid = $object->getUuid();
+            $name = $object->getName();
+            if ($uuid !== null && $name !== null) {
+                $uuidToNameMap[$uuid] = $name;
+            }
+        }
+
+        // Collect all UUIDs from relation columns across all objects.
+        $allUuids = [];
+        foreach ($objects as $object) {
+            $objectData = $object->getObject();
+            foreach ($nameColumns as $sourceProperty) {
+                $value = $objectData[$sourceProperty] ?? null;
+                if ($value === null) {
+                    continue;
                 }
+
+                $this->collectUuids(value: $value, allUuids: $allUuids);
             }
+        }
 
-            // First pass: collect all UUIDs from relation columns across all objects.
-            $allUuids = [];
-            foreach ($objects as $object) {
-                $objectData = $object->getObject();
-                foreach ($nameColumns as $sourceProperty) {
-                    $value = $objectData[$sourceProperty] ?? null;
-                    if ($value === null) {
-                        continue;
-                    }
+        // Only resolve UUIDs not already in the pre-seeded map.
+        $uniqueUuids   = array_unique($allUuids);
+        $externalUuids = array_diff($uniqueUuids, array_keys($uuidToNameMap));
 
-                    $this->collectUuids(value: $value, allUuids: $allUuids);
-                }
-            }
+        if (empty($externalUuids) === false) {
+            $externalNames = $this->cacheHandler->getMultipleObjectNames(array_values($externalUuids));
+            $uuidToNameMap = array_merge($uuidToNameMap, $externalNames);
+        }
 
-            // Only resolve UUIDs not already in the pre-seeded map.
-            $uniqueUuids   = array_unique($allUuids);
-            $externalUuids = array_diff($uniqueUuids, array_keys($uuidToNameMap));
+        return $uuidToNameMap;
+    }//end resolveUuidNameMap()
 
-            if (empty($externalUuids) === false) {
-                $externalNames = $this->cacheHandler->getMultipleObjectNames(array_values($externalUuids));
-                $uuidToNameMap = array_merge($uuidToNameMap, $externalNames);
-            }
-        }//end if
+    /**
+     * Write object data rows to the spreadsheet.
+     *
+     * @param \PhpOffice\PhpSpreadsheet\Worksheet\Worksheet $sheet         The worksheet to populate.
+     * @param ObjectEntity[]                                $objects       The objects to write.
+     * @param array                                         $headers       Header map keyed by column letter.
+     * @param array                                         $nameColumns   Map of companion name columns.
+     * @param array                                         $uuidToNameMap Map of UUID to human-readable name.
+     * @param int                                           $startRow      The first data row number.
+     *
+     * @return void
+     */
+    private function writeObjectRows(
+        $sheet,
+        array $objects,
+        array $headers,
+        array $nameColumns,
+        array $uuidToNameMap,
+        int $startRow
+    ): void {
+        $row = $startRow;
 
-        // Second pass: populate the sheet with data and resolved names.
         foreach ($objects as $object) {
             $objectData = $object->getObject();
 
@@ -396,7 +478,7 @@ class ExportService
 
             $row++;
         }
-    }//end populateSheet()
+    }//end writeObjectRows()
 
     /**
      * Get headers for export

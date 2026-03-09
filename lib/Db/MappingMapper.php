@@ -27,9 +27,12 @@ use OCP\AppFramework\Db\Entity;
 use OCP\AppFramework\Db\MultipleObjectsReturnedException;
 use OCP\AppFramework\Db\QBMapper;
 use OCP\DB\QueryBuilder\IQueryBuilder;
+use OCP\ICache;
+use OCP\ICacheFactory;
 use OCP\IDBConnection;
 use OCP\IGroupManager;
 use OCP\IUserSession;
+use Psr\Log\LoggerInterface;
 use Symfony\Component\Uid\Uuid;
 
 /**
@@ -84,21 +87,39 @@ class MappingMapper extends QBMapper
     private readonly IGroupManager $groupManager;
 
     /**
+     * Distributed cache for mapping entity lookups
+     *
+     * @var ICache|null
+     */
+    private ?ICache $mappingCache = null;
+
+    /**
+     * Cache key prefix matching MappingService
+     *
+     * @var string
+     */
+    private const CACHE_PREFIX = 'openregister_mapping_';
+
+    /**
      * MappingMapper constructor
      *
      * Initializes mapper with database connection and multi-tenancy/RBAC dependencies.
      * Calls parent constructor to set up base mapper functionality.
      *
-     * @param IDBConnection $db           Database connection
-     * @param IUserSession  $userSession  User session
-     * @param IGroupManager $groupManager Group manager
+     * @param IDBConnection   $db           Database connection
+     * @param IUserSession    $userSession  User session
+     * @param IGroupManager   $groupManager Group manager
+     * @param ICacheFactory   $cacheFactory Cache factory for distributed caching
+     * @param LoggerInterface $logger       Logger for cache diagnostics
      *
      * @return void
      */
     public function __construct(
         IDBConnection $db,
         IUserSession $userSession,
-        IGroupManager $groupManager
+        IGroupManager $groupManager,
+        ICacheFactory $cacheFactory,
+        private readonly LoggerInterface $logger
     ) {
         // Call parent constructor to initialize base mapper with table name and entity class.
         parent::__construct(db: $db, tableName: 'openregister_mappings', entityClass: Mapping::class);
@@ -106,6 +127,16 @@ class MappingMapper extends QBMapper
         // Store dependencies for use in mapper methods.
         $this->userSession  = $userSession;
         $this->groupManager = $groupManager;
+
+        // Initialize distributed cache for invalidation on write operations.
+        try {
+            $this->mappingCache = $cacheFactory->createDistributed(self::CACHE_PREFIX);
+        } catch (\Exception $e) {
+            $this->logger->warning(
+                message: '[MappingMapper] Failed to initialize distributed cache',
+                context: ['error' => $e->getMessage()]
+            );
+        }
     }//end __construct()
 
     /**
@@ -154,14 +185,17 @@ class MappingMapper extends QBMapper
      * Retrieves mapping by ID with organisation filtering for multi-tenancy.
      * Throws exception if mapping not found or doesn't belong to current organisation.
      *
-     * @param int|string $id Mapping ID, UUID, or slug to find
+     * @param int|string $id             Mapping ID, UUID, or slug to find
+     * @param bool       $includeNullOrg Include mappings with no organisation set
      *
      * @return Mapping The found mapping entity
+     *
+     * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Flag controls org filter inclusion
      *
      * @throws DoesNotExistException If mapping not found or not accessible
      * @throws MultipleObjectsReturnedException If multiple mappings found (should not happen)
      */
-    public function find(int|string $id): Mapping
+    public function find(int|string $id, bool $includeNullOrg=false): Mapping
     {
         // Step 1: Get query builder instance.
         $qb = $this->db->getQueryBuilder();
@@ -189,7 +223,8 @@ class MappingMapper extends QBMapper
 
         // Step 4: Apply organisation filter for multi-tenancy.
         // This ensures users can only access mappings from their organisation.
-        $this->applyOrganisationFilter(qb: $qb);
+        // When includeNullOrg is true, also matches mappings with no organisation set.
+        $this->applyOrganisationFilter(qb: $qb, allowNullOrg: $includeNullOrg);
 
         // Step 5: Execute query and return single entity.
         return $this->findEntity(query: $qb);
@@ -216,6 +251,35 @@ class MappingMapper extends QBMapper
 
         return $this->findEntities(query: $qb);
     }//end findByRef()
+
+    /**
+     * Invalidates distributed cache entries for a mapping entity.
+     *
+     * Removes cache entries keyed by ID, UUID, and slug so that subsequent
+     * reads via MappingService::getMapping() fetch fresh data from the database.
+     *
+     * @param Entity $mapping The mapping entity whose cache entries should be invalidated
+     *
+     * @return void
+     */
+    private function invalidateCache(Entity $mapping): void
+    {
+        if ($this->mappingCache === null) {
+            return;
+        }
+
+        // Invalidate all possible lookup keys: numeric ID, UUID, and slug.
+        $keys = [(string) $mapping->getId()];
+
+        if ($mapping instanceof Mapping) {
+            $keys[] = $mapping->getUuid();
+            $keys[] = $mapping->getSlug();
+        }
+
+        foreach (array_filter($keys) as $key) {
+            $this->mappingCache->remove($key);
+        }
+    }//end invalidateCache()
 
     /**
      * Create a new mapping from array data
@@ -254,7 +318,12 @@ class MappingMapper extends QBMapper
         $this->setOrganisationOnCreate(entity: $mapping);
 
         // Persist to database.
-        return $this->insert(entity: $mapping);
+        $mapping = $this->insert(entity: $mapping);
+
+        // Invalidate cache so subsequent lookups get fresh data.
+        $this->invalidateCache(mapping: $mapping);
+
+        return $mapping;
     }//end createFromArray()
 
     /**
@@ -303,7 +372,12 @@ class MappingMapper extends QBMapper
         $mapping->hydrate($data);
 
         // Persist to database.
-        return $this->update(entity: $mapping);
+        $mapping = $this->update(entity: $mapping);
+
+        // Invalidate cache so subsequent lookups get fresh data.
+        $this->invalidateCache(mapping: $mapping);
+
+        return $mapping;
     }//end updateFromArray()
 
     /**
@@ -323,6 +397,9 @@ class MappingMapper extends QBMapper
 
         // Verify organisation access.
         $this->verifyOrganisationAccess(entity: $entity);
+
+        // Invalidate cache before deletion.
+        $this->invalidateCache(mapping: $entity);
 
         return parent::delete(entity: $entity);
     }//end delete()
@@ -374,15 +451,19 @@ class MappingMapper extends QBMapper
     /**
      * Get all mapping ID to slug mappings
      *
+     * @param bool $includeNullOrg Include mappings with no organisation set
+     *
      * @return array<string,string> Array mapping mapping IDs to their slugs
+     *
+     * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Flag controls org filter inclusion
      */
-    public function getIdToSlugMap(): array
+    public function getIdToSlugMap(bool $includeNullOrg=false): array
     {
         $qb = $this->db->getQueryBuilder();
         $qb->select('id', 'slug')
             ->from($this->getTableName());
 
-        $this->applyOrganisationFilter(qb: $qb);
+        $this->applyOrganisationFilter(qb: $qb, allowNullOrg: $includeNullOrg);
 
         $result   = $qb->executeQuery();
         $mappings = [];
@@ -396,15 +477,19 @@ class MappingMapper extends QBMapper
     /**
      * Get all mapping slug to ID mappings
      *
+     * @param bool $includeNullOrg Include mappings with no organisation set
+     *
      * @return array<string,string> Array mapping mapping slugs to their IDs
+     *
+     * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Flag controls org filter inclusion
      */
-    public function getSlugToIdMap(): array
+    public function getSlugToIdMap(bool $includeNullOrg=false): array
     {
         $qb = $this->db->getQueryBuilder();
         $qb->select('id', 'slug')
             ->from($this->getTableName());
 
-        $this->applyOrganisationFilter(qb: $qb);
+        $this->applyOrganisationFilter(qb: $qb, allowNullOrg: $includeNullOrg);
 
         $result   = $qb->executeQuery();
         $mappings = [];

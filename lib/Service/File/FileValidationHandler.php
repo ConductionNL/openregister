@@ -272,13 +272,13 @@ class FileValidationHandler
 
             // If we get here, the file is accessible.
             $this->logger->debug(
-                message: "[FileValidationHandler] checkOwnership: File {$file->getName()} (ID: {$file->getId()}) is accessible",
+                message: '[FileValidationHandler] checkOwnership: File '."{$file->getName()} (ID: {$file->getId()}) is accessible",
                 context: ['file' => __FILE__, 'line' => __LINE__]
             );
         } catch (NotFoundException $e) {
             // File exists but we can't access it - likely an ownership issue.
             $this->logger->warning(
-                message: "[FileValidationHandler] checkOwnership: File {$file->getName()} (ID: {$file->getId()}) not accessible",
+                message: '[FileValidationHandler] checkOwnership: File '."{$file->getName()} (ID: {$file->getId()}) not accessible",
                 context: ['file' => __FILE__, 'line' => __LINE__]
             );
 
@@ -288,7 +288,7 @@ class FileValidationHandler
 
                 if ($fileOwner === null || $fileOwner->getUID() !== $openRegisterUser->getUID()) {
                     $this->logger->info(
-                        message: "[FileValidationHandler] checkOwnership: File {$file->getName()} (ID: {$file->getId()}) has wrong owner",
+                        message: '[FileValidationHandler] checkOwnership: '."File {$file->getName()} (ID: {$file->getId()}) has wrong owner",
                         context: ['file' => __FILE__, 'line' => __LINE__]
                     );
 
@@ -297,14 +297,14 @@ class FileValidationHandler
 
                     if ($ownershipFixed === false) {
                         $this->logger->error(
-                            message: "[FileValidationHandler] checkOwnership: Failed to fix ownership for file {$file->getName()}",
+                            message: '[FileValidationHandler] checkOwnership: '."Failed to fix ownership for file {$file->getName()}",
                             context: ['file' => __FILE__, 'line' => __LINE__]
                         );
                         throw new Exception("Failed to fix file ownership for file: ".$file->getName());
                     }
 
                     $this->logger->info(
-                        message: "[FileValidationHandler] checkOwnership: Fixed ownership for file {$file->getName()}",
+                        message: '[FileValidationHandler] checkOwnership: '."Fixed ownership for file {$file->getName()}",
                         context: ['file' => __FILE__, 'line' => __LINE__]
                     );
 
@@ -312,12 +312,12 @@ class FileValidationHandler
                 }//end if
 
                 $this->logger->info(
-                    message: "[FileValidationHandler] checkOwnership: File {$file->getName()} has correct owner but not accessible",
+                    message: '[FileValidationHandler] checkOwnership: '."File {$file->getName()} has correct owner but not accessible",
                     context: ['file' => __FILE__, 'line' => __LINE__]
                 );
             } catch (Exception $ownershipException) {
                 $this->logger->error(
-                    message: "[FileValidationHandler] checkOwnership: Error for file {$file->getName()}: ".$ownershipException->getMessage(),
+                    message: '[FileValidationHandler] checkOwnership: '."Error for file {$file->getName()}: ".$ownershipException->getMessage(),
                     context: ['file' => __FILE__, 'line' => __LINE__]
                 );
                 throw new Exception("Ownership check failed for file: ".$file->getName());
@@ -325,7 +325,7 @@ class FileValidationHandler
         } catch (NotPermittedException $e) {
             // Permission denied - likely an ownership issue.
             $this->logger->warning(
-                message: "[FileValidationHandler] checkOwnership: Permission denied for file {$file->getName()}, attempting ownership fix",
+                message: '[FileValidationHandler] checkOwnership: '."Permission denied for file {$file->getName()}, ".'attempting ownership fix',
                 context: ['file' => __FILE__, 'line' => __LINE__]
             );
 
@@ -333,12 +333,12 @@ class FileValidationHandler
                 // Try to fix the ownership.
                 $this->ownFile(file: $file);
                 $this->logger->info(
-                    message: "[FileValidationHandler] checkOwnership: Fixed ownership for file {$file->getName()} after permission error",
+                    message: '[FileValidationHandler] checkOwnership: '."Fixed ownership for file {$file->getName()} ".'after permission error',
                     context: ['file' => __FILE__, 'line' => __LINE__]
                 );
             } catch (Exception $ownershipException) {
                 $fileName = $file->getName();
-                $errMsg   = "[FileValidationHandler] checkOwnership: Failed to fix for file {$fileName}: ".$ownershipException->getMessage();
+                $errMsg   = '[FileValidationHandler] checkOwnership: '."Failed to fix for file {$fileName}: ".$ownershipException->getMessage();
                 $this->logger->error(message: $errMsg, context: ['file' => __FILE__, 'line' => __LINE__]);
                 throw new Exception("Ownership fix failed for file: ".$file->getName());
             }
@@ -368,7 +368,7 @@ class FileValidationHandler
             $fileId           = $file->getId();
 
             $this->logger->info(
-                message: "[FileValidationHandler] ownFile: Attempting to set ownership of file {$file->getName()} (ID: $fileId) to user: $userId",
+                message: "[FileValidationHandler] ownFile: Setting ownership of {$file->getName()} to {$userId}",
                 context: ['file' => __FILE__, 'line' => __LINE__]
             );
 
@@ -376,7 +376,7 @@ class FileValidationHandler
 
             if ($result === false) {
                 $this->logger->warning(
-                    message: "[FileValidationHandler] ownFile: Failed to set ownership of file {$file->getName()} (ID: $fileId) to user: $userId",
+                    message: "[FileValidationHandler] ownFile: Failed to set ownership of {$file->getName()} to {$userId}",
                     context: ['file' => __FILE__, 'line' => __LINE__]
                 );
 
@@ -384,14 +384,14 @@ class FileValidationHandler
             }
 
             $this->logger->info(
-                message: "[FileValidationHandler] ownFile: Successfully set ownership of file {$file->getName()} (ID: $fileId) to user: $userId",
+                message: "[FileValidationHandler] ownFile: Set ownership of {$file->getName()} to {$userId}",
                 context: ['file' => __FILE__, 'line' => __LINE__]
             );
 
             return $result;
         } catch (Exception $e) {
             $this->logger->error(
-                message: "[FileValidationHandler] ownFile: Error setting ownership of file {$file->getName()}: ".$e->getMessage(),
+                message: "[FileValidationHandler] ownFile: Error setting ownership of {$file->getName()}: ".$e->getMessage(),
                 context: ['file' => __FILE__, 'line' => __LINE__]
             );
             throw new Exception("Failed to set file ownership: ".$e->getMessage());

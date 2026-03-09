@@ -18,7 +18,7 @@ One of the most powerful aspects of Open Register is how its core concepts inter
 
 ## Relationship Overview
 
-The core entities in Open Register - Registers, Schemas, Objects, Files, Sources, and Events - form an interconnected system:
+The core entities in Open Register - Registers, Schemas, Objects, Files, Sources, Mappings, and Events - form an interconnected system:
 
 ```mermaid
 architecture-beta

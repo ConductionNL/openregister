@@ -22,11 +22,14 @@ namespace OCA\OpenRegister\Service;
 use GuzzleHttp\Client as GuzzleClient;
 use GuzzleHttp\Exception\RequestException;
 use DateTime;
+use OCA\OpenRegister\Db\Mapping;
+use OCA\OpenRegister\Db\MappingMapper;
 use OCA\OpenRegister\Db\Webhook;
 use OCA\OpenRegister\Db\WebhookLog;
 use OCA\OpenRegister\Db\WebhookLogMapper;
 use OCA\OpenRegister\Db\WebhookMapper;
 use OCA\OpenRegister\Service\Webhook\CloudEventFormatter;
+use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\BackgroundJob\IJobList;
 use OCP\EventDispatcher\Event;
 use OCP\IRequest;
@@ -40,6 +43,7 @@ use Psr\Log\LoggerInterface;
  * 2. Pre-request webhook interception - Intercepts requests before controller execution
  *
  * @SuppressWarnings(PHPMD.ExcessiveClassComplexity) Complex webhook delivery with retry and interception logic
+ * @SuppressWarnings(PHPMD.CouplingBetweenObjects)   Webhook delivery requires mapping, formatting, and logging dependencies
  */
 class WebhookService
 {
@@ -80,11 +84,27 @@ class WebhookService
     private ?CloudEventFormatter $cloudEventFormatter;
 
     /**
+     * Mapping service for payload transformation
+     *
+     * @var MappingService
+     */
+    private MappingService $mappingService;
+
+    /**
+     * Mapping mapper for loading mapping entities
+     *
+     * @var MappingMapper
+     */
+    private MappingMapper $mappingMapper;
+
+    /**
      * Constructor
      *
      * @param WebhookMapper            $webhookMapper       Webhook mapper
      * @param LoggerInterface          $logger              Logger
      * @param WebhookLogMapper         $webhookLogMapper    Webhook log mapper
+     * @param MappingService           $mappingService      Mapping service
+     * @param MappingMapper            $mappingMapper       Mapping mapper
      * @param CloudEventFormatter|null $cloudEventFormatter CloudEvent formatter (optional)
      *
      * @return void
@@ -93,11 +113,15 @@ class WebhookService
         WebhookMapper $webhookMapper,
         LoggerInterface $logger,
         WebhookLogMapper $webhookLogMapper,
+        MappingService $mappingService,
+        MappingMapper $mappingMapper,
         ?CloudEventFormatter $cloudEventFormatter=null
     ) {
         $this->webhookMapper    = $webhookMapper;
         $this->logger           = $logger;
         $this->webhookLogMapper = $webhookLogMapper;
+        $this->mappingService   = $mappingService;
+        $this->mappingMapper    = $mappingMapper;
         $this->cloudEventFormatter = $cloudEventFormatter;
         $this->initializeHttpClient();
     }//end __construct()
@@ -428,23 +452,43 @@ class WebhookService
     /**
      * Build webhook payload
      *
-     * Builds the webhook payload in either standard format or CloudEvents format
-     * based on webhook configuration.
+     * Builds the webhook payload using one of three strategies (in priority order):
+     * 1. Mapping transformation — if webhook references a Mapping entity
+     * 2. CloudEvents format — if configured via useCloudEvents
+     * 3. Standard format — default
      *
      * @param Webhook $webhook   Webhook configuration
      * @param string  $eventName Event name
      * @param array   $payload   Event payload
      * @param int     $attempt   Delivery attempt number
      *
-     * @return array Webhook payload in standard or CloudEvents format.
+     * @return array Webhook payload in mapped, CloudEvents, or standard format.
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity) Three payload format strategies
      */
     private function buildPayload(Webhook $webhook, string $eventName, array $payload, int $attempt): array
     {
-        // Check if webhook is configured to use CloudEvents format.
+        // Strategy 1: Apply mapping transformation if webhook references a Mapping entity.
+        $mappingId = $webhook->getMapping();
+        if ($mappingId !== null) {
+            $mappedPayload = $this->applyMappingTransformation(
+                mappingId: $mappingId,
+                eventName: $eventName,
+                payload: $payload,
+                webhook: $webhook
+            );
+
+            if ($mappedPayload !== null) {
+                return $mappedPayload;
+            }
+
+            // Fall through to other formats if mapping failed.
+        }
+
+        // Strategy 2: Use CloudEvents format if configured and formatter is available.
         $config         = $webhook->getConfigurationArray();
         $useCloudEvents = ($config['useCloudEvents'] ?? false) === true;
 
-        // Use CloudEvents format if configured and formatter is available.
         if ($useCloudEvents === true && $this->cloudEventFormatter !== null) {
             // Add webhook metadata to payload.
             $enrichedPayload = array_merge(
@@ -466,7 +510,7 @@ class WebhookService
             );
         }
 
-        // Use standard format.
+        // Strategy 3: Use standard format.
         return [
             'event'     => $eventName,
             'webhook'   => [
@@ -478,6 +522,93 @@ class WebhookService
             'attempt'   => $attempt,
         ];
     }//end buildPayload()
+
+    /**
+     * Apply mapping transformation to event payload
+     *
+     * Loads the referenced Mapping entity and runs the event payload through
+     * MappingService.executeMapping(). Returns null on failure so the caller
+     * can fall back to other formats.
+     *
+     * @param int     $mappingId Mapping entity ID
+     * @param string  $eventName Event class name
+     * @param array   $payload   Raw event payload
+     * @param Webhook $webhook   Webhook entity (for context)
+     *
+     * @return array|null Transformed payload, or null on failure
+     */
+    private function applyMappingTransformation(
+        int $mappingId,
+        string $eventName,
+        array $payload,
+        Webhook $webhook
+    ): ?array {
+        try {
+            $mapping = $this->mappingMapper->find($mappingId);
+        } catch (DoesNotExistException $e) {
+            $this->logger->warning(
+                message: '[WebhookService] Webhook references missing mapping, falling back to raw payload',
+                context: [
+                    'file'       => __FILE__,
+                    'line'       => __LINE__,
+                    'webhook_id' => $webhook->getId(),
+                    'mapping_id' => $mappingId,
+                ]
+            );
+            return null;
+        } catch (\Exception $e) {
+            $this->logger->warning(
+                message: '[WebhookService] Failed to load mapping entity',
+                context: [
+                    'file'       => __FILE__,
+                    'line'       => __LINE__,
+                    'webhook_id' => $webhook->getId(),
+                    'mapping_id' => $mappingId,
+                    'error'      => $e->getMessage(),
+                ]
+            );
+            return null;
+        }//end try
+
+        // Build the mapping input with full event context.
+        $mappingInput = array_merge(
+            $payload,
+            [
+                'event'     => $this->getShortEventName(eventName: $eventName),
+                'timestamp' => date('c'),
+            ]
+        );
+
+        try {
+            return $this->mappingService->executeMapping(mapping: $mapping, input: $mappingInput);
+        } catch (\Exception $e) {
+            $this->logger->warning(
+                message: '[WebhookService] Mapping transformation failed, falling back to raw payload',
+                context: [
+                    'file'         => __FILE__,
+                    'line'         => __LINE__,
+                    'webhook_id'   => $webhook->getId(),
+                    'mapping_id'   => $mappingId,
+                    'mapping_name' => $mapping->getName(),
+                    'error'        => $e->getMessage(),
+                ]
+            );
+            return null;
+        }
+    }//end applyMappingTransformation()
+
+    /**
+     * Get short event class name from fully qualified class name
+     *
+     * @param string $eventName Fully qualified event class name
+     *
+     * @return string Short class name (e.g., "ObjectCreatedEvent")
+     */
+    private function getShortEventName(string $eventName): string
+    {
+        $parts = explode('\\', $eventName);
+        return end($parts);
+    }//end getShortEventName()
 
     /**
      * Send HTTP request to webhook URL

@@ -825,7 +825,12 @@ class BulkOperationsHandler
                     $batchRetryCount++;
                     $this->logger->error(
                         message: '[BulkOperationsHandler] Error executing batch',
-                        context: ['file' => __FILE__, 'line' => __LINE__, 'attempt' => $batchRetryCount, 'error' => $e->getMessage()]
+                        context: [
+                            'file'    => __FILE__,
+                            'line'    => __LINE__,
+                            'attempt' => $batchRetryCount,
+                            'error'   => $e->getMessage(),
+                        ]
                     );
 
                     if ($batchRetryCount > $maxBatchRetries) {
@@ -958,7 +963,7 @@ class BulkOperationsHandler
                 ->where(
                     $qb->expr()->in(
                         'uuid',
-                        $qb->createNamedParameter($uuidChunk, \Doctrine\DBAL\Connection::PARAM_STR_ARRAY)
+                        $qb->createNamedParameter($uuidChunk, IQueryBuilder::PARAM_STR_ARRAY)
                     )
                 );
 
@@ -1003,7 +1008,7 @@ class BulkOperationsHandler
                     ->where(
                         $qb->expr()->in(
                             'id',
-                            $qb->createNamedParameter($softDeleteIds, \Doctrine\DBAL\Connection::PARAM_INT_ARRAY)
+                            $qb->createNamedParameter($softDeleteIds, IQueryBuilder::PARAM_INT_ARRAY)
                         )
                     );
 
@@ -1017,7 +1022,7 @@ class BulkOperationsHandler
                     ->where(
                         $qb->expr()->in(
                             'id',
-                            $qb->createNamedParameter($hardDeleteIds, \Doctrine\DBAL\Connection::PARAM_INT_ARRAY)
+                            $qb->createNamedParameter($hardDeleteIds, IQueryBuilder::PARAM_INT_ARRAY)
                         )
                     );
 
@@ -1078,7 +1083,7 @@ class BulkOperationsHandler
                 ->where(
                     $qb->expr()->in(
                         'uuid',
-                        $qb->createNamedParameter($uuidChunk, \Doctrine\DBAL\Connection::PARAM_STR_ARRAY)
+                        $qb->createNamedParameter($uuidChunk, IQueryBuilder::PARAM_STR_ARRAY)
                     )
                 );
 
@@ -1099,7 +1104,7 @@ class BulkOperationsHandler
                 $qb->where(
                     $qb->expr()->in(
                         'id',
-                        $qb->createNamedParameter($objectIds, \Doctrine\DBAL\Connection::PARAM_INT_ARRAY)
+                        $qb->createNamedParameter($objectIds, IQueryBuilder::PARAM_INT_ARRAY)
                     )
                 );
 
@@ -1162,7 +1167,7 @@ class BulkOperationsHandler
                 ->where(
                     $qb->expr()->in(
                         'uuid',
-                        $qb->createNamedParameter($uuidChunk, \Doctrine\DBAL\Connection::PARAM_STR_ARRAY)
+                        $qb->createNamedParameter($uuidChunk, IQueryBuilder::PARAM_STR_ARRAY)
                     )
                 );
 
@@ -1183,7 +1188,7 @@ class BulkOperationsHandler
                 $qb->where(
                     $qb->expr()->in(
                         'id',
-                        $qb->createNamedParameter($objectIds, \Doctrine\DBAL\Connection::PARAM_INT_ARRAY)
+                        $qb->createNamedParameter($objectIds, IQueryBuilder::PARAM_INT_ARRAY)
                     )
                 );
 

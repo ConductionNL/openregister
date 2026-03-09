@@ -124,7 +124,7 @@ class StatisticsHandler
                 if (is_array($registerId) === true) {
                     // Convert array of integers to array of strings.
                     $stringIds = array_map('strval', $registerId);
-                    $paramType = \Doctrine\DBAL\Connection::PARAM_STR_ARRAY;
+                    $paramType = IQueryBuilder::PARAM_STR_ARRAY;
                     $param     = $qb->createNamedParameter($stringIds, $paramType);
                     $qb->andWhere($qb->expr()->in('register', $param));
                 }
@@ -141,7 +141,7 @@ class StatisticsHandler
                 if (is_array($schemaId) === true) {
                     // Convert array of integers to array of strings.
                     $stringIds = array_map('strval', $schemaId);
-                    $paramType = \Doctrine\DBAL\Connection::PARAM_STR_ARRAY;
+                    $paramType = IQueryBuilder::PARAM_STR_ARRAY;
                     $param     = $qb->createNamedParameter($stringIds, $paramType);
                     $qb->andWhere($qb->expr()->in('schema', $param));
                 }
@@ -228,7 +228,7 @@ class StatisticsHandler
             $qb = $this->db->getQueryBuilder();
 
             // Get database platform to determine casting method.
-            $platform = $qb->getConnection()->getDatabasePlatform()->getName();
+            $platform = $qb->getConnection()->getDatabasePlatform();
 
             // Join with registers table to get register names.
             // Note: o.register is VARCHAR, r.id is BIGINT - need explicit cast for PostgreSQL.
@@ -241,7 +241,7 @@ class StatisticsHandler
             // PostgreSQL requires explicit casting for VARCHAR to BIGINT comparison.
             // MySQL/MariaDB does implicit type conversion.
             $joinCondition = 'o.register = r.id';
-            if ($platform === 'postgresql') {
+            if ($platform instanceof \Doctrine\DBAL\Platforms\PostgreSQLPlatform) {
                 $joinCondition = 'CAST(o.register AS BIGINT) = r.id';
             }
 
@@ -306,7 +306,7 @@ class StatisticsHandler
             $qb = $this->db->getQueryBuilder();
 
             // Get database platform to determine casting method.
-            $platform = $qb->getConnection()->getDatabasePlatform()->getName();
+            $platform = $qb->getConnection()->getDatabasePlatform();
 
             // Join with schemas table to get schema names.
             // Note: o.schema is VARCHAR, s.id is BIGINT - need explicit cast for PostgreSQL.
@@ -319,7 +319,7 @@ class StatisticsHandler
             // PostgreSQL requires explicit casting for VARCHAR to BIGINT comparison.
             // MySQL/MariaDB does implicit type conversion.
             $joinCondition = 'o.schema = s.id';
-            if ($platform === 'postgresql') {
+            if ($platform instanceof \Doctrine\DBAL\Platforms\PostgreSQLPlatform) {
                 $joinCondition = 'CAST(o.schema AS BIGINT) = s.id';
             }
 
@@ -488,7 +488,7 @@ class StatisticsHandler
             $publishedCondition = $part1.$part2;
 
             $stringIds = array_map('strval', $schemaIds);
-            $paramType = \Doctrine\DBAL\Connection::PARAM_STR_ARRAY;
+            $paramType = IQueryBuilder::PARAM_STR_ARRAY;
 
             $qb->select(
                 'schema',

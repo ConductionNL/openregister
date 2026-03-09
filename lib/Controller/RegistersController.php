@@ -452,7 +452,12 @@ class RegistersController extends Controller
                 data: ['error' => $e->getMessage()],
                 statusCode: $e->getHttpStatusCode()
             );
-        }
+        } catch (\Exception $e) {
+            return new JSONResponse(
+                data: ['error' => $e->getMessage()],
+                statusCode: 500
+            );
+        }//end try
     }//end create()
 
     /**
