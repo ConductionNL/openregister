@@ -1,7 +1,7 @@
 <script>
 import { NcAppContent } from '@nextcloud/vue'
 import { CnIndexPage } from '@conduction/nextcloud-vue'
-import { navigationStore, objectStore, packageObjectStore, registerStore, schemaStore } from '../../store/store.js'
+import { navigationStore, objectStore, registerStore, schemaStore } from '../../store/store.js'
 
 /**
  * Normalize list so each row has top-level id for CnIndexPage rowKey.
@@ -32,17 +32,17 @@ export default {
 			return normalizeObjects(objectStore.searchCollection)
 		},
 		hasSelectedRegisters() {
-			return objectStore.searchParams.registerId != null
+			return objectStore.searchParams.register != null
 		},
 		hasSelectedSchemas() {
-			return objectStore.searchParams.schemaId != null
+			return objectStore.searchParams.schema != null
 		},
 		pageTitle() {
 			if (!this.hasSelectedRegisters) return 'No register selected'
-			const reg = registerStore.registerList.find((r) => r.id === objectStore.searchParams.registerId)
+			const reg = registerStore.registerList.find((r) => r.id === objectStore.searchParams.register)
 			const regTitle = reg ? (reg.label || reg.title) : 'Register'
 			if (!this.hasSelectedSchemas) return `${regTitle} / No schema selected`
-			const schema = schemaStore.schemaList.find((s) => s.id === objectStore.searchParams.schemaId)
+			const schema = schemaStore.schemaList.find((s) => s.id === objectStore.searchParams.schema)
 			const schemaTitle = schema ? (schema.label || schema.title) : 'Schema'
 			return `${regTitle} / ${schemaTitle}`
 		},
@@ -51,7 +51,7 @@ export default {
 			return Array.isArray(list) ? list.map(String) : []
 		},
 		computedObjectType() {
-			return packageObjectStore.createObjectTypeSlug(objectStore.searchRegister, objectStore.searchSchema)
+			return objectStore.createObjectTypeSlug(objectStore.searchRegister, objectStore.searchSchema)
 		},
 	},
 	methods: {
@@ -59,15 +59,15 @@ export default {
 			objectStore.refetchSearchCollection()
 		},
 		handleSort({ key, order }) {
-			objectStore.setSearchParams({ sortKey: key, sortOrder: order })
+			objectStore.updateSearchParams({ sortKey: key, sortOrder: order })
 			objectStore.refetchSearchCollection()
 		},
 		handlePageChanged(page) {
-			objectStore.setSearchParams({ page })
+			objectStore.updateSearchParams({ page })
 			objectStore.refetchSearchCollection()
 		},
 		handlePageSizeChanged(limit) {
-			objectStore.setSearchParams({ page: 1, limit })
+			objectStore.updateSearchParams({ page: 1, limit })
 			objectStore.refetchSearchCollection()
 		},
 		handleSelect(ids) {
@@ -81,8 +81,8 @@ export default {
 			console.log('handleCreate', res)
 			return
 
-			const registerId = objectStore.searchParams.registerId
-			const schemaId = objectStore.searchParams.schemaId
+			const registerId = objectStore.searchParams.register
+			const schemaId = objectStore.searchParams.schema
 			if (!registerId || !schemaId) return
 			registerStore.setRegisterItem(registerStore.registerList.find((r) => r.id === registerId))
 			schemaStore.setSchemaItem(schemaStore.schemaList.find((s) => s.id === schemaId))

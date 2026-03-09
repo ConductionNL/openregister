@@ -735,7 +735,7 @@ export default {
 		},
 	},
 	mounted() {
-		objectStore.initializeColumnFilters()
+		// objectStore.initializeColumnFilters()
 		this.registerLoading = true
 		this.schemaLoading = true
 
@@ -781,7 +781,7 @@ export default {
 		 */
 		onSearchInput(value) {
 			const search = value || ''
-			objectStore.setSearchParams({ search })
+			objectStore.updateSearchParams({ search })
 			this.searchTerms = search ? search.trim().split(/\s+/).filter(Boolean) : []
 			objectStore.refetchSearchCollection()
 		},
@@ -793,7 +793,7 @@ export default {
 		 */
 		onFilterChange({ key, values }) {
 			const filters = { ...objectStore.searchParams.filters, [key]: values || [] }
-			objectStore.setSearchParams({ filters })
+			objectStore.updateSearchParams({ filters })
 			this.facetFilters = { ...this.facetFilters, [key]: values || [] }
 			objectStore.refetchSearchCollection()
 		},
@@ -967,8 +967,8 @@ export default {
 				schemaStore.setSchemaItem(null)
 			}
 			objectStore.setSearchParams({
-				registerId,
-				schemaId,
+				register: registerId,
+				schema: schemaId,
 				search,
 				filters,
 				source: this.selectedSource || 'auto',
@@ -1055,7 +1055,7 @@ export default {
 
 		/** Load facet options for type 'search' via _facets=extend; facet data then comes from objectStore.searchFacets. */
 		async discoverFacets() {
-			if (!objectStore.searchParams.registerId || !objectStore.searchParams.schemaId) return
+			if (!objectStore.searchParams.register || !objectStore.searchParams.schema) return
 			try {
 				this.facetsLoading = true
 				this.facetableFields = null
@@ -1125,7 +1125,7 @@ export default {
 			this.facetFilters = {}
 			this.facetData = null
 			this.facetDataLoading = false
-			objectStore.setSearchParams({ filters: {} })
+			objectStore.updateSearchParams({ filters: {} })
 			if (this.canSearch) {
 				objectStore.refetchSearchCollection()
 			}
@@ -1544,7 +1544,7 @@ export default {
 					activeFilters[field] = filterValues
 				}
 			})
-			objectStore.setSearchParams({
+			objectStore.updateSearchParams({
 				search: this.searchTerms.length > 0 ? this.searchTerms.join(' ') : '',
 				filters: activeFilters,
 				source: this.selectedSource || 'auto',
