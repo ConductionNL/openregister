@@ -2539,8 +2539,7 @@ class ObjectEntityMapper extends QBMapper
         }
 
         $result = $qb->executeQuery();
-        $row    = $result->fetch();
-        return (int) ($row['COUNT(id)'] ?? 0);
+        return (int) $result->fetchOne();
     }//end countSearchObjects()
 
     /**
@@ -2575,8 +2574,7 @@ class ObjectEntityMapper extends QBMapper
         }
 
         $result = $qb->executeQuery();
-        $row    = $result->fetch();
-        return (int) ($row['COUNT(id)'] ?? 0);
+        return (int) $result->fetchOne();
     }//end countAll()
 
     /**
@@ -2599,8 +2597,7 @@ class ObjectEntityMapper extends QBMapper
             ->andWhere($qb->expr()->in('schema', $qb->createNamedParameter($schemaIds, IQueryBuilder::PARAM_INT_ARRAY)));
 
         $result = $qb->executeQuery();
-        $row    = $result->fetch();
-        return (int) ($row['COUNT(id)'] ?? 0);
+        return (int) $result->fetchOne();
     }//end countBySchemas()
 
     /**

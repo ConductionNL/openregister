@@ -116,7 +116,7 @@ class MigrationServiceTest extends TestCase
      * These tests verify the method throws the expected error from that call.
      * This appears to be a bug in MigrationService - it should use getTitle() instead.
      */
-    public function testGetStorageStatusThrowsDueToInvalidGetterCall(): void
+    public function testGetStorageStatusReturnsStatusArray(): void
     {
         $register = $this->createRegister(1);
         $schema = $this->createSchema(2);
@@ -124,9 +124,13 @@ class MigrationServiceTest extends TestCase
         $this->objectEntityMapper->method('countAll')->willReturn(50);
         $this->magicMapper->method('existsTableForRegisterSchema')->willReturn(false);
 
-        $this->expectException(\BadFunctionCallException::class);
+        $result = $this->service->getStorageStatus($register, $schema);
 
-        $this->service->getStorageStatus($register, $schema);
+        $this->assertIsArray($result);
+        $this->assertArrayHasKey('register', $result);
+        $this->assertArrayHasKey('schema', $result);
+        $this->assertArrayHasKey('blobStorage', $result);
+        $this->assertSame(50, $result['blobStorage']['count']);
     }
 
     public function testMigrateToMagicTableEmptySource(): void

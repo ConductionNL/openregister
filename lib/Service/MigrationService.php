@@ -104,12 +104,12 @@ class MigrationService
         return [
             'register'    => [
                 'id'   => $register->getId(),
-                'name' => $register->getName(),
+                'name' => $register->getTitle(),
                 'slug' => $register->getSlug(),
             ],
             'schema'      => [
                 'id'   => $schema->getId(),
-                'name' => $schema->getName(),
+                'name' => $schema->getTitle(),
                 'slug' => $schema->getSlug(),
             ],
             'blobStorage' => [
