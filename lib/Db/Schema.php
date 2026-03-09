@@ -82,6 +82,8 @@ use OCA\OpenRegister\Service\Schemas\PropertyValidatorHandler;
  * @method void setDeleted(?DateTime $deleted)
  * @method array|null getConfiguration()
  * @method void setConfiguration(?array $configuration)
+ * @method array|null getHooks()
+ * @method void setHooks(?array $hooks)
  *
  * @SuppressWarnings(PHPMD.ExcessiveClassLength)
  * @SuppressWarnings(PHPMD.ExcessiveClassComplexity)
@@ -364,6 +366,13 @@ class Schema extends Entity implements JsonSerializable
     protected ?DateTime $depublished = null;
 
     /**
+     * Hooks configuration for the schema
+     *
+     * @var array|null Hooks configuration
+     */
+    protected ?array $hooks = null;
+
+    /**
      * Constructor for the Schema class
      *
      * Sets up field types for all properties
@@ -401,6 +410,7 @@ class Schema extends Entity implements JsonSerializable
         $this->addType(fieldName: 'groups', type: 'json');
         $this->addType(fieldName: 'published', type: 'datetime');
         $this->addType(fieldName: 'depublished', type: 'datetime');
+        $this->addType(fieldName: 'hooks', type: 'json');
     }//end __construct()
 
     /**
@@ -1236,6 +1246,7 @@ class Schema extends Entity implements JsonSerializable
             'oneOf'          => $this->oneOf,
             'anyOf'          => $this->anyOf,
             'facets'         => $this->facets,
+            'hooks'          => $this->hooks,
         ];
     }//end jsonSerialize()
 

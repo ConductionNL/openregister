@@ -4,7 +4,7 @@
  *
  * This test class verifies that both individual and bulk object save operations
  * correctly set owner and organization metadata when not provided in the object data.
- * 
+ *
  * Test Coverage:
  * - Owner metadata setting in bulk operations
  * - Organization metadata setting using optimized OrganisationService
@@ -113,18 +113,18 @@ class BulkMetadataHandlingTest extends TestCase
     private MockObject $mockUser;
 
     /**
-     * Mock register entity
+     * Register entity for testing
      *
-     * @var MockObject|Register
+     * @var Register
      */
-    private MockObject $mockRegister;
+    private Register $mockRegister;
 
     /**
-     * Mock schema entity
+     * Schema entity for testing
      *
-     * @var MockObject|Schema
+     * @var Schema
      */
-    private MockObject $mockSchema;
+    private Schema $mockSchema;
 
 
     /**
@@ -145,17 +145,18 @@ class BulkMetadataHandlingTest extends TestCase
         $this->mockUserSession = $this->createMock(IUserSession::class);
         $this->mockOrganisationService = $this->createMock(OrganisationService::class);
 
-        // Create mock entities.
+        // Create mock user (interface, keep as mock).
         $this->mockUser = $this->createMock(IUser::class);
-        $this->mockRegister = $this->createMock(Register::class);
-        $this->mockSchema = $this->createMock(Schema::class);
 
-        // Configure basic mock entity behavior.
-        $this->mockRegister->method('getId')->willReturn(1);
-        $this->mockSchema->method('getId')->willReturn(1);
-        $this->mockSchema->method('getProperties')->willReturn([]);
-        $this->mockSchema->method('getConfiguration')->willReturn([]);
-        $this->mockSchema->method('getHardValidation')->willReturn(false);
+        // Create real entity instances instead of mocks (Entity __call does not support mocking).
+        $this->mockRegister = new Register();
+        $this->mockRegister->setId(1);
+
+        $this->mockSchema = new Schema();
+        $this->mockSchema->setId(1);
+        $this->mockSchema->setProperties([]);
+        $this->mockSchema->setConfiguration([]);
+        $this->mockSchema->setHardValidation(false);
 
         // Create the SaveObjects handler with mocked dependencies.
         $this->saveObjectsHandler = new SaveObjects(
