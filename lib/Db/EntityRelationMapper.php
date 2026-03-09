@@ -45,7 +45,7 @@ class EntityRelationMapper extends QBMapper
      */
     public function __construct(IDBConnection $db)
     {
-        parent::__construct($db, 'openregister_entity_relations', EntityRelation::class);
+        parent::__construct(db: $db, tableName: 'openregister_entity_relations', entityClass: EntityRelation::class);
     }//end __construct()
 
     /**
@@ -62,7 +62,7 @@ class EntityRelationMapper extends QBMapper
             ->from($this->getTableName())
             ->where($qb->expr()->eq('file_id', $qb->createNamedParameter($fileId, IQueryBuilder::PARAM_INT)));
 
-        return $this->findEntities($qb);
+        return $this->findEntities(query: $qb);
     }//end findByFileId()
 
     /**
@@ -79,7 +79,7 @@ class EntityRelationMapper extends QBMapper
             ->from($this->getTableName())
             ->where($qb->expr()->eq('entity_id', $qb->createNamedParameter($entityId, IQueryBuilder::PARAM_INT)));
 
-        return $this->findEntities($qb);
+        return $this->findEntities(query: $qb);
     }//end findByEntityId()
 
     /**

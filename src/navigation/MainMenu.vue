@@ -92,16 +92,16 @@
 					<MagnifyPlus :size="20" />
 				</template>
 			</NcAppNavigationItem>
-		<NcAppNavigationItem :active="$route.path.startsWith('/webhooks')" :name="t('openregister', 'Webhooks')" @click="handleNavigate('/webhooks')">
-			<template #icon>
-				<Webhook :size="20" />
-			</template>
-		</NcAppNavigationItem>
-		<NcAppNavigationItem :active="$route.path.startsWith('/endpoints')" :name="t('openregister', 'Endpoints')" @click="handleNavigate('/endpoints')">
-			<template #icon>
-				<Api :size="20" />
-			</template>
-		</NcAppNavigationItem>
+			<NcAppNavigationItem :active="$route.path.startsWith('/webhooks')" :name="t('openregister', 'Webhooks')" @click="handleNavigate('/webhooks')">
+				<template #icon>
+					<Webhook :size="20" />
+				</template>
+			</NcAppNavigationItem>
+			<NcAppNavigationItem :active="$route.path.startsWith('/endpoints')" :name="t('openregister', 'Endpoints')" @click="handleNavigate('/endpoints')">
+				<template #icon>
+					<Api :size="20" />
+				</template>
+			</NcAppNavigationItem>
 		</NcAppNavigationSettings>
 	</NcAppNavigation>
 </template>

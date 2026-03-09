@@ -224,8 +224,8 @@ class AgentsController extends Controller
             $this->logger->error(
                 message: '[AgentsController] Failed to get agents',
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'  => __FILE__,
+                    'line'  => __LINE__,
                     'error' => $e->getMessage(),
                     'trace' => $e->getTraceAsString(),
                 ]
@@ -282,8 +282,8 @@ class AgentsController extends Controller
             $this->logger->error(
                 message: '[AgentsController] Failed to get agent',
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'  => __FILE__,
+                    'line'  => __LINE__,
                     'id'    => $id,
                     'error' => $e->getMessage(),
                 ]
@@ -348,8 +348,8 @@ class AgentsController extends Controller
             $this->logger->info(
                 message: '[AgentsController] Agent created successfully',
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'         => __FILE__,
+                    'line'         => __LINE__,
                     'id'           => $agent->getId(),
                     'organisation' => $agent->getOrganisation(),
                     'isPrivate'    => $agent->getIsPrivate(),
@@ -366,8 +366,8 @@ class AgentsController extends Controller
             $this->logger->error(
                 message: '[AgentsController] Failed to create agent',
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'  => __FILE__,
+                    'line'  => __LINE__,
                     'error' => $e->getMessage(),
                     'trace' => $e->getTraceAsString(),
                 ]
@@ -445,8 +445,8 @@ class AgentsController extends Controller
             $this->logger->error(
                 message: '[AgentsController] Failed to update agent',
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'  => __FILE__,
+                    'line'  => __LINE__,
                     'id'    => $id,
                     'error' => $e->getMessage(),
                 ]
@@ -476,7 +476,7 @@ class AgentsController extends Controller
     public function patch(int $id): JSONResponse
     {
         // Delegate to update method (both handle partial updates).
-        return $this->update($id);
+        return $this->update(id: $id);
     }//end patch()
 
     /**
@@ -534,8 +534,8 @@ class AgentsController extends Controller
             $this->logger->error(
                 message: '[AgentsController] Failed to delete agent',
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'  => __FILE__,
+                    'line'  => __LINE__,
                     'id'    => $id,
                     'error' => $e->getMessage(),
                 ]
@@ -580,8 +580,8 @@ class AgentsController extends Controller
             $this->logger->error(
                 message: '[AgentsController] Failed to get agent statistics',
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'  => __FILE__,
+                    'line'  => __LINE__,
                     'error' => $e->getMessage(),
                 ]
             );
@@ -616,8 +616,8 @@ class AgentsController extends Controller
             $this->logger->debug(
                 message: '[AgentsController] Returning available tools',
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'  => __FILE__,
+                    'line'  => __LINE__,
                     'count' => count($tools),
                 ]
             );
@@ -632,8 +632,8 @@ class AgentsController extends Controller
             $this->logger->error(
                 message: '[AgentsController] Failed to get available tools',
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'  => __FILE__,
+                    'line'  => __LINE__,
                     'error' => $e->getMessage(),
                     'trace' => $e->getTraceAsString(),
                 ]

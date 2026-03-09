@@ -124,7 +124,7 @@ class ToolRegistry
             context: ['file' => __FILE__, 'line' => __LINE__]
         );
 
-        $event = new ToolRegistrationEvent($this);
+        $event = new ToolRegistrationEvent(registry: $this);
         $this->eventDispatcher->dispatchTyped($event);
 
         $this->loaded = true;
@@ -132,8 +132,8 @@ class ToolRegistry
         $this->logger->info(
             message: '[ToolRegistry] Loaded tools',
             context: [
-                'file' => __FILE__,
-                'line' => __LINE__,
+                'file'  => __FILE__,
+                'line'  => __LINE__,
                 'count' => count($this->tools),
                 'tools' => array_keys($this->tools),
             ]

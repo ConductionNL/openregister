@@ -70,8 +70,8 @@ class AbstractNodesFolderEventListener implements IEventListener
         }
 
         match (true) {
-            $event instanceof NodeCopiedEvent => $this->handleNodeCopied($event),
-            $event instanceof NodeRenamedEvent => $this->handleNodeRenamed($event),
+            $event instanceof NodeCopiedEvent => $this->handleNodeCopied(_event: $event),
+            $event instanceof NodeRenamedEvent => $this->handleNodeRenamed(_event: $event),
             default => throw new InvalidArgumentException(
                 'Unsupported event type: '.get_class($event)
             ),

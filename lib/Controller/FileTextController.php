@@ -100,8 +100,8 @@ class FileTextController extends Controller
             $this->logger->error(
                 message: '[FileTextController] Failed to get file text',
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'    => __FILE__,
+                    'line'    => __LINE__,
                     'file_id' => $fileId,
                     'error'   => $e->getMessage(),
                 ]
@@ -159,8 +159,8 @@ class FileTextController extends Controller
             $this->logger->error(
                 message: '[FileTextController] Failed to extract file text',
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'    => __FILE__,
+                    'line'    => __LINE__,
                     'file_id' => $fileId,
                     'error'   => $e->getMessage(),
                 ]
@@ -205,8 +205,8 @@ class FileTextController extends Controller
             $this->logger->error(
                 message: '[FileTextController] Failed bulk extraction',
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'  => __FILE__,
+                    'line'  => __LINE__,
                     'error' => $e->getMessage(),
                 ]
             );
@@ -245,8 +245,8 @@ class FileTextController extends Controller
             $this->logger->error(
                 message: '[FileTextController] Failed to get stats',
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'  => __FILE__,
+                    'line'  => __LINE__,
                     'error' => $e->getMessage(),
                 ]
             );
@@ -289,8 +289,8 @@ class FileTextController extends Controller
             $this->logger->error(
                 message: '[FileTextController] Failed to delete file text',
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'    => __FILE__,
+                    'line'    => __LINE__,
                     'file_id' => $fileId,
                     'error'   => $e->getMessage(),
                 ]
@@ -338,8 +338,8 @@ class FileTextController extends Controller
             $this->logger->error(
                 message: '[FileTextController] Failed to process extracted files',
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'  => __FILE__,
+                    'line'  => __LINE__,
                     'error' => $e->getMessage(),
                 ]
             );
@@ -386,8 +386,8 @@ class FileTextController extends Controller
             $this->logger->error(
                 message: '[FileTextController] Failed to process file',
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'    => __FILE__,
+                    'line'    => __LINE__,
                     'file_id' => $fileId,
                     'error'   => $e->getMessage(),
                 ]
@@ -427,8 +427,8 @@ class FileTextController extends Controller
             $this->logger->error(
                 message: '[FileTextController] Failed to get chunking stats',
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'  => __FILE__,
+                    'line'  => __LINE__,
                     'error' => $e->getMessage(),
                 ]
             );
@@ -504,7 +504,7 @@ class FileTextController extends Controller
             }
 
             // Build entities array in the format expected by anonymizeDocument.
-            // Format: [['text' => 'value', 'entityType' => 'TYPE', 'key' => 'unique_key'], ...]
+            // Format: [['text' => 'value', 'entityType' => 'TYPE', 'key' => 'unique_key'], ...].
             $entities        = [];
             $processedValues = [];
             // Track unique values to avoid duplicates.
@@ -527,8 +527,8 @@ class FileTextController extends Controller
             $this->logger->debug(
                 message: '[FileTextController] Found entities to anonymize',
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'         => __FILE__,
+                    'line'         => __LINE__,
                     'file_id'      => $fileId,
                     'entity_count' => count($entities),
                 ]
@@ -546,8 +546,8 @@ class FileTextController extends Controller
             $this->logger->info(
                 message: '[FileTextController] File anonymized successfully',
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'               => __FILE__,
+                    'line'               => __LINE__,
                     'original_file_id'   => $fileId,
                     'anonymized_file_id' => $anonymizedFile->getId(),
                     'anonymized_path'    => $anonymizedFile->getPath(),
@@ -569,8 +569,8 @@ class FileTextController extends Controller
             $this->logger->error(
                 message: '[FileTextController] Failed to anonymize file',
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'    => __FILE__,
+                    'line'    => __LINE__,
                     'file_id' => $fileId,
                     'error'   => $e->getMessage(),
                     'trace'   => $e->getTraceAsString(),

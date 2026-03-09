@@ -72,7 +72,7 @@ class EndpointLogMapper extends QBMapper
     public function __construct(IDBConnection $db)
     {
         // Call parent constructor to initialize base mapper with table name and entity class.
-        parent::__construct($db, 'openregister_endpoint_logs', EndpointLog::class);
+        parent::__construct(db: $db, tableName: 'openregister_endpoint_logs', entityClass: EndpointLog::class);
     }//end __construct()
 
     /**
@@ -109,7 +109,7 @@ class EndpointLogMapper extends QBMapper
         }
 
         // Step 5: Execute query and return entities.
-        return $this->findEntities($qb);
+        return $this->findEntities(query: $qb);
     }//end findAll()
 
     /**
@@ -148,7 +148,7 @@ class EndpointLogMapper extends QBMapper
         }
 
         // Step 5: Execute query and return entities.
-        return $this->findEntities($qb);
+        return $this->findEntities(query: $qb);
     }//end findByEndpoint()
 
     /**
@@ -174,7 +174,7 @@ class EndpointLogMapper extends QBMapper
             ->where($qb->expr()->eq('id', $qb->createNamedParameter($id, IQueryBuilder::PARAM_INT)));
 
         // Step 3: Execute query and return single entity.
-        return $this->findEntity($qb);
+        return $this->findEntity(query: $qb);
     }//end find()
 
     /**

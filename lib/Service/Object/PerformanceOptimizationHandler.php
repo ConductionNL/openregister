@@ -66,7 +66,12 @@ class PerformanceOptimizationHandler
                 $uuid = $activeOrganisation->getUuid();
                 $this->logger->debug(
                     message: '[PerformanceOptimizationHandler] Got active organisation for context',
-                    context: ['file' => __FILE__, 'line' => __LINE__, 'organisationUuid' => $uuid, 'organisationName' => $activeOrganisation->getName()]
+                    context: [
+                        'file'             => __FILE__,
+                        'line'             => __LINE__,
+                        'organisationUuid' => $uuid,
+                        'organisationName' => $activeOrganisation->getName(),
+                    ]
                 );
                 return $uuid;
             }

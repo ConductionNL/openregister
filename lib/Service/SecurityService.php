@@ -103,8 +103,8 @@ class SecurityService
      */
     public function checkLoginRateLimit(string $username, string $ipAddress): array
     {
-        $username  = $this->sanitizeForCacheKey($username);
-        $ipAddress = $this->sanitizeForCacheKey($ipAddress);
+        $username  = $this->sanitizeForCacheKey(input: $username);
+        $ipAddress = $this->sanitizeForCacheKey(input: $ipAddress);
 
         $userLockoutKey   = self::CACHE_PREFIX_USER_LOCKOUT.$username;
         $userLockoutUntil = $this->cache->get($userLockoutKey);
@@ -189,8 +189,8 @@ class SecurityService
      */
     public function recordFailedLoginAttempt(string $username, string $ipAddress, string $reason='invalid_credentials'): void
     {
-        $username  = $this->sanitizeForCacheKey($username);
-        $ipAddress = $this->sanitizeForCacheKey($ipAddress);
+        $username  = $this->sanitizeForCacheKey(input: $username);
+        $ipAddress = $this->sanitizeForCacheKey(input: $ipAddress);
 
         $userAttemptsKey = self::CACHE_PREFIX_LOGIN_ATTEMPTS.$username;
         $userAttempts    = ($this->cache->get($userAttemptsKey) ?? 0) + 1;
@@ -254,8 +254,8 @@ class SecurityService
      */
     public function recordSuccessfulLogin(string $username, string $ipAddress): void
     {
-        $username  = $this->sanitizeForCacheKey($username);
-        $ipAddress = $this->sanitizeForCacheKey($ipAddress);
+        $username  = $this->sanitizeForCacheKey(input: $username);
+        $ipAddress = $this->sanitizeForCacheKey(input: $ipAddress);
 
         // Clear user-based rate limits.
         $userAttemptsKey = self::CACHE_PREFIX_LOGIN_ATTEMPTS.$username;
@@ -296,7 +296,7 @@ class SecurityService
      */
     public function clearIpRateLimits(string $ipAddress): void
     {
-        $ipAddress = $this->sanitizeForCacheKey($ipAddress);
+        $ipAddress = $this->sanitizeForCacheKey(input: $ipAddress);
 
         $ipAttemptsKey = self::CACHE_PREFIX_IP_ATTEMPTS.$ipAddress;
         $this->cache->remove($ipAttemptsKey);
@@ -322,7 +322,7 @@ class SecurityService
      */
     public function clearUserRateLimits(string $username): void
     {
-        $username = $this->sanitizeForCacheKey($username);
+        $username = $this->sanitizeForCacheKey(input: $username);
 
         $userAttemptsKey = self::CACHE_PREFIX_LOGIN_ATTEMPTS.$username;
         $this->cache->remove($userAttemptsKey);

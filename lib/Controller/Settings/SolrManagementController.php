@@ -473,8 +473,8 @@ class SolrManagementController extends Controller
             $logger->warning(
                 message: '[SolrManagementController] ❌ Failed to delete SOLR field via API',
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'       => __FILE__,
+                    'line'       => __LINE__,
                     'field_name' => $fieldName,
                     'error'      => $result['message'],
                     'user'       => $this->userId,
@@ -821,8 +821,8 @@ class SolrManagementController extends Controller
             $logger->error(
                 message: '[SolrManagementController] ❌ SOLR collection deletion failed',
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'       => __FILE__,
+                    'line'       => __LINE__,
                     'error'      => $result['message'],
                     'error_code' => $result['error_code'] ?? 'unknown',
                     'collection' => $name,
@@ -844,8 +844,8 @@ class SolrManagementController extends Controller
             $logger->error(
                 message: '[SolrManagementController] Exception during SOLR collection deletion',
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'       => __FILE__,
+                    'line'       => __LINE__,
                     'error'      => $e->getMessage(),
                     'collection' => $name,
                     'trace'      => $e->getTraceAsString(),

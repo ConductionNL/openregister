@@ -355,8 +355,8 @@ class SolrBackend implements SearchBackendInterface
         $this->logger->info(
             message: '[SolrBackend] Warmup requested (simplified version)',
             context: [
-                'file' => __FILE__,
-                'line' => __LINE__,
+                'file'       => __FILE__,
+                'line'       => __LINE__,
                 'maxObjects' => $maxObjects,
                 'mode'       => $mode,
             ]
@@ -542,8 +542,8 @@ class SolrBackend implements SearchBackendInterface
         $this->logger->info(
             message: '[SolrBackend] Reindex requested (simplified version)',
             context: [
-                'file' => __FILE__,
-                'line' => __LINE__,
+                'file'       => __FILE__,
+                'line'       => __LINE__,
                 'maxObjects' => $maxObjects,
                 'batchSize'  => $batchSize,
             ]

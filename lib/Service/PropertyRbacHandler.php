@@ -56,6 +56,7 @@ use Psr\Log\LoggerInterface;
  */
 class PropertyRbacHandler
 {
+
     /**
      * Cached active organisation UUID
      *
@@ -112,7 +113,7 @@ class PropertyRbacHandler
         Schema $schema,
         string $property,
         array $object,
-        bool $isCreate = false
+        bool $isCreate=false
     ): bool {
         return $this->checkPropertyAccess(
             schema: $schema,
@@ -144,11 +145,11 @@ class PropertyRbacHandler
         }
 
         // Get properties with authorization.
-        // Returns associative array: propertyName => authorizationConfig
+        // Returns associative array: propertyName => authorizationConfig.
         $propertiesWithAuth = $schema->getPropertiesWithAuthorization();
 
         // Filter out properties user cannot read.
-        foreach ($propertiesWithAuth as $propertyName => $authConfig) {
+        foreach (array_keys($propertiesWithAuth) as $propertyName) {
             // Only filter if the property exists in the object.
             if (array_key_exists($propertyName, $object) === false) {
                 continue;
@@ -184,7 +185,7 @@ class PropertyRbacHandler
         Schema $schema,
         array $object,
         array $incomingData,
-        bool $isCreate = false
+        bool $isCreate=false
     ): array {
         // If user is admin, no restrictions.
         if ($this->isAdmin() === true) {
@@ -196,14 +197,14 @@ class PropertyRbacHandler
             return [];
         }
 
-        $unauthorizedProperties = [];
+        $unauthorizedProps = [];
 
         // Get properties with authorization.
-        // Returns associative array: propertyName => authorizationConfig
+        // Returns associative array: propertyName => authorizationConfig.
         $propertiesWithAuth = $schema->getPropertiesWithAuthorization();
 
         // Check each incoming property that has authorization rules.
-        foreach ($propertiesWithAuth as $propertyName => $authConfig) {
+        foreach (array_keys($propertiesWithAuth) as $propertyName) {
             // Only check properties that are being submitted.
             if (array_key_exists($propertyName, $incomingData) === false) {
                 continue;
@@ -227,11 +228,11 @@ class PropertyRbacHandler
                 isCreate: $isCreate
             ) === false
             ) {
-                $unauthorizedProperties[] = $propertyName;
+                $unauthorizedProps[] = $propertyName;
             }
-        }
+        }//end foreach
 
-        return $unauthorizedProperties;
+        return $unauthorizedProps;
     }//end getUnauthorizedProperties()
 
     /**
@@ -250,7 +251,7 @@ class PropertyRbacHandler
         string $property,
         array $object,
         string $action,
-        bool $isCreate = false
+        bool $isCreate=false
     ): bool {
         // Get property authorization.
         $authorization = $schema->getPropertyAuthorization($property);
@@ -411,7 +412,7 @@ class PropertyRbacHandler
         // For creates, skip organisation matching since there's no existing object.
         // Other match conditions still apply.
         if ($isCreate === true) {
-            $match = $this->filterOrganisationMatchForCreate($match);
+            $match = $this->filterOrganisationMatchForCreate(match: $match);
             if (empty($match) === true) {
                 return true;
             }
@@ -433,7 +434,7 @@ class PropertyRbacHandler
      */
     private function filterOrganisationMatchForCreate(array $match): array
     {
-        $organisationKeys = ['_organisation', 'organisation'];
+        $organisationKeys   = ['_organisation', 'organisation'];
         $organisationValues = ['$organisation', '$activeOrganisation'];
 
         $filtered = [];
@@ -466,7 +467,7 @@ class PropertyRbacHandler
             $objectValue = $this->getObjectValue(object: $object, property: $property);
 
             // Resolve dynamic variables in the match value.
-            $resolvedValue = $this->resolveDynamicValue($value);
+            $resolvedValue = $this->resolveDynamicValue(value: $value);
 
             // If dynamic variable resolved to null, condition cannot be met.
             if ($value !== $resolvedValue && $resolvedValue === null) {
@@ -474,7 +475,10 @@ class PropertyRbacHandler
             }
 
             // Simple value: equals comparison.
-            if (is_string($resolvedValue) === true || is_numeric($resolvedValue) === true || is_bool($resolvedValue) === true) {
+            if (is_string($resolvedValue) === true
+                || is_numeric($resolvedValue) === true
+                || is_bool($resolvedValue) === true
+            ) {
                 if ($objectValue !== $resolvedValue) {
                     return false;
                 }
@@ -570,7 +574,7 @@ class PropertyRbacHandler
 
         try {
             $organisationService = $this->container->get('OCA\OpenRegister\Service\OrganisationService');
-            $activeOrg = $organisationService->getActiveOrganisation();
+            $activeOrg           = $organisationService->getActiveOrganisation();
 
             if ($activeOrg !== null) {
                 $this->cachedActiveOrg = $activeOrg->getUuid();

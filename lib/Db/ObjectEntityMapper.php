@@ -205,7 +205,7 @@ class ObjectEntityMapper extends QBMapper
         LoggerInterface $logger,
         OrganisationMapper $organisationMapper
     ) {
-        parent::__construct($db, 'openregister_objects');
+        parent::__construct(db: $db, tableName: 'openregister_objects');
 
         // Existing dependencies.
         // $this->databaseJsonService = $mySQLJsonService; // REMOVED: Dead code (never used).
@@ -312,9 +312,9 @@ class ObjectEntityMapper extends QBMapper
 
             // Load the entity, set the lock, and update it properly through Entity.
             // This ensures Entity's change tracking and JSON serialization work correctly.
-            $entity = $this->find($uuid);
+            $entity = $this->find(identifier: $uuid);
             $entity->setLocked($lockData);
-            $this->update($entity);
+            $this->update(entity: $entity);
 
             // Return lock information.
             return [
@@ -371,7 +371,7 @@ class ObjectEntityMapper extends QBMapper
     public function insert(Entity $entity, ?Register $register=null, ?Schema $schema=null): Entity
     {
         // Dispatch creating event.
-        $this->eventDispatcher->dispatchTyped(new ObjectCreatingEvent($entity));
+        $this->eventDispatcher->dispatchTyped(new ObjectCreatingEvent(object: $entity));
 
         // Check if this entity should use magic mapping.
         // IMPORTANT: Use provided register/schema if available, otherwise extract from entity.
@@ -387,18 +387,18 @@ class ObjectEntityMapper extends QBMapper
                 $this->logger->debug(
                     message: '[ObjectEntityMapper::insert] Using provided register/schema for magic check',
                     context: [
-                        'file' => __FILE__,
-                        'line' => __LINE__,
-                            'registerId' => $register->getId(),
-                            'schemaId'   => $schema->getId(),
-                            'schemaSlug' => $schema->getSlug(),
-                            'result'     => $useMagicMapper,
-                        ]
+                        'file'       => __FILE__,
+                        'line'       => __LINE__,
+                        'registerId' => $register->getId(),
+                        'schemaId'   => $schema->getId(),
+                        'schemaSlug' => $schema->getSlug(),
+                        'result'     => $useMagicMapper,
+                    ]
                         );
             } else {
                 // Fall back to extracting from entity.
-                $useMagicMapper = $this->shouldUseMagicMapper($entity);
-            }
+                $useMagicMapper = $this->shouldUseMagicMapper(entity: $entity);
+            }//end if
         }//end if
 
         if ($useMagicMapper === true) {
@@ -409,10 +409,10 @@ class ObjectEntityMapper extends QBMapper
         }//end if
 
         // Call parent QBMapper insert directly (CrudHandler has circular dependency).
-        $result = parent::insert($entity);
+        $result = parent::insert(entity: $entity);
 
         // Dispatch created event.
-        $this->eventDispatcher->dispatchTyped(new ObjectCreatedEvent($result));
+        $this->eventDispatcher->dispatchTyped(new ObjectCreatedEvent(object: $result));
 
         return $result;
     }//end insert()
@@ -430,10 +430,10 @@ class ObjectEntityMapper extends QBMapper
     public function insertDirectBlobStorage(\OCP\AppFramework\Db\Entity $entity): ObjectEntity
     {
         // Dispatch creating event (pre-save hook).
-        $this->eventDispatcher->dispatchTyped(new ObjectCreatingEvent($entity));
+        $this->eventDispatcher->dispatchTyped(new ObjectCreatingEvent(object: $entity));
 
         // Call parent QBMapper insert directly (blob storage).
-        $result = parent::insert($entity);
+        $result = parent::insert(entity: $entity);
 
         // NOTE: ObjectCreatedEvent is dispatched by UnifiedObjectMapper (the facade) to avoid duplicate events.
         // Do NOT dispatch ObjectCreatedEvent here.
@@ -514,8 +514,8 @@ class ObjectEntityMapper extends QBMapper
                 $this->logger->debug(
                     message: '[ObjectEntityMapper] Magic mapping enabled for schema',
                     context: [
-                        'file' => __FILE__,
-                        'line' => __LINE__,
+                        'file'       => __FILE__,
+                        'line'       => __LINE__,
                         'registerId' => $register->getId(),
                         'schemaId'   => $schema->getId(),
                         'schemaSlug' => $schema->getSlug(),
@@ -602,8 +602,8 @@ class ObjectEntityMapper extends QBMapper
                 message: '[ObjectEntityMapper::update] No register/schema params - checking entity',
                 context: ['file' => __FILE__, 'line' => __LINE__]
             );
-            $useMagic = $this->shouldUseMagicMapper($entity);
-        }
+            $useMagic = $this->shouldUseMagicMapper(entity: $entity);
+        }//end if
 
         if ($useMagic === true) {
             // No blob fallback — objects live in per-schema tables, not in the
@@ -616,17 +616,17 @@ class ObjectEntityMapper extends QBMapper
         $this->logger->error(
             message: '[ObjectEntityMapper] DEBUG: About to call parent::update with entity object',
             context: [
-                'file' => __FILE__,
-                'line' => __LINE__,
+                'file'       => __FILE__,
+                'line'       => __LINE__,
                 'app'        => 'openregister',
                 'uuid'       => $entity->getUuid(),
                 'objectData' => json_encode($entity->getObject()),
             ]
         );
-        $result = parent::update($entity);
+        $result = parent::update(entity: $entity);
 
         // Dispatch updated event with correct oldObject.
-        $this->eventDispatcher->dispatchTyped(new ObjectUpdatedEvent($result, $oldObject));
+        $this->eventDispatcher->dispatchTyped(new ObjectUpdatedEvent(newObject: $result, oldObject: $oldObject));
 
         return $result;
     }//end update()
@@ -660,23 +660,23 @@ class ObjectEntityMapper extends QBMapper
         $this->logger->error(
             message: '[ObjectEntityMapper] updateDirectBlobStorage calling parent::update',
             context: [
-                'file' => __FILE__,
-                'line' => __LINE__,
-                    'app'        => 'openregister',
-                    'id'         => $entity->getId(),
-                    'uuid'       => $entity->getUuid(),
-                    'objectData' => json_encode($entity->getObject()),
-                ]
+                'file'       => __FILE__,
+                'line'       => __LINE__,
+                'app'        => 'openregister',
+                'id'         => $entity->getId(),
+                'uuid'       => $entity->getUuid(),
+                'objectData' => json_encode($entity->getObject()),
+            ]
                 );
-        $result = parent::update($entity);
+        $result = parent::update(entity: $entity);
         $this->logger->error(
             message: '[ObjectEntityMapper] updateDirectBlobStorage after parent::update',
             context: [
-                'file' => __FILE__,
-                'line' => __LINE__,
-                    'app'          => 'openregister',
-                    'resultObject' => json_encode($result->getObject()),
-                ]
+                'file'         => __FILE__,
+                'line'         => __LINE__,
+                'app'          => 'openregister',
+                'resultObject' => json_encode($result->getObject()),
+            ]
                 );
 
         // NOTE: ObjectUpdatedEvent is dispatched by UnifiedObjectMapper (the facade) to avoid duplicate events.
@@ -696,13 +696,13 @@ class ObjectEntityMapper extends QBMapper
     public function delete(\OCP\AppFramework\Db\Entity $entity): \OCP\AppFramework\Db\Entity
     {
         // Dispatch deleting event.
-        $this->eventDispatcher->dispatchTyped(new ObjectDeletingEvent($entity));
+        $this->eventDispatcher->dispatchTyped(new ObjectDeletingEvent(object: $entity));
 
         // Call parent QBMapper delete directly (CrudHandler has circular dependency).
-        $result = parent::delete($entity);
+        $result = parent::delete(entity: $entity);
 
         // Dispatch deleted event.
-        $this->eventDispatcher->dispatchTyped(new ObjectDeletedEvent($result));
+        $this->eventDispatcher->dispatchTyped(new ObjectDeletedEvent(object: $result));
 
         return $result;
     }//end delete()
@@ -722,7 +722,7 @@ class ObjectEntityMapper extends QBMapper
      */
     public function insertEntity(\OCP\AppFramework\Db\Entity $entity): \OCP\AppFramework\Db\Entity
     {
-        return parent::insert($entity);
+        return parent::insert(entity: $entity);
     }//end insertEntity()
 
     /**
@@ -740,7 +740,7 @@ class ObjectEntityMapper extends QBMapper
      */
     public function updateEntity(\OCP\AppFramework\Db\Entity $entity): \OCP\AppFramework\Db\Entity
     {
-        return parent::update($entity);
+        return parent::update(entity: $entity);
     }//end updateEntity()
 
     /**
@@ -758,7 +758,7 @@ class ObjectEntityMapper extends QBMapper
      */
     public function deleteEntity(\OCP\AppFramework\Db\Entity $entity): \OCP\AppFramework\Db\Entity
     {
-        return parent::delete($entity);
+        return parent::delete(entity: $entity);
     }//end deleteEntity()
 
     // ==================================================================================
@@ -781,7 +781,6 @@ class ObjectEntityMapper extends QBMapper
         return $this->statisticsHandler->getStatistics(registerId: $registerId, schemaId: $schemaId, exclude: $exclude);
     }//end getStatistics()
 
-
     /**
      * Get statistics grouped by schema for multiple schemas in a single query
      *
@@ -793,7 +792,6 @@ class ObjectEntityMapper extends QBMapper
     {
         return $this->statisticsHandler->getStatisticsGroupedBySchema(schemaIds: $schemaIds);
     }//end getStatisticsGroupedBySchema()
-
 
     /**
      * Get chart data for objects grouped by register.
@@ -1377,14 +1375,32 @@ class ObjectEntityMapper extends QBMapper
         // without explicit register configuration.
         $hasContext = $register !== null && $schema !== null;
 
+        if ($hasContext === true) {
+            $hasContextStr = 'true';
+        } else {
+            $hasContextStr = 'false';
+        }
+
+        if ($register !== null) {
+            $registerStr = 'true';
+        } else {
+            $registerStr = 'false';
+        }
+
+        if ($schema !== null) {
+            $schemaStr = 'true';
+        } else {
+            $schemaStr = 'false';
+        }
+
         $this->logger->debug(
             message: '[ObjectEntityMapper::find] Routing check',
             context: [
-                'file' => __FILE__,
-                'line' => __LINE__,
-                'hasContext'       => $hasContext ? 'true' : 'false',
-                'registerNotNull' => $register !== null ? 'true' : 'false',
-                'schemaNotNull'   => $schema !== null ? 'true' : 'false',
+                'file'            => __FILE__,
+                'line'            => __LINE__,
+                'hasContext'      => $hasContextStr,
+                'registerNotNull' => $registerStr,
+                'schemaNotNull'   => $schemaStr,
             ]
         );
 
@@ -1403,8 +1419,8 @@ class ObjectEntityMapper extends QBMapper
                 register: $register,
                 schema: $schema,
                 includeDeleted: $includeDeleted,
-                _rbac: $_rbac,
-                _multitenancy: $_multitenancy
+                rbac: $_rbac,
+                multitenancy: $_multitenancy
             );
         }//end if
 
@@ -1456,7 +1472,7 @@ class ObjectEntityMapper extends QBMapper
             );
         }
 
-        $entity = $this->findEntity($qb);
+        $entity = $this->findEntity(query: $qb);
         // Set source to indicate data came from blob storage.
         $entity->setSource('blob');
         return $entity;
@@ -1541,14 +1557,14 @@ class ObjectEntityMapper extends QBMapper
         $this->logger->debug(
             message: '[ObjectEntityMapper::findDirectBlobStorage] Multitenancy check',
             context: [
-                'file' => __FILE__,
-                'line' => __LINE__,
-                    'identifier'      => $identifier,
-                    '_multitenancy'   => $_multitenancy,
-                    '_rbac'           => $_rbac,
-                    'willApplyFilter' => $_multitenancy === true,
-                    'backtrace'       => debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, 3),
-                ]
+                'file'            => __FILE__,
+                'line'            => __LINE__,
+                'identifier'      => $identifier,
+                '_multitenancy'   => $_multitenancy,
+                '_rbac'           => $_rbac,
+                'willApplyFilter' => $_multitenancy === true,
+                'backtrace'       => debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, 3),
+            ]
                 );
 
         if ($_multitenancy === true) {
@@ -1556,7 +1572,7 @@ class ObjectEntityMapper extends QBMapper
                 message: '[ObjectEntityMapper::findDirectBlobStorage] APPLYING organisation filter',
                 context: ['file' => __FILE__, 'line' => __LINE__]
             );
-            $this->applyOrganisationFilter($qb, allowNullOrg: true, multiTenancyEnabled: true);
+            $this->applyOrganisationFilter(qb: $qb, allowNullOrg: true, multiTenancyEnabled: true);
         } else {
             $this->logger->info(
                 message: '[ObjectEntityMapper::findDirectBlobStorage] SKIPPING organisation filter',
@@ -1564,7 +1580,7 @@ class ObjectEntityMapper extends QBMapper
             );
         }
 
-        return $this->findEntity($qb);
+        return $this->findEntity(query: $qb);
     }//end findDirectBlobStorage()
 
     /**
@@ -1596,10 +1612,10 @@ class ObjectEntityMapper extends QBMapper
         $this->logger->debug(
             message: '[ObjectEntityMapper::findAcrossAllSources] Starting search',
             context: [
-                'file' => __FILE__,
-                'line' => __LINE__,
-                    'identifier' => $identifier,
-                ]
+                'file'       => __FILE__,
+                'line'       => __LINE__,
+                'identifier' => $identifier,
+            ]
                 );
 
         // First, try to find in blob storage (fast path for non-magic objects).
@@ -1618,8 +1634,8 @@ class ObjectEntityMapper extends QBMapper
                 context: [
                     'file' => __FILE__,
                     'line' => __LINE__,
-                        'uuid' => $object->getUuid(),
-                    ]
+                    'uuid' => $object->getUuid(),
+                ]
                     );
 
             // Set source to indicate data came from blob storage.
@@ -1668,12 +1684,12 @@ class ObjectEntityMapper extends QBMapper
             $this->logger->debug(
                 message: '[ObjectEntityMapper::findAcrossAllSources] Found in magic table',
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
-                        'uuid'       => $result['object']->getUuid(),
-                        'registerId' => $result['register']?->getId(),
-                        'schemaId'   => $result['schema']?->getId(),
-                    ]
+                    'file'       => __FILE__,
+                    'line'       => __LINE__,
+                    'uuid'       => $result['object']->getUuid(),
+                    'registerId' => $result['register']?->getId(),
+                    'schemaId'   => $result['schema']?->getId(),
+                ]
                     );
 
             // Set source to indicate data came from magic tables (ORM).
@@ -1739,7 +1755,7 @@ class ObjectEntityMapper extends QBMapper
         $qb->andWhere($qb->expr()->isNull('deleted'));
 
         // First, search blob storage.
-        $blobResults = $this->findEntities($qb);
+        $blobResults = $this->findEntities(query: $qb);
 
         // Set source to indicate data came from blob storage.
         foreach ($blobResults as $entity) {
@@ -1779,11 +1795,11 @@ class ObjectEntityMapper extends QBMapper
                 $this->logger->warning(
                     message: '[ObjectEntityMapper] Failed to search magic tables in findMultiple',
                     context: [
-                        'file' => __FILE__,
-                        'line' => __LINE__,
-                            'error'        => $e->getMessage(),
-                            'missingUuids' => count($missingUuids),
-                        ]
+                        'file'         => __FILE__,
+                        'line'         => __LINE__,
+                        'error'        => $e->getMessage(),
+                        'missingUuids' => count($missingUuids),
+                    ]
                         );
             }//end try
         }//end if
@@ -1821,7 +1837,7 @@ class ObjectEntityMapper extends QBMapper
         $qb->where($qb->expr()->eq('o.schema', $qb->createNamedParameter($schemaId, IQueryBuilder::PARAM_INT)))
             ->andWhere($qb->expr()->isNull('o.deleted'));
 
-        return $this->findEntities($qb);
+        return $this->findEntities(query: $qb);
     }//end findBySchema()
 
     /**
@@ -1901,7 +1917,7 @@ class ObjectEntityMapper extends QBMapper
             offset: $offset,
             uses: $uses
         );
-        return $this->findEntities($qb);
+        return $this->findEntities(query: $qb);
     }//end findAll()
 
     /**
@@ -2291,7 +2307,7 @@ class ObjectEntityMapper extends QBMapper
             limit: $limit,
             offset: $offset
         );
-        return $this->findEntities($qb);
+        return $this->findEntities(query: $qb);
     }//end findAllDirectBlobStorage()
 
     /**
@@ -2359,7 +2375,7 @@ class ObjectEntityMapper extends QBMapper
             );
         }
 
-        return $this->findEntities($qb);
+        return $this->findEntities(query: $qb);
     }//end searchObjects()
 
     /**
@@ -2558,7 +2574,7 @@ class ObjectEntityMapper extends QBMapper
             $qb->setFirstResult($offset);
         }
 
-        return $this->findEntities($qb);
+        return $this->findEntities(query: $qb);
     }//end findBySchemas()
 
     /**
@@ -2567,8 +2583,9 @@ class ObjectEntityMapper extends QBMapper
      * Searches for objects that contain a specific value in their relationships.
      * This is a simplified version that searches in the JSON object field.
      *
-     * @param string $search       Search term to find in relationships
-     * @param bool   $partialMatch Whether to allow partial matches (default: true)
+     * @param string $search             Search term to find in relationships.
+     * @param bool   $partialMatch       Whether to allow partial matches (default: true).
+     * @param bool   $includeMagicTables Whether to include magic tables in search.
      *
      * @return ObjectEntity[]
      *
@@ -2583,7 +2600,7 @@ class ObjectEntityMapper extends QBMapper
         }
 
         // Search in blob storage (openregister_objects table).
-        $blobResults = $this->findByRelationInBlobStorage($search, $partialMatch);
+        $blobResults = $this->findByRelationInBlobStorage(search: $search, partialMatch: $partialMatch);
 
         // Optionally search in magic tables using the efficient _relations column.
         if ($includeMagicTables === true) {
@@ -2656,7 +2673,7 @@ class ObjectEntityMapper extends QBMapper
 
         $qb->setMaxResults(100);
         // Limit to prevent performance issues.
-        return $this->findEntities($qb);
+        return $this->findEntities(query: $qb);
     }//end findByRelationInBlobStorage()
 
     /**

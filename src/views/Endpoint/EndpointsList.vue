@@ -109,4 +109,3 @@ export default {
 <style>
 /* Styles remain the same */
 </style>
-

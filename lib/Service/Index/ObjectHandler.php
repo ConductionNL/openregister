@@ -92,8 +92,8 @@ class ObjectHandler
         $this->logger->debug(
             message: '[ObjectHandler] Searching objects',
             context: [
-                'file' => __FILE__,
-                'line' => __LINE__,
+                'file'         => __FILE__,
+                'line'         => __LINE__,
                 'query'        => $query,
                 'rbac'         => $rbac,
                 'multitenancy' => $multitenancy,
@@ -113,7 +113,7 @@ class ObjectHandler
         $results = $this->searchBackend->search($solrQuery);
 
         // Convert Solr results to OpenRegister format.
-        return $this->convertToOpenRegisterFormat($results);
+        return $this->convertToOpenRegisterFormat(solrResults: $results);
     }//end searchObjects()
 
     /**
@@ -221,8 +221,8 @@ class ObjectHandler
             $this->logger->error(
                 message: '[ObjectHandler] Failed to commit to Solr',
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'  => __FILE__,
+                    'line'  => __LINE__,
                     'error' => $e->getMessage(),
                 ]
             );
@@ -246,8 +246,8 @@ class ObjectHandler
         $this->logger->info(
             message: '[ObjectHandler] Starting full reindex',
             context: [
-                'file' => __FILE__,
-                'line' => __LINE__,
+                'file'       => __FILE__,
+                'line'       => __LINE__,
                 'maxObjects' => $maxObjects,
                 'batchSize'  => $batchSize,
                 'collection' => $collectionName,
@@ -261,8 +261,8 @@ class ObjectHandler
             $this->logger->error(
                 message: '[ObjectHandler] Reindex failed',
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'  => __FILE__,
+                    'line'  => __LINE__,
                     'error' => $e->getMessage(),
                 ]
             );

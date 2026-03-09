@@ -216,7 +216,7 @@ class SolrSettingsHandler
             $rawStats = $objectCacheService->getSolrDashboardStats();
 
             // Transform the raw stats into the expected dashboard structure.
-            return $this->transformSolrStatsToDashboard($rawStats);
+            return $this->transformSolrStatsToDashboard(rawStats: $rawStats);
         } catch (Exception $e) {
             // Return default dashboard structure if SOLR is not available.
             return [
@@ -375,7 +375,7 @@ class SolrSettingsHandler
                 'response_time_ms'  => 0,
         // Not available in raw stats.
                 'total_documents'   => $rawStats['document_count'] ?? 0,
-                'index_size'        => $this->formatBytesForDashboard(($rawStats['index_size'] ?? 0) * 1024),
+                'index_size'        => $this->formatBytesForDashboard(bytes: ($rawStats['index_size'] ?? 0) * 1024),
         // Assuming KB.
                 'last_commit'       => $rawStats['last_modified'] ?? null,
             ],
@@ -634,8 +634,8 @@ class SolrSettingsHandler
             $this->logger->info(
                 message: '[SolrSettingsHandler] Search backend changed to: '.$backend,
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'    => __FILE__,
+                    'line'    => __LINE__,
                     'app'     => 'openregister',
                     'backend' => $backend,
                 ]
@@ -719,7 +719,7 @@ class SolrSettingsHandler
     {
         try {
             // Validate the configuration structure.
-            $validatedConfig = $this->validateFacetConfiguration($facetConfig);
+            $validatedConfig = $this->validateFacetConfiguration(config: $facetConfig);
 
             $this->appConfig->setValueString($this->appName, 'solr_facet_config', json_encode($validatedConfig));
             return $validatedConfig;

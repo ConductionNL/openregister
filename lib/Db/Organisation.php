@@ -235,21 +235,21 @@ class Organisation extends Entity implements JsonSerializable
      */
     public function __construct()
     {
-        $this->addType('uuid', 'string');
-        $this->addType('slug', 'string');
-        $this->addType('name', 'string');
-        $this->addType('description', 'string');
-        $this->addType('users', 'json');
-        $this->addType('groups', 'json');
-        $this->addType('owner', 'string');
-        $this->addType('created', 'datetime');
-        $this->addType('updated', 'datetime');
-        $this->addType('active', 'boolean');
-        $this->addType('storage_quota', 'integer');
-        $this->addType('bandwidth_quota', 'integer');
-        $this->addType('request_quota', 'integer');
-        $this->addType('authorization', 'json');
-        $this->addType('parent', 'string');
+        $this->addType(fieldName: 'uuid', type: 'string');
+        $this->addType(fieldName: 'slug', type: 'string');
+        $this->addType(fieldName: 'name', type: 'string');
+        $this->addType(fieldName: 'description', type: 'string');
+        $this->addType(fieldName: 'users', type: 'json');
+        $this->addType(fieldName: 'groups', type: 'json');
+        $this->addType(fieldName: 'owner', type: 'string');
+        $this->addType(fieldName: 'created', type: 'datetime');
+        $this->addType(fieldName: 'updated', type: 'datetime');
+        $this->addType(fieldName: 'active', type: 'boolean');
+        $this->addType(fieldName: 'storage_quota', type: 'integer');
+        $this->addType(fieldName: 'bandwidth_quota', type: 'integer');
+        $this->addType(fieldName: 'request_quota', type: 'integer');
+        $this->addType(fieldName: 'authorization', type: 'json');
+        $this->addType(fieldName: 'parent', type: 'string');
     }//end __construct()
 
     /**
@@ -267,7 +267,7 @@ class Organisation extends Entity implements JsonSerializable
 
         if (in_array($userId, $this->users) === false) {
             $this->users[] = $userId;
-            $this->markFieldUpdated('users');
+            $this->markFieldUpdated(attribute: 'users');
         }
 
         return $this;
@@ -298,7 +298,7 @@ class Organisation extends Entity implements JsonSerializable
 
         // Only mark as updated if a user was actually removed.
         if (count($this->users) !== $originalCount) {
-            $this->markFieldUpdated('users');
+            $this->markFieldUpdated(attribute: 'users');
         }
 
         return $this;
@@ -369,7 +369,7 @@ class Organisation extends Entity implements JsonSerializable
     public function setGroups(?array $groups): static
     {
         $this->groups = $groups ?? [];
-        $this->markFieldUpdated('groups');
+        $this->markFieldUpdated(attribute: 'groups');
         return $this;
     }//end setGroups()
 
@@ -399,9 +399,9 @@ class Organisation extends Entity implements JsonSerializable
             $activeValue = (bool) $active;
         }
 
-        parent::setActive($activeValue);
+        parent::setActive(active: $activeValue);
 
-        $this->markFieldUpdated('active');
+        $this->markFieldUpdated(attribute: 'active');
         return $this;
     }//end setActive()
 
@@ -533,24 +533,24 @@ class Organisation extends Entity implements JsonSerializable
      */
     public function setAuthorization(array|string|null $authorization): static
     {
-        // Handle JSON string from database (type safety)
+        // Handle JSON string from database (type safety).
         if (is_string($authorization) === true) {
             try {
                 $decoded = json_decode($authorization, true);
-                if (json_last_error() === JSON_ERROR_NONE && is_array($decoded)) {
+                if (json_last_error() === JSON_ERROR_NONE && is_array($decoded) === true) {
                     $authorization = $decoded;
                 } else {
-                    // Invalid JSON, use default
+                    // Invalid JSON, use default.
                     $authorization = null;
                 }
             } catch (\Exception $e) {
-                // If decoding fails, use default
+                // If decoding fails, use default.
                 $authorization = null;
             }
         }
 
         $this->authorization = $authorization ?? $this->getDefaultAuthorization();
-        $this->markFieldUpdated('authorization');
+        $this->markFieldUpdated(attribute: 'authorization');
         return $this;
     }//end setAuthorization()
 
@@ -574,7 +574,7 @@ class Organisation extends Entity implements JsonSerializable
     public function setParent(?string $parent): static
     {
         $this->parent = $parent;
-        $this->markFieldUpdated('parent');
+        $this->markFieldUpdated(attribute: 'parent');
         return $this;
     }//end setParent()
 

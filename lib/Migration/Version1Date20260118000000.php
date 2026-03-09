@@ -85,7 +85,7 @@ class Version1Date20260118000000 extends SimpleMigrationStep
         if ($schema->hasTable('openregister_organisations') === true) {
             $table = $schema->getTable('openregister_organisations');
 
-            // Check if active column already exists
+            // Check if active column already exists.
             if ($table->hasColumn('active') === false) {
                 $output->info(message: '📋 Adding active column to openregister_organisations table...');
 

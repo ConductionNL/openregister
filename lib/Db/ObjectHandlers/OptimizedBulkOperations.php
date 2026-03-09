@@ -146,8 +146,8 @@ class OptimizedBulkOperations
             $this->logger->info(
                 message: "[OptimizedBulkOperations] Starting ultra-fast bulk operations",
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'          => __FILE__,
+                    'line'          => __LINE__,
                     'total_objects' => count($allObjects),
                     'chunks'        => $totalChunks,
                 ]
@@ -169,8 +169,8 @@ class OptimizedBulkOperations
             $this->logger->debug(
                 message: "[OptimizedBulkOperations] Processed chunk with optimized bulk operations",
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'               => __FILE__,
+                    'line'               => __LINE__,
                     'chunk'              => $chunkIndex + 1,
                     'objects'            => count($chunk),
                     'time_seconds'       => round($chunkTime, 3),
@@ -194,8 +194,8 @@ class OptimizedBulkOperations
         $this->logger->info(
             message: "[OptimizedBulkOperations] Completed optimized bulk operations",
             context: [
-                'file' => __FILE__,
-                'line' => __LINE__,
+                'file'                    => __FILE__,
+                'line'                    => __LINE__,
                 'total_objects'           => count($allObjects),
                 'total_time_seconds'      => round($totalTime, 3),
                 'objects_per_second'      => round($objectsPerSecond, 0),
@@ -248,7 +248,7 @@ class OptimizedBulkOperations
         $tableName = 'oc_openregister_objects';
 
         // Map object columns to actual database columns.
-        $dbColumns   = $this->mapObjectColumnsToDatabase($columns);
+        $dbColumns   = $this->mapObjectColumnsToDatabase(objectColumns: $columns);
         $objectCount = count($objects);
         $sql         = $this->buildMassiveInsertOnDuplicateKeyUpdateSQL(
             tableName: $tableName,
@@ -315,8 +315,8 @@ class OptimizedBulkOperations
         $this->logger->info(
             message: "[OptimizedBulkOperations] BULK SAVE: Executed unified bulk operation with statistics",
             context: [
-                'file' => __FILE__,
-                'line' => __LINE__,
+                'file'              => __FILE__,
+                'line'              => __LINE__,
                 'chunk'             => $chunkNumber,
                 'objects_processed' => $totalObjects,
                 'affected_rows'     => $affectedRows,
@@ -358,8 +358,8 @@ class OptimizedBulkOperations
             $this->logger->info(
                 message: "[OptimizedBulkOperations] BULK SAVE: Retrieved complete objects for classification",
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'               => __FILE__,
+                    'line'               => __LINE__,
                     'chunk'              => $chunkNumber,
                     'uuids_requested'    => count($uuids),
                     'objects_returned'   => count($completeObjects),
@@ -725,7 +725,7 @@ class OptimizedBulkOperations
                 // Only set if explicitly provided (for migrations or special cases).
                 $value = $objectData[$dbColumn] ?? null;
                 if ($value !== null && $value !== '') {
-                    return $this->convertDateTimeToMySQLFormat($value);
+                    return $this->convertDateTimeToMySQLFormat(value: $value);
                 }
                 return null;
             // Let database handle with DEFAULT CURRENT_TIMESTAMP.
@@ -734,7 +734,7 @@ class OptimizedBulkOperations
                 // Only set if explicitly provided (for migrations or special cases).
                 $value = $objectData[$dbColumn] ?? null;
                 if ($value !== null && $value !== '') {
-                    return $this->convertDateTimeToMySQLFormat($value);
+                    return $this->convertDateTimeToMySQLFormat(value: $value);
                 }
                 return null;
             // Let database handle with ON UPDATE CURRENT_TIMESTAMP.
@@ -747,7 +747,7 @@ class OptimizedBulkOperations
                     return null;
                     // These fields can be null.
                 }
-                return $this->convertDateTimeToMySQLFormat($value);
+                return $this->convertDateTimeToMySQLFormat(value: $value);
 
             case 'name':
                 // SIMPLE METADATA EXTRACTION: Look for 'naam' in object data.
@@ -841,7 +841,7 @@ class OptimizedBulkOperations
         foreach ($insertObjects as $objectData) {
             try {
                 // Create ObjectEntity from raw data for event dispatching.
-                $entity = $this->createEntityFromData($objectData);
+                $entity = $this->createEntityFromData(data: $objectData);
 
                 if ($entity !== null) {
                     $this->eventDispatcher->dispatchTyped(
@@ -854,8 +854,8 @@ class OptimizedBulkOperations
                 $this->logger->warning(
                     message: '[OptimizedBulkOperations] Failed to dispatch created event',
                     context: [
-                        'file' => __FILE__,
-                        'line' => __LINE__,
+                        'file'  => __FILE__,
+                        'line'  => __LINE__,
                         'uuid'  => $objectData['uuid'] ?? 'unknown',
                         'error' => $e->getMessage(),
                     ]
@@ -880,8 +880,8 @@ class OptimizedBulkOperations
                 $this->logger->warning(
                     message: '[OptimizedBulkOperations] Failed to dispatch updated event',
                     context: [
-                        'file' => __FILE__,
-                        'line' => __LINE__,
+                        'file'  => __FILE__,
+                        'line'  => __LINE__,
                         'uuid'  => $entity->getUuid() ?? 'unknown',
                         'error' => $e->getMessage(),
                     ]
@@ -892,8 +892,8 @@ class OptimizedBulkOperations
         $this->logger->info(
             message: '[OptimizedBulkOperations] Dispatched bulk events',
             context: [
-                'file' => __FILE__,
-                'line' => __LINE__,
+                'file'    => __FILE__,
+                'line'    => __LINE__,
                 'created' => $createdCount,
                 'updated' => $updatedCount,
                 'total'   => $createdCount + $updatedCount,

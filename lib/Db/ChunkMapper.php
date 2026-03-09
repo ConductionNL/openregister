@@ -45,7 +45,7 @@ class ChunkMapper extends QBMapper
      */
     public function __construct(IDBConnection $db)
     {
-        parent::__construct($db, 'openregister_chunks', Chunk::class);
+        parent::__construct(db: $db, tableName: 'openregister_chunks', entityClass: Chunk::class);
     }//end __construct()
 
     /**
@@ -57,7 +57,7 @@ class ChunkMapper extends QBMapper
      */
     public function findEntitiesPublic(IQueryBuilder $query): array
     {
-        return parent::findEntities($query);
+        return parent::findEntities(query: $query);
     }//end findEntitiesPublic()
 
     /**
@@ -87,7 +87,7 @@ class ChunkMapper extends QBMapper
             )
             ->orderBy('chunk_index', 'ASC');
 
-        return $this->findEntities($qb);
+        return $this->findEntities(query: $qb);
     }//end findBySource()
 
     /**
@@ -249,8 +249,13 @@ class ChunkMapper extends QBMapper
      *
      * @return array List of file source summaries
      */
-    public function getFileSourceSummaries(?int $limit=null, ?int $offset=null, ?string $search=null, string $sort='extractedAt', string $order='DESC'): array
-    {
+    public function getFileSourceSummaries(
+        ?int $limit=null,
+        ?int $offset=null,
+        ?string $search=null,
+        string $sort='extractedAt',
+        string $order='DESC'
+    ): array {
         $sortMap = [
             'fileName'    => 'fc.name',
             'fileSize'    => 'fc.size',
@@ -258,8 +263,12 @@ class ChunkMapper extends QBMapper
             'chunkCount'  => 'chunk_count',
         ];
 
-        $sqlSort  = $sortMap[$sort] ?? 'last_extracted';
-        $sqlOrder = strtoupper($order) === 'ASC' ? 'ASC' : 'DESC';
+        $sqlSort = $sortMap[$sort] ?? 'last_extracted';
+        if (strtoupper($order) === 'ASC') {
+            $sqlOrder = 'ASC';
+        } else {
+            $sqlOrder = 'DESC';
+        }
 
         $qb = $this->db->getQueryBuilder();
 
@@ -278,7 +287,13 @@ class ChunkMapper extends QBMapper
             ->orderBy($sqlSort, $sqlOrder);
 
         if ($search !== null && $search !== '') {
-            $qb->andWhere($qb->expr()->iLike('fc.name', $qb->createNamedParameter('%' . $this->db->escapeLikeParameter($search) . '%', IQueryBuilder::PARAM_STR)));
+            $searchPattern = '%'.$this->db->escapeLikeParameter($search).'%';
+            $qb->andWhere(
+                $qb->expr()->iLike(
+                    'fc.name',
+                    $qb->createNamedParameter($searchPattern, IQueryBuilder::PARAM_STR)
+                )
+            );
         }
 
         if ($limit !== null) {
@@ -303,7 +318,7 @@ class ChunkMapper extends QBMapper
                 'mimeType'       => $row['mime_type'],
                 'fileSize'       => (int) $row['file_size'],
             ];
-            $row = $result->fetch();
+            $row    = $result->fetch();
         }
 
         $result->closeCursor();
@@ -328,7 +343,13 @@ class ChunkMapper extends QBMapper
             ->where($qb->expr()->eq('ch.source_type', $qb->createNamedParameter('file', IQueryBuilder::PARAM_STR)));
 
         if ($search !== null && $search !== '') {
-            $qb->andWhere($qb->expr()->iLike('fc.name', $qb->createNamedParameter('%' . $this->db->escapeLikeParameter($search) . '%', IQueryBuilder::PARAM_STR)));
+            $searchPattern = '%'.$this->db->escapeLikeParameter($search).'%';
+            $qb->andWhere(
+                $qb->expr()->iLike(
+                    'fc.name',
+                    $qb->createNamedParameter($searchPattern, IQueryBuilder::PARAM_STR)
+                )
+            );
         }
 
         $result = $qb->executeQuery();
@@ -366,6 +387,6 @@ class ChunkMapper extends QBMapper
             $qb->setFirstResult($offset);
         }
 
-        return $this->findEntities($qb);
+        return $this->findEntities(query: $qb);
     }//end findUnindexed()
 }//end class

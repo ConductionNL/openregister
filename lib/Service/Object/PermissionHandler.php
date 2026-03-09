@@ -196,7 +196,7 @@ class PermissionHandler
             ) {
                 return true;
             }
-        }
+        }//end foreach
 
         // Logged-in users should also have at least the same rights as 'public' users.
         // If 'public' is in the authorization, logged-in users should have access too.
@@ -447,8 +447,8 @@ class PermissionHandler
             $this->logger->warning(
                 message: '[PermissionHandler] Failed to get active organisation',
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'  => __FILE__,
+                    'line'  => __LINE__,
                     'error' => $e->getMessage(),
                 ]
             );

@@ -123,7 +123,10 @@ class UpdateFileHandler
     ): File {
         // Debug logging - original file path.
         $originalFilePath = $filePath;
-        $this->logger->info(message: "[UpdateFileHandler] updateFile: Original file path received: '$originalFilePath'", context: ['file' => __FILE__, 'line' => __LINE__]);
+        $this->logger->info(
+            message: "[UpdateFileHandler] updateFile: Original file path received: '$originalFilePath'",
+            context: ['file' => __FILE__, 'line' => __LINE__]
+        );
 
         // Initialize variables before conditional assignment.
         $file     = null;
@@ -131,7 +134,10 @@ class UpdateFileHandler
 
         // If $filePath is an integer (file ID), try to find the file directly by ID.
         if (is_int($filePath) === true) {
-            $this->logger->info(message: "[UpdateFileHandler] updateFile: File ID provided: $filePath", context: ['file' => __FILE__, 'line' => __LINE__]);
+            $this->logger->info(
+                message: "[UpdateFileHandler] updateFile: File ID provided: $filePath",
+                context: ['file' => __FILE__, 'line' => __LINE__]
+            );
 
             if ($object !== null) {
                 // Try to find the file in the object's folder by ID.
@@ -139,7 +145,10 @@ class UpdateFileHandler
                 if ($file !== null) {
                     $fileName = $file->getName();
                     $fileId   = $file->getId();
-                    $this->logger->info(message: "[UpdateFileHandler] updateFile: Found file by ID in object folder: $fileName (ID: $fileId)", context: ['file' => __FILE__, 'line' => __LINE__]);
+                    $this->logger->info(
+                        message: "[UpdateFileHandler] updateFile: Found file by ID in object folder: $fileName (ID: $fileId)",
+                        context: ['file' => __FILE__, 'line' => __LINE__]
+                    );
                 }
             }
 
@@ -149,19 +158,28 @@ class UpdateFileHandler
                     $userFolder = $this->folderMgmtHandler->getOpenRegisterUserFolder();
                     $nodes      = $userFolder->getById($filePath);
                     if (empty($nodes) === true) {
-                        $this->logger->error(message: "[UpdateFileHandler] updateFile: No file found with ID: $filePath", context: ['file' => __FILE__, 'line' => __LINE__]);
+                        $this->logger->error(
+                            message: "[UpdateFileHandler] updateFile: No file found with ID: $filePath",
+                            context: ['file' => __FILE__, 'line' => __LINE__]
+                        );
                         throw new Exception("File with ID $filePath does not exist");
                     }
 
                     $file     = $nodes[0];
                     $fileName = $file->getName();
                     $fid      = $file->getId();
-                    $this->logger->info(message: "[UpdateFileHandler] updateFile: Found file by ID in user folder: $fileName (ID: $fid)", context: ['file' => __FILE__, 'line' => __LINE__]);
+                    $this->logger->info(
+                        message: "[UpdateFileHandler] updateFile: Found file by ID in user folder: $fileName (ID: $fid)",
+                        context: ['file' => __FILE__, 'line' => __LINE__]
+                    );
                 } catch (Exception $e) {
-                    $this->logger->error(message: "[UpdateFileHandler] updateFile: Error finding file by ID $filePath: ".$e->getMessage(), context: ['file' => __FILE__, 'line' => __LINE__]);
+                    $this->logger->error(
+                        message: "[UpdateFileHandler] updateFile: Error finding file by ID $filePath: ".$e->getMessage(),
+                        context: ['file' => __FILE__, 'line' => __LINE__]
+                    );
                     throw new Exception("File with ID $filePath does not exist: ".$e->getMessage());
-                }
-            }
+                }//end try
+            }//end if
         } else {
             // Handle string file paths (existing logic).
             // Clean file path and extract filename using utility method.
@@ -169,9 +187,15 @@ class UpdateFileHandler
             $filePath = $pathInfo['cleanPath'];
             $fileName = $pathInfo['fileName'];
 
-            $this->logger->info(message: "[UpdateFileHandler] updateFile: After cleaning: '$filePath'", context: ['file' => __FILE__, 'line' => __LINE__]);
+            $this->logger->info(
+                message: "[UpdateFileHandler] updateFile: After cleaning: '$filePath'",
+                context: ['file' => __FILE__, 'line' => __LINE__]
+            );
             if ($fileName !== $filePath) {
-                $this->logger->info(message: "[UpdateFileHandler] updateFile: Extracted filename from path: '$fileName' (from '$filePath')", context: ['file' => __FILE__, 'line' => __LINE__]);
+                $this->logger->info(
+                    message: "[UpdateFileHandler] updateFile: Extracted filename from path: '$fileName' (from '$filePath')",
+                    context: ['file' => __FILE__, 'line' => __LINE__]
+                );
             }
         }//end if
 
@@ -183,66 +207,109 @@ class UpdateFileHandler
                     $objectFolder = $this->folderMgmtHandler->getObjectFolder($object);
 
                     if ($objectFolder !== null) {
-                        $this->logger->info(message: "[UpdateFileHandler] updateFile: Object folder path: ".$objectFolder->getPath(), context: ['file' => __FILE__, 'line' => __LINE__]);
-                        $this->logger->info(message: "[UpdateFileHandler] updateFile: Object folder ID: ".$objectFolder->getId(), context: ['file' => __FILE__, 'line' => __LINE__]);
+                        $this->logger->info(
+                            message: "[UpdateFileHandler] updateFile: Object folder path: ".$objectFolder->getPath(),
+                            context: ['file' => __FILE__, 'line' => __LINE__]
+                        );
+                        $this->logger->info(
+                            message: "[UpdateFileHandler] updateFile: Object folder ID: ".$objectFolder->getId(),
+                            context: ['file' => __FILE__, 'line' => __LINE__]
+                        );
 
                         // List all files in the object folder for debugging.
                         try {
                             $folderFiles = $objectFolder->getDirectoryListing();
                             $fileNames   = array_map(fn($f) => $f->getName(), $folderFiles);
-                            $this->logger->info(message: "[UpdateFileHandler] updateFile: Files in object folder: ".implode(', ', $fileNames), context: ['file' => __FILE__, 'line' => __LINE__]);
+                            $this->logger->info(
+                                message: "[UpdateFileHandler] updateFile: Files in object folder: ".implode(', ', $fileNames),
+                                context: ['file' => __FILE__, 'line' => __LINE__]
+                            );
                         } catch (Exception $e) {
-                            $this->logger->warning(message: "[UpdateFileHandler] updateFile: Could not list folder contents: ".$e->getMessage(), context: ['file' => __FILE__, 'line' => __LINE__]);
+                            $this->logger->warning(
+                                message: "[UpdateFileHandler] updateFile: Could not list folder contents: ".$e->getMessage(),
+                                context: ['file' => __FILE__, 'line' => __LINE__]
+                            );
                         }
 
                         // Try to get the file from object folder using just the filename.
                         try {
                             $file = $objectFolder->get($fileName);
                             $msg  = "updateFile: Found file in object folder: ".$file->getName()." (ID: ".$file->getId().")";
-                            $this->logger->info(message: "[UpdateFileHandler] ".$msg, context: ['file' => __FILE__, 'line' => __LINE__]);
+                            $this->logger->info(
+                                message: "[UpdateFileHandler] ".$msg,
+                                context: ['file' => __FILE__, 'line' => __LINE__]
+                            );
                         } catch (NotFoundException) {
-                            $this->logger->warning(message: "[UpdateFileHandler] updateFile: File '$fileName' not found in object folder.", context: ['file' => __FILE__, 'line' => __LINE__]);
+                            $this->logger->warning(
+                                message: "[UpdateFileHandler] updateFile: File '$fileName' not found in object folder.",
+                                context: ['file' => __FILE__, 'line' => __LINE__]
+                            );
 
                             // Also try with the full path in case it's nested.
                             try {
                                 $file = $objectFolder->get($filePath);
                                 $msg  = "updateFile: Found file using full path in object folder: ".$file->getName();
-                                $this->logger->info(message: "[UpdateFileHandler] ".$msg, context: ['file' => __FILE__, 'line' => __LINE__]);
+                                $this->logger->info(
+                                    message: "[UpdateFileHandler] ".$msg,
+                                    context: ['file' => __FILE__, 'line' => __LINE__]
+                                );
                             } catch (NotFoundException) {
                                 $msg = "updateFile: File '$filePath' also not found with full path in object folder.";
-                                $this->logger->warning(message: "[UpdateFileHandler] ".$msg, context: ['file' => __FILE__, 'line' => __LINE__]);
+                                $this->logger->warning(
+                                    message: "[UpdateFileHandler] ".$msg,
+                                    context: ['file' => __FILE__, 'line' => __LINE__]
+                                );
                             }
-                        }
+                        }//end try
                     }//end if
 
                     if ($objectFolder === null) {
                         $msg = "updateFile: Could not get object folder for object ID: ".$object->getId();
-                        $this->logger->warning(message: "[UpdateFileHandler] ".$msg, context: ['file' => __FILE__, 'line' => __LINE__]);
+                        $this->logger->warning(
+                            message: "[UpdateFileHandler] ".$msg,
+                            context: ['file' => __FILE__, 'line' => __LINE__]
+                        );
                     }
                 } catch (Exception $e) {
-                    $this->logger->error(message: "[UpdateFileHandler] updateFile: Error accessing object folder: ".$e->getMessage(), context: ['file' => __FILE__, 'line' => __LINE__]);
+                    $this->logger->error(
+                        message: "[UpdateFileHandler] updateFile: Error accessing object folder: ".$e->getMessage(),
+                        context: ['file' => __FILE__, 'line' => __LINE__]
+                    );
                 }//end try
             }//end if
 
             if ($object === null) {
-                $this->logger->info(message: "[UpdateFileHandler] updateFile: No object provided, will search in user folder", context: ['file' => __FILE__, 'line' => __LINE__]);
+                $this->logger->info(
+                    message: "[UpdateFileHandler] updateFile: No object provided, will search in user folder",
+                    context: ['file' => __FILE__, 'line' => __LINE__]
+                );
             }
 
             // If object wasn't provided or file wasn't found in object folder, try user folder.
+            $userFolder = null;
             if ($file === null) {
-                $this->logger->info(message: "[UpdateFileHandler] updateFile: Trying user folder approach with path: '$filePath'", context: ['file' => __FILE__, 'line' => __LINE__]);
+                $this->logger->info(
+                    message: "[UpdateFileHandler] updateFile: Trying user folder approach with path: '$filePath'",
+                    context: ['file' => __FILE__, 'line' => __LINE__]
+                );
                 try {
                     $userFolder = $this->folderMgmtHandler->getOpenRegisterUserFolder();
                     $file       = $userFolder->get(path: $filePath);
                     $msg        = "[UpdateFileHandler] updateFile: Found file in user folder at path: $filePath (ID: ".$file->getId().")";
                     $this->logger->info(message: $msg, context: ['file' => __FILE__, 'line' => __LINE__]);
                 } catch (NotFoundException $e) {
-                    $this->logger->error(message: "[UpdateFileHandler] updateFile: File $filePath not found in user folder either.", context: ['file' => __FILE__, 'line' => __LINE__]);
+                    $this->logger->error(
+                        message: "[UpdateFileHandler] updateFile: File $filePath not found in user folder either.",
+                        context: ['file' => __FILE__, 'line' => __LINE__]
+                    );
 
                     // Try to find the file by ID if the path starts with a number.
                     if (preg_match('/^(\d+)\//', $filePath, $matches) === 1) {
                         $fileId = (int) $matches[1];
-                        $this->logger->info(message: "[UpdateFileHandler] updateFile: Attempting to find file by ID: $fileId", context: ['file' => __FILE__, 'line' => __LINE__]);
+                        $this->logger->info(
+                            message: "[UpdateFileHandler] updateFile: Attempting to find file by ID: $fileId",
+                            context: ['file' => __FILE__, 'line' => __LINE__]
+                        );
 
                         try {
                             $nodes = $userFolder->getById($fileId);
@@ -251,22 +318,34 @@ class UpdateFileHandler
                                 $fileName = $file->getName();
                                 $path     = $file->getPath();
                                 $msg      = "updateFile: Found file by ID $fileId: $fileName at path: $path";
-                                $this->logger->info(message: "[UpdateFileHandler] ".$msg, context: ['file' => __FILE__, 'line' => __LINE__]);
+                                $this->logger->info(
+                                    message: "[UpdateFileHandler] ".$msg,
+                                    context: ['file' => __FILE__, 'line' => __LINE__]
+                                );
                             }
 
                             if (empty($nodes) === true) {
-                                $this->logger->warning(message: "[UpdateFileHandler] updateFile: No file found with ID: $fileId", context: ['file' => __FILE__, 'line' => __LINE__]);
+                                $this->logger->warning(
+                                    message: "[UpdateFileHandler] updateFile: No file found with ID: $fileId",
+                                    context: ['file' => __FILE__, 'line' => __LINE__]
+                                );
                             }
                         } catch (Exception $e) {
-                            $this->logger->error(message: "[UpdateFileHandler] updateFile: Error finding file by ID $fileId: ".$e->getMessage(), context: ['file' => __FILE__, 'line' => __LINE__]);
-                        }
+                            $this->logger->error(
+                                message: "[UpdateFileHandler] updateFile: Error finding file by ID $fileId: ".$e->getMessage(),
+                                context: ['file' => __FILE__, 'line' => __LINE__]
+                            );
+                        }//end try
                     }//end if
 
                     if ($file === null) {
                         throw new Exception("File $filePath does not exist");
                     }
                 } catch (NotPermittedException | InvalidPathException $e) {
-                    $this->logger->error(message: "[UpdateFileHandler] updateFile: Can't access file $filePath: ".$e->getMessage(), context: ['file' => __FILE__, 'line' => __LINE__]);
+                    $this->logger->error(
+                        message: "[UpdateFileHandler] updateFile: Can't access file $filePath: ".$e->getMessage(),
+                        context: ['file' => __FILE__, 'line' => __LINE__]
+                    );
                     throw new Exception("Can't access file $filePath: ".$e->getMessage());
                 }//end try
             }//end if
@@ -287,12 +366,18 @@ class UpdateFileHandler
                 $this->fileValidHandler->checkOwnership($file);
 
                 $file->putContent(data: $content);
-                $this->logger->info(message: "[UpdateFileHandler] updateFile: Successfully updated file content: ".$file->getName(), context: ['file' => __FILE__, 'line' => __LINE__]);
+                $this->logger->info(
+                    message: "[UpdateFileHandler] updateFile: Successfully updated file content: ".$file->getName(),
+                    context: ['file' => __FILE__, 'line' => __LINE__]
+                );
 
                 // Transfer ownership to OpenRegister and share with current user if needed.
                 $this->fileOwnershipHandler->transferFileOwnershipIfNeeded($file);
             } catch (NotPermittedException $e) {
-                $this->logger->error(message: "[UpdateFileHandler] updateFile: Can't write content to file: ".$e->getMessage(), context: ['file' => __FILE__, 'line' => __LINE__]);
+                $this->logger->error(
+                    message: "[UpdateFileHandler] updateFile: Can't write content to file: ".$e->getMessage(),
+                    context: ['file' => __FILE__, 'line' => __LINE__]
+                );
                 throw new Exception("Can't write content to file: ".$e->getMessage());
             }//end try
         }//end if
@@ -312,7 +397,10 @@ class UpdateFileHandler
             $allTags = array_unique(array_merge($objectTags, $tags));
 
             $this->fileService->attachTagsToFile(fileId: (string) $file->getId(), tags: $allTags);
-            $this->logger->info(message: "[UpdateFileHandler] updateFile: Successfully updated file tags: ".$file->getName(), context: ['file' => __FILE__, 'line' => __LINE__]);
+            $this->logger->info(
+                message: "[UpdateFileHandler] updateFile: Successfully updated file tags: ".$file->getName(),
+                context: ['file' => __FILE__, 'line' => __LINE__]
+            );
         }
 
         return $file;

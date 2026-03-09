@@ -85,14 +85,15 @@ class VectorSearchHandler
         $this->logger->info(
             message: '[VectorSearchHandler] Performing semantic search',
             context: [
-                'file' => __FILE__,
-                'line' => __LINE__,
+                'file'    => __FILE__,
+                'line'    => __LINE__,
                 'backend' => $backend,
                 'limit'   => $limit,
                 'filters' => $filters,
             ]
         );
 
+        $results = [];
         try {
             // Route to appropriate backend for vector search.
             if ($backend === 'solr') {
@@ -105,14 +106,14 @@ class VectorSearchHandler
 
             // Use PHP/database similarity calculation.
             if ($backend !== 'solr') {
-                $vectors = $this->fetchVectors($filters);
+                $vectors = $this->fetchVectors(filters: $filters);
 
                 if ($vectors === []) {
                     $this->logger->warning(
                         message: '[VectorSearchHandler] No vectors found in database',
                         context: [
-                            'file' => __FILE__,
-                            'line' => __LINE__,
+                            'file'    => __FILE__,
+                            'line'    => __LINE__,
                             'filters' => $filters,
                         ]
                     );
@@ -156,8 +157,8 @@ class VectorSearchHandler
                         $this->logger->warning(
                             message: '[VectorSearchHandler] Failed to process vector',
                             context: [
-                                'file' => __FILE__,
-                                'line' => __LINE__,
+                                'file'      => __FILE__,
+                                'line'      => __LINE__,
                                 'vector_id' => $vector['id'],
                                 'error'     => $e->getMessage(),
                             ]
@@ -177,8 +178,8 @@ class VectorSearchHandler
             $this->logger->info(
                 message: '[VectorSearchHandler] Semantic search completed',
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'           => __FILE__,
+                    'line'           => __LINE__,
                     'backend'        => $backend,
                     'results_count'  => count($results),
                     'top_similarity' => $results[0]['similarity'] ?? 0,
@@ -193,8 +194,8 @@ class VectorSearchHandler
             $this->logger->error(
                 message: '[VectorSearchHandler] Semantic search failed',
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'           => __FILE__,
+                    'line'           => __LINE__,
                     'error'          => $e->getMessage(),
                     'search_time_ms' => $searchTime,
                 ]
@@ -226,8 +227,8 @@ class VectorSearchHandler
         $this->logger->debug(
             message: '[VectorSearchHandler] Searching vectors in Solr',
             context: [
-                'file' => __FILE__,
-                'line' => __LINE__,
+                'file'    => __FILE__,
+                'line'    => __LINE__,
                 'limit'   => $limit,
                 'filters' => $filters,
             ]
@@ -247,7 +248,7 @@ class VectorSearchHandler
             $allResults  = [];
 
             // Determine which collections to search based on entity_type filter.
-            $collectionsToSearch = $this->getCollectionsToSearch($filters);
+            $collectionsToSearch = $this->getCollectionsToSearch(filters: $filters);
 
             if ($collectionsToSearch === []) {
                 throw new Exception('No Solr collections configured for vector search');
@@ -311,8 +312,8 @@ class VectorSearchHandler
                     $this->logger->warning(
                         message: '[VectorSearchHandler] Failed to search collection',
                         context: [
-                            'file' => __FILE__,
-                            'line' => __LINE__,
+                            'file'       => __FILE__,
+                            'line'       => __LINE__,
                             'collection' => $collection,
                             'error'      => $e->getMessage(),
                         ]
@@ -329,8 +330,8 @@ class VectorSearchHandler
             $this->logger->error(
                 message: '[VectorSearchHandler] Solr vector search failed',
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'  => __FILE__,
+                    'line'  => __LINE__,
                     'error' => $e->getMessage(),
                 ]
             );
@@ -402,8 +403,8 @@ class VectorSearchHandler
                     $this->logger->warning(
                         message: '[VectorSearchHandler] Vector search failed in hybrid search',
                         context: [
-                            'file' => __FILE__,
-                            'line' => __LINE__,
+                            'file'  => __FILE__,
+                            'line'  => __LINE__,
                             'error' => $e->getMessage(),
                         ]
                     );
@@ -457,8 +458,8 @@ class VectorSearchHandler
             $this->logger->error(
                 message: '[VectorSearchHandler] Hybrid search failed',
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'           => __FILE__,
+                    'line'           => __LINE__,
                     'error'          => $e->getMessage(),
                     'search_time_ms' => $searchTime,
                 ]
@@ -624,8 +625,8 @@ class VectorSearchHandler
             $this->logger->error(
                 message: '[VectorSearchHandler] Failed to fetch vectors',
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'  => __FILE__,
+                    'line'  => __LINE__,
                     'error' => $e->getMessage(),
                 ]
             );
@@ -701,6 +702,7 @@ class VectorSearchHandler
         $settings            = $this->settingsService->getSettings();
 
         if (($filters['entity_type'] ?? null) !== null) {
+            $entityTypes = [];
             if (is_array($filters['entity_type']) === true) {
                 $entityTypes = $filters['entity_type'];
             }

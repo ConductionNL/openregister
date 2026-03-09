@@ -69,7 +69,7 @@ class SearchTrailMapper extends QBMapper
         private readonly IRequest $request,
         private readonly IUserSession $userSession
     ) {
-        parent::__construct($db, 'openregister_search_trails', SearchTrail::class);
+        parent::__construct(db: $db, tableName: 'openregister_search_trails', entityClass: SearchTrail::class);
     }//end __construct()
 
     /**
@@ -90,7 +90,7 @@ class SearchTrailMapper extends QBMapper
             ->from($this->getTableName())
             ->where($qb->expr()->eq('id', $qb->createNamedParameter($id, IQueryBuilder::PARAM_INT)));
 
-        return $this->findEntity($qb);
+        return $this->findEntity(query: $qb);
     }//end find()
 
     /**
@@ -165,7 +165,7 @@ class SearchTrailMapper extends QBMapper
             $qb->setFirstResult($offset);
         }
 
-        return $this->findEntities($qb);
+        return $this->findEntities(query: $qb);
     }//end findAll()
 
     /**
@@ -249,16 +249,16 @@ class SearchTrailMapper extends QBMapper
         $this->extractSearchParameters(searchTrail: $searchTrail, query: $searchQuery);
 
         // Set request information.
-        $this->setRequestInformation($searchTrail);
+        $this->setRequestInformation(searchTrail: $searchTrail);
 
         // Set user information.
-        $this->setUserInformation($searchTrail);
+        $this->setUserInformation(searchTrail: $searchTrail);
 
         // Calculate and set the size of the search trail entry, with a minimum default of 14 bytes.
         $serializedSize = strlen(serialize($searchTrail->jsonSerialize()));
         $searchTrail->setSize(max($serializedSize, 14));
 
-        return $this->insert($searchTrail);
+        return $this->insert(entity: $searchTrail);
     }//end createSearchTrail()
 
     /**

@@ -65,8 +65,8 @@ class CronFileTextExtractionJob extends TimedJob
      */
     public function __construct(ITimeFactory $time)
     {
-        parent::__construct($time);
-        $this->setInterval(self::DEFAULT_INTERVAL);
+        parent::__construct(time: $time);
+        $this->setInterval(seconds: self::DEFAULT_INTERVAL);
     }//end __construct()
 
     /**
@@ -92,8 +92,8 @@ class CronFileTextExtractionJob extends TimedJob
         $logger->info(
             message: '[CronFileTextExtractionJob] 🔄 Cron File Text Extraction Job Started',
             context: [
-                'file' => __FILE__,
-                'line' => __LINE__,
+                'file'           => __FILE__,
+                'line'           => __LINE__,
                 'job_id'         => $this->getId(),
                 'scheduled_time' => date('Y-m-d H:i:s'),
             ]
@@ -126,7 +126,7 @@ class CronFileTextExtractionJob extends TimedJob
 
             if ($extractionMode !== 'cron') {
                 $logger->debug(
-                    message: '[CronFileTextExtractionJob] Cron File Text Extraction Job skipped - extraction mode is not cron',
+                    message: '[CronFileTextExtractionJob] Skipped - mode is not cron',
                     context: ['file' => __FILE__, 'line' => __LINE__, 'extraction_mode' => $extractionMode]
                 );
                 return;
@@ -139,8 +139,8 @@ class CronFileTextExtractionJob extends TimedJob
             $logger->info(
                 message: '[CronFileTextExtractionJob] Starting cron file text extraction',
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'             => __FILE__,
+                    'line'             => __LINE__,
                     'batch_size'       => $batchSize,
                     'extraction_scope' => $extractionScope,
                 ]
@@ -155,6 +155,7 @@ class CronFileTextExtractionJob extends TimedJob
             );
 
             if (empty($pendingFiles) === true) {
+                // phpcs:ignore Generic.Files.LineLength.MaxExceeded
                 $logger->info(message: '[CronFileTextExtractionJob] No pending files found for cron extraction', context: ['file' => __FILE__, 'line' => __LINE__]);
                 return;
             }
@@ -162,8 +163,8 @@ class CronFileTextExtractionJob extends TimedJob
             $logger->info(
                 message: '[CronFileTextExtractionJob] Processing files in cron job',
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'        => __FILE__,
+                    'line'        => __LINE__,
                     'files_count' => count($pendingFiles),
                     'batch_size'  => $batchSize,
                 ]
@@ -184,8 +185,8 @@ class CronFileTextExtractionJob extends TimedJob
                     $logger->debug(
                         message: '[CronFileTextExtractionJob] Processing file in cron job',
                         context: [
-                            'file' => __FILE__,
-                            'line' => __LINE__,
+                            'file'      => __FILE__,
+                            'line'      => __LINE__,
                             'file_id'   => $fileId,
                             'file_name' => $file['name'] ?? 'unknown',
                         ]
@@ -203,8 +204,8 @@ class CronFileTextExtractionJob extends TimedJob
                     $logger->error(
                         message: '[CronFileTextExtractionJob] Failed to process file in cron job',
                         context: [
-                            'file' => __FILE__,
-                            'line' => __LINE__,
+                            'file'    => __FILE__,
+                            'line'    => __LINE__,
                             'file_id' => $fileId ?? 0,
                             'error'   => $e->getMessage(),
                         ]
@@ -217,8 +218,8 @@ class CronFileTextExtractionJob extends TimedJob
             $logger->info(
                 message: '[CronFileTextExtractionJob] ✅ Cron File Text Extraction Job Completed',
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'                   => __FILE__,
+                    'line'                   => __LINE__,
                     'job_id'                 => $this->getId(),
                     'execution_time_seconds' => round($executionTime, 2),
                     'files_processed'        => $processed,
@@ -270,8 +271,8 @@ class CronFileTextExtractionJob extends TimedJob
         $logger->debug(
             message: '[CronFileTextExtractionJob] Fetching pending files for cron extraction',
             context: [
-                'file' => __FILE__,
-                'line' => __LINE__,
+                'file'             => __FILE__,
+                'line'             => __LINE__,
                 'extraction_scope' => $extractionScope,
                 'batch_size'       => $batchSize,
             ]
@@ -287,8 +288,8 @@ class CronFileTextExtractionJob extends TimedJob
             $logger->debug(
                 message: '[CronFileTextExtractionJob] Retrieved pending files',
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'       => __FILE__,
+                    'line'       => __LINE__,
                     'count'      => count($pendingFiles),
                     'batch_size' => $batchSize,
                     'scope'      => $extractionScope,
@@ -301,8 +302,8 @@ class CronFileTextExtractionJob extends TimedJob
             $logger->error(
                 message: '[CronFileTextExtractionJob] Failed to retrieve pending files',
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'             => __FILE__,
+                    'line'             => __LINE__,
                     'error'            => $e->getMessage(),
                     'extraction_scope' => $extractionScope,
                     'batch_size'       => $batchSize,

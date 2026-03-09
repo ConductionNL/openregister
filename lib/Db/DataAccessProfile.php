@@ -91,12 +91,12 @@ class DataAccessProfile extends Entity implements JsonSerializable
      */
     public function __construct()
     {
-        $this->addType('uuid', 'string');
-        $this->addType('name', 'string');
-        $this->addType('description', 'string');
-        $this->addType('permissions', 'json');
-        $this->addType('created', 'datetime');
-        $this->addType('updated', 'datetime');
+        $this->addType(fieldName: 'uuid', type: 'string');
+        $this->addType(fieldName: 'name', type: 'string');
+        $this->addType(fieldName: 'description', type: 'string');
+        $this->addType(fieldName: 'permissions', type: 'json');
+        $this->addType(fieldName: 'created', type: 'datetime');
+        $this->addType(fieldName: 'updated', type: 'datetime');
     }//end __construct()
 
     /**

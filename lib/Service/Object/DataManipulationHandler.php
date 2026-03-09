@@ -89,7 +89,7 @@ class DataManipulationHandler
             }
 
             // Generate the base slug.
-            $slug = $this->createSlugHelper($value);
+            $slug = $this->createSlugHelper(text: $value);
 
             // Add timestamp for uniqueness.
             $timestamp  = time();

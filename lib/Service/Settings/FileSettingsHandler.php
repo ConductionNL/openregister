@@ -88,13 +88,13 @@ class FileSettingsHandler
             if (empty($fileConfig) === true) {
                 // Return default configuration.
                 return [
-                    'vectorizationEnabled'     => false,
-                    'provider'                 => null,
-                    'chunkingStrategy'         => 'RECURSIVE_CHARACTER',
-                    'chunkSize'                => 1000,
-                    'chunkOverlap'             => 200,
+                    'vectorizationEnabled'      => false,
+                    'provider'                  => null,
+                    'chunkingStrategy'          => 'RECURSIVE_CHARACTER',
+                    'chunkSize'                 => 1000,
+                    'chunkOverlap'              => 200,
                 // LLPhant-friendly defaults: native PHP support + common library-based formats.
-                    'enabledFileTypes'         => [
+                    'enabledFileTypes'          => [
                         'txt',
                         'md',
                         'html',
@@ -107,24 +107,24 @@ class FileSettingsHandler
                         'xlsx',
                         'xls',
                     ],
-                    'ocrEnabled'               => false,
-                    'maxFileSizeMB'            => 100,
+                    'ocrEnabled'                => false,
+                    'maxFileSizeMB'             => 100,
                     // Text extraction settings (for FileConfiguration component).
-                    'extractionScope'          => 'objects',
+                    'extractionScope'           => 'objects',
                     // None, all, folders, objects.
-                    'textExtractor'            => 'llphant',
+                    'textExtractor'             => 'llphant',
                     // Llphant, dolphin.
-                    'extractionMode'           => 'background',
+                    'extractionMode'            => 'background',
                     // Background, immediate, manual.
-                    'maxFileSize'              => 100,
-                    'batchSize'                => 10,
-                    'dolphinApiEndpoint'       => '',
-                    'dolphinApiKey'            => '',
+                    'maxFileSize'               => 100,
+                    'batchSize'                 => 10,
+                    'dolphinApiEndpoint'        => '',
+                    'dolphinApiKey'             => '',
                     // Presidio entity recognition settings.
-                    'presidioApiEndpoint'      => '',
+                    'presidioApiEndpoint'       => '',
                     'openAnonymiserApiEndpoint' => '',
-                    'entityRecognitionEnabled' => false,
-                    'entityRecognitionMethod'  => 'hybrid',
+                    'entityRecognitionEnabled'  => false,
+                    'entityRecognitionMethod'   => 'hybrid',
                     // Regex, presidio, openanonymiser, llm, hybrid.
                 ];
             }//end if
@@ -158,12 +158,12 @@ class FileSettingsHandler
     {
         try {
             $fileConfig = [
-                'vectorizationEnabled'     => $fileData['vectorizationEnabled'] ?? false,
-                'provider'                 => $fileData['provider'] ?? null,
-                'chunkingStrategy'         => $fileData['chunkingStrategy'] ?? 'RECURSIVE_CHARACTER',
-                'chunkSize'                => $fileData['chunkSize'] ?? 1000,
-                'chunkOverlap'             => $fileData['chunkOverlap'] ?? 200,
-                'enabledFileTypes'         => $fileData['enabledFileTypes'] ?? [
+                'vectorizationEnabled'      => $fileData['vectorizationEnabled'] ?? false,
+                'provider'                  => $fileData['provider'] ?? null,
+                'chunkingStrategy'          => $fileData['chunkingStrategy'] ?? 'RECURSIVE_CHARACTER',
+                'chunkSize'                 => $fileData['chunkSize'] ?? 1000,
+                'chunkOverlap'              => $fileData['chunkOverlap'] ?? 200,
+                'enabledFileTypes'          => $fileData['enabledFileTypes'] ?? [
                     'txt',
                     'md',
                     'html',
@@ -176,24 +176,24 @@ class FileSettingsHandler
                     'xlsx',
                     'xls',
                 ],
-                'ocrEnabled'               => $fileData['ocrEnabled'] ?? false,
-                'maxFileSizeMB'            => $fileData['maxFileSizeMB'] ?? 100,
+                'ocrEnabled'                => $fileData['ocrEnabled'] ?? false,
+                'maxFileSizeMB'             => $fileData['maxFileSizeMB'] ?? 100,
                 // Text extraction settings (from FileConfiguration component).
-                'extractionScope'          => $fileData['extractionScope'] ?? 'objects',
+                'extractionScope'           => $fileData['extractionScope'] ?? 'objects',
                 // None, all, folders, objects.
-                'textExtractor'            => $fileData['textExtractor'] ?? 'llphant',
+                'textExtractor'             => $fileData['textExtractor'] ?? 'llphant',
                 // Llphant, dolphin.
-                'extractionMode'           => $fileData['extractionMode'] ?? 'background',
+                'extractionMode'            => $fileData['extractionMode'] ?? 'background',
                 // Background, immediate, manual.
-                'maxFileSize'              => $fileData['maxFileSize'] ?? 100,
-                'batchSize'                => $fileData['batchSize'] ?? 10,
-                'dolphinApiEndpoint'       => $fileData['dolphinApiEndpoint'] ?? '',
-                'dolphinApiKey'            => $fileData['dolphinApiKey'] ?? '',
+                'maxFileSize'               => $fileData['maxFileSize'] ?? 100,
+                'batchSize'                 => $fileData['batchSize'] ?? 10,
+                'dolphinApiEndpoint'        => $fileData['dolphinApiEndpoint'] ?? '',
+                'dolphinApiKey'             => $fileData['dolphinApiKey'] ?? '',
                 // Presidio entity recognition settings.
-                'presidioApiEndpoint'      => $fileData['presidioApiEndpoint'] ?? '',
+                'presidioApiEndpoint'       => $fileData['presidioApiEndpoint'] ?? '',
                 'openAnonymiserApiEndpoint' => $fileData['openAnonymiserApiEndpoint'] ?? '',
-                'entityRecognitionEnabled' => $fileData['entityRecognitionEnabled'] ?? false,
-                'entityRecognitionMethod'  => $fileData['entityRecognitionMethod'] ?? 'hybrid',
+                'entityRecognitionEnabled'  => $fileData['entityRecognitionEnabled'] ?? false,
+                'entityRecognitionMethod'   => $fileData['entityRecognitionMethod'] ?? 'hybrid',
                 // Regex, presidio, openanonymiser, llm, hybrid.
             ];
 

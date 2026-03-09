@@ -52,7 +52,7 @@ class WebhookLogMapper extends QBMapper
      */
     public function __construct(IDBConnection $db)
     {
-        parent::__construct($db, 'openregister_webhook_logs', WebhookLog::class);
+        parent::__construct(db: $db, tableName: 'openregister_webhook_logs', entityClass: WebhookLog::class);
     }//end __construct()
 
     /**
@@ -73,7 +73,7 @@ class WebhookLogMapper extends QBMapper
             ->from($this->getTableName())
             ->where($qb->expr()->eq('id', $qb->createNamedParameter($id, IQueryBuilder::PARAM_INT)));
 
-        return $this->findEntity($qb);
+        return $this->findEntity(query: $qb);
     }//end find()
 
     /**
@@ -104,7 +104,7 @@ class WebhookLogMapper extends QBMapper
             $qb->setFirstResult($offset);
         }
 
-        return $this->findEntities($qb);
+        return $this->findEntities(query: $qb);
     }//end findByWebhook()
 
     /**
@@ -133,7 +133,7 @@ class WebhookLogMapper extends QBMapper
             $qb->setFirstResult($offset);
         }
 
-        return $this->findEntities($qb);
+        return $this->findEntities(query: $qb);
     }//end findAll()
 
     /**
@@ -156,7 +156,7 @@ class WebhookLogMapper extends QBMapper
             ->andWhere($qb->expr()->lte('next_retry_at', $qb->createNamedParameter($before, IQueryBuilder::PARAM_DATE)))
             ->orderBy('next_retry_at', 'ASC');
 
-        return $this->findEntities($qb);
+        return $this->findEntities(query: $qb);
     }//end findFailedForRetry()
 
     /**
@@ -175,7 +175,7 @@ class WebhookLogMapper extends QBMapper
             $entity->setCreated(new DateTime());
         }
 
-        return parent::insert($entity);
+        return parent::insert(entity: $entity);
     }//end insert()
 
     /**

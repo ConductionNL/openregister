@@ -236,8 +236,8 @@ class ConfigurationController extends Controller
             $this->logger->info(
                 message: '[ConfigurationController] Enriching configuration details',
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'   => __FILE__,
+                    'line'   => __LINE__,
                     'source' => $source,
                     'owner'  => $owner,
                     'repo'   => $repo,
@@ -276,8 +276,8 @@ class ConfigurationController extends Controller
             $this->logger->error(
                 message: '[ConfigurationController] Configuration enrichment failed: '.$e->getMessage(),
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'      => __FILE__,
+                    'line'      => __LINE__,
                     'exception' => get_class($e),
                     'trace'     => $e->getTraceAsString(),
                 ]
@@ -388,10 +388,10 @@ class ConfigurationController extends Controller
             );
         } catch (Exception $e) {
             $this->logger->error(
-                message: "[ConfigurationController] Failed to update configuration {$id}: ".$e->getMessage(), 
+                message: "[ConfigurationController] Failed to update configuration {$id}: ".$e->getMessage(),
                 context: [
-                    'file' => __FILE__, 
-                    'line' => __LINE__
+                    'file' => __FILE__,
+                    'line' => __LINE__,
                 ]
             );
 
@@ -474,7 +474,7 @@ class ConfigurationController extends Controller
                 message: "[ConfigurationController] Deleted configuration: {$configuration->getTitle()} (ID: {$id})",
                 context: [
                     'file' => __FILE__,
-                    'line' => __LINE__
+                    'line' => __LINE__,
                 ]
             );
 
@@ -486,7 +486,7 @@ class ConfigurationController extends Controller
                 message: "[ConfigurationController] Failed to delete configuration {$id}: ".$e->getMessage(),
                 context: [
                     'file' => __FILE__,
-                    'line' => __LINE__
+                    'line' => __LINE__,
                 ]
             );
 
@@ -528,7 +528,7 @@ class ConfigurationController extends Controller
                 message: "[ConfigurationController] Failed to check version for configuration {$id}: ".$e->getMessage(),
                 context: [
                     'file' => __FILE__,
-                    'line' => __LINE__
+                    'line' => __LINE__,
                 ]
             );
 
@@ -538,7 +538,7 @@ class ConfigurationController extends Controller
                 message: "[ConfigurationController] Failed to check version for configuration {$id}: ".$e->getMessage(),
                 context: [
                     'file' => __FILE__,
-                    'line' => __LINE__
+                    'line' => __LINE__,
                 ]
             );
 
@@ -615,8 +615,8 @@ class ConfigurationController extends Controller
             $this->logger->info(
                 message: "[ConfigurationController] Imported configuration {$configuration->getTitle()}",
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'      => __FILE__,
+                    'line'      => __LINE__,
                     'registers' => count($result['registers']),
                     'schemas'   => count($result['schemas']),
                     'objects'   => count($result['objects']),
@@ -717,8 +717,8 @@ class ConfigurationController extends Controller
             $this->logger->info(
                 message: '[ConfigurationController] Discovering configurations',
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'    => __FILE__,
+                    'line'    => __LINE__,
                     'source'  => $source,
                     '_search' => $search,
                     'page'    => $page,
@@ -757,15 +757,15 @@ class ConfigurationController extends Controller
                     message: '[ConfigurationController] GitLab search completed',
                     context: ['file' => __FILE__, 'line' => __LINE__, 'result_count' => count($results['results'] ?? [])]
                 );
-            }
+            }//end if
 
             return new JSONResponse(data: $results, statusCode: 200);
         } catch (Exception $e) {
             $this->logger->error(
                 message: '[ConfigurationController] Configuration discovery failed: '.$e->getMessage(),
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'      => __FILE__,
+                    'line'      => __LINE__,
                     'source'    => $source ?? 'unknown',
                     'exception' => get_class($e),
                     'trace'     => $e->getTraceAsString(),
@@ -804,8 +804,8 @@ class ConfigurationController extends Controller
             $this->logger->info(
                 message: '[ConfigurationController] Fetching GitHub branches',
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'  => __FILE__,
+                    'line'  => __LINE__,
                     'owner' => $owner,
                     'repo'  => $repo,
                 ]
@@ -850,8 +850,8 @@ class ConfigurationController extends Controller
             $this->logger->info(
                 message: '[ConfigurationController] Fetching GitHub repositories',
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'     => __FILE__,
+                    'line'     => __LINE__,
                     'page'     => $page,
                     'per_page' => $perPage,
                 ]
@@ -899,8 +899,8 @@ class ConfigurationController extends Controller
             $this->logger->info(
                 message: '[ConfigurationController] Fetching GitHub configurations',
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'   => __FILE__,
+                    'line'   => __LINE__,
                     'owner'  => $owner,
                     'repo'   => $repo,
                     'branch' => $branch,
@@ -949,8 +949,8 @@ class ConfigurationController extends Controller
             $this->logger->info(
                 message: '[ConfigurationController] Fetching GitLab branches',
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'       => __FILE__,
+                    'line'       => __LINE__,
                     'namespace'  => $namespace,
                     'project'    => $project,
                     'project_id' => $projectId,
@@ -1000,8 +1000,8 @@ class ConfigurationController extends Controller
             $this->logger->info(
                 message: '[ConfigurationController] Fetching GitLab configurations',
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'       => __FILE__,
+                    'line'       => __LINE__,
                     'namespace'  => $namespace,
                     'project'    => $project,
                     'project_id' => $projectId,
@@ -1204,7 +1204,7 @@ class ConfigurationController extends Controller
             if (count($existingConfigs) > 0) {
                 return new JSONResponse(
                     data: [
-                        'error'                   => $this->getExistingConfigErrorMessage($appId),
+                        'error'                   => $this->getExistingConfigErrorMessage(appId: $appId),
                         'existingConfigurationId' => $existingConfigs[0]->getId(),
                     ],
                     statusCode: 409
@@ -1240,8 +1240,9 @@ class ConfigurationController extends Controller
 
             $configuration = $this->configurationMapper->insert($configuration);
 
+            $msg = '[ConfigurationController] Created configuration'." entity with ID {$configuration->getId()} for app {$appId}";
             $this->logger->info(
-                message: "[ConfigurationController] Created configuration entity with ID {$configuration->getId()} for app {$appId}",
+                message: $msg,
                 context: ['file' => __FILE__, 'line' => __LINE__]
             );
 
@@ -1264,8 +1265,9 @@ class ConfigurationController extends Controller
             // But we need to save the sync status.
             $this->configurationMapper->update($configuration);
 
+            $msg = '[ConfigurationController] Successfully imported'." configuration {$configuration->getTitle()} from {$sourceType}";
             $this->logger->info(
-                message: "[ConfigurationController] Successfully imported configuration {$configuration->getTitle()} from {$sourceType}",
+                message: $msg,
                 context: ['file' => __FILE__, 'line' => __LINE__]
             );
 
@@ -1318,7 +1320,7 @@ class ConfigurationController extends Controller
     public function importFromGitHub(): JSONResponse
     {
         return $this->importFromSource(
-            fetchConfig: fn(array $params) => $this->fetchConfigFromGitHub($params),
+            fetchConfig: fn(array $params) => $this->fetchConfigFromGitHub(params: $params),
             params: $this->request->getParams(),
             sourceType: 'github'
         );
@@ -1340,7 +1342,7 @@ class ConfigurationController extends Controller
     public function importFromGitLab(): JSONResponse
     {
         return $this->importFromSource(
-            fetchConfig: fn(array $params) => $this->fetchConfigFromGitLab($params),
+            fetchConfig: fn(array $params) => $this->fetchConfigFromGitLab(params: $params),
             params: $this->request->getParams(),
             sourceType: 'gitlab'
         );
@@ -1362,7 +1364,7 @@ class ConfigurationController extends Controller
     public function importFromUrl(): JSONResponse
     {
         return $this->importFromSource(
-            fetchConfig: fn(array $params) => $this->fetchConfigFromUrl($params),
+            fetchConfig: fn(array $params) => $this->fetchConfigFromUrl(params: $params),
             params: $this->request->getParams(),
             sourceType: 'url'
         );
@@ -1503,7 +1505,7 @@ class ConfigurationController extends Controller
         $path = ltrim($path, '/');
         if (empty($path) === true) {
             $title          = $configuration->getTitle();
-            $snakeCaseTitle = $this->toSnakeCase($title ?? 'configuration');
+            $snakeCaseTitle = $this->toSnakeCase(string: $title ?? 'configuration');
             $path           = $snakeCaseTitle.'_openregister.json';
         }
 
@@ -1531,8 +1533,8 @@ class ConfigurationController extends Controller
         $this->logger->info(
             message: '[ConfigurationController] Publishing configuration to GitHub',
             context: [
-                'file' => __FILE__,
-                'line' => __LINE__,
+                'file'             => __FILE__,
+                'line'             => __LINE__,
                 'configuration_id' => $id,
                 'owner'            => $params['owner'],
                 'repo'             => $params['repo'],
@@ -1674,8 +1676,8 @@ class ConfigurationController extends Controller
         $this->logger->info(
             message: "[ConfigurationController] Successfully published configuration {$configuration->getTitle()} to GitHub",
             context: [
-                'file' => __FILE__,
-                'line' => __LINE__,
+                'file'     => __FILE__,
+                'line'     => __LINE__,
                 'owner'    => $params['owner'],
                 'repo'     => $params['repo'],
                 'branch'   => $params['branch'],
@@ -1753,8 +1755,8 @@ class ConfigurationController extends Controller
             $this->logger->warning(
                 message: '[ConfigurationController] Could not fetch repository default branch',
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'  => __FILE__,
+                    'line'  => __LINE__,
                     'owner' => $params['owner'],
                     'repo'  => $params['repo'],
                     'error' => $e->getMessage(),

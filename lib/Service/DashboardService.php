@@ -183,7 +183,10 @@ class DashboardService
                 ],
             ];
         } catch (Exception $e) {
-            $this->logger->error(message: '[DashboardService] Failed to get statistics: '.$e->getMessage(), context: ['file' => __FILE__, 'line' => __LINE__]);
+            $this->logger->error(
+                message: '[DashboardService] Failed to get statistics: '.$e->getMessage(),
+                context: ['file' => __FILE__, 'line' => __LINE__]
+            );
             return [
                 'objects'     => [
                     'total'     => 0,
@@ -261,7 +264,10 @@ class DashboardService
                 ],
             ];
         } catch (Exception $e) {
-            $this->logger->error(message: '[DashboardService] Failed to get orphaned statistics: '.$e->getMessage(), context: ['file' => __FILE__, 'line' => __LINE__]);
+            $this->logger->error(
+                message: '[DashboardService] Failed to get orphaned statistics: '.$e->getMessage(),
+                context: ['file' => __FILE__, 'line' => __LINE__]
+            );
             return [
                 'objects' => [
                     'total'     => 0,
@@ -325,7 +331,7 @@ class DashboardService
                 $schemas = $this->registerMapper->getSchemasByRegisterId($register->getId());
 
                 // Get register-level statistics.
-                $registerStats = $this->getStats($register->getId());
+                $registerStats = $this->getStats(registerId: $register->getId());
 
                 // Convert register to array and add statistics.
                 $registerArray          = $register->jsonSerialize();
@@ -363,7 +369,10 @@ class DashboardService
 
             return $result;
         } catch (Exception $e) {
-            $this->logger->error(message: '[DashboardService] Failed to get registers with schemas: '.$e->getMessage(), context: ['file' => __FILE__, 'line' => __LINE__]);
+            $this->logger->error(
+                message: '[DashboardService] Failed to get registers with schemas: '.$e->getMessage(),
+                context: ['file' => __FILE__, 'line' => __LINE__]
+            );
             throw new Exception('Failed to get registers with schemas: '.$e->getMessage());
         }//end try
     }//end getRegistersWithSchemas()
@@ -405,14 +414,20 @@ class DashboardService
                     $this->objectMapper->update($object);
                     $result['processed']++;
                 } catch (Exception $e) {
-                    $this->logger->error(message: '[DashboardService] Failed to update object '.$object->getId().': '.$e->getMessage(), context: ['file' => __FILE__, 'line' => __LINE__]);
+                    $this->logger->error(
+                        message: '[DashboardService] Failed to update object '.$object->getId().': '.$e->getMessage(),
+                        context: ['file' => __FILE__, 'line' => __LINE__]
+                    );
                     $result['failed']++;
                 }
             }
 
             return $result;
         } catch (Exception $e) {
-            $this->logger->error(message: '[DashboardService] Failed to recalculate sizes: '.$e->getMessage(), context: ['file' => __FILE__, 'line' => __LINE__]);
+            $this->logger->error(
+                message: '[DashboardService] Failed to recalculate sizes: '.$e->getMessage(),
+                context: ['file' => __FILE__, 'line' => __LINE__]
+            );
             throw new Exception('Failed to recalculate sizes: '.$e->getMessage());
         }//end try
     }//end recalculateSizes()
@@ -454,14 +469,20 @@ class DashboardService
                     $this->auditTrailMapper->update($log);
                     $result['processed']++;
                 } catch (Exception $e) {
-                    $this->logger->error(message: '[DashboardService] Failed to update log '.$log->getId().': '.$e->getMessage(), context: ['file' => __FILE__, 'line' => __LINE__]);
+                    $this->logger->error(
+                        message: '[DashboardService] Failed to update log '.$log->getId().': '.$e->getMessage(),
+                        context: ['file' => __FILE__, 'line' => __LINE__]
+                    );
                     $result['failed']++;
                 }
             }
 
             return $result;
         } catch (Exception $e) {
-            $this->logger->error(message: '[DashboardService] Failed to recalculate log sizes: '.$e->getMessage(), context: ['file' => __FILE__, 'line' => __LINE__]);
+            $this->logger->error(
+                message: '[DashboardService] Failed to recalculate log sizes: '.$e->getMessage(),
+                context: ['file' => __FILE__, 'line' => __LINE__]
+            );
             throw new Exception('Failed to recalculate log sizes: '.$e->getMessage());
         }//end try
     }//end recalculateLogSizes()
@@ -489,7 +510,10 @@ class DashboardService
                 ],
             ];
         } catch (Exception $e) {
-            $this->logger->error(message: '[DashboardService] Failed to recalculate all sizes: '.$e->getMessage(), context: ['file' => __FILE__, 'line' => __LINE__]);
+            $this->logger->error(
+                message: '[DashboardService] Failed to recalculate all sizes: '.$e->getMessage(),
+                context: ['file' => __FILE__, 'line' => __LINE__]
+            );
             throw new Exception('Failed to recalculate all sizes: '.$e->getMessage());
         }
     }//end recalculateAllSizes()
@@ -515,7 +539,7 @@ class DashboardService
     {
         try {
             // Fetch and validate register and schema.
-            $register = $this->fetchRegister($registerId);
+            $register = $this->fetchRegister(registerId: $registerId);
             $schema   = $this->fetchSchema(schemaId: $schemaId, register: $register);
 
             // Perform the calculations.
@@ -530,13 +554,16 @@ class DashboardService
                 'summary'   => [
                     'total_processed' => $results['total']['processed'],
                     'total_failed'    => $results['total']['failed'],
-                    'success_rate'    => $this->calculateSuccessRate($results),
+                    'success_rate'    => $this->calculateSuccessRate(results: $results),
                 ],
             ];
 
             return $response;
         } catch (Exception $e) {
-            $this->logger->error(message: '[DashboardService] Size calculation failed: '.$e->getMessage(), context: ['file' => __FILE__, 'line' => __LINE__]);
+            $this->logger->error(
+                message: '[DashboardService] Size calculation failed: '.$e->getMessage(),
+                context: ['file' => __FILE__, 'line' => __LINE__]
+            );
             throw new Exception('Size calculation failed: '.$e->getMessage());
         }//end try
     }//end calculate()
@@ -671,7 +698,10 @@ class DashboardService
                 schemaId: $schemaId
             );
         } catch (Exception $e) {
-            $this->logger->error(message: '[DashboardService] Failed to get audit trail action chart data: '.$e->getMessage(), context: ['file' => __FILE__, 'line' => __LINE__]);
+            $this->logger->error(
+                message: '[DashboardService] Failed to get audit trail action chart data: '.$e->getMessage(),
+                context: ['file' => __FILE__, 'line' => __LINE__]
+            );
             return [
                 'labels' => [],
                 'series' => [],
@@ -694,7 +724,10 @@ class DashboardService
         try {
             return $this->objectMapper->getRegisterChartData(registerId: $registerId, schemaId: $schemaId);
         } catch (Exception $e) {
-            $this->logger->error(message: '[DashboardService] Failed to get objects by register chart data: '.$e->getMessage(), context: ['file' => __FILE__, 'line' => __LINE__]);
+            $this->logger->error(
+                message: '[DashboardService] Failed to get objects by register chart data: '.$e->getMessage(),
+                context: ['file' => __FILE__, 'line' => __LINE__]
+            );
             return [
                 'labels' => [],
                 'series' => [],
@@ -717,7 +750,10 @@ class DashboardService
         try {
             return $this->objectMapper->getSchemaChartData(registerId: $registerId, schemaId: $schemaId);
         } catch (Exception $e) {
-            $this->logger->error(message: '[DashboardService] Failed to get objects by schema chart data: '.$e->getMessage(), context: ['file' => __FILE__, 'line' => __LINE__]);
+            $this->logger->error(
+                message: '[DashboardService] Failed to get objects by schema chart data: '.$e->getMessage(),
+                context: ['file' => __FILE__, 'line' => __LINE__]
+            );
             return [
                 'labels' => [],
                 'series' => [],
@@ -740,7 +776,10 @@ class DashboardService
         try {
             return $this->objectMapper->getSizeDistributionChartData(registerId: $registerId, schemaId: $schemaId);
         } catch (Exception $e) {
-            $this->logger->error(message: '[DashboardService] Failed to get objects by size chart data: '.$e->getMessage(), context: ['file' => __FILE__, 'line' => __LINE__]);
+            $this->logger->error(
+                message: '[DashboardService] Failed to get objects by size chart data: '.$e->getMessage(),
+                context: ['file' => __FILE__, 'line' => __LINE__]
+            );
             return [
                 'labels' => [],
                 'series' => [],
@@ -768,7 +807,10 @@ class DashboardService
                 hours: $hours
             );
         } catch (Exception $e) {
-            $this->logger->error(message: '[DashboardService] Failed to get audit trail statistics: '.$e->getMessage(), context: ['file' => __FILE__, 'line' => __LINE__]);
+            $this->logger->error(
+                message: '[DashboardService] Failed to get audit trail statistics: '.$e->getMessage(),
+                context: ['file' => __FILE__, 'line' => __LINE__]
+            );
             return [
                 'total'   => 0,
                 'creates' => 0,
@@ -799,7 +841,10 @@ class DashboardService
                 hours: $hours
             );
         } catch (Exception $e) {
-            $this->logger->error(message: '[DashboardService] Failed to get audit trail action distribution: '.$e->getMessage(), context: ['file' => __FILE__, 'line' => __LINE__]);
+            $this->logger->error(
+                message: '[DashboardService] Failed to get audit trail action distribution: '.$e->getMessage(),
+                context: ['file' => __FILE__, 'line' => __LINE__]
+            );
             return [
                 'actions' => [],
             ];
@@ -828,7 +873,10 @@ class DashboardService
                 hours: $hours
             );
         } catch (Exception $e) {
-            $this->logger->error(message: '[DashboardService] Failed to get most active objects: '.$e->getMessage(), context: ['file' => __FILE__, 'line' => __LINE__]);
+            $this->logger->error(
+                message: '[DashboardService] Failed to get most active objects: '.$e->getMessage(),
+                context: ['file' => __FILE__, 'line' => __LINE__]
+            );
             return [
                 'objects' => [],
             ];

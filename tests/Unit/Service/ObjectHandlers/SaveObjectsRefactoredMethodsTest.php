@@ -54,11 +54,11 @@ class SaveObjectsRefactoredMethodsTest extends TestCase
 	/** @var MockObject|LoggerInterface */
 	private $logger;
 
-	/** @var MockObject|Register */
-	private $mockRegister;
+	/** @var Register */
+	private Register $mockRegister;
 
-	/** @var MockObject|Schema */
-	private $mockSchema;
+	/** @var Schema */
+	private Schema $mockSchema;
 
 	/**
 	 * Set up test environment before each test.
@@ -73,15 +73,14 @@ class SaveObjectsRefactoredMethodsTest extends TestCase
 		$this->saveObject = $this->createMock(SaveObject::class);
 		$this->logger = $this->createMock(LoggerInterface::class);
 
-		// Create mock entities.
-		$this->mockRegister = $this->createMock(Register::class);
-		$this->mockSchema = $this->createMock(Schema::class);
+		// Create real entity instances (Entity __call methods cannot be mocked in PHPUnit 10+).
+		$this->mockRegister = new Register();
+		$this->mockRegister->setId(1);
+		$this->mockRegister->setSlug('test-register');
 
-		// Set up basic mock returns.
-		$this->mockRegister->method('getId')->willReturn(1);
-		$this->mockRegister->method('getSlug')->willReturn('test-register');
-		$this->mockSchema->method('getId')->willReturn(1);
-		$this->mockSchema->method('getSlug')->willReturn('test-schema');
+		$this->mockSchema = new Schema();
+		$this->mockSchema->setId(1);
+		$this->mockSchema->setSlug('test-schema');
 
 		// Create SaveObjects instance.
 		$this->saveObjects = new SaveObjects(
@@ -652,14 +651,3 @@ class SaveObjectsRefactoredMethodsTest extends TestCase
 		$this->assertCount(1, $result['errors'], 'Errors array should have 1 item.');
 	}
 }
-
-
-
-
-
-
-
-
-
-
-

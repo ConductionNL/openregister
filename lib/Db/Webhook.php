@@ -230,28 +230,28 @@ class Webhook extends Entity implements JsonSerializable
      */
     public function __construct()
     {
-        $this->addType('uuid', 'string');
-        $this->addType('name', 'string');
-        $this->addType('url', 'string');
-        $this->addType('method', 'string');
-        $this->addType('events', 'string');
-        $this->addType('headers', 'string');
-        $this->addType('secret', 'string');
-        $this->addType('enabled', 'boolean');
-        $this->addType('organisation', 'string');
-        $this->addType('filters', 'string');
-        $this->addType('retryPolicy', 'string');
-        $this->addType('maxRetries', 'integer');
-        $this->addType('timeout', 'integer');
-        $this->addType('lastTriggeredAt', 'datetime');
-        $this->addType('lastSuccessAt', 'datetime');
-        $this->addType('lastFailureAt', 'datetime');
-        $this->addType('totalDeliveries', 'integer');
-        $this->addType('successfulDeliveries', 'integer');
-        $this->addType('failedDeliveries', 'integer');
-        $this->addType('created', 'datetime');
-        $this->addType('updated', 'datetime');
-        $this->addType('configuration', 'string');
+        $this->addType(fieldName: 'uuid', type: 'string');
+        $this->addType(fieldName: 'name', type: 'string');
+        $this->addType(fieldName: 'url', type: 'string');
+        $this->addType(fieldName: 'method', type: 'string');
+        $this->addType(fieldName: 'events', type: 'string');
+        $this->addType(fieldName: 'headers', type: 'string');
+        $this->addType(fieldName: 'secret', type: 'string');
+        $this->addType(fieldName: 'enabled', type: 'boolean');
+        $this->addType(fieldName: 'organisation', type: 'string');
+        $this->addType(fieldName: 'filters', type: 'string');
+        $this->addType(fieldName: 'retryPolicy', type: 'string');
+        $this->addType(fieldName: 'maxRetries', type: 'integer');
+        $this->addType(fieldName: 'timeout', type: 'integer');
+        $this->addType(fieldName: 'lastTriggeredAt', type: 'datetime');
+        $this->addType(fieldName: 'lastSuccessAt', type: 'datetime');
+        $this->addType(fieldName: 'lastFailureAt', type: 'datetime');
+        $this->addType(fieldName: 'totalDeliveries', type: 'integer');
+        $this->addType(fieldName: 'successfulDeliveries', type: 'integer');
+        $this->addType(fieldName: 'failedDeliveries', type: 'integer');
+        $this->addType(fieldName: 'created', type: 'datetime');
+        $this->addType(fieldName: 'updated', type: 'datetime');
+        $this->addType(fieldName: 'configuration', type: 'string');
     }//end __construct()
 
     /**
@@ -273,7 +273,7 @@ class Webhook extends Entity implements JsonSerializable
      */
     public function setEventsArray(array $events): void
     {
-        $this->setEvents(json_encode($events));
+        $this->setEvents(events: json_encode($events));
     }//end setEventsArray()
 
     /**
@@ -300,11 +300,11 @@ class Webhook extends Entity implements JsonSerializable
     public function setHeadersArray(?array $headers): void
     {
         if ($headers === null) {
-            $this->setHeaders(null);
+            $this->setHeaders(headers: null);
             return;
         }
 
-        $this->setHeaders(json_encode($headers));
+        $this->setHeaders(headers: json_encode($headers));
     }//end setHeadersArray()
 
     /**
@@ -331,11 +331,11 @@ class Webhook extends Entity implements JsonSerializable
     public function setFiltersArray(?array $filters): void
     {
         if ($filters === null) {
-            $this->setFilters(null);
+            $this->setFilters(filters: null);
             return;
         }
 
-        $this->setFilters(json_encode($filters));
+        $this->setFilters(filters: json_encode($filters));
     }//end setFiltersArray()
 
     /**
@@ -362,11 +362,11 @@ class Webhook extends Entity implements JsonSerializable
     public function setConfigurationArray(?array $configuration): void
     {
         if ($configuration === null) {
-            $this->setConfiguration(null);
+            $this->setConfiguration(configuration: null);
             return;
         }
 
-        $this->setConfiguration(json_encode($configuration));
+        $this->setConfiguration(configuration: json_encode($configuration));
     }//end setConfigurationArray()
 
     /**
@@ -461,86 +461,86 @@ class Webhook extends Entity implements JsonSerializable
     public function hydrate(array $object): static
     {
         if (($object['id'] ?? null) !== null) {
-            $this->setId($object['id']);
+            $this->setId(id: $object['id']);
         }
 
         if (($object['uuid'] ?? null) !== null) {
-            $this->setUuid($object['uuid']);
+            $this->setUuid(uuid: $object['uuid']);
         }
 
         if (($object['name'] ?? null) !== null) {
-            $this->setName($object['name']);
+            $this->setName(name: $object['name']);
         }
 
         if (($object['url'] ?? null) !== null) {
-            $this->setUrl($object['url']);
+            $this->setUrl(url: $object['url']);
         }
 
         if (($object['method'] ?? null) !== null) {
-            $this->setMethod($object['method']);
+            $this->setMethod(method: $object['method']);
         }
 
         if (($object['events'] ?? null) !== null) {
             if (is_array($object['events']) === true) {
-                $this->setEventsArray($object['events']);
+                $this->setEventsArray(events: $object['events']);
             }
 
             if (is_array($object['events']) === false) {
-                $this->setEvents($object['events']);
+                $this->setEvents(events: $object['events']);
             }
         }
 
         if (($object['headers'] ?? null) !== null) {
             if (is_array($object['headers']) === true) {
-                $this->setHeadersArray($object['headers']);
+                $this->setHeadersArray(headers: $object['headers']);
             }
 
             if (is_array($object['headers']) === false) {
-                $this->setHeaders($object['headers']);
+                $this->setHeaders(headers: $object['headers']);
             }
         }
 
         if (($object['secret'] ?? null) !== null) {
-            $this->setSecret($object['secret']);
+            $this->setSecret(secret: $object['secret']);
         }
 
         if (($object['enabled'] ?? null) !== null) {
-            $this->setEnabled((bool) $object['enabled']);
+            $this->setEnabled(enabled: (bool) $object['enabled']);
         }
 
         if (($object['organisation'] ?? null) !== null) {
-            $this->setOrganisation($object['organisation']);
+            $this->setOrganisation(organisation: $object['organisation']);
         }
 
         if (($object['filters'] ?? null) !== null) {
             if (is_array($object['filters']) === true) {
-                $this->setFiltersArray($object['filters']);
+                $this->setFiltersArray(filters: $object['filters']);
             }
 
             if (is_array($object['filters']) === false) {
-                $this->setFilters($object['filters']);
+                $this->setFilters(filters: $object['filters']);
             }
         }
 
         if (($object['retryPolicy'] ?? null) !== null) {
-            $this->setRetryPolicy($object['retryPolicy']);
+            $this->setRetryPolicy(retryPolicy: $object['retryPolicy']);
         }
 
         if (($object['maxRetries'] ?? null) !== null) {
-            $this->setMaxRetries((int) $object['maxRetries']);
+            $this->setMaxRetries(maxRetries: (int) $object['maxRetries']);
         }
 
         if (($object['timeout'] ?? null) !== null) {
-            $this->setTimeout((int) $object['timeout']);
+            $this->setTimeout(timeout: (int) $object['timeout']);
         }
 
         if (($object['configuration'] ?? null) !== null) {
             if (is_array($object['configuration']) === true) {
-                $this->setConfigurationArray($object['configuration']);
+                $this->setConfigurationArray(configuration: $object['configuration']);
             }
 
             if (is_array($object['configuration']) === false) {
-                $this->setConfiguration($object['configuration']);
+                $this->setConfiguration(configuration: $object['configuration']);
             }
         }
 

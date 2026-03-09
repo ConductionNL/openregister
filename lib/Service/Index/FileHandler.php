@@ -80,8 +80,8 @@ class FileHandler
         $this->logger->info(
             message: '[FileHandler] Indexing file chunks',
             context: [
-                'file' => __FILE__,
-                'line' => __LINE__,
+                'file'        => __FILE__,
+                'line'        => __LINE__,
                 'file_id'     => $fileId,
                 'chunk_count' => count($chunks),
             ]
@@ -152,8 +152,8 @@ class FileHandler
             $this->logger->error(
                 message: '[FileHandler] Failed to get file stats',
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'  => __FILE__,
+                    'line'  => __LINE__,
                     'error' => $e->getMessage(),
                 ]
             );
@@ -181,8 +181,8 @@ class FileHandler
         $this->logger->info(
             message: '[FileHandler] Starting chunk indexing',
             context: [
-                'file' => __FILE__,
-                'line' => __LINE__,
+                'file'  => __FILE__,
+                'line'  => __LINE__,
                 'limit' => $limit,
             ]
         );
@@ -246,8 +246,8 @@ class FileHandler
                 $this->logger->error(
                     message: '[FileHandler] Failed to process file chunks',
                     context: [
-                        'file' => __FILE__,
-                        'line' => __LINE__,
+                        'file'    => __FILE__,
+                        'line'    => __LINE__,
                         'file_id' => $fileId,
                         'error'   => $e->getMessage(),
                     ]
@@ -261,8 +261,8 @@ class FileHandler
         $this->logger->info(
             message: '[FileHandler] Chunk indexing complete',
             context: [
-                'file' => __FILE__,
-                'line' => __LINE__,
+                'file'  => __FILE__,
+                'line'  => __LINE__,
                 'stats' => $stats,
             ]
         );
@@ -311,8 +311,8 @@ class FileHandler
         $this->logger->info(
             message: '[FileHandler] Indexing files',
             context: [
-                'file' => __FILE__,
-                'line' => __LINE__,
+                'file'       => __FILE__,
+                'line'       => __LINE__,
                 'count'      => count($fileIds),
                 'collection' => $collectionName,
             ]
@@ -330,8 +330,8 @@ class FileHandler
             $this->logger->error(
                 message: '[FileHandler] Failed to index files',
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'  => __FILE__,
+                    'line'  => __LINE__,
                     'error' => $e->getMessage(),
                 ]
             );
@@ -363,8 +363,8 @@ class FileHandler
             $this->logger->error(
                 message: '[FileHandler] Failed to get file index stats',
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'  => __FILE__,
+                    'line'  => __LINE__,
                     'error' => $e->getMessage(),
                 ]
             );

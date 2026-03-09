@@ -87,10 +87,10 @@ class ObjectServiceRefactoredMethodsTest extends TestCase
 	/** @var MockObject|CacheService */
 	private $cacheService;
 
-	/** @var MockObject|Register */
+	/** @var Register */
 	private $mockRegister;
 
-	/** @var MockObject|Schema */
+	/** @var Schema */
 	private $mockSchema;
 
 	/**
@@ -113,15 +113,14 @@ class ObjectServiceRefactoredMethodsTest extends TestCase
 		$this->searchService = $this->createMock(SearchService::class);
 		$this->cacheService = $this->createMock(CacheService::class);
 
-		// Create mock entities.
-		$this->mockRegister = $this->createMock(Register::class);
-		$this->mockSchema = $this->createMock(Schema::class);
+		// Create real entity instances instead of mocks (Entity __call does not support mocking).
+		$this->mockRegister = new Register();
+		$this->mockRegister->setId(1);
+		$this->mockRegister->setSlug('test-register');
 
-		// Set up basic mock returns.
-		$this->mockRegister->method('getId')->willReturn(1);
-		$this->mockRegister->method('getSlug')->willReturn('test-register');
-		$this->mockSchema->method('getId')->willReturn(1);
-		$this->mockSchema->method('getSlug')->willReturn('test-schema');
+		$this->mockSchema = new Schema();
+		$this->mockSchema->setId(1);
+		$this->mockSchema->setSlug('test-schema');
 
 		// Create ObjectService instance.
 		$this->objectService = new ObjectService(
@@ -684,14 +683,3 @@ class ObjectServiceRefactoredMethodsTest extends TestCase
 		$this->assertCount(2, $result, 'Should return 2 objects.');
 	}
 }
-
-
-
-
-
-
-
-
-
-
-

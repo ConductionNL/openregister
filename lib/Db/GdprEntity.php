@@ -138,16 +138,16 @@ class GdprEntity extends Entity implements JsonSerializable
      */
     public function __construct()
     {
-        $this->addType('uuid', 'string');
-        $this->addType('type', 'string');
-        $this->addType('value', 'string');
-        $this->addType('category', 'string');
-        $this->addType('belongsToEntityId', 'integer');
-        $this->addType('metadata', 'json');
-        $this->addType('owner', 'string');
-        $this->addType('organisation', 'string');
-        $this->addType('detectedAt', 'datetime');
-        $this->addType('updatedAt', 'datetime');
+        $this->addType(fieldName: 'uuid', type: 'string');
+        $this->addType(fieldName: 'type', type: 'string');
+        $this->addType(fieldName: 'value', type: 'string');
+        $this->addType(fieldName: 'category', type: 'string');
+        $this->addType(fieldName: 'belongsToEntityId', type: 'integer');
+        $this->addType(fieldName: 'metadata', type: 'json');
+        $this->addType(fieldName: 'owner', type: 'string');
+        $this->addType(fieldName: 'organisation', type: 'string');
+        $this->addType(fieldName: 'detectedAt', type: 'datetime');
+        $this->addType(fieldName: 'updatedAt', type: 'datetime');
     }//end __construct()
 
     /**

@@ -323,7 +323,7 @@ class ImportHandler
             return null;
         }
 
-        $phpArray = $this->ensureArrayStructure($phpArray);
+        $phpArray = $this->ensureArrayStructure(data: $phpArray);
         return $phpArray;
     }//end decode()
 
@@ -343,7 +343,7 @@ class ImportHandler
         if (is_array($data) === true) {
             foreach ($data as $key => $value) {
                 if (is_object($value) === true || is_array($value) === true) {
-                    $data[$key] = $this->ensureArrayStructure($value);
+                    $data[$key] = $this->ensureArrayStructure(data: $value);
                 }
             }
         }
@@ -439,7 +439,7 @@ class ImportHandler
             );
         }
 
-        $phpArray = $this->ensureArrayStructure($phpArray);
+        $phpArray = $this->ensureArrayStructure(data: $phpArray);
         return $phpArray;
     }//end getJSONfromBody()
 
@@ -469,7 +469,7 @@ class ImportHandler
     ): Register {
         try {
             // Ensure data is consistently an array by converting any stdClass objects.
-            $data = $this->ensureArrayStructure($data);
+            $data = $this->ensureArrayStructure(data: $data);
 
             // Remove id, uuid, and organisation from the data.
             // Organisation is instance-specific and should not be imported.
@@ -490,8 +490,8 @@ class ImportHandler
                 $this->logger->info(
                     message: "[ImportHandler] Found existing register during import",
                     context: [
-                        'file' => __FILE__,
-                        'line' => __LINE__,
+                        'file'        => __FILE__,
+                        'line'        => __LINE__,
                         'slug'        => $data['slug'],
                         'registerId'  => $existingRegister->getId(),
                         'application' => $existingRegister->getApplication(),
@@ -516,7 +516,10 @@ class ImportHandler
                 // Compare versions using version_compare for proper semver comparison.
                 $existingVersion = $existingRegister->getVersion() ?? '0.0.0';
                 if ($force === false && version_compare($data['version'], $existingVersion, '<=') === true) {
-                    $this->logger->info(message: '[ImportHandler] Skipping register import as existing version is newer or equal.', context: ['file' => __FILE__, 'line' => __LINE__]);
+                    $this->logger->info(
+                        message: '[ImportHandler] Skipping register import as existing version is newer or equal.',
+                        context: ['file' => __FILE__, 'line' => __LINE__]
+                    );
                     // Even though we're skipping the update, we still need to add it to the map.
                     return $existingRegister;
                 }
@@ -560,7 +563,10 @@ class ImportHandler
 
             return $register;
         } catch (Exception $e) {
-            $this->logger->error(message: '[ImportHandler] Failed to import register: '.$e->getMessage(), context: ['file' => __FILE__, 'line' => __LINE__]);
+            $this->logger->error(
+                message: '[ImportHandler] Failed to import register: '.$e->getMessage(),
+                context: ['file' => __FILE__, 'line' => __LINE__]
+            );
             throw new Exception('Failed to import register: '.$e->getMessage());
         }//end try
     }//end importRegister()
@@ -579,7 +585,7 @@ class ImportHandler
     private function handleDuplicateRegisterError(string $slug, string $appId, string $version)
     {
         // Get details about the duplicate registers.
-        $duplicateInfo = $this->getDuplicateRegisterInfo($slug);
+        $duplicateInfo = $this->getDuplicateRegisterInfo(slug: $slug);
 
         $formatStr  = "Duplicate register detected during import from app '%s' (version %s). ";
         $formatStr .= "Register with slug '%s' has multiple entries in the database: %s. ";
@@ -653,7 +659,7 @@ class ImportHandler
     private function handleDuplicateSchemaError(string $slug, string $appId, string $version)
     {
         // Get details about the duplicate schemas.
-        $duplicateInfo = $this->getDuplicateSchemaInfo($slug);
+        $duplicateInfo = $this->getDuplicateSchemaInfo(slug: $slug);
 
         $formatStr  = "Duplicate schema detected during import from app '%s' (version %s). ";
         $formatStr .= "Schema with slug '%s' has multiple entries in the database: %s. ";
@@ -847,7 +853,7 @@ class ImportHandler
                                 $existingRegister = $this->registerMapper->find($registerSlug);
                                 $property['objectConfiguration']['register'] = $existingRegister->getId();
                                 $this->registersMap[$registerSlug]           = $existingRegister;
-                            } catch (\OCP\AppFramework\Db\DoesNotExistException|ValidationException $e) {
+                            } catch (\OCP\AppFramework\Db\DoesNotExistException | ValidationException $e) {
                                 $msg  = 'Register with slug %s not found in current ';
                                 $msg .= 'organisation context during schema property import ';
                                 $msg .= '(will be resolved after registers are imported).';
@@ -876,7 +882,7 @@ class ImportHandler
                                     $existingSchema = $this->schemaMapper->find($schemaSlug);
                                     $property['objectConfiguration']['schema'] = $existingSchema->getId();
                                     $this->schemasMap[$schemaSlug] = $existingSchema;
-                                } catch (\OCP\AppFramework\Db\DoesNotExistException|ValidationException $e) {
+                                } catch (\OCP\AppFramework\Db\DoesNotExistException | ValidationException $e) {
                                     $msg  = 'Schema with slug %s not found in current ';
                                     $msg .= 'organisation context during schema property import ';
                                     $msg .= '(will be resolved after schemas are imported).';
@@ -919,7 +925,7 @@ class ImportHandler
                                 $existingRegister = $this->registerMapper->find($registerSlug);
                                 $property['items']['objectConfiguration']['register'] = $existingRegister->getId();
                                 $this->registersMap[$registerSlug] = $existingRegister;
-                            } catch (\OCP\AppFramework\Db\DoesNotExistException|ValidationException $e) {
+                            } catch (\OCP\AppFramework\Db\DoesNotExistException | ValidationException $e) {
                                 $msg  = 'Register with slug %s not found in current ';
                                 $msg .= 'organisation context during array items schema property ';
                                 $msg .= 'import (will be resolved after registers are imported).';
@@ -951,7 +957,7 @@ class ImportHandler
                                     $schemaId       = $existingSchema->getId();
                                     $property['items']['objectConfiguration']['schema'] = $schemaId;
                                     $this->schemasMap[$schemaSlug] = $existingSchema;
-                                } catch (\OCP\AppFramework\Db\DoesNotExistException|ValidationException $e) {
+                                } catch (\OCP\AppFramework\Db\DoesNotExistException | ValidationException $e) {
                                     $msg  = 'Schema with slug %s not found in current ';
                                     $msg .= 'organisation context during array items schema ';
                                     $msg .= 'property import (will be resolved after schemas are imported).';
@@ -1006,7 +1012,10 @@ class ImportHandler
                 // Compare versions using version_compare for proper semver comparison.
                 $existingVersion = $existingSchema->getVersion() ?? '0.0.0';
                 if ($force === false && version_compare($data['version'], $existingVersion, '<=') === true) {
-                    $this->logger->info(message: '[ImportHandler] Skipping schema import as existing version is newer or equal.', context: ['file' => __FILE__, 'line' => __LINE__]);
+                    $this->logger->info(
+                        message: '[ImportHandler] Skipping schema import as existing version is newer or equal.',
+                        context: ['file' => __FILE__, 'line' => __LINE__]
+                    );
                     return $existingSchema;
                 }
 
@@ -1021,7 +1030,7 @@ class ImportHandler
                 }
 
                 return $this->schemaMapper->update($existingSchema);
-            }
+            }//end if
 
             // Create new schema.
             $schema = $this->schemaMapper->createFromArray($data);
@@ -1037,7 +1046,10 @@ class ImportHandler
 
             return $schema;
         } catch (Exception $e) {
-            $this->logger->error(message: '[ImportHandler] Failed to import schema: '.$e->getMessage(), context: ['file' => __FILE__, 'line' => __LINE__]);
+            $this->logger->error(
+                message: '[ImportHandler] Failed to import schema: '.$e->getMessage(),
+                context: ['file' => __FILE__, 'line' => __LINE__]
+            );
             throw new Exception('Failed to import schema: '.$e->getMessage(), $e->getCode(), $e);
         }//end try
     }//end importSchema()
@@ -1094,7 +1106,7 @@ class ImportHandler
         }
 
         // Ensure data is consistently an array by converting any stdClass objects.
-        $data = $this->ensureArrayStructure($data);
+        $data = $this->ensureArrayStructure(data: $data);
 
         // Extract appId and version from data if not provided as parameters.
         if ($appId === null && (($data['appId'] ?? null) !== null)) {
@@ -1161,8 +1173,8 @@ class ImportHandler
             $this->logger->info(
                 message: '[ImportHandler] Starting TWO-PASS schema import process',
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'         => __FILE__,
+                    'line'         => __LINE__,
                     'totalSchemas' => count($data['components']['schemas']),
                     'schemaKeys'   => array_keys($data['components']['schemas']),
                 ]
@@ -1180,8 +1192,8 @@ class ImportHandler
                 $this->logger->debug(
                     message: '[ImportHandler] Processing schema (Pass 1)',
                     context: [
-                        'file' => __FILE__,
-                        'line' => __LINE__,
+                        'file'        => __FILE__,
+                        'line'        => __LINE__,
                         'schemaKey'   => $key,
                         'schemaTitle' => $schemaData['title'] ?? 'no title',
                         'schemaSlug'  => $schemaData['slug'] ?? $key,
@@ -1216,8 +1228,8 @@ class ImportHandler
                     $this->logger->debug(
                         message: '[ImportHandler] Successfully created schema (Pass 1)',
                         context: [
-                            'file' => __FILE__,
-                            'line' => __LINE__,
+                            'file'       => __FILE__,
+                            'line'       => __LINE__,
                             'schemaKey'  => $key,
                             'schemaSlug' => $schema->getSlug(),
                             'schemaId'   => $schema->getId(),
@@ -1227,8 +1239,8 @@ class ImportHandler
                     $this->logger->error(
                         message: '[ImportHandler] Failed to create schema (Pass 1)',
                         context: [
-                            'file' => __FILE__,
-                            'line' => __LINE__,
+                            'file'      => __FILE__,
+                            'line'      => __LINE__,
                             'schemaKey' => $key,
                             'error'     => $e->getMessage(),
                             'trace'     => $e->getTraceAsString(),
@@ -1241,8 +1253,8 @@ class ImportHandler
             $this->logger->info(
                 message: '[ImportHandler] Pass 1 completed - all schemas created',
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'           => __FILE__,
+                    'line'           => __LINE__,
                     'createdCount'   => count($result['schemas']),
                     'createdSchemas' => array_map(fn($schema) => $schema->getSlug(), $result['schemas']),
                 ]
@@ -1299,8 +1311,8 @@ class ImportHandler
                     $this->logger->error(
                         message: '[ImportHandler] Failed to resolve cross-references for schema (Pass 2)',
                         context: [
-                            'file' => __FILE__,
-                            'line' => __LINE__,
+                            'file'      => __FILE__,
+                            'line'      => __LINE__,
                             'schemaKey' => $key,
                             'error'     => $e->getMessage(),
                             'trace'     => $e->getTraceAsString(),
@@ -1312,8 +1324,8 @@ class ImportHandler
             $this->logger->info(
                 message: '[ImportHandler] Schema import process completed (TWO-PASS)',
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'            => __FILE__,
+                    'line'            => __LINE__,
                     'importedCount'   => count($result['schemas']),
                     'importedSchemas' => array_map(fn($schema) => $schema->getSlug(), $result['schemas']),
                 ]
@@ -1393,8 +1405,8 @@ class ImportHandler
                     $this->logger->warning(
                         message: '[ImportHandler] Skipping object import - register or schema not found in maps',
                         context: [
-                            'file' => __FILE__,
-                            'line' => __LINE__,
+                            'file'          => __FILE__,
+                            'line'          => __LINE__,
                             'objectSlug'    => $slug,
                             'registerSlug'  => $rawRegister,
                             'schemaSlug'    => $rawSchema,
@@ -1418,7 +1430,10 @@ class ImportHandler
                     ],
                     '_limit' => 1,
                 ];
-                $this->logger->debug(message: '[ImportHandler] Import object search filter', context: ['file' => __FILE__, 'line' => __LINE__, 'filter' => $search]);
+                $this->logger->debug(
+                    message: '[ImportHandler] Import object search filter',
+                    context: ['file' => __FILE__, 'line' => __LINE__, 'filter' => $search]
+                );
 
                 // Search for existing object.
                 // Use _rbac: false and _multitenancy: false to ensure we find objects regardless of organisation context.
@@ -1446,8 +1461,8 @@ class ImportHandler
                     $this->logger->info(
                         message: '[ImportHandler] No existing object found - will create new object',
                         context: [
-                            'file' => __FILE__,
-                            'line' => __LINE__,
+                            'file'       => __FILE__,
+                            'line'       => __LINE__,
                             'registerId' => $registerId,
                             'schemaId'   => $schemaId,
                             'slug'       => $slug,
@@ -1488,8 +1503,8 @@ class ImportHandler
                         $this->logger->info(
                             message: '[ImportHandler] Skipped object update: imported version not higher',
                             context: [
-                                'file' => __FILE__,
-                                'line' => __LINE__,
+                                'file'            => __FILE__,
+                                'line'            => __LINE__,
                                 'slug'            => $slug,
                                 'register'        => $registerId,
                                 'schema'          => $schemaId,
@@ -1549,7 +1564,10 @@ class ImportHandler
         // Store the version information if appId and version are available.
         if ($appId !== null && $version !== null) {
             $this->appConfig->setValueString('openregister', "imported_config_{$appId}_version", $version);
-            $this->logger->info(message: "[ImportHandler] Stored version {$version} for app {$appId} after successful import", context: ['file' => __FILE__, 'line' => __LINE__]);
+            $this->logger->info(
+                message: "[ImportHandler] Stored version {$version} for app {$appId} after successful import",
+                context: ['file' => __FILE__, 'line' => __LINE__]
+            );
         }
 
         // Import seed data objects if present (only if configuration was created/updated).
@@ -1609,7 +1627,7 @@ class ImportHandler
     {
         try {
             // Ensure data is consistently an array by converting any stdClass objects.
-            $data = $this->ensureArrayStructure($data);
+            $data = $this->ensureArrayStructure(data: $data);
 
             // Try to find existing configuration for this app.
             // First check by sourceUrl (unique identifier), then by appId.
@@ -1625,8 +1643,8 @@ class ImportHandler
                         $this->logger->info(
                             message: "[ImportHandler] Found existing configuration by sourceUrl",
                             context: [
-                                'file' => __FILE__,
-                                'line' => __LINE__,
+                                'file'            => __FILE__,
+                                'line'            => __LINE__,
                                 'sourceUrl'       => $sourceUrl,
                                 'configurationId' => $configuration->getId(),
                                 'currentVersion'  => $configuration->getVersion(),
@@ -1648,8 +1666,8 @@ class ImportHandler
                         $this->logger->info(
                             message: "[ImportHandler] Found existing configuration for app {$appId}",
                             context: [
-                                'file' => __FILE__,
-                                'line' => __LINE__,
+                                'file'            => __FILE__,
+                                'line'            => __LINE__,
                                 'configurationId' => $configuration->getId(),
                                 'currentVersion'  => $configuration->getVersion(),
                             ]
@@ -1674,7 +1692,10 @@ class ImportHandler
                     }//end if
                 } catch (Exception $e) {
                     // No existing configuration found, we'll create a new one.
-                    $this->logger->info(message: "[ImportHandler] No existing configuration found for app {$appId}, will create new one", context: ['file' => __FILE__, 'line' => __LINE__]);
+                    $this->logger->info(
+                        message: "[ImportHandler] No existing configuration found for app {$appId}, will create new one",
+                        context: ['file' => __FILE__, 'line' => __LINE__]
+                    );
                 }//end try
             }//end if
 
@@ -1764,8 +1785,8 @@ class ImportHandler
                 $this->logger->info(
                     message: "[ImportHandler] Created new configuration for app {$appId}",
                     context: [
-                        'file' => __FILE__,
-                        'line' => __LINE__,
+                        'file'            => __FILE__,
+                        'line'            => __LINE__,
                         'configurationId' => $configuration->getId(),
                         'version'         => $version,
                     ]
@@ -1876,8 +1897,8 @@ class ImportHandler
                 $this->logger->info(
                     message: "[ImportHandler] Updated configuration entity for app {$appId}",
                     context: [
-                        'file' => __FILE__,
-                        'line' => __LINE__,
+                        'file'            => __FILE__,
+                        'line'            => __LINE__,
                         'configurationId' => $configuration->getId(),
                         'totalRegisters'  => count($existingRegisterIds ?? []),
                         'totalSchemas'    => count($existingSchemaIds ?? []),
@@ -1888,7 +1909,10 @@ class ImportHandler
 
             return $result;
         } catch (Exception $e) {
-            $this->logger->error(message: "[ImportHandler] Failed to import configuration for app {$appId}: ".$e->getMessage(), context: ['file' => __FILE__, 'line' => __LINE__]);
+            $this->logger->error(
+                message: "[ImportHandler] Failed to import configuration for app {$appId}: ".$e->getMessage(),
+                context: ['file' => __FILE__, 'line' => __LINE__]
+            );
             throw new Exception("Failed to import configuration for app {$appId}: ".$e->getMessage());
         }//end try
     }//end importFromApp()
@@ -1980,8 +2004,8 @@ class ImportHandler
             $this->logger->error(
                 message: '[ImportHandler] Failed to import configuration from file: '.$e->getMessage(),
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'     => __FILE__,
+                    'line'     => __LINE__,
                     'appId'    => $appId,
                     'filePath' => $filePath,
                 ]
@@ -2016,7 +2040,7 @@ class ImportHandler
     ): Configuration {
         try {
             // Ensure data is consistently an array by converting any stdClass objects.
-            $data = $this->ensureArrayStructure($data);
+            $data = $this->ensureArrayStructure(data: $data);
 
             // Try to find existing configuration for this app.
             $existingConfig = null;
@@ -2081,7 +2105,10 @@ class ImportHandler
                 $existingConfig->setObjects(array_unique(array_merge($existingObjectIds, $objectIds)));
 
                 $configuration = $this->configurationMapper->update($existingConfig);
-                $this->logger->info(message: "[ImportHandler] Updated existing configuration for app {$appId} with version {$version}", context: ['file' => __FILE__, 'line' => __LINE__]);
+                $this->logger->info(
+                    message: "[ImportHandler] Updated existing configuration for app {$appId} with version {$version}",
+                    context: ['file' => __FILE__, 'line' => __LINE__]
+                );
             } else {
                 // Create new configuration.
                 $configuration = new Configuration();
@@ -2150,12 +2177,18 @@ class ImportHandler
                 }
 
                 $configuration = $this->configurationMapper->insert($configuration);
-                $this->logger->info(message: "[ImportHandler] Created new configuration for app {$appId} with version {$version}", context: ['file' => __FILE__, 'line' => __LINE__]);
+                $this->logger->info(
+                    message: "[ImportHandler] Created new configuration for app {$appId} with version {$version}",
+                    context: ['file' => __FILE__, 'line' => __LINE__]
+                );
             }//end if
 
             return $configuration;
         } catch (Exception $e) {
-            $this->logger->error(message: "[ImportHandler] Failed to create or update configuration for app {$appId}: ".$e->getMessage(), context: ['file' => __FILE__, 'line' => __LINE__]);
+            $this->logger->error(
+                message: "[ImportHandler] Failed to create or update configuration for app {$appId}: ".$e->getMessage(),
+                context: ['file' => __FILE__, 'line' => __LINE__]
+            );
             throw new Exception("Failed to create or update configuration: ".$e->getMessage());
         }//end try
     }//end createOrUpdateConfiguration()
@@ -2205,8 +2238,8 @@ class ImportHandler
             $this->logger->warning(
                 message: '[ImportHandler] No register found for seedData - using register 0',
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'         => __FILE__,
+                    'line'         => __LINE__,
                     'appId'        => $appId,
                     'config_title' => $configData['info']['title'] ?? 'unknown',
                 ]
@@ -2218,8 +2251,8 @@ class ImportHandler
             $this->logger->info(
                 message: '[ImportHandler] SeedData will be imported into register',
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'           => __FILE__,
+                    'line'           => __LINE__,
                     'register_id'    => $targetRegisterId,
                     'register_slug'  => $targetRegister->getSlug(),
                     'register_title' => $targetRegister->getTitle(),
@@ -2230,8 +2263,8 @@ class ImportHandler
         $this->logger->info(
             message: '[ImportHandler] Importing seed data objects',
             context: [
-                'file' => __FILE__,
-                'line' => __LINE__,
+                'file'            => __FILE__,
+                'line'            => __LINE__,
                 'config_title'    => $configData['info']['title'] ?? 'unknown',
                 'description'     => $seedData['description'] ?? 'no description',
                 'object_types'    => array_keys($seedData['objects']),
@@ -2242,7 +2275,7 @@ class ImportHandler
         // Ensure dependencies are met before importing seedData.
         // This is checked here (lazy) rather than at start of import to avoid circular dependency issues.
         // TEMPORARILY DISABLED: Causes hanging due to circular dependency when apps try to load configs at boot.
-        // See: $this->ensureDependenciesForSeedData($configData).
+        // See: $this->ensureDependenciesForSeedData(configData: $configData).
         foreach ($seedData['objects'] as $schemaSlug => $objects) {
             // Find schema by slug - first check schemasMap, then database.
             $schema = $this->schemasMap[$schemaSlug] ?? null;
@@ -2262,7 +2295,7 @@ class ImportHandler
                         message: "[ImportHandler] Found schema '{$schemaSlug}' in database for seedData",
                         context: ['file' => __FILE__, 'line' => __LINE__, 'schemaId' => $schema->getId(), 'schemaApp' => $schema->getApplication()]
                     );
-                } catch (\OCP\AppFramework\Db\DoesNotExistException|ValidationException $e) {
+                } catch (\OCP\AppFramework\Db\DoesNotExistException | ValidationException $e) {
                     $this->logger->warning(
                         message: "[ImportHandler] Skipping seed data for schema '{$schemaSlug}' - schema not found",
                         context: ['file' => __FILE__, 'line' => __LINE__, 'appId' => $appId, 'availableSchemasInMap' => array_keys($this->schemasMap)]
@@ -2284,8 +2317,8 @@ class ImportHandler
                     $this->logger->debug(
                         message: "[ImportHandler] Pre-creating magic mapper table for schema before importing seed objects",
                         context: [
-                            'file' => __FILE__,
-                            'line' => __LINE__,
+                            'file'        => __FILE__,
+                            'line'        => __LINE__,
                             'schema_id'   => $schema->getId(),
                             'schema_slug' => $schemaSlug,
                             'register_id' => $targetRegisterId,
@@ -2300,8 +2333,8 @@ class ImportHandler
                     $this->logger->warning(
                         message: "[ImportHandler] Failed to pre-create magic mapper table - objects may go to blob storage",
                         context: [
-                            'file' => __FILE__,
-                            'line' => __LINE__,
+                            'file'        => __FILE__,
+                            'line'        => __LINE__,
                             'schema_slug' => $schemaSlug,
                             'register_id' => $targetRegisterId,
                             'error'       => $e->getMessage(),
@@ -2319,17 +2352,17 @@ class ImportHandler
                 $externalSchemaSlug   = $selfData['schema'] ?? null;
 
                 // Start with the current target register (from configuration).
-                $targetRegId       = $targetRegisterId;
-                $objectSchema      = $schema;
-                $objectRegister    = $targetRegister;  // Track the Register object for idempotency checks.
-
+                $targetRegId    = $targetRegisterId;
+                $objectSchema   = $schema;
+                $objectRegister = $targetRegister;
+                // Track the Register object for idempotency checks.
                 // If object references external configuration, resolve schema and register from that config.
                 if ($externalConfigUrl !== null) {
                     $this->logger->info(
                         message: "[ImportHandler] SeedData object references external configuration",
                         context: [
-                            'file' => __FILE__,
-                            'line' => __LINE__,
+                            'file'          => __FILE__,
+                            'line'          => __LINE__,
                             'config_url'    => $externalConfigUrl,
                             'register_slug' => $externalRegisterSlug,
                             'schema_slug'   => $externalSchemaSlug,
@@ -2347,8 +2380,8 @@ class ImportHandler
                                 $this->logger->warning(
                                     message: "[ImportHandler] External register not found - using default",
                                     context: [
-                                        'file' => __FILE__,
-                                        'line' => __LINE__,
+                                        'file'            => __FILE__,
+                                        'line'            => __LINE__,
                                         'requested_slug'  => $externalRegisterSlug,
                                         'available_slugs' => array_keys($slugToIdMap),
                                     ]
@@ -2363,24 +2396,25 @@ class ImportHandler
                                     _multitenancy: false
                                 );
                                 $targetRegId        = $externalRegister->getId();
-                                $objectRegister     = $externalRegister;  // Update for idempotency check.
+                                $objectRegister     = $externalRegister;
+                                // Update for idempotency check.
                                 $this->logger->info(
                                     message: "[ImportHandler] Resolved external register for seedData object",
                                     context: [
-                                        'file' => __FILE__,
-                                        'line' => __LINE__,
+                                        'file'  => __FILE__,
+                                        'line'  => __LINE__,
                                         'slug'  => $externalRegisterSlug,
                                         'id'    => $targetRegId,
                                         'title' => $externalRegister->getTitle(),
                                     ]
                                 );
-                            }
+                            }//end if
                         } catch (\Exception $e) {
                             $this->logger->error(
                                 message: "[ImportHandler] Failed to resolve external register",
                                 context: [
-                                    'file' => __FILE__,
-                                    'line' => __LINE__,
+                                    'file'  => __FILE__,
+                                    'line'  => __LINE__,
                                     'slug'  => $externalRegisterSlug,
                                     'error' => $e->getMessage(),
                                 ]
@@ -2403,8 +2437,8 @@ class ImportHandler
                                 $this->logger->warning(
                                     message: "[ImportHandler] External schema not found - using current schema",
                                     context: [
-                                        'file' => __FILE__,
-                                        'line' => __LINE__,
+                                        'file'           => __FILE__,
+                                        'line'           => __LINE__,
                                         'requested_slug' => $externalSchemaSlug,
                                         'current_schema' => $schemaSlug,
                                     ]
@@ -2416,8 +2450,8 @@ class ImportHandler
                                 $this->logger->info(
                                     message: "[ImportHandler] Resolved external schema for seedData object",
                                     context: [
-                                        'file' => __FILE__,
-                                        'line' => __LINE__,
+                                        'file'  => __FILE__,
+                                        'line'  => __LINE__,
                                         'slug'  => $externalSchemaSlug,
                                         'id'    => $objectSchema->getId(),
                                         'title' => $objectSchema->getTitle(),
@@ -2428,8 +2462,8 @@ class ImportHandler
                             $this->logger->error(
                                 message: "[ImportHandler] Failed to resolve external schema",
                                 context: [
-                                    'file' => __FILE__,
-                                    'line' => __LINE__,
+                                    'file'  => __FILE__,
+                                    'line'  => __LINE__,
                                     'slug'  => $externalSchemaSlug,
                                     'error' => $e->getMessage(),
                                 ]
@@ -2450,7 +2484,7 @@ class ImportHandler
                 try {
                     // IDEMPOTENCY CHECK: Check if object already exists by slug or uuid.
                     // This prevents duplicate data when configuration is run multiple times.
-                    $existingObject = null;
+                    $existingObject   = null;
                     $lookupIdentifier = $objectData['uuid'] ?? $objectSlug;
 
                     try {
@@ -2481,20 +2515,22 @@ class ImportHandler
                         $existingObject = null;
                     } catch (\OCP\AppFramework\Db\MultipleObjectsReturnedException $e) {
                         // Multiple objects found with same identifier - log warning and skip.
+                        $warnMsg  = "[ImportHandler] Multiple seed objects found with identifier";
+                        $warnMsg .= " '{$lookupIdentifier}' - skipping to avoid duplication";
                         $this->logger->warning(
-                            message: "[ImportHandler] Multiple seed objects found with identifier '{$lookupIdentifier}' - skipping to avoid duplication",
+                            message: $warnMsg,
                             context: ['file' => __FILE__, 'line' => __LINE__, 'schema' => $schemaSlug, 'identifier' => $lookupIdentifier]
                         );
                         continue;
-                    }
+                    }//end try
 
                     if ($existingObject !== null) {
                         // Object already exists - skip creation to prevent duplication.
                         $this->logger->debug(
                             message: "[ImportHandler] Seed object already exists - skipping",
                             context: [
-                                'file' => __FILE__,
-                                'line' => __LINE__,
+                                'file'       => __FILE__,
+                                'line'       => __LINE__,
                                 'schema'     => $schemaSlug,
                                 'identifier' => $lookupIdentifier,
                                 'object_id'  => $existingObject->getId(),
@@ -2543,7 +2579,13 @@ class ImportHandler
                     $result['objects'][] = $createdObject->getId();
                     $this->logger->debug(
                         message: "[ImportHandler] Seed object imported",
-                        context: ['file' => __FILE__, 'line' => __LINE__, 'schema' => $schemaSlug, 'object_id' => $createdObject->getId(), 'slug' => $objectSlug]
+                        context: [
+                            'file'      => __FILE__,
+                            'line'      => __LINE__,
+                            'schema'    => $schemaSlug,
+                            'object_id' => $createdObject->getId(),
+                            'slug'      => $objectSlug,
+                        ]
                     );
                 } catch (Exception $e) {
                     $this->logger->error(
@@ -2557,8 +2599,8 @@ class ImportHandler
         $this->logger->info(
             message: '[ImportHandler] Seed data import complete',
             context: [
-                'file' => __FILE__,
-                'line' => __LINE__,
+                'file'         => __FILE__,
+                'line'         => __LINE__,
                 'config_title' => $configData['info']['title'] ?? 'unknown',
                 'imported'     => count($result['objects']),
             ]
@@ -2597,8 +2639,8 @@ class ImportHandler
         $this->logger->info(
             message: '[ImportHandler] Ensuring Nextcloud app dependencies for seedData',
             context: [
-                'file' => __FILE__,
-                'line' => __LINE__,
+                'file'  => __FILE__,
+                'line'  => __LINE__,
                 'count' => count($dependencies),
             ]
         );
@@ -2630,8 +2672,8 @@ class ImportHandler
                 $this->logger->info(
                     message: "[ImportHandler] Checking Nextcloud app dependency: {$appId}",
                     context: [
-                        'file' => __FILE__,
-                        'line' => __LINE__,
+                        'file'     => __FILE__,
+                        'line'     => __LINE__,
                         'required' => $required,
                         'reason'   => $reason,
                     ]
@@ -2723,6 +2765,6 @@ class ImportHandler
      */
     private function handleNextcloudAppDependencies(array $configData): void
     {
-        $this->ensureDependenciesForSeedData($configData);
+        $this->ensureDependenciesForSeedData(configData: $configData);
     }//end handleNextcloudAppDependencies()
 }//end class

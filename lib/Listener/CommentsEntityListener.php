@@ -67,7 +67,7 @@ class CommentsEntityListener implements IEventListener
         LoggerInterface $logger
     ) {
         $this->objectEntityMapper = $objectEntityMapper;
-        $this->logger             = $logger;
+        $this->logger = $logger;
     }//end __construct()
 
     /**
@@ -86,17 +86,20 @@ class CommentsEntityListener implements IEventListener
             return;
         }
 
-        $event->addEntityCollection('openregister', function (string $objectUuid): bool {
-            try {
-                $this->objectEntityMapper->find($objectUuid);
-                return true;
-            } catch (\Exception $e) {
-                $this->logger->debug(
-                    'Object UUID not found for comments entity: '.$objectUuid,
-                    ['exception' => $e]
+        $event->addEntityCollection(
+                'openregister',
+                function (string $objectUuid): bool {
+                    try {
+                        $this->objectEntityMapper->find($objectUuid);
+                        return true;
+                    } catch (\Exception $e) {
+                        $this->logger->debug(
+                            'Object UUID not found for comments entity: '.$objectUuid,
+                            ['exception' => $e]
+                        );
+                        return false;
+                    }
+                }
                 );
-                return false;
-            }
-        });
     }//end handle()
 }//end class

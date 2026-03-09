@@ -196,8 +196,8 @@ class MigrationHandler
                     $this->logger->debug(
                         message: '[MigrationHandler] Object properties mapped',
                         context: [
-                            'file' => __FILE__,
-                            'line' => __LINE__,
+                            'file'       => __FILE__,
+                            'line'       => __LINE__,
                             'mappedData' => $mappedData,
                         ]
                     );

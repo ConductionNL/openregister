@@ -70,7 +70,7 @@ class MetaDataFacetHandler
     public function getTermsFacet(string $field, array $baseQuery=[]): array
     {
         // FACET FIX: Map @self metadata field names to actual database columns.
-        $actualField = $this->mapMetadataFieldToColumn($field);
+        $actualField = $this->mapMetadataFieldToColumn(field: $field);
 
         $queryBuilder = $this->db->getQueryBuilder();
 
@@ -168,7 +168,7 @@ class MetaDataFacetHandler
         $queryBuilder = $this->db->getQueryBuilder();
 
         // Build date histogram query based on interval.
-        $dateFormat = $this->getDateFormatForInterval($interval);
+        $dateFormat = $this->getDateFormatForInterval(interval: $interval);
 
         $queryBuilder->selectAlias(
             $queryBuilder->createFunction("DATE_FORMAT($field, '$dateFormat')"),
@@ -254,7 +254,7 @@ class MetaDataFacetHandler
             $count  = (int) $result->fetchOne();
 
             // Generate range key.
-            $key = $this->generateRangeKey($range);
+            $key = $this->generateRangeKey(range: $range);
 
             $bucket = [
                 'key'     => $key,
@@ -504,7 +504,7 @@ class MetaDataFacetHandler
                 continue;
             }
 
-            if ($this->isValueArray($value) === true) {
+            if ($this->isValueArray(value: $value) === true) {
                 $this->applyInArrayFilter(queryBuilder: $queryBuilder, field: $field, value: $value);
                 continue;
             }

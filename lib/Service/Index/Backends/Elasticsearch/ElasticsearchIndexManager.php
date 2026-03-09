@@ -113,8 +113,8 @@ class ElasticsearchIndexManager
                 $this->logger->info(
                     message: '[ElasticsearchIndexManager] Index created',
                     context: [
-                        'file' => __FILE__,
-                        'line' => __LINE__,
+                        'file'  => __FILE__,
+                        'line'  => __LINE__,
                         'index' => $indexName,
                     ]
                 );
@@ -125,8 +125,8 @@ class ElasticsearchIndexManager
             $this->logger->error(
                 message: '[ElasticsearchIndexManager] Failed to create index',
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'  => __FILE__,
+                    'line'  => __LINE__,
                     'index' => $indexName,
                     'error' => $e->getMessage(),
                 ]
@@ -154,8 +154,8 @@ class ElasticsearchIndexManager
                 $this->logger->info(
                     message: '[ElasticsearchIndexManager] Index deleted',
                     context: [
-                        'file' => __FILE__,
-                        'line' => __LINE__,
+                        'file'  => __FILE__,
+                        'line'  => __LINE__,
                         'index' => $indexName,
                     ]
                 );
@@ -166,8 +166,8 @@ class ElasticsearchIndexManager
             $this->logger->error(
                 message: '[ElasticsearchIndexManager] Failed to delete index',
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'  => __FILE__,
+                    'line'  => __LINE__,
                     'index' => $indexName,
                     'error' => $e->getMessage(),
                 ]
@@ -185,19 +185,19 @@ class ElasticsearchIndexManager
      */
     public function ensureIndex(string $indexName): bool
     {
-        if ($this->indexExists($indexName) === true) {
+        if ($this->indexExists(indexName: $indexName) === true) {
             $this->logger->debug(
                 message: '[ElasticsearchIndexManager] Index already exists',
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'  => __FILE__,
+                    'line'  => __LINE__,
                     'index' => $indexName,
                 ]
             );
             return true;
         }
 
-        return $this->createIndex($indexName);
+        return $this->createIndex(indexName: $indexName);
     }//end ensureIndex()
 
     /**
@@ -226,8 +226,8 @@ class ElasticsearchIndexManager
             $this->logger->error(
                 message: '[ElasticsearchIndexManager] Failed to get index stats',
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'  => __FILE__,
+                    'line'  => __LINE__,
                     'index' => $indexName,
                     'error' => $e->getMessage(),
                 ]
@@ -254,8 +254,8 @@ class ElasticsearchIndexManager
             $this->logger->error(
                 message: '[ElasticsearchIndexManager] Failed to refresh index',
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'  => __FILE__,
+                    'line'  => __LINE__,
                     'index' => $indexName,
                     'error' => $e->getMessage(),
                 ]

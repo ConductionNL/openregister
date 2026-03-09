@@ -45,7 +45,7 @@ class GdprEntityMapper extends QBMapper
      */
     public function __construct(IDBConnection $db)
     {
-        parent::__construct($db, 'openregister_entities', GdprEntity::class);
+        parent::__construct(db: $db, tableName: 'openregister_entities', entityClass: GdprEntity::class);
     }//end __construct()
 
     /**
@@ -57,7 +57,7 @@ class GdprEntityMapper extends QBMapper
      */
     public function findEntitiesPublic(IQueryBuilder $query): array
     {
-        return parent::findEntities($query);
+        return parent::findEntities(query: $query);
     }//end findEntitiesPublic()
 
     /**
@@ -77,6 +77,6 @@ class GdprEntityMapper extends QBMapper
             ->from($this->getTableName())
             ->where($qb->expr()->eq('id', $qb->createNamedParameter($id, IQueryBuilder::PARAM_INT)));
 
-        return $this->findEntity($qb);
+        return $this->findEntity(query: $qb);
     }//end find()
 }//end class

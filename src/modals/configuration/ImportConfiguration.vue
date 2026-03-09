@@ -237,7 +237,9 @@ import { configurationStore, navigationStore, registerStore, schemaStore } from 
 							<div v-else class="selectedFileInfo">
 								<Check :size="32" class="checkIcon" />
 								<p><strong>{{ selectedUploadFile.name }}</strong></p>
-								<p class="fileSize">{{ formatFileSize(selectedUploadFile.size) }}</p>
+								<p class="fileSize">
+									{{ formatFileSize(selectedUploadFile.size) }}
+								</p>
 								<NcButton @click.stop="clearFileSelection">
 									<template #icon>
 										<Cancel :size="20" />

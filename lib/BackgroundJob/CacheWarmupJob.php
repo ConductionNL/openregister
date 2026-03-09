@@ -71,7 +71,7 @@ class CacheWarmupJob extends TimedJob
         IAppConfig $appConfig,
         LoggerInterface $logger
     ) {
-        parent::__construct($time);
+        parent::__construct(time: $time);
 
         $this->appConfig = $appConfig;
         $this->logger    = $logger;

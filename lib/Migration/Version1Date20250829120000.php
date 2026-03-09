@@ -67,7 +67,7 @@ class Version1Date20250829120000 extends SimpleMigrationStep
      */
     public function preSchemaChange(IOutput $output, Closure $schemaClosure, array $options): void
     {
-        $this->cleanupDuplicateSlugs($output);
+        $this->cleanupDuplicateSlugs(output: $output);
     }//end preSchemaChange()
 
     /**

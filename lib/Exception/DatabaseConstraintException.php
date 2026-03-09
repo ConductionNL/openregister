@@ -63,7 +63,7 @@ class DatabaseConstraintException extends Exception
      */
     public function __construct(string $message, int $code=0, int $httpStatus=409, ?Exception $previous=null)
     {
-        parent::__construct($message, $code, $previous);
+        parent::__construct(message: $message, code: $code, previous: $previous);
         $this->httpStatusCode = $httpStatus;
     }//end __construct()
 

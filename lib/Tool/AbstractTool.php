@@ -134,7 +134,7 @@ abstract class AbstractTool implements ToolInterface
      */
     protected function hasUserContext(?string $explicitUserId=null): bool
     {
-        return $this->getUserId($explicitUserId) !== null;
+        return $this->getUserId(explicitUserId: $explicitUserId) !== null;
     }//end hasUserContext()
 
     /**
@@ -229,8 +229,8 @@ abstract class AbstractTool implements ToolInterface
         // Build context array with tool execution metadata.
         // Includes tool name, function name, parameters, agent ID, and user ID.
         $context = [
-            'file' => __FILE__,
-            'line' => __LINE__,
+            'file'       => __FILE__,
+            'line'       => __LINE__,
             'tool'       => $this->getName(),
             'function'   => $functionName,
             'parameters' => $parameters,

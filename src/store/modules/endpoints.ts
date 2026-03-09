@@ -248,4 +248,3 @@ export const useEndpointStore = defineStore('endpoint', () => {
 		testEndpoint,
 	}
 })
-

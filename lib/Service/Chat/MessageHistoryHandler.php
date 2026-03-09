@@ -113,8 +113,8 @@ class MessageHistoryHandler
         $this->logger->debug(
             message: '[MessageHistoryHandler] Building message history',
             context: [
-                'file' => __FILE__,
-                'line' => __LINE__,
+                'file'           => __FILE__,
+                'line'           => __LINE__,
                 'conversationId' => $conversationId,
                 'messageCount'   => count($messages),
             ]
@@ -128,8 +128,8 @@ class MessageHistoryHandler
             $this->logger->debug(
                 message: '[MessageHistoryHandler] Adding message to history',
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'          => __FILE__,
+                    'line'          => __LINE__,
                     'role'          => $role,
                     'contentLength' => strlen($content ?? ''),
                     'hasContent'    => empty($content) === false,
@@ -158,14 +158,14 @@ class MessageHistoryHandler
                         ]
                     );
                 }
-            }
+            }//end if
 
             if (empty($role) === true || empty($content) === true) {
                 $this->logger->warning(
                     message: '[MessageHistoryHandler] Skipping message with missing role or content',
                     context: [
-                        'file' => __FILE__,
-                        'line' => __LINE__,
+                        'file'       => __FILE__,
+                        'line'       => __LINE__,
                         'hasRole'    => empty($role) === false,
                         'hasContent' => empty($content) === false,
                     ]
@@ -176,8 +176,8 @@ class MessageHistoryHandler
         $this->logger->info(
             message: '[MessageHistoryHandler] Message history built',
             context: [
-                'file' => __FILE__,
-                'line' => __LINE__,
+                'file'         => __FILE__,
+                'line'         => __LINE__,
                 'historyCount' => count($history),
             ]
         );
@@ -220,8 +220,8 @@ class MessageHistoryHandler
         $this->logger->debug(
             message: '[MessageHistoryHandler] Message stored',
             context: [
-                'file' => __FILE__,
-                'line' => __LINE__,
+                'file'           => __FILE__,
+                'line'           => __LINE__,
                 'messageId'      => $message->getId(),
                 'conversationId' => $conversationId,
                 'role'           => $role,

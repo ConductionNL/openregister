@@ -114,7 +114,7 @@ class RevertHandler
             $userId = $this->container->get('userId');
             if ($object->getLockedBy() !== $userId) {
                 throw new LockedException(
-                    sprintf('Object is locked by %s', $object->getLockedBy())
+                    message: sprintf('Object is locked by %s', $object->getLockedBy())
                 );
             }
         }

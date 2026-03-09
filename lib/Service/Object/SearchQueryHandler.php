@@ -285,8 +285,8 @@ class SearchQueryHandler
         $this->logger->debug(
             message: '[SearchQueryHandler] Applying views to query',
             context: [
-                'file' => __FILE__,
-                'line' => __LINE__,
+                'file'          => __FILE__,
+                'line'          => __LINE__,
                 'viewIds'       => $viewIds,
                 'originalQuery' => array_keys($query),
             ]
@@ -358,8 +358,8 @@ class SearchQueryHandler
                 $this->logger->debug(
                     message: '[SearchQueryHandler] Applied view to query',
                     context: [
-                        'file' => __FILE__,
-                        'line' => __LINE__,
+                        'file'           => __FILE__,
+                        'line'           => __LINE__,
                         'viewId'         => $viewId,
                         'registers'      => $viewQuery['registers'] ?? [],
                         'schemas'        => $viewQuery['schemas'] ?? [],
@@ -370,8 +370,8 @@ class SearchQueryHandler
                 $this->logger->warning(
                     message: '[SearchQueryHandler] Failed to apply view',
                     context: [
-                        'file' => __FILE__,
-                        'line' => __LINE__,
+                        'file'   => __FILE__,
+                        'line'   => __LINE__,
                         'viewId' => $viewId,
                         'error'  => $e->getMessage(),
                     ]
@@ -491,7 +491,7 @@ class SearchQueryHandler
             $nextPage = ($page + 1);
             $nextUrl  = preg_replace('/([?&])page=\d+/', '$1page='.$nextPage, $currentUrl);
             if (strpos($nextUrl, 'page=') === false) {
-                $nextUrl .= $this->getUrlSeparator($nextUrl).'page='.$nextPage;
+                $nextUrl .= $this->getUrlSeparator(url: $nextUrl).'page='.$nextPage;
             }
 
             $paginatedResults['next'] = $nextUrl;
@@ -502,7 +502,7 @@ class SearchQueryHandler
             $prevPage = ($page - 1);
             $prevUrl  = preg_replace('/([?&])page=\d+/', '$1page='.$prevPage, $currentUrl);
             if (strpos($prevUrl, 'page=') === false) {
-                $prevUrl .= $this->getUrlSeparator($prevUrl).'page='.$prevPage;
+                $prevUrl .= $this->getUrlSeparator(url: $prevUrl).'page='.$prevPage;
             }
 
             $paginatedResults['prev'] = $prevUrl;
@@ -583,8 +583,8 @@ class SearchQueryHandler
             $this->logger->warning(
                 message: '[SearchQueryHandler] Failed to check search trails setting, defaulting to enabled',
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'  => __FILE__,
+                    'line'  => __LINE__,
                     'error' => $e->getMessage(),
                 ]
             );

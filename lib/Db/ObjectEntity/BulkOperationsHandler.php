@@ -451,7 +451,7 @@ class BulkOperationsHandler
         }
 
         // Use the existing bulk delete method.
-        $deletedUuids = $this->deleteObjects($uuids);
+        $deletedUuids = $this->deleteObjects(uuids: $uuids);
 
         return [
             'deleted_count' => count($deletedUuids),
@@ -483,7 +483,7 @@ class BulkOperationsHandler
             }
 
             // Process the insert chunk.
-            $insertedIds = $this->bulkInsert($insertChunk);
+            $insertedIds = $this->bulkInsert(insertObjects: $insertChunk);
 
             // Commit transaction if we started it.
             if ($transactionStarted === true) {
@@ -531,7 +531,7 @@ class BulkOperationsHandler
             }
 
             // Process the update chunk.
-            $updatedIds = $this->bulkUpdate($updateChunk);
+            $updatedIds = $this->bulkUpdate(updateObjects: $updateChunk);
 
             // Commit transaction if we started it.
             if ($transactionStarted === true) {
@@ -588,7 +588,7 @@ class BulkOperationsHandler
         $maxObjectSize = 0;
 
         foreach ($sampleObjects as $object) {
-            $objectSize    = $this->estimateObjectSize($object);
+            $objectSize    = $this->estimateObjectSize(object: $object);
             $totalSize    += $objectSize;
             $maxObjectSize = max($maxObjectSize, $objectSize);
             $objectCount++;
@@ -704,7 +704,7 @@ class BulkOperationsHandler
         $maxObjectSize = 0;
 
         foreach ($sampleObjects as $object) {
-            $objectSize    = $this->estimateObjectSize($object);
+            $objectSize    = $this->estimateObjectSize(object: $object);
             $totalSize    += $objectSize;
             $maxObjectSize = max($maxObjectSize, $objectSize);
             $objectCount++;
@@ -880,7 +880,7 @@ class BulkOperationsHandler
             }
 
             // Get all column names from the object.
-            $columns = $this->getEntityColumns($object);
+            $columns = $this->getEntityColumns(entity: $object);
 
             // Build UPDATE statement for this object.
             $qb = $this->db->getQueryBuilder();

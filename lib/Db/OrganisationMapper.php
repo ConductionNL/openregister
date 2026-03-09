@@ -77,7 +77,7 @@ class OrganisationMapper extends QBMapper
         private readonly IEventDispatcher $eventDispatcher,
         private readonly IAppConfig $appConfig
     ) {
-        parent::__construct($db, 'openregister_organisations', Organisation::class);
+        parent::__construct(db: $db, tableName: 'openregister_organisations', entityClass: Organisation::class);
     }//end __construct()
 
     /**
@@ -100,10 +100,10 @@ class OrganisationMapper extends QBMapper
             $entity->setUpdated(new DateTime());
         }
 
-        $entity = parent::insert($entity);
+        $entity = parent::insert(entity: $entity);
 
         // Dispatch creation event.
-        $this->eventDispatcher->dispatchTyped(new OrganisationCreatedEvent($entity));
+        $this->eventDispatcher->dispatchTyped(new OrganisationCreatedEvent(organisation: $entity));
 
         return $entity;
     }//end insert()
@@ -131,7 +131,7 @@ class OrganisationMapper extends QBMapper
                 $qb->select('*')
                     ->from($this->getTableName())
                     ->where($qb->expr()->eq('id', $qb->createNamedParameter($entity->getId(), IQueryBuilder::PARAM_INT)));
-                $oldEntity = $this->findEntity($qb);
+                $oldEntity = $this->findEntity(query: $qb);
             } catch (DoesNotExistException $e) {
                 // Old entity not found — proceed without old state in event.
             }
@@ -141,7 +141,7 @@ class OrganisationMapper extends QBMapper
             $entity->setUpdated(new DateTime());
         }
 
-        $entity = parent::update($entity);
+        $entity = parent::update(entity: $entity);
 
         // Dispatch update event.
         $event = new OrganisationUpdatedEvent(
@@ -162,10 +162,10 @@ class OrganisationMapper extends QBMapper
      */
     public function delete(Entity $entity): Entity
     {
-        $entity = parent::delete($entity);
+        $entity = parent::delete(entity: $entity);
 
         // Dispatch deletion event.
-        $this->eventDispatcher->dispatchTyped(new OrganisationDeletedEvent($entity));
+        $this->eventDispatcher->dispatchTyped(new OrganisationDeletedEvent(organisation: $entity));
 
         return $entity;
     }//end delete()
@@ -188,7 +188,7 @@ class OrganisationMapper extends QBMapper
             ->from($this->getTableName())
             ->where($qb->expr()->eq('uuid', $qb->createNamedParameter($uuid)));
 
-        return $this->findEntity($qb);
+        return $this->findEntity(query: $qb);
     }//end findByUuid()
 
     /**
@@ -260,7 +260,7 @@ class OrganisationMapper extends QBMapper
 
         $qb->where($whereExpr);
 
-        return $this->findEntities($qb);
+        return $this->findEntities(query: $qb);
     }//end findByUserId()
 
     /**
@@ -278,7 +278,7 @@ class OrganisationMapper extends QBMapper
             ->from($this->getTableName())
             ->orderBy('name', 'ASC');
 
-        $organisations = $this->findEntities($qb);
+        $organisations = $this->findEntities(query: $qb);
 
         // Add user count to each organisation.
         foreach ($organisations as &$organisation) {
@@ -300,7 +300,7 @@ class OrganisationMapper extends QBMapper
     public function save(Organisation $organisation): Organisation
     {
         // Validate UUID if provided.
-        $this->validateUuid($organisation);
+        $this->validateUuid(organisation: $organisation);
 
         // Generate UUID if not present and not explicitly set.
         if ($organisation->getUuid() === null || $organisation->getUuid() === '') {
@@ -318,7 +318,7 @@ class OrganisationMapper extends QBMapper
 
         if ($organisation->getId() === null) {
             try {
-                $result = $this->insert($organisation);
+                $result = $this->insert(entity: $organisation);
                 return $result;
             } catch (Exception $e) {
                 // Handle duplicate slug: find the existing org and update it instead.
@@ -328,10 +328,10 @@ class OrganisationMapper extends QBMapper
                         message: '[OrganisationMapper] Duplicate slug, updating existing organisation',
                         context: ['slug' => $organisation->getSlug()]
                     );
-                    $existing = $this->findBySlug($organisation->getSlug());
+                    $existing = $this->findBySlug(slug: $organisation->getSlug());
                     $organisation->setId($existing->getId());
                     $organisation->setCreated($existing->getCreated());
-                    return $this->update($organisation);
+                    return $this->update(entity: $organisation);
                 }
 
                 $this->logger->error(
@@ -341,7 +341,7 @@ class OrganisationMapper extends QBMapper
             }//end try
         }//end if
 
-        return $this->update($organisation);
+        return $this->update(entity: $organisation);
     }//end save()
 
     /**
@@ -442,7 +442,7 @@ class OrganisationMapper extends QBMapper
             ->setMaxResults($limit)
             ->setFirstResult($offset);
 
-        return $this->findEntities($qb);
+        return $this->findEntities(query: $qb);
     }//end findAll()
 
     /**
@@ -467,7 +467,7 @@ class OrganisationMapper extends QBMapper
             ->setMaxResults($limit)
             ->setFirstResult($offset);
 
-        return $this->findEntities($qb);
+        return $this->findEntities(query: $qb);
     }//end findByName()
 
     /**
@@ -488,7 +488,7 @@ class OrganisationMapper extends QBMapper
             ->where($qb->expr()->eq('slug', $qb->createNamedParameter($slug)))
             ->setMaxResults(1);
 
-        return $this->findEntity($qb);
+        return $this->findEntity(query: $qb);
     }//end findBySlug()
 
     /**
@@ -528,9 +528,9 @@ class OrganisationMapper extends QBMapper
      */
     public function addUserToOrganisation(string $organisationUuid, string $userId): Organisation
     {
-        $organisation = $this->findByUuid($organisationUuid);
+        $organisation = $this->findByUuid(uuid: $organisationUuid);
         $organisation->addUser($userId);
-        return $this->update($organisation);
+        return $this->update(entity: $organisation);
     }//end addUserToOrganisation()
 
     /**
@@ -547,9 +547,9 @@ class OrganisationMapper extends QBMapper
      */
     public function removeUserFromOrganisation(string $organisationUuid, string $userId): Organisation
     {
-        $organisation = $this->findByUuid($organisationUuid);
+        $organisation = $this->findByUuid(uuid: $organisationUuid);
         $organisation->removeUser($userId);
-        return $this->update($organisation);
+        return $this->update(entity: $organisation);
     }//end removeUserFromOrganisation()
 
     /**
@@ -752,13 +752,13 @@ class OrganisationMapper extends QBMapper
 
         // Check if new parent exists (validation only).
         try {
-            $this->findByUuid($newParentUuid);
+            $this->findByUuid(uuid: $newParentUuid);
         } catch (Exception $e) {
             throw new Exception('Parent organisation not found.');
         }
 
         // Check for circular reference: if the new parent has this org in its parent chain.
-        $parentChain = $this->findParentChain($newParentUuid);
+        $parentChain = $this->findParentChain(organisationUuid: $newParentUuid);
         if (in_array($organisationUuid, $parentChain) === true) {
             throw new Exception(
                 'Circular reference detected: The new parent organisation is already a descendant of this organisation.'
@@ -766,7 +766,7 @@ class OrganisationMapper extends QBMapper
         }
 
         // Check max depth: current parent chain + this org + existing children chain.
-        $childrenChain = $this->findChildrenChain($organisationUuid);
+        $childrenChain = $this->findChildrenChain(organisationUuid: $organisationUuid);
 
         // Calculate maximum depth after assignment.
         $maxDepthAbove = count($parentChain) + 1;
@@ -816,7 +816,7 @@ class OrganisationMapper extends QBMapper
         $parentMap = [];
         foreach ($childrenUuids as $childUuid) {
             try {
-                $child = $this->findByUuid($childUuid);
+                $child = $this->findByUuid(uuid: $childUuid);
                 if ($child->getParent() !== null) {
                     $parentMap[$childUuid] = $child->getParent();
                 }
@@ -931,7 +931,7 @@ class OrganisationMapper extends QBMapper
     public function getActiveOrganisationWithFallback(string $userId): ?string
     {
         // First try to get active organisation from preferences.
-        $activeOrgUuid = $this->getActiveOrganisationUuidForUser($userId);
+        $activeOrgUuid = $this->getActiveOrganisationUuidForUser(userId: $userId);
         if ($activeOrgUuid !== null) {
             $this->logger->debug(
                 message: '[OrganisationMapper] Found active organisation for user in preferences',
@@ -1074,7 +1074,7 @@ class OrganisationMapper extends QBMapper
         $hierarchy = [$organisationUuid];
 
         // Add all parent organisations.
-        $parents = $this->findParentChain($organisationUuid);
+        $parents = $this->findParentChain(organisationUuid: $organisationUuid);
         if (empty($parents) === false) {
             $hierarchy = array_merge($hierarchy, $parents);
         }

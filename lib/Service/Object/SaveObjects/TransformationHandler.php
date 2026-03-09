@@ -191,8 +191,8 @@ class TransformationHandler
             $this->logger->info(
                 message: '[TransformationHandler] DEBUG - Mixed schema object structure',
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'                => __FILE__,
+                    'line'                => __LINE__,
                     'available_keys'      => array_keys($object),
                     'has_object_property' => isset($object['object']) === true,
                     'sample_data'         => array_slice($object, 0, 3, true),
@@ -237,8 +237,8 @@ class TransformationHandler
                 $this->logger->info(
                     message: '[TransformationHandler] Metadata removal applied (mixed)',
                     context: [
-                        'file' => __FILE__,
-                        'line' => __LINE__,
+                        'file'                 => __FILE__,
+                        'line'                 => __LINE__,
                         'removed_fields'       => array_intersect($metadataFields, array_keys($object)),
                         'remaining_keys'       => array_keys($businessData),
                         'business_data_sample' => array_slice($businessData, 0, 3, true),
@@ -261,8 +261,8 @@ class TransformationHandler
                     $this->logger->info(
                         message: '[TransformationHandler] Relations scanned in transformation',
                         context: [
-                            'file' => __FILE__,
-                            'line' => __LINE__,
+                            'file'          => __FILE__,
+                            'line'          => __LINE__,
                             'uuid'          => $selfData['uuid'] ?? 'unknown',
                             'relationCount' => count($relations),
                             'relations'     => array_slice($relations, 0, 3, true),
@@ -273,8 +273,8 @@ class TransformationHandler
                 $this->logger->info(
                     message: '[TransformationHandler] Relations already set from preparation',
                     context: [
-                        'file' => __FILE__,
-                        'line' => __LINE__,
+                        'file'          => __FILE__,
+                        'line'          => __LINE__,
                         'uuid'          => $selfData['uuid'] ?? 'unknown',
                         'relationCount' => count($selfData['relations']),
                     ]

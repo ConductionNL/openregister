@@ -89,12 +89,18 @@ class DeleteFileHandler
         }
 
         if ($file === null) {
-            $this->logger->error(message: '[DeleteFileHandler] File '.$fileName.' not found for object '.($object?->getId() ?? 'unknown'), context: ['file' => __FILE__, 'line' => __LINE__]);
+            $this->logger->error(
+                message: '[DeleteFileHandler] File '.$fileName.' not found for object '.($object?->getId() ?? 'unknown'),
+                context: ['file' => __FILE__, 'line' => __LINE__]
+            );
             return false;
         }
 
         if ($file instanceof File === false) {
-            $this->logger->error(message: '[DeleteFileHandler] File is not a File instance, it\'s a: '.get_class($file), context: ['file' => __FILE__, 'line' => __LINE__]);
+            $this->logger->error(
+                message: '[DeleteFileHandler] File is not a File instance, it\'s a: '.get_class($file),
+                context: ['file' => __FILE__, 'line' => __LINE__]
+            );
             return false;
         }
 
@@ -104,7 +110,10 @@ class DeleteFileHandler
         try {
             $file->delete();
         } catch (Exception $e) {
-            $this->logger->error(message: '[DeleteFileHandler] Failed to delete file: '.$e->getMessage(), context: ['file' => __FILE__, 'line' => __LINE__]);
+            $this->logger->error(
+                message: '[DeleteFileHandler] Failed to delete file: '.$e->getMessage(),
+                context: ['file' => __FILE__, 'line' => __LINE__]
+            );
             return false;
         }
 
@@ -126,7 +135,7 @@ class DeleteFileHandler
         $results = [];
         foreach ($files as $file) {
             try {
-                $results[] = ['file' => $file, 'success' => $this->deleteFile($file, $object)];
+                $results[] = ['file' => $file, 'success' => $this->deleteFile(file: $file, object: $object)];
             } catch (Exception $e) {
                 $results[] = ['file' => $file, 'success' => false, 'error' => $e->getMessage()];
             }
