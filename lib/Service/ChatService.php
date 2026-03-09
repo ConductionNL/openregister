@@ -199,8 +199,8 @@ class ChatService
         $this->logger->info(
             message: '[ChatService] Processing message',
             context: [
-                'file' => __FILE__,
-                'line' => __LINE__,
+                'file'           => __FILE__,
+                'line'           => __LINE__,
                 'conversationId' => $conversationId,
                 'userId'         => $userId,
                 'messageLength'  => strlen($userMessage),
@@ -302,8 +302,8 @@ class ChatService
             $this->logger->error(
                 message: '[ChatService] Message processing failed',
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'  => __FILE__,
+                    'line'  => __LINE__,
                     'error' => $e->getMessage(),
                 ]
             );
@@ -365,8 +365,8 @@ class ChatService
         $this->logger->info(
             message: '[ChatService] Testing chat functionality',
             context: [
-                'file' => __FILE__,
-                'line' => __LINE__,
+                'file'     => __FILE__,
+                'line'     => __LINE__,
                 'provider' => $provider,
                 'model'    => $config['chatModel'] ?? $config['model'] ?? 'unknown',
             ]
@@ -384,8 +384,8 @@ class ChatService
             $this->logger->error(
                 message: '[ChatService] Chat test failed',
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'  => __FILE__,
+                    'line'  => __LINE__,
                     'error' => $e->getMessage(),
                 ]
             );

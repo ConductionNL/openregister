@@ -112,7 +112,7 @@ class UploadHandler
         }
 
         // Process JSON blob from the post body.
-        return $this->getJSONfromBody($data['json']);
+        return $this->getJSONfromBody(phpArray: $data['json']);
     }//end getUploadedJson()
 
     /**
@@ -154,7 +154,7 @@ class UploadHandler
         }
 
         // Ensure all data is consistently arrays by converting any stdClass objects.
-        $phpArray = $this->ensureArrayStructure($phpArray);
+        $phpArray = $this->ensureArrayStructure(data: $phpArray);
 
         return $phpArray;
     }//end decode()
@@ -175,9 +175,9 @@ class UploadHandler
         if (is_array($data) === true) {
             foreach ($data as $key => $value) {
                 if (is_object($value) === true) {
-                    $data[$key] = $this->ensureArrayStructure($value);
+                    $data[$key] = $this->ensureArrayStructure(data: $value);
                 } else if (is_array($value) === true) {
-                    $data[$key] = $this->ensureArrayStructure($value);
+                    $data[$key] = $this->ensureArrayStructure(data: $value);
                 }
             }
         }
@@ -282,7 +282,7 @@ class UploadHandler
         }
 
         // Ensure all data is consistently arrays by converting any stdClass objects.
-        $phpArray = $this->ensureArrayStructure($phpArray);
+        $phpArray = $this->ensureArrayStructure(data: $phpArray);
 
         return $phpArray;
     }//end getJSONfromBody()

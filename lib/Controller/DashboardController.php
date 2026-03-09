@@ -552,8 +552,8 @@ class DashboardController extends Controller
             $this->logger->error(
                 message: '[DashboardController] Error retrieving most active objects: '.$e->getMessage(),
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'        => __FILE__,
+                    'line'        => __LINE__,
                     'register_id' => $registerId,
                     'schema_id'   => $schemaId,
                     'limit'       => $limit,

@@ -1,5 +1,18 @@
 <?php
 
+/**
+ * MigrationController
+ *
+ * Controller for storage migration between blob and magic tables.
+ *
+ * @category Controller
+ * @package  OCA\OpenRegister\Controller
+ *
+ * @author    Conduction Development Team <dev@conduction.nl>
+ * @copyright 2024 Conduction B.V.
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ */
+
 declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
@@ -14,21 +27,30 @@ use OCP\IRequest;
  */
 class MigrationController extends Controller
 {
+    /**
+     * Constructor for MigrationController.
+     *
+     * @param string           $appName          Application name.
+     * @param IRequest         $request          HTTP request object.
+     * @param MigrationService $migrationService Migration service.
+     *
+     * @return void
+     */
     public function __construct(
         string $appName,
         IRequest $request,
         private readonly MigrationService $migrationService,
     ) {
         parent::__construct(appName: $appName, request: $request);
-    }
+    }//end __construct()
 
     /**
      * Get storage status for a register/schema combination.
      *
-     * @NoCSRFRequired
-     *
      * @param string $register Register ID or slug.
      * @param string $schema   Schema ID or slug.
+     *
+     * @NoCSRFRequired
      *
      * @return JSONResponse Storage status.
      */
@@ -52,7 +74,7 @@ class MigrationController extends Controller
                 statusCode: 500
             );
         }
-    }
+    }//end status()
 
     /**
      * Trigger a migration between blob storage and magic tables.
@@ -67,10 +89,10 @@ class MigrationController extends Controller
     {
         try {
             $registerParam = $this->request->getParam('register');
-            $schemaParam = $this->request->getParam('schema');
-            $direction = $this->request->getParam('direction');
-            $batchSize = (int) ($this->request->getParam('batchSize', 100));
-            $dryRun = filter_var(
+            $schemaParam   = $this->request->getParam('schema');
+            $direction     = $this->request->getParam('direction');
+            $batchSize     = (int) ($this->request->getParam('batchSize', 100));
+            $dryRun        = filter_var(
                 $this->request->getParam('dryRun', false),
                 FILTER_VALIDATE_BOOLEAN
             );
@@ -116,6 +138,6 @@ class MigrationController extends Controller
                 data: ['error' => $e->getMessage()],
                 statusCode: 500
             );
-        }
-    }
-}
+        }//end try
+    }//end migrate()
+}//end class

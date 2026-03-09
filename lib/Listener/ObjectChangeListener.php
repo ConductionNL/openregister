@@ -85,8 +85,8 @@ class ObjectChangeListener implements IEventListener
         $this->logger->debug(
             message: '[ObjectChangeListener] Object event detected',
             context: [
-                'file' => __FILE__,
-                'line' => __LINE__,
+                'file'        => __FILE__,
+                'line'        => __LINE__,
                 'event_type'  => get_class($event),
                 'object_id'   => $objectId,
                 'object_uuid' => $object->getUuid(),
@@ -112,8 +112,8 @@ class ObjectChangeListener implements IEventListener
             $this->logger->error(
                 message: '[ObjectChangeListener] Error determining extraction mode',
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'      => __FILE__,
+                    'line'      => __LINE__,
                     'object_id' => $objectId,
                     'error'     => $e->getMessage(),
                     'trace'     => $e->getTraceAsString(),
@@ -143,11 +143,11 @@ class ObjectChangeListener implements IEventListener
                 break;
 
             case 'cron':
-                $this->processCronMode($objectId);
+                $this->processCronMode(objectId: $objectId);
                 break;
 
             case 'manual':
-                $this->processManualMode($objectId);
+                $this->processManualMode(objectId: $objectId);
                 break;
 
             default:
@@ -169,8 +169,8 @@ class ObjectChangeListener implements IEventListener
         $this->logger->info(
             message: '[ObjectChangeListener] Immediate mode - processing synchronously',
             context: [
-                'file' => __FILE__,
-                'line' => __LINE__,
+                'file'        => __FILE__,
+                'line'        => __LINE__,
                 'object_id'   => $objectId,
                 'object_uuid' => $objectUuid,
             ]
@@ -186,8 +186,8 @@ class ObjectChangeListener implements IEventListener
             $this->logger->error(
                 message: '[ObjectChangeListener] Immediate extraction failed',
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'      => __FILE__,
+                    'line'      => __LINE__,
                     'object_id' => $objectId,
                     'error'     => $e->getMessage(),
                 ]
@@ -208,8 +208,8 @@ class ObjectChangeListener implements IEventListener
         $this->logger->info(
             message: '[ObjectChangeListener] Background mode - queueing extraction job',
             context: [
-                'file' => __FILE__,
-                'line' => __LINE__,
+                'file'        => __FILE__,
+                'line'        => __LINE__,
                 'object_id'   => $objectId,
                 'object_uuid' => $objectUuid,
             ]
@@ -225,8 +225,8 @@ class ObjectChangeListener implements IEventListener
             $this->logger->error(
                 message: '[ObjectChangeListener] Failed to queue background job',
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'      => __FILE__,
+                    'line'      => __LINE__,
                     'object_id' => $objectId,
                     'error'     => $e->getMessage(),
                 ]
@@ -277,8 +277,8 @@ class ObjectChangeListener implements IEventListener
         $this->logger->warning(
             message: '[ObjectChangeListener] Unknown extraction mode, defaulting to background',
             context: [
-                'file' => __FILE__,
-                'line' => __LINE__,
+                'file'            => __FILE__,
+                'line'            => __LINE__,
                 'object_id'       => $objectId,
                 'extraction_mode' => $mode,
             ]

@@ -28,7 +28,12 @@ if (!defined('OC_CONSOLE')) {
     if (file_exists(__DIR__ . '/../../../lib/base.php')) {
         require_once __DIR__ . '/../../../lib/base.php';
     }
-    
+
+    // Load Test\TestCase and other NC test classes (NC convention).
+    if (file_exists(__DIR__ . '/../../../tests/autoload.php')) {
+        require_once __DIR__ . '/../../../tests/autoload.php';
+    }
+
     // Load all enabled apps.
     \OC_App::loadApps();
     

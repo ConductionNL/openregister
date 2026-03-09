@@ -76,7 +76,7 @@ class SolrManagementCommand extends Command
      */
     protected function configure(): void
     {
-        $this->setName('openregister:solr:manage')
+        $this->setName(name: 'openregister:solr:manage')
             ->setDescription('🔧 SOLR Management - Setup, optimize, and maintain SOLR infrastructure')
             ->addArgument(
                 name: 'action',

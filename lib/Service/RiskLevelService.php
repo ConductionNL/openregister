@@ -168,7 +168,7 @@ class RiskLevelService
      */
     public function updateRiskLevel(int $fileId): string
     {
-        $riskLevel = $this->computeRiskLevel($fileId);
+        $riskLevel = $this->computeRiskLevel(fileId: $fileId);
 
         try {
             $metadata = $this->metadataManager->getMetadata($fileId, true);

@@ -286,42 +286,53 @@ class RegistersController extends Controller
                         } catch (DoesNotExistException $e) {
                             // Schema not found, skip it.
                             $ctx = ['schemaId' => $schemaId];
-                            $this->logger->warning(message: '[RegistersController] Schema not found for expansion', context: array_merge(['file' => __FILE__, 'line' => __LINE__], $ctx));
+                            $this->logger->warning(
+                                message: '[RegistersController] Schema not found for expansion',
+                                context: array_merge(['file' => __FILE__, 'line' => __LINE__], $ctx)
+                            );
                         }
                     }
 
                     $register['schemas'] = $expandedSchemas;
 
-                    // If schemas were expanded and stats are requested, add schema-level stats
+                    // If schemas were expanded and stats are requested, add schema-level stats.
                     if (in_array('@self.stats', $extend, true) === true && empty($expandedSchemas) === false) {
-                        // Get object counts per schema using optimized query
+                        // Get object counts per schema using optimized query.
                         $schemaCounts = $this->registerService->getSchemaObjectCounts(
                             registerId: $register['id'],
                             schemas: $expandedSchemas
                         );
 
+                        $msg = '[RegistersController] Schema counts for register '.$register['id'].': '.json_encode($schemaCounts);
                         $this->logger->debug(
-                            message: '[RegistersController] Schema counts for register '.$register['id'].': '.json_encode($schemaCounts),
+                            message: $msg,
                             context: ['file' => __FILE__, 'line' => __LINE__]
                         );
 
-                        // Add stats to each expanded schema
+                        // Add stats to each expanded schema.
                         foreach ($register['schemas'] as &$schema) {
                             $schemaId = $schema['id'] ?? null;
+                            if (isset($schemaCounts[$schemaId]) === true) {
+                                $hasCount = 'yes';
+                            } else {
+                                $hasCount = 'no';
+                            }
+
                             $this->logger->debug(
-                                message: "[RegistersController] Processing schema {$schemaId}, has count: ".(isset($schemaCounts[$schemaId]) ? 'yes' : 'no'),
+                                message: "[RegistersController] Processing schema {$schemaId},".' has count: '.$hasCount,
                                 context: ['file' => __FILE__, 'line' => __LINE__]
                             );
                             if ($schemaId !== null && isset($schemaCounts[$schemaId]) === true) {
                                 $schema['stats'] = [
                                     'objects' => $schemaCounts[$schemaId],
                                 ];
+                                $msg = '[RegistersController] Set stats for schema '."{$schemaId}: ".json_encode($schema['stats']);
                                 $this->logger->debug(
-                                    message: "[RegistersController] Set stats for schema {$schemaId}: ".json_encode($schema['stats']),
+                                    message: $msg,
                                     context: ['file' => __FILE__, 'line' => __LINE__]
                                 );
                             } else {
-                                // No objects found for this schema
+                                // No objects found for this schema.
                                 $schema['stats'] = [
                                     'objects' => ['total' => 0],
                                 ];
@@ -330,7 +341,7 @@ class RegistersController extends Controller
                                     context: ['file' => __FILE__, 'line' => __LINE__]
                                 );
                             }
-                        }
+                        }//end foreach
 
                         unset($schema);
                         // CRITICAL: Unset reference to prevent corruption of array in subsequent iterations.
@@ -526,7 +537,7 @@ class RegistersController extends Controller
     {
         // PATCH works the same as PUT for this resource.
         // The service layer handles partial updates automatically.
-        return $this->update($id);
+        return $this->update(id: $id);
     }//end patch()
 
     /**
@@ -767,8 +778,8 @@ class RegistersController extends Controller
             $this->logger->info(
                 message: '[RegistersController] Publishing register OAS to GitHub',
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'          => __FILE__,
+                    'line'          => __LINE__,
                     'register_id'   => $id,
                     'register_slug' => $register->getSlug(),
                     'owner'         => $owner,
@@ -810,8 +821,8 @@ class RegistersController extends Controller
             $this->logger->info(
                 message: "[RegistersController] Successfully published register OAS {$register->getTitle()} to GitHub",
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'     => __FILE__,
+                    'line'     => __LINE__,
                     'owner'    => $owner,
                     'repo'     => $repo,
                     'branch'   => $branch,
@@ -829,8 +840,8 @@ class RegistersController extends Controller
                 $this->logger->warning(
                     message: '[RegistersController] Could not fetch repository default branch',
                     context: [
-                        'file' => __FILE__,
-                        'line' => __LINE__,
+                        'file'  => __FILE__,
+                        'line'  => __LINE__,
                         'owner' => $owner,
                         'repo'  => $repo,
                         'error' => $e->getMessage(),
@@ -941,8 +952,8 @@ class RegistersController extends Controller
             $this->logger->debug(
                 message: '[RegistersController] Import parameters received',
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'           => __FILE__,
+                    'line'           => __LINE__,
                     'includeObjects' => $includeObjects,
                     'validation'     => $validation,
                     'events'         => $events,
@@ -1288,8 +1299,8 @@ class RegistersController extends Controller
             $this->logger->info(
                 message: '[RegistersController] Register published',
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'           => __FILE__,
+                    'line'           => __LINE__,
                     'register_id'    => $id,
                     'published_date' => $date->format('Y-m-d H:i:s'),
                 ]
@@ -1302,8 +1313,8 @@ class RegistersController extends Controller
             $this->logger->error(
                 message: '[RegistersController] Failed to publish register',
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'        => __FILE__,
+                    'line'        => __LINE__,
                     'register_id' => $id,
                     'error'       => $e->getMessage(),
                 ]
@@ -1389,8 +1400,8 @@ class RegistersController extends Controller
             $this->logger->info(
                 message: '[RegistersController] Register depublished',
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'             => __FILE__,
+                    'line'             => __LINE__,
                     'register_id'      => $id,
                     'depublished_date' => $date->format('Y-m-d H:i:s'),
                 ]
@@ -1403,8 +1414,8 @@ class RegistersController extends Controller
             $this->logger->error(
                 message: '[RegistersController] Failed to depublish register',
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'        => __FILE__,
+                    'line'        => __LINE__,
                     'register_id' => $id,
                     'error'       => $e->getMessage(),
                 ]

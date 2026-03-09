@@ -314,7 +314,7 @@ class Register extends Entity implements JsonSerializable
             }
         );
 
-        parent::setSchemas($schemas);
+        parent::setSchemas(schemas: $schemas);
 
         return $this;
     }//end setSchemas()
@@ -612,7 +612,7 @@ class Register extends Entity implements JsonSerializable
         }
 
         $this->published = $published;
-        $this->markFieldUpdated('published');
+        $this->markFieldUpdated(attribute: 'published');
     }//end setPublished()
 
     /**
@@ -639,7 +639,7 @@ class Register extends Entity implements JsonSerializable
         }
 
         $this->depublished = $depublished;
-        $this->markFieldUpdated('depublished');
+        $this->markFieldUpdated(attribute: 'depublished');
     }//end setDepublished()
 
     // ==================================================================================
@@ -665,7 +665,7 @@ class Register extends Entity implements JsonSerializable
         // If it's a JSON string, decode it.
         if (is_string($this->configuration) === true) {
             $decoded = json_decode($this->configuration, true);
-            if (json_last_error() === JSON_ERROR_NONE && is_array($decoded)) {
+            if (json_last_error() === JSON_ERROR_NONE && is_array($decoded) === true) {
                 return $decoded;
             }
         }
@@ -690,7 +690,7 @@ class Register extends Entity implements JsonSerializable
         if (is_string($configuration) === true) {
             try {
                 $decoded = json_decode($configuration, true);
-                if (json_last_error() === JSON_ERROR_NONE && is_array($decoded)) {
+                if (json_last_error() === JSON_ERROR_NONE && is_array($decoded) === true) {
                     $this->configuration = $decoded;
                 } else {
                     // Invalid JSON, set to null.
@@ -701,12 +701,12 @@ class Register extends Entity implements JsonSerializable
                 $this->configuration = null;
             }
 
-            $this->markFieldUpdated('configuration');
+            $this->markFieldUpdated(attribute: 'configuration');
             return;
         }
 
         $this->configuration = $configuration;
-        $this->markFieldUpdated('configuration');
+        $this->markFieldUpdated(attribute: 'configuration');
     }//end setConfiguration()
 
     /**
@@ -827,7 +827,7 @@ class Register extends Entity implements JsonSerializable
             $config['schemas'][$schemaId]['comment'] = $comment;
         }
 
-        $this->setConfiguration($config);
+        $this->setConfiguration(configuration: $config);
 
         return $this;
     }//end enableMagicMappingForSchema()
@@ -845,7 +845,7 @@ class Register extends Entity implements JsonSerializable
 
         if (isset($config['schemas'][$schemaId]) === true) {
             $config['schemas'][$schemaId]['magicMapping'] = false;
-            $this->setConfiguration($config);
+            $this->setConfiguration(configuration: $config);
         }
 
         return $this;

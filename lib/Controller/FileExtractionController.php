@@ -106,13 +106,23 @@ class FileExtractionController extends Controller
                 );
             }
 
-            $searchTerm = ($search !== null && $search !== '') ? $search : null;
+            if ($search !== null && $search !== '') {
+                $searchTerm = $search;
+            } else {
+                $searchTerm = null;
+            }
 
             // For riskLevel/entityCount sorting, fetch all then sort in PHP.
-            $phpSort    = in_array($sort, ['riskLevel', 'entityCount'], true);
-            $dbLimit    = $phpSort ? null : $limit;
-            $dbOffset   = $phpSort ? null : $offset;
-            $dbSort     = $phpSort ? 'extractedAt' : $sort;
+            $phpSort = in_array($sort, ['riskLevel', 'entityCount'], true);
+            if ($phpSort === true) {
+                $dbLimit  = null;
+                $dbOffset = null;
+                $dbSort   = 'extractedAt';
+            } else {
+                $dbLimit  = $limit;
+                $dbOffset = $offset;
+                $dbSort   = $sort;
+            }
 
             $summaries  = $this->chunkMapper->getFileSourceSummaries($dbLimit, $dbOffset, $searchTerm, $dbSort, $order);
             $totalCount = $this->chunkMapper->countFileSourceSummaries($searchTerm);
@@ -138,24 +148,32 @@ class FileExtractionController extends Controller
 
             // Filter by risk level if requested.
             if ($riskLevel !== null && $riskLevel !== '') {
-                $data = array_values(array_filter($data, fn($f) => $f['riskLevel'] === $riskLevel));
+                $data       = array_values(array_filter($data, fn($f) => $f['riskLevel'] === $riskLevel));
                 $totalCount = count($data);
             }
 
             // PHP-side sorting for fields not in the DB query.
             if ($phpSort === true) {
                 $riskOrder = ['none' => 0, 'low' => 1, 'medium' => 2, 'high' => 3, 'very_high' => 4];
-                usort($data, function ($a, $b) use ($sort, $order, $riskOrder) {
-                    if ($sort === 'riskLevel') {
-                        $cmp = ($riskOrder[$a['riskLevel']] ?? 0) <=> ($riskOrder[$b['riskLevel']] ?? 0);
-                    } else {
-                        $cmp = ($a[$sort] ?? 0) <=> ($b[$sort] ?? 0);
-                    }
-                    return $order === 'ASC' ? $cmp : -$cmp;
-                });
+                usort(
+                        $data,
+                        function ($a, $b) use ($sort, $order, $riskOrder) {
+                            if ($sort === 'riskLevel') {
+                                $cmp = ($riskOrder[$a['riskLevel']] ?? 0) <=> ($riskOrder[$b['riskLevel']] ?? 0);
+                            } else {
+                                $cmp = ($a[$sort] ?? 0) <=> ($b[$sort] ?? 0);
+                            }
+
+                            if ($order === 'ASC') {
+                                return $cmp;
+                            }
+
+                            return -$cmp;
+                        }
+                        );
                 $totalCount = count($data);
-                $data = array_slice($data, $offset, $limit);
-            }
+                $data       = array_slice($data, $offset, $limit);
+            }//end if
 
             return new JSONResponse(
                 data: [

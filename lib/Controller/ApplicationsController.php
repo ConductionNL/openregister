@@ -156,9 +156,9 @@ class ApplicationsController extends Controller
             $params = $this->request->getParams();
 
             // Extract pagination and search parameters.
-            $limit  = $this->extractLimit($params);
-            $offset = $this->extractOffset($params);
-            $page   = $this->extractPage($params);
+            $limit  = $this->extractLimit(params: $params);
+            $offset = $this->extractOffset(params: $params);
+            $page   = $this->extractPage(params: $params);
 
             // Convert page to offset if provided (page-based pagination).
             if ($page !== null && $limit !== null) {
@@ -192,8 +192,8 @@ class ApplicationsController extends Controller
             $this->logger->error(
                 message: '[ApplicationsController] Failed to get applications',
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'  => __FILE__,
+                    'line'  => __LINE__,
                     'error' => $e->getMessage(),
                     'trace' => $e->getTraceAsString(),
                 ]
@@ -241,8 +241,8 @@ class ApplicationsController extends Controller
             $this->logger->error(
                 message: '[ApplicationsController] Failed to get application',
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'  => __FILE__,
+                    'line'  => __LINE__,
                     'id'    => $id,
                     'error' => $e->getMessage(),
                 ]
@@ -288,8 +288,8 @@ class ApplicationsController extends Controller
             $this->logger->error(
                 message: '[ApplicationsController] Failed to create application',
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'  => __FILE__,
+                    'line'  => __LINE__,
                     'error' => $e->getMessage(),
                     'trace' => $e->getTraceAsString(),
                 ]
@@ -342,8 +342,8 @@ class ApplicationsController extends Controller
             $this->logger->error(
                 message: '[ApplicationsController] Failed to update application',
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'  => __FILE__,
+                    'line'  => __LINE__,
                     'id'    => $id,
                     'error' => $e->getMessage(),
                 ]
@@ -378,7 +378,7 @@ class ApplicationsController extends Controller
     public function patch(int $id): JSONResponse
     {
         // Delegate to update method (both handle partial updates).
-        return $this->update($id);
+        return $this->update(id: $id);
     }//end patch()
 
     /**
@@ -415,8 +415,8 @@ class ApplicationsController extends Controller
             $this->logger->error(
                 message: '[ApplicationsController] Failed to delete application',
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'  => __FILE__,
+                    'line'  => __LINE__,
                     'id'    => $id,
                     'error' => $e->getMessage(),
                 ]

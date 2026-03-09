@@ -619,10 +619,10 @@ class FileService
             $this->logger->error(
                 message: '[FileService] Failed to create folder for entity: {message}',
                 context: [
-                    'file' => __FILE__, 
-                    'line' => __LINE__,
-                    'message' => $e->getMessage(),
-                    'exception' => $e
+                    'file'      => __FILE__,
+                    'line'      => __LINE__,
+                    'message'   => $e->getMessage(),
+                    'exception' => $e,
                 ]
             );
             return null;
@@ -712,9 +712,9 @@ class FileService
     public function getFilesForEntity(Register|ObjectEntity $entity, ?bool $sharedFilesOnly=false): array
     {
 
-        $folder = $this->getObjectFolder($entity);
+        $folder = $this->getObjectFolder(objectEntity: $entity);
         if ($entity instanceof Register) {
-            $folder = $this->getRegisterFolderById($entity);
+            $folder = $this->getRegisterFolderById(register: $entity);
         }
 
         if ($folder === null) {
@@ -727,7 +727,7 @@ class FileService
             $files = array_filter(
                 $files,
                 function ($file) {
-                    $shares = $this->findShares($file);
+                    $shares = $this->findShares(file: $file);
                     return empty($shares) === false;
                 }
             );
@@ -748,7 +748,7 @@ class FileService
      */
     private function getRegisterFolderById(Register $register): ?Folder
     {
-        return $this->folderManagementHandler->getRegisterFolderById($register);
+        return $this->folderManagementHandler->getRegisterFolderById(register: $register);
     }//end getRegisterFolderById()
 
     /**
@@ -834,7 +834,7 @@ class FileService
      */
     public function checkOwnership(Node $file): void
     {
-        $this->fileValidationHandler->checkOwnership($file);
+        $this->fileValidationHandler->checkOwnership(file: $file);
     }//end checkOwnership()
 
     /**
@@ -913,7 +913,7 @@ class FileService
     public function findShares(Node $file, int $shareType=3): array
     {
         // Check ownership to prevent "File not found" errors - hack for NextCloud rights issues.
-        $this->checkOwnership($file);
+        $this->checkOwnership(file: $file);
 
         return $this->fileSharingHandler->findShares(
             file: $file,
@@ -1032,7 +1032,7 @@ class FileService
             $file = $this->rootFolder->get($path);
         } catch (NotFoundException $e) {
             $this->logger->error(
-                message: "[FileService] Can't create share link for $path because file doesn't exist.", 
+                message: "[FileService] Can't create share link for $path because file doesn't exist.",
                 context: [
                     'file' => __FILE__,
                     'line' => __LINE__,
@@ -1042,7 +1042,7 @@ class FileService
         }
 
         // @TODO: Check ownership to prevent "File not found" errors - hack for NextCloud rights issues.
-        $this->checkOwnership($file);
+        $this->checkOwnership(file: $file);
 
         try {
             $share = $this->createShare(
@@ -1053,7 +1053,7 @@ class FileService
                     'permissions' => $permissions,
                 ]
             );
-            return $this->getShareLink($share);
+            return $this->getShareLink(share: $share);
         } catch (Exception $exception) {
             $this->logger->error(
                 message: "[FileService] Can't create share link for $path: ".$exception->getMessage(),
@@ -1391,7 +1391,7 @@ class FileService
             }
 
             // Check ownership for NextCloud rights issues.
-            $this->checkOwnership($node);
+            $this->checkOwnership(file: $node);
 
             return $node;
         } catch (Exception $e) {
@@ -1585,7 +1585,7 @@ class FileService
     public function debugListObjectFiles(ObjectEntity $object): array
     {
         try {
-            $objectFolder = $this->getObjectFolder($object);
+            $objectFolder = $this->getObjectFolder(objectEntity: $object);
 
             if ($objectFolder === null) {
                 $objectId = $object->getId();

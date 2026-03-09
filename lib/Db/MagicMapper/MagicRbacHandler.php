@@ -183,8 +183,8 @@ class MagicRbacHandler
             $this->logger->debug(
                 message: '[MagicRbacHandler] No access conditions met, denying all',
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'   => __FILE__,
+                    'line'   => __LINE__,
                     'userId' => $userId,
                     'action' => $action,
                 ]
@@ -413,10 +413,10 @@ class MagicRbacHandler
     private function buildPropertyCondition(IQueryBuilder $qb, string $property, mixed $value): mixed
     {
         // Convert camelCase property to snake_case column name.
-        $columnName = $this->propertyToColumnName($property);
+        $columnName = $this->propertyToColumnName(property: $property);
 
         // Resolve dynamic variables in the value.
-        $resolvedValue = $this->resolveDynamicValue($value);
+        $resolvedValue = $this->resolveDynamicValue(value: $value);
 
         // If dynamic variable resolved to null, this condition cannot be met.
         if ($value !== $resolvedValue && $resolvedValue === null) {
@@ -663,7 +663,7 @@ class MagicRbacHandler
             $objectValue = $objectData[$property] ?? null;
 
             // Resolve dynamic variables in the match value.
-            $resolvedValue = $this->resolveDynamicValue($value);
+            $resolvedValue = $this->resolveDynamicValue(value: $value);
 
             // If dynamic variable resolved to null, condition cannot be met.
             if ($value !== $resolvedValue && $resolvedValue === null) {
@@ -822,7 +822,7 @@ class MagicRbacHandler
 
         // Condition: User is the owner of the object (owners always have access).
         if ($userId !== null) {
-            $quotedUserId = $this->quoteValue($userId);
+            $quotedUserId = $this->quoteValue(value: $userId);
             $conditions[] = "_owner = {$quotedUserId}";
         }
 
@@ -908,7 +908,7 @@ class MagicRbacHandler
         }
 
         // Build SQL conditions for the match criteria.
-        return $this->buildMatchConditionsSql($match);
+        return $this->buildMatchConditionsSql(match: $match);
     }//end processConditionalRuleSql()
 
     /**
@@ -953,10 +953,10 @@ class MagicRbacHandler
     private function buildPropertyConditionSql(string $property, mixed $value): ?string
     {
         // Convert camelCase property to snake_case column name.
-        $columnName = $this->propertyToColumnName($property);
+        $columnName = $this->propertyToColumnName(property: $property);
 
         // Resolve dynamic variables in the value.
-        $resolvedValue = $this->resolveDynamicValue($value);
+        $resolvedValue = $this->resolveDynamicValue(value: $value);
 
         // If dynamic variable resolved to null, this condition cannot be met.
         if ($value !== $resolvedValue && $resolvedValue === null) {
@@ -965,13 +965,18 @@ class MagicRbacHandler
 
         // Simple value: equals comparison.
         if (is_string($resolvedValue) === true || is_numeric($resolvedValue) === true) {
-            $quotedValue = $this->quoteValue($resolvedValue);
+            $quotedValue = $this->quoteValue(value: $resolvedValue);
             return "{$columnName} = {$quotedValue}";
         }
 
         // Boolean value.
         if (is_bool($resolvedValue) === true) {
-            $boolValue = $resolvedValue ? 'TRUE' : 'FALSE';
+            if ($resolvedValue === true) {
+                $boolValue = 'TRUE';
+            } else {
+                $boolValue = 'FALSE';
+            }
+
             return "{$columnName} = {$boolValue}";
         }
 
@@ -1001,23 +1006,23 @@ class MagicRbacHandler
         foreach ($operators as $operator => $operand) {
             switch ($operator) {
                 case '$eq':
-                    $quotedValue = $this->quoteValue($operand);
+                    $quotedValue = $this->quoteValue(value: $operand);
                     return "{$columnName} = {$quotedValue}";
 
                 case '$ne':
-                    $quotedValue = $this->quoteValue($operand);
+                    $quotedValue = $this->quoteValue(value: $operand);
                     return "{$columnName} != {$quotedValue}";
 
                 case '$in':
                     if (is_array($operand) === true && empty($operand) === false) {
-                        $quotedValues = array_map(fn($v) => $this->quoteValue($v), $operand);
+                        $quotedValues = array_map(fn($v) => $this->quoteValue(value: $v), $operand);
                         return "{$columnName} IN (".implode(', ', $quotedValues).')';
                     }
                     break;
 
                 case '$nin':
                     if (is_array($operand) === true && empty($operand) === false) {
-                        $quotedValues = array_map(fn($v) => $this->quoteValue($v), $operand);
+                        $quotedValues = array_map(fn($v) => $this->quoteValue(value: $v), $operand);
                         return "{$columnName} NOT IN (".implode(', ', $quotedValues).')';
                     }
                     break;
@@ -1029,19 +1034,19 @@ class MagicRbacHandler
                     return "{$columnName} IS NULL";
 
                 case '$gt':
-                    $quotedValue = $this->quoteValue($operand);
+                    $quotedValue = $this->quoteValue(value: $operand);
                     return "{$columnName} > {$quotedValue}";
 
                 case '$gte':
-                    $quotedValue = $this->quoteValue($operand);
+                    $quotedValue = $this->quoteValue(value: $operand);
                     return "{$columnName} >= {$quotedValue}";
 
                 case '$lt':
-                    $quotedValue = $this->quoteValue($operand);
+                    $quotedValue = $this->quoteValue(value: $operand);
                     return "{$columnName} < {$quotedValue}";
 
                 case '$lte':
-                    $quotedValue = $this->quoteValue($operand);
+                    $quotedValue = $this->quoteValue(value: $operand);
                     return "{$columnName} <= {$quotedValue}";
             }//end switch
         }//end foreach
@@ -1063,7 +1068,11 @@ class MagicRbacHandler
         }
 
         if (is_bool($value) === true) {
-            return $value ? 'TRUE' : 'FALSE';
+            if ($value === true) {
+                return 'TRUE';
+            }
+
+            return 'FALSE';
         }
 
         if (is_int($value) === true || is_float($value) === true) {
@@ -1152,8 +1161,8 @@ class MagicRbacHandler
 
         // Check if user qualifies for any rule that should bypass multitenancy.
         // This includes:
-        // 1. Simple rules (group name strings) - user in group can see ALL records
-        // 2. Conditional rules with non-_organisation match fields - RBAC handles filtering
+        // 1. Simple rules (group name strings) - user in group can see ALL records.
+        // 2. Conditional rules with non-_organisation match fields - RBAC handles filtering.
         foreach ($rules as $rule) {
             // Check simple rules (just group names).
             // If user qualifies for a simple rule, they can see ALL records,

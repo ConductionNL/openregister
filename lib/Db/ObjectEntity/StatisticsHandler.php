@@ -452,6 +452,7 @@ class StatisticsHandler
             ];
         }//end try
     }//end getSizeDistributionChartData()
+
     /**
      * Get statistics grouped by schema for multiple schemas in a single query
      *
@@ -502,8 +503,8 @@ class StatisticsHandler
                 ->where($qb->expr()->in('schema', $qb->createNamedParameter($stringIds, $paramType)))
                 ->groupBy('schema');
 
-            $result     = $qb->executeQuery();
-            $statsMap   = [];
+            $result   = $qb->executeQuery();
+            $statsMap = [];
 
             while (($row = $result->fetch()) !== false) {
                 $schemaKey            = (int) $row['schema'];
@@ -542,6 +543,4 @@ class StatisticsHandler
             return $statsMap;
         }//end try
     }//end getStatisticsGroupedBySchema()
-
-
 }//end class

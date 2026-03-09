@@ -93,8 +93,8 @@ class ObjectVectorizationStrategy implements VectorizationStrategyInterface
         $this->logger->debug(
             message: '[ObjectVectorizationStrategy] Fetching objects',
             context: [
-                'file' => __FILE__,
-                'line' => __LINE__,
+                'file'  => __FILE__,
+                'line'  => __LINE__,
                 'views' => $views,
                 'limit' => $limit,
             ]
@@ -124,8 +124,8 @@ class ObjectVectorizationStrategy implements VectorizationStrategyInterface
         $this->logger->debug(
             message: '[ObjectVectorizationStrategy] Fetched objects',
             context: [
-                'file' => __FILE__,
-                'line' => __LINE__,
+                'file'  => __FILE__,
+                'line'  => __LINE__,
                 'count' => $count,
             ]
         );
@@ -216,11 +216,11 @@ class ObjectVectorizationStrategy implements VectorizationStrategyInterface
         $this->logger->debug(
             message: '[ObjectVectorizationStrategy] Preparing metadata',
             context: [
-                'file' => __FILE__,
-                'line' => __LINE__,
+                'file'            => __FILE__,
+                'line'            => __LINE__,
                 'object_id'       => $objectId,
                 'has_@self'       => isset($objectData['@self']) === true,
-                '@self_keys'      => $this->extractSelfKeys($objectData),
+                '@self_keys'      => $this->extractSelfKeys(objectData: $objectData),
                 'register_direct' => $objectData['_register'] ?? $objectData['register'] ?? 'none',
                 'register_@self'  => $objectData['@self']['register'] ?? 'none',
             ]
@@ -229,7 +229,7 @@ class ObjectVectorizationStrategy implements VectorizationStrategyInterface
         // Extract title/name - check multiple possible fields.
         $title = $objectData['title'] ?? $objectData['name'] ?? $objectData['_name'] ?? $objectData['summary'];
         if ($title === null) {
-            $title = $this->extractFirstStringField($objectData);
+            $title = $this->extractFirstStringField(objectData: $objectData);
         }
 
         if ($title === null) {
@@ -243,7 +243,7 @@ class ObjectVectorizationStrategy implements VectorizationStrategyInterface
         }
 
         // Extract @self keys for logging.
-        $this->extractSelfKeys($objectData);
+        $this->extractSelfKeys(objectData: $objectData);
 
         // Extract register and schema IDs from multiple possible locations.
         $selfData   = $objectData['@self'] ?? [];
@@ -369,8 +369,8 @@ class ObjectVectorizationStrategy implements VectorizationStrategyInterface
         $this->logger->debug(
             message: '[ObjectVectorizationStrategy] Serializing object',
             context: [
-                'file' => __FILE__,
-                'line' => __LINE__,
+                'file'             => __FILE__,
+                'line'             => __LINE__,
                 'objectId'         => $object['id'] ?? 'unknown',
                 'includeMetadata'  => $includeMetadata,
                 'includeRelations' => $includeRelations,

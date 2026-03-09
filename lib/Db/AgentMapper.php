@@ -111,7 +111,7 @@ class AgentMapper extends QBMapper
         IGroupManager $groupManager,
         IEventDispatcher $eventDispatcher
     ) {
-        parent::__construct($db, 'openregister_agents', Agent::class);
+        parent::__construct(db: $db, tableName: 'openregister_agents', entityClass: Agent::class);
         // REMOVED: Services should not be in mappers.
         $this->organisationMapper = $organisationMapper;
         $this->userSession        = $userSession;
@@ -151,7 +151,7 @@ class AgentMapper extends QBMapper
             allowNullOrg: true
         );
 
-        return $this->findEntity($qb);
+        return $this->findEntity(query: $qb);
     }//end find()
 
     /**
@@ -186,7 +186,7 @@ class AgentMapper extends QBMapper
             allowNullOrg: true
         );
 
-        return $this->findEntity($qb);
+        return $this->findEntity(query: $qb);
     }//end findByUuid()
 
     /**
@@ -228,11 +228,11 @@ class AgentMapper extends QBMapper
 
         // If no user provided, return all agents in the organisation.
         if ($userId === null) {
-            return $this->findEntities($qb);
+            return $this->findEntities(query: $qb);
         }
 
         // Filter results by user access rights.
-        $allAgents = $this->findEntities($qb);
+        $allAgents = $this->findEntities(query: $qb);
         return $this->filterByUserAccess(
             agents: $allAgents,
             userId: $userId
@@ -389,7 +389,7 @@ class AgentMapper extends QBMapper
             allowNullOrg: true
         );
 
-        return $this->findEntities($qb);
+        return $this->findEntities(query: $qb);
     }//end findAll()
 
     /**
@@ -431,12 +431,12 @@ class AgentMapper extends QBMapper
         }
 
         // Auto-set organisation from active session.
-        $this->setOrganisationOnCreate($entity);
+        $this->setOrganisationOnCreate(entity: $entity);
 
-        $entity = parent::insert($entity);
+        $entity = parent::insert(entity: $entity);
 
         // Dispatch creation event.
-        $this->eventDispatcher->dispatchTyped(new AgentCreatedEvent($entity));
+        $this->eventDispatcher->dispatchTyped(new AgentCreatedEvent(agent: $entity));
 
         return $entity;
     }//end insert()
@@ -458,17 +458,17 @@ class AgentMapper extends QBMapper
         );
 
         // Verify user has access to this organisation.
-        $this->verifyOrganisationAccess($entity);
+        $this->verifyOrganisationAccess(entity: $entity);
 
         // Get old state before update.
         $oldEntity = $this->find(id: $entity->getId());
 
         $entity->setUpdated(new DateTime());
 
-        $entity = parent::update($entity);
+        $entity = parent::update(entity: $entity);
 
         // Dispatch update event.
-        $this->eventDispatcher->dispatchTyped(new AgentUpdatedEvent($entity, $oldEntity));
+        $this->eventDispatcher->dispatchTyped(new AgentUpdatedEvent(newAgent: $entity, oldAgent: $oldEntity));
 
         return $entity;
     }//end update()
@@ -492,12 +492,12 @@ class AgentMapper extends QBMapper
         );
 
         // Verify user has access to this organisation.
-        $this->verifyOrganisationAccess($entity);
+        $this->verifyOrganisationAccess(entity: $entity);
 
-        $entity = parent::delete($entity);
+        $entity = parent::delete(entity: $entity);
 
         // Dispatch deletion event.
-        $this->eventDispatcher->dispatchTyped(new AgentDeletedEvent($entity));
+        $this->eventDispatcher->dispatchTyped(new AgentDeletedEvent(agent: $entity));
 
         return $entity;
     }//end delete()
@@ -514,7 +514,7 @@ class AgentMapper extends QBMapper
         $agent = new Agent();
         $agent->hydrate($data);
 
-        return $this->insert($agent);
+        return $this->insert(entity: $agent);
     }//end createFromArray()
 
     /**
@@ -562,7 +562,7 @@ class AgentMapper extends QBMapper
         }//end if
 
         // Apply organisation filter (all users including admins must have active org).
-        $this->applyOrganisationFilter($qb);
+        $this->applyOrganisationFilter(qb: $qb);
 
         return (int) $qb->executeQuery()->fetchOne();
     }//end count()

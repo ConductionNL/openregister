@@ -93,7 +93,7 @@ class TasksController extends Controller
         string $id
     ): JSONResponse {
         try {
-            $object = $this->validateObject($register, $schema, $id);
+            $object = $this->validateObject(register: $register, schema: $schema, id: $id);
             if ($object === null) {
                 return new JSONResponse(
                     data: ['error' => 'Object not found'],
@@ -129,7 +129,7 @@ class TasksController extends Controller
         string $id
     ): JSONResponse {
         try {
-            $object = $this->validateObject($register, $schema, $id);
+            $object = $this->validateObject(register: $register, schema: $schema, id: $id);
             if ($object === null) {
                 return new JSONResponse(
                     data: ['error' => 'Object not found'],
@@ -160,7 +160,7 @@ class TasksController extends Controller
             return new JSONResponse(data: ['error' => 'Object not found'], statusCode: 404);
         } catch (Exception $e) {
             return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 400);
-        }
+        }//end try
     }//end create()
 
     /**
@@ -183,7 +183,7 @@ class TasksController extends Controller
         string $taskId
     ): JSONResponse {
         try {
-            $object = $this->validateObject($register, $schema, $id);
+            $object = $this->validateObject(register: $register, schema: $schema, id: $id);
             if ($object === null) {
                 return new JSONResponse(
                     data: ['error' => 'Object not found'],
@@ -220,7 +220,7 @@ class TasksController extends Controller
             return new JSONResponse(data: ['error' => 'Object not found'], statusCode: 404);
         } catch (Exception $e) {
             return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 400);
-        }
+        }//end try
     }//end update()
 
     /**
@@ -243,7 +243,7 @@ class TasksController extends Controller
         string $taskId
     ): JSONResponse {
         try {
-            $object = $this->validateObject($register, $schema, $id);
+            $object = $this->validateObject(register: $register, schema: $schema, id: $id);
             if ($object === null) {
                 return new JSONResponse(
                     data: ['error' => 'Object not found'],
@@ -275,7 +275,7 @@ class TasksController extends Controller
             return new JSONResponse(data: ['error' => 'Object not found'], statusCode: 404);
         } catch (Exception $e) {
             return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 400);
-        }
+        }//end try
     }//end destroy()
 
     /**

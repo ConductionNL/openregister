@@ -107,13 +107,13 @@ class GdprEntitiesController extends Controller
                 'e.detected_at',
                 'e.updated_at'
             )
-                ->selectAlias($qb->createFunction('(' . $subQb->getSQL() . ')'), 'relation_count')
+                ->selectAlias($qb->createFunction('('.$subQb->getSQL().')'), 'relation_count')
                 ->from('openregister_entities', 'e');
 
             // Apply filters.
             if ($search !== '') {
                 $qb->andWhere(
-                    $qb->expr()->iLike('e.value', $qb->createNamedParameter('%' . $search . '%'))
+                    $qb->expr()->iLike('e.value', $qb->createNamedParameter('%'.$search.'%'))
                 );
             }
 
@@ -136,7 +136,7 @@ class GdprEntitiesController extends Controller
 
             if ($search !== '') {
                 $countQb->andWhere(
-                    $countQb->expr()->iLike('e.value', $countQb->createNamedParameter('%' . $search . '%'))
+                    $countQb->expr()->iLike('e.value', $countQb->createNamedParameter('%'.$search.'%'))
                 );
             }
 
@@ -164,7 +164,7 @@ class GdprEntitiesController extends Controller
             $result   = $qb->executeQuery();
             $entities = [];
 
-            while ($row = $result->fetch()) {
+            while (($row = $result->fetch()) !== false) {
                 $entities[] = [
                     'id'            => (int) $row['id'],
                     'uuid'          => $row['uuid'],
@@ -192,8 +192,8 @@ class GdprEntitiesController extends Controller
             $this->logger->error(
                 message: '[GdprEntitiesController] Failed to list entities',
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'  => __FILE__,
+                    'line'  => __LINE__,
                     'error' => $e->getMessage(),
                     'trace' => $e->getTraceAsString(),
                 ]
@@ -202,7 +202,7 @@ class GdprEntitiesController extends Controller
             return new JSONResponse(
                 data: [
                     'success' => false,
-                    'message' => 'Failed to list entities: ' . $e->getMessage(),
+                    'message' => 'Failed to list entities: '.$e->getMessage(),
                 ],
                 statusCode: Http::STATUS_INTERNAL_SERVER_ERROR
             );
@@ -247,8 +247,8 @@ class GdprEntitiesController extends Controller
             $this->logger->error(
                 message: '[GdprEntitiesController] Failed to get entity',
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'  => __FILE__,
+                    'line'  => __LINE__,
                     'id'    => $id,
                     'error' => $e->getMessage(),
                 ]
@@ -257,7 +257,7 @@ class GdprEntitiesController extends Controller
             return new JSONResponse(
                 data: [
                     'success' => false,
-                    'message' => 'Failed to get entity: ' . $e->getMessage(),
+                    'message' => 'Failed to get entity: '.$e->getMessage(),
                 ],
                 statusCode: Http::STATUS_INTERNAL_SERVER_ERROR
             );
@@ -284,7 +284,7 @@ class GdprEntitiesController extends Controller
             $result = $qb->executeQuery();
             $types  = [];
 
-            while ($row = $result->fetch()) {
+            while (($row = $result->fetch()) !== false) {
                 $types[] = $row['type'];
             }
 
@@ -332,7 +332,7 @@ class GdprEntitiesController extends Controller
             $result     = $qb->executeQuery();
             $categories = [];
 
-            while ($row = $result->fetch()) {
+            while (($row = $result->fetch()) !== false) {
                 $categories[] = $row['category'];
             }
 
@@ -391,7 +391,7 @@ class GdprEntitiesController extends Controller
             $typeResult = $typeQb->executeQuery();
             $byType     = [];
 
-            while ($row = $typeResult->fetch()) {
+            while (($row = $typeResult->fetch()) !== false) {
                 $byType[$row['type']] = (int) $row['count'];
             }
 
@@ -408,7 +408,7 @@ class GdprEntitiesController extends Controller
             $catResult  = $catQb->executeQuery();
             $byCategory = [];
 
-            while ($row = $catResult->fetch()) {
+            while (($row = $catResult->fetch()) !== false) {
                 $byCategory[$row['category']] = (int) $row['count'];
             }
 
@@ -484,8 +484,8 @@ class GdprEntitiesController extends Controller
             $this->logger->error(
                 message: '[GdprEntitiesController] Failed to delete entity',
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'  => __FILE__,
+                    'line'  => __LINE__,
                     'id'    => $id,
                     'error' => $e->getMessage(),
                 ]
@@ -494,7 +494,7 @@ class GdprEntitiesController extends Controller
             return new JSONResponse(
                 data: [
                     'success' => false,
-                    'message' => 'Failed to delete entity: ' . $e->getMessage(),
+                    'message' => 'Failed to delete entity: '.$e->getMessage(),
                 ],
                 statusCode: Http::STATUS_INTERNAL_SERVER_ERROR
             );

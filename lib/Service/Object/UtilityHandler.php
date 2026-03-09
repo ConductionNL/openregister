@@ -77,7 +77,8 @@ class UtilityHandler
         }
 
         // Prefixed UUID (e.g., "id-uuid" with or without dashes).
-        if (preg_match('/^[a-z]+-([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}|[0-9a-f]{32})$/i', $value) === 1) {
+        $pattern = '/^[a-z]+-([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}|[0-9a-f]{32})$/i';
+        if (preg_match($pattern, $value) === 1) {
             return true;
         }
 

@@ -129,8 +129,8 @@ class WarmupHandler
         $this->logger->info(
             message: '[WarmupHandler] Starting index warmup',
             context: [
-                'file' => __FILE__,
-                'line' => __LINE__,
+                'file'        => __FILE__,
+                'line'        => __LINE__,
                 'max_objects' => $maxObjects,
                 'mode'        => $mode,
                 'batch_size'  => $batchSize,
@@ -151,8 +151,8 @@ class WarmupHandler
             $this->logger->info(
                 message: '[WarmupHandler] Index warmup completed',
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'            => __FILE__,
+                    'line'            => __LINE__,
                     'success'         => $result['success'] ?? false,
                     'objects_indexed' => $result['operations']['objects_indexed'] ?? 0,
                 ]
@@ -163,8 +163,8 @@ class WarmupHandler
             $this->logger->error(
                 message: '[WarmupHandler] Index warmup failed',
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'  => __FILE__,
+                    'line'  => __LINE__,
                     'error' => $e->getMessage(),
                 ]
             );

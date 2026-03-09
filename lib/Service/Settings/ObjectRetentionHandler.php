@@ -205,8 +205,8 @@ class ObjectRetentionHandler
                 'readLogRetention'       => $retentionData['readLogRetention'] ?? 86400000,
                 'updateLogRetention'     => $retentionData['updateLogRetention'] ?? 604800000,
                 'deleteLogRetention'     => $retentionData['deleteLogRetention'] ?? 2592000000,
-                'auditTrailsEnabled'     => $this->convertToBoolean($retentionData['auditTrailsEnabled'] ?? true),
-                'searchTrailsEnabled'    => $this->convertToBoolean($retentionData['searchTrailsEnabled'] ?? true),
+                'auditTrailsEnabled'     => $this->convertToBoolean(value: $retentionData['auditTrailsEnabled'] ?? true),
+                'searchTrailsEnabled'    => $this->convertToBoolean(value: $retentionData['searchTrailsEnabled'] ?? true),
             ];
         } catch (Exception $e) {
             throw new RuntimeException('Failed to retrieve Retention settings: '.$e->getMessage());

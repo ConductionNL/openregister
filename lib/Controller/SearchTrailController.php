@@ -727,7 +727,7 @@ class SearchTrailController extends Controller
                 $filename    = 'search-trails-'.date('Y-m-d-H-i-s').'.json';
             } else {
                 // Default to CSV.
-                $content     = $this->arrayToCsv($exportData);
+                $content     = $this->arrayToCsv(data: $exportData);
                 $contentType = 'text/csv';
                 $filename    = 'search-trails-'.date('Y-m-d-H-i-s').'.csv';
             }

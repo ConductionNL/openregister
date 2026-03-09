@@ -4,7 +4,6 @@ namespace OCA\OpenRegister\Tests\Unit\Service;
 
 use OCA\OpenRegister\Service\VectorEmbeddingService;
 use Test\TestCase;
-use ReflectionClass;
 
 /**
  * Unit tests for VectorEmbeddingService
@@ -32,7 +31,7 @@ class VectorEmbeddingServiceTest extends TestCase
 		$vector1 = [1.0, 0.0, 0.0];
 		$vector2 = [1.0, 0.0, 0.0];
 		
-		$similarity = $this->invokePrivate('cosineSimilarity', [$vector1, $vector2]);
+		$similarity = self::invokePrivate($this->service, 'cosineSimilarity', [$vector1, $vector2]);
 		
 		$this->assertEquals(1.0, $similarity, '', 0.001);
 	}
@@ -42,7 +41,7 @@ class VectorEmbeddingServiceTest extends TestCase
 		$vector1 = [1.0, 0.0, 0.0];
 		$vector2 = [0.0, 1.0, 0.0];
 		
-		$similarity = $this->invokePrivate('cosineSimilarity', [$vector1, $vector2]);
+		$similarity = self::invokePrivate($this->service, 'cosineSimilarity', [$vector1, $vector2]);
 		
 		$this->assertEquals(0.0, $similarity, '', 0.001);
 	}
@@ -52,7 +51,7 @@ class VectorEmbeddingServiceTest extends TestCase
 		$vector1 = [1.0, 0.0];
 		$vector2 = [-1.0, 0.0];
 		
-		$similarity = $this->invokePrivate('cosineSimilarity', [$vector1, $vector2]);
+		$similarity = self::invokePrivate($this->service, 'cosineSimilarity', [$vector1, $vector2]);
 		
 		$this->assertEquals(-1.0, $similarity, '', 0.001);
 	}
@@ -62,7 +61,7 @@ class VectorEmbeddingServiceTest extends TestCase
 		$vector1 = [1.0, 1.0, 0.0];
 		$vector2 = [1.0, 0.0, 0.0];
 		
-		$similarity = $this->invokePrivate('cosineSimilarity', [$vector1, $vector2]);
+		$similarity = self::invokePrivate($this->service, 'cosineSimilarity', [$vector1, $vector2]);
 		
 		// cos(45°) ≈ 0.707.
 		$this->assertGreaterThan(0.7, $similarity);
@@ -75,7 +74,7 @@ class VectorEmbeddingServiceTest extends TestCase
 		$vector1 = array_fill(0, 1536, 1.0);
 		$vector2 = array_fill(0, 1536, 1.0);
 		
-		$similarity = $this->invokePrivate('cosineSimilarity', [$vector1, $vector2]);
+		$similarity = self::invokePrivate($this->service, 'cosineSimilarity', [$vector1, $vector2]);
 		
 		$this->assertEquals(1.0, $similarity, '', 0.001);
 	}
@@ -86,7 +85,7 @@ class VectorEmbeddingServiceTest extends TestCase
 		$vector1 = [2.0, 2.0];
 		$vector2 = [1.0, 1.0];
 		
-		$similarity = $this->invokePrivate('cosineSimilarity', [$vector1, $vector2]);
+		$similarity = self::invokePrivate($this->service, 'cosineSimilarity', [$vector1, $vector2]);
 		
 		// Should be 1.0 (same direction, different magnitude).
 		$this->assertEquals(1.0, $similarity, '', 0.001);
@@ -106,7 +105,7 @@ class VectorEmbeddingServiceTest extends TestCase
 			['id' => 'D', 'similarity' => 0.7],
 		];
 		
-		$merged = $this->invokePrivate('reciprocalRankFusion', [$keywordResults, $semanticResults, 60]);
+		$merged = self::invokePrivate($this->service, 'reciprocalRankFusion', [$keywordResults, $semanticResults, 60]);
 		
 		$this->assertCount(4, $merged); // A, B, C, D
 		
@@ -127,7 +126,7 @@ class VectorEmbeddingServiceTest extends TestCase
 		
 		$semanticResults = [];
 		
-		$merged = $this->invokePrivate('reciprocalRankFusion', [$keywordResults, $semanticResults, 60]);
+		$merged = self::invokePrivate($this->service, 'reciprocalRankFusion', [$keywordResults, $semanticResults, 60]);
 		
 		$this->assertCount(2, $merged);
 		$this->assertEquals('A', $merged[0]['id']);
@@ -143,7 +142,7 @@ class VectorEmbeddingServiceTest extends TestCase
 			['id' => 'Y', 'similarity' => 0.8],
 		];
 		
-		$merged = $this->invokePrivate('reciprocalRankFusion', [$keywordResults, $semanticResults, 60]);
+		$merged = self::invokePrivate($this->service, 'reciprocalRankFusion', [$keywordResults, $semanticResults, 60]);
 		
 		$this->assertCount(2, $merged);
 		$this->assertEquals('X', $merged[0]['id']);
@@ -156,8 +155,8 @@ class VectorEmbeddingServiceTest extends TestCase
 		$semanticResults = [['id' => 'A', 'similarity' => 0.9]];
 		
 		// Test with different k values.
-		$merged1 = $this->invokePrivate('reciprocalRankFusion', [$keywordResults, $semanticResults, 10]);
-		$merged2 = $this->invokePrivate('reciprocalRankFusion', [$keywordResults, $semanticResults, 100]);
+		$merged1 = self::invokePrivate($this->service, 'reciprocalRankFusion', [$keywordResults, $semanticResults, 10]);
+		$merged2 = self::invokePrivate($this->service, 'reciprocalRankFusion', [$keywordResults, $semanticResults, 100]);
 		
 		// Different k values should produce different scores.
 		$this->assertNotEquals($merged1[0]['rrf_score'], $merged2[0]['rrf_score']);
@@ -173,7 +172,7 @@ class VectorEmbeddingServiceTest extends TestCase
 			['id' => 'A', 'similarity' => 0.9, 'text' => 'Some text']
 		];
 		
-		$merged = $this->invokePrivate('reciprocalRankFusion', [$keywordResults, $semanticResults, 60]);
+		$merged = self::invokePrivate($this->service, 'reciprocalRankFusion', [$keywordResults, $semanticResults, 60]);
 		
 		// Should preserve metadata from keyword results.
 		$this->assertArrayHasKey('title', $merged[0]);
@@ -205,7 +204,7 @@ class VectorEmbeddingServiceTest extends TestCase
 		$semanticResults[1]['id'] = 'K2';
 		$semanticResults[2]['id'] = 'K3';
 		
-		$merged = $this->invokePrivate('reciprocalRankFusion', [$keywordResults, $semanticResults, 60]);
+		$merged = self::invokePrivate($this->service, 'reciprocalRankFusion', [$keywordResults, $semanticResults, 60]);
 		
 		// K1, K2, K3 should rank highly due to appearing in both.
 		$topIds = array_slice(array_column($merged, 'id'), 0, 5);
@@ -214,19 +213,5 @@ class VectorEmbeddingServiceTest extends TestCase
 		$this->assertContains('K3', $topIds);
 	}
 	
-	/**
-	 * Helper method to invoke private methods
-	 *
-	 * @param string $methodName
-	 * @param array $parameters
-	 * @return mixed
-	 */
-	private function invokePrivate(string $methodName, array $parameters = [])
-	{
-		$reflection = new ReflectionClass($this->service);
-		$method = $reflection->getMethod($methodName);
-		$method->setAccessible(true);
-		return $method->invokeArgs($this->service, $parameters);
-	}
 }
 

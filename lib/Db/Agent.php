@@ -340,36 +340,36 @@ class Agent extends Entity implements JsonSerializable
      */
     public function __construct()
     {
-        $this->addType('uuid', 'string');
-        $this->addType('name', 'string');
-        $this->addType('description', 'string');
-        $this->addType('type', 'string');
-        $this->addType('provider', 'string');
-        $this->addType('model', 'string');
-        $this->addType('prompt', 'string');
-        $this->addType('temperature', 'float');
-        $this->addType('maxTokens', 'integer');
-        $this->addType('configuration', 'json');
-        $this->addType('organisation', 'string');
-        $this->addType('owner', 'string');
-        $this->addType('active', 'boolean');
-        $this->addType('enableRag', 'boolean');
-        $this->addType('ragSearchMode', 'string');
-        $this->addType('ragNumSources', 'integer');
-        $this->addType('ragIncludeFiles', 'boolean');
-        $this->addType('ragIncludeObjects', 'boolean');
-        $this->addType('requestQuota', 'integer');
-        $this->addType('tokenQuota', 'integer');
-        $this->addType('views', 'json');
-        $this->addType('searchFiles', 'boolean');
-        $this->addType('searchObjects', 'boolean');
-        $this->addType('isPrivate', 'boolean');
-        $this->addType('invitedUsers', 'json');
-        $this->addType('groups', 'json');
-        $this->addType('tools', 'json');
-        $this->addType('user', 'string');
-        $this->addType('created', 'datetime');
-        $this->addType('updated', 'datetime');
+        $this->addType(fieldName: 'uuid', type: 'string');
+        $this->addType(fieldName: 'name', type: 'string');
+        $this->addType(fieldName: 'description', type: 'string');
+        $this->addType(fieldName: 'type', type: 'string');
+        $this->addType(fieldName: 'provider', type: 'string');
+        $this->addType(fieldName: 'model', type: 'string');
+        $this->addType(fieldName: 'prompt', type: 'string');
+        $this->addType(fieldName: 'temperature', type: 'float');
+        $this->addType(fieldName: 'maxTokens', type: 'integer');
+        $this->addType(fieldName: 'configuration', type: 'json');
+        $this->addType(fieldName: 'organisation', type: 'string');
+        $this->addType(fieldName: 'owner', type: 'string');
+        $this->addType(fieldName: 'active', type: 'boolean');
+        $this->addType(fieldName: 'enableRag', type: 'boolean');
+        $this->addType(fieldName: 'ragSearchMode', type: 'string');
+        $this->addType(fieldName: 'ragNumSources', type: 'integer');
+        $this->addType(fieldName: 'ragIncludeFiles', type: 'boolean');
+        $this->addType(fieldName: 'ragIncludeObjects', type: 'boolean');
+        $this->addType(fieldName: 'requestQuota', type: 'integer');
+        $this->addType(fieldName: 'tokenQuota', type: 'integer');
+        $this->addType(fieldName: 'views', type: 'json');
+        $this->addType(fieldName: 'searchFiles', type: 'boolean');
+        $this->addType(fieldName: 'searchObjects', type: 'boolean');
+        $this->addType(fieldName: 'isPrivate', type: 'boolean');
+        $this->addType(fieldName: 'invitedUsers', type: 'json');
+        $this->addType(fieldName: 'groups', type: 'json');
+        $this->addType(fieldName: 'tools', type: 'json');
+        $this->addType(fieldName: 'user', type: 'string');
+        $this->addType(fieldName: 'created', type: 'datetime');
+        $this->addType(fieldName: 'updated', type: 'datetime');
     }//end __construct()
 
     /**
@@ -403,35 +403,35 @@ class Agent extends Entity implements JsonSerializable
             $uuid = $object['uuid'];
         }
 
-        $this->setUuid($uuid);
+        $this->setUuid(uuid: $uuid);
 
-        $this->setName($object['name'] ?? null);
-        $this->setDescription($object['description'] ?? null);
-        $this->setType($object['type'] ?? null);
-        $this->setProvider($object['provider'] ?? null);
-        $this->setModel($object['model'] ?? null);
-        $this->setPrompt($object['prompt'] ?? null);
-        $this->setTemperature($object['temperature'] ?? null);
-        $this->setMaxTokens($object['maxTokens'] ?? $object['max_tokens'] ?? null);
-        $this->setConfiguration($object['configuration'] ?? null);
-        $this->setOrganisation($object['organisation'] ?? null);
-        $this->setOwner($object['owner'] ?? null);
-        $this->setActive($object['active'] ?? true);
-        $this->setEnableRag($object['enableRag'] ?? $object['enable_rag'] ?? false);
-        $this->setRagSearchMode($object['ragSearchMode'] ?? $object['rag_search_mode'] ?? null);
-        $this->setRagNumSources($object['ragNumSources'] ?? $object['rag_num_sources'] ?? null);
-        $this->setRagIncludeFiles($object['ragIncludeFiles'] ?? $object['rag_include_files'] ?? false);
-        $this->setRagIncludeObjects($object['ragIncludeObjects'] ?? $object['rag_include_objects'] ?? false);
-        $this->setRequestQuota($object['requestQuota'] ?? $object['request_quota'] ?? null);
-        $this->setTokenQuota($object['tokenQuota'] ?? $object['token_quota'] ?? null);
-        $this->setViews($object['views'] ?? null);
-        $this->setSearchFiles($object['searchFiles'] ?? $object['search_files'] ?? true);
-        $this->setSearchObjects($object['searchObjects'] ?? $object['search_objects'] ?? true);
-        $this->setIsPrivate($object['isPrivate'] ?? $object['is_private'] ?? true);
-        $this->setInvitedUsers($object['invitedUsers'] ?? $object['invited_users'] ?? null);
-        $this->setGroups($object['groups'] ?? null);
-        $this->setTools($object['tools'] ?? null);
-        $this->setUser($object['user'] ?? null);
+        $this->setName(name: $object['name'] ?? null);
+        $this->setDescription(description: $object['description'] ?? null);
+        $this->setType(type: $object['type'] ?? null);
+        $this->setProvider(provider: $object['provider'] ?? null);
+        $this->setModel(model: $object['model'] ?? null);
+        $this->setPrompt(prompt: $object['prompt'] ?? null);
+        $this->setTemperature(temperature: $object['temperature'] ?? null);
+        $this->setMaxTokens(maxTokens: $object['maxTokens'] ?? $object['max_tokens'] ?? null);
+        $this->setConfiguration(configuration: $object['configuration'] ?? null);
+        $this->setOrganisation(organisation: $object['organisation'] ?? null);
+        $this->setOwner(owner: $object['owner'] ?? null);
+        $this->setActive(active: $object['active'] ?? true);
+        $this->setEnableRag(enableRag: $object['enableRag'] ?? $object['enable_rag'] ?? false);
+        $this->setRagSearchMode(ragSearchMode: $object['ragSearchMode'] ?? $object['rag_search_mode'] ?? null);
+        $this->setRagNumSources(ragNumSources: $object['ragNumSources'] ?? $object['rag_num_sources'] ?? null);
+        $this->setRagIncludeFiles(ragIncludeFiles: $object['ragIncludeFiles'] ?? $object['rag_include_files'] ?? false);
+        $this->setRagIncludeObjects(ragIncludeObjects: $object['ragIncludeObjects'] ?? $object['rag_include_objects'] ?? false);
+        $this->setRequestQuota(requestQuota: $object['requestQuota'] ?? $object['request_quota'] ?? null);
+        $this->setTokenQuota(tokenQuota: $object['tokenQuota'] ?? $object['token_quota'] ?? null);
+        $this->setViews(views: $object['views'] ?? null);
+        $this->setSearchFiles(searchFiles: $object['searchFiles'] ?? $object['search_files'] ?? true);
+        $this->setSearchObjects(searchObjects: $object['searchObjects'] ?? $object['search_objects'] ?? true);
+        $this->setIsPrivate(isPrivate: $object['isPrivate'] ?? $object['is_private'] ?? true);
+        $this->setInvitedUsers(invitedUsers: $object['invitedUsers'] ?? $object['invited_users'] ?? null);
+        $this->setGroups(groups: $object['groups'] ?? null);
+        $this->setTools(tools: $object['tools'] ?? null);
+        $this->setUser(user: $object['user'] ?? null);
 
         return $this;
     }//end hydrate()

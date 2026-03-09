@@ -246,7 +246,7 @@ class ExportHandler
             $this->registersMap[$register->getId()] = $register;
 
             // Set the base register.
-            $openApiSpec['components']['registers'][$register->getSlug()] = $this->exportRegister($register);
+            $openApiSpec['components']['registers'][$register->getSlug()] = $this->exportRegister(register: $register);
             // Drop the schemas from the register (we need to slugify those).
             $openApiSpec['components']['registers'][$register->getSlug()]['schemas'] = [];
 

@@ -65,6 +65,7 @@ class ReadFileHandler
      * @param FileValidationHandler   $fileValidHandler     File validation handler.
      * @param FileOwnershipHandler    $fileOwnershipHandler File ownership handler.
      * @param ObjectEntityMapper      $objectEntityMapper   Object entity mapper.
+     * @param UnifiedObjectMapper     $unifiedObjectMapper  Unified object mapper.
      * @param LoggerInterface         $logger               Logger for logging operations.
      */
     public function __construct(
@@ -145,13 +146,16 @@ class ReadFileHandler
                     return $fileNode;
                 }
             } catch (Exception $e) {
-                $this->logger->error(message: '[ReadFileHandler] getFile: Error finding file by ID '.$file.': '.$e->getMessage(), context: ['file' => __FILE__, 'line' => __LINE__]);
+                $this->logger->error(
+                    message: '[ReadFileHandler] getFile: Error finding file by ID '.$file.': '.$e->getMessage(),
+                    context: ['file' => __FILE__, 'line' => __LINE__]
+                );
                 return null;
             }
 
             // If not found by ID, return null.
             return null;
-        }
+        }//end if
 
         // Clean file path and extract filename using utility method.
         $pathInfo = $this->fileService->extractFileNameFromPath((string) $file);
@@ -225,7 +229,10 @@ class ReadFileHandler
 
             return $node;
         } catch (Exception $e) {
-            $this->logger->error(message: '[ReadFileHandler] getFileById: Error finding file by ID '.$fileId.': '.$e->getMessage(), context: ['file' => __FILE__, 'line' => __LINE__]);
+            $this->logger->error(
+                message: '[ReadFileHandler] getFileById: Error finding file by ID '.$fileId.': '.$e->getMessage(),
+                context: ['file' => __FILE__, 'line' => __LINE__]
+            );
             return null;
         }//end try
     }//end getFileById()

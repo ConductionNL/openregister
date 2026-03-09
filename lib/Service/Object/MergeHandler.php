@@ -211,7 +211,7 @@ class MergeHandler
                 }
             } else if ($fileAction === 'delete' && $sourceObject->getFolder() !== null) {
                 try {
-                    $deleteResult = $this->deleteObjectFiles($sourceObject);
+                    $deleteResult = $this->deleteObjectFiles(sourceObject: $sourceObject);
                     $mergeReport['actions']['files']           = $deleteResult['files'];
                     $mergeReport['statistics']['filesDeleted'] = $deleteResult['deleted'];
 

@@ -139,6 +139,6 @@ class ObjectCleanupListener implements IEventListener
                 'Failed to clean up tasks for deleted object: '.$objectUuid.': '.$e->getMessage(),
                 ['exception' => $e]
             );
-        }
+        }//end try
     }//end handle()
 }//end class

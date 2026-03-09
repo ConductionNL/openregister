@@ -59,7 +59,7 @@ class ApplicationTool extends AbstractTool implements ToolInterface
         IUserSession $userSession,
         LoggerInterface $logger
     ) {
-        parent::__construct($userSession, $logger);
+        parent::__construct(userSession: $userSession, logger: $logger);
         $this->applicationMapper = $applicationMapper;
     }//end __construct()
 
@@ -211,8 +211,8 @@ class ApplicationTool extends AbstractTool implements ToolInterface
             $this->logger->info(
                 message: '[ApplicationTool] Listing applications',
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'   => __FILE__,
+                    'line'   => __LINE__,
                     'limit'  => $limit,
                     'offset' => $offset,
                 ]
@@ -238,8 +238,8 @@ class ApplicationTool extends AbstractTool implements ToolInterface
             $this->logger->error(
                 message: '[ApplicationTool] Failed to list applications',
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'  => __FILE__,
+                    'line'  => __LINE__,
                     'error' => $e->getMessage(),
                 ]
             );
@@ -277,8 +277,8 @@ class ApplicationTool extends AbstractTool implements ToolInterface
             $this->logger->error(
                 message: '[ApplicationTool] Failed to get application',
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'  => __FILE__,
+                    'line'  => __LINE__,
                     'uuid'  => $uuid,
                     'error' => $e->getMessage(),
                 ]
@@ -327,8 +327,8 @@ class ApplicationTool extends AbstractTool implements ToolInterface
             $this->logger->error(
                 message: '[ApplicationTool] Failed to create application',
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'  => __FILE__,
+                    'line'  => __LINE__,
                     'name'  => $name,
                     'error' => $e->getMessage(),
                 ]
@@ -386,8 +386,8 @@ class ApplicationTool extends AbstractTool implements ToolInterface
             $this->logger->error(
                 message: '[ApplicationTool] Failed to update application',
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'  => __FILE__,
+                    'line'  => __LINE__,
                     'uuid'  => $uuid,
                     'error' => $e->getMessage(),
                 ]
@@ -430,8 +430,8 @@ class ApplicationTool extends AbstractTool implements ToolInterface
             $this->logger->error(
                 message: '[ApplicationTool] Failed to delete application',
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'  => __FILE__,
+                    'line'  => __LINE__,
                     'uuid'  => $uuid,
                     'error' => $e->getMessage(),
                 ]

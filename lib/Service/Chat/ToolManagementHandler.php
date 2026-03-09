@@ -113,8 +113,8 @@ class ToolManagementHandler
             $this->logger->info(
                 message: '[ToolManagementHandler] Filtering tools',
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'          => __FILE__,
+                    'line'          => __LINE__,
                     'agentTools'    => count($agent->getTools()),
                     'selectedTools' => count($selectedTools),
                     'filteredTools' => count($enabledToolIds),
@@ -140,7 +140,7 @@ class ToolManagementHandler
                     context: [
                         'file' => __FILE__,
                         'line' => __LINE__,
-                        'id' => $fullToolId
+                        'id'   => $fullToolId,
                     ]
                 );
             }
@@ -151,7 +151,7 @@ class ToolManagementHandler
                     context: [
                         'file' => __FILE__,
                         'line' => __LINE__,
-                        'id' => $fullToolId
+                        'id'   => $fullToolId,
                     ]
                 );
             }

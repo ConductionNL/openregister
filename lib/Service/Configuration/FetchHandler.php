@@ -166,7 +166,7 @@ class FetchHandler
             );
 
             // Use getJSONfromURL to fetch and parse the remote configuration.
-            $remoteData = $this->getJSONfromURL($sourceUrl);
+            $remoteData = $this->getJSONfromURL(url: $sourceUrl);
 
             if ($remoteData instanceof JSONResponse) {
                 return $remoteData;
@@ -174,8 +174,9 @@ class FetchHandler
 
             $schemaCount   = count($remoteData['components']['schemas'] ?? []);
             $registerCount = count($remoteData['components']['registers'] ?? []);
+            $msg           = '[FetchHandler] Fetched config: '.$schemaCount.' schemas, '.$registerCount.' registers';
             $this->logger->info(
-                message: "[FetchHandler] Successfully fetched remote configuration with {$schemaCount} schemas and {$registerCount} registers",
+                message: $msg,
                 context: ['file' => __FILE__, 'line' => __LINE__]
             );
 

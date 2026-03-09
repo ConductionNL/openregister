@@ -92,7 +92,7 @@ class TaskService
      */
     public function getTasksForObject(string $objectUuid): array
     {
-        $calendar = $this->findUserCalendar();
+        $calendar   = $this->findUserCalendar();
         $calendarId = $calendar['id'];
 
         // Get all calendar objects from this calendar.
@@ -119,7 +119,7 @@ class TaskService
             }
 
             try {
-                $taskArray = $this->vtodoToArray($calendarData, (string) $calendarId, $calendarObject['uri']);
+                $taskArray = $this->vtodoToArray(calendarData: $calendarData, calendarId: (string) $calendarId, uri: $calendarObject['uri']);
 
                 // Only include tasks that match our object UUID.
                 if ($taskArray !== null && $taskArray['objectUuid'] === $objectUuid) {
@@ -162,14 +162,14 @@ class TaskService
         $calendar   = $this->findUserCalendar();
         $calendarId = $calendar['id'];
 
-        $uid       = strtoupper(bin2hex(random_bytes(16)));
-        $dtstamp   = gmdate('Ymd\THis\Z');
-        $summary   = $this->escapeIcalText($data['summary'] ?? 'Untitled task');
-        $status    = strtoupper($data['status'] ?? 'NEEDS-ACTION');
-        $priority  = (int) ($data['priority'] ?? 0);
+        $uid      = strtoupper(bin2hex(random_bytes(16)));
+        $dtstamp  = gmdate('Ymd\THis\Z');
+        $summary  = $this->escapeIcalText(text: $data['summary'] ?? 'Untitled task');
+        $status   = strtoupper($data['status'] ?? 'NEEDS-ACTION');
+        $priority = (int) ($data['priority'] ?? 0);
 
         // Build the VTODO lines.
-        $lines = [];
+        $lines   = [];
         $lines[] = 'BEGIN:VCALENDAR';
         $lines[] = 'VERSION:2.0';
         $lines[] = 'PRODID:-//OpenRegister//Tasks//EN';
@@ -179,7 +179,7 @@ class TaskService
         $lines[] = 'SUMMARY:'.$summary;
 
         if (empty($data['description']) === false) {
-            $lines[] = 'DESCRIPTION:'.$this->escapeIcalText($data['description']);
+            $lines[] = 'DESCRIPTION:'.$this->escapeIcalText(text: $data['description']);
         }
 
         $lines[] = 'STATUS:'.$status;
@@ -196,7 +196,7 @@ class TaskService
         $lines[] = 'X-OPENREGISTER-OBJECT:'.$objectUuid;
 
         // RFC 9253 LINK property.
-        $linkLabel = $this->escapeIcalText($objectTitle);
+        $linkLabel = $this->escapeIcalText(text: $objectTitle);
         $linkUri   = '/apps/openregister/api/objects/'.$registerId.'/'.$schemaId.'/'.$objectUuid;
         $lines[]   = 'LINK;LINKREL="related";LABEL="'.$linkLabel.'";VALUE=URI:'.$linkUri;
 
@@ -208,7 +208,7 @@ class TaskService
 
         $this->calDavBackend->createCalendarObject($calendarId, $uri, $calendarData);
 
-        return $this->vtodoToArray($calendarData, (string) $calendarId, $uri);
+        return $this->vtodoToArray(calendarData: $calendarData, calendarId: (string) $calendarId, uri: $uri);
     }//end createTask()
 
     /**
@@ -276,7 +276,7 @@ class TaskService
         $calendarData = $vcalendar->serialize();
         $this->calDavBackend->updateCalendarObject($calendarIdInt, $taskUri, $calendarData);
 
-        return $this->vtodoToArray($calendarData, $calendarId, $taskUri);
+        return $this->vtodoToArray(calendarData: $calendarData, calendarId: $calendarId, uri: $taskUri);
     }//end updateTask()
 
     /**
@@ -336,18 +336,23 @@ class TaskService
                             break;
                         }
                     }
-                } elseif (is_string($components) === true) {
+                } else if (is_string($components) === true) {
                     $supportsVtodo = stripos($components, 'VTODO') !== false;
                 } else {
                     // If components is an array or other iterable.
                     foreach ($components as $comp) {
-                        $compName = is_string($comp) ? $comp : (string) $comp;
+                        if (is_string($comp) === true) {
+                            $compName = $comp;
+                        } else {
+                            $compName = (string) $comp;
+                        }
+
                         if (strtoupper($compName) === 'VTODO') {
                             $supportsVtodo = true;
                             break;
                         }
                     }
-                }
+                }//end if
 
                 if ($supportsVtodo === true) {
                     return [
@@ -400,9 +405,20 @@ class TaskService
         }
 
         // Extract standard fields.
-        $due       = isset($vtodo->DUE) === true ? $vtodo->DUE->getDateTime()->format('c') : null;
-        $completed = isset($vtodo->COMPLETED) === true ? $vtodo->COMPLETED->getDateTime()->format('c') : null;
-        $created   = isset($vtodo->CREATED) === true ? $vtodo->CREATED->getDateTime()->format('c') : null;
+        $due = null;
+        if (isset($vtodo->DUE) === true) {
+            $due = $vtodo->DUE->getDateTime()->format('c');
+        }
+
+        $completed = null;
+        if (isset($vtodo->COMPLETED) === true) {
+            $completed = $vtodo->COMPLETED->getDateTime()->format('c');
+        }
+
+        $created = null;
+        if (isset($vtodo->CREATED) === true) {
+            $created = $vtodo->CREATED->getDateTime()->format('c');
+        }
 
         // Map STATUS to lowercase.
         $status = 'needs-action';
@@ -412,14 +428,35 @@ class TaskService
             $status = strtolower((string) $vtodo->STATUS);
         }
 
+        // Extract UID, SUMMARY, DESCRIPTION, PRIORITY.
+        $taskUid         = null;
+        $taskSummary     = '';
+        $taskDescription = '';
+        $taskPriority    = 0;
+        if (isset($vtodo->UID) === true) {
+            $taskUid = (string) $vtodo->UID;
+        }
+
+        if (isset($vtodo->SUMMARY) === true) {
+            $taskSummary = (string) $vtodo->SUMMARY;
+        }
+
+        if (isset($vtodo->DESCRIPTION) === true) {
+            $taskDescription = (string) $vtodo->DESCRIPTION;
+        }
+
+        if (isset($vtodo->PRIORITY) === true) {
+            $taskPriority = (int) (string) $vtodo->PRIORITY;
+        }
+
         return [
             'id'          => $uri,
-            'uid'         => isset($vtodo->UID) === true ? (string) $vtodo->UID : null,
+            'uid'         => $taskUid,
             'calendarId'  => $calendarId,
-            'summary'     => isset($vtodo->SUMMARY) === true ? (string) $vtodo->SUMMARY : null,
-            'description' => isset($vtodo->DESCRIPTION) === true ? (string) $vtodo->DESCRIPTION : null,
+            'summary'     => $taskSummary,
+            'description' => $taskDescription,
             'status'      => $status,
-            'priority'    => isset($vtodo->PRIORITY) === true ? (int) (string) $vtodo->PRIORITY : 0,
+            'priority'    => $taskPriority,
             'due'         => $due,
             'completed'   => $completed,
             'created'     => $created,

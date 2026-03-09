@@ -112,8 +112,8 @@ class UserController extends Controller
             $this->logger->error(
                 message: '[UserController] Failed to get user profile',
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'          => __FILE__,
+                    'line'          => __LINE__,
                     'error_message' => $e->getMessage(),
                     'error_code'    => $e->getCode(),
                 ]
@@ -179,8 +179,8 @@ class UserController extends Controller
             $this->logger->error(
                 message: '[UserController] Failed to update user profile',
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'          => __FILE__,
+                    'line'          => __LINE__,
                     'error_message' => $e->getMessage(),
                     'error_code'    => $e->getCode(),
                 ]
@@ -321,8 +321,8 @@ class UserController extends Controller
                 $this->logger->warning(
                     message: '[UserController] High memory usage during login',
                     context: [
-                        'file' => __FILE__,
-                        'line' => __LINE__,
+                        'file'           => __FILE__,
+                        'line'           => __LINE__,
                         'user'           => $user->getUID(),
                         'initial_memory' => $initialMemoryUsage,
                         'final_memory'   => $finalMemoryUsage,

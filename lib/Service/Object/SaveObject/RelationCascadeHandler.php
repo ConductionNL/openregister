@@ -88,7 +88,7 @@ class RelationCascadeHandler
         }
 
         // Remove query parameters if present (e.g., "schema?key=value" -> "schema").
-        $cleanReference = $this->removeQueryParameters($reference);
+        $cleanReference = $this->removeQueryParameters(reference: $reference);
 
         // First, try direct ID lookup (numeric ID or UUID).
         if (is_numeric($cleanReference) === true
@@ -171,7 +171,7 @@ class RelationCascadeHandler
         }
 
         // Remove query parameters if present.
-        $cleanReference = $this->removeQueryParameters($reference);
+        $cleanReference = $this->removeQueryParameters(reference: $reference);
 
         // First, try direct ID lookup (numeric ID or UUID).
         if (is_numeric($cleanReference) === true
@@ -257,7 +257,7 @@ class RelationCascadeHandler
 
             if (is_array($value) === true) {
                 // If it's an array of references.
-                if ($this->isArrayOfReferences($value) === true) {
+                if ($this->isArrayOfReferences(array: $value) === true) {
                     $relations[] = $currentPath;
                     continue;
                 }
@@ -265,9 +265,9 @@ class RelationCascadeHandler
                 // Recursively scan nested objects.
                 $nestedRelations = $this->scanForRelations(data: $value, prefix: $currentPath, schema: $schema);
                 $relations       = array_merge($relations, $nestedRelations);
-            } else if (is_string($value) === true && $this->isReference($value) === true) {
+            } else if (is_string($value) === true && $this->isReference(value: $value) === true) {
                 // Single reference value.
-                if ($hasRef === true || $this->looksLikeObjectReference($value) === true) {
+                if ($hasRef === true || $this->looksLikeObjectReference(value: $value) === true) {
                     $relations[] = $currentPath;
                 }
             }
@@ -308,7 +308,7 @@ class RelationCascadeHandler
     private function isArrayOfReferences(array $array): bool
     {
         foreach ($array as $item) {
-            if (is_string($item) === true && $this->isReference($item) === true) {
+            if (is_string($item) === true && $this->isReference(value: $item) === true) {
                 return true;
             }
         }
@@ -336,7 +336,8 @@ class RelationCascadeHandler
         }
 
         // Prefixed UUID patterns (e.g., "id-uuid" with or without dashes).
-        if (preg_match('/^[a-z]+-([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}|[0-9a-f]{32})$/i', $value) === 1) {
+        $pattern = '/^[a-z]+-([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}|[0-9a-f]{32})$/i';
+        if (preg_match($pattern, $value) === 1) {
             return true;
         }
 
@@ -379,7 +380,8 @@ class RelationCascadeHandler
         }
 
         // Check for prefixed UUID patterns (e.g., "id-uuid" with or without dashes).
-        if (preg_match('/^[a-z]+-([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}|[0-9a-f]{32})$/i', $value) === 1) {
+        $pattern = '/^[a-z]+-([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}|[0-9a-f]{32})$/i';
+        if (preg_match($pattern, $value) === 1) {
             return true;
         }
 
@@ -471,7 +473,7 @@ class RelationCascadeHandler
             $resolved = [];
             foreach ($value as $ref) {
                 if (is_string($ref) === true) {
-                    $uuid = $this->extractUuidFromReference($ref);
+                    $uuid = $this->extractUuidFromReference(reference: $ref);
                     if ($uuid !== null) {
                         $resolved[] = $uuid;
                     }
@@ -481,7 +483,7 @@ class RelationCascadeHandler
             $current[$lastKey] = $resolved;
         } else if (is_string($value) === true) {
             // Single reference.
-            $uuid = $this->extractUuidFromReference($value);
+            $uuid = $this->extractUuidFromReference(reference: $value);
             if ($uuid !== null) {
                 $current[$lastKey] = $uuid;
             }
@@ -570,7 +572,7 @@ class RelationCascadeHandler
             }
 
             // Handle single object.
-            if (is_array($propData) === true && $this->isArrayOfScalars($propData) === false) {
+            if (is_array($propData) === true && $this->isArrayOfScalars(array: $propData) === false) {
                 $uuid = $this->cascadeSingleObject(
                     _objectEntity: $objectEntity,
                     _definition: $property,
@@ -622,7 +624,7 @@ class RelationCascadeHandler
         $createdUuids = [];
 
         foreach ($propData as $object) {
-            if (is_array($object) === true && $this->isArrayOfScalars($object) === false) {
+            if (is_array($object) === true && $this->isArrayOfScalars(array: $object) === false) {
                 $uuid = $this->cascadeSingleObject(_objectEntity: $objectEntity, _definition: $property, _object: $object);
                 if ($uuid !== null) {
                     $createdUuids[] = $uuid;

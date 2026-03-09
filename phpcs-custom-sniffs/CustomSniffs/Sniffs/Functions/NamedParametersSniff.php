@@ -1,11 +1,19 @@
 <?php
 /**
- * Custom PHPCS Sniff to encourage named parameters usage
- * 
- * This sniff checks for function calls and suggests using named parameters
- * for better code readability and maintainability.
- * 
- * @author OpenRegister Team
+ * Enforce named parameters for all calls to internal (our own) code.
+ *
+ * Requires named arguments for:
+ * - $this->method(name: $value)
+ * - self::method(name: $value) / static::method(name: $value)
+ * - parent::method(name: $value)
+ * - new OurClass(name: $value) — classes from the same app namespace
+ *
+ * Allows positional arguments for external code:
+ * - PHP built-in functions (strlen, array_map, sprintf, etc.)
+ * - Nextcloud/third-party method calls ($variable->method() where $variable !== $this)
+ * - Any call we cannot determine is "our code"
+ *
+ * @author  Conduction
  * @package CustomSniffs
  */
 
@@ -15,541 +23,386 @@ use PHP_CodeSniffer\Sniffs\Sniff;
 use PHP_CodeSniffer\Files\File;
 
 /**
- * NamedParametersSniff
- * 
- * Encourages the use of named parameters in function calls
+ * NamedParametersSniff — enforces named parameters for internal code.
  */
 class NamedParametersSniff implements Sniff
 {
-    /**
-     * Returns an array of tokens this test wants to listen for.
-     *
-     * @return array
-     */
-    public function register()
-    {
-        return [T_STRING];
-    }
+
 
     /**
-     * Processes this test, when one of its tokens is encountered.
+     * Returns tokens this sniff listens for.
+     *
+     * @return array<int>
+     */
+    public function register(): array
+    {
+        return [T_STRING];
+
+    }//end register()
+
+
+    /**
+     * Process a T_STRING token — check if it's a function/method call to our code.
      *
      * @param File $phpcsFile The file being scanned.
-     * @param int  $stackPtr  The position of the current token in the stack.
+     * @param int  $stackPtr  Position of the T_STRING token.
      *
      * @return void
      */
-    public function process(File $phpcsFile, $stackPtr)
+    public function process(File $phpcsFile, $stackPtr): void
+    {
+        $tokens       = $phpcsFile->getTokens();
+        $functionName = $tokens[$stackPtr]['content'];
+
+        // Must be followed by ( to be a function/method call.
+        $openParen = $phpcsFile->findNext(T_WHITESPACE, ($stackPtr + 1), null, true);
+        if ($openParen === false || $tokens[$openParen]['code'] !== T_OPEN_PARENTHESIS) {
+            return;
+        }
+
+        // Skip function/method definitions.
+        if ($this->isFunctionDefinition(phpcsFile: $phpcsFile, stackPtr: $stackPtr) === true) {
+            return;
+        }
+
+        // Only check calls to our own code.
+        if ($this->isInternalCall(phpcsFile: $phpcsFile, stackPtr: $stackPtr) === false) {
+            return;
+        }
+
+        // Get the closing parenthesis.
+        if (isset($tokens[$openParen]['parenthesis_closer']) === false) {
+            return;
+        }
+
+        $closeParen = $tokens[$openParen]['parenthesis_closer'];
+
+        // Check if there are any arguments.
+        $firstContent = $phpcsFile->findNext(
+            types: [T_WHITESPACE, T_COMMENT, T_DOC_COMMENT],
+            start: ($openParen + 1),
+            end: $closeParen,
+            exclude: true
+        );
+        if ($firstContent === false) {
+            return;
+        }
+
+        // Check if all arguments use named parameters.
+        if ($this->hasUnnamedArguments(phpcsFile: $phpcsFile, openParen: $openParen, closeParen: $closeParen) === true) {
+            $error = 'All arguments in calls to internal code must use named parameters: %s(paramName: $value)';
+            $phpcsFile->addError($error, $stackPtr, 'RequireNamedParameters', [$functionName]);
+        }
+
+    }//end process()
+
+
+    /**
+     * Check if the T_STRING at $stackPtr is part of a function/method definition (not a call).
+     *
+     * @param File $phpcsFile The file being scanned.
+     * @param int  $stackPtr  Position of the T_STRING token.
+     *
+     * @return bool True if this is a definition, false if it's a call.
+     */
+    private function isFunctionDefinition(File $phpcsFile, int $stackPtr): bool
     {
         $tokens = $phpcsFile->getTokens();
-        
-        // Check if this is a function call (look for opening parenthesis after the function name).
-        $next = $phpcsFile->findNext(T_WHITESPACE, ($stackPtr + 1), null, true);
-        if ($next === false || $tokens[$next]['code'] !== T_OPEN_PARENTHESIS) {
-            return;
-        }
-        
-        // Check if this is a method call (preceded by -> or ::).
-        $isMethodCall = false;
-        $isConstructor = false;
-        $prevToken = $phpcsFile->findPrevious([T_WHITESPACE, T_COMMENT, T_DOC_COMMENT], ($stackPtr - 1), null, true);
-        if ($prevToken !== false && 
-            ($tokens[$prevToken]['code'] === T_OBJECT_OPERATOR || 
-             $tokens[$prevToken]['code'] === T_DOUBLE_COLON)) {
-            $isMethodCall = true;
-        }
-        
-        // Check if this is a constructor call (preceded by 'new' keyword).
-        if ($prevToken !== false && $tokens[$prevToken]['code'] === T_NEW) {
-            $isConstructor = true;
-        }
-        
-        // Skip function definitions - look for 'function' keyword before this token.
-        // We need to check if this T_STRING is part of a function declaration.
-        $prev = $stackPtr - 1;
-        while ($prev >= 0 && isset($tokens[$prev])) {
-            if ($tokens[$prev]['code'] === T_FUNCTION) {
-                // This is a function definition, skip it.
-                return;
+        $prev   = ($stackPtr - 1);
+        while ($prev >= 0) {
+            $code = $tokens[$prev]['code'];
+            if ($code === T_FUNCTION) {
+                return true;
             }
-            if ($tokens[$prev]['code'] === T_SEMICOLON || 
-                $tokens[$prev]['code'] === T_OPEN_CURLY_BRACKET ||
-                $tokens[$prev]['code'] === T_CLOSE_CURLY_BRACKET) {
-                // We've gone past a statement boundary, this is likely a function call.
-                break;
+
+            // Stop at statement/block boundaries.
+            if ($code === T_SEMICOLON
+                || $code === T_OPEN_CURLY_BRACKET
+                || $code === T_CLOSE_CURLY_BRACKET
+            ) {
+                return false;
             }
+
             $prev--;
         }
-        
-        // Skip parent class methods that don't support named parameters.
-        // QBMapper::find() and similar parent class methods.
-        $functionName = $tokens[$stackPtr]['content'];
-        
-        // Skip parent::__construct calls - they're calling parent class constructors we don't control.
-        if ($isMethodCall && strtolower($functionName) === '__construct') {
-            // Check if this is a parent:: call by looking backwards for 'parent' keyword.
-            $checkToken = $prevToken;
-            while ($checkToken !== false && $checkToken >= 0) {
-                if ($tokens[$checkToken]['code'] === T_DOUBLE_COLON) {
-                    $prevPrevToken = $phpcsFile->findPrevious([T_WHITESPACE, T_COMMENT, T_DOC_COMMENT], ($checkToken - 1), null, true);
-                    if ($prevPrevToken !== false && strtolower($tokens[$prevPrevToken]['content']) === 'parent') {
-                        return; // Skip parent::__construct calls.
+
+        return false;
+
+    }//end isFunctionDefinition()
+
+
+    /**
+     * Determine if the function/method call at $stackPtr is to our own code.
+     *
+     * Matches:
+     * - $this->method()
+     * - self::method() / static::method() / parent::method()
+     * - new OurClass() where OurClass is from the same app namespace
+     *
+     * @param File $phpcsFile The file being scanned.
+     * @param int  $stackPtr  Position of the T_STRING (function/method name).
+     *
+     * @return bool True if call is to internal code.
+     */
+    private function isInternalCall(File $phpcsFile, int $stackPtr): bool
+    {
+        $tokens = $phpcsFile->getTokens();
+
+        $prev = $phpcsFile->findPrevious(
+            types: [T_WHITESPACE, T_COMMENT, T_DOC_COMMENT],
+            start: ($stackPtr - 1),
+            end: null,
+            exclude: true
+        );
+        if ($prev === false) {
+            return false;
+        }
+
+        $prevCode = $tokens[$prev]['code'];
+
+        // Case 1: $this->method().
+        if ($prevCode === T_OBJECT_OPERATOR) {
+            $beforeArrow = $phpcsFile->findPrevious(
+                types: [T_WHITESPACE, T_COMMENT, T_DOC_COMMENT],
+                start: ($prev - 1),
+                end: null,
+                exclude: true
+            );
+            return ($beforeArrow !== false
+                && $tokens[$beforeArrow]['code'] === T_VARIABLE
+                && $tokens[$beforeArrow]['content'] === '$this');
+        }
+
+        // Case 2: self::method() / static::method() / parent::method().
+        if ($prevCode === T_DOUBLE_COLON) {
+            $beforeColon = $phpcsFile->findPrevious(
+                types: [T_WHITESPACE, T_COMMENT, T_DOC_COMMENT],
+                start: ($prev - 1),
+                end: null,
+                exclude: true
+            );
+            return ($beforeColon !== false
+                && in_array($tokens[$beforeColon]['code'], [T_SELF, T_STATIC, T_PARENT], true) === true);
+        }
+
+        // Case 3: new OurClass().
+        if ($prevCode === T_NEW) {
+            return $this->isClassFromOurNamespace(phpcsFile: $phpcsFile, classNamePtr: $stackPtr);
+        }
+
+        return false;
+
+    }//end isInternalCall()
+
+
+    /**
+     * Check if the class at $classNamePtr is from the same app namespace as the current file.
+     *
+     * Compares the class's use-import path against the file's OCA\AppName\ prefix.
+     *
+     * @param File $phpcsFile    The file being scanned.
+     * @param int  $classNamePtr Position of the class name token.
+     *
+     * @return bool True if the class is from our app namespace.
+     */
+    private function isClassFromOurNamespace(File $phpcsFile, int $classNamePtr): bool
+    {
+        $tokens    = $phpcsFile->getTokens();
+        $className = $tokens[$classNamePtr]['content'];
+
+        // Find the file's namespace declaration.
+        $appPrefix = $this->getAppNamespacePrefix(phpcsFile: $phpcsFile);
+        if ($appPrefix === null) {
+            return false;
+        }
+
+        // Scan use-statements for an import matching this class name from our namespace.
+        for ($i = 0; $i < $phpcsFile->numTokens; $i++) {
+            if ($tokens[$i]['code'] === T_USE) {
+                $usePath = $this->getUseStatementPath(phpcsFile: $phpcsFile, usePtr: $i);
+                if ($usePath === null) {
+                    continue;
+                }
+
+                // Extract the imported short name (last segment).
+                $segments     = explode(separator: '\\', string: $usePath);
+                $importedName = end($segments);
+
+                if ($importedName === $className
+                    && str_starts_with(haystack: $usePath, needle: $appPrefix) === true
+                ) {
+                    return true;
+                }
+            }//end if
+
+            // Stop scanning after the class declaration.
+            if (in_array($tokens[$i]['code'], [T_CLASS, T_INTERFACE, T_TRAIT, T_ENUM], true) === true) {
+                break;
+            }
+        }//end for
+
+        return false;
+
+    }//end isClassFromOurNamespace()
+
+
+    /**
+     * Get the app namespace prefix (e.g., "OCA\MyDash") from the file's namespace declaration.
+     *
+     * @param File $phpcsFile The file being scanned.
+     *
+     * @return string|null The app prefix or null if not found.
+     */
+    private function getAppNamespacePrefix(File $phpcsFile): ?string
+    {
+        $tokens = $phpcsFile->getTokens();
+        for ($i = 0; $i < $phpcsFile->numTokens; $i++) {
+            if ($tokens[$i]['code'] === T_NAMESPACE) {
+                $namespace = '';
+                $j         = ($i + 1);
+                while ($j < $phpcsFile->numTokens && $tokens[$j]['code'] !== T_SEMICOLON) {
+                    if ($tokens[$j]['code'] !== T_WHITESPACE) {
+                        $namespace .= $tokens[$j]['content'];
                     }
-                    break;
+
+                    $j++;
                 }
-                if ($tokens[$checkToken]['code'] !== T_WHITESPACE && $tokens[$checkToken]['code'] !== T_COMMENT && $tokens[$checkToken]['code'] !== T_DOC_COMMENT) {
-                    break;
+
+                // Extract first two segments: OCA\AppName.
+                $parts = explode(separator: '\\', string: $namespace);
+                if (count($parts) >= 2) {
+                    return $parts[0].'\\'.$parts[1];
                 }
-                $checkToken--;
+
+                return null;
+            }//end if
+        }//end for
+
+        return null;
+
+    }//end getAppNamespacePrefix()
+
+
+    /**
+     * Extract the full path from a use-statement starting at $usePtr.
+     *
+     * @param File $phpcsFile The file being scanned.
+     * @param int  $usePtr    Position of the T_USE token.
+     *
+     * @return string|null The use path or null if parsing failed.
+     */
+    private function getUseStatementPath(File $phpcsFile, int $usePtr): ?string
+    {
+        $tokens  = $phpcsFile->getTokens();
+        $usePath = '';
+        $j       = ($usePtr + 1);
+        while ($j < $phpcsFile->numTokens) {
+            $code = $tokens[$j]['code'];
+            if ($code === T_SEMICOLON || $code === T_OPEN_CURLY_BRACKET) {
+                break;
             }
-        }
-        
-        $parentClassMethods = ['find', 'findEntity', 'findAll', 'findEntities', 'insert', 'update', 'delete', 'insertOrUpdate'];
-        if ($isMethodCall && in_array(strtolower($functionName), $parentClassMethods)) {
-            // This is likely a parent class method call, skip named parameter checking.
-            return;
-        }
-        
-        // Skip Nextcloud/Doctrine QueryBuilder methods that don't support named parameters well.
-        // These are fluent interface methods where named parameters don't make sense or aren't supported.
-        $queryBuilderMethods = [
-            // QueryBuilder fluent interface methods.
-            'select', 'from', 'where', 'andwhere', 'orwhere', 'orderby', 'groupby', 'selectalias',
-            'having', 'andhaving', 'orhaving', 'setmaxresults', 'setfirstresult',
-            'setparameter', 'setparameters', 'createnamedparameter', 'createparameter',
-            'createpositionalparameter', 'createfunction', 'executequery', 'executestatement',
-            'getsql', 'getparameters', 'getparameter', 'getparametertypes',
-            'set', 'update', 'insert', 'delete', 'values',
-            // QueryBuilder join methods.
-            'leftjoin', 'rightjoin', 'innerjoin', 'join',
-            // QueryBuilder expression methods.
-            'expr', 'eq', 'neq', 'lt', 'lte', 'gt', 'gte', 'like', 'notlike',
-            'in', 'notin', 'isnull', 'isnotnull', 'between', 'notbetween',
-            'orx', 'andx', 'add', 'addgroupby', 'addorderby',
-            // Result set methods.
-            'fetch', 'fetchall', 'fetchone', 'fetchassociative', 'fetchnumeric',
-            'fetchcolumn', 'fetchfirstcolumn', 'rowcount', 'closecursor',
-            // Database connection methods.
-            'getquerybuilder', 'getconnection', 'getentitymanager', 'getrepository',
-            'begintransaction', 'commit', 'rollback', 'prepare', 'execute',
-            // PDO methods.
-            'bindvalue', 'bindparam', 'execute', 'fetch', 'fetchall', 'fetchcolumn',
-            // Other Nextcloud/Doctrine methods.
-            'getdb', 'gettable', 'gettableName',
-            // PSR Logger methods.
-            'emergency', 'alert', 'critical', 'error', 'warning', 'notice', 'info', 'debug', 'log',
-            // PHP Reflection methods.
-            'setvalue', 'getvalue', 'setaccessible', 'getaccessible', 'invoke', 'invokeargs',
-            'newinstance', 'newinstanceargs',
-            // Getter methods (typically don't need named parameters).
-            'getproperty', 'getmessage', 'getcode', 'getfile', 'getline', 'gettrace', 'getprevious',
-            // Nextcloud Response methods.
-            'addheader', 'setheader', 'setstatus', 'setcontenttype',
-            // Nextcloud IRequest methods.
-            'getparam', 'getparams', 'getuploadedfile', 'getuploadedfiles',
-            // Nextcloud IAppConfig methods.
-            'getvaluebool', 'getvalueint', 'getvaluestring', 'getvaluearray', 'setvaluestring',
-            // Nextcloud IConfig methods.
-            'getappvalue', 'setappvalue', 'getuservalue', 'setuservalue', 'deleteuservalue', 'getsystemvalue',
-            // Nextcloud IUserManager methods.
-            'createuser', 'checkpassword',
-            // Nextcloud Files_Versions methods.
-            'getversionfile',
-            // Nextcloud IURLGenerator methods.
-            'linktoroute', 'getabsoluteurl',
-            // GuzzleHttp Client methods.
-            'request', 'get', 'post', 'put', 'delete', 'patch', 'head', 'options',
-            // Opis JsonSchema library methods.
-            'register', 'registerprotocol', 'validate', 'format', 'getproperty', 'geterrors',
-            // GuzzleHttp Psr7 Uri static methods.
-            'fromparts',
-            // ReactPHP Promise methods.
-            'promise', 'then', 'catch', 'finally', 'otherwise', 'always',
-            // ZipArchive methods.
-            'open', 'addfromstring',
-            // Doctrine Schema Builder methods (used in migrations).
-            'addcolumn', 'addindex', 'adduniqueindex', 'addtype', 'addoption',
-            'dropcolumn', 'dropindex', 'dropuniqueindex', 'droptype', 'dropoption',
-            'modifycolumn', 'changecolumn', 'renamecolumn', 'renameindex',
-            'setprimarykey', 'dropprimarykey', 'addforeignkey', 'dropforeignkey',
-            'setcomment', 'setcharset', 'setcollation',
-            // OpenRegister domain-specific methods.
-            'ismagicmappingenabledforschema'
-        ];
-        if ($isMethodCall && in_array(strtolower($functionName), $queryBuilderMethods)) {
-            // This is a Nextcloud/Doctrine method that doesn't support named parameters well.
-            return;
-        }
-        
-        // Skip Nextcloud framework constructor calls (DataDownloadResponse, JSONResponse, etc.).
-        if ($isConstructor) {
-            $nextcloudConstructors = [
-                'datadownloadresponse', 'jsonresponse', 'templateresponse', 'streamresponse',
-                'fileresponse', 'redirectresponse', 'downloadresponse',
-                // OpenRegister setup classes.
-                'solrsetup',
-                // Third-party library constructors (Opis JsonSchema).
-                'validationresult', 'errorformatter', 'validator',
-                // PHP built-in exception constructors.
-                'exception', 'runtimeexception', 'invalidargumentexception', 'logicexception',
-                // Nextcloud exception constructors.
-                'ocpdbexception',
-                // QBMapper parent class constructor.
-                'qbmapper',
-                // Event classes (extend OCP\EventDispatcher\Event).
-                'registerupdatedevent', 'organisationupdatedevent', 'registercreatedevent', 'registerdeletedevent',
-                'schemaupdatedevent', 'schemacreatedevent', 'schemadeletedevent',
-                'objectupdatedevent', 'objectcreatedevent', 'objectdeletedevent', 'objectrevertedevent', 'objectdeletingevent',
-                'viewupdatedevent', 'viewcreatedevent', 'viewdeletedevent',
-                'sourceupdatedevent', 'sourcecreatedevent', 'sourcedeletedevent',
-                'agentupdatedevent', 'agentcreatedevent', 'agentdeletedevent',
-                'applicationupdatedevent', 'applicationcreatedevent', 'applicationdeletedevent',
-                'conversationupdatedevent', 'conversationcreatedevent', 'conversationdeletedevent',
-                'configurationupdatedevent', 'configurationcreatedevent', 'configurationdeletedevent',
-                'toolregistrationevent',
-                // OpenRegister internal constructors.
-                'objecthandler',
-                // ReactPHP Promise constructor.
-                'promise'
-            ];
-            if (in_array(strtolower($functionName), $nextcloudConstructors)) {
-                // This is a Nextcloud framework constructor, skip named parameter checking.
-                return;
+
+            // Stop at 'as' keyword (aliases) — use the path before it.
+            if ($code === T_AS) {
+                break;
             }
+
+            if ($code !== T_WHITESPACE) {
+                $usePath .= $tokens[$j]['content'];
+            }
+
+            $j++;
         }
-        
-        // Find the closing parenthesis.
-        // Check if PHP_CodeSniffer has already parsed the parenthesis pair.
-        if (isset($tokens[$next]['parenthesis_closer'])) {
-            $closer = $tokens[$next]['parenthesis_closer'];
-        } else {
-            // Manually find the matching closing parenthesis.
-            $parenLevel = 1;
-            $closer = $next + 1;
-            while ($closer < $phpcsFile->numTokens && $parenLevel > 0) {
-                if ($tokens[$closer]['code'] === T_OPEN_PARENTHESIS) {
-                    $parenLevel++;
-                } elseif ($tokens[$closer]['code'] === T_CLOSE_PARENTHESIS) {
-                    $parenLevel--;
+
+        $usePath = trim(string: $usePath);
+        return ($usePath !== '') ? $usePath : null;
+
+    }//end getUseStatementPath()
+
+
+    /**
+     * Check if the arguments between $openParen and $closeParen contain any unnamed arguments.
+     *
+     * An argument is "named" if its first significant token is followed by T_COLON.
+     * Handles nested parentheses, brackets, and braces correctly.
+     *
+     * @param File $phpcsFile  The file being scanned.
+     * @param int  $openParen  Position of the opening parenthesis.
+     * @param int  $closeParen Position of the closing parenthesis.
+     *
+     * @return bool True if any argument is positional (unnamed).
+     */
+    private function hasUnnamedArguments(File $phpcsFile, int $openParen, int $closeParen): bool
+    {
+        $tokens         = $phpcsFile->getTokens();
+        $parenDepth     = 0;
+        $bracketDepth   = 0;
+        $braceDepth     = 0;
+        $atArgumentStart = true;
+
+        for ($i = ($openParen + 1); $i < $closeParen; $i++) {
+            $code = $tokens[$i]['code'];
+
+            // Track nesting depth.
+            if ($code === T_OPEN_PARENTHESIS) {
+                $parenDepth++;
+            } elseif ($code === T_CLOSE_PARENTHESIS) {
+                $parenDepth--;
+            } elseif ($code === T_OPEN_SHORT_ARRAY || $code === T_OPEN_SQUARE_BRACKET) {
+                $bracketDepth++;
+            } elseif ($code === T_CLOSE_SHORT_ARRAY || $code === T_CLOSE_SQUARE_BRACKET) {
+                $bracketDepth--;
+            } elseif ($code === T_OPEN_CURLY_BRACKET) {
+                $braceDepth++;
+            } elseif ($code === T_CLOSE_CURLY_BRACKET) {
+                $braceDepth--;
+            }
+
+            // Only examine tokens at the top level of the argument list.
+            if ($parenDepth > 0 || $bracketDepth > 0 || $braceDepth > 0) {
+                continue;
+            }
+
+            // Comma at top level → next argument starts.
+            if ($code === T_COMMA) {
+                $atArgumentStart = true;
+                continue;
+            }
+
+            // Skip whitespace and comments at argument start.
+            if ($atArgumentStart === true
+                && in_array($code, [T_WHITESPACE, T_COMMENT, T_DOC_COMMENT], true) === true
+            ) {
+                continue;
+            }
+
+            if ($atArgumentStart === true) {
+                $atArgumentStart = false;
+
+                // Skip spread operator (...$args).
+                if ($code === T_ELLIPSIS) {
+                    continue;
                 }
-                // Only increment if we haven't found the matching closing parenthesis yet.
-                if ($parenLevel > 0) {
-                    $closer++;
+
+                // Check if this argument is named: token followed by ':'.
+                $nextNonWs = $phpcsFile->findNext(
+                    types: [T_WHITESPACE, T_COMMENT, T_DOC_COMMENT],
+                    start: ($i + 1),
+                    end: $closeParen,
+                    exclude: true
+                );
+
+                $isNamed = ($nextNonWs !== false && $tokens[$nextNonWs]['code'] === T_COLON);
+
+                if ($isNamed === false) {
+                    return true;
                 }
-            }
-            // If we couldn't find a matching closing parenthesis, skip this token.
-            if ($parenLevel !== 0 || $closer >= $phpcsFile->numTokens) {
-                return;
-            }
-        }
-        
-        // Check if there are parameters.
-        $paramStart = $next + 1;
-        $paramEnd = $closer - 1;
-        
-        if ($paramStart >= $paramEnd) {
-            return; // No parameters
-        }
-        
-        // Check for positional arguments after named arguments (PHP 8+ fatal error).
-        // This is a critical error that must be caught.
-        $hasNamedParam = false;
-        $parenLevel = 1;
-        $lastCommaPos = null;
-        
-        for ($i = $paramStart; $i <= $paramEnd && $parenLevel > 0; $i++) {
-            if ($tokens[$i]['code'] === T_OPEN_PARENTHESIS) {
-                $parenLevel++;
-            } elseif ($tokens[$i]['code'] === T_CLOSE_PARENTHESIS) {
-                $parenLevel--;
-            } elseif ($tokens[$i]['code'] === T_COMMA && $parenLevel === 1) {
-                $lastCommaPos = $i;
-            } elseif ($tokens[$i]['code'] === T_STRING && $parenLevel === 1) {
-                // Check if this is a named parameter: T_STRING followed by T_COLON.
-                // Make sure it's not part of a class name (like ClassName::class).
-                $prevNonWhitespace = $phpcsFile->findPrevious([T_WHITESPACE, T_COMMENT, T_DOC_COMMENT], $i - 1, $paramStart, true);
-                $nextNonWhitespace = $phpcsFile->findNext(T_WHITESPACE, $i + 1, $paramEnd + 1, true);
-                // Named parameter: T_STRING followed by T_COLON, and not preceded by T_DOUBLE_COLON.
-                if ($nextNonWhitespace !== false 
-                    && $tokens[$nextNonWhitespace]['code'] === T_COLON
-                    && ($prevNonWhitespace === false || $tokens[$prevNonWhitespace]['code'] !== T_DOUBLE_COLON)) {
-                    // Found a named parameter (parameter name followed by colon).
-                    $hasNamedParam = true;
-                }
-            } elseif ($tokens[$i]['code'] === T_GOTO_LABEL && $parenLevel === 1) {
-                // Also check for goto label syntax (though less common for named params).
-                $hasNamedParam = true;
-            } elseif ($hasNamedParam && $lastCommaPos !== null && $i > $lastCommaPos && $parenLevel === 1) {
-                // We have a named parameter and we're past a comma.
-                // Check if this is a positional argument (not a named one).
-                if ($tokens[$i]['code'] !== T_WHITESPACE && 
-                    $tokens[$i]['code'] !== T_GOTO_LABEL &&
-                    $tokens[$i]['code'] !== T_COLON) {
-                    // Check if next non-whitespace token is NOT a colon (which would indicate named param).
-                    $nextNonWhitespace = $phpcsFile->findNext(T_WHITESPACE, $i + 1, $paramEnd + 1, true);
-                    if ($nextNonWhitespace === false || 
-                        ($tokens[$nextNonWhitespace]['code'] !== T_COLON && 
-                         $tokens[$nextNonWhitespace]['code'] !== T_GOTO_LABEL)) {
-                        // This looks like a positional argument after a named one!
-                        $error = 'Cannot use positional argument after named argument (PHP 8+ fatal error). ' .
-                                 'All arguments after the first named argument must also be named.';
-                        $phpcsFile->addError($error, $stackPtr, 'PositionalAfterNamedArgument');
-                        return; // Don't continue with warnings if we found this critical error.
-                    }
-                }
-            }
-        }
-        
-        // Count parameters by counting commas + 1 (if there are any non-whitespace tokens).
-        $parameterCount = 0;
-        $hasNamedParameters = false;
-        $hasContent = false;
-        
-        // Quick heuristic check: if we detected named params in the first loop, use that.
-        if ($hasNamedParam === true) {
-            $hasNamedParameters = true;
-        }
-        
-        // Also do a quick string-based check for named parameter pattern.
-        // Build parameter content string for regex matching.
-        $paramContent = '';
-        for ($contentIdx = $paramStart; $contentIdx <= $paramEnd; $contentIdx++) {
-            if (isset($tokens[$contentIdx]['content'])) {
-                $paramContent .= $tokens[$contentIdx]['content'];
-            }
-        }
-        // Check for named parameter pattern: word followed by colon and value.
-        // Pattern: identifier : $variable or identifier : 'string' or identifier : 123
-        // But exclude :: (double colon) patterns.
-        if (preg_match('/\b[a-zA-Z_][a-zA-Z0-9_]*\s*:\s*(?:\$[a-zA-Z0-9_]|[0-9]+|["\']|null|true|false|array\s*\(|\[)/', $paramContent) === 1) {
-            // Found named parameter pattern. Verify it's not just :: patterns.
-            // Remove all :: patterns and check again.
-            $withoutDoubleColon = preg_replace('/::/', '', $paramContent);
-            if (preg_match('/\b[a-zA-Z_][a-zA-Z0-9_]*\s*:\s*(?:\$[a-zA-Z0-9_]|[0-9]+|["\']|null|true|false|array\s*\(|\[)/', $withoutDoubleColon) === 1) {
-                $hasNamedParameters = true;
-            }
-        }
-        
-        // First, check if there are any named parameters by looking for T_COLON in the parameter list.
-        // A named parameter has the format: parameterName: value
-        // We look for T_COLON that's preceded by T_STRING (not part of ::) and followed by a value.
-        // Note: We're already inside the function call's parentheses, so start at level 1.
-        $checkParenLevel = 1;
-        $checkBracketLevel = 0;
-        $checkBraceLevel = 0;
-        for ($checkIdx = $paramStart; $checkIdx <= $paramEnd; $checkIdx++) {
-            if ($tokens[$checkIdx]['code'] === T_OPEN_PARENTHESIS) {
-                $checkParenLevel++;
-            } elseif ($tokens[$checkIdx]['code'] === T_CLOSE_PARENTHESIS) {
-                $checkParenLevel--;
-            } elseif ($tokens[$checkIdx]['code'] === T_OPEN_SQUARE_BRACKET || $tokens[$checkIdx]['code'] === T_OPEN_SHORT_ARRAY) {
-                $checkBracketLevel++;
-            } elseif ($tokens[$checkIdx]['code'] === T_CLOSE_SQUARE_BRACKET) {
-                $checkBracketLevel--;
-            } elseif ($tokens[$checkIdx]['code'] === T_OPEN_CURLY_BRACKET) {
-                $checkBraceLevel++;
-            } elseif ($tokens[$checkIdx]['code'] === T_CLOSE_CURLY_BRACKET) {
-                $checkBraceLevel--;
-            } elseif ($tokens[$checkIdx]['code'] === T_COLON 
-                      && $checkParenLevel === 1 
-                      && $checkBracketLevel === 0 
-                      && $checkBraceLevel === 0) {
-                // Found a colon at parameter level. Check if it's part of a named parameter.
-                // A named parameter colon should be preceded by T_STRING (parameter name).
-                $prevToken = $phpcsFile->findPrevious([T_WHITESPACE, T_COMMENT, T_DOC_COMMENT], $checkIdx - 1, $paramStart - 1, true);
-                if ($prevToken !== false 
-                    && $prevToken >= $paramStart
-                    && isset($tokens[$prevToken])
-                    && $tokens[$prevToken]['code'] === T_STRING) {
-                    // Found T_STRING before colon - check it's not part of :: (double colon).
-                    $isNamedParam = true;
-                    // Check token immediately before prevToken (skip whitespace).
-                    if ($prevToken > $paramStart) {
-                        $immediatePrev = $prevToken - 1;
-                        while ($immediatePrev >= $paramStart && in_array($tokens[$immediatePrev]['code'], [T_WHITESPACE, T_COMMENT, T_DOC_COMMENT], true)) {
-                            $immediatePrev--;
-                        }
-                        if ($immediatePrev >= $paramStart && isset($tokens[$immediatePrev]) && $tokens[$immediatePrev]['code'] === T_DOUBLE_COLON) {
-                            // This is part of :: (like ClassName::class), not a named parameter.
-                            $isNamedParam = false;
-                        }
-                    }
-                    // Check if next token after colon is a valid value.
-                    if ($isNamedParam === true) {
-                        $valueToken = $phpcsFile->findNext([T_WHITESPACE, T_COMMENT, T_DOC_COMMENT], $checkIdx + 1, $paramEnd + 1, true);
-                        if ($valueToken !== false && $valueToken <= $paramEnd) {
-                            // Valid value tokens for named parameters.
-                            $validValueTokens = [
-                                T_VARIABLE, T_CONSTANT_ENCAPSED_STRING, T_LNUMBER, T_DNUMBER,
-                                T_STRING, T_ARRAY, T_OPEN_SHORT_ARRAY, T_NULL, T_TRUE, T_FALSE,
-                                T_OPEN_PARENTHESIS, T_STATIC, T_NEW
-                            ];
-                            if (in_array($tokens[$valueToken]['code'], $validValueTokens, true)) {
-                                $hasNamedParameters = true;
-                                break; // Found at least one named parameter, no need to continue.
-                            }
-                        }
-                    }
-                }
-            }
-        }
-        
-        $parenLevel = 1;
-        for ($i = $paramStart; $i <= $paramEnd && $parenLevel > 0; $i++) {
-            if ($tokens[$i]['code'] === T_OPEN_PARENTHESIS) {
-                $parenLevel++;
-            } elseif ($tokens[$i]['code'] === T_CLOSE_PARENTHESIS) {
-                $parenLevel--;
-                if ($parenLevel === 0 && $hasContent) {
-                    $parameterCount++; // Count the last parameter
-                }
-            } elseif ($tokens[$i]['code'] === T_COMMA && $parenLevel === 1) {
-                $parameterCount++;
-            } elseif ($tokens[$i]['code'] !== T_WHITESPACE) {
-                $hasContent = true;
-            }
-        }
-        
-        // Suggest named parameters for functions with 1+ parameters (they might have defaults).
-        if ($parameterCount >= 1 && !$hasNamedParameters) {
-            $functionName = $tokens[$stackPtr]['content'];
-            
-            // Skip built-in functions that don't support named parameters or don't benefit from them.
-            $skipFunctions = [
-                // Basic output functions.
-                'echo', 'print', 'var_dump', 'print_r', 'var_export',
-                
-                // Type checking functions.
-                'empty', 'isset', 'is_null', 'is_array', 'is_string', 'is_int', 'is_bool',
-                'is_object', 'is_numeric', 'is_callable', 'is_resource',
-                
-                // String functions (simple ones).
-                'strlen', 'trim', 'ltrim', 'rtrim', 'strtolower', 'strtoupper', 'ucfirst',
-                'ucwords', 'lcfirst', 'ord', 'chr', 'md5', 'sha1', 'crc32',
-                'str_contains', 'str_starts_with', 'str_ends_with', 'strpos', 'stripos', 'strrpos', 'strripos',
-            'mb_check_encoding', 'mb_convert_encoding',
-                
-                // Array functions (simple ones).
-                'count', 'sizeof', 'array_push', 'array_pop', 'array_shift', 'array_unshift',
-                'array_keys', 'array_values', 'array_reverse', 'array_unique', 'array_sum',
-                'array_product', 'min', 'max', 'end', 'reset', 'key', 'current', 'next', 'prev',
-                'array_fill', 'array_fill_keys', 'array_combine', 'array_flip', 'array_pad',
-                'array_diff', 'array_diff_key', 'array_diff_assoc', 'array_intersect', 'array_intersect_key',
-                'array_slice', 'array_chunk', 'array_column',
-                
-                // Array functions that commonly use callbacks (might benefit from named params but often don't).
-                'array_filter', 'array_map', 'array_reduce', 'array_walk', 'array_walk_recursive', 'usort', 'uksort',
-                'uasort', 'array_search', 'array_key_exists', 'in_array',
-                
-                // String manipulation that's usually obvious.
-                'implode', 'explode', 'str_repeat', 'str_pad', 'wordwrap',
-                'strpos', 'stripos', 'strrpos', 'strripos', 'strstr', 'stristr', 'strcasecmp',
-                'str_replace', 'str_ireplace', 'substr', 'substr_replace',
-                'str_split', 'chunk_split', 'str_shuffle', 'strrev',
-                'str_starts_with', 'str_ends_with', 'str_contains', 'str_equals',
-                
-                // Regular expression functions (usually obvious from context).
-                'preg_match', 'preg_match_all', 'preg_replace', 'preg_replace_callback',
-                'preg_split', 'preg_filter', 'preg_grep', 'preg_quote',
-                
-                // Built-in functions that DON'T support named parameters (PHP built-ins).
-                // These use variadic arguments or have special calling conventions.
-                'sprintf', 'printf', 'fprintf', 'vprintf', 'vfprintf', 'vsprintf',
-                'unset', 'isset', 'empty',
-                'call_user_func', 'call_user_func_array',
-                'array_merge', 'array_merge_recursive', 'in_array',
-                
-                // Serialization.
-                'json_encode', 'json_decode', 'serialize', 'unserialize',
-                
-                // Hash functions.
-                'hash_hmac', 'hash', 'md5', 'sha1', 'sha256', 'sha512',
-                
-                // Math functions.
-                'abs', 'ceil', 'floor', 'round', 'sqrt', 'pow', 'log', 'sin', 'cos', 'tan',
-                'rand', 'mt_rand', 'srand', 'mt_srand', 'range', 'number_format',
-                // Encoding/decoding functions.
-                'base64_encode', 'base64_decode',
-                
-                // File functions (simple ones).
-                'file_exists', 'is_file', 'is_dir', 'is_readable', 'is_writable',
-                'filesize', 'filemtime', 'filectime', 'fileatime', 'dirname', 'basename',
-                'fopen', 'fclose', 'fread', 'fwrite', 'fgets', 'fgetcsv', 'fputcsv', 'feof',
-            'chown', 'open', 'stream_copy_to_stream',
-                'stream_context_create',
-                
-                // DateTime (simple constructors).
-                'time', 'microtime', 'date', 'gmdate', 'mktime', 'gmmktime',
-            'array_replace_recursive', 'version_compare',
-                
-                // URL and validation functions.
-                'filter_var', 'parse_url', 'urlencode', 'urldecode', 'htmlspecialchars', 'htmlentities',
-                'preg_match', 'preg_match_all', 'preg_replace', 'preg_replace_callback', 'preg_split',
-                
-                // PHP debug functions.
-                'debug_backtrace', 'var_dump', 'print_r',
-                // PHP reflection and type checking functions.
-                'method_exists', 'class_exists', 'function_exists', 'property_exists', 'is_a', 'is_subclass_of',
-                
-                // PHP file/path functions.
-                'pathinfo', 'dirname', 'basename', 'realpath',
-                'file_put_contents', 'file_get_contents', 'readfile', 'filesize',
-                'unlink', 'sys_get_temp_dir', 'tempnam',
-                
-                // PHP DateTime static methods.
-                'createfromformat',
-                
-                // PHP string functions (additional).
-                'addcslashes', 'strcmp', 'fnmatch', 'mb_strcut', 'iconv', 'str_starts_with', 'str_ends_with', 'str_contains',
-                
-                // PHP system functions.
-                'exec', 'ini_set', 'random_int', 'apcu_store',
-                
-                // PHP URL/HTTP functions.
-                'http_build_query',
-                
-                // cURL functions (already partially added, ensuring completeness).
-                'curl_setopt', 'curl_setopt_array', 'curl_exec', 'curl_init', 'curl_close',
-                'curl_getinfo', 'curl_error',
-                
-                // Exception classes - most don't benefit from named parameters for simple message/code/previous.
-                'exception', 'ocpdbexception', 'doesnotexistexception', 'multipleobjectsreturnedexception',
-                'runtimeexception', 'invalidargumentexception', 'logicexception', 'badmethodcallexception',
-                'domainexception', 'rangeexception', 'outofboundsexception', 'overflowexception', 'underflowexception',
-                
-                // PHP reflection classes - named parameters don't add value.
-                'reflectionmethod', 'reflectionclass', 'reflectionproperty', 'reflectionfunction', 'reflectionparameter',
-                
-                // Nextcloud framework registration methods - simple 2-parameter methods.
-                'registereventlistener', 'registerservice', 'registerstrategy', 'dispatch', 'dispatchtyped',
-                'addforeignkeyconstraint', 'addindex', 'addcolumn',
-                
-                // Nextcloud framework classes - simple constructors.
-                'searchresultentry',
-                
-                // Simple query/check methods - typically obvious from context (very generic names only).
-                'has', 'exists', 'includes', 'warmupsolrindex', 'testschemawaremapping', 'callollamawithtools', 'scheduleafter',
-                'preparefilters', 'lockobject', 'search', 'indexfiles', 'reindexall', 'warmupindex', 'fixmismatchedfields',
-                'createwriter', 'save', 'getexpectedschemafields', 'createconfigset', 'createcollection',
-                'findnotindexedinsolr', 'findbystatus', 'postraw', 'deletefile', 'deletefield', 'callfireworkschatapiwithhistory',
-                'findrecentbyconversation', 'applyfilefilters', 'applybasefilters', 'converttopaginatedformat',
-                'parameter', 'functioninfo', 'findbysource', 'setdeleted',
-                
-                // HTTP client constructors - obvious parameters.
-                'guzzleclient',
-                
-                // Query builder expression methods - obvious from context.
-                'lt', 'lte', 'gt', 'gte', 'eq', 'neq', 'like', 'ilike', 'notlike', 'in', 'notin', 'isnotnull', 'isnull',
-                
-                // Translation and formatting functions - simple and obvious from context.
-                't', 'date', 'strtotime'
-            ];
-            
-            if (!in_array(strtolower($functionName), $skipFunctions)) {
-                $warning = 'Consider using named parameters for function "%s" to improve code readability: %s(parameterName: $value)';
-                $data = [$functionName, $functionName];
-                $phpcsFile->addWarning($warning, $stackPtr, 'ShouldUseNamedParameters', $data);
-            }
-        }
-    }
-} 
+            }//end if
+        }//end for
+
+        return false;
+
+    }//end hasUnnamedArguments()
+
+
+}//end class

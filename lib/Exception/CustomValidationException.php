@@ -72,7 +72,7 @@ class CustomValidationException extends Exception
         $this->errors = $errors;
 
         // Call parent constructor to initialize base exception properties.
-        parent::__construct($message);
+        parent::__construct(message: $message);
     }//end __construct()
 
     /**

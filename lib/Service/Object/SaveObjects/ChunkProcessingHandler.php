@@ -195,8 +195,8 @@ class ChunkProcessingHandler
         $this->logger->info(
             message: '[ChunkProcessingHandler] Using single-call bulk processing (no pre-lookup needed)',
             context: [
-                'file' => __FILE__,
-                'line' => __LINE__,
+                'file'               => __FILE__,
+                'line'               => __LINE__,
                 'objects_to_process' => count($transformedObjects),
                 'approach'           => 'INSERT...ON DUPLICATE KEY UPDATE with database-computed classification',
             ]
@@ -240,7 +240,7 @@ class ChunkProcessingHandler
             $firstItem = reset($bulkResult);
 
             if (is_array($firstItem) === true
-                && isset($firstItem['object_status'])
+                && isset($firstItem['object_status']) === true
             ) {
                 // NEW APPROACH: Complete objects with database-computed classification returned.
                 $this->logger->info(
@@ -286,8 +286,8 @@ class ChunkProcessingHandler
                             $this->logger->warning(
                                 message: "[ChunkProcessingHandler] Unexpected object status: {$objectStatus}",
                                 context: [
-                                    'file' => __FILE__,
-                                    'line' => __LINE__,
+                                    'file'          => __FILE__,
+                                    'line'          => __LINE__,
                                     'uuid'          => $completeObject['uuid'],
                                     'object_status' => $objectStatus,
                                 ]
@@ -301,8 +301,8 @@ class ChunkProcessingHandler
                 $this->logger->info(
                     message: '[ChunkProcessingHandler] Database-computed classification completed',
                     context: [
-                        'file' => __FILE__,
-                        'line' => __LINE__,
+                        'file'                  => __FILE__,
+                        'line'                  => __LINE__,
                         'total_processed'       => count($bulkResult),
                         'created_objects'       => count($createdObjects),
                         'updated_objects'       => count($updatedObjects),
@@ -343,8 +343,8 @@ class ChunkProcessingHandler
             $this->logger->info(
                 message: '[ChunkProcessingHandler] Using database-computed pre-classified objects for response',
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'              => __FILE__,
+                    'line'              => __LINE__,
                     'saved_objects'     => count($result['saved']),
                     'updated_objects'   => count($result['updated']),
                     'unchanged_objects' => count($result['unchanged']),

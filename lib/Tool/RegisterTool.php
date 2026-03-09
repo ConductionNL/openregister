@@ -63,7 +63,7 @@ class RegisterTool extends AbstractTool
         LoggerInterface $logger,
         RegisterService $registerService
     ) {
-        parent::__construct($userSession, $logger);
+        parent::__construct(userSession: $userSession, logger: $logger);
         $this->registerService = $registerService;
     }//end __construct()
 
@@ -205,7 +205,7 @@ class RegisterTool extends AbstractTool
     {
         $this->log(functionName: $functionName, parameters: $parameters);
 
-        if ($this->hasUserContext($userId) === false) {
+        if ($this->hasUserContext(explicitUserId: $userId) === false) {
             return $this->formatError(message: 'No user context available. Tool cannot execute without user session.');
         }
 
@@ -237,7 +237,7 @@ class RegisterTool extends AbstractTool
     {
 
         $filters = [];
-        $filters = $this->applyViewFilters($filters);
+        $filters = $this->applyViewFilters(params: $filters);
 
         $registers = $this->registerService->findAll(limit: $limit, offset: $offset, filters: $filters);
 

@@ -47,14 +47,14 @@
 		<!-- Retention Configuration Section -->
 		<RetentionConfiguration />
 
-	<!-- SOLR Configuration Section -->
-	<SolrConfiguration />
+		<!-- SOLR Configuration Section -->
+		<SolrConfiguration />
 
-	<!-- n8n Workflow Configuration Section -->
-	<N8nConfiguration />
+		<!-- n8n Workflow Configuration Section -->
+		<N8nConfiguration />
 
-	<!-- LLM Configuration Section -->
-	<LlmConfiguration />
+		<!-- LLM Configuration Section -->
+		<LlmConfiguration />
 
 		<!-- File Configuration Section -->
 		<FileConfiguration />

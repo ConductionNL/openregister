@@ -108,8 +108,8 @@ class SolrOperationsController extends Controller
             $logger->info(
                 message: '[SolrOperationsController] 📋 SOLR configuration loaded for setup',
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'            => __FILE__,
+                    'line'            => __LINE__,
                     'enabled'         => $solrSettings['enabled'] ?? false,
                     'host'            => $solrSettings['host'] ?? 'not_set',
                     'port'            => $solrSettings['port'] ?? 'not_set',
@@ -123,7 +123,10 @@ class SolrOperationsController extends Controller
             $setup = new SetupHandler(solrService: $guzzleSolrService, logger: $logger);
 
             // **IMPROVED LOGGING**: Log setup initialization.
-            $logger->info(message: '[SolrOperationsController] 🏗️ SolrSetup instance created, starting setup process', context: ['file' => __FILE__, 'line' => __LINE__]);
+            $logger->info(
+                message: '[SolrOperationsController] SolrSetup instance created, starting setup process',
+                context: ['file' => __FILE__, 'line' => __LINE__]
+            );
 
             // Run setup.
             $setupResult = $setup->setupSolr();
@@ -137,8 +140,8 @@ class SolrOperationsController extends Controller
                 $logger->info(
                     message: '[SolrOperationsController] ✅ SOLR setup completed successfully',
                     context: [
-                        'file' => __FILE__,
-                        'line' => __LINE__,
+                        'file'            => __FILE__,
+                        'line'            => __LINE__,
                         'completed_steps' => $setupProgress['completed_steps'] ?? 0,
                         'total_steps'     => $setupProgress['total_steps'] ?? 0,
                         'duration'        => $setupProgress['completed_at'] ?? 'unknown',
@@ -277,8 +280,8 @@ class SolrOperationsController extends Controller
             $logger->error(
                 message: '[SolrOperationsController] ❌ SOLR setup failed with exception',
                 context: [
-                    'file'               => __FILE__,
-                    'line'               => __LINE__,
+                    'file'              => __FILE__,
+                    'line'              => __LINE__,
                     'exception_class'   => get_class($e),
                     'exception_message' => $e->getMessage(),
                     'exception_file'    => $e->getFile(),
@@ -302,13 +305,19 @@ class SolrOperationsController extends Controller
                     ];
 
                     // **IMPROVED LOGGING**: Log setup progress and error details.
-                    $logger->error(message: '[SolrOperationsController] 📋 SOLR setup failure details', context: array_merge(['file' => __FILE__, 'line' => __LINE__], $detailedError));
+                    $logger->error(
+                        message: '[SolrOperationsController] SOLR setup failure details',
+                        context: array_merge(
+                            ['file' => __FILE__, 'line' => __LINE__],
+                            $detailedError
+                        )
+                    );
                 } catch (Exception $progressException) {
                     $logger->warning(
                         message: '[SolrOperationsController] Failed to get setup progress details',
                         context: [
-                            'file' => __FILE__,
-                            'line' => __LINE__,
+                            'file'  => __FILE__,
+                            'line'  => __LINE__,
                             'error' => $progressException->getMessage(),
                         ]
                     );
@@ -420,14 +429,14 @@ class SolrOperationsController extends Controller
             $logger->info(
                 message: '[SolrOperationsController] 🔥 WARMUP: Received warmup request',
                 context: [
-                    'file'             => __FILE__,
-                    'line'             => __LINE__,
+                    'file'            => __FILE__,
+                    'line'            => __LINE__,
                     'maxObjects'      => $maxObjects,
                     'mode'            => $mode,
                     'batchSize'       => $batchSize,
                     'schemaIds'       => $schemaIds,
                     'schemaIds_type'  => gettype($schemaIds),
-                    'schemaIds_count' => $this->getSchemaIdsCount($schemaIds),
+                    'schemaIds_count' => $this->getSchemaIdsCount(schemaIds: $schemaIds),
                 ]
             );
 
@@ -509,8 +518,8 @@ class SolrOperationsController extends Controller
             $logger->error(
                 message: '[SolrOperationsController] Exception in inspectSolrIndex controller',
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'  => __FILE__,
+                    'line'  => __LINE__,
                     'error' => $e->getMessage(),
                     'trace' => $e->getTraceAsString(),
                 ]

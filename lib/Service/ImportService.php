@@ -323,7 +323,7 @@ class ImportService
 
         // Schedule SOLR warmup job after successful Excel import.
         $finalResult = [$sheetTitle => $sheetSummary];
-        $this->scheduleSmartSolrWarmup($finalResult);
+        $this->scheduleSmartSolrWarmup(importSummary: $finalResult);
 
         // Return in sheet-based format for consistency.
         return $finalResult;
@@ -398,7 +398,7 @@ class ImportService
 
         // Schedule SOLR warmup job after successful CSV import.
         $finalResult = [$sheetTitle => $sheetSummary];
-        $this->scheduleSmartSolrWarmup($finalResult);
+        $this->scheduleSmartSolrWarmup(importSummary: $finalResult);
 
         // Return in sheet-based format for consistency.
         return $finalResult;
@@ -414,7 +414,8 @@ class ImportService
      * @param bool        $_rbac         Whether to apply RBAC permissions
      * @param bool        $_multitenancy Whether to apply multi-tenancy filtering
      * @param bool        $publish       Whether to publish objects after import
-     * @param IUser|null  $currentUser   The current user performing the import
+     * @param IUser|null  $currentUser   The current user performing the import.
+     * @param bool        $enrich        Whether to enrich objects with metadata.
      *
      * @return         array<string, array> Summary of import with sheet-based results
      * @phpstan-return array<string, array{
@@ -459,7 +460,7 @@ class ImportService
 
         foreach ($spreadsheet->getWorksheetIterator() as $worksheet) {
             $schemaSlug = $worksheet->getTitle();
-            $schema     = $this->getSchemaBySlug($schemaSlug);
+            $schema     = $this->getSchemaBySlug(slug: $schemaSlug);
 
             // Initialize sheet summary even if no schema found.
             $summary[$schemaSlug] = [
@@ -479,8 +480,8 @@ class ImportService
             // Skip sheets that don't correspond to a valid schema.
             // Note: getSchemaBySlug() returns Schema (non-nullable) or throws exception.
             try {
-                $schema = $this->getSchemaBySlug($schemaSlug);
-                // Schema is guaranteed to be non-null if we reach here (exception thrown otherwise)
+                $schema = $this->getSchemaBySlug(slug: $schemaSlug);
+                // Schema is guaranteed to be non-null if we reach here (exception thrown otherwise).
                 // Add schema information to the summary.
                 $summary[$schemaSlug]['schema'] = [
                     'id'    => $schema->getId(),
@@ -526,7 +527,7 @@ class ImportService
         }//end foreach
 
         // Schedule SOLR warmup job after successful multi-schema import.
-        $this->scheduleSmartSolrWarmup($summary);
+        $this->scheduleSmartSolrWarmup(importSummary: $summary);
 
         return $summary;
     }//end processMultiSchemaSpreadsheetAsync()
@@ -591,7 +592,7 @@ class ImportService
         $sheetTitle = $sheet->getTitle();
 
         // Build column mapping from headers.
-        $columnMapping = $this->buildColumnMapping($sheet);
+        $columnMapping = $this->buildColumnMapping(sheet: $sheet);
 
         if (empty($columnMapping) === true) {
             $summary['errors'][] = [
@@ -756,7 +757,7 @@ class ImportService
         $startTime = microtime(true);
 
         // Build column mapping from headers.
-        $columnMapping = $this->buildColumnMapping($sheet);
+        $columnMapping = $this->buildColumnMapping(sheet: $sheet);
 
         if (empty($columnMapping) === true) {
             $summary['errors'][] = [
@@ -814,8 +815,8 @@ class ImportService
             $this->logger->debug(
                 message: '[ImportService] CSV import processing objects',
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'        => __FILE__,
+                    'line'        => __LINE__,
                     'objectCount' => count($allObjects),
                     'publish'     => $publish,
                 ]
@@ -838,8 +839,8 @@ class ImportService
                 $this->logger->debug(
                     message: '[ImportService] Adding publish date to CSV import objects',
                     context: [
-                        'file' => __FILE__,
-                        'line' => __LINE__,
+                        'file'        => __FILE__,
+                        'line'        => __LINE__,
                         'publishDate' => $publishDate,
                         'objectCount' => count($allObjects),
                     ]
@@ -851,8 +852,8 @@ class ImportService
                     $this->logger->debug(
                         message: '[ImportService] First object @self structure after adding publish date',
                         context: [
-                            'file' => __FILE__,
-                            'line' => __LINE__,
+                            'file'     => __FILE__,
+                            'line'     => __LINE__,
                             'selfData' => $allObjects[0]['@self'],
                         ]
                     );
@@ -973,16 +974,21 @@ class ImportService
         ];
 
         // Single pass through row data with proper column filtering.
-        $isAdmin = $this->isUserAdmin($currentUser);
+        $isAdmin = $this->isUserAdmin(user: $currentUser);
 
-        // Debug log to verify admin status
+        // Debug log to verify admin status.
+        $importUsername = 'null';
+        if ($currentUser !== null) {
+            $importUsername = $currentUser->getUID();
+        }
+
         $this->logger->debug(
                 message: '[ImportService] Processing CSV row',
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'     => __FILE__,
+                    'line'     => __LINE__,
                     'isAdmin'  => $isAdmin,
-                    'username' => $currentUser ? $currentUser->getUID() : 'null',
+                    'username' => $importUsername,
                 ]
                 );
 
@@ -1104,7 +1110,7 @@ class ImportService
     {
         // Transform datetime properties to MySQL datetime format.
         if (in_array($propertyName, ['published', 'created', 'updated'], true) === true) {
-            return $this->transformDateTimeValue($value);
+            return $this->transformDateTimeValue(value: $value);
         }
 
         // Transform organisation property - ensure it's a valid UUID.
@@ -1146,7 +1152,7 @@ class ImportService
         $selfData   = [];
 
         // Check if current user is admin for column filtering.
-        $isAdmin = $this->isUserAdmin($currentUser);
+        $isAdmin = $this->isUserAdmin(user: $currentUser);
 
         foreach ($rowData as $key => $value) {
             // Skip empty values.
@@ -1373,10 +1379,10 @@ class ImportService
                 return (float) $value;
 
             case 'boolean':
-                return $this->stringToBoolean($value);
+                return $this->stringToBoolean(value: $value);
 
             case 'array':
-                return $this->stringToArray($value);
+                return $this->stringToArray(value: $value);
 
             case 'object':
                 // Check if this is a related-object that should store UUID strings directly.
@@ -1386,7 +1392,7 @@ class ImportService
                     // For related objects, store UUID strings directly instead of wrapping in objects.
                     return (string) $value;
                 }
-                return $this->stringToObject($value);
+                return $this->stringToObject(value: $value);
 
             default:
                 return (string) $value;
@@ -1588,7 +1594,7 @@ class ImportService
     ): bool {
         try {
             // Calculate total objects imported across all sheets.
-            $totalImported = $this->calculateTotalImported($importSummary);
+            $totalImported = $this->calculateTotalImported(importSummary: $importSummary);
 
             if ($totalImported === 0) {
                 $this->logger->info(
@@ -1621,8 +1627,8 @@ class ImportService
             $this->logger->info(
                 message: '[ImportService] 🔥 SOLR Warmup Job Scheduled',
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'           => __FILE__,
+                    'line'           => __LINE__,
                     'total_imported' => $totalImported,
                     'warmup_mode'    => $mode,
                     'max_objects'    => $maxObjects,
@@ -1637,8 +1643,8 @@ class ImportService
             $this->logger->error(
                 message: '[ImportService] Failed to schedule SOLR warmup job',
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'           => __FILE__,
+                    'line'           => __LINE__,
                     'error'          => $e->getMessage(),
                     'import_summary' => $importSummary,
                 ]
@@ -1714,14 +1720,14 @@ class ImportService
      */
     public function scheduleSmartSolrWarmup(array $importSummary, bool $immediate=false): bool
     {
-        $totalImported = $this->calculateTotalImported($importSummary);
+        $totalImported = $this->calculateTotalImported(importSummary: $importSummary);
 
         if ($totalImported === 0) {
             return false;
         }
 
         // Smart configuration based on import size.
-        $mode = $this->getRecommendedWarmupMode($totalImported);
+        $mode = $this->getRecommendedWarmupMode(totalImported: $totalImported);
         // Index up to 2x imported objects, max 15k.
         $maxObjects = min($totalImported * 2, 15000);
         $delay      = 30;
@@ -1729,12 +1735,12 @@ class ImportService
             $delay = 0;
         }
 
-        // 30 second delay by default
+        // 30 second delay by default.
         $this->logger->info(
             message: '[ImportService] Scheduling smart SOLR warmup',
             context: [
-                'file' => __FILE__,
-                'line' => __LINE__,
+                'file'             => __FILE__,
+                'line'             => __LINE__,
                 'total_imported'   => $totalImported,
                 'recommended_mode' => $mode,
                 'max_objects'      => $maxObjects,

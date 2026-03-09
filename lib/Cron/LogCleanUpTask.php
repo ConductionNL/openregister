@@ -65,18 +65,18 @@ class LogCleanUpTask extends TimedJob
         AuditTrailMapper $auditTrailMapper,
         LoggerInterface $logger,
     ) {
-        parent::__construct($time);
+        parent::__construct(time: $time);
         $this->auditTrailMapper = $auditTrailMapper;
         $this->logger           = $logger;
 
         // Run every hour (3600 seconds).
-        $this->setInterval(3600);
+        $this->setInterval(seconds: 3600);
 
         // Delay until low-load time.
-        $this->setTimeSensitivity(IJob::TIME_INSENSITIVE);
+        $this->setTimeSensitivity(sensitivity: IJob::TIME_INSENSITIVE);
 
         // Only run one instance of this job at a time.
-        $this->setAllowParallelRuns(false);
+        $this->setAllowParallelRuns(allow: false);
     }//end __construct()
 
     /**
@@ -104,7 +104,7 @@ class LogCleanUpTask extends TimedJob
                     context: [
                         'file' => __FILE__,
                         'line' => __LINE__,
-                        'app' => 'openregister',
+                        'app'  => 'openregister',
                     ]
                 );
                 return;
@@ -115,7 +115,7 @@ class LogCleanUpTask extends TimedJob
                 context: [
                     'file' => __FILE__,
                     'line' => __LINE__,
-                    'app' => 'openregister',
+                    'app'  => 'openregister',
                 ]
             );
         } catch (\Exception $e) {
@@ -123,8 +123,8 @@ class LogCleanUpTask extends TimedJob
             $this->logger->error(
                 message: '[LogCleanUpTask] Failed to clear expired audit trail logs: '.$e->getMessage(),
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'      => __FILE__,
+                    'line'      => __LINE__,
                     'app'       => 'openregister',
                     'exception' => $e,
                 ]

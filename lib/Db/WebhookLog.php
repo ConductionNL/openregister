@@ -163,19 +163,19 @@ class WebhookLog extends Entity implements JsonSerializable
      */
     public function __construct()
     {
-        $this->addType('webhook', 'integer');
-        $this->addType('eventClass', 'string');
-        $this->addType('payload', 'string');
-        $this->addType('url', 'string');
-        $this->addType('method', 'string');
-        $this->addType('success', 'boolean');
-        $this->addType('statusCode', 'integer');
-        $this->addType('requestBody', 'string');
-        $this->addType('responseBody', 'string');
-        $this->addType('errorMessage', 'string');
-        $this->addType('attempt', 'integer');
-        $this->addType('nextRetryAt', 'datetime');
-        $this->addType('created', 'datetime');
+        $this->addType(fieldName: 'webhook', type: 'integer');
+        $this->addType(fieldName: 'eventClass', type: 'string');
+        $this->addType(fieldName: 'payload', type: 'string');
+        $this->addType(fieldName: 'url', type: 'string');
+        $this->addType(fieldName: 'method', type: 'string');
+        $this->addType(fieldName: 'success', type: 'boolean');
+        $this->addType(fieldName: 'statusCode', type: 'integer');
+        $this->addType(fieldName: 'requestBody', type: 'string');
+        $this->addType(fieldName: 'responseBody', type: 'string');
+        $this->addType(fieldName: 'errorMessage', type: 'string');
+        $this->addType(fieldName: 'attempt', type: 'integer');
+        $this->addType(fieldName: 'nextRetryAt', type: 'datetime');
+        $this->addType(fieldName: 'created', type: 'datetime');
 
         // Initialize created timestamp.
         $this->created = new DateTime();
@@ -205,11 +205,11 @@ class WebhookLog extends Entity implements JsonSerializable
     public function setPayloadArray(?array $payload): void
     {
         if ($payload === null) {
-            $this->setPayload(null);
+            $this->setPayload(payload: null);
             return;
         }
 
-        $this->setPayload(json_encode($payload));
+        $this->setPayload(payload: json_encode($payload));
     }//end setPayloadArray()
 
     /**

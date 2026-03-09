@@ -147,8 +147,8 @@ class WebhookService
             $this->logger->debug(
                 message: '[WebhookService] Webhook table does not exist yet, skipping webhook delivery',
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'  => __FILE__,
+                    'line'  => __LINE__,
                     'event' => $eventName,
                     'error' => $e->getMessage(),
                 ]
@@ -160,8 +160,8 @@ class WebhookService
             $this->logger->debug(
                 message: '[WebhookService] No webhooks configured for event',
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'  => __FILE__,
+                    'line'  => __LINE__,
                     'event' => $eventName,
                 ]
             );
@@ -171,8 +171,8 @@ class WebhookService
         $this->logger->info(
             message: '[WebhookService] Dispatching event to webhooks',
             context: [
-                'file' => __FILE__,
-                'line' => __LINE__,
+                'file'          => __FILE__,
+                'line'          => __LINE__,
                 'event'         => $eventName,
                 'webhook_count' => count($webhooks),
             ]
@@ -204,8 +204,8 @@ class WebhookService
             $this->logger->debug(
                 message: '[WebhookService] Webhook is disabled, skipping delivery',
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'       => __FILE__,
+                    'line'       => __LINE__,
                     'webhook_id' => $webhook->getId(),
                     'event'      => $eventName,
                 ]
@@ -218,8 +218,8 @@ class WebhookService
             $this->logger->debug(
                 message: '[WebhookService] Webhook filters did not match, skipping delivery',
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'       => __FILE__,
+                    'line'       => __LINE__,
                     'webhook_id' => $webhook->getId(),
                     'event'      => $eventName,
                 ]
@@ -254,8 +254,8 @@ class WebhookService
             $this->logger->info(
                 message: '[WebhookService] Webhook delivered successfully',
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'         => __FILE__,
+                    'line'         => __LINE__,
                     'webhook_id'   => $webhook->getId(),
                     'webhook_name' => $webhook->getName(),
                     'event'        => $eventName,
@@ -318,8 +318,8 @@ class WebhookService
             $this->logger->error(
                 message: '[WebhookService] Webhook delivery failed',
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'            => __FILE__,
+                    'line'            => __LINE__,
                     'webhook_id'      => $webhook->getId(),
                     'webhook_name'    => $webhook->getName(),
                     'event'           => $eventName,
@@ -355,8 +355,8 @@ class WebhookService
             $this->logger->error(
                 message: '[WebhookService] Unexpected error during webhook delivery',
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'       => __FILE__,
+                    'line'       => __LINE__,
                     'webhook_id' => $webhook->getId(),
                     'event'      => $eventName,
                     'error'      => $e->getMessage(),
@@ -569,8 +569,8 @@ class WebhookService
         $this->logger->info(
             message: '[WebhookService] Scheduling webhook retry',
             context: [
-                'file' => __FILE__,
-                'line' => __LINE__,
+                'file'         => __FILE__,
+                'line'         => __LINE__,
                 'webhook_id'   => $webhook->getId(),
                 'webhook_name' => $webhook->getName(),
                 'event'        => $eventName,
@@ -651,7 +651,7 @@ class WebhookService
     public function interceptRequest(IRequest $request, string $eventType): array
     {
         // Find webhooks configured for this event type.
-        $webhooks = $this->findWebhooksForInterception($eventType);
+        $webhooks = $this->findWebhooksForInterception(eventType: $eventType);
 
         if (empty($webhooks) === true) {
             // No webhooks configured, return original request data.
@@ -699,12 +699,12 @@ class WebhookService
                 // Process response if webhook is configured to handle responses.
                 // Note: This is currently limited as we're using fire-and-forget delivery.
                 // TODO: Implement response handling if needed.
-                if ($success === true && $this->shouldProcessResponse($webhook) === true) {
+                if ($success === true && $this->shouldProcessResponse(webhook: $webhook) === true) {
                     $this->logger->info(
                         message: '[WebhookService] Webhook delivery successful but response processing not yet implemented',
                         context: [
-                            'file' => __FILE__,
-                            'line' => __LINE__,
+                            'file'       => __FILE__,
+                            'line'       => __LINE__,
                             'webhook_id' => $webhook->getId(),
                             'event_type' => $eventType,
                         ]
@@ -715,8 +715,8 @@ class WebhookService
                 $this->logger->error(
                     message: '[WebhookService] Failed to deliver webhook during request interception',
                     context: [
-                        'file' => __FILE__,
-                        'line' => __LINE__,
+                        'file'         => __FILE__,
+                        'line'         => __LINE__,
                         'webhook_id'   => $webhook->getId(),
                         'webhook_name' => $webhook->getName(),
                         'event_type'   => $eventType,
@@ -767,7 +767,7 @@ class WebhookService
             $events = $webhook->getEventsArray();
             if (empty($events) === false) {
                 // Check if event type matches.
-                $eventClass = $this->eventTypeToEventClass($eventType);
+                $eventClass = $this->eventTypeToEventClass(eventType: $eventType);
                 if ($webhook->matchesEvent($eventClass) === false) {
                     continue;
                 }

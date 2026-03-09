@@ -37,5 +37,15 @@ if (file_exists(__DIR__ . '/../../../lib/composer/autoload.php')) {
     require_once __DIR__ . '/../../../lib/composer/autoload.php';
 }
 
+// Register Test\ namespace for NC test classes (without triggering full bootstrap).
+// tests/autoload.php loads lib/base.php which requires a full NC install,
+// so we register the PSR-4 namespace directly for unit tests.
+$serverTestsLib = __DIR__ . '/../../../tests/lib/';
+if (is_dir($serverTestsLib)) {
+    $loader = new \Composer\Autoload\ClassLoader();
+    $loader->addPsr4('Test\\', $serverTestsLib);
+    $loader->register(true);
+}
+
 error_log("[UNIT TEST BOOTSTRAP] Minimal bootstrap complete - ready for unit tests");
 

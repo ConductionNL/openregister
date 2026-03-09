@@ -122,8 +122,8 @@ class SolrFacetProcessor
             $this->logger->debug(
                 message: '[SolrFacetProcessor] Found facetable fields',
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'  => __FILE__,
+                    'line'  => __LINE__,
                     'count' => count($facetable),
                 ]
             );
@@ -133,8 +133,8 @@ class SolrFacetProcessor
             $this->logger->error(
                 message: '[SolrFacetProcessor] Failed to get facetable fields',
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'  => __FILE__,
+                    'line'  => __LINE__,
                     'error' => $e->getMessage(),
                 ]
             );

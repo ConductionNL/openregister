@@ -490,5 +490,20 @@ return [
 		['name' => 'webhooks#logStats', 'url' => '/api/webhooks/{id}/logs/stats', 'verb' => 'GET', 'requirements' => ['id' => '\d+']],
 		['name' => 'webhooks#allLogs', 'url' => '/api/webhooks/logs', 'verb' => 'GET'],
 		['name' => 'webhooks#retry', 'url' => '/api/webhooks/logs/{logId}/retry', 'verb' => 'POST', 'requirements' => ['logId' => '\d+']],
+
+		// Workflow Engines - CRUD and health check.
+		['name' => 'workflowEngine#available', 'url' => '/api/engines/available', 'verb' => 'GET'],
+		['name' => 'workflowEngine#index', 'url' => '/api/engines', 'verb' => 'GET'],
+		['name' => 'workflowEngine#create', 'url' => '/api/engines', 'verb' => 'POST'],
+		['name' => 'workflowEngine#show', 'url' => '/api/engines/{id}', 'verb' => 'GET', 'requirements' => ['id' => '\d+']],
+		['name' => 'workflowEngine#update', 'url' => '/api/engines/{id}', 'verb' => 'PUT', 'requirements' => ['id' => '\d+']],
+		['name' => 'workflowEngine#destroy', 'url' => '/api/engines/{id}', 'verb' => 'DELETE', 'requirements' => ['id' => '\d+']],
+		['name' => 'workflowEngine#health', 'url' => '/api/engines/{id}/health', 'verb' => 'POST', 'requirements' => ['id' => '\d+']],
+
+		// MCP Discovery - Tiered API discovery for AI agents.
+		['name' => 'mcp#discover', 'url' => '/api/mcp/v1/discover', 'verb' => 'GET'],
+		['name' => 'mcp#discoverCapability', 'url' => '/api/mcp/v1/discover/{capability}', 'verb' => 'GET', 'requirements' => ['capability' => '[a-z-]+']],
+		['name' => 'mcp#discover', 'url' => '/api/mcp/v1/discover', 'verb' => 'OPTIONS'],
+		['name' => 'mcp#discoverCapability', 'url' => '/api/mcp/v1/discover/{capability}', 'verb' => 'OPTIONS', 'requirements' => ['capability' => '[a-z-]+']],
     ],
 ];

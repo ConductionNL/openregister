@@ -100,12 +100,12 @@ class TaggingHandler
 
                 if (empty($tagObj) === true) {
                     // Tag doesn't exist with this ID, search by name and create if needed.
-                    $existingTag = $this->findOrCreateTag($tag);
+                    $existingTag = $this->findOrCreateTag(tagName: $tag);
                     $newTagIds[] = $existingTag->getId();
                 }
             } catch (TagNotFoundException) {
                 // Tag doesn't exist, create it.
-                $newTag      = $this->findOrCreateTag($tag);
+                $newTag      = $this->findOrCreateTag(tagName: $tag);
                 $newTagIds[] = $newTag->getId();
             } catch (Exception $e) {
                 $this->logger->error(
@@ -114,7 +114,7 @@ class TaggingHandler
                 );
                 // Try to create it anyway.
                 try {
-                    $newTag      = $this->findOrCreateTag($tag);
+                    $newTag      = $this->findOrCreateTag(tagName: $tag);
                     $newTagIds[] = $newTag->getId();
                 } catch (Exception $e2) {
                     $this->logger->error(

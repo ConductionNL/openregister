@@ -390,7 +390,7 @@ class MappingService
                 return $value;
 
             case 'coordinateStringToArray':
-                return $this->coordinateStringToArray((string) $value);
+                return $this->coordinateStringToArray(coordinates: (string) $value);
 
             case 'keyCantBeValue':
                 if ($key === $value) {
@@ -405,7 +405,7 @@ class MappingService
                     $dotArray->delete($key);
                 } else if ($unsetIfValue === ''
                     && is_array($value) === true
-                    && $this->areAllArrayKeysNull($value) === true
+                    && $this->areAllArrayKeysNull(array: $value) === true
                 ) {
                     $dotArray->delete($key);
                 }
@@ -420,7 +420,10 @@ class MappingService
                     return null;
                 }
 
-                if ($setNullIfValue === '' && is_array($value) === true && $this->areAllArrayKeysNull($value) === true) {
+                if ($setNullIfValue === ''
+                    && is_array($value) === true
+                    && $this->areAllArrayKeysNull(array: $value) === true
+                ) {
                     return null;
                 }
                 return $value;
@@ -463,7 +466,7 @@ class MappingService
 
         foreach ($array as $value) {
             if (is_array($value) === true) {
-                if ($this->areAllArrayKeysNull($value) === false) {
+                if ($this->areAllArrayKeysNull(array: $value) === false) {
                     return false;
                 }
             } else if (empty($value) === false) {

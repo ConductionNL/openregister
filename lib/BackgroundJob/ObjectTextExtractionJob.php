@@ -83,7 +83,7 @@ class ObjectTextExtractionJob extends QueuedJob
         LoggerInterface $logger,
         TextExtractionService $textExtractor
     ) {
-        parent::__construct($time);
+        parent::__construct(time: $time);
         $this->config        = $config;
         $this->logger        = $logger;
         $this->textExtractor = $textExtractor;
@@ -122,8 +122,8 @@ class ObjectTextExtractionJob extends QueuedJob
             $this->logger->error(
                 message: '[ObjectTextExtractionJob] Missing object_id in job arguments',
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'     => __FILE__,
+                    'line'     => __LINE__,
                     'argument' => $argument,
                 ]
             );
@@ -135,8 +135,8 @@ class ObjectTextExtractionJob extends QueuedJob
         $this->logger->info(
             message: '[ObjectTextExtractionJob] Starting text extraction',
             context: [
-                'file' => __FILE__,
-                'line' => __LINE__,
+                'file'      => __FILE__,
+                'line'      => __LINE__,
                 'object_id' => $objectId,
                 'job_id'    => $this->getId(),
             ]
@@ -153,8 +153,8 @@ class ObjectTextExtractionJob extends QueuedJob
             $this->logger->info(
                 message: '[ObjectTextExtractionJob] Text extraction completed successfully',
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'               => __FILE__,
+                    'line'               => __LINE__,
                     'object_id'          => $objectId,
                     'processing_time_ms' => $processingTime,
                 ]
@@ -165,8 +165,8 @@ class ObjectTextExtractionJob extends QueuedJob
             $this->logger->error(
                 message: '[ObjectTextExtractionJob] Exception during text extraction',
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'               => __FILE__,
+                    'line'               => __LINE__,
                     'object_id'          => $objectId,
                     'error'              => $e->getMessage(),
                     'trace'              => $e->getTraceAsString(),

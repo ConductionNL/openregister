@@ -92,10 +92,10 @@ class UploadService
     public function getUploadedJson(array $data): array | JSONResponse
     {
         // Remove internal parameters (starting with '_').
-        $data = $this->removeInternalParameters($data);
+        $data = $this->removeInternalParameters(data: $data);
 
         // Validate upload source is provided.
-        $validationError = $this->validateUploadSource($data);
+        $validationError = $this->validateUploadSource(data: $data);
         if ($validationError !== null) {
             return $validationError;
         }
@@ -103,15 +103,15 @@ class UploadService
         // Process based on upload source type.
         if (empty($data['file']) === false) {
             // File upload handling - throws Exception (not yet implemented).
-            $this->processFileUpload($data['file']);
+            $this->processFileUpload(_file: $data['file']);
         }
 
         if (empty($data['url']) === false) {
-            return $this->processUrlUpload($data['url']);
+            return $this->processUrlUpload(url: $data['url']);
         }
 
         // Process direct JSON input.
-        return $this->processJsonUpload($data['json']);
+        return $this->processJsonUpload(jsonInput: $data['json']);
     }//end getUploadedJson()
 
     /**
@@ -187,7 +187,7 @@ class UploadService
      */
     private function processUrlUpload(string $url): array|JSONResponse
     {
-        $result = $this->getJSONfromURL($url);
+        $result = $this->getJSONfromURL(url: $url);
 
         // Handle array response (direct array return).
         if (is_array($result) === true) {

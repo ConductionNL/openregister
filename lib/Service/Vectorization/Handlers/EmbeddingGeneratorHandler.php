@@ -88,8 +88,8 @@ class EmbeddingGeneratorHandler
             $this->logger->debug(
                 message: '[EmbeddingGeneratorHandler] Creating new embedding generator',
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'     => __FILE__,
+                    'line'     => __LINE__,
                     'provider' => $config['provider'],
                     'model'    => $config['model'],
                 ]
@@ -108,8 +108,8 @@ class EmbeddingGeneratorHandler
             $this->logger->info(
                 message: '[EmbeddingGeneratorHandler] Embedding generator created',
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'       => __FILE__,
+                    'line'       => __LINE__,
                     'provider'   => $config['provider'],
                     'model'      => $config['model'],
                     'dimensions' => $generator->getEmbeddingLength(),
@@ -242,8 +242,8 @@ class EmbeddingGeneratorHandler
                 $this->logger->debug(
                     message: '[EmbeddingGeneratorHandler] Calling Fireworks AI API',
                     context: [
-                        'file' => __FILE__,
-                        'line' => __LINE__,
+                        'file'  => __FILE__,
+                        'line'  => __LINE__,
                         'url'   => $url,
                         'model' => $this->model,
                     ]
@@ -325,7 +325,7 @@ class EmbeddingGeneratorHandler
              */
             public function embedDocument(\LLPhant\Embeddings\Document $document): \LLPhant\Embeddings\Document
             {
-                $document->embedding = $this->embedText($document->content);
+                $document->embedding = $this->embedText(text: $document->content);
                 return $document;
             }//end embedDocument()
 
@@ -339,7 +339,7 @@ class EmbeddingGeneratorHandler
             public function embedDocuments(array $documents): array
             {
                 foreach ($documents as $document) {
-                    $document->embedding = $this->embedText($document->content);
+                    $document->embedding = $this->embedText(text: $document->content);
                 }
 
                 return $documents;

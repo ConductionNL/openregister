@@ -193,7 +193,7 @@ class BulkIndexer
             );
 
             // Get count of searchable objects for planning.
-            $totalObjects     = $this->countSearchableObjects($schemaIds);
+            $totalObjects     = $this->countSearchableObjects(schemaIds: $schemaIds);
             $estimatedBatches = ceil($totalObjects / $batchSize);
             $willProcess      = $totalObjects;
             if ($maxObjects > 0) {
@@ -204,8 +204,8 @@ class BulkIndexer
             $this->logger->info(
                 message: '[BulkIndexer] Planning bulk index',
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'                   => __FILE__,
+                    'line'                   => __LINE__,
                     'totalSearchableObjects' => $totalObjects,
                     'maxObjects'             => $maxObjects,
                     'batchSize'              => $batchSize,
@@ -239,8 +239,8 @@ class BulkIndexer
                 $this->logger->info(
                     message: '[BulkIndexer] Batch fetched',
                     context: [
-                        'file' => __FILE__,
-                        'line' => __LINE__,
+                        'file'         => __FILE__,
+                        'line'         => __LINE__,
                         'batch'        => $batchCount + 1,
                         'objectsFound' => $objectsCount,
                         'fetchTime'    => $fetchDuration.'ms',
@@ -266,8 +266,8 @@ class BulkIndexer
                             $this->logger->warning(
                                 message: '[BulkIndexer] Unexpected non-searchable schema',
                                 context: [
-                                    'file' => __FILE__,
-                                    'line' => __LINE__,
+                                    'file'     => __FILE__,
+                                    'line'     => __LINE__,
                                     'objectId' => $object->getId(),
                                     'error'    => $e->getMessage(),
                                 ]
@@ -280,8 +280,8 @@ class BulkIndexer
                         $this->logger->warning(
                             message: '[BulkIndexer] Failed to create document',
                             context: [
-                                'file' => __FILE__,
-                                'line' => __LINE__,
+                                'file'     => __FILE__,
+                                'line'     => __LINE__,
                                 'error'    => $e->getMessage(),
                                 'objectId' => $object->getId(),
                             ]
@@ -300,8 +300,8 @@ class BulkIndexer
                     $this->logger->debug(
                         message: '[BulkIndexer] Batch indexed',
                         context: [
-                            'file' => __FILE__,
-                            'line' => __LINE__,
+                            'file'      => __FILE__,
+                            'line'      => __LINE__,
                             'documents' => $indexed,
                             'indexTime' => $indexDuration.'ms',
                         ]
@@ -316,8 +316,8 @@ class BulkIndexer
             $this->logger->info(
                 message: '[BulkIndexer] Bulk indexing completed',
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'         => __FILE__,
+                    'line'         => __LINE__,
                     'totalIndexed' => $totalIndexed,
                     'totalBatches' => $batchCount,
                     'batchSize'    => $batchSize,
@@ -353,7 +353,7 @@ class BulkIndexer
     private function countSearchableObjects(array $schemaIds=[]): int
     {
         // Get searchable schema IDs.
-        $searchableSchemaIds = $this->getSearchableSchemaIds($schemaIds);
+        $searchableSchemaIds = $this->getSearchableSchemaIds(schemaIds: $schemaIds);
 
         if (empty($searchableSchemaIds) === true) {
             return 0;
@@ -377,7 +377,7 @@ class BulkIndexer
     private function fetchSearchableObjects(int $limit, int $offset, array $schemaIds=[]): array
     {
         // Get searchable schema IDs.
-        $searchableSchemaIds = $this->getSearchableSchemaIds($schemaIds);
+        $searchableSchemaIds = $this->getSearchableSchemaIds(schemaIds: $schemaIds);
 
         if (empty($searchableSchemaIds) === true) {
             return [];

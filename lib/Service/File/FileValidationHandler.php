@@ -153,8 +153,8 @@ class FileValidationHandler
             $this->logger->warning(
                 message: '[FileValidationHandler] Executable file upload blocked',
                 context: [
-                    'file' => __FILE__,
-                    'line' => __LINE__,
+                    'file'      => __FILE__,
+                    'line'      => __LINE__,
                     'app'       => 'openregister',
                     'filename'  => $fileName,
                     'extension' => $extension,
@@ -207,8 +207,8 @@ class FileValidationHandler
                 $this->logger->warning(
                     message: '[FileValidationHandler] Executable magic bytes detected',
                     context: [
-                        'file' => __FILE__,
-                        'line' => __LINE__,
+                        'file'     => __FILE__,
+                        'line'     => __LINE__,
                         'app'      => 'openregister',
                         'filename' => $fileName,
                         'type'     => $description,
@@ -293,7 +293,7 @@ class FileValidationHandler
                     );
 
                     // Try to fix the ownership.
-                    $ownershipFixed = $this->ownFile($file);
+                    $ownershipFixed = $this->ownFile(file: $file);
 
                     if ($ownershipFixed === false) {
                         $this->logger->error(
@@ -331,7 +331,7 @@ class FileValidationHandler
 
             try {
                 // Try to fix the ownership.
-                $this->ownFile($file);
+                $this->ownFile(file: $file);
                 $this->logger->info(
                     message: "[FileValidationHandler] checkOwnership: Fixed ownership for file {$file->getName()} after permission error",
                     context: ['file' => __FILE__, 'line' => __LINE__]
