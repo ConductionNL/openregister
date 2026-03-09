@@ -192,8 +192,12 @@ class MappingRuntime implements RuntimeExtensionInterface
      *
      * @return string The extracted UUID
      */
-    public function zgwExtractUuid(string $url): string
+    public function zgwExtractUuid(?string $url = null): string
     {
+        if ($url === null || $url === '') {
+            return '';
+        }
+
         $parts = explode('/', rtrim($url, '/'));
 
         return end($parts);

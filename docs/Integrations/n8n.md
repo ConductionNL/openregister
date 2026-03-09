@@ -4,21 +4,266 @@ Integrate OpenRegister with n8n to create powerful automation workflows. This gu
 
 ## Overview
 
-n8n is a fair-code workflow automation platform that allows you to connect various services and automate tasks. With OpenRegister's webhook integration, you can:
+n8n is a fair-code workflow automation platform that allows you to connect various services and automate tasks. OpenRegister provides two integration approaches:
 
-- Automatically sync objects to external systems
-- Trigger notifications on schema changes
-- Create bidirectional data synchronization
+1. **Schema Hooks (recommended)** — Configure hooks directly on schemas that call n8n workflows synchronously (blocking) or asynchronously on object lifecycle events. Supports advanced validation, data enrichment, and rejection of invalid objects before save.
+2. **Webhook Listeners (legacy)** — Use Nextcloud's `webhook_listeners` app for simple event notifications to n8n.
+
+With the n8n integration you can:
+
+- **Block saves** with sync hooks — n8n validates objects before they are persisted
+- **Enrich data** — n8n adds computed fields before save (e.g., geocoding, KvK lookup)
+- **Reject invalid objects** — return HTTP 422 with validation errors from n8n
+- Automatically sync objects to external systems (async)
+- Deploy workflows as part of app configuration via import
 - Build custom automation workflows
 
 ## Prerequisites
 
 - Nextcloud 28+ with OpenRegister installed
-- n8n instance (self-hosted or cloud)
-- Nextcloud `webhook_listeners` app enabled
+- n8n instance (self-hosted, cloud, or as Nextcloud ExApp)
+- A registered workflow engine in OpenRegister (see [Workflow Engine Setup](#workflow-engine-setup))
 - Admin access to both Nextcloud and n8n
 
-## Quick Start
+## Workflow Engine Setup
+
+Before using schema hooks, register your n8n instance as a workflow engine in OpenRegister:
+
+```bash
+curl -X POST http://localhost:8080/index.php/apps/openregister/api/engines \
+  -u 'admin:admin' \
+  -H 'Content-Type: application/json' \
+  -H 'OCS-APIREQUEST: true' \
+  -d '{
+    "name": "n8n Production",
+    "engineType": "n8n",
+    "baseUrl": "http://your-n8n-host:5678",
+    "authType": "bearer",
+    "authConfig": {
+      "token": "your-n8n-api-key"
+    },
+    "enabled": true
+  }'
+```
+
+Verify the connection:
+
+```bash
+curl -X POST http://localhost:8080/index.php/apps/openregister/api/engines/{id}/health \
+  -u 'admin:admin' \
+  -H 'OCS-APIREQUEST: true'
+```
+
+## Schema Hooks (Recommended)
+
+Schema hooks are configured directly on a schema's `hooks` JSON property. They fire on object lifecycle events and call n8n workflows via the workflow engine adapter.
+
+### How It Works
+
+```mermaid
+sequenceDiagram
+    participant Client
+    participant API as OpenRegister API
+    participant Mapper as MagicMapper
+    participant Hook as HookExecutor
+    participant n8n as n8n Workflow
+    participant DB as Database
+
+    Client->>API: POST /api/objects/{register}/{schema}
+    API->>Mapper: insertObjectEntity()
+    Mapper->>Mapper: Dispatch ObjectCreatingEvent
+    Mapper->>Hook: HookListener delegates to HookExecutor
+    Hook->>n8n: POST CloudEvent to webhook URL
+
+    alt Approved
+        n8n-->>Hook: {"status": "approved"}
+        Hook-->>Mapper: Event not stopped
+        Mapper->>DB: INSERT object
+        DB-->>API: Object saved
+        API-->>Client: 201 Created
+    else Rejected
+        n8n-->>Hook: {"status": "rejected", "errors": [...]}
+        Hook-->>Mapper: stopPropagation() + setErrors()
+        Mapper-->>API: throw HookStoppedException
+        API-->>Client: 422 with validation errors
+    else Modified
+        n8n-->>Hook: {"status": "modified", "data": {...}}
+        Hook-->>Mapper: setModifiedData()
+        Mapper->>Mapper: Merge enrichment data
+        Mapper->>DB: INSERT enriched object
+        DB-->>API: Object saved
+        API-->>Client: 201 Created (with enriched data)
+    end
+```
+
+### Sync vs Async Events
+
+| Event | Type | When | Can Block? |
+|-------|------|------|------------|
+| `creating` | Sync | Before INSERT | Yes |
+| `updating` | Sync | Before UPDATE | Yes |
+| `deleting` | Sync | Before DELETE | Yes |
+| `created` | Async | After INSERT | No |
+| `updated` | Async | After UPDATE | No |
+| `deleted` | Async | After DELETE | No |
+
+### Configuring a Schema Hook
+
+Add a hook to a schema via the API:
+
+```bash
+# First, get the current schema
+SCHEMA=$(curl -s -u admin:admin -H 'OCS-APIREQUEST: true' \
+  http://localhost:8080/index.php/apps/openregister/api/schemas/{id})
+
+# Update hooks array (add to existing hooks)
+curl -X PUT http://localhost:8080/index.php/apps/openregister/api/schemas/{id} \
+  -u 'admin:admin' \
+  -H 'Content-Type: application/json' \
+  -H 'OCS-APIREQUEST: true' \
+  -d '{
+    "hooks": [
+      {
+        "event": "creating",
+        "engine": "n8n",
+        "workflowId": "your-n8n-workflow-id",
+        "mode": "sync",
+        "order": 1,
+        "timeout": 30,
+        "enabled": true,
+        "onFailure": "reject",
+        "onTimeout": "allow",
+        "onEngineDown": "allow"
+      }
+    ]
+  }'
+```
+
+### Hook Configuration Fields
+
+| Field | Type | Default | Description |
+|-------|------|---------|-------------|
+| `event` | string | required | `creating`, `updating`, `deleting`, `created`, `updated`, `deleted` |
+| `engine` | string | required | Engine type: `n8n` or `windmill` |
+| `workflowId` | string | required | The workflow ID in the engine (used for webhook URL) |
+| `mode` | string | `sync` | `sync` (blocking, waits for response) or `async` (fire-and-forget) |
+| `order` | int | `0` | Execution order when multiple hooks exist for the same event |
+| `timeout` | int | `30` | Timeout in seconds for sync hooks |
+| `enabled` | bool | `true` | Toggle hook on/off |
+| `onFailure` | string | `reject` | `reject` (abort save), `allow` (proceed), `flag` (proceed + set metadata), `queue` (proceed + retry later) |
+| `onTimeout` | string | `reject` | Same options as onFailure |
+| `onEngineDown` | string | `allow` | Same options as onFailure |
+
+### n8n Workflow Response Format
+
+Your n8n workflow must return one of these JSON responses:
+
+**Approve (allow save):**
+```json
+{"status": "approved"}
+```
+
+**Reject (block save, return HTTP 422):**
+```json
+{
+  "status": "rejected",
+  "errors": [
+    {"field": "kvkNumber", "message": "Invalid KvK number", "code": "INVALID_KVK"},
+    {"field": "email", "message": "Email domain not allowed", "code": "BLOCKED_DOMAIN"}
+  ]
+}
+```
+
+**Modify (enrich data before save):**
+```json
+{
+  "status": "modified",
+  "data": {
+    "normalizedAddress": "Keizersgracht 1, 1015 AA Amsterdam",
+    "geocode": {"lat": 52.3676, "lng": 4.8837},
+    "validatedAt": "2026-03-08T12:00:00Z"
+  }
+}
+```
+
+### CloudEvents Payload
+
+Hooks deliver a CloudEvents 1.0 payload to the n8n webhook URL:
+
+```json
+{
+  "specversion": "1.0",
+  "type": "nl.openregister.object.creating",
+  "source": "/apps/openregister/registers/1/schemas/5",
+  "id": "unique-event-uuid",
+  "time": "2026-03-08T12:00:00Z",
+  "datacontenttype": "application/json",
+  "subject": "object:abc-123",
+  "data": {
+    "object": {
+      "id": "abc-123",
+      "name": "Acme Corp",
+      "kvkNumber": "12345678"
+    },
+    "schema": "organisation",
+    "register": "1",
+    "action": "creating",
+    "hookMode": "sync"
+  }
+}
+```
+
+## Deploying Workflows via Import
+
+Instead of manually configuring hooks, you can include workflow definitions in your JSON import file. This enables packaging n8n workflows as part of your app configuration.
+
+```json
+{
+  "info": {
+    "title": "My App Config",
+    "version": "1.0.0"
+  },
+  "components": {
+    "schemas": {
+      "organisation": {
+        "title": "Organisation",
+        "slug": "organisation",
+        "properties": {
+          "name": {"type": "string"},
+          "kvkNumber": {"type": "string"}
+        }
+      }
+    },
+    "workflows": [
+      {
+        "name": "kvk-validator",
+        "engine": "n8n",
+        "workflow": { "...n8n workflow JSON..." },
+        "attachTo": {
+          "schema": "organisation",
+          "event": "creating",
+          "mode": "sync",
+          "onFailure": "reject"
+        }
+      }
+    ]
+  }
+}
+```
+
+The import pipeline:
+1. Creates schemas
+2. Deploys workflows to n8n via `WorkflowEngineInterface::deployWorkflow()`
+3. Wires hooks to schemas using the engine-returned workflow ID
+4. Creates objects (with hooks now active)
+
+Reimports are idempotent — unchanged workflows (same SHA-256 hash) are skipped. See [Import/Export documentation](../user/import-export.md) for the full format reference.
+
+## Webhook Listeners (Legacy Approach)
+
+> **Note:** The webhook listeners approach requires the `webhook_listeners` Nextcloud app and uses Nextcloud's event system directly. For most use cases, [Schema Hooks](#schema-hooks-recommended) are simpler and more powerful — they support sync blocking, data enrichment, and can be deployed via import.
+
+## Quick Start (Legacy)
 
 ### Step 1: Enable webhook_listeners in Nextcloud
 

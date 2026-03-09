@@ -29,6 +29,7 @@ use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Db\ViewMapper;
 use OCA\OpenRegister\Db\ObjectEntityMapper;
+use OCA\OpenRegister\Db\MappingMapper;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\MagicMapper\MagicRbacHandler;
 use OCA\OpenRegister\Db\UnifiedObjectMapper;
@@ -494,6 +495,7 @@ class Application extends App implements IBootstrap
                 registerMapper: $container->get(RegisterMapper::class),
                 objectEntityMapper: $container->get(ObjectEntityMapper::class),
                 configurationMapper: $container->get('OCA\OpenRegister\Db\ConfigurationMapper'),
+                mappingMapper: $container->get(MappingMapper::class),
                 client: new Client(),
                 appConfig: $container->get('OCP\IAppConfig'),
                 logger: $logger,
@@ -535,6 +537,7 @@ class Application extends App implements IBootstrap
                     registerMapper: $container->get(RegisterMapper::class),
                     objectEntityMapper: $container->get(ObjectEntityMapper::class),
                     configurationMapper: $container->get('OCA\OpenRegister\Db\ConfigurationMapper'),
+                    mappingMapper: $container->get(MappingMapper::class),
                     logger: $container->get('Psr\Log\LoggerInterface')
                 );
 

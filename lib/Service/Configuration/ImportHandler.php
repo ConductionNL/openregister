@@ -35,6 +35,8 @@ use OCA\OpenRegister\Db\DeployedWorkflow;
 use OCA\OpenRegister\Db\DeployedWorkflowMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\ObjectEntityMapper;
+use OCA\OpenRegister\Db\Mapping;
+use OCA\OpenRegister\Db\MappingMapper;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\UnifiedObjectMapper;
 use OCA\OpenRegister\Service\ObjectService;
@@ -185,6 +187,20 @@ class ImportHandler
     private array $schemasMap = [];
 
     /**
+     * Mapping mapper instance for handling mapping operations.
+     *
+     * @var MappingMapper The mapping mapper instance.
+     */
+    private readonly MappingMapper $mappingMapper;
+
+    /**
+     * Map of mappings indexed by slug during import.
+     *
+     * @var array<string, Mapping> Mappings indexed by slug.
+     */
+    private array $mappingsMap = [];
+
+    /**
      * OpenConnector configuration service for optional integration.
      *
      * @var mixed The OpenConnector configuration service or null.
@@ -214,6 +230,7 @@ class ImportHandler
      * @param RegisterMapper      $registerMapper      The register mapper.
      * @param ObjectEntityMapper  $objectEntityMapper  The object entity mapper.
      * @param ConfigurationMapper $configurationMapper The configuration mapper.
+     * @param MappingMapper       $mappingMapper       The mapping mapper.
      * @param Client              $client              The HTTP client for URL fetching.
      * @param IAppConfig          $appConfig           The app config.
      * @param LoggerInterface     $logger              The logger interface.
@@ -226,6 +243,7 @@ class ImportHandler
         RegisterMapper $registerMapper,
         ObjectEntityMapper $objectEntityMapper,
         ConfigurationMapper $configurationMapper,
+        MappingMapper $mappingMapper,
         Client $client,
         IAppConfig $appConfig,
         LoggerInterface $logger,
@@ -237,6 +255,7 @@ class ImportHandler
         $this->registerMapper      = $registerMapper;
         $this->objectEntityMapper  = $objectEntityMapper;
         $this->configurationMapper = $configurationMapper;
+        $this->mappingMapper       = $mappingMapper;
         $this->client        = $client;
         $this->appConfig     = $appConfig;
         $this->logger        = $logger;
@@ -611,6 +630,93 @@ class ImportHandler
             throw new Exception('Failed to import register: '.$e->getMessage());
         }//end try
     }//end importRegister()
+
+    /**
+     * Import a single mapping from configuration data.
+     *
+     * Creates a new mapping or updates an existing one based on slug matching.
+     * Follows the same find-or-create pattern used by importSchema and importRegister.
+     *
+     * @param array              $data           The mapping data from the JSON config.
+     * @param array              $slugsAndIdsMap Existing slug-to-ID map for lookups.
+     * @param Configuration|null $configuration  The configuration entity for tracking.
+     * @param string|null        $version        The configuration version.
+     * @param bool               $force          Force import regardless of version.
+     *
+     * @return Mapping|null The imported mapping entity or null if skipped.
+     *
+     * @throws Exception If import fails.
+     *
+     * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Force flag to override version checks
+     */
+    private function importMapping(
+        array $data,
+        array $slugsAndIdsMap,
+        ?Configuration $configuration=null,
+        ?string $version=null,
+        bool $force=false
+    ): ?Mapping {
+        $slug = $data['slug'] ?? $data['name'] ?? null;
+
+        if ($slug === null) {
+            $this->logger->warning(
+                message: '[ImportHandler] Mapping has no slug or name — skipping',
+                context: ['file' => __FILE__, 'line' => __LINE__]
+            );
+            return null;
+        }
+
+        // Associate mapping with the configuration.
+        if ($configuration !== null) {
+            $data['configurations'] = [$configuration->getUuid()];
+        }
+
+        // Check if mapping already exists by slug.
+        $existingMapping = null;
+        if (isset($slugsAndIdsMap[$slug]) === true) {
+            try {
+                $existingMapping = $this->mappingMapper->find(id: $slugsAndIdsMap[$slug], includeNullOrg: true);
+            } catch (Exception $e) {
+                $this->logger->debug(
+                    message: '[ImportHandler] Existing mapping lookup failed, will create new',
+                    context: [
+                        'file'  => __FILE__,
+                        'line'  => __LINE__,
+                        'slug'  => $slug,
+                        'error' => $e->getMessage(),
+                    ]
+                );
+            }
+        }
+
+        if ($existingMapping !== null) {
+            // Version check: only update if imported version is higher.
+            $importedVersion = $data['version'] ?? $version ?? '0.0.1';
+            $existingVersion = $existingMapping->getVersion() ?? '0.0.0';
+
+            if ($force === false && version_compare($importedVersion, $existingVersion, '<=') === true) {
+                $this->logger->info(
+                    message: "[ImportHandler] Skipping mapping '{$slug}': v{$importedVersion} <= v{$existingVersion}",
+                    context: ['file' => __FILE__, 'line' => __LINE__]
+                );
+                return $existingMapping;
+            }
+
+            // Update existing mapping.
+            $data['version'] = $importedVersion;
+            return $this->mappingMapper->updateFromArray(
+                id: $existingMapping->getId(),
+                data: $data
+            );
+        }
+
+        // Create new mapping.
+        if (isset($data['version']) === false) {
+            $data['version'] = $version ?? '0.0.1';
+        }
+
+        return $this->mappingMapper->createFromArray(data: $data);
+    }//end importMapping()
 
     /**
      * Handle duplicate register error during import.
@@ -1119,7 +1225,7 @@ class ImportHandler
      *     objects: array<ObjectEntity>,
      *     endpoints: array,
      *     sources: array,
-     *     mappings: array,
+     *     mappings: array<Mapping>,
      *     jobs: array,
      *     synchronizations: array,
      *     rules: array
@@ -1194,6 +1300,7 @@ class ImportHandler
         // Reset the maps for this import.
         $this->registersMap = [];
         $this->schemasMap   = [];
+        $this->mappingsMap  = [];
 
         $result = [
             'registers'        => [],
@@ -1446,6 +1553,80 @@ class ImportHandler
                 workflows: $data['components']['workflows'],
                 deployedWorkflows: $deployedWorkflows,
                 result: $result
+            );
+        }//end if
+
+        // Process and import mappings if present.
+        if (($data['components']['mappings'] ?? null) !== null
+            && is_array($data['components']['mappings']) === true
+        ) {
+            $slugsAndIdsMap = $this->mappingMapper->getSlugToIdMap(includeNullOrg: true);
+
+            $this->logger->info(
+                message: '[ImportHandler] Starting mapping import',
+                context: [
+                    'file'          => __FILE__,
+                    'line'          => __LINE__,
+                    'totalMappings' => count($data['components']['mappings']),
+                    'mappingKeys'   => array_keys($data['components']['mappings']),
+                ]
+            );
+
+            foreach ($data['components']['mappings'] as $key => $mappingData) {
+                if (isset($mappingData['name']) === false && is_string($key) === true) {
+                    $mappingData['name'] = $key;
+                }
+
+                $mappingSlug = $mappingData['slug'] ?? $key;
+
+                try {
+                    $mapping = $this->importMapping(
+                        data: $mappingData,
+                        slugsAndIdsMap: $slugsAndIdsMap,
+                        configuration: $configuration,
+                        version: $version,
+                        force: $force
+                    );
+
+                    if ($mapping !== null) {
+                        $this->mappingsMap[$mappingSlug] = $mapping;
+                        $result['mappings'][]            = $mapping;
+                    }
+
+                    $mappingId = null;
+                    if ($mapping !== null) {
+                        $mappingId = $mapping->getId();
+                    }
+
+                    $this->logger->debug(
+                        message: '[ImportHandler] Mapping imported successfully',
+                        context: [
+                            'file'        => __FILE__,
+                            'line'        => __LINE__,
+                            'mappingSlug' => $mappingSlug,
+                            'mappingId'   => $mappingId,
+                        ]
+                    );
+                } catch (Exception $e) {
+                    $this->logger->error(
+                        message: '[ImportHandler] Failed to import mapping',
+                        context: [
+                            'file'       => __FILE__,
+                            'line'       => __LINE__,
+                            'mappingKey' => $key,
+                            'error'      => $e->getMessage(),
+                        ]
+                    );
+                }//end try
+            }//end foreach
+
+            $this->logger->info(
+                message: '[ImportHandler] Mapping import completed',
+                context: [
+                    'file'          => __FILE__,
+                    'line'          => __LINE__,
+                    'importedCount' => count($result['mappings']),
+                ]
             );
         }//end if
 
@@ -1844,6 +2025,37 @@ class ImportHandler
             $deployed->setUpdated(new DateTime());
             $this->deployedWfMapper->update($deployed);
 
+            // Build hook entry and add it to the schema's hooks JSON array.
+            $hookEntry = [
+                'event'        => $event,
+                'engine'       => $deployed->getEngine(),
+                'workflowId'   => $deployed->getEngineWorkflowId(),
+                'mode'         => $attachTo['mode'] ?? 'sync',
+                'order'        => (int) ($attachTo['order'] ?? 0),
+                'timeout'      => (int) ($attachTo['timeout'] ?? 30),
+                'enabled'      => true,
+                'onFailure'    => $attachTo['onFailure'] ?? 'reject',
+                'onTimeout'    => $attachTo['onTimeout'] ?? 'reject',
+                'onEngineDown' => $attachTo['onEngineDown'] ?? 'allow',
+            ];
+
+            $hooks = ($schema->getHooks() ?? []);
+
+            // Avoid duplicate: remove existing hook with same workflowId + event.
+            $hooks = array_values(
+                array_filter(
+                    $hooks,
+                    static function (array $h) use ($hookEntry): bool {
+                        return !(($h['workflowId'] ?? '') === $hookEntry['workflowId']
+                            && ($h['event'] ?? '') === $hookEntry['event']);
+                    }
+                )
+            );
+
+            $hooks[] = $hookEntry;
+            $schema->setHooks($hooks);
+            $this->schemaMapper->update($schema);
+
             $msg = "Attached workflow '{$name}' to schema '{$schemaSlug}' on event '{$event}'";
             $this->logger->info(
                 message: '[ImportHandler] '.$msg,
@@ -1876,7 +2088,7 @@ class ImportHandler
      *     objects: array<ObjectEntity>,
      *     endpoints: array,
      *     sources: array,
-     *     mappings: array,
+     *     mappings: array<Mapping>,
      *     jobs: array,
      *     synchronizations: array,
      *     rules: array
@@ -2202,7 +2414,7 @@ class ImportHandler
      *     objects: array<ObjectEntity>,
      *     endpoints: array,
      *     sources: array,
-     *     mappings: array,
+     *     mappings: array<Mapping>,
      *     jobs: array,
      *     synchronizations: array,
      *     rules: array

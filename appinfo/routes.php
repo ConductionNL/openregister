@@ -10,6 +10,7 @@ return [
         'Agents' => ['url' => 'api/agents'],
         'Endpoints' => ['url' => 'api/endpoints'],
         'Mappings' => ['url' => 'api/mappings'],
+        'Consumers' => ['url' => 'api/consumers'],
     ],
     'routes' => [
         // PATCH routes for resources (partial updates).
@@ -21,6 +22,7 @@ return [
         ['name' => 'agents#patch', 'url' => '/api/agents/{id}', 'verb' => 'PATCH', 'requirements' => ['id' => '[^/]+']],
         ['name' => 'endpoints#patch', 'url' => '/api/endpoints/{id}', 'verb' => 'PATCH', 'requirements' => ['id' => '[^/]+']],
         ['name' => 'mappings#patch', 'url' => '/api/mappings/{id}', 'verb' => 'PATCH', 'requirements' => ['id' => '[^/]+']],
+        ['name' => 'consumers#patch', 'url' => '/api/consumers/{id}', 'verb' => 'PATCH', 'requirements' => ['id' => '[^/]+']],
 
         // Mappings - Custom routes.
         ['name' => 'mappings#test', 'url' => '/api/mappings/test', 'verb' => 'POST'],
@@ -237,9 +239,10 @@ return [
         ['name' => 'objects#patch', 'url' => '/api/objects/{register}/{schema}/{id}', 'verb' => 'PATCH', 'requirements' => ['id' => '[^/]+']],
         ['name' => 'objects#postPatch', 'url' => '/api/objects/{register}/{schema}/{id}', 'verb' => 'POST', 'requirements' => ['id' => '[^/]+']],
         ['name' => 'objects#destroy', 'url' => '/api/objects/{register}/{schema}/{id}', 'verb' => 'DELETE', 'requirements' => ['id' => '[^/]+']],
+        ['name' => 'objects#canDelete', 'url' => '/api/objects/{register}/{schema}/{id}/can-delete', 'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
         ['name' => 'objects#merge', 'url' => '/api/objects/{register}/{schema}/{id}/merge', 'verb' => 'POST', 'requirements' => ['id' => '[^/]+']],
         ['name' => 'objects#migrate', 'url' => '/api/migrate', 'verb' => 'POST'],
-        // Relations.        
+        // Relations.
         ['name' => 'objects#contracts', 'url' => '/api/objects/{register}/{schema}/{id}/contracts', 'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
         ['name' => 'objects#uses', 'url' => '/api/objects/{register}/{schema}/{id}/uses', 'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
         ['name' => 'objects#used', 'url' => '/api/objects/{register}/{schema}/{id}/used', 'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
@@ -501,9 +504,11 @@ return [
 		['name' => 'workflowEngine#health', 'url' => '/api/engines/{id}/health', 'verb' => 'POST', 'requirements' => ['id' => '\d+']],
 
 		// MCP Discovery - Tiered API discovery for AI agents.
+		// CORS preflight (OPTIONS) is handled automatically by the @CORS annotation.
 		['name' => 'mcp#discover', 'url' => '/api/mcp/v1/discover', 'verb' => 'GET'],
 		['name' => 'mcp#discoverCapability', 'url' => '/api/mcp/v1/discover/{capability}', 'verb' => 'GET', 'requirements' => ['capability' => '[a-z-]+']],
-		['name' => 'mcp#discover', 'url' => '/api/mcp/v1/discover', 'verb' => 'OPTIONS'],
-		['name' => 'mcp#discoverCapability', 'url' => '/api/mcp/v1/discover/{capability}', 'verb' => 'OPTIONS', 'requirements' => ['capability' => '[a-z-]+']],
+
+		// MCP Standard Protocol — JSON-RPC 2.0 Streamable HTTP endpoint.
+		['name' => 'mcpServer#handle', 'url' => '/api/mcp', 'verb' => 'POST'],
     ],
 ];

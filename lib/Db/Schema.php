@@ -785,6 +785,21 @@ class Schema extends Entity implements JsonSerializable
             }
         }//end foreach
 
+        // Normalize onDelete values to uppercase on relation properties.
+        if (($this->properties ?? null) !== null) {
+            $normalized = false;
+            foreach ($this->properties as $propName => $propDef) {
+                if (isset($propDef['onDelete']) === true) {
+                    $this->properties[$propName]['onDelete'] = strtoupper((string) $propDef['onDelete']);
+                    $normalized = true;
+                }
+            }
+
+            if ($normalized === true) {
+                $this->markFieldUpdated(attribute: 'properties');
+            }
+        }
+
         // Validate properties if validator is provided.
         if ($validator !== null && (($object['properties'] ?? null) !== null)) {
             $this->validateProperties(validator: $validator);

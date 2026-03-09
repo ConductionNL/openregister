@@ -118,3 +118,55 @@ The base OAS template (`BaseOas.json`) MUST NOT contain hardcoded `read`/`write`
 - WHEN OAS is generated
 - THEN `components.securitySchemes` MUST still contain `basicAuth` and `oauth2`
 - AND the oauth2 scopes object MAY be empty or contain generic fallback scopes
+
+## ZGW Autorisaties Mapping Guide
+
+OpenRegister's existing group-based RBAC maps directly to ZGW autorisaties concepts. No additional code is required — this is a configuration and documentation concern.
+
+### Consumer = Nextcloud User
+
+A ZGW **Applicatie** (consumer application) maps to an OpenRegister **Consumer** entity. Each Consumer has a `userId` field that links it to a Nextcloud user. Authentication is handled via OpenRegister's multi-auth support (JWT, Basic Auth, OAuth2, API Key), and each authenticated request is resolved to a Nextcloud user identity.
+
+| ZGW Concept | OpenRegister Equivalent |
+|---|---|
+| Applicatie | Consumer entity with `userId` field |
+| Applicatie.clientIds | Consumer authentication credentials (JWT subject, API key, etc.) |
+| Applicatie.label | Consumer name |
+
+### Scope = Nextcloud Group
+
+A ZGW **scope** (e.g., `zaken.lezen`, `zaken.aanmaken`) maps to a **Nextcloud group**. Schema-level and property-level authorization rules reference groups for CRUD access control.
+
+| ZGW Scope | OpenRegister Configuration |
+|---|---|
+| `zaken.lezen` | Schema property `authorization.read: [{ "group": "zaken-lezen" }]` |
+| `zaken.aanmaken` | Schema property `authorization.create: [{ "group": "zaken-aanmaken" }]` |
+| `zaken.bijwerken` | Schema property `authorization.update: [{ "group": "zaken-bijwerken" }]` |
+| `zaken.verwijderen` | Schema property `authorization.delete: [{ "group": "zaken-verwijderen" }]` |
+
+To grant a consumer a scope, add the consumer's Nextcloud user to the corresponding Nextcloud group.
+
+### heeftAlleAutorisaties = Admin Group
+
+The ZGW `heeftAlleAutorisaties` flag (superuser access) maps to **admin group membership** in Nextcloud. Users in the admin group bypass all schema-level and property-level authorization checks.
+
+### maxVertrouwelijkheidaanduiding = Property-Level Authorization
+
+ZGW confidentiality levels (`maxVertrouwelijkheidaanduiding`) map to OpenRegister's **property-level authorization** with conditional matching. Properties can be restricted based on group membership with conditions like organisation context (`$organisation`), user identity (`$userId`), or custom conditions via `ConditionMatcher`.
+
+Example: restricting a confidential property to specific groups:
+```json
+{
+  "vertrouwelijkAanduiding": {
+    "type": "string",
+    "authorization": {
+      "read": [{ "group": "vertrouwelijk-lezen", "condition": { "$organisation": "{{ object.bronorganisatie }}" } }],
+      "update": [{ "group": "vertrouwelijk-schrijven" }]
+    }
+  }
+}
+```
+
+### Query-Time Filtering
+
+OpenRegister's `MagicRbacHandler` automatically filters query results at the database level based on the authenticated user's group memberships. This ensures that API list endpoints only return objects the consumer is authorized to see — equivalent to ZGW's filtered listing behavior based on autorisaties.

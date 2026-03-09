@@ -2158,6 +2158,16 @@ class ObjectService
     }//end getCacheHandler()
 
     /**
+     * Get the delete handler.
+     *
+     * @return DeleteObject The delete handler.
+     */
+    public function getDeleteHandler(): DeleteObject
+    {
+        return $this->deleteHandler;
+    }//end getDeleteHandler()
+
+    /**
      * Collect UUID-to-name mappings for all related objects in search results.
      *
      * This method extracts all UUIDs from the search results (relations, object properties)

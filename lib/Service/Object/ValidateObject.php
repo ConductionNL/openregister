@@ -382,6 +382,18 @@ class ValidateObject
             $this->transformObjectPropertyForOpenRegister(objectSchema: $propertySchema);
         }
 
+        // Strip $ref from string-type properties referencing other schemas.
+        // OpenRegister uses $ref to denote schema relationships, but Opis JSON Schema
+        // interprets $ref as a JSON Schema reference and tries to resolve it as a URI.
+        // The $ref is only needed by OpenRegister for relation tracking (e.g. onDelete),
+        // not for validation.
+        if (($propertySchema->type ?? null) !== null
+            && $propertySchema->type === 'string'
+            && ($propertySchema->{'$ref'} ?? null) !== null
+        ) {
+            unset($propertySchema->{'$ref'});
+        }
+
         // Recursively transform nested properties.
         if (($propertySchema->properties ?? null) !== null) {
             foreach ($propertySchema->properties ?? [] as $nestedPropertyName => $nestedPropertySchema) {

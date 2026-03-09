@@ -133,15 +133,22 @@ The `ObjectCreatingEvent`, `ObjectUpdatingEvent`, and `ObjectDeletingEvent` clas
 #### Scenario: Event propagation stopped by hook rejection
 - GIVEN a sync hook rejects an object creation
 - WHEN the HookExecutor calls `stopPropagation()` on the event
-- THEN the ObjectEntityMapper checks `isPropagationStopped()` after dispatching the event
-- AND skips the database INSERT/UPDATE/DELETE
-- AND returns the validation errors to the controller
+- THEN the mapper (MagicMapper for magic-table storage, ObjectEntityMapper for blob storage) checks `isPropagationStopped()` after dispatching the event
+- AND throws a `HookStoppedException` containing the validation errors
+- AND the controller catches the exception and returns HTTP 422 with the errors array
+- AND no object is persisted to the database
 
 #### Scenario: Event propagation not stopped
 - GIVEN all sync hooks approve the object
-- WHEN the ObjectEntityMapper checks `isPropagationStopped()`
+- WHEN the mapper checks `isPropagationStopped()`
 - THEN it returns `false`
 - AND the database write proceeds normally
+
+#### Scenario: Hook returns modified data
+- GIVEN a sync hook returns `{"status": "modified", "data": {...}}`
+- WHEN the mapper processes the event after dispatch
+- THEN the modified data from `getModifiedData()` is merged into the object before save
+- AND the enriched object is persisted to the database
 
 ### Requirement: Hook Logging
 All hook executions MUST be logged for debugging and audit purposes.

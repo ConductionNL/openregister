@@ -101,6 +101,51 @@ The initialization will return:
 3. Assign the workflow to your OpenRegister project
 4. Save and activate the workflow
 
+### Deploying Workflows via Import
+
+You can deploy n8n workflows as part of your app configuration using the JSON import pipeline. This is the recommended approach for packaging workflows with your application.
+
+Include a `workflows` array in your import JSON under `components`:
+
+```json
+{
+  "info": { "title": "My App", "version": "1.0.0" },
+  "components": {
+    "schemas": { ... },
+    "workflows": [
+      {
+        "name": "validate-organisation",
+        "engine": "n8n",
+        "description": "Validates KvK numbers on creation",
+        "workflow": {
+          "name": "KvK Validator",
+          "nodes": [ ... ],
+          "connections": { ... }
+        },
+        "attachTo": {
+          "schema": "organisation",
+          "event": "creating",
+          "mode": "sync",
+          "timeout": 30,
+          "onFailure": "reject"
+        }
+      }
+    ]
+  }
+}
+```
+
+**Import processing order:** schemas -> workflows -> objects
+
+When `attachTo` is provided, the workflow is automatically wired as a schema hook after deployment. This means:
+- The workflow is deployed to n8n via the REST API
+- A hook entry is added to the schema's `hooks` array
+- When objects are created/updated/deleted on that schema, the hook fires
+
+**Idempotent reimports:** Workflows are tracked by SHA-256 hash. Reimporting the same workflow definition is a no-op. Changed definitions trigger `updateWorkflow()` and increment the version.
+
+See [Import/Export documentation](import-export.md) for the full format reference.
+
 ### Viewing Workflows
 
 The **Workflow Management** section displays:
@@ -110,6 +155,31 @@ The **Workflow Management** section displays:
 - Quick access to the n8n editor
 
 Click **Refresh Workflows** to update the list.
+
+## Schema Hooks
+
+Schema hooks allow n8n workflows to act as synchronous gatekeepers for object lifecycle events. Unlike async notifications, sync hooks can **block saves**, **reject invalid data**, and **enrich objects** before they are persisted.
+
+### Supported Events
+
+| Event | Type | Can Block Save? |
+|-------|------|-----------------|
+| `creating` | Sync (pre-save) | Yes |
+| `updating` | Sync (pre-save) | Yes |
+| `deleting` | Sync (pre-save) | Yes |
+| `created` | Async (post-save) | No |
+| `updated` | Async (post-save) | No |
+| `deleted` | Async (post-save) | No |
+
+### n8n Response Format
+
+Your n8n workflow receives a CloudEvents 1.0 payload and must return one of:
+
+- `{"status": "approved"}` — save proceeds
+- `{"status": "rejected", "errors": [...]}` — save blocked, HTTP 422 returned
+- `{"status": "modified", "data": {...}}` — data merged into object before save
+
+See the [n8n Integration guide](../Integrations/n8n.md#schema-hooks-recommended) for full details on hook configuration and response format.
 
 ## Workflow Examples
 

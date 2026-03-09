@@ -27,6 +27,7 @@ use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Configuration;
 use OCA\OpenRegister\Db\ConfigurationMapper;
 use OCA\OpenRegister\Db\DeployedWorkflowMapper;
+use OCA\OpenRegister\Db\MappingMapper;
 use OCA\OpenRegister\Db\ObjectEntityMapper;
 use OCA\OpenRegister\Service\WorkflowEngineRegistry;
 use Exception;
@@ -103,6 +104,13 @@ class ExportHandler
     private ?WorkflowEngineRegistry $workflowEngineRegistry = null;
 
     /**
+     * Mapping mapper instance for handling mapping operations.
+     *
+     * @var MappingMapper The mapping mapper instance.
+     */
+    private readonly MappingMapper $mappingMapper;
+
+    /**
      * Mapper for deployed workflow entities.
      *
      * @var DeployedWorkflowMapper|null
@@ -116,6 +124,7 @@ class ExportHandler
      * @param RegisterMapper      $registerMapper      The register mapper.
      * @param ObjectEntityMapper  $objectEntityMapper  The object entity mapper.
      * @param ConfigurationMapper $configurationMapper The configuration mapper.
+     * @param MappingMapper       $mappingMapper       The mapping mapper.
      * @param LoggerInterface     $logger              The logger interface.
      */
     public function __construct(
@@ -123,12 +132,14 @@ class ExportHandler
         RegisterMapper $registerMapper,
         ObjectEntityMapper $objectEntityMapper,
         ConfigurationMapper $configurationMapper,
+        MappingMapper $mappingMapper,
         LoggerInterface $logger
     ) {
         $this->schemaMapper        = $schemaMapper;
         $this->registerMapper      = $registerMapper;
         $this->objectEntityMapper  = $objectEntityMapper;
         $this->configurationMapper = $configurationMapper;
+        $this->mappingMapper       = $mappingMapper;
         $this->logger = $logger;
     }//end __construct()
 
@@ -353,6 +364,37 @@ class ExportHandler
                 );
             }
         }//end foreach
+
+        // Export mappings associated with this configuration.
+        if (isset($configuration) === true && $configuration instanceof Configuration) {
+            $mappingIds = $configuration->getMappings() ?? [];
+            foreach ($mappingIds as $mappingId) {
+                try {
+                    $mapping      = $this->mappingMapper->find($mappingId);
+                    $mappingArray = $mapping->jsonSerialize();
+
+                    // Remove instance-specific properties.
+                    unset(
+                        $mappingArray['id'],
+                        $mappingArray['uuid'],
+                        $mappingArray['organisation'],
+                        $mappingArray['configurations'],
+                        $mappingArray['created'],
+                        $mappingArray['updated']
+                    );
+
+                    $openApiSpec['components']['mappings'][$mapping->getSlug()] = $mappingArray;
+                } catch (Exception $e) {
+                    $this->logger->warning(
+                        message: '[ExportHandler] Failed to export mapping',
+                        context: [
+                            'mappingId' => $mappingId,
+                            'error'     => $e->getMessage(),
+                        ]
+                    );
+                }//end try
+            }//end foreach
+        }//end if
 
         return $openApiSpec;
     }//end exportConfig()

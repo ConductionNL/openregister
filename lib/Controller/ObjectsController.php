@@ -32,6 +32,7 @@ use OCA\OpenRegister\Exception\RegisterNotFoundException;
 use OCA\OpenRegister\Exception\SchemaNotFoundException;
 use OCA\OpenRegister\Exception\LockedException;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
+use OCA\OpenRegister\Exception\ReferentialIntegrityException;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\WebhookService;
 use RuntimeException;
@@ -1709,6 +1710,15 @@ class ObjectsController extends Controller
         } catch (ValidationException | CustomValidationException $exception) {
             // Handle validation errors.
                        return new JSONResponse(data: $exception->getMessage(), statusCode: 400);
+        } catch (\OCA\OpenRegister\Exception\HookStoppedException $exception) {
+            // Handle hook rejection — return 422 with validation errors from the workflow.
+            return new JSONResponse(
+                data: [
+                    'error'  => $exception->getMessage(),
+                    'errors' => $exception->getErrors(),
+                ],
+                statusCode: 422
+            );
         } catch (\Exception $exception) {
             // Handle all other exceptions (including RBAC permission errors).
             return new JSONResponse(data: ['error' => $exception->getMessage()], statusCode: 403);
@@ -1874,6 +1884,11 @@ class ObjectsController extends Controller
         } catch (ValidationException | CustomValidationException $exception) {
             // Handle validation errors.
             return $objectService->handleValidationException(exception: $exception);
+        } catch (\OCA\OpenRegister\Exception\HookStoppedException $exception) {
+            return new JSONResponse(
+                data: ['error' => $exception->getMessage(), 'errors' => $exception->getErrors()],
+                statusCode: 422
+            );
         } catch (\Exception $exception) {
             // Handle all other exceptions (including RBAC permission errors).
             return new JSONResponse(data: ['error' => $exception->getMessage()], statusCode: 403);
@@ -2042,6 +2057,11 @@ class ObjectsController extends Controller
                     ]
                     );
             return $objectService->handleValidationException(exception: $exception);
+        } catch (\OCA\OpenRegister\Exception\HookStoppedException $exception) {
+            return new JSONResponse(
+                data: ['error' => $exception->getMessage(), 'errors' => $exception->getErrors()],
+                statusCode: 422
+            );
         } catch (\Exception $exception) {
             // Handle all other exceptions (including RBAC permission errors).
             $this->logger->error(
@@ -2157,6 +2177,11 @@ class ObjectsController extends Controller
             return new JSONResponse(data: $objectEntity->jsonSerialize());
         } catch (ValidationException | CustomValidationException $exception) {
             return $objectService->handleValidationException(exception: $exception);
+        } catch (\OCA\OpenRegister\Exception\HookStoppedException $exception) {
+            return new JSONResponse(
+                data: ['error' => $exception->getMessage(), 'errors' => $exception->getErrors()],
+                statusCode: 422
+            );
         } catch (\Exception $exception) {
             return new JSONResponse(data: ['error' => $exception->getMessage()], statusCode: 500);
         }//end try
@@ -2203,11 +2228,65 @@ class ObjectsController extends Controller
 
             // Return 204 No Content for successful delete (REST convention).
             return new JSONResponse(data: null, statusCode: 204);
+        } catch (ReferentialIntegrityException $exception) {
+            return new JSONResponse(
+                data: $exception->toResponseBody(),
+                statusCode: 409
+            );
+        } catch (\OCA\OpenRegister\Exception\HookStoppedException $exception) {
+            return new JSONResponse(
+                data: ['error' => $exception->getMessage(), 'errors' => $exception->getErrors()],
+                statusCode: 422
+            );
         } catch (\Exception $exception) {
             // Handle all exceptions (including RBAC permission errors and object not found).
             return new JSONResponse(data: ['error' => $exception->getMessage()], statusCode: 403);
         }//end try
     }//end destroy()
+
+    /**
+     * Check if an object can be deleted (pre-flight referential integrity analysis).
+     *
+     * Returns the full deletion analysis without performing any mutations.
+     *
+     * @param string        $id            The ID/UUID of the object to check
+     * @param string        $register      The register slug or identifier
+     * @param string        $schema        The schema slug or identifier
+     * @param ObjectService $objectService The object service
+     *
+     * @return JSONResponse JSON response with DeletionAnalysis
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     */
+    public function canDelete(
+        string $id,
+        string $register,
+        string $schema,
+        ObjectService $objectService
+    ): JSONResponse {
+        try {
+            $objectService->setRegister(register: $register);
+            $objectService->setSchema(schema: $schema);
+
+            $context      = $this->objectEntityMapper->findAcrossAllSources(
+                identifier: $id,
+                includeDeleted: false,
+                _rbac: false,
+                _multitenancy: false
+            );
+            $objectEntity = $context['object'];
+
+            $deleteHandler = $objectService->getDeleteHandler();
+            $analysis      = $deleteHandler->canDelete($objectEntity);
+
+            return new JSONResponse(data: $analysis->toArray(), statusCode: 200);
+        } catch (\OCP\AppFramework\Db\DoesNotExistException $exception) {
+            return new JSONResponse(data: ['error' => 'Object not found'], statusCode: 404);
+        } catch (\Exception $exception) {
+            return new JSONResponse(data: ['error' => $exception->getMessage()], statusCode: 403);
+        }//end try
+    }//end canDelete()
 
     /**
      * Retrieves call logs for a object

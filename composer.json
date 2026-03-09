@@ -94,7 +94,8 @@
 		"symfony/uid": "^6.4",
 		"symfony/yaml": "^6.4",
 		"theodo-group/llphant": "^0.9.3",
-		"twig/twig": "^3.18"
+		"twig/twig": "^3.18",
+		"web-token/jwt-framework": "^3"
 	},
 	"require-dev": {
 		"edgedesign/phpqa": "^1.27",

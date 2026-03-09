@@ -3209,6 +3209,9 @@ class SaveObject
         // Prepare the data.
         $preparedData = $this->prepareObjectData(objectEntity: $objectEntity, schema: $schema, data: $data);
 
+        // Validate reference existence for properties with validateReference: true.
+        $this->validateReferences(schema: $schema, data: $preparedData, register: $objectEntity->getRegister());
+
         // Set the prepared data.
         $objectEntity->setObject($preparedData);
 
@@ -3314,6 +3317,16 @@ class SaveObject
 
         // Prepare the data.
         $preparedData = $this->prepareObjectData(objectEntity: $existingObject, schema: $schema, data: $data);
+
+        // Validate reference existence for properties with validateReference: true.
+        // On updates, skip validation for unchanged values to avoid re-validating existing references.
+        $oldData = $existingObject->getObject();
+        $this->validateReferences(
+            schema: $schema,
+            data: $preparedData,
+            register: $existingObject->getRegister(),
+            oldData: $oldData
+        );
 
         // PUT semantics: fill missing schema properties with null to ensure complete replacement.
         // For magic-mapped objects, the MagicMapper generates SET clauses only for properties
@@ -3459,6 +3472,184 @@ class SaveObject
             $objectEntity->setOrganisation($selfData['organisation']);
         }
     }//end setSelfMetadata()
+
+    /**
+     * Validate reference existence for all properties with validateReference: true.
+     *
+     * Iterates schema properties, finds those with $ref and validateReference enabled,
+     * and checks that referenced object UUIDs exist in the target schema.
+     *
+     * @param Schema      $schema   The schema containing property definitions.
+     * @param array       $data     The object data to validate.
+     * @param string|null $register The object's register ID (fallback for target register).
+     * @param array|null  $oldData  Previous object data (for update skip-unchanged logic).
+     *
+     * @return void
+     *
+     * @throws ValidationException If a referenced object does not exist.
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity) Multiple property type checks
+     */
+    private function validateReferences(
+        Schema $schema,
+        array $data,
+        ?string $register,
+        ?array $oldData=null
+    ): void {
+        $properties = $schema->getProperties();
+        if ($properties === null) {
+            return;
+        }
+
+        foreach ($properties as $propertyName => $property) {
+            // Check if validateReference is enabled for this property.
+            if (($property['validateReference'] ?? false) !== true) {
+                continue;
+            }
+
+            // Determine the $ref target.
+            $ref     = $property['$ref'] ?? $property['items']['$ref'] ?? null;
+            $isArray = isset($property['type']) && $property['type'] === 'array';
+
+            if ($ref === null) {
+                continue;
+            }
+
+            // Get the value from data.
+            $value = $data[$propertyName] ?? null;
+
+            // Skip null or empty values (non-required property).
+            if ($value === null || $value === '') {
+                continue;
+            }
+
+            // On updates, skip validation for unchanged values.
+            if ($oldData !== null && array_key_exists($propertyName, $oldData) === true) {
+                if ($oldData[$propertyName] === $value) {
+                    continue;
+                }
+            }
+
+            // Resolve the target register: property-level config or object's register.
+            $targetRegister = $property['register'] ?? $register;
+
+            if ($isArray === true && is_array($value) === true) {
+                // Validate each UUID in the array.
+                foreach ($value as $uuid) {
+                    if (empty($uuid) === true) {
+                        continue;
+                    }
+
+                    $this->validateReferenceExists(
+                        propertyName: $propertyName,
+                        uuid: (string) $uuid,
+                        schemaRef: $ref,
+                        register: $targetRegister
+                    );
+                }
+            } else {
+                // Validate single-value reference.
+                $this->validateReferenceExists(
+                    propertyName: $propertyName,
+                    uuid: (string) $value,
+                    schemaRef: $ref,
+                    register: $targetRegister
+                );
+            }//end if
+        }//end foreach
+    }//end validateReferences()
+
+    /**
+     * Validate that a referenced object exists in the target schema.
+     *
+     * @param string      $propertyName The property name holding the reference.
+     * @param string      $uuid         The UUID to validate.
+     * @param string      $schemaRef    The $ref value pointing to the target schema.
+     * @param string|null $register     The register ID to search in.
+     *
+     * @return void
+     *
+     * @throws ValidationException If the referenced object does not exist (HTTP 422).
+     */
+    private function validateReferenceExists(
+        string $propertyName,
+        string $uuid,
+        string $schemaRef,
+        ?string $register
+    ): void {
+        // Resolve the target schema ID.
+        $targetSchemaId = $this->resolveSchemaReference(reference: $schemaRef);
+        if ($targetSchemaId === null) {
+            $this->logger->warning(
+                message: '[SaveObject] Could not resolve schema reference for reference validation',
+                context: [
+                    'file'     => __FILE__,
+                    'line'     => __LINE__,
+                    'property' => $propertyName,
+                    'ref'      => $schemaRef,
+                ]
+            );
+            return;
+        }
+
+        // Get the target schema for the error message.
+        $targetSchemaSlug = $schemaRef;
+        try {
+            $targetSchema     = $this->getCachedSchema(schemaId: $targetSchemaId);
+            $targetSchemaSlug = $targetSchema->getSlug() ?? $schemaRef;
+        } catch (DoesNotExistException $e) {
+            // Use the raw reference as the slug in the error message.
+        }
+
+        // Resolve register and schema to entity objects for UnifiedObjectMapper.
+        $registerEntity = null;
+        if ($register !== null) {
+            try {
+                $registerEntity = $this->getCachedRegister(registerId: $register);
+            } catch (DoesNotExistException $e) {
+                $this->logger->warning(
+                    message: '[SaveObject] Could not resolve register for reference validation',
+                    context: [
+                        'file'     => __FILE__,
+                        'line'     => __LINE__,
+                        'property' => $propertyName,
+                        'register' => $register,
+                    ]
+                );
+                return;
+            }
+        }
+
+        $targetSchemaEntity = $targetSchema ?? null;
+
+        // Check if the object exists.
+        try {
+            $this->unifiedObjectMapper->find(
+                identifier: $uuid,
+                register: $registerEntity,
+                schema: $targetSchemaEntity,
+                rbac: false,
+                multitenancy: false
+            );
+        } catch (DoesNotExistException $e) {
+            throw new ValidationException(
+                message: "Referenced object '{$uuid}' not found in schema '{$targetSchemaSlug}' for property '{$propertyName}'",
+                code: 422
+            );
+        } catch (Exception $e) {
+            // Non-existence errors (e.g., database errors) — log warning but don't block.
+            $this->logger->warning(
+                message: '[SaveObject] Reference validation lookup failed',
+                context: [
+                    'file'     => __FILE__,
+                    'line'     => __LINE__,
+                    'property' => $propertyName,
+                    'uuid'     => $uuid,
+                    'error'    => $e->getMessage(),
+                ]
+            );
+        }//end try
+    }//end validateReferenceExists()
 
     /**
      * Prepares object data by applying all necessary transformations.

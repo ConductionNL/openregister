@@ -26,34 +26,127 @@ OpenRegister allows you to import data from various formats:
 Your JSON import file should contain:
 - Schemas: The structure definitions for your data
 - Objects (optional): The actual data entries that follow these schemas
+- Workflows (optional): Workflow definitions to deploy to engines like n8n
 
 Example of a valid JSON import file:
 ```json
 {
-  "schemas": [
-    {
-      "name": "Employee",
-      "description": "Employee record schema",
-      "fields": [
-        {
-          "name": "firstName",
-          "type": "string",
-          "required": true,
-          "description": "Employee's first name"
-        }
-      ]
-    }
-  ],
-  "objects": [
-    {
-      "name": "john_doe",
-      "schema": "Employee",
-      "data": {
+  "info": {
+    "title": "My Configuration",
+    "version": "1.0.0",
+    "description": "Example configuration with schemas and objects"
+  },
+  "components": {
+    "registers": {
+      "my-register": {
+        "title": "My Register",
+        "slug": "my-register"
+      }
+    },
+    "schemas": {
+      "employee": {
+        "title": "Employee",
+        "slug": "employee",
+        "description": "Employee record schema",
+        "@self": {
+          "register": "my-register"
+        },
+        "properties": {
+          "firstName": {
+            "type": "string",
+            "title": "First Name"
+          }
+        },
+        "required": ["firstName"]
+      }
+    },
+    "objects": [
+      {
+        "@self": {
+          "register": "my-register",
+          "schema": "employee",
+          "slug": "john-doe"
+        },
         "firstName": "John"
       }
-    }
-  ]
+    ]
+  }
 }
+```
+
+#### Including Workflows in JSON Import
+
+You can include n8n or Windmill workflow definitions in your import file. Workflows are deployed to their engine and optionally wired as schema hooks for event-driven business logic.
+
+The import processes in order: **schemas** -> **workflows** -> **objects**, ensuring hooks are active when objects are created.
+
+```json
+{
+  "info": {
+    "title": "Configuration with Workflows",
+    "version": "1.0.0"
+  },
+  "components": {
+    "schemas": {
+      "organisation": {
+        "title": "Organisation",
+        "slug": "organisation",
+        "@self": { "register": "my-register" },
+        "properties": {
+          "name": { "type": "string", "title": "Name" },
+          "kvkNumber": { "type": "string", "title": "KvK Number" }
+        },
+        "required": ["name"]
+      }
+    },
+    "workflows": [
+      {
+        "name": "validate-kvk",
+        "engine": "n8n",
+        "description": "Validates KvK numbers before saving",
+        "workflow": {
+          "name": "KvK Validator",
+          "nodes": [],
+          "connections": {}
+        },
+        "attachTo": {
+          "schema": "organisation",
+          "event": "creating",
+          "mode": "sync",
+          "timeout": 30,
+          "onFailure": "reject",
+          "onTimeout": "allow",
+          "onEngineDown": "allow"
+        }
+      }
+    ]
+  }
+}
+```
+
+**Workflow entry fields:**
+
+| Field | Required | Description |
+|-------|----------|-------------|
+| `name` | Yes | Unique workflow name |
+| `engine` | Yes | Engine type: `n8n` or `windmill` |
+| `workflow` | Yes | Engine-native workflow definition (JSON) |
+| `description` | No | Human-readable description |
+| `attachTo` | No | Hook wiring configuration (see below) |
+
+**attachTo fields:**
+
+| Field | Required | Default | Description |
+|-------|----------|---------|-------------|
+| `schema` | Yes | - | Schema slug to attach the hook to |
+| `event` | Yes | - | Lifecycle event: `creating`, `updating`, `deleting`, `created`, `updated`, `deleted` |
+| `mode` | No | `sync` | `sync` (blocking) or `async` (fire-and-forget) |
+| `timeout` | No | `30` | Timeout in seconds for sync hooks |
+| `onFailure` | No | `reject` | What to do when hook rejects: `reject`, `allow`, `flag`, `queue` |
+| `onTimeout` | No | `reject` | What to do on timeout: `reject`, `allow`, `flag`, `queue` |
+| `onEngineDown` | No | `allow` | What to do when engine is down: `reject`, `allow`, `flag`, `queue` |
+
+**Reimport behavior:** Workflows use SHA-256 hashing for idempotent reimports. Unchanged workflows are skipped, modified workflows are updated in the engine, and the version is incremented.
 ```
 
 #### Excel Format

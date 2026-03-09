@@ -29,8 +29,12 @@ use OCA\OpenRegister\Db\MappingMapper;
 use Throwable;
 use OCA\OpenRegister\Twig\MappingExtension;
 use OCA\OpenRegister\Twig\MappingRuntimeLoader;
+use OCP\ICacheFactory;
+use OCP\ICache;
+use Psr\Log\LoggerInterface;
 use Twig\Environment;
 use Twig\Loader\ArrayLoader;
+use Twig\TemplateWrapper;
 
 /**
  * Service for executing data mappings
@@ -61,12 +65,44 @@ class MappingService
     private Environment $twig;
 
     /**
+     * In-memory cache for compiled Twig templates, keyed by template string hash
+     *
+     * @var array<string, TemplateWrapper>
+     */
+    private array $templateCache = [];
+
+    /**
+     * Distributed cache for mapping entity lookups (APCu/Redis)
+     *
+     * @var ICache|null
+     */
+    private ?ICache $mappingCache = null;
+
+    /**
+     * Cache TTL for mapping entities in seconds (5 minutes)
+     *
+     * @var int
+     */
+    private const MAPPING_CACHE_TTL = 300;
+
+    /**
+     * Cache key prefix for mapping entities
+     *
+     * @var string
+     */
+    private const CACHE_PREFIX = 'openregister_mapping_';
+
+    /**
      * MappingService constructor
      *
-     * @param MappingMapper $mappingMapper The mapping mapper for database operations
+     * @param MappingMapper   $mappingMapper The mapping mapper for database operations
+     * @param ICacheFactory   $cacheFactory  Cache factory for distributed caching
+     * @param LoggerInterface $logger        Logger for cache diagnostics
      */
     public function __construct(
-        private readonly MappingMapper $mappingMapper
+        private readonly MappingMapper $mappingMapper,
+        ICacheFactory $cacheFactory,
+        private readonly LoggerInterface $logger
     ) {
         $loader     = new ArrayLoader([]);
         $this->twig = new Environment($loader);
@@ -77,6 +113,16 @@ class MappingService
                 mappingMapper: $this->mappingMapper,
             )
         );
+
+        // Initialize distributed cache for mapping entity lookups.
+        try {
+            $this->mappingCache = $cacheFactory->createDistributed(self::CACHE_PREFIX);
+        } catch (\Exception $e) {
+            $this->logger->warning(
+                message: '[MappingService] Failed to initialize distributed cache, falling back to DB-only',
+                context: ['error' => $e->getMessage()]
+            );
+        }
     }//end __construct()
 
     /**
@@ -176,7 +222,8 @@ class MappingService
             }
 
             try {
-                $rendered = $this->twig->createTemplate((string) $value)->render($originalInput);
+                $template = $this->getCachedTemplate(templateString: (string) $value);
+                $rendered = $template->render($originalInput);
                 $dotArray->set($key, html_entity_decode($rendered));
             } catch (Throwable $e) {
                 $mappingName = $mapping->getName() ?? 'Unknown';
@@ -331,7 +378,7 @@ class MappingService
 
             case '?bool':
             case '?boolean':
-                if ($value === null) {
+                if ($value === null || $value === '') {
                     return null;
                 }
 
@@ -487,6 +534,46 @@ class MappingService
     }//end areAllArrayKeysNull()
 
     /**
+     * Returns a compiled Twig template from the in-memory cache, compiling on first use.
+     *
+     * Avoids re-parsing the same Twig template string on repeated calls within a request.
+     * Templates are keyed by their SHA-256 hash for fast lookup.
+     *
+     * @param string $templateString The Twig template source string
+     *
+     * @return TemplateWrapper The compiled template ready for rendering
+     */
+    private function getCachedTemplate(string $templateString): TemplateWrapper
+    {
+        $cacheKey = hash('sha256', $templateString);
+
+        if (isset($this->templateCache[$cacheKey]) === false) {
+            $this->templateCache[$cacheKey] = $this->twig->createTemplate($templateString);
+        }
+
+        return $this->templateCache[$cacheKey];
+    }//end getCachedTemplate()
+
+    /**
+     * Invalidates the distributed cache entry for a mapping.
+     *
+     * Called by MappingMapper on create, update, or delete to ensure stale data
+     * is not served from the cache.
+     *
+     * @param int|string $id The mapping ID, UUID, or slug to invalidate
+     *
+     * @return void
+     */
+    public function invalidateMappingCache(int|string $id): void
+    {
+        if ($this->mappingCache === null) {
+            return;
+        }
+
+        $this->mappingCache->remove((string) $id);
+    }//end invalidateMappingCache()
+
+    /**
      * Converts a coordinate string to an array of coordinates.
      *
      * @param string $coordinates A string containing coordinates.
@@ -518,7 +605,10 @@ class MappingService
     }//end coordinateStringToArray()
 
     /**
-     * Retrieves a single mapping by its ID.
+     * Retrieves a single mapping by its ID, with distributed caching.
+     *
+     * Checks the distributed cache (APCu/Redis) first. On cache miss, fetches from
+     * the database and stores the serialized entity for subsequent requests.
      *
      * @param string $mappingId The unique identifier of the mapping to retrieve
      *
@@ -529,7 +619,29 @@ class MappingService
      */
     public function getMapping(string $mappingId): Mapping
     {
-        return $this->mappingMapper->find($mappingId);
+        // Try distributed cache first.
+        if ($this->mappingCache !== null) {
+            $cached = $this->mappingCache->get($mappingId);
+            if ($cached !== null) {
+                $mapping = new Mapping();
+                $mapping->hydrate($cached);
+                if (isset($cached['id']) === true) {
+                    $mapping->setId($cached['id']);
+                }
+
+                return $mapping;
+            }
+        }
+
+        // Cache miss — fetch from database.
+        $mapping = $this->mappingMapper->find($mappingId);
+
+        // Store in distributed cache for subsequent requests.
+        if ($this->mappingCache !== null) {
+            $this->mappingCache->set($mappingId, $mapping->jsonSerialize(), self::MAPPING_CACHE_TTL);
+        }
+
+        return $mapping;
     }//end getMapping()
 
     /**

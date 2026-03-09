@@ -1,19 +1,75 @@
-# Webhooks
+# Webhooks and Schema Hooks
 
-OpenRegister includes a built-in webhook system that enables two powerful use cases: **event notifications** and **business logic integration**. Webhooks allow you to trigger external workflows and integrations whenever events occur within OpenRegister, enabling seamless integration with external systems and complex business rule validation.
+OpenRegister provides two systems for integrating with external workflows:
+
+1. **Schema Hooks** (recommended for business logic) — Hooks configured directly on schemas that call workflow engines (n8n, Windmill) on object lifecycle events. Support synchronous blocking (approve/reject/modify before save) and async notifications.
+2. **Webhook Entities** (for general event notifications) — Standalone webhook subscriptions with retries, HMAC signing, event filtering, and delivery tracking.
 
 ![img.png](img.png)
 
-## Overview
+## Choosing the Right Approach
 
-Webhooks serve two primary purposes in OpenRegister:
+| Feature | Schema Hooks | Webhook Entities |
+|---------|-------------|------------------|
+| Block saves (sync) | Yes | Limited |
+| Reject with errors (HTTP 422) | Yes | No |
+| Enrich/modify data before save | Yes | No |
+| CloudEvents 1.0 format | Yes | Optional |
+| Automatic retries | Via failure modes | Yes (exponential/linear/fixed) |
+| HMAC signature verification | No (engine auth) | Yes |
+| Delivery statistics | Via logs | Yes |
+| Deploy via import | Yes | No |
+| Multiple engines | Yes (n8n, Windmill) | Any HTTP endpoint |
 
-1. **Event Notifications**: Send CloudEvents to external systems when objects experience CRUD operations
-2. **Business Logic Integration**: Add complex business rules and decision-making to the internal flow of registers
+**Use Schema Hooks when:** you need business logic validation, data enrichment, or blocking saves based on external rules.
 
-OpenRegister's webhook system provides a robust, production-ready solution with automatic retries, event filtering, and comprehensive monitoring.
+**Use Webhook Entities when:** you need simple event notifications to arbitrary HTTP endpoints with retries and delivery tracking.
 
-## Use Case 1: Event Notifications
+## Schema Hooks
+
+Schema hooks are the recommended way to add business logic to object lifecycle events. They are configured on the schema's `hooks` JSON property and execute via workflow engines.
+
+See the [n8n Integration guide](../Integrations/n8n.md#schema-hooks-recommended) for complete setup instructions, or the [Schema Hooks specification](../../openspec/specs/schema-hooks/spec.md) for the full technical spec.
+
+### Key Capabilities
+
+- **Sync hooks** (`creating`, `updating`, `deleting`) fire BEFORE the database write and can block it
+- **Async hooks** (`created`, `updated`, `deleted`) fire AFTER the write as fire-and-forget notifications
+- **Failure modes**: `reject` (abort save), `allow` (proceed anyway), `flag` (proceed + set validation metadata), `queue` (proceed + retry later)
+- **Chained hooks**: Multiple hooks on the same event execute in order; each receives data modified by the previous hook
+- **Deploy via import**: Include workflow definitions in your JSON import file — they are automatically deployed and wired to schemas
+
+### Example: Sync Validation Hook
+
+```json
+{
+  "hooks": [
+    {
+      "event": "creating",
+      "engine": "n8n",
+      "workflowId": "wf-abc123",
+      "mode": "sync",
+      "order": 1,
+      "timeout": 30,
+      "enabled": true,
+      "onFailure": "reject",
+      "onTimeout": "allow",
+      "onEngineDown": "allow"
+    }
+  ]
+}
+```
+
+The n8n workflow receives a CloudEvents 1.0 payload and returns:
+- `{"status": "approved"}` — save proceeds
+- `{"status": "rejected", "errors": [...]}` — save blocked, HTTP 422 returned to client
+- `{"status": "modified", "data": {...}}` — data merged into object before save
+
+## Webhook Entities
+
+OpenRegister also includes a standalone webhook entity system for general-purpose event notifications. This provides a robust, production-ready solution with automatic retries, event filtering, and comprehensive monitoring.
+
+### Use Case 1: Event Notifications
 
 The simplest use case for webhooks is notifying external systems when objects are created, updated, or deleted. This enables real-time synchronization between OpenRegister and other applications.
 
@@ -54,7 +110,9 @@ flowchart LR
 
 When a cat object is created, OpenRegister automatically sends a CloudEvent to the POS system, which then updates its product catalog in real-time.
 
-## Use Case 2: Business Logic and Decision Making
+### Use Case 2: Business Logic and Decision Making
+
+> **Note:** For business logic integration, [Schema Hooks](#schema-hooks) are now the recommended approach. They provide a cleaner configuration model, proper sync blocking with HTTP 422 responses, and can be deployed via import. The webhook entity approach below still works but is more complex to set up.
 
 Webhooks can also be used to add complex business logic and decision-making to the internal flow of registers. This is particularly useful when validation rules are too complex for JSON schema validation.
 

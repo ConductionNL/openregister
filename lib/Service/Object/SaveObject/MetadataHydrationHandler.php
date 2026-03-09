@@ -95,9 +95,12 @@ class MetadataHydrationHandler
         $objectData = $entity->getObject();
 
         // CRITICAL FIX: Extract business data from correct location.
-        // If object data has 'object' key (structured format), use that for property access.
+        // If object data has 'object' key that is an array (structured format), use that for property access.
         // Otherwise use the objectData directly (flat format).
-        $businessData = $objectData['object'] ?? $objectData;
+        // Note: 'object' may also be a regular string property (e.g., a URL in ObjectInformatieObject).
+        $businessData = (isset($objectData['object']) === true && is_array($objectData['object']) === true)
+            ? $objectData['object']
+            : $objectData;
 
         // Get schema properties for relation field detection.
         $schemaProperties = $schema->getProperties() ?? [];

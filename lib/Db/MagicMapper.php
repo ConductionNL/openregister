@@ -4600,7 +4600,8 @@ class MagicMapper
         Register $register,
         Schema $schema,
         bool $rbac=true,
-        bool $multitenancy=true
+        bool $multitenancy=true,
+        bool $includeDeleted=false
     ): ObjectEntity {
         // Ensure table exists if magic mapping is enabled.
         if ($this->existsTableForRegisterSchema(register: $register, schema: $schema) === false) {
@@ -4658,8 +4659,10 @@ class MagicMapper
             )
         );
 
-        // Exclude deleted objects by default.
-        $qb->andWhere($qb->expr()->isNull(self::METADATA_PREFIX.'deleted'));
+        // Exclude deleted objects by default (unless includeDeleted is true).
+        if ($includeDeleted === false) {
+            $qb->andWhere($qb->expr()->isNull(self::METADATA_PREFIX.'deleted'));
+        }
 
         // Apply multitenancy filtering if enabled.
         // Note: For MagicMapper, we rely on the table structure itself for multitenancy,.
@@ -5354,9 +5357,25 @@ class MagicMapper
         Schema $schema,
         bool $dispatchEvents=true
     ): ObjectEntity {
-        // Dispatch creating event for audit trails.
+        // Dispatch creating event (pre-save hook).
         if ($dispatchEvents === true) {
-            $this->eventDispatcher->dispatchTyped(new ObjectCreatingEvent(object: $entity));
+            $creatingEvent = new ObjectCreatingEvent(object: $entity);
+            $this->eventDispatcher->dispatchTyped($creatingEvent);
+
+            // Check if a hook stopped propagation (reject mode).
+            if ($creatingEvent->isPropagationStopped() === true) {
+                throw new \OCA\OpenRegister\Exception\HookStoppedException(
+                    message: $creatingEvent->getErrors()[0]['message'] ?? 'Object creation rejected by hook',
+                    errors: $creatingEvent->getErrors()
+                );
+            }
+
+            // Merge modified data from hooks if any.
+            $modifiedData = $creatingEvent->getModifiedData();
+            if (empty($modifiedData) === false) {
+                $objectData = $entity->getObject() ?? [];
+                $entity->setObject(array_merge($objectData, $modifiedData));
+            }
         }
 
         // Ensure table exists.
@@ -5467,9 +5486,24 @@ class MagicMapper
             context: ['file' => __FILE__, 'line' => __LINE__]
         );
 
-        // Dispatch updating event for audit trails.
-        $event = new ObjectUpdatingEvent(newObject: $entity, oldObject: $oldObject);
-        $this->eventDispatcher->dispatchTyped($event);
+        // Dispatch updating event (pre-save hook).
+        $updatingEvent = new ObjectUpdatingEvent(newObject: $entity, oldObject: $oldObject);
+        $this->eventDispatcher->dispatchTyped($updatingEvent);
+
+        // Check if a hook stopped propagation (reject mode).
+        if ($updatingEvent->isPropagationStopped() === true) {
+            throw new \OCA\OpenRegister\Exception\HookStoppedException(
+                message: $updatingEvent->getErrors()[0]['message'] ?? 'Object update rejected by hook',
+                errors: $updatingEvent->getErrors()
+            );
+        }
+
+        // Merge modified data from hooks if any.
+        $modifiedData = $updatingEvent->getModifiedData();
+        if (empty($modifiedData) === false) {
+            $objectData = $entity->getObject() ?? [];
+            $entity->setObject(array_merge($objectData, $modifiedData));
+        }
 
         $tableName = $this->getTableNameForRegisterSchema(register: $register, schema: $schema);
         $uuid      = $entity->getUuid();
@@ -5501,11 +5535,13 @@ class MagicMapper
 
         // CRITICAL FIX: Re-fetch the updated object from database to get fresh metadata.
         // This ensures the returned entity has correct updated timestamps, ID, etc.
+        // Include deleted objects in re-fetch — the update may have soft-deleted the entity.
         try {
             $updatedEntity = $this->findInRegisterSchemaTable(
                 identifier: $uuid,
                 register: $register,
-                schema: $schema
+                schema: $schema,
+                includeDeleted: true
             );
         } catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
             // Fallback: return input entity if re-fetch fails.
@@ -5545,9 +5581,18 @@ class MagicMapper
         bool $hardDelete=false,
         bool $dispatchEvents=true
     ): ObjectEntity {
-        // Dispatch deleting event for audit trails.
+        // Dispatch deleting event (pre-save hook).
         if ($dispatchEvents === true) {
-            $this->eventDispatcher->dispatchTyped(new ObjectDeletingEvent(object: $entity));
+            $deletingEvent = new ObjectDeletingEvent(object: $entity);
+            $this->eventDispatcher->dispatchTyped($deletingEvent);
+
+            // Check if a hook stopped propagation (reject mode).
+            if ($deletingEvent->isPropagationStopped() === true) {
+                throw new \OCA\OpenRegister\Exception\HookStoppedException(
+                    message: $deletingEvent->getErrors()[0]['message'] ?? 'Object deletion rejected by hook',
+                    errors: $deletingEvent->getErrors()
+                );
+            }
         }
 
         $tableName = $this->getTableNameForRegisterSchema(register: $register, schema: $schema);
