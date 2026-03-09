@@ -4,7 +4,7 @@
  *
  * This test class covers the standalone MagicMapper service that provides
  * dynamic table creation and management based on JSON schema definitions.
- * 
+ *
  * Test Coverage:
  * - Dynamic table creation from JSON schemas
  * - Table structure updates when schemas change
@@ -42,12 +42,59 @@ use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCP\IDBConnection;
 use OCP\IConfig;
+use OCP\IURLGenerator;
 use Psr\Log\LoggerInterface;
 use Doctrine\DBAL\Schema\AbstractSchemaManager;
 use Doctrine\DBAL\Schema\Schema as DoctrineSchema;
 use Doctrine\DBAL\Schema\Table;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\DB\QueryBuilder\IExpressionBuilder;
+use stdClass;
+
+/**
+ * Testable Schema subclass for MagicMapper tests.
+ *
+ * Allows overriding getSchemaObject, getConfiguration, and getProperties
+ * without relying on PHPUnit mocks of Entity __call methods.
+ */
+class TestableSchema extends Schema
+{
+    public ?stdClass $testSchemaObject = null;
+    public ?array $testConfiguration = null;
+    public ?array $testProperties = null;
+
+    /**
+     * Override getSchemaObject to return the test value.
+     *
+     * @param IURLGenerator $urlGenerator URL generator (unused in test double).
+     *
+     * @return stdClass
+     */
+    public function getSchemaObject(IURLGenerator $urlGenerator): stdClass
+    {
+        return $this->testSchemaObject ?? new stdClass();
+    }
+
+    /**
+     * Override getConfiguration to return the test value.
+     *
+     * @return array|null
+     */
+    public function getConfiguration(): ?array
+    {
+        return $this->testConfiguration;
+    }
+
+    /**
+     * Override getProperties to return the test value.
+     *
+     * @return array
+     */
+    public function getProperties(): array
+    {
+        return $this->testProperties ?? [];
+    }
+}
 
 /**
  * Unit tests for MagicMapper service
@@ -68,7 +115,6 @@ use OCP\DB\QueryBuilder\IExpressionBuilder;
  * - Cache management and performance optimizations
  *
  * @psalm-type MockDatabase = IDBConnection&MockObject
- * @psalm-type MockSchema = Schema&MockObject
  * @psalm-type MockConfig = IConfig&MockObject
  */
 class MagicMapperTest extends TestCase
@@ -124,18 +170,18 @@ class MagicMapperTest extends TestCase
     private LoggerInterface $mockLogger;
 
     /**
-     * Mock register entity for testing
+     * Register entity for testing
      *
-     * @var Register&MockObject
+     * @var Register
      */
     private Register $mockRegister;
 
     /**
-     * Mock schema entity for testing
+     * Schema entity for testing
      *
-     * @var Schema&MockObject
+     * @var TestableSchema
      */
-    private Schema $mockSchema;
+    private TestableSchema $mockSchema;
 
 
     /**
@@ -155,19 +201,19 @@ class MagicMapperTest extends TestCase
         $this->mockConfig = $this->createMock(IConfig::class);
         $this->mockLogger = $this->createMock(LoggerInterface::class);
 
-        // Create mock entities for testing.
-        $this->mockRegister = $this->createMock(Register::class);
-        $this->mockRegister->method('getId')->willReturn(1);
-        $this->mockRegister->method('getSlug')->willReturn('test-register');
-        $this->mockRegister->method('getTitle')->willReturn('Test Register');
-        $this->mockRegister->method('getVersion')->willReturn('1.0');
+        // Create real entity instances (Entity __call methods cannot be mocked in PHPUnit 10+).
+        $this->mockRegister = new Register();
+        $this->mockRegister->setId(1);
+        $this->mockRegister->setSlug('test-register');
+        $this->mockRegister->setTitle('Test Register');
+        $this->mockRegister->setVersion('1.0');
 
-        $this->mockSchema = $this->createMock(Schema::class);
-        $this->mockSchema->method('getId')->willReturn(1);
-        $this->mockSchema->method('getSlug')->willReturn('test-schema');
-        $this->mockSchema->method('getTitle')->willReturn('Test Schema');
-        $this->mockSchema->method('getVersion')->willReturn('1.0');
-        $this->mockSchema->method('getConfiguration')->willReturn([]);
+        $this->mockSchema = new TestableSchema();
+        $this->mockSchema->setId(1);
+        $this->mockSchema->setSlug('test-schema');
+        $this->mockSchema->setTitle('Test Schema');
+        $this->mockSchema->setVersion('1.0');
+        $this->mockSchema->testConfiguration = [];
 
         // Create MagicMapper instance.
         $this->magicMapper = new MagicMapper(
@@ -195,15 +241,15 @@ class MagicMapperTest extends TestCase
      */
     public function testGetTableNameForRegisterSchema(int $registerId, int $schemaId, string $expectedResult): void
     {
-        // Create mock register and schema.
-        $mockRegister = $this->createMock(Register::class);
-        $mockRegister->method('getId')->willReturn($registerId);
-        
-        $mockSchema = $this->createMock(Schema::class);
-        $mockSchema->method('getId')->willReturn($schemaId);
+        // Create real register and schema instances.
+        $register = new Register();
+        $register->setId($registerId);
+
+        $schema = new TestableSchema();
+        $schema->setId($schemaId);
 
         // Test table name generation.
-        $result = $this->magicMapper->getTableNameForRegisterSchema($mockRegister, $mockSchema);
+        $result = $this->magicMapper->getTableNameForRegisterSchema($register, $schema);
 
         $this->assertEquals($expectedResult, $result);
         $this->assertStringStartsWith('oc_openregister_table_', $result);
@@ -282,17 +328,15 @@ class MagicMapperTest extends TestCase
      */
     public function testIsMagicMappingEnabled(?array $schemaConfig, string $globalConfig, bool $expectedResult): void
     {
-        $mockSchema = $this->createMock(Schema::class);
-        $mockSchema->expects($this->once())
-                   ->method('getConfiguration')
-                   ->willReturn($schemaConfig ?? []);
+        $schema = new TestableSchema();
+        $schema->testConfiguration = $schemaConfig ?? [];
 
         $this->mockConfig->expects($this->any())
                          ->method('getAppValue')
                          ->with('openregister', 'magic_mapping_enabled', 'false')
                          ->willReturn($globalConfig);
 
-        $result = $this->magicMapper->isMagicMappingEnabled($this->mockRegister, $mockSchema);
+        $result = $this->magicMapper->isMagicMappingEnabled($this->mockRegister, $schema);
 
         $this->assertEquals($expectedResult, $result);
 
@@ -345,7 +389,7 @@ class MagicMapperTest extends TestCase
     public function testPrivateTableExistsMethodWithCaching(): void
     {
         $tableName = 'oc_openregister_table_test';
-        
+
         // Mock schema manager.
         $mockSchemaManager = $this->createMock(AbstractSchemaManager::class);
         $mockSchemaManager->expects($this->once())
@@ -361,7 +405,7 @@ class MagicMapperTest extends TestCase
         $reflection = new \ReflectionClass($this->magicMapper);
         $method = $reflection->getMethod('tableExists');
         $method->setAccessible(true);
-        
+
         $result1 = $method->invoke($this->magicMapper, $tableName);
         $this->assertTrue($result1);
 
@@ -379,25 +423,17 @@ class MagicMapperTest extends TestCase
      */
     public function testSchemaVersionCalculation(): void
     {
-        $mockSchema = $this->createMock(Schema::class);
-        $mockSchema->expects($this->once())
-                   ->method('getProperties')
-                   ->willReturn(['name' => ['type' => 'string'], 'age' => ['type' => 'integer']]);
-        $mockSchema->expects($this->once())
-                   ->method('getRequired')
-                   ->willReturn(['name']);
-        $mockSchema->expects($this->once())
-                   ->method('getTitle')
-                   ->willReturn('Test Schema');
-        $mockSchema->expects($this->once())
-                   ->method('getVersion')
-                   ->willReturn('1.0');
+        $schema = new TestableSchema();
+        $schema->testProperties = ['name' => ['type' => 'string'], 'age' => ['type' => 'integer']];
+        $schema->setRequired(['name']);
+        $schema->setTitle('Test Schema');
+        $schema->setVersion('1.0');
 
         $reflection = new \ReflectionClass($this->magicMapper);
         $method = $reflection->getMethod('calculateSchemaVersion');
         $method->setAccessible(true);
-        
-        $version = $method->invoke($this->magicMapper, $mockSchema);
+
+        $version = $method->invoke($this->magicMapper, $schema);
 
         $this->assertIsString($version);
         $this->assertEquals(32, strlen($version)); // MD5 hash length
@@ -420,7 +456,7 @@ class MagicMapperTest extends TestCase
         $reflection = new \ReflectionClass($this->magicMapper);
         $method = $reflection->getMethod('sanitizeTableName');
         $method->setAccessible(true);
-        
+
         $result = $method->invoke($this->magicMapper, $input);
 
         $this->assertEquals($expected, $result);
@@ -484,7 +520,7 @@ class MagicMapperTest extends TestCase
         $reflection = new \ReflectionClass($this->magicMapper);
         $method = $reflection->getMethod('sanitizeColumnName');
         $method->setAccessible(true);
-        
+
         $result = $method->invoke($this->magicMapper, $input);
 
         $this->assertEquals($expected, $result);
@@ -535,13 +571,13 @@ class MagicMapperTest extends TestCase
         $reflection = new \ReflectionClass($this->magicMapper);
         $method = $reflection->getMethod('getMetadataColumns');
         $method->setAccessible(true);
-        
+
         $columns = $method->invoke($this->magicMapper);
 
         // Verify all expected metadata columns are present.
         $expectedColumns = [
             '_id', '_uuid', '_slug', '_uri', '_version', '_register', '_schema',
-            '_owner', '_organisation', '_application', '_folder', '_name', 
+            '_owner', '_organisation', '_application', '_folder', '_name',
             '_description', '_summary', '_image', '_size', '_schema_version',
             '_created', '_updated', '_published', '_depublished', '_expires',
             '_files', '_relations', '_locked', '_authorization', '_validation',
@@ -583,20 +619,20 @@ class MagicMapperTest extends TestCase
     public function testSchemaPropertyToColumnMapping(array $propertyConfig, array $expectedColumn, ?string $propertyName=null): void
     {
         $propertyName = $propertyName ?? 'testProperty';
-        
+
         $reflection = new \ReflectionClass($this->magicMapper);
         $method = $reflection->getMethod('mapSchemaPropertyToColumn');
         $method->setAccessible(true);
-        
+
         $result = $method->invoke($this->magicMapper, $propertyName, $propertyConfig);
 
         $this->assertIsArray($result);
         $this->assertEquals($expectedColumn['type'], $result['type']);
-        
+
         if (isset($expectedColumn['length'])) {
             $this->assertEquals($expectedColumn['length'], $result['length']);
         }
-        
+
         if (isset($expectedColumn['nullable'])) {
             $this->assertEquals($expectedColumn['nullable'], $result['nullable']);
         }
@@ -672,14 +708,12 @@ class MagicMapperTest extends TestCase
      */
     public function testObjectDataPreparationForTable(): void
     {
-        $mockSchema = $this->createMock(Schema::class);
-        $mockSchema->expects($this->once())
-                   ->method('getProperties')
-                   ->willReturn([
-                       'name' => ['type' => 'string'],
-                       'age' => ['type' => 'integer'],
-                       'settings' => ['type' => 'object']
-                   ]);
+        $schema = new TestableSchema();
+        $schema->testProperties = [
+            'name' => ['type' => 'string'],
+            'age' => ['type' => 'integer'],
+            'settings' => ['type' => 'object']
+        ];
 
         $objectData = [
             '@self' => [
@@ -697,8 +731,8 @@ class MagicMapperTest extends TestCase
         $reflection = new \ReflectionClass($this->magicMapper);
         $method = $reflection->getMethod('prepareObjectDataForTable');
         $method->setAccessible(true);
-        
-        $result = $method->invoke($this->magicMapper, $objectData, $this->mockRegister, $mockSchema);
+
+        $result = $method->invoke($this->magicMapper, $objectData, $this->mockRegister, $schema);
 
         // Verify metadata fields are prefixed.
         $this->assertEquals('test-uuid-123', $result['_uuid']);
@@ -710,7 +744,7 @@ class MagicMapperTest extends TestCase
         // Verify schema properties are included.
         $this->assertEquals('John Doe', $result['name']);
         $this->assertEquals(30, $result['age']);
-        
+
         // Verify complex types are JSON encoded.
         $this->assertIsString($result['settings']);
         $this->assertEquals(['theme' => 'dark', 'language' => 'en'], json_decode($result['settings'], true));
@@ -731,11 +765,11 @@ class MagicMapperTest extends TestCase
     {
         // Set some static cache values using reflection.
         $reflection = new \ReflectionClass($this->magicMapper);
-        
+
         $tableExistsCache = $reflection->getProperty('tableExistsCache');
         $tableExistsCache->setAccessible(true);
         $tableExistsCache->setValue(['test_table' => time()]);
-        
+
         $schemaTableCache = $reflection->getProperty('schemaTableCache');
         $schemaTableCache->setAccessible(true);
         $schemaTableCache->setValue([1 => 'test_table']);
@@ -745,11 +779,11 @@ class MagicMapperTest extends TestCase
 
         // Verify caches are empty.
         $this->assertEquals([], $tableExistsCache->getValue());
-        
+
         // Test targeted cache clear.
         $tableExistsCache->setValue(['1_1' => time()]);
         $this->magicMapper->clearCache(1, 1);
-        
+
         // Should clear specific cache entry.
         $this->assertArrayNotHasKey('1_1', $tableExistsCache->getValue());
 
@@ -787,11 +821,11 @@ class MagicMapperTest extends TestCase
                      ->willReturn($mockSchemaManager);
 
         $result = $this->magicMapper->getExistingRegisterSchemaTables();
-        
+
         // Should parse table names and extract register+schema IDs.
         $this->assertIsArray($result);
         $this->assertCount(3, $result); // Should find 3 matching tables
-        
+
         // Check structure of returned data.
         foreach ($result as $tableInfo) {
             $this->assertArrayHasKey('registerId', $tableInfo);
@@ -809,33 +843,21 @@ class MagicMapperTest extends TestCase
      */
     public function testTableCreationWorkflow(): void
     {
-        $mockSchema = $this->createMock(Schema::class);
-        $mockSchema->expects($this->any())
-                   ->method('getId')
-                   ->willReturn(1);
-        $mockSchema->expects($this->any())
-                   ->method('getSlug')
-                   ->willReturn('test_schema');
-        $mockSchema->expects($this->any())
-                   ->method('getTitle')
-                   ->willReturn('Test Schema');
-        $mockSchema->expects($this->any())
-                   ->method('getProperties')
-                   ->willReturn([
-                       'name' => ['type' => 'string', 'maxLength' => 255],
-                       'age' => ['type' => 'integer']
-                   ]);
-        $mockSchema->expects($this->any())
-                   ->method('getRequired')
-                   ->willReturn(['name']);
-        $mockSchema->expects($this->any())
-                   ->method('getVersion')
-                   ->willReturn('1.0');
+        $schema = new TestableSchema();
+        $schema->setId(1);
+        $schema->setSlug('test_schema');
+        $schema->setTitle('Test Schema');
+        $schema->setVersion('1.0');
+        $schema->testProperties = [
+            'name' => ['type' => 'string', 'maxLength' => 255],
+            'age' => ['type' => 'integer']
+        ];
+        $schema->setRequired(['name']);
 
         // Mock database schema operations.
         $mockDoctrineSchema = $this->createMock(DoctrineSchema::class);
         $mockTable = $this->createMock(Table::class);
-        
+
         $mockDoctrineSchema->expects($this->once())
                            ->method('createTable')
                            ->with('oc_openregister_table_test_schema')
@@ -865,7 +887,7 @@ class MagicMapperTest extends TestCase
                          ->with('openregister', 'schema_version_1', $this->anything());
 
         // Test table creation.
-        $result = $this->magicMapper->ensureTableForRegisterSchema($this->mockRegister, $mockSchema);
+        $result = $this->magicMapper->ensureTableForRegisterSchema($this->mockRegister, $schema);
 
         $this->assertTrue($result);
 
@@ -879,16 +901,10 @@ class MagicMapperTest extends TestCase
      */
     public function testTableCreationErrorHandling(): void
     {
-        $mockSchema = $this->createMock(Schema::class);
-        $mockSchema->expects($this->any())
-                   ->method('getId')
-                   ->willReturn(1);
-        $mockSchema->expects($this->any())
-                   ->method('getSlug')
-                   ->willReturn('test_schema');
-        $mockSchema->expects($this->any())
-                   ->method('getTitle')
-                   ->willReturn('Test Schema');
+        $schema = new TestableSchema();
+        $schema->setId(1);
+        $schema->setSlug('test_schema');
+        $schema->setTitle('Test Schema');
 
         // Mock database to throw exception.
         $this->mockDb->expects($this->once())
@@ -909,7 +925,7 @@ class MagicMapperTest extends TestCase
         $this->expectException(\Exception::class);
         $this->expectExceptionMessageMatches('/Failed to create\/update table for schema/');
 
-        $this->magicMapper->ensureTableForRegisterSchema($this->mockRegister, $mockSchema);
+        $this->magicMapper->ensureTableForRegisterSchema($this->mockRegister, $schema);
 
     }//end testTableCreationErrorHandling()
 
@@ -929,7 +945,7 @@ class MagicMapperTest extends TestCase
         $reflection = new \ReflectionClass($this->magicMapper);
         $method = $reflection->getMethod('isJsonString');
         $method->setAccessible(true);
-        
+
         $result = $method->invoke($this->magicMapper, $input);
 
         $this->assertEquals($expected, $result);

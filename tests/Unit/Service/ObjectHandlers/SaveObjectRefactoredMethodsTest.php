@@ -40,6 +40,52 @@ use Twig\Loader\ArrayLoader;
 use Symfony\Component\Uid\Uuid;
 use ReflectionClass;
 use ReflectionMethod;
+use stdClass;
+
+/**
+ * Testable Schema subclass for SaveObjectRefactoredMethods tests.
+ *
+ * Allows overriding getSchemaObject and getConfiguration without relying
+ * on PHPUnit mocks of Entity __call methods.
+ */
+class RefactoredTestableSchema extends Schema
+{
+    public ?stdClass $testSchemaObject = null;
+    public ?array $testConfiguration = null;
+    public ?array $testProperties = null;
+
+    /**
+     * Override getSchemaObject to return the test value.
+     *
+     * @param IURLGenerator $urlGenerator URL generator (unused in test double).
+     *
+     * @return stdClass
+     */
+    public function getSchemaObject(IURLGenerator $urlGenerator): stdClass
+    {
+        return $this->testSchemaObject ?? new stdClass();
+    }
+
+    /**
+     * Override getConfiguration to return the test value.
+     *
+     * @return array|null
+     */
+    public function getConfiguration(): ?array
+    {
+        return $this->testConfiguration;
+    }
+
+    /**
+     * Override getProperties to return the test value.
+     *
+     * @return array
+     */
+    public function getProperties(): array
+    {
+        return $this->testProperties ?? [];
+    }
+}
 
 /**
  * Unit tests for SaveObject refactored methods.
@@ -82,11 +128,11 @@ class SaveObjectRefactoredMethodsTest extends TestCase
 	/** @var MockObject|ArrayLoader */
 	private $arrayLoader;
 
-	/** @var MockObject|Register */
-	private $mockRegister;
+	/** @var Register */
+	private Register $mockRegister;
 
-	/** @var MockObject|Schema */
-	private $mockSchema;
+	/** @var RefactoredTestableSchema */
+	private RefactoredTestableSchema $mockSchema;
 
 	/** @var MockObject|IUser */
 	private $mockUser;
@@ -111,20 +157,19 @@ class SaveObjectRefactoredMethodsTest extends TestCase
 		// ArrayLoader is final, so we create a real instance instead of mocking.
 		$this->arrayLoader = new ArrayLoader([]);
 
-		// Create mock entities.
-		$this->mockRegister = $this->createMock(Register::class);
-		$this->mockSchema = $this->createMock(Schema::class);
-		$this->mockUser = $this->createMock(IUser::class);
+		// Create real entity instances (Entity __call methods cannot be mocked in PHPUnit 10+).
+		$this->mockRegister = new Register();
+		$this->mockRegister->setId(1);
+		$this->mockRegister->setSlug('test-register');
 
-		// Set up basic mock returns.
-		$this->mockRegister->method('getId')->willReturn(1);
-		$this->mockRegister->method('getSlug')->willReturn('test-register');
-
-		$this->mockSchema->method('getId')->willReturn(1);
-		$this->mockSchema->method('getSlug')->willReturn('test-schema');
-		$this->mockSchema->method('getSchemaObject')->willReturn((object)[
+		$this->mockSchema = new RefactoredTestableSchema();
+		$this->mockSchema->setId(1);
+		$this->mockSchema->setSlug('test-schema');
+		$this->mockSchema->testSchemaObject = (object)[
 			'properties' => []
-		]);
+		];
+
+		$this->mockUser = $this->createMock(IUser::class);
 
 		$this->mockUser->method('getUID')->willReturn('testuser');
 		$this->userSession->method('getUser')->willReturn($this->mockUser);
@@ -473,16 +518,14 @@ class SaveObjectRefactoredMethodsTest extends TestCase
 	public function testClearImageMetadataIfFilePropertyRemovesMetadata(): void
 	{
 		// Set up schema with file property.
-		$this->mockSchema
-			->method('getSchemaObject')
-			->willReturn((object)[
-				'properties' => [
-					'avatar' => [
-						'type' => 'string',
-						'format' => 'file'
-					]
+		$this->mockSchema->testSchemaObject = (object)[
+			'properties' => [
+				'avatar' => [
+					'type' => 'string',
+					'format' => 'file'
 				]
-			]);
+			]
+		];
 
 		// Set current schema.
 		$schemaProp = $this->reflection->getProperty('currentSchema');
@@ -516,15 +559,13 @@ class SaveObjectRefactoredMethodsTest extends TestCase
 	public function testClearImageMetadataIfFilePropertyPreservesNonFileMetadata(): void
 	{
 		// Set up schema WITHOUT file property.
-		$this->mockSchema
-			->method('getSchemaObject')
-			->willReturn((object)[
-				'properties' => [
-					'avatar' => [
-						'type' => 'string'
-					]
+		$this->mockSchema->testSchemaObject = (object)[
+			'properties' => [
+				'avatar' => [
+					'type' => 'string'
 				]
-			]);
+			]
+		];
 
 		// Set current schema.
 		$schemaProp = $this->reflection->getProperty('currentSchema');
@@ -626,5 +667,3 @@ class SaveObjectRefactoredMethodsTest extends TestCase
 		$this->assertEquals($data, $result->getObject(), 'Data should be preserved.');
 	}
 }
-
-
