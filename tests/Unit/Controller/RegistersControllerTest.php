@@ -261,4 +261,179 @@ class RegistersControllerTest extends TestCase
 
         $this->assertSame(404, $result->getStatus());
     }
+
+    public function testDestroyReturns409OnValidationException(): void
+    {
+        $register = $this->createMock(Register::class);
+        $this->registerService->method('find')->willReturn($register);
+        $this->registerService->method('delete')
+            ->willThrowException(new \OCA\OpenRegister\Exception\ValidationException('Objects attached'));
+
+        $result = $this->controller->destroy(1);
+
+        $this->assertSame(409, $result->getStatus());
+    }
+
+    public function testDestroyReturns500OnGenericException(): void
+    {
+        $register = $this->createMock(Register::class);
+        $this->registerService->method('find')->willReturn($register);
+        $this->registerService->method('delete')
+            ->willThrowException(new Exception('Delete error'));
+
+        $result = $this->controller->destroy(1);
+
+        $this->assertSame(500, $result->getStatus());
+    }
+
+    public function testSchemasReturnsSchemasList(): void
+    {
+        $register = $this->createRealRegister(1, 'Test');
+        $this->registerService->method('find')->willReturn($register);
+
+        $schema = $this->createMock(\OCA\OpenRegister\Db\Schema::class);
+        $schema->method('jsonSerialize')->willReturn(['id' => 1, 'title' => 'Schema']);
+
+        $this->registerMapper->method('getSchemasByRegisterId')->willReturn([$schema]);
+
+        $result = $this->controller->schemas(1);
+
+        $this->assertSame(200, $result->getStatus());
+        $data = $result->getData();
+        $this->assertCount(1, $data['results']);
+        $this->assertSame(1, $data['total']);
+    }
+
+    public function testSchemasReturns404WhenRegisterNotFound(): void
+    {
+        $this->registerService->method('find')
+            ->willThrowException(new DoesNotExistException('Not found'));
+
+        $result = $this->controller->schemas(999);
+
+        $this->assertSame(404, $result->getStatus());
+    }
+
+    public function testSchemasReturns500OnGenericException(): void
+    {
+        $this->registerService->method('find')
+            ->willThrowException(new Exception('DB error'));
+
+        $result = $this->controller->schemas(1);
+
+        $this->assertSame(500, $result->getStatus());
+    }
+
+    public function testObjectsReturnsSearchResults(): void
+    {
+        $this->objectEntityMapper->method('searchObjects')->willReturn([
+            'results' => [],
+            'total' => 0,
+        ]);
+
+        $result = $this->controller->objects(1, 1);
+
+        $this->assertSame(200, $result->getStatus());
+    }
+
+    public function testUpdateReturnsErrorOnDBException(): void
+    {
+        $this->request->method('getParams')->willReturn(['title' => 'Updated']);
+        $this->registerService->method('updateFromArray')
+            ->willThrowException(new DBException('Constraint violation'));
+
+        $result = $this->controller->update(1);
+
+        // DBException is caught and wrapped with DatabaseConstraintException
+        $this->assertInstanceOf(\OCP\AppFramework\Http\JSONResponse::class, $result);
+        $data = $result->getData();
+        $this->assertArrayHasKey('error', $data);
+    }
+
+    public function testShowThrowsWhenNotFound(): void
+    {
+        // show() has no try/catch, so DoesNotExistException propagates
+        $this->request->method('getParam')->willReturn([]);
+        $this->registerService->method('find')
+            ->willThrowException(new DoesNotExistException('Not found'));
+
+        $this->expectException(DoesNotExistException::class);
+        $this->controller->show(999);
+    }
+
+    public function testExportReturns400OnException(): void
+    {
+        $this->request->method('getParam')->willReturn('configuration');
+        $this->registerService->method('find')
+            ->willThrowException(new Exception('Export error'));
+
+        $result = $this->controller->export(1);
+
+        $this->assertInstanceOf(JSONResponse::class, $result);
+        $this->assertSame(400, $result->getStatus());
+    }
+
+    public function testImportReturns400WhenNoFile(): void
+    {
+        $this->request->method('getUploadedFile')->willReturn(null);
+
+        $result = $this->controller->import(1);
+
+        $this->assertSame(400, $result->getStatus());
+        $this->assertSame('No file uploaded', $result->getData()['error']);
+    }
+
+    public function testPublishToGitHubReturns400WhenMissingParams(): void
+    {
+        $register = $this->createRealRegister(1, 'Test');
+        $this->registerMapper->method('find')->willReturn($register);
+        $this->request->method('getParams')->willReturn([]);
+
+        $result = $this->controller->publishToGitHub(1);
+
+        $this->assertSame(400, $result->getStatus());
+        $this->assertStringContainsString('Owner and repo', $result->getData()['error']);
+    }
+
+    public function testPublishToGitHubReturns404WhenRegisterNotFound(): void
+    {
+        $this->registerMapper->method('find')
+            ->willThrowException(new DoesNotExistException('Not found'));
+
+        $result = $this->controller->publishToGitHub(999);
+
+        $this->assertSame(404, $result->getStatus());
+    }
+
+    public function testStatsReturnsRegisterStatistics(): void
+    {
+        $register = $this->createRealRegister(1, 'Test');
+        $this->registerService->method('find')->willReturn($register);
+
+        $result = $this->controller->stats(1);
+
+        $this->assertSame(200, $result->getStatus());
+        $data = $result->getData();
+        $this->assertArrayHasKey('register', $data);
+    }
+
+    public function testStatsReturns404WhenNotFound(): void
+    {
+        $this->registerService->method('find')
+            ->willThrowException(new DoesNotExistException('Not found'));
+
+        $result = $this->controller->stats(999);
+
+        $this->assertSame(404, $result->getStatus());
+    }
+
+    public function testStatsReturns500OnGenericException(): void
+    {
+        $this->registerService->method('find')
+            ->willThrowException(new Exception('Error'));
+
+        $result = $this->controller->stats(1);
+
+        $this->assertSame(500, $result->getStatus());
+    }
 }

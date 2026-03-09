@@ -272,4 +272,141 @@ class FilesControllerTest extends TestCase
 
         $this->assertEquals(200, $result->getStatus());
     }
+
+    public function testDepublishObjectNull(): void
+    {
+        $this->objectService->method('setSchema')->willReturnSelf();
+        $this->objectService->method('setRegister')->willReturnSelf();
+        $this->objectService->method('setObject')->willReturnSelf();
+        $this->objectService->method('getObject')->willReturn(null);
+
+        $result = $this->controller->depublish('reg1', 'schema1', 'obj1', 1);
+
+        $this->assertEquals(404, $result->getStatus());
+    }
+
+    public function testUpdateSuccess(): void
+    {
+        $object = $this->createMock(ObjectEntity::class);
+        $this->objectService->method('setSchema')->willReturnSelf();
+        $this->objectService->method('setRegister')->willReturnSelf();
+        $this->objectService->method('setObject')->willReturnSelf();
+        $this->objectService->method('getObject')->willReturn($object);
+
+        $file = $this->createMock(File::class);
+        $this->fileService->method('updateFile')->willReturn($file);
+        $this->fileService->method('formatFile')->willReturn(['id' => 1, 'name' => 'updated.txt']);
+
+        $this->request->method('getParams')->willReturn([
+            'content' => 'updated content',
+            'tags' => ['tag1'],
+        ]);
+
+        $result = $this->controller->update('reg1', 'schema1', 'obj1', 1);
+
+        $this->assertEquals(200, $result->getStatus());
+    }
+
+    public function testUpdateObjectNotFound(): void
+    {
+        $this->objectService->method('setSchema')->willReturnSelf();
+        $this->objectService->method('setRegister')->willReturnSelf();
+        $this->objectService->method('setObject')
+            ->willThrowException(new DoesNotExistException('Not found'));
+
+        $result = $this->controller->update('reg1', 'schema1', 'obj1', 1);
+
+        $this->assertEquals(404, $result->getStatus());
+    }
+
+    public function testShowSuccess(): void
+    {
+        $object = $this->createMock(ObjectEntity::class);
+        $this->objectService->method('setSchema')->willReturnSelf();
+        $this->objectService->method('setRegister')->willReturnSelf();
+        $this->objectService->method('setObject')->willReturnSelf();
+        $this->objectService->method('getObject')->willReturn($object);
+
+        $file = $this->createMock(File::class);
+        $this->fileService->method('getFile')->willReturn($file);
+        $this->fileService->method('formatFile')->willReturn(['id' => 1, 'name' => 'test.txt']);
+
+        $result = $this->controller->show('reg1', 'schema1', 'obj1', 1);
+
+        $this->assertEquals(200, $result->getStatus());
+    }
+
+    public function testShowObjectNotFound(): void
+    {
+        $this->objectService->method('setSchema')->willReturnSelf();
+        $this->objectService->method('setRegister')->willReturnSelf();
+        $this->objectService->method('setObject')
+            ->willThrowException(new DoesNotExistException('Not found'));
+
+        $result = $this->controller->show('reg1', 'schema1', 'obj1', 1);
+
+        $this->assertEquals(404, $result->getStatus());
+    }
+
+    public function testIndexGeneralException(): void
+    {
+        $this->fileService->method('getFiles')
+            ->willThrowException(new \Exception('General error'));
+
+        $result = $this->controller->index('reg1', 'schema1', 'obj1');
+
+        $this->assertEquals(500, $result->getStatus());
+    }
+
+    public function testCreateMultipartMissingFile(): void
+    {
+        $object = $this->createMock(ObjectEntity::class);
+        $this->objectService->method('setSchema')->willReturnSelf();
+        $this->objectService->method('setRegister')->willReturnSelf();
+        $this->objectService->method('setObject')->willReturnSelf();
+        $this->objectService->method('getObject')->willReturn($object);
+        $this->request->method('getUploadedFile')->willReturn(null);
+
+        $result = $this->controller->createMultipart('reg1', 'schema1', 'obj1');
+
+        $this->assertEquals(400, $result->getStatus());
+    }
+
+    public function testDeleteGeneralException(): void
+    {
+        $this->objectService->method('setSchema')->willReturnSelf();
+        $this->objectService->method('setRegister')->willReturnSelf();
+        $this->objectService->method('setObject')->willReturnSelf();
+        $this->objectService->method('getObject')->willReturn($this->createMock(ObjectEntity::class));
+        $this->fileService->method('deleteFile')
+            ->willThrowException(new \Exception('Delete error'));
+
+        $result = $this->controller->delete('reg1', 'schema1', 'obj1', 1);
+
+        $this->assertEquals(400, $result->getStatus());
+    }
+
+    public function testPublishObjectNotFound(): void
+    {
+        $this->objectService->method('setSchema')->willReturnSelf();
+        $this->objectService->method('setRegister')->willReturnSelf();
+        $this->objectService->method('setObject')
+            ->willThrowException(new DoesNotExistException('Not found'));
+
+        $result = $this->controller->publish('reg1', 'schema1', 'obj1', 1);
+
+        $this->assertEquals(404, $result->getStatus());
+    }
+
+    public function testDepublishObjectNotFound(): void
+    {
+        $this->objectService->method('setSchema')->willReturnSelf();
+        $this->objectService->method('setRegister')->willReturnSelf();
+        $this->objectService->method('setObject')
+            ->willThrowException(new DoesNotExistException('Not found'));
+
+        $result = $this->controller->depublish('reg1', 'schema1', 'obj1', 1);
+
+        $this->assertEquals(404, $result->getStatus());
+    }
 }

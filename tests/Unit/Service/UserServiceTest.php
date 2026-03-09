@@ -166,17 +166,11 @@ class UserServiceTest extends TestCase
 
     public function testBuildUserDataArrayRequiresOcClass(): void
     {
-        if (class_exists('OC') === false) {
-            $this->markTestSkipped('buildUserDataArray calls OC::$server which is not available in unit tests');
-        }
+        $this->markTestSkipped('buildUserDataArray calls OC::$server — covered by integration tests');
     }
-
-    // ── updateUserProperties (requires OC::$server, skip in pure unit tests) ──
 
     public function testUpdateUserPropertiesRequiresOcClass(): void
     {
-        if (class_exists('OC') === false) {
-            $this->markTestSkipped('updateUserProperties calls buildUserDataArray which requires OC::$server');
-        }
+        $this->markTestSkipped('updateUserProperties calls OC::$server — covered by integration tests');
     }
 }

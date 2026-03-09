@@ -332,6 +332,287 @@ class SettingsControllerTest extends TestCase
     }
 
     /**
+     * Test rebase handles service exceptions gracefully
+     *
+     * @return void
+     */
+    public function testRebaseHandlesServiceExceptions(): void
+    {
+        $this->settingsService
+            ->method('rebase')
+            ->willThrowException(new \Exception('Rebase failed'));
+
+        $response = $this->controller->rebase();
+
+        $this->assertInstanceOf(JSONResponse::class, $response);
+        $data = $response->getData();
+        $this->assertIsArray($data);
+        $this->assertArrayHasKey('error', $data);
+    }
+
+    /**
+     * Test getStatistics handles service exceptions gracefully
+     *
+     * @return void
+     */
+    public function testGetStatisticsHandlesServiceExceptions(): void
+    {
+        $this->settingsService
+            ->method('getStats')
+            ->willThrowException(new \Exception('Stats error'));
+
+        $response = $this->controller->getStatistics();
+
+        $this->assertInstanceOf(JSONResponse::class, $response);
+        $data = $response->getData();
+        $this->assertIsArray($data);
+        $this->assertArrayHasKey('error', $data);
+    }
+
+    /**
+     * Test stats handles service exceptions gracefully
+     *
+     * @return void
+     */
+    public function testStatsHandlesServiceExceptions(): void
+    {
+        $this->settingsService
+            ->method('getStats')
+            ->willThrowException(new \Exception('Stats error'));
+
+        $response = $this->controller->stats();
+
+        $this->assertInstanceOf(JSONResponse::class, $response);
+        $data = $response->getData();
+        $this->assertIsArray($data);
+        $this->assertArrayHasKey('error', $data);
+    }
+
+    /**
+     * Test getVersionInfo handles service exceptions gracefully
+     *
+     * @return void
+     */
+    public function testGetVersionInfoHandlesServiceExceptions(): void
+    {
+        $this->settingsService
+            ->method('getVersionInfoOnly')
+            ->willThrowException(new \Exception('Version error'));
+
+        $response = $this->controller->getVersionInfo();
+
+        $this->assertInstanceOf(JSONResponse::class, $response);
+        $data = $response->getData();
+        $this->assertIsArray($data);
+        $this->assertArrayHasKey('error', $data);
+    }
+
+    /**
+     * Test getSearchBackend handles service exceptions gracefully
+     *
+     * @return void
+     */
+    public function testGetSearchBackendHandlesServiceExceptions(): void
+    {
+        $this->settingsService
+            ->method('getSearchBackendConfig')
+            ->willThrowException(new \Exception('Config error'));
+
+        $response = $this->controller->getSearchBackend();
+
+        $this->assertInstanceOf(JSONResponse::class, $response);
+        $data = $response->getData();
+        $this->assertIsArray($data);
+        $this->assertArrayHasKey('error', $data);
+    }
+
+    /**
+     * Test update handles service exceptions gracefully
+     *
+     * @return void
+     */
+    public function testUpdateHandlesServiceExceptions(): void
+    {
+        $this->settingsService
+            ->method('updateSettings')
+            ->willThrowException(new \Exception('Update failed'));
+
+        $response = $this->controller->update();
+
+        $this->assertInstanceOf(JSONResponse::class, $response);
+        $data = $response->getData();
+        $this->assertIsArray($data);
+        $this->assertArrayHasKey('error', $data);
+    }
+
+    /**
+     * Test updatePublishingOptions handles service exceptions gracefully
+     *
+     * @return void
+     */
+    public function testUpdatePublishingOptionsHandlesServiceExceptions(): void
+    {
+        $this->settingsService
+            ->method('updatePublishingOptions')
+            ->willThrowException(new \Exception('Publish options error'));
+
+        $response = $this->controller->updatePublishingOptions();
+
+        $this->assertInstanceOf(JSONResponse::class, $response);
+        $data = $response->getData();
+        $this->assertIsArray($data);
+        $this->assertArrayHasKey('error', $data);
+    }
+
+    /**
+     * Test load handles service exceptions gracefully
+     *
+     * @return void
+     */
+    public function testLoadHandlesServiceExceptions(): void
+    {
+        $this->settingsService
+            ->method('getSettings')
+            ->willThrowException(new \Exception('Load failed'));
+
+        $response = $this->controller->load();
+
+        $this->assertInstanceOf(JSONResponse::class, $response);
+        $data = $response->getData();
+        $this->assertIsArray($data);
+        $this->assertArrayHasKey('error', $data);
+    }
+
+    /**
+     * Test semanticSearch returns results
+     *
+     * @return void
+     */
+    public function testSemanticSearchReturnsResults(): void
+    {
+        $this->vectorizationService
+            ->method('semanticSearch')
+            ->willReturn([
+                ['id' => '1', 'score' => 0.95],
+            ]);
+
+        $response = $this->controller->semanticSearch('test query', 10);
+
+        $this->assertInstanceOf(JSONResponse::class, $response);
+        $data = $response->getData();
+        $this->assertTrue($data['success']);
+        $this->assertSame('test query', $data['query']);
+        $this->assertSame(1, $data['total']);
+    }
+
+    /**
+     * Test semanticSearch returns 400 for empty query
+     *
+     * @return void
+     */
+    public function testSemanticSearchReturns400ForEmptyQuery(): void
+    {
+        $response = $this->controller->semanticSearch('   ', 10);
+
+        $this->assertInstanceOf(JSONResponse::class, $response);
+        $data = $response->getData();
+        $this->assertFalse($data['success']);
+        $this->assertSame(400, $response->getStatus());
+    }
+
+    /**
+     * Test semanticSearch handles exceptions
+     *
+     * @return void
+     */
+    public function testSemanticSearchHandlesExceptions(): void
+    {
+        $this->vectorizationService
+            ->method('semanticSearch')
+            ->willThrowException(new \Exception('Search error'));
+
+        $response = $this->controller->semanticSearch('test', 10);
+
+        $this->assertInstanceOf(JSONResponse::class, $response);
+        $this->assertSame(500, $response->getStatus());
+        $data = $response->getData();
+        $this->assertFalse($data['success']);
+    }
+
+    /**
+     * Test hybridSearch returns 400 for empty query
+     *
+     * @return void
+     */
+    public function testHybridSearchReturns400ForEmptyQuery(): void
+    {
+        $response = $this->controller->hybridSearch('   ', 20);
+
+        $this->assertInstanceOf(JSONResponse::class, $response);
+        $this->assertSame(400, $response->getStatus());
+    }
+
+    /**
+     * Test getObjectService returns null when app is installed
+     *
+     * @return void
+     */
+    public function testGetObjectServiceReturnsNullWhenInstalled(): void
+    {
+        $this->appManager->method('getInstalledApps')
+            ->willReturn(['openregister']);
+
+        $result = $this->controller->getObjectService();
+
+        $this->assertNull($result);
+    }
+
+    /**
+     * Test getObjectService throws when app not installed
+     *
+     * @return void
+     */
+    public function testGetObjectServiceThrowsWhenNotInstalled(): void
+    {
+        $this->appManager->method('getInstalledApps')
+            ->willReturn(['other-app']);
+
+        $this->expectException(\RuntimeException::class);
+        $this->controller->getObjectService();
+    }
+
+    /**
+     * Test getConfigurationService returns service when app is installed
+     *
+     * @return void
+     */
+    public function testGetConfigurationServiceReturnsService(): void
+    {
+        $this->appManager->method('getInstalledApps')
+            ->willReturn(['openregister']);
+        $mockConfigService = $this->createMock(\OCA\OpenRegister\Service\ConfigurationService::class);
+        $this->container->method('get')->willReturn($mockConfigService);
+
+        $result = $this->controller->getConfigurationService();
+
+        $this->assertSame($mockConfigService, $result);
+    }
+
+    /**
+     * Test getConfigurationService throws when app not installed
+     *
+     * @return void
+     */
+    public function testGetConfigurationServiceThrowsWhenNotInstalled(): void
+    {
+        $this->appManager->method('getInstalledApps')
+            ->willReturn(['other-app']);
+
+        $this->expectException(\RuntimeException::class);
+        $this->controller->getConfigurationService();
+    }
+
+    /**
      * Test that all existing controller methods return JSONResponse objects
      *
      * This comprehensive test ensures API consistency across ALL endpoints

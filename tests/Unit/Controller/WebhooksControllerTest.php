@@ -201,4 +201,192 @@ class WebhooksControllerTest extends TestCase
         $this->assertIsArray($result->getData());
         $this->assertNotEmpty($result->getData());
     }
+
+    public function testLogsReturnsWebhookLogs(): void
+    {
+        $webhook = $this->createWebhookEntity();
+        $this->webhookMapper->method('find')->willReturn($webhook);
+        $this->request->method('getParam')->willReturn(null);
+        $this->webhookLogMapper->method('findByWebhook')->willReturn([]);
+
+        $result = $this->controller->logs(1);
+
+        $this->assertEquals(200, $result->getStatus());
+        $data = $result->getData();
+        $this->assertArrayHasKey('results', $data);
+        $this->assertSame(0, $data['total']);
+    }
+
+    public function testLogsReturns404WhenWebhookNotFound(): void
+    {
+        $this->webhookMapper->method('find')
+            ->willThrowException(new DoesNotExistException('not found'));
+
+        $result = $this->controller->logs(999);
+
+        $this->assertEquals(404, $result->getStatus());
+        $this->assertSame('Webhook not found', $result->getData()['error']);
+    }
+
+    public function testLogsReturns500OnGenericException(): void
+    {
+        $this->webhookMapper->method('find')
+            ->willThrowException(new \Exception('DB error'));
+
+        $result = $this->controller->logs(1);
+
+        $this->assertEquals(500, $result->getStatus());
+    }
+
+    public function testLogStatsReturnsStatistics(): void
+    {
+        $webhook = $this->createWebhookEntity();
+        $this->webhookMapper->method('find')->willReturn($webhook);
+        $this->webhookLogMapper->method('getStatistics')->willReturn([
+            'total' => 50,
+            'successful' => 45,
+            'failed' => 5,
+        ]);
+        $this->webhookLogMapper->method('findFailedForRetry')->willReturn([]);
+
+        $result = $this->controller->logStats(1);
+
+        $this->assertEquals(200, $result->getStatus());
+        $data = $result->getData();
+        $this->assertSame(50, $data['total']);
+        $this->assertSame(0, $data['pendingRetries']);
+    }
+
+    public function testLogStatsReturns404WhenWebhookNotFound(): void
+    {
+        $this->webhookMapper->method('find')
+            ->willThrowException(new DoesNotExistException('not found'));
+
+        $result = $this->controller->logStats(999);
+
+        $this->assertEquals(404, $result->getStatus());
+    }
+
+    public function testLogStatsReturns500OnGenericException(): void
+    {
+        $this->webhookMapper->method('find')
+            ->willThrowException(new \Exception('Stats error'));
+
+        $result = $this->controller->logStats(1);
+
+        $this->assertEquals(500, $result->getStatus());
+    }
+
+    public function testAllLogsReturnsLogs(): void
+    {
+        $this->request->method('getParam')->willReturn(null);
+        $this->webhookLogMapper->method('findAll')->willReturn([]);
+
+        $result = $this->controller->allLogs();
+
+        $this->assertEquals(200, $result->getStatus());
+        $data = $result->getData();
+        $this->assertArrayHasKey('results', $data);
+        $this->assertArrayHasKey('total', $data);
+    }
+
+    public function testAllLogsReturns500OnException(): void
+    {
+        $this->request->method('getParam')->willReturn(null);
+        $this->webhookLogMapper->method('findAll')
+            ->willThrowException(new \Exception('DB error'));
+
+        $result = $this->controller->allLogs();
+
+        $this->assertEquals(500, $result->getStatus());
+    }
+
+    public function testRetryReturns404WhenLogNotFound(): void
+    {
+        $this->webhookLogMapper->method('find')
+            ->willThrowException(new DoesNotExistException('not found'));
+
+        $result = $this->controller->retry(999);
+
+        $this->assertEquals(404, $result->getStatus());
+    }
+
+    public function testCreateRemovesInternalParams(): void
+    {
+        $webhook = $this->createWebhookEntity();
+
+        $this->request->method('getParams')->willReturn([
+            '_route' => 'test',
+            'id' => 5,
+            'name' => 'New Hook',
+            'url' => 'https://example.com/hook',
+        ]);
+        $this->webhookMapper->expects($this->once())
+            ->method('createFromArray')
+            ->with($this->callback(function ($data) {
+                return !isset($data['_route']) && !isset($data['id'])
+                    && isset($data['name']) && isset($data['url']);
+            }))
+            ->willReturn($webhook);
+
+        $result = $this->controller->create();
+        $this->assertEquals(201, $result->getStatus());
+    }
+
+    public function testCreateReturns500OnException(): void
+    {
+        $this->request->method('getParams')->willReturn([
+            'name' => 'Test',
+            'url' => 'https://example.com',
+        ]);
+        $this->webhookMapper->method('createFromArray')
+            ->willThrowException(new \Exception('DB error'));
+
+        $result = $this->controller->create();
+
+        $this->assertEquals(500, $result->getStatus());
+    }
+
+    public function testUpdateReturns500OnException(): void
+    {
+        $this->request->method('getParams')->willReturn(['name' => 'Updated']);
+        $this->webhookMapper->method('updateFromArray')
+            ->willThrowException(new \Exception('DB error'));
+
+        $result = $this->controller->update(1);
+
+        $this->assertEquals(500, $result->getStatus());
+    }
+
+    public function testDestroyReturns500OnException(): void
+    {
+        $this->webhookMapper->method('find')
+            ->willThrowException(new \Exception('DB error'));
+
+        $result = $this->controller->destroy(1);
+
+        $this->assertEquals(500, $result->getStatus());
+    }
+
+    public function testTestWebhookReturns500OnException(): void
+    {
+        $webhook = $this->createWebhookEntity();
+        $this->webhookMapper->method('find')->willReturn($webhook);
+        $this->webhookService->method('deliverWebhook')
+            ->willThrowException(new \Exception('Delivery failed'));
+
+        $result = $this->controller->test(1);
+
+        $this->assertEquals(500, $result->getStatus());
+    }
+
+    public function testShowReturns500OnException(): void
+    {
+        $this->webhookMapper->method('find')
+            ->willThrowException(new \Exception('DB error'));
+
+        $result = $this->controller->show(1);
+
+        $this->assertEquals(500, $result->getStatus());
+    }
 }

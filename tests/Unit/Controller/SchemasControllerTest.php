@@ -220,4 +220,254 @@ class SchemasControllerTest extends TestCase
 
         $this->assertSame(500, $result->getStatus());
     }
+
+    public function testDownloadReturnsSchema(): void
+    {
+        $schema = $this->createRealSchema(1, 'Downloadable');
+        $this->schemaMapper->method('find')->willReturn($schema);
+
+        $result = $this->controller->download(1);
+
+        $this->assertSame(200, $result->getStatus());
+    }
+
+    public function testDownloadReturns404WhenNotFound(): void
+    {
+        $this->schemaMapper->method('find')
+            ->willThrowException(new Exception('Not found'));
+
+        $result = $this->controller->download(999);
+
+        $this->assertSame(404, $result->getStatus());
+        $this->assertSame('Schema not found', $result->getData()['error']);
+    }
+
+    public function testRelatedReturnsRelationships(): void
+    {
+        $schema1 = $this->createRealSchema(1, 'Schema A');
+        $schema1->setProperties(['field1' => ['type' => 'string']]);
+
+        $this->schemaMapper->method('getRelated')->willReturn([]);
+        $this->schemaMapper->method('find')->willReturn($schema1);
+        $this->schemaMapper->method('findAll')->willReturn([$schema1]);
+        $this->schemaMapper->method('hasReferenceToSchema')->willReturn(false);
+
+        $result = $this->controller->related(1);
+
+        $this->assertSame(200, $result->getStatus());
+        $data = $result->getData();
+        $this->assertArrayHasKey('incoming', $data);
+        $this->assertArrayHasKey('outgoing', $data);
+        $this->assertArrayHasKey('total', $data);
+    }
+
+    public function testRelatedReturns404WhenSchemaNotFound(): void
+    {
+        $this->schemaMapper->method('getRelated')
+            ->willThrowException(new DoesNotExistException('Not found'));
+
+        $result = $this->controller->related(999);
+
+        $this->assertSame(404, $result->getStatus());
+    }
+
+    public function testRelatedReturns500OnGenericException(): void
+    {
+        $this->schemaMapper->method('getRelated')
+            ->willThrowException(new Exception('DB error'));
+
+        $result = $this->controller->related(1);
+
+        $this->assertSame(500, $result->getStatus());
+    }
+
+    public function testStatsReturnsSchemaStatistics(): void
+    {
+        $schema = $this->createRealSchema(1, 'Stats Schema');
+        $this->schemaMapper->method('find')->willReturn($schema);
+
+        $this->objectEntityMapper->method('getStatistics')->willReturn([
+            'total' => 50,
+            'invalid' => 3,
+            'deleted' => 5,
+            'published' => 42,
+            'locked' => 1,
+            'size' => 10000,
+        ]);
+
+        $this->auditTrailMapper->method('getStatistics')->willReturn([
+            'total' => 100,
+        ]);
+
+        $this->schemaMapper->method('getRegisterCountPerSchema')->willReturn([
+            1 => 3,
+        ]);
+
+        $result = $this->controller->stats(1);
+
+        $this->assertSame(200, $result->getStatus());
+        $data = $result->getData();
+        $this->assertSame(50, $data['objectCount']);
+        $this->assertArrayHasKey('objects', $data);
+        $this->assertArrayHasKey('logs', $data);
+    }
+
+    public function testStatsReturns404WhenSchemaNotFound(): void
+    {
+        $this->schemaMapper->method('find')
+            ->willThrowException(new DoesNotExistException('Not found'));
+
+        $result = $this->controller->stats(999);
+
+        $this->assertSame(404, $result->getStatus());
+    }
+
+    public function testExploreReturnsExplorationResults(): void
+    {
+        $this->schemaService->method('exploreSchemaProperties')->willReturn([
+            'newProperties' => ['field1' => ['type' => 'string']],
+            'objectsScanned' => 100,
+        ]);
+
+        $result = $this->controller->explore(1);
+
+        $this->assertSame(200, $result->getStatus());
+    }
+
+    public function testExploreReturns500OnException(): void
+    {
+        $this->schemaService->method('exploreSchemaProperties')
+            ->willThrowException(new Exception('Explore failed'));
+
+        $result = $this->controller->explore(1);
+
+        $this->assertSame(500, $result->getStatus());
+    }
+
+    public function testUpdateFromExplorationReturns400WhenNoProperties(): void
+    {
+        $this->request->method('getParam')->willReturn([]);
+
+        $result = $this->controller->updateFromExploration(1);
+
+        $this->assertSame(400, $result->getStatus());
+    }
+
+    public function testUpdateFromExplorationSuccess(): void
+    {
+        $this->request->method('getParam')
+            ->willReturnMap([
+                ['properties', [], ['field1' => ['type' => 'string']]],
+            ]);
+
+        $updatedSchema = $this->createRealSchema(1, 'Updated');
+        $this->schemaService->method('updateSchemaFromExploration')->willReturn($updatedSchema);
+        // clearSchemaCache() returns void, no need to mock return value
+
+        $result = $this->controller->updateFromExploration(1);
+
+        $this->assertSame(200, $result->getStatus());
+        $data = $result->getData();
+        $this->assertTrue($data['success']);
+    }
+
+    public function testUpdateFromExplorationReturns500OnException(): void
+    {
+        $this->request->method('getParam')
+            ->willReturnMap([
+                ['properties', [], ['field1' => ['type' => 'string']]],
+            ]);
+
+        $this->schemaService->method('updateSchemaFromExploration')
+            ->willThrowException(new Exception('Update error'));
+
+        $result = $this->controller->updateFromExploration(1);
+
+        $this->assertSame(500, $result->getStatus());
+    }
+
+    public function testPublishSetsPublicationDate(): void
+    {
+        $schema = $this->createRealSchema(1, 'Publishable');
+        $this->request->method('getParam')->willReturn(null);
+        $this->schemaMapper->method('find')->willReturn($schema);
+        $this->schemaMapper->method('update')->willReturn($schema);
+
+        $result = $this->controller->publish(1);
+
+        $this->assertSame(200, $result->getStatus());
+    }
+
+    public function testPublishReturns404WhenSchemaNotFound(): void
+    {
+        $this->request->method('getParam')->willReturn(null);
+        $this->schemaMapper->method('find')
+            ->willThrowException(new DoesNotExistException('Not found'));
+
+        $result = $this->controller->publish(999);
+
+        $this->assertSame(404, $result->getStatus());
+    }
+
+    public function testDepublishSetsDepublicationDate(): void
+    {
+        $schema = $this->createRealSchema(1, 'Depublishable');
+        $this->request->method('getParam')->willReturn(null);
+        $this->schemaMapper->method('find')->willReturn($schema);
+        $this->schemaMapper->method('update')->willReturn($schema);
+
+        $result = $this->controller->depublish(1);
+
+        $this->assertSame(200, $result->getStatus());
+    }
+
+    public function testDepublishReturns404WhenSchemaNotFound(): void
+    {
+        $this->request->method('getParam')->willReturn(null);
+        $this->schemaMapper->method('find')
+            ->willThrowException(new DoesNotExistException('Not found'));
+
+        $result = $this->controller->depublish(999);
+
+        $this->assertSame(404, $result->getStatus());
+    }
+
+    public function testUpdateRemovesImmutableFields(): void
+    {
+        $schema = $this->createRealSchema(1, 'Updated');
+
+        $this->request->method('getParams')->willReturn([
+            'id' => 1,
+            'organisation' => 'org1',
+            'owner' => 'user1',
+            'created' => '2024-01-01',
+            'title' => 'Updated',
+        ]);
+        $this->schemaMapper->expects($this->once())
+            ->method('updateFromArray')
+            ->with(
+                $this->equalTo(1),
+                $this->callback(function ($data) {
+                    return !isset($data['id'])
+                        && !isset($data['organisation'])
+                        && !isset($data['owner'])
+                        && !isset($data['created'])
+                        && isset($data['title']);
+                })
+            )
+            ->willReturn($schema);
+
+        $this->controller->update(1);
+    }
+
+    public function testUpdateReturns500OnException(): void
+    {
+        $this->request->method('getParams')->willReturn(['title' => 'Updated']);
+        $this->schemaMapper->method('updateFromArray')
+            ->willThrowException(new Exception('DB error'));
+
+        $result = $this->controller->update(1);
+
+        $this->assertSame(500, $result->getStatus());
+    }
 }

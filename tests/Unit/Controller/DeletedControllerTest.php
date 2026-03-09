@@ -194,4 +194,138 @@ class DeletedControllerTest extends TestCase
 
         $this->assertEquals(400, $result->getStatus());
     }
+
+    public function testRestoreSuccess(): void
+    {
+        $object = new ObjectEntity();
+        $object->setDeleted(['deleted' => '2024-01-01']);
+        $this->objectEntityMapper->method('find')->willReturn($object);
+
+        // Mock the query builder chain
+        $qb = $this->createMock(\OCP\DB\QueryBuilder\IQueryBuilder::class);
+        $qb->method('update')->willReturnSelf();
+        $qb->method('set')->willReturnSelf();
+        $qb->method('where')->willReturnSelf();
+        $qb->method('createNamedParameter')->willReturn('?');
+
+        $expr = $this->createMock(\OCP\DB\QueryBuilder\IExpressionBuilder::class);
+        $expr->method('eq')->willReturn('uuid = ?');
+        $qb->method('expr')->willReturn($expr);
+        $qb->method('executeStatement')->willReturn(1);
+
+        $this->objectEntityMapper->method('getQueryBuilder')->willReturn($qb);
+
+        $result = $this->controller->restore('uuid-123');
+
+        $this->assertEquals(200, $result->getStatus());
+        $data = $result->getData();
+        $this->assertTrue($data['success']);
+    }
+
+    public function testRestoreMultipleSuccess(): void
+    {
+        $deletedObject = new ObjectEntity();
+        $deletedObject->setDeleted(['deleted' => '2024-01-01']);
+        $ref = new \ReflectionClass($deletedObject);
+        $prop = $ref->getProperty('id');
+        $prop->setAccessible(true);
+        $prop->setValue($deletedObject, 'uuid-1');
+
+        $this->request->method('getParam')
+            ->willReturnMap([
+                ['ids', [], ['uuid-1']],
+            ]);
+
+        $this->objectEntityMapper->method('findAll')->willReturn([$deletedObject]);
+        $this->objectEntityMapper->method('update')->willReturn($deletedObject);
+
+        $result = $this->controller->restoreMultiple();
+
+        $this->assertEquals(200, $result->getStatus());
+        $data = $result->getData();
+        $this->assertTrue($data['success']);
+    }
+
+    public function testRestoreMultipleException(): void
+    {
+        $this->request->method('getParam')
+            ->willReturnMap([
+                ['ids', [], ['uuid-1']],
+            ]);
+
+        $this->objectEntityMapper->method('findAll')
+            ->willThrowException(new \Exception('Error'));
+
+        $result = $this->controller->restoreMultiple();
+
+        $this->assertEquals(500, $result->getStatus());
+    }
+
+    public function testDestroyMultipleSuccess(): void
+    {
+        $deletedObject = new ObjectEntity();
+        $deletedObject->setDeleted(['deleted' => '2024-01-01']);
+        $ref = new \ReflectionClass($deletedObject);
+        $prop = $ref->getProperty('id');
+        $prop->setAccessible(true);
+        $prop->setValue($deletedObject, 'uuid-1');
+
+        $this->request->method('getParam')
+            ->willReturnMap([
+                ['ids', [], ['uuid-1']],
+            ]);
+
+        $this->objectEntityMapper->method('findAll')->willReturn([$deletedObject]);
+        $this->objectEntityMapper->method('delete')->willReturn($deletedObject);
+
+        $result = $this->controller->destroyMultiple();
+
+        $this->assertEquals(200, $result->getStatus());
+        $data = $result->getData();
+        $this->assertTrue($data['success']);
+    }
+
+    public function testDestroyMultipleException(): void
+    {
+        $this->request->method('getParam')
+            ->willReturnMap([
+                ['ids', [], ['uuid-1']],
+            ]);
+
+        $this->objectEntityMapper->method('findAll')
+            ->willThrowException(new \Exception('Error'));
+
+        $result = $this->controller->destroyMultiple();
+
+        $this->assertEquals(500, $result->getStatus());
+    }
+
+    public function testIndexWithPagination(): void
+    {
+        $this->request->method('getParams')->willReturn([
+            '_limit' => '5',
+            '_page' => '2',
+        ]);
+        $this->userSession->method('getUser')->willReturn(null);
+
+        $this->objectService->method('searchObjectsPaginated')->willReturn([
+            'results' => [],
+            'total' => 0,
+        ]);
+
+        $result = $this->controller->index();
+
+        $this->assertEquals(200, $result->getStatus());
+    }
+
+    public function testTopDeletersException(): void
+    {
+        // topDeleters returns a hardcoded empty array, so no exception is possible
+        // This test confirms the endpoint works consistently
+        $result = $this->controller->topDeleters();
+
+        $this->assertEquals(200, $result->getStatus());
+        $data = $result->getData();
+        $this->assertIsArray($data);
+    }
 }

@@ -146,12 +146,11 @@ jobs:
           cd server/apps/openregister
           composer install --no-progress --prefer-dist --optimize-autoloader
 
-      - name: Run PHPUnit tests
+      - name: Run PHPUnit tests (unit + integration)
         run: |
           cd server/apps/openregister
           ./vendor/bin/phpunit \
-            --bootstrap tests/bootstrap-unit.php \
-            --testsuite "Unit Tests" \
+            -c phpunit.xml \
             --colors=always \
             --coverage-clover=coverage/clover.xml
 
