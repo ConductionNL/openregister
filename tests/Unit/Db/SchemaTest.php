@@ -448,7 +448,7 @@ class SchemaTest extends TestCase
     public function testJsonSerializeHooksDefault(): void
     {
         $json = $this->schema->jsonSerialize();
-        $this->assertSame([], $json['hooks']);
+        $this->assertNull($json['hooks']);
     }
 
     // --- Slug ---

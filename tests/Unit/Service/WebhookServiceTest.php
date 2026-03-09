@@ -104,11 +104,11 @@ class WebhookServiceTest extends TestCase
      */
     protected function setUp(): void
     {
-        $this->webhookMapper    = $this->createMock(originalClassName: WebhookMapper::class);
-        $this->webhookLogMapper = $this->createMock(originalClassName: WebhookLogMapper::class);
-        $this->mappingService   = $this->createMock(originalClassName: MappingService::class);
-        $this->mappingMapper    = $this->createMock(originalClassName: MappingMapper::class);
-        $this->logger           = $this->createMock(originalClassName: LoggerInterface::class);
+        $this->webhookMapper    = $this->createMock(WebhookMapper::class);
+        $this->webhookLogMapper = $this->createMock(WebhookLogMapper::class);
+        $this->mappingService   = $this->createMock(MappingService::class);
+        $this->mappingMapper    = $this->createMock(MappingMapper::class);
+        $this->logger           = $this->createMock(LoggerInterface::class);
 
         $this->service = new WebhookService(
             webhookMapper: $this->webhookMapper,
@@ -118,7 +118,7 @@ class WebhookServiceTest extends TestCase
             mappingMapper: $this->mappingMapper
         );
 
-        $this->reflection = new \ReflectionClass(objectOrClass: $this->service);
+        $this->reflection = new \ReflectionClass($this->service);
     }//end setUp()
 
     // ─── Helper methods ──────────────────────────────────────────────
@@ -203,9 +203,9 @@ class WebhookServiceTest extends TestCase
      */
     private function invokePrivateMethod(string $methodName, array $args): mixed
     {
-        $method = $this->reflection->getMethod(name: $methodName);
-        $method->setAccessible(accessible: true);
-        return $method->invokeArgs(object: $this->service, args: $args);
+        $method = $this->reflection->getMethod($methodName);
+        $method->setAccessible(true);
+        return $method->invokeArgs($this->service, $args);
     }//end invokePrivateMethod()
 
     // ─── buildPayload tests ──────────────────────────────────────────
@@ -229,19 +229,19 @@ class WebhookServiceTest extends TestCase
             mapping: ['kanaal' => '{{ action }}', 'resource' => '{{ objectType }}']
         );
 
-        $this->mappingMapper->expects(constraint: $this->once())
-            ->method(constraint: 'find')
+        $this->mappingMapper->expects($this->once())
+            ->method('find')
             ->with(42)
-            ->willReturn(value: $mappingEntity);
+            ->willReturn($mappingEntity);
 
         $transformedPayload = ['kanaal' => 'create', 'resource' => 'object'];
-        $this->mappingService->expects(constraint: $this->once())
-            ->method(constraint: 'executeMapping')
-            ->willReturn(value: $transformedPayload);
+        $this->mappingService->expects($this->once())
+            ->method('executeMapping')
+            ->willReturn($transformedPayload);
 
         $result = $this->invokePrivateMethod(
-            methodName: 'buildPayload',
-            args: [
+            'buildPayload',
+            [
                 'webhook'   => $webhook,
                 'eventName' => 'OCA\\OpenRegister\\Event\\ObjectCreatedEvent',
                 'payload'   => $payload,
@@ -249,7 +249,7 @@ class WebhookServiceTest extends TestCase
             ]
         );
 
-        $this->assertSame(expected: $transformedPayload, actual: $result);
+        $this->assertSame($transformedPayload, $result);
     }//end testBuildPayloadWithMappingTransformsPayload()
 
     /**
@@ -262,21 +262,21 @@ class WebhookServiceTest extends TestCase
         $webhook = $this->createTestWebhook(mapping: 999);
         $payload = ['objectType' => 'object', 'action' => 'create'];
 
-        $this->mappingMapper->expects(constraint: $this->once())
-            ->method(constraint: 'find')
+        $this->mappingMapper->expects($this->once())
+            ->method('find')
             ->with(999)
-            ->willThrowException(exception: new DoesNotExistException(msg: 'Not found'));
+            ->willThrowException(new DoesNotExistException('Not found'));
 
-        $this->logger->expects(constraint: $this->once())
-            ->method(constraint: 'warning')
+        $this->logger->expects($this->once())
+            ->method('warning')
             ->with(
-                $this->stringContains(string: 'missing mapping'),
+                $this->stringContains('missing mapping'),
                 $this->anything()
             );
 
         $result = $this->invokePrivateMethod(
-            methodName: 'buildPayload',
-            args: [
+            'buildPayload',
+            [
                 'webhook'   => $webhook,
                 'eventName' => 'OCA\\OpenRegister\\Event\\ObjectCreatedEvent',
                 'payload'   => $payload,
@@ -285,9 +285,9 @@ class WebhookServiceTest extends TestCase
         );
 
         // Should fall back to standard format.
-        $this->assertArrayHasKey(key: 'event', array: $result);
-        $this->assertArrayHasKey(key: 'data', array: $result);
-        $this->assertArrayHasKey(key: 'webhook', array: $result);
+        $this->assertArrayHasKey('event', $result);
+        $this->assertArrayHasKey('data', $result);
+        $this->assertArrayHasKey('webhook', $result);
     }//end testBuildPayloadWithMissingMappingFallsBackToStandard()
 
     /**
@@ -301,26 +301,26 @@ class WebhookServiceTest extends TestCase
         $payload = ['objectType' => 'object', 'action' => 'create'];
 
         $mappingEntity = $this->createTestMapping(id: 42);
-        $this->mappingMapper->expects(constraint: $this->once())
-            ->method(constraint: 'find')
+        $this->mappingMapper->expects($this->once())
+            ->method('find')
             ->with(42)
-            ->willReturn(value: $mappingEntity);
+            ->willReturn($mappingEntity);
 
-        $this->mappingService->expects(constraint: $this->once())
-            ->method(constraint: 'executeMapping')
-            ->willThrowException(exception: new \RuntimeException(message: 'Twig rendering failed'));
+        $this->mappingService->expects($this->once())
+            ->method('executeMapping')
+            ->willThrowException(new \RuntimeException('Twig rendering failed'));
 
         // Should log a warning about transformation failure.
-        $this->logger->expects(constraint: $this->once())
-            ->method(constraint: 'warning')
+        $this->logger->expects($this->once())
+            ->method('warning')
             ->with(
-                $this->stringContains(string: 'Mapping transformation failed'),
+                $this->stringContains('Mapping transformation failed'),
                 $this->anything()
             );
 
         $result = $this->invokePrivateMethod(
-            methodName: 'buildPayload',
-            args: [
+            'buildPayload',
+            [
                 'webhook'   => $webhook,
                 'eventName' => 'OCA\\OpenRegister\\Event\\ObjectCreatedEvent',
                 'payload'   => $payload,
@@ -329,8 +329,8 @@ class WebhookServiceTest extends TestCase
         );
 
         // Should fall back to standard format.
-        $this->assertArrayHasKey(key: 'event', array: $result);
-        $this->assertArrayHasKey(key: 'data', array: $result);
+        $this->assertArrayHasKey('event', $result);
+        $this->assertArrayHasKey('data', $result);
     }//end testBuildPayloadWithMappingErrorFallsBackWithWarning()
 
     /**
@@ -344,11 +344,11 @@ class WebhookServiceTest extends TestCase
         $payload = ['objectType' => 'object', 'action' => 'create'];
 
         // MappingMapper should NOT be called.
-        $this->mappingMapper->expects(constraint: $this->never())->method(constraint: 'find');
+        $this->mappingMapper->expects($this->never())->method('find');
 
         $result = $this->invokePrivateMethod(
-            methodName: 'buildPayload',
-            args: [
+            'buildPayload',
+            [
                 'webhook'   => $webhook,
                 'eventName' => 'OCA\\OpenRegister\\Event\\ObjectCreatedEvent',
                 'payload'   => $payload,
@@ -356,12 +356,12 @@ class WebhookServiceTest extends TestCase
             ]
         );
 
-        $this->assertSame(expected: 'OCA\\OpenRegister\\Event\\ObjectCreatedEvent', actual: $result['event']);
-        $this->assertSame(expected: $payload, actual: $result['data']);
-        $this->assertSame(expected: 'webhook-uuid-1', actual: $result['webhook']['id']);
-        $this->assertSame(expected: 'Test Webhook', actual: $result['webhook']['name']);
-        $this->assertArrayHasKey(key: 'timestamp', array: $result);
-        $this->assertSame(expected: 1, actual: $result['attempt']);
+        $this->assertSame('OCA\\OpenRegister\\Event\\ObjectCreatedEvent', $result['event']);
+        $this->assertSame($payload, $result['data']);
+        $this->assertSame('webhook-uuid-1', $result['webhook']['id']);
+        $this->assertSame('Test Webhook', $result['webhook']['name']);
+        $this->assertArrayHasKey('timestamp', $result);
+        $this->assertSame(1, $result['attempt']);
     }//end testBuildPayloadWithNullMappingUsesStandardFormat()
 
     /**
@@ -372,7 +372,7 @@ class WebhookServiceTest extends TestCase
     public function testBuildPayloadMappingTakesPrecedenceOverCloudEvents(): void
     {
         // Create service WITH CloudEventFormatter.
-        $cloudEventFormatter = $this->createMock(originalClassName: CloudEventFormatter::class);
+        $cloudEventFormatter = $this->createMock(CloudEventFormatter::class);
         $service = new WebhookService(
             webhookMapper: $this->webhookMapper,
             logger: $this->logger,
@@ -382,34 +382,34 @@ class WebhookServiceTest extends TestCase
             cloudEventFormatter: $cloudEventFormatter
         );
 
-        $reflection = new \ReflectionClass(objectOrClass: $service);
+        $reflection = new \ReflectionClass($service);
 
         // Webhook has BOTH mapping AND CloudEvents configured.
         $webhook = $this->createTestWebhook(
             mapping: 42,
-            configuration: json_encode(value: ['useCloudEvents' => true])
+            configuration: json_encode(['useCloudEvents' => true])
         );
         $payload = ['objectType' => 'object', 'action' => 'create'];
 
         $mappingEntity = $this->createTestMapping(id: 42);
-        $this->mappingMapper->expects(constraint: $this->once())
-            ->method(constraint: 'find')
+        $this->mappingMapper->expects($this->once())
+            ->method('find')
             ->with(42)
-            ->willReturn(value: $mappingEntity);
+            ->willReturn($mappingEntity);
 
         $transformedPayload = ['kanaal' => 'create'];
-        $this->mappingService->expects(constraint: $this->once())
-            ->method(constraint: 'executeMapping')
-            ->willReturn(value: $transformedPayload);
+        $this->mappingService->expects($this->once())
+            ->method('executeMapping')
+            ->willReturn($transformedPayload);
 
         // CloudEventFormatter should NOT be called.
-        $cloudEventFormatter->expects(constraint: $this->never())->method(constraint: 'formatAsCloudEvent');
+        $cloudEventFormatter->expects($this->never())->method('formatAsCloudEvent');
 
-        $method = $reflection->getMethod(name: 'buildPayload');
-        $method->setAccessible(accessible: true);
+        $method = $reflection->getMethod('buildPayload');
+        $method->setAccessible(true);
         $result = $method->invokeArgs(
-            object: $service,
-            args: [
+            $service,
+            [
                 'webhook'   => $webhook,
                 'eventName' => 'OCA\\OpenRegister\\Event\\ObjectCreatedEvent',
                 'payload'   => $payload,
@@ -417,7 +417,7 @@ class WebhookServiceTest extends TestCase
             ]
         );
 
-        $this->assertSame(expected: $transformedPayload, actual: $result);
+        $this->assertSame($transformedPayload, $result);
     }//end testBuildPayloadMappingTakesPrecedenceOverCloudEvents()
 
     // ─── applyMappingTransformation tests ────────────────────────────
@@ -432,19 +432,19 @@ class WebhookServiceTest extends TestCase
         $webhook       = $this->createTestWebhook(mapping: 42);
         $mappingEntity = $this->createTestMapping(id: 42);
 
-        $this->mappingMapper->expects(constraint: $this->once())
-            ->method(constraint: 'find')
+        $this->mappingMapper->expects($this->once())
+            ->method('find')
             ->with(42)
-            ->willReturn(value: $mappingEntity);
+            ->willReturn($mappingEntity);
 
         $payload = ['objectType' => 'object', 'action' => 'create'];
 
-        $this->mappingService->expects(constraint: $this->once())
-            ->method(constraint: 'executeMapping')
+        $this->mappingService->expects($this->once())
+            ->method('executeMapping')
             ->with(
-                $this->identicalTo(value: $mappingEntity),
+                $this->identicalTo($mappingEntity),
                 $this->callback(
-                    callback: function ($input) {
+                    function ($input) {
                         // Verify that the mapping input includes enriched context.
                         return isset($input['event'])
                         && $input['event'] === 'ObjectCreatedEvent'
@@ -454,11 +454,11 @@ class WebhookServiceTest extends TestCase
                     }
                 )
             )
-            ->willReturn(value: ['mapped' => true]);
+            ->willReturn(['mapped' => true]);
 
         $result = $this->invokePrivateMethod(
-            methodName: 'applyMappingTransformation',
-            args: [
+            'applyMappingTransformation',
+            [
                 'mappingId' => 42,
                 'eventName' => 'OCA\\OpenRegister\\Event\\ObjectCreatedEvent',
                 'payload'   => $payload,
@@ -466,7 +466,7 @@ class WebhookServiceTest extends TestCase
             ]
         );
 
-        $this->assertSame(expected: ['mapped' => true], actual: $result);
+        $this->assertSame(['mapped' => true], $result);
     }//end testApplyMappingTransformationEnrichesInput()
 
     /**
@@ -478,14 +478,14 @@ class WebhookServiceTest extends TestCase
     {
         $webhook = $this->createTestWebhook(mapping: 999);
 
-        $this->mappingMapper->expects(constraint: $this->once())
-            ->method(constraint: 'find')
+        $this->mappingMapper->expects($this->once())
+            ->method('find')
             ->with(999)
-            ->willThrowException(exception: new DoesNotExistException(msg: 'Not found'));
+            ->willThrowException(new DoesNotExistException('Not found'));
 
         $result = $this->invokePrivateMethod(
-            methodName: 'applyMappingTransformation',
-            args: [
+            'applyMappingTransformation',
+            [
                 'mappingId' => 999,
                 'eventName' => 'OCA\\OpenRegister\\Event\\ObjectCreatedEvent',
                 'payload'   => ['objectType' => 'object'],
@@ -493,7 +493,7 @@ class WebhookServiceTest extends TestCase
             ]
         );
 
-        $this->assertNull(actual: $result);
+        $this->assertNull($result);
     }//end testApplyMappingTransformationReturnsNullOnMissingMapping()
 
     /**
@@ -506,18 +506,18 @@ class WebhookServiceTest extends TestCase
         $webhook       = $this->createTestWebhook(mapping: 42);
         $mappingEntity = $this->createTestMapping(id: 42);
 
-        $this->mappingMapper->expects(constraint: $this->once())
-            ->method(constraint: 'find')
+        $this->mappingMapper->expects($this->once())
+            ->method('find')
             ->with(42)
-            ->willReturn(value: $mappingEntity);
+            ->willReturn($mappingEntity);
 
-        $this->mappingService->expects(constraint: $this->once())
-            ->method(constraint: 'executeMapping')
-            ->willThrowException(exception: new \RuntimeException(message: 'Twig error'));
+        $this->mappingService->expects($this->once())
+            ->method('executeMapping')
+            ->willThrowException(new \RuntimeException('Twig error'));
 
         $result = $this->invokePrivateMethod(
-            methodName: 'applyMappingTransformation',
-            args: [
+            'applyMappingTransformation',
+            [
                 'mappingId' => 42,
                 'eventName' => 'OCA\\OpenRegister\\Event\\ObjectCreatedEvent',
                 'payload'   => ['objectType' => 'object'],
@@ -525,7 +525,7 @@ class WebhookServiceTest extends TestCase
             ]
         );
 
-        $this->assertNull(actual: $result);
+        $this->assertNull($result);
     }//end testApplyMappingTransformationReturnsNullOnExecutionError()
 
     // ─── getShortEventName tests ─────────────────────────────────────
@@ -538,13 +538,13 @@ class WebhookServiceTest extends TestCase
     public function testGetShortEventNameExtractsClassName(): void
     {
         $result = $this->invokePrivateMethod(
-            methodName: 'getShortEventName',
-            args: [
+            'getShortEventName',
+            [
                 'eventName' => 'OCA\\OpenRegister\\Event\\ObjectCreatedEvent',
             ]
         );
 
-        $this->assertSame(expected: 'ObjectCreatedEvent', actual: $result);
+        $this->assertSame('ObjectCreatedEvent', $result);
     }//end testGetShortEventNameExtractsClassName()
 
     /**
@@ -555,13 +555,13 @@ class WebhookServiceTest extends TestCase
     public function testGetShortEventNameWithSimpleName(): void
     {
         $result = $this->invokePrivateMethod(
-            methodName: 'getShortEventName',
-            args: [
+            'getShortEventName',
+            [
                 'eventName' => 'ObjectCreatedEvent',
             ]
         );
 
-        $this->assertSame(expected: 'ObjectCreatedEvent', actual: $result);
+        $this->assertSame('ObjectCreatedEvent', $result);
     }//end testGetShortEventNameWithSimpleName()
 
     // ─── CloudEvents fallback test ───────────────────────────────────
@@ -573,7 +573,7 @@ class WebhookServiceTest extends TestCase
      */
     public function testBuildPayloadWithNullMappingUsesCloudEventsWhenConfigured(): void
     {
-        $cloudEventFormatter = $this->createMock(originalClassName: CloudEventFormatter::class);
+        $cloudEventFormatter = $this->createMock(CloudEventFormatter::class);
         $service = new WebhookService(
             webhookMapper: $this->webhookMapper,
             logger: $this->logger,
@@ -583,27 +583,27 @@ class WebhookServiceTest extends TestCase
             cloudEventFormatter: $cloudEventFormatter
         );
 
-        $reflection = new \ReflectionClass(objectOrClass: $service);
+        $reflection = new \ReflectionClass($service);
 
         $webhook = $this->createTestWebhook(
             mapping: null,
-            configuration: json_encode(value: ['useCloudEvents' => true])
+            configuration: json_encode(['useCloudEvents' => true])
         );
         $payload = ['objectType' => 'object', 'action' => 'create'];
 
         $cloudEventPayload = ['specversion' => '1.0', 'type' => 'ObjectCreatedEvent', 'data' => $payload];
-        $cloudEventFormatter->expects(constraint: $this->once())
-            ->method(constraint: 'formatAsCloudEvent')
-            ->willReturn(value: $cloudEventPayload);
+        $cloudEventFormatter->expects($this->once())
+            ->method('formatAsCloudEvent')
+            ->willReturn($cloudEventPayload);
 
         // MappingMapper should NOT be called.
-        $this->mappingMapper->expects(constraint: $this->never())->method(constraint: 'find');
+        $this->mappingMapper->expects($this->never())->method('find');
 
-        $method = $reflection->getMethod(name: 'buildPayload');
-        $method->setAccessible(accessible: true);
+        $method = $reflection->getMethod('buildPayload');
+        $method->setAccessible(true);
         $result = $method->invokeArgs(
-            object: $service,
-            args: [
+            $service,
+            [
                 'webhook'   => $webhook,
                 'eventName' => 'OCA\\OpenRegister\\Event\\ObjectCreatedEvent',
                 'payload'   => $payload,
@@ -611,6 +611,6 @@ class WebhookServiceTest extends TestCase
             ]
         );
 
-        $this->assertSame(expected: $cloudEventPayload, actual: $result);
+        $this->assertSame($cloudEventPayload, $result);
     }//end testBuildPayloadWithNullMappingUsesCloudEventsWhenConfigured()
 }//end class

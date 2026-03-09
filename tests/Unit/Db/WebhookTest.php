@@ -230,13 +230,13 @@ class WebhookTest extends TestCase
     }
 
     /**
-     * setEventsArray uses named args on magic setter (events is non-nullable string),
-     * which causes TypeError since __call receives null for $args[0].
+     * setEventsArray correctly JSON-encodes and stores the array via setEvents.
      */
-    public function testSetEventsArrayNamedArgBug(): void
+    public function testSetEventsArrayStoresJsonString(): void
     {
-        $this->expectException(\TypeError::class);
         $this->webhook->setEventsArray(['event1', 'event2']);
+        $this->assertSame('["event1","event2"]', $this->webhook->getEvents());
+        $this->assertSame(['event1', 'event2'], $this->webhook->getEventsArray());
     }
 
     // --- getHeadersArray / setHeadersArray ---
@@ -259,15 +259,13 @@ class WebhookTest extends TestCase
     }
 
     /**
-     * setHeadersArray uses named args but headers is nullable string,
-     * so the value silently becomes null instead of the JSON string.
+     * setHeadersArray correctly JSON-encodes and stores the array via setHeaders.
      */
-    public function testSetHeadersArraySetsNull(): void
+    public function testSetHeadersArrayStoresJsonString(): void
     {
         $this->webhook->setHeadersArray(['Content-Type' => 'application/json']);
-        // Due to named-arg bug, the value gets set to null instead of JSON
-        $this->assertNull($this->webhook->getHeaders());
-        $this->assertSame([], $this->webhook->getHeadersArray());
+        $this->assertSame('{"Content-Type":"application\/json"}', $this->webhook->getHeaders());
+        $this->assertSame(['Content-Type' => 'application/json'], $this->webhook->getHeadersArray());
     }
 
     public function testSetHeadersArrayNull(): void
@@ -298,14 +296,13 @@ class WebhookTest extends TestCase
     }
 
     /**
-     * setFiltersArray uses named args but filters is nullable string,
-     * so the value silently becomes null instead of the JSON string.
+     * setFiltersArray correctly JSON-encodes and stores the array via setFilters.
      */
-    public function testSetFiltersArraySetsNull(): void
+    public function testSetFiltersArrayStoresJsonString(): void
     {
         $this->webhook->setFiltersArray(['schema' => 'test']);
-        $this->assertNull($this->webhook->getFilters());
-        $this->assertSame([], $this->webhook->getFiltersArray());
+        $this->assertSame('{"schema":"test"}', $this->webhook->getFilters());
+        $this->assertSame(['schema' => 'test'], $this->webhook->getFiltersArray());
     }
 
     public function testSetFiltersArrayNull(): void
@@ -336,14 +333,13 @@ class WebhookTest extends TestCase
     }
 
     /**
-     * setConfigurationArray uses named args but configuration is nullable string,
-     * so the value silently becomes null instead of the JSON string.
+     * setConfigurationArray correctly JSON-encodes and stores the array via setConfiguration.
      */
-    public function testSetConfigurationArraySetsNull(): void
+    public function testSetConfigurationArrayStoresJsonString(): void
     {
         $this->webhook->setConfigurationArray(['key' => 'value']);
-        $this->assertNull($this->webhook->getConfiguration());
-        $this->assertSame([], $this->webhook->getConfigurationArray());
+        $this->assertSame('{"key":"value"}', $this->webhook->getConfiguration());
+        $this->assertSame(['key' => 'value'], $this->webhook->getConfigurationArray());
     }
 
     public function testSetConfigurationArrayNull(): void
@@ -530,24 +526,24 @@ class WebhookTest extends TestCase
     // --- hydrate ---
 
     /**
-     * hydrate uses named args on magic setters, which causes TypeError for non-nullable
-     * string properties. This tests that hydrate throws for basic fields.
+     * hydrate uses positional args on setters, correctly setting string fields.
      */
-    public function testHydrateThrowsForNonNullableStringFields(): void
+    public function testHydrateSetsStringFields(): void
     {
-        $this->expectException(\TypeError::class);
         $this->webhook->hydrate([
             'uuid' => 'hook-uuid',
             'name' => 'My Hook',
         ]);
+        $this->assertSame('hook-uuid', $this->webhook->getUuid());
+        $this->assertSame('My Hook', $this->webhook->getName());
     }
 
-    public function testHydrateIdNamedArgBug(): void
+    public function testHydrateIdSetsCorrectly(): void
     {
-        // hydrate calls setId(id: ...) with named args -- setId is also __call,
-        // so the value becomes null. The id stays unset.
+        // hydrate calls setId with positional args -- setId is concrete on Entity base,
+        // so it works correctly.
         $this->webhook->hydrate(['id' => 42]);
-        $this->assertNull($this->webhook->getId());
+        $this->assertSame(42, $this->webhook->getId());
     }
 
     public function testHydrateSkipsNullValues(): void

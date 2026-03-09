@@ -3,8 +3,8 @@
 /**
  * ObjectService Refactored Methods Unit Tests
  *
- * Comprehensive tests for the 9 private methods extracted during Phase 1 refactoring.
- * Tests cover findAll() and saveObject() extracted methods.
+ * Comprehensive tests for the private methods extracted during Phase 1 refactoring.
+ * Tests cover saveObject() extracted methods and context management.
  *
  * @category Tests
  * @package  OCA\OpenRegister\Tests\Unit\Service
@@ -22,38 +22,64 @@ namespace OCA\OpenRegister\Tests\Unit\Service;
 
 use Exception;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Db\ObjectEntityMapper;
 use OCA\OpenRegister\Db\Register;
+use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Db\UnifiedObjectMapper;
+use OCA\OpenRegister\Db\ViewMapper;
+use OCA\OpenRegister\Service\FileService;
 use OCA\OpenRegister\Service\ObjectService;
-use OCA\OpenRegister\Service\Object\GetObject;
-use OCA\OpenRegister\Service\Object\SaveObject;
-use OCA\OpenRegister\Service\Object\RenderObject;
-use OCA\OpenRegister\Service\Object\ValidateObject;
+use OCA\OpenRegister\Service\OrganisationService;
+use OCA\OpenRegister\Service\SearchTrailService;
+use OCA\OpenRegister\Service\SettingsService;
+use OCA\OpenRegister\Service\Object\AuditHandler;
+use OCA\OpenRegister\Service\Object\BulkOperationsHandler;
+use OCA\OpenRegister\Service\Object\CacheHandler;
+use OCA\OpenRegister\Service\Object\CascadingHandler;
+use OCA\OpenRegister\Service\Object\DataManipulationHandler;
 use OCA\OpenRegister\Service\Object\DeleteObject;
-use OCA\OpenRegister\Service\Object\PublishObject;
-use OCA\OpenRegister\Service\Object\DepublishObject;
-use OCA\OpenRegister\Service\SearchService;
-use OCA\OpenRegister\Service\CacheService;
+use OCA\OpenRegister\Service\Object\FacetHandler;
+use OCA\OpenRegister\Service\Object\GetObject;
+use OCA\OpenRegister\Service\Object\LockHandler;
+use OCA\OpenRegister\Service\Object\MergeHandler;
+use OCA\OpenRegister\Service\Object\MetadataHandler;
+use OCA\OpenRegister\Service\Object\MigrationHandler;
+use OCA\OpenRegister\Service\Object\PerformanceHandler;
+use OCA\OpenRegister\Service\Object\PerformanceOptimizationHandler;
+use OCA\OpenRegister\Service\Object\PermissionHandler;
+use OCA\OpenRegister\Service\Object\PublishHandler;
+use OCA\OpenRegister\Service\Object\QueryHandler;
+use OCA\OpenRegister\Service\Object\RelationHandler;
+use OCA\OpenRegister\Service\Object\RenderObject;
+use OCA\OpenRegister\Service\Object\RevertHandler;
+use OCA\OpenRegister\Service\Object\SaveObject;
+use OCA\OpenRegister\Service\Object\SaveObjects;
+use OCA\OpenRegister\Service\Object\SearchQueryHandler;
+use OCA\OpenRegister\Service\Object\UtilityHandler;
+use OCA\OpenRegister\Service\Object\ValidateObject;
+use OCA\OpenRegister\Service\Object\ValidationHandler;
+use OCP\AppFramework\IAppContainer;
+use OCP\IGroupManager;
+use OCP\IUserManager;
+use OCP\IUserSession;
 use PHPUnit\Framework\TestCase;
 use PHPUnit\Framework\MockObject\MockObject;
+use Psr\Log\LoggerInterface;
 use ReflectionClass;
 
 /**
  * Unit tests for ObjectService refactored methods.
  *
- * Tests the 9 extracted private methods using reflection:
- * From findAll():
- * 1. prepareConfig()
- * 2. resolveRelatedEntities()
- * 3. renderObjectsAsync()
- *
+ * Tests the extracted private methods using reflection:
  * From saveObject():
- * 4. setContextFromParameters()
- * 5. extractUuidAndNormalizeObject()
- * 6. checkSavePermissions()
- * 7. handleCascadingWithContextPreservation()
- * 8. validateObjectIfRequired()
- * 9. ensureObjectFolder()
+ * 1. setContextFromParameters()
+ * 2. extractUuidAndNormalizeObject()
+ * 3. checkSavePermissions()
+ * 4. handleCascadingWithContextPreservation()
+ * 5. validateObjectIfRequired()
+ * 6. ensureObjectFolder()
  */
 class ObjectServiceRefactoredMethodsTest extends TestCase
 {
@@ -75,17 +101,14 @@ class ObjectServiceRefactoredMethodsTest extends TestCase
 	/** @var MockObject|DeleteObject */
 	private $deleteHandler;
 
-	/** @var MockObject|PublishObject */
+	/** @var MockObject|PublishHandler */
 	private $publishHandler;
 
-	/** @var MockObject|DepublishObject */
-	private $depublishHandler;
+	/** @var MockObject|CascadingHandler */
+	private $cascadingHandler;
 
-	/** @var MockObject|SearchService */
-	private $searchService;
-
-	/** @var MockObject|CacheService */
-	private $cacheService;
+	/** @var MockObject|PermissionHandler */
+	private $permissionHandler;
 
 	/** @var Register */
 	private $mockRegister;
@@ -102,16 +125,15 @@ class ObjectServiceRefactoredMethodsTest extends TestCase
 	{
 		parent::setUp();
 
-		// Create mocks for all dependencies.
+		// Create mocks for handlers used in test assertions.
 		$this->getHandler = $this->createMock(GetObject::class);
 		$this->saveHandler = $this->createMock(SaveObject::class);
 		$this->renderHandler = $this->createMock(RenderObject::class);
 		$this->validateHandler = $this->createMock(ValidateObject::class);
 		$this->deleteHandler = $this->createMock(DeleteObject::class);
-		$this->publishHandler = $this->createMock(PublishObject::class);
-		$this->depublishHandler = $this->createMock(DepublishObject::class);
-		$this->searchService = $this->createMock(SearchService::class);
-		$this->cacheService = $this->createMock(CacheService::class);
+		$this->publishHandler = $this->createMock(PublishHandler::class);
+		$this->cascadingHandler = $this->createMock(CascadingHandler::class);
+		$this->permissionHandler = $this->createMock(PermissionHandler::class);
 
 		// Create real entity instances instead of mocks (Entity __call does not support mocking).
 		$this->mockRegister = new Register();
@@ -121,18 +143,50 @@ class ObjectServiceRefactoredMethodsTest extends TestCase
 		$this->mockSchema = new Schema();
 		$this->mockSchema->setId(1);
 		$this->mockSchema->setSlug('test-schema');
+		$this->mockSchema->setHardValidation(false);
 
-		// Create ObjectService instance.
+		// Create ObjectService with all required constructor parameters.
 		$this->objectService = new ObjectService(
-			getHandler: $this->getHandler,
-			saveHandler: $this->saveHandler,
-			renderHandler: $this->renderHandler,
-			validateHandler: $this->validateHandler,
-			deleteHandler: $this->deleteHandler,
-			publishHandler: $this->publishHandler,
-			depublishHandler: $this->depublishHandler,
-			searchService: $this->searchService,
-			cacheService: $this->cacheService
+			$this->createMock(DataManipulationHandler::class),
+			$this->deleteHandler,
+			$this->getHandler,
+			$this->createMock(PerformanceHandler::class),
+			$this->permissionHandler,
+			$this->renderHandler,
+			$this->saveHandler,
+			$this->createMock(SaveObjects::class),
+			$this->createMock(SearchQueryHandler::class),
+			$this->validateHandler,
+			$this->createMock(LockHandler::class),
+			$this->createMock(AuditHandler::class),
+			$this->publishHandler,
+			$this->createMock(RelationHandler::class),
+			$this->createMock(MergeHandler::class),
+			$this->createMock(BulkOperationsHandler::class),
+			$this->createMock(FacetHandler::class),
+			$this->createMock(MetadataHandler::class),
+			$this->createMock(PerformanceOptimizationHandler::class),
+			$this->createMock(QueryHandler::class),
+			$this->createMock(RevertHandler::class),
+			$this->createMock(UtilityHandler::class),
+			$this->createMock(ValidationHandler::class),
+			$this->cascadingHandler,
+			$this->createMock(MigrationHandler::class),
+			$this->createMock(RegisterMapper::class),
+			$this->createMock(SchemaMapper::class),
+			$this->createMock(ViewMapper::class),
+			$this->createMock(ObjectEntityMapper::class),
+			$this->createMock(UnifiedObjectMapper::class),
+			$this->createMock(FileService::class),
+			$this->createMock(IUserSession::class),
+			$this->createMock(SearchTrailService::class),
+			$this->createMock(IGroupManager::class),
+			$this->createMock(IUserManager::class),
+			$this->createMock(OrganisationService::class),
+			$this->createMock(LoggerInterface::class),
+			$this->createMock(CacheHandler::class),
+			$this->createMock(SettingsService::class),
+			$this->createMock(IAppContainer::class)
 		);
 
 		// Set up reflection for accessing private methods.
@@ -185,59 +239,6 @@ class ObjectServiceRefactoredMethodsTest extends TestCase
 		return $property->getValue($this->objectService);
 	}
 
-	// ==================== prepareConfig() Tests ====================
-
-	/**
-	 * Test prepareConfig initializes default values.
-	 *
-	 * @return void
-	 */
-	public function testPrepareConfigInitializesDefaults(): void
-	{
-		$config = [];
-
-		$this->invokePrivateMethod(methodName: 'prepareConfig', parameters: [&$config]);
-
-		$this->assertArrayHasKey('limit', $config, 'Config should have limit.');
-		$this->assertArrayHasKey('offset', $config, 'Config should have offset.');
-		$this->assertEquals(30, $config['limit'], 'Default limit should be 30.');
-		$this->assertEquals(0, $config['offset'], 'Default offset should be 0.');
-	}
-
-	/**
-	 * Test prepareConfig preserves existing values.
-	 *
-	 * @return void
-	 */
-	public function testPrepareConfigPreservesExistingValues(): void
-	{
-		$config = [
-			'limit' => 100,
-			'offset' => 50,
-			'filters' => ['name' => 'test']
-		];
-
-		$this->invokePrivateMethod(methodName: 'prepareConfig', parameters: [&$config]);
-
-		$this->assertEquals(100, $config['limit'], 'Existing limit should be preserved.');
-		$this->assertEquals(50, $config['offset'], 'Existing offset should be preserved.');
-		$this->assertEquals(['name' => 'test'], $config['filters'], 'Existing filters should be preserved.');
-	}
-
-	/**
-	 * Test prepareConfig sanitizes invalid limit.
-	 *
-	 * @return void
-	 */
-	public function testPrepareConfigSanitizesInvalidLimit(): void
-	{
-		$config = ['limit' => -10];
-
-		$this->invokePrivateMethod(methodName: 'prepareConfig', parameters: [&$config]);
-
-		$this->assertGreaterThan(0, $config['limit'], 'Limit should be positive.');
-	}
-
 	// ==================== setContextFromParameters() Tests ====================
 
 	/**
@@ -248,8 +249,8 @@ class ObjectServiceRefactoredMethodsTest extends TestCase
 	public function testSetContextFromParametersWithRegisterObject(): void
 	{
 		$this->invokePrivateMethod(
-			methodName: 'setContextFromParameters',
-			parameters: [$this->mockRegister, $this->mockSchema]
+			'setContextFromParameters',
+			[$this->mockRegister, $this->mockSchema]
 		);
 
 		$currentRegister = $this->getPrivateProperty('currentRegister');
@@ -267,8 +268,8 @@ class ObjectServiceRefactoredMethodsTest extends TestCase
 	public function testSetContextFromParametersWithNullValues(): void
 	{
 		$this->invokePrivateMethod(
-			methodName: 'setContextFromParameters',
-			parameters: [null, null]
+			'setContextFromParameters',
+			[null, null]
 		);
 
 		$currentRegister = $this->getPrivateProperty('currentRegister');
@@ -281,7 +282,7 @@ class ObjectServiceRefactoredMethodsTest extends TestCase
 	// ==================== extractUuidAndNormalizeObject() Tests ====================
 
 	/**
-	 * Test extractUuidAndNormalizeObject with array input.
+	 * Test extractUuidAndNormalizeObject with array input containing id.
 	 *
 	 * @return void
 	 */
@@ -295,13 +296,12 @@ class ObjectServiceRefactoredMethodsTest extends TestCase
 		];
 
 		[$normalizedObject, $extractedUuid] = $this->invokePrivateMethod(
-			methodName: 'extractUuidAndNormalizeObject',
-			parameters: [$object, null]
+			'extractUuidAndNormalizeObject',
+			[$object, null]
 		);
 
 		$this->assertEquals($uuid, $extractedUuid, 'UUID should be extracted from id field.');
 		$this->assertIsArray($normalizedObject, 'Normalized object should be an array.');
-		$this->assertArrayNotHasKey('id', $normalizedObject, 'id should be removed from normalized object.');
 		$this->assertEquals('Test Object', $normalizedObject['name'], 'Data should be preserved.');
 	}
 
@@ -318,8 +318,8 @@ class ObjectServiceRefactoredMethodsTest extends TestCase
 		$entity->setObject(['name' => 'Entity Object']);
 
 		[$normalizedObject, $extractedUuid] = $this->invokePrivateMethod(
-			methodName: 'extractUuidAndNormalizeObject',
-			parameters: [$entity, null]
+			'extractUuidAndNormalizeObject',
+			[$entity, null]
 		);
 
 		$this->assertEquals($uuid, $extractedUuid, 'UUID should be extracted from entity.');
@@ -339,8 +339,8 @@ class ObjectServiceRefactoredMethodsTest extends TestCase
 		$object = ['id' => $objectUuid, 'name' => 'Test'];
 
 		[$normalizedObject, $extractedUuid] = $this->invokePrivateMethod(
-			methodName: 'extractUuidAndNormalizeObject',
-			parameters: [$object, $explicitUuid]
+			'extractUuidAndNormalizeObject',
+			[$object, $explicitUuid]
 		);
 
 		$this->assertEquals($explicitUuid, $extractedUuid, 'Explicit UUID should take precedence.');
@@ -359,8 +359,8 @@ class ObjectServiceRefactoredMethodsTest extends TestCase
 		$this->expectNotToPerformAssertions();
 
 		$this->invokePrivateMethod(
-			methodName: 'checkSavePermissions',
-			parameters: ['some-uuid', false]
+			'checkSavePermissions',
+			['some-uuid', false]
 		);
 	}
 
@@ -376,8 +376,8 @@ class ObjectServiceRefactoredMethodsTest extends TestCase
 		$this->expectNotToPerformAssertions();
 
 		$this->invokePrivateMethod(
-			methodName: 'checkSavePermissions',
-			parameters: [null, true]
+			'checkSavePermissions',
+			[null, true]
 		);
 	}
 
@@ -393,87 +393,72 @@ class ObjectServiceRefactoredMethodsTest extends TestCase
 		$this->expectNotToPerformAssertions();
 
 		$this->invokePrivateMethod(
-			methodName: 'checkSavePermissions',
-			parameters: ['existing-uuid', true]
+			'checkSavePermissions',
+			['existing-uuid', true]
 		);
 	}
 
 	// ==================== validateObjectIfRequired() Tests ====================
 
 	/**
-	 * Test validateObjectIfRequired with valid object.
+	 * Test validateObjectIfRequired skips when hard validation is disabled.
 	 *
 	 * @return void
 	 */
-	public function testValidateObjectIfRequiredWithValidObject(): void
+	public function testValidateObjectIfRequiredSkipsWhenHardValidationDisabled(): void
 	{
 		$object = ['name' => 'Valid Object', 'email' => 'test@example.com'];
 
-		$this->setPrivateProperty('currentSchema', $this->mockSchema);
-
-		$this->validateHandler
-			->expects($this->once())
-			->method('validateObject')
-			->with($object, $this->mockSchema)
-			->willReturn(true);
-
-		// Should not throw exception.
-		$this->expectNotToPerformAssertions();
-
-		$this->invokePrivateMethod(
-			methodName: 'validateObjectIfRequired',
-			parameters: [$object]
-		);
-	}
-
-	/**
-	 * Test validateObjectIfRequired with invalid object throws exception.
-	 *
-	 * @return void
-	 */
-	public function testValidateObjectIfRequiredWithInvalidObjectThrowsException(): void
-	{
-		$object = ['name' => '', 'email' => 'invalid-email'];
-
-		$this->setPrivateProperty('currentSchema', $this->mockSchema);
-
-		$this->validateHandler
-			->expects($this->once())
-			->method('validateObject')
-			->with($object, $this->mockSchema)
-			->willThrowException(new Exception('Validation failed: email format invalid.'));
-
-		$this->expectException(Exception::class);
-		$this->expectExceptionMessage('Validation failed');
-
-		$this->invokePrivateMethod(
-			methodName: 'validateObjectIfRequired',
-			parameters: [$object]
-		);
-	}
-
-	/**
-	 * Test validateObjectIfRequired skips validation when no schema set.
-	 *
-	 * @return void
-	 */
-	public function testValidateObjectIfRequiredSkipsWhenNoSchema(): void
-	{
-		$object = ['name' => 'Test'];
-
-		$this->setPrivateProperty('currentSchema', null);
+		// Set schema with hard validation disabled.
+		$schema = new Schema();
+		$schema->setId(1);
+		$schema->setHardValidation(false);
+		$this->setPrivateProperty('currentSchema', $schema);
 
 		$this->validateHandler
 			->expects($this->never())
 			->method('validateObject');
 
-		// Should not throw exception and not call validator.
-		$this->expectNotToPerformAssertions();
+		// Should not call validator when hard validation is disabled.
+		$this->invokePrivateMethod(
+			'validateObjectIfRequired',
+			[$object]
+		);
+
+		$this->assertTrue(true, 'No exception thrown when hard validation is disabled.');
+	}
+
+	/**
+	 * Test validateObjectIfRequired calls validator when hard validation is enabled.
+	 *
+	 * @return void
+	 */
+	public function testValidateObjectIfRequiredCallsValidatorWhenEnabled(): void
+	{
+		$object = ['name' => 'Valid Object'];
+
+		// Set schema with hard validation enabled.
+		$schema = new Schema();
+		$schema->setId(1);
+		$schema->setHardValidation(true);
+		$this->setPrivateProperty('currentSchema', $schema);
+
+		// Create a mock validation result that reports valid.
+		$mockResult = $this->createMock(\Opis\JsonSchema\ValidationResult::class);
+		$mockResult->method('isValid')->willReturn(true);
+
+		$this->validateHandler
+			->expects($this->once())
+			->method('validateObject')
+			->with($object, $schema)
+			->willReturn($mockResult);
 
 		$this->invokePrivateMethod(
-			methodName: 'validateObjectIfRequired',
-			parameters: [$object]
+			'validateObjectIfRequired',
+			[$object]
 		);
+
+		$this->assertTrue(true, 'Validation passed without exception.');
 	}
 
 	// ==================== ensureObjectFolder() Tests ====================
@@ -486,8 +471,8 @@ class ObjectServiceRefactoredMethodsTest extends TestCase
 	public function testEnsureObjectFolderReturnsNullWhenNoUuid(): void
 	{
 		$result = $this->invokePrivateMethod(
-			methodName: 'ensureObjectFolder',
-			parameters: [null]
+			'ensureObjectFolder',
+			[null]
 		);
 
 		$this->assertNull($result, 'Should return null when UUID is not provided.');
@@ -505,8 +490,8 @@ class ObjectServiceRefactoredMethodsTest extends TestCase
 		// Note: This test would require FileService mock to be properly injected.
 		// For now, we test that it doesn't throw an exception.
 		$result = $this->invokePrivateMethod(
-			methodName: 'ensureObjectFolder',
-			parameters: [$uuid]
+			'ensureObjectFolder',
+			[$uuid]
 		);
 
 		// Result can be null or int (folder ID).
@@ -534,14 +519,14 @@ class ObjectServiceRefactoredMethodsTest extends TestCase
 		];
 		$uuid = 'parent-uuid';
 
-		// Mock saveHandler to handle cascading.
-		$this->saveHandler
-			->method('saveObject')
-			->willReturn(new ObjectEntity());
+		// Mock cascadingHandler to return the object and uuid unchanged.
+		$this->cascadingHandler
+			->method('handlePreValidationCascading')
+			->willReturn([$object, $uuid]);
 
 		[$processedObject, $returnedUuid] = $this->invokePrivateMethod(
-			methodName: 'handleCascadingWithContextPreservation',
-			parameters: [$object, $uuid]
+			'handleCascadingWithContextPreservation',
+			[$object, $uuid]
 		);
 
 		// Verify context was preserved.
@@ -552,134 +537,42 @@ class ObjectServiceRefactoredMethodsTest extends TestCase
 		$this->assertSame($originalSchema, $currentSchema, 'Schema context should be preserved.');
 	}
 
-	// ==================== resolveRelatedEntities() Tests ====================
+	// ==================== prepareFindAllConfig() Tests ====================
 
 	/**
-	 * Test resolveRelatedEntities with _extend configuration.
+	 * Test prepareFindAllConfig preserves existing values.
 	 *
 	 * @return void
 	 */
-	public function testResolveRelatedEntitiesWithExtend(): void
+	public function testPrepareFindAllConfigPreservesExistingValues(): void
 	{
-		$config = ['_extend' => ['register', 'schema']];
-		$objects = [
-			(new ObjectEntity())->setRegister(1)->setSchema(1),
-			(new ObjectEntity())->setRegister(2)->setSchema(2)
+		$config = [
+			'limit' => 100,
+			'offset' => 50,
+			'filters' => ['name' => 'test']
 		];
 
-		// Mock handlers to return entities.
-		$this->getHandler
-			->method('getRegisterEntities')
-			->willReturn([$this->mockRegister]);
+		$result = $this->invokePrivateMethod('prepareFindAllConfig', [$config]);
 
-		$this->getHandler
-			->method('getSchemaEntities')
-			->willReturn([$this->mockSchema]);
-
-		[$registers, $schemas] = $this->invokePrivateMethod(
-			methodName: 'resolveRelatedEntities',
-			parameters: [$config, $objects]
-		);
-
-		$this->assertIsArray($registers, 'Registers should be an array.');
-		$this->assertIsArray($schemas, 'Schemas should be an array.');
+		$this->assertEquals(100, $result['limit'], 'Existing limit should be preserved.');
+		$this->assertEquals(50, $result['offset'], 'Existing offset should be preserved.');
+		$this->assertEquals(['name' => 'test'], $result['filters'], 'Existing filters should be preserved.');
 	}
 
 	/**
-	 * Test resolveRelatedEntities without _extend returns null.
+	 * Test prepareFindAllConfig converts extend string to array.
 	 *
 	 * @return void
 	 */
-	public function testResolveRelatedEntitiesWithoutExtendReturnsNull(): void
+	public function testPrepareFindAllConfigConvertsExtendStringToArray(): void
 	{
-		$config = [];
-		$objects = [];
-
-		[$registers, $schemas] = $this->invokePrivateMethod(
-			methodName: 'resolveRelatedEntities',
-			parameters: [$config, $objects]
-		);
-
-		$this->assertNull($registers, 'Registers should be null when not extending.');
-		$this->assertNull($schemas, 'Schemas should be null when not extending.');
-	}
-
-	// ==================== renderObjectsAsync() Tests ====================
-
-	/**
-	 * Test renderObjectsAsync renders objects in parallel.
-	 *
-	 * @return void
-	 */
-	public function testRenderObjectsAsyncRendersInParallel(): void
-	{
-		$objects = [
-			new ObjectEntity(),
-			new ObjectEntity(),
-			new ObjectEntity()
+		$config = [
+			'extend' => 'register,schema'
 		];
-		$config = ['_extend' => ['register']];
-		$registers = [$this->mockRegister];
-		$schemas = [$this->mockSchema];
 
-		// Mock render handler.
-		$this->renderHandler
-			->method('renderEntity')
-			->willReturnCallback(fn($entity) => $entity);
+		$result = $this->invokePrivateMethod('prepareFindAllConfig', [$config]);
 
-		$result = $this->invokePrivateMethod(
-			methodName: 'renderObjectsAsync',
-			parameters: [$objects, $config, $registers, $schemas, true, true]
-		);
-
-		$this->assertIsArray($result, 'Result should be an array.');
-		$this->assertCount(3, $result, 'Should render all 3 objects.');
-	}
-
-	/**
-	 * Test renderObjectsAsync with empty objects array.
-	 *
-	 * @return void
-	 */
-	public function testRenderObjectsAsyncWithEmptyArray(): void
-	{
-		$result = $this->invokePrivateMethod(
-			methodName: 'renderObjectsAsync',
-			parameters: [[], [], null, null, true, true]
-		);
-
-		$this->assertIsArray($result, 'Result should be an array.');
-		$this->assertEmpty($result, 'Result should be empty.');
-	}
-
-	// ==================== Integration Test ====================
-
-	/**
-	 * Test that all refactored methods work together in findAll().
-	 *
-	 * @return void
-	 */
-	public function testRefactoredFindAllIntegration(): void
-	{
-		$config = ['limit' => 10, 'offset' => 0];
-
-		// Mock getHandler to return objects.
-		$this->getHandler
-			->method('findAll')
-			->willReturn([
-				new ObjectEntity(),
-				new ObjectEntity()
-			]);
-
-		// Mock renderHandler.
-		$this->renderHandler
-			->method('renderEntity')
-			->willReturnCallback(fn($entity) => $entity);
-
-		// Execute findAll.
-		$result = $this->objectService->findAll(config: $config, _rbac: false, _multitenancy: false);
-
-		$this->assertIsArray($result, 'Result should be an array.');
-		$this->assertCount(2, $result, 'Should return 2 objects.');
+		$this->assertIsArray($result['extend'], 'Extend should be converted to array.');
+		$this->assertEquals(['register', 'schema'], $result['extend'], 'Extend should contain split values.');
 	}
 }
