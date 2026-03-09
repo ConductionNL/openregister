@@ -20,7 +20,6 @@
 
 namespace OCA\OpenRegister\Tests\Unit\Service\ObjectHandlers;
 
-use DateTime;
 use Exception;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\ObjectEntityMapper;
@@ -28,17 +27,17 @@ use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
+use stdClass;
 use OCA\OpenRegister\Db\AuditTrailMapper;
+use OCA\OpenRegister\Db\UnifiedObjectMapper;
+use OCA\OpenRegister\Service\Object\SaveObject;
+use OCA\OpenRegister\Service\Object\SaveObject\MetadataHydrationHandler;
+use OCA\OpenRegister\Service\Object\SaveObject\FilePropertyHandler;
+use OCA\OpenRegister\Service\Object\CacheHandler;
 use OCA\OpenRegister\Service\FileService;
-use OCA\OpenRegister\Service\ObjectHandlers\SaveObject;
 use OCA\OpenRegister\Service\OrganisationService;
-use OCA\OpenRegister\Service\ObjectCacheService;
-use OCA\OpenRegister\Service\Schemas\SchemaCacheHandler;
-use OCA\OpenRegister\Service\SchemaFacetCacheService;
+use OCA\OpenRegister\Service\PropertyRbacHandler;
 use OCA\OpenRegister\Service\SettingsService;
-use OCA\OpenRegister\BackgroundJob\FileTextExtractionJob;
-use OCP\AppFramework\Db\DoesNotExistException;
-use OCP\BackgroundJob\IJobList;
 use OCP\IURLGenerator;
 use OCP\IUserSession;
 use OCP\IUser;
@@ -46,8 +45,52 @@ use OCP\Files\File;
 use PHPUnit\Framework\TestCase;
 use PHPUnit\Framework\MockObject\MockObject;
 use Twig\Loader\ArrayLoader;
-use Symfony\Component\Uid\Uuid;
 use Psr\Log\LoggerInterface;
+
+/**
+ * Testable Schema subclass that allows overriding methods that depend on external services.
+ *
+ * Schema::getSchemaObject() requires an IURLGenerator, and Schema::getConfiguration()
+ * and Schema::getProperties() need to be controllable in tests without mocking __call.
+ */
+class TestableSchema extends Schema
+{
+    public ?stdClass $testSchemaObject = null;
+    public ?array $testConfiguration = null;
+    public ?array $testProperties = null;
+
+    /**
+     * Override getSchemaObject to return the test value.
+     *
+     * @param IURLGenerator $urlGenerator URL generator (unused in test double).
+     *
+     * @return stdClass
+     */
+    public function getSchemaObject(IURLGenerator $urlGenerator): stdClass
+    {
+        return $this->testSchemaObject ?? new stdClass();
+    }
+
+    /**
+     * Override getConfiguration to return the test value.
+     *
+     * @return array|null
+     */
+    public function getConfiguration(): ?array
+    {
+        return $this->testConfiguration;
+    }
+
+    /**
+     * Override getProperties to return the test value.
+     *
+     * @return array
+     */
+    public function getProperties(): array
+    {
+        return $this->testProperties ?? [];
+    }
+}
 
 /**
  * Unit tests for integrated file upload functionality
@@ -67,6 +110,15 @@ class IntegratedFileUploadTest extends TestCase
 
     /** @var MockObject|ObjectEntityMapper */
     private $objectEntityMapper;
+
+    /** @var MockObject|UnifiedObjectMapper */
+    private $unifiedObjectMapper;
+
+    /** @var MockObject|MetadataHydrationHandler */
+    private $metaHydrationHandler;
+
+    /** @var MockObject|FilePropertyHandler */
+    private $filePropertyHandler;
 
     /** @var MockObject|FileService */
     private $fileService;
@@ -89,17 +141,14 @@ class IntegratedFileUploadTest extends TestCase
     /** @var MockObject|OrganisationService */
     private $organisationService;
 
-    /** @var MockObject|ObjectCacheService */
-    private $objectCacheService;
-
-    /** @var MockObject|SchemaCacheHandler */
-    private $schemaCacheService;
-
-    /** @var MockObject|SchemaFacetCacheService */
-    private $schemaFacetCacheService;
+    /** @var MockObject|CacheHandler */
+    private $cacheHandler;
 
     /** @var MockObject|SettingsService */
     private $settingsService;
+
+    /** @var MockObject|PropertyRbacHandler */
+    private $propertyRbacHandler;
 
     /** @var MockObject|LoggerInterface */
     private $logger;
@@ -107,11 +156,11 @@ class IntegratedFileUploadTest extends TestCase
     /** @var MockObject|ArrayLoader */
     private $arrayLoader;
 
-    /** @var MockObject|Register */
-    private $mockRegister;
+    /** @var Register */
+    private Register $mockRegister;
 
-    /** @var MockObject|Schema */
-    private $mockSchema;
+    /** @var TestableSchema */
+    private TestableSchema $mockSchema;
 
     /** @var MockObject|IUser */
     private $mockUser;
@@ -127,6 +176,9 @@ class IntegratedFileUploadTest extends TestCase
 
         // Create mocks for all dependencies.
         $this->objectEntityMapper = $this->createMock(ObjectEntityMapper::class);
+        $this->unifiedObjectMapper = $this->createMock(UnifiedObjectMapper::class);
+        $this->metaHydrationHandler = $this->createMock(MetadataHydrationHandler::class);
+        $this->filePropertyHandler = $this->createMock(FilePropertyHandler::class);
         $this->fileService = $this->createMock(FileService::class);
         $this->userSession = $this->createMock(IUserSession::class);
         $this->auditTrailMapper = $this->createMock(AuditTrailMapper::class);
@@ -134,42 +186,42 @@ class IntegratedFileUploadTest extends TestCase
         $this->registerMapper = $this->createMock(RegisterMapper::class);
         $this->urlGenerator = $this->createMock(IURLGenerator::class);
         $this->organisationService = $this->createMock(OrganisationService::class);
-        $this->objectCacheService = $this->createMock(ObjectCacheService::class);
-        $this->schemaCacheService = $this->createMock(SchemaCacheHandler::class);
-        $this->schemaFacetCacheService = $this->createMock(SchemaFacetCacheService::class);
+        $this->cacheHandler = $this->createMock(CacheHandler::class);
         $this->settingsService = $this->createMock(SettingsService::class);
+        $this->propertyRbacHandler = $this->createMock(PropertyRbacHandler::class);
         $this->logger = $this->createMock(LoggerInterface::class);
-        $this->arrayLoader = $this->createMock(ArrayLoader::class);
+        $this->arrayLoader = new ArrayLoader();
 
-        // Create mock entities.
-        $this->mockRegister = $this->createMock(Register::class);
-        $this->mockSchema = $this->createMock(Schema::class);
+        // Create real entity instances (Entity __call methods cannot be mocked in PHPUnit 10+).
+        $this->mockRegister = new Register();
+        $this->mockRegister->setId(1);
+        $this->mockRegister->setSlug('documents');
+
+        $this->mockSchema = new TestableSchema();
+
         $this->mockUser = $this->createMock(IUser::class);
 
-        // Set up basic mock returns.
-        $this->mockRegister->method('getId')->willReturn(1);
-        $this->mockRegister->method('getSlug')->willReturn('documents');
-        
         $this->mockUser->method('getUID')->willReturn('testuser');
         $this->userSession->method('getUser')->willReturn($this->mockUser);
-        
+
         $this->organisationService->method('getOrganisationForNewEntity')->willReturn('org-123');
         $this->settingsService->method('getSetting')->willReturn(false);
 
         // Create SaveObject instance.
         $this->saveObject = new SaveObject(
             $this->objectEntityMapper,
-            $this->fileService,
+            $this->unifiedObjectMapper,
+            $this->metaHydrationHandler,
+            $this->filePropertyHandler,
             $this->userSession,
             $this->auditTrailMapper,
             $this->schemaMapper,
             $this->registerMapper,
             $this->urlGenerator,
             $this->organisationService,
-            $this->objectCacheService,
-            $this->schemaCacheService,
-            $this->schemaFacetCacheService,
+            $this->cacheHandler,
             $this->settingsService,
+            $this->propertyRbacHandler,
             $this->logger,
             $this->arrayLoader
         );
@@ -183,18 +235,18 @@ class IntegratedFileUploadTest extends TestCase
     public function testMultipartFileUploadSingleFile(): void
     {
         // Arrange: Set up schema with file property.
-        $this->mockSchema->method('getId')->willReturn(1);
-        $this->mockSchema->method('getProperties')->willReturn([
+        $this->mockSchema->setId(1);
+        $this->mockSchema->testProperties = [
             'title' => ['type' => 'string'],
             'attachment' => ['type' => 'file']
-        ]);
-        $this->mockSchema->method('getConfiguration')->willReturn([]);
-        $this->mockSchema->method('getSchemaObject')->willReturn((object)[
+        ];
+        $this->mockSchema->testConfiguration = [];
+        $this->mockSchema->testSchemaObject = (object)[
             'properties' => [
                 'title' => ['type' => 'string'],
                 'attachment' => ['type' => 'file']
             ]
-        ]);
+        ];
 
         $this->schemaMapper->method('find')->willReturn($this->mockSchema);
         $this->registerMapper->method('find')->willReturn($this->mockRegister);
@@ -219,7 +271,7 @@ class IntegratedFileUploadTest extends TestCase
         // Mock file service to expect file creation.
         $mockFile = $this->createMock(File::class);
         $mockFile->method('getId')->willReturn(123);
-        
+
         $this->fileService->expects($this->once())
             ->method('addFile')
             ->willReturn($mockFile);
@@ -234,7 +286,7 @@ class IntegratedFileUploadTest extends TestCase
 
         // Act: Save object with uploaded file.
         $objectData = ['title' => 'Test Document'];
-        
+
         $result = $this->saveObject->saveObject(
             register: $this->mockRegister,
             schema: $this->mockSchema,
@@ -268,18 +320,18 @@ class IntegratedFileUploadTest extends TestCase
     public function testBase64FileUploadWithDataURI(): void
     {
         // Arrange: Set up schema with file property.
-        $this->mockSchema->method('getId')->willReturn(1);
-        $this->mockSchema->method('getProperties')->willReturn([
+        $this->mockSchema->setId(1);
+        $this->mockSchema->testProperties = [
             'title' => ['type' => 'string'],
             'image' => ['type' => 'file']
-        ]);
-        $this->mockSchema->method('getConfiguration')->willReturn([]);
-        $this->mockSchema->method('getSchemaObject')->willReturn((object)[
+        ];
+        $this->mockSchema->testConfiguration = [];
+        $this->mockSchema->testSchemaObject = (object)[
             'properties' => [
                 'title' => ['type' => 'string'],
                 'image' => ['type' => 'file']
             ]
-        ]);
+        ];
 
         $this->schemaMapper->method('find')->willReturn($this->mockSchema);
         $this->registerMapper->method('find')->willReturn($this->mockRegister);
@@ -292,7 +344,7 @@ class IntegratedFileUploadTest extends TestCase
         // Mock file service.
         $mockFile = $this->createMock(File::class);
         $mockFile->method('getId')->willReturn(456);
-        
+
         $this->fileService->expects($this->once())
             ->method('addFile')
             ->with(
@@ -317,7 +369,7 @@ class IntegratedFileUploadTest extends TestCase
             'title' => 'Test Image',
             'image' => $dataUri
         ];
-        
+
         $result = $this->saveObject->saveObject(
             register: $this->mockRegister,
             schema: $this->mockSchema,
@@ -345,18 +397,18 @@ class IntegratedFileUploadTest extends TestCase
     public function testURLFileReference(): void
     {
         // Arrange: Set up schema with file property.
-        $this->mockSchema->method('getId')->willReturn(1);
-        $this->mockSchema->method('getProperties')->willReturn([
+        $this->mockSchema->setId(1);
+        $this->mockSchema->testProperties = [
             'title' => ['type' => 'string'],
             'document' => ['type' => 'file']
-        ]);
-        $this->mockSchema->method('getConfiguration')->willReturn([]);
-        $this->mockSchema->method('getSchemaObject')->willReturn((object)[
+        ];
+        $this->mockSchema->testConfiguration = [];
+        $this->mockSchema->testSchemaObject = (object)[
             'properties' => [
                 'title' => ['type' => 'string'],
                 'document' => ['type' => 'file']
             ]
-        ]);
+        ];
 
         $this->schemaMapper->method('find')->willReturn($this->mockSchema);
         $this->registerMapper->method('find')->willReturn($this->mockRegister);
@@ -364,7 +416,7 @@ class IntegratedFileUploadTest extends TestCase
         // Mock file service.
         $mockFile = $this->createMock(File::class);
         $mockFile->method('getId')->willReturn(789);
-        
+
         $this->fileService->expects($this->once())
             ->method('addFile')
             ->willReturn($mockFile);
@@ -382,7 +434,7 @@ class IntegratedFileUploadTest extends TestCase
             'title' => 'Remote Document',
             'document' => 'https://example.com/files/document.pdf'
         ];
-        
+
         $result = $this->saveObject->saveObject(
             register: $this->mockRegister,
             schema: $this->mockSchema,
@@ -410,22 +462,22 @@ class IntegratedFileUploadTest extends TestCase
     public function testMixedFileTypes(): void
     {
         // Arrange: Set up schema with multiple file properties.
-        $this->mockSchema->method('getId')->willReturn(1);
-        $this->mockSchema->method('getProperties')->willReturn([
+        $this->mockSchema->setId(1);
+        $this->mockSchema->testProperties = [
             'title' => ['type' => 'string'],
             'attachment' => ['type' => 'file'],
             'image' => ['type' => 'file'],
             'reference' => ['type' => 'file']
-        ]);
-        $this->mockSchema->method('getConfiguration')->willReturn([]);
-        $this->mockSchema->method('getSchemaObject')->willReturn((object)[
+        ];
+        $this->mockSchema->testConfiguration = [];
+        $this->mockSchema->testSchemaObject = (object)[
             'properties' => [
                 'title' => ['type' => 'string'],
                 'attachment' => ['type' => 'file'],
                 'image' => ['type' => 'file'],
                 'reference' => ['type' => 'file']
             ]
-        ]);
+        ];
 
         $this->schemaMapper->method('find')->willReturn($this->mockSchema);
         $this->registerMapper->method('find')->willReturn($this->mockRegister);
@@ -434,7 +486,7 @@ class IntegratedFileUploadTest extends TestCase
         $testFileContent = 'PDF content';
         $tmpFile = tempnam(sys_get_temp_dir(), 'test');
         file_put_contents($tmpFile, $testFileContent);
-        
+
         $uploadedFiles = [
             'attachment' => [
                 'name' => 'document.pdf',
@@ -452,7 +504,7 @@ class IntegratedFileUploadTest extends TestCase
         // Mock file service to handle multiple files.
         $mockFileIds = [123, 456, 789];
         $callCount = 0;
-        
+
         $this->fileService->expects($this->exactly(3))
             ->method('addFile')
             ->willReturnCallback(function() use ($mockFileIds, &$callCount) {
@@ -475,7 +527,7 @@ class IntegratedFileUploadTest extends TestCase
             'image' => $dataUri,
             'reference' => 'https://example.com/file.doc'
         ];
-        
+
         $result = $this->saveObject->saveObject(
             register: $this->mockRegister,
             schema: $this->mockSchema,
@@ -493,7 +545,7 @@ class IntegratedFileUploadTest extends TestCase
         // Assert: All files were processed.
         $this->assertInstanceOf(ObjectEntity::class, $result);
         $savedData = $result->getObject();
-        
+
         $this->assertIsInt($savedData['attachment'], 'Multipart file ID should be stored');
         $this->assertIsInt($savedData['image'], 'Base64 file ID should be stored');
         $this->assertIsInt($savedData['reference'], 'URL file ID should be stored');
@@ -512,16 +564,16 @@ class IntegratedFileUploadTest extends TestCase
     public function testArrayOfFiles(): void
     {
         // Arrange: Set up schema with array of files.
-        $this->mockSchema->method('getId')->willReturn(1);
-        $this->mockSchema->method('getProperties')->willReturn([
+        $this->mockSchema->setId(1);
+        $this->mockSchema->testProperties = [
             'title' => ['type' => 'string'],
             'attachments' => [
                 'type' => 'array',
                 'items' => ['type' => 'file']
             ]
-        ]);
-        $this->mockSchema->method('getConfiguration')->willReturn([]);
-        $this->mockSchema->method('getSchemaObject')->willReturn((object)[
+        ];
+        $this->mockSchema->testConfiguration = [];
+        $this->mockSchema->testSchemaObject = (object)[
             'properties' => [
                 'title' => ['type' => 'string'],
                 'attachments' => [
@@ -529,7 +581,7 @@ class IntegratedFileUploadTest extends TestCase
                     'items' => ['type' => 'file']
                 ]
             ]
-        ]);
+        ];
 
         $this->schemaMapper->method('find')->willReturn($this->mockSchema);
         $this->registerMapper->method('find')->willReturn($this->mockRegister);
@@ -542,7 +594,7 @@ class IntegratedFileUploadTest extends TestCase
         // Mock file service.
         $mockFileIds = [111, 222, 333];
         $callCount = 0;
-        
+
         $this->fileService->expects($this->exactly(3))
             ->method('addFile')
             ->willReturnCallback(function() use ($mockFileIds, &$callCount) {
@@ -564,7 +616,7 @@ class IntegratedFileUploadTest extends TestCase
             'title' => 'Multi-Attachment Document',
             'attachments' => [$file1, $file2, $file3]
         ];
-        
+
         $result = $this->saveObject->saveObject(
             register: $this->mockRegister,
             schema: $this->mockSchema,
@@ -581,7 +633,7 @@ class IntegratedFileUploadTest extends TestCase
         // Assert: All files in array were processed.
         $this->assertInstanceOf(ObjectEntity::class, $result);
         $savedData = $result->getObject();
-        
+
         $this->assertIsArray($savedData['attachments'], 'Attachments should be an array');
         $this->assertCount(3, $savedData['attachments'], 'Should have 3 file IDs');
         $this->assertEquals([111, 222, 333], $savedData['attachments'], 'All file IDs should be stored');
@@ -595,14 +647,14 @@ class IntegratedFileUploadTest extends TestCase
     public function testMultipartFileUploadError(): void
     {
         // Arrange: Set up schema.
-        $this->mockSchema->method('getId')->willReturn(1);
-        $this->mockSchema->method('getProperties')->willReturn([
+        $this->mockSchema->setId(1);
+        $this->mockSchema->testProperties = [
             'attachment' => ['type' => 'file']
-        ]);
-        $this->mockSchema->method('getConfiguration')->willReturn([]);
-        $this->mockSchema->method('getSchemaObject')->willReturn((object)[
+        ];
+        $this->mockSchema->testConfiguration = [];
+        $this->mockSchema->testSchemaObject = (object)[
             'properties' => ['attachment' => ['type' => 'file']]
-        ]);
+        ];
 
         $this->schemaMapper->method('find')->willReturn($this->mockSchema);
         $this->registerMapper->method('find')->willReturn($this->mockRegister);
@@ -636,7 +688,7 @@ class IntegratedFileUploadTest extends TestCase
 
         // Act: Save object with failed upload.
         $objectData = ['title' => 'Test'];
-        
+
         $result = $this->saveObject->saveObject(
             register: $this->mockRegister,
             schema: $this->mockSchema,
@@ -663,22 +715,22 @@ class IntegratedFileUploadTest extends TestCase
     public function testFileUploadWithInvalidMimeType(): void
     {
         // Arrange: Schema only allows PDF.
-        $this->mockSchema->method('getId')->willReturn(1);
-        $this->mockSchema->method('getProperties')->willReturn([
+        $this->mockSchema->setId(1);
+        $this->mockSchema->testProperties = [
             'attachment' => [
                 'type' => 'file',
                 'allowedTypes' => ['application/pdf']
             ]
-        ]);
-        $this->mockSchema->method('getConfiguration')->willReturn([]);
-        $this->mockSchema->method('getSchemaObject')->willReturn((object)[
+        ];
+        $this->mockSchema->testConfiguration = [];
+        $this->mockSchema->testSchemaObject = (object)[
             'properties' => [
                 'attachment' => [
                     'type' => 'file',
                     'allowedTypes' => ['application/pdf']
                 ]
             ]
-        ]);
+        ];
 
         $this->schemaMapper->method('find')->willReturn($this->mockSchema);
         $this->registerMapper->method('find')->willReturn($this->mockRegister);
@@ -714,22 +766,22 @@ class IntegratedFileUploadTest extends TestCase
     public function testFileUploadExceedsMaxSize(): void
     {
         // Arrange: Schema with 1MB limit.
-        $this->mockSchema->method('getId')->willReturn(1);
-        $this->mockSchema->method('getProperties')->willReturn([
+        $this->mockSchema->setId(1);
+        $this->mockSchema->testProperties = [
             'attachment' => [
                 'type' => 'file',
                 'maxSize' => 1048576
             ]
-        ]);
-        $this->mockSchema->method('getConfiguration')->willReturn([]);
-        $this->mockSchema->method('getSchemaObject')->willReturn((object)[
+        ];
+        $this->mockSchema->testConfiguration = [];
+        $this->mockSchema->testSchemaObject = (object)[
             'properties' => [
                 'attachment' => [
                     'type' => 'file',
                     'maxSize' => 1048576
                 ]
             ]
-        ]);
+        ];
 
         $this->schemaMapper->method('find')->willReturn($this->mockSchema);
         $this->registerMapper->method('find')->willReturn($this->mockRegister);
@@ -765,14 +817,14 @@ class IntegratedFileUploadTest extends TestCase
     public function testCorruptedBase64Upload(): void
     {
         // Arrange: Schema with file property.
-        $this->mockSchema->method('getId')->willReturn(1);
-        $this->mockSchema->method('getProperties')->willReturn([
+        $this->mockSchema->setId(1);
+        $this->mockSchema->testProperties = [
             'attachment' => ['type' => 'file']
-        ]);
-        $this->mockSchema->method('getConfiguration')->willReturn([]);
-        $this->mockSchema->method('getSchemaObject')->willReturn((object)[
+        ];
+        $this->mockSchema->testConfiguration = [];
+        $this->mockSchema->testSchemaObject = (object)[
             'properties' => ['attachment' => ['type' => 'file']]
-        ]);
+        ];
 
         $this->schemaMapper->method('find')->willReturn($this->mockSchema);
         $this->registerMapper->method('find')->willReturn($this->mockRegister);
@@ -807,8 +859,8 @@ class IntegratedFileUploadTest extends TestCase
     public function testArrayWithValidationError(): void
     {
         // Arrange: Schema with strict validation.
-        $this->mockSchema->method('getId')->willReturn(1);
-        $this->mockSchema->method('getProperties')->willReturn([
+        $this->mockSchema->setId(1);
+        $this->mockSchema->testProperties = [
             'images' => [
                 'type' => 'array',
                 'items' => [
@@ -817,9 +869,9 @@ class IntegratedFileUploadTest extends TestCase
                     'maxSize' => 1048576
                 ]
             ]
-        ]);
-        $this->mockSchema->method('getConfiguration')->willReturn([]);
-        $this->mockSchema->method('getSchemaObject')->willReturn((object)[
+        ];
+        $this->mockSchema->testConfiguration = [];
+        $this->mockSchema->testSchemaObject = (object)[
             'properties' => [
                 'images' => [
                     'type' => 'array',
@@ -830,7 +882,7 @@ class IntegratedFileUploadTest extends TestCase
                     ]
                 ]
             ]
-        ]);
+        ];
 
         $this->schemaMapper->method('find')->willReturn($this->mockSchema);
         $this->registerMapper->method('find')->willReturn($this->mockRegister);
@@ -877,18 +929,18 @@ class IntegratedFileUploadTest extends TestCase
         }
 
         // Arrange: Set up schema with file property.
-        $this->mockSchema->method('getId')->willReturn(1);
-        $this->mockSchema->method('getProperties')->willReturn([
+        $this->mockSchema->setId(1);
+        $this->mockSchema->testProperties = [
             'title' => ['type' => 'string'],
             'document' => ['type' => 'file']
-        ]);
-        $this->mockSchema->method('getConfiguration')->willReturn([]);
-        $this->mockSchema->method('getSchemaObject')->willReturn((object)[
+        ];
+        $this->mockSchema->testConfiguration = [];
+        $this->mockSchema->testSchemaObject = (object)[
             'properties' => [
                 'title' => ['type' => 'string'],
                 'document' => ['type' => 'file']
             ]
-        ]);
+        ];
 
         $this->schemaMapper->method('find')->willReturn($this->mockSchema);
         $this->registerMapper->method('find')->willReturn($this->mockRegister);
@@ -897,7 +949,7 @@ class IntegratedFileUploadTest extends TestCase
         $testFileContent = 'This is a test document for text extraction background job testing.';
         $tmpFile = tempnam(sys_get_temp_dir(), 'test');
         file_put_contents($tmpFile, $testFileContent);
-        
+
         $uploadedFiles = [
             'document' => [
                 'name' => 'test-doc.txt',
@@ -911,7 +963,7 @@ class IntegratedFileUploadTest extends TestCase
         // Mock file service.
         $mockFile = $this->createMock(File::class);
         $mockFile->method('getId')->willReturn(999);
-        
+
         $this->fileService->expects($this->once())
             ->method('addFile')
             ->willReturn($mockFile);
@@ -926,7 +978,7 @@ class IntegratedFileUploadTest extends TestCase
 
         // Act: Save object with uploaded file.
         $objectData = ['title' => 'Background Job Test Document'];
-        
+
         $result = $this->saveObject->saveObject(
             register: $this->mockRegister,
             schema: $this->mockSchema,
@@ -972,14 +1024,14 @@ class IntegratedFileUploadTest extends TestCase
     public function testFileUploadIsNonBlocking(): void
     {
         // Arrange: Set up schema.
-        $this->mockSchema->method('getId')->willReturn(1);
-        $this->mockSchema->method('getProperties')->willReturn([
+        $this->mockSchema->setId(1);
+        $this->mockSchema->testProperties = [
             'document' => ['type' => 'file']
-        ]);
-        $this->mockSchema->method('getConfiguration')->willReturn([]);
-        $this->mockSchema->method('getSchemaObject')->willReturn((object)[
+        ];
+        $this->mockSchema->testConfiguration = [];
+        $this->mockSchema->testSchemaObject = (object)[
             'properties' => ['document' => ['type' => 'file']]
-        ]);
+        ];
 
         $this->schemaMapper->method('find')->willReturn($this->mockSchema);
         $this->registerMapper->method('find')->willReturn($this->mockRegister);
@@ -988,7 +1040,7 @@ class IntegratedFileUploadTest extends TestCase
         $testFileContent = str_repeat('Sample text content. ', 100);
         $tmpFile = tempnam(sys_get_temp_dir(), 'test');
         file_put_contents($tmpFile, $testFileContent);
-        
+
         $uploadedFiles = [
             'document' => [
                 'name' => 'large-doc.txt',
@@ -1002,7 +1054,7 @@ class IntegratedFileUploadTest extends TestCase
         // Mock file service - should complete quickly.
         $mockFile = $this->createMock(File::class);
         $mockFile->method('getId')->willReturn(123);
-        
+
         $this->fileService->expects($this->once())
             ->method('addFile')
             ->willReturn($mockFile);
@@ -1016,7 +1068,7 @@ class IntegratedFileUploadTest extends TestCase
 
         // Act: Measure upload time.
         $startTime = microtime(true);
-        
+
         $result = $this->saveObject->saveObject(
             register: $this->mockRegister,
             schema: $this->mockSchema,
@@ -1030,13 +1082,13 @@ class IntegratedFileUploadTest extends TestCase
             validation: false,
             uploadedFiles: $uploadedFiles
         );
-        
+
         $uploadTime = (microtime(true) - $startTime) * 1000; // Convert to milliseconds
 
         // Assert: Upload completes quickly (< 100ms).
         // Note: This is a generous threshold for unit tests
         $this->assertLessThan(100, $uploadTime, 'File upload should complete in < 100ms (non-blocking)');
-        
+
         // Assert: File was stored successfully.
         $this->assertInstanceOf(ObjectEntity::class, $result);
 
@@ -1054,14 +1106,14 @@ class IntegratedFileUploadTest extends TestCase
     public function testPDFUploadQueuesBackgroundJob(): void
     {
         // Arrange: Set up schema.
-        $this->mockSchema->method('getId')->willReturn(1);
-        $this->mockSchema->method('getProperties')->willReturn([
+        $this->mockSchema->setId(1);
+        $this->mockSchema->testProperties = [
             'pdf' => ['type' => 'file']
-        ]);
-        $this->mockSchema->method('getConfiguration')->willReturn([]);
-        $this->mockSchema->method('getSchemaObject')->willReturn((object)[
+        ];
+        $this->mockSchema->testConfiguration = [];
+        $this->mockSchema->testSchemaObject = (object)[
             'properties' => ['pdf' => ['type' => 'file']]
-        ]);
+        ];
 
         $this->schemaMapper->method('find')->willReturn($this->mockSchema);
         $this->registerMapper->method('find')->willReturn($this->mockRegister);
@@ -1073,7 +1125,7 @@ class IntegratedFileUploadTest extends TestCase
         // Mock file service.
         $mockFile = $this->createMock(File::class);
         $mockFile->method('getId')->willReturn(555);
-        
+
         $this->fileService->expects($this->once())
             ->method('addFile')
             ->willReturn($mockFile);
@@ -1103,9 +1155,8 @@ class IntegratedFileUploadTest extends TestCase
         $this->assertInstanceOf(ObjectEntity::class, $result);
         $savedData = $result->getObject();
         $this->assertEquals(555, $savedData['pdf'], 'PDF file ID should be stored');
-        
+
         // Note: In real environment, FileChangeListener would queue
         // FileTextExtractionJob with file_id=555 for background processing.
     }
 }
-
