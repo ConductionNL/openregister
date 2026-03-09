@@ -53,7 +53,7 @@ use Psr\Log\LoggerInterface;
  * Schema::getSchemaObject() requires an IURLGenerator, and Schema::getConfiguration()
  * and Schema::getProperties() need to be controllable in tests without mocking __call.
  */
-class TestableSchema extends Schema
+class FileUploadTestableSchema extends Schema
 {
     public ?stdClass $testSchemaObject = null;
     public ?array $testConfiguration = null;
@@ -160,7 +160,7 @@ class IntegratedFileUploadTest extends TestCase
     private Register $mockRegister;
 
     /** @var TestableSchema */
-    private TestableSchema $mockSchema;
+    private FileUploadTestableSchema $mockSchema;
 
     /** @var MockObject|IUser */
     private $mockUser;
@@ -197,7 +197,7 @@ class IntegratedFileUploadTest extends TestCase
         $this->mockRegister->setId(1);
         $this->mockRegister->setSlug('documents');
 
-        $this->mockSchema = new TestableSchema();
+        $this->mockSchema = new FileUploadTestableSchema();
 
         $this->mockUser = $this->createMock(IUser::class);
 
