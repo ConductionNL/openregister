@@ -77,25 +77,6 @@ export default {
 			navigationStore.setModal('viewObject')
 			objectStore.setObjectItem(row)
 		},
-		handleCreate(res) {
-			console.log('handleCreate', res)
-			return
-
-			const registerId = objectStore.searchParams.register
-			const schemaId = objectStore.searchParams.schema
-			if (!registerId || !schemaId) return
-			registerStore.setRegisterItem(registerStore.registerList.find((r) => r.id === registerId))
-			schemaStore.setSchemaItem(schemaStore.schemaList.find((s) => s.id === schemaId))
-			objectStore.setObjectItem(null)
-			navigationStore.setModal('viewObject')
-		},
-		handleEdit(formData) {
-			const row = this.normalizedObjects.find((r) => String(r.id) === String(formData?.id))
-			if (row) {
-				objectStore.setObjectItem(row)
-				navigationStore.setModal('viewObject')
-			}
-		},
 		handleDelete(id) {
 			const row = this.normalizedObjects.find((r) => String(r.id) === String(id))
 			if (row) {
@@ -127,6 +108,7 @@ export default {
 
 <template>
 	<NcAppContent>
+		<!-- creation logic is handled inside CnIndexPage due to store and object-type props -->
 		<CnIndexPage
 			:title="pageTitle"
 			:schema="objectStore.searchSchema"
@@ -151,8 +133,6 @@ export default {
 			mass-action-name-field="title"
 			empty-text="No objects found. Select registers and schemas in the sidebar, then search."
 			@refresh="handleRefresh"
-			@create="handleCreate"
-			@edit="handleEdit"
 			@delete="handleDelete"
 			@copy="handleCopy"
 			@mass-delete="handleMassDelete"
