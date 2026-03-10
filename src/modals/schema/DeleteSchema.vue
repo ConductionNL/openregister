@@ -1,5 +1,5 @@
 <script setup>
-import { schemaStore, navigationStore, objectStore, packageObjectStore, registerStore } from '../../store/store.js'
+import { schemaStore, navigationStore, objectStore, registerStore } from '../../store/store.js'
 </script>
 
 <template>
@@ -120,8 +120,8 @@ export default {
 						search: '',
 					})
 
-					if (packageObjectStore.getCollection(objectStore.currentType).length) {
-						this.objects.push(...packageObjectStore.getCollection(objectStore.currentType))
+					if (objectStore.getCollection(objectStore.currentType).length) {
+						this.objects.push(...objectStore.getCollection(objectStore.currentType))
 						this.registerName = reg.title
 					}
 				}

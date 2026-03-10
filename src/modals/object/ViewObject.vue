@@ -1,5 +1,5 @@
 <script setup>
-import { objectStore, packageObjectStore, navigationStore, registerStore, schemaStore } from '../../store/store.js'
+import { objectStore, navigationStore, registerStore, schemaStore } from '../../store/store.js'
 </script>
 
 <template>
@@ -1419,8 +1419,8 @@ export default {
 				}
 
 				const type = `${this.currentRegister.id}-${this.currentSchema.id}`
-				packageObjectStore.registerObjectType(type, this.currentSchema.id, this.currentRegister.id)
-				const data = await packageObjectStore.saveObject(type, dataToSave)
+				objectStore.registerObjectType(type, this.currentSchema.id, this.currentRegister.id)
+				const data = await objectStore.saveObject(type, dataToSave)
 				if (data) objectStore.setObjectItem(data)
 				await objectStore.refreshObjectList({ register: this.currentRegister.id, schema: this.currentSchema.id })
 				console.info('Save object data:', data)

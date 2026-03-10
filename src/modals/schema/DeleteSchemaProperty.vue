@@ -1,5 +1,5 @@
 <script setup>
-import { navigationStore, schemaStore, objectStore, packageObjectStore, registerStore } from '../../store/store.js'
+import { navigationStore, schemaStore, objectStore, registerStore } from '../../store/store.js'
 </script>
 
 <template>
@@ -100,8 +100,8 @@ export default {
 						schema: schemaStore.schemaItem.id,
 						search: '',
 					})
-					if (packageObjectStore.getCollection(objectStore.currentType).length) {
-						for (const obj of packageObjectStore.getCollection(objectStore.currentType)) {
+					if (objectStore.getCollection(objectStore.currentType).length) {
+						for (const obj of objectStore.getCollection(objectStore.currentType)) {
 							if (obj[schemaStore.schemaPropertyKey]) {
 								this.objects.push(obj)
 							}

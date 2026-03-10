@@ -1,5 +1,5 @@
 <script setup>
-import { objectStore, packageObjectStore, navigationStore, schemaStore, registerStore } from '../../store/store.js'
+import { objectStore, navigationStore, schemaStore, registerStore } from '../../store/store.js'
 </script>
 
 <template>
@@ -240,8 +240,8 @@ export default {
 			}
 
 			const type = `${newObject.register}-${newObject.schema}`
-			packageObjectStore.registerObjectType(type, newObject.schema, newObject.register)
-			packageObjectStore.saveObject(type, newObject)
+			objectStore.registerObjectType(type, newObject.schema, newObject.register)
+			objectStore.saveObject(type, newObject)
 				.then((data) => {
 					this.success = !!data
 					this.error = false

@@ -1,5 +1,5 @@
 <script setup>
-import { objectStore, packageObjectStore, navigationStore } from '../../store/store.js'
+import { objectStore, navigationStore } from '../../store/store.js'
 </script>
 
 <template>
@@ -162,8 +162,8 @@ export default {
 				const register = objectStore.objectItem['@self'].register
 				const schema = objectStore.objectItem['@self'].schema
 				const type = `${register}-${schema}`
-				packageObjectStore.registerObjectType(type, schema, register)
-				const data = await packageObjectStore.saveObject(type, objectToCopy)
+				objectStore.registerObjectType(type, schema, register)
+				const data = await objectStore.saveObject(type, objectToCopy)
 				await objectStore.refreshObjectList({ register, schema })
 
 				if (data) {
