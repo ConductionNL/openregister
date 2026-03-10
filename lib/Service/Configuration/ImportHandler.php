@@ -997,12 +997,11 @@ class ImportHandler
                         } else if ($registerSlug !== '') {
                             // Try to find existing register in database.
                             try {
-                                $existingRegister = $this->registerMapper->find($registerSlug);
+                                $existingRegister = $this->registerMapper->find($registerSlug, _multitenancy: false);
                                 $property['objectConfiguration']['register'] = $existingRegister->getId();
                                 $this->registersMap[$registerSlug]           = $existingRegister;
                             } catch (\OCP\AppFramework\Db\DoesNotExistException | ValidationException $e) {
-                                $msg  = 'Register with slug %s not found in current ';
-                                $msg .= 'organisation context during schema property import ';
+                                $msg  = 'Register with slug %s not found during schema property import ';
                                 $msg .= '(will be resolved after registers are imported).';
                                 $this->logger->info(
                                     message: '[ImportHandler] '.sprintf($msg, $registerSlug),
@@ -1026,12 +1025,11 @@ class ImportHandler
                             if (($this->schemasMap[$schemaSlug] ?? null) === null) {
                                 // Try to find existing schema in database.
                                 try {
-                                    $existingSchema = $this->schemaMapper->find($schemaSlug);
+                                    $existingSchema = $this->schemaMapper->find($schemaSlug, _multitenancy: false);
                                     $property['objectConfiguration']['schema'] = $existingSchema->getId();
                                     $this->schemasMap[$schemaSlug] = $existingSchema;
                                 } catch (\OCP\AppFramework\Db\DoesNotExistException | ValidationException $e) {
-                                    $msg  = 'Schema with slug %s not found in current ';
-                                    $msg .= 'organisation context during schema property import ';
+                                    $msg  = 'Schema with slug %s not found during schema property import ';
                                     $msg .= '(will be resolved after schemas are imported).';
                                     $this->logger->info(
                                         message: '[ImportHandler] '.sprintf($msg, $schemaSlug),
@@ -1069,12 +1067,11 @@ class ImportHandler
                         } else if ($registerSlug !== '') {
                             // Try to find existing register in database.
                             try {
-                                $existingRegister = $this->registerMapper->find($registerSlug);
+                                $existingRegister = $this->registerMapper->find($registerSlug, _multitenancy: false);
                                 $property['items']['objectConfiguration']['register'] = $existingRegister->getId();
                                 $this->registersMap[$registerSlug] = $existingRegister;
                             } catch (\OCP\AppFramework\Db\DoesNotExistException | ValidationException $e) {
-                                $msg  = 'Register with slug %s not found in current ';
-                                $msg .= 'organisation context during array items schema property ';
+                                $msg  = 'Register with slug %s not found during array items schema property ';
                                 $msg .= 'import (will be resolved after registers are imported).';
                                 $this->logger->info(
                                     message: '[ImportHandler] '.sprintf($msg, $registerSlug),
@@ -1100,13 +1097,12 @@ class ImportHandler
                             if (($this->schemasMap[$schemaSlug] ?? null) === null) {
                                 // Try to find existing schema in database.
                                 try {
-                                    $existingSchema = $this->schemaMapper->find($schemaSlug);
+                                    $existingSchema = $this->schemaMapper->find($schemaSlug, _multitenancy: false);
                                     $schemaId       = $existingSchema->getId();
                                     $property['items']['objectConfiguration']['schema'] = $schemaId;
                                     $this->schemasMap[$schemaSlug] = $existingSchema;
                                 } catch (\OCP\AppFramework\Db\DoesNotExistException | ValidationException $e) {
-                                    $msg  = 'Schema with slug %s not found in current ';
-                                    $msg .= 'organisation context during array items schema ';
+                                    $msg  = 'Schema with slug %s not found during array items schema ';
                                     $msg .= 'property import (will be resolved after schemas are imported).';
                                     $this->logger->info(
                                         message: '[ImportHandler] '.sprintf($msg, $schemaSlug),
@@ -1138,11 +1134,13 @@ class ImportHandler
             }//end if
 
             // Check if schema already exists by slug.
+            // Bypass multi-tenancy so we find schemas regardless of organisation context,
+            // preventing duplicate schemas when the active organisation UUID changes.
             $existingSchema = null;
             try {
-                $existingSchema = $this->schemaMapper->find($data['slug']);
+                $existingSchema = $this->schemaMapper->find($data['slug'], _multitenancy: false);
             } catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
-                $msg = "Schema '{$data['slug']}' not found in current organisation context, will create new one";
+                $msg = "Schema '{$data['slug']}' not found, will create new one";
                 $this->logger->info(message: '[ImportHandler] '.$msg, context: ['file' => __FILE__, 'line' => __LINE__]);
             } catch (\OCA\OpenRegister\Exception\ValidationException $e) {
                 $msg = "Schema '{$data['slug']}' not found (ValidationException), will create new one";
