@@ -2,216 +2,213 @@
 
 namespace OCA\OpenRegister\Tests\Unit\Service;
 
-use OCA\OpenRegister\Service\VectorEmbeddingService;
-use Test\TestCase;
+use OCA\OpenRegister\Service\Vectorization\Handlers\VectorSearchHandler;
+use PHPUnit\Framework\TestCase;
+use ReflectionMethod;
 
 /**
- * Unit tests for VectorEmbeddingService
- *
- * @group DB
+ * Unit tests for VectorSearchHandler (cosine similarity, RRF)
  */
 class VectorEmbeddingServiceTest extends TestCase
 {
-	/** @var VectorEmbeddingService */
-	private $service;
-	
+	/** @var VectorSearchHandler */
+	private $handler;
+
 	protected function setUp(): void
 	{
 		parent::setUp();
-		
+
 		$db = $this->createMock(\OCP\IDBConnection::class);
 		$settings = $this->createMock(\OCA\OpenRegister\Service\SettingsService::class);
+		$indexService = $this->createMock(\OCA\OpenRegister\Service\IndexService::class);
 		$logger = $this->createMock(\Psr\Log\LoggerInterface::class);
-		
-		$this->service = new VectorEmbeddingService($db, $settings, $logger);
+
+		$this->handler = new VectorSearchHandler($db, $settings, $indexService, $logger);
 	}
-	
+
+	/**
+	 * Invoke a private/protected method on the handler.
+	 */
+	private function invokeMethod(string $methodName, array $args = []): mixed
+	{
+		$method = new ReflectionMethod($this->handler, $methodName);
+		$method->setAccessible(true);
+		return $method->invokeArgs($this->handler, $args);
+	}
+
+	/**
+	 * Helper to build a vector result entry matching the expected format.
+	 */
+	private function makeVectorResult(string $id, float $similarity, string $entityType = 'object'): array
+	{
+		return [
+			'entity_type' => $entityType,
+			'entity_id' => $id,
+			'chunk_index' => 0,
+			'chunk_text' => 'text for ' . $id,
+			'metadata' => [],
+			'similarity' => $similarity,
+		];
+	}
+
+	/**
+	 * Helper to build a SOLR result entry matching the expected format.
+	 */
+	private function makeSolrResult(string $id, float $score, string $entityType = 'object'): array
+	{
+		return [
+			'entity_type' => $entityType,
+			'entity_id' => $id,
+			'chunk_index' => 0,
+			'chunk_text' => 'text for ' . $id,
+			'metadata' => [],
+			'score' => $score,
+		];
+	}
+
 	public function testCosineSimilarityIdentical()
 	{
-		$vector1 = [1.0, 0.0, 0.0];
-		$vector2 = [1.0, 0.0, 0.0];
-		
-		$similarity = self::invokePrivate($this->service, 'cosineSimilarity', [$vector1, $vector2]);
-		
-		$this->assertEquals(1.0, $similarity, '', 0.001);
+		$similarity = $this->invokeMethod('cosineSimilarity', [[1.0, 0.0, 0.0], [1.0, 0.0, 0.0]]);
+		$this->assertEqualsWithDelta(1.0, $similarity, 0.001);
 	}
-	
+
 	public function testCosineSimilarityOrthogonal()
 	{
-		$vector1 = [1.0, 0.0, 0.0];
-		$vector2 = [0.0, 1.0, 0.0];
-		
-		$similarity = self::invokePrivate($this->service, 'cosineSimilarity', [$vector1, $vector2]);
-		
-		$this->assertEquals(0.0, $similarity, '', 0.001);
+		$similarity = $this->invokeMethod('cosineSimilarity', [[1.0, 0.0, 0.0], [0.0, 1.0, 0.0]]);
+		$this->assertEqualsWithDelta(0.0, $similarity, 0.001);
 	}
-	
+
 	public function testCosineSimilarityOpposite()
 	{
-		$vector1 = [1.0, 0.0];
-		$vector2 = [-1.0, 0.0];
-		
-		$similarity = self::invokePrivate($this->service, 'cosineSimilarity', [$vector1, $vector2]);
-		
-		$this->assertEquals(-1.0, $similarity, '', 0.001);
+		$similarity = $this->invokeMethod('cosineSimilarity', [[1.0, 0.0], [-1.0, 0.0]]);
+		$this->assertEqualsWithDelta(-1.0, $similarity, 0.001);
 	}
-	
+
 	public function testCosineSimilarityPartial()
 	{
-		$vector1 = [1.0, 1.0, 0.0];
-		$vector2 = [1.0, 0.0, 0.0];
-		
-		$similarity = self::invokePrivate($this->service, 'cosineSimilarity', [$vector1, $vector2]);
-		
-		// cos(45°) ≈ 0.707.
+		$similarity = $this->invokeMethod('cosineSimilarity', [[1.0, 1.0, 0.0], [1.0, 0.0, 0.0]]);
+		// cos(45) = 0.707.
 		$this->assertGreaterThan(0.7, $similarity);
 		$this->assertLessThan(0.8, $similarity);
 	}
-	
+
 	public function testCosineSimilarityHighDimensional()
 	{
-		// Test with realistic embedding dimensions (1536).
-		$vector1 = array_fill(0, 1536, 1.0);
-		$vector2 = array_fill(0, 1536, 1.0);
-		
-		$similarity = self::invokePrivate($this->service, 'cosineSimilarity', [$vector1, $vector2]);
-		
-		$this->assertEquals(1.0, $similarity, '', 0.001);
+		$v = array_fill(0, 1536, 1.0);
+		$similarity = $this->invokeMethod('cosineSimilarity', [$v, $v]);
+		$this->assertEqualsWithDelta(1.0, $similarity, 0.001);
 	}
-	
+
 	public function testCosineSimilarityNormalization()
 	{
-		// Vectors with different magnitudes but same direction.
-		$vector1 = [2.0, 2.0];
-		$vector2 = [1.0, 1.0];
-		
-		$similarity = self::invokePrivate($this->service, 'cosineSimilarity', [$vector1, $vector2]);
-		
-		// Should be 1.0 (same direction, different magnitude).
-		$this->assertEquals(1.0, $similarity, '', 0.001);
+		$similarity = $this->invokeMethod('cosineSimilarity', [[2.0, 2.0], [1.0, 1.0]]);
+		$this->assertEqualsWithDelta(1.0, $similarity, 0.001);
 	}
-	
+
 	public function testReciprocalRankFusionBasic()
 	{
-		$keywordResults = [
-			['id' => 'A', 'score' => 10],
-			['id' => 'B', 'score' => 8],
-			['id' => 'C', 'score' => 6],
+		$vector = [
+			$this->makeVectorResult('A', 0.9),
+			$this->makeVectorResult('B', 0.8),
 		];
-		
-		$semanticResults = [
-			['id' => 'B', 'similarity' => 0.9],
-			['id' => 'A', 'similarity' => 0.8],
-			['id' => 'D', 'similarity' => 0.7],
+		$solr = [
+			$this->makeSolrResult('B', 10.0),
+			$this->makeSolrResult('C', 8.0),
 		];
-		
-		$merged = self::invokePrivate($this->service, 'reciprocalRankFusion', [$keywordResults, $semanticResults, 60]);
-		
-		$this->assertCount(4, $merged); // A, B, C, D
-		
-		// B should be first (rank 2 in keyword, rank 1 in semantic).
-		$this->assertEquals('B', $merged[0]['id']);
-		
-		// Check that RRF scores are calculated.
-		$this->assertArrayHasKey('rrf_score', $merged[0]);
-		$this->assertGreaterThan(0, $merged[0]['rrf_score']);
+
+		$merged = $this->invokeMethod('reciprocalRankFusion', [$vector, $solr]);
+
+		$this->assertCount(3, $merged);
+		// B is in both lists, should be ranked first.
+		$this->assertEquals('B', $merged[0]['entity_id']);
+		$this->assertArrayHasKey('combined_score', $merged[0]);
+		$this->assertGreaterThan(0, $merged[0]['combined_score']);
 	}
-	
-	public function testReciprocalRankFusionOnlyKeyword()
+
+	public function testReciprocalRankFusionOnlyVector()
 	{
-		$keywordResults = [
-			['id' => 'A', 'score' => 10],
-			['id' => 'B', 'score' => 8],
+		$vector = [
+			$this->makeVectorResult('A', 0.9),
+			$this->makeVectorResult('B', 0.8),
 		];
-		
-		$semanticResults = [];
-		
-		$merged = self::invokePrivate($this->service, 'reciprocalRankFusion', [$keywordResults, $semanticResults, 60]);
-		
+		$merged = $this->invokeMethod('reciprocalRankFusion', [$vector, []]);
+
 		$this->assertCount(2, $merged);
-		$this->assertEquals('A', $merged[0]['id']);
-		$this->assertEquals('B', $merged[1]['id']);
+		$this->assertEquals('A', $merged[0]['entity_id']);
+		$this->assertEquals('B', $merged[1]['entity_id']);
 	}
-	
-	public function testReciprocalRankFusionOnlySemantic()
+
+	public function testReciprocalRankFusionOnlySolr()
 	{
-		$keywordResults = [];
-		
-		$semanticResults = [
-			['id' => 'X', 'similarity' => 0.9],
-			['id' => 'Y', 'similarity' => 0.8],
+		$solr = [
+			$this->makeSolrResult('X', 10.0),
+			$this->makeSolrResult('Y', 8.0),
 		];
-		
-		$merged = self::invokePrivate($this->service, 'reciprocalRankFusion', [$keywordResults, $semanticResults, 60]);
-		
+		$merged = $this->invokeMethod('reciprocalRankFusion', [[], $solr]);
+
 		$this->assertCount(2, $merged);
-		$this->assertEquals('X', $merged[0]['id']);
-		$this->assertEquals('Y', $merged[1]['id']);
+		$this->assertEquals('X', $merged[0]['entity_id']);
+		$this->assertEquals('Y', $merged[1]['entity_id']);
 	}
-	
-	public function testReciprocalRankFusionKParameter()
+
+	public function testReciprocalRankFusionWeights()
 	{
-		$keywordResults = [['id' => 'A', 'score' => 10]];
-		$semanticResults = [['id' => 'A', 'similarity' => 0.9]];
-		
-		// Test with different k values.
-		$merged1 = self::invokePrivate($this->service, 'reciprocalRankFusion', [$keywordResults, $semanticResults, 10]);
-		$merged2 = self::invokePrivate($this->service, 'reciprocalRankFusion', [$keywordResults, $semanticResults, 100]);
-		
-		// Different k values should produce different scores.
-		$this->assertNotEquals($merged1[0]['rrf_score'], $merged2[0]['rrf_score']);
+		// A appears at rank 0 in vector, B at rank 0 in solr.
+		// With vector-heavy weights, A should rank higher; with solr-heavy, B should rank higher.
+		$vector = [$this->makeVectorResult('A', 0.9)];
+		$solr = [$this->makeSolrResult('B', 10.0)];
+
+		$merged1 = $this->invokeMethod('reciprocalRankFusion', [$vector, $solr, 0.9, 0.1]);
+		$merged2 = $this->invokeMethod('reciprocalRankFusion', [$vector, $solr, 0.1, 0.9]);
+
+		// With high vector weight, A should be first.
+		$this->assertEquals('A', $merged1[0]['entity_id']);
+		// With high solr weight, B should be first.
+		$this->assertEquals('B', $merged2[0]['entity_id']);
 	}
-	
+
 	public function testReciprocalRankFusionPreservesMetadata()
 	{
-		$keywordResults = [
-			['id' => 'A', 'score' => 10, 'title' => 'Title A', 'custom' => 'data']
-		];
-		
-		$semanticResults = [
-			['id' => 'A', 'similarity' => 0.9, 'text' => 'Some text']
-		];
-		
-		$merged = self::invokePrivate($this->service, 'reciprocalRankFusion', [$keywordResults, $semanticResults, 60]);
-		
-		// Should preserve metadata from keyword results.
-		$this->assertArrayHasKey('title', $merged[0]);
-		$this->assertEquals('Title A', $merged[0]['title']);
-		$this->assertArrayHasKey('custom', $merged[0]);
-		$this->assertEquals('data', $merged[0]['custom']);
-		
-		// Should also have semantic data.
-		$this->assertArrayHasKey('text', $merged[0]);
-		$this->assertEquals('Some text', $merged[0]['text']);
+		$vector = [[
+			'entity_type' => 'object',
+			'entity_id' => 'A',
+			'chunk_index' => 2,
+			'chunk_text' => 'Some text',
+			'metadata' => ['title' => 'Title A'],
+			'similarity' => 0.9,
+		]];
+		$solr = [];
+
+		$merged = $this->invokeMethod('reciprocalRankFusion', [$vector, $solr]);
+
+		$this->assertEquals('A', $merged[0]['entity_id']);
+		$this->assertEquals('Some text', $merged[0]['chunk_text']);
+		$this->assertEquals(2, $merged[0]['chunk_index']);
+		$this->assertEquals(['title' => 'Title A'], $merged[0]['metadata']);
 	}
-	
+
 	public function testReciprocalRankFusionLargeDataset()
 	{
-		// Generate 100 keyword results.
-		$keywordResults = [];
+		$vector = [];
 		for ($i = 1; $i <= 100; $i++) {
-			$keywordResults[] = ['id' => 'K' . $i, 'score' => 100 - $i];
+			$vector[] = $this->makeVectorResult('V' . $i, 1.0 - ($i * 0.005));
 		}
-		
-		// Generate 100 semantic results (with some overlap).
-		$semanticResults = [];
-		for ($i = 1; $i <= 100; $i++) {
-			$semanticResults[] = ['id' => 'S' . $i, 'similarity' => 1.0 - ($i * 0.01)];
-		}
-		
-		// Add some overlapping IDs.
-		$semanticResults[0]['id'] = 'K1';
-		$semanticResults[1]['id'] = 'K2';
-		$semanticResults[2]['id'] = 'K3';
-		
-		$merged = self::invokePrivate($this->service, 'reciprocalRankFusion', [$keywordResults, $semanticResults, 60]);
-		
-		// K1, K2, K3 should rank highly due to appearing in both.
-		$topIds = array_slice(array_column($merged, 'id'), 0, 5);
-		$this->assertContains('K1', $topIds);
-		$this->assertContains('K2', $topIds);
-		$this->assertContains('K3', $topIds);
-	}
-	
-}
 
+		$solr = [];
+		for ($i = 1; $i <= 100; $i++) {
+			$solr[] = $this->makeSolrResult('S' . $i, 100 - $i);
+		}
+
+		// Overlap: first 3 solr items share IDs with first 3 vector items.
+		$solr[0]['entity_id'] = 'V1';
+		$solr[1]['entity_id'] = 'V2';
+		$solr[2]['entity_id'] = 'V3';
+
+		$merged = $this->invokeMethod('reciprocalRankFusion', [$vector, $solr]);
+
+		$topIds = array_slice(array_column($merged, 'entity_id'), 0, 5);
+		$this->assertContains('V1', $topIds);
+		$this->assertContains('V2', $topIds);
+		$this->assertContains('V3', $topIds);
+	}
+}

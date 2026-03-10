@@ -95,9 +95,12 @@ class MetadataHydrationHandler
         $objectData = $entity->getObject();
 
         // CRITICAL FIX: Extract business data from correct location.
-        // If object data has 'object' key (structured format), use that for property access.
+        // If object data has 'object' key that is an array (structured format), use that for property access.
         // Otherwise use the objectData directly (flat format).
-        $businessData = $objectData['object'] ?? $objectData;
+        // Note: 'object' may also be a regular string property (e.g., a URL in ObjectInformatieObject).
+        $businessData = (isset($objectData['object']) === true && is_array($objectData['object']) === true)
+            ? $objectData['object']
+            : $objectData;
 
         // Get schema properties for relation field detection.
         $schemaProperties = $schema->getProperties() ?? [];
@@ -107,7 +110,11 @@ class MetadataHydrationHandler
         $name      = null;
 
         if ($nameField !== null) {
-            $name = $this->extractMetadataValue(data: $businessData, fieldPath: $nameField, schemaProperties: $schemaProperties);
+            $name = $this->extractMetadataValue(
+                data: $businessData,
+                fieldPath: $nameField,
+                schemaProperties: $schemaProperties
+            );
         }
 
         // Fallback: try common name fields if not configured or configured field is empty.
@@ -342,14 +349,29 @@ class MetadataHydrationHandler
             $fieldExpression = trim($matches[1][$index]);
 
             // Check if this expression uses the ifFilled filter: "field | ifFilled: valIfFilled, valIfEmpty".
-            if (preg_match('/^(.+?)\|\s*ifFilled\s*:\s*(.+)$/s', $fieldExpression, $ifFilledMatch) === 1) {
-                $value = $this->processIfFilledFilter(data: $data, fieldName: trim($ifFilledMatch[1]), definition: trim($ifFilledMatch[2]));
-            } else if (preg_match('/^(.+?)\|\s*map\s*:\s*(.+)$/s', $fieldExpression, $mapMatch) === 1) {
-                // Check if this expression uses the map filter syntax: "field | map: key1=val1, key2=val2".
-                $value = $this->processMapFilter(data: $data, fieldName: trim($mapMatch[1]), mapDefinition: trim($mapMatch[2]));
+            $ifFilledRegex = '/^(.+?)\|\s*ifFilled\s*:\s*(.+)$/s';
+            $mapRegex      = '/^(.+?)\|\s*map\s*:\s*(.+)$/s';
+            if (preg_match($ifFilledRegex, $fieldExpression, $ifFilledMatch) === 1) {
+                $value = $this->processIfFilledFilter(
+                    data: $data,
+                    fieldName: trim($ifFilledMatch[1]),
+                    definition: trim($ifFilledMatch[2])
+                );
+            } else if (preg_match($mapRegex, $fieldExpression, $mapMatch) === 1) {
+                // Check if this expression uses the map filter
+                // syntax: "field | map: key1=val1, key2=val2".
+                $value = $this->processMapFilter(
+                    data: $data,
+                    fieldName: trim($mapMatch[1]),
+                    mapDefinition: trim($mapMatch[2])
+                );
             } else if (str_contains($fieldExpression, '|') === true) {
                 // Pipe without "map:" means fallback syntax.
-                $value = $this->processFieldWithFallbacks(data: $data, fieldChain: $fieldExpression, schemaProperties: $schemaProperties);
+                $value = $this->processFieldWithFallbacks(
+                    data: $data,
+                    fieldChain: $fieldExpression,
+                    schemaProperties: $schemaProperties
+                );
             } else {
                 $value = $this->getValueFromPath(data: $data, path: $fieldExpression);
 
@@ -359,7 +381,7 @@ class MetadataHydrationHandler
                     value: $value,
                     schemaProperties: $schemaProperties
                 );
-            }
+            }//end if
 
             // Convert arrays to string representation if still an array at this point.
             if (is_array($value) === true) {

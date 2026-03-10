@@ -1,17 +1,17 @@
 ---
-status: draft
+status: active
 ---
 
 # Unit Test Coverage to 100%
 
-Achieve 100% unit test code coverage for all PHP source files in `lib/` (excluding `Migration/` and `AppInfo/Application.php`). This requires fixing 314 broken existing tests and writing new tests for ~330 untested source files. Tests SHALL exercise every code path — not just the happy flow, but all branches, error paths, edge cases, and boundary conditions.
+Achieve 100% unit test code coverage for all PHP source files in `lib/` (excluding `Migration/` and `AppInfo/Application.php`). Tests SHALL exercise every code path — not just the happy flow, but all branches, error paths, edge cases, and boundary conditions.
 
 ## Current State
 
+- **Phase 1 COMPLETE**: All 314 errors + 2 failures fixed — **1,121 tests pass** with 0 errors, 0 failures
 - **361 source files** in scope, **30 test files** exist
-- **377 tests defined**, but **314 errors + 2 failures** — only ~63 tests pass
-- Coverage cannot be measured because broken tests prevent PHPUnit from completing
-- Current coverage threshold is set at 75% (`composer coverage:check`)
+- Coverage threshold is set at 75% (`composer coverage:check`)
+- Phase 2 (write ~136 new test files for ~330 untested source files) is planned
 
 ## Testing Standards
 
@@ -115,6 +115,54 @@ Tests SHALL verify not just return values but also that the correct service/mapp
 - `->willThrowException(new \Exception('msg'))` — simulate failures
 - `->willReturnCallback(function($arg) { ... })` — dynamic return values
 
+### Requirement: Use real Entity instances, never mock Nextcloud entities
+
+Nextcloud Entity classes use `__call` magic for getters/setters. PHPUnit 10+ cannot properly mock `__call`-based methods. All tests SHALL use real entity instances with setters instead of mocking entities.
+
+**Critical rule:** NEVER use named arguments on Entity setters — `__call` passes `['name' => val]` but Entity's `setter()` uses `$args[0]`.
+
+```php
+// CORRECT — real instance with positional args
+$schema = new Schema();
+$schema->setTitle('Test Schema');
+$schema->setProperties(json_encode([['title' => 'name', 'type' => 'string']]));
+
+// WRONG — mock (breaks __call magic)
+$schema = $this->createMock(Schema::class);
+$schema->method('getTitle')->willReturn('Test Schema');
+
+// WRONG — named arg (breaks __call)
+$schema->setTitle(title: 'Test Schema');
+```
+
+**For entities that need method overrides** (e.g., to control `hasPropertyAuthorization`), use a Testable subclass:
+
+```php
+class TestableSchema extends Schema {
+    private bool $hasAuth = true;
+    public function setHasPropertyAuthorization(bool $v): void { $this->hasAuth = $v; }
+    public function hasPropertyAuthorization(string $p): bool { return $this->hasAuth; }
+}
+```
+
+### Requirement: Use real ArrayLoader instances (final class)
+
+`Twig\Loader\ArrayLoader` is declared `final` and cannot be mocked. Tests that need a Twig loader SHALL use a real `ArrayLoader` instance.
+
+### Requirement: No named parameters on PHPUnit API calls
+
+PHPUnit 10+ marks all API methods with `@no-named-arguments`. Tests SHALL use positional parameters only on all PHPUnit method calls (`expects`, `method`, `willReturn`, `with`, `assertSame`, `assertEquals`, etc.).
+
+```php
+// CORRECT
+$mock->expects($this->once())->method('save')->willReturn($entity);
+$this->assertSame('expected', $result);
+
+// WRONG — named parameters
+$mock->expects(constraint: $this->once());
+$this->assertSame(expected: 'expected', actual: $result);
+```
+
 ### Requirement: Use Reflection for private methods when necessary
 
 When a public method delegates to private helpers that contain complex logic worth testing individually, use `ReflectionClass` to access them.
@@ -135,9 +183,9 @@ Test methods SHALL follow `test[MethodOrBehavior][Scenario]` naming:
 - `testCreateOrganisationWhenMapperThrows` — exception handling
 - `testDeleteOrganisationAsLastMember` — edge case
 
-## Phase 1: Fix Broken Existing Tests
+## Phase 1: Fix Broken Existing Tests (COMPLETE)
 
-All 316 test failures must be resolved before new tests can be written. These fall into 4 categories.
+All 316 test failures have been resolved. **1,121 tests now pass with 0 errors, 0 failures.** The fixes fell into 4 categories.
 
 ### Requirement: Fix OrganisationService constructor mismatch (245 errors)
 

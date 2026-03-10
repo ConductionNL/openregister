@@ -57,6 +57,9 @@ use DateTime;
  * but optimized for schema-specific table structures.
  *
  * @SuppressWarnings(PHPMD.ExcessiveClassComplexity)
+ * @SuppressWarnings(PHPMD.ExcessiveClassLength)     Search handler requires many specialized query building methods
+ * @SuppressWarnings(PHPMD.TooManyMethods)           Search requires per-operator and per-type conversion methods
+ * @SuppressWarnings(PHPMD.CouplingBetweenObjects)   Search handler bridges schema, register, and query builder layers
  */
 class MagicSearchHandler
 {
@@ -217,7 +220,9 @@ class MagicSearchHandler
             if ($fuzzyEnabled === true && $searchTerm !== null) {
                 $searchTermParam = $queryBuilder->createNamedParameter($searchTerm);
                 $queryBuilder->addSelect(
-                    $queryBuilder->createFunction("ROUND(similarity(t._name::text, {$searchTermParam}) * 100)::integer AS _relevance")
+                    $queryBuilder->createFunction(
+                        'ROUND(similarity(t._name::text, '."{$searchTermParam}) * 100)::integer AS _relevance"
+                    )
                 );
             }
 
@@ -269,34 +274,18 @@ class MagicSearchHandler
         $relationsContains = $query['_relations_contains'] ?? null;
         $source            = $query['_source'] ?? null;
 
-        // Public schemas bypass multitenancy by default, UNLESS the user explicitly requests
-        // multitenancy with _multi=true. This allows public data to be visible across orgs
-        // while still giving users the option to filter by their own organisation.
-        $mtExplicitRaw = $query['_multitenancy_explicit'] ?? false;
-        $multitenancyExplicit    = $mtExplicitRaw === true
-            || $mtExplicitRaw === 'true'
-            || $mtExplicitRaw === '1'
-            || $mtExplicitRaw === 1;
+        // Resolve multitenancy flag based on public schema access and explicit request.
+        $multitenancyExplicit = $this->isExplicitlyTrue(value: $query['_multitenancy_explicit'] ?? false);
+        $multitenancy         = $this->resolveMultitenancyFlag(
+            multitenancy: $multitenancy,
+            multitenancyExplicit: $multitenancyExplicit,
+            source: $source,
+            schema: $schema
+        );
 
-        if ($multitenancy === true && $source !== 'database') {
-            $schemaAuth = $schema->getAuthorization();
-            $readGroups = $schemaAuth['read'] ?? [];
-            $hasPublic  = $this->hasPublicReadAccess(readRules: $readGroups);
-
-            // Public schemas bypass multitenancy UNLESS user explicitly set _multi=true.
-            if ($hasPublic === true && $multitenancyExplicit === false) {
-                // Public schema without explicit _multi=true - bypass multitenancy.
-                $multitenancy = false;
-            }
-
-            // If _multi=true was explicitly set, enforce multitenancy even on public schemas.
-        }
-
-        // Extract metadata from @self.
+        // Extract and clean filters from the query.
         $metadataFilters = $query['@self'] ?? [];
-
-        // Clean the query: remove @self and all properties prefixed with _.
-        $objectFilters = array_filter(
+        $objectFilters   = array_filter(
             $query,
             function ($key) {
                 return $key !== '@self' && !str_starts_with($key, '_');
@@ -310,57 +299,14 @@ class MagicSearchHandler
         // Apply basic filters (deleted, published, etc.).
         $this->applyBasicFilters(qb: $queryBuilder, includeDeleted: $includeDeleted, published: $published);
 
-        // Apply multi-tenancy (organization) filtering if enabled.
-        // Admin bypass is controlled by config setting, not hardcoded.
-        // This ensures consistent behavior with MultiTenancyTrait.
-        //
-        // Check if user qualifies for any RBAC rule (simple or conditional).
-        // When user has RBAC access, multitenancy is bypassed by default (RBAC controls access).
-        // However, when _multi=true is explicitly set, multitenancy filter is applied AFTER RBAC
-        // to further restrict results to only the user's organisation.
-        $userHasRbacAccess = false;
-        if ($rbac === true) {
-            $userHasRbacAccess = $this->rbacHandler->hasConditionalRulesBypassingMultitenancy(
-                schema: $schema,
-                action: 'read'
-            );
-        }
-
-        // Apply multitenancy filter:
-        // - When user has NO RBAC access: Apply multitenancy as normal (AND restriction)
-        // - When user HAS RBAC access AND _multi=true: Apply multitenancy AFTER RBAC (AND restriction)
-        // - When user HAS RBAC access AND _multi=false: Skip multitenancy (RBAC handles access).
-        if ($multitenancy === true) {
-            $applyMultitenancy = false;
-
-            if ($userHasRbacAccess === false) {
-                // No RBAC access - apply multitenancy as normal.
-                $applyMultitenancy = true;
-            } else if ($multitenancyExplicit === true) {
-                // User has RBAC access but explicitly requested _multi=true
-                // Apply multitenancy to further restrict results to their org.
-                $applyMultitenancy = true;
-            }
-
-            // Otherwise: user has RBAC access and didn't request _multi=true
-            // Skip multitenancy - let RBAC handle access control.
-            if ($applyMultitenancy === true) {
-                $this->organizationHandler->applyOrganizationFilter(
-                    qb: $queryBuilder,
-                    allowPublishedAccess: $this->organizationHandler->shouldPublishedBypassMultiTenancy(),
-                    adminBypassEnabled: $this->organizationHandler->isAdminOverrideEnabled()
-                );
-            }
-        }//end if
-
-        // Apply RBAC filtering if enabled.
-        if ($rbac === true) {
-            $this->rbacHandler->applyRbacFilters(
-                qb: $queryBuilder,
-                schema: $schema,
-                action: 'read'
-            );
-        }
+        // Apply multi-tenancy and RBAC access control filters.
+        $this->applyAccessControlFilters(
+            qb: $queryBuilder,
+            schema: $schema,
+            rbac: $rbac,
+            multitenancy: $multitenancy,
+            multitenancyExplicit: $multitenancyExplicit
+        );
 
         // Apply metadata filters.
         if (empty($metadataFilters) === false) {
@@ -380,12 +326,7 @@ class MagicSearchHandler
         // Apply full-text search if provided.
         // Fuzzy matching is only enabled when _fuzzy=true parameter is explicitly set.
         if ($search !== null && trim($search) !== '') {
-            $fuzzyEnabled = false;
-            $fuzzyParam   = $query['_fuzzy'] ?? null;
-            if ($fuzzyParam === true || $fuzzyParam === 'true' || $fuzzyParam === '1' || $fuzzyParam === 1) {
-                $fuzzyEnabled = $this->hasPgTrgmExtension();
-            }
-
+            $fuzzyEnabled = $this->isFuzzySearchEnabled(fuzzyParam: $query['_fuzzy'] ?? null);
             $this->applyFullTextSearch(
                 qb: $queryBuilder,
                 search: trim($search),
@@ -437,75 +378,251 @@ class MagicSearchHandler
 
         // 2. Published filter.
         if ($published === true) {
-            $now          = (new DateTime())->format('Y-m-d H:i:s');
-            $quotedNow    = $connection->quote($now);
-            $conditions[] = "(_published IS NOT NULL AND _published <= {$quotedNow} AND (_depublished IS NULL OR _depublished > {$quotedNow}))";
+            $conditions[] = $this->buildPublishedConditionSql(connection: $connection);
         }
 
         // 3. RBAC filter (role-based access control).
         if ($rbac === true) {
-            $rbacResult = $this->rbacHandler->buildRbacConditionsSql(schema: $schema, action: 'read');
-
-            if ($rbacResult['bypass'] === false) {
-                // User doesn't have unconditional access.
-                if (empty($rbacResult['conditions']) === true) {
-                    // No access conditions met - deny all.
-                    $conditions[] = '1=0';
-                } else {
-                    // OR together all RBAC conditions (access if ANY matches).
-                    $conditions[] = '('.implode(' OR ', $rbacResult['conditions']).')';
-                }
+            $rbacCondition = $this->buildRbacConditionSql(schema: $schema);
+            if ($rbacCondition !== null) {
+                $conditions[] = $rbacCondition;
             }
-
-            // If bypass=true, no RBAC filtering needed (user has full access).
         }
 
         // 4. Full-text search filter with optional fuzzy matching.
-        // Fuzzy matching (pg_trgm similarity) is only enabled when _fuzzy=true parameter is set.
-        // This gives users control over the performance vs typo-tolerance trade-off.
-        // Without _fuzzy=true: ~140ms (ILIKE only)
-        // With _fuzzy=true: ~160ms (ILIKE + similarity on _name)
         if ($search !== null && trim($search) !== '') {
-            $searchTerm       = trim($search);
-            $searchConditions = [];
-            $likePattern      = $connection->quote('%'.$searchTerm.'%');
-            $quotedTerm       = $connection->quote($searchTerm);
-
-            // Check if fuzzy search is explicitly requested via _fuzzy=true parameter.
-            $fuzzyEnabled = false;
-            $fuzzyParam   = $query['_fuzzy'] ?? null;
-            if ($fuzzyParam === true || $fuzzyParam === 'true' || $fuzzyParam === '1' || $fuzzyParam === 1) {
-                $fuzzyEnabled = $this->hasPgTrgmExtension();
+            $searchCondition = $this->buildSearchConditionSql(
+                search: trim($search),
+                schema: $schema,
+                query: $query,
+                connection: $connection
+            );
+            if ($searchCondition !== null) {
+                $conditions[] = $searchCondition;
             }
-
-            // Search in schema string properties (ILIKE only for performance).
-            $properties = $schema->getProperties() ?? [];
-            foreach ($properties as $propName => $propDef) {
-                $type = $propDef['type'] ?? 'string';
-                if ($type === 'string') {
-                    $columnName         = $this->sanitizeColumnName(name: $propName);
-                    $searchConditions[] = "{$columnName}::text ILIKE {$likePattern}";
-                }
-            }
-
-            // Search in metadata text fields (ILIKE for all).
-            $searchConditions[] = "_name::text ILIKE {$likePattern}";
-            $searchConditions[] = "_description::text ILIKE {$likePattern}";
-            $searchConditions[] = "_summary::text ILIKE {$likePattern}";
-
-            // Add fuzzy matching ONLY for _name when explicitly requested via _fuzzy=true.
-            // This uses pg_trgm similarity() for typo tolerance at ~13% performance cost.
-            if ($fuzzyEnabled === true) {
-                $searchConditions[] = "similarity(_name::text, {$quotedTerm}) > 0.1";
-            }
-
-            if (empty($searchConditions) === false) {
-                $conditions[] = '('.implode(' OR ', $searchConditions).')';
-            }
-        }//end if
+        }
 
         // 5. Object field filters (non-reserved, non-metadata).
-        $reservedParams = [
+        $objectConditions = $this->buildObjectFilterConditionsSql(
+            query: $query,
+            schema: $schema,
+            connection: $connection
+        );
+        $conditions       = array_merge($conditions, $objectConditions);
+
+        return $conditions;
+    }//end buildWhereConditionsSql()
+
+    /**
+     * Build the published status SQL condition
+     *
+     * @param object $connection Database connection for value quoting
+     *
+     * @return string SQL condition for published filter
+     */
+    private function buildPublishedConditionSql(object $connection): string
+    {
+        $now       = (new DateTime())->format('Y-m-d H:i:s');
+        $quotedNow = $connection->quote($now);
+
+        return "(_published IS NOT NULL AND _published <= {$quotedNow} AND (_depublished IS NULL OR _depublished > {$quotedNow}))";
+    }//end buildPublishedConditionSql()
+
+    /**
+     * Build the RBAC SQL condition
+     *
+     * @param Schema $schema Schema for RBAC rules
+     *
+     * @return string|null SQL condition or null if no RBAC filtering needed
+     */
+    private function buildRbacConditionSql(Schema $schema): ?string
+    {
+        $rbacResult = $this->rbacHandler->buildRbacConditionsSql(schema: $schema, action: 'read');
+
+        if ($rbacResult['bypass'] === false) {
+            // User doesn't have unconditional access.
+            if (empty($rbacResult['conditions']) === true) {
+                // No access conditions met - deny all.
+                return '1=0';
+            }
+
+            // OR together all RBAC conditions (access if ANY matches).
+            return '('.implode(' OR ', $rbacResult['conditions']).')';
+        }
+
+        // If bypass=true, no RBAC filtering needed (user has full access).
+        return null;
+    }//end buildRbacConditionSql()
+
+    /**
+     * Build the full-text search SQL condition with optional fuzzy matching
+     *
+     * Fuzzy matching (pg_trgm similarity) is only enabled when _fuzzy=true parameter is set.
+     * This gives users control over the performance vs typo-tolerance trade-off.
+     * Without _fuzzy=true: ~140ms (ILIKE only)
+     * With _fuzzy=true: ~160ms (ILIKE + similarity on _name)
+     *
+     * @param string $search     Trimmed search term
+     * @param Schema $schema     Schema for determining searchable columns
+     * @param array  $query      Full query array for extracting _fuzzy param
+     * @param object $connection Database connection for value quoting
+     *
+     * @return string|null SQL condition or null if no search conditions generated
+     */
+    private function buildSearchConditionSql(
+        string $search,
+        Schema $schema,
+        array $query,
+        object $connection
+    ): ?string {
+        $searchConditions = [];
+        $likePattern      = $connection->quote('%'.$search.'%');
+        $quotedTerm       = $connection->quote($search);
+
+        // Check if fuzzy search is explicitly requested via _fuzzy=true parameter.
+        $fuzzyEnabled = $this->isFuzzySearchEnabled(fuzzyParam: $query['_fuzzy'] ?? null);
+
+        // Search in schema string properties (ILIKE only for performance).
+        $properties = $schema->getProperties() ?? [];
+        foreach ($properties as $propName => $propDef) {
+            $type = $propDef['type'] ?? 'string';
+            if ($type === 'string') {
+                $columnName         = $this->sanitizeColumnName(name: $propName);
+                $searchConditions[] = "{$columnName}::text ILIKE {$likePattern}";
+            }
+        }
+
+        // Search in metadata text fields (ILIKE for all).
+        $searchConditions[] = "_name::text ILIKE {$likePattern}";
+        $searchConditions[] = "_description::text ILIKE {$likePattern}";
+        $searchConditions[] = "_summary::text ILIKE {$likePattern}";
+
+        // Add fuzzy matching ONLY for _name when explicitly requested via _fuzzy=true.
+        // This uses pg_trgm similarity() for typo tolerance at ~13% performance cost.
+        if ($fuzzyEnabled === true) {
+            $searchConditions[] = "similarity(_name::text, {$quotedTerm}) > 0.1";
+        }
+
+        if (empty($searchConditions) === false) {
+            return '('.implode(' OR ', $searchConditions).')';
+        }
+
+        return null;
+    }//end buildSearchConditionSql()
+
+    /**
+     * Build object field filter SQL conditions for non-reserved query parameters
+     *
+     * @param array  $query      Full query array
+     * @param Schema $schema     Schema for property type lookup
+     * @param object $connection Database connection for value quoting
+     *
+     * @return string[] Array of SQL WHERE conditions
+     */
+    private function buildObjectFilterConditionsSql(array $query, Schema $schema, object $connection): array
+    {
+        $conditions     = [];
+        $reservedParams = $this->getReservedParams();
+        $properties     = $schema->getProperties() ?? [];
+
+        foreach ($query as $key => $value) {
+            // Skip reserved params, underscore-prefixed params, and @ metadata params.
+            if (in_array($key, $reservedParams, true) === true
+                || str_starts_with($key, '_') === true
+                || str_starts_with($key, '@') === true
+            ) {
+                continue;
+            }
+
+            // Check if this property exists in the schema.
+            if (isset($properties[$key]) === false) {
+                // Property doesn't exist - add impossible condition.
+                $conditions[] = '1=0';
+                continue;
+            }
+
+            $columnName   = $this->sanitizeColumnName(name: $key);
+            $propertyType = $properties[$key]['type'] ?? 'string';
+
+            // Handle array-type properties (JSONB columns) with JSON containment operator.
+            if ($propertyType === 'array') {
+                $conditions[] = $this->buildArrayPropertyConditionSql(
+                    columnName: $columnName,
+                    value: $value,
+                    connection: $connection
+                );
+                continue;
+            }
+
+            // Handle array filter values with IN clause (for non-array property types).
+            if (is_array($value) === true) {
+                if (empty($value) === false) {
+                    $quotedValues = array_map(
+                        fn($v) => $connection->quote((string) $v),
+                        $value
+                    );
+                    $conditions[] = "{$columnName} IN (".implode(', ', $quotedValues).')';
+                }
+
+                continue;
+            }
+
+            // Simple equality filter.
+            $conditions[] = "{$columnName} = ".$connection->quote((string) $value);
+        }//end foreach
+
+        return $conditions;
+    }//end buildObjectFilterConditionsSql()
+
+    /**
+     * Build SQL condition for array-type (JSONB) property filtering
+     *
+     * Uses PostgreSQL JSONB containment operator (@>) to check if a JSON array
+     * column contains the specified value(s).
+     *
+     * @param string $columnName Sanitized column name
+     * @param mixed  $value      Filter value (string or array of strings)
+     * @param object $connection Database connection for value quoting
+     *
+     * @return string SQL condition for the array property filter
+     */
+    private function buildArrayPropertyConditionSql(string $columnName, mixed $value, object $connection): string
+    {
+        // Normalize value to array.
+        if (is_array($value) === true) {
+            $values = $value;
+        } else {
+            $values = [$value];
+        }
+
+        if (empty($values) === true || count($values) === 1) {
+            // Single value (or empty): check if JSON array contains this value.
+            $singleValue = $values[0] ?? '';
+            $jsonValue   = $connection->quote(json_encode([$singleValue]));
+            return "COALESCE({$columnName}, '[]')::jsonb @> {$jsonValue}::jsonb";
+        }
+
+        // Multiple values: check if JSON array contains ANY of the values (OR logic).
+        $orParts = [];
+        foreach ($values as $v) {
+            $jsonValue = $connection->quote(json_encode([$v]));
+            $orParts[] = "COALESCE({$columnName}, '[]')::jsonb @> {$jsonValue}::jsonb";
+        }
+
+        return '('.implode(' OR ', $orParts).')';
+    }//end buildArrayPropertyConditionSql()
+
+    /**
+     * Get the list of reserved query parameter names
+     *
+     * These parameters are used for pagination, sorting, and internal flags
+     * and should not be treated as object field filters.
+     *
+     * @return string[] List of reserved parameter names
+     */
+    private function getReservedParams(): array
+    {
+        return [
             '_limit',
             '_offset',
             '_page',
@@ -542,75 +659,7 @@ class MagicSearchHandler
             'schemas',
             'extend',
         ];
-
-        $properties = $schema->getProperties() ?? [];
-        foreach ($query as $key => $value) {
-            // Skip reserved params, underscore-prefixed params, and @ metadata params.
-            if (in_array($key, $reservedParams, true) === true
-                || str_starts_with($key, '_') === true
-                || str_starts_with($key, '@') === true
-            ) {
-                continue;
-            }
-
-            // Check if this property exists in the schema.
-            if (isset($properties[$key]) === false) {
-                // Property doesn't exist - add impossible condition.
-                $conditions[] = '1=0';
-                continue;
-            }
-
-            $columnName   = $this->sanitizeColumnName(name: $key);
-            $propertyType = $properties[$key]['type'] ?? 'string';
-
-            // Handle array-type properties (JSONB columns) with JSON containment operator.
-            if ($propertyType === 'array') {
-                // Normalize value to array.
-                if (is_array($value) === true) {
-                    $values = $value;
-                } else {
-                    $values = [$value];
-                }
-
-                if (empty($values) === false) {
-                    if (count($values) === 1) {
-                        // Single value: check if JSON array contains this value.
-                        $jsonValue    = $connection->quote(json_encode([$values[0]]));
-                        $conditions[] = "COALESCE({$columnName}, '[]')::jsonb @> {$jsonValue}::jsonb";
-                    } else {
-                        // Multiple values: check if JSON array contains ANY of the values (OR logic).
-                        $orParts = [];
-                        foreach ($values as $v) {
-                            $jsonValue = $connection->quote(json_encode([$v]));
-                            $orParts[] = "COALESCE({$columnName}, '[]')::jsonb @> {$jsonValue}::jsonb";
-                        }
-
-                        $conditions[] = '('.implode(' OR ', $orParts).')';
-                    }
-                }
-
-                continue;
-            }//end if
-
-            // Handle array filter values with IN clause (for non-array property types).
-            if (is_array($value) === true) {
-                if (empty($value) === false) {
-                    $quotedValues = array_map(
-                        fn($v) => $connection->quote((string) $v),
-                        $value
-                    );
-                    $conditions[] = "{$columnName} IN (".implode(', ', $quotedValues).')';
-                }
-
-                continue;
-            }
-
-            // Simple equality filter.
-            $conditions[] = "{$columnName} = ".$connection->quote((string) $value);
-        }//end foreach
-
-        return $conditions;
-    }//end buildWhereConditionsSql()
+    }//end getReservedParams()
 
     /**
      * Apply basic filters like deleted and published status
@@ -645,6 +694,143 @@ class MagicSearchHandler
     }//end applyBasicFilters()
 
     /**
+     * Check if a mixed value represents an explicit boolean true
+     *
+     * Handles string, integer, and boolean representations of true.
+     *
+     * @param mixed $value The value to check
+     *
+     * @return bool True if the value is explicitly true
+     */
+    private function isExplicitlyTrue(mixed $value): bool
+    {
+        return $value === true
+            || $value === 'true'
+            || $value === '1'
+            || $value === 1;
+    }//end isExplicitlyTrue()
+
+    /**
+     * Resolve the multitenancy flag based on public schema access and explicit request
+     *
+     * Public schemas bypass multitenancy by default, UNLESS the user explicitly requests
+     * multitenancy with _multi=true. This allows public data to be visible across orgs
+     * while still giving users the option to filter by their own organisation.
+     *
+     * @param bool        $multitenancy         Current multitenancy flag
+     * @param bool        $multitenancyExplicit Whether multitenancy was explicitly requested
+     * @param string|null $source               Data source type
+     * @param Schema      $schema               Schema to check for public access
+     *
+     * @return bool Resolved multitenancy flag
+     */
+    private function resolveMultitenancyFlag(
+        bool $multitenancy,
+        bool $multitenancyExplicit,
+        ?string $source,
+        Schema $schema
+    ): bool {
+        if ($multitenancy === true && $source !== 'database') {
+            $schemaAuth = $schema->getAuthorization();
+            $readGroups = $schemaAuth['read'] ?? [];
+            $hasPublic  = $this->hasPublicReadAccess(readRules: $readGroups);
+
+            // Public schemas bypass multitenancy UNLESS user explicitly set _multi=true.
+            if ($hasPublic === true && $multitenancyExplicit === false) {
+                return false;
+            }
+        }
+
+        return $multitenancy;
+    }//end resolveMultitenancyFlag()
+
+    /**
+     * Apply access control filters (multitenancy and RBAC) to the query
+     *
+     * Handles the interaction between RBAC and multitenancy:
+     * - When user has NO RBAC access: Apply multitenancy as normal (AND restriction)
+     * - When user HAS RBAC access AND _multi=true: Apply multitenancy AFTER RBAC
+     * - When user HAS RBAC access AND _multi=false: Skip multitenancy (RBAC handles access)
+     *
+     * @param IQueryBuilder $qb                   Query builder to modify
+     * @param Schema        $schema               Schema for access control rules
+     * @param bool          $rbac                 Whether RBAC filtering is enabled
+     * @param bool          $multitenancy         Whether multitenancy filtering is enabled
+     * @param bool          $multitenancyExplicit Whether multitenancy was explicitly requested
+     *
+     * @return void
+     */
+    private function applyAccessControlFilters(
+        IQueryBuilder $qb,
+        Schema $schema,
+        bool $rbac,
+        bool $multitenancy,
+        bool $multitenancyExplicit
+    ): void {
+        // Check if user qualifies for any RBAC rule (simple or conditional).
+        // When user has RBAC access, multitenancy is bypassed by default (RBAC controls access).
+        $userHasRbacAccess = false;
+        if ($rbac === true) {
+            $userHasRbacAccess = $this->rbacHandler->hasConditionalRulesBypassingMultitenancy(
+                schema: $schema,
+                action: 'read'
+            );
+        }
+
+        // Apply multitenancy filter based on RBAC access and explicit request.
+        if ($multitenancy === true) {
+            $applyMultitenancy = false;
+
+            if ($userHasRbacAccess === false) {
+                // No RBAC access - apply multitenancy as normal.
+                $applyMultitenancy = true;
+            } else if ($multitenancyExplicit === true) {
+                // User has RBAC access but explicitly requested _multi=true
+                // Apply multitenancy to further restrict results to their org.
+                $applyMultitenancy = true;
+            }
+
+            // Otherwise: user has RBAC access and didn't request _multi=true
+            // Skip multitenancy - let RBAC handle access control.
+            if ($applyMultitenancy === true) {
+                $this->organizationHandler->applyOrganizationFilter(
+                    qb: $qb,
+                    allowPublishedAccess: $this->organizationHandler->shouldPublishedBypassMultiTenancy(),
+                    adminBypassEnabled: $this->organizationHandler->isAdminOverrideEnabled()
+                );
+            }
+        }//end if
+
+        // Apply RBAC filtering if enabled.
+        if ($rbac === true) {
+            $this->rbacHandler->applyRbacFilters(
+                qb: $qb,
+                schema: $schema,
+                action: 'read'
+            );
+        }
+    }//end applyAccessControlFilters()
+
+    /**
+     * Check if fuzzy search should be enabled based on the _fuzzy parameter
+     *
+     * Fuzzy matching is only enabled when explicitly requested AND the pg_trgm
+     * extension is available.
+     *
+     * @param mixed $fuzzyParam The raw _fuzzy parameter value
+     *
+     * @return bool True if fuzzy search should be enabled
+     */
+    private function isFuzzySearchEnabled(mixed $fuzzyParam): bool
+    {
+        if ($this->isExplicitlyTrue(value: $fuzzyParam) === true) {
+            return $this->hasPgTrgmExtension();
+        }
+
+        return false;
+    }//end isFuzzySearchEnabled()
+
+    /**
      * Apply metadata filters to the query
      *
      * @param IQueryBuilder $qb      Query builder to modify
@@ -665,7 +851,7 @@ class MagicSearchHandler
                 $qb->andWhere(
                     $qb->expr()->in(
                         "t.{$columnName}",
-                        $qb->createNamedParameter($value, \Doctrine\DBAL\Connection::PARAM_STR_ARRAY)
+                        $qb->createNamedParameter($value, IQueryBuilder::PARAM_STR_ARRAY)
                     )
                 );
                 continue;
@@ -720,7 +906,7 @@ class MagicSearchHandler
                     $qb->andWhere(
                         $qb->expr()->in(
                             "t.{$columnName}",
-                            $qb->createNamedParameter($value, \Doctrine\DBAL\Connection::PARAM_STR_ARRAY)
+                            $qb->createNamedParameter($value, IQueryBuilder::PARAM_STR_ARRAY)
                         )
                     );
                     continue;
@@ -839,8 +1025,8 @@ class MagicSearchHandler
     private function applyIdFilters(IQueryBuilder $qb, array $ids): void
     {
         $orX = $qb->expr()->orX();
-        $orX->add($qb->expr()->in('t._uuid', $qb->createNamedParameter($ids, \Doctrine\DBAL\Connection::PARAM_STR_ARRAY)));
-        $orX->add($qb->expr()->in('t._slug', $qb->createNamedParameter($ids, \Doctrine\DBAL\Connection::PARAM_STR_ARRAY)));
+        $orX->add($qb->expr()->in('t._uuid', $qb->createNamedParameter($ids, IQueryBuilder::PARAM_STR_ARRAY)));
+        $orX->add($qb->expr()->in('t._slug', $qb->createNamedParameter($ids, IQueryBuilder::PARAM_STR_ARRAY)));
         $qb->andWhere($orX);
     }//end applyIdFilters()
 
@@ -1390,77 +1576,135 @@ class MagicSearchHandler
         }
 
         // Convert based on schema type (schema is authoritative, not data format).
-        switch ($type) {
-            case 'array':
-            case 'object':
-                // Schema says this should be array/object - decode if it's a JSON string.
-                if (is_string($value) === true) {
-                    $decoded = json_decode($value, true);
-                    if (json_last_error() === JSON_ERROR_NONE) {
-                        return $decoded;
-                    }
-                }
-
-                // Already an array/object or failed to decode - return as-is.
-                return $value;
-
-            case 'number':
-                // Schema says this should be a number (float).
-                if (is_numeric($value) === true) {
-                    return (float) $value;
-                }
-                return $value;
-
-            case 'integer':
-                // Schema says this should be an integer.
-                if (is_numeric($value) === true) {
-                    return (int) $value;
-                }
-                return $value;
-
-            case 'boolean':
-                // Schema says this should be a boolean.
-                if (is_bool($value) === true) {
-                    return $value;
-                }
-
-                if (is_string($value) === true) {
-                    return in_array(strtolower($value), ['true', '1', 'yes'], true);
-                }
-                return (bool) $value;
-
-            case 'string':
-            default:
-                // Schema says string or unknown type.
-                // However, for backwards compatibility and data flexibility, if the value
-                // looks like a JSON array or object (starts with [ or {), try to decode it.
-                // This handles cases where schema is incorrectly defined as string but
-                // the actual data is array/object, matching MagicMapper::convertRowToObjectEntity behavior.
-                if (is_string($value) === true) {
-                    $trimmed = trim($value);
-                    $startsWithArrObj = (
-                        str_starts_with($trimmed, '[') === true || str_starts_with($trimmed, '{') === true
-                    );
-
-                    if ($startsWithArrObj === true) {
-                        $decoded = json_decode($value, true);
-                        if (json_last_error() === JSON_ERROR_NONE && ($decoded !== null || $value === 'null')) {
-                            return $decoded;
-                        }
-                    }
-
-                    return $value;
-                }
-
-                // For schema type 'string', ensure we return a string.
-                // This handles cases where the database driver returns numeric values as integers
-                // even though they're stored in TEXT/VARCHAR columns (e.g., "45" returned as int 45).
-                if ($type === 'string' && (is_int($value) === true || is_float($value) === true)) {
-                    return (string) $value;
-                }
-                return $value;
-        }//end switch
+        return match ($type) {
+            'array', 'object' => $this->convertArrayOrObjectValue(value: $value),
+            'number'          => $this->convertNumberValue(value: $value),
+            'integer'         => $this->convertIntegerValue(value: $value),
+            'boolean'         => $this->convertBooleanValue(value: $value),
+            default           => $this->convertStringValue(value: $value, type: $type),
+        };
     }//end convertValueByType()
+
+    /**
+     * Convert a value to array or object type
+     *
+     * Schema says this should be array/object - decode if it's a JSON string.
+     *
+     * @param mixed $value Value to convert
+     *
+     * @return mixed Decoded array/object or original value
+     */
+    private function convertArrayOrObjectValue(mixed $value): mixed
+    {
+        if (is_string($value) === true) {
+            $decoded = json_decode($value, true);
+            if (json_last_error() === JSON_ERROR_NONE) {
+                return $decoded;
+            }
+        }
+
+        // Already an array/object or failed to decode - return as-is.
+        return $value;
+    }//end convertArrayOrObjectValue()
+
+    /**
+     * Convert a value to number (float) type
+     *
+     * Schema says this should be a number (float).
+     *
+     * @param mixed $value Value to convert
+     *
+     * @return mixed Float value or original if not numeric
+     */
+    private function convertNumberValue(mixed $value): mixed
+    {
+        if (is_numeric($value) === true) {
+            return (float) $value;
+        }
+
+        return $value;
+    }//end convertNumberValue()
+
+    /**
+     * Convert a value to integer type
+     *
+     * Schema says this should be an integer.
+     *
+     * @param mixed $value Value to convert
+     *
+     * @return mixed Integer value or original if not numeric
+     */
+    private function convertIntegerValue(mixed $value): mixed
+    {
+        if (is_numeric($value) === true) {
+            return (int) $value;
+        }
+
+        return $value;
+    }//end convertIntegerValue()
+
+    /**
+     * Convert a value to boolean type
+     *
+     * Schema says this should be a boolean.
+     *
+     * @param mixed $value Value to convert
+     *
+     * @return bool Boolean value
+     */
+    private function convertBooleanValue(mixed $value): bool
+    {
+        if (is_bool($value) === true) {
+            return $value;
+        }
+
+        if (is_string($value) === true) {
+            return in_array(strtolower($value), ['true', '1', 'yes'], true);
+        }
+
+        return (bool) $value;
+    }//end convertBooleanValue()
+
+    /**
+     * Convert a value for string or unknown schema type
+     *
+     * For backwards compatibility, if the value looks like a JSON array or object
+     * (starts with [ or {), try to decode it. This handles cases where schema is
+     * incorrectly defined as string but the actual data is array/object, matching
+     * MagicMapper::convertRowToObjectEntity behavior.
+     *
+     * @param mixed  $value Value to convert
+     * @param string $type  The schema type (used to check for explicit 'string')
+     *
+     * @return mixed Converted value
+     */
+    private function convertStringValue(mixed $value, string $type): mixed
+    {
+        if (is_string($value) === true) {
+            $trimmed          = trim($value);
+            $startsWithArrObj = (
+                str_starts_with($trimmed, '[') === true || str_starts_with($trimmed, '{') === true
+            );
+
+            if ($startsWithArrObj === true) {
+                $decoded = json_decode($value, true);
+                if (json_last_error() === JSON_ERROR_NONE && ($decoded !== null || $value === 'null')) {
+                    return $decoded;
+                }
+            }
+
+            return $value;
+        }
+
+        // For schema type 'string', ensure we return a string.
+        // This handles cases where the database driver returns numeric values as integers
+        // even though they're stored in TEXT/VARCHAR columns (e.g., "45" returned as int 45).
+        if ($type === 'string' && (is_int($value) === true || is_float($value) === true)) {
+            return (string) $value;
+        }
+
+        return $value;
+    }//end convertStringValue()
 
     /**
      * Check if authorization rules include public read access

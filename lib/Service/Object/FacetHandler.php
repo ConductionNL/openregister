@@ -522,8 +522,54 @@ class FacetHandler
             }
         }
 
-        // Metadata facet definitions for @self fields.
-        $metadataDefinitions = [
+        // Process @self metadata facets.
+        if (isset($facets['@self']) === true && is_array($facets['@self']) === true) {
+            $order = $this->transformMetadataFacets(
+                metadataFacets: $facets['@self'],
+                transformed: $transformed,
+                startOrder: $order
+            );
+        }//end if
+
+        // Process object field facets (non-@self).
+        foreach ($facets as $field => $facetData) {
+            if ($field === '@self') {
+                continue;
+            }
+
+            // Check if this is a non-aggregated facet (added by calculateFacetsWithFallback).
+            $isNonAggregated = $facetData['_nonAggregated'] ?? false;
+
+            if ($isNonAggregated === true) {
+                $order = $this->transformNonAggregatedFacet(
+                    field: $field,
+                    facetData: $facetData,
+                    transformed: $transformed,
+                    currentOrder: $order
+                );
+            } else {
+                $order = $this->transformAggregatedFacet(
+                    field: $field,
+                    facetData: $facetData,
+                    aggregatedConfigs: $aggregatedConfigs,
+                    transformed: $transformed,
+                    currentOrder: $order
+                );
+            }//end if
+        }//end foreach
+
+        return $transformed;
+    }//end transformFacetsToStandardFormat()
+
+    /**
+     * Get the metadata facet definitions for @self fields.
+     *
+     * @return array Keyed by field name, each value contains title,
+     *               description, data_type, index_field, index_type, enabled.
+     */
+    private function getMetadataDefinitions(): array
+    {
+        return [
             'register'     => [
                 'title'       => 'Register',
                 'description' => 'metadata field: Register',
@@ -573,144 +619,187 @@ class FacetHandler
                 'enabled'     => false,
             ],
         ];
+    }//end getMetadataDefinitions()
 
-        // Process @self metadata facets.
-        if (isset($facets['@self']) === true && is_array($facets['@self']) === true) {
-            foreach ($facets['@self'] as $field => $facetData) {
-                $order++;
-                $name       = '_'.$field;
-                $definition = $metadataDefinitions[$field] ?? [
-                    'title'       => ucfirst($field),
-                    'description' => 'metadata field: '.ucfirst($field),
-                    'data_type'   => 'string',
-                    'index_field' => 'self_'.$field,
-                    'index_type'  => 'string',
-                    'enabled'     => true,
-                ];
+    /**
+     * Transform @self metadata facets into the standard format.
+     *
+     * @param array $metadataFacets The @self facet data keyed by field name.
+     * @param array $transformed    Reference to the transformed output array.
+     * @param int   $startOrder     The current order counter.
+     *
+     * @return int The updated order counter after processing metadata facets.
+     */
+    private function transformMetadataFacets(array $metadataFacets, array &$transformed, int $startOrder): int
+    {
+        $order = $startOrder;
+        $metadataDefinitions = $this->getMetadataDefinitions();
 
-                $transformed[$name] = $this->buildFacetEntry(
-                    name: $name,
-                    facetData: $facetData,
-                    definition: $definition,
-                    source: 'metadata',
-                    queryParameter: '@self['.$field.']',
-                    order: $order
-                );
-            }//end foreach
-        }//end if
+        foreach ($metadataFacets as $field => $facetData) {
+            $order++;
+            $name       = '_'.$field;
+            $definition = $metadataDefinitions[$field] ?? [
+                'title'       => ucfirst($field),
+                'description' => 'metadata field: '.ucfirst($field),
+                'data_type'   => 'string',
+                'index_field' => 'self_'.$field,
+                'index_type'  => 'string',
+                'enabled'     => true,
+            ];
 
-        // Process object field facets (non-@self).
-        foreach ($facets as $field => $facetData) {
-            if ($field === '@self') {
-                continue;
-            }
-
-            // Check if this is a non-aggregated facet (added by calculateFacetsWithFallback).
-            $isNonAggregated = $facetData['_nonAggregated'] ?? false;
-
-            if ($isNonAggregated === true) {
-                // Non-aggregated facet: use config for title/description/order, include schema ID.
-                $naConfig    = $facetData['_facetConfig'] ?? [];
-                $naSchemaId  = $facetData['_schemaId'] ?? null;
-                $naFieldName = $facetData['_fieldName'] ?? $field;
-
-                // Clean internal metadata from facet data before processing.
-                unset(
-                    $facetData['_nonAggregated'],
-                    $facetData['_schemaId'],
-                    $facetData['_facetConfig'],
-                    $facetData['_fieldName']
-                );
-
-                $configOrder = $naConfig['order'] ?? null;
-                if ($configOrder !== null) {
-                    $facetOrder = (int) $configOrder;
-                } else {
-                    $facetOrder = ++$order;
-                }
-
-                if ($configOrder === null) {
-                    $order = $facetOrder;
-                }
-
-                $title       = $naConfig['title'] ?? $facetData['title'] ?? $this->formatFieldTitle(field: $naFieldName);
-                $description = $naConfig['description'] ?? 'object field: '.$naFieldName;
-
-                $definition = [
-                    'title'       => $title,
-                    'description' => $description,
-                    'data_type'   => $this->inferDataType(facetData: $facetData),
-                    'index_field' => $this->sanitizeFieldName(field: $naFieldName),
-                    'index_type'  => 'string',
-                    'enabled'     => true,
-                ];
-
-                $entry = $this->buildFacetEntry(
-                    name: $naFieldName,
-                    facetData: $facetData,
-                    definition: $definition,
-                    source: 'object',
-                    queryParameter: $naFieldName,
-                    order: $facetOrder,
-                    schemaId: $naSchemaId
-                );
-
-                $transformed[$field] = $entry;
-            } else {
-                // Aggregated facet: use config overrides if available.
-                $fieldConfig = $aggregatedConfigs[$field] ?? null;
-
-                if ($fieldConfig !== null) {
-                    $configOrder = $fieldConfig['order'] ?? null;
-                } else {
-                    $configOrder = null;
-                }
-
-                if ($configOrder !== null) {
-                    $facetOrder = (int) $configOrder;
-                } else {
-                    $facetOrder = ++$order;
-                }//end if
-
-                if ($configOrder === null) {
-                    $order = $facetOrder;
-                }
-
-                // Use config title/description if available, then fall back to facet data or auto-generated.
-                if ($fieldConfig !== null && ($fieldConfig['title'] ?? null) !== null) {
-                    $title = $fieldConfig['title'];
-                } else {
-                    $title = $facetData['title'] ?? $this->formatFieldTitle(field: $field);
-                }
-
-                if ($fieldConfig !== null && ($fieldConfig['description'] ?? null) !== null) {
-                    $description = $fieldConfig['description'];
-                } else {
-                    $description = 'object field: '.$field;
-                }
-
-                $definition = [
-                    'title'       => $title,
-                    'description' => $description,
-                    'data_type'   => $this->inferDataType(facetData: $facetData),
-                    'index_field' => $this->sanitizeFieldName(field: $field),
-                    'index_type'  => 'string',
-                    'enabled'     => true,
-                ];
-
-                $transformed[$field] = $this->buildFacetEntry(
-                    name: $field,
-                    facetData: $facetData,
-                    definition: $definition,
-                    source: 'object',
-                    queryParameter: $field,
-                    order: $facetOrder
-                );
-            }//end if
+            $transformed[$name] = $this->buildFacetEntry(
+                name: $name,
+                facetData: $facetData,
+                definition: $definition,
+                source: 'metadata',
+                queryParameter: '@self['.$field.']',
+                order: $order
+            );
         }//end foreach
 
-        return $transformed;
-    }//end transformFacetsToStandardFormat()
+        return $order;
+    }//end transformMetadataFacets()
+
+    /**
+     * Transform a non-aggregated object field facet into the standard format.
+     *
+     * Non-aggregated facets use config for title/description/order and include a schema ID.
+     *
+     * @param string $field        The facet field key.
+     * @param array  $facetData    The raw facet data (may contain internal metadata keys).
+     * @param array  $transformed  Reference to the transformed output array.
+     * @param int    $currentOrder The current order counter.
+     *
+     * @return int The updated order counter.
+     */
+    private function transformNonAggregatedFacet(
+        string $field,
+        array $facetData,
+        array &$transformed,
+        int $currentOrder
+    ): int {
+        $order = $currentOrder;
+
+        $naConfig    = $facetData['_facetConfig'] ?? [];
+        $naSchemaId  = $facetData['_schemaId'] ?? null;
+        $naFieldName = $facetData['_fieldName'] ?? $field;
+
+        // Clean internal metadata from facet data before processing.
+        unset(
+            $facetData['_nonAggregated'],
+            $facetData['_schemaId'],
+            $facetData['_facetConfig'],
+            $facetData['_fieldName']
+        );
+
+        $configOrder = $naConfig['order'] ?? null;
+        if ($configOrder !== null) {
+            $facetOrder = (int) $configOrder;
+        } else {
+            $facetOrder = ++$order;
+        }
+
+        if ($configOrder === null) {
+            $order = $facetOrder;
+        }
+
+        $title       = $naConfig['title'] ?? $facetData['title'] ?? $this->formatFieldTitle(field: $naFieldName);
+        $description = $naConfig['description'] ?? 'object field: '.$naFieldName;
+
+        $definition = [
+            'title'       => $title,
+            'description' => $description,
+            'data_type'   => $this->inferDataType(facetData: $facetData),
+            'index_field' => $this->sanitizeFieldName(field: $naFieldName),
+            'index_type'  => 'string',
+            'enabled'     => true,
+        ];
+
+        $transformed[$field] = $this->buildFacetEntry(
+            name: $naFieldName,
+            facetData: $facetData,
+            definition: $definition,
+            source: 'object',
+            queryParameter: $naFieldName,
+            order: $facetOrder,
+            schemaId: $naSchemaId
+        );
+
+        return $order;
+    }//end transformNonAggregatedFacet()
+
+    /**
+     * Transform an aggregated object field facet into the standard format.
+     *
+     * Aggregated facets use config overrides from the facetable configuration if available.
+     *
+     * @param string $field             The facet field key.
+     * @param array  $facetData         The raw facet data.
+     * @param array  $aggregatedConfigs Lookup of aggregated field configs keyed by field name.
+     * @param array  $transformed       Reference to the transformed output array.
+     * @param int    $currentOrder      The current order counter.
+     *
+     * @return int The updated order counter.
+     */
+    private function transformAggregatedFacet(
+        string $field,
+        array $facetData,
+        array $aggregatedConfigs,
+        array &$transformed,
+        int $currentOrder
+    ): int {
+        $order       = $currentOrder;
+        $fieldConfig = $aggregatedConfigs[$field] ?? null;
+
+        if ($fieldConfig !== null) {
+            $configOrder = $fieldConfig['order'] ?? null;
+        } else {
+            $configOrder = null;
+        }
+
+        if ($configOrder !== null) {
+            $facetOrder = (int) $configOrder;
+        } else {
+            $facetOrder = ++$order;
+        }//end if
+
+        if ($configOrder === null) {
+            $order = $facetOrder;
+        }
+
+        // Use config title/description if available, then fall back to facet data or auto-generated.
+        if ($fieldConfig !== null && ($fieldConfig['title'] ?? null) !== null) {
+            $title = $fieldConfig['title'];
+        } else {
+            $title = $facetData['title'] ?? $this->formatFieldTitle(field: $field);
+        }
+
+        if ($fieldConfig !== null && ($fieldConfig['description'] ?? null) !== null) {
+            $description = $fieldConfig['description'];
+        } else {
+            $description = 'object field: '.$field;
+        }
+
+        $definition = [
+            'title'       => $title,
+            'description' => $description,
+            'data_type'   => $this->inferDataType(facetData: $facetData),
+            'index_field' => $this->sanitizeFieldName(field: $field),
+            'index_type'  => 'string',
+            'enabled'     => true,
+        ];
+
+        $transformed[$field] = $this->buildFacetEntry(
+            name: $field,
+            facetData: $facetData,
+            definition: $definition,
+            source: 'object',
+            queryParameter: $field,
+            order: $facetOrder
+        );
+
+        return $order;
+    }//end transformAggregatedFacet()
 
     /**
      * Build a single facet entry in the standardized format.

@@ -32,6 +32,7 @@ use OCA\OpenRegister\Exception\RegisterNotFoundException;
 use OCA\OpenRegister\Exception\SchemaNotFoundException;
 use OCA\OpenRegister\Exception\LockedException;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
+use OCA\OpenRegister\Exception\ReferentialIntegrityException;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\WebhookService;
 use RuntimeException;
@@ -212,8 +213,8 @@ class ObjectsController extends Controller
      * @return array<string, array{name: string, type: string, tmp_name: string, error: int, size: int}>
      *     Array of uploaded files keyed by field name
      *
-     * @suppressWarnings(PHPMD.NPathComplexity)      File extraction requires handling many field scenarios
-     * @suppressWarnings(PHPMD.CyclomaticComplexity)
+     * @SuppressWarnings(PHPMD.Superglobals)         $_FILES access necessary — IRequest does not expose all file keys
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity) File extraction must handle multiple upload field formats
      */
     private function extractAllUploadedFiles(): array
     {
@@ -378,8 +379,6 @@ class ObjectsController extends Controller
      *     next?: string,
      *     prev?: string
      * }
-     *
-     * @suppressWarnings(PHPMD.CyclomaticComplexity)
      */
     private function paginate(array $results, ?int $total=0, ?int $limit=20, ?int $offset=0, ?int $page=1): array
     {
@@ -657,7 +656,6 @@ class ObjectsController extends Controller
      * @psalm-suppress UnusedParam Params are used in foreach loops and method calls.
      *
      * @suppressWarnings(PHPMD.ExcessiveMethodLength)
-     * @suppressWarnings(PHPMD.CyclomaticComplexity)
      */
     private function crossTableSearch(array $registers, array $schemas, ObjectService $objectService): JSONResponse
     {
@@ -877,7 +875,7 @@ class ObjectsController extends Controller
      *
      * @suppressWarnings(PHPMD.NPathComplexity)       Complex request parameter handling for flexible API
      * @suppressWarnings(PHPMD.ExcessiveMethodLength)
-     * @suppressWarnings(PHPMD.CyclomaticComplexity)
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)  Multi-schema search + pagination + filtering requires branching
      */
     public function index(string $register, string $schema, ObjectService $objectService): JSONResponse
     {
@@ -1260,8 +1258,8 @@ class ObjectsController extends Controller
      * @psalm-return JSONResponse<200, array<string, mixed>, array<never, never>>
      *
      * @suppressWarnings(PHPMD.ExcessiveMethodLength)
-     * @suppressWarnings(PHPMD.CyclomaticComplexity)
      * @suppressWarnings(PHPMD.NPathComplexity)
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)  Cross-table search + multi-schema routing requires branching
      */
     public function objects(ObjectService $objectService): JSONResponse
     {
@@ -1444,8 +1442,8 @@ class ObjectsController extends Controller
      *
      * @return JSONResponse JSON response with the object or error
      *
-     * @suppressWarnings(PHPMD.CyclomaticComplexity)
      * @suppressWarnings(PHPMD.NPathComplexity)
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity) Object retrieval with slug resolution + access checks requires branching
      */
     public function show(
         string $id,
@@ -1618,8 +1616,7 @@ class ObjectsController extends Controller
      * @psalm-suppress TypeDoesNotContainType
      * @psalm-suppress NoValue
      *
-     * @suppressWarnings(PHPMD.NPathComplexity)      Object creation requires many validation and processing steps
-     * @suppressWarnings(PHPMD.CyclomaticComplexity)
+     * @suppressWarnings(PHPMD.NPathComplexity) Object creation requires many validation and processing steps
      */
     public function create(
         string $register,
@@ -1713,6 +1710,15 @@ class ObjectsController extends Controller
         } catch (ValidationException | CustomValidationException $exception) {
             // Handle validation errors.
                        return new JSONResponse(data: $exception->getMessage(), statusCode: 400);
+        } catch (\OCA\OpenRegister\Exception\HookStoppedException $exception) {
+            // Handle hook rejection — return 422 with validation errors from the workflow.
+            return new JSONResponse(
+                data: [
+                    'error'  => $exception->getMessage(),
+                    'errors' => $exception->getErrors(),
+                ],
+                statusCode: 422
+            );
         } catch (\Exception $exception) {
             // Handle all other exceptions (including RBAC permission errors).
             return new JSONResponse(data: ['error' => $exception->getMessage()], statusCode: 403);
@@ -1745,7 +1751,7 @@ class ObjectsController extends Controller
      *
      * @suppressWarnings(PHPMD.NPathComplexity)       Object update requires many validation and processing steps
      * @suppressWarnings(PHPMD.ExcessiveMethodLength)
-     * @suppressWarnings(PHPMD.CyclomaticComplexity)
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)  Object update requires many validation and processing steps
      */
     public function update(
         string $register,
@@ -1878,6 +1884,11 @@ class ObjectsController extends Controller
         } catch (ValidationException | CustomValidationException $exception) {
             // Handle validation errors.
             return $objectService->handleValidationException(exception: $exception);
+        } catch (\OCA\OpenRegister\Exception\HookStoppedException $exception) {
+            return new JSONResponse(
+                data: ['error' => $exception->getMessage(), 'errors' => $exception->getErrors()],
+                statusCode: 422
+            );
         } catch (\Exception $exception) {
             // Handle all other exceptions (including RBAC permission errors).
             return new JSONResponse(data: ['error' => $exception->getMessage()], statusCode: 403);
@@ -1903,7 +1914,6 @@ class ObjectsController extends Controller
      * @NoCSRFRequired
      *
      * @suppressWarnings(PHPMD.ExcessiveMethodLength)
-     * @suppressWarnings(PHPMD.CyclomaticComplexity)
      * @suppressWarnings(PHPMD.NPathComplexity)
      */
     public function patch(
@@ -2047,6 +2057,11 @@ class ObjectsController extends Controller
                     ]
                     );
             return $objectService->handleValidationException(exception: $exception);
+        } catch (\OCA\OpenRegister\Exception\HookStoppedException $exception) {
+            return new JSONResponse(
+                data: ['error' => $exception->getMessage(), 'errors' => $exception->getErrors()],
+                statusCode: 422
+            );
         } catch (\Exception $exception) {
             // Handle all other exceptions (including RBAC permission errors).
             $this->logger->error(
@@ -2162,6 +2177,11 @@ class ObjectsController extends Controller
             return new JSONResponse(data: $objectEntity->jsonSerialize());
         } catch (ValidationException | CustomValidationException $exception) {
             return $objectService->handleValidationException(exception: $exception);
+        } catch (\OCA\OpenRegister\Exception\HookStoppedException $exception) {
+            return new JSONResponse(
+                data: ['error' => $exception->getMessage(), 'errors' => $exception->getErrors()],
+                statusCode: 422
+            );
         } catch (\Exception $exception) {
             return new JSONResponse(data: ['error' => $exception->getMessage()], statusCode: 500);
         }//end try
@@ -2208,11 +2228,65 @@ class ObjectsController extends Controller
 
             // Return 204 No Content for successful delete (REST convention).
             return new JSONResponse(data: null, statusCode: 204);
+        } catch (ReferentialIntegrityException $exception) {
+            return new JSONResponse(
+                data: $exception->toResponseBody(),
+                statusCode: 409
+            );
+        } catch (\OCA\OpenRegister\Exception\HookStoppedException $exception) {
+            return new JSONResponse(
+                data: ['error' => $exception->getMessage(), 'errors' => $exception->getErrors()],
+                statusCode: 422
+            );
         } catch (\Exception $exception) {
             // Handle all exceptions (including RBAC permission errors and object not found).
             return new JSONResponse(data: ['error' => $exception->getMessage()], statusCode: 403);
         }//end try
     }//end destroy()
+
+    /**
+     * Check if an object can be deleted (pre-flight referential integrity analysis).
+     *
+     * Returns the full deletion analysis without performing any mutations.
+     *
+     * @param string        $id            The ID/UUID of the object to check
+     * @param string        $register      The register slug or identifier
+     * @param string        $schema        The schema slug or identifier
+     * @param ObjectService $objectService The object service
+     *
+     * @return JSONResponse JSON response with DeletionAnalysis
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     */
+    public function canDelete(
+        string $id,
+        string $register,
+        string $schema,
+        ObjectService $objectService
+    ): JSONResponse {
+        try {
+            $objectService->setRegister(register: $register);
+            $objectService->setSchema(schema: $schema);
+
+            $context      = $this->objectEntityMapper->findAcrossAllSources(
+                identifier: $id,
+                includeDeleted: false,
+                _rbac: false,
+                _multitenancy: false
+            );
+            $objectEntity = $context['object'];
+
+            $deleteHandler = $objectService->getDeleteHandler();
+            $analysis      = $deleteHandler->canDelete($objectEntity);
+
+            return new JSONResponse(data: $analysis->toArray(), statusCode: 200);
+        } catch (\OCP\AppFramework\Db\DoesNotExistException $exception) {
+            return new JSONResponse(data: ['error' => 'Object not found'], statusCode: 404);
+        } catch (\Exception $exception) {
+            return new JSONResponse(data: ['error' => $exception->getMessage()], statusCode: 403);
+        }//end try
+    }//end canDelete()
 
     /**
      * Retrieves call logs for a object
@@ -2409,8 +2483,8 @@ class ObjectsController extends Controller
      *     message?: 'Object does not belong to specified register/schema'|'Object not found'},
      *     array<never, never>>
      *
-     * @suppressWarnings(PHPMD.CyclomaticComplexity)
      * @suppressWarnings(PHPMD.NPathComplexity)
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity) Audit log retrieval with pagination + access checks requires branching
      */
     public function logs(string $id, string $register, string $schema, ObjectService $objectService): JSONResponse
     {
@@ -2505,10 +2579,9 @@ class ObjectsController extends Controller
     /**
      * Lock an object
      *
-     * @param string        $id            The ID/UUID of the object to lock
-     * @param string        $register      The register ID
-     * @param string        $schema        The schema ID
-     * @param ObjectService $objectService The object service
+     * @param string $register The register slug or identifier
+     * @param string $schema   The schema slug or identifier
+     * @param string $id       The ID/UUID of the object to lock
      *
      * @return JSONResponse JSON response with lock result
      *
@@ -2516,28 +2589,34 @@ class ObjectsController extends Controller
      *
      * @NoCSRFRequired
      */
-    public function lock(string $id, string $register, string $schema, ObjectService $objectService): JSONResponse
+    public function lock(string $register, string $schema, string $id): JSONResponse
     {
-        // Set the schema and register to the object service.
-        $objectService->setSchema(schema: $schema);
-        $objectService->setRegister(register: $register);
+        try {
+            // Set the schema and register to the object service.
+            $this->objectService->setSchema(schema: $schema);
+            $this->objectService->setRegister(register: $register);
 
-        $data    = $this->request->getParams();
-        $process = ($data['process'] ?? null);
-        // Check if duration is set in the request data.
-        $duration = null;
-        if (($data['duration'] ?? null) !== null) {
-            $duration = (int) $data['duration'];
-        }
+            $data    = $this->request->getParams();
+            $process = ($data['process'] ?? null);
+            // Check if duration is set in the request data.
+            $duration = null;
+            if (($data['duration'] ?? null) !== null) {
+                $duration = (int) $data['duration'];
+            }
 
-        $lockResult = $objectService->lockObject(
-            identifier: $id,
-            process: $process,
-            duration: $duration
-        );
+            $lockResult = $this->objectService->lockObject(
+                identifier: $id,
+                process: $process,
+                duration: $duration
+            );
 
-        // Return response with locked status for test compatibility.
-        return new JSONResponse(data: array_merge($lockResult, ['locked' => true]));
+            // Return response with locked status for test compatibility.
+            return new JSONResponse(data: array_merge($lockResult, ['locked' => true]));
+        } catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
+            return new JSONResponse(data: ['error' => 'Object not found'], statusCode: 404);
+        } catch (\Throwable $e) {
+            return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 500);
+        }//end try
     }//end lock()
 
     /**
@@ -2889,8 +2968,6 @@ class ObjectsController extends Controller
      * @NoCSRFRequired
      *
      * @return JSONResponse JSON response with migration result or error
-     *
-     * @suppressWarnings(PHPMD.CyclomaticComplexity)
      */
     public function migrate(ObjectService $objectService): JSONResponse
     {

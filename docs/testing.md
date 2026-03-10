@@ -389,28 +389,117 @@ public function searchObjects(
 - `NPathComplexity` - Complex decision paths
 - `StaticAccess` - Framework static methods
 
+## Test Coverage Strategy
+
+OpenRegister uses a dual coverage approach to achieve 100% code coverage:
+
+### Unit Tests (PHPUnit)
+
+Unit tests verify individual classes in isolation. All external dependencies are mocked.
+
+- **Config**: `phpunit-unit.xml` with `bootstrap-unit.php` (no Nextcloud server)
+- **Base class**: `PHPUnit\Framework\TestCase` (NOT `Test\TestCase`)
+- **Location**: `tests/Unit/` mirroring `lib/` structure
+- **Run**: `composer test:unit`
+- **Coverage**: `composer test:coverage`
+
+**Key patterns:**
+- Real entity instances (not mocks) for Nextcloud Entity subclasses — `__call` magic breaks PHPUnit 10+ mocking
+- Real `ArrayLoader` instances (final class, cannot be mocked)
+- Positional parameters only on PHPUnit API calls (no named args)
+- `#[DataProvider]` for parameterized tests
+- Test ALL code paths: if/else branches, try/catch, early returns, null checks
+
+**Spec**: `openspec/specs/unit-test-coverage/spec.md`
+
+### API Integration Tests (Newman/Postman)
+
+Newman tests verify the full API surface end-to-end via HTTP requests.
+
+- **Collections**: `tests/integration/*.postman_collection.json`
+- **Run locally**: `cd tests/integration && ./run-tests.sh`
+- **Dual storage**: `./run-dual-storage-tests.sh` (both Normal + Magic Mapper)
+- **CI**: Runs against 4 combinations (PostgreSQL/MySQL x Normal/MagicMapper)
+
+**Current coverage: 71 of 376 routes (18.9%)**
+
+| Collection | Purpose |
+|------------|---------|
+| `openregister-crud.postman_collection.json` | Core CRUD operations |
+| `openregister-referential-integrity.postman_collection.json` | Cascading delete tests |
+| `magic-mapper-import.postman_collection.json` | Import tests |
+
+**Spec**: `openspec/specs/api-test-coverage/spec.md`
+
+### Code Coverage from Integration Tests (PCOV)
+
+Integration tests can measure server-side code coverage using PCOV. This captures which PHP lines execute during API requests — complementing unit test coverage.
+
+**How it works:**
+1. A `coverage-prepend.php` script starts PCOV collection on every PHP request
+2. A shutdown function writes `.cov` files to a temporary directory
+3. After Newman runs, `phpcov merge` combines all `.cov` files into a clover report
+4. The combined unit + API coverage shows total project coverage
+
+**Setup:**
+```bash
+# Enable PCOV in PHP config (Docker)
+echo "auto_prepend_file=/var/www/html/custom_apps/openregister/tests/integration/coverage-prepend.php" >> /usr/local/etc/php/conf.d/pcov.ini
+echo "pcov.enabled=1" >> /usr/local/etc/php/conf.d/pcov.ini
+
+# Run Newman tests (coverage collected automatically)
+cd tests/integration && ./run-tests.sh
+
+# Merge coverage files
+phpcov merge --clover=coverage/api-clover.xml /tmp/openregister-coverage/
+
+# Combine with unit test coverage
+phpcov merge --clover=coverage/combined-clover.xml coverage/
+```
+
+### Coverage Guard
+
+The `scripts/coverage-guard.php` script prevents coverage regressions. It compares the current clover report against `.coverage-baseline` and fails if coverage dropped.
+
+```bash
+# Check coverage hasn't regressed
+composer coverage:check
+
+# Update baseline after improvements
+composer coverage:update
+```
+
 ## Best Practices
 
 ### Before Committing
-1. ✅ Run `composer phpqa` locally
-2. ✅ Run `./tests/integration/run-tests.sh`
-3. ✅ Fix all PHPCS errors (0 required)
-4. ✅ Fix all Psalm errors (0 required)
-5. ✅ Update documentation if needed
+1. Run `composer phpqa` locally
+2. Run `./tests/integration/run-tests.sh`
+3. Fix all PHPCS errors (0 required)
+4. Fix all Psalm errors (0 required)
+5. Update documentation if needed
 
-### Writing Tests
-1. ✅ Add tests for new features
-2. ✅ Test both storage modes
-3. ✅ Test error cases
-4. ✅ Use descriptive test names
-5. ✅ Include assertions for all responses
+### Writing Unit Tests
+1. Extend `PHPUnit\Framework\TestCase` — never `Test\TestCase`
+2. Mock all dependencies — no database, no server
+3. Test ALL code paths (if/else, try/catch, null checks)
+4. Use `#[DataProvider]` for parameterized scenarios
+5. Use real entity instances, not mocks (Entity `__call` limitation)
+6. Verify side effects with `expects()` / `with()` / `willReturn()`
+
+### Writing Newman Tests
+1. Test both success and error paths for each endpoint
+2. Always assert HTTP status code AND response body structure
+3. Store IDs in collection variables for subsequent requests
+4. Clean up created resources at the end of the collection
+5. Test both storage modes (Normal + Magic Mapper)
+6. Include descriptive test names for failure diagnostics
 
 ### Code Quality
-1. ✅ Keep methods under 100 lines
-2. ✅ Keep cyclomatic complexity under 10
-3. ✅ Avoid else expressions (early returns)
-4. ✅ Add PHPDoc blocks for all public methods
-5. ✅ Use type hints everywhere
+1. Keep methods under 100 lines
+2. Keep cyclomatic complexity under 10
+3. Avoid else expressions (early returns)
+4. Add PHPDoc blocks for all public methods
+5. Use type hints everywhere
 
 ## Resources
 
@@ -419,3 +508,5 @@ public function searchObjects(
 - [PHPCS Documentation](https://github.com/squizlabs/PHP_CodeSniffer/wiki)
 - [Psalm Documentation](https://psalm.dev/docs/)
 - [PHPMD Documentation](https://phpmd.org/documentation/index.html)
+- [PCOV Documentation](https://github.com/krakjoe/pcov)
+- [phpcov Documentation](https://github.com/sebastianbergmann/phpcov)

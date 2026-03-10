@@ -60,6 +60,7 @@ use Psr\Log\LoggerInterface;
  * @package OCA\OpenRegister\Db
  *
  * @SuppressWarnings(PHPMD.TooManyPublicMethods)
+ * @SuppressWarnings(PHPMD.TooManyMethods)           Unified mapper bridges multiple query strategies
  * @SuppressWarnings(PHPMD.ExcessiveClassComplexity)
  * @SuppressWarnings(PHPMD.ExcessiveClassLength)
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
@@ -155,7 +156,7 @@ class UnifiedObjectMapper extends AbstractObjectMapper
      *
      * @return array{Register|null, Schema|null} Array with [register, schema].
      */
-    private function resolveRegisterAndSchema(
+    private function getResolvedRegisterAndSchema(
         ObjectEntity $entity,
         ?Register $register=null,
         ?Schema $schema=null
@@ -168,7 +169,12 @@ class UnifiedObjectMapper extends AbstractObjectMapper
             } catch (Exception $e) {
                 $this->logger->warning(
                     message: '[UnifiedObjectMapper] Failed to resolve register from entity',
-                    context: ['file' => __FILE__, 'line' => __LINE__, 'registerId' => $entity->getRegister(), 'error' => $e->getMessage()]
+                    context: [
+                        'file'       => __FILE__,
+                        'line'       => __LINE__,
+                        'registerId' => $entity->getRegister(),
+                        'error'      => $e->getMessage(),
+                    ]
                 );
             }
         }
@@ -181,13 +187,18 @@ class UnifiedObjectMapper extends AbstractObjectMapper
             } catch (Exception $e) {
                 $this->logger->warning(
                     message: '[UnifiedObjectMapper] Failed to resolve schema from entity',
-                    context: ['file' => __FILE__, 'line' => __LINE__, 'schemaId' => $entity->getSchema(), 'error' => $e->getMessage()]
+                    context: [
+                        'file'     => __FILE__,
+                        'line'     => __LINE__,
+                        'schemaId' => $entity->getSchema(),
+                        'error'    => $e->getMessage(),
+                    ]
                 );
             }
         }
 
         return [$register, $schema];
-    }//end resolveRegisterAndSchema()
+    }//end getResolvedRegisterAndSchema()
 
     // ==================================================================================
     // CORE CRUD OPERATIONS
@@ -450,7 +461,7 @@ class UnifiedObjectMapper extends AbstractObjectMapper
 
         // Use provided register/schema or resolve from entity.
         if ($register === null || $schema === null) {
-            [$register, $schema] = $this->resolveRegisterAndSchema(entity: $entity);
+            [$register, $schema] = $this->getResolvedRegisterAndSchema(entity: $entity);
         }
 
         if ($this->shouldUseMagicMapper(register: $register, schema: $schema) === true) {
@@ -498,15 +509,19 @@ class UnifiedObjectMapper extends AbstractObjectMapper
      *
      * @throws Exception If update fails.
      */
-    public function update(Entity $entity, ?Register $register=null, ?Schema $schema=null, ?ObjectEntity $oldEntity=null): Entity
-    {
+    public function update(
+        Entity $entity,
+        ?Register $register=null,
+        ?Schema $schema=null,
+        ?ObjectEntity $oldEntity=null
+    ): Entity {
         if ($entity instanceof ObjectEntity === false) {
             throw new Exception('Entity must be an instance of ObjectEntity');
         }
 
         // Use provided register/schema or resolve from entity.
         if ($register === null || $schema === null) {
-            [$register, $schema] = $this->resolveRegisterAndSchema(entity: $entity);
+            [$register, $schema] = $this->getResolvedRegisterAndSchema(entity: $entity);
         }
 
         // Use provided oldEntity (preferred) or fetch from DB as fallback.
@@ -547,7 +562,12 @@ class UnifiedObjectMapper extends AbstractObjectMapper
                 message: '[UnifiedObjectMapper] Routing update() to MagicMapper',
                 context: ['file' => __FILE__, 'line' => __LINE__]
             );
-            $updatedEntity = $this->magicMapper->updateObjectEntity(entity: $entity, register: $register, schema: $schema, oldEntity: $oldEntity);
+            $updatedEntity = $this->magicMapper->updateObjectEntity(
+                entity: $entity,
+                register: $register,
+                schema: $schema,
+                oldEntity: $oldEntity
+            );
         } else {
             $this->logger->debug(
                 message: '[UnifiedObjectMapper] Using blob storage (via ObjectEntityMapper parent::update)',
@@ -587,7 +607,7 @@ class UnifiedObjectMapper extends AbstractObjectMapper
             throw new Exception('Entity must be an instance of ObjectEntity');
         }
 
-        [$register, $schema] = $this->resolveRegisterAndSchema(entity: $entity);
+        [$register, $schema] = $this->getResolvedRegisterAndSchema(entity: $entity);
 
         if ($this->shouldUseMagicMapper(register: $register, schema: $schema) === true) {
             $this->logger->debug(
@@ -708,14 +728,24 @@ class UnifiedObjectMapper extends AbstractObjectMapper
 
             $this->logger->info(
                 message: '[UnifiedObjectMapper] Schema grouping result',
-                context: ['file' => __FILE__, 'line' => __LINE__, 'groupCount' => count($schemaGroups), 'groups' => array_keys($schemaGroups)]
+                context: [
+                    'file'       => __FILE__,
+                    'line'       => __LINE__,
+                    'groupCount' => count($schemaGroups),
+                    'groups'     => array_keys($schemaGroups),
+                ]
             );
 
             // If we have multiple schema groups, process each separately.
             if (count($schemaGroups) > 1) {
                 $this->logger->info(
                     message: '[UnifiedObjectMapper] Mixed schema batch detected, processing by schema groups',
-                    context: ['file' => __FILE__, 'line' => __LINE__, 'groupCount' => count($schemaGroups), 'groups' => array_keys($schemaGroups)]
+                    context: [
+                        'file'       => __FILE__,
+                        'line'       => __LINE__,
+                        'groupCount' => count($schemaGroups),
+                        'groups'     => array_keys($schemaGroups),
+                    ]
                 );
 
                 $allResults = [];
@@ -1020,7 +1050,10 @@ class UnifiedObjectMapper extends AbstractObjectMapper
         // If _schemas is provided (array of schema IDs), use multi-schema faceting.
         // Supports both single-register and multi-register.
         if ($schemaIds !== null && is_array($schemaIds) === true
-            && ($registerId !== null || ($registerIds !== null && is_array($registerIds) === true && count($registerIds) > 0))
+            && ($registerId !== null
+            || ($registerIds !== null
+            && is_array($registerIds) === true
+            && count($registerIds) > 0))
         ) {
             if ($registerIds !== null && is_array($registerIds) === true && count($registerIds) > 0) {
                 $allRegisterIds = array_map('intval', $registerIds);
@@ -1113,8 +1146,10 @@ class UnifiedObjectMapper extends AbstractObjectMapper
                     if (is_array($registerSchemas) === true) {
                         $schemaIdStr = (string) $schemaId;
                         $schemaIdInt = (int) $schemaId;
-                        $inValues    = in_array($schemaIdInt, $registerSchemas, false) || in_array($schemaIdStr, $registerSchemas, false);
-                        $inKeys      = array_key_exists($schemaIdInt, $registerSchemas) || array_key_exists($schemaIdStr, $registerSchemas);
+                        $inValues    = in_array($schemaIdInt, $registerSchemas, false)
+                            || in_array($schemaIdStr, $registerSchemas, false);
+                        $inKeys      = array_key_exists($schemaIdInt, $registerSchemas)
+                            || array_key_exists($schemaIdStr, $registerSchemas);
                         if ($inValues === true || $inKeys === true) {
                             $matchedRegister = $register;
                             break;
@@ -1224,7 +1259,6 @@ class UnifiedObjectMapper extends AbstractObjectMapper
         // Each schema belongs to a specific register; find the correct register for each schema.
         $registerSchemaPairs = [];
         $totalCount          = 0;
-        $ignoredFilters      = [];
 
         foreach ($schemaIds as $schemaId) {
             try {
@@ -1244,14 +1278,16 @@ class UnifiedObjectMapper extends AbstractObjectMapper
                         // Check if schema ID is in the values (sequential) or keys (associative).
                         $schemaIdStr = (string) $schemaId;
                         $schemaIdInt = (int) $schemaId;
-                        $inValues    = in_array($schemaIdInt, $registerSchemas, false) || in_array($schemaIdStr, $registerSchemas, false);
-                        $inKeys      = array_key_exists($schemaIdInt, $registerSchemas) || array_key_exists($schemaIdStr, $registerSchemas);
+                        $inValues    = in_array($schemaIdInt, $registerSchemas, false)
+                            || in_array($schemaIdStr, $registerSchemas, false);
+                        $inKeys      = array_key_exists($schemaIdInt, $registerSchemas)
+                            || array_key_exists($schemaIdStr, $registerSchemas);
                         if ($inValues === true || $inKeys === true) {
                             $matchedRegister = $register;
                             break;
                         }
                     }
-                }
+                }//end foreach
 
                 // Fallback: use first register if no match found (for backward compatibility).
                 if ($matchedRegister === null) {
@@ -1538,7 +1574,10 @@ class UnifiedObjectMapper extends AbstractObjectMapper
             && $schemaIds !== null
             && is_array($schemaIds) === true
             && count($schemaIds) > 0
-            && ($registerId !== null || ($registerIds !== null && is_array($registerIds) === true && count($registerIds) > 0));
+            && ($registerId !== null
+                || ($registerIds !== null
+                    && is_array($registerIds) === true
+                    && count($registerIds) > 0));
         if ($isMultiSchemaSearch === true) {
             // Build array of register IDs: use _registers if available, otherwise wrap single _register.
             if ($registerIds !== null && is_array($registerIds) === true && count($registerIds) > 0) {
@@ -1632,18 +1671,27 @@ class UnifiedObjectMapper extends AbstractObjectMapper
             && count($queryIds) > 0;
 
         if ($isIdSearch === true) {
-            return $this->searchObjectsGloballyByIds(
-                ids: $queryIds,
-                searchQuery: $searchQuery,
-                activeOrgUuid: $activeOrgUuid,
-                rbac: $rbac,
-                multitenancy: $multitenancy
+            // Use MagicMapper's efficient batch search across all magic tables.
+            $idResults = $this->magicMapper->findMultipleAcrossAllMagicTables(
+                uuids: $queryIds,
+                includeDeleted: false
             );
+
+            // Also check blob storage for any objects not found in magic tables.
+            $foundUuids   = array_map(fn($obj) => $obj->getUuid(), $idResults);
+            $missingUuids = array_diff($queryIds, $foundUuids);
+
+            if (empty($missingUuids) === false) {
+                $blobResults = $this->objectEntityMapper->findMultiple(ids: $missingUuids);
+                $idResults   = array_merge($idResults, $blobResults);
+            }
+
+            return $this->getGlobalSearchResult(results: $idResults, searchQuery: $searchQuery, rbac: $rbac);
         }
 
         // Check if this is a global relations search (no register/schema but _relations_contains provided).
         // In this case, search across ALL magic tables to find objects that reference the given UUID.
-        $relationsContains       = $searchQuery['_relations_contains'] ?? null;
+        $relationsContains = $searchQuery['_relations_contains'] ?? null;
         $isGlobalRelSearch = $registerId === null
             && $schemaId === null
             && $relationsContains !== null
@@ -1651,13 +1699,13 @@ class UnifiedObjectMapper extends AbstractObjectMapper
             && empty($relationsContains) === false;
 
         if ($isGlobalRelSearch === true) {
-            return $this->searchObjectsGloballyByRelations(
+            // Use MagicMapper to search across all magic tables for objects with this UUID in relations.
+            $relResults = $this->magicMapper->findByRelationAcrossAllMagicTables(
                 uuid: $relationsContains,
-                searchQuery: $searchQuery,
-                activeOrgUuid: $activeOrgUuid,
-                rbac: $rbac,
-                multitenancy: $multitenancy
+                includeDeleted: false
             );
+
+            return $this->getGlobalSearchResult(results: $relResults, searchQuery: $searchQuery, rbac: $rbac);
         }
 
         // Check if this is a global text search (no register/schema but _search is provided).
@@ -1922,165 +1970,38 @@ class UnifiedObjectMapper extends AbstractObjectMapper
      *
      * @psalm-suppress UnusedParam $multitenancy reserved for future multitenancy filtering implementation
      */
-    private function searchObjectsGloballyByIds(
-        array $ids,
-        array $searchQuery,
-        ?string $activeOrgUuid=null,
-        bool $rbac=true,
-        bool $multitenancy=true
-    ): array {
-        $this->logger->debug(
-                message: '[UnifiedObjectMapper] searchObjectsGloballyByIds starting',
-                context: [
-                    'file'     => __FILE__,
-                    'line'     => __LINE__,
-                    'idsCount' => count($ids),
-                ]
-                );
 
-        // Use MagicMapper's efficient batch search across all magic tables.
-        $results = $this->magicMapper->findMultipleAcrossAllMagicTables(
-            uuids: $ids,
-            includeDeleted: false
-        );
-
-        // Also check blob storage for any objects not found in magic tables.
-        $foundUuids   = array_map(fn($obj) => $obj->getUuid(), $results);
-        $missingUuids = array_diff($ids, $foundUuids);
-
-        if (empty($missingUuids) === false) {
-            $blobResults = $this->objectEntityMapper->findMultiple(ids: $missingUuids);
-            $results     = array_merge($results, $blobResults);
-        }
-
+    /**
+     * Build a global search result with register/schema caches, RBAC filtering, and pagination.
+     *
+     * Shared post-processing for searchObjectsGloballyByIds and searchObjectsGloballyByRelations.
+     * Collects register/schema metadata caches from the results, applies RBAC filtering,
+     * paginates, and trims the caches to only include entries present in the final result set.
+     *
+     * @param array $results     Array of ObjectEntity results from the storage search.
+     * @param array $searchQuery The original search query parameters (for _limit/_offset).
+     * @param bool  $rbac        Whether to apply RBAC filtering.
+     *
+     * @return array{results: array, total: int, registers: array, schemas: array}
+     */
+    private function getGlobalSearchResult(array $results, array $searchQuery, bool $rbac): array
+    {
         // Collect register/schema info for frontend (needed for RBAC filtering).
         $registersCache = [];
         $schemasCache   = [];
 
         foreach ($results as $result) {
-            if ($result instanceof ObjectEntity) {
-                $regId = $result->getRegister();
-                $schId = $result->getSchema();
-
-                if ($regId !== null && isset($registersCache[$regId]) === false) {
-                    try {
-                        $reg = $this->registerMapper->find(id: (int) $regId, _multitenancy: false, _rbac: false);
-                        $registersCache[$reg->getId()] = $reg->jsonSerialize();
-                    } catch (\Exception $e) {
-                        // Skip if register not found.
-                    }
-                }
-
-                if ($schId !== null && isset($schemasCache[$schId]) === false) {
-                    try {
-                        $sch = $this->schemaMapper->find((int) $schId, _multitenancy: false, _rbac: false);
-                        $schemasCache[$sch->getId()] = $sch->jsonSerialize();
-                    } catch (\Exception $e) {
-                        // Skip if not found.
-                    }
-                }
-            }//end if
-        }//end foreach
-
-        // Apply RBAC filtering based on schema authorization.
-        $results = $this->filterBySchemaRbac(objects: $results, schemasCache: $schemasCache, rbac: $rbac);
-
-        $total = count($results);
-
-        // Apply limit/offset from query after RBAC filtering.
-        $limit   = $searchQuery['_limit'] ?? 1000;
-        $offset  = $searchQuery['_offset'] ?? 0;
-        $results = array_slice($results, $offset, $limit);
-
-        // Filter caches to only include schemas/registers actually in the filtered results.
-        $finalSchemaIds   = [];
-        $finalRegisterIds = [];
-        foreach ($results as $object) {
-            $schId = $object->getSchema();
-            $regId = $object->getRegister();
-            if ($schId !== null) {
-                $finalSchemaIds[$schId] = true;
+            if (($result instanceof ObjectEntity) === false) {
+                continue;
             }
 
-            if ($regId !== null) {
-                $finalRegisterIds[$regId] = true;
-            }
-        }
-
-        $schemasCache   = array_intersect_key($schemasCache, $finalSchemaIds);
-        $registersCache = array_intersect_key($registersCache, $finalRegisterIds);
-
-        $this->logger->debug(
-                message: '[UnifiedObjectMapper] searchObjectsGloballyByIds complete',
-                context: [
-                    'file'           => __FILE__,
-                    'line'           => __LINE__,
-                    'requestedCount' => count($ids),
-                    'foundCount'     => $total,
-                ]
-                );
-
-        return [
-            'results'   => $results,
-            'total'     => $total,
-            'registers' => $registersCache,
-            'schemas'   => $schemasCache,
-        ];
-    }//end searchObjectsGloballyByIds()
-
-    /**
-     * Search for objects across ALL magic tables that contain the given UUID in their relations.
-     *
-     * This method is used when no register/schema is specified but _relations_contains is provided.
-     * It searches across all magic tables to find objects that reference the given UUID.
-     *
-     * @param string      $uuid          The UUID to search for in relations.
-     * @param array       $searchQuery   The original search query parameters.
-     * @param string|null $activeOrgUuid The active organisation UUID for multitenancy.
-     * @param bool        $rbac          Whether to apply RBAC filtering.
-     * @param bool        $multitenancy  Whether to apply multitenancy filtering.
-     *
-     * @return array Search results with pagination info.
-     *
-     * @psalm-suppress UnusedParam $multitenancy reserved for future multitenancy filtering implementation
-     */
-    private function searchObjectsGloballyByRelations(
-        string $uuid,
-        array $searchQuery,
-        ?string $activeOrgUuid=null,
-        bool $rbac=true,
-        bool $multitenancy=true
-    ): array {
-        $this->logger->debug(
-            message: '[UnifiedObjectMapper] searchObjectsGloballyByRelations starting',
-            context: [
-                'file' => __FILE__,
-                'line' => __LINE__,
-                'uuid' => $uuid,
-                'rbac' => $rbac,
-            ]
-        );
-
-        // Use MagicMapper to search across all magic tables for objects with this UUID in relations.
-        $results = $this->magicMapper->findByRelationAcrossAllMagicTables(
-            uuid: $uuid,
-            includeDeleted: false
-        );
-
-        // Collect unique register/schema info for @self metadata (needed for RBAC filtering).
-        $registersCache = [];
-        $schemasCache   = [];
-
-        foreach ($results as $object) {
-            $regId = $object->getRegister();
-            $schId = $object->getSchema();
+            $regId = $result->getRegister();
+            $schId = $result->getSchema();
 
             if ($regId !== null && isset($registersCache[$regId]) === false) {
                 try {
-                    $register = $this->registerMapper->find((int) $regId, _multitenancy: false, _rbac: false);
-                    if ($register !== null) {
-                        $registersCache[$regId] = $register->jsonSerialize();
-                    }
+                    $reg = $this->registerMapper->find(id: (int) $regId, _multitenancy: false, _rbac: false);
+                    $registersCache[$reg->getId()] = $reg->jsonSerialize();
                 } catch (\Exception $e) {
                     // Skip if register not found.
                 }
@@ -2088,10 +2009,8 @@ class UnifiedObjectMapper extends AbstractObjectMapper
 
             if ($schId !== null && isset($schemasCache[$schId]) === false) {
                 try {
-                    $schema = $this->schemaMapper->find((int) $schId, _multitenancy: false, _rbac: false);
-                    if ($schema !== null) {
-                        $schemasCache[$schId] = $schema->jsonSerialize();
-                    }
+                    $sch = $this->schemaMapper->find((int) $schId, _multitenancy: false, _rbac: false);
+                    $schemasCache[$sch->getId()] = $sch->jsonSerialize();
                 } catch (\Exception $e) {
                     // Skip if schema not found.
                 }
@@ -2126,23 +2045,13 @@ class UnifiedObjectMapper extends AbstractObjectMapper
         $schemasCache   = array_intersect_key($schemasCache, $finalSchemaIds);
         $registersCache = array_intersect_key($registersCache, $finalRegisterIds);
 
-        $this->logger->debug(
-            message: '[UnifiedObjectMapper] searchObjectsGloballyByRelations complete',
-            context: [
-                'file'       => __FILE__,
-                'line'       => __LINE__,
-                'uuid'       => $uuid,
-                'foundCount' => $total,
-            ]
-        );
-
         return [
             'results'   => $results,
             'total'     => $total,
             'registers' => $registersCache,
             'schemas'   => $schemasCache,
         ];
-    }//end searchObjectsGloballyByRelations()
+    }//end getGlobalSearchResult()
 
     /**
      * Search for objects across ALL magic tables using a text search term.
@@ -2266,113 +2175,4 @@ class UnifiedObjectMapper extends AbstractObjectMapper
             '@self'          => ['source' => 'magic_mapper'],
         ];
     }//end searchObjectsGloballyBySearch()
-
-    /**
-     * Get a field value from an ObjectEntity for sorting purposes.
-     *
-     * Handles both metadata fields (via getters) and object data properties.
-     *
-     * @param ObjectEntity $object    The object entity to get the value from.
-     * @param string       $fieldName The field name (without _ prefix).
-     *
-     * @return mixed The field value, or null if not found.
-     */
-    private function getObjectFieldValue(ObjectEntity $object, string $fieldName): mixed
-    {
-        // Map common field names to getter methods.
-        $getterMap = [
-            'id'           => 'getId',
-            'uuid'         => 'getUuid',
-            'name'         => 'getName',
-            'slug'         => 'getSlug',
-            'uri'          => 'getUri',
-            'version'      => 'getVersion',
-            'register'     => 'getRegister',
-            'schema'       => 'getSchema',
-            'owner'        => 'getOwner',
-            'organisation' => 'getOrganisation',
-            'application'  => 'getApplication',
-            'folder'       => 'getFolder',
-            'created'      => 'getCreated',
-            'updated'      => 'getUpdated',
-            'published'    => 'getPublished',
-            'description'  => 'getDescription',
-            'summary'      => 'getSummary',
-        ];
-
-        // Try getter method first (ObjectEntity may use __call for dynamic getters).
-        if (isset($getterMap[$fieldName]) === true) {
-            $method = $getterMap[$fieldName];
-            try {
-                return $object->$method();
-            } catch (\Exception $e) {
-                // Method doesn't exist, continue to fallback.
-            }
-        }
-
-        // Try dynamic getter (getFieldName).
-        $camelCaseGetter = 'get'.ucfirst($fieldName);
-        try {
-            return $object->$camelCaseGetter();
-        } catch (\Exception $e) {
-            // Method doesn't exist, continue to fallback.
-        }
-
-        // Fall back to object data.
-        $objectData = $object->getObject();
-        if (is_array($objectData) === true && isset($objectData[$fieldName]) === true) {
-            return $objectData[$fieldName];
-        }
-
-        return null;
-    }//end getObjectFieldValue()
-
-    /**
-     * Compare two values for sorting purposes.
-     *
-     * Handles DateTime objects, numeric values, and strings.
-     *
-     * @param mixed $a First value.
-     * @param mixed $b Second value.
-     *
-     * @return int Comparison result (-1, 0, or 1).
-     */
-    private function compareValues(mixed $a, mixed $b): int
-    {
-        // Handle null values.
-        if ($a === null && $b === null) {
-            return 0;
-        }
-
-        if ($a === null) {
-            return -1;
-        }
-
-        if ($b === null) {
-            return 1;
-        }
-
-        // Handle DateTime objects.
-        if ($a instanceof DateTime && $b instanceof DateTime) {
-            return $a->getTimestamp() <=> $b->getTimestamp();
-        }
-
-        // Handle numeric values.
-        if (is_numeric($a) === true && is_numeric($b) === true) {
-            return ((float) $a) <=> ((float) $b);
-        }
-
-        // Handle strings (case-insensitive).
-        if (is_string($a) === true && is_string($b) === true) {
-            return strcasecmp($a, $b);
-        }
-
-        // Handle arrays (compare by count).
-        if (is_array($a) === true && is_array($b) === true) {
-            return count($a) <=> count($b);
-        }
-
-        // Default string comparison.
-        return strcmp((string) $a, (string) $b);
-    }//end compareValues()
 }//end class

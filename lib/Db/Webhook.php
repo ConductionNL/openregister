@@ -63,6 +63,8 @@ use OCP\AppFramework\Db\Entity;
  * @method void setUpdated(?DateTime $updated)
  * @method string|null getConfiguration()
  * @method void setConfiguration(?string $configuration)
+ * @method int|null getMapping()
+ * @method void setMapping(?int $mapping)
  *
  * @SuppressWarnings(PHPMD.TooManyFields)
  *
@@ -226,6 +228,13 @@ class Webhook extends Entity implements JsonSerializable
     protected ?string $configuration = null;
 
     /**
+     * Mapping ID reference for payload transformation
+     *
+     * @var integer|null
+     */
+    protected ?int $mapping = null;
+
+    /**
      * Constructor
      */
     public function __construct()
@@ -252,6 +261,7 @@ class Webhook extends Entity implements JsonSerializable
         $this->addType(fieldName: 'created', type: 'datetime');
         $this->addType(fieldName: 'updated', type: 'datetime');
         $this->addType(fieldName: 'configuration', type: 'string');
+        $this->addType(fieldName: 'mapping', type: 'integer');
     }//end __construct()
 
     /**
@@ -273,7 +283,9 @@ class Webhook extends Entity implements JsonSerializable
      */
     public function setEventsArray(array $events): void
     {
-        $this->setEvents(events: json_encode($events));
+        // phpcs:disable CustomSniffs.Functions.NamedParameters -- Entity __call breaks with named args.
+        $this->setEvents(json_encode(value: $events));
+        // phpcs:enable CustomSniffs.Functions.NamedParameters
     }//end setEventsArray()
 
     /**
@@ -299,12 +311,14 @@ class Webhook extends Entity implements JsonSerializable
      */
     public function setHeadersArray(?array $headers): void
     {
+        // phpcs:disable CustomSniffs.Functions.NamedParameters -- Entity __call breaks with named args.
         if ($headers === null) {
-            $this->setHeaders(headers: null);
+            $this->setHeaders(null);
             return;
         }
 
-        $this->setHeaders(headers: json_encode($headers));
+        $this->setHeaders(json_encode(value: $headers));
+        // phpcs:enable CustomSniffs.Functions.NamedParameters
     }//end setHeadersArray()
 
     /**
@@ -330,12 +344,14 @@ class Webhook extends Entity implements JsonSerializable
      */
     public function setFiltersArray(?array $filters): void
     {
+        // phpcs:disable CustomSniffs.Functions.NamedParameters -- Entity __call breaks with named args.
         if ($filters === null) {
-            $this->setFilters(filters: null);
+            $this->setFilters(null);
             return;
         }
 
-        $this->setFilters(filters: json_encode($filters));
+        $this->setFilters(json_encode(value: $filters));
+        // phpcs:enable CustomSniffs.Functions.NamedParameters
     }//end setFiltersArray()
 
     /**
@@ -361,12 +377,14 @@ class Webhook extends Entity implements JsonSerializable
      */
     public function setConfigurationArray(?array $configuration): void
     {
+        // phpcs:disable CustomSniffs.Functions.NamedParameters -- Entity __call breaks with named args.
         if ($configuration === null) {
-            $this->setConfiguration(configuration: null);
+            $this->setConfiguration(null);
             return;
         }
 
-        $this->setConfiguration(configuration: json_encode($configuration));
+        $this->setConfiguration(json_encode(value: $configuration));
+        // phpcs:enable CustomSniffs.Functions.NamedParameters
     }//end setConfigurationArray()
 
     /**
@@ -412,7 +430,8 @@ class Webhook extends Entity implements JsonSerializable
      *     lastTriggeredAt: null|string, lastSuccessAt: null|string,
      *     lastFailureAt: null|string, totalDeliveries: int,
      *     successfulDeliveries: int, failedDeliveries: int,
-     *     created: null|string, updated: null|string, configuration: array}
+     *     created: null|string, updated: null|string, configuration: array,
+     *     mapping: int|null}
      */
     public function jsonSerialize(): array
     {
@@ -445,6 +464,7 @@ class Webhook extends Entity implements JsonSerializable
             'created'              => $this->created?->format('c'),
             'updated'              => $this->updated?->format('c'),
             'configuration'        => $this->getConfigurationArray(),
+            'mapping'              => $this->mapping,
         ];
     }//end jsonSerialize()
 
@@ -460,90 +480,96 @@ class Webhook extends Entity implements JsonSerializable
      */
     public function hydrate(array $object): static
     {
+        // phpcs:disable CustomSniffs.Functions.NamedParameters -- Entity __call breaks with named args.
         if (($object['id'] ?? null) !== null) {
-            $this->setId(id: $object['id']);
+            $this->setId($object['id']);
         }
 
         if (($object['uuid'] ?? null) !== null) {
-            $this->setUuid(uuid: $object['uuid']);
+            $this->setUuid($object['uuid']);
         }
 
         if (($object['name'] ?? null) !== null) {
-            $this->setName(name: $object['name']);
+            $this->setName($object['name']);
         }
 
         if (($object['url'] ?? null) !== null) {
-            $this->setUrl(url: $object['url']);
+            $this->setUrl($object['url']);
         }
 
         if (($object['method'] ?? null) !== null) {
-            $this->setMethod(method: $object['method']);
+            $this->setMethod($object['method']);
         }
 
         if (($object['events'] ?? null) !== null) {
             if (is_array($object['events']) === true) {
-                $this->setEventsArray(events: $object['events']);
+                $this->setEventsArray($object['events']);
             }
 
             if (is_array($object['events']) === false) {
-                $this->setEvents(events: $object['events']);
+                $this->setEvents($object['events']);
             }
         }
 
         if (($object['headers'] ?? null) !== null) {
             if (is_array($object['headers']) === true) {
-                $this->setHeadersArray(headers: $object['headers']);
+                $this->setHeadersArray($object['headers']);
             }
 
             if (is_array($object['headers']) === false) {
-                $this->setHeaders(headers: $object['headers']);
+                $this->setHeaders($object['headers']);
             }
         }
 
         if (($object['secret'] ?? null) !== null) {
-            $this->setSecret(secret: $object['secret']);
+            $this->setSecret($object['secret']);
         }
 
         if (($object['enabled'] ?? null) !== null) {
-            $this->setEnabled(enabled: (bool) $object['enabled']);
+            $this->setEnabled((bool) $object['enabled']);
         }
 
         if (($object['organisation'] ?? null) !== null) {
-            $this->setOrganisation(organisation: $object['organisation']);
+            $this->setOrganisation($object['organisation']);
         }
 
         if (($object['filters'] ?? null) !== null) {
             if (is_array($object['filters']) === true) {
-                $this->setFiltersArray(filters: $object['filters']);
+                $this->setFiltersArray($object['filters']);
             }
 
             if (is_array($object['filters']) === false) {
-                $this->setFilters(filters: $object['filters']);
+                $this->setFilters($object['filters']);
             }
         }
 
         if (($object['retryPolicy'] ?? null) !== null) {
-            $this->setRetryPolicy(retryPolicy: $object['retryPolicy']);
+            $this->setRetryPolicy($object['retryPolicy']);
         }
 
         if (($object['maxRetries'] ?? null) !== null) {
-            $this->setMaxRetries(maxRetries: (int) $object['maxRetries']);
+            $this->setMaxRetries((int) $object['maxRetries']);
         }
 
         if (($object['timeout'] ?? null) !== null) {
-            $this->setTimeout(timeout: (int) $object['timeout']);
+            $this->setTimeout((int) $object['timeout']);
         }
 
         if (($object['configuration'] ?? null) !== null) {
             if (is_array($object['configuration']) === true) {
-                $this->setConfigurationArray(configuration: $object['configuration']);
+                $this->setConfigurationArray($object['configuration']);
             }
 
             if (is_array($object['configuration']) === false) {
-                $this->setConfiguration(configuration: $object['configuration']);
+                $this->setConfiguration($object['configuration']);
             }
         }
 
+        if (($object['mapping'] ?? null) !== null) {
+            $this->setMapping((int) $object['mapping']);
+        }
+
         return $this;
+        // phpcs:enable
     }//end hydrate()
 }//end class

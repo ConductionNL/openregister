@@ -189,10 +189,12 @@ class WebhookEventListener implements IEventListener
             $object = $event->getObject();
             return [
                 'objectType' => 'object',
-                'action'     => 'created',
+                'action'     => 'create',
                 'object'     => $object->jsonSerialize(),
+                'objectUuid' => $object->getUuid(),
                 'register'   => $object->getRegister(),
                 'schema'     => $object->getSchema(),
+                'timestamp'  => date('c'),
             ];
         }
 
@@ -200,18 +202,25 @@ class WebhookEventListener implements IEventListener
             $object = $event->getNewObject();
             return [
                 'objectType' => 'object',
-                'action'     => 'updated',
+                'action'     => 'update',
                 'object'     => $object->jsonSerialize(),
+                'objectUuid' => $object->getUuid(),
                 'register'   => $object->getRegister(),
                 'schema'     => $object->getSchema(),
+                'timestamp'  => date('c'),
             ];
         }
 
         if ($event instanceof ObjectDeletedEvent) {
+            $object = $event->getObject();
             return [
                 'objectType' => 'object',
-                'action'     => 'deleted',
-                'object'     => $event->getObject()->jsonSerialize(),
+                'action'     => 'delete',
+                'object'     => $object->jsonSerialize(),
+                'objectUuid' => $object->getUuid(),
+                'register'   => $object->getRegister(),
+                'schema'     => $object->getSchema(),
+                'timestamp'  => date('c'),
             ];
         }
 

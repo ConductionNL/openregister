@@ -63,6 +63,7 @@ use Psr\Log\LoggerInterface;
  * @SuppressWarnings(PHPMD.ExcessiveClassLength)     Validation requires comprehensive rule handling
  * @SuppressWarnings(PHPMD.ExcessiveClassComplexity) Complex JSON Schema validation logic
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)   Validation requires multiple format and schema dependencies
+ * @SuppressWarnings(PHPMD.TooManyMethods)           Validation requires per-type and per-format validator methods
  */
 
 class ValidateObject
@@ -301,6 +302,9 @@ class ValidateObject
      */
     private function transformPropertyForOpenRegister(object $propertySchema): void
     {
+        // UUID pattern for related object references.
+        $uuidPat = '^([a-z]+-)?([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}|[0-9a-f]{32}|[0-9]+)$';
+
         // Handle inversedBy relationships for validation.
         // TODO: Move writeBack, removeAfterWriteBack, and inversedBy from items to config.
         if (($propertySchema->inversedBy ?? null) !== null && $propertySchema->inversedBy !== '') {
@@ -314,7 +318,7 @@ class ValidateObject
                     'oneOf' => [
                         (object) [
                             'type'        => 'string',
-                            'pattern'     => '^([a-z]+-)?([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}|[0-9a-f]{32}|[0-9]+)$',
+                            'pattern'     => $uuidPat,
                             'description' => 'UUID reference to a related object',
                         ],
                         (object) [
@@ -335,7 +339,7 @@ class ValidateObject
                     ],
                     (object) [
                         'type'        => 'string',
-                        'pattern'     => '^([a-z]+-)?([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}|[0-9a-f]{32}|[0-9]+)$',
+                        'pattern'     => $uuidPat,
                         'description' => 'UUID reference to a related object',
                     ],
                     (object) [
@@ -353,17 +357,41 @@ class ValidateObject
             }//end if
         }//end if
 
-        // Handle array properties with object items.
+        // Handle array properties with object items (inlined from transformArrayItemsForOpenRegister).
         $isArrayType = ($propertySchema->type ?? null) !== null
             && $propertySchema->type === 'array';
         $hasItems    = ($propertySchema->items ?? null) !== null;
-        if ($isArrayType === true && $hasItems === true) {
-            $this->transformArrayItemsForOpenRegister(itemsSchema: $propertySchema->items);
+        if ($isArrayType === true && $hasItems === true && is_object($propertySchema->items) === true) {
+            $itemsSchema = $propertySchema->items;
+
+            // Handle inversedBy relationships for array items.
+            // TODO: Move writeBack, removeAfterWriteBack, and inversedBy from items to config.
+            if (($itemsSchema->inversedBy ?? null) !== null) {
+                // For inversedBy array items, transform to UUID string validation.
+                $itemsSchema->type        = 'string';
+                $itemsSchema->pattern     = $uuidPat;
+                $itemsSchema->description = 'UUID reference to a related object (inversedBy - should be empty)';
+                unset($itemsSchema->properties, $itemsSchema->required, $itemsSchema->{'$ref'});
+            } else if (isset($itemsSchema->type) === true && $itemsSchema->type === 'object') {
+                $this->transformObjectPropertyForOpenRegister(objectSchema: $itemsSchema);
+            }
         }
 
         // Handle direct object properties.
         if (($propertySchema->type ?? null) !== null && $propertySchema->type === 'object') {
             $this->transformObjectPropertyForOpenRegister(objectSchema: $propertySchema);
+        }
+
+        // Strip $ref from string-type properties referencing other schemas.
+        // OpenRegister uses $ref to denote schema relationships, but Opis JSON Schema
+        // interprets $ref as a JSON Schema reference and tries to resolve it as a URI.
+        // The $ref is only needed by OpenRegister for relation tracking (e.g. onDelete),
+        // not for validation.
+        if (($propertySchema->type ?? null) !== null
+            && $propertySchema->type === 'string'
+            && ($propertySchema->{'$ref'} ?? null) !== null
+        ) {
+            unset($propertySchema->{'$ref'});
         }
 
         // Recursively transform nested properties.
@@ -375,40 +403,6 @@ class ValidateObject
             }
         }
     }//end transformPropertyForOpenRegister()
-
-    /**
-     * Transforms array items based on OpenRegister object configuration.
-     *
-     * @param mixed $itemsSchema The array items schema to transform
-     *
-     * @return void
-     */
-    private function transformArrayItemsForOpenRegister($itemsSchema): void
-    {
-        // Handle case where items might be an array or not an object.
-        if (is_object($itemsSchema) === false) {
-            return;
-        }
-
-        // Handle inversedBy relationships for array items.
-        // TODO: Move writeBack, removeAfterWriteBack, and inversedBy from items to config.
-        if (($itemsSchema->inversedBy ?? null) !== null) {
-            // For inversedBy array items, transform to UUID string validation.
-            // But since this is an inversedBy relationship, the parent array should be empty.
-            // The transformation is handled at the parent array level.
-            $itemsSchema->type        = 'string';
-            $itemsSchema->pattern     = '^([a-z]+-)?([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}|[0-9a-f]{32}|[0-9]+)$';
-            $itemsSchema->description = 'UUID reference to a related object (inversedBy - should be empty)';
-            unset($itemsSchema->properties, $itemsSchema->required, $itemsSchema->{'$ref'});
-            return;
-        }
-
-        if (isset($itemsSchema->type) === false || $itemsSchema->type !== 'object') {
-            return;
-        }
-
-        $this->transformObjectPropertyForOpenRegister(objectSchema: $itemsSchema);
-    }//end transformArrayItemsForOpenRegister()
 
     /**
      * Transforms object properties based on OpenRegister object configuration.
@@ -453,6 +447,9 @@ class ValidateObject
      */
     private function transformToUuidProperty(object $objectSchema): void
     {
+        // UUID pattern for related object references.
+        $uuidPat = '^([a-z]+-)?([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}|[0-9a-f]{32}|[0-9]+)$';
+
         // If this property has inversedBy, it should support both objects and UUID strings.
         if (($objectSchema->inversedBy ?? null) === null) {
             // Original behavior for non-inversedBy properties.
@@ -461,7 +458,7 @@ class ValidateObject
 
             // Set to string type with UUID pattern.
             $objectSchema->type        = 'string';
-            $objectSchema->pattern     = '^([a-z]+-)?([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}|[0-9a-f]{32}|[0-9]+)$';
+            $objectSchema->pattern     = $uuidPat;
             $objectSchema->description = 'UUID reference to a related object';
 
             // Remove $ref to prevent circular references.
@@ -494,7 +491,7 @@ class ValidateObject
         // Create the UUID string schema.
         $uuidTypeSchema = (object) [
             'type'        => 'string',
-            'pattern'     => '^([a-z]+-)?([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}|[0-9a-f]{32}|[0-9]+)$',
+            'pattern'     => $uuidPat,
             'description' => 'UUID reference to a related object',
         ];
 
@@ -575,7 +572,7 @@ class ValidateObject
     {
         // Check directly on the property schema.
         if (isset($propertySchema->objectConfiguration) === true) {
-            $handling = $this->getHandlingFromConfig(config: $propertySchema->objectConfiguration);
+            $handling = $this->getMixedValue(data: $propertySchema->objectConfiguration, key: 'handling');
             if ($handling !== null) {
                 return $handling;
             }
@@ -587,74 +584,72 @@ class ValidateObject
             $items = $propertySchema->items;
 
             // Check if items has objectConfiguration directly.
-            $itemsConfig = $this->getNestedValue(data: $items, key: 'objectConfiguration');
+            $itemsConfig = $this->getMixedValue(data: $items, key: 'objectConfiguration');
             if ($itemsConfig !== null) {
-                $handling = $this->getHandlingFromConfig(config: $itemsConfig);
+                $handling = $this->getMixedValue(data: $itemsConfig, key: 'handling');
                 if ($handling !== null) {
                     return $handling;
                 }
             }
 
             // Check inside items.oneOf (for polymorphic references).
-            $oneOf = $this->getNestedValue(data: $items, key: 'oneOf');
-            if ($oneOf !== null && (is_array($oneOf) === true || is_object($oneOf) === true)) {
-                foreach ($oneOf as $oneOfItem) {
-                    $oneOfConfig = $this->getNestedValue(data: $oneOfItem, key: 'objectConfiguration');
-                    if ($oneOfConfig !== null) {
-                        $handling = $this->getHandlingFromConfig(config: $oneOfConfig);
-                        if ($handling !== null) {
-                            return $handling;
-                        }
-                    }
-                }
+            $oneOf    = $this->getMixedValue(data: $items, key: 'oneOf');
+            $handling = $this->extractHandlingFromOneOfItems(oneOf: $oneOf);
+            if ($handling !== null) {
+                return $handling;
             }
         }//end if
 
         // Check inside oneOf directly on the property (alternative structure).
-        if (isset($propertySchema->oneOf) === true && (is_array($propertySchema->oneOf) === true || is_object($propertySchema->oneOf) === true)) {
-            foreach ($propertySchema->oneOf as $oneOfItem) {
-                $oneOfConfig = $this->getNestedValue(data: $oneOfItem, key: 'objectConfiguration');
-                if ($oneOfConfig !== null) {
-                    $handling = $this->getHandlingFromConfig(config: $oneOfConfig);
-                    if ($handling !== null) {
-                        return $handling;
-                    }
-                }
-            }
+        $handling = $this->extractHandlingFromOneOfItems(oneOf: ($propertySchema->oneOf ?? null));
+        if ($handling !== null) {
+            return $handling;
         }
 
         return null;
     }//end extractObjectConfigurationHandling()
 
     /**
-     * Gets the handling value from an objectConfiguration.
+     * Extracts the handling value from a oneOf array of schema items.
      *
-     * @param mixed $config The objectConfiguration (array or object)
+     * Iterates through oneOf items looking for objectConfiguration with a handling value.
+     * Used to find handling in polymorphic schema references.
      *
-     * @return string|null The handling value or null
+     * @param mixed $oneOf The oneOf array or object to search (null-safe)
+     *
+     * @return string|null The handling value or null if not found
      */
-    private function getHandlingFromConfig($config): ?string
+    private function extractHandlingFromOneOfItems($oneOf): ?string
     {
-        if (is_array($config) === true && isset($config['handling']) === true) {
-            return $config['handling'];
+        if ($oneOf === null || (is_array($oneOf) === false && is_object($oneOf) === false)) {
+            return null;
         }
 
-        if (is_object($config) === true && isset($config->handling) === true) {
-            return $config->handling;
+        foreach ($oneOf as $oneOfItem) {
+            $oneOfConfig = $this->getMixedValue(data: $oneOfItem, key: 'objectConfiguration');
+            if ($oneOfConfig !== null) {
+                $handling = $this->getMixedValue(data: $oneOfConfig, key: 'handling');
+                if ($handling !== null) {
+                    return $handling;
+                }
+            }
         }
 
         return null;
-    }//end getHandlingFromConfig()
+    }//end extractHandlingFromOneOfItems()
 
     /**
-     * Gets a nested value from either an array or object.
+     * Gets a value from either an array or object by key.
+     *
+     * Consolidates array/object access into a single helper that works
+     * with both data formats used in schema configurations.
      *
      * @param mixed  $data The data structure (array or object)
      * @param string $key  The key to retrieve
      *
      * @return mixed The value or null if not found
      */
-    private function getNestedValue($data, string $key)
+    private function getMixedValue($data, string $key)
     {
         if (is_array($data) === true && isset($data[$key]) === true) {
             return $data[$key];
@@ -665,7 +660,7 @@ class ValidateObject
         }
 
         return null;
-    }//end getNestedValue()
+    }//end getMixedValue()
 
     /**
      * Transforms schema for validation by handling circular references, OpenRegister configurations, and schema resolution.
@@ -710,6 +705,9 @@ class ValidateObject
                     $handling = $config->handling;
                 }
 
+                // UUID pattern for related object references.
+                $uuidPat = '^([a-z]+-)?([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}|[0-9a-f]{32}|[0-9]+)$';
+
                 if ($config !== null && $handling === 'related-object') {
                     // Handle inversedBy relationships for single objects.
                     if (($propertySchema->inversedBy ?? null) !== null) {
@@ -722,7 +720,7 @@ class ValidateObject
                             ],
                             (object) [
                                 'type'        => 'string',
-                                'pattern'     => '^([a-z]+-)?([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}|[0-9a-f]{32}|[0-9]+)$',
+                                'pattern'     => $uuidPat,
                                 'description' => 'UUID reference to a related object',
                             ],
                             (object) [
@@ -731,14 +729,13 @@ class ValidateObject
                             ],
                         ];
                         unset($propertySchema->type, $propertySchema->pattern);
-                    }
+                    }//end if
 
                     if (($propertySchema->inversedBy ?? null) === null) {
                         // For non-inversedBy properties, expect string UUID.
-                        $uuidPattern  = '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-';
-                        $uuidPattern .= '[0-9a-f]{4}-[0-9a-f]{12}$';
-                        // Note: For related-object patterns, we support prefixed UUIDs, UUIDs without dashes, and numeric IDs.
-                        $uuidPattern          = '^([a-z]+-)?([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}|[0-9a-f]{32}|[0-9]+)$';
+                        // Support prefixed UUIDs, UUIDs without dashes,
+                        // and numeric IDs.
+                        $uuidPattern          = $uuidPat;
                         $propertySchema->type = 'string';
                         $propertySchema->pattern = $uuidPattern;
                         $desc = 'UUID reference to a related object (self-reference)';
@@ -767,7 +764,7 @@ class ValidateObject
                             'oneOf' => [
                                 (object) [
                                     'type'        => 'string',
-                                    'pattern'     => '^([a-z]+-)?([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}|[0-9a-f]{32}|[0-9]+)$',
+                                    'pattern'     => $uuidPat,
                                     'description' => 'UUID reference to a related object',
                                 ],
                                 (object) [
@@ -776,13 +773,13 @@ class ValidateObject
                                 ],
                             ],
                         ];
-                    }
+                    }//end if
 
                     if (($propertySchema->items->inversedBy ?? null) === null) {
                         // For non-inversedBy properties, expect array of UUIDs.
                         $propertySchema->items = (object) [
                             'type'        => 'string',
-                            'pattern'     => '^([a-z]+-)?([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}|[0-9a-f]{32}|[0-9]+)$',
+                            'pattern'     => $uuidPat,
                             'description' => 'UUID reference to a related object (self-reference)',
                         ];
                     }//end if
@@ -947,59 +944,76 @@ class ValidateObject
             );
         }
 
-        // Fix misplaced enum on array types: move enum from array level to items level.
-        // This handles the common mistake where enum is placed on the array property
-        // instead of inside items. JSON Schema requires enum to be on items for arrays.
-        if (($cleanedProperty->type ?? null) === 'array'
-            && ($cleanedProperty->enum ?? null) !== null
-            && is_array($cleanedProperty->enum) === true
-            && empty($cleanedProperty->enum) === false
+        // Fix misplaced enum and oneOf on array types by moving them to items level.
+        $cleanedProperty = $this->fixMisplacedArrayConstraints(propertySchema: $cleanedProperty);
+
+        return $cleanedProperty;
+    }//end cleanPropertyForValidation()
+
+    /**
+     * Fixes misplaced enum and oneOf constraints on array-type properties.
+     *
+     * JSON Schema requires enum and oneOf to be on the items level for arrays,
+     * not on the array property itself. This method moves them to the correct location.
+     *
+     * @param object $propertySchema The property schema to fix
+     *
+     * @return object The property schema with constraints moved to items level
+     */
+    private function fixMisplacedArrayConstraints(object $propertySchema): object
+    {
+        if (($propertySchema->type ?? null) !== 'array') {
+            return $propertySchema;
+        }
+
+        // Fix misplaced enum: move from array level to items level.
+        if (($propertySchema->enum ?? null) !== null
+            && is_array($propertySchema->enum) === true
+            && empty($propertySchema->enum) === false
         ) {
             // Ensure items object exists.
-            if (($cleanedProperty->items ?? null) === null) {
-                $cleanedProperty->items       = new \stdClass();
-                $cleanedProperty->items->type = 'string';
+            if (($propertySchema->items ?? null) === null) {
+                $propertySchema->items       = new stdClass();
+                $propertySchema->items->type = 'string';
             }
 
             // Move enum to items (only if items doesn't already have an enum).
-            if (($cleanedProperty->items->enum ?? null) === null) {
-                $cleanedProperty->items->enum = $cleanedProperty->enum;
+            if (($propertySchema->items->enum ?? null) === null) {
+                $propertySchema->items->enum = $propertySchema->enum;
             }
 
             // Remove enum from array level.
-            unset($cleanedProperty->enum);
+            unset($propertySchema->enum);
         }
 
-        // Fix misplaced oneOf on array types: move oneOf from array level to items level.
-        // Similar to enum, oneOf should be on items when validating array item values.
-        if (($cleanedProperty->type ?? null) === 'array'
-            && ($cleanedProperty->oneOf ?? null) !== null
-            && (is_array($cleanedProperty->oneOf) === true || is_object($cleanedProperty->oneOf) === true)
+        // Fix misplaced oneOf: move from array level to items level.
+        if (($propertySchema->oneOf ?? null) !== null
+            && (is_array($propertySchema->oneOf) === true || is_object($propertySchema->oneOf) === true)
         ) {
-            if (is_object($cleanedProperty->oneOf) === true) {
-                $oneOfArray = get_object_vars($cleanedProperty->oneOf);
+            if (is_object($propertySchema->oneOf) === true) {
+                $oneOfArray = get_object_vars($propertySchema->oneOf);
             } else {
-                $oneOfArray = $cleanedProperty->oneOf;
+                $oneOfArray = $propertySchema->oneOf;
             }
 
             if (empty($oneOfArray) === false) {
                 // Ensure items object exists.
-                if (($cleanedProperty->items ?? null) === null) {
-                    $cleanedProperty->items = new \stdClass();
+                if (($propertySchema->items ?? null) === null) {
+                    $propertySchema->items = new stdClass();
                 }
 
                 // Move oneOf to items (only if items doesn't already have oneOf).
-                if (($cleanedProperty->items->oneOf ?? null) === null) {
-                    $cleanedProperty->items->oneOf = $cleanedProperty->oneOf;
+                if (($propertySchema->items->oneOf ?? null) === null) {
+                    $propertySchema->items->oneOf = $propertySchema->oneOf;
                 }
 
                 // Remove oneOf from array level.
-                unset($cleanedProperty->oneOf);
+                unset($propertySchema->oneOf);
             }
         }//end if
 
-        return $cleanedProperty;
-    }//end cleanPropertyForValidation()
+        return $propertySchema;
+    }//end fixMisplacedArrayConstraints()
 
     /**
      * Transforms custom OpenRegister types to valid JSON Schema types.
@@ -1083,106 +1097,67 @@ class ValidateObject
             $handling = $config->handling;
         }
 
+        // Determine whether to use UUID strings or simple object structure.
+        // UUID strings: related-object handling, $ref references, or unknown handling types.
+        // Simple object: nested-object handling or no configuration and no $ref.
+        $useUuidStrings = false;
         if ($config !== null && $handling !== null) {
-            switch ($handling) {
-                case 'related-object':
-                    // For related objects, convert to UUID strings.
-                    return $this->transformItemsToUuidStrings(itemsSchema: $itemsSchema);
-
-                case 'nested-object':
-                    // For nested objects, create a simple object structure.
-                    return $this->transformItemsToSimpleObject(itemsSchema: $itemsSchema);
-
-                default:
-                    // For other handling types, convert to UUID strings as default.
-                    return $this->transformItemsToUuidStrings(itemsSchema: $itemsSchema);
-            }
+            $useUuidStrings = ($handling !== 'nested-object');
+        } else if (($itemsSchema->{'$ref'} ?? null) !== null) {
+            $useUuidStrings = true;
         }
 
-        // If no objectConfiguration, check if there's a $ref.
-        if (($itemsSchema->{'$ref'} ?? null) !== null) {
-            // Convert to UUID strings for any referenced objects.
-            return $this->transformItemsToUuidStrings(itemsSchema: $itemsSchema);
-        }
+        if ($useUuidStrings === true) {
+            // Transform to accept both UUID strings and objects with id field.
+            // Remove all object-specific properties.
+            unset($itemsSchema->properties, $itemsSchema->required, $itemsSchema->{'$ref'});
 
-        // Default: convert to simple object structure.
-        return $this->transformItemsToSimpleObject(itemsSchema: $itemsSchema);
-    }//end transformArrayItemsForValidation()
+            // UUID pattern for string validation.
+            $uuidPattern = '^([a-z]+-)?([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}|[0-9a-f]{32}|[0-9]+)$';
 
-    /**
-     * Transforms array items to accept both UUID strings and objects with id field.
-     *
-     * Related objects can be sent as either:
-     * - UUID strings: "uuid-here" or "prefix-uuid-here"
-     * - Objects with id field: {"id": "uuid-here", ...}
-     *
-     * @param object $itemsSchema The array items schema to transform
-     *
-     * @return object The transformed schema accepting UUID strings or objects
-     */
-    private function transformItemsToUuidStrings(object $itemsSchema): object
-    {
-
-        // Remove all object-specific properties.
-        unset($itemsSchema->properties, $itemsSchema->required, $itemsSchema->{'$ref'});
-
-        // UUID pattern for string validation.
-        $uuidPattern = '^([a-z]+-)?([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}|[0-9a-f]{32}|[0-9]+)$';
-
-        // Accept either a UUID string or an object with an id field.
-        // This allows flexibility in how related objects are submitted.
-        unset($itemsSchema->type);
-        $itemsSchema->oneOf       = [
-            (object) [
-                'type'        => 'string',
-                'pattern'     => $uuidPattern,
-                'description' => 'UUID reference to a related object',
-            ],
-            (object) [
-                'type'                 => 'object',
-                'description'          => 'Object with id field referencing a related object',
-                'properties'           => (object) [
-                    'id' => (object) [
-                        'type'    => 'string',
-                        'pattern' => $uuidPattern,
-                    ],
+            // Accept either a UUID string or an object with an id field.
+            // This allows flexibility in how related objects are submitted.
+            unset($itemsSchema->type);
+            $itemsSchema->oneOf       = [
+                (object) [
+                    'type'        => 'string',
+                    'pattern'     => $uuidPattern,
+                    'description' => 'UUID reference to a related object',
                 ],
-                'required'             => ['id'],
-                'additionalProperties' => true,
-            ],
-        ];
-        $itemsSchema->description = 'UUID reference or object with id field';
+                (object) [
+                    'type'                 => 'object',
+                    'description'          => 'Object with id field referencing a related object',
+                    'properties'           => (object) [
+                        'id' => (object) [
+                            'type'    => 'string',
+                            'pattern' => $uuidPattern,
+                        ],
+                    ],
+                    'required'             => ['id'],
+                    'additionalProperties' => true,
+                ],
+            ];
+            $itemsSchema->description = 'UUID reference or object with id field';
+        } else {
+            // Transform to a simple object structure for nested objects.
+            // Remove $ref to prevent circular references.
+            unset($itemsSchema->{'$ref'});
+
+            // Create a simple object structure.
+            $itemsSchema->type        = 'object';
+            $itemsSchema->description = 'Nested object';
+
+            // Add basic properties that most objects should have.
+            $itemsSchema->properties = (object) [
+                'id' => (object) [
+                    'type'        => 'string',
+                    'description' => 'Object identifier',
+                ],
+            ];
+        }//end if
 
         return $itemsSchema;
-    }//end transformItemsToUuidStrings()
-
-    /**
-     * Transforms array items to a simple object structure.
-     *
-     * @param object $itemsSchema The array items schema to transform
-     *
-     * @return object The transformed schema with simple object structure
-     */
-    private function transformItemsToSimpleObject(object $itemsSchema): object
-    {
-
-        // Remove $ref to prevent circular references.
-        unset($itemsSchema->{'$ref'});
-
-        // Create a simple object structure.
-        $itemsSchema->type        = 'object';
-        $itemsSchema->description = 'Nested object';
-
-        // Add basic properties that most objects should have.
-        $itemsSchema->properties = (object) [
-            'id' => (object) [
-                'type'        => 'string',
-                'description' => 'Object identifier',
-            ],
-        ];
-
-        return $itemsSchema;
-    }//end transformItemsToSimpleObject()
+    }//end transformArrayItemsForValidation()
 
     /**
      * Checks if a property schema is a self-reference to the given schema slug.

@@ -30,6 +30,8 @@
                 <referencedClass name="Symfony\Component\HttpFoundation\Response"/>
                 <referencedClass name="Doctrine\DBAL\Platforms\AbstractPlatform"/>
                 <referencedClass name="Doctrine\DBAL\Platforms\MySQLPlatform"/>
+                <referencedClass name="Doctrine\DBAL\Platforms\AbstractMySQLPlatform"/>
+                <referencedClass name="Doctrine\DBAL\Platforms\SqlitePlatform"/>
                 <referencedClass name="Doctrine\DBAL\ParameterType"/>
                 <referencedClass name="APCUIterator"/>
                 <referencedClass name="React\Async\PromiseInterface"/>
@@ -86,6 +88,7 @@
                 <referencedClass name="OCA\OpenRegister\Db\Exception"/>
             </errorLevel>
         </UndefinedClass>
+        <InaccessibleMethod errorLevel="suppress"/>
         <UndefinedMagicMethod errorLevel="suppress"/>
         <UnusedClass errorLevel="suppress"/>
         <PossiblyUnusedMethod errorLevel="suppress"/>

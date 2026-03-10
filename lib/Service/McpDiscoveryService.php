@@ -258,6 +258,8 @@ class McpDiscoveryService
     /**
      * Build the registers capability detail
      *
+     * @SuppressWarnings(PHPMD.UnusedPrivateMethod)
+     *
      * @return array<string, mixed> Capability detail with endpoints and context
      */
     private function buildRegistersCapability(): array
@@ -329,6 +331,8 @@ class McpDiscoveryService
     /**
      * Build the schemas capability detail
      *
+     * @SuppressWarnings(PHPMD.UnusedPrivateMethod)
+     *
      * @return array<string, mixed> Capability detail with endpoints and context
      */
     private function buildSchemasCapability(): array
@@ -398,6 +402,8 @@ class McpDiscoveryService
     /**
      * Build the objects capability detail
      *
+     * @SuppressWarnings(PHPMD.UnusedPrivateMethod)
+     *
      * @return array<string, mixed> Capability detail with endpoints and context
      */
     private function buildObjectsCapability(): array
@@ -442,11 +448,41 @@ class McpDiscoveryService
                     'path'        => '/api/objects/{register}/{schema}',
                     'description' => 'List objects. Supports filtering and pagination.',
                     'parameters'  => [
-                        ['name' => 'register', 'in' => 'path', 'type' => 'integer', 'required' => true, 'description' => 'Register ID'],
-                        ['name' => 'schema', 'in' => 'path', 'type' => 'integer', 'required' => true, 'description' => 'Schema ID'],
-                        ['name' => '_limit', 'in' => 'query', 'type' => 'integer', 'required' => false, 'description' => 'Max results (default 30)'],
-                        ['name' => '_offset', 'in' => 'query', 'type' => 'integer', 'required' => false, 'description' => 'Skip N results'],
-                        ['name' => '_search', 'in' => 'query', 'type' => 'string', 'required' => false, 'description' => 'Full-text search'],
+                        [
+                            'name'        => 'register',
+                            'in'          => 'path',
+                            'type'        => 'integer',
+                            'required'    => true,
+                            'description' => 'Register ID',
+                        ],
+                        [
+                            'name'        => 'schema',
+                            'in'          => 'path',
+                            'type'        => 'integer',
+                            'required'    => true,
+                            'description' => 'Schema ID',
+                        ],
+                        [
+                            'name'        => '_limit',
+                            'in'          => 'query',
+                            'type'        => 'integer',
+                            'required'    => false,
+                            'description' => 'Max results (default 30)',
+                        ],
+                        [
+                            'name'        => '_offset',
+                            'in'          => 'query',
+                            'type'        => 'integer',
+                            'required'    => false,
+                            'description' => 'Skip N results',
+                        ],
+                        [
+                            'name'        => '_search',
+                            'in'          => 'query',
+                            'type'        => 'string',
+                            'required'    => false,
+                            'description' => 'Full-text search',
+                        ],
                         [
                             'name'        => '_order[field]',
                             'in'          => 'query',
@@ -505,6 +541,8 @@ class McpDiscoveryService
     /**
      * Build the search capability detail
      *
+     * @SuppressWarnings(PHPMD.UnusedPrivateMethod)
+     *
      * @return array<string, mixed> Capability detail with endpoints and context
      */
     private function buildSearchCapability(): array
@@ -520,9 +558,27 @@ class McpDiscoveryService
                     'path'        => '/api/search',
                     'description' => 'Search across all objects. Supports _search, register, schema, and facet filters.',
                     'parameters'  => [
-                        ['name' => '_search', 'in' => 'query', 'type' => 'string', 'required' => true, 'description' => 'Search query'],
-                        ['name' => 'register', 'in' => 'query', 'type' => 'integer', 'required' => false, 'description' => 'Filter by register ID'],
-                        ['name' => 'schema', 'in' => 'query', 'type' => 'integer', 'required' => false, 'description' => 'Filter by schema ID'],
+                        [
+                            'name'        => '_search',
+                            'in'          => 'query',
+                            'type'        => 'string',
+                            'required'    => true,
+                            'description' => 'Search query',
+                        ],
+                        [
+                            'name'        => 'register',
+                            'in'          => 'query',
+                            'type'        => 'integer',
+                            'required'    => false,
+                            'description' => 'Filter by register ID',
+                        ],
+                        [
+                            'name'        => 'schema',
+                            'in'          => 'query',
+                            'type'        => 'integer',
+                            'required'    => false,
+                            'description' => 'Filter by schema ID',
+                        ],
                     ],
                 ],
                 [
@@ -556,6 +612,8 @@ class McpDiscoveryService
 
     /**
      * Build the files capability detail
+     *
+     * @SuppressWarnings(PHPMD.UnusedPrivateMethod)
      *
      * @return array<string, mixed> Capability detail with endpoints and context
      */
@@ -609,6 +667,8 @@ class McpDiscoveryService
     /**
      * Build the audit capability detail
      *
+     * @SuppressWarnings(PHPMD.UnusedPrivateMethod)
+     *
      * @return array<string, mixed> Capability detail with endpoints and context
      */
     private function buildAuditCapability(): array
@@ -646,6 +706,8 @@ class McpDiscoveryService
     /**
      * Build the bulk operations capability detail
      *
+     * @SuppressWarnings(PHPMD.UnusedPrivateMethod)
+     *
      * @return array<string, mixed> Capability detail with endpoints and context
      */
     private function buildBulkCapability(): array
@@ -682,6 +744,8 @@ class McpDiscoveryService
 
     /**
      * Build the webhooks capability detail
+     *
+     * @SuppressWarnings(PHPMD.UnusedPrivateMethod)
      *
      * @return array<string, mixed> Capability detail with endpoints and context
      */
@@ -735,6 +799,8 @@ class McpDiscoveryService
     /**
      * Build the chat capability detail
      *
+     * @SuppressWarnings(PHPMD.UnusedPrivateMethod)
+     *
      * @return array<string, mixed> Capability detail with endpoints and context
      */
     private function buildChatCapability(): array
@@ -781,6 +847,8 @@ class McpDiscoveryService
 
     /**
      * Build the views capability detail
+     *
+     * @SuppressWarnings(PHPMD.UnusedPrivateMethod)
      *
      * @return array<string, mixed> Capability detail with endpoints and context
      */

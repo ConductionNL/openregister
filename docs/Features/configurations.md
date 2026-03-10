@@ -8,29 +8,36 @@ A Configuration is a container that groups together:
 - **Registers**: Collections of objects that share similar characteristics
 - **Schemas**: Data structure definitions that define object properties
 - **Objects**: Individual data items (optional)
+- **Mappings**: Data transformation rules for converting between formats (see [Mappings](mappings.md))
 
 ```mermaid
 graph TD
     A[Configuration] --> B[Registers]
     A --> C[Schemas]
     A --> D[Objects]
-    
+    A --> E[Mappings]
+
     B --> B1[Register 1]
     B --> B2[Register 2]
     B --> B3[Register N]
-    
+
     C --> C1[Schema 1]
     C --> C2[Schema 2]
     C --> C3[Schema N]
-    
+
     D --> D1[Object 1]
     D --> D2[Object 2]
     D --> D3[Object N]
-    
+
+    E --> E1[Mapping 1]
+    E --> E2[Mapping 2]
+    E --> E3[Mapping N]
+
     style A fill:#e3f2fd
     style B fill:#fff3e0
     style C fill:#ffe0b2
     style D fill:#c8e6c9
+    style E fill:#f3e5f5
 ```
 
 ## Key Concepts
@@ -46,6 +53,7 @@ Each configuration has the following properties:
 - **Registers**: Array of register IDs that are part of this configuration
 - **Schemas**: Array of schema IDs that are part of this configuration
 - **Objects**: Array of object IDs that are part of this configuration (optional)
+- **Mappings**: Array of mapping IDs imported by this configuration
 - **Version**: Configuration version for tracking changes
 - **Created/Updated**: Timestamps for auditing
 

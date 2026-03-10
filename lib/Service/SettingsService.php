@@ -563,7 +563,7 @@ class SettingsService
      */
     public function clearCache(?string $cacheType=null): array
     {
-        return $this->cacheSettingsHandler->clearCache($cacheType);
+        return $this->cacheSettingsHandler->clearCache($cacheType ?? 'all');
     }//end clearCache()
 
     /**

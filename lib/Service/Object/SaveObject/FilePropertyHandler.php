@@ -1057,7 +1057,7 @@ class FilePropertyHandler
     ): void {
         $errorPrefix = "File at $propertyName";
         if ($index !== null) {
-            $errorPrefix = "File at $propertyName[$index]";
+            $errorPrefix = "File at {$propertyName}[{$index}]";
         }
 
         // Security: Block executable files (unless explicitly allowed).

@@ -458,7 +458,7 @@ class MetaDataFacetHandler
             $orConditions->add(
                 $queryBuilder->expr()->in(
                     'id',
-                    $queryBuilder->createNamedParameter($integerIds, \Doctrine\DBAL\Connection::PARAM_INT_ARRAY)
+                    $queryBuilder->createNamedParameter($integerIds, IQueryBuilder::PARAM_INT_ARRAY)
                 )
             );
         }
@@ -468,7 +468,7 @@ class MetaDataFacetHandler
             $orConditions->add(
                 $queryBuilder->expr()->in(
                     'uuid',
-                    $queryBuilder->createNamedParameter($stringIds, \Doctrine\DBAL\Connection::PARAM_STR_ARRAY)
+                    $queryBuilder->createNamedParameter($stringIds, IQueryBuilder::PARAM_STR_ARRAY)
                 )
             );
         }
@@ -563,7 +563,7 @@ class MetaDataFacetHandler
         $queryBuilder->andWhere(
             $queryBuilder->expr()->in(
                 $field,
-                $queryBuilder->createNamedParameter($value, \Doctrine\DBAL\Connection::PARAM_STR_ARRAY)
+                $queryBuilder->createNamedParameter($value, IQueryBuilder::PARAM_STR_ARRAY)
             )
         );
     }//end applyInArrayFilter()

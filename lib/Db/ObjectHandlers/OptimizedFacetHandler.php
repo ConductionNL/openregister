@@ -345,7 +345,7 @@ class OptimizedFacetHandler
         if ($hasIds === true) {
             $idsParam = $queryBuilder->createNamedParameter(
                 $baseQuery['_ids'],
-                \Doctrine\DBAL\Connection::PARAM_INT_ARRAY
+                IQueryBuilder::PARAM_INT_ARRAY
             );
             $queryBuilder->andWhere(
                 $queryBuilder->expr()->in('id', $idsParam)

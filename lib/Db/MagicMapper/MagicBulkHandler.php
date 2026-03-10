@@ -103,6 +103,8 @@ class MagicBulkHandler
      * @return (false|int|mixed|null|string)[][] Array of prepared object data
      *
      * @psalm-return list<non-empty-array<string, false|int|mixed|null|string>>
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity) Bulk preparation requires handling multiple data type scenarios
      */
     private function prepareObjectsForDynamicTable(array $objects, Register $register, Schema $schema): array
     {
@@ -182,9 +184,7 @@ class MagicBulkHandler
 
             // Map ALL object properties to columns (camelCase → snake_case).
             // Properties can be at top level OR in 'object' key (structured format).
-            $propertySource   = $object['object'] ?? $object;
-            $schemaProperties = $schema->getProperties() ?? [];
-
+            $propertySource = $object['object'] ?? $object;
             foreach ($propertySource as $propertyName => $value) {
                 // Skip metadata (already handled) and @self.
                 if ($propertyName === '@self' || str_starts_with($propertyName, '_') === true) {
@@ -488,7 +488,7 @@ class MagicBulkHandler
 
         $uuids      = array_column($filteredChunk, '_uuid');
         $platform   = $this->db->getDatabasePlatform();
-        $isPostgres = $platform->getName() === 'postgresql';
+        $isPostgres = $platform instanceof \Doctrine\DBAL\Platforms\PostgreSQLPlatform;
 
         // Get full table name with hardcoded prefix.
         $fullTableName = 'oc_'.$tableName;
@@ -702,7 +702,7 @@ class MagicBulkHandler
     {
         try {
             $platform   = $this->db->getDatabasePlatform();
-            $isPostgres = $platform->getName() === 'postgresql';
+            $isPostgres = $platform instanceof \Doctrine\DBAL\Platforms\PostgreSQLPlatform;
 
             // Get full table name with hardcoded prefix.
             $fullTableName = 'oc_'.$tableName;
