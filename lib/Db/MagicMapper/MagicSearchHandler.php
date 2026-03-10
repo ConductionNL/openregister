@@ -226,14 +226,14 @@ class MagicSearchHandler
                 );
             }
 
-            $queryBuilder->setMaxResults($limit)
-                ->setFirstResult($offset);
-
-            // Apply sorting (skip for count queries).
-            // Pass search term for relevance sorting support.
+            // Apply sorting BEFORE pagination so the query optimizer can use
+            // indexes for ORDER BY … LIMIT instead of sorting the full result set.
             if (empty($order) === false) {
                 $this->applySorting(qb: $queryBuilder, order: $order, schema: $schema, searchTerm: $searchTerm);
             }
+
+            $queryBuilder->setMaxResults($limit)
+                ->setFirstResult($offset);
         }//end if
 
         // Execute query and return results.

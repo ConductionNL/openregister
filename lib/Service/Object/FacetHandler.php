@@ -338,10 +338,13 @@ class FacetHandler
         $strategy     = 'filtered';
         $fallbackUsed = false;
 
-        // **INTELLIGENT FALLBACK**: If no facets and we have restrictive filters, try broader query.
+        // NOTE: The "intelligent fallback" that stripped object field filters and returned
+        // collection-wide facet counts has been removed. It caused #453: after selecting a
+        // Type filter, other facets showed full-dataset counts instead of scoped counts.
+        // Showing empty/scoped facets is correct; showing unscoped counts is misleading.
         if ($totalFacetResults === 0 && $hasRestrictFilter === true) {
             $this->logger->debug(
-                message: '[FacetHandler] Facets empty with restrictive filters, trying collection-wide fallback',
+                message: '[FacetHandler] Facets empty with restrictive filters — returning empty facets (no fallback)',
                 context: [
                     'file'          => __FILE__,
                     'line'          => __LINE__,
@@ -349,35 +352,6 @@ class FacetHandler
                     'totalResults'  => $totalFacetResults,
                 ]
             );
-
-            // Create collection-wide query: keep register/schema context but remove restrictive filters.
-            $collectionQuery = [
-                '@self'           => $facetQuery['@self'] ?? [],
-                '_facets'         => $facetConfig,
-                '_published'      => $facetQuery['_published'] ?? false,
-                '_includeDeleted' => $facetQuery['_includeDeleted'] ?? false,
-            ];
-
-            // Calculate collection-wide facets.
-            $fallbackFacets  = $this->unifiedObjectMapper->getSimpleFacets($collectionQuery);
-            $fallbackResults = $this->countFacetResults(facets: $fallbackFacets);
-
-            if ($fallbackResults > 0) {
-                $facets       = $fallbackFacets;
-                $strategy     = 'collection_fallback';
-                $fallbackUsed = true;
-
-                $this->logger->info(
-                    message: '[FacetHandler] Smart faceting fallback successful',
-                    context: [
-                        'file'            => __FILE__,
-                        'line'            => __LINE__,
-                        'fallbackResults' => $fallbackResults,
-                        'originalResults' => $totalFacetResults,
-                        'collectionQuery' => array_keys($collectionQuery),
-                    ]
-                );
-            }
         }//end if
 
         // **NON-AGGREGATED CLEANUP**: Remove fields from aggregated results that are ONLY configured
