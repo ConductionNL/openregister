@@ -985,40 +985,24 @@ class ObjectEntityMapper extends QBMapper
         if ($useMagic === true) {
             try {
                 $this->logger->debug(
-                    message: '[ObjectEntityMapper] Routing deleteObjects() to MagicMapper',
-                    context: ['file' => __FILE__, 'line' => __LINE__]
+                    message: '[ObjectEntityMapper] Routing deleteObjects() to MagicMapper batch delete',
+                    context: ['file' => __FILE__, 'line' => __LINE__, 'count' => count($uuids)]
                 );
-                $deletedUuids = [];
-                foreach ($uuids as $uuid) {
-                    try {
-                        $unifiedObjectMapper = \OC::$server->get(UnifiedObjectMapper::class);
-                        $object = $unifiedObjectMapper->find(
-                            identifier: $uuid,
-                            register: $register,
-                            schema: $schema
-                        );
 
-                        if ($hardDelete === true) {
-                            // Hard delete: remove from database.
-                            $unifiedObjectMapper->delete($object);
-                        }
+                $magicMapper = \OC::$server->get(MagicMapper::class);
+                $deletedCount = $magicMapper->deleteObjectsByUuids(
+                    register: $register,
+                    schema: $schema,
+                    uuids: $uuids,
+                    hardDelete: $hardDelete
+                );
 
-                        if ($hardDelete === false) {
-                            // Soft delete: set deleted timestamp.
-                            $object->setDeleted(new DateTime());
-                            $unifiedObjectMapper->update($object);
-                        }
+                $this->logger->debug(
+                    message: '[ObjectEntityMapper] MagicMapper batch delete completed',
+                    context: ['file' => __FILE__, 'line' => __LINE__, 'deletedCount' => $deletedCount]
+                );
 
-                        $deletedUuids[] = $uuid;
-                    } catch (Exception $e) {
-                        $this->logger->warning(
-                            message: '[ObjectEntityMapper] Failed to delete object via magic mapper',
-                            context: ['file' => __FILE__, 'line' => __LINE__, 'uuid' => $uuid, 'error' => $e->getMessage()]
-                        );
-                    }//end try
-                }//end foreach
-
-                return $deletedUuids;
+                return $uuids;
             } catch (Exception $e) {
                 // No blob fallback — let errors propagate.
                 throw $e;

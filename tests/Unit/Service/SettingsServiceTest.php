@@ -1383,12 +1383,18 @@ class SettingsServiceTest extends TestCase
      * SettingsService::clearCache(?string) passes null to CacheSettingsHandler::clearCache(string).
      * This is a known type mismatch in production code; we verify the behavior here.
      */
-    public function testRebaseAllComponentsTypeError(): void
+    public function testRebaseAllComponents(): void
     {
-        // rebase() with 'all' calls clearCache(null) which triggers TypeError on the handler.
-        $this->expectException(\TypeError::class);
+        $this->cacheSettingsHandler->expects($this->once())
+            ->method('clearCache')
+            ->with('all')
+            ->willReturn(['success' => true]);
 
-        $this->settingsService->rebase(options: ['components' => ['all']]);
+        $result = $this->settingsService->rebase(options: ['components' => ['all']]);
+
+        $this->assertTrue($result['success']);
+        $this->assertArrayHasKey('solr', $result['rebased']);
+        $this->assertArrayHasKey('cache', $result['rebased']);
     }
 
     /**
@@ -1413,5 +1419,442 @@ class SettingsServiceTest extends TestCase
         $this->assertTrue($result['success']);
         $this->assertSame('Solr configuration rebased', $result['rebased']['solr']['message']);
         $this->assertArrayHasKey('timestamp', $result);
+    }
+
+    /**
+     * Test rebase with default (no options) triggers all components
+     */
+    public function testRebaseDefaultOptionsTriggersAllComponents(): void
+    {
+        $this->cacheSettingsHandler->expects($this->once())
+            ->method('clearCache')
+            ->with('all')
+            ->willReturn(['success' => true]);
+
+        $result = $this->settingsService->rebase();
+
+        $this->assertTrue($result['success']);
+        $this->assertArrayHasKey('solr', $result['rebased']);
+        $this->assertArrayHasKey('cache', $result['rebased']);
+        $this->assertArrayHasKey('timestamp', $result);
+    }
+
+    /**
+     * Test rebase with cache component only
+     */
+    public function testRebaseCacheOnly(): void
+    {
+        $this->cacheSettingsHandler->expects($this->once())
+            ->method('clearCache')
+            ->with('all')
+            ->willReturn(['success' => true]);
+
+        $result = $this->settingsService->rebase(options: ['components' => ['cache']]);
+
+        $this->assertTrue($result['success']);
+        $this->assertArrayHasKey('cache', $result['rebased']);
+        $this->assertArrayNotHasKey('solr', $result['rebased']);
+    }
+
+    // ===== STATS TESTS =====.
+
+    /**
+     * Test getStats returns complete structure when DB fails
+     */
+    public function testGetStatsWithDbFailure(): void
+    {
+        $this->db->method('getQueryBuilder')
+            ->willThrowException(new \Exception('DB connection error'));
+
+        $this->cacheSettingsHandler->method('getCacheStats')
+            ->willReturn(['success' => true]);
+        $this->solrSettingsHandler->method('getSolrDashboardStats')
+            ->willReturn(['numDocs' => 0]);
+
+        $result = $this->settingsService->getStats();
+
+        $this->assertIsArray($result);
+        $this->assertArrayHasKey('warnings', $result);
+        $this->assertArrayHasKey('totals', $result);
+        $this->assertArrayHasKey('system', $result);
+    }
+
+    /**
+     * Test getStats includes system info
+     */
+    public function testGetStatsIncludesSystemInfo(): void
+    {
+        $this->db->method('getQueryBuilder')
+            ->willReturn($this->createMock(\OCP\DB\QueryBuilder\IQueryBuilder::class));
+        $this->db->method('executeQuery')
+            ->willThrowException(new \Exception('No database'));
+        $this->cacheSettingsHandler->method('getCacheStats')
+            ->willReturn([]);
+        $this->solrSettingsHandler->method('getSolrDashboardStats')
+            ->willReturn([]);
+
+        $result = $this->settingsService->getStats();
+
+        $this->assertArrayHasKey('system', $result);
+        $this->assertArrayHasKey('php_version', $result['system']);
+        $this->assertArrayHasKey('memory_limit', $result['system']);
+        $this->assertArrayHasKey('max_execution_time', $result['system']);
+    }
+
+    /**
+     * Test getStats handles Solr exception gracefully
+     */
+    public function testGetStatsHandlesSolrException(): void
+    {
+        $this->db->method('getQueryBuilder')
+            ->willReturn($this->createMock(\OCP\DB\QueryBuilder\IQueryBuilder::class));
+        $this->db->method('executeQuery')
+            ->willThrowException(new \Exception('No database'));
+        $this->cacheSettingsHandler->method('getCacheStats')
+            ->willReturn([]);
+        $this->solrSettingsHandler->method('getSolrDashboardStats')
+            ->willThrowException(new \Exception('Solr down'));
+
+        $result = $this->settingsService->getStats();
+
+        $this->assertArrayHasKey('solr', $result);
+        $this->assertSame('Solr down', $result['solr']['error']);
+    }
+
+    /**
+     * Test getStats handles cache stats exception gracefully
+     */
+    public function testGetStatsHandlesCacheStatsException(): void
+    {
+        $this->db->method('getQueryBuilder')
+            ->willReturn($this->createMock(\OCP\DB\QueryBuilder\IQueryBuilder::class));
+        $this->db->method('executeQuery')
+            ->willThrowException(new \Exception('No database'));
+        $this->cacheSettingsHandler->method('getCacheStats')
+            ->willThrowException(new \Exception('Cache error'));
+        $this->solrSettingsHandler->method('getSolrDashboardStats')
+            ->willReturn([]);
+
+        $result = $this->settingsService->getStats();
+
+        $this->assertArrayHasKey('cache', $result);
+        $this->assertSame('Cache error', $result['cache']['error']);
+    }
+
+    /**
+     * Test getStats includes timestamp
+     */
+    public function testGetStatsIncludesTimestamp(): void
+    {
+        $this->db->method('getQueryBuilder')
+            ->willReturn($this->createMock(\OCP\DB\QueryBuilder\IQueryBuilder::class));
+        $this->db->method('executeQuery')
+            ->willThrowException(new \Exception('No database'));
+        $this->cacheSettingsHandler->method('getCacheStats')->willReturn([]);
+        $this->solrSettingsHandler->method('getSolrDashboardStats')->willReturn([]);
+
+        $result = $this->settingsService->getStats();
+
+        $this->assertArrayHasKey('timestamp', $result);
+        $this->assertArrayHasKey('date', $result);
+    }
+
+    // ===== MASS VALIDATE PARAMETER VALIDATION =====.
+
+    /**
+     * Test massValidateObjects with invalid mode throws exception
+     */
+    public function testMassValidateObjectsInvalidMode(): void
+    {
+        $container = $this->createMock(IAppContainer::class);
+
+        $service = new SettingsService(
+            config: $this->config,
+            auditTrailMapper: $this->auditTrailMapper,
+            cacheFactory: $this->cacheFactory,
+            groupManager: $this->groupManager,
+            logger: $this->logger,
+            organisationMapper: $this->organisationMapper,
+            schemaCacheService: $this->schemaCacheService,
+            facetCacheSvc: $this->facetCacheHandler,
+            searchTrailMapper: $this->searchTrailMapper,
+            userManager: $this->userManager,
+            db: $this->db,
+            container: $container,
+            validOpsHandler: $this->validationOperationsHandler,
+            searchBackendHandler: $this->searchBackendHandler,
+            llmSettingsHandler: $this->llmSettingsHandler,
+            fileSettingsHandler: $this->fileSettingsHandler,
+            objRetentionHandler: $this->objectRetentionHandler,
+            cacheSettingsHandler: $this->cacheSettingsHandler,
+            solrSettingsHandler: $this->solrSettingsHandler,
+            cfgSettingsHandler: $this->configurationSettingsHandler
+        );
+
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessage('Invalid mode parameter');
+
+        $service->massValidateObjects(mode: 'invalid_mode');
+    }
+
+    /**
+     * Test massValidateObjects with invalid batch size (too small)
+     */
+    public function testMassValidateObjectsInvalidBatchSizeTooSmall(): void
+    {
+        $container = $this->createMock(IAppContainer::class);
+
+        $service = new SettingsService(
+            config: $this->config,
+            auditTrailMapper: $this->auditTrailMapper,
+            cacheFactory: $this->cacheFactory,
+            groupManager: $this->groupManager,
+            logger: $this->logger,
+            organisationMapper: $this->organisationMapper,
+            schemaCacheService: $this->schemaCacheService,
+            facetCacheSvc: $this->facetCacheHandler,
+            searchTrailMapper: $this->searchTrailMapper,
+            userManager: $this->userManager,
+            db: $this->db,
+            container: $container,
+            validOpsHandler: $this->validationOperationsHandler,
+            searchBackendHandler: $this->searchBackendHandler,
+            llmSettingsHandler: $this->llmSettingsHandler,
+            fileSettingsHandler: $this->fileSettingsHandler,
+            objRetentionHandler: $this->objectRetentionHandler,
+            cacheSettingsHandler: $this->cacheSettingsHandler,
+            solrSettingsHandler: $this->solrSettingsHandler,
+            cfgSettingsHandler: $this->configurationSettingsHandler
+        );
+
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessage('Invalid batch size');
+
+        $service->massValidateObjects(batchSize: 0);
+    }
+
+    /**
+     * Test massValidateObjects with invalid batch size (too large)
+     */
+    public function testMassValidateObjectsInvalidBatchSizeTooLarge(): void
+    {
+        $container = $this->createMock(IAppContainer::class);
+
+        $service = new SettingsService(
+            config: $this->config,
+            auditTrailMapper: $this->auditTrailMapper,
+            cacheFactory: $this->cacheFactory,
+            groupManager: $this->groupManager,
+            logger: $this->logger,
+            organisationMapper: $this->organisationMapper,
+            schemaCacheService: $this->schemaCacheService,
+            facetCacheSvc: $this->facetCacheHandler,
+            searchTrailMapper: $this->searchTrailMapper,
+            userManager: $this->userManager,
+            db: $this->db,
+            container: $container,
+            validOpsHandler: $this->validationOperationsHandler,
+            searchBackendHandler: $this->searchBackendHandler,
+            llmSettingsHandler: $this->llmSettingsHandler,
+            fileSettingsHandler: $this->fileSettingsHandler,
+            objRetentionHandler: $this->objectRetentionHandler,
+            cacheSettingsHandler: $this->cacheSettingsHandler,
+            solrSettingsHandler: $this->solrSettingsHandler,
+            cfgSettingsHandler: $this->configurationSettingsHandler
+        );
+
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessage('Invalid batch size');
+
+        $service->massValidateObjects(batchSize: 5001);
+    }
+
+    // ===== PURE LOGIC METHOD TESTS (additional coverage) =====.
+
+    /**
+     * Test formatBytes with TB level
+     */
+    public function testFormatBytesTB(): void
+    {
+        // 2 TB = 2 * 1024^4 = 2199023255552
+        $result = $this->settingsService->formatBytes(bytes: 2199023255552);
+        $this->assertSame('2 TB', $result);
+    }
+
+    /**
+     * Test convertToBytes with lowercase suffix
+     */
+    public function testConvertToBytesLowercase(): void
+    {
+        $result = $this->settingsService->convertToBytes(memoryLimit: '512k');
+        $this->assertSame(524288, $result);
+    }
+
+    /**
+     * Test convertToBytes with leading/trailing spaces
+     */
+    public function testConvertToBytesWithSpaces(): void
+    {
+        $result = $this->settingsService->convertToBytes(memoryLimit: ' 128M ');
+        $this->assertSame(134217728, $result);
+    }
+
+    /**
+     * Test maskToken with very long token
+     */
+    public function testMaskTokenVeryLong(): void
+    {
+        $token = str_repeat('a', 100);
+        $result = $this->settingsService->maskToken(token: $token);
+
+        // first 4 + min(20, 100-8)=20 stars + last 4
+        $this->assertSame('aaaa' . str_repeat('*', 20) . 'aaaa', $result);
+        $this->assertSame(28, strlen($result));
+    }
+
+    // ===== COMPARE FIELDS (additional coverage) =====.
+
+    /**
+     * Test compareFields with docValues mismatch
+     */
+    public function testCompareFieldsDocValuesMismatch(): void
+    {
+        $actual = [
+            'status' => ['type' => 'string', 'multiValued' => false, 'docValues' => true],
+        ];
+        $expected = [
+            'status' => ['type' => 'string', 'multiValued' => false, 'docValues' => false],
+        ];
+
+        $result = $this->settingsService->compareFields(actualFields: $actual, expectedFields: $expected);
+
+        $this->assertSame(1, $result['summary']['mismatched_count']);
+        $this->assertContains('docValues', $result['mismatched'][0]['differences']);
+    }
+
+    /**
+     * Test compareFields with empty arrays
+     */
+    public function testCompareFieldsEmpty(): void
+    {
+        $result = $this->settingsService->compareFields(actualFields: [], expectedFields: []);
+
+        $this->assertSame(0, $result['summary']['total_differences']);
+    }
+
+    /**
+     * Test compareFields with all three difference types simultaneously
+     */
+    public function testCompareFieldsAllDifferenceTypes(): void
+    {
+        $actual = [
+            'field_a' => ['type' => 'string', 'multiValued' => true, 'docValues' => true],
+            'field_extra' => ['type' => 'string'],
+        ];
+        $expected = [
+            'field_a' => ['type' => 'text_general', 'multiValued' => false, 'docValues' => false],
+            'field_missing' => ['type' => 'string'],
+        ];
+
+        $result = $this->settingsService->compareFields(actualFields: $actual, expectedFields: $expected);
+
+        $this->assertSame(1, $result['summary']['missing_count']);
+        $this->assertSame(1, $result['summary']['extra_count']);
+        $this->assertSame(1, $result['summary']['mismatched_count']);
+        $this->assertSame(3, $result['summary']['total_differences']);
+
+        // Check mismatch has all three differences.
+        $differences = $result['mismatched'][0]['differences'];
+        $this->assertContains('type', $differences);
+        $this->assertContains('multiValued', $differences);
+        $this->assertContains('docValues', $differences);
+    }
+
+    // ===== DATABASE INFO (additional coverage) =====.
+
+    /**
+     * Test getDatabaseInfo with valid data but no extensions key
+     */
+    public function testGetDatabaseInfoWithNoExtensions(): void
+    {
+        $dbData = json_encode([
+            'database' => [
+                'type' => 'PostgreSQL',
+                'version' => '15.0',
+            ],
+        ]);
+        $this->config->method('getAppValue')
+            ->with('openregister', 'databaseInfo', '')
+            ->willReturn($dbData);
+
+        $result = $this->settingsService->getDatabaseInfo();
+        $this->assertSame('PostgreSQL', $result['type']);
+        $this->assertArrayNotHasKey('extensions', $result);
+    }
+
+    /**
+     * Test hasPostgresExtension returns false when no extensions key
+     */
+    public function testHasPostgresExtensionNoExtensionsKey(): void
+    {
+        $dbData = json_encode([
+            'database' => [
+                'type' => 'PostgreSQL',
+            ],
+        ]);
+        $this->config->method('getAppValue')
+            ->with('openregister', 'databaseInfo', '')
+            ->willReturn($dbData);
+
+        $this->assertFalse($this->settingsService->hasPostgresExtension(extensionName: 'vector'));
+    }
+
+    // ===== HANDLER DELEGATION (additional methods) =====.
+
+    /**
+     * Test clearCache with null cacheType
+     */
+    public function testClearCacheNull(): void
+    {
+        $this->cacheSettingsHandler->expects($this->once())
+            ->method('clearCache')
+            ->with('all')
+            ->willReturn(['success' => true]);
+
+        $result = $this->settingsService->clearCache(null);
+        $this->assertTrue($result['success']);
+    }
+
+    /**
+     * Test updateSearchBackendConfig defaults to 'solr' when no key present
+     */
+    public function testUpdateSearchBackendConfigDefaultsSolr(): void
+    {
+        $this->searchBackendHandler->expects($this->once())
+            ->method('updateSearchBackendConfig')
+            ->with('solr')
+            ->willReturn(['active' => 'solr']);
+
+        $result = $this->settingsService->updateSearchBackendConfig(data: []);
+        $this->assertSame('solr', $result['active']);
+    }
+
+    /**
+     * Test getPostgresExtensions with extensions but no name keys
+     */
+    public function testGetPostgresExtensionsWithMalformedData(): void
+    {
+        $dbData = json_encode([
+            'database' => [
+                'type' => 'PostgreSQL',
+                'extensions' => [['version' => '1.0']],
+            ],
+        ]);
+        $this->config->method('getAppValue')
+            ->with('openregister', 'databaseInfo', '')
+            ->willReturn($dbData);
+
+        $result = $this->settingsService->getPostgresExtensions();
+        $this->assertCount(1, $result);
     }
 }

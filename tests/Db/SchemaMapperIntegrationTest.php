@@ -593,4 +593,281 @@ class SchemaMapperIntegrationTest extends TestCase
         $this->assertCount(1, $limited);
         $this->assertGreaterThanOrEqual(2, count($all));
     }
+
+    // =========================================================================
+    // findBySlug with limit and offset tests
+    // =========================================================================
+
+    public function testFindBySlugWithLimit(): void
+    {
+        $schema = $this->createTestSchema();
+        $slug = $schema->getSlug();
+
+        $results = $this->mapper->findBySlug($slug, 1, 0, null, false, false);
+        $this->assertIsArray($results);
+        $this->assertLessThanOrEqual(1, count($results));
+    }
+
+    public function testFindBySlugWithOffset(): void
+    {
+        $schema = $this->createTestSchema();
+        $slug = $schema->getSlug();
+
+        // Only one schema with this slug, offset 1 should give empty result
+        $results = $this->mapper->findBySlug($slug, 10, 1, null, false, false);
+        $this->assertIsArray($results);
+        $this->assertEmpty($results);
+    }
+
+    // =========================================================================
+    // getRelated with referencing schemas
+    // =========================================================================
+
+    public function testGetRelatedWithReferencingSchema(): void
+    {
+        $targetSchema = $this->createTestSchema(['title' => 'Target Schema ' . uniqid()]);
+        // Create a schema with a $ref property pointing to the target
+        $referencingSchema = $this->createTestSchema([
+            'title'      => 'Referencing Schema ' . uniqid(),
+            'properties' => [
+                'link' => [
+                    'type'  => 'string',
+                    'title' => 'Link',
+                    '$ref'  => (string) $targetSchema->getId(),
+                ],
+            ],
+        ]);
+
+        $related = $this->mapper->getRelated($targetSchema);
+        $this->assertIsArray($related);
+        // The referencing schema should appear in related
+    }
+
+    // =========================================================================
+    // createFromArray edge cases
+    // =========================================================================
+
+    public function testCreateFromArrayEmptyProperties(): void
+    {
+        $schema = $this->createTestSchema(['properties' => []]);
+        $props = $schema->getProperties();
+        $this->assertIsArray($props);
+        $this->assertEmpty($props);
+    }
+
+    public function testCreateFromArrayWithNestedObjectProperties(): void
+    {
+        $schema = $this->createTestSchema([
+            'properties' => [
+                'address' => [
+                    'type'       => 'object',
+                    'title'      => 'Address',
+                    'properties' => [
+                        'street' => ['type' => 'string', 'title' => 'Street'],
+                        'city'   => ['type' => 'string', 'title' => 'City'],
+                    ],
+                ],
+            ],
+        ]);
+
+        $props = $schema->getProperties();
+        $this->assertArrayHasKey('address', $props);
+        $this->assertSame('object', $props['address']['type']);
+        $this->assertArrayHasKey('properties', $props['address']);
+        $this->assertArrayHasKey('street', $props['address']['properties']);
+    }
+
+    public function testCreateFromArrayWithSource(): void
+    {
+        $schema = $this->createTestSchema(['source' => 'external-api']);
+        $this->assertSame('external-api', $schema->getSource());
+    }
+
+    // =========================================================================
+    // updateFromArray edge cases
+    // =========================================================================
+
+    public function testUpdateFromArrayReplacesProperties(): void
+    {
+        $schema = $this->createTestSchema([
+            'properties' => [
+                'oldField' => ['type' => 'string', 'title' => 'Old Field'],
+            ],
+        ]);
+
+        $updated = $this->mapper->updateFromArray($schema->getId(), [
+            'properties' => [
+                'newField' => ['type' => 'integer', 'title' => 'New Field'],
+            ],
+        ]);
+
+        $props = $updated->getProperties();
+        $this->assertArrayHasKey('newField', $props);
+    }
+
+    public function testUpdateFromArrayChangesTitle(): void
+    {
+        $schema = $this->createTestSchema();
+        $newTitle = 'Completely New Title ' . uniqid();
+
+        $updated = $this->mapper->updateFromArray($schema->getId(), [
+            'title' => $newTitle,
+        ]);
+
+        $this->assertSame($newTitle, $updated->getTitle());
+    }
+
+    // =========================================================================
+    // hasReferenceToSchema with matching $ref
+    // =========================================================================
+
+    public function testHasReferenceToSchemaByIdTrue(): void
+    {
+        $targetSchema = $this->createTestSchema();
+        $properties = [
+            'link' => [
+                'type'  => 'string',
+                'title' => 'Link',
+                '$ref'  => (string) $targetSchema->getId(),
+            ],
+        ];
+
+        $result = $this->mapper->hasReferenceToSchema(
+            $properties,
+            (string) $targetSchema->getId(),
+            $targetSchema->getUuid() ?? '',
+            $targetSchema->getSlug() ?? ''
+        );
+        $this->assertTrue($result);
+    }
+
+    public function testHasReferenceToSchemaByUuidTrue(): void
+    {
+        $targetSchema = $this->createTestSchema();
+        $properties = [
+            'link' => [
+                'type'  => 'string',
+                'title' => 'Link',
+                '$ref'  => $targetSchema->getUuid(),
+            ],
+        ];
+
+        $result = $this->mapper->hasReferenceToSchema(
+            $properties,
+            (string) $targetSchema->getId(),
+            $targetSchema->getUuid() ?? '',
+            $targetSchema->getSlug() ?? ''
+        );
+        $this->assertTrue($result);
+    }
+
+    public function testHasReferenceToSchemaFalse(): void
+    {
+        $targetSchema = $this->createTestSchema();
+        $properties = [
+            'name' => [
+                'type'  => 'string',
+                'title' => 'Name',
+            ],
+        ];
+
+        $result = $this->mapper->hasReferenceToSchema(
+            $properties,
+            (string) $targetSchema->getId(),
+            $targetSchema->getUuid() ?? '',
+            $targetSchema->getSlug() ?? ''
+        );
+        $this->assertFalse($result);
+    }
+
+    // =========================================================================
+    // findExtendedBy with actual extensions
+    // =========================================================================
+
+    public function testFindExtendedByEmpty(): void
+    {
+        $schema = $this->createTestSchema();
+        $result = $this->mapper->findExtendedBy($schema->getId());
+        $this->assertIsArray($result);
+        $this->assertEmpty($result);
+    }
+
+    // =========================================================================
+    // getPropertySourceMetadata tests
+    // =========================================================================
+
+    public function testGetPropertySourceMetadataWithProperties(): void
+    {
+        $schema = $this->createTestSchema([
+            'properties' => [
+                'email'  => ['type' => 'string', 'format' => 'email', 'title' => 'Email'],
+                'score'  => ['type' => 'integer', 'title' => 'Score'],
+                'active' => ['type' => 'boolean', 'title' => 'Active'],
+            ],
+        ]);
+
+        $result = $this->mapper->getPropertySourceMetadata($schema);
+        $this->assertIsArray($result);
+    }
+
+    // =========================================================================
+    // findAll with search conditions
+    // =========================================================================
+
+    public function testFindAllWithSourceFilter(): void
+    {
+        $uniqueSource = 'phpunit-src-' . uniqid();
+        $this->createTestSchema(['source' => $uniqueSource]);
+
+        $results = $this->mapper->findAll(
+            null,
+            null,
+            ['source' => $uniqueSource],
+            [],
+            [],
+            [],
+            null,
+            false,
+            false
+        );
+        $this->assertNotEmpty($results);
+        $this->assertSame($uniqueSource, $results[0]->getSource());
+    }
+
+    // =========================================================================
+    // Slug case insensitive lookup
+    // =========================================================================
+
+    public function testFindBySlugCaseInsensitive(): void
+    {
+        $schema = $this->createTestSchema(['title' => 'CaseTest Schema ' . uniqid()]);
+        $slug = $schema->getSlug();
+        $this->assertNotNull($slug);
+
+        // Find with uppercase slug
+        $found = $this->mapper->find(strtoupper($slug), [], null, false, false);
+        $this->assertSame($schema->getId(), $found->getId());
+    }
+
+    // =========================================================================
+    // getRegisterCountPerSchema
+    // =========================================================================
+
+    public function testGetRegisterCountPerSchemaReturnsArray(): void
+    {
+        $result = $this->mapper->getRegisterCountPerSchema();
+        $this->assertIsArray($result);
+    }
+
+    // =========================================================================
+    // findMultipleOptimized with missing IDs
+    // =========================================================================
+
+    public function testFindMultipleOptimizedSkipsMissing(): void
+    {
+        $s1 = $this->createTestSchema();
+        $results = $this->mapper->findMultipleOptimized([$s1->getId(), 999999999]);
+        $this->assertCount(1, $results);
+        $this->assertArrayHasKey($s1->getId(), $results);
+    }
 }

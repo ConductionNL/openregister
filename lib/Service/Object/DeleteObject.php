@@ -294,6 +294,8 @@ class DeleteObject
         bool $_rbac=true,
         bool $_multitenancy=true
     ): bool {
+        $t0 = microtime(true);
+
         // Find object with context (searches both blob and magic tables).
         $context = $this->objectEntityMapper->findAcrossAllSources(
             identifier: $uuid,
@@ -303,6 +305,9 @@ class DeleteObject
         );
         $object  = $context['object'];
 
+        $t1 = microtime(true);
+        $this->logger->warning('[DELETE-PERF] findAcrossAllSources: ' . round(($t1 - $t0) * 1000) . 'ms uuid=' . $uuid);
+
         // Referential integrity check: only for root deletions (not cascade sub-deletions).
         if ($originalObjectId === null) {
             $schemaId = $object->getSchema();
@@ -311,7 +316,10 @@ class DeleteObject
             if ($schemaId !== null
                 && $this->integrityService->hasIncomingOnDeleteReferences($schemaId) === true
             ) {
+                $t2      = microtime(true);
                 $analysis = $this->integrityService->canDelete($object);
+                $t3      = microtime(true);
+                $this->logger->warning('[DELETE-PERF] canDelete (analysis): ' . round(($t3 - $t2) * 1000) . 'ms cascadeTargets=' . count($analysis->cascadeTargets));
 
                 if ($analysis->deletable === false) {
                     // Log RESTRICT block to audit trail before throwing exception.
@@ -354,6 +362,7 @@ class DeleteObject
                     $triggerSchemaSlug = $contextSchema->getSlug();
                 }
 
+                $t4 = microtime(true);
                 $this->integrityService->applyDeletionActions(
                     $analysis,
                     $userId,
@@ -361,12 +370,15 @@ class DeleteObject
                     $activeOrganisation,
                     $triggerSchemaSlug
                 );
+                $t5 = microtime(true);
+                $this->logger->warning('[DELETE-PERF] applyDeletionActions: ' . round(($t5 - $t4) * 1000) . 'ms');
             }//end if
 
             // Legacy cascade: handle old-style cascade: true properties.
             $contextRegister = $context['register'] ?? null;
             $contextSchema   = $context['schema'] ?? null;
 
+            $t6 = microtime(true);
             if ($contextRegister instanceof Register && $contextSchema instanceof Schema) {
                 $this->cascadeDeleteObjects(
                     register: $contextRegister,
@@ -375,10 +387,17 @@ class DeleteObject
                     originalObjectId: $uuid
                 );
             }
+
+            $t7 = microtime(true);
+            $this->logger->warning('[DELETE-PERF] legacyCascade: ' . round(($t7 - $t6) * 1000) . 'ms');
         }//end if
 
         try {
-            return $this->delete(object: $object);
+            $t8     = microtime(true);
+            $result = $this->delete(object: $object);
+            $t9     = microtime(true);
+            $this->logger->warning('[DELETE-PERF] selfDelete: ' . round(($t9 - $t8) * 1000) . 'ms total=' . round(($t9 - $t0) * 1000) . 'ms');
+            return $result;
         } catch (Exception $e) {
             $this->logger->warning(
                 message: '[DeleteObject] Delete failed',

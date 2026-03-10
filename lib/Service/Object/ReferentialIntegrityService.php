@@ -31,6 +31,8 @@ use OCA\OpenRegister\Db\AuditTrail;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\ObjectEntityMapper;
+use OCA\OpenRegister\Db\Register;
+use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Dto\DeletionAnalysis;
@@ -48,7 +50,6 @@ use Symfony\Component\Uid\Uuid;
  */
 class ReferentialIntegrityService
 {
-
     /**
      * Maximum depth for graph walking to prevent infinite recursion in pathological configs.
      *
@@ -85,6 +86,13 @@ class ReferentialIntegrityService
     private ?array $schemaCache = null;
 
     /**
+     * Cached schema-to-register mapping: schema ID => Register entity.
+     *
+     * @var array|null
+     */
+    private ?array $schemaRegisterMap = null;
+
+    /**
      * Constructor for ReferentialIntegrityService.
      *
      * @param SchemaMapper       $schemaMapper       Schema data mapper.
@@ -94,6 +102,7 @@ class ReferentialIntegrityService
      */
     public function __construct(
         private readonly SchemaMapper $schemaMapper,
+        private readonly RegisterMapper $registerMapper,
         private readonly ObjectEntityMapper $objectEntityMapper,
         private readonly AuditTrailMapper $auditTrailMapper,
         private readonly LoggerInterface $logger
@@ -111,7 +120,9 @@ class ReferentialIntegrityService
      */
     public function canDelete(ObjectEntity $object): DeletionAnalysis
     {
+        $t0 = microtime(true);
         $this->ensureRelationIndex();
+        $t1 = microtime(true);
 
         $schemaId = $object->getSchema();
         if ($schemaId === null) {
@@ -122,6 +133,9 @@ class ReferentialIntegrityService
         if (isset($this->relationIndex[$schemaId]) === false) {
             return DeletionAnalysis::empty();
         }
+
+        $depCount = count($this->relationIndex[$schemaId] ?? []);
+        $this->logger->warning('[DELETE-PERF] canDelete ensureRelationIndex: ' . round(($t1 - $t0) * 1000) . 'ms, deps=' . $depCount . ', schemaRegisterMap=' . count($this->schemaRegisterMap ?? []));
 
         $visited = [];
         return $this->walkDeletionGraph(object: $object, visited: $visited);
@@ -146,8 +160,8 @@ class ReferentialIntegrityService
         DeletionAnalysis $analysis,
         string $userId,
         string $cascadeSource,
-        ?string $organisationId=null,
-        ?string $triggerSchemaSlug=null
+        ?string $organisationId = null,
+        ?string $triggerSchemaSlug = null
     ): void {
         // 1. Apply SET_NULL targets first (objects survive with cleared reference).
         foreach ($analysis->nullifyTargets as $target) {
@@ -187,29 +201,17 @@ class ReferentialIntegrityService
             );
         }
 
-        // 3. Apply CASCADE targets (deepest first = reverse order, since graph walk adds parent before child).
+        // 3. Apply CASCADE targets in batch (deepest first = reverse order).
         $cascadeTargets = array_reverse($analysis->cascadeTargets);
-        foreach ($cascadeTargets as $target) {
-            $this->applyCascadeDelete(
-                target: $target,
+
+        if (empty($cascadeTargets) === false) {
+            $this->applyBatchCascadeDelete(
+                cascadeTargets: $cascadeTargets,
                 userId: $userId,
                 cascadeSource: $cascadeSource,
-                organisationId: $organisationId
+                triggerSchemaSlug: $triggerSchemaSlug
             );
-            $this->logIntegrityAction(
-                action: 'referential_integrity.cascade_delete',
-                objectUuid: $target['objectUuid'],
-                schemaId: $target['schema'] ?? null,
-                registerId: null,
-                changed: [
-                    'deletedBecause' => 'cascade',
-                    'triggerObject'  => $cascadeSource,
-                    'triggerSchema'  => $triggerSchemaSlug,
-                    'property'       => $target['property'],
-                ],
-                userId: $userId
-            );
-        }//end foreach
+        }
     }//end applyDeletionActions()
 
     /**
@@ -297,8 +299,9 @@ class ReferentialIntegrityService
             return;
         }
 
-        $this->relationIndex = [];
-        $this->schemaCache   = [];
+        $this->relationIndex   = [];
+        $this->schemaCache     = [];
+        $this->schemaRegisterMap = [];
 
         try {
             $allSchemas = $this->schemaMapper->findAll(
@@ -311,6 +314,48 @@ class ReferentialIntegrityService
                 context: ['file' => __FILE__, 'line' => __LINE__, 'error' => $e->getMessage()]
             );
             return;
+        }
+
+        // Build schema-to-register map by scanning magic table names.
+        // Tables follow convention: openregister_table_{registerId}_{schemaId}.
+        try {
+            $allRegisters = $this->registerMapper->findAll(
+                _rbac: false,
+                _multitenancy: false
+            );
+            $registerCache = [];
+            foreach ($allRegisters as $register) {
+                $registerCache[(string) $register->getId()] = $register;
+            }
+
+            $db     = \OC::$server->getDatabaseConnection();
+            $stmt   = $db->prepare(
+                "SELECT table_name FROM information_schema.tables "
+                . "WHERE table_name LIKE 'oc_openregister_table_%' AND table_schema = current_schema()"
+            );
+            $stmt->execute();
+            $tables = [];
+            while ($row = $stmt->fetch()) {
+                // Strip oc_ prefix to match naming convention.
+                $tables[] = substr($row['table_name'], 3);
+            }
+            foreach ($tables as $tableName) {
+                // Parse: openregister_table_{registerId}_{schemaId}.
+                if (preg_match('/^openregister_table_(\d+)_(\d+)$/', $tableName, $m) === 1) {
+                    $regId    = $m[1];
+                    $schemaId = $m[2];
+                    if (isset($registerCache[$regId]) === true
+                        && isset($this->schemaRegisterMap[$schemaId]) === false
+                    ) {
+                        $this->schemaRegisterMap[$schemaId] = $registerCache[$regId];
+                    }
+                }
+            }
+        } catch (\Exception $e) {
+            $this->logger->debug(
+                message: '[ReferentialIntegrity] Failed to build schema-register map',
+                context: ['error' => $e->getMessage()]
+            );
         }
 
         foreach ($allSchemas as $schema) {
@@ -451,8 +496,8 @@ class ReferentialIntegrityService
     private function walkDeletionGraph(
         ObjectEntity $object,
         array &$visited,
-        array $chain=[],
-        int $depth=0
+        array $chain = [],
+        int $depth = 0
     ): DeletionAnalysis {
         // Cycle detection.
         $uuid = $object->getUuid();
@@ -485,12 +530,15 @@ class ReferentialIntegrityService
 
         foreach ($dependents as $dep) {
             // Find actual objects of the dependent schema that reference this object's UUID.
+            $tFind = microtime(true);
             $referencingObjects = $this->findReferencingObjects(
                 sourceSchemaId: $dep['sourceSchemaId'],
                 propertyName: $dep['property'],
                 targetUuid: $uuid,
                 isArray: $dep['isArray']
             );
+            $tFindEnd = microtime(true);
+            $this->logger->warning('[DELETE-PERF] findReferencingObjects: ' . round(($tFindEnd - $tFind) * 1000) . 'ms schema=' . $dep['sourceSchemaId'] . ' prop=' . $dep['property'] . ' results=' . count($referencingObjects));
 
             foreach ($referencingObjects as $refObj) {
                 // Skip already soft-deleted objects.
@@ -515,6 +563,7 @@ class ReferentialIntegrityService
                     case 'CASCADE':
                         $cascadeTargets[] = [
                             'objectUuid' => $refObj->getUuid(),
+                            'register'   => $refObj->getRegister(),
                             'schema'     => $dep['sourceSchemaId'],
                             'property'   => $dep['property'],
                             'chain'      => $currentChain,
@@ -534,10 +583,11 @@ class ReferentialIntegrityService
                         break;
 
                     case 'SET_NULL':
-                        if ($this->isRequiredProperty(
-                            schemaId: $dep['sourceSchemaId'],
-                            propertyName: $dep['property']
-                        ) === true
+                        if (
+                            $this->isRequiredProperty(
+                                schemaId: $dep['sourceSchemaId'],
+                                propertyName: $dep['property']
+                            ) === true
                         ) {
                             // Falls back to RESTRICT.
                             $blockers[] = [
@@ -565,10 +615,11 @@ class ReferentialIntegrityService
                         );
                         if ($defaultValue === null) {
                             // Falls back to SET_NULL → RESTRICT chain.
-                            if ($this->isRequiredProperty(
-                                schemaId: $dep['sourceSchemaId'],
-                                propertyName: $dep['property']
-                            ) === true
+                            if (
+                                $this->isRequiredProperty(
+                                    schemaId: $dep['sourceSchemaId'],
+                                    propertyName: $dep['property']
+                                ) === true
                             ) {
                                 $blockers[] = [
                                     'objectUuid' => $refObj->getUuid(),
@@ -632,8 +683,33 @@ class ReferentialIntegrityService
         string $targetUuid,
         bool $isArray
     ): array {
-        // Use findByRelation which searches across blob and magic tables for UUID references.
-        // Then filter to only objects of the expected schema that have the UUID in the right property.
+        $candidates = [];
+
+        // Optimized path: search directly in the specific magic table using the property column.
+        $register = $this->schemaRegisterMap[$sourceSchemaId] ?? null;
+        $schema   = $this->schemaCache[$sourceSchemaId] ?? null;
+
+        if ($register !== null && $schema !== null) {
+            try {
+                $candidates = $this->findReferencingInMagicTable(
+                    register: $register,
+                    schema: $schema,
+                    propertyName: $propertyName,
+                    targetUuid: $targetUuid,
+                    isArray: $isArray
+                );
+                // Direct match: no further filtering needed.
+                return $candidates;
+            } catch (\Exception $e) {
+                $this->logger->debug(
+                    message: '[ReferentialIntegrity] Targeted magic table search failed, falling back',
+                    context: ['schemaId' => $sourceSchemaId, 'error' => $e->getMessage()]
+                );
+                $candidates = [];
+            }
+        }
+
+        // Fallback: broad search across all sources.
         try {
             $candidates = $this->objectEntityMapper->findByRelation(
                 search: $targetUuid,
@@ -688,6 +764,103 @@ class ReferentialIntegrityService
      *
      * @return bool True if the property is required.
      */
+    /**
+     * Search a specific magic table for objects whose property column contains the target UUID.
+     *
+     * Queries the property column directly (not _relations JSONB), avoiding full-table scans.
+     * For scalar properties, uses an exact match; for array properties, uses JSON containment.
+     *
+     * @param Register $register    The register entity.
+     * @param Schema   $schema      The schema entity.
+     * @param string   $propertyName The property holding the reference.
+     * @param string   $targetUuid  The UUID being referenced.
+     * @param bool     $isArray     Whether the property is an array type.
+     *
+     * @return ObjectEntity[] Matching objects.
+     */
+    /**
+     * Search a specific magic table for objects whose property column contains the target UUID.
+     *
+     * Queries the property column directly (not _relations JSONB), avoiding full-table scans.
+     * Constructs minimal ObjectEntity objects from the results for use in cascade analysis.
+     *
+     * @param Register $register    The register entity.
+     * @param Schema   $schema      The schema entity.
+     * @param string   $propertyName The property holding the reference.
+     * @param string   $targetUuid  The UUID being referenced.
+     * @param bool     $isArray     Whether the property is an array type.
+     *
+     * @return ObjectEntity[] Matching objects.
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity) Handles PostgreSQL/MySQL and array/scalar variants
+     */
+    private function findReferencingInMagicTable(
+        Register $register,
+        Schema $schema,
+        string $propertyName,
+        string $targetUuid,
+        bool $isArray
+    ): array {
+        $fullTableName = 'oc_openregister_table_' . $register->getId() . '_' . $schema->getId();
+
+        // Convert camelCase property name to snake_case column name and quote it.
+        $columnName  = strtolower(preg_replace('/[A-Z]/', '_$0', $propertyName));
+        $quotedCol   = '"' . str_replace('"', '""', $columnName) . '"';
+
+        $db         = \OC::$server->getDatabaseConnection();
+        $platform   = $db->getDatabasePlatform();
+        $isPostgres = stripos($platform::class, 'PostgreSQL') !== false;
+
+        if ($isPostgres === true) {
+            $deletedCheck = "(_deleted IS NULL OR _deleted = 'null'::jsonb)";
+        } else {
+            $deletedCheck = '_deleted IS NULL';
+        }
+
+        if ($isArray === true) {
+            if ($isPostgres === true) {
+                $sql = "SELECT _uuid, _register, _schema, _deleted, {$quotedCol} AS _prop
+                        FROM {$fullTableName}
+                        WHERE {$deletedCheck} AND {$quotedCol}::jsonb @> to_jsonb(?::text)
+                        LIMIT 100";
+            } else {
+                $sql = "SELECT _uuid, _register, _schema, _deleted, {$quotedCol} AS _prop
+                        FROM {$fullTableName}
+                        WHERE {$deletedCheck} AND JSON_CONTAINS({$quotedCol}, JSON_QUOTE(?))
+                        LIMIT 100";
+            }
+        } else {
+            $sql = "SELECT _uuid, _register, _schema, _deleted, {$quotedCol} AS _prop
+                    FROM {$fullTableName}
+                    WHERE {$deletedCheck} AND {$quotedCol} = ?
+                    LIMIT 100";
+        }
+
+        $stmt = $db->prepare($sql);
+        $stmt->execute([$targetUuid]);
+        $rows = $stmt->fetchAll();
+
+        $results = [];
+        foreach ($rows as $row) {
+            $entity = new ObjectEntity();
+            $entity->setUuid($row['_uuid']);
+            $entity->setRegister($row['_register'] ?? (string) $register->getId());
+            $entity->setSchema($row['_schema'] ?? (string) $schema->getId());
+
+            $deleted = $row['_deleted'] ?? null;
+            if ($deleted !== null && $deleted !== 'null') {
+                $decoded = is_string($deleted) ? json_decode($deleted, true) : $deleted;
+                $entity->setDeleted(is_array($decoded) ? $decoded : []);
+            }
+
+            // Set object with at least the property that matched.
+            $entity->setObject([$propertyName => $row['_prop'] ?? $targetUuid]);
+            $results[] = $entity;
+        }
+
+        return $results;
+    }//end findReferencingInMagicTable()
+
     private function isRequiredProperty(string $schemaId, string $propertyName): bool
     {
         $schema = $this->schemaCache[$schemaId] ?? null;
@@ -879,62 +1052,100 @@ class ReferentialIntegrityService
     }//end applySetDefault()
 
     /**
-     * Apply CASCADE delete: soft-delete the dependent object with cascade metadata.
+     * Apply CASCADE deletes in batch, grouped by register+schema.
      *
-     * @param array       $target         The cascade target from the DeletionAnalysis.
-     * @param string      $userId         The user performing the deletion.
-     * @param string      $cascadeSource  The UUID of the root object triggering the cascade.
-     * @param string|null $organisationId The active organisation ID.
+     * Groups cascade targets by their register+schema pair, resolves entities
+     * once per group, and calls ObjectEntityMapper::deleteObjects() in bulk.
+     * Falls back to individual deletion for targets without register info.
+     *
+     * @param array       $cascadeTargets   The cascade targets from DeletionAnalysis (already reversed).
+     * @param string      $userId           The user performing the deletion.
+     * @param string      $cascadeSource    The UUID of the root object triggering the cascade.
+     * @param string|null $triggerSchemaSlug Schema slug of the trigger object for logging.
      *
      * @return void
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity) Groups targets and handles entity resolution per group
      */
-    private function applyCascadeDelete(
-        array $target,
+    private function applyBatchCascadeDelete(
+        array $cascadeTargets,
         string $userId,
         string $cascadeSource,
-        ?string $organisationId
+        ?string $triggerSchemaSlug
     ): void {
-        try {
-            $context        = $this->objectEntityMapper->findAcrossAllSources(
-                identifier: $target['objectUuid'],
-                includeDeleted: true,
-                _rbac: false,
-                _multitenancy: false
-            );
-            $object         = $context['object'];
-            $registerEntity = $context['register'];
-            $schemaEntity   = $context['schema'];
+        // Group targets by register+schema for batch deletion.
+        $groups = [];
+        foreach ($cascadeTargets as $target) {
+            $registerId = $target['register'] ?? null;
+            $schemaId   = $target['schema'] ?? null;
 
-            // Skip if already deleted.
-            $deleted = $object->getDeleted();
-            if ($deleted !== null && empty($deleted) === false) {
-                return;
+            if ($registerId !== null && $schemaId !== null) {
+                $groupKey = $registerId . '::' . $schemaId;
+                $groups[$groupKey]['registerId'] = $registerId;
+                $groups[$groupKey]['schemaId']   = $schemaId;
+                $groups[$groupKey]['targets'][]  = $target;
+            } else {
+                // Fallback: targets without register info get their own single-item group.
+                $groups['fallback_' . $target['objectUuid']] = [
+                    'registerId' => $registerId,
+                    'schemaId'   => $schemaId,
+                    'targets'    => [$target],
+                ];
             }
+        }
 
-            $deletionData = [
-                'deletedBy'     => 'cascade',
-                'deletedAt'     => (new DateTime())->format(\DateTime::ATOM),
-                'objectId'      => $object->getUuid(),
-                'organisation'  => $organisationId,
-                'cascadeSource' => $cascadeSource,
-                'cascadeUser'   => $userId,
-            ];
+        // Process each group with batch delete.
+        foreach ($groups as $group) {
+            $uuids = array_map(
+                static fn(array $t): string => $t['objectUuid'],
+                $group['targets']
+            );
 
-            $object->setDeleted($deletionData);
-            $this->objectEntityMapper->update(
-                entity: $object,
-                register: $registerEntity,
-                schema: $schemaEntity
-            );
-        } catch (\Exception $e) {
-            $this->logger->warning(
-                message: '[ReferentialIntegrity] Failed to apply CASCADE delete',
-                context: [
-                    'objectUuid'    => $target['objectUuid'],
-                    'cascadeSource' => $cascadeSource,
-                    'error'         => $e->getMessage(),
-                ]
-            );
-        }//end try
-    }//end applyCascadeDelete()
+            try {
+                $register = null;
+                $schema   = null;
+
+                if ($group['registerId'] !== null) {
+                    $register = $this->registerMapper->find($group['registerId']);
+                }
+
+                if ($group['schemaId'] !== null) {
+                    $schema = $this->schemaMapper->find($group['schemaId']);
+                }
+
+                $this->objectEntityMapper->deleteObjects(
+                    uuids: $uuids,
+                    hardDelete: false,
+                    register: $register,
+                    schema: $schema
+                );
+            } catch (\Exception $e) {
+                $this->logger->warning(
+                    message: '[ReferentialIntegrity] Batch CASCADE delete failed',
+                    context: [
+                        'uuids'         => $uuids,
+                        'cascadeSource' => $cascadeSource,
+                        'error'         => $e->getMessage(),
+                    ]
+                );
+            }//end try
+
+            // Log each target individually for audit trail.
+            foreach ($group['targets'] as $target) {
+                $this->logIntegrityAction(
+                    action: 'referential_integrity.cascade_delete',
+                    objectUuid: $target['objectUuid'],
+                    schemaId: $target['schema'] ?? null,
+                    registerId: $target['register'] ?? null,
+                    changed: [
+                        'deletedBecause' => 'cascade',
+                        'triggerObject'  => $cascadeSource,
+                        'triggerSchema'  => $triggerSchemaSlug,
+                        'property'       => $target['property'],
+                    ],
+                    userId: $userId
+                );
+            }
+        }//end foreach
+    }//end applyBatchCascadeDelete()
 }//end class

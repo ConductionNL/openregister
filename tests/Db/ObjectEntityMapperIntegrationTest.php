@@ -773,4 +773,377 @@ class ObjectEntityMapperIntegrationTest extends TestCase
         $result = $this->mapper->hasJsonFilters(['register' => '1', 'schema' => '2']);
         $this->assertFalse($result);
     }
+
+    // =========================================================================
+    // findAcrossAllSources tests (ObjectEntityMapper level)
+    // =========================================================================
+
+    public function testFindAcrossAllSourcesByUuid(): void
+    {
+        $object = $this->createTestObject();
+
+        $result = $this->mapper->findAcrossAllSources(
+            $object->getUuid(),
+            false,
+            false,
+            false
+        );
+        $this->assertIsArray($result);
+        $this->assertArrayHasKey('object', $result);
+        $this->assertInstanceOf(ObjectEntity::class, $result['object']);
+        $this->assertSame($object->getUuid(), $result['object']->getUuid());
+    }
+
+    public function testFindAcrossAllSourcesReturnsRegisterSchema(): void
+    {
+        $register = $this->createTestRegister();
+        $schema = $this->createTestSchema();
+        $object = $this->createTestObjectDirect($register, $schema);
+
+        $result = $this->mapper->findAcrossAllSources(
+            $object->getUuid(),
+            false,
+            false,
+            false
+        );
+        $this->assertArrayHasKey('register', $result);
+        $this->assertArrayHasKey('schema', $result);
+    }
+
+    public function testFindAcrossAllSourcesNotFoundThrows(): void
+    {
+        $this->expectException(\OCP\AppFramework\Db\DoesNotExistException::class);
+        $this->mapper->findAcrossAllSources('nonexistent-uuid-' . uniqid(), false, false, false);
+    }
+
+    // =========================================================================
+    // findByRelation with actual data
+    // =========================================================================
+
+    public function testFindByRelationWithMatchingObject(): void
+    {
+        $register = $this->createTestRegister();
+        $schema = $this->createTestSchema();
+
+        $searchTerm = 'phpunit-relation-target-' . uniqid();
+
+        $entity = new ObjectEntity();
+        $entity->setUuid(\Symfony\Component\Uid\Uuid::v4()->toRfc4122());
+        $entity->setRegister((string) $register->getId());
+        $entity->setSchema((string) $schema->getId());
+        $entity->setObject(['name' => $searchTerm, 'value' => 42]);
+
+        $inserted = $this->mapper->insertEntity($entity);
+        $this->createdObjectIds[] = $inserted->getId();
+
+        $results = $this->mapper->findByRelation($searchTerm, true, false);
+        $this->assertIsArray($results);
+        // Should find the object containing our search term
+        $this->assertNotEmpty($results);
+    }
+
+    public function testFindByRelationEmptySearch(): void
+    {
+        $results = $this->mapper->findByRelation('');
+        $this->assertIsArray($results);
+        $this->assertEmpty($results);
+    }
+
+    // =========================================================================
+    // searchObjects tests
+    // =========================================================================
+
+    public function testSearchObjectsReturnsArray(): void
+    {
+        $results = $this->mapper->searchObjects([], null, false, false);
+        $this->assertIsArray($results);
+    }
+
+    public function testSearchObjectsWithLimitAndOffset(): void
+    {
+        $this->createTestObject();
+        $this->createTestObject();
+
+        $results = $this->mapper->searchObjects(
+            ['_limit' => 1, '_offset' => 0],
+            null,
+            false,
+            false
+        );
+        $this->assertIsArray($results);
+        $this->assertLessThanOrEqual(1, count($results));
+    }
+
+    // =========================================================================
+    // countSearchObjects tests
+    // =========================================================================
+
+    public function testCountSearchObjects(): void
+    {
+        $this->createTestObject();
+
+        $count = $this->mapper->countSearchObjects([], null, false, false);
+        $this->assertIsInt($count);
+        $this->assertGreaterThanOrEqual(1, $count);
+    }
+
+    // =========================================================================
+    // countAll with both schema and register
+    // =========================================================================
+
+    public function testCountAllWithSchemaAndRegister(): void
+    {
+        $register = $this->createTestRegister();
+        $schema = $this->createTestSchema();
+        $this->createTestObjectDirect($register, $schema);
+
+        $count = $this->mapper->countAll(null, $schema, $register);
+        $this->assertIsInt($count);
+        $this->assertGreaterThanOrEqual(0, $count);
+    }
+
+    // =========================================================================
+    // publishObjectsBySchema tests
+    // =========================================================================
+
+    public function testPublishObjectsBySchema(): void
+    {
+        $schema = $this->createTestSchema();
+        $this->createTestObjectDirect(null, $schema);
+
+        $result = $this->mapper->publishObjectsBySchema($schema->getId(), true);
+        $this->assertIsArray($result);
+        $this->assertArrayHasKey('published_count', $result);
+        $this->assertArrayHasKey('schema_id', $result);
+    }
+
+    // =========================================================================
+    // deleteObjectsBySchema / deleteObjectsByRegister with data
+    // =========================================================================
+
+    public function testDeleteObjectsBySchemaSoftDelete(): void
+    {
+        $schema = $this->createTestSchema();
+        $obj = $this->createTestObjectDirect(null, $schema);
+
+        $result = $this->mapper->deleteObjectsBySchema($schema->getId(), false);
+        $this->assertIsArray($result);
+        $this->assertArrayHasKey('deleted_count', $result);
+
+        // Remove from cleanup since deleted
+        $this->createdObjectIds = array_filter(
+            $this->createdObjectIds,
+            fn($oid) => $oid !== $obj->getId()
+        );
+    }
+
+    // =========================================================================
+    // bulkOwnerDeclaration tests
+    // =========================================================================
+
+    public function testBulkOwnerDeclaration(): void
+    {
+        $this->createTestObject();
+
+        $result = $this->mapper->bulkOwnerDeclaration('phpunit-owner', null, 10);
+        $this->assertIsArray($result);
+        $this->assertArrayHasKey('endTime', $result);
+        $this->assertArrayHasKey('duration', $result);
+    }
+
+    // =========================================================================
+    // findDirectBlobStorage with includeDeleted
+    // =========================================================================
+
+    public function testFindDirectBlobStorageIncludeDeleted(): void
+    {
+        $register = $this->createTestRegister();
+        $schema = $this->createTestSchema();
+        $object = $this->createTestObjectDirect($register, $schema);
+
+        // Soft-delete using a proper JSON object (deleted column is json type expecting array)
+        $db = \OC::$server->get(\OCP\IDBConnection::class);
+        $qb = $db->getQueryBuilder();
+        $deletedJson = json_encode(['date' => (new \DateTime())->format('c'), 'by' => 'phpunit']);
+        $qb->update('openregister_objects')
+            ->set('deleted', $qb->createNamedParameter($deletedJson))
+            ->where($qb->expr()->eq('id', $qb->createNamedParameter($object->getId(), IQueryBuilder::PARAM_INT)));
+        $qb->executeStatement();
+
+        // Without includeDeleted, should throw
+        $thrown = false;
+        try {
+            $this->mapper->findDirectBlobStorage($object->getUuid());
+        } catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
+            $thrown = true;
+        }
+        $this->assertTrue($thrown, 'Expected DoesNotExistException for soft-deleted object');
+
+        // With includeDeleted, should find it
+        $found = $this->mapper->findDirectBlobStorage(
+            $object->getUuid(),
+            null,
+            null,
+            true,
+            false,
+            false
+        );
+        $this->assertSame($object->getUuid(), $found->getUuid());
+    }
+
+    // =========================================================================
+    // findAll with filters
+    // =========================================================================
+
+    public function testFindAllWithSchemaFilter(): void
+    {
+        $register = $this->createTestRegister();
+        $schema = $this->createTestSchema();
+        $this->createTestObject($register, $schema);
+
+        $results = $this->mapper->findAll(
+            10,
+            0,
+            null,
+            null,
+            null,
+            [],
+            null,
+            null,
+            null,
+            false,
+            null,
+            $schema
+        );
+        $this->assertIsArray($results);
+    }
+
+    public function testFindAllWithRegisterFilter(): void
+    {
+        $register = $this->createTestRegister();
+        $schema = $this->createTestSchema();
+        $this->createTestObject($register, $schema);
+
+        $results = $this->mapper->findAll(
+            10,
+            0,
+            null,
+            null,
+            null,
+            [],
+            null,
+            null,
+            null,
+            false,
+            $register,
+            null
+        );
+        $this->assertIsArray($results);
+    }
+
+    // =========================================================================
+    // findMultiple with mixed IDs and UUIDs
+    // =========================================================================
+
+    public function testFindMultipleMixedIdsAndUuids(): void
+    {
+        $o1 = $this->createTestObject();
+        $o2 = $this->createTestObject();
+
+        $results = $this->mapper->findMultiple([$o1->getId(), $o2->getUuid()]);
+        $this->assertIsArray($results);
+        $this->assertGreaterThanOrEqual(1, count($results));
+    }
+
+    public function testFindMultipleEmptyReturnsEmpty(): void
+    {
+        $results = $this->mapper->findMultiple([]);
+        $this->assertIsArray($results);
+        $this->assertEmpty($results);
+    }
+
+    // =========================================================================
+    // insertDirectBlobStorage / updateDirectBlobStorage tests
+    // =========================================================================
+
+    public function testInsertDirectBlobStorage(): void
+    {
+        $register = $this->createTestRegister();
+        $schema = $this->createTestSchema();
+
+        $entity = new ObjectEntity();
+        $entity->setUuid(\Symfony\Component\Uid\Uuid::v4()->toRfc4122());
+        $entity->setRegister((string) $register->getId());
+        $entity->setSchema((string) $schema->getId());
+        $entity->setObject(['name' => 'Direct blob insert ' . uniqid()]);
+
+        $result = $this->mapper->insertDirectBlobStorage($entity);
+        $this->createdObjectIds[] = $result->getId();
+
+        $this->assertNotNull($result->getId());
+        $this->assertNotNull($result->getUuid());
+    }
+
+    public function testUpdateDirectBlobStorage(): void
+    {
+        $object = $this->createTestObject();
+
+        $oldEntity = clone $object;
+        $object->setObject(['name' => 'Updated blob ' . uniqid(), 'value' => 99]);
+        $updated = $this->mapper->updateDirectBlobStorage($object, $oldEntity);
+
+        $this->assertSame($object->getId(), $updated->getId());
+    }
+
+    // =========================================================================
+    // findAllDirectBlobStorage tests
+    // =========================================================================
+
+    public function testFindAllDirectBlobStorage(): void
+    {
+        $this->createTestObject();
+
+        $results = $this->mapper->findAllDirectBlobStorage(5, 0);
+        $this->assertIsArray($results);
+    }
+
+    // =========================================================================
+    // lockObject / unlockObject tests
+    // =========================================================================
+
+    public function testLockAndUnlockObject(): void
+    {
+        $object = $this->createTestObject();
+
+        $lockResult = $this->mapper->lockObject($object->getUuid(), 300);
+        $this->assertIsArray($lockResult);
+        $this->assertArrayHasKey('uuid', $lockResult);
+        $this->assertArrayHasKey('locked', $lockResult);
+
+        $unlocked = $this->mapper->unlockObject($object->getUuid());
+        $this->assertTrue($unlocked);
+    }
+
+    // =========================================================================
+    // getStatisticsGroupedBySchema with data
+    // =========================================================================
+
+    public function testGetStatisticsGroupedBySchemaWithData(): void
+    {
+        $schema = $this->createTestSchema();
+        $this->createTestObjectDirect(null, $schema);
+
+        $stats = $this->mapper->getStatisticsGroupedBySchema([$schema->getId()]);
+        $this->assertIsArray($stats);
+    }
+
+    // =========================================================================
+    // ultraFastBulkSave tests
+    // =========================================================================
+
+    public function testUltraFastBulkSaveEmpty(): void
+    {
+        $result = $this->mapper->ultraFastBulkSave([], []);
+        $this->assertIsArray($result);
+    }
 }

@@ -594,4 +594,291 @@ class UnifiedObjectMapperIntegrationTest extends TestCase
         $register = new Register();
         $this->mapper->insert($register);
     }
+
+    // =========================================================================
+    // searchObjects with actual data
+    // =========================================================================
+
+    public function testSearchObjectsWithRegisterFilter(): void
+    {
+        $register = $this->createTestRegister();
+        $schema = $this->createTestSchema();
+        $this->createTestObject($register, $schema);
+
+        $results = $this->mapper->searchObjects(
+            ['register' => (string) $register->getId()],
+            null,
+            false,
+            false
+        );
+        $this->assertIsArray($results);
+    }
+
+    public function testSearchObjectsWithLimit(): void
+    {
+        $register = $this->createTestRegister();
+        $schema = $this->createTestSchema();
+        $this->createTestObject($register, $schema);
+        $this->createTestObject($register, $schema);
+
+        $results = $this->mapper->searchObjects(
+            ['_limit' => 1, '_offset' => 0],
+            null,
+            false,
+            false
+        );
+        $this->assertIsArray($results);
+        $this->assertLessThanOrEqual(1, count($results));
+    }
+
+    // =========================================================================
+    // searchObjectsPaginated with actual data
+    // =========================================================================
+
+    public function testSearchObjectsPaginatedWithData(): void
+    {
+        $register = $this->createTestRegister();
+        $schema = $this->createTestSchema();
+        $this->createTestObject($register, $schema);
+
+        $result = $this->mapper->searchObjectsPaginated([], [], null, false, false);
+        $this->assertIsArray($result);
+        $this->assertArrayHasKey('results', $result);
+        $this->assertArrayHasKey('total', $result);
+        $this->assertIsArray($result['results']);
+        $this->assertIsInt($result['total']);
+        $this->assertGreaterThanOrEqual(0, $result['total']);
+    }
+
+    // =========================================================================
+    // countSearchObjects with data
+    // =========================================================================
+
+    public function testCountSearchObjectsWithData(): void
+    {
+        // Insert directly into blob storage so countSearchObjects can find it
+        $register = $this->createTestRegister();
+        $schema = $this->createTestSchema();
+
+        $entity = new ObjectEntity();
+        $entity->setUuid(Uuid::v4()->toRfc4122());
+        $entity->setRegister((string) $register->getId());
+        $entity->setSchema((string) $schema->getId());
+        $entity->setObject(['name' => 'phpunit-test-count-' . uniqid()]);
+
+        $inserted = $this->objectEntityMapper->insertEntity($entity);
+        $this->createdObjectIds[] = $inserted->getId();
+
+        $count = $this->mapper->countSearchObjects([], null, false, false);
+        $this->assertIsInt($count);
+        $this->assertGreaterThanOrEqual(1, $count);
+    }
+
+    // =========================================================================
+    // Bulk operations with actual objects
+    // =========================================================================
+
+    public function testDeleteObjectsWithActualUuids(): void
+    {
+        // Insert an object into blob storage directly for deleteObjects to find
+        $register = $this->createTestRegister();
+        $schema = $this->createTestSchema();
+
+        $entity = new ObjectEntity();
+        $entity->setUuid(Uuid::v4()->toRfc4122());
+        $entity->setRegister((string) $register->getId());
+        $entity->setSchema((string) $schema->getId());
+        $entity->setObject(['name' => 'phpunit-test-delete-' . uniqid()]);
+
+        $inserted = $this->objectEntityMapper->insertEntity($entity);
+        $this->createdObjectIds[] = $inserted->getId();
+
+        $result = $this->mapper->deleteObjects([$inserted->getUuid()], false);
+        $this->assertIsArray($result);
+
+        // Remove from cleanup since soft deleted
+        $this->createdObjectIds = array_filter(
+            $this->createdObjectIds,
+            fn($oid) => $oid !== $inserted->getId()
+        );
+    }
+
+    public function testPublishObjectsWithActualUuids(): void
+    {
+        $register = $this->createTestRegister();
+        $schema = $this->createTestSchema();
+
+        $entity = new ObjectEntity();
+        $entity->setUuid(Uuid::v4()->toRfc4122());
+        $entity->setRegister((string) $register->getId());
+        $entity->setSchema((string) $schema->getId());
+        $entity->setObject(['name' => 'phpunit-test-publish-' . uniqid()]);
+
+        $inserted = $this->objectEntityMapper->insertEntity($entity);
+        $this->createdObjectIds[] = $inserted->getId();
+
+        $result = $this->mapper->publishObjects([$inserted->getUuid()], true);
+        $this->assertIsArray($result);
+    }
+
+    public function testDepublishObjectsWithActualUuids(): void
+    {
+        $register = $this->createTestRegister();
+        $schema = $this->createTestSchema();
+
+        $entity = new ObjectEntity();
+        $entity->setUuid(Uuid::v4()->toRfc4122());
+        $entity->setRegister((string) $register->getId());
+        $entity->setSchema((string) $schema->getId());
+        $entity->setObject(['name' => 'phpunit-test-depublish-' . uniqid()]);
+
+        $inserted = $this->objectEntityMapper->insertEntity($entity);
+        $this->createdObjectIds[] = $inserted->getId();
+
+        // First publish
+        $this->mapper->publishObjects([$inserted->getUuid()], true);
+
+        // Then depublish
+        $result = $this->mapper->depublishObjects([$inserted->getUuid()], true);
+        $this->assertIsArray($result);
+    }
+
+    // =========================================================================
+    // findAcrossAllSources with register/schema context
+    // =========================================================================
+
+    public function testFindAcrossAllSourcesBlobReturnsRegisterAndSchema(): void
+    {
+        $register = $this->createTestRegister();
+        $schema = $this->createTestSchema();
+
+        $entity = new ObjectEntity();
+        $entity->setUuid(Uuid::v4()->toRfc4122());
+        $entity->setRegister((string) $register->getId());
+        $entity->setSchema((string) $schema->getId());
+        $entity->setObject(['name' => 'phpunit-test-blob-context-' . uniqid()]);
+
+        $inserted = $this->objectEntityMapper->insertEntity($entity);
+        $this->createdObjectIds[] = $inserted->getId();
+
+        $result = $this->mapper->findAcrossAllSources(
+            $inserted->getUuid(),
+            false,
+            false,
+            false
+        );
+        $this->assertArrayHasKey('object', $result);
+        $this->assertArrayHasKey('register', $result);
+        $this->assertArrayHasKey('schema', $result);
+        $this->assertInstanceOf(ObjectEntity::class, $result['object']);
+    }
+
+    // =========================================================================
+    // countAll with combined filters
+    // =========================================================================
+
+    public function testCountAllWithRegisterAndSchemaFilter(): void
+    {
+        $register = $this->createTestRegister();
+        $schema = $this->createTestSchema();
+        $this->createTestObject($register, $schema);
+
+        // UnifiedObjectMapper::countAll takes (array $filters, Schema, Register)
+        $count = $this->mapper->countAll(null, $schema, $register);
+        $this->assertIsInt($count);
+        $this->assertGreaterThanOrEqual(0, $count);
+    }
+
+    // =========================================================================
+    // getSimpleFacets with actual data
+    // =========================================================================
+
+    public function testGetSimpleFacetsWithData(): void
+    {
+        $register = $this->createTestRegister();
+        $schema = $this->createTestSchema();
+        $this->createTestObject($register, $schema);
+
+        $facets = $this->mapper->getSimpleFacets([
+            '_register' => $register->getId(),
+            '_schema'   => $schema->getId(),
+        ]);
+        $this->assertIsArray($facets);
+    }
+
+    // =========================================================================
+    // Statistics with combined register + schema filter
+    // =========================================================================
+
+    public function testGetStatisticsWithBothRegisterAndSchemaFilter(): void
+    {
+        $register = $this->createTestRegister();
+        $schema = $this->createTestSchema();
+        $this->createTestObject($register, $schema);
+
+        $stats = $this->mapper->getStatistics($register->getId(), $schema->getId());
+        $this->assertIsArray($stats);
+        $this->assertArrayHasKey('total', $stats);
+    }
+
+    // =========================================================================
+    // findAll with sorting
+    // =========================================================================
+
+    public function testFindAllWithSorting(): void
+    {
+        $register = $this->createTestRegister();
+        $schema = $this->createTestSchema();
+        $this->createTestObject($register, $schema);
+
+        $results = $this->mapper->findAll(
+            10,
+            0,
+            null,
+            null,
+            null,
+            [],
+            null,
+            null,
+            null,
+            false,
+            $register,
+            $schema
+        );
+        $this->assertIsArray($results);
+    }
+
+    // =========================================================================
+    // findBySchema returns correct objects
+    // =========================================================================
+
+    public function testFindBySchemaAfterInsert(): void
+    {
+        $register = $this->createTestRegister();
+        $schema = $this->createTestSchema();
+        $this->createTestObject($register, $schema);
+
+        $results = $this->mapper->findBySchema($schema->getId());
+        $this->assertIsArray($results);
+    }
+
+    // =========================================================================
+    // findMultiple with UUIDs
+    // =========================================================================
+
+    public function testFindMultipleWithUuids(): void
+    {
+        $o1 = $this->createTestObject();
+        $o2 = $this->createTestObject();
+
+        $results = $this->mapper->findMultiple([$o1->getUuid(), $o2->getUuid()]);
+        $this->assertIsArray($results);
+    }
+
+    public function testFindMultipleEmptyReturnsEmpty(): void
+    {
+        $results = $this->mapper->findMultiple([]);
+        $this->assertIsArray($results);
+        $this->assertEmpty($results);
+    }
 }

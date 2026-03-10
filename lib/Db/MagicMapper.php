@@ -5796,6 +5796,65 @@ class MagicMapper
     }//end deleteObjectsBySchema()
 
     /**
+     * Batch delete objects by UUID list from a register+schema magic table.
+     *
+     * Performs a single SQL statement for all UUIDs instead of one-by-one.
+     * Supports both soft delete (sets _deleted metadata) and hard delete.
+     *
+     * @param Register $register   The register context.
+     * @param Schema   $schema     The schema context.
+     * @param array    $uuids      Array of object UUIDs to delete.
+     * @param bool     $hardDelete Whether to hard delete (default: soft delete).
+     *
+     * @return int Number of objects deleted.
+     *
+     * @SuppressWarnings(PHPMD.BooleanArgumentFlag)
+     */
+    public function deleteObjectsByUuids(
+        Register $register,
+        Schema $schema,
+        array $uuids,
+        bool $hardDelete=false
+    ): int {
+        if (empty($uuids) === true) {
+            return 0;
+        }
+
+        $tableName = $this->getTableNameForRegisterSchema(register: $register, schema: $schema);
+
+        if ($this->tableExistsForRegisterSchema(register: $register, schema: $schema) === false) {
+            return 0;
+        }
+
+        $uuidCol = self::METADATA_PREFIX.'uuid';
+        $qb      = $this->db->getQueryBuilder();
+
+        if ($hardDelete === true) {
+            $qb->delete($tableName)
+                ->where($qb->expr()->in($uuidCol, $qb->createNamedParameter($uuids, IQueryBuilder::PARAM_STR_ARRAY)));
+
+            return $qb->executeStatement();
+        }
+
+        // Soft delete — set _deleted metadata in a single UPDATE.
+        $deletedMetadata = json_encode(
+            [
+                'time'      => (new DateTime())->format('Y-m-d H:i:s'),
+                'user'      => $this->userSession->getUser()?->getUID() ?? 'system',
+                'reason'    => 'Bulk soft delete via deleteObjectsByUuids',
+                'retention' => 30,
+            ]
+        );
+
+        $qb->update($tableName)
+            ->set(self::METADATA_PREFIX.'deleted', $qb->createNamedParameter($deletedMetadata, \PDO::PARAM_STR))
+            ->where($qb->expr()->in($uuidCol, $qb->createNamedParameter($uuids, IQueryBuilder::PARAM_STR_ARRAY)))
+            ->andWhere($qb->expr()->isNull(self::METADATA_PREFIX.'deleted'));
+
+        return $qb->executeStatement();
+    }//end deleteObjectsByUuids()
+
+    /**
      * Lock object in register+schema table.
      *
      * @param ObjectEntity $entity       The object entity to lock.

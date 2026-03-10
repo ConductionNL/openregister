@@ -279,9 +279,6 @@ class ValidateObject
             return $schemaObject;
         }
 
-        // UUID pattern for related object references.
-        $uuidPat = '^([a-z]+-)?([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}|[0-9a-f]{32}|[0-9]+)$';
-
         foreach ($schemaObject->properties as $propertyName => $propertySchema) {
             // Suppress unused variable warning for $propertyName - only processing schemas.
             unset($propertyName);
@@ -305,6 +302,9 @@ class ValidateObject
      */
     private function transformPropertyForOpenRegister(object $propertySchema): void
     {
+        // UUID pattern for related object references.
+        $uuidPat = '^([a-z]+-)?([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}|[0-9a-f]{32}|[0-9]+)$';
+
         // Handle inversedBy relationships for validation.
         // TODO: Move writeBack, removeAfterWriteBack, and inversedBy from items to config.
         if (($propertySchema->inversedBy ?? null) !== null && $propertySchema->inversedBy !== '') {

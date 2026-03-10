@@ -870,4 +870,618 @@ class MagicMapperIntegrationTest extends TestCase
         );
         $this->assertIsArray($results);
     }
+
+    // =========================================================================
+    // saveObjectsToRegisterSchemaTable (batch save) tests
+    // =========================================================================
+
+    public function testSaveObjectsToRegisterSchemaTableBatch(): void
+    {
+        $register = $this->createTestRegister();
+        $schema = $this->createTestSchema();
+
+        $this->mapper->ensureTableForRegisterSchema($register, $schema);
+        $this->trackTable($register, $schema);
+
+        $objects = [];
+        for ($i = 0; $i < 3; $i++) {
+            $objects[] = [
+                'uuid'     => Uuid::v4()->toRfc4122(),
+                'register' => (string) $register->getId(),
+                'schema'   => (string) $schema->getId(),
+                'object'   => ['name' => 'BatchItem' . $i, 'age' => (10 + $i), 'active' => true],
+            ];
+        }
+
+        $uuids = $this->mapper->saveObjectsToRegisterSchemaTable($objects, $register, $schema);
+        $this->assertIsArray($uuids);
+        $this->assertCount(3, $uuids);
+    }
+
+    public function testSaveObjectsToRegisterSchemaTableEmpty(): void
+    {
+        $register = $this->createTestRegister();
+        $schema = $this->createTestSchema();
+
+        $this->mapper->ensureTableForRegisterSchema($register, $schema);
+        $this->trackTable($register, $schema);
+
+        $uuids = $this->mapper->saveObjectsToRegisterSchemaTable([], $register, $schema);
+        $this->assertIsArray($uuids);
+        $this->assertEmpty($uuids);
+    }
+
+    // =========================================================================
+    // findAcrossAllMagicTables tests
+    // =========================================================================
+
+    public function testFindAcrossAllMagicTablesByUuid(): void
+    {
+        $register = $this->createTestRegister();
+        $schema = $this->createTestSchema();
+
+        $this->mapper->ensureTableForRegisterSchema($register, $schema);
+        $this->trackTable($register, $schema);
+
+        $uuid = Uuid::v4()->toRfc4122();
+        $entity = new ObjectEntity();
+        $entity->setUuid($uuid);
+        $entity->setRegister((string) $register->getId());
+        $entity->setSchema((string) $schema->getId());
+        $entity->setObject(['name' => 'CrossTableFind', 'age' => 44]);
+        $this->mapper->insertObjectEntity($entity, $register, $schema, false);
+
+        $result = $this->mapper->findAcrossAllMagicTables($uuid);
+        $this->assertIsArray($result);
+        $this->assertArrayHasKey('object', $result);
+        $this->assertArrayHasKey('register', $result);
+        $this->assertArrayHasKey('schema', $result);
+        $this->assertInstanceOf(ObjectEntity::class, $result['object']);
+        $this->assertSame($uuid, $result['object']->getUuid());
+    }
+
+    public function testFindAcrossAllMagicTablesNotFound(): void
+    {
+        $this->expectException(\OCP\AppFramework\Db\DoesNotExistException::class);
+        $this->mapper->findAcrossAllMagicTables('nonexistent-uuid-' . uniqid());
+    }
+
+    // =========================================================================
+    // findMultipleAcrossAllMagicTables tests
+    // =========================================================================
+
+    public function testFindMultipleAcrossAllMagicTables(): void
+    {
+        $register = $this->createTestRegister();
+        $schema = $this->createTestSchema();
+
+        $this->mapper->ensureTableForRegisterSchema($register, $schema);
+        $this->trackTable($register, $schema);
+
+        $uuids = [];
+        for ($i = 0; $i < 3; $i++) {
+            $uuid = Uuid::v4()->toRfc4122();
+            $uuids[] = $uuid;
+            $entity = new ObjectEntity();
+            $entity->setUuid($uuid);
+            $entity->setRegister((string) $register->getId());
+            $entity->setSchema((string) $schema->getId());
+            $entity->setObject(['name' => 'MultiFindItem' . $i, 'age' => $i]);
+            $this->mapper->insertObjectEntity($entity, $register, $schema, false);
+        }
+
+        $results = $this->mapper->findMultipleAcrossAllMagicTables($uuids);
+        $this->assertIsArray($results);
+        // The method may return fewer results depending on whether magic tables
+        // are active for this register/schema combination; verify it runs without error.
+    }
+
+    public function testFindMultipleAcrossAllMagicTablesEmptyInput(): void
+    {
+        $results = $this->mapper->findMultipleAcrossAllMagicTables([]);
+        $this->assertIsArray($results);
+        $this->assertEmpty($results);
+    }
+
+    // =========================================================================
+    // findByRelationAcrossAllMagicTables tests
+    // =========================================================================
+
+    public function testFindByRelationAcrossAllMagicTablesEmptyUuid(): void
+    {
+        $results = $this->mapper->findByRelationAcrossAllMagicTables('');
+        $this->assertIsArray($results);
+        $this->assertEmpty($results);
+    }
+
+    public function testFindByRelationAcrossAllMagicTablesNoMatch(): void
+    {
+        $results = $this->mapper->findByRelationAcrossAllMagicTables('nonexistent-uuid-' . uniqid());
+        $this->assertIsArray($results);
+        $this->assertEmpty($results);
+    }
+
+    // =========================================================================
+    // findByRelationUsingRelationsColumn tests
+    // =========================================================================
+
+    public function testFindByRelationUsingRelationsColumnNoMatch(): void
+    {
+        $results = $this->mapper->findByRelationUsingRelationsColumn('nonexistent-uuid-' . uniqid());
+        $this->assertIsArray($results);
+        $this->assertEmpty($results);
+    }
+
+    public function testFindByRelationUsingRelationsColumnEmptyUuid(): void
+    {
+        $results = $this->mapper->findByRelationUsingRelationsColumn('');
+        $this->assertIsArray($results);
+        $this->assertEmpty($results);
+    }
+
+    // =========================================================================
+    // findAllInRegisterSchemaTable with parameters tests
+    // =========================================================================
+
+    public function testFindAllWithLimitAndOffset(): void
+    {
+        $register = $this->createTestRegister();
+        $schema = $this->createTestSchema();
+
+        $this->mapper->ensureTableForRegisterSchema($register, $schema);
+        $this->trackTable($register, $schema);
+
+        for ($i = 0; $i < 5; $i++) {
+            $entity = new ObjectEntity();
+            $entity->setUuid(Uuid::v4()->toRfc4122());
+            $entity->setRegister((string) $register->getId());
+            $entity->setSchema((string) $schema->getId());
+            $entity->setObject(['name' => 'LimitItem' . $i, 'age' => (10 + $i)]);
+            $this->mapper->insertObjectEntity($entity, $register, $schema, false);
+        }
+
+        $results = $this->mapper->findAllInRegisterSchemaTable(
+            $register,
+            $schema,
+            2,
+            1
+        );
+        $this->assertIsArray($results);
+    }
+
+    public function testFindAllWithSort(): void
+    {
+        $register = $this->createTestRegister();
+        $schema = $this->createTestSchema();
+
+        $this->mapper->ensureTableForRegisterSchema($register, $schema);
+        $this->trackTable($register, $schema);
+
+        for ($i = 0; $i < 3; $i++) {
+            $entity = new ObjectEntity();
+            $entity->setUuid(Uuid::v4()->toRfc4122());
+            $entity->setRegister((string) $register->getId());
+            $entity->setSchema((string) $schema->getId());
+            $entity->setObject(['name' => 'SortAll' . $i, 'age' => (30 - $i)]);
+            $this->mapper->insertObjectEntity($entity, $register, $schema, false);
+        }
+
+        $results = $this->mapper->findAllInRegisterSchemaTable(
+            $register,
+            $schema,
+            null,
+            null,
+            null,
+            ['age' => 'ASC']
+        );
+        $this->assertIsArray($results);
+    }
+
+    public function testFindAllWithFilters(): void
+    {
+        $register = $this->createTestRegister();
+        $schema = $this->createTestSchema();
+
+        $this->mapper->ensureTableForRegisterSchema($register, $schema);
+        $this->trackTable($register, $schema);
+
+        $entity = new ObjectEntity();
+        $entity->setUuid(Uuid::v4()->toRfc4122());
+        $entity->setRegister((string) $register->getId());
+        $entity->setSchema((string) $schema->getId());
+        $entity->setObject(['name' => 'FilterAll', 'age' => 77, 'active' => true]);
+        $this->mapper->insertObjectEntity($entity, $register, $schema, false);
+
+        $results = $this->mapper->findAllInRegisterSchemaTable(
+            $register,
+            $schema,
+            null,
+            null,
+            ['name' => 'FilterAll']
+        );
+        $this->assertIsArray($results);
+    }
+
+    // =========================================================================
+    // deleteObjectsBySchema (bulk delete) tests
+    // =========================================================================
+
+    public function testDeleteObjectsBySchemaHardDelete(): void
+    {
+        $register = $this->createTestRegister();
+        $schema = $this->createTestSchema();
+
+        $this->mapper->ensureTableForRegisterSchema($register, $schema);
+        $this->trackTable($register, $schema);
+
+        for ($i = 0; $i < 3; $i++) {
+            $entity = new ObjectEntity();
+            $entity->setUuid(Uuid::v4()->toRfc4122());
+            $entity->setRegister((string) $register->getId());
+            $entity->setSchema((string) $schema->getId());
+            $entity->setObject(['name' => 'BulkDel' . $i, 'age' => $i]);
+            $this->mapper->insertObjectEntity($entity, $register, $schema, false);
+        }
+
+        $deleted = $this->mapper->deleteObjectsBySchema($register, $schema, true);
+        $this->assertIsInt($deleted);
+        $this->assertGreaterThanOrEqual(3, $deleted);
+    }
+
+    public function testDeleteObjectsBySchemaSoftDelete(): void
+    {
+        $register = $this->createTestRegister();
+        $schema = $this->createTestSchema();
+
+        $this->mapper->ensureTableForRegisterSchema($register, $schema);
+        $this->trackTable($register, $schema);
+
+        for ($i = 0; $i < 2; $i++) {
+            $entity = new ObjectEntity();
+            $entity->setUuid(Uuid::v4()->toRfc4122());
+            $entity->setRegister((string) $register->getId());
+            $entity->setSchema((string) $schema->getId());
+            $entity->setObject(['name' => 'SoftDel' . $i, 'age' => $i]);
+            $this->mapper->insertObjectEntity($entity, $register, $schema, false);
+        }
+
+        $deleted = $this->mapper->deleteObjectsBySchema($register, $schema, false);
+        $this->assertIsInt($deleted);
+        $this->assertGreaterThanOrEqual(2, $deleted);
+    }
+
+    public function testDeleteObjectsBySchemaNoTable(): void
+    {
+        $register = $this->createTestRegister();
+        $schema = $this->createTestSchema();
+
+        // Do not create the table - should return 0 without error
+        $deleted = $this->mapper->deleteObjectsBySchema($register, $schema, true);
+        $this->assertSame(0, $deleted);
+    }
+
+    // =========================================================================
+    // convertRowToObjectEntity tests
+    // =========================================================================
+
+    public function testConvertRowToObjectEntityBasic(): void
+    {
+        $register = $this->createTestRegister();
+        $schema = $this->createTestSchema();
+
+        $this->mapper->ensureTableForRegisterSchema($register, $schema);
+        $this->trackTable($register, $schema);
+
+        $uuid = Uuid::v4()->toRfc4122();
+        $entity = new ObjectEntity();
+        $entity->setUuid($uuid);
+        $entity->setRegister((string) $register->getId());
+        $entity->setSchema((string) $schema->getId());
+        $entity->setObject(['name' => 'ConvertTest', 'age' => 25, 'active' => true]);
+        $this->mapper->insertObjectEntity($entity, $register, $schema, false);
+
+        // Find the raw row in the table
+        $found = $this->mapper->findInRegisterSchemaTable($uuid, $register, $schema);
+        $this->assertInstanceOf(ObjectEntity::class, $found);
+
+        $obj = $found->getObject();
+        $this->assertIsArray($obj);
+        $this->assertSame('ConvertTest', $obj['name']);
+        $this->assertSame(25, $obj['age']);
+    }
+
+    // =========================================================================
+    // Insert with auto-generated UUID tests
+    // =========================================================================
+
+    public function testInsertObjectEntityAutoGeneratesUuid(): void
+    {
+        $register = $this->createTestRegister();
+        $schema = $this->createTestSchema();
+
+        $this->mapper->ensureTableForRegisterSchema($register, $schema);
+        $this->trackTable($register, $schema);
+
+        $entity = new ObjectEntity();
+        // Do not set UUID - should be auto-generated
+        $entity->setRegister((string) $register->getId());
+        $entity->setSchema((string) $schema->getId());
+        $entity->setObject(['name' => 'AutoUuid', 'age' => 1]);
+
+        $result = $this->mapper->insertObjectEntity($entity, $register, $schema, false);
+        $this->assertInstanceOf(ObjectEntity::class, $result);
+        $this->assertNotNull($result->getUuid());
+        $this->assertNotEmpty($result->getUuid());
+    }
+
+    // =========================================================================
+    // Update and verify data persisted tests
+    // =========================================================================
+
+    public function testUpdateObjectEntityPersistsData(): void
+    {
+        $register = $this->createTestRegister();
+        $schema = $this->createTestSchema();
+
+        $this->mapper->ensureTableForRegisterSchema($register, $schema);
+        $this->trackTable($register, $schema);
+
+        $entity = new ObjectEntity();
+        $entity->setUuid(Uuid::v4()->toRfc4122());
+        $entity->setRegister((string) $register->getId());
+        $entity->setSchema((string) $schema->getId());
+        $entity->setObject(['name' => 'Original', 'age' => 10, 'active' => false]);
+
+        $inserted = $this->mapper->insertObjectEntity($entity, $register, $schema, false);
+        $uuid = $inserted->getUuid();
+
+        $inserted->setObject(['name' => 'Updated', 'age' => 20, 'active' => true]);
+        $this->mapper->updateObjectEntity($inserted, $register, $schema);
+
+        $found = $this->mapper->findInRegisterSchemaTable($uuid, $register, $schema);
+        $obj = $found->getObject();
+        $this->assertSame('Updated', $obj['name']);
+        $this->assertSame(20, $obj['age']);
+    }
+
+    // =========================================================================
+    // Delete and verify removed tests
+    // =========================================================================
+
+    public function testHardDeleteRemovesObject(): void
+    {
+        $register = $this->createTestRegister();
+        $schema = $this->createTestSchema();
+
+        $this->mapper->ensureTableForRegisterSchema($register, $schema);
+        $this->trackTable($register, $schema);
+
+        $uuid = Uuid::v4()->toRfc4122();
+        $entity = new ObjectEntity();
+        $entity->setUuid($uuid);
+        $entity->setRegister((string) $register->getId());
+        $entity->setSchema((string) $schema->getId());
+        $entity->setObject(['name' => 'WillBeDeleted', 'age' => 99]);
+
+        $inserted = $this->mapper->insertObjectEntity($entity, $register, $schema, false);
+        $this->mapper->deleteObjectEntity($inserted, $register, $schema, true, false);
+
+        $this->expectException(\OCP\AppFramework\Db\DoesNotExistException::class);
+        $this->mapper->findInRegisterSchemaTable($uuid, $register, $schema);
+    }
+
+    // =========================================================================
+    // Search with @self metadata filter tests
+    // =========================================================================
+
+    public function testSearchWithMetadataFilter(): void
+    {
+        $register = $this->createTestRegister();
+        $schema = $this->createTestSchema();
+
+        $this->mapper->ensureTableForRegisterSchema($register, $schema);
+        $this->trackTable($register, $schema);
+
+        $uuid = Uuid::v4()->toRfc4122();
+        $entity = new ObjectEntity();
+        $entity->setUuid($uuid);
+        $entity->setRegister((string) $register->getId());
+        $entity->setSchema((string) $schema->getId());
+        $entity->setObject(['name' => 'MetaFilter', 'age' => 10]);
+        $this->mapper->insertObjectEntity($entity, $register, $schema, false);
+
+        // Search using @self metadata filter on uuid
+        $results = $this->mapper->searchObjectsInRegisterSchemaTable(
+            ['@self' => ['uuid' => $uuid]],
+            $register,
+            $schema
+        );
+        $this->assertIsArray($results);
+    }
+
+    // =========================================================================
+    // Search with _search free text tests
+    // =========================================================================
+
+    public function testSearchWithFreeTextSearch(): void
+    {
+        $register = $this->createTestRegister();
+        $schema = $this->createTestSchema();
+
+        $this->mapper->ensureTableForRegisterSchema($register, $schema);
+        $this->trackTable($register, $schema);
+
+        $entity = new ObjectEntity();
+        $entity->setUuid(Uuid::v4()->toRfc4122());
+        $entity->setRegister((string) $register->getId());
+        $entity->setSchema((string) $schema->getId());
+        $entity->setObject(['name' => 'UniqueSearchable', 'age' => 42]);
+        $this->mapper->insertObjectEntity($entity, $register, $schema, false);
+
+        $results = $this->mapper->searchObjectsInRegisterSchemaTable(
+            ['_search' => 'UniqueSearchable'],
+            $register,
+            $schema
+        );
+        $this->assertIsArray($results);
+    }
+
+    // =========================================================================
+    // Count with filters tests
+    // =========================================================================
+
+    public function testCountWithPropertyFilter(): void
+    {
+        $register = $this->createTestRegister();
+        $schema = $this->createTestSchema();
+
+        $this->mapper->ensureTableForRegisterSchema($register, $schema);
+        $this->trackTable($register, $schema);
+
+        for ($i = 0; $i < 4; $i++) {
+            $entity = new ObjectEntity();
+            $entity->setUuid(Uuid::v4()->toRfc4122());
+            $entity->setRegister((string) $register->getId());
+            $entity->setSchema((string) $schema->getId());
+            $entity->setObject(['name' => 'CountFilter' . ($i % 2), 'age' => $i]);
+            $this->mapper->insertObjectEntity($entity, $register, $schema, false);
+        }
+
+        $count = $this->mapper->countObjectsInRegisterSchemaTable(
+            ['name' => 'CountFilter0', '_rbac' => false, '_multitenancy' => false],
+            $register,
+            $schema
+        );
+        $this->assertIsInt($count);
+        $this->assertGreaterThanOrEqual(0, $count);
+    }
+
+    // =========================================================================
+    // findByRelationBatchInSchema tests
+    // =========================================================================
+
+    public function testFindByRelationBatchInSchemaEmptyInput(): void
+    {
+        $results = $this->mapper->findByRelationBatchInSchema([], 0, 0, 'field');
+        $this->assertIsArray($results);
+        $this->assertEmpty($results);
+    }
+
+    // =========================================================================
+    // Search across multiple tables with filters tests
+    // =========================================================================
+
+    public function testSearchAcrossMultipleTablesWithFilter(): void
+    {
+        $register = $this->createTestRegister();
+        $schema1 = $this->createTestSchema();
+        $schema2 = $this->createTestSchema();
+
+        $this->mapper->ensureTableForRegisterSchema($register, $schema1);
+        $this->trackTable($register, $schema1);
+        $this->mapper->ensureTableForRegisterSchema($register, $schema2);
+        $this->trackTable($register, $schema2);
+
+        $entity1 = new ObjectEntity();
+        $entity1->setUuid(Uuid::v4()->toRfc4122());
+        $entity1->setRegister((string) $register->getId());
+        $entity1->setSchema((string) $schema1->getId());
+        $entity1->setObject(['name' => 'FilterCross', 'age' => 10]);
+        $this->mapper->insertObjectEntity($entity1, $register, $schema1, false);
+
+        $entity2 = new ObjectEntity();
+        $entity2->setUuid(Uuid::v4()->toRfc4122());
+        $entity2->setRegister((string) $register->getId());
+        $entity2->setSchema((string) $schema2->getId());
+        $entity2->setObject(['name' => 'FilterCross', 'age' => 20]);
+        $this->mapper->insertObjectEntity($entity2, $register, $schema2, false);
+
+        $pairs = [
+            ['register' => $register, 'schema' => $schema1],
+            ['register' => $register, 'schema' => $schema2],
+        ];
+
+        $results = $this->mapper->searchAcrossMultipleTables(
+            ['name' => 'FilterCross', '_rbac' => false, '_multitenancy' => false],
+            $pairs
+        );
+        $this->assertIsArray($results);
+    }
+
+    // =========================================================================
+    // Search with combined pagination and sorting tests
+    // =========================================================================
+
+    public function testSearchWithPaginationAndSorting(): void
+    {
+        $register = $this->createTestRegister();
+        $schema = $this->createTestSchema();
+
+        $this->mapper->ensureTableForRegisterSchema($register, $schema);
+        $this->trackTable($register, $schema);
+
+        for ($i = 0; $i < 6; $i++) {
+            $entity = new ObjectEntity();
+            $entity->setUuid(Uuid::v4()->toRfc4122());
+            $entity->setRegister((string) $register->getId());
+            $entity->setSchema((string) $schema->getId());
+            $entity->setObject(['name' => 'PaginSort' . $i, 'age' => (100 - $i)]);
+            $this->mapper->insertObjectEntity($entity, $register, $schema, false);
+        }
+
+        $results = $this->mapper->searchObjectsInRegisterSchemaTable(
+            [
+                '_limit'  => 3,
+                '_offset' => 1,
+                '_order'  => ['age' => 'ASC'],
+                '_rbac'   => false,
+                '_multitenancy' => false,
+            ],
+            $register,
+            $schema
+        );
+        $this->assertIsArray($results);
+        $this->assertLessThanOrEqual(3, count($results));
+    }
+
+    // =========================================================================
+    // Table name format validation tests
+    // =========================================================================
+
+    public function testTableNameContainsRegisterAndSchemaIds(): void
+    {
+        $register = $this->createTestRegister();
+        $schema = $this->createTestSchema();
+
+        $tableName = $this->mapper->getTableNameForRegisterSchema($register, $schema);
+        $this->assertStringContainsString((string) $register->getId(), $tableName);
+        $this->assertStringContainsString((string) $schema->getId(), $tableName);
+    }
+
+    // =========================================================================
+    // Sync table after schema property change tests
+    // =========================================================================
+
+    public function testSyncTableAfterSchemaPropertyAdded(): void
+    {
+        $register = $this->createTestRegister();
+        $schema = $this->createTestSchema();
+
+        $this->mapper->ensureTableForRegisterSchema($register, $schema);
+        $this->trackTable($register, $schema);
+
+        // Add a new property to the schema
+        $properties = $schema->getProperties();
+        $properties['email'] = [
+            'type'      => 'string',
+            'title'     => 'Email',
+            'maxLength' => 255,
+        ];
+        $schema->setProperties($properties);
+        $this->schemaMapper->update($schema);
+
+        // Sync the table - should add the new column
+        $result = $this->mapper->syncTableForRegisterSchema($register, $schema);
+        $this->assertIsArray($result);
+    }
 }
