@@ -67,7 +67,7 @@ function openregisterObjectPlugin() {
 				const registerId = options.register ?? registerStore.registerItem?.id
 				const schemaId = options.schema ?? schemaStore.schemaItem?.id
 				if (!registerId || !schemaId) {
-					throw new Error('Register and schema are required')
+					throw new Error('Register and schema are required.')
 				}
 				const type = `${registerId}-${schemaId}`
 				if (!this.objectTypes.includes(type)) {
