@@ -198,6 +198,25 @@ class PropertyValidatorHandler
             throw new Exception("'hideOnForm' at '$path' must be a boolean");
         }
 
+        // Validate onDelete property if present.
+        if (($property['onDelete'] ?? null) !== null) {
+            // OnDelete is only valid on relation properties (those with $ref).
+            $hasRef = isset($property['$ref']) === true
+                || (isset($property['items']['$ref']) === true);
+            if ($hasRef === false) {
+                throw new Exception("'onDelete' at '$path' is only valid on relation properties with '\$ref'");
+            }
+
+            $validActions = ['CASCADE', 'RESTRICT', 'SET_NULL', 'SET_DEFAULT', 'NO_ACTION'];
+            $upperValue   = strtoupper((string) $property['onDelete']);
+            if (in_array($upperValue, $validActions, true) === false) {
+                $validList = implode(', ', $validActions);
+                throw new Exception(
+                    "Invalid onDelete value '{$property['onDelete']}' at '$path'. Must be one of: {$validList}"
+                );
+            }
+        }
+
         return true;
     }//end validateProperty()
 

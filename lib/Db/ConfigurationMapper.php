@@ -386,7 +386,12 @@ class ConfigurationMapper extends QBMapper
         $this->invalidateConfigurationCache();
 
         // Dispatch update event.
-        $this->eventDispatcher->dispatchTyped(new ConfigurationUpdatedEvent(newConfiguration: $result, oldConfiguration: $oldEntity));
+        $this->eventDispatcher->dispatchTyped(
+            new ConfigurationUpdatedEvent(
+                newConfiguration: $result,
+                oldConfiguration: $oldEntity
+            )
+        );
 
         return $result;
     }//end update()

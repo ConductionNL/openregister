@@ -164,7 +164,7 @@ class NoteService
     public function deleteNote(int $noteId): void
     {
         try {
-            $comment = $this->commentsManager->get((string) $noteId);
+            $this->commentsManager->get((string) $noteId);
             $this->commentsManager->delete((string) $noteId);
         } catch (CommentsNotFoundException $e) {
             throw new Exception('Note not found');

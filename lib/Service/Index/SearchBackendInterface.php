@@ -323,4 +323,40 @@ interface SearchBackendInterface
      * @return array Reindexing results with statistics.
      */
     public function reindexAll(int $maxObjects=0, int $batchSize=1000, ?string $collectionName=null): array;
+
+    /**
+     * Index files by their IDs.
+     *
+     * Used by FileHandler for indexing file content into the search backend.
+     *
+     * @param array       $fileIds        Array of file IDs to index.
+     * @param string|null $collectionName Optional collection name.
+     *
+     * @return array Indexing results with 'indexed', 'failed', and 'errors' keys.
+     */
+    public function indexFiles(array $fileIds, ?string $collectionName=null): array;
+
+    /**
+     * Get file indexing statistics.
+     *
+     * Returns statistics about files indexed in the search backend.
+     *
+     * @return array File indexing statistics.
+     */
+    public function getFileIndexStats(): array;
+
+    /**
+     * Fix mismatched fields in the search backend schema.
+     *
+     * Corrects field type mismatches between the expected schema and the actual
+     * backend configuration. Supports dry-run mode for previewing changes.
+     *
+     * @param array $mismatchedFields Array of mismatched fields with expected config.
+     * @param bool  $dryRun           Whether to only preview changes without applying.
+     *
+     * @return array Results with fixed/failed fields.
+     *
+     * @SuppressWarnings(PHPMD.BooleanArgumentFlag)
+     */
+    public function fixMismatchedFields(array $mismatchedFields, bool $dryRun=false): array;
 }//end interface

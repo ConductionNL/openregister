@@ -47,5 +47,31 @@ if (is_dir($serverTestsLib)) {
     $loader->register(true);
 }
 
+// Provide a minimal OC stub so unit tests can exercise code paths that
+// reference \OC::$server->get() without requiring the full Nextcloud bootstrap.
+// The stub's get() returns null, which is acceptable because all call-sites
+// wrap \OC::$server->get() in try-catch blocks.
+if (class_exists('OC', false) === false) {
+    // phpcs:disable PSR1.Classes.ClassDeclaration.MissingNamespace
+    // phpcs:disable Squiz.Classes.ClassFileName.NoMatch
+    class OC_ServerStub
+    {
+        /** @return mixed */
+        public function get(string $class): mixed
+        {
+            throw new \Exception("OC::server->get({$class}) not available in unit tests");
+        }
+    }
+
+    class OC
+    {
+        /** @var OC_ServerStub */
+        public static $server;
+    }
+
+    OC::$server = new OC_ServerStub();
+    // phpcs:enable
+}
+
 error_log("[UNIT TEST BOOTSTRAP] Minimal bootstrap complete - ready for unit tests");
 

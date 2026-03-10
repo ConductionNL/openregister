@@ -58,6 +58,7 @@ use Psr\Log\LoggerInterface;
  * @SuppressWarnings(PHPMD.CyclomaticComplexity)
  * @SuppressWarnings(PHPMD.NPathComplexity)
  * @SuppressWarnings(PHPMD.ExcessiveClassLength)
+ * @SuppressWarnings(PHPMD.CouplingBetweenObjects)   Facet computation requires schema, register, and query dependencies
  */
 class MagicFacetHandler
 {
@@ -148,7 +149,7 @@ class MagicFacetHandler
      *
      * @var ICache|null
      */
-    private ?ICache $distributedLabelCache = null;
+    private ?ICache $distLabelCache = null;
 
     /**
      * Search handler for building filtered queries (single source of truth for filters).
@@ -180,7 +181,7 @@ class MagicFacetHandler
         // Initialize distributed cache for facet labels.
         if ($this->cacheFactory !== null) {
             try {
-                $this->distributedLabelCache = $this->cacheFactory->createDistributed('openregister_facet_labels');
+                $this->distLabelCache = $this->cacheFactory->createDistributed('openregister_facet_labels');
             } catch (\Exception $e) {
                 $this->logger->warning(
                     message: '[MagicFacetHandler] Failed to create distributed facet label cache: '.$e->getMessage(),
@@ -378,9 +379,6 @@ class MagicFacetHandler
 
         $facets     = [];
         $facetTimes = [];
-
-        // Get all table names.
-        $allTables = array_map(fn($c) => $c['tableName'], $tableConfigs);
 
         // Process object field facets using UNION.
         $objectFacetConfig = array_filter(
@@ -626,7 +624,13 @@ class MagicFacetHandler
         } catch (\Exception $e) {
             $this->logger->warning(
                 message: '[MagicFacetHandler] UNION facet query failed',
-                context: ['file' => __FILE__, 'line' => __LINE__, 'field' => $field, 'error' => $e->getMessage(), 'sql' => $sql]
+                context: [
+                    'file'  => __FILE__,
+                    'line'  => __LINE__,
+                    'field' => $field,
+                    'error' => $e->getMessage(),
+                    'sql'   => $sql,
+                ]
             );
             return ['type' => 'terms', 'buckets' => []];
         }//end try
@@ -1320,7 +1324,13 @@ class MagicFacetHandler
         } catch (\Exception $e) {
             $this->logger->warning(
                 message: '[MagicFacetHandler] Failed to check column existence',
-                context: ['file' => __FILE__, 'line' => __LINE__, 'tableName' => $tableName, 'column' => $columnName, 'error' => $e->getMessage()]
+                context: [
+                    'file'      => __FILE__,
+                    'line'      => __LINE__,
+                    'tableName' => $tableName,
+                    'column'    => $columnName,
+                    'error'     => $e->getMessage(),
+                ]
             );
             return false;
         }//end try
@@ -1366,7 +1376,7 @@ class MagicFacetHandler
                     $queryBuilder->andWhere(
                         $queryBuilder->expr()->in(
                             $columnName,
-                            $queryBuilder->createNamedParameter($value, \Doctrine\DBAL\Connection::PARAM_STR_ARRAY)
+                            $queryBuilder->createNamedParameter($value, IQueryBuilder::PARAM_STR_ARRAY)
                         )
                     );
                     continue;
@@ -1496,7 +1506,7 @@ class MagicFacetHandler
                 $queryBuilder->andWhere(
                     $queryBuilder->expr()->in(
                         $columnName,
-                        $queryBuilder->createNamedParameter($value, \Doctrine\DBAL\Connection::PARAM_STR_ARRAY)
+                        $queryBuilder->createNamedParameter($value, IQueryBuilder::PARAM_STR_ARRAY)
                     )
                 );
                 continue;
@@ -1722,9 +1732,9 @@ class MagicFacetHandler
         }//end if
 
         // STEP 2: Check distributed cache for field-level labels.
-        if ($this->distributedLabelCache !== null && isset($this->warmedFields[$fieldCacheKey]) === false) {
+        if ($this->distLabelCache !== null && isset($this->warmedFields[$fieldCacheKey]) === false) {
             try {
-                $distributedLabels = $this->distributedLabelCache->get($fieldCacheKey);
+                $distributedLabels = $this->distLabelCache->get($fieldCacheKey);
                 if ($distributedLabels !== null && is_array($distributedLabels) === true) {
                     // Store in in-memory cache for this request.
                     $this->fieldLabelCache[$fieldCacheKey] = $distributedLabels;
@@ -1791,9 +1801,9 @@ class MagicFacetHandler
             );
 
             // Persist to distributed cache for future requests.
-            if ($this->distributedLabelCache !== null) {
+            if ($this->distLabelCache !== null) {
                 try {
-                    $this->distributedLabelCache->set(
+                    $this->distLabelCache->set(
                         $fieldCacheKey,
                         $this->fieldLabelCache[$fieldCacheKey],
                         self::FACET_LABEL_CACHE_TTL

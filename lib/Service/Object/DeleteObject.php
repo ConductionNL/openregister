@@ -33,7 +33,10 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\ObjectEntityMapper;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Dto\DeletionAnalysis;
+use OCA\OpenRegister\Exception\ReferentialIntegrityException;
 use OCA\OpenRegister\Service\Object\CacheHandler;
+use OCA\OpenRegister\Service\Object\ReferentialIntegrityService;
 use OCA\OpenRegister\Service\Schemas\SchemaCacheHandler;
 use OCA\OpenRegister\Service\Schemas\FacetCacheHandler;
 use OCA\OpenRegister\Db\AuditTrailMapper;
@@ -83,14 +86,22 @@ class DeleteObject
     private LoggerInterface $logger;
 
     /**
+     * Referential integrity service
+     *
+     * @var ReferentialIntegrityService
+     */
+    private ReferentialIntegrityService $integrityService;
+
+    /**
      * Constructor for DeleteObject handler.
      *
-     * @param ObjectEntityMapper $objectEntityMapper Object entity data mapper.
-     * @param CacheHandler       $cacheHandler       Object cache service for entity and query caching
-     * @param IUserSession       $userSession        User session service for tracking who deletes
-     * @param AuditTrailMapper   $auditTrailMapper   Audit trail mapper for logs
-     * @param SettingsService    $settingsService    Settings service for accessing trail settings
-     * @param LoggerInterface    $logger             Logger for error handling
+     * @param ObjectEntityMapper          $objectEntityMapper Object entity data mapper.
+     * @param CacheHandler                $cacheHandler       Object cache service for entity and query caching
+     * @param IUserSession                $userSession        User session service for tracking who deletes
+     * @param AuditTrailMapper            $auditTrailMapper   Audit trail mapper for logs
+     * @param SettingsService             $settingsService    Settings service for accessing trail settings
+     * @param LoggerInterface             $logger             Logger for error handling
+     * @param ReferentialIntegrityService $integrityService   Referential integrity service
      */
     public function __construct(
         private readonly ObjectEntityMapper $objectEntityMapper,
@@ -98,11 +109,13 @@ class DeleteObject
         private readonly IUserSession $userSession,
         AuditTrailMapper $auditTrailMapper,
         SettingsService $settingsService,
-        LoggerInterface $logger
+        LoggerInterface $logger,
+        ReferentialIntegrityService $integrityService
     ) {
         $this->auditTrailMapper = $auditTrailMapper;
         $this->settingsService  = $settingsService;
         $this->logger           = $logger;
+        $this->integrityService = $integrityService;
     }//end __construct()
 
     /**
@@ -240,7 +253,23 @@ class DeleteObject
     }//end delete()
 
     /**
+     * Perform pre-flight deletion analysis for an object.
+     *
+     * @param ObjectEntity $object The object to analyze.
+     *
+     * @return DeletionAnalysis The analysis result.
+     */
+    public function canDelete(ObjectEntity $object): DeletionAnalysis
+    {
+        return $this->integrityService->canDelete($object);
+    }//end canDelete()
+
+    /**
      * Deletes an object by its UUID with optional cascading.
+     *
+     * Performs referential integrity checks before deletion. If the object's schema
+     * has incoming onDelete references from other schemas, walks the dependency graph
+     * to detect blockers (RESTRICT) and apply actions (CASCADE, SET_NULL, SET_DEFAULT).
      *
      * @param Register|int|string $register         The register containing the object.
      * @param Schema|int|string   $schema           The schema of the object.
@@ -251,6 +280,7 @@ class DeleteObject
      *
      * @return bool Whether the deletion was successful.
      *
+     * @throws ReferentialIntegrityException If deletion is blocked by RESTRICT constraints.
      * @throws Exception If there is an error during deletion.
      *
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag)
@@ -264,50 +294,107 @@ class DeleteObject
         bool $_rbac=true,
         bool $_multitenancy=true
     ): bool {
-        try {
-            // Find object with context (searches both blob and magic tables).
-            $context = $this->objectEntityMapper->findAcrossAllSources(
-                identifier: $uuid,
-                includeDeleted: true,
-                _rbac: $_rbac,
-                _multitenancy: $_multitenancy
-            );
-            $object  = $context['object'];
+        // Find object with context (searches both blob and magic tables).
+        $context = $this->objectEntityMapper->findAcrossAllSources(
+            identifier: $uuid,
+            includeDeleted: true,
+            _rbac: $_rbac,
+            _multitenancy: $_multitenancy
+        );
+        $object  = $context['object'];
 
-            // Handle cascading deletes if this is the root object.
-            // Use register and schema from context if provided, otherwise use passed parameters.
-            if ($originalObjectId === null) {
-                $contextRegister = $context['register'] ?? null;
-                $contextSchema   = $context['schema'] ?? null;
+        // Referential integrity check: only for root deletions (not cascade sub-deletions).
+        if ($originalObjectId === null) {
+            $schemaId = $object->getSchema();
 
-                // Only cascade if we have valid Register and Schema objects.
-                if ($contextRegister instanceof Register && $contextSchema instanceof Schema) {
-                    $this->cascadeDeleteObjects(
-                        register: $contextRegister,
-                        schema: $contextSchema,
-                        object: $object,
-                        originalObjectId: $uuid
+            // Only run referential integrity if this schema has incoming onDelete references.
+            if ($schemaId !== null
+                && $this->integrityService->hasIncomingOnDeleteReferences($schemaId) === true
+            ) {
+                $analysis = $this->integrityService->canDelete($object);
+
+                if ($analysis->deletable === false) {
+                    // Log RESTRICT block to audit trail before throwing exception.
+                    $blockUser    = 'system';
+                    $blockUserObj = $this->userSession->getUser();
+                    if ($blockUserObj !== null) {
+                        $blockUser = $blockUserObj->getUID();
+                    }
+
+                    $this->integrityService->logRestrictBlock(
+                        objectUuid: $uuid,
+                        schemaId: $schemaId,
+                        analysis: $analysis,
+                        userId: $blockUser
                     );
-                }
-            }
 
+                    throw new ReferentialIntegrityException(analysis: $analysis);
+                }
+
+                // Apply referential integrity actions (SET_NULL, SET_DEFAULT, CASCADE).
+                $user   = $this->userSession->getUser();
+                $userId = 'system';
+                if ($user !== null) {
+                    $userId = $user->getUID();
+                }
+
+                $activeOrganisation = null;
+                if ($user !== null) {
+                    try {
+                        $organisationMapper = \OC::$server->get(\OCA\OpenRegister\Db\OrganisationMapper::class);
+                        $activeOrganisation = $organisationMapper->getActiveOrganisationWithFallback($user->getUID());
+                    } catch (\Exception $e) {
+                        $activeOrganisation = null;
+                    }
+                }
+
+                $triggerSchemaSlug = null;
+                $contextSchema     = $context['schema'] ?? null;
+                if ($contextSchema instanceof Schema) {
+                    $triggerSchemaSlug = $contextSchema->getSlug();
+                }
+
+                $this->integrityService->applyDeletionActions(
+                    $analysis,
+                    $userId,
+                    $uuid,
+                    $activeOrganisation,
+                    $triggerSchemaSlug
+                );
+            }//end if
+
+            // Legacy cascade: handle old-style cascade: true properties.
+            $contextRegister = $context['register'] ?? null;
+            $contextSchema   = $context['schema'] ?? null;
+
+            if ($contextRegister instanceof Register && $contextSchema instanceof Schema) {
+                $this->cascadeDeleteObjects(
+                    register: $contextRegister,
+                    schema: $contextSchema,
+                    object: $object,
+                    originalObjectId: $uuid
+                );
+            }
+        }//end if
+
+        try {
             return $this->delete(object: $object);
         } catch (Exception $e) {
             $this->logger->warning(
-                    message: '[DeleteObject] Delete failed',
-                    context: [
-                        'file'  => __FILE__,
-                        'line'  => __LINE__,
-                        'uuid'  => $uuid,
-                        'error' => $e->getMessage(),
-                    ]
-                    );
+                message: '[DeleteObject] Delete failed',
+                context: [
+                    'file'  => __FILE__,
+                    'line'  => __LINE__,
+                    'uuid'  => $uuid,
+                    'error' => $e->getMessage(),
+                ]
+            );
             return false;
         }//end try
     }//end deleteObject()
 
     /**
-     * Handles cascading deletes for related objects.
+     * Handles cascading deletes for related objects (legacy cascade: true).
      *
      * @param Register     $register         The register containing the object.
      * @param Schema       $schema           The schema of the object.

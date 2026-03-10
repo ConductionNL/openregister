@@ -29,6 +29,7 @@ use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Db\ViewMapper;
 use OCA\OpenRegister\Db\ObjectEntityMapper;
+use OCA\OpenRegister\Db\MappingMapper;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\MagicMapper\MagicRbacHandler;
 use OCA\OpenRegister\Db\UnifiedObjectMapper;
@@ -38,6 +39,7 @@ use OCA\OpenRegister\Db\GdprEntityMapper;
 use OCA\OpenRegister\Db\EntityRelationMapper;
 use OCA\OpenRegister\Db\FileTextMapper;
 use OCA\OpenRegister\Db\AuditTrailMapper;
+use OCA\OpenRegister\Db\DeployedWorkflowMapper;
 use OCA\OpenRegister\Db\WebhookMapper;
 use OCA\OpenRegister\Db\WebhookLogMapper;
 use OCA\OpenRegister\Service\SearchTrailService;
@@ -47,6 +49,7 @@ use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\OrganisationService;
 use OCA\OpenRegister\Service\MySQLJsonService;
 use OCA\OpenRegister\Service\ConfigurationService;
+use OCA\OpenRegister\Service\WorkflowEngineRegistry;
 use OCA\OpenRegister\Service\UserService;
 use OCA\OpenRegister\Service\Objects\DataManipulationHandler;
 use OCA\OpenRegister\Service\Objects\DeleteObject;
@@ -140,12 +143,16 @@ use OCA\OpenRegister\Listener\ObjectChangeListener;
 use OCA\OpenRegister\Listener\ObjectCleanupListener;
 use OCA\OpenRegister\Listener\ToolRegistrationListener;
 use OCA\OpenRegister\Listener\WebhookEventListener;
+use OCA\OpenRegister\Listener\HookListener;
 use OCA\OpenRegister\Service\NoteService;
 use OCA\OpenRegister\Service\TaskService;
 use OCP\Comments\CommentsEntityEvent;
 use OCP\Files\Events\Node\NodeCreatedEvent;
 use OCP\Files\Events\Node\NodeWrittenEvent;
 use OCA\OpenRegister\Event\ObjectCreatedEvent;
+use OCA\OpenRegister\Event\ObjectCreatingEvent;
+use OCA\OpenRegister\Event\ObjectDeletingEvent;
+use OCA\OpenRegister\Event\ObjectUpdatingEvent;
 use OCA\OpenRegister\Event\ObjectUpdatedEvent;
 use OCA\OpenRegister\Event\ObjectDeletedEvent;
 use OCA\OpenRegister\Event\ObjectLockedEvent;
@@ -488,6 +495,7 @@ class Application extends App implements IBootstrap
                 registerMapper: $container->get(RegisterMapper::class),
                 objectEntityMapper: $container->get(ObjectEntityMapper::class),
                 configurationMapper: $container->get('OCA\OpenRegister\Db\ConfigurationMapper'),
+                mappingMapper: $container->get(MappingMapper::class),
                 client: new Client(),
                 appConfig: $container->get('OCP\IAppConfig'),
                 logger: $logger,
@@ -504,6 +512,10 @@ class Application extends App implements IBootstrap
             // This ensures objects go to the magic mapper table when the register is configured for it.
             $importHandler->setUnifiedObjectMapper($container->get(UnifiedObjectMapper::class));
 
+            // Inject workflow dependencies for deploying workflows during import.
+            $importHandler->setWorkflowEngineRegistry($container->get(WorkflowEngineRegistry::class));
+            $importHandler->setDeployedWorkflowMapper($container->get(DeployedWorkflowMapper::class));
+
             return $importHandler;
         };
 
@@ -514,6 +526,26 @@ class Application extends App implements IBootstrap
         $context->registerService(
             'OCA\OpenRegister\Service\Configuration\ImportHandler',
             $importHandlerFactory
+        );
+
+        // Register ExportHandler with workflow dependencies.
+        $context->registerService(
+            ConfigurationExportHandler::class,
+            function (ContainerInterface $container): ConfigurationExportHandler {
+                $exportHandler = new ConfigurationExportHandler(
+                    schemaMapper: $container->get(SchemaMapper::class),
+                    registerMapper: $container->get(RegisterMapper::class),
+                    objectEntityMapper: $container->get(ObjectEntityMapper::class),
+                    configurationMapper: $container->get('OCA\OpenRegister\Db\ConfigurationMapper'),
+                    mappingMapper: $container->get(MappingMapper::class),
+                    logger: $container->get('Psr\Log\LoggerInterface')
+                );
+
+                $exportHandler->setWorkflowEngineRegistry($container->get(WorkflowEngineRegistry::class));
+                $exportHandler->setDeployedWorkflowMapper($container->get(DeployedWorkflowMapper::class));
+
+                return $exportHandler;
+            }
         );
 
         $context->registerService(
@@ -720,6 +752,14 @@ class Application extends App implements IBootstrap
 
         // ToolRegistrationListener for agent function tools.
         $context->registerEventListener(ToolRegistrationEvent::class, ToolRegistrationListener::class);
+
+        // HookListener for schema hook execution on lifecycle events.
+        $context->registerEventListener(ObjectCreatingEvent::class, HookListener::class);
+        $context->registerEventListener(ObjectUpdatingEvent::class, HookListener::class);
+        $context->registerEventListener(ObjectDeletingEvent::class, HookListener::class);
+        $context->registerEventListener(ObjectCreatedEvent::class, HookListener::class);
+        $context->registerEventListener(ObjectUpdatedEvent::class, HookListener::class);
+        $context->registerEventListener(ObjectDeletedEvent::class, HookListener::class);
 
         // WebhookEventListener for webhook delivery.
         $context->registerEventListener(ObjectCreatedEvent::class, WebhookEventListener::class);

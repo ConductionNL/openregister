@@ -145,8 +145,9 @@ class UpdateFileHandler
                 if ($file !== null) {
                     $fileName = $file->getName();
                     $fileId   = $file->getId();
+                    $msg      = "[UpdateFileHandler] updateFile: Found file by ID in object folder: $fileName (ID: $fileId)";
                     $this->logger->info(
-                        message: "[UpdateFileHandler] updateFile: Found file by ID in object folder: $fileName (ID: $fileId)",
+                        message: $msg,
                         context: ['file' => __FILE__, 'line' => __LINE__]
                     );
                 }
@@ -221,8 +222,11 @@ class UpdateFileHandler
                             $folderFiles = $objectFolder->getDirectoryListing();
                             $fileNames   = array_map(fn($f) => $f->getName(), $folderFiles);
                             $this->logger->info(
-                                message: "[UpdateFileHandler] updateFile: Files in object folder: ".implode(', ', $fileNames),
-                                context: ['file' => __FILE__, 'line' => __LINE__]
+                                message: '[UpdateFileHandler] updateFile: Files in object folder: '.implode(', ', $fileNames),
+                                context: [
+                                    'file' => __FILE__,
+                                    'line' => __LINE__,
+                                ]
                             );
                         } catch (Exception $e) {
                             $this->logger->warning(
@@ -295,7 +299,8 @@ class UpdateFileHandler
                 try {
                     $userFolder = $this->folderMgmtHandler->getOpenRegisterUserFolder();
                     $file       = $userFolder->get(path: $filePath);
-                    $msg        = "[UpdateFileHandler] updateFile: Found file in user folder at path: $filePath (ID: ".$file->getId().")";
+                    $fileId     = $file->getId();
+                    $msg        = "[UpdateFileHandler] updateFile: Found file in user folder at path: $filePath (ID: $fileId)";
                     $this->logger->info(message: $msg, context: ['file' => __FILE__, 'line' => __LINE__]);
                 } catch (NotFoundException $e) {
                     $this->logger->error(

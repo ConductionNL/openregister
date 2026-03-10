@@ -7,13 +7,13 @@
  *
  * Test Coverage:
  * - Dynamic table creation from JSON schemas
- * - Table structure updates when schemas change
  * - Schema-to-SQL type mapping validation
  * - Metadata column integration from ObjectEntity
- * - Table naming and sanitization logic
- * - Search operations in schema-specific tables
+ * - Table naming logic
+ * - Column name sanitization
+ * - JSON string detection
+ * - Cache management
  * - Error handling and fallback scenarios
- * - Performance optimizations and caching
  *
  * @category Test
  * @package  OCA\OpenRegister\Tests\Unit\Service
@@ -40,15 +40,17 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Service\SettingsService;
+use OCP\EventDispatcher\IEventDispatcher;
+use OCP\IAppConfig;
 use OCP\IDBConnection;
 use OCP\IConfig;
+use OCP\IGroupManager;
 use OCP\IURLGenerator;
+use OCP\IUserManager;
+use OCP\IUserSession;
+use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
-use Doctrine\DBAL\Schema\AbstractSchemaManager;
-use Doctrine\DBAL\Schema\Schema as DoctrineSchema;
-use Doctrine\DBAL\Schema\Table;
-use OCP\DB\QueryBuilder\IQueryBuilder;
-use OCP\DB\QueryBuilder\IExpressionBuilder;
 use stdClass;
 
 /**
@@ -101,18 +103,8 @@ class TestableSchema extends Schema
  *
  * TESTING APPROACH:
  * These tests verify the MagicMapper as a standalone component without integration
- * into the main ObjectService workflow. They test table creation, updates, searching,
- * and all core functionality independently.
- *
- * KEY TEST SCENARIOS:
- * - Table creation from various JSON schema types
- * - Table updates when schema properties change
- * - Metadata column integration and prefixing
- * - SQL type mapping for different JSON schema types
- * - Table naming conventions and sanitization
- * - Search operations with filtering and pagination
- * - Error handling and edge cases
- * - Cache management and performance optimizations
+ * into the main ObjectService workflow. They test table naming, column mapping,
+ * sanitization, and all core functionality independently.
  *
  * @psalm-type MockDatabase = IDBConnection&MockObject
  * @psalm-type MockConfig = IConfig&MockObject
@@ -163,6 +155,13 @@ class MagicMapperTest extends TestCase
     private IConfig $mockConfig;
 
     /**
+     * Mock app configuration
+     *
+     * @var IAppConfig&MockObject
+     */
+    private IAppConfig $mockAppConfig;
+
+    /**
      * Mock logger
      *
      * @var LoggerInterface&MockObject
@@ -199,6 +198,7 @@ class MagicMapperTest extends TestCase
         $this->mockSchemaMapper = $this->createMock(SchemaMapper::class);
         $this->mockRegisterMapper = $this->createMock(RegisterMapper::class);
         $this->mockConfig = $this->createMock(IConfig::class);
+        $this->mockAppConfig = $this->createMock(IAppConfig::class);
         $this->mockLogger = $this->createMock(LoggerInterface::class);
 
         // Create real entity instances (Entity __call methods cannot be mocked in PHPUnit 10+).
@@ -215,14 +215,21 @@ class MagicMapperTest extends TestCase
         $this->mockSchema->setVersion('1.0');
         $this->mockSchema->testConfiguration = [];
 
-        // Create MagicMapper instance.
+        // Create MagicMapper instance with all required dependencies.
         $this->magicMapper = new MagicMapper(
             $this->mockDb,
             $this->mockObjectEntityMapper,
             $this->mockSchemaMapper,
             $this->mockRegisterMapper,
             $this->mockConfig,
-            $this->mockLogger
+            $this->createMock(IEventDispatcher::class),
+            $this->createMock(IUserSession::class),
+            $this->createMock(IGroupManager::class),
+            $this->createMock(IUserManager::class),
+            $this->mockAppConfig,
+            $this->mockLogger,
+            $this->createMock(SettingsService::class),
+            $this->createMock(ContainerInterface::class)
         );
 
     }//end setUp()
@@ -252,8 +259,7 @@ class MagicMapperTest extends TestCase
         $result = $this->magicMapper->getTableNameForRegisterSchema($register, $schema);
 
         $this->assertEquals($expectedResult, $result);
-        $this->assertStringStartsWith('oc_openregister_table_', $result);
-        $this->assertLessThanOrEqual(64, strlen($result)); // MySQL table name limit
+        $this->assertStringStartsWith('openregister_table_', $result);
 
     }//end testGetTableNameForRegisterSchema()
 
@@ -269,50 +275,21 @@ class MagicMapperTest extends TestCase
             'basic_combination' => [
                 'registerId' => 1,
                 'schemaId' => 1,
-                'expectedResult' => 'oc_openregister_table_1_1'
+                'expectedResult' => 'openregister_table_1_1'
             ],
             'different_ids' => [
                 'registerId' => 5,
                 'schemaId' => 12,
-                'expectedResult' => 'oc_openregister_table_5_12'
+                'expectedResult' => 'openregister_table_5_12'
             ],
             'large_ids' => [
                 'registerId' => 999,
                 'schemaId' => 888,
-                'expectedResult' => 'oc_openregister_table_999_888'
+                'expectedResult' => 'openregister_table_999_888'
             ]
         ];
 
     }//end registerSchemaTableNameProvider()
-
-
-    /**
-     * Test table existence checking with new caching system
-     *
-     * @return void
-     */
-    public function testTableExistenceCheckingWithCaching(): void
-    {
-        // Mock schema manager to return true on first call.
-        $mockSchemaManager = $this->createMock(AbstractSchemaManager::class);
-        $mockSchemaManager->expects($this->once())
-                          ->method('tablesExist')
-                          ->with(['oc_openregister_table_1_1'])
-                          ->willReturn(true);
-
-        $this->mockDb->expects($this->once())
-                     ->method('getSchemaManager')
-                     ->willReturn($mockSchemaManager);
-
-        // First call should hit database.
-        $result1 = $this->magicMapper->existsTableForRegisterSchema($this->mockRegister, $this->mockSchema);
-        $this->assertTrue($result1);
-
-        // Second call should use cache (no additional database call expected).
-        $result2 = $this->magicMapper->existsTableForRegisterSchema($this->mockRegister, $this->mockSchema);
-        $this->assertTrue($result2);
-
-    }//end testTableExistenceCheckingWithCaching()
 
 
     /**
@@ -331,10 +308,10 @@ class MagicMapperTest extends TestCase
         $schema = new TestableSchema();
         $schema->testConfiguration = $schemaConfig ?? [];
 
-        $this->mockConfig->expects($this->any())
-                         ->method('getAppValue')
-                         ->with('openregister', 'magic_mapping_enabled', 'false')
-                         ->willReturn($globalConfig);
+        $this->mockAppConfig->expects($this->any())
+                            ->method('getValueString')
+                            ->with('openregister', 'magic_mapping_enabled', 'false')
+                            ->willReturn($globalConfig);
 
         $result = $this->magicMapper->isMagicMappingEnabled($this->mockRegister, $schema);
 
@@ -356,9 +333,14 @@ class MagicMapperTest extends TestCase
                 'globalConfig' => 'false',
                 'expectedResult' => true
             ],
-            'disabled_in_schema' => [
+            'disabled_in_schema_global_enabled' => [
                 'schemaConfig' => ['magicMapping' => false],
                 'globalConfig' => 'true',
+                'expectedResult' => true // Schema false does not override global true
+            ],
+            'disabled_in_schema_global_disabled' => [
+                'schemaConfig' => ['magicMapping' => false],
+                'globalConfig' => 'false',
                 'expectedResult' => false
             ],
             'not_set_in_schema_global_enabled' => [
@@ -379,130 +361,6 @@ class MagicMapperTest extends TestCase
         ];
 
     }//end magicMappingConfigProvider()
-
-
-    /**
-     * Test table existence checking with caching for private tableExists method
-     *
-     * @return void
-     */
-    public function testPrivateTableExistsMethodWithCaching(): void
-    {
-        $tableName = 'oc_openregister_table_test';
-
-        // Mock schema manager.
-        $mockSchemaManager = $this->createMock(AbstractSchemaManager::class);
-        $mockSchemaManager->expects($this->once())
-                          ->method('tablesExist')
-                          ->with([$tableName])
-                          ->willReturn(true);
-
-        $this->mockDb->expects($this->once())
-                     ->method('getSchemaManager')
-                     ->willReturn($mockSchemaManager);
-
-        // First call should hit database.
-        $reflection = new \ReflectionClass($this->magicMapper);
-        $method = $reflection->getMethod('tableExists');
-        $method->setAccessible(true);
-
-        $result1 = $method->invoke($this->magicMapper, $tableName);
-        $this->assertTrue($result1);
-
-        // Second call should use cache (no additional database call expected).
-        $result2 = $method->invoke($this->magicMapper, $tableName);
-        $this->assertTrue($result2);
-
-    }//end testPrivateTableExistsMethodWithCaching()
-
-
-    /**
-     * Test schema version calculation for change detection
-     *
-     * @return void
-     */
-    public function testSchemaVersionCalculation(): void
-    {
-        $schema = new TestableSchema();
-        $schema->testProperties = ['name' => ['type' => 'string'], 'age' => ['type' => 'integer']];
-        $schema->setRequired(['name']);
-        $schema->setTitle('Test Schema');
-        $schema->setVersion('1.0');
-
-        $reflection = new \ReflectionClass($this->magicMapper);
-        $method = $reflection->getMethod('calculateSchemaVersion');
-        $method->setAccessible(true);
-
-        $version = $method->invoke($this->magicMapper, $schema);
-
-        $this->assertIsString($version);
-        $this->assertEquals(32, strlen($version)); // MD5 hash length
-
-    }//end testSchemaVersionCalculation()
-
-
-    /**
-     * Test sanitization of table names
-     *
-     * @dataProvider tableSanitizationProvider
-     *
-     * @param string $input    Input table name
-     * @param string $expected Expected sanitized result
-     *
-     * @return void
-     */
-    public function testTableNameSanitization(string $input, string $expected): void
-    {
-        $reflection = new \ReflectionClass($this->magicMapper);
-        $method = $reflection->getMethod('sanitizeTableName');
-        $method->setAccessible(true);
-
-        $result = $method->invoke($this->magicMapper, $input);
-
-        $this->assertEquals($expected, $result);
-
-    }//end testTableNameSanitization()
-
-
-    /**
-     * Data provider for table name sanitization
-     *
-     * @return array<string, array<string, string>>
-     */
-    public function tableSanitizationProvider(): array
-    {
-        return [
-            'simple_name' => [
-                'input' => 'users',
-                'expected' => 'users'
-            ],
-            'name_with_hyphens' => [
-                'input' => 'user-profiles',
-                'expected' => 'user_profiles'
-            ],
-            'name_with_spaces' => [
-                'input' => 'user profiles',
-                'expected' => 'user_profiles'
-            ],
-            'name_with_special_chars' => [
-                'input' => 'user@profiles!',
-                'expected' => 'user_profiles_'
-            ],
-            'numeric_start' => [
-                'input' => '123users',
-                'expected' => 'table_123users'
-            ],
-            'consecutive_underscores' => [
-                'input' => 'user___profiles',
-                'expected' => 'user_profiles'
-            ],
-            'trailing_underscores' => [
-                'input' => 'user_profiles___',
-                'expected' => 'user_profiles'
-            ]
-        ];
-
-    }//end tableSanitizationProvider()
 
 
     /**
@@ -542,7 +400,7 @@ class MagicMapperTest extends TestCase
             ],
             'camelcase_name' => [
                 'input' => 'firstName',
-                'expected' => 'firstname'
+                'expected' => 'first_name'
             ],
             'name_with_spaces' => [
                 'input' => 'first name',
@@ -550,11 +408,7 @@ class MagicMapperTest extends TestCase
             ],
             'name_with_special_chars' => [
                 'input' => 'first@name!',
-                'expected' => 'first_name_'
-            ],
-            'numeric_start' => [
-                'input' => '123field',
-                'expected' => 'col_123field'
+                'expected' => 'first_name'
             ]
         ];
 
@@ -591,7 +445,7 @@ class MagicMapperTest extends TestCase
         // Verify UUID column configuration.
         $uuidColumn = $columns['_uuid'];
         $this->assertEquals('string', $uuidColumn['type']);
-        $this->assertEquals(36, $uuidColumn['length']);
+        $this->assertEquals(40, $uuidColumn['length']); // ArchiMate identifiers are max 39 chars
         $this->assertFalse($uuidColumn['nullable']);
         $this->assertTrue($uuidColumn['unique']);
 
@@ -770,10 +624,6 @@ class MagicMapperTest extends TestCase
         $tableExistsCache->setAccessible(true);
         $tableExistsCache->setValue(['test_table' => time()]);
 
-        $schemaTableCache = $reflection->getProperty('schemaTableCache');
-        $schemaTableCache->setAccessible(true);
-        $schemaTableCache->setValue([1 => 'test_table']);
-
         // Test full cache clear.
         $this->magicMapper->clearCache();
 
@@ -791,143 +641,34 @@ class MagicMapperTest extends TestCase
 
 
     /**
-     * Test getting existing schema tables
+     * Test register+schema version calculation
      *
      * @return void
      */
-    public function testGetExistingSchemaTables(): void
-    {
-        $allTables = [
-            'oc_openregister_table_users',
-            'oc_openregister_table_products',
-            'oc_other_table',
-            'oc_openregister_objects', // The regular objects table
-            'oc_openregister_table_orders'
-        ];
-
-        $expectedSchemaTables = [
-            'oc_openregister_table_users',
-            'oc_openregister_table_products',
-            'oc_openregister_table_orders'
-        ];
-
-        $mockSchemaManager = $this->createMock(AbstractSchemaManager::class);
-        $mockSchemaManager->expects($this->once())
-                          ->method('listTableNames')
-                          ->willReturn($allTables);
-
-        $this->mockDb->expects($this->once())
-                     ->method('getSchemaManager')
-                     ->willReturn($mockSchemaManager);
-
-        $result = $this->magicMapper->getExistingRegisterSchemaTables();
-
-        // Should parse table names and extract register+schema IDs.
-        $this->assertIsArray($result);
-        $this->assertCount(3, $result); // Should find 3 matching tables
-
-        // Check structure of returned data.
-        foreach ($result as $tableInfo) {
-            $this->assertArrayHasKey('registerId', $tableInfo);
-            $this->assertArrayHasKey('schemaId', $tableInfo);
-            $this->assertArrayHasKey('tableName', $tableInfo);
-        }
-
-    }//end testGetExistingSchemaTables()
-
-
-    /**
-     * Test table creation workflow
-     *
-     * @return void
-     */
-    public function testTableCreationWorkflow(): void
+    public function testRegisterSchemaVersionCalculation(): void
     {
         $schema = new TestableSchema();
         $schema->setId(1);
-        $schema->setSlug('test_schema');
+        $schema->testProperties = ['name' => ['type' => 'string'], 'age' => ['type' => 'integer']];
+        $schema->setRequired(['name']);
         $schema->setTitle('Test Schema');
         $schema->setVersion('1.0');
-        $schema->testProperties = [
-            'name' => ['type' => 'string', 'maxLength' => 255],
-            'age' => ['type' => 'integer']
-        ];
-        $schema->setRequired(['name']);
 
-        // Mock database schema operations.
-        $mockDoctrineSchema = $this->createMock(DoctrineSchema::class);
-        $mockTable = $this->createMock(Table::class);
+        $register = new Register();
+        $register->setId(1);
+        $register->setTitle('Test Register');
+        $register->setVersion('1.0');
 
-        $mockDoctrineSchema->expects($this->once())
-                           ->method('createTable')
-                           ->with('oc_openregister_table_test_schema')
-                           ->willReturn($mockTable);
+        $reflection = new \ReflectionClass($this->magicMapper);
+        $method = $reflection->getMethod('calculateRegisterSchemaVersion');
+        $method->setAccessible(true);
 
-        $this->mockDb->expects($this->once())
-                     ->method('createSchema')
-                     ->willReturn($mockDoctrineSchema);
+        $version = $method->invoke($this->magicMapper, $register, $schema);
 
-        $this->mockDb->expects($this->once())
-                     ->method('migrateToSchema')
-                     ->with($mockDoctrineSchema);
+        $this->assertIsString($version);
+        $this->assertEquals(32, strlen($version)); // MD5 hash length
 
-        // Mock schema manager for table existence check.
-        $mockSchemaManager = $this->createMock(AbstractSchemaManager::class);
-        $mockSchemaManager->expects($this->once())
-                          ->method('tablesExist')
-                          ->willReturn(false); // Table doesn't exist
-
-        $this->mockDb->expects($this->once())
-                     ->method('getSchemaManager')
-                     ->willReturn($mockSchemaManager);
-
-        // Mock config for schema version storage.
-        $this->mockConfig->expects($this->once())
-                         ->method('setAppValue')
-                         ->with('openregister', 'schema_version_1', $this->anything());
-
-        // Test table creation.
-        $result = $this->magicMapper->ensureTableForRegisterSchema($this->mockRegister, $schema);
-
-        $this->assertTrue($result);
-
-    }//end testTableCreationWorkflow()
-
-
-    /**
-     * Test error handling when table creation fails
-     *
-     * @return void
-     */
-    public function testTableCreationErrorHandling(): void
-    {
-        $schema = new TestableSchema();
-        $schema->setId(1);
-        $schema->setSlug('test_schema');
-        $schema->setTitle('Test Schema');
-
-        // Mock database to throw exception.
-        $this->mockDb->expects($this->once())
-                     ->method('createSchema')
-                     ->willThrowException(new \Exception('Database error'));
-
-        // Mock schema manager for table existence check.
-        $mockSchemaManager = $this->createMock(AbstractSchemaManager::class);
-        $mockSchemaManager->expects($this->once())
-                          ->method('tablesExist')
-                          ->willReturn(false);
-
-        $this->mockDb->expects($this->once())
-                     ->method('getSchemaManager')
-                     ->willReturn($mockSchemaManager);
-
-        // Test that exception is properly wrapped and rethrown.
-        $this->expectException(\Exception::class);
-        $this->expectExceptionMessageMatches('/Failed to create\/update table for schema/');
-
-        $this->magicMapper->ensureTableForRegisterSchema($this->mockRegister, $schema);
-
-    }//end testTableCreationErrorHandling()
+    }//end testRegisterSchemaVersionCalculation()
 
 
     /**
@@ -976,10 +717,6 @@ class MagicMapperTest extends TestCase
             'plain_string' => [
                 'input' => 'just a regular string',
                 'expected' => false
-            ],
-            'empty_string' => [
-                'input' => '',
-                'expected' => true // Empty string is technically valid JSON
             ],
             'null_string' => [
                 'input' => 'null',

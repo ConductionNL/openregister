@@ -45,7 +45,6 @@ namespace OCA\OpenRegister\Service;
 use OCA\OpenRegister\Db\Schema;
 use OCP\IUserSession;
 use OCP\IGroupManager;
-use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -53,29 +52,22 @@ use Psr\Log\LoggerInterface;
  *
  * This class provides property-level RBAC filtering, ensuring that specific
  * fields within objects can have different access rules than the object itself.
+ * Condition matching and operator evaluation are delegated to ConditionMatcher.
  */
 class PropertyRbacHandler
 {
-
-    /**
-     * Cached active organisation UUID
-     *
-     * @var string|null
-     */
-    private ?string $cachedActiveOrg = null;
-
     /**
      * Constructor for PropertyRbacHandler
      *
-     * @param IUserSession       $userSession  User session for current user context
-     * @param IGroupManager      $groupManager Group manager for user group operations
-     * @param ContainerInterface $container    Container for service injection
-     * @param LoggerInterface    $logger       Logger for debugging
+     * @param IUserSession     $userSession      User session for current user context
+     * @param IGroupManager    $groupManager     Group manager for user group operations
+     * @param ConditionMatcher $conditionMatcher Condition matcher for match expressions
+     * @param LoggerInterface  $logger           Logger for debugging
      */
     public function __construct(
         private readonly IUserSession $userSession,
         private readonly IGroupManager $groupManager,
-        private readonly ContainerInterface $container,
+        private readonly ConditionMatcher $conditionMatcher,
         private readonly LoggerInterface $logger
     ) {
     }//end __construct()
@@ -321,7 +313,7 @@ class PropertyRbacHandler
     ): bool {
         // Simple rule: just a group name string.
         if (is_string($rule) === true) {
-            return $this->checkSimpleRule(rule: $rule, userGroups: $userGroups, userId: $userId);
+            return $this->userQualifiesForGroup(group: $rule, userGroups: $userGroups, userId: $userId);
         }
 
         // Conditional rule: object with 'group' and optional 'match'.
@@ -344,31 +336,6 @@ class PropertyRbacHandler
     }//end checkRule()
 
     /**
-     * Check a simple (group-only) rule
-     *
-     * @param string      $rule       Group name
-     * @param array       $userGroups User's group IDs
-     * @param string|null $userId     Current user ID
-     *
-     * @return bool True if rule grants access
-     */
-    private function checkSimpleRule(string $rule, array $userGroups, ?string $userId): bool
-    {
-        // 'public' grants access to anyone, including unauthenticated users.
-        if ($rule === 'public') {
-            return true;
-        }
-
-        // 'authenticated' grants access to any logged-in user.
-        if ($rule === 'authenticated') {
-            return $userId !== null;
-        }
-
-        // Check if user is in the specified group.
-        return in_array($rule, $userGroups, true);
-    }//end checkSimpleRule()
-
-    /**
      * Check a conditional rule with match criteria
      *
      * @param array       $rule       Rule with 'group' and optional 'match'
@@ -389,18 +356,8 @@ class PropertyRbacHandler
         $group = $rule['group'];
         $match = $rule['match'] ?? null;
 
-        // Check if user qualifies for this group.
-        $userQualifies = false;
-        if ($group === 'public') {
-            $userQualifies = true;
-        } else if ($group === 'authenticated' && $userId !== null) {
-            $userQualifies = true;
-        } else if (in_array($group, $userGroups, true) === true) {
-            $userQualifies = true;
-        }
-
         // If user doesn't qualify for the group, this rule doesn't apply.
-        if ($userQualifies === false) {
+        if ($this->userQualifiesForGroup(group: $group, userGroups: $userGroups, userId: $userId) === false) {
             return false;
         }
 
@@ -412,264 +369,37 @@ class PropertyRbacHandler
         // For creates, skip organisation matching since there's no existing object.
         // Other match conditions still apply.
         if ($isCreate === true) {
-            $match = $this->filterOrganisationMatchForCreate(match: $match);
+            $match = $this->conditionMatcher->filterOrganisationMatchForCreate(match: $match);
             if (empty($match) === true) {
                 return true;
             }
         }
 
         // Check if object matches all conditions.
-        return $this->objectMatchesConditions(object: $object, match: $match);
+        return $this->conditionMatcher->objectMatchesConditions(object: $object, match: $match);
     }//end checkConditionalRule()
 
     /**
-     * Filter out organisation matching for create operations
+     * Check if a user qualifies for a specific group
      *
-     * On create, there's no existing object to match organisation against,
-     * so we skip organisation-based conditions.
+     * @param string      $group      Group name from the rule
+     * @param array       $userGroups User's group IDs
+     * @param string|null $userId     Current user ID
      *
-     * @param array $match Match conditions
-     *
-     * @return array Filtered match conditions
+     * @return bool True if user qualifies for the group
      */
-    private function filterOrganisationMatchForCreate(array $match): array
+    private function userQualifiesForGroup(string $group, array $userGroups, ?string $userId): bool
     {
-        $organisationKeys   = ['_organisation', 'organisation'];
-        $organisationValues = ['$organisation', '$activeOrganisation'];
-
-        $filtered = [];
-        foreach ($match as $property => $value) {
-            // Skip if this is an organisation match condition.
-            if (in_array($property, $organisationKeys, true) === true) {
-                if (is_string($value) === true && in_array($value, $organisationValues, true) === true) {
-                    continue;
-                }
-            }
-
-            $filtered[$property] = $value;
+        if ($group === 'public') {
+            return true;
         }
 
-        return $filtered;
-    }//end filterOrganisationMatchForCreate()
-
-    /**
-     * Check if object data matches all conditions
-     *
-     * @param array $object Object data to check
-     * @param array $match  Match conditions
-     *
-     * @return bool True if object matches all conditions
-     */
-    private function objectMatchesConditions(array $object, array $match): bool
-    {
-        foreach ($match as $property => $value) {
-            // Get object value, checking both direct property and @self.
-            $objectValue = $this->getObjectValue(object: $object, property: $property);
-
-            // Resolve dynamic variables in the match value.
-            $resolvedValue = $this->resolveDynamicValue(value: $value);
-
-            // If dynamic variable resolved to null, condition cannot be met.
-            if ($value !== $resolvedValue && $resolvedValue === null) {
-                return false;
-            }
-
-            // Simple value: equals comparison.
-            if (is_string($resolvedValue) === true
-                || is_numeric($resolvedValue) === true
-                || is_bool($resolvedValue) === true
-            ) {
-                if ($objectValue !== $resolvedValue) {
-                    return false;
-                }
-
-                continue;
-            }
-
-            // Operator object.
-            if (is_array($resolvedValue) === true) {
-                if ($this->valueMatchesOperator(value: $objectValue, operators: $resolvedValue) === false) {
-                    return false;
-                }
-
-                continue;
-            }
-
-            // Null value: check if object value is null.
-            if ($resolvedValue === null && $objectValue !== null) {
-                return false;
-            }
-        }//end foreach
-
-        return true;
-    }//end objectMatchesConditions()
-
-    /**
-     * Get a value from the object, checking both direct property and @self
-     *
-     * @param array  $object   Object data
-     * @param string $property Property name
-     *
-     * @return mixed Property value or null
-     */
-    private function getObjectValue(array $object, string $property): mixed
-    {
-        // Check direct property first.
-        if (isset($object[$property]) === true) {
-            return $object[$property];
+        if ($group === 'authenticated' && $userId !== null) {
+            return true;
         }
 
-        // For underscore-prefixed properties, also check @self.
-        if (str_starts_with($property, '_') === true) {
-            $selfProperty = substr($property, 1);
-            if (isset($object['@self'][$selfProperty]) === true) {
-                return $object['@self'][$selfProperty];
-            }
-        }
-
-        return null;
-    }//end getObjectValue()
-
-    /**
-     * Resolve dynamic variable values
-     *
-     * Supports special variables:
-     * - $organisation / $activeOrganisation: Current user's active organisation UUID
-     * - $userId / $user: Current user's ID
-     *
-     * @param mixed $value The value to resolve
-     *
-     * @return mixed The resolved value, or null if variable cannot be resolved
-     */
-    private function resolveDynamicValue(mixed $value): mixed
-    {
-        if (is_string($value) === false) {
-            return $value;
-        }
-
-        // Check for $organisation variable.
-        if ($value === '$organisation' || $value === '$activeOrganisation') {
-            return $this->getActiveOrganisationUuid();
-        }
-
-        // Check for $userId variable.
-        if ($value === '$userId' || $value === '$user') {
-            return $this->userSession->getUser()?->getUID();
-        }
-
-        return $value;
-    }//end resolveDynamicValue()
-
-    /**
-     * Get the current user's active organisation UUID
-     *
-     * @return string|null The active organisation UUID or null
-     */
-    private function getActiveOrganisationUuid(): ?string
-    {
-        // Return cached value if available.
-        if ($this->cachedActiveOrg !== null) {
-            return $this->cachedActiveOrg;
-        }
-
-        try {
-            $organisationService = $this->container->get('OCA\OpenRegister\Service\OrganisationService');
-            $activeOrg           = $organisationService->getActiveOrganisation();
-
-            if ($activeOrg !== null) {
-                $this->cachedActiveOrg = $activeOrg->getUuid();
-                return $this->cachedActiveOrg;
-            }
-        } catch (\Exception $e) {
-            $this->logger->debug(
-                message: '[PropertyRbacHandler] Could not get active organisation',
-                context: ['file' => __FILE__, 'line' => __LINE__, 'error' => $e->getMessage()]
-            );
-        }
-
-        return null;
-    }//end getActiveOrganisationUuid()
-
-    /**
-     * Check if a value matches operator conditions
-     *
-     * @param mixed $value     Object value
-     * @param array $operators Operator conditions
-     *
-     * @return bool True if value matches
-     */
-    private function valueMatchesOperator(mixed $value, array $operators): bool
-    {
-        foreach ($operators as $operator => $operand) {
-            switch ($operator) {
-                case '$eq':
-                    if ($value !== $operand) {
-                        return false;
-                    }
-                    break;
-
-                case '$ne':
-                    if ($value === $operand) {
-                        return false;
-                    }
-                    break;
-
-                case '$in':
-                    if (is_array($operand) === false || in_array($value, $operand, true) === false) {
-                        return false;
-                    }
-                    break;
-
-                case '$nin':
-                    if (is_array($operand) === true && in_array($value, $operand, true) === true) {
-                        return false;
-                    }
-                    break;
-
-                case '$exists':
-                    if ($operand === true && $value === null) {
-                        return false;
-                    }
-
-                    if ($operand === false && $value !== null) {
-                        return false;
-                    }
-                    break;
-
-                case '$gt':
-                    if ($value <= $operand) {
-                        return false;
-                    }
-                    break;
-
-                case '$gte':
-                    if ($value < $operand) {
-                        return false;
-                    }
-                    break;
-
-                case '$lt':
-                    if ($value >= $operand) {
-                        return false;
-                    }
-                    break;
-
-                case '$lte':
-                    if ($value > $operand) {
-                        return false;
-                    }
-                    break;
-
-                default:
-                    $this->logger->warning(
-                        message: '[PropertyRbacHandler] Unknown operator',
-                        context: ['file' => __FILE__, 'line' => __LINE__, 'operator' => $operator]
-                    );
-            }//end switch
-        }//end foreach
-
-        return true;
-    }//end valueMatchesOperator()
+        return in_array($group, $userGroups, true);
+    }//end userQualifiesForGroup()
 
     /**
      * Check if current user is admin

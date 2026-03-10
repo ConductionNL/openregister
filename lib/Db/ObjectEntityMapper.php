@@ -32,6 +32,7 @@ use OCA\OpenRegister\Db\ObjectEntity\StatisticsHandler;
 use OCA\OpenRegister\Event\ObjectCreatedEvent;
 use OCA\OpenRegister\Event\ObjectCreatingEvent;
 use OCA\OpenRegister\Event\ObjectDeletedEvent;
+use OCA\OpenRegister\Exception\HookStoppedException;
 use OCA\OpenRegister\Event\ObjectDeletingEvent;
 use OCA\OpenRegister\Event\ObjectLockedEvent;
 use OCA\OpenRegister\Event\ObjectUnlockedEvent;
@@ -371,7 +372,22 @@ class ObjectEntityMapper extends QBMapper
     public function insert(Entity $entity, ?Register $register=null, ?Schema $schema=null): Entity
     {
         // Dispatch creating event.
-        $this->eventDispatcher->dispatchTyped(new ObjectCreatingEvent(object: $entity));
+        $creatingEvent = new ObjectCreatingEvent(object: $entity);
+        $this->eventDispatcher->dispatchTyped($creatingEvent);
+
+        // Check if a hook stopped propagation (reject mode).
+        if ($creatingEvent->isPropagationStopped() === true) {
+            throw new HookStoppedException(
+                message: $creatingEvent->getErrors()['message'] ?? 'Object creation rejected by hook'
+            );
+        }
+
+        // Merge modified data from hooks if any.
+        $modifiedData = $creatingEvent->getModifiedData();
+        if (empty($modifiedData) === false && $entity instanceof ObjectEntity === true) {
+            $objectData = $entity->getObject();
+            $entity->setObject(array_merge($objectData, $modifiedData));
+        }
 
         // Check if this entity should use magic mapping.
         // IMPORTANT: Use provided register/schema if available, otherwise extract from entity.
@@ -430,7 +446,22 @@ class ObjectEntityMapper extends QBMapper
     public function insertDirectBlobStorage(\OCP\AppFramework\Db\Entity $entity): ObjectEntity
     {
         // Dispatch creating event (pre-save hook).
-        $this->eventDispatcher->dispatchTyped(new ObjectCreatingEvent(object: $entity));
+        $creatingEvent = new ObjectCreatingEvent(object: $entity);
+        $this->eventDispatcher->dispatchTyped($creatingEvent);
+
+        // Check if a hook stopped propagation (reject mode).
+        if ($creatingEvent->isPropagationStopped() === true) {
+            throw new HookStoppedException(
+                message: $creatingEvent->getErrors()['message'] ?? 'Object creation rejected by hook'
+            );
+        }
+
+        // Merge modified data from hooks if any.
+        $modifiedData = $creatingEvent->getModifiedData();
+        if (empty($modifiedData) === false && $entity instanceof ObjectEntity === true) {
+            $objectData = $entity->getObject();
+            $entity->setObject(array_merge($objectData, $modifiedData));
+        }
 
         // Call parent QBMapper insert directly (blob storage).
         $result = parent::insert(entity: $entity);
@@ -571,12 +602,22 @@ class ObjectEntityMapper extends QBMapper
             );
         }
 
-        $this->eventDispatcher->dispatchTyped(
-            new ObjectUpdatingEvent(
-                newObject: $entity,
-                oldObject: $oldObject
-            )
-        );
+        $updatingEvent = new ObjectUpdatingEvent(newObject: $entity, oldObject: $oldObject);
+        $this->eventDispatcher->dispatchTyped($updatingEvent);
+
+        // Check if a hook stopped propagation (reject mode).
+        if ($updatingEvent->isPropagationStopped() === true) {
+            throw new HookStoppedException(
+                message: $updatingEvent->getErrors()['message'] ?? 'Object update rejected by hook'
+            );
+        }
+
+        // Merge modified data from hooks if any.
+        $modifiedData = $updatingEvent->getModifiedData();
+        if (empty($modifiedData) === false && $entity instanceof ObjectEntity === true) {
+            $objectData = $entity->getObject();
+            $entity->setObject(array_merge($objectData, $modifiedData));
+        }
 
         // Check if this entity should use magic mapping.
         // Use register+schema parameters if provided, otherwise try to resolve from entity.
@@ -641,20 +682,32 @@ class ObjectEntityMapper extends QBMapper
      *
      * @return ObjectEntity Updated entity.
      */
-    public function updateDirectBlobStorage(\OCP\AppFramework\Db\Entity $entity, \OCP\AppFramework\Db\Entity $oldEntity=null): ObjectEntity
-    {
+    public function updateDirectBlobStorage(
+        \OCP\AppFramework\Db\Entity $entity,
+        \OCP\AppFramework\Db\Entity $oldEntity=null
+    ): ObjectEntity {
         // Use provided oldEntity or fallback to current entity.
         if ($oldEntity === null) {
             $oldEntity = $entity;
         }
 
         // Dispatch updating event (pre-save hook).
-        $this->eventDispatcher->dispatchTyped(
-            new ObjectUpdatingEvent(
-                newObject: $entity,
-                oldObject: $oldEntity
-            )
-        );
+        $updatingEvent = new ObjectUpdatingEvent(newObject: $entity, oldObject: $oldEntity);
+        $this->eventDispatcher->dispatchTyped($updatingEvent);
+
+        // Check if a hook stopped propagation (reject mode).
+        if ($updatingEvent->isPropagationStopped() === true) {
+            throw new HookStoppedException(
+                message: $updatingEvent->getErrors()['message'] ?? 'Object update rejected by hook'
+            );
+        }
+
+        // Merge modified data from hooks if any.
+        $modifiedData = $updatingEvent->getModifiedData();
+        if (empty($modifiedData) === false && $entity instanceof ObjectEntity === true) {
+            $objectData = $entity->getObject();
+            $entity->setObject(array_merge($objectData, $modifiedData));
+        }
 
         // Call parent QBMapper update directly (blob storage).
         $this->logger->error(
@@ -696,7 +749,15 @@ class ObjectEntityMapper extends QBMapper
     public function delete(\OCP\AppFramework\Db\Entity $entity): \OCP\AppFramework\Db\Entity
     {
         // Dispatch deleting event.
-        $this->eventDispatcher->dispatchTyped(new ObjectDeletingEvent(object: $entity));
+        $deletingEvent = new ObjectDeletingEvent(object: $entity);
+        $this->eventDispatcher->dispatchTyped($deletingEvent);
+
+        // Check if a hook stopped propagation (reject mode).
+        if ($deletingEvent->isPropagationStopped() === true) {
+            throw new HookStoppedException(
+                message: $deletingEvent->getErrors()['message'] ?? 'Object deletion rejected by hook'
+            );
+        }
 
         // Call parent QBMapper delete directly (CrudHandler has circular dependency).
         $result = parent::delete(entity: $entity);
@@ -924,40 +985,24 @@ class ObjectEntityMapper extends QBMapper
         if ($useMagic === true) {
             try {
                 $this->logger->debug(
-                    message: '[ObjectEntityMapper] Routing deleteObjects() to MagicMapper',
-                    context: ['file' => __FILE__, 'line' => __LINE__]
+                    message: '[ObjectEntityMapper] Routing deleteObjects() to MagicMapper batch delete',
+                    context: ['file' => __FILE__, 'line' => __LINE__, 'count' => count($uuids)]
                 );
-                $deletedUuids = [];
-                foreach ($uuids as $uuid) {
-                    try {
-                        $unifiedObjectMapper = \OC::$server->get(UnifiedObjectMapper::class);
-                        $object = $unifiedObjectMapper->find(
-                            identifier: $uuid,
-                            register: $register,
-                            schema: $schema
-                        );
 
-                        if ($hardDelete === true) {
-                            // Hard delete: remove from database.
-                            $unifiedObjectMapper->delete($object);
-                        }
+                $magicMapper = \OC::$server->get(MagicMapper::class);
+                $deletedCount = $magicMapper->deleteObjectsByUuids(
+                    register: $register,
+                    schema: $schema,
+                    uuids: $uuids,
+                    hardDelete: $hardDelete
+                );
 
-                        if ($hardDelete === false) {
-                            // Soft delete: set deleted timestamp.
-                            $object->setDeleted(new DateTime());
-                            $unifiedObjectMapper->update($object);
-                        }
+                $this->logger->debug(
+                    message: '[ObjectEntityMapper] MagicMapper batch delete completed',
+                    context: ['file' => __FILE__, 'line' => __LINE__, 'deletedCount' => $deletedCount]
+                );
 
-                        $deletedUuids[] = $uuid;
-                    } catch (Exception $e) {
-                        $this->logger->warning(
-                            message: '[ObjectEntityMapper] Failed to delete object via magic mapper',
-                            context: ['file' => __FILE__, 'line' => __LINE__, 'uuid' => $uuid, 'error' => $e->getMessage()]
-                        );
-                    }//end try
-                }//end foreach
-
-                return $deletedUuids;
+                return $uuids;
             } catch (Exception $e) {
                 // No blob fallback — let errors propagate.
                 throw $e;
@@ -1821,14 +1866,14 @@ class ObjectEntityMapper extends QBMapper
         $qb = $this->db->getQueryBuilder();
 
         // Get database platform to determine casting method.
-        $platform = $qb->getConnection()->getDatabasePlatform()->getName();
+        $platform = $qb->getConnection()->getDatabasePlatform();
 
         $qb->select('o.*')
             ->from('openregister_objects', 'o');
 
         // PostgreSQL requires explicit casting for VARCHAR to BIGINT comparison.
         // MySQL/MariaDB does implicit type conversion.
-        if ($platform === 'postgresql') {
+        if ($platform instanceof \Doctrine\DBAL\Platforms\PostgreSQLPlatform) {
             $qb->leftJoin('o', 'openregister_schemas', 's', 'CAST(o.schema AS BIGINT) = s.id');
         } else {
             $qb->leftJoin('o', 'openregister_schemas', 's', 'o.schema = s.id');
@@ -2478,8 +2523,7 @@ class ObjectEntityMapper extends QBMapper
         }
 
         $result = $qb->executeQuery();
-        $row    = $result->fetch();
-        return (int) ($row['COUNT(id)'] ?? 0);
+        return (int) $result->fetchOne();
     }//end countSearchObjects()
 
     /**
@@ -2514,8 +2558,7 @@ class ObjectEntityMapper extends QBMapper
         }
 
         $result = $qb->executeQuery();
-        $row    = $result->fetch();
-        return (int) ($row['COUNT(id)'] ?? 0);
+        return (int) $result->fetchOne();
     }//end countAll()
 
     /**
@@ -2538,8 +2581,7 @@ class ObjectEntityMapper extends QBMapper
             ->andWhere($qb->expr()->in('schema', $qb->createNamedParameter($schemaIds, IQueryBuilder::PARAM_INT_ARRAY)));
 
         $result = $qb->executeQuery();
-        $row    = $result->fetch();
-        return (int) ($row['COUNT(id)'] ?? 0);
+        return (int) $result->fetchOne();
     }//end countBySchemas()
 
     /**
@@ -2667,7 +2709,12 @@ class ObjectEntityMapper extends QBMapper
 
         if ($partialMatch === false) {
             $qb->andWhere(
-                $qb->expr()->like($objectColumn, $qb->createNamedParameter('%"'.$this->db->escapeLikeParameter($search).'"%'))
+                $qb->expr()->like(
+                    $objectColumn,
+                    $qb->createNamedParameter(
+                        '%"'.$this->db->escapeLikeParameter($search).'"%'
+                    )
+                )
             );
         }
 

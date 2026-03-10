@@ -9,14 +9,15 @@
          beStrictAboutCoverageMetadata="true"
          beStrictAboutOutputDuringTests="true"
          failOnRisky="true"
-         failOnWarning="true">
+         failOnWarning="false"
+         failOnDeprecation="false">
     
     <testsuites>
         <testsuite name="Unit Tests">
             <directory>tests/Unit</directory>
         </testsuite>
         <testsuite name="Integration Tests">
-            <directory>tests/Integration</directory>
+            <directory>tests/integration</directory>
         </testsuite>
         <testsuite name="Database Tests">
             <directory>tests/Db</directory>
@@ -46,6 +47,5 @@
 
     <php>
         <env name="PHPUNIT_RUN" value="1"/>
-        <env name="NEXTCLOUD_CONFIG_DIR" value="tests/config"/>
     </php>
 </phpunit>

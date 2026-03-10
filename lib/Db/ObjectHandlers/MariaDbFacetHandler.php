@@ -642,7 +642,7 @@ class MariaDbFacetHandler
             $orConditions->add(
                 $queryBuilder->expr()->in(
                     'id',
-                    $queryBuilder->createNamedParameter($integerIds, \Doctrine\DBAL\Connection::PARAM_INT_ARRAY)
+                    $queryBuilder->createNamedParameter($integerIds, IQueryBuilder::PARAM_INT_ARRAY)
                 )
             );
         }
@@ -652,7 +652,7 @@ class MariaDbFacetHandler
             $orConditions->add(
                 $queryBuilder->expr()->in(
                     'uuid',
-                    $queryBuilder->createNamedParameter($stringIds, \Doctrine\DBAL\Connection::PARAM_STR_ARRAY)
+                    $queryBuilder->createNamedParameter($stringIds, IQueryBuilder::PARAM_STR_ARRAY)
                 )
             );
         }
@@ -712,7 +712,7 @@ class MariaDbFacetHandler
                         $field,
                         $queryBuilder->createNamedParameter(
                             $value,
-                            \Doctrine\DBAL\Connection::PARAM_STR_ARRAY
+                            IQueryBuilder::PARAM_STR_ARRAY
                         )
                     )
                 );

@@ -99,6 +99,45 @@ class N8nAdapter implements WorkflowEngineInterface
     }//end deployWorkflow()
 
     /**
+     * Update an existing workflow in n8n.
+     *
+     * @param string               $workflowId         The workflow ID to update
+     * @param array<string, mixed> $workflowDefinition Updated workflow definition
+     *
+     * @return string The workflow ID
+     */
+    public function updateWorkflow(string $workflowId, array $workflowDefinition): string
+    {
+        $client   = $this->clientService->newClient();
+        $response = $client->patch(
+            $this->baseUrl.'/rest/workflows/'.$workflowId,
+            $this->buildRequestOptions(extra: ['json' => $workflowDefinition])
+        );
+
+        $data = json_decode($response->getBody(), true);
+
+        return (string) ($data['id'] ?? $workflowId);
+    }//end updateWorkflow()
+
+    /**
+     * Get a workflow definition from n8n.
+     *
+     * @param string $workflowId The workflow ID to retrieve
+     *
+     * @return array<string, mixed> The workflow definition
+     */
+    public function getWorkflow(string $workflowId): array
+    {
+        $client   = $this->clientService->newClient();
+        $response = $client->get(
+            $this->baseUrl.'/rest/workflows/'.$workflowId,
+            $this->buildRequestOptions()
+        );
+
+        return json_decode($response->getBody(), true) ?? [];
+    }//end getWorkflow()
+
+    /**
      * Delete a workflow from n8n.
      *
      * @param string $workflowId The workflow ID to delete

@@ -62,6 +62,7 @@ use Symfony\Component\Uid\Uuid;
  * @template-extends QBMapper<Webhook>
  *
  * @SuppressWarnings(PHPMD.TooManyPublicMethods)
+ * @SuppressWarnings(PHPMD.CouplingBetweenObjects) Webhook dispatching requires event and HTTP dependencies
  */
 class WebhookMapper extends QBMapper
 {

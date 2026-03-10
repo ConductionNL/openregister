@@ -464,11 +464,11 @@ class OrganisationService
      * Get the active organisation for the current user
      * Uses session caching to avoid repeated database calls for RBAC performance
      *
-     * @param array|null $preloadedOrganisations Pre-loaded organisations to avoid extra queries.
+     * @param array|null $preloadedOrgs Pre-loaded organisations to avoid extra queries.
      *
      * @return Organisation|null The active organisation or null.
      */
-    public function getActiveOrganisation(?array $preloadedOrganisations=null): ?Organisation
+    public function getActiveOrganisation(?array $preloadedOrgs=null): ?Organisation
     {
         $user = $this->getCurrentUser();
         if ($user === null) {
@@ -494,7 +494,7 @@ class OrganisationService
         }
 
         // Cache miss or expired - fetch from database.
-        $organisation = $this->fetchActiveOrganisationFromDatabase(userId: $userId, preloadedOrganisations: $preloadedOrganisations);
+        $organisation = $this->fetchActiveOrganisationFromDatabase(userId: $userId, preloadedOrgs: $preloadedOrgs);
 
         // Cache the result if we have an organisation.
         if ($organisation !== null) {
@@ -699,8 +699,9 @@ class OrganisationService
      *
      * @throws Exception If user not logged in or organisation creation fails
      *
-     * @SuppressWarnings(PHPMD.StaticAccess)        Uuid::isValid is standard Symfony UID pattern
-     * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Boolean flag controls whether to add current user to organisation
+     * @SuppressWarnings(PHPMD.StaticAccess)         Uuid::isValid is standard Symfony UID pattern
+     * @SuppressWarnings(PHPMD.BooleanArgumentFlag)  Boolean flag controls whether to add current user to organisation
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity) Organisation creation requires multiple validation steps
      */
     public function createOrganisation(
         string $name,
@@ -856,7 +857,7 @@ class OrganisationService
         }
 
         $organisations = $this->getUserOrganisations();
-        $activeOrg     = $this->getActiveOrganisation(preloadedOrganisations: $organisations);
+        $activeOrg     = $this->getActiveOrganisation(preloadedOrgs: $organisations);
 
         return [
             'total'   => count($organisations),
@@ -935,7 +936,10 @@ class OrganisationService
     {
         $adminGroup = $this->groupManager->get('admin');
         if ($adminGroup === null) {
-            $this->logger->warning(message: '[OrganisationService] Admin group not found', context: ['file' => __FILE__, 'line' => __LINE__]);
+            $this->logger->warning(
+                message: '[OrganisationService] Admin group not found',
+                context: ['file' => __FILE__, 'line' => __LINE__]
+            );
             return [];
         }
 
@@ -1087,15 +1091,15 @@ class OrganisationService
     /**
      * Fetch active organisation from database (cache miss fallback)
      *
-     * @param string     $userId                 The user ID to fetch active organisation for.
-     * @param array|null $preloadedOrganisations Pre-loaded organisations to avoid extra queries.
+     * @param string     $userId        The user ID to fetch active organisation for.
+     * @param array|null $preloadedOrgs Pre-loaded organisations to avoid extra queries.
      *
      * @return Organisation|null The active organisation or null
      *
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Active org logic requires comprehensive fallback chain
      * @SuppressWarnings(PHPMD.ElseExpression)        Else clause needed for clear invalid access handling
      */
-    private function fetchActiveOrganisationFromDatabase(string $userId, ?array $preloadedOrganisations=null): ?Organisation
+    private function fetchActiveOrganisationFromDatabase(string $userId, ?array $preloadedOrgs=null): ?Organisation
     {
         // Get active organisation UUID from user configuration (persistent).
         $activeUuid = $this->config->getUserValue(
@@ -1143,7 +1147,7 @@ class OrganisationService
         }//end if
 
         // No valid active organisation set, try to set the oldest one from user's organisations.
-        $organisations = $preloadedOrganisations ?? $this->getUserOrganisations();
+        $organisations = $preloadedOrgs ?? $this->getUserOrganisations();
         if (empty($organisations) === false) {
             // Sort by created date and take the oldest.
             usort(

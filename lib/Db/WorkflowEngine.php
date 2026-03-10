@@ -168,10 +168,15 @@ class WorkflowEngine extends Entity implements JsonSerializable
      */
     public function hydrate(array $object): self
     {
-        $methods = get_class_methods($this);
+        $fields = [
+            'uuid', 'name', 'engineType', 'baseUrl', 'authType',
+            'authConfig', 'enabled', 'defaultTimeout', 'healthStatus',
+            'lastHealthCheck', 'created', 'updated',
+        ];
+
         foreach ($object as $key => $value) {
-            $setter = 'set'.ucfirst($key);
-            if (in_array(needle: $setter, haystack: $methods, strict: true) === true) {
+            if (in_array($key, $fields, true) === true) {
+                $setter = 'set'.ucfirst($key);
                 $this->$setter($value);
             }
         }

@@ -4,7 +4,7 @@
  * ConfigurationController Refactored Methods Unit Tests
  *
  * Comprehensive tests for the 1 private method extracted during Phase 1 refactoring.
- * Tests cover data-driven configuration updates.
+ * Tests cover data-driven configuration updates via Configuration entity setters.
  *
  * @category Tests
  * @package  OCA\OpenRegister\Tests\Unit\Controller
@@ -21,17 +21,24 @@
 namespace OCA\OpenRegister\Tests\Unit\Controller;
 
 use OCA\OpenRegister\Controller\ConfigurationController;
+use OCA\OpenRegister\Db\Configuration;
+use OCA\OpenRegister\Db\ConfigurationMapper;
 use OCA\OpenRegister\Service\ConfigurationService;
+use OCA\OpenRegister\Service\Configuration\GitHubHandler;
+use OCA\OpenRegister\Service\Configuration\GitLabHandler;
+use OCA\OpenRegister\Service\NotificationService;
+use OCP\App\IAppManager;
 use OCP\IRequest;
 use PHPUnit\Framework\TestCase;
 use PHPUnit\Framework\MockObject\MockObject;
+use Psr\Log\LoggerInterface;
 use ReflectionClass;
 
 /**
  * Unit tests for ConfigurationController refactored methods.
  *
  * Tests the 1 extracted private method using reflection:
- * 1. applyConfigurationUpdates()
+ * 1. applyConfigurationUpdates(Configuration $configuration, array $data): void
  */
 class ConfigurationControllerRefactoredMethodsTest extends TestCase
 {
@@ -41,8 +48,26 @@ class ConfigurationControllerRefactoredMethodsTest extends TestCase
 	/** @var MockObject|IRequest */
 	private $request;
 
+	/** @var MockObject|ConfigurationMapper */
+	private $configurationMapper;
+
 	/** @var MockObject|ConfigurationService */
 	private $configurationService;
+
+	/** @var MockObject|NotificationService */
+	private $notificationService;
+
+	/** @var MockObject|GitHubHandler */
+	private $githubHandler;
+
+	/** @var MockObject|GitLabHandler */
+	private $gitlabHandler;
+
+	/** @var MockObject|IAppManager */
+	private $appManager;
+
+	/** @var MockObject|LoggerInterface */
+	private $logger;
 
 	/**
 	 * Set up test environment before each test.
@@ -55,13 +80,25 @@ class ConfigurationControllerRefactoredMethodsTest extends TestCase
 
 		// Create mocks for all dependencies.
 		$this->request = $this->createMock(IRequest::class);
+		$this->configurationMapper = $this->createMock(ConfigurationMapper::class);
 		$this->configurationService = $this->createMock(ConfigurationService::class);
+		$this->notificationService = $this->createMock(NotificationService::class);
+		$this->githubHandler = $this->createMock(GitHubHandler::class);
+		$this->gitlabHandler = $this->createMock(GitLabHandler::class);
+		$this->appManager = $this->createMock(IAppManager::class);
+		$this->logger = $this->createMock(LoggerInterface::class);
 
 		// Create ConfigurationController instance.
 		$this->configurationController = new ConfigurationController(
-			AppName: 'openregister',
+			appName: 'openregister',
 			request: $this->request,
-			configurationService: $this->configurationService
+			configurationMapper: $this->configurationMapper,
+			configurationService: $this->configurationService,
+			notificationService: $this->notificationService,
+			githubHandler: $this->githubHandler,
+			gitlabHandler: $this->gitlabHandler,
+			appManager: $this->appManager,
+			logger: $this->logger
 		);
 
 		// Set up reflection for accessing private methods.
@@ -93,24 +130,21 @@ class ConfigurationControllerRefactoredMethodsTest extends TestCase
 	 */
 	public function testApplyConfigurationUpdatesAppliesSingleField(): void
 	{
-		$config = [
-			'name' => 'Old Name',
-			'description' => 'Old Description',
-			'enabled' => false
-		];
+		$config = new Configuration();
+		$config->setTitle('Old Name');
+		$config->setDescription('Old Description');
 
 		$input = [
-			'name' => 'New Name'
+			'title' => 'New Name'
 		];
 
 		$this->invokePrivateMethod(
 			methodName: 'applyConfigurationUpdates',
-			parameters: [&$config, $input]
+			parameters: [$config, $input]
 		);
 
-		$this->assertEquals('New Name', $config['name'], 'Name should be updated.');
-		$this->assertEquals('Old Description', $config['description'], 'Description should remain unchanged.');
-		$this->assertEquals(false, $config['enabled'], 'Enabled should remain unchanged.');
+		$this->assertEquals('New Name', $config->getTitle(), 'Title should be updated.');
+		$this->assertEquals('Old Description', $config->getDescription(), 'Description should remain unchanged.');
 	}
 
 	/**
@@ -120,54 +154,25 @@ class ConfigurationControllerRefactoredMethodsTest extends TestCase
 	 */
 	public function testApplyConfigurationUpdatesAppliesMultipleFields(): void
 	{
-		$config = [
-			'name' => 'Old Name',
-			'description' => 'Old Description',
-			'version' => '1.0.0',
-			'enabled' => false
-		];
+		$config = new Configuration();
+		$config->setTitle('Old Name');
+		$config->setDescription('Old Description');
+		$config->setVersion('1.0.0');
 
 		$input = [
-			'name' => 'New Name',
+			'title' => 'New Name',
 			'description' => 'New Description',
 			'version' => '2.0.0'
 		];
 
 		$this->invokePrivateMethod(
 			methodName: 'applyConfigurationUpdates',
-			parameters: [&$config, $input]
+			parameters: [$config, $input]
 		);
 
-		$this->assertEquals('New Name', $config['name'], 'Name should be updated.');
-		$this->assertEquals('New Description', $config['description'], 'Description should be updated.');
-		$this->assertEquals('2.0.0', $config['version'], 'Version should be updated.');
-		$this->assertEquals(false, $config['enabled'], 'Enabled should remain unchanged.');
-	}
-
-	/**
-	 * Test applyConfigurationUpdates adds new fields.
-	 *
-	 * @return void
-	 */
-	public function testApplyConfigurationUpdatesAddsNewFields(): void
-	{
-		$config = [
-			'name' => 'Test Config'
-		];
-
-		$input = [
-			'description' => 'New Description',
-			'author' => 'John Doe'
-		];
-
-		$this->invokePrivateMethod(
-			methodName: 'applyConfigurationUpdates',
-			parameters: [&$config, $input]
-		);
-
-		$this->assertEquals('Test Config', $config['name'], 'Name should remain unchanged.');
-		$this->assertEquals('New Description', $config['description'], 'Description should be added.');
-		$this->assertEquals('John Doe', $config['author'], 'Author should be added.');
+		$this->assertEquals('New Name', $config->getTitle(), 'Title should be updated.');
+		$this->assertEquals('New Description', $config->getDescription(), 'Description should be updated.');
+		$this->assertEquals('2.0.0', $config->getVersion(), 'Version should be updated.');
 	}
 
 	/**
@@ -177,47 +182,42 @@ class ConfigurationControllerRefactoredMethodsTest extends TestCase
 	 */
 	public function testApplyConfigurationUpdatesWithEmptyInput(): void
 	{
-		$config = [
-			'name' => 'Test Config',
-			'description' => 'Test Description'
-		];
-
-		$originalConfig = $config;
+		$config = new Configuration();
+		$config->setTitle('Test Config');
+		$config->setDescription('Test Description');
 
 		$this->invokePrivateMethod(
 			methodName: 'applyConfigurationUpdates',
-			parameters: [&$config, []]
+			parameters: [$config, []]
 		);
 
-		$this->assertEquals($originalConfig, $config, 'Config should remain unchanged with empty input.');
+		$this->assertEquals('Test Config', $config->getTitle(), 'Title should remain unchanged with empty input.');
+		$this->assertEquals('Test Description', $config->getDescription(), 'Description should remain unchanged with empty input.');
 	}
 
 	/**
-	 * Test applyConfigurationUpdates handles null values.
+	 * Test applyConfigurationUpdates handles null values (should not apply).
 	 *
 	 * @return void
 	 */
 	public function testApplyConfigurationUpdatesWithNullValues(): void
 	{
-		$config = [
-			'name' => 'Test Config',
-			'description' => 'Test Description',
-			'optional' => 'Some Value'
-		];
+		$config = new Configuration();
+		$config->setTitle('Test Config');
+		$config->setDescription('Test Description');
 
 		$input = [
 			'description' => null,
-			'optional' => null
 		];
 
 		$this->invokePrivateMethod(
 			methodName: 'applyConfigurationUpdates',
-			parameters: [&$config, $input]
+			parameters: [$config, $input]
 		);
 
-		$this->assertNull($config['description'], 'Description should be set to null.');
-		$this->assertNull($config['optional'], 'Optional should be set to null.');
-		$this->assertEquals('Test Config', $config['name'], 'Name should remain unchanged.');
+		// Null values should not be applied (the method checks for !== null).
+		$this->assertEquals('Test Config', $config->getTitle(), 'Title should remain unchanged.');
+		$this->assertEquals('Test Description', $config->getDescription(), 'Description should remain unchanged when null is passed.');
 	}
 
 	/**
@@ -227,25 +227,19 @@ class ConfigurationControllerRefactoredMethodsTest extends TestCase
 	 */
 	public function testApplyConfigurationUpdatesWithBooleanValues(): void
 	{
-		$config = [
-			'enabled' => false,
-			'public' => false,
-			'archived' => false
-		];
+		$config = new Configuration();
+		$config->setAutoUpdate(false);
 
 		$input = [
-			'enabled' => true,
-			'public' => true
+			'autoUpdate' => true
 		];
 
 		$this->invokePrivateMethod(
 			methodName: 'applyConfigurationUpdates',
-			parameters: [&$config, $input]
+			parameters: [$config, $input]
 		);
 
-		$this->assertTrue($config['enabled'], 'Enabled should be true.');
-		$this->assertTrue($config['public'], 'Public should be true.');
-		$this->assertFalse($config['archived'], 'Archived should remain false.');
+		$this->assertTrue($config->getAutoUpdate(), 'AutoUpdate should be true.');
 	}
 
 	/**
@@ -255,95 +249,21 @@ class ConfigurationControllerRefactoredMethodsTest extends TestCase
 	 */
 	public function testApplyConfigurationUpdatesWithArrayValues(): void
 	{
-		$config = [
-			'tags' => ['tag1', 'tag2'],
-			'metadata' => ['key1' => 'value1']
-		];
+		$config = new Configuration();
+		$config->setRegisters(['reg1']);
 
 		$input = [
-			'tags' => ['tag3', 'tag4', 'tag5'],
-			'metadata' => ['key2' => 'value2', 'key3' => 'value3']
+			'registers' => ['reg1', 'reg2', 'reg3'],
+			'schemas' => ['schema1', 'schema2']
 		];
 
 		$this->invokePrivateMethod(
 			methodName: 'applyConfigurationUpdates',
-			parameters: [&$config, $input]
+			parameters: [$config, $input]
 		);
 
-		$this->assertEquals(['tag3', 'tag4', 'tag5'], $config['tags'], 'Tags should be replaced.');
-		$this->assertEquals(['key2' => 'value2', 'key3' => 'value3'], $config['metadata'], 'Metadata should be replaced.');
-	}
-
-	/**
-	 * Test applyConfigurationUpdates handles nested object updates.
-	 *
-	 * @return void
-	 */
-	public function testApplyConfigurationUpdatesWithNestedObjects(): void
-	{
-		$config = [
-			'name' => 'Test',
-			'settings' => [
-				'theme' => 'dark',
-				'language' => 'en',
-				'notifications' => [
-					'email' => true,
-					'push' => false
-				]
-			]
-		];
-
-		$input = [
-			'settings' => [
-				'theme' => 'light',
-				'notifications' => [
-					'email' => false,
-					'push' => true,
-					'sms' => true
-				]
-			]
-		];
-
-		$this->invokePrivateMethod(
-			methodName: 'applyConfigurationUpdates',
-			parameters: [&$config, $input]
-		);
-
-		// The entire 'settings' object should be replaced.
-		$this->assertEquals('light', $config['settings']['theme'], 'Theme should be updated.');
-		$this->assertArrayNotHasKey('language', $config['settings'], 'Language should be removed (full replacement).');
-		$this->assertFalse($config['settings']['notifications']['email'], 'Email notifications should be false.');
-		$this->assertTrue($config['settings']['notifications']['push'], 'Push notifications should be true.');
-		$this->assertTrue($config['settings']['notifications']['sms'], 'SMS notifications should be added.');
-	}
-
-	/**
-	 * Test applyConfigurationUpdates handles numeric keys.
-	 *
-	 * @return void
-	 */
-	public function testApplyConfigurationUpdatesWithNumericKeys(): void
-	{
-		$config = [
-			0 => 'value0',
-			1 => 'value1',
-			'name' => 'Test'
-		];
-
-		$input = [
-			0 => 'new_value0',
-			2 => 'value2'
-		];
-
-		$this->invokePrivateMethod(
-			methodName: 'applyConfigurationUpdates',
-			parameters: [&$config, $input]
-		);
-
-		$this->assertEquals('new_value0', $config[0], 'Numeric key 0 should be updated.');
-		$this->assertEquals('value1', $config[1], 'Numeric key 1 should remain unchanged.');
-		$this->assertEquals('value2', $config[2], 'Numeric key 2 should be added.');
-		$this->assertEquals('Test', $config['name'], 'Name should remain unchanged.');
+		$this->assertEquals(['reg1', 'reg2', 'reg3'], $config->getRegisters(), 'Registers should be replaced.');
+		$this->assertEquals(['schema1', 'schema2'], $config->getSchemas(), 'Schemas should be set.');
 	}
 
 	/**
@@ -353,39 +273,26 @@ class ConfigurationControllerRefactoredMethodsTest extends TestCase
 	 */
 	public function testApplyConfigurationUpdatesPreservesDataTypes(): void
 	{
-		$config = [
-			'string' => 'value',
-			'integer' => 42,
-			'float' => 3.14,
-			'boolean' => true,
-			'array' => [1, 2, 3],
-			'null' => null
-		];
+		$config = new Configuration();
 
 		$input = [
-			'string' => 'new_value',
-			'integer' => 100,
-			'float' => 2.71,
-			'boolean' => false,
-			'array' => [4, 5, 6],
-			'null' => 'not_null_anymore'
+			'title' => 'new_value',
+			'autoUpdate' => false,
+			'registers' => [1, 2, 3],
 		];
 
 		$this->invokePrivateMethod(
 			methodName: 'applyConfigurationUpdates',
-			parameters: [&$config, $input]
+			parameters: [$config, $input]
 		);
 
-		$this->assertIsString($config['string'], 'String should remain string.');
-		$this->assertIsInt($config['integer'], 'Integer should remain integer.');
-		$this->assertIsFloat($config['float'], 'Float should remain float.');
-		$this->assertIsBool($config['boolean'], 'Boolean should remain boolean.');
-		$this->assertIsArray($config['array'], 'Array should remain array.');
-		$this->assertIsString($config['null'], 'Null was changed to string.');
+		$this->assertIsString($config->getTitle(), 'Title should be string.');
+		$this->assertIsBool($config->getAutoUpdate(), 'AutoUpdate should be boolean.');
+		$this->assertIsArray($config->getRegisters(), 'Registers should be array.');
 	}
 
 	/**
-	 * Test applyConfigurationUpdates is efficient with large configs.
+	 * Test applyConfigurationUpdates is efficient with large data.
 	 *
 	 * This test verifies the data-driven approach is performant.
 	 *
@@ -393,38 +300,37 @@ class ConfigurationControllerRefactoredMethodsTest extends TestCase
 	 */
 	public function testApplyConfigurationUpdatesPerformance(): void
 	{
-		// Create large config with 1000 fields.
-		$config = [];
-		for ($i = 0; $i < 1000; $i++) {
-			$config["field_{$i}"] = "value_{$i}";
-		}
+		$config = new Configuration();
+		$config->setTitle('old_title');
+		$config->setDescription('old_desc');
+		$config->setVersion('1.0.0');
+		$config->setSourceUrl('http://example.com');
 
-		// Update 10 fields.
 		$input = [
-			'field_0' => 'updated_0',
-			'field_100' => 'updated_100',
-			'field_500' => 'updated_500',
-			'field_999' => 'updated_999'
+			'title' => 'updated_title',
+			'description' => 'updated_desc',
+			'version' => '2.0.0',
+			'sourceUrl' => 'http://updated.com'
 		];
 
 		$startTime = microtime(true);
 
 		$this->invokePrivateMethod(
 			methodName: 'applyConfigurationUpdates',
-			parameters: [&$config, $input]
+			parameters: [$config, $input]
 		);
 
 		$endTime = microtime(true);
 		$duration = $endTime - $startTime;
 
 		// Should complete in under 10ms (generous for CI environments).
-		$this->assertLessThan(0.01, $duration, 'Should complete quickly even with large config.');
+		$this->assertLessThan(0.01, $duration, 'Should complete quickly.');
 
 		// Verify updates were applied.
-		$this->assertEquals('updated_0', $config['field_0'], 'Field 0 should be updated.');
-		$this->assertEquals('updated_100', $config['field_100'], 'Field 100 should be updated.');
-		$this->assertEquals('updated_500', $config['field_500'], 'Field 500 should be updated.');
-		$this->assertEquals('updated_999', $config['field_999'], 'Field 999 should be updated.');
+		$this->assertEquals('updated_title', $config->getTitle(), 'Title should be updated.');
+		$this->assertEquals('updated_desc', $config->getDescription(), 'Description should be updated.');
+		$this->assertEquals('2.0.0', $config->getVersion(), 'Version should be updated.');
+		$this->assertEquals('http://updated.com', $config->getSourceUrl(), 'SourceUrl should be updated.');
 	}
 
 	/**
@@ -436,50 +342,77 @@ class ConfigurationControllerRefactoredMethodsTest extends TestCase
 	 */
 	public function testDataDrivenApproachReducesComplexity(): void
 	{
-		// Before refactoring: 20+ if statements (NPath ~98K, Complexity 20).
-		// After refactoring: 1 foreach loop (NPath ~200, Complexity 5).
-		//
-		// This test conceptually validates the approach works for all scenarios
-		// that previously required separate if statements.
-
-		$config = [
-			'name' => 'old',
-			'version' => 'old',
-			'description' => 'old',
-			'source' => 'old',
-			'schema' => 'old'
-		];
+		$config = new Configuration();
 
 		// Simulate updating all fields that had separate if statements.
 		$input = [
-			'name' => 'new',
-			'version' => 'new',
+			'title' => 'new',
 			'description' => 'new',
-			'source' => 'new',
-			'schema' => 'new'
+			'sourceUrl' => 'http://new.example.com',
+			'type' => 'new_type'
 		];
 
 		$this->invokePrivateMethod(
 			methodName: 'applyConfigurationUpdates',
-			parameters: [&$config, $input]
+			parameters: [$config, $input]
 		);
 
-		// All fields should be updated with single loop.
-		foreach ($input as $key => $value) {
-			$this->assertEquals('new', $config[$key], "Field '{$key}' should be updated.");
-		}
+		// All fields should be updated via the data-driven setter approach.
+		$this->assertEquals('new', $config->getTitle(), 'Title should be updated.');
+		$this->assertEquals('new', $config->getDescription(), 'Description should be updated.');
+		$this->assertEquals('http://new.example.com', $config->getSourceUrl(), 'SourceUrl should be updated.');
+		$this->assertEquals('new_type', $config->getType(), 'Type should be updated.');
 
 		$this->assertTrue(true, 'Data-driven approach successfully handles all update scenarios.');
 	}
+
+	/**
+	 * Test applyConfigurationUpdates ignores unknown fields.
+	 *
+	 * @return void
+	 */
+	public function testApplyConfigurationUpdatesIgnoresUnknownFields(): void
+	{
+		$config = new Configuration();
+		$config->setTitle('Original');
+
+		$input = [
+			'title' => 'Updated',
+			'nonExistentField' => 'should be ignored',
+			'anotherFakeField' => 42
+		];
+
+		// Should not throw an exception even with unknown fields.
+		$this->invokePrivateMethod(
+			methodName: 'applyConfigurationUpdates',
+			parameters: [$config, $input]
+		);
+
+		$this->assertEquals('Updated', $config->getTitle(), 'Title should be updated.');
+	}
+
+	/**
+	 * Test applyConfigurationUpdates with GitHub-related fields.
+	 *
+	 * @return void
+	 */
+	public function testApplyConfigurationUpdatesWithGitHubFields(): void
+	{
+		$config = new Configuration();
+
+		$input = [
+			'githubRepo' => 'ConductionNL/openregister',
+			'githubBranch' => 'main',
+			'githubPath' => '/schemas'
+		];
+
+		$this->invokePrivateMethod(
+			methodName: 'applyConfigurationUpdates',
+			parameters: [$config, $input]
+		);
+
+		$this->assertEquals('ConductionNL/openregister', $config->getGithubRepo(), 'GitHub repo should be set.');
+		$this->assertEquals('main', $config->getGithubBranch(), 'GitHub branch should be set.');
+		$this->assertEquals('/schemas', $config->getGithubPath(), 'GitHub path should be set.');
+	}
 }
-
-
-
-
-
-
-
-
-
-
-

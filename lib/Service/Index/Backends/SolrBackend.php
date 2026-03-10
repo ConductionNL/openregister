@@ -586,4 +586,40 @@ class SolrBackend implements SearchBackendInterface
     {
         return $this->httpClient;
     }//end getHttpClient()
+
+    /**
+     * Index files by their IDs.
+     *
+     * @param array       $fileIds        Array of file IDs to index.
+     * @param string|null $collectionName Optional collection name.
+     *
+     * @return array Indexing results.
+     */
+    public function indexFiles(array $fileIds, ?string $collectionName=null): array
+    {
+        return ['indexed' => 0, 'failed' => 0, 'errors' => []];
+    }//end indexFiles()
+
+    /**
+     * Get file indexing statistics.
+     *
+     * @return array File indexing statistics.
+     */
+    public function getFileIndexStats(): array
+    {
+        return [];
+    }//end getFileIndexStats()
+
+    /**
+     * Fix mismatched fields in the search backend schema.
+     *
+     * @param array $mismatchedFields Array of mismatched fields.
+     * @param bool  $dryRun           Whether to preview changes only.
+     *
+     * @return array Results of the fix operation.
+     */
+    public function fixMismatchedFields(array $mismatchedFields, bool $dryRun=false): array
+    {
+        return [];
+    }//end fixMismatchedFields()
 }//end class

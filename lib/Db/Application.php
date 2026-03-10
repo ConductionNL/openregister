@@ -73,7 +73,8 @@ use Symfony\Component\Uid\Uuid;
  * @psalm-suppress PossiblyUnusedMethod
  * @psalm-suppress PropertyNotSetInConstructor $id is set by Nextcloud's Entity base class
  *
- * @SuppressWarnings(PHPMD.TooManyFields) Domain entity requires many fields for complete application configuration
+ * @SuppressWarnings(PHPMD.TooManyFields)
+ * @SuppressWarnings(PHPMD.ExcessiveClassComplexity)
  */
 class Application extends Entity implements JsonSerializable
 {
@@ -557,26 +558,8 @@ class Application extends Entity implements JsonSerializable
             'owner'                  => $this->owner,
             'active'                 => $this->isActive(),
             'groups'                 => $groups,
-            'quota'                  => [
-                'storage'   => $this->storageQuota,
-                'bandwidth' => $this->bandwidthQuota,
-                'requests'  => $this->requestQuota,
-                'users'     => null,
-        // To be set via admin configuration.
-                'groups'    => null,
-        // To be set via admin configuration.
-            ],
-            'usage'                  => [
-                'storage'   => 0,
-            // To be calculated from actual usage.
-                'bandwidth' => 0,
-            // To be calculated from actual usage.
-                'requests'  => 0,
-            // To be calculated from actual usage.
-                'users'     => 0,
-            // Applications don't have direct users.
-                'groups'    => count($groups ?? []),
-            ],
+            'quota'                  => $this->getQuotaData(),
+            'usage'                  => $this->getUsageData(groups: $groups),
             'authorization'          => $this->authorization ?? $this->getDefaultAuthorization(),
             'created'                => $this->getCreatedFormatted(),
             'updated'                => $this->getUpdatedFormatted(),
@@ -680,6 +663,50 @@ class Application extends Entity implements JsonSerializable
 
         return null;
     }//end getManagedByConfiguration()
+
+    /**
+     * Get quota data for JSON serialization.
+     *
+     * Returns the quota allocation structure for storage, bandwidth, and requests.
+     *
+     * @return array{storage: int|null, bandwidth: int|null, requests: int|null, users: null, groups: null}
+     */
+    private function getQuotaData(): array
+    {
+        return [
+            'storage'   => $this->storageQuota,
+            'bandwidth' => $this->bandwidthQuota,
+            'requests'  => $this->requestQuota,
+            'users'     => null,
+            // To be set via admin configuration.
+            'groups'    => null,
+            // To be set via admin configuration.
+        ];
+    }//end getQuotaData()
+
+    /**
+     * Get usage data for JSON serialization.
+     *
+     * Returns the current usage statistics structure.
+     *
+     * @param array $groups The groups array to calculate group count from.
+     *
+     * @return array{storage: 0, bandwidth: 0, requests: 0, users: 0, groups: int<0, max>}
+     */
+    private function getUsageData(array $groups): array
+    {
+        return [
+            'storage'   => 0,
+            // To be calculated from actual usage.
+            'bandwidth' => 0,
+            // To be calculated from actual usage.
+            'requests'  => 0,
+            // To be calculated from actual usage.
+            'users'     => 0,
+            // Applications don't have direct users.
+            'groups'    => count($groups ?? []),
+        ];
+    }//end getUsageData()
 
     /**
      * Get formatted created date for JSON serialization

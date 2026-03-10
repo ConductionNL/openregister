@@ -114,6 +114,13 @@ use OCP\IUserSession;
  * @method void setPublished(?DateTime $published)
  * @method DateTime|null getModified()
  * @method void setModified(?DateTime $modified)
+ * @method DateTime|null getDepublished()
+ * @method void setDepublished(?DateTime $depublished)
+ * @method string|null getOrganization()
+ * @method float|null getRelevance()
+ * @method void setRelevance(?float $relevance)
+ * @method array|null getGroups()
+ * @method void setGroups(?array $groups)
  *
  * @SuppressWarnings(PHPMD.ExcessiveClassComplexity)
  * @SuppressWarnings(PHPMD.TooManyFields)

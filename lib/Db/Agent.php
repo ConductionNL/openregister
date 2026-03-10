@@ -403,35 +403,49 @@ class Agent extends Entity implements JsonSerializable
             $uuid = $object['uuid'];
         }
 
-        $this->setUuid(uuid: $uuid);
+        // Map property names to their resolved values.
+        // Uses camelCase keys with snake_case fallback and defaults where needed.
+        // NOTE: Entity setters use __call which does not support named arguments,
+        // so we use dynamic $this->$method($value) calls via the mapping approach.
+        $fields = [
+            'uuid'              => $uuid,
+            'name'              => $object['name'] ?? null,
+            'description'       => $object['description'] ?? null,
+            'type'              => $object['type'] ?? null,
+            'provider'          => $object['provider'] ?? null,
+            'model'             => $object['model'] ?? null,
+            'prompt'            => $object['prompt'] ?? null,
+            'temperature'       => $object['temperature'] ?? null,
+            'maxTokens'         => $object['maxTokens'] ?? $object['max_tokens'] ?? null,
+            'configuration'     => $object['configuration'] ?? null,
+            'organisation'      => $object['organisation'] ?? null,
+            'owner'             => $object['owner'] ?? null,
+            'active'            => $object['active'] ?? true,
+            'enableRag'         => $object['enableRag'] ?? $object['enable_rag'] ?? false,
+            'ragSearchMode'     => $object['ragSearchMode'] ?? $object['rag_search_mode'] ?? null,
+            'ragNumSources'     => $object['ragNumSources'] ?? $object['rag_num_sources'] ?? null,
+            'ragIncludeFiles'   => $object['ragIncludeFiles'] ?? $object['rag_include_files'] ?? false,
+            'ragIncludeObjects' => $object['ragIncludeObjects'] ?? $object['rag_include_objects'] ?? false,
+            'requestQuota'      => $object['requestQuota'] ?? $object['request_quota'] ?? null,
+            'tokenQuota'        => $object['tokenQuota'] ?? $object['token_quota'] ?? null,
+            'views'             => $object['views'] ?? null,
+            'searchFiles'       => $object['searchFiles'] ?? $object['search_files'] ?? true,
+            'searchObjects'     => $object['searchObjects'] ?? $object['search_objects'] ?? true,
+            'isPrivate'         => $object['isPrivate'] ?? $object['is_private'] ?? true,
+            'invitedUsers'      => $object['invitedUsers'] ?? $object['invited_users'] ?? null,
+            'groups'            => $object['groups'] ?? null,
+            'tools'             => $object['tools'] ?? null,
+            'user'              => $object['user'] ?? null,
+        ];
 
-        $this->setName(name: $object['name'] ?? null);
-        $this->setDescription(description: $object['description'] ?? null);
-        $this->setType(type: $object['type'] ?? null);
-        $this->setProvider(provider: $object['provider'] ?? null);
-        $this->setModel(model: $object['model'] ?? null);
-        $this->setPrompt(prompt: $object['prompt'] ?? null);
-        $this->setTemperature(temperature: $object['temperature'] ?? null);
-        $this->setMaxTokens(maxTokens: $object['maxTokens'] ?? $object['max_tokens'] ?? null);
-        $this->setConfiguration(configuration: $object['configuration'] ?? null);
-        $this->setOrganisation(organisation: $object['organisation'] ?? null);
-        $this->setOwner(owner: $object['owner'] ?? null);
-        $this->setActive(active: $object['active'] ?? true);
-        $this->setEnableRag(enableRag: $object['enableRag'] ?? $object['enable_rag'] ?? false);
-        $this->setRagSearchMode(ragSearchMode: $object['ragSearchMode'] ?? $object['rag_search_mode'] ?? null);
-        $this->setRagNumSources(ragNumSources: $object['ragNumSources'] ?? $object['rag_num_sources'] ?? null);
-        $this->setRagIncludeFiles(ragIncludeFiles: $object['ragIncludeFiles'] ?? $object['rag_include_files'] ?? false);
-        $this->setRagIncludeObjects(ragIncludeObjects: $object['ragIncludeObjects'] ?? $object['rag_include_objects'] ?? false);
-        $this->setRequestQuota(requestQuota: $object['requestQuota'] ?? $object['request_quota'] ?? null);
-        $this->setTokenQuota(tokenQuota: $object['tokenQuota'] ?? $object['token_quota'] ?? null);
-        $this->setViews(views: $object['views'] ?? null);
-        $this->setSearchFiles(searchFiles: $object['searchFiles'] ?? $object['search_files'] ?? true);
-        $this->setSearchObjects(searchObjects: $object['searchObjects'] ?? $object['search_objects'] ?? true);
-        $this->setIsPrivate(isPrivate: $object['isPrivate'] ?? $object['is_private'] ?? true);
-        $this->setInvitedUsers(invitedUsers: $object['invitedUsers'] ?? $object['invited_users'] ?? null);
-        $this->setGroups(groups: $object['groups'] ?? null);
-        $this->setTools(tools: $object['tools'] ?? null);
-        $this->setUser(user: $object['user'] ?? null);
+        foreach ($fields as $key => $value) {
+            $method = 'set'.ucfirst($key);
+            try {
+                $this->$method($value);
+            } catch (\Exception $e) {
+                // Silently ignore invalid properties.
+            }
+        }
 
         return $this;
     }//end hydrate()

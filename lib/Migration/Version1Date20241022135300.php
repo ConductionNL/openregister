@@ -78,7 +78,7 @@ class Version1Date20241022135300 extends SimpleMigrationStep
         }
 
         if ($table->hasColumn('regsiter') === true) {
-            $table->dropColumn('regsiter', 'register');
+            $table->dropColumn('regsiter');
         }
 
         return $schema;
