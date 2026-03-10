@@ -120,9 +120,7 @@ class ReferentialIntegrityService
      */
     public function canDelete(ObjectEntity $object): DeletionAnalysis
     {
-        $t0 = microtime(true);
         $this->ensureRelationIndex();
-        $t1 = microtime(true);
 
         $schemaId = $object->getSchema();
         if ($schemaId === null) {
@@ -133,9 +131,6 @@ class ReferentialIntegrityService
         if (isset($this->relationIndex[$schemaId]) === false) {
             return DeletionAnalysis::empty();
         }
-
-        $depCount = count($this->relationIndex[$schemaId] ?? []);
-        $this->logger->warning('[DELETE-PERF] canDelete ensureRelationIndex: ' . round(($t1 - $t0) * 1000) . 'ms, deps=' . $depCount . ', schemaRegisterMap=' . count($this->schemaRegisterMap ?? []));
 
         $visited = [];
         return $this->walkDeletionGraph(object: $object, visited: $visited);
@@ -530,15 +525,12 @@ class ReferentialIntegrityService
 
         foreach ($dependents as $dep) {
             // Find actual objects of the dependent schema that reference this object's UUID.
-            $tFind = microtime(true);
             $referencingObjects = $this->findReferencingObjects(
                 sourceSchemaId: $dep['sourceSchemaId'],
                 propertyName: $dep['property'],
                 targetUuid: $uuid,
                 isArray: $dep['isArray']
             );
-            $tFindEnd = microtime(true);
-            $this->logger->warning('[DELETE-PERF] findReferencingObjects: ' . round(($tFindEnd - $tFind) * 1000) . 'ms schema=' . $dep['sourceSchemaId'] . ' prop=' . $dep['property'] . ' results=' . count($referencingObjects));
 
             foreach ($referencingObjects as $refObj) {
                 // Skip already soft-deleted objects.
@@ -701,15 +693,16 @@ class ReferentialIntegrityService
                 // Direct match: no further filtering needed.
                 return $candidates;
             } catch (\Exception $e) {
+                // Table doesn't exist or column missing — no referencing objects possible.
                 $this->logger->debug(
-                    message: '[ReferentialIntegrity] Targeted magic table search failed, falling back',
+                    message: '[ReferentialIntegrity] Targeted magic table search failed',
                     context: ['schemaId' => $sourceSchemaId, 'error' => $e->getMessage()]
                 );
-                $candidates = [];
+                return [];
             }
         }
 
-        // Fallback: broad search across all sources.
+        // Fallback: broad search across all sources (only for schemas without register mapping).
         try {
             $candidates = $this->objectEntityMapper->findByRelation(
                 search: $targetUuid,

@@ -1089,6 +1089,10 @@ class MagicMapper
         $qb    = $this->db->getQueryBuilder();
         $parts = [];
 
+        // Detect database platform for identifier quoting.
+        $platform   = $this->db->getDatabasePlatform();
+        $isPostgres = stripos($platform::class, 'PostgreSQL') !== false;
+
         // Collect superset of all property columns across all schemas for UNION compatibility.
         // Each SELECT must include the same columns; schemas that lack a column get NULL AS alias.
         $allPropertyColumns = $this->collectAllPropertyColumns(registerSchemaPairs: $registerSchemaPairs);
@@ -1182,7 +1186,11 @@ class MagicMapper
                 } else if (str_starts_with($field, '_') === false) {
                     // Non-metadata fields - property columns are included in UNION queries.
                     // The column must exist in the SELECT for ordering to work.
-                    $columnName = $this->sanitizeColumnName(name: $field);
+                    // Quote to protect against SQL reserved keywords (e.g. "order", "group").
+                    $columnName = $this->quoteIdentifier(
+                        name: $this->sanitizeColumnName(name: $field),
+                        isPostgres: $isPostgres
+                    );
                 }
 
                 if (strtoupper($direction) === 'DESC') {
@@ -1261,6 +1269,10 @@ class MagicMapper
     ): ?string {
         $qb = $this->db->getQueryBuilder();
 
+        // Detect database platform for identifier quoting.
+        $platform   = $this->db->getDatabasePlatform();
+        $isPostgres = stripos($platform::class, 'PostgreSQL') !== false;
+
         // Add table prefix.
         $fullTableName = 'oc_'.$tableName;
 
@@ -1277,10 +1289,11 @@ class MagicMapper
         // Cast to text ensures type compatibility across schemas in UNION.
         // (e.g., one schema has 'type' as text, another as jsonb).
         foreach (array_keys($allPropertyColumns) as $columnName) {
+            $quotedCol = $this->quoteIdentifier(name: $columnName, isPostgres: $isPostgres);
             if ($this->columnExistsInTable(tableName: $tableName, columnName: $columnName) === true) {
-                $selectColumns[] = "{$columnName}::text AS {$columnName}";
+                $selectColumns[] = "{$quotedCol}::text AS {$quotedCol}";
             } else {
-                $selectColumns[] = "NULL::text AS {$columnName}";
+                $selectColumns[] = "NULL::text AS {$quotedCol}";
             }
         }
 
@@ -1303,13 +1316,14 @@ class MagicMapper
                 $type = $propDef['type'] ?? 'string';
                 if (in_array($type, ['string', 'text'], true) === true) {
                     $columnName = $this->sanitizeColumnName(name: $propName);
+                    $quotedCol  = $this->quoteIdentifier(name: $columnName, isPostgres: $isPostgres);
                     if ($hasTrgm === true) {
                         // Use similarity() for fuzzy scoring when pg_trgm is available.
-                        $searchColumns[] = "COALESCE(similarity({$columnName}::text, {$quotedTerm}), 0)";
+                        $searchColumns[] = "COALESCE(similarity({$quotedCol}::text, {$quotedTerm}), 0)";
                     } else {
                         // Fallback: use CASE with ILIKE for basic relevance scoring.
                         $likePattern     = "'%".trim($quotedTerm, "'")."%'";
-                        $searchColumns[] = "CASE WHEN {$columnName}::text ILIKE {$likePattern} THEN 1 ELSE 0 END";
+                        $searchColumns[] = "CASE WHEN {$quotedCol}::text ILIKE {$likePattern} THEN 1 ELSE 0 END";
                     }
                 }
             }
@@ -2837,6 +2851,7 @@ class MagicMapper
             if (is_array($schemaProperties) === true) {
                 foreach ($schemaProperties as $propertyName => $propertyConfig) {
                     $columnName = $this->sanitizeColumnName(name: $propertyName);
+                    $quotedCol  = $this->quoteIdentifier(name: $columnName, isPostgres: $isPostgres);
 
                     // Create indexes on relation properties (object references) for _extend queries.
                     $hasRef       = isset($propertyConfig['$ref']);
@@ -2849,7 +2864,7 @@ class MagicMapper
                         $idxName = "{$tableName}_{$columnName}_rel_idx";
                         try {
                             $this->db->executeStatement(
-                                "CREATE INDEX IF NOT EXISTS {$idxName} ON {$fullTableName} ({$columnName})"
+                                "CREATE INDEX IF NOT EXISTS {$idxName} ON {$fullTableName} ({$quotedCol})"
                             );
                             $relationIndexes[] = $columnName;
                         } catch (Exception $e) {
@@ -2867,7 +2882,7 @@ class MagicMapper
                             $idxName = "{$tableName}_{$columnName}_arr_gin_idx";
                             try {
                                 $this->db->executeStatement(
-                                    "CREATE INDEX IF NOT EXISTS {$idxName} ON {$fullTableName} USING GIN ({$columnName})"
+                                    "CREATE INDEX IF NOT EXISTS {$idxName} ON {$fullTableName} USING GIN ({$quotedCol})"
                                 );
                                 $relationIndexes[] = $columnName.' (GIN)';
                             } catch (Exception $e) {
@@ -2881,7 +2896,7 @@ class MagicMapper
                         $idxName = "{$tableName}_{$columnName}_facet_idx";
                         try {
                             $this->db->executeStatement(
-                                "CREATE INDEX IF NOT EXISTS {$idxName} ON {$fullTableName} ({$columnName})"
+                                "CREATE INDEX IF NOT EXISTS {$idxName} ON {$fullTableName} ({$quotedCol})"
                             );
                             $facetIndexes[] = $columnName;
                         } catch (Exception $e) {
@@ -6277,9 +6292,10 @@ class MagicMapper
             // Some fields store references as {"value": "uuid"} which may not be in _relations.
             foreach ($additionalFieldNames as $extraField) {
                 $columnName = strtolower(preg_replace('/[A-Z]/', '_$0', $extraField));
+                $quotedCol  = $this->quoteIdentifier(name: $columnName, isPostgres: $isPostgres);
                 foreach ($uuids as $uuid) {
                     // Match both plain UUID strings and {"value": "uuid"} JSON objects.
-                    $conditions[] = "({$columnName} = ? OR {$columnName}::text LIKE ?)";
+                    $conditions[] = "({$quotedCol} = ? OR {$quotedCol}::text LIKE ?)";
                     $params[]     = $uuid;
                     $params[]     = '%'.$uuid.'%';
                 }
