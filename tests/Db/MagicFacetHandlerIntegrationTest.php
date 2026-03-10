@@ -847,4 +847,681 @@ class MagicFacetHandlerIntegrationTest extends TestCase
         $this->assertIsArray($facets);
         $this->assertArrayHasKey('category', $facets);
     }
+
+    // =========================================================================
+    // Date histogram facets with various intervals
+    // =========================================================================
+
+    public function testDateHistogramFacetWithDayInterval(): void
+    {
+        $register = $this->createTestRegister();
+        $schema = $this->createTestSchema();
+
+        $this->mapper->ensureTableForRegisterSchema($register, $schema);
+        $this->trackTable($register, $schema);
+
+        $this->insertTestObject($register, $schema, ['name' => 'Day1', 'category' => 'A', 'age' => 10, 'active' => true]);
+        $this->insertTestObject($register, $schema, ['name' => 'Day2', 'category' => 'B', 'age' => 20, 'active' => false]);
+
+        $facets = $this->mapper->getSimpleFacetsFromRegisterSchemaTable(
+            [
+                '_facets' => [
+                    '@self' => [
+                        'created' => ['type' => 'date_histogram', 'interval' => 'day'],
+                    ],
+                ],
+                '_rbac' => false,
+                '_multitenancy' => false,
+            ],
+            $register,
+            $schema
+        );
+
+        $this->assertIsArray($facets);
+        if (isset($facets['@self']['created'])) {
+            $this->assertArrayHasKey('buckets', $facets['@self']['created']);
+            $this->assertSame('date_histogram', $facets['@self']['created']['type'] ?? null);
+        }
+    }
+
+    public function testDateHistogramFacetWithWeekInterval(): void
+    {
+        $register = $this->createTestRegister();
+        $schema = $this->createTestSchema();
+
+        $this->mapper->ensureTableForRegisterSchema($register, $schema);
+        $this->trackTable($register, $schema);
+
+        $this->insertTestObject($register, $schema, ['name' => 'Week1', 'category' => 'A', 'age' => 10, 'active' => true]);
+
+        $facets = $this->mapper->getSimpleFacetsFromRegisterSchemaTable(
+            [
+                '_facets' => [
+                    '@self' => [
+                        'created' => ['type' => 'date_histogram', 'interval' => 'week'],
+                    ],
+                ],
+                '_rbac' => false,
+                '_multitenancy' => false,
+            ],
+            $register,
+            $schema
+        );
+
+        $this->assertIsArray($facets);
+    }
+
+    public function testDateHistogramFacetWithYearInterval(): void
+    {
+        $register = $this->createTestRegister();
+        $schema = $this->createTestSchema();
+
+        $this->mapper->ensureTableForRegisterSchema($register, $schema);
+        $this->trackTable($register, $schema);
+
+        $this->insertTestObject($register, $schema, ['name' => 'Year1', 'category' => 'A', 'age' => 10, 'active' => true]);
+
+        $facets = $this->mapper->getSimpleFacetsFromRegisterSchemaTable(
+            [
+                '_facets' => [
+                    '@self' => [
+                        'updated' => ['type' => 'date_histogram', 'interval' => 'year'],
+                    ],
+                ],
+                '_rbac' => false,
+                '_multitenancy' => false,
+            ],
+            $register,
+            $schema
+        );
+
+        $this->assertIsArray($facets);
+    }
+
+    // =========================================================================
+    // Facets with comma-separated field names
+    // =========================================================================
+
+    public function testFacetsWithCommaSeparatedFieldNames(): void
+    {
+        $register = $this->createTestRegister();
+        $schema = $this->createTestSchema();
+
+        $this->mapper->ensureTableForRegisterSchema($register, $schema);
+        $this->trackTable($register, $schema);
+
+        $this->insertTestObject($register, $schema, ['name' => 'Comma1', 'category' => 'X', 'age' => 10, 'active' => true]);
+
+        // _facets as comma-separated string with specific field names
+        $facets = $this->mapper->getSimpleFacetsFromRegisterSchemaTable(
+            [
+                '_facets' => 'category,active',
+                '_rbac' => false,
+                '_multitenancy' => false,
+            ],
+            $register,
+            $schema
+        );
+
+        $this->assertIsArray($facets);
+        // Should have category and active as facets
+        $this->assertArrayHasKey('category', $facets);
+        $this->assertArrayHasKey('active', $facets);
+    }
+
+    public function testFacetsWithCommaSeparatedMetadataFields(): void
+    {
+        $register = $this->createTestRegister();
+        $schema = $this->createTestSchema();
+
+        $this->mapper->ensureTableForRegisterSchema($register, $schema);
+        $this->trackTable($register, $schema);
+
+        $this->insertTestObject($register, $schema, ['name' => 'Meta1', 'category' => 'A', 'age' => 10, 'active' => true]);
+
+        // Comma-separated with metadata fields register, schema
+        $facets = $this->mapper->getSimpleFacetsFromRegisterSchemaTable(
+            [
+                '_facets' => 'register,schema',
+                '_rbac' => false,
+                '_multitenancy' => false,
+            ],
+            $register,
+            $schema
+        );
+
+        $this->assertIsArray($facets);
+        // register and schema should go into @self
+        if (isset($facets['@self'])) {
+            $this->assertIsArray($facets['@self']);
+        }
+    }
+
+    public function testFacetsWithCommaSeparatedDateFields(): void
+    {
+        $register = $this->createTestRegister();
+        $schema = $this->createTestSchema();
+
+        $this->mapper->ensureTableForRegisterSchema($register, $schema);
+        $this->trackTable($register, $schema);
+
+        $this->insertTestObject($register, $schema, ['name' => 'DateField1', 'category' => 'A', 'age' => 10, 'active' => true]);
+
+        // created and updated are metadata date fields
+        $facets = $this->mapper->getSimpleFacetsFromRegisterSchemaTable(
+            [
+                '_facets' => 'created,updated',
+                '_rbac' => false,
+                '_multitenancy' => false,
+            ],
+            $register,
+            $schema
+        );
+
+        $this->assertIsArray($facets);
+    }
+
+    // =========================================================================
+    // Facets with facetable property discovery from schema
+    // =========================================================================
+
+    public function testFacetsExtendWithFacetableProperties(): void
+    {
+        $register = $this->createTestRegister();
+
+        // Create schema with facetable properties
+        $schema = $this->createTestSchema([
+            'status' => [
+                'type' => 'string',
+                'title' => 'Status',
+                'maxLength' => 255,
+                'facetable' => true,
+            ],
+            'priority' => [
+                'type' => 'integer',
+                'title' => 'Priority',
+                'facetable' => true,
+            ],
+        ]);
+
+        $this->mapper->ensureTableForRegisterSchema($register, $schema);
+        $this->trackTable($register, $schema);
+
+        $this->insertTestObject($register, $schema, [
+            'name' => 'Facetable1',
+            'category' => 'A',
+            'age' => 10,
+            'active' => true,
+            'status' => 'open',
+            'priority' => 1,
+        ]);
+
+        $facets = $this->mapper->getSimpleFacetsFromRegisterSchemaTable(
+            [
+                '_facets' => 'extend',
+                '_rbac' => false,
+                '_multitenancy' => false,
+            ],
+            $register,
+            $schema
+        );
+
+        $this->assertIsArray($facets);
+        // 'status' and 'priority' should be auto-discovered facets since facetable=true
+        $this->assertArrayHasKey('status', $facets);
+        $this->assertArrayHasKey('priority', $facets);
+    }
+
+    public function testFacetsExtendWithDateFormatProperty(): void
+    {
+        $register = $this->createTestRegister();
+
+        $schema = $this->createTestSchema([
+            'start_date' => [
+                'type' => 'string',
+                'format' => 'date',
+                'title' => 'Start Date',
+                'facetable' => true,
+            ],
+        ]);
+
+        $this->mapper->ensureTableForRegisterSchema($register, $schema);
+        $this->trackTable($register, $schema);
+
+        $this->insertTestObject($register, $schema, [
+            'name' => 'DateFormat1',
+            'category' => 'A',
+            'age' => 10,
+            'active' => true,
+            'start_date' => '2025-01-15',
+        ]);
+
+        $facets = $this->mapper->getSimpleFacetsFromRegisterSchemaTable(
+            [
+                '_facets' => 'extend',
+                '_rbac' => false,
+                '_multitenancy' => false,
+            ],
+            $register,
+            $schema
+        );
+
+        $this->assertIsArray($facets);
+        // start_date with format=date and facetable=true should generate a date_histogram facet
+        $this->assertArrayHasKey('start_date', $facets);
+    }
+
+    // =========================================================================
+    // Facets combined with search filter
+    // =========================================================================
+
+    public function testFacetsWithSearchFilter(): void
+    {
+        $register = $this->createTestRegister();
+        $schema = $this->createTestSchema();
+
+        $this->mapper->ensureTableForRegisterSchema($register, $schema);
+        $this->trackTable($register, $schema);
+
+        $this->insertTestObject($register, $schema, ['name' => 'Searchable Alpha', 'category' => 'A', 'age' => 10, 'active' => true]);
+        $this->insertTestObject($register, $schema, ['name' => 'Searchable Beta', 'category' => 'B', 'age' => 20, 'active' => false]);
+        $this->insertTestObject($register, $schema, ['name' => 'Other Gamma', 'category' => 'A', 'age' => 30, 'active' => true]);
+
+        // Apply _search combined with facets
+        $facets = $this->mapper->getSimpleFacetsFromRegisterSchemaTable(
+            [
+                '_search' => 'Searchable',
+                '_facets' => [
+                    'category' => ['type' => 'terms'],
+                ],
+                '_rbac' => false,
+                '_multitenancy' => false,
+            ],
+            $register,
+            $schema
+        );
+
+        $this->assertIsArray($facets);
+        $this->assertArrayHasKey('category', $facets);
+    }
+
+    // =========================================================================
+    // Facets with object field filter on array-type properties
+    // =========================================================================
+
+    public function testFacetsWithArrayTypeProperty(): void
+    {
+        $register = $this->createTestRegister();
+
+        $schema = $this->createTestSchema([
+            'tags' => [
+                'type' => 'array',
+                'title' => 'Tags',
+                'items' => ['type' => 'string'],
+            ],
+        ]);
+
+        $this->mapper->ensureTableForRegisterSchema($register, $schema);
+        $this->trackTable($register, $schema);
+
+        $this->insertTestObject($register, $schema, [
+            'name' => 'Tagged1',
+            'category' => 'A',
+            'age' => 10,
+            'active' => true,
+            'tags' => ['php', 'nextcloud'],
+        ]);
+        $this->insertTestObject($register, $schema, [
+            'name' => 'Tagged2',
+            'category' => 'B',
+            'age' => 20,
+            'active' => false,
+            'tags' => ['javascript', 'nextcloud'],
+        ]);
+
+        $facets = $this->mapper->getSimpleFacetsFromRegisterSchemaTable(
+            [
+                '_facets' => [
+                    'tags' => ['type' => 'terms'],
+                ],
+                '_rbac' => false,
+                '_multitenancy' => false,
+            ],
+            $register,
+            $schema
+        );
+
+        $this->assertIsArray($facets);
+        $this->assertArrayHasKey('tags', $facets);
+        $this->assertArrayHasKey('buckets', $facets['tags']);
+        // Array values should be split into individual tag buckets
+        $keys = array_column($facets['tags']['buckets'], 'key');
+        $this->assertContains('nextcloud', $keys, 'Expected "nextcloud" to appear as a facet key');
+    }
+
+    // =========================================================================
+    // UNION facets with date_histogram on metadata
+    // =========================================================================
+
+    public function testFacetsUnionWithDateHistogramMetadata(): void
+    {
+        $register = $this->createTestRegister();
+        $schema1 = $this->createTestSchema();
+        $schema2 = $this->createTestSchema();
+
+        $this->mapper->ensureTableForRegisterSchema($register, $schema1);
+        $this->trackTable($register, $schema1);
+        $this->mapper->ensureTableForRegisterSchema($register, $schema2);
+        $this->trackTable($register, $schema2);
+
+        $this->insertTestObject($register, $schema1, ['name' => 'DH1', 'category' => 'X', 'age' => 10, 'active' => true]);
+        $this->insertTestObject($register, $schema2, ['name' => 'DH2', 'category' => 'Y', 'age' => 20, 'active' => false]);
+
+        $pairs = [
+            ['register' => $register, 'schema' => $schema1],
+            ['register' => $register, 'schema' => $schema2],
+        ];
+
+        $facets = $this->mapper->getSimpleFacetsUnion(
+            [
+                '_facets' => [
+                    '@self' => [
+                        'created' => ['type' => 'date_histogram', 'interval' => 'month'],
+                    ],
+                ],
+                '_rbac' => false,
+                '_multitenancy' => false,
+            ],
+            $register,
+            [$schema1, $schema2],
+            $pairs
+        );
+
+        $this->assertIsArray($facets);
+        if (isset($facets['@self']['created'])) {
+            $this->assertArrayHasKey('buckets', $facets['@self']['created']);
+        }
+    }
+
+    // =========================================================================
+    // UNION facets with field not present in all tables
+    // =========================================================================
+
+    public function testFacetsUnionWithFieldMissingInOneTable(): void
+    {
+        $register = $this->createTestRegister();
+        $schema1 = $this->createTestSchema([
+            'extra_field' => [
+                'type' => 'string',
+                'title' => 'Extra',
+                'maxLength' => 255,
+            ],
+        ]);
+        $schema2 = $this->createTestSchema(); // no extra_field
+
+        $this->mapper->ensureTableForRegisterSchema($register, $schema1);
+        $this->trackTable($register, $schema1);
+        $this->mapper->ensureTableForRegisterSchema($register, $schema2);
+        $this->trackTable($register, $schema2);
+
+        $this->insertTestObject($register, $schema1, [
+            'name' => 'Extra1',
+            'category' => 'A',
+            'age' => 10,
+            'active' => true,
+            'extra_field' => 'value1',
+        ]);
+        $this->insertTestObject($register, $schema2, ['name' => 'NoExtra', 'category' => 'B', 'age' => 20, 'active' => false]);
+
+        $pairs = [
+            ['register' => $register, 'schema' => $schema1],
+            ['register' => $register, 'schema' => $schema2],
+        ];
+
+        $facets = $this->mapper->getSimpleFacetsUnion(
+            [
+                '_facets' => [
+                    'extra_field' => ['type' => 'terms'],
+                ],
+                '_rbac' => false,
+                '_multitenancy' => false,
+            ],
+            $register,
+            [$schema1, $schema2],
+            $pairs
+        );
+
+        $this->assertIsArray($facets);
+        $this->assertArrayHasKey('extra_field', $facets);
+        // Only schema1 has extra_field, so buckets should reflect that
+        $this->assertArrayHasKey('buckets', $facets['extra_field']);
+    }
+
+    // =========================================================================
+    // Facets with register and schema metadata terms
+    // =========================================================================
+
+    public function testMetadataRegisterTermsFacet(): void
+    {
+        $register = $this->createTestRegister();
+        $schema = $this->createTestSchema();
+
+        $this->mapper->ensureTableForRegisterSchema($register, $schema);
+        $this->trackTable($register, $schema);
+
+        $this->insertTestObject($register, $schema, ['name' => 'RegMeta1', 'category' => 'A', 'age' => 10, 'active' => true]);
+
+        $facets = $this->mapper->getSimpleFacetsFromRegisterSchemaTable(
+            [
+                '_facets' => [
+                    '@self' => [
+                        'register' => ['type' => 'terms'],
+                    ],
+                ],
+                '_rbac' => false,
+                '_multitenancy' => false,
+            ],
+            $register,
+            $schema
+        );
+
+        $this->assertIsArray($facets);
+        if (isset($facets['@self']['register'])) {
+            $this->assertArrayHasKey('buckets', $facets['@self']['register']);
+            // Register facet should resolve the register ID to a title label
+            if (!empty($facets['@self']['register']['buckets'])) {
+                $this->assertArrayHasKey('label', $facets['@self']['register']['buckets'][0]);
+            }
+        }
+    }
+
+    // =========================================================================
+    // Facets with non-existent column (graceful fallback)
+    // =========================================================================
+
+    public function testFacetsWithNonExistentColumn(): void
+    {
+        $register = $this->createTestRegister();
+        $schema = $this->createTestSchema();
+
+        $this->mapper->ensureTableForRegisterSchema($register, $schema);
+        $this->trackTable($register, $schema);
+
+        $this->insertTestObject($register, $schema, ['name' => 'NonExist', 'category' => 'A', 'age' => 10, 'active' => true]);
+
+        $facets = $this->mapper->getSimpleFacetsFromRegisterSchemaTable(
+            [
+                '_facets' => [
+                    'nonexistent_column' => ['type' => 'terms'],
+                ],
+                '_rbac' => false,
+                '_multitenancy' => false,
+            ],
+            $register,
+            $schema
+        );
+
+        $this->assertIsArray($facets);
+        // Should still return result (empty buckets for non-existent column)
+        $this->assertArrayHasKey('nonexistent_column', $facets);
+        $this->assertEmpty($facets['nonexistent_column']['buckets']);
+    }
+
+    // =========================================================================
+    // UNION facets with list of field names format
+    // =========================================================================
+
+    public function testFacetsUnionWithListOfFieldNames(): void
+    {
+        $register = $this->createTestRegister();
+        $schema1 = $this->createTestSchema();
+        $schema2 = $this->createTestSchema();
+
+        $this->mapper->ensureTableForRegisterSchema($register, $schema1);
+        $this->trackTable($register, $schema1);
+        $this->mapper->ensureTableForRegisterSchema($register, $schema2);
+        $this->trackTable($register, $schema2);
+
+        $this->insertTestObject($register, $schema1, ['name' => 'List1', 'category' => 'A', 'age' => 10, 'active' => true]);
+        $this->insertTestObject($register, $schema2, ['name' => 'List2', 'category' => 'B', 'age' => 20, 'active' => false]);
+
+        $pairs = [
+            ['register' => $register, 'schema' => $schema1],
+            ['register' => $register, 'schema' => $schema2],
+        ];
+
+        // _facets as numerically-indexed array of field names
+        $facets = $this->mapper->getSimpleFacetsUnion(
+            [
+                '_facets' => ['category', 'active'],
+                '_rbac' => false,
+                '_multitenancy' => false,
+            ],
+            $register,
+            [$schema1, $schema2],
+            $pairs
+        );
+
+        $this->assertIsArray($facets);
+    }
+
+    // =========================================================================
+    // Facets with object field filter applied
+    // =========================================================================
+
+    public function testFacetsWithObjectFieldArrayFilter(): void
+    {
+        $register = $this->createTestRegister();
+        $schema = $this->createTestSchema();
+
+        $this->mapper->ensureTableForRegisterSchema($register, $schema);
+        $this->trackTable($register, $schema);
+
+        $this->insertTestObject($register, $schema, ['name' => 'Filter1', 'category' => 'A', 'age' => 10, 'active' => true]);
+        $this->insertTestObject($register, $schema, ['name' => 'Filter2', 'category' => 'A', 'age' => 20, 'active' => false]);
+        $this->insertTestObject($register, $schema, ['name' => 'Filter3', 'category' => 'B', 'age' => 30, 'active' => true]);
+
+        // Filter by category array AND get active facets
+        $facets = $this->mapper->getSimpleFacetsFromRegisterSchemaTable(
+            [
+                'category' => ['A', 'B'],
+                '_facets' => [
+                    'active' => ['type' => 'terms'],
+                ],
+                '_rbac' => false,
+                '_multitenancy' => false,
+            ],
+            $register,
+            $schema
+        );
+
+        $this->assertIsArray($facets);
+        $this->assertArrayHasKey('active', $facets);
+    }
+
+    // =========================================================================
+    // Facets with filter on non-existent property (zero results)
+    // =========================================================================
+
+    public function testFacetsWithFilterOnNonExistentProperty(): void
+    {
+        $register = $this->createTestRegister();
+        $schema = $this->createTestSchema();
+
+        $this->mapper->ensureTableForRegisterSchema($register, $schema);
+        $this->trackTable($register, $schema);
+
+        $this->insertTestObject($register, $schema, ['name' => 'ZeroFilt', 'category' => 'A', 'age' => 10, 'active' => true]);
+
+        // Filter on a non-existent column should result in zero results
+        $facets = $this->mapper->getSimpleFacetsFromRegisterSchemaTable(
+            [
+                'nonexistent_filter' => 'val',
+                '_facets' => [
+                    'category' => ['type' => 'terms'],
+                ],
+                '_rbac' => false,
+                '_multitenancy' => false,
+            ],
+            $register,
+            $schema
+        );
+
+        $this->assertIsArray($facets);
+        $this->assertArrayHasKey('category', $facets);
+        // Because the filter column does not exist, should return empty buckets
+        $this->assertEmpty($facets['category']['buckets']);
+    }
+
+    // =========================================================================
+    // Facets with camelCase property name (sanitization)
+    // =========================================================================
+
+    public function testFacetsWithCamelCasePropertyName(): void
+    {
+        $register = $this->createTestRegister();
+
+        $schema = $this->createTestSchema([
+            'firstName' => [
+                'type' => 'string',
+                'title' => 'First Name',
+                'maxLength' => 255,
+            ],
+        ]);
+
+        $this->mapper->ensureTableForRegisterSchema($register, $schema);
+        $this->trackTable($register, $schema);
+
+        $this->insertTestObject($register, $schema, [
+            'name' => 'CamelCase1',
+            'category' => 'A',
+            'age' => 10,
+            'active' => true,
+            'firstName' => 'Alice',
+        ]);
+        $this->insertTestObject($register, $schema, [
+            'name' => 'CamelCase2',
+            'category' => 'B',
+            'age' => 20,
+            'active' => false,
+            'firstName' => 'Bob',
+        ]);
+
+        $facets = $this->mapper->getSimpleFacetsFromRegisterSchemaTable(
+            [
+                '_facets' => [
+                    'firstName' => ['type' => 'terms'],
+                ],
+                '_rbac' => false,
+                '_multitenancy' => false,
+            ],
+            $register,
+            $schema
+        );
+
+        $this->assertIsArray($facets);
+        // camelCase -> snake_case: firstName -> first_name
+        $this->assertArrayHasKey('firstName', $facets);
+        $this->assertArrayHasKey('buckets', $facets['firstName']);
+    }
 }

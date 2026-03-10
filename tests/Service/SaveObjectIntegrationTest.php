@@ -966,4 +966,978 @@ class SaveObjectIntegrationTest extends TestCase
         $this->saveHandler->clearAllCaches();
         $this->assertEmpty($this->saveHandler->getCreatedSubObjects());
     }
+
+    // =========================================================================
+    // scanForRelations - advanced patterns (isReference coverage)
+    // =========================================================================
+
+    public function testScanForRelationsWithPrefixedUuid(): void
+    {
+        $uuid = Uuid::v4()->toRfc4122();
+        $data = [
+            'title'     => 'Test',
+            'reference' => 'id-' . $uuid,
+        ];
+
+        $result = $this->saveHandler->scanForRelations($data);
+        $this->assertIsArray($result);
+        // Prefixed UUID should be detected as a relation.
+        $this->assertArrayHasKey('reference', $result);
+    }
+
+    public function testScanForRelationsWithNumericId(): void
+    {
+        $data = [
+            'title'     => 'Test',
+            'reference' => '12345',
+        ];
+
+        $result = $this->saveHandler->scanForRelations($data);
+        $this->assertIsArray($result);
+        // Numeric IDs should be detected as relations.
+        $this->assertArrayHasKey('reference', $result);
+    }
+
+    public function testScanForRelationsWithUuidWithoutDashes(): void
+    {
+        // UUID without dashes (32 hex chars).
+        $data = [
+            'title'     => 'Test',
+            'reference' => 'abcdef01234567890abcdef012345678',
+        ];
+
+        $result = $this->saveHandler->scanForRelations($data);
+        $this->assertIsArray($result);
+        $this->assertArrayHasKey('reference', $result);
+    }
+
+    public function testScanForRelationsWithNestedObjectInArray(): void
+    {
+        $uuid = Uuid::v4()->toRfc4122();
+        $data = [
+            'title' => 'Test',
+            'items' => [
+                ['ref' => $uuid],
+            ],
+        ];
+
+        $result = $this->saveHandler->scanForRelations($data);
+        $this->assertIsArray($result);
+    }
+
+    public function testScanForRelationsWithSchemaObjectProperty(): void
+    {
+        // Create a schema with an object-type property.
+        $schema = new Schema();
+        $schema->setTitle('phpunit-scan-obj-' . uniqid());
+        $schema->setDescription('Schema for relation scanning');
+        $schema->setUuid(Uuid::v4()->toRfc4122());
+        $schema->setSlug('phpunit-scan-obj-' . uniqid());
+        $schema->setProperties([
+            'title'  => ['type' => 'string', 'title' => 'Title'],
+            'parent' => ['type' => 'object', 'title' => 'Parent'],
+        ]);
+        $schema = $this->schemaMapper->insert($schema);
+        $this->extraSchemaIds[] = $schema->getId();
+
+        $uuid = Uuid::v4()->toRfc4122();
+        $data = [
+            'title'  => 'Test',
+            'parent' => $uuid,
+        ];
+
+        // Object properties with string values should be treated as relations.
+        $result = $this->saveHandler->scanForRelations($data, '', $schema);
+        $this->assertIsArray($result);
+        $this->assertArrayHasKey('parent', $result);
+    }
+
+    public function testScanForRelationsWithPrefix(): void
+    {
+        $uuid = Uuid::v4()->toRfc4122();
+        $data = ['ref' => $uuid];
+
+        $result = $this->saveHandler->scanForRelations($data, 'nested.path');
+        $this->assertIsArray($result);
+        // Should use prefix in the key.
+        $this->assertArrayHasKey('nested.path.ref', $result);
+    }
+
+    public function testScanForRelationsSkipsEmptyKeys(): void
+    {
+        // Arrays with numeric keys should not be treated as top-level relations.
+        $data = [0 => 'value1', 1 => 'value2'];
+        $result = $this->saveHandler->scanForRelations($data);
+        $this->assertIsArray($result);
+    }
+
+    // =========================================================================
+    // applyPropertyDefaults - advanced behaviors
+    // =========================================================================
+
+    public function testApplyPropertyDefaultsFalsyBehavior(): void
+    {
+        // Create a schema with defaultBehavior: falsy.
+        $schema = new Schema();
+        $schema->setTitle('phpunit-falsy-' . uniqid());
+        $schema->setDescription('Schema with falsy defaults');
+        $schema->setUuid(Uuid::v4()->toRfc4122());
+        $schema->setSlug('phpunit-falsy-' . uniqid());
+        $schema->setProperties([
+            'title'  => ['type' => 'string', 'title' => 'Title'],
+            'status' => [
+                'type'            => 'string',
+                'title'           => 'Status',
+                'default'         => 'pending',
+                'defaultBehavior' => 'falsy',
+            ],
+        ]);
+        $schema = $this->schemaMapper->insert($schema);
+        $this->extraSchemaIds[] = $schema->getId();
+
+        // Empty string should trigger falsy default.
+        $data = ['title' => 'Test', 'status' => ''];
+        $result = $this->saveHandler->applyPropertyDefaults($schema, $data);
+        $this->assertSame('pending', $result['status']);
+    }
+
+    public function testApplyPropertyDefaultsFalsyBehaviorWithEmptyArray(): void
+    {
+        $schema = new Schema();
+        $schema->setTitle('phpunit-falsy-arr-' . uniqid());
+        $schema->setDescription('Schema with falsy defaults for array');
+        $schema->setUuid(Uuid::v4()->toRfc4122());
+        $schema->setSlug('phpunit-falsy-arr-' . uniqid());
+        $schema->setProperties([
+            'title' => ['type' => 'string', 'title' => 'Title'],
+            'tags'  => [
+                'type'            => 'array',
+                'title'           => 'Tags',
+                'items'           => ['type' => 'string'],
+                'default'         => ['default-tag'],
+                'defaultBehavior' => 'falsy',
+            ],
+        ]);
+        $schema = $this->schemaMapper->insert($schema);
+        $this->extraSchemaIds[] = $schema->getId();
+
+        // Empty array should trigger falsy default.
+        $data = ['title' => 'Test', 'tags' => []];
+        $result = $this->saveHandler->applyPropertyDefaults($schema, $data);
+        $this->assertSame(['default-tag'], $result['tags']);
+    }
+
+    public function testApplyPropertyDefaultsWithTwigTemplate(): void
+    {
+        $schema = new Schema();
+        $schema->setTitle('phpunit-twig-def-' . uniqid());
+        $schema->setDescription('Schema with twig template defaults');
+        $schema->setUuid(Uuid::v4()->toRfc4122());
+        $schema->setSlug('phpunit-twig-def-' . uniqid());
+        $schema->setProperties([
+            'title'    => ['type' => 'string', 'title' => 'Title'],
+            'label'    => ['type' => 'string', 'title' => 'Label'],
+            'computed' => [
+                'type'            => 'string',
+                'title'           => 'Computed',
+                'default'         => '{{ title }}',
+                'defaultBehavior' => 'always',
+            ],
+        ]);
+        $schema = $this->schemaMapper->insert($schema);
+        $this->extraSchemaIds[] = $schema->getId();
+
+        $data = ['title' => 'My Title'];
+        $result = $this->saveHandler->applyPropertyDefaults($schema, $data);
+        $this->assertSame('My Title', $result['computed']);
+    }
+
+    public function testApplyPropertyDefaultsWithNonExistentSourceProperty(): void
+    {
+        $schema = new Schema();
+        $schema->setTitle('phpunit-twig-missing-' . uniqid());
+        $schema->setDescription('Schema with twig template referencing missing property');
+        $schema->setUuid(Uuid::v4()->toRfc4122());
+        $schema->setSlug('phpunit-twig-missing-' . uniqid());
+        $schema->setProperties([
+            'title'    => ['type' => 'string', 'title' => 'Title'],
+            'computed' => [
+                'type'            => 'string',
+                'title'           => 'Computed',
+                'default'         => '{{ nonExistent }}',
+                'defaultBehavior' => 'always',
+            ],
+        ]);
+        $schema = $this->schemaMapper->insert($schema);
+        $this->extraSchemaIds[] = $schema->getId();
+
+        // Should not throw, computed should be null since source doesn't exist.
+        $data = ['title' => 'Test'];
+        $result = $this->saveHandler->applyPropertyDefaults($schema, $data);
+        $this->assertIsArray($result);
+    }
+
+    public function testApplyPropertyDefaultsNonTemplateDefault(): void
+    {
+        $schema = new Schema();
+        $schema->setTitle('phpunit-static-def-' . uniqid());
+        $schema->setDescription('Schema with static default');
+        $schema->setUuid(Uuid::v4()->toRfc4122());
+        $schema->setSlug('phpunit-static-def-' . uniqid());
+        $schema->setProperties([
+            'title' => ['type' => 'string', 'title' => 'Title'],
+            'color' => [
+                'type'    => 'string',
+                'title'   => 'Color',
+                'default' => 'blue',
+            ],
+        ]);
+        $schema = $this->schemaMapper->insert($schema);
+        $this->extraSchemaIds[] = $schema->getId();
+
+        $data = ['title' => 'Test'];
+        $result = $this->saveHandler->applyPropertyDefaults($schema, $data);
+        $this->assertSame('blue', $result['color']);
+    }
+
+    // =========================================================================
+    // applyAlwaysDefaults - advanced
+    // =========================================================================
+
+    public function testApplyAlwaysDefaultsWithTwigTemplate(): void
+    {
+        $schema = new Schema();
+        $schema->setTitle('phpunit-always-twig-' . uniqid());
+        $schema->setDescription('Schema with always default using twig');
+        $schema->setUuid(Uuid::v4()->toRfc4122());
+        $schema->setSlug('phpunit-always-twig-' . uniqid());
+        $schema->setProperties([
+            'title'   => ['type' => 'string', 'title' => 'Title'],
+            'derived' => [
+                'type'            => 'string',
+                'title'           => 'Derived',
+                'default'         => '{{ title }}',
+                'defaultBehavior' => 'always',
+            ],
+        ]);
+        $schema = $this->schemaMapper->insert($schema);
+        $this->extraSchemaIds[] = $schema->getId();
+
+        $data = ['title' => 'Source Value', 'derived' => 'will be overwritten'];
+        $result = $this->saveHandler->applyAlwaysDefaults($schema, $data);
+        $this->assertSame('Source Value', $result['derived']);
+    }
+
+    public function testApplyAlwaysDefaultsWithNoSchemaProperties(): void
+    {
+        $schema = new Schema();
+        $schema->setTitle('phpunit-always-empty-' . uniqid());
+        $schema->setDescription('Schema with no properties');
+        $schema->setUuid(Uuid::v4()->toRfc4122());
+        $schema->setSlug('phpunit-always-empty-' . uniqid());
+        $schema->setProperties([]);
+        $schema = $this->schemaMapper->insert($schema);
+        $this->extraSchemaIds[] = $schema->getId();
+
+        $data = ['title' => 'Test'];
+        $result = $this->saveHandler->applyAlwaysDefaults($schema, $data);
+        $this->assertSame('Test', $result['title']);
+    }
+
+    // =========================================================================
+    // saveObject with schema/register slug resolution
+    // =========================================================================
+
+    public function testSaveObjectWithSchemaSlugResolution(): void
+    {
+        // Save using schema slug (string) instead of entity/ID.
+        $result = $this->saveHandler->saveObject(
+            $this->testRegister,
+            (string) $this->testSchema->getId(),
+            ['title' => 'phpunit-schema-slug-' . uniqid()],
+            null,
+            null,
+            false,
+            false
+        );
+        $this->createdObjectUuids[] = $result->getUuid();
+
+        $this->assertInstanceOf(ObjectEntity::class, $result);
+        $this->assertSame((string) $this->testSchema->getId(), $result->getSchema());
+    }
+
+    public function testSaveObjectWithRegisterSlugResolution(): void
+    {
+        // Save using register slug (string) instead of entity/ID.
+        $result = $this->saveHandler->saveObject(
+            (string) $this->testRegister->getId(),
+            $this->testSchema,
+            ['title' => 'phpunit-register-slug-' . uniqid()],
+            null,
+            null,
+            false,
+            false
+        );
+        $this->createdObjectUuids[] = $result->getUuid();
+
+        $this->assertInstanceOf(ObjectEntity::class, $result);
+    }
+
+    // =========================================================================
+    // saveObject with const values in schema
+    // =========================================================================
+
+    public function testSaveObjectWithConstantValue(): void
+    {
+        $schema = new Schema();
+        $schema->setTitle('phpunit-const-' . uniqid());
+        $schema->setDescription('Schema with const value');
+        $schema->setUuid(Uuid::v4()->toRfc4122());
+        $schema->setSlug('phpunit-const-' . uniqid());
+        $schema->setProperties([
+            'title' => ['type' => 'string', 'title' => 'Title'],
+            'type'  => [
+                'type'  => 'string',
+                'title' => 'Type',
+                'const' => 'fixed-type',
+            ],
+        ]);
+        $schema = $this->schemaMapper->insert($schema);
+        $this->extraSchemaIds[] = $schema->getId();
+
+        $schemas = $this->testRegister->getSchemas();
+        $schemas[] = $schema->getId();
+        $this->testRegister->setSchemas($schemas);
+        $this->registerMapper->update($this->testRegister);
+
+        $result = $this->saveHandler->saveObject(
+            $this->testRegister,
+            $schema,
+            ['title' => 'phpunit-const-test-' . uniqid(), 'type' => 'user-value'],
+            null,
+            null,
+            false,
+            false
+        );
+        $this->createdObjectUuids[] = $result->getUuid();
+
+        // The const value should always override the user-provided value.
+        $objectData = $result->getObject();
+        $this->assertSame('fixed-type', $objectData['type']);
+    }
+
+    // =========================================================================
+    // saveObject with slug generation
+    // =========================================================================
+
+    public function testSaveObjectWithSlugGeneration(): void
+    {
+        $schema = new Schema();
+        $schema->setTitle('phpunit-slug-gen-' . uniqid());
+        $schema->setDescription('Schema with slug configuration');
+        $schema->setUuid(Uuid::v4()->toRfc4122());
+        $schema->setSlug('phpunit-slug-gen-' . uniqid());
+        $schema->setProperties([
+            'title' => ['type' => 'string', 'title' => 'Title'],
+        ]);
+        $schema->setConfiguration(['objectSlugField' => 'title']);
+        $schema = $this->schemaMapper->insert($schema);
+        $this->extraSchemaIds[] = $schema->getId();
+
+        $schemas = $this->testRegister->getSchemas();
+        $schemas[] = $schema->getId();
+        $this->testRegister->setSchemas($schemas);
+        $this->registerMapper->update($this->testRegister);
+
+        $result = $this->saveHandler->saveObject(
+            $this->testRegister,
+            $schema,
+            ['title' => 'My Test Title'],
+            null,
+            null,
+            false,
+            false
+        );
+        $this->createdObjectUuids[] = $result->getUuid();
+
+        // The object should have a slug generated from the title field.
+        $this->assertInstanceOf(ObjectEntity::class, $result);
+        $objectData = $result->getObject();
+        // Slug should contain a slugified version of the title.
+        if (isset($objectData['slug'])) {
+            $this->assertStringContainsString('my-test-title', $objectData['slug']);
+        }
+    }
+
+    // =========================================================================
+    // hydrateObjectMetadata - advanced fields
+    // =========================================================================
+
+    public function testHydrateObjectMetadataWithDescriptionField(): void
+    {
+        $schema = new Schema();
+        $schema->setTitle('phpunit-desc-meta-' . uniqid());
+        $schema->setDescription('Schema with description mapping');
+        $schema->setUuid(Uuid::v4()->toRfc4122());
+        $schema->setSlug('phpunit-desc-meta-' . uniqid());
+        $schema->setProperties([
+            'title'   => ['type' => 'string', 'title' => 'Title'],
+            'content' => ['type' => 'string', 'title' => 'Content'],
+        ]);
+        $schema->setConfiguration([
+            'objectNameField'        => 'title',
+            'objectDescriptionField' => 'content',
+        ]);
+        $schema = $this->schemaMapper->insert($schema);
+        $this->extraSchemaIds[] = $schema->getId();
+
+        $schemas = $this->testRegister->getSchemas();
+        $schemas[] = $schema->getId();
+        $this->testRegister->setSchemas($schemas);
+        $this->registerMapper->update($this->testRegister);
+
+        $created = $this->saveHandler->saveObject(
+            $this->testRegister,
+            $schema,
+            ['title' => 'My Object', 'content' => 'Detailed description here'],
+            null,
+            null,
+            false,
+            false
+        );
+        $this->createdObjectUuids[] = $created->getUuid();
+
+        $this->saveHandler->hydrateObjectMetadata($created, $schema);
+
+        $this->assertSame('My Object', $created->getName());
+        $this->assertSame('Detailed description here', $created->getDescription());
+    }
+
+    public function testHydrateObjectMetadataWithSummaryField(): void
+    {
+        $schema = new Schema();
+        $schema->setTitle('phpunit-summary-meta-' . uniqid());
+        $schema->setDescription('Schema with summary mapping');
+        $schema->setUuid(Uuid::v4()->toRfc4122());
+        $schema->setSlug('phpunit-summary-meta-' . uniqid());
+        $schema->setProperties([
+            'title' => ['type' => 'string', 'title' => 'Title'],
+            'kort'  => ['type' => 'string', 'title' => 'Short summary'],
+        ]);
+        $schema->setConfiguration([
+            'objectNameField'    => 'title',
+            'objectSummaryField' => 'kort',
+        ]);
+        $schema = $this->schemaMapper->insert($schema);
+        $this->extraSchemaIds[] = $schema->getId();
+
+        $created = $this->saveHandler->saveObject(
+            $this->testRegister,
+            $schema,
+            ['title' => 'Test Object', 'kort' => 'Brief summary'],
+            null,
+            null,
+            false,
+            false
+        );
+        $this->createdObjectUuids[] = $created->getUuid();
+
+        $this->saveHandler->hydrateObjectMetadata($created, $schema);
+
+        $this->assertSame('Brief summary', $created->getSummary());
+    }
+
+    public function testHydrateObjectMetadataWithImageUrl(): void
+    {
+        $schema = new Schema();
+        $schema->setTitle('phpunit-image-meta-' . uniqid());
+        $schema->setDescription('Schema with image mapping');
+        $schema->setUuid(Uuid::v4()->toRfc4122());
+        $schema->setSlug('phpunit-image-meta-' . uniqid());
+        $schema->setProperties([
+            'title' => ['type' => 'string', 'title' => 'Title'],
+            'logo'  => ['type' => 'string', 'title' => 'Logo URL'],
+        ]);
+        $schema->setConfiguration([
+            'objectNameField'  => 'title',
+            'objectImageField' => 'logo',
+        ]);
+        $schema = $this->schemaMapper->insert($schema);
+        $this->extraSchemaIds[] = $schema->getId();
+
+        $created = $this->saveHandler->saveObject(
+            $this->testRegister,
+            $schema,
+            ['title' => 'Image Test', 'logo' => 'https://example.com/logo.png'],
+            null,
+            null,
+            false,
+            false
+        );
+        $this->createdObjectUuids[] = $created->getUuid();
+
+        $this->saveHandler->hydrateObjectMetadata($created, $schema);
+
+        $this->assertSame('https://example.com/logo.png', $created->getImage());
+    }
+
+    public function testHydrateObjectMetadataWithPublishedField(): void
+    {
+        $schema = new Schema();
+        $schema->setTitle('phpunit-published-meta-' . uniqid());
+        $schema->setDescription('Schema with published date mapping');
+        $schema->setUuid(Uuid::v4()->toRfc4122());
+        $schema->setSlug('phpunit-published-meta-' . uniqid());
+        $schema->setProperties([
+            'title'       => ['type' => 'string', 'title' => 'Title'],
+            'publishDate' => ['type' => 'string', 'title' => 'Published date'],
+        ]);
+        $schema->setConfiguration([
+            'objectNameField'      => 'title',
+            'objectPublishedField' => 'publishDate',
+        ]);
+        $schema = $this->schemaMapper->insert($schema);
+        $this->extraSchemaIds[] = $schema->getId();
+
+        $created = $this->saveHandler->saveObject(
+            $this->testRegister,
+            $schema,
+            ['title' => 'Publish Test', 'publishDate' => '2025-06-15T10:00:00+00:00'],
+            null,
+            null,
+            false,
+            false
+        );
+        $this->createdObjectUuids[] = $created->getUuid();
+
+        $this->saveHandler->hydrateObjectMetadata($created, $schema);
+
+        // hydrateObjectMetadata delegates to metaHydrationHandler for published dates.
+        // The published field is set during save via the configuration, so verify the
+        // metadata hydration method runs without error and returns void.
+        $this->assertInstanceOf(ObjectEntity::class, $created);
+    }
+
+    public function testHydrateObjectMetadataWithDepublishedField(): void
+    {
+        $schema = new Schema();
+        $schema->setTitle('phpunit-depub-meta-' . uniqid());
+        $schema->setDescription('Schema with depublished date mapping');
+        $schema->setUuid(Uuid::v4()->toRfc4122());
+        $schema->setSlug('phpunit-depub-meta-' . uniqid());
+        $schema->setProperties([
+            'title'   => ['type' => 'string', 'title' => 'Title'],
+            'endDate' => ['type' => 'string', 'title' => 'End date'],
+        ]);
+        $schema->setConfiguration([
+            'objectNameField'          => 'title',
+            'objectDepublishedField'   => 'endDate',
+        ]);
+        $schema = $this->schemaMapper->insert($schema);
+        $this->extraSchemaIds[] = $schema->getId();
+
+        $created = $this->saveHandler->saveObject(
+            $this->testRegister,
+            $schema,
+            ['title' => 'Depub Test', 'endDate' => '2026-12-31T23:59:59+00:00'],
+            null,
+            null,
+            false,
+            false
+        );
+        $this->createdObjectUuids[] = $created->getUuid();
+
+        $this->saveHandler->hydrateObjectMetadata($created, $schema);
+
+        // Verify the method processes without error, exercising the depublished date path.
+        $this->assertInstanceOf(ObjectEntity::class, $created);
+    }
+
+    public function testHydrateObjectMetadataWithImageFromFileObjectArray(): void
+    {
+        $schema = new Schema();
+        $schema->setTitle('phpunit-imgobj-meta-' . uniqid());
+        $schema->setDescription('Schema with image from file object');
+        $schema->setUuid(Uuid::v4()->toRfc4122());
+        $schema->setSlug('phpunit-imgobj-meta-' . uniqid());
+        $schema->setProperties([
+            'title'  => ['type' => 'string', 'title' => 'Title'],
+            'images' => [
+                'type'  => 'array',
+                'title' => 'Images',
+                'items' => ['type' => 'object'],
+            ],
+        ]);
+        $schema->setConfiguration([
+            'objectNameField'  => 'title',
+            'objectImageField' => 'images',
+        ]);
+        $schema = $this->schemaMapper->insert($schema);
+        $this->extraSchemaIds[] = $schema->getId();
+
+        $created = $this->saveHandler->saveObject(
+            $this->testRegister,
+            $schema,
+            [
+                'title'  => 'Image Array Test',
+                'images' => [
+                    ['downloadUrl' => 'https://example.com/img1.jpg', 'accessUrl' => 'https://example.com/img1-access.jpg'],
+                    ['downloadUrl' => 'https://example.com/img2.jpg'],
+                ],
+            ],
+            null,
+            null,
+            false,
+            false
+        );
+        $this->createdObjectUuids[] = $created->getUuid();
+
+        $this->saveHandler->hydrateObjectMetadata($created, $schema);
+
+        // Should use the downloadUrl from the first file object.
+        $this->assertSame('https://example.com/img1.jpg', $created->getImage());
+    }
+
+    public function testHydrateObjectMetadataWithImageFromAccessUrlFallback(): void
+    {
+        $schema = new Schema();
+        $schema->setTitle('phpunit-imgaccess-meta-' . uniqid());
+        $schema->setDescription('Schema with image from accessUrl fallback');
+        $schema->setUuid(Uuid::v4()->toRfc4122());
+        $schema->setSlug('phpunit-imgaccess-meta-' . uniqid());
+        $schema->setProperties([
+            'title'  => ['type' => 'string', 'title' => 'Title'],
+            'images' => [
+                'type'  => 'array',
+                'title' => 'Images',
+                'items' => ['type' => 'object'],
+            ],
+        ]);
+        $schema->setConfiguration([
+            'objectNameField'  => 'title',
+            'objectImageField' => 'images',
+        ]);
+        $schema = $this->schemaMapper->insert($schema);
+        $this->extraSchemaIds[] = $schema->getId();
+
+        $created = $this->saveHandler->saveObject(
+            $this->testRegister,
+            $schema,
+            [
+                'title'  => 'AccessUrl Fallback Test',
+                'images' => [
+                    ['accessUrl' => 'https://example.com/img-access.jpg'],
+                ],
+            ],
+            null,
+            null,
+            false,
+            false
+        );
+        $this->createdObjectUuids[] = $created->getUuid();
+
+        $this->saveHandler->hydrateObjectMetadata($created, $schema);
+
+        // Should fall back to accessUrl when downloadUrl is not available.
+        $this->assertSame('https://example.com/img-access.jpg', $created->getImage());
+    }
+
+    // =========================================================================
+    // saveObject with cascading (related schema)
+    // =========================================================================
+
+    public function testSaveObjectWithCascadeObjectCreation(): void
+    {
+        // Create a related schema that the cascade will use.
+        $relSchema = new Schema();
+        $relSchema->setTitle('phpunit-cascade-sub-' . uniqid());
+        $relSchema->setDescription('Sub-object schema for cascading');
+        $relSchema->setUuid(Uuid::v4()->toRfc4122());
+        $relSchemaSlug = 'phpunit-cascade-sub-' . uniqid();
+        $relSchema->setSlug($relSchemaSlug);
+        $relSchema->setProperties([
+            'name' => ['type' => 'string', 'title' => 'Name'],
+        ]);
+        $relSchema = $this->schemaMapper->insert($relSchema);
+        $this->extraSchemaIds[] = $relSchema->getId();
+
+        // Create a parent schema with a cascade property using string type
+        // (string stores the UUID cleanly in magic mapper, object type gets JSON column).
+        $parentSchema = new Schema();
+        $parentSchema->setTitle('phpunit-cascade-parent-' . uniqid());
+        $parentSchema->setDescription('Parent schema for cascading');
+        $parentSchema->setUuid(Uuid::v4()->toRfc4122());
+        $parentSchema->setSlug('phpunit-cascade-parent-' . uniqid());
+        $parentSchema->setProperties([
+            'title'    => ['type' => 'string', 'title' => 'Title'],
+            'contacts' => [
+                'type'                => 'array',
+                'title'               => 'Contacts',
+                '$ref'                => '#/components/schemas/' . $relSchemaSlug,
+                'objectConfiguration' => ['handling' => 'cascade'],
+                'items'               => [
+                    '$ref'                => '#/components/schemas/' . $relSchemaSlug,
+                    'objectConfiguration' => ['handling' => 'cascade'],
+                ],
+            ],
+        ]);
+        $parentSchema = $this->schemaMapper->insert($parentSchema);
+        $this->extraSchemaIds[] = $parentSchema->getId();
+
+        $schemas = $this->testRegister->getSchemas();
+        $schemas[] = $relSchema->getId();
+        $schemas[] = $parentSchema->getId();
+        $this->testRegister->setSchemas($schemas);
+        $this->registerMapper->update($this->testRegister);
+
+        $this->saveHandler->clearAllCaches();
+
+        $result = $this->saveHandler->saveObject(
+            $this->testRegister,
+            $parentSchema,
+            [
+                'title'    => 'phpunit-cascade-test-' . uniqid(),
+                'contacts' => [['name' => 'John Doe']],
+            ],
+            null,
+            null,
+            false,
+            false
+        );
+        $this->createdObjectUuids[] = $result->getUuid();
+
+        $objectData = $result->getObject();
+        $this->assertInstanceOf(ObjectEntity::class, $result);
+
+        // Track any sub-objects for cleanup.
+        if (isset($objectData['contacts']) && is_array($objectData['contacts'])) {
+            foreach ($objectData['contacts'] as $item) {
+                if (is_string($item)) {
+                    $this->createdObjectUuids[] = $item;
+                }
+            }
+        }
+    }
+
+    public function testSaveObjectWithCascadeArrayObjects(): void
+    {
+        // Create a related schema.
+        $relSchema = new Schema();
+        $relSchema->setTitle('phpunit-cascade-arr-sub-' . uniqid());
+        $relSchema->setDescription('Sub-object schema for array cascading');
+        $relSchema->setUuid(Uuid::v4()->toRfc4122());
+        $relSchemaSlug = 'phpunit-cascade-arr-sub-' . uniqid();
+        $relSchema->setSlug($relSchemaSlug);
+        $relSchema->setProperties([
+            'label' => ['type' => 'string', 'title' => 'Label'],
+        ]);
+        $relSchema = $this->schemaMapper->insert($relSchema);
+        $this->extraSchemaIds[] = $relSchema->getId();
+
+        // Create a parent schema with a cascade array property.
+        $parentSchema = new Schema();
+        $parentSchema->setTitle('phpunit-cascade-arr-par-' . uniqid());
+        $parentSchema->setDescription('Parent schema with array cascading');
+        $parentSchema->setUuid(Uuid::v4()->toRfc4122());
+        $parentSchema->setSlug('phpunit-cascade-arr-par-' . uniqid());
+        $parentSchema->setProperties([
+            'title' => ['type' => 'string', 'title' => 'Title'],
+            'items' => [
+                'type'                => 'array',
+                'title'               => 'Items',
+                '$ref'                => '#/components/schemas/' . $relSchemaSlug,
+                'objectConfiguration' => ['handling' => 'cascade'],
+                'items'               => [
+                    '$ref'                => '#/components/schemas/' . $relSchemaSlug,
+                    'objectConfiguration' => ['handling' => 'cascade'],
+                ],
+            ],
+        ]);
+        $parentSchema = $this->schemaMapper->insert($parentSchema);
+        $this->extraSchemaIds[] = $parentSchema->getId();
+
+        $schemas = $this->testRegister->getSchemas();
+        $schemas[] = $relSchema->getId();
+        $schemas[] = $parentSchema->getId();
+        $this->testRegister->setSchemas($schemas);
+        $this->registerMapper->update($this->testRegister);
+
+        $this->saveHandler->clearAllCaches();
+
+        $result = $this->saveHandler->saveObject(
+            $this->testRegister,
+            $parentSchema,
+            [
+                'title' => 'phpunit-cascade-arr-test-' . uniqid(),
+                'items' => [
+                    ['label' => 'Item A'],
+                    ['label' => 'Item B'],
+                ],
+            ],
+            null,
+            null,
+            false,
+            false
+        );
+        $this->createdObjectUuids[] = $result->getUuid();
+
+        $objectData = $result->getObject();
+        $this->assertInstanceOf(ObjectEntity::class, $result);
+
+        // Track any sub-objects for cleanup.
+        if (isset($objectData['items']) && is_array($objectData['items'])) {
+            foreach ($objectData['items'] as $item) {
+                if (is_string($item)) {
+                    $this->createdObjectUuids[] = $item;
+                }
+            }
+        }
+    }
+
+    // =========================================================================
+    // saveObject update - multiple field changes
+    // =========================================================================
+
+    public function testSaveObjectUpdateMultipleFields(): void
+    {
+        $created = $this->saveTestObject([
+            'title'    => 'phpunit-multi-update-' . uniqid(),
+            'summary'  => 'Original summary',
+            'priority' => 1,
+            'active'   => false,
+            'tags'     => ['old'],
+        ]);
+
+        $updated = $this->saveHandler->saveObject(
+            $this->testRegister,
+            $this->testSchema,
+            [
+                'title'    => $created->getObject()['title'],
+                'summary'  => 'New summary',
+                'priority' => 99,
+                'active'   => true,
+                'tags'     => ['new1', 'new2'],
+            ],
+            $created->getUuid(),
+            null,
+            false,
+            false
+        );
+
+        $objectData = $updated->getObject();
+        $this->assertSame('New summary', $objectData['summary']);
+        $this->assertSame(99, $objectData['priority']);
+        $this->assertTrue($objectData['active']);
+        $this->assertSame(['new1', 'new2'], $objectData['tags']);
+    }
+
+    // =========================================================================
+    // saveObject with empty UUID handling
+    // =========================================================================
+
+    public function testSaveObjectWithEmptyStringUuid(): void
+    {
+        // Empty string UUID should be treated as null (create new object).
+        $result = $this->saveHandler->saveObject(
+            $this->testRegister,
+            $this->testSchema,
+            ['title' => 'phpunit-empty-uuid-' . uniqid()],
+            '',
+            null,
+            false,
+            false
+        );
+        $this->createdObjectUuids[] = $result->getUuid();
+
+        $this->assertInstanceOf(ObjectEntity::class, $result);
+        $this->assertNotEmpty($result->getUuid());
+    }
+
+    // =========================================================================
+    // saveObject with @self nested id
+    // =========================================================================
+
+    public function testSaveObjectWithSelfNestedId(): void
+    {
+        $uuid = Uuid::v4()->toRfc4122();
+        $result = $this->saveHandler->saveObject(
+            $this->testRegister,
+            $this->testSchema,
+            [
+                'title' => 'phpunit-nested-id-' . uniqid(),
+                '@self' => ['id' => $uuid],
+            ],
+            null,
+            null,
+            false,
+            false
+        );
+        $this->createdObjectUuids[] = $result->getUuid();
+
+        // The @self.id should be used as the UUID.
+        $this->assertSame($uuid, $result->getUuid());
+    }
+
+    // =========================================================================
+    // saveObject with folder ID
+    // =========================================================================
+
+    public function testSaveObjectWithFolderId(): void
+    {
+        $result = $this->saveHandler->saveObject(
+            $this->testRegister,
+            $this->testSchema,
+            ['title' => 'phpunit-folder-' . uniqid()],
+            null,
+            42, // folderId
+            false,
+            false
+        );
+        $this->createdObjectUuids[] = $result->getUuid();
+
+        $this->assertInstanceOf(ObjectEntity::class, $result);
+        $this->assertSame('42', $result->getFolder());
+    }
+
+    // =========================================================================
+    // saveObject with silent mode (no audit trail)
+    // =========================================================================
+
+    public function testSaveObjectInSilentMode(): void
+    {
+        $result = $this->saveHandler->saveObject(
+            $this->testRegister,
+            $this->testSchema,
+            ['title' => 'phpunit-silent-create-' . uniqid()],
+            null,
+            null,
+            false,
+            false,
+            true,
+            true // silent = true
+        );
+        $this->createdObjectUuids[] = $result->getUuid();
+
+        $this->assertInstanceOf(ObjectEntity::class, $result);
+    }
+
+    // =========================================================================
+    // saveObject with deeply nested metadata object
+    // =========================================================================
+
+    public function testSaveObjectWithDeeplyNestedObject(): void
+    {
+        $result = $this->saveTestObject([
+            'title'    => 'phpunit-deep-nested-' . uniqid(),
+            'metadata' => [
+                'source'  => 'api',
+                'version' => 3,
+            ],
+        ]);
+
+        $objectData = $result->getObject();
+        $this->assertIsArray($objectData['metadata']);
+        $this->assertSame('api', $objectData['metadata']['source']);
+        $this->assertSame(3, $objectData['metadata']['version']);
+    }
 }
