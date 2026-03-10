@@ -419,7 +419,7 @@ class EntityRecognitionHandler
                 continue;
             }
 
-            if (preg_match_all($patternDef['pattern'], $text, $matches, PREG_OFFSET_CAPTURE) === true) {
+            if (preg_match_all($patternDef['pattern'], $text, $matches, PREG_OFFSET_CAPTURE) > 0) {
                 foreach ($matches[0] as $match) {
                     $entities[] = [
                         'type'           => $patternDef['type'],

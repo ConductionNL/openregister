@@ -502,4 +502,451 @@ class MappingServiceTest extends TestCase
 
         $this->assertInstanceOf(MappingService::class, $service);
     }
+
+    public function testExecuteMappingWithCastToArray(): void
+    {
+        $entity = new Mapping();
+        $entity->hydrate([
+            'name' => 'TestMapping',
+            'mapping' => json_encode(['items' => 'input_items']),
+            'passThrough' => false,
+            'unset' => json_encode([]),
+            'cast' => json_encode(['items' => 'array']),
+        ]);
+
+        $input = ['input_items' => 'single-value'];
+
+        $result = $this->service->executeMapping($entity, $input);
+
+        $this->assertIsArray($result['items']);
+    }
+
+    public function testExecuteMappingWithUrlDecodeCast(): void
+    {
+        $entity = new Mapping();
+        $entity->hydrate([
+            'name' => 'TestMapping',
+            'mapping' => json_encode(['decoded' => 'input']),
+            'passThrough' => false,
+            'unset' => json_encode([]),
+            'cast' => json_encode(['decoded' => 'urlDecode']),
+        ]);
+
+        $input = ['input' => 'hello+world'];
+
+        $result = $this->service->executeMapping($entity, $input);
+
+        $this->assertSame('hello world', $result['decoded']);
+    }
+
+    public function testExecuteMappingWithHtmlCast(): void
+    {
+        $entity = new Mapping();
+        $entity->hydrate([
+            'name' => 'TestMapping',
+            'mapping' => json_encode(['escaped' => 'input']),
+            'passThrough' => false,
+            'unset' => json_encode([]),
+            'cast' => json_encode(['escaped' => 'html']),
+        ]);
+
+        $input = ['input' => '<b>bold</b>'];
+
+        $result = $this->service->executeMapping($entity, $input);
+
+        $this->assertSame('&lt;b&gt;bold&lt;/b&gt;', $result['escaped']);
+    }
+
+    public function testExecuteMappingWithHtmlDecodeCast(): void
+    {
+        $entity = new Mapping();
+        $entity->hydrate([
+            'name' => 'TestMapping',
+            'mapping' => json_encode(['decoded' => 'input']),
+            'passThrough' => false,
+            'unset' => json_encode([]),
+            'cast' => json_encode(['decoded' => 'htmlDecode']),
+        ]);
+
+        $input = ['input' => '&lt;b&gt;bold&lt;/b&gt;'];
+
+        $result = $this->service->executeMapping($entity, $input);
+
+        $this->assertSame('<b>bold</b>', $result['decoded']);
+    }
+
+    public function testExecuteMappingWithJsonToArrayCast(): void
+    {
+        $entity = new Mapping();
+        $entity->hydrate([
+            'name' => 'TestMapping',
+            'mapping' => json_encode(['parsed' => 'input']),
+            'passThrough' => false,
+            'unset' => json_encode([]),
+            'cast' => json_encode(['parsed' => 'jsonToArray']),
+        ]);
+
+        $input = ['input' => '{"key":"val"}'];
+
+        $result = $this->service->executeMapping($entity, $input);
+
+        $this->assertIsArray($result['parsed']);
+        $this->assertSame('val', $result['parsed']['key']);
+    }
+
+    public function testExecuteMappingWithJsonToArrayCastAlreadyArray(): void
+    {
+        $entity = new Mapping();
+        $entity->hydrate([
+            'name' => 'TestMapping',
+            'mapping' => json_encode(['parsed' => 'input']),
+            'passThrough' => false,
+            'unset' => json_encode([]),
+            'cast' => json_encode(['parsed' => 'jsonToArray']),
+        ]);
+
+        $input = ['input' => ['already' => 'array']];
+
+        $result = $this->service->executeMapping($entity, $input);
+
+        $this->assertSame(['already' => 'array'], $result['parsed']);
+    }
+
+    public function testExecuteMappingWithMoneyStringToIntCast(): void
+    {
+        $entity = new Mapping();
+        $entity->hydrate([
+            'name' => 'TestMapping',
+            'mapping' => json_encode(['amount' => 'input']),
+            'passThrough' => false,
+            'unset' => json_encode([]),
+            'cast' => json_encode(['amount' => 'moneyStringToInt']),
+        ]);
+
+        $input = ['input' => '1.234,56'];
+
+        $result = $this->service->executeMapping($entity, $input);
+
+        $this->assertSame(123456, $result['amount']);
+    }
+
+    public function testExecuteMappingWithIntToMoneyStringCast(): void
+    {
+        $entity = new Mapping();
+        $entity->hydrate([
+            'name' => 'TestMapping',
+            'mapping' => json_encode(['display' => 'input']),
+            'passThrough' => false,
+            'unset' => json_encode([]),
+            'cast' => json_encode(['display' => 'intToMoneyString']),
+        ]);
+
+        $input = ['input' => 12345];
+
+        $result = $this->service->executeMapping($entity, $input);
+
+        $this->assertSame('123,45', $result['display']);
+    }
+
+    public function testExecuteMappingWithNestedDotNotation(): void
+    {
+        $entity = new Mapping();
+        $entity->hydrate([
+            'name' => 'TestMapping',
+            'mapping' => json_encode(['flat_city' => 'address.city']),
+            'passThrough' => false,
+            'unset' => json_encode([]),
+            'cast' => json_encode([]),
+        ]);
+
+        $input = ['address' => ['city' => 'Amsterdam']];
+
+        $result = $this->service->executeMapping($entity, $input);
+
+        $this->assertSame('Amsterdam', $result['flat_city']);
+    }
+
+    public function testExecuteMappingWithNestedOutputDotNotation(): void
+    {
+        $entity = new Mapping();
+        $entity->hydrate([
+            'name' => 'TestMapping',
+            'mapping' => json_encode(['output.nested' => 'input_field']),
+            'passThrough' => false,
+            'unset' => json_encode([]),
+            'cast' => json_encode([]),
+        ]);
+
+        $input = ['input_field' => 'value'];
+
+        $result = $this->service->executeMapping($entity, $input);
+
+        $this->assertSame('value', $result['output']['nested']);
+    }
+
+    public function testExecuteMappingWithRootHashResolvesToScalar(): void
+    {
+        $entity = new Mapping();
+        $entity->hydrate([
+            'name' => 'TestMapping',
+            'mapping' => json_encode(['#' => 'data']),
+            'passThrough' => false,
+            'unset' => json_encode([]),
+            'cast' => json_encode([]),
+        ]);
+
+        // When # maps to a scalar, output wraps it in array.
+        $input = ['data' => 'scalar-value'];
+
+        $result = $this->service->executeMapping($entity, $input);
+
+        $this->assertSame(['scalar-value'], $result);
+    }
+
+    public function testCoordinateStringToArraySingleNumber(): void
+    {
+        // Single coordinate with only one pair.
+        $result = $this->service->coordinateStringToArray('52.123 4.567');
+
+        $this->assertSame(['52.123', '4.567'], $result);
+    }
+
+    public function testEncodeArrayKeysDeepNesting(): void
+    {
+        $input = [
+            'level.1' => [
+                'level.2' => [
+                    'level.3' => 'value',
+                ],
+            ],
+        ];
+        $result = $this->service->encodeArrayKeys($input, '.', '&#46;');
+
+        $this->assertArrayHasKey('level&#46;1', $result);
+        $this->assertArrayHasKey('level&#46;2', $result['level&#46;1']);
+        $this->assertArrayHasKey('level&#46;3', $result['level&#46;1']['level&#46;2']);
+    }
+
+    public function testExecuteMappingWithUnsetOnNestedKey(): void
+    {
+        $entity = new Mapping();
+        $entity->hydrate([
+            'name' => 'TestMapping',
+            'mapping' => json_encode(['a' => 'x', 'b.nested' => 'y']),
+            'passThrough' => false,
+            'unset' => json_encode(['b.nested']),
+            'cast' => json_encode([]),
+        ]);
+
+        $input = ['x' => '1', 'y' => '2'];
+
+        $result = $this->service->executeMapping($entity, $input);
+
+        $this->assertSame('1', $result['a']);
+        // b.nested was unset, but b key may still exist as empty.
+        $this->assertArrayNotHasKey('nested', $result['b'] ?? []);
+    }
+
+    public function testExecuteMappingListModeWithExtraValues(): void
+    {
+        $entity = new Mapping();
+        $entity->hydrate([
+            'name' => 'TestMapping',
+            'mapping' => json_encode(['name' => 'input_name', 'ctx' => 'context_val']),
+            'passThrough' => false,
+            'unset' => json_encode([]),
+            'cast' => json_encode([]),
+        ]);
+
+        $input = [
+            'listInput' => [
+                ['input_name' => 'Alice'],
+                ['input_name' => 'Bob'],
+            ],
+            'context_val' => 'shared-context',
+        ];
+
+        $result = $this->service->executeMapping($entity, $input, true);
+
+        $this->assertCount(2, $result);
+        $this->assertSame('shared-context', $result[0]['ctx']);
+        $this->assertSame('shared-context', $result[1]['ctx']);
+    }
+
+    public function testExecuteMappingDefaultCastReturnsValue(): void
+    {
+        $entity = new Mapping();
+        $entity->hydrate([
+            'name' => 'TestMapping',
+            'mapping' => json_encode(['val' => 'input']),
+            'passThrough' => false,
+            'unset' => json_encode([]),
+            'cast' => json_encode(['val' => 'unknownCastType']),
+        ]);
+
+        $input = ['input' => 'original'];
+
+        $result = $this->service->executeMapping($entity, $input);
+
+        // Unknown cast type returns value unchanged.
+        $this->assertSame('original', $result['val']);
+    }
+
+    public function testGetMappingCacheNull(): void
+    {
+        // Create service with no cache (cache factory throws).
+        $failingCacheFactory = $this->createMock(ICacheFactory::class);
+        $failingCacheFactory->method('createDistributed')
+            ->willThrowException(new \Exception('Cache unavailable'));
+
+        $service = new MappingService(
+            $this->mappingMapper,
+            $failingCacheFactory,
+            $this->logger
+        );
+
+        $mapping = new Mapping();
+        $mapping->hydrate(['name' => 'DBMapping']);
+        $ref = new \ReflectionClass($mapping);
+        $prop = $ref->getProperty('id');
+        $prop->setAccessible(true);
+        $prop->setValue($mapping, 5);
+
+        $this->mappingMapper->method('find')->willReturn($mapping);
+
+        $result = $service->getMapping('5');
+
+        $this->assertInstanceOf(Mapping::class, $result);
+    }
+
+    // ── Additional edge-case tests ─────────────────────────────────────
+
+    public function testExecuteMappingWithCastToDatetime(): void
+    {
+        $entity = new Mapping();
+        $entity->hydrate([
+            'name' => 'TestMapping',
+            'mapping' => json_encode(['date' => 'input_date']),
+            'passThrough' => false,
+            'unset' => json_encode([]),
+            'cast' => json_encode(['date' => 'datetime']),
+        ]);
+
+        $input = ['input_date' => '2025-01-15 10:30:00'];
+
+        $result = $this->service->executeMapping($entity, $input);
+
+        // datetime cast should produce a formatted date string
+        $this->assertIsString($result['date']);
+    }
+
+    public function testExecuteMappingWithEmptyInput(): void
+    {
+        $entity = new Mapping();
+        $entity->hydrate([
+            'name' => 'TestMapping',
+            'mapping' => json_encode(['output' => 'missing_key']),
+            'passThrough' => false,
+            'unset' => json_encode([]),
+            'cast' => json_encode([]),
+        ]);
+
+        $input = [];
+
+        $result = $this->service->executeMapping($entity, $input);
+
+        // Missing key: the mapping uses the string value as-is when not found in input
+        $this->assertArrayHasKey('output', $result);
+    }
+
+    public function testExecuteMappingWithMultipleCasts(): void
+    {
+        $entity = new Mapping();
+        $entity->hydrate([
+            'name' => 'TestMapping',
+            'mapping' => json_encode([
+                'count' => 'input_count',
+                'active' => 'input_active',
+                'price' => 'input_price',
+            ]),
+            'passThrough' => false,
+            'unset' => json_encode([]),
+            'cast' => json_encode([
+                'count' => 'int',
+                'active' => 'bool',
+                'price' => 'float',
+            ]),
+        ]);
+
+        $input = [
+            'input_count' => '42',
+            'input_active' => '1',
+            'input_price' => '19.99',
+        ];
+
+        $result = $this->service->executeMapping($entity, $input);
+
+        $this->assertSame(42, $result['count']);
+        $this->assertTrue($result['active']);
+        $this->assertSame(19.99, $result['price']);
+    }
+
+    public function testExecuteMappingWithMultipleUnsets(): void
+    {
+        $entity = new Mapping();
+        $entity->hydrate([
+            'name' => 'TestMapping',
+            'mapping' => json_encode([
+                'a' => 'x',
+                'b' => 'y',
+                'c' => 'z',
+            ]),
+            'passThrough' => false,
+            'unset' => json_encode(['a', 'c']),
+            'cast' => json_encode([]),
+        ]);
+
+        $input = ['x' => '1', 'y' => '2', 'z' => '3'];
+
+        $result = $this->service->executeMapping($entity, $input);
+
+        $this->assertArrayNotHasKey('a', $result);
+        $this->assertSame('2', $result['b']);
+        $this->assertArrayNotHasKey('c', $result);
+    }
+
+    public function testGetMappingsReturnsEmptyWhenNone(): void
+    {
+        $this->mappingMapper->method('findAll')->willReturn([]);
+
+        $result = $this->service->getMappings();
+
+        $this->assertCount(0, $result);
+    }
+
+    public function testExecuteMappingWithNullableCastNonNull(): void
+    {
+        $entity = new Mapping();
+        $entity->hydrate([
+            'name' => 'TestMapping',
+            'mapping' => json_encode(['flag' => 'input_flag']),
+            'passThrough' => false,
+            'unset' => json_encode([]),
+            'cast' => json_encode(['flag' => '?bool']),
+        ]);
+
+        $input = ['input_flag' => 'true'];
+
+        $result = $this->service->executeMapping($entity, $input);
+
+        $this->assertTrue($result['flag']);
+    }
+
+    public function testCoordinateStringToArrayEmptyString(): void
+    {
+        $result = $this->service->coordinateStringToArray('');
+
+        $this->assertIsArray($result);
+    }
+
 }

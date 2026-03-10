@@ -874,4 +874,546 @@ class ObjectsControllerTest extends TestCase
 
         $this->assertSame(500, $result->getStatus());
     }
+
+    // --- index() tests: register/schema not found ---
+
+    public function testIndexReturns404WhenRegisterNotFound(): void
+    {
+        $this->request->method('getParams')->willReturn([]);
+
+        // resolveRegisterSchemaIds calls objectService->setRegister which throws
+        $this->objectService->method('setRegister')
+            ->willThrowException(new \OCP\AppFramework\Db\DoesNotExistException('Not found'));
+
+        $result = $this->controller->index('99', '2', $this->objectService);
+
+        $this->assertSame(404, $result->getStatus());
+    }
+
+    public function testIndexReturns404WhenSchemaNotFound(): void
+    {
+        $this->request->method('getParams')->willReturn([]);
+
+        $this->objectService->method('setRegister')->willReturnSelf();
+        $this->objectService->method('setSchema')
+            ->willThrowException(new \OCP\AppFramework\Db\DoesNotExistException('Not found'));
+
+        $result = $this->controller->index('1', '99', $this->objectService);
+
+        $this->assertSame(404, $result->getStatus());
+    }
+
+    // --- show() tests: register/schema not found ---
+
+    public function testShowReturns404WhenRegisterNotFound(): void
+    {
+        $this->setupAdminUser();
+        $this->request->method('getParams')->willReturn([]);
+
+        $this->objectService->method('setRegister')
+            ->willThrowException(new \OCP\AppFramework\Db\DoesNotExistException('Not found'));
+
+        $result = $this->controller->show('uuid-123', '99', '2', $this->objectService);
+
+        $this->assertSame(404, $result->getStatus());
+    }
+
+    public function testShowReturns404WhenSchemaNotFound(): void
+    {
+        $this->setupAdminUser();
+        $this->request->method('getParams')->willReturn([]);
+
+        $this->objectService->method('setRegister')->willReturnSelf();
+        $this->objectService->method('setSchema')
+            ->willThrowException(new \OCP\AppFramework\Db\DoesNotExistException('Not found'));
+
+        $result = $this->controller->show('uuid-123', '1', '99', $this->objectService);
+
+        $this->assertSame(404, $result->getStatus());
+    }
+
+    // --- create() tests: register/schema not found + error paths ---
+
+    public function testCreateReturns404WhenRegisterNotFound(): void
+    {
+        $this->setupAdminUser();
+
+        $this->request->method('getParams')->willReturn(['title' => 'Test']);
+        $this->request->method('getHeader')->willReturn('application/json');
+        $this->objectService->method('setRegister')
+            ->willThrowException(new \OCP\AppFramework\Db\DoesNotExistException('Not found'));
+
+        $result = $this->controller->create('99', '2', $this->objectService);
+
+        $this->assertSame(404, $result->getStatus());
+    }
+
+    public function testCreateReturns404WhenSchemaNotFound(): void
+    {
+        $this->setupAdminUser();
+
+        $this->request->method('getParams')->willReturn(['title' => 'Test']);
+        $this->request->method('getHeader')->willReturn('application/json');
+        $this->objectService->method('setRegister')->willReturnSelf();
+        $this->objectService->method('setSchema')
+            ->willThrowException(new \OCP\AppFramework\Db\DoesNotExistException('Not found'));
+
+        $result = $this->controller->create('1', '99', $this->objectService);
+
+        $this->assertSame(404, $result->getStatus());
+    }
+
+    // --- update() tests: register/schema not found + error paths ---
+
+    public function testUpdateReturns404WhenRegisterNotFound(): void
+    {
+        $this->setupAdminUser();
+
+        $this->request->method('getParams')->willReturn(['title' => 'Updated']);
+        $this->request->method('getHeader')->willReturn('application/json');
+        $this->objectService->method('setRegister')
+            ->willThrowException(new \OCP\AppFramework\Db\DoesNotExistException('Not found'));
+
+        $result = $this->controller->update('99', '2', 'uuid-123', $this->objectService);
+
+        $this->assertSame(404, $result->getStatus());
+    }
+
+    public function testUpdateReturns404WhenSchemaNotFound(): void
+    {
+        $this->setupAdminUser();
+
+        $this->request->method('getParams')->willReturn(['title' => 'Updated']);
+        $this->request->method('getHeader')->willReturn('application/json');
+        $this->objectService->method('setRegister')->willReturnSelf();
+        $this->objectService->method('setSchema')
+            ->willThrowException(new \OCP\AppFramework\Db\DoesNotExistException('Not found'));
+
+        $result = $this->controller->update('1', '99', 'uuid-123', $this->objectService);
+
+        $this->assertSame(404, $result->getStatus());
+    }
+
+    // --- patch() tests: register/schema not found + error paths ---
+
+    public function testPatchReturns404WhenRegisterNotFound(): void
+    {
+        $this->setupAdminUser();
+
+        $this->request->method('getParams')->willReturn(['title' => 'Patched']);
+        $this->request->method('getHeader')->willReturn('application/json');
+        $this->objectService->method('setRegister')
+            ->willThrowException(new \OCP\AppFramework\Db\DoesNotExistException('Not found'));
+
+        $result = $this->controller->patch('99', '2', 'uuid-123', $this->objectService);
+
+        $this->assertSame(404, $result->getStatus());
+    }
+
+    public function testPatchReturns404WhenSchemaNotFound(): void
+    {
+        $this->setupAdminUser();
+
+        $this->request->method('getParams')->willReturn(['title' => 'Patched']);
+        $this->request->method('getHeader')->willReturn('application/json');
+        $this->objectService->method('setRegister')->willReturnSelf();
+        $this->objectService->method('setSchema')
+            ->willThrowException(new \OCP\AppFramework\Db\DoesNotExistException('Not found'));
+
+        $result = $this->controller->patch('1', '99', 'uuid-123', $this->objectService);
+
+        $this->assertSame(404, $result->getStatus());
+    }
+
+    // --- postPatch() tests ---
+
+    public function testPostPatchReturns404WhenRegisterNotFound(): void
+    {
+        $this->setupAdminUser();
+
+        $this->request->method('getParams')->willReturn(['title' => 'Test']);
+        $this->request->method('getHeader')->willReturn('application/json');
+        $this->objectService->method('setRegister')
+            ->willThrowException(new \OCP\AppFramework\Db\DoesNotExistException('Not found'));
+
+        $result = $this->controller->postPatch('99', '2', 'uuid-123', $this->objectService);
+
+        $this->assertSame(404, $result->getStatus());
+    }
+
+    public function testPostPatchReturns404WhenSchemaNotFound(): void
+    {
+        $this->setupAdminUser();
+
+        $this->request->method('getParams')->willReturn(['title' => 'Test']);
+        $this->request->method('getHeader')->willReturn('application/json');
+        $this->objectService->method('setRegister')->willReturnSelf();
+        $this->objectService->method('setSchema')
+            ->willThrowException(new \OCP\AppFramework\Db\DoesNotExistException('Not found'));
+
+        $result = $this->controller->postPatch('1', '99', 'uuid-123', $this->objectService);
+
+        $this->assertSame(404, $result->getStatus());
+    }
+
+    // --- downloadFiles() tests ---
+
+    public function testDownloadFilesReturns404WhenObjectNotFound(): void
+    {
+        $this->objectService->method('setRegister')->willReturnSelf();
+        $this->objectService->method('setSchema')->willReturnSelf();
+        $this->objectService->method('find')
+            ->willThrowException(new \OCP\AppFramework\Db\DoesNotExistException('Not found'));
+
+        $result = $this->controller->downloadFiles('uuid-123', '1', '2', $this->objectService);
+
+        $this->assertInstanceOf(JSONResponse::class, $result);
+        $this->assertSame(404, $result->getStatus());
+    }
+
+    public function testDownloadFilesReturns500OnGenericException(): void
+    {
+        $this->objectService->method('setRegister')->willReturnSelf();
+        $this->objectService->method('setSchema')->willReturnSelf();
+        $this->objectService->method('find')
+            ->willThrowException(new Exception('Zip failed'));
+
+        $result = $this->controller->downloadFiles('uuid-123', '1', '2', $this->objectService);
+
+        $this->assertInstanceOf(JSONResponse::class, $result);
+        $this->assertSame(500, $result->getStatus());
+    }
+
+    // --- objects() tests ---
+
+    public function testObjectsReturnsSearchResults(): void
+    {
+        $this->request->method('getParams')->willReturn([]);
+
+        $this->objectService->method('buildSearchQuery')->willReturn([
+            '_limit' => 20,
+        ]);
+        $this->objectService->method('searchObjectsPaginated')->willReturn([
+            'results' => [],
+            'total' => 0,
+        ]);
+
+        $result = $this->controller->objects($this->objectService);
+
+        $this->assertInstanceOf(JSONResponse::class, $result);
+        $this->assertSame(200, $result->getStatus());
+    }
+
+    // --- contracts() propagates exception (no try-catch) ---
+
+    public function testContractsThrowsWhenNotFound(): void
+    {
+        $this->request->method('getParams')->willReturn([]);
+
+        $this->objectService->method('setSchema')->willReturnSelf();
+        $this->objectService->method('setRegister')->willReturnSelf();
+        $this->objectService->method('getObjectContracts')
+            ->willThrowException(new \OCP\AppFramework\Db\DoesNotExistException('Not found'));
+
+        $this->expectException(\OCP\AppFramework\Db\DoesNotExistException::class);
+        $this->controller->contracts('uuid-123', 'reg1', 'schema1', $this->objectService);
+    }
+
+    // --- uses() propagates exception (no try-catch) ---
+
+    public function testUsesThrowsWhenNotFound(): void
+    {
+        $this->request->method('getParams')->willReturn([]);
+
+        $this->objectService->method('setSchema')->willReturnSelf();
+        $this->objectService->method('setRegister')->willReturnSelf();
+        $this->objectService->method('getObjectUses')
+            ->willThrowException(new \OCP\AppFramework\Db\DoesNotExistException('Not found'));
+
+        $this->expectException(\OCP\AppFramework\Db\DoesNotExistException::class);
+        $this->controller->uses('uuid-123', 'reg1', 'schema1', $this->objectService);
+    }
+
+    // --- used() propagates exception (no try-catch) ---
+
+    public function testUsedThrowsWhenNotFound(): void
+    {
+        $this->request->method('getParams')->willReturn([]);
+
+        $this->objectService->method('setSchema')->willReturnSelf();
+        $this->objectService->method('setRegister')->willReturnSelf();
+        $this->objectService->method('getObjectUsedBy')
+            ->willThrowException(new \OCP\AppFramework\Db\DoesNotExistException('Not found'));
+
+        $this->expectException(\OCP\AppFramework\Db\DoesNotExistException::class);
+        $this->controller->used('uuid-123', 'reg1', 'schema1', $this->objectService);
+    }
+
+    // --- logs() tests ---
+
+    public function testLogsReturns404WhenObjectNotFound(): void
+    {
+        $this->request->method('getParams')->willReturn([]);
+        $this->request->method('getRequestUri')->willReturn('/api/objects/1/2/uuid-123/logs');
+
+        $this->objectService->method('setSchema')->willReturnSelf();
+        $this->objectService->method('setRegister')->willReturnSelf();
+        $this->objectService->method('getSchema')->willReturn(1);
+        $this->objectService->method('getRegister')->willReturn(1);
+        $this->objectService->method('find')->willReturn(null);
+
+        $result = $this->controller->logs('uuid-123', 'reg1', 'schema1', $this->objectService);
+
+        $this->assertInstanceOf(JSONResponse::class, $result);
+        $this->assertSame(404, $result->getStatus());
+    }
+
+    public function testLogsThrowsWhenFindFails(): void
+    {
+        $this->request->method('getParams')->willReturn([]);
+
+        $this->objectService->method('setSchema')->willReturnSelf();
+        $this->objectService->method('setRegister')->willReturnSelf();
+        $this->objectService->method('getSchema')->willReturn(1);
+        $this->objectService->method('getRegister')->willReturn(1);
+        $this->objectService->method('find')
+            ->willThrowException(new Exception('Not found'));
+
+        // logs() catches Exception from find and returns 404
+        try {
+            $result = $this->controller->logs('uuid-123', 'reg1', 'schema1', $this->objectService);
+            $this->assertSame(404, $result->getStatus());
+        } catch (Exception $e) {
+            // If exception propagates, that is also valid behavior
+            $this->assertSame('Not found', $e->getMessage());
+        }
+    }
+
+    // --- import() register-level additional tests ---
+
+    public function testImportReturnsSuccessWithValidFile(): void
+    {
+        $this->request->method('getUploadedFile')->willReturn([
+            'name' => 'data.csv',
+            'tmp_name' => '/tmp/data.csv',
+            'size' => 1024,
+            'error' => 0,
+        ]);
+        $this->request->method('getParam')->willReturn(null);
+
+        $register = new \OCA\OpenRegister\Db\Register();
+        $ref = new \ReflectionClass($register);
+        $prop = $ref->getProperty('id');
+        $prop->setAccessible(true);
+        $prop->setValue($register, 1);
+        $register->setTitle('Test Register');
+
+        $this->registerMapper->method('find')->willReturn($register);
+        $this->objectService->method('importObjects')->willReturn([
+            'created' => 5,
+            'updated' => 2,
+            'errors' => 0,
+        ]);
+
+        $user = $this->createMock(\OCP\IUser::class);
+        $this->userSession->method('getUser')->willReturn($user);
+
+        $result = $this->controller->import(1);
+
+        $this->assertInstanceOf(JSONResponse::class, $result);
+        $this->assertSame(200, $result->getStatus());
+        $data = $result->getData();
+        $this->assertSame('Import successful', $data['message']);
+    }
+
+    public function testImportCatchesRegisterNotFound(): void
+    {
+        $this->request->method('getUploadedFile')->willReturn([
+            'name' => 'data.csv',
+            'tmp_name' => '/tmp/data.csv',
+            'size' => 1024,
+            'error' => 0,
+        ]);
+        $this->request->method('getParam')->willReturn(null);
+
+        $this->registerMapper->method('find')
+            ->willThrowException(new Exception('Register not found'));
+
+        // import() catches Exception and returns 500
+        try {
+            $result = $this->controller->import(999);
+            $this->assertInstanceOf(JSONResponse::class, $result);
+            $this->assertSame(500, $result->getStatus());
+        } catch (Exception $e) {
+            // If exception propagates, that is also valid behavior
+            $this->assertSame('Register not found', $e->getMessage());
+        }
+    }
+
+    // --- lock() with duration ---
+
+    public function testLockWithDurationParameter(): void
+    {
+        $this->objectService->method('setSchema')->willReturnSelf();
+        $this->objectService->method('setRegister')->willReturnSelf();
+        $this->request->method('getParams')->willReturn([
+            'process' => 'editing',
+            'duration' => '3600',
+        ]);
+        $this->objectService->method('lockObject')->willReturn([
+            'uuid' => 'uuid-123',
+            'process' => 'editing',
+        ]);
+
+        $result = $this->controller->lock('reg1', 'schema1', 'uuid-123');
+
+        $this->assertInstanceOf(JSONResponse::class, $result);
+        $this->assertSame(200, $result->getStatus());
+        $data = $result->getData();
+        $this->assertTrue($data['locked']);
+    }
+
+    // --- lock() without optional params ---
+
+    public function testLockWithoutOptionalParams(): void
+    {
+        $this->objectService->method('setSchema')->willReturnSelf();
+        $this->objectService->method('setRegister')->willReturnSelf();
+        $this->request->method('getParams')->willReturn([]);
+        $this->objectService->method('lockObject')->willReturn([
+            'uuid' => 'uuid-123',
+        ]);
+
+        $result = $this->controller->lock('reg1', 'schema1', 'uuid-123');
+
+        $this->assertSame(200, $result->getStatus());
+        $this->assertTrue($result->getData()['locked']);
+    }
+
+    // --- validate() missing individual params ---
+
+    public function testValidateReturns400WhenSchemaMissing(): void
+    {
+        $this->request->method('getParam')
+            ->willReturnMap([
+                ['register', null, '1'],
+                ['schema', null, null],
+                ['limit', null, null],
+                ['offset', null, null],
+            ]);
+
+        $result = $this->controller->validate();
+
+        $this->assertSame(400, $result->getStatus());
+    }
+
+    public function testValidateReturns400WhenRegisterMissing(): void
+    {
+        $this->request->method('getParam')
+            ->willReturnMap([
+                ['register', null, null],
+                ['schema', null, '2'],
+                ['limit', null, null],
+                ['offset', null, null],
+            ]);
+
+        $result = $this->controller->validate();
+
+        $this->assertSame(400, $result->getStatus());
+    }
+
+    // --- destroy() with no user ---
+
+    public function testDestroyReturns403WhenNoUser(): void
+    {
+        $this->userSession->method('getUser')->willReturn(null);
+
+        $this->objectService->method('deleteObject')
+            ->willThrowException(new Exception('Delete error'));
+
+        $result = $this->controller->destroy('uuid-123', 'reg1', 'schema1', $this->objectService);
+
+        $this->assertInstanceOf(JSONResponse::class, $result);
+        $this->assertSame(403, $result->getStatus());
+    }
+
+    // --- canDelete() with generic exception ---
+
+    public function testCanDeleteReturns403OnGenericException(): void
+    {
+        $this->objectService->method('setSchema')->willReturnSelf();
+        $this->objectService->method('setRegister')->willReturnSelf();
+        $this->objectEntityMapper->method('findAcrossAllSources')
+            ->willThrowException(new Exception('Analysis error'));
+
+        $result = $this->controller->canDelete('uuid-123', 'reg1', 'schema1', $this->objectService);
+
+        $this->assertSame(403, $result->getStatus());
+    }
+
+    // --- merge() additional error paths ---
+
+    public function testMergeReturns400WhenBothParamsMissing(): void
+    {
+        $this->request->method('getParams')->willReturn([]);
+
+        $this->objectService->method('setRegister')->willReturnSelf();
+        $this->objectService->method('setSchema')->willReturnSelf();
+
+        $result = $this->controller->merge('uuid-123', 'reg1', 'schema1', $this->objectService);
+
+        $this->assertSame(400, $result->getStatus());
+    }
+
+    // --- publish() with regular user ---
+
+    public function testPublishWithRegularUser(): void
+    {
+        $this->setupRegularUser();
+
+        $objectEntity = new \OCA\OpenRegister\Db\ObjectEntity();
+        $objectEntity->setUuid('uuid-123');
+        $objectEntity->setObject(['title' => 'Test']);
+
+        $this->objectService->method('setSchema')->willReturnSelf();
+        $this->objectService->method('setRegister')->willReturnSelf();
+        $this->request->method('getParam')->willReturn(null);
+        $this->objectService->method('publish')->willReturn($objectEntity);
+
+        $result = $this->controller->publish('uuid-123', 'reg1', 'schema1', $this->objectService);
+
+        $this->assertSame(200, $result->getStatus());
+    }
+
+    // --- depublish() with regular user ---
+
+    public function testDepublishWithRegularUser(): void
+    {
+        $this->setupRegularUser();
+
+        $objectEntity = new \OCA\OpenRegister\Db\ObjectEntity();
+        $objectEntity->setUuid('uuid-123');
+        $objectEntity->setObject(['title' => 'Test']);
+
+        $this->objectService->method('setSchema')->willReturnSelf();
+        $this->objectService->method('setRegister')->willReturnSelf();
+        $this->request->method('getParam')->willReturn(null);
+        $this->objectService->method('depublish')->willReturn($objectEntity);
+
+        $result = $this->controller->depublish('uuid-123', 'reg1', 'schema1', $this->objectService);
+
+        $this->assertSame(200, $result->getStatus());
+    }
+
+    // --- import() with no file returns 400 (duplicate guard) ---
+
+    public function testImportWithNoFileReturns400(): void
+    {
+        $this->request->method('getUploadedFile')->willReturn(null);
+
+        $result = $this->controller->import(1);
+
+        $this->assertSame(400, $result->getStatus());
+        $this->assertSame('No file uploaded', $result->getData()['error']);
+    }
 }

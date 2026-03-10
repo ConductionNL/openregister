@@ -863,7 +863,7 @@ class RenderObject
     ): ObjectEntity {
         if ($entity->getUuid() !== null && in_array($entity->getUuid(), $visitedIds ?? [], true) === true) {
             // @psalm-suppress NullableReturnStatement - setObject() returns $this (ObjectEntity) despite void annotation
-            $entity->setObject(object: ['@circular' => true, 'id' => $entity->getUuid()]);
+            $entity->setObject(['@circular' => true, 'id' => $entity->getUuid()]);
             return $entity;
         }
 

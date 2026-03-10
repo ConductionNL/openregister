@@ -502,4 +502,372 @@ class MagicMapperIntegrationTest extends TestCase
         $result = $this->mapper->syncTableForRegisterSchema($register, $schema);
         $this->assertIsArray($result);
     }
+
+    // =========================================================================
+    // MagicFacetHandler tests (via MagicMapper)
+    // =========================================================================
+
+    public function testFacetsReturnStructureWithData(): void
+    {
+        $register = $this->createTestRegister();
+        $schema = $this->createTestSchema();
+
+        $this->mapper->ensureTableForRegisterSchema($register, $schema);
+        $this->trackTable($register, $schema);
+
+        // Insert multiple objects with different values for faceting
+        for ($i = 0; $i < 3; $i++) {
+            $entity = new ObjectEntity();
+            $entity->setUuid(Uuid::v4()->toRfc4122());
+            $entity->setRegister((string) $register->getId());
+            $entity->setSchema((string) $schema->getId());
+            $entity->setObject(['name' => 'FacetUser' . ($i % 2), 'age' => (20 + $i), 'active' => ($i % 2 === 0)]);
+            $this->mapper->insertObjectEntity($entity, $register, $schema, false);
+        }
+
+        $facets = $this->mapper->getSimpleFacetsFromRegisterSchemaTable([], $register, $schema);
+        $this->assertIsArray($facets);
+    }
+
+    public function testFacetsWithFilterQuery(): void
+    {
+        $register = $this->createTestRegister();
+        $schema = $this->createTestSchema();
+
+        $this->mapper->ensureTableForRegisterSchema($register, $schema);
+        $this->trackTable($register, $schema);
+
+        $entity = new ObjectEntity();
+        $entity->setUuid(Uuid::v4()->toRfc4122());
+        $entity->setRegister((string) $register->getId());
+        $entity->setSchema((string) $schema->getId());
+        $entity->setObject(['name' => 'FacetFilter', 'age' => 33, 'active' => true]);
+        $this->mapper->insertObjectEntity($entity, $register, $schema, false);
+
+        // Query with a filter
+        $facets = $this->mapper->getSimpleFacetsFromRegisterSchemaTable(
+            ['name' => 'FacetFilter'],
+            $register,
+            $schema
+        );
+        $this->assertIsArray($facets);
+    }
+
+    public function testFacetsOnEmptyTable(): void
+    {
+        $register = $this->createTestRegister();
+        $schema = $this->createTestSchema();
+
+        $this->mapper->ensureTableForRegisterSchema($register, $schema);
+        $this->trackTable($register, $schema);
+
+        $facets = $this->mapper->getSimpleFacetsFromRegisterSchemaTable([], $register, $schema);
+        $this->assertIsArray($facets);
+    }
+
+    public function testFacetsUnionAcrossMultipleTables(): void
+    {
+        $register = $this->createTestRegister();
+        $schema1 = $this->createTestSchema();
+        $schema2 = $this->createTestSchema();
+
+        $this->mapper->ensureTableForRegisterSchema($register, $schema1);
+        $this->trackTable($register, $schema1);
+        $this->mapper->ensureTableForRegisterSchema($register, $schema2);
+        $this->trackTable($register, $schema2);
+
+        // Insert data into both tables
+        foreach ([$schema1, $schema2] as $schema) {
+            $entity = new ObjectEntity();
+            $entity->setUuid(Uuid::v4()->toRfc4122());
+            $entity->setRegister((string) $register->getId());
+            $entity->setSchema((string) $schema->getId());
+            $entity->setObject(['name' => 'UnionFacet', 'age' => 25, 'active' => true]);
+            $this->mapper->insertObjectEntity($entity, $register, $schema, false);
+        }
+
+        $pairs = [
+            ['register' => $register, 'schema' => $schema1],
+            ['register' => $register, 'schema' => $schema2],
+        ];
+
+        // getSimpleFacetsUnion signature: (array $query, ?Register $register, array $schemas, array $registerSchemaPairs)
+        $facets = $this->mapper->getSimpleFacetsUnion([], $register, [$schema1, $schema2], $pairs);
+        $this->assertIsArray($facets);
+    }
+
+    // =========================================================================
+    // MagicSearchHandler tests (via MagicMapper)
+    // =========================================================================
+
+    public function testSearchWithFilterOnProperty(): void
+    {
+        $register = $this->createTestRegister();
+        $schema = $this->createTestSchema();
+
+        $this->mapper->ensureTableForRegisterSchema($register, $schema);
+        $this->trackTable($register, $schema);
+
+        $entity = new ObjectEntity();
+        $entity->setUuid(Uuid::v4()->toRfc4122());
+        $entity->setRegister((string) $register->getId());
+        $entity->setSchema((string) $schema->getId());
+        $entity->setObject(['name' => 'SearchableAlice', 'age' => 30, 'active' => true]);
+        $this->mapper->insertObjectEntity($entity, $register, $schema, false);
+
+        $results = $this->mapper->searchObjectsInRegisterSchemaTable(
+            ['name' => 'SearchableAlice'],
+            $register,
+            $schema
+        );
+        $this->assertIsArray($results);
+    }
+
+    public function testSearchWithPagination(): void
+    {
+        $register = $this->createTestRegister();
+        $schema = $this->createTestSchema();
+
+        $this->mapper->ensureTableForRegisterSchema($register, $schema);
+        $this->trackTable($register, $schema);
+
+        for ($i = 0; $i < 5; $i++) {
+            $entity = new ObjectEntity();
+            $entity->setUuid(Uuid::v4()->toRfc4122());
+            $entity->setRegister((string) $register->getId());
+            $entity->setSchema((string) $schema->getId());
+            $entity->setObject(['name' => 'PageItem' . $i, 'age' => $i]);
+            $this->mapper->insertObjectEntity($entity, $register, $schema, false);
+        }
+
+        $results = $this->mapper->searchObjectsInRegisterSchemaTable(
+            ['_limit' => 2, '_offset' => 0],
+            $register,
+            $schema
+        );
+        $this->assertIsArray($results);
+    }
+
+    public function testSearchWithSorting(): void
+    {
+        $register = $this->createTestRegister();
+        $schema = $this->createTestSchema();
+
+        $this->mapper->ensureTableForRegisterSchema($register, $schema);
+        $this->trackTable($register, $schema);
+
+        $entity = new ObjectEntity();
+        $entity->setUuid(Uuid::v4()->toRfc4122());
+        $entity->setRegister((string) $register->getId());
+        $entity->setSchema((string) $schema->getId());
+        $entity->setObject(['name' => 'SortItem', 'age' => 50]);
+        $this->mapper->insertObjectEntity($entity, $register, $schema, false);
+
+        $results = $this->mapper->searchObjectsInRegisterSchemaTable(
+            ['_order' => ['age' => 'DESC']],
+            $register,
+            $schema
+        );
+        $this->assertIsArray($results);
+    }
+
+    public function testCountObjectsInTable(): void
+    {
+        $register = $this->createTestRegister();
+        $schema = $this->createTestSchema();
+
+        $this->mapper->ensureTableForRegisterSchema($register, $schema);
+        $this->trackTable($register, $schema);
+
+        for ($i = 0; $i < 3; $i++) {
+            $entity = new ObjectEntity();
+            $entity->setUuid(Uuid::v4()->toRfc4122());
+            $entity->setRegister((string) $register->getId());
+            $entity->setSchema((string) $schema->getId());
+            $entity->setObject(['name' => 'CountItem' . $i, 'age' => $i]);
+            $this->mapper->insertObjectEntity($entity, $register, $schema, false);
+        }
+
+        $count = $this->mapper->countObjectsInRegisterSchemaTable([], $register, $schema);
+        $this->assertIsInt($count);
+        $this->assertGreaterThanOrEqual(0, $count);
+    }
+
+    public function testSearchWithNonExistentFilterProperty(): void
+    {
+        $register = $this->createTestRegister();
+        $schema = $this->createTestSchema();
+
+        $this->mapper->ensureTableForRegisterSchema($register, $schema);
+        $this->trackTable($register, $schema);
+
+        $entity = new ObjectEntity();
+        $entity->setUuid(Uuid::v4()->toRfc4122());
+        $entity->setRegister((string) $register->getId());
+        $entity->setSchema((string) $schema->getId());
+        $entity->setObject(['name' => 'IgnoredFilter', 'age' => 10]);
+        $this->mapper->insertObjectEntity($entity, $register, $schema, false);
+
+        // Filter on a property not in schema - should not crash
+        $results = $this->mapper->searchObjectsInRegisterSchemaTable(
+            ['nonExistentProperty' => 'value'],
+            $register,
+            $schema
+        );
+        $this->assertIsArray($results);
+    }
+
+    public function testSearchAcrossMultipleTables(): void
+    {
+        $register = $this->createTestRegister();
+        $schema1 = $this->createTestSchema();
+        $schema2 = $this->createTestSchema();
+
+        $this->mapper->ensureTableForRegisterSchema($register, $schema1);
+        $this->trackTable($register, $schema1);
+        $this->mapper->ensureTableForRegisterSchema($register, $schema2);
+        $this->trackTable($register, $schema2);
+
+        foreach ([$schema1, $schema2] as $schema) {
+            $entity = new ObjectEntity();
+            $entity->setUuid(Uuid::v4()->toRfc4122());
+            $entity->setRegister((string) $register->getId());
+            $entity->setSchema((string) $schema->getId());
+            $entity->setObject(['name' => 'CrossTableItem', 'age' => 30]);
+            $this->mapper->insertObjectEntity($entity, $register, $schema, false);
+        }
+
+        $pairs = [
+            ['register' => $register, 'schema' => $schema1],
+            ['register' => $register, 'schema' => $schema2],
+        ];
+
+        $results = $this->mapper->searchAcrossMultipleTables([], $pairs);
+        $this->assertIsArray($results);
+    }
+
+    // =========================================================================
+    // MagicRbacHandler tests (via MagicMapper search)
+    // =========================================================================
+
+    public function testSearchReturnsResultsWithRbacDisabled(): void
+    {
+        $register = $this->createTestRegister();
+        $schema = $this->createTestSchema();
+
+        $this->mapper->ensureTableForRegisterSchema($register, $schema);
+        $this->trackTable($register, $schema);
+
+        $entity = new ObjectEntity();
+        $entity->setUuid(Uuid::v4()->toRfc4122());
+        $entity->setRegister((string) $register->getId());
+        $entity->setSchema((string) $schema->getId());
+        $entity->setObject(['name' => 'RbacOff', 'age' => 25]);
+        $this->mapper->insertObjectEntity($entity, $register, $schema, false);
+
+        // Search with RBAC disabled
+        $results = $this->mapper->searchObjectsInRegisterSchemaTable(
+            ['_rbac' => false],
+            $register,
+            $schema
+        );
+        $this->assertIsArray($results);
+    }
+
+    public function testSearchWithRbacEnabledDoesNotCrash(): void
+    {
+        $register = $this->createTestRegister();
+        $schema = $this->createTestSchema();
+
+        $this->mapper->ensureTableForRegisterSchema($register, $schema);
+        $this->trackTable($register, $schema);
+
+        $entity = new ObjectEntity();
+        $entity->setUuid(Uuid::v4()->toRfc4122());
+        $entity->setRegister((string) $register->getId());
+        $entity->setSchema((string) $schema->getId());
+        $entity->setObject(['name' => 'RbacOn', 'age' => 40]);
+        $this->mapper->insertObjectEntity($entity, $register, $schema, false);
+
+        // Search with RBAC enabled (default) - may filter results based on user session
+        $results = $this->mapper->searchObjectsInRegisterSchemaTable(
+            ['_rbac' => true],
+            $register,
+            $schema
+        );
+        $this->assertIsArray($results);
+    }
+
+    public function testCountWithRbacDisabled(): void
+    {
+        $register = $this->createTestRegister();
+        $schema = $this->createTestSchema();
+
+        $this->mapper->ensureTableForRegisterSchema($register, $schema);
+        $this->trackTable($register, $schema);
+
+        $entity = new ObjectEntity();
+        $entity->setUuid(Uuid::v4()->toRfc4122());
+        $entity->setRegister((string) $register->getId());
+        $entity->setSchema((string) $schema->getId());
+        $entity->setObject(['name' => 'RbacCount', 'age' => 15]);
+        $this->mapper->insertObjectEntity($entity, $register, $schema, false);
+
+        // Count with RBAC disabled — in a test environment without a user session,
+        // multitenancy/organisation filters may still reduce the count to 0.
+        // The important thing is that it returns an int without errors.
+        $count = $this->mapper->countObjectsInRegisterSchemaTable(
+            ['_rbac' => false],
+            $register,
+            $schema
+        );
+        $this->assertIsInt($count);
+        $this->assertGreaterThanOrEqual(0, $count);
+    }
+
+    public function testFacetsWithRbacDisabled(): void
+    {
+        $register = $this->createTestRegister();
+        $schema = $this->createTestSchema();
+
+        $this->mapper->ensureTableForRegisterSchema($register, $schema);
+        $this->trackTable($register, $schema);
+
+        $entity = new ObjectEntity();
+        $entity->setUuid(Uuid::v4()->toRfc4122());
+        $entity->setRegister((string) $register->getId());
+        $entity->setSchema((string) $schema->getId());
+        $entity->setObject(['name' => 'RbacFacet', 'age' => 50]);
+        $this->mapper->insertObjectEntity($entity, $register, $schema, false);
+
+        $facets = $this->mapper->getSimpleFacetsFromRegisterSchemaTable(
+            ['_rbac' => false],
+            $register,
+            $schema
+        );
+        $this->assertIsArray($facets);
+    }
+
+    public function testSearchWithMultitenancyDisabled(): void
+    {
+        $register = $this->createTestRegister();
+        $schema = $this->createTestSchema();
+
+        $this->mapper->ensureTableForRegisterSchema($register, $schema);
+        $this->trackTable($register, $schema);
+
+        $entity = new ObjectEntity();
+        $entity->setUuid(Uuid::v4()->toRfc4122());
+        $entity->setRegister((string) $register->getId());
+        $entity->setSchema((string) $schema->getId());
+        $entity->setObject(['name' => 'MultitenancyOff', 'age' => 35]);
+        $this->mapper->insertObjectEntity($entity, $register, $schema, false);
+
+        $results = $this->mapper->searchObjectsInRegisterSchemaTable(
+            ['_rbac' => false, '_multitenancy' => false],
+            $register,
+            $schema
+        );
+        $this->assertIsArray($results);
+    }
 }

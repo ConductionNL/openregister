@@ -579,4 +579,311 @@ class ExportServiceTest extends TestCase
 
         $this->assertNotContains('@self.created', $headerValues);
     }
+
+    public function testExportToCsvWithDataRows(): void
+    {
+        $schema = new Schema();
+        $schema->setSlug('test');
+        $schema->setProperties([
+            'title' => ['type' => 'string'],
+            'count' => ['type' => 'integer'],
+        ]);
+
+        $obj1 = $this->createObjectEntity('uuid-1', 'First', ['title' => 'Alpha', 'count' => 10]);
+        $obj2 = $this->createObjectEntity('uuid-2', 'Second', ['title' => 'Beta', 'count' => 20]);
+
+        $this->propertyRbacHandler
+            ->method('canReadProperty')
+            ->willReturn(true);
+
+        $this->objectService
+            ->method('searchObjects')
+            ->willReturn([$obj1, $obj2]);
+
+        $csv = $this->service->exportToCsv(null, $schema);
+
+        $this->assertIsString($csv);
+        $this->assertStringContainsString('title', $csv);
+        $this->assertStringContainsString('Alpha', $csv);
+        $this->assertStringContainsString('Beta', $csv);
+    }
+
+    public function testExportToCsvSkipsHiddenOnCollectionProperties(): void
+    {
+        $schema = new Schema();
+        $schema->setSlug('test');
+        $schema->setProperties([
+            'visible' => ['type' => 'string'],
+            'hidden' => ['type' => 'string', 'hideOnCollection' => true],
+        ]);
+
+        $this->propertyRbacHandler
+            ->method('canReadProperty')
+            ->willReturn(true);
+
+        $this->objectService
+            ->method('searchObjects')
+            ->willReturn([]);
+
+        $csv = $this->service->exportToCsv(null, $schema);
+
+        $this->assertIsString($csv);
+        $this->assertStringContainsString('visible', $csv);
+        $this->assertStringNotContainsString('hidden', $csv);
+    }
+
+    public function testExportToExcelHandlesBooleanValues(): void
+    {
+        $schema = new Schema();
+        $schema->setSlug('test');
+        $schema->setProperties([
+            'active' => ['type' => 'boolean'],
+        ]);
+
+        $object = $this->createObjectEntity('uuid-1', 'Test', ['active' => true]);
+
+        $this->propertyRbacHandler
+            ->method('canReadProperty')
+            ->willReturn(true);
+
+        $this->objectService
+            ->method('searchObjects')
+            ->willReturn([$object]);
+
+        $spreadsheet = $this->service->exportToExcel(null, $schema);
+
+        $sheet = $spreadsheet->getActiveSheet();
+        // Boolean true should be converted to "true" string.
+        $cellValue = $sheet->getCell('B2')->getValue();
+        $this->assertNotNull($cellValue);
+    }
+
+    public function testExportToExcelHandlesNestedObjectValues(): void
+    {
+        $schema = new Schema();
+        $schema->setSlug('test');
+        $schema->setProperties([
+            'address' => ['type' => 'object'],
+        ]);
+
+        $object = $this->createObjectEntity('uuid-1', 'Test', [
+            'address' => ['street' => 'Main St', 'city' => 'Amsterdam'],
+        ]);
+
+        $this->propertyRbacHandler
+            ->method('canReadProperty')
+            ->willReturn(true);
+
+        $this->objectService
+            ->method('searchObjects')
+            ->willReturn([$object]);
+
+        $spreadsheet = $this->service->exportToExcel(null, $schema);
+
+        $sheet = $spreadsheet->getActiveSheet();
+        $cellValue = $sheet->getCell('B2')->getValue();
+        // Nested objects should be JSON-encoded.
+        $this->assertIsString($cellValue);
+        $this->assertStringContainsString('Main St', $cellValue);
+    }
+
+    public function testExportToExcelWithEmptySchemaProperties(): void
+    {
+        $schema = new Schema();
+        $schema->setSlug('empty-schema');
+        $schema->setProperties([]);
+
+        $this->propertyRbacHandler
+            ->method('canReadProperty')
+            ->willReturn(true);
+
+        $this->objectService
+            ->method('searchObjects')
+            ->willReturn([]);
+
+        $spreadsheet = $this->service->exportToExcel(null, $schema);
+
+        $this->assertInstanceOf(\PhpOffice\PhpSpreadsheet\Spreadsheet::class, $spreadsheet);
+        // Should still have at least the default id/name headers.
+        $headers = $this->readHeaders($spreadsheet);
+        $this->assertContains('id', array_values($headers));
+    }
+
+    public function testExportToCsvWithRbacRestrictions(): void
+    {
+        $schema = new Schema();
+        $schema->setSlug('test');
+        $schema->setProperties([
+            'public_field' => ['type' => 'string'],
+            'secret_field' => ['type' => 'string'],
+        ]);
+
+        $this->propertyRbacHandler
+            ->method('canReadProperty')
+            ->willReturnCallback(function ($schema, $property, $object) {
+                return $property !== 'secret_field';
+            });
+
+        $this->objectService
+            ->method('searchObjects')
+            ->willReturn([]);
+
+        $csv = $this->service->exportToCsv(null, $schema);
+
+        $this->assertStringContainsString('public_field', $csv);
+        $this->assertStringNotContainsString('secret_field', $csv);
+    }
+
+    // ── Additional edge-case tests ─────────────────────────────────────
+
+    public function testExportToExcelWithFilters(): void
+    {
+        $schema = new Schema();
+        $schema->setSlug('filtered');
+        $schema->setProperties([
+            'status' => ['type' => 'string'],
+        ]);
+
+        $this->propertyRbacHandler
+            ->method('canReadProperty')
+            ->willReturn(true);
+
+        $obj = $this->createObjectEntity('uuid-1', 'Active', ['status' => 'active']);
+        $this->objectService
+            ->method('searchObjects')
+            ->willReturn([$obj]);
+
+        $spreadsheet = $this->service->exportToExcel(null, $schema, ['status' => 'active']);
+
+        $this->assertInstanceOf(\PhpOffice\PhpSpreadsheet\Spreadsheet::class, $spreadsheet);
+        $sheet = $spreadsheet->getActiveSheet();
+        $this->assertSame('uuid-1', $sheet->getCell('A2')->getValue());
+    }
+
+    public function testExportToCsvWithMultipleObjectsVerifyRowCount(): void
+    {
+        $schema = new Schema();
+        $schema->setSlug('count-test');
+        $schema->setProperties([
+            'name' => ['type' => 'string'],
+        ]);
+
+        $objects = [];
+        for ($i = 0; $i < 5; $i++) {
+            $objects[] = $this->createObjectEntity("uuid-$i", "Obj $i", ['name' => "Item $i"]);
+        }
+
+        $this->propertyRbacHandler
+            ->method('canReadProperty')
+            ->willReturn(true);
+
+        $this->objectService
+            ->method('searchObjects')
+            ->willReturn($objects);
+
+        $csv = $this->service->exportToCsv(null, $schema);
+
+        // Header + 5 data rows = 6 lines (last line may be empty)
+        $lines = array_filter(explode("\n", trim($csv)));
+        $this->assertCount(6, $lines);
+    }
+
+    public function testExportToExcelWithArrayOfUuidsResolvesNames(): void
+    {
+        $schema = new Schema();
+        $schema->setSlug('test');
+        $schema->setProperties([
+            'members' => [
+                'type' => 'array',
+                'items' => ['format' => 'uuid'],
+            ],
+        ]);
+
+        $object = $this->createObjectEntity('obj-1', 'Team', [
+            'members' => ['member-uuid-1', 'member-uuid-2'],
+        ]);
+
+        $this->propertyRbacHandler
+            ->method('canReadProperty')
+            ->willReturn(true);
+
+        $this->objectService
+            ->method('searchObjects')
+            ->willReturn([$object]);
+
+        $this->cacheHandler
+            ->method('getMultipleObjectNames')
+            ->willReturn([
+                'member-uuid-1' => 'Alice',
+                'member-uuid-2' => 'Bob',
+            ]);
+
+        $spreadsheet = $this->service->exportToExcel(null, $schema);
+
+        $sheet = $spreadsheet->getActiveSheet();
+        $nameCol = null;
+        for ($col = 'A'; $col !== 'ZZ'; $col++) {
+            if ($sheet->getCell($col . '1')->getValue() === '_members') {
+                $nameCol = $col;
+                break;
+            }
+        }
+
+        $this->assertNotNull($nameCol);
+        $nameValue = $sheet->getCell($nameCol . '2')->getValue();
+        $this->assertStringContainsString('Alice', $nameValue);
+    }
+
+    public function testExportToCsvHandlesSpecialCharsInValues(): void
+    {
+        $schema = new Schema();
+        $schema->setSlug('test');
+        $schema->setProperties([
+            'note' => ['type' => 'string'],
+        ]);
+
+        $object = $this->createObjectEntity('uuid-1', 'Test', [
+            'note' => 'Value with "quotes" and, commas',
+        ]);
+
+        $this->propertyRbacHandler
+            ->method('canReadProperty')
+            ->willReturn(true);
+
+        $this->objectService
+            ->method('searchObjects')
+            ->willReturn([$object]);
+
+        $csv = $this->service->exportToCsv(null, $schema);
+
+        $this->assertIsString($csv);
+        $this->assertStringContainsString('quotes', $csv);
+    }
+
+    public function testExportToExcelWithRegisterAndSchemaOverrideUsesSchema(): void
+    {
+        $register = new Register();
+        $ref = new \ReflectionClass($register);
+        $idProp = $ref->getProperty('id');
+        $idProp->setAccessible(true);
+        $idProp->setValue($register, 1);
+
+        $schema = new Schema();
+        $schema->setSlug('override-schema');
+        $schema->setProperties(['title' => ['type' => 'string']]);
+
+        $this->propertyRbacHandler
+            ->method('canReadProperty')
+            ->willReturn(true);
+
+        $this->objectService
+            ->method('searchObjects')
+            ->willReturn([]);
+
+        $spreadsheet = $this->service->exportToExcel($register, $schema);
+
+        $this->assertSame(1, $spreadsheet->getSheetCount());
+        $this->assertSame('override-schema', $spreadsheet->getActiveSheet()->getTitle());
+    }
+
 }

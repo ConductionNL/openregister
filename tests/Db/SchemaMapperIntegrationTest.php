@@ -398,4 +398,199 @@ class SchemaMapperIntegrationTest extends TestCase
         $result = $this->mapper->findAllExtendedBy();
         $this->assertIsArray($result);
     }
+
+    // =========================================================================
+    // hasReferenceToSchema tests
+    // =========================================================================
+
+    public function testHasReferenceToSchemaReturnsBool(): void
+    {
+        $schema = $this->createTestSchema();
+        $otherSchema = $this->createTestSchema();
+
+        // hasReferenceToSchema expects (array $properties, string $targetSchemaId,
+        // string $targetSchemaUuid, string $targetSchemaSlug)
+        $result = $this->mapper->hasReferenceToSchema(
+            $schema->getProperties() ?? [],
+            (string) $otherSchema->getId(),
+            $otherSchema->getUuid() ?? '',
+            $otherSchema->getSlug() ?? ''
+        );
+        $this->assertIsBool($result);
+    }
+
+    // =========================================================================
+    // getPropertySourceMetadata tests
+    // =========================================================================
+
+    public function testGetPropertySourceMetadataReturnsArray(): void
+    {
+        $schema = $this->createTestSchema();
+
+        $result = $this->mapper->getPropertySourceMetadata($schema);
+        $this->assertIsArray($result);
+    }
+
+    // =========================================================================
+    // insert / update / delete lifecycle
+    // =========================================================================
+
+    public function testInsertDoesNotAutoSetCreatedTimestamp(): void
+    {
+        // createFromArray does not auto-populate created/updated timestamps;
+        // they remain null unless explicitly set before insert.
+        $schema = $this->createTestSchema();
+        $this->assertNull($schema->getCreated());
+    }
+
+    public function testInsertDoesNotAutoSetUpdatedTimestamp(): void
+    {
+        // createFromArray does not auto-populate created/updated timestamps;
+        // they remain null unless explicitly set before insert.
+        $schema = $this->createTestSchema();
+        $this->assertNull($schema->getUpdated());
+    }
+
+    public function testUpdateSetsUpdatedTimestamp(): void
+    {
+        $schema = $this->createTestSchema();
+        $originalUpdated = $schema->getUpdated();
+
+        // Small delay to ensure different timestamp
+        usleep(100000);
+
+        $updated = $this->mapper->updateFromArray($schema->getId(), [
+            'description' => 'Timestamp test update',
+        ]);
+        // Updated timestamp should be different (or at least not null)
+        $this->assertNotNull($updated->getUpdated());
+    }
+
+    // =========================================================================
+    // findAll with sorting tests
+    // =========================================================================
+
+    public function testFindAllWithSearchConditionsReturnsArray(): void
+    {
+        $schema1 = $this->createTestSchema(['title' => 'AAA Sort Test ' . uniqid()]);
+        $schema2 = $this->createTestSchema(['title' => 'ZZZ Sort Test ' . uniqid()]);
+
+        // findAll signature: ($limit, $offset, $filters, $searchConditions, $searchParams, $_extend, $published, $_rbac, $_multitenancy)
+        // Pass empty arrays for searchConditions and searchParams (they are SQL WHERE fragments, not sort directives)
+        $results = $this->mapper->findAll(
+            null,
+            null,
+            [],
+            [],
+            [],
+            [],
+            null,
+            false,
+            false
+        );
+
+        $this->assertIsArray($results);
+        $this->assertGreaterThanOrEqual(2, count($results));
+    }
+
+    // =========================================================================
+    // updateFromArray preserves fields not in update
+    // =========================================================================
+
+    public function testUpdateFromArrayPreservesExistingProperties(): void
+    {
+        $schema = $this->createTestSchema([
+            'properties' => [
+                'email' => ['type' => 'string', 'title' => 'Email'],
+            ],
+        ]);
+
+        // Update only description, properties should remain
+        $updated = $this->mapper->updateFromArray($schema->getId(), [
+            'description' => 'Updated desc only',
+        ]);
+
+        $props = $updated->getProperties();
+        $this->assertIsArray($props);
+        $this->assertArrayHasKey('email', $props);
+    }
+
+    // =========================================================================
+    // createFromArray with different property types
+    // =========================================================================
+
+    public function testCreateSchemaWithBooleanProperty(): void
+    {
+        $schema = $this->createTestSchema([
+            'properties' => [
+                'isActive' => ['type' => 'boolean', 'title' => 'Is Active'],
+            ],
+        ]);
+
+        $props = $schema->getProperties();
+        $this->assertArrayHasKey('isActive', $props);
+        $this->assertSame('boolean', $props['isActive']['type']);
+    }
+
+    public function testCreateSchemaWithNumberProperty(): void
+    {
+        $schema = $this->createTestSchema([
+            'properties' => [
+                'price' => ['type' => 'number', 'title' => 'Price'],
+            ],
+        ]);
+
+        $props = $schema->getProperties();
+        $this->assertArrayHasKey('price', $props);
+        $this->assertSame('number', $props['price']['type']);
+    }
+
+    public function testCreateSchemaWithArrayProperty(): void
+    {
+        $schema = $this->createTestSchema([
+            'properties' => [
+                'tags' => [
+                    'type'  => 'array',
+                    'title' => 'Tags',
+                    'items' => ['type' => 'string'],
+                ],
+            ],
+        ]);
+
+        $props = $schema->getProperties();
+        $this->assertArrayHasKey('tags', $props);
+        $this->assertSame('array', $props['tags']['type']);
+    }
+
+    // =========================================================================
+    // Slug uniqueness tests
+    // =========================================================================
+
+    public function testCreateSchemasWithSameTitleThrowsUniqueConstraint(): void
+    {
+        $title = 'Duplicate Title Schema';
+        $s1 = $this->createTestSchema(['title' => $title]);
+        $this->assertNotNull($s1->getSlug());
+
+        // The database enforces a unique constraint on (organisation, slug),
+        // so inserting a second schema with the same slug should throw.
+        $this->expectException(\Exception::class);
+        $this->createTestSchema(['title' => $title]);
+    }
+
+    // =========================================================================
+    // countAll / findAll count validation
+    // =========================================================================
+
+    public function testFindAllCountMatchesActualResults(): void
+    {
+        $this->createTestSchema();
+        $this->createTestSchema();
+
+        $all = $this->mapper->findAll(null, null, [], [], [], [], null, false, false);
+        $limited = $this->mapper->findAll(1, 0, [], [], [], [], null, false, false);
+
+        $this->assertCount(1, $limited);
+        $this->assertGreaterThanOrEqual(2, count($all));
+    }
 }

@@ -550,4 +550,227 @@ class ObjectEntityMapperIntegrationTest extends TestCase
         $fields = $this->mapper->getFacetableFieldsFromSchemas([]);
         $this->assertIsArray($fields);
     }
+
+    // =========================================================================
+    // Bulk operations handler tests (BulkOperationsHandler)
+    // =========================================================================
+
+    public function testDeleteObjectsEmptyReturnsEmpty(): void
+    {
+        $result = $this->mapper->deleteObjects([]);
+        $this->assertIsArray($result);
+        $this->assertEmpty($result);
+    }
+
+    public function testDeleteObjectsSoftDelete(): void
+    {
+        $object = $this->createTestObject();
+        $uuid = $object->getUuid();
+
+        $result = $this->mapper->deleteObjects([$uuid], false);
+        $this->assertIsArray($result);
+
+        // Remove from cleanup list since deleted
+        $this->createdObjectIds = array_filter(
+            $this->createdObjectIds,
+            fn($oid) => $oid !== $object->getId()
+        );
+    }
+
+    public function testDeleteObjectsHardDelete(): void
+    {
+        $object = $this->createTestObject();
+        $uuid = $object->getUuid();
+
+        $result = $this->mapper->deleteObjects([$uuid], true);
+        $this->assertIsArray($result);
+
+        // Remove from cleanup list since deleted
+        $this->createdObjectIds = array_filter(
+            $this->createdObjectIds,
+            fn($oid) => $oid !== $object->getId()
+        );
+    }
+
+    public function testPublishObjectsEmptyReturnsEmpty(): void
+    {
+        $result = $this->mapper->publishObjects([]);
+        $this->assertIsArray($result);
+        $this->assertEmpty($result);
+    }
+
+    public function testPublishObjects(): void
+    {
+        $object = $this->createTestObject();
+
+        $result = $this->mapper->publishObjects([$object->getUuid()], true);
+        $this->assertIsArray($result);
+    }
+
+    public function testDepublishObjectsEmptyReturnsEmpty(): void
+    {
+        $result = $this->mapper->depublishObjects([]);
+        $this->assertIsArray($result);
+        $this->assertEmpty($result);
+    }
+
+    public function testDepublishObjects(): void
+    {
+        $object = $this->createTestObject();
+
+        // First publish
+        $this->mapper->publishObjects([$object->getUuid()], true);
+
+        // Then depublish
+        $result = $this->mapper->depublishObjects([$object->getUuid()], true);
+        $this->assertIsArray($result);
+    }
+
+    public function testProcessInsertChunkReturnsArray(): void
+    {
+        $result = $this->mapper->processInsertChunk([]);
+        $this->assertIsArray($result);
+    }
+
+    public function testProcessUpdateChunkReturnsArray(): void
+    {
+        $result = $this->mapper->processUpdateChunk([]);
+        $this->assertIsArray($result);
+    }
+
+    public function testCalculateOptimalChunkSizeReturnsPositiveInt(): void
+    {
+        $size = $this->mapper->calculateOptimalChunkSize([], []);
+        $this->assertIsInt($size);
+        $this->assertGreaterThan(0, $size);
+    }
+
+    public function testCalculateOptimalChunkSizeWithData(): void
+    {
+        $objects = [
+            ['uuid' => 'test-1', 'object' => ['name' => 'Item 1']],
+            ['uuid' => 'test-2', 'object' => ['name' => 'Item 2']],
+        ];
+        $size = $this->mapper->calculateOptimalChunkSize($objects, []);
+        $this->assertIsInt($size);
+        $this->assertGreaterThan(0, $size);
+    }
+
+    public function testSeparateLargeObjectsEmptyInput(): void
+    {
+        $result = $this->mapper->separateLargeObjects([]);
+        $this->assertIsArray($result);
+    }
+
+    public function testSeparateLargeObjectsWithSmallObjects(): void
+    {
+        $objects = [
+            new ObjectEntity(),
+            new ObjectEntity(),
+        ];
+        $result = $this->mapper->separateLargeObjects($objects);
+        $this->assertIsArray($result);
+    }
+
+    public function testProcessLargeObjectsIndividuallyEmptyInput(): void
+    {
+        $result = $this->mapper->processLargeObjectsIndividually([]);
+        $this->assertIsArray($result);
+        $this->assertEmpty($result);
+    }
+
+    // =========================================================================
+    // Expiry / retention tests (delegated to BulkOperationsHandler)
+    // =========================================================================
+
+    public function testSetExpiryDate(): void
+    {
+        // setExpiryDate uses DATE_ADD and JSON_EXTRACT which are MySQL-only; skip on PostgreSQL
+        $db = \OC::$server->get(\OCP\IDBConnection::class);
+        $platform = $db->getDatabasePlatform();
+        if (stripos(get_class($platform), 'PostgreSQL') !== false) {
+            $this->markTestSkipped('setExpiryDate uses MySQL-only DATE_ADD/JSON_EXTRACT functions');
+        }
+
+        $register = $this->createTestRegister();
+        $schema = $this->createTestSchema();
+        $this->createTestObject($register, $schema);
+
+        // Set expiry to 7 days in ms
+        $result = $this->mapper->setExpiryDate(604800000);
+        $this->assertIsInt($result);
+    }
+
+    // =========================================================================
+    // Schema/Register based bulk operations tests
+    // =========================================================================
+
+    public function testDeleteObjectsBySchemaReturnsArray(): void
+    {
+        $register = $this->createTestRegister();
+        $schema = $this->createTestSchema();
+        $obj = $this->createTestObjectDirect($register, $schema);
+
+        $result = $this->mapper->deleteObjectsBySchema($schema->getId(), true);
+        $this->assertIsArray($result);
+
+        // Remove from cleanup since bulk deleted
+        $this->createdObjectIds = array_filter(
+            $this->createdObjectIds,
+            fn($oid) => $oid !== $obj->getId()
+        );
+    }
+
+    public function testDeleteObjectsByRegisterReturnsArray(): void
+    {
+        $register = $this->createTestRegister();
+        $schema = $this->createTestSchema();
+        $obj = $this->createTestObjectDirect($register, $schema);
+
+        $result = $this->mapper->deleteObjectsByRegister($register->getId());
+        $this->assertIsArray($result);
+
+        // Remove from cleanup since bulk deleted
+        $this->createdObjectIds = array_filter(
+            $this->createdObjectIds,
+            fn($oid) => $oid !== $obj->getId()
+        );
+    }
+
+    // =========================================================================
+    // findByRelation tests
+    // =========================================================================
+
+    public function testFindByRelationReturnsArray(): void
+    {
+        $results = $this->mapper->findByRelation('nonexistent-uuid-' . uniqid());
+        $this->assertIsArray($results);
+        $this->assertEmpty($results);
+    }
+
+    // =========================================================================
+    // clearBlobObjects tests
+    // =========================================================================
+
+    public function testClearBlobObjectsReturnsArray(): void
+    {
+        $result = $this->mapper->clearBlobObjects();
+        $this->assertIsArray($result);
+    }
+
+    // =========================================================================
+    // hasJsonFilters tests (QueryOptimizationHandler)
+    // =========================================================================
+
+    public function testHasJsonFiltersWithDotNotation(): void
+    {
+        $result = $this->mapper->hasJsonFilters(['object.name' => 'test']);
+        $this->assertTrue($result);
+    }
+
+    public function testHasJsonFiltersWithPlainFilters(): void
+    {
+        $result = $this->mapper->hasJsonFilters(['register' => '1', 'schema' => '2']);
+        $this->assertFalse($result);
+    }
 }

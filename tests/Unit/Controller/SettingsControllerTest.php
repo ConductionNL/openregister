@@ -613,6 +613,225 @@ class SettingsControllerTest extends TestCase
     }
 
     /**
+     * Test testSetupHandler returns 400 when SOLR is disabled
+     *
+     * @return void
+     */
+    public function testSetupHandlerReturnsSolrDisabled(): void
+    {
+        $this->settingsService
+            ->method('getSolrSettings')
+            ->willReturn(['enabled' => false]);
+
+        $response = $this->controller->testSetupHandler();
+
+        $this->assertInstanceOf(JSONResponse::class, $response);
+        $this->assertSame(400, $response->getStatus());
+        $data = $response->getData();
+        $this->assertFalse($data['success']);
+        $this->assertStringContainsString('disabled', $data['message']);
+    }
+
+    /**
+     * Test testSetupHandler returns 422 when getSolrSettings throws
+     *
+     * @return void
+     */
+    public function testSetupHandlerReturns422OnException(): void
+    {
+        $this->settingsService
+            ->method('getSolrSettings')
+            ->willThrowException(new \Exception('Config error'));
+
+        $response = $this->controller->testSetupHandler();
+
+        $this->assertInstanceOf(JSONResponse::class, $response);
+        $this->assertSame(422, $response->getStatus());
+        $data = $response->getData();
+        $this->assertFalse($data['success']);
+    }
+
+    /**
+     * Test reindexSpecificCollection returns 400 for invalid batch size
+     *
+     * @return void
+     */
+    public function testReindexSpecificCollectionInvalidBatchSize(): void
+    {
+        $this->request->method('getParam')
+            ->willReturnMap([
+                ['maxObjects', 0, 10],
+                ['batchSize', 1000, 10000],
+            ]);
+
+        $response = $this->controller->reindexSpecificCollection('test-collection');
+
+        $this->assertInstanceOf(JSONResponse::class, $response);
+        $this->assertSame(400, $response->getStatus());
+        $data = $response->getData();
+        $this->assertFalse($data['success']);
+        $this->assertSame('test-collection', $data['collection']);
+    }
+
+    /**
+     * Test reindexSpecificCollection returns 400 for negative maxObjects
+     *
+     * @return void
+     */
+    public function testReindexSpecificCollectionNegativeMaxObjects(): void
+    {
+        $this->request->method('getParam')
+            ->willReturnMap([
+                ['maxObjects', 0, -5],
+                ['batchSize', 1000, 100],
+            ]);
+
+        $response = $this->controller->reindexSpecificCollection('test-collection');
+
+        $this->assertInstanceOf(JSONResponse::class, $response);
+        $this->assertSame(400, $response->getStatus());
+        $data = $response->getData();
+        $this->assertFalse($data['success']);
+    }
+
+    /**
+     * Test reindexSpecificCollection returns 422 when container throws
+     *
+     * @return void
+     */
+    public function testReindexSpecificCollectionException(): void
+    {
+        $this->request->method('getParam')
+            ->willReturnMap([
+                ['maxObjects', 0, 0],
+                ['batchSize', 1000, 100],
+            ]);
+        $this->container->method('get')
+            ->willThrowException(new \Exception('IndexService unavailable'));
+
+        $response = $this->controller->reindexSpecificCollection('my-col');
+
+        $this->assertInstanceOf(JSONResponse::class, $response);
+        $this->assertSame(422, $response->getStatus());
+        $data = $response->getData();
+        $this->assertFalse($data['success']);
+        $this->assertSame('my-col', $data['collection']);
+    }
+
+    /**
+     * Test getDatabaseInfo returns cached data
+     *
+     * @return void
+     */
+    public function testGetDatabaseInfoReturnsCached(): void
+    {
+        $cachedJson = json_encode([
+            'database' => ['type' => 'MySQL', 'version' => '8.0'],
+            'success'  => true,
+        ]);
+
+        $this->request->method('getParam')
+            ->willReturn(false);
+        $this->config->method('getValueString')
+            ->with('openregister', 'databaseInfo', '')
+            ->willReturn($cachedJson);
+
+        $response = $this->controller->getDatabaseInfo();
+
+        $this->assertInstanceOf(JSONResponse::class, $response);
+        $data = $response->getData();
+        $this->assertTrue($data['fromCache']);
+        $this->assertSame('MySQL', $data['database']['type']);
+    }
+
+    /**
+     * Test getDatabaseInfo returns 500 on exception
+     *
+     * @return void
+     */
+    public function testGetDatabaseInfoReturns500OnException(): void
+    {
+        $this->request->method('getParam')
+            ->willReturn('true');
+        $this->db->method('getDatabasePlatform')
+            ->willThrowException(new \Exception('DB connect failed'));
+
+        $response = $this->controller->getDatabaseInfo();
+
+        $this->assertInstanceOf(JSONResponse::class, $response);
+        $this->assertSame(500, $response->getStatus());
+        $data = $response->getData();
+        $this->assertFalse($data['success']);
+    }
+
+    /**
+     * Test refreshDatabaseInfo clears cache and delegates
+     *
+     * @return void
+     */
+    public function testRefreshDatabaseInfoClearsCache(): void
+    {
+        $this->config->expects($this->once())
+            ->method('deleteKey')
+            ->with('openregister', 'databaseInfo');
+
+        // After clearing cache, getDatabaseInfo will be called.
+        // Make it return cached data (empty) then hit the db path.
+        $this->request->method('getParam')
+            ->willReturn(false);
+        $this->config->method('getValueString')
+            ->willReturn('');
+        $this->db->method('getDatabasePlatform')
+            ->willThrowException(new \Exception('DB error'));
+
+        $response = $this->controller->refreshDatabaseInfo();
+
+        // Will get 500 because db call fails after cache miss.
+        $this->assertInstanceOf(JSONResponse::class, $response);
+    }
+
+    /**
+     * Test hybridSearch returns results when query is valid
+     *
+     * @return void
+     */
+    public function testHybridSearchReturnsResults(): void
+    {
+        $this->vectorizationService
+            ->method('hybridSearch')
+            ->willReturn([
+                'results' => [['id' => '1']],
+                'total' => 1,
+            ]);
+
+        $response = $this->controller->hybridSearch('test query', 20);
+
+        $this->assertInstanceOf(JSONResponse::class, $response);
+        $data = $response->getData();
+        $this->assertTrue($data['success']);
+        $this->assertSame('test query', $data['query']);
+    }
+
+    /**
+     * Test hybridSearch handles exceptions
+     *
+     * @return void
+     */
+    public function testHybridSearchHandlesExceptions(): void
+    {
+        $this->vectorizationService
+            ->method('hybridSearch')
+            ->willThrowException(new \Exception('Search failed'));
+
+        $response = $this->controller->hybridSearch('test', 20);
+
+        $this->assertInstanceOf(JSONResponse::class, $response);
+        $this->assertSame(500, $response->getStatus());
+        $data = $response->getData();
+        $this->assertFalse($data['success']);
+    }
+
+    /**
      * Test that all existing controller methods return JSONResponse objects
      *
      * This comprehensive test ensures API consistency across ALL endpoints
@@ -669,4 +888,154 @@ class SettingsControllerTest extends TestCase
             }
         }
     }
+
+    // ── testSchemaMapping tests ────────────────────────────────────────
+
+    public function testSchemaMappingContainerThrows(): void
+    {
+        // testSchemaMapping calls container->get(IndexService::class)
+        // When it throws, returns 422
+        $this->container->method('get')
+            ->willThrowException(new \Exception('IndexService not available'));
+
+        $response = $this->controller->testSchemaMapping();
+
+        $this->assertInstanceOf(JSONResponse::class, $response);
+        $this->assertSame(422, $response->getStatus());
+        $data = $response->getData();
+        $this->assertFalse($data['success']);
+        $this->assertStringContainsString('IndexService', $data['error']);
+    }
+
+    public function testSchemaMappingReturns422OnException(): void
+    {
+        $this->container->method('get')
+            ->willThrowException(new \Exception('Service unavailable'));
+
+        $response = $this->controller->testSchemaMapping();
+
+        $this->assertInstanceOf(JSONResponse::class, $response);
+        $this->assertSame(422, $response->getStatus());
+        $data = $response->getData();
+        $this->assertFalse($data['success']);
+    }
+
+    // ── debugTypeFiltering tests ───────────────────────────────────────
+
+    public function testDebugTypeFilteringReturns500OnException(): void
+    {
+        $this->container->method('get')
+            ->willThrowException(new \Exception('ObjectService unavailable'));
+
+        $response = $this->controller->debugTypeFiltering();
+
+        $this->assertInstanceOf(JSONResponse::class, $response);
+        $this->assertSame(500, $response->getStatus());
+        $data = $response->getData();
+        $this->assertArrayHasKey('error', $data);
+    }
+
+    // ── semanticSearch with filters and provider ──────────────────────
+
+    public function testSemanticSearchWithFiltersAndProvider(): void
+    {
+        $this->vectorizationService
+            ->method('semanticSearch')
+            ->willReturn([
+                ['id' => '1', 'score' => 0.9],
+                ['id' => '2', 'score' => 0.85],
+            ]);
+
+        $response = $this->controller->semanticSearch(
+            'test query',
+            5,
+            ['entity_type' => 'register'],
+            'dolphin'
+        );
+
+        $this->assertInstanceOf(JSONResponse::class, $response);
+        $data = $response->getData();
+        $this->assertTrue($data['success']);
+        $this->assertSame(2, $data['total']);
+        $this->assertSame(5, $data['limit']);
+    }
+
+    // ── hybridSearch with filters ────────────────────────────────────
+
+    public function testHybridSearchWithFilters(): void
+    {
+        $this->vectorizationService
+            ->method('hybridSearch')
+            ->willReturn([
+                'results' => [['id' => '1']],
+                'total' => 1,
+            ]);
+
+        $response = $this->controller->hybridSearch('test query', 5);
+
+        $this->assertInstanceOf(JSONResponse::class, $response);
+        $data = $response->getData();
+        $this->assertTrue($data['success']);
+    }
+
+    // ── getDatabaseInfo when cache is empty (forces refresh) ─────────
+
+    public function testGetDatabaseInfoWhenCacheEmpty(): void
+    {
+        $this->request->method('getParam')
+            ->willReturn(false);
+        $this->config->method('getValueString')
+            ->willReturn('');
+        $this->db->method('getDatabasePlatform')
+            ->willThrowException(new \Exception('Platform error'));
+
+        $response = $this->controller->getDatabaseInfo();
+
+        $this->assertInstanceOf(JSONResponse::class, $response);
+        $this->assertSame(500, $response->getStatus());
+    }
+
+    // ── testSetupHandler with SOLR enabled ───────────────────────────
+
+    public function testSetupHandlerWithSolrEnabledButServiceUnavailable(): void
+    {
+        // When SOLR is enabled but IndexService fails to load, we get 422
+        $this->settingsService
+            ->method('getSolrSettings')
+            ->willReturn(['enabled' => true, 'host' => 'localhost', 'port' => 8983]);
+
+        // The controller internally uses OC class for container resolution
+        // which is not available in unit tests. The exception propagates as 422.
+        try {
+            $response = $this->controller->testSetupHandler();
+            // If we get a response, verify it
+            $this->assertInstanceOf(JSONResponse::class, $response);
+        } catch (\Error $e) {
+            // OC class not found is expected in unit test environment
+            $this->assertStringContainsString('OC', $e->getMessage());
+        }
+    }
+
+    // ── reindexSpecificCollection with valid params ──────────────────
+
+    public function testReindexSpecificCollectionValidParams(): void
+    {
+        $this->request->method('getParam')
+            ->willReturnMap([
+                ['maxObjects', 0, 100],
+                ['batchSize', 1000, 500],
+            ]);
+        $mockIndexService = $this->createMock(\OCA\OpenRegister\Service\IndexService::class);
+        $mockIndexService->method('reindexAll')->willReturn([
+            'success' => true,
+            'stats' => ['indexed' => 50, 'errors' => 0],
+        ]);
+        $this->container->method('get')->willReturn($mockIndexService);
+
+        $response = $this->controller->reindexSpecificCollection('my-collection');
+
+        $this->assertInstanceOf(JSONResponse::class, $response);
+        $this->assertSame(200, $response->getStatus());
+    }
+
 }

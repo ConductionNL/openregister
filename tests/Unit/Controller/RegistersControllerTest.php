@@ -436,4 +436,330 @@ class RegistersControllerTest extends TestCase
 
         $this->assertSame(500, $result->getStatus());
     }
+
+    public function testIndexThrowsOnException(): void
+    {
+        $this->request->method('getParams')->willReturn([]);
+        $this->registerService->method('findAll')
+            ->willThrowException(new Exception('DB error'));
+
+        $this->expectException(Exception::class);
+        $this->expectExceptionMessage('DB error');
+        $this->controller->index();
+    }
+
+    public function testUpdateThrowsOnGenericException(): void
+    {
+        $this->request->method('getParams')->willReturn(['title' => 'Updated']);
+        $this->registerService->method('updateFromArray')
+            ->willThrowException(new Exception('Update error'));
+
+        $this->expectException(Exception::class);
+        $this->expectExceptionMessage('Update error');
+        $this->controller->update(1);
+    }
+
+    public function testCreateReturns409OnDBException(): void
+    {
+        $this->request->method('getParams')->willReturn(['title' => 'Dup']);
+        $this->registerService->method('createFromArray')
+            ->willThrowException(new DBException('Duplicate entry'));
+
+        $result = $this->controller->create();
+
+        // DBException is caught and returns error response
+        $this->assertInstanceOf(JSONResponse::class, $result);
+        $data = $result->getData();
+        $this->assertArrayHasKey('error', $data);
+    }
+
+    public function testObjectsThrowsOnException(): void
+    {
+        $this->objectEntityMapper->method('searchObjects')
+            ->willThrowException(new Exception('Search error'));
+
+        $this->expectException(Exception::class);
+        $this->expectExceptionMessage('Search error');
+        $this->controller->objects(1, 1);
+    }
+
+    public function testPublishToGitHubReturns500OnException(): void
+    {
+        $register = $this->createRealRegister(1, 'Test');
+        $this->registerMapper->method('find')->willReturn($register);
+        $this->request->method('getParams')->willReturn([
+            'owner' => 'org',
+            'repo' => 'repo',
+        ]);
+        $this->oasService->method('createOas')
+            ->willThrowException(new Exception('Push failed'));
+
+        $result = $this->controller->publishToGitHub(1);
+
+        $this->assertSame(500, $result->getStatus());
+    }
+
+    public function testImportReturns400OnException(): void
+    {
+        $this->request->method('getUploadedFile')->willReturn([
+            'name' => 'import.csv',
+            'tmp_name' => '/tmp/import.csv',
+            'size' => 1024,
+        ]);
+        $this->registerService->method('find')
+            ->willThrowException(new Exception('Import error'));
+
+        $result = $this->controller->import(1);
+
+        $this->assertSame(400, $result->getStatus());
+    }
+
+    public function testPublishReturns404WhenNotFound(): void
+    {
+        $this->registerMapper->method('find')
+            ->willThrowException(new DoesNotExistException('Not found'));
+
+        $result = $this->controller->publish(999);
+
+        $this->assertSame(404, $result->getStatus());
+    }
+
+    public function testPublishReturns400OnException(): void
+    {
+        $register = $this->createRealRegister(1, 'Test');
+        $this->registerMapper->method('find')->willReturn($register);
+        $this->registerMapper->method('update')
+            ->willThrowException(new Exception('Publish error'));
+
+        $result = $this->controller->publish(1);
+
+        $this->assertSame(400, $result->getStatus());
+    }
+
+    public function testDepublishReturns404WhenNotFound(): void
+    {
+        $this->registerMapper->method('find')
+            ->willThrowException(new DoesNotExistException('Not found'));
+
+        $result = $this->controller->depublish(999);
+
+        $this->assertSame(404, $result->getStatus());
+    }
+
+    public function testDepublishReturns400OnException(): void
+    {
+        $register = $this->createRealRegister(1, 'Test');
+        $this->registerMapper->method('find')->willReturn($register);
+        $this->registerMapper->method('update')
+            ->willThrowException(new Exception('Depublish error'));
+
+        $result = $this->controller->depublish(1);
+
+        $this->assertSame(400, $result->getStatus());
+    }
+
+    public function testPatchThrowsWhenNotFound(): void
+    {
+        $this->request->method('getParams')->willReturn(['title' => 'Patched']);
+        $this->registerService->method('updateFromArray')
+            ->willThrowException(new DoesNotExistException('Not found'));
+
+        $this->expectException(DoesNotExistException::class);
+        $this->controller->patch(999);
+    }
+
+    // ── Export format tests ────────────────────────────────────────────
+
+    public function testExportConfigurationFormatSuccess(): void
+    {
+        $register = $this->createRealRegister(1, 'Test');
+        $register->setSlug('test-register');
+        $this->request->method('getParam')->willReturnMap([
+            ['format', 'configuration', 'configuration'],
+            ['includeObjects', false, false],
+            ['schema', null, null],
+        ]);
+        $this->registerService->method('find')->willReturn($register);
+        $this->configurationService->method('exportConfig')->willReturn([
+            'info' => ['title' => 'Test'],
+        ]);
+
+        $result = $this->controller->export(1);
+
+        $this->assertInstanceOf(\OCP\AppFramework\Http\DataDownloadResponse::class, $result);
+    }
+
+    public function testExportCsvMissingSchemaReturns400(): void
+    {
+        $register = $this->createRealRegister(1, 'Test');
+        $this->request->method('getParam')->willReturnMap([
+            ['format', 'configuration', 'csv'],
+            ['includeObjects', false, false],
+            ['schema', null, null],
+        ]);
+        $this->registerService->method('find')->willReturn($register);
+
+        $result = $this->controller->export(1);
+
+        $this->assertInstanceOf(JSONResponse::class, $result);
+        $this->assertSame(400, $result->getStatus());
+        $this->assertStringContainsString('schema', $result->getData()['error']);
+    }
+
+    // ── Publish/depublish success tests ────────────────────────────────
+
+    public function testPublishSuccess(): void
+    {
+        $register = $this->createRealRegister(1, 'Test');
+        $this->registerMapper->method('find')->willReturn($register);
+        $this->registerMapper->method('update')->willReturn($register);
+
+        $result = $this->controller->publish(1);
+
+        $this->assertSame(200, $result->getStatus());
+    }
+
+    public function testDepublishSuccess(): void
+    {
+        $register = $this->createRealRegister(1, 'Test');
+        $this->registerMapper->method('find')->willReturn($register);
+        $this->registerMapper->method('update')->willReturn($register);
+
+        $result = $this->controller->depublish(1);
+
+        $this->assertSame(200, $result->getStatus());
+    }
+
+    public function testPublishWithCustomDate(): void
+    {
+        $register = $this->createRealRegister(1, 'Test');
+        $this->registerMapper->method('find')->willReturn($register);
+        $this->registerMapper->method('update')->willReturn($register);
+        $this->request->method('getParam')->willReturn('2025-06-15');
+
+        $result = $this->controller->publish(1);
+
+        $this->assertSame(200, $result->getStatus());
+    }
+
+    public function testDepublishWithCustomDate(): void
+    {
+        $register = $this->createRealRegister(1, 'Test');
+        $this->registerMapper->method('find')->willReturn($register);
+        $this->registerMapper->method('update')->willReturn($register);
+        $this->request->method('getParam')->willReturn('2025-06-15');
+
+        $result = $this->controller->depublish(1);
+
+        $this->assertSame(200, $result->getStatus());
+    }
+
+    // ── PublishToGitHub success test ───────────────────────────────────
+
+    public function testPublishToGitHubSuccess(): void
+    {
+        $register = $this->createRealRegister(1, 'Test');
+        $register->setSlug('test-register');
+        $this->registerMapper->method('find')->willReturn($register);
+        $this->request->method('getParams')->willReturn([
+            'owner' => 'testorg',
+            'repo' => 'testrepo',
+            'path' => 'api/test.yaml',
+            'branch' => 'main',
+        ]);
+        $this->oasService->method('createOas')->willReturn([
+            'openapi' => '3.0.0',
+            'info' => ['title' => 'Test'],
+        ]);
+        $this->githubService->method('getFileSha')->willReturn('abc123');
+        $this->githubService->method('publishConfiguration')->willReturn([
+            'commit_sha' => 'sha456',
+            'commit_url' => 'https://github.com/testorg/testrepo/commit/sha456',
+            'file_url' => 'https://github.com/testorg/testrepo/blob/main/api/test.yaml',
+        ]);
+        $this->githubService->method('getRepositoryInfo')->willReturn([
+            'default_branch' => 'main',
+        ]);
+
+        $result = $this->controller->publishToGitHub(1);
+
+        $this->assertSame(200, $result->getStatus());
+        $data = $result->getData();
+        $this->assertTrue($data['success']);
+    }
+
+    // ── Stats edge cases ──────────────────────────────────────────────
+
+    public function testStatsContainsExpectedKeys(): void
+    {
+        $register = $this->createRealRegister(1, 'Test');
+        $this->registerService->method('find')->willReturn($register);
+
+        $result = $this->controller->stats(1);
+
+        $this->assertSame(200, $result->getStatus());
+        $data = $result->getData();
+        $this->assertArrayHasKey('register', $data);
+        $this->assertArrayHasKey('message', $data);
+    }
+
+    // ── Create with all fields ────────────────────────────────────────
+
+    public function testCreateWithFullParams(): void
+    {
+        $register = $this->createRealRegister(1, 'Full Register');
+
+        $this->request->method('getParams')->willReturn([
+            'title' => 'Full Register',
+            'description' => 'A register with all fields',
+            'version' => '2.0.0',
+        ]);
+        $this->registerService->method('createFromArray')->willReturn($register);
+
+        $result = $this->controller->create();
+
+        $this->assertSame(201, $result->getStatus());
+    }
+
+    // ── Destroy with DatabaseConstraintException ──────────────────────
+
+    public function testDestroyReturns500OnDatabaseConstraintException(): void
+    {
+        $register = $this->createMock(Register::class);
+        $this->registerService->method('find')->willReturn($register);
+        $this->registerService->method('delete')
+            ->willThrowException(new DatabaseConstraintException('Foreign key constraint'));
+
+        $result = $this->controller->destroy(1);
+
+        // DatabaseConstraintException extends Exception, so caught by generic catch -> 500
+        $this->assertSame(500, $result->getStatus());
+    }
+
+    // ── Objects with pagination params ────────────────────────────────
+
+    public function testObjectsWithPaginationParams(): void
+    {
+        $this->objectEntityMapper->method('searchObjects')->willReturn([
+            'results' => [['id' => 1], ['id' => 2]],
+            'total' => 2,
+        ]);
+
+        $result = $this->controller->objects(1, 1);
+
+        $this->assertSame(200, $result->getStatus());
+    }
+
+    // ── Update with DoesNotExistException ─────────────────────────────
+
+    public function testUpdateReturnsErrorOnDoesNotExist(): void
+    {
+        $this->request->method('getParams')->willReturn(['title' => 'Updated']);
+        $this->registerService->method('updateFromArray')
+            ->willThrowException(new DoesNotExistException('Not found'));
+
+        $this->expectException(DoesNotExistException::class);
+        $this->controller->update(999);
+    }
+
 }
