@@ -310,6 +310,155 @@ class ActiveOrganisationCachingTest extends TestCase
     }
 
     /**
+     * Test cache reconstruction with DateTime objects (not strings)
+     *
+     * @return void
+     */
+    public function testCacheReconstructionWithDateTimeObjects(): void
+    {
+        // Arrange: Mock user session.
+        $this->mockUser->method('getUID')->willReturn('dt-user');
+        $this->userSession->method('getUser')->willReturn($this->mockUser);
+
+        $createdDt = new \DateTime('2024-06-15 10:00:00');
+        $updatedDt = new \DateTime('2024-06-16 12:00:00');
+
+        // Mock: Cache data with DateTime objects instead of strings.
+        $cachedOrgData = [
+            'id' => 5,
+            'uuid' => 'dt-org-uuid',
+            'name' => 'DateTime Org',
+            'description' => 'Testing DateTime cache',
+            'owner' => 'dt-user',
+            'users' => ['dt-user'],
+            'created' => $createdDt,
+            'updated' => $updatedDt,
+        ];
+
+        $this->session
+            ->method('get')
+            ->willReturnMap([
+                ['openregister_active_organisation_dt-user', $cachedOrgData],
+                ['openregister_active_organisation_timestamp_dt-user', time() - 100],
+            ]);
+
+        // Act.
+        $activeOrg = $this->organisationService->getActiveOrganisation();
+
+        // Assert: Organisation reconstructed with DateTime objects.
+        $this->assertInstanceOf(Organisation::class, $activeOrg);
+        $this->assertEquals('dt-org-uuid', $activeOrg->getUuid());
+        $this->assertInstanceOf(\DateTime::class, $activeOrg->getCreated());
+        $this->assertInstanceOf(\DateTime::class, $activeOrg->getUpdated());
+    }
+
+    /**
+     * Test active org cleared when user no longer has access (stale config)
+     *
+     * @return void
+     */
+    public function testActiveOrgClearedWhenUserNoLongerMember(): void
+    {
+        // Arrange: Mock user session.
+        $this->mockUser->method('getUID')->willReturn('stale-user');
+        $this->userSession->method('getUser')->willReturn($this->mockUser);
+
+        // Mock: No cache (cache miss).
+        $this->session->method('get')->willReturn(null);
+
+        // Mock: Config has a stale active org UUID.
+        $this->config->method('getUserValue')
+            ->with('stale-user', 'openregister', 'active_organisation', '')
+            ->willReturn('stale-org-uuid');
+
+        // Mock: Org exists but user is no longer a member.
+        $staleOrg = new Organisation();
+        $staleOrg->setUuid('stale-org-uuid');
+        $staleOrg->setName('Stale Org');
+        $staleOrg->setUsers(['alice']); // stale-user NOT in users list.
+
+        $this->organisationMapper
+            ->method('findByUuid')
+            ->with('stale-org-uuid')
+            ->willReturn($staleOrg);
+
+        // Mock: deleteUserValue called to clear stale config.
+        $this->config->expects($this->atLeastOnce())
+            ->method('deleteUserValue');
+
+        // Mock: getUserOrganisations returns the user's actual orgs for fallback.
+        $actualOrg = new Organisation();
+        $actualOrg->setUuid('actual-org-uuid');
+        $actualOrg->setName('Actual Org');
+        $actualOrg->setUsers(['stale-user']);
+        $actualOrg->setCreated(new \DateTime('2024-01-01'));
+
+        $this->organisationMapper
+            ->method('findByUserId')
+            ->with('stale-user')
+            ->willReturn([$actualOrg]);
+
+        // Mock: setUserValue for auto-set.
+        $this->config->expects($this->atLeastOnce())
+            ->method('setUserValue');
+
+        // Act.
+        $activeOrg = $this->organisationService->getActiveOrganisation();
+
+        // Assert: Falls back to user's actual org.
+        $this->assertInstanceOf(Organisation::class, $activeOrg);
+        $this->assertEquals('actual-org-uuid', $activeOrg->getUuid());
+    }
+
+    /**
+     * Test active org cleared when org was deleted from DB
+     *
+     * @return void
+     */
+    public function testActiveOrgClearedWhenOrgDeleted(): void
+    {
+        // Arrange: Mock user session.
+        $this->mockUser->method('getUID')->willReturn('deleted-user');
+        $this->userSession->method('getUser')->willReturn($this->mockUser);
+
+        // Mock: No cache.
+        $this->session->method('get')->willReturn(null);
+
+        // Mock: Config has a deleted org UUID.
+        $this->config->method('getUserValue')
+            ->with('deleted-user', 'openregister', 'active_organisation', '')
+            ->willReturn('deleted-org-uuid');
+
+        // Mock: findByUuid throws DoesNotExistException.
+        $this->organisationMapper
+            ->method('findByUuid')
+            ->willThrowException(new \OCP\AppFramework\Db\DoesNotExistException('Not found'));
+
+        // Mock: deleteUserValue called.
+        $this->config->expects($this->atLeastOnce())
+            ->method('deleteUserValue');
+
+        // Mock: user has fallback orgs.
+        $fallbackOrg = new Organisation();
+        $fallbackOrg->setUuid('fallback-org-uuid');
+        $fallbackOrg->setName('Fallback Org');
+        $fallbackOrg->setUsers(['deleted-user']);
+        $fallbackOrg->setCreated(new \DateTime('2024-03-01'));
+
+        $this->organisationMapper
+            ->method('findByUserId')
+            ->with('deleted-user')
+            ->willReturn([$fallbackOrg]);
+
+        // Act.
+        $activeOrg = $this->organisationService->getActiveOrganisation();
+
+        // Assert: Falls back to user's remaining org.
+        $this->assertInstanceOf(Organisation::class, $activeOrg);
+        $this->assertEquals('fallback-org-uuid', $activeOrg->getUuid());
+    }
+
+    /**
      * Test cache invalidation on setActiveOrganisation
      *
      * @return void

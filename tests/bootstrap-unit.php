@@ -61,6 +61,38 @@ if (class_exists('OC', false) === false) {
         {
             throw new \Exception("OC::server->get({$class}) not available in unit tests");
         }
+
+        /** @return mixed */
+        public function getDatabaseConnection(): mixed
+        {
+            throw new \Exception("OC::server->getDatabaseConnection() not available in unit tests");
+        }
+
+        /** @return mixed */
+        public function getL10NFactory(): mixed
+        {
+            throw new \Exception("OC::server->getL10NFactory() not available in unit tests");
+        }
+
+        /** @return mixed */
+        public function getURLGenerator(): mixed
+        {
+            throw new \Exception("OC::server->getURLGenerator() not available in unit tests");
+        }
+
+        /**
+         * Catch-all for any other \OC::$server method calls.
+         *
+         * @param string $name      The method name
+         * @param array  $arguments The method arguments
+         *
+         * @return mixed
+         * @throws \Exception Always throws, indicating the method is not available
+         */
+        public function __call(string $name, array $arguments): mixed
+        {
+            throw new \Exception("OC::server->{$name}() not available in unit tests");
+        }
     }
 
     class OC

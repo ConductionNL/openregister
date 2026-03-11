@@ -1857,4 +1857,1769 @@ class SettingsServiceTest extends TestCase
         $result = $this->settingsService->getPostgresExtensions();
         $this->assertCount(1, $result);
     }
+
+    // ===== EXPECTED SCHEMA FIELDS TESTS =====.
+
+    /**
+     * Test getExpectedSchemaFields with setupHandler and schemas
+     */
+    public function testGetExpectedSchemaFieldsWithSetupHandler(): void
+    {
+        $setupHandler = $this->createMock(SetupHandler::class);
+        $setupHandler->method('getObjectEntityFieldDefinitions')
+            ->willReturn([
+                'uuid' => ['type' => 'string', 'multiValued' => false],
+                'name' => ['type' => 'text_general', 'multiValued' => false],
+            ]);
+
+        $service = new SettingsService(
+            $this->config,
+            $this->auditTrailMapper,
+            $this->cacheFactory,
+            $this->groupManager,
+            $this->logger,
+            $this->organisationMapper,
+            $this->schemaCacheService,
+            $this->facetCacheHandler,
+            $this->searchTrailMapper,
+            $this->userManager,
+            $this->db,
+            $setupHandler,
+            null,
+            null,
+            'openregister',
+            $this->validationOperationsHandler,
+            $this->searchBackendHandler,
+            $this->llmSettingsHandler,
+            $this->fileSettingsHandler,
+            $this->objectRetentionHandler,
+            $this->cacheSettingsHandler,
+            $this->solrSettingsHandler,
+            $this->configurationSettingsHandler
+        );
+
+        $schemaMapper = $this->createMock(\OCA\OpenRegister\Db\SchemaMapper::class);
+        $schemaMapper->method('findAll')->willReturn([]);
+
+        $indexService = $this->createMock(\OCA\OpenRegister\Service\IndexService::class);
+
+        // The method uses reflection to call analyzeAndResolveFieldConflicts.
+        // Since we pass empty schemas, the reflected method should return empty fields.
+        // We test the fallback path by making reflection throw.
+        $result = $service->getExpectedSchemaFields($schemaMapper, $indexService);
+
+        // Should at least contain the core fields from setupHandler.
+        $this->assertIsArray($result);
+        $this->assertArrayHasKey('uuid', $result);
+        $this->assertArrayHasKey('name', $result);
+    }
+
+    /**
+     * Test getExpectedSchemaFields without setupHandler returns empty on exception
+     */
+    public function testGetExpectedSchemaFieldsWithoutSetupHandlerOnException(): void
+    {
+        $service = new SettingsService(
+            $this->config,
+            $this->auditTrailMapper,
+            $this->cacheFactory,
+            $this->groupManager,
+            $this->logger,
+            $this->organisationMapper,
+            $this->schemaCacheService,
+            $this->facetCacheHandler,
+            $this->searchTrailMapper,
+            $this->userManager,
+            $this->db,
+            null,
+            null,
+            null,
+            'openregister',
+            $this->validationOperationsHandler,
+            $this->searchBackendHandler,
+            $this->llmSettingsHandler,
+            $this->fileSettingsHandler,
+            $this->objectRetentionHandler,
+            $this->cacheSettingsHandler,
+            $this->solrSettingsHandler,
+            $this->configurationSettingsHandler
+        );
+
+        $schemaMapper = $this->createMock(\OCA\OpenRegister\Db\SchemaMapper::class);
+        $schemaMapper->method('findAll')
+            ->willThrowException(new \Exception('DB error'));
+
+        $indexService = $this->createMock(\OCA\OpenRegister\Service\IndexService::class);
+
+        $result = $service->getExpectedSchemaFields($schemaMapper, $indexService);
+
+        // Without setupHandler and with exception, should return empty array.
+        $this->assertSame([], $result);
+    }
+
+    /**
+     * Test getExpectedSchemaFields with setupHandler falls back to core fields on exception
+     */
+    public function testGetExpectedSchemaFieldsFallbackToCoreFields(): void
+    {
+        $coreFields = [
+            'uuid' => ['type' => 'string'],
+            'owner' => ['type' => 'string'],
+        ];
+
+        $setupHandler = $this->createMock(SetupHandler::class);
+        $setupHandler->method('getObjectEntityFieldDefinitions')
+            ->willReturn($coreFields);
+
+        $service = new SettingsService(
+            $this->config,
+            $this->auditTrailMapper,
+            $this->cacheFactory,
+            $this->groupManager,
+            $this->logger,
+            $this->organisationMapper,
+            $this->schemaCacheService,
+            $this->facetCacheHandler,
+            $this->searchTrailMapper,
+            $this->userManager,
+            $this->db,
+            $setupHandler,
+            null,
+            null,
+            'openregister',
+            $this->validationOperationsHandler,
+            $this->searchBackendHandler,
+            $this->llmSettingsHandler,
+            $this->fileSettingsHandler,
+            $this->objectRetentionHandler,
+            $this->cacheSettingsHandler,
+            $this->solrSettingsHandler,
+            $this->configurationSettingsHandler
+        );
+
+        $schemaMapper = $this->createMock(\OCA\OpenRegister\Db\SchemaMapper::class);
+        $schemaMapper->method('findAll')
+            ->willThrowException(new \Exception('Schema error'));
+
+        $indexService = $this->createMock(\OCA\OpenRegister\Service\IndexService::class);
+
+        $result = $service->getExpectedSchemaFields($schemaMapper, $indexService);
+
+        // Should fall back to core fields from setupHandler.
+        $this->assertSame($coreFields, $result);
+    }
+
+    // ===== REBASE EXCEPTION PATH =====.
+
+    /**
+     * Test rebase handles exception gracefully
+     */
+    public function testRebaseExceptionPath(): void
+    {
+        // Make clearCache throw to trigger the catch block in rebase.
+        $this->cacheSettingsHandler->method('clearCache')
+            ->willThrowException(new \Exception('Cache clear failed'));
+
+        $result = $this->settingsService->rebase(options: ['components' => ['cache']]);
+
+        $this->assertFalse($result['success']);
+        $this->assertSame('Rebase failed', $result['error']);
+        $this->assertSame('Cache clear failed', $result['message']);
+    }
+
+    /**
+     * Test rebase with unknown component only returns success with empty rebased
+     */
+    public function testRebaseUnknownComponent(): void
+    {
+        $result = $this->settingsService->rebase(options: ['components' => ['unknown_thing']]);
+
+        $this->assertTrue($result['success']);
+        $this->assertEmpty($result['rebased']);
+        $this->assertArrayHasKey('timestamp', $result);
+    }
+
+    /**
+     * Test rebase with both solr and cache components
+     */
+    public function testRebaseSolrAndCache(): void
+    {
+        $this->cacheSettingsHandler->expects($this->once())
+            ->method('clearCache')
+            ->with('all')
+            ->willReturn(['success' => true]);
+
+        $result = $this->settingsService->rebase(options: ['components' => ['solr', 'cache']]);
+
+        $this->assertTrue($result['success']);
+        $this->assertArrayHasKey('solr', $result['rebased']);
+        $this->assertArrayHasKey('cache', $result['rebased']);
+    }
+
+    // ===== MASS VALIDATE BOUNDARY TESTS =====.
+
+    /**
+     * Test massValidateObjects with negative batch size throws exception
+     */
+    public function testMassValidateObjectsNegativeBatchSize(): void
+    {
+        $container = $this->createMock(IAppContainer::class);
+
+        $service = new SettingsService(
+            $this->config,
+            $this->auditTrailMapper,
+            $this->cacheFactory,
+            $this->groupManager,
+            $this->logger,
+            $this->organisationMapper,
+            $this->schemaCacheService,
+            $this->facetCacheHandler,
+            $this->searchTrailMapper,
+            $this->userManager,
+            $this->db,
+            null,
+            null,
+            $container,
+            'openregister',
+            $this->validationOperationsHandler,
+            $this->searchBackendHandler,
+            $this->llmSettingsHandler,
+            $this->fileSettingsHandler,
+            $this->objectRetentionHandler,
+            $this->cacheSettingsHandler,
+            $this->solrSettingsHandler,
+            $this->configurationSettingsHandler
+        );
+
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessage('Invalid batch size');
+
+        $service->massValidateObjects(0, -1, 'serial', false);
+    }
+
+    /**
+     * Test massValidateObjects validates mode before batch size
+     */
+    public function testMassValidateObjectsModeValidatedFirst(): void
+    {
+        $container = $this->createMock(IAppContainer::class);
+
+        $service = new SettingsService(
+            $this->config,
+            $this->auditTrailMapper,
+            $this->cacheFactory,
+            $this->groupManager,
+            $this->logger,
+            $this->organisationMapper,
+            $this->schemaCacheService,
+            $this->facetCacheHandler,
+            $this->searchTrailMapper,
+            $this->userManager,
+            $this->db,
+            null,
+            null,
+            $container,
+            'openregister',
+            $this->validationOperationsHandler,
+            $this->searchBackendHandler,
+            $this->llmSettingsHandler,
+            $this->fileSettingsHandler,
+            $this->objectRetentionHandler,
+            $this->cacheSettingsHandler,
+            $this->solrSettingsHandler,
+            $this->configurationSettingsHandler
+        );
+
+        // Both mode and batchSize are invalid, but mode is checked first.
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessage('Invalid mode parameter');
+
+        $service->massValidateObjects(0, 0, 'bogus', false);
+    }
+
+    // ===== CLEAR CACHE WITH SPECIFIC TYPE =====.
+
+    /**
+     * Test clearCache with specific cache type passes correct type
+     */
+    public function testClearCacheSpecificType(): void
+    {
+        $this->cacheSettingsHandler->expects($this->once())
+            ->method('clearCache')
+            ->with('objects')
+            ->willReturn(['success' => true, 'type' => 'objects']);
+
+        $result = $this->settingsService->clearCache('objects');
+        $this->assertSame('objects', $result['type']);
+    }
+
+    // ===== COMPARE FIELDS ADDITIONAL EDGE CASES =====.
+
+    /**
+     * Test compareFields with missing type defaults to empty string comparison
+     */
+    public function testCompareFieldsMissingTypeKeys(): void
+    {
+        $actual = [
+            'field_a' => ['multiValued' => false, 'docValues' => false],
+        ];
+        $expected = [
+            'field_a' => ['multiValued' => false, 'docValues' => false],
+        ];
+
+        $result = $this->settingsService->compareFields($actual, $expected);
+
+        // Both missing 'type' defaults to '' === '' so no mismatch.
+        $this->assertSame(0, $result['summary']['mismatched_count']);
+    }
+
+    /**
+     * Test compareFields where actual has no type but expected does
+     */
+    public function testCompareFieldsActualMissingType(): void
+    {
+        $actual = [
+            'field_a' => ['multiValued' => false, 'docValues' => false],
+        ];
+        $expected = [
+            'field_a' => ['type' => 'string', 'multiValued' => false, 'docValues' => false],
+        ];
+
+        $result = $this->settingsService->compareFields($actual, $expected);
+
+        $this->assertSame(1, $result['summary']['mismatched_count']);
+        $this->assertContains('type', $result['mismatched'][0]['differences']);
+    }
+
+    /**
+     * Test compareFields extra field reports correct actual_type
+     */
+    public function testCompareFieldsExtraFieldType(): void
+    {
+        $actual = [
+            'orphan' => ['type' => 'plong'],
+        ];
+        $expected = [];
+
+        $result = $this->settingsService->compareFields($actual, $expected);
+
+        $this->assertSame(1, $result['summary']['extra_count']);
+        $this->assertSame('plong', $result['extra'][0]['actual_type']);
+    }
+
+    /**
+     * Test compareFields extra field with no type key defaults to 'unknown'
+     */
+    public function testCompareFieldsExtraFieldNoType(): void
+    {
+        $actual = [
+            'orphan' => ['multiValued' => true],
+        ];
+        $expected = [];
+
+        $result = $this->settingsService->compareFields($actual, $expected);
+
+        $this->assertSame('unknown', $result['extra'][0]['actual_type']);
+    }
+
+    /**
+     * Test compareFields missing field with no type key defaults to 'unknown'
+     */
+    public function testCompareFieldsMissingFieldNoType(): void
+    {
+        $actual = [];
+        $expected = [
+            'needed' => ['multiValued' => true],
+        ];
+
+        $result = $this->settingsService->compareFields($actual, $expected);
+
+        $this->assertSame('unknown', $result['missing'][0]['expected_type']);
+    }
+
+    // ===== FORMAT BYTES ADDITIONAL COVERAGE =====.
+
+    /**
+     * Test formatBytes with exactly 1 byte
+     */
+    public function testFormatBytesOneByte(): void
+    {
+        $result = $this->settingsService->formatBytes(1);
+        $this->assertSame('1 B', $result);
+    }
+
+    /**
+     * Test formatBytes with precision 0
+     */
+    public function testFormatBytesPrecisionZero(): void
+    {
+        // 1536 bytes = 1.5 KB, with precision 0 should round to 2 KB.
+        $result = $this->settingsService->formatBytes(1536, 0);
+        $this->assertSame('2 KB', $result);
+    }
+
+    /**
+     * Test formatBytes with large TB value
+     */
+    public function testFormatBytesLargeTB(): void
+    {
+        // 10 TB = 10 * 1024^4 = 10995116277760
+        $result = $this->settingsService->formatBytes(10995116277760);
+        $this->assertSame('10 TB', $result);
+    }
+
+    // ===== CONVERT TO BYTES ADDITIONAL COVERAGE =====.
+
+    /**
+     * Test convertToBytes with lowercase 'g'
+     */
+    public function testConvertToBytesLowercaseG(): void
+    {
+        $result = $this->settingsService->convertToBytes('2g');
+        $this->assertSame(2147483648, $result);
+    }
+
+    /**
+     * Test convertToBytes with lowercase 'm'
+     */
+    public function testConvertToBytesLowercaseM(): void
+    {
+        $result = $this->settingsService->convertToBytes('256m');
+        $this->assertSame(268435456, $result);
+    }
+
+    /**
+     * Test convertToBytes with zero
+     */
+    public function testConvertToBytesZero(): void
+    {
+        $result = $this->settingsService->convertToBytes('0');
+        $this->assertSame(0, $result);
+    }
+
+    // ===== HAS POSTGRES EXTENSION EDGE CASES =====.
+
+    /**
+     * Test hasPostgresExtension with missing type key returns false
+     */
+    public function testHasPostgresExtensionMissingTypeKey(): void
+    {
+        $dbData = json_encode([
+            'database' => [
+                'extensions' => [['name' => 'vector']],
+            ],
+        ]);
+        $this->config->method('getAppValue')
+            ->with('openregister', 'databaseInfo', '')
+            ->willReturn($dbData);
+
+        $this->assertFalse($this->settingsService->hasPostgresExtension('vector'));
+    }
+
+    /**
+     * Test getPostgresExtensions with PostgreSQL but no extensions key returns empty
+     */
+    public function testGetPostgresExtensionsNoExtensionsKey(): void
+    {
+        $dbData = json_encode([
+            'database' => [
+                'type' => 'PostgreSQL',
+            ],
+        ]);
+        $this->config->method('getAppValue')
+            ->with('openregister', 'databaseInfo', '')
+            ->willReturn($dbData);
+
+        $result = $this->settingsService->getPostgresExtensions();
+        $this->assertSame([], $result);
+    }
+
+    // ===== SEARCH BACKEND CONFIG EDGE CASES =====.
+
+    /**
+     * Test updateSearchBackendConfig prefers 'backend' over 'active' key
+     */
+    public function testUpdateSearchBackendConfigBackendPrecedence(): void
+    {
+        $this->searchBackendHandler->expects($this->once())
+            ->method('updateSearchBackendConfig')
+            ->with('elasticsearch')
+            ->willReturn(['active' => 'elasticsearch']);
+
+        // When both 'backend' and 'active' are present, 'backend' takes precedence.
+        $result = $this->settingsService->updateSearchBackendConfig(
+            ['backend' => 'elasticsearch', 'active' => 'solr']
+        );
+
+        $this->assertSame('elasticsearch', $result['active']);
+    }
+
+    // ===== GET STATS OUTER EXCEPTION =====.
+
+    /**
+     * Test getStats catches outer exception and returns error structure
+     */
+    public function testGetStatsOuterException(): void
+    {
+        // Make getQueryBuilder throw to trigger DB stats failure.
+        $this->db->method('getQueryBuilder')
+            ->willReturn($this->createMock(\OCP\DB\QueryBuilder\IQueryBuilder::class));
+        $this->db->method('executeQuery')
+            ->willThrowException(new \Exception('DB failed'));
+
+        // Make getSolrDashboardStats throw.
+        $this->solrSettingsHandler->method('getSolrDashboardStats')
+            ->willThrowException(new \Exception('Solr error'));
+
+        // Make getCacheStats throw.
+        $this->cacheSettingsHandler->method('getCacheStats')
+            ->willThrowException(new \Exception('Cache error'));
+
+        $result = $this->settingsService->getStats();
+
+        $this->assertIsArray($result);
+        // Despite all sub-errors, getStats still returns a valid structure.
+        $this->assertArrayHasKey('warnings', $result);
+        $this->assertArrayHasKey('solr', $result);
+        $this->assertArrayHasKey('cache', $result);
+        $this->assertArrayHasKey('system', $result);
+    }
+
+    // ===== HANDLER DELEGATION EDGE CASES =====.
+
+    /**
+     * Test warmupNamesCache handler exception propagates
+     */
+    public function testWarmupNamesCacheException(): void
+    {
+        $this->cacheSettingsHandler->method('warmupNamesCache')
+            ->willThrowException(new \Exception('Warmup failed'));
+
+        $this->expectException(\Exception::class);
+        $this->expectExceptionMessage('Warmup failed');
+
+        $this->settingsService->warmupNamesCache();
+    }
+
+    /**
+     * Test validateAllObjects handler exception propagates
+     */
+    public function testValidateAllObjectsException(): void
+    {
+        $this->validationOperationsHandler->method('validateAllObjects')
+            ->willThrowException(new \Exception('Validation error'));
+
+        $this->expectException(\Exception::class);
+        $this->expectExceptionMessage('Validation error');
+
+        $this->settingsService->validateAllObjects();
+    }
+
+    /**
+     * Test getLLMSettingsOnly handler exception propagates
+     */
+    public function testGetLLMSettingsOnlyException(): void
+    {
+        $this->llmSettingsHandler->method('getLLMSettingsOnly')
+            ->willThrowException(new \Exception('LLM error'));
+
+        $this->expectException(\Exception::class);
+        $this->settingsService->getLLMSettingsOnly();
+    }
+
+    /**
+     * Test getFileSettingsOnly handler exception propagates
+     */
+    public function testGetFileSettingsOnlyException(): void
+    {
+        $this->fileSettingsHandler->method('getFileSettingsOnly')
+            ->willThrowException(new \Exception('File error'));
+
+        $this->expectException(\Exception::class);
+        $this->settingsService->getFileSettingsOnly();
+    }
+
+    /**
+     * Test getObjectSettingsOnly handler exception propagates
+     */
+    public function testGetObjectSettingsOnlyException(): void
+    {
+        $this->objectRetentionHandler->method('getObjectSettingsOnly')
+            ->willThrowException(new \Exception('Object error'));
+
+        $this->expectException(\Exception::class);
+        $this->settingsService->getObjectSettingsOnly();
+    }
+
+    /**
+     * Test getSolrSettings handler exception propagates
+     */
+    public function testGetSolrSettingsException(): void
+    {
+        $this->solrSettingsHandler->method('getSolrSettings')
+            ->willThrowException(new \Exception('Solr error'));
+
+        $this->expectException(\Exception::class);
+        $this->settingsService->getSolrSettings();
+    }
+
+    /**
+     * Test getRetentionSettingsOnly handler exception propagates
+     */
+    public function testGetRetentionSettingsOnlyException(): void
+    {
+        $this->objectRetentionHandler->method('getRetentionSettingsOnly')
+            ->willThrowException(new \Exception('Retention error'));
+
+        $this->expectException(\Exception::class);
+        $this->settingsService->getRetentionSettingsOnly();
+    }
+
+    /**
+     * Test getRbacSettingsOnly handler exception propagates
+     */
+    public function testGetRbacSettingsOnlyException(): void
+    {
+        $this->configurationSettingsHandler->method('getRbacSettingsOnly')
+            ->willThrowException(new \Exception('RBAC error'));
+
+        $this->expectException(\Exception::class);
+        $this->settingsService->getRbacSettingsOnly();
+    }
+
+    /**
+     * Test getMultitenancySettingsOnly handler exception propagates
+     */
+    public function testGetMultitenancySettingsOnlyException(): void
+    {
+        $this->configurationSettingsHandler->method('getMultitenancySettingsOnly')
+            ->willThrowException(new \Exception('MT error'));
+
+        $this->expectException(\Exception::class);
+        $this->settingsService->getMultitenancySettingsOnly();
+    }
+
+    /**
+     * Test getOrganisationSettingsOnly handler exception propagates
+     */
+    public function testGetOrganisationSettingsOnlyException(): void
+    {
+        $this->configurationSettingsHandler->method('getOrganisationSettingsOnly')
+            ->willThrowException(new \Exception('Org error'));
+
+        $this->expectException(\Exception::class);
+        $this->settingsService->getOrganisationSettingsOnly();
+    }
+
+    /**
+     * Test getVersionInfoOnly handler exception propagates
+     */
+    public function testGetVersionInfoOnlyException(): void
+    {
+        $this->configurationSettingsHandler->method('getVersionInfoOnly')
+            ->willThrowException(new \Exception('Version error'));
+
+        $this->expectException(\Exception::class);
+        $this->settingsService->getVersionInfoOnly();
+    }
+
+    /**
+     * Test getCacheStats handler exception propagates
+     */
+    public function testGetCacheStatsException(): void
+    {
+        $this->cacheSettingsHandler->method('getCacheStats')
+            ->willThrowException(new \Exception('Cache stats error'));
+
+        $this->expectException(\Exception::class);
+        $this->settingsService->getCacheStats();
+    }
+
+    /**
+     * Test getSolrSettingsOnly handler exception propagates
+     */
+    public function testGetSolrSettingsOnlyException(): void
+    {
+        $this->solrSettingsHandler->method('getSolrSettingsOnly')
+            ->willThrowException(new \Exception('Solr only error'));
+
+        $this->expectException(\Exception::class);
+        $this->settingsService->getSolrSettingsOnly();
+    }
+
+    /**
+     * Test getSolrFacetConfiguration handler exception propagates
+     */
+    public function testGetSolrFacetConfigurationException(): void
+    {
+        $this->solrSettingsHandler->method('getSolrFacetConfiguration')
+            ->willThrowException(new \Exception('Facet error'));
+
+        $this->expectException(\Exception::class);
+        $this->settingsService->getSolrFacetConfiguration();
+    }
+
+    /**
+     * Test getSolrDashboardStats handler exception propagates
+     */
+    public function testGetSolrDashboardStatsException(): void
+    {
+        $this->solrSettingsHandler->method('getSolrDashboardStats')
+            ->willThrowException(new \Exception('Dashboard error'));
+
+        $this->expectException(\Exception::class);
+        $this->settingsService->getSolrDashboardStats();
+    }
+
+    // ===== CONSTRUCTOR / INITIALIZATION TESTS =====.
+
+    /**
+     * Test service can be constructed with all handler dependencies
+     */
+    public function testConstructorWithAllHandlers(): void
+    {
+        $service = new SettingsService(
+            $this->config,
+            $this->auditTrailMapper,
+            $this->cacheFactory,
+            $this->groupManager,
+            $this->logger,
+            $this->organisationMapper,
+            $this->schemaCacheService,
+            $this->facetCacheHandler,
+            $this->searchTrailMapper,
+            $this->userManager,
+            $this->db,
+            null,
+            null,
+            null,
+            'openregister',
+            $this->validationOperationsHandler,
+            $this->searchBackendHandler,
+            $this->llmSettingsHandler,
+            $this->fileSettingsHandler,
+            $this->objectRetentionHandler,
+            $this->cacheSettingsHandler,
+            $this->solrSettingsHandler,
+            $this->configurationSettingsHandler
+        );
+
+        // Service should be created without errors.
+        $this->assertInstanceOf(SettingsService::class, $service);
+    }
+
+    /**
+     * Test service can be constructed with custom app name
+     */
+    public function testConstructorWithCustomAppName(): void
+    {
+        $config = $this->createMock(IConfig::class);
+
+        $service = new SettingsService(
+            $config,
+            $this->auditTrailMapper,
+            $this->cacheFactory,
+            $this->groupManager,
+            $this->logger,
+            $this->organisationMapper,
+            $this->schemaCacheService,
+            $this->facetCacheHandler,
+            $this->searchTrailMapper,
+            $this->userManager,
+            $this->db,
+            null,
+            null,
+            null,
+            'custom_app',
+            $this->validationOperationsHandler,
+            $this->searchBackendHandler,
+            $this->llmSettingsHandler,
+            $this->fileSettingsHandler,
+            $this->objectRetentionHandler,
+            $this->cacheSettingsHandler,
+            $this->solrSettingsHandler,
+            $this->configurationSettingsHandler
+        );
+
+        $this->assertInstanceOf(SettingsService::class, $service);
+
+        // Verify the custom app name is used: getSearchBackendConfig uses $this->appName.
+        $config->expects($this->once())
+            ->method('getAppValue')
+            ->with('custom_app', 'search_backend', '')
+            ->willReturn('');
+
+        $result = $service->getSearchBackendConfig();
+        $this->assertSame('solr', $result['active']);
+    }
+
+    // ===== MASK TOKEN ADDITIONAL COVERAGE =====.
+
+    /**
+     * Test maskToken with exactly 9 characters confirms boundary behavior
+     */
+    public function testMaskTokenBoundaryTenChars(): void
+    {
+        $result = $this->settingsService->maskToken('1234567890');
+        // first 4 + min(20, 10-8)=2 stars + last 4
+        $this->assertSame('1234**7890', $result);
+        $this->assertSame(10, strlen($result));
+    }
+
+    /**
+     * Test maskToken with single character
+     */
+    public function testMaskTokenSingleChar(): void
+    {
+        $result = $this->settingsService->maskToken('x');
+        $this->assertSame('*', $result);
+    }
+
+    // ===== COMPARE FIELDS: MISMATCHED FIELD DETAILS =====.
+
+    /**
+     * Test compareFields mismatch entry contains all expected keys
+     */
+    public function testCompareFieldsMismatchEntryStructure(): void
+    {
+        $actual = [
+            'test_field' => ['type' => 'text', 'multiValued' => true, 'docValues' => true],
+        ];
+        $expected = [
+            'test_field' => ['type' => 'string', 'multiValued' => false, 'docValues' => false],
+        ];
+
+        $result = $this->settingsService->compareFields($actual, $expected);
+
+        $mismatch = $result['mismatched'][0];
+        $this->assertArrayHasKey('field', $mismatch);
+        $this->assertArrayHasKey('expected_type', $mismatch);
+        $this->assertArrayHasKey('actual_type', $mismatch);
+        $this->assertArrayHasKey('expected_multiValued', $mismatch);
+        $this->assertArrayHasKey('actual_multiValued', $mismatch);
+        $this->assertArrayHasKey('expected_docValues', $mismatch);
+        $this->assertArrayHasKey('actual_docValues', $mismatch);
+        $this->assertArrayHasKey('differences', $mismatch);
+        $this->assertArrayHasKey('expected_config', $mismatch);
+        $this->assertArrayHasKey('actual_config', $mismatch);
+        $this->assertSame('test_field', $mismatch['field']);
+    }
+
+    /**
+     * Test compareFields summary structure
+     */
+    public function testCompareFieldsSummaryStructure(): void
+    {
+        $result = $this->settingsService->compareFields([], []);
+
+        $this->assertArrayHasKey('missing', $result);
+        $this->assertArrayHasKey('extra', $result);
+        $this->assertArrayHasKey('mismatched', $result);
+        $this->assertArrayHasKey('summary', $result);
+        $this->assertArrayHasKey('missing_count', $result['summary']);
+        $this->assertArrayHasKey('extra_count', $result['summary']);
+        $this->assertArrayHasKey('mismatched_count', $result['summary']);
+        $this->assertArrayHasKey('total_differences', $result['summary']);
+    }
+
+    // ===== DATABASE INFO EDGE CASE =====.
+
+    /**
+     * Test getDatabaseInfo with JSON that decodes to non-array (e.g., a string)
+     */
+    public function testGetDatabaseInfoJsonDecodesToScalar(): void
+    {
+        $this->config->method('getAppValue')
+            ->with('openregister', 'databaseInfo', '')
+            ->willReturn('"just a string"');
+
+        $result = $this->settingsService->getDatabaseInfo();
+        // json_decode returns a string, which is not null, but isset($data['database']) is false.
+        $this->assertNull($result);
+    }
+
+    // ===== WARMUP SOLR INDEX =====.
+
+    /**
+     * Test warmupSolrIndex delegates to solrSettingsHandler
+     */
+    public function testWarmupSolrIndexDelegatesToHandler(): void
+    {
+        $this->solrSettingsHandler->expects($this->once())
+            ->method('warmupSolrIndex')
+            ->willThrowException(new \RuntimeException('Deprecated: Use IndexService->warmupIndex()'));
+
+        $this->expectException(\RuntimeException::class);
+        $this->expectExceptionMessage('Deprecated');
+
+        $this->settingsService->warmupSolrIndex();
+    }
+
+    /**
+     * Test warmupSolrIndex with parameters still delegates to handler
+     */
+    public function testWarmupSolrIndexWithParams(): void
+    {
+        $this->solrSettingsHandler->expects($this->once())
+            ->method('warmupSolrIndex')
+            ->willThrowException(new \RuntimeException('Deprecated'));
+
+        $this->expectException(\RuntimeException::class);
+
+        $this->settingsService->warmupSolrIndex(
+            schemas: ['schema1'],
+            maxObjects: 100,
+            mode: 'parallel',
+            collectErrors: true,
+            batchSize: 500,
+            schemaIds: [1, 2]
+        );
+    }
+
+    // ===== MASS VALIDATE OBJECTS HAPPY PATH =====.
+
+    /**
+     * Helper to create a SettingsService with a mocked container
+     *
+     * @param \OCP\AppFramework\IAppContainer|MockObject $container Container mock
+     *
+     * @return SettingsService
+     */
+    private function createServiceWithContainer($container): SettingsService
+    {
+        return new SettingsService(
+            $this->config,
+            $this->auditTrailMapper,
+            $this->cacheFactory,
+            $this->groupManager,
+            $this->logger,
+            $this->organisationMapper,
+            $this->schemaCacheService,
+            $this->facetCacheHandler,
+            $this->searchTrailMapper,
+            $this->userManager,
+            $this->db,
+            null,
+            null,
+            $container,
+            'openregister',
+            $this->validationOperationsHandler,
+            $this->searchBackendHandler,
+            $this->llmSettingsHandler,
+            $this->fileSettingsHandler,
+            $this->objectRetentionHandler,
+            $this->cacheSettingsHandler,
+            $this->solrSettingsHandler,
+            $this->configurationSettingsHandler
+        );
+    }
+
+    /**
+     * Test massValidateObjects serial mode with zero objects
+     */
+    public function testMassValidateObjectsSerialZeroObjects(): void
+    {
+        $container = $this->createMock(IAppContainer::class);
+        $objectMapper = $this->createMock(\OCA\OpenRegister\Db\ObjectEntityMapper::class);
+
+        $container->method('get')
+            ->willReturnCallback(function (string $class) use ($objectMapper) {
+                if ($class === \OCA\OpenRegister\Db\ObjectEntityMapper::class) {
+                    return $objectMapper;
+                }
+                return null;
+            });
+
+        $objectMapper->method('countSearchObjects')
+            ->willReturn(0);
+
+        $service = $this->createServiceWithContainer($container);
+        $result = $service->massValidateObjects(0, 1000, 'serial', false);
+
+        $this->assertTrue($result['success']);
+        $this->assertSame(0, $result['stats']['total_objects']);
+        $this->assertSame(0, $result['stats']['processed_objects']);
+        $this->assertSame(0, $result['stats']['successful_saves']);
+        $this->assertSame(0, $result['stats']['failed_saves']);
+        $this->assertSame('serial', $result['config_used']['mode']);
+        $this->assertArrayHasKey('memory_usage', $result);
+        $this->assertArrayHasKey('timestamp', $result);
+    }
+
+    /**
+     * Test massValidateObjects parallel mode with zero objects
+     */
+    public function testMassValidateObjectsParallelZeroObjects(): void
+    {
+        $container = $this->createMock(IAppContainer::class);
+        $objectMapper = $this->createMock(\OCA\OpenRegister\Db\ObjectEntityMapper::class);
+
+        $container->method('get')
+            ->willReturnCallback(function (string $class) use ($objectMapper) {
+                if ($class === \OCA\OpenRegister\Db\ObjectEntityMapper::class) {
+                    return $objectMapper;
+                }
+                return null;
+            });
+
+        $objectMapper->method('countSearchObjects')
+            ->willReturn(0);
+
+        $service = $this->createServiceWithContainer($container);
+        $result = $service->massValidateObjects(0, 1000, 'parallel', false);
+
+        $this->assertTrue($result['success']);
+        $this->assertSame('parallel', $result['config_used']['mode']);
+        $this->assertSame(0, $result['stats']['total_objects']);
+    }
+
+    /**
+     * Test massValidateObjects serial mode with maxObjects limit
+     */
+    public function testMassValidateObjectsWithMaxObjectsLimit(): void
+    {
+        $container = $this->createMock(IAppContainer::class);
+        $objectMapper = $this->createMock(\OCA\OpenRegister\Db\ObjectEntityMapper::class);
+
+        $container->method('get')
+            ->willReturnCallback(function (string $class) use ($objectMapper) {
+                if ($class === \OCA\OpenRegister\Db\ObjectEntityMapper::class) {
+                    return $objectMapper;
+                }
+                return null;
+            });
+
+        // Total objects is 1000, but maxObjects limits to 50.
+        $objectMapper->method('countSearchObjects')
+            ->willReturn(1000);
+        $objectMapper->method('findAll')
+            ->willReturn([]);
+
+        $service = $this->createServiceWithContainer($container);
+        $result = $service->massValidateObjects(50, 100, 'serial', false);
+
+        $this->assertTrue($result['success']);
+        $this->assertSame(50, $result['stats']['total_objects']);
+        $this->assertSame(50, $result['config_used']['max_objects']);
+    }
+
+    /**
+     * Test massValidateObjects serial mode with objects throws Error due to null objectService
+     *
+     * The source hardcodes $objectService = null (circular dependency fix).
+     * processJobsSerial catches Exception but not Error, so the null->saveObject()
+     * call propagates as a PHP Error.
+     */
+    public function testMassValidateObjectsSerialWithObjectsThrowsError(): void
+    {
+        $container = $this->createMock(IAppContainer::class);
+        $objectMapper = $this->createMock(\OCA\OpenRegister\Db\ObjectEntityMapper::class);
+
+        $container->method('get')
+            ->willReturnCallback(function (string $class) use ($objectMapper) {
+                if ($class === \OCA\OpenRegister\Db\ObjectEntityMapper::class) {
+                    return $objectMapper;
+                }
+                return null;
+            });
+
+        $objectMapper->method('countSearchObjects')
+            ->willReturn(1);
+
+        $obj = new \OCA\OpenRegister\Db\ObjectEntity();
+        $obj->setUuid('uuid-1');
+        $obj->setRegister('reg-1');
+        $obj->setSchema('schema-1');
+
+        $objectMapper->method('findAll')
+            ->willReturn([$obj]);
+
+        // PHP Error (not Exception) propagates because catch(Exception) doesn't catch Error.
+        $this->expectException(\Error::class);
+
+        $service = $this->createServiceWithContainer($container);
+        $service->massValidateObjects(0, 1000, 'serial', true);
+    }
+
+    /**
+     * Test massValidateObjects parallel mode with objects throws TypeError due to null objectService
+     *
+     * processBatchDirectly has a non-nullable ObjectService parameter, so passing
+     * null triggers a TypeError.
+     */
+    public function testMassValidateObjectsParallelWithObjectsThrowsTypeError(): void
+    {
+        $container = $this->createMock(IAppContainer::class);
+        $objectMapper = $this->createMock(\OCA\OpenRegister\Db\ObjectEntityMapper::class);
+
+        $container->method('get')
+            ->willReturnCallback(function (string $class) use ($objectMapper) {
+                if ($class === \OCA\OpenRegister\Db\ObjectEntityMapper::class) {
+                    return $objectMapper;
+                }
+                return null;
+            });
+
+        $objectMapper->method('countSearchObjects')
+            ->willReturn(1);
+
+        $obj = new \OCA\OpenRegister\Db\ObjectEntity();
+        $obj->setUuid('uuid-1');
+        $obj->setRegister('reg-1');
+        $obj->setSchema('schema-1');
+
+        $objectMapper->method('findAll')
+            ->willReturn([$obj]);
+
+        $this->expectException(\TypeError::class);
+
+        $service = $this->createServiceWithContainer($container);
+        $service->massValidateObjects(0, 1000, 'parallel', true);
+    }
+
+    /**
+     * Test massValidateObjects valid batch size boundary (exactly 1)
+     */
+    public function testMassValidateObjectsBatchSizeOne(): void
+    {
+        $container = $this->createMock(IAppContainer::class);
+        $objectMapper = $this->createMock(\OCA\OpenRegister\Db\ObjectEntityMapper::class);
+
+        $container->method('get')
+            ->willReturnCallback(function (string $class) use ($objectMapper) {
+                if ($class === \OCA\OpenRegister\Db\ObjectEntityMapper::class) {
+                    return $objectMapper;
+                }
+                return null;
+            });
+
+        $objectMapper->method('countSearchObjects')
+            ->willReturn(0);
+
+        $service = $this->createServiceWithContainer($container);
+        $result = $service->massValidateObjects(0, 1, 'serial', false);
+
+        $this->assertTrue($result['success']);
+        $this->assertSame(1, $result['config_used']['batch_size']);
+    }
+
+    /**
+     * Test massValidateObjects valid batch size boundary (exactly 5000)
+     */
+    public function testMassValidateObjectsBatchSizeFiveThousand(): void
+    {
+        $container = $this->createMock(IAppContainer::class);
+        $objectMapper = $this->createMock(\OCA\OpenRegister\Db\ObjectEntityMapper::class);
+
+        $container->method('get')
+            ->willReturnCallback(function (string $class) use ($objectMapper) {
+                if ($class === \OCA\OpenRegister\Db\ObjectEntityMapper::class) {
+                    return $objectMapper;
+                }
+                return null;
+            });
+
+        $objectMapper->method('countSearchObjects')
+            ->willReturn(0);
+
+        $service = $this->createServiceWithContainer($container);
+        $result = $service->massValidateObjects(0, 5000, 'serial', false);
+
+        $this->assertTrue($result['success']);
+        $this->assertSame(5000, $result['config_used']['batch_size']);
+    }
+
+    /**
+     * Test massValidateObjects config_used reflects all input parameters
+     */
+    public function testMassValidateObjectsConfigUsed(): void
+    {
+        $container = $this->createMock(IAppContainer::class);
+        $objectMapper = $this->createMock(\OCA\OpenRegister\Db\ObjectEntityMapper::class);
+
+        $container->method('get')
+            ->willReturnCallback(function (string $class) use ($objectMapper) {
+                if ($class === \OCA\OpenRegister\Db\ObjectEntityMapper::class) {
+                    return $objectMapper;
+                }
+                return null;
+            });
+
+        $objectMapper->method('countSearchObjects')
+            ->willReturn(0);
+
+        $service = $this->createServiceWithContainer($container);
+        $result = $service->massValidateObjects(42, 500, 'serial', true);
+
+        $this->assertArrayHasKey('config_used', $result);
+        $this->assertSame('serial', $result['config_used']['mode']);
+        $this->assertSame(42, $result['config_used']['max_objects']);
+        $this->assertSame(500, $result['config_used']['batch_size']);
+        $this->assertTrue($result['config_used']['collect_errors']);
+    }
+
+    /**
+     * Test massValidateObjects duration calculation with zero-time processing
+     */
+    public function testMassValidateObjectsDurationAndMemory(): void
+    {
+        $container = $this->createMock(IAppContainer::class);
+        $objectMapper = $this->createMock(\OCA\OpenRegister\Db\ObjectEntityMapper::class);
+
+        $container->method('get')
+            ->willReturnCallback(function (string $class) use ($objectMapper) {
+                if ($class === \OCA\OpenRegister\Db\ObjectEntityMapper::class) {
+                    return $objectMapper;
+                }
+                return null;
+            });
+
+        $objectMapper->method('countSearchObjects')
+            ->willReturn(0);
+
+        $service = $this->createServiceWithContainer($container);
+        $result = $service->massValidateObjects(0, 1000, 'serial', false);
+
+        // Check memory_usage structure.
+        $this->assertArrayHasKey('memory_usage', $result);
+        $this->assertArrayHasKey('start_memory', $result['memory_usage']);
+        $this->assertArrayHasKey('end_memory', $result['memory_usage']);
+        $this->assertArrayHasKey('peak_memory', $result['memory_usage']);
+        $this->assertArrayHasKey('memory_used', $result['memory_usage']);
+        $this->assertArrayHasKey('peak_percentage', $result['memory_usage']);
+        $this->assertArrayHasKey('formatted', $result['memory_usage']);
+        $this->assertArrayHasKey('actual_used', $result['memory_usage']['formatted']);
+        $this->assertArrayHasKey('peak_usage', $result['memory_usage']['formatted']);
+        $this->assertArrayHasKey('peak_percentage', $result['memory_usage']['formatted']);
+
+        // Duration should be set.
+        $this->assertIsFloat($result['stats']['duration_seconds']);
+    }
+
+    // ===== GET STATS WITH SUCCESSFUL DATABASE STATS =====.
+
+    /**
+     * Test getStats with successful database stats retrieval
+     *
+     * This covers the getDatabaseStats private method happy path through getStats.
+     */
+    public function testGetStatsWithSuccessfulDbStats(): void
+    {
+        $qb = $this->createMock(\OCP\DB\QueryBuilder\IQueryBuilder::class);
+        $qb->method('getTableName')
+            ->willReturnCallback(function (string $table) {
+                return 'oc_' . $table;
+            });
+
+        $this->db->method('getQueryBuilder')
+            ->willReturn($qb);
+
+        // Mock executeQuery to handle blob count, blob size, magic tables, sources check, and main query.
+        $callCount = 0;
+        $this->db->method('executeQuery')
+            ->willReturnCallback(function (string $query) use (&$callCount) {
+                $callCount++;
+                $mockResult = $this->createMock(\OCP\DB\IResult::class);
+
+                // First call: blob count query.
+                if ($callCount === 1) {
+                    $mockResult->method('fetch')
+                        ->willReturn(['cnt' => '10']);
+                    return $mockResult;
+                }
+
+                // Second call: blob size query.
+                if ($callCount === 2) {
+                    $mockResult->method('fetch')
+                        ->willReturn(['total' => '5000']);
+                    return $mockResult;
+                }
+
+                // Third call: getDatabasePlatform tables query.
+                // This is after the platform check, so simulate pg_tables or info_schema.
+                if ($callCount === 3) {
+                    // Return empty table list (no magic mapper tables).
+                    $mockResult->method('fetchAll')
+                        ->willReturn([]);
+                    return $mockResult;
+                }
+
+                // Fourth call: sources table existence check.
+                if ($callCount === 4) {
+                    $mockResult->method('fetch')
+                        ->willReturn(['1' => 1]);
+                    return $mockResult;
+                }
+
+                // Fifth call: main stats query.
+                if ($callCount === 5) {
+                    $mockResult->method('fetch')
+                        ->willReturn([
+                            'total_objects'                  => '10',
+                            'deleted_objects'                => '2',
+                            'total_audit_trails'             => '50',
+                            'total_search_trails'            => '30',
+                            'total_configurations'           => '5',
+                            'total_organisations'            => '3',
+                            'total_registers'                => '4',
+                            'total_schemas'                  => '6',
+                            'total_sources'                  => '2',
+                            'total_webhook_logs'             => '15',
+                            'objects_without_owner'           => '1',
+                            'objects_without_organisation'    => '0',
+                            'audit_trails_without_expiry'    => '10',
+                            'search_trails_without_expiry'   => '5',
+                            'expired_audit_trails'           => '3',
+                            'expired_search_trails'          => '1',
+                            'expired_objects'                => '0',
+                        ]);
+                    return $mockResult;
+                }
+
+                // Additional calls.
+                return $mockResult;
+            });
+
+        // Mock getDatabasePlatform (needed for magic mapper table detection).
+        $platform = $this->createMock(\Doctrine\DBAL\Platforms\PostgreSQLPlatform::class);
+        $this->db->method('getDatabasePlatform')
+            ->willReturn($platform);
+
+        $this->cacheSettingsHandler->method('getCacheStats')
+            ->willReturn(['success' => true, 'caches' => []]);
+        $this->solrSettingsHandler->method('getSolrDashboardStats')
+            ->willReturn(['numDocs' => 100]);
+
+        $result = $this->settingsService->getStats();
+
+        $this->assertIsArray($result);
+        $this->assertArrayHasKey('warnings', $result);
+        $this->assertArrayHasKey('totals', $result);
+        $this->assertArrayHasKey('system', $result);
+        $this->assertArrayHasKey('solr', $result);
+        $this->assertArrayHasKey('cache', $result);
+
+        // Verify totals include blob + magic counts.
+        $this->assertSame(10, $result['totals']['totalObjects']);
+        $this->assertSame(10, $result['totals']['totalBlobObjects']);
+        $this->assertSame(0, $result['totals']['totalMagicObjects']);
+        $this->assertSame(5000, $result['totals']['totalBlobSize']);
+
+        // Verify warnings.
+        $this->assertSame(1, $result['warnings']['objectsWithoutOwner']);
+        $this->assertSame(0, $result['warnings']['objectsWithoutOrganisation']);
+        $this->assertSame(10, $result['warnings']['auditTrailsWithoutExpiry']);
+        $this->assertSame(3, $result['warnings']['expiredAuditTrails']);
+    }
+
+    /**
+     * Test getStats with MySQL database platform
+     */
+    public function testGetStatsWithMysqlPlatform(): void
+    {
+        $qb = $this->createMock(\OCP\DB\QueryBuilder\IQueryBuilder::class);
+        $qb->method('getTableName')
+            ->willReturnCallback(function (string $table) {
+                return 'oc_' . $table;
+            });
+
+        $this->db->method('getQueryBuilder')
+            ->willReturn($qb);
+
+        $callCount = 0;
+        $this->db->method('executeQuery')
+            ->willReturnCallback(function (string $query) use (&$callCount) {
+                $callCount++;
+                $mockResult = $this->createMock(\OCP\DB\IResult::class);
+
+                if ($callCount === 1) {
+                    // Blob count.
+                    $mockResult->method('fetch')->willReturn(['cnt' => '5']);
+                    return $mockResult;
+                }
+
+                if ($callCount === 2) {
+                    // Blob size.
+                    $mockResult->method('fetch')->willReturn(['total' => '2000']);
+                    return $mockResult;
+                }
+
+                if ($callCount === 3) {
+                    // MySQL table listing.
+                    $mockResult->method('fetchAll')->willReturn([]);
+                    return $mockResult;
+                }
+
+                if ($callCount === 4) {
+                    // Sources table check - throw to simulate not installed.
+                    throw new \Exception('Table does not exist');
+                }
+
+                if ($callCount === 5) {
+                    // Main stats query.
+                    $mockResult->method('fetch')->willReturn([
+                        'total_objects'                 => '5',
+                        'deleted_objects'               => '0',
+                        'total_audit_trails'            => '20',
+                        'total_search_trails'           => '10',
+                        'total_configurations'          => '2',
+                        'total_organisations'           => '1',
+                        'total_registers'               => '2',
+                        'total_schemas'                 => '3',
+                        'total_sources'                 => '0',
+                        'total_webhook_logs'            => '5',
+                        'objects_without_owner'          => '0',
+                        'objects_without_organisation'   => '0',
+                        'audit_trails_without_expiry'   => '0',
+                        'search_trails_without_expiry'  => '0',
+                        'expired_audit_trails'          => '0',
+                        'expired_search_trails'         => '0',
+                        'expired_objects'               => '0',
+                    ]);
+                    return $mockResult;
+                }
+
+                return $mockResult;
+            });
+
+        // MySQL platform (not PostgreSQL).
+        $platform = $this->createMock(\Doctrine\DBAL\Platforms\MySQLPlatform::class);
+        $this->db->method('getDatabasePlatform')
+            ->willReturn($platform);
+
+        $this->cacheSettingsHandler->method('getCacheStats')
+            ->willReturn([]);
+        $this->solrSettingsHandler->method('getSolrDashboardStats')
+            ->willReturn([]);
+
+        $result = $this->settingsService->getStats();
+
+        $this->assertIsArray($result);
+        $this->assertArrayHasKey('totals', $result);
+        $this->assertSame(5, $result['totals']['totalObjects']);
+    }
+
+    /**
+     * Test getStats with magic mapper tables
+     */
+    public function testGetStatsWithMagicMapperTables(): void
+    {
+        $qb = $this->createMock(\OCP\DB\QueryBuilder\IQueryBuilder::class);
+        $qb->method('getTableName')
+            ->willReturnCallback(function (string $table) {
+                return 'oc_' . $table;
+            });
+
+        $this->db->method('getQueryBuilder')
+            ->willReturn($qb);
+
+        $callCount = 0;
+        $this->db->method('executeQuery')
+            ->willReturnCallback(function (string $query) use (&$callCount) {
+                $callCount++;
+                $mockResult = $this->createMock(\OCP\DB\IResult::class);
+
+                if ($callCount === 1) {
+                    // Blob count.
+                    $mockResult->method('fetch')->willReturn(['cnt' => '5']);
+                    return $mockResult;
+                }
+
+                if ($callCount === 2) {
+                    // Blob size.
+                    $mockResult->method('fetch')->willReturn(['total' => '1000']);
+                    return $mockResult;
+                }
+
+                if ($callCount === 3) {
+                    // Table listing - return 2 magic mapper tables.
+                    $mockResult->method('fetchAll')
+                        ->willReturn(['oc_openregister_table_abc', 'oc_openregister_table_def']);
+                    return $mockResult;
+                }
+
+                if ($callCount === 4) {
+                    // First magic mapper table count/size.
+                    $mockResult->method('fetch')
+                        ->willReturn(['cnt' => '100', 'total_size' => '50000']);
+                    return $mockResult;
+                }
+
+                if ($callCount === 5) {
+                    // Second magic mapper table count/size.
+                    $mockResult->method('fetch')
+                        ->willReturn(['cnt' => '200', 'total_size' => '80000']);
+                    return $mockResult;
+                }
+
+                if ($callCount === 6) {
+                    // Sources table check.
+                    $mockResult->method('fetch')->willReturn(['1' => 1]);
+                    return $mockResult;
+                }
+
+                if ($callCount === 7) {
+                    // Main stats query.
+                    $mockResult->method('fetch')->willReturn([
+                        'total_objects'                 => '5',
+                        'deleted_objects'               => '0',
+                        'total_audit_trails'            => '0',
+                        'total_search_trails'           => '0',
+                        'total_configurations'          => '0',
+                        'total_organisations'           => '0',
+                        'total_registers'               => '0',
+                        'total_schemas'                 => '0',
+                        'total_sources'                 => '0',
+                        'total_webhook_logs'            => '0',
+                        'objects_without_owner'          => '0',
+                        'objects_without_organisation'   => '0',
+                        'audit_trails_without_expiry'   => '0',
+                        'search_trails_without_expiry'  => '0',
+                        'expired_audit_trails'          => '0',
+                        'expired_search_trails'         => '0',
+                        'expired_objects'               => '0',
+                    ]);
+                    return $mockResult;
+                }
+
+                return $mockResult;
+            });
+
+        $platform = $this->createMock(\Doctrine\DBAL\Platforms\PostgreSQLPlatform::class);
+        $this->db->method('getDatabasePlatform')
+            ->willReturn($platform);
+
+        $this->cacheSettingsHandler->method('getCacheStats')
+            ->willReturn([]);
+        $this->solrSettingsHandler->method('getSolrDashboardStats')
+            ->willReturn([]);
+
+        $result = $this->settingsService->getStats();
+
+        $this->assertIsArray($result);
+        // totalObjects = blobCount(5) + magicCount(100+200) = 305.
+        $this->assertSame(305, $result['totals']['totalObjects']);
+        $this->assertSame(5, $result['totals']['totalBlobObjects']);
+        $this->assertSame(300, $result['totals']['totalMagicObjects']);
+        $this->assertSame(131000, $result['totals']['totalSize']);
+        $this->assertSame(1000, $result['totals']['totalBlobSize']);
+        $this->assertSame(130000, $result['totals']['totalMagicSize']);
+    }
+
+    /**
+     * Test getStats when getDatabaseStats main query returns false
+     */
+    public function testGetStatsWhenMainQueryReturnsFalse(): void
+    {
+        $qb = $this->createMock(\OCP\DB\QueryBuilder\IQueryBuilder::class);
+        $qb->method('getTableName')
+            ->willReturnCallback(function (string $table) {
+                return 'oc_' . $table;
+            });
+
+        $this->db->method('getQueryBuilder')
+            ->willReturn($qb);
+
+        $callCount = 0;
+        $this->db->method('executeQuery')
+            ->willReturnCallback(function (string $query) use (&$callCount) {
+                $callCount++;
+                $mockResult = $this->createMock(\OCP\DB\IResult::class);
+
+                if ($callCount === 1) {
+                    $mockResult->method('fetch')->willReturn(['cnt' => '0']);
+                    return $mockResult;
+                }
+
+                if ($callCount === 2) {
+                    $mockResult->method('fetch')->willReturn(['total' => '0']);
+                    return $mockResult;
+                }
+
+                if ($callCount === 3) {
+                    // Tables listing.
+                    $mockResult->method('fetchAll')->willReturn([]);
+                    return $mockResult;
+                }
+
+                if ($callCount === 4) {
+                    // Sources check - throw.
+                    throw new \Exception('No sources table');
+                }
+
+                if ($callCount === 5) {
+                    // Main query returns false.
+                    $mockResult->method('fetch')->willReturn(false);
+                    return $mockResult;
+                }
+
+                return $mockResult;
+            });
+
+        $platform = $this->createMock(\Doctrine\DBAL\Platforms\PostgreSQLPlatform::class);
+        $this->db->method('getDatabasePlatform')
+            ->willReturn($platform);
+
+        $this->cacheSettingsHandler->method('getCacheStats')
+            ->willReturn([]);
+        $this->solrSettingsHandler->method('getSolrDashboardStats')
+            ->willReturn([]);
+
+        $result = $this->settingsService->getStats();
+
+        // getDatabaseStats throws RuntimeException ('Failed to fetch database statistics'),
+        // getStats catches it and returns default empty stats.
+        $this->assertIsArray($result);
+        $this->assertArrayHasKey('warnings', $result);
+        $this->assertSame(0, $result['warnings']['objectsWithoutOwner']);
+    }
+
+    /**
+     * Test getStats when magic mapper table query fails individually
+     */
+    public function testGetStatsWithFailingMagicMapperTable(): void
+    {
+        $qb = $this->createMock(\OCP\DB\QueryBuilder\IQueryBuilder::class);
+        $qb->method('getTableName')
+            ->willReturnCallback(function (string $table) {
+                return 'oc_' . $table;
+            });
+
+        $this->db->method('getQueryBuilder')
+            ->willReturn($qb);
+
+        $callCount = 0;
+        $this->db->method('executeQuery')
+            ->willReturnCallback(function (string $query) use (&$callCount) {
+                $callCount++;
+                $mockResult = $this->createMock(\OCP\DB\IResult::class);
+
+                if ($callCount === 1) {
+                    $mockResult->method('fetch')->willReturn(['cnt' => '5']);
+                    return $mockResult;
+                }
+
+                if ($callCount === 2) {
+                    $mockResult->method('fetch')->willReturn(['total' => '500']);
+                    return $mockResult;
+                }
+
+                if ($callCount === 3) {
+                    // Return one magic table.
+                    $mockResult->method('fetchAll')
+                        ->willReturn(['oc_openregister_table_broken']);
+                    return $mockResult;
+                }
+
+                if ($callCount === 4) {
+                    // Magic table query fails.
+                    throw new \Exception('Corrupted table');
+                }
+
+                if ($callCount === 5) {
+                    // Sources check.
+                    throw new \Exception('No sources');
+                }
+
+                if ($callCount === 6) {
+                    // Main stats query.
+                    $mockResult->method('fetch')->willReturn([
+                        'total_objects'                 => '5',
+                        'deleted_objects'               => '0',
+                        'total_audit_trails'            => '0',
+                        'total_search_trails'           => '0',
+                        'total_configurations'          => '0',
+                        'total_organisations'           => '0',
+                        'total_registers'               => '0',
+                        'total_schemas'                 => '0',
+                        'total_sources'                 => '0',
+                        'total_webhook_logs'            => '0',
+                        'objects_without_owner'          => '0',
+                        'objects_without_organisation'   => '0',
+                        'audit_trails_without_expiry'   => '0',
+                        'search_trails_without_expiry'  => '0',
+                        'expired_audit_trails'          => '0',
+                        'expired_search_trails'         => '0',
+                        'expired_objects'               => '0',
+                    ]);
+                    return $mockResult;
+                }
+
+                return $mockResult;
+            });
+
+        $platform = $this->createMock(\Doctrine\DBAL\Platforms\PostgreSQLPlatform::class);
+        $this->db->method('getDatabasePlatform')
+            ->willReturn($platform);
+
+        $this->cacheSettingsHandler->method('getCacheStats')
+            ->willReturn([]);
+        $this->solrSettingsHandler->method('getSolrDashboardStats')
+            ->willReturn([]);
+
+        $result = $this->settingsService->getStats();
+
+        $this->assertIsArray($result);
+        // Magic count should be 0 since the table query failed (skipped).
+        $this->assertSame(5, $result['totals']['totalObjects']);
+        $this->assertSame(0, $result['totals']['totalMagicObjects']);
+    }
+
+    /**
+     * Test massValidateObjects maxObjects exactly equals totalObjects (no limiting)
+     */
+    public function testMassValidateObjectsMaxObjectsEqualsTotal(): void
+    {
+        $container = $this->createMock(IAppContainer::class);
+        $objectMapper = $this->createMock(\OCA\OpenRegister\Db\ObjectEntityMapper::class);
+
+        $container->method('get')
+            ->willReturnCallback(function (string $class) use ($objectMapper) {
+                if ($class === \OCA\OpenRegister\Db\ObjectEntityMapper::class) {
+                    return $objectMapper;
+                }
+                return null;
+            });
+
+        // maxObjects = totalObjects, no limiting applied.
+        $objectMapper->method('countSearchObjects')
+            ->willReturn(50);
+        $objectMapper->method('findAll')
+            ->willReturn([]);
+
+        $service = $this->createServiceWithContainer($container);
+        $result = $service->massValidateObjects(50, 100, 'serial', false);
+
+        $this->assertTrue($result['success']);
+        $this->assertSame(50, $result['stats']['total_objects']);
+    }
+
+    /**
+     * Test massValidateObjects maxObjects greater than totalObjects (no limiting)
+     */
+    public function testMassValidateObjectsMaxObjectsGreaterThanTotal(): void
+    {
+        $container = $this->createMock(IAppContainer::class);
+        $objectMapper = $this->createMock(\OCA\OpenRegister\Db\ObjectEntityMapper::class);
+
+        $container->method('get')
+            ->willReturnCallback(function (string $class) use ($objectMapper) {
+                if ($class === \OCA\OpenRegister\Db\ObjectEntityMapper::class) {
+                    return $objectMapper;
+                }
+                return null;
+            });
+
+        $objectMapper->method('countSearchObjects')
+            ->willReturn(10);
+        $objectMapper->method('findAll')
+            ->willReturn([]);
+
+        $service = $this->createServiceWithContainer($container);
+        $result = $service->massValidateObjects(100, 100, 'serial', false);
+
+        $this->assertTrue($result['success']);
+        // totalObjects stays at 10 since maxObjects(100) > total(10).
+        $this->assertSame(10, $result['stats']['total_objects']);
+    }
 }
