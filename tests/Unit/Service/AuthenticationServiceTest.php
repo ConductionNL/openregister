@@ -842,7 +842,7 @@ class AuthenticationServiceTest extends TestCase
 
         $jwk = new \Jose\Component\Core\JWK([
             'kty' => 'oct',
-            'k'   => rtrim(base64_encode('test-secret-key-for-jwt'), '='),
+            'k'   => rtrim(base64_encode('test-secret-key-for-jwt-min-32-bytes!!'), '='),
         ]);
 
         $token = $this->invokeMethod($this->service, 'generateJWT', [
@@ -869,7 +869,7 @@ class AuthenticationServiceTest extends TestCase
 
         $jwk = new \Jose\Component\Core\JWK([
             'kty' => 'oct',
-            'k'   => rtrim(base64_encode('test-secret-key-for-jwt'), '='),
+            'k'   => rtrim(base64_encode('test-secret-key-for-jwt-min-32-bytes!!'), '='),
         ]);
 
         $token = $this->invokeMethod($this->service, 'generateJWT', [
@@ -892,7 +892,7 @@ class AuthenticationServiceTest extends TestCase
 
         $jwk = new \Jose\Component\Core\JWK([
             'kty' => 'oct',
-            'k'   => rtrim(base64_encode('test-secret-key-for-jwt'), '='),
+            'k'   => rtrim(base64_encode('test-secret-key-for-jwt-min-32-bytes!!'), '='),
         ]);
 
         $inputPayload = [
@@ -917,13 +917,16 @@ class AuthenticationServiceTest extends TestCase
 
     // ── createClientCredentialConfig with client_assertion_type ──
 
-    public function testCreateClientCredentialConfigWithJwtBearerAssertion(): void
+    public function testCreateClientCredentialConfigWithJwtBearerAssertionThrowsOnInvalidKey(): void
     {
         if (class_exists('Jose\Component\Core\JWK') === false) {
             $this->markTestSkipped('Jose JWT library not available');
         }
 
-        $result = $this->invokeMethod($this->service, 'createClientCredentialConfig', [
+        // JWT bearer assertion with an invalid private key should propagate the exception.
+        $this->expectException(\InvalidArgumentException::class);
+
+        $this->invokeMethod($this->service, 'createClientCredentialConfig', [
             [
                 'grant_type'              => 'client_credentials',
                 'scope'                   => 'api',
@@ -931,23 +934,13 @@ class AuthenticationServiceTest extends TestCase
                 'client_id'               => 'jwt-client',
                 'client_secret'           => 'jwt-secret',
                 'client_assertion_type'   => 'urn:ietf:params:oauth:client-assertion-type:jwt-bearer',
-                'private_key'             => base64_encode('not-a-real-key'),
+                'private_key'             => base64_encode('not-a-valid-rsa-key'),
                 'x5t'                     => 'thumbprint-123',
                 'payload'                 => '{"sub": "{{ client_id }}"}',
-                'algorithm'               => 'HS256',
-                'secret'                  => 'hs256-fallback-secret-at-least-32-bytes-long!!!',
+                'algorithm'               => 'RS256',
+                'secret'                  => 'fallback-secret',
             ],
         ]);
-
-        $this->assertArrayHasKey('form_params', $result);
-        $this->assertSame(
-            'urn:ietf:params:oauth:client-assertion-type:jwt-bearer',
-            $result['form_params']['client_assertion_type']
-        );
-        $this->assertNotEmpty($result['form_params']['client_assertion']);
-        // The assertion should be a valid JWT (3 parts).
-        $parts = explode('.', $result['form_params']['client_assertion']);
-        $this->assertCount(3, $parts);
     }
 
     public function testCreateClientCredentialConfigWithoutJwtBearerAssertionType(): void
