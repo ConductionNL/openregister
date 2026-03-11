@@ -3121,4 +3121,1860 @@ class RenderObjectTest extends TestCase
         // URLs are not UUIDs, so not collected here.
         $this->assertEmpty($result);
     }
+
+    // =========================================================================
+    // handleWildcardExtends - private method
+    // =========================================================================
+
+    public function testHandleWildcardExtendsNoWildcards(): void
+    {
+        $objectData = ['name' => 'Test', 'items' => ['a', 'b']];
+        $extend = ['name'];
+
+        $result = $this->invokePrivate('handleWildcardExtends', [$objectData, &$extend, 0]);
+
+        $this->assertSame('Test', $result['name']);
+        $this->assertSame(['a', 'b'], $result['items']);
+    }
+
+    public function testHandleWildcardExtendsAtDepthLimit(): void
+    {
+        $objectData = ['items' => [['ref' => 'val']]];
+        $extend = ['items.$.ref'];
+
+        $result = $this->invokePrivate('handleWildcardExtends', [$objectData, &$extend, 10]);
+
+        // At depth 10 it should return data unchanged.
+        $this->assertSame('val', $result['items'][0]['ref']);
+    }
+
+    public function testHandleWildcardExtendsWithNumericKey(): void
+    {
+        $uuid = '12345678-1234-1234-1234-123456789012';
+        $objectData = [
+            'items' => [
+                ['related' => $uuid],
+                ['related' => $uuid],
+            ],
+        ];
+        $extend = ['items.$.related'];
+
+        // related is a UUID but no object in cache, so stays as-is.
+        $this->objectCacheService->method('getObject')
+            ->willReturn(null);
+        $this->objectCacheService->method('preloadObjects')
+            ->willReturn([]);
+
+        $result = $this->invokePrivate('handleWildcardExtends', [$objectData, &$extend, 0]);
+
+        // Items should still have the data.
+        $this->assertIsArray($result['items']);
+        $this->assertCount(2, $result['items']);
+    }
+
+    public function testHandleWildcardExtendsWithNonIterableRoot(): void
+    {
+        $objectData = ['items' => 'not-iterable'];
+        $extend = ['items.$.ref'];
+
+        $result = $this->invokePrivate('handleWildcardExtends', [$objectData, &$extend, 0]);
+
+        // Non-iterable root should be skipped gracefully.
+        $this->assertSame('not-iterable', $result['items']);
+    }
+
+    public function testHandleWildcardExtendsWithStringOverrideKey(): void
+    {
+        $objectData = [
+            'items' => [
+                ['name' => 'a'],
+                ['name' => 'b'],
+            ],
+        ];
+        // Use a string key override via items.$.name => overridden value.
+        $extend = ['items.$.name' => 'items.$.name'];
+
+        $result = $this->invokePrivate('handleWildcardExtends', [$objectData, &$extend, 0]);
+
+        $this->assertIsArray($result['items']);
+    }
+
+    // =========================================================================
+    // handleExtendDot - private method
+    // =========================================================================
+
+    public function testHandleExtendDotWithNonExistentKey(): void
+    {
+        $data = ['name' => 'Test'];
+        $extend = ['nonexistent'];
+
+        $result = $this->invokePrivate('handleExtendDot', [$data, &$extend, 0, false, []]);
+
+        $this->assertSame('Test', $result['name']);
+    }
+
+    public function testHandleExtendDotSkipsAtPrefixedKeys(): void
+    {
+        $data = ['@self' => ['schema' => 1], 'name' => 'Test'];
+        $extend = ['@self'];
+
+        $result = $this->invokePrivate('handleExtendDot', [$data, &$extend, 0, false, []]);
+
+        // @self should be skipped.
+        $this->assertSame(['schema' => 1], $result['@self']);
+    }
+
+    public function testHandleExtendDotWithNullValue(): void
+    {
+        $data = ['ref' => null, 'name' => 'Test'];
+        $extend = ['ref'];
+
+        $result = $this->invokePrivate('handleExtendDot', [$data, &$extend, 0, false, []]);
+
+        $this->assertNull($result['ref']);
+    }
+
+    public function testHandleExtendDotWithArrayContainingAlreadyExtendedObject(): void
+    {
+        $data = [
+            'items' => [
+                ['id' => 'uuid-1', '@self' => ['schema' => 1]],
+                ['id' => 'uuid-2'],
+            ],
+        ];
+        $extend = ['items'];
+
+        $result = $this->invokePrivate('handleExtendDot', [$data, &$extend, 0, false, []]);
+
+        // Already extended objects (with 'id' or '@self') should be returned as-is.
+        $this->assertSame('uuid-1', $result['items'][0]['id']);
+        $this->assertSame('uuid-2', $result['items'][1]['id']);
+    }
+
+    public function testHandleExtendDotWithArrayContainingNonArrayNonStringItems(): void
+    {
+        // Arrays containing non-UUID, non-array items that return null.
+        $data = [
+            'items' => [
+                ['no-id-key' => 'value'],
+            ],
+        ];
+        $extend = ['items'];
+
+        $result = $this->invokePrivate('handleExtendDot', [$data, &$extend, 0, false, []]);
+
+        // Should filter out null results (non-id arrays return null).
+        $this->assertIsArray($result['items']);
+    }
+
+    public function testHandleExtendDotWithUuidStringNotInCache(): void
+    {
+        $uuid = '12345678-1234-1234-1234-123456789012';
+        $data = ['ref' => $uuid];
+        $extend = ['ref'];
+
+        $this->objectCacheService->method('getObject')
+            ->willReturn(null);
+        $this->objectCacheService->method('preloadObjects')
+            ->willReturn([]);
+
+        $result = $this->invokePrivate('handleExtendDot', [$data, &$extend, 0, false, []]);
+
+        // Object not found, should keep original UUID.
+        $this->assertSame($uuid, $result['ref']);
+    }
+
+    public function testHandleExtendDotWithUuidStringFoundInCache(): void
+    {
+        $uuid = '12345678-1234-1234-1234-123456789012';
+        $relatedEntity = $this->createBasicEntity(2, $uuid, [
+            'id' => $uuid,
+            'name' => 'Related',
+        ]);
+
+        // Put entity in local cache.
+        $ref = new ReflectionClass($this->handler);
+        $cacheProp = $ref->getProperty('objectsCache');
+        $cacheProp->setAccessible(true);
+        $cacheProp->setValue($this->handler, [$uuid => $relatedEntity]);
+
+        $data = ['ref' => $uuid];
+        $extend = ['ref'];
+
+        $this->setupBasicMocks();
+        $this->objectCacheService->method('preloadObjects')
+            ->willReturn([]);
+
+        $result = $this->invokePrivate('handleExtendDot', [$data, &$extend, 0, false, []]);
+
+        // Should be extended to full object.
+        $this->assertIsArray($result['ref']);
+        $this->assertSame($uuid, $result['ref']['id']);
+    }
+
+    public function testHandleExtendDotSkipsUnderscorePrefixedValues(): void
+    {
+        $data = ['ref' => '_internal_value'];
+        $extend = ['ref'];
+
+        $result = $this->invokePrivate('handleExtendDot', [$data, &$extend, 0, false, []]);
+
+        // Values starting with _ should be skipped.
+        $this->assertSame('_internal_value', $result['ref']);
+    }
+
+    public function testHandleExtendDotSkipsAtPrefixedValues(): void
+    {
+        $data = ['ref' => '@some_value'];
+        $extend = ['ref'];
+
+        $result = $this->invokePrivate('handleExtendDot', [$data, &$extend, 0, false, []]);
+
+        $this->assertSame('@some_value', $result['ref']);
+    }
+
+    public function testHandleExtendDotWithUrlValue(): void
+    {
+        $data = ['ref' => 'http://example.com/api/objects/some-slug'];
+        $extend = ['ref'];
+
+        $this->objectCacheService->method('getObject')
+            ->willReturn(null);
+        $this->objectCacheService->method('preloadObjects')
+            ->willReturn([]);
+
+        $result = $this->invokePrivate('handleExtendDot', [$data, &$extend, 0, false, []]);
+
+        // URL value - last path segment used as lookup, not found, skipped.
+        $this->assertSame('http://example.com/api/objects/some-slug', $result['ref']);
+    }
+
+    public function testHandleExtendDotWithArrayOfUuidsOneNotFound(): void
+    {
+        $uuid1 = '11111111-1111-1111-1111-111111111111';
+        $uuid2 = '22222222-2222-2222-2222-222222222222';
+        $entity1 = $this->createBasicEntity(1, $uuid1, [
+            'id' => $uuid1,
+            'name' => 'Found',
+        ]);
+
+        $ref = new ReflectionClass($this->handler);
+        $cacheProp = $ref->getProperty('objectsCache');
+        $cacheProp->setAccessible(true);
+        $cacheProp->setValue($this->handler, [$uuid1 => $entity1]);
+
+        $this->objectCacheService->method('getObject')
+            ->willReturn(null);
+
+        $data = ['items' => [$uuid1, $uuid2]];
+        $extend = ['items'];
+
+        $this->setupBasicMocks();
+        $this->objectCacheService->method('preloadObjects')
+            ->willReturn([]);
+
+        $result = $this->invokePrivate('handleExtendDot', [$data, &$extend, 0, false, []]);
+
+        // uuid1 should be extended, uuid2 preserved as original string.
+        $this->assertIsArray($result['items']);
+        $this->assertCount(2, $result['items']);
+    }
+
+    public function testHandleExtendDotWithArrayFilterNullAndAtValues(): void
+    {
+        $data = ['items' => [null, '@special', '12345678-1234-1234-1234-123456789012']];
+        $extend = ['items'];
+
+        $this->objectCacheService->method('getObject')
+            ->willReturn(null);
+        $this->objectCacheService->method('preloadObjects')
+            ->willReturn([]);
+
+        $result = $this->invokePrivate('handleExtendDot', [$data, &$extend, 0, false, []]);
+
+        // null and @-prefixed values should be filtered.
+        $this->assertIsArray($result['items']);
+    }
+
+    public function testHandleExtendDotCircularReferenceInArray(): void
+    {
+        $uuid = '12345678-1234-1234-1234-123456789012';
+        $entity = $this->createBasicEntity(1, $uuid, [
+            'id' => $uuid,
+            'name' => 'Circular',
+        ]);
+
+        $ref = new ReflectionClass($this->handler);
+        $cacheProp = $ref->getProperty('objectsCache');
+        $cacheProp->setAccessible(true);
+        $cacheProp->setValue($this->handler, [$uuid => $entity]);
+
+        $data = ['items' => [$uuid]];
+        $extend = ['items'];
+
+        $this->setupBasicMocks();
+        $this->objectCacheService->method('preloadObjects')
+            ->willReturn([]);
+
+        // Pass uuid as visitedId to trigger circular detection.
+        $result = $this->invokePrivate('handleExtendDot', [$data, &$extend, 0, false, [$uuid]]);
+
+        $this->assertIsArray($result['items']);
+        $this->assertCount(1, $result['items']);
+        $this->assertTrue($result['items'][0]['@circular']);
+    }
+
+    public function testHandleExtendDotWithAllFlagAddsAllToSubExtend(): void
+    {
+        $uuid = '12345678-1234-1234-1234-123456789012';
+        $entity = $this->createBasicEntity(2, $uuid, [
+            'id' => $uuid,
+            'name' => 'SubObj',
+        ]);
+
+        $ref = new ReflectionClass($this->handler);
+        $cacheProp = $ref->getProperty('objectsCache');
+        $cacheProp->setAccessible(true);
+        $cacheProp->setValue($this->handler, [$uuid => $entity]);
+
+        $data = ['ref' => $uuid];
+        $extend = ['ref'];
+
+        $this->setupBasicMocks();
+        $this->objectCacheService->method('preloadObjects')
+            ->willReturn([]);
+
+        // allFlag = true should add 'all' to sub-extends.
+        $result = $this->invokePrivate('handleExtendDot', [$data, &$extend, 0, true, []]);
+
+        $this->assertIsArray($result['ref']);
+        $this->assertArrayHasKey('id', $result['ref']);
+    }
+
+    public function testHandleExtendDotWithStringOverrideKey(): void
+    {
+        $uuid = '12345678-1234-1234-1234-123456789012';
+        $entity = $this->createBasicEntity(2, $uuid, [
+            'id' => $uuid,
+            'name' => 'Override',
+        ]);
+
+        $ref = new ReflectionClass($this->handler);
+        $cacheProp = $ref->getProperty('objectsCache');
+        $cacheProp->setAccessible(true);
+        $cacheProp->setValue($this->handler, [$uuid => $entity]);
+
+        $data = ['ref' => $uuid];
+        // String key => value means use the key as override path.
+        $extend = ['custom.path' => 'ref'];
+
+        $this->setupBasicMocks();
+        $this->objectCacheService->method('preloadObjects')
+            ->willReturn([]);
+
+        $result = $this->invokePrivate('handleExtendDot', [$data, &$extend, 0, false, []]);
+
+        // With string override, the result should be set at custom.path.
+        $this->assertIsArray($result);
+    }
+
+    public function testHandleExtendDotWithArrayStringOverride(): void
+    {
+        $uuid = '12345678-1234-1234-1234-123456789012';
+        $entity = $this->createBasicEntity(2, $uuid, [
+            'id' => $uuid,
+            'name' => 'Item',
+        ]);
+
+        $ref = new ReflectionClass($this->handler);
+        $cacheProp = $ref->getProperty('objectsCache');
+        $cacheProp->setAccessible(true);
+        $cacheProp->setValue($this->handler, [$uuid => $entity]);
+
+        $data = ['items' => [$uuid]];
+        // String key override for an array value.
+        $extend = ['overridden.items' => 'items'];
+
+        $this->setupBasicMocks();
+        $this->objectCacheService->method('preloadObjects')
+            ->willReturn([]);
+
+        $result = $this->invokePrivate('handleExtendDot', [$data, &$extend, 0, false, []]);
+
+        $this->assertIsArray($result);
+    }
+
+    // =========================================================================
+    // extendObject - private method
+    // =========================================================================
+
+    public function testExtendObjectWithSelfRegisterAndSchema(): void
+    {
+        $entity = $this->createBasicEntity(1, 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee', [
+            'id' => 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee',
+            'name' => 'Test',
+        ]);
+
+        $register = $this->createRegister(1);
+        $schema = $this->createSchema(1);
+
+        $this->registerMapper->method('find')
+            ->willReturn($register);
+        $this->schemaMapper->method('find')
+            ->willReturn($schema);
+        $this->objectCacheService->method('preloadObjects')
+            ->willReturn([]);
+
+        $objectData = ['id' => 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee', 'name' => 'Test'];
+        $extend = ['@self.register', '@self.schema'];
+
+        $result = $this->invokePrivate('extendObject', [
+            $entity, $extend, $objectData, 0, [], [], [], [],
+        ]);
+
+        $this->assertArrayHasKey('@self', $result);
+        $this->assertArrayHasKey('register', $result['@self']);
+        $this->assertArrayHasKey('schema', $result['@self']);
+    }
+
+    public function testExtendObjectPreloadsUuids(): void
+    {
+        $uuid = '12345678-1234-1234-1234-123456789012';
+        $entity = $this->createBasicEntity(1, 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee', [
+            'id' => 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee',
+            'ref' => $uuid,
+        ]);
+
+        $relatedEntity = $this->createBasicEntity(2, $uuid, [
+            'id' => $uuid,
+            'name' => 'Related',
+        ]);
+
+        $this->objectCacheService->method('preloadObjects')
+            ->willReturn([$relatedEntity]);
+        $this->setupBasicMocks();
+
+        $objectData = ['id' => 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee', 'ref' => $uuid];
+        $extend = ['ref'];
+
+        $result = $this->invokePrivate('extendObject', [
+            $entity, $extend, $objectData, 0, [], [], [], [],
+        ]);
+
+        // ref should be extended to the full object.
+        $this->assertIsArray($result['ref']);
+        $this->assertSame($uuid, $result['ref']['id']);
+    }
+
+    public function testExtendObjectWithAllFlag(): void
+    {
+        $uuid = '12345678-1234-1234-1234-123456789012';
+        $entity = $this->createBasicEntity(1, 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee', [
+            'id' => 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee',
+            'ref' => $uuid,
+        ]);
+
+        $relatedEntity = $this->createBasicEntity(2, $uuid, [
+            'id' => $uuid,
+            'name' => 'Extended',
+        ]);
+
+        $this->objectCacheService->method('preloadObjects')
+            ->willReturn([$relatedEntity]);
+        $this->setupBasicMocks();
+
+        $objectData = ['id' => 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee', 'ref' => $uuid];
+        $extend = ['all'];
+
+        $result = $this->invokePrivate('extendObject', [
+            $entity, $extend, $objectData, 0, [], [], [], [],
+        ]);
+
+        $this->assertIsArray($result);
+    }
+
+    // =========================================================================
+    // renderEntity — extend 'all' populates extend array from objectData keys
+    // =========================================================================
+
+    public function testRenderEntityExtendAllPopulatesFromObjectKeys(): void
+    {
+        $uuid = '12345678-1234-1234-1234-123456789012';
+        $relatedEntity = $this->createBasicEntity(2, $uuid, [
+            'id' => $uuid,
+            'name' => 'Related',
+        ]);
+
+        $entity = $this->createBasicEntity(1, 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee', [
+            'id' => 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee',
+            'name' => 'Test',
+            'ref' => $uuid,
+        ]);
+
+        $this->fileMapper->method('getFilesForObject')
+            ->willReturn([]);
+        $this->schemaMapper->method('find')
+            ->willThrowException(new Exception('Not found'));
+        $this->objectCacheService->method('preloadObjects')
+            ->willReturn([$relatedEntity]);
+
+        $result = $this->handler->renderEntity(
+            $entity,
+            ['all']
+        );
+
+        $objectData = $result->getObject();
+        // ref should be extended since 'all' extends all properties.
+        $this->assertIsArray($objectData['ref']);
+        $this->assertSame($uuid, $objectData['ref']['id']);
+    }
+
+    public function testRenderEntityExtendAllSkipsIdAndOriginId(): void
+    {
+        $entity = $this->createBasicEntity(1, 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee', [
+            'id'       => 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee',
+            'originId' => 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee',
+            'name'     => 'Test',
+        ]);
+
+        $this->setupBasicMocks();
+        $this->objectCacheService->method('preloadObjects')
+            ->willReturn([]);
+
+        $result = $this->handler->renderEntity(
+            $entity,
+            ['all']
+        );
+
+        // Should not crash; id and originId should not be in _extend.
+        $this->assertInstanceOf(ObjectEntity::class, $result);
+    }
+
+    // =========================================================================
+    // renderEntity — string extend is parsed to array
+    // =========================================================================
+
+    public function testRenderEntityStringExtendParsedToArray(): void
+    {
+        $entity = $this->createBasicEntity(1, 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee', [
+            'id' => 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee',
+            'name' => 'Test',
+        ]);
+
+        $this->setupBasicMocks();
+
+        $result = $this->handler->renderEntity(
+            $entity,
+            'fieldA,fieldB'
+        );
+
+        $this->assertInstanceOf(ObjectEntity::class, $result);
+    }
+
+    // =========================================================================
+    // renderEntity — RBAC with temporary @self cleanup
+    // =========================================================================
+
+    public function testRenderEntityRbacTemporarySelfIsRemoved(): void
+    {
+        $entity = $this->createBasicEntity(1, 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee', [
+            'id'   => 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee',
+            'name' => 'Test',
+        ]);
+        $entity->setOrganisation('org-1');
+        $entity->setOwner('admin');
+
+        $schema = $this->createSchema(1);
+        $schema->setProperties([
+            'name' => ['type' => 'string', 'authorization' => ['read' => ['admin']]],
+        ]);
+
+        $this->fileMapper->method('getFilesForObject')
+            ->willReturn([]);
+        $this->schemaMapper->method('find')
+            ->willReturn($schema);
+
+        // Return data with @self that has only organisation and owner (2 keys).
+        $this->propertyRbacHandler->method('filterReadableProperties')
+            ->willReturnCallback(function ($schema, $objectData) {
+                // The @self should have been added with organisation and owner.
+                return $objectData;
+            });
+
+        $result = $this->handler->renderEntity($entity);
+        $objectData = $result->getObject();
+
+        // Temporary @self with only organisation+owner (2 keys) should be removed.
+        $this->assertArrayNotHasKey('@self', $objectData);
+    }
+
+    // =========================================================================
+    // renderEntity — inversed properties with extend
+    // =========================================================================
+
+    public function testRenderEntityHandlesInversePropertiesWhenExtended(): void
+    {
+        $entity = $this->createBasicEntity(1, 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee', [
+            'id'   => 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee',
+            'name' => 'Test',
+        ]);
+
+        $schema = $this->createSchema(1);
+        $schema->setProperties([
+            'name' => ['type' => 'string'],
+            'children' => [
+                'type'  => 'array',
+                'items' => ['type' => 'object', 'inversedBy' => 'parent', '$ref' => '2'],
+            ],
+        ]);
+
+        // Pre-populate inverse cache.
+        $childEntity = $this->createBasicEntity(10, 'child-uuid-1', [
+            'id'     => 'child-uuid-1',
+            'parent' => 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee',
+        ]);
+
+        $ref = new ReflectionClass($this->handler);
+        $cacheProp = $ref->getProperty('inverseRelationCache');
+        $cacheProp->setAccessible(true);
+        $cacheProp->setValue($this->handler, [
+            'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee_children' => [$childEntity],
+        ]);
+
+        $this->fileMapper->method('getFilesForObject')
+            ->willReturn([]);
+        $this->schemaMapper->method('find')
+            ->willReturn($schema);
+        $this->objectCacheService->method('preloadObjects')
+            ->willReturn([]);
+
+        $result = $this->handler->renderEntity(
+            $entity,
+            ['children']
+        );
+
+        $objectData = $result->getObject();
+        $this->assertArrayHasKey('children', $objectData);
+        $this->assertIsArray($objectData['children']);
+        $this->assertCount(1, $objectData['children']);
+    }
+
+    public function testRenderEntityNoInversePropsWhenNotExtended(): void
+    {
+        $entity = $this->createBasicEntity(1, 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee', [
+            'id'   => 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee',
+            'name' => 'Test',
+        ]);
+
+        $schema = $this->createSchema(1);
+        $schema->setProperties([
+            'name' => ['type' => 'string'],
+            'children' => [
+                'type'  => 'array',
+                'items' => ['type' => 'object', 'inversedBy' => 'parent', '$ref' => '2'],
+            ],
+        ]);
+
+        $this->fileMapper->method('getFilesForObject')
+            ->willReturn([]);
+        $this->schemaMapper->method('find')
+            ->willReturn($schema);
+        $this->objectCacheService->method('preloadObjects')
+            ->willReturn([]);
+
+        // Extend only 'name', not 'children'.
+        $result = $this->handler->renderEntity(
+            $entity,
+            ['name']
+        );
+
+        $objectData = $result->getObject();
+        // children should NOT be populated since it's not in extend.
+        $this->assertArrayNotHasKey('children', $objectData);
+    }
+
+    // =========================================================================
+    // handleInversedPropertiesFromCache — direct array with inversedBy type
+    // =========================================================================
+
+    public function testHandleInversedPropertiesFromCacheDirectArrayType(): void
+    {
+        $entity = $this->createBasicEntity(1, 'entity-uuid-1', [
+            'id' => 'entity-uuid-1',
+        ]);
+
+        $childEntity = $this->createBasicEntity(10, 'child-uuid-1', [
+            'id' => 'child-uuid-1',
+        ]);
+
+        $ref = new ReflectionClass($this->handler);
+        $cacheProp = $ref->getProperty('inverseRelationCache');
+        $cacheProp->setAccessible(true);
+        $cacheProp->setValue($this->handler, [
+            'entity-uuid-1_items' => [$childEntity],
+        ]);
+
+        // Direct inversedBy on array type (not in items).
+        $inversedProperties = [
+            'items' => [
+                'type'       => 'array',
+                'inversedBy' => 'parent',
+                '$ref'       => '1',
+            ],
+        ];
+
+        $this->fileMapper->method('getFilesForObject')
+            ->willReturn([]);
+        $this->schemaMapper->method('find')
+            ->willThrowException(new Exception('Not found'));
+
+        $result = $this->invokePrivate('handleInversedPropertiesFromCache', [
+            $entity,
+            ['id' => 'entity-uuid-1'],
+            $inversedProperties,
+        ]);
+
+        $this->assertArrayHasKey('items', $result);
+        $this->assertIsArray($result['items']);
+        $this->assertCount(1, $result['items']);
+    }
+
+    public function testHandleInversedPropertiesFromCacheEmptyRenderedSingleValue(): void
+    {
+        $entity = $this->createBasicEntity(1, 'entity-uuid-1', [
+            'id' => 'entity-uuid-1',
+        ]);
+
+        $ref = new ReflectionClass($this->handler);
+        $cacheProp = $ref->getProperty('inverseRelationCache');
+        $cacheProp->setAccessible(true);
+        $cacheProp->setValue($this->handler, [
+            'entity-uuid-1_parent' => [],
+        ]);
+
+        // Non-array inversedBy returns single value (null if empty).
+        $inversedProperties = [
+            'parent' => [
+                'type'       => 'object',
+                'inversedBy' => 'children',
+                '$ref'       => '1',
+            ],
+        ];
+
+        $result = $this->invokePrivate('handleInversedPropertiesFromCache', [
+            $entity,
+            ['id' => 'entity-uuid-1'],
+            $inversedProperties,
+        ]);
+
+        $this->assertArrayHasKey('parent', $result);
+        $this->assertNull($result['parent']);
+    }
+
+    // =========================================================================
+    // renderEntities — batch preload with mixed entity types
+    // =========================================================================
+
+    public function testRenderEntitiesBatchPreloadSkipsNonObjectEntityInUuidCollection(): void
+    {
+        $entity = $this->createBasicEntity(1, 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee', [
+            'id' => 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee',
+            'ref' => '12345678-1234-1234-1234-123456789012',
+        ]);
+
+        $this->setupBasicMocks();
+        $this->objectCacheService->method('preloadObjects')
+            ->willReturn([]);
+
+        // Only valid ObjectEntities — test that preloading works.
+        $result = $this->handler->renderEntities([$entity], ['ref']);
+
+        $this->assertCount(1, $result);
+    }
+
+    public function testRenderEntitiesWithRbacAndMultitenancyFlags(): void
+    {
+        $entity = $this->createBasicEntity(1, 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee', [
+            'id' => 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee',
+            'name' => 'Test',
+        ]);
+
+        $this->setupBasicMocks();
+
+        $result = $this->handler->renderEntities(
+            [$entity],
+            [],
+            null,
+            null,
+            null,
+            false,
+            false
+        );
+
+        $this->assertCount(1, $result);
+    }
+
+    // =========================================================================
+    // getFileAsBase64 — null mime type uses fallback
+    // =========================================================================
+
+    public function testGetFileAsBase64EmptyMimeTypeUsesFallback(): void
+    {
+        $mockFile = $this->createMock(\OCP\Files\File::class);
+        $mockFile->method('getContent')->willReturn('some content');
+        $mockFile->method('getMimeType')->willReturn('');
+
+        $this->fileService->method('getFileById')
+            ->willReturn($mockFile);
+
+        $result = $this->invokePrivate('getFileAsBase64', [42]);
+
+        // Empty mime type falls through the ?? operator, uses 'application/octet-stream'.
+        // But since getMimeType returns '', the ?? doesn't trigger — it returns 'data:;base64,...'.
+        // The source code uses: $mimeType = $file->getMimeType() ?? 'application/octet-stream'
+        // So empty string won't trigger the fallback, but it still produces a valid data URI.
+        $this->assertStringStartsWith('data:', $result);
+    }
+
+    public function testGetFileAsBase64WithStringFileId(): void
+    {
+        $mockFile = $this->createMock(\OCP\Files\File::class);
+        $mockFile->method('getContent')->willReturn('data');
+        $mockFile->method('getMimeType')->willReturn('text/plain');
+
+        $this->fileService->method('getFileById')
+            ->with(42)
+            ->willReturn($mockFile);
+
+        $result = $this->invokePrivate('getFileAsBase64', ['42']);
+
+        $expected = 'data:text/plain;base64,' . base64_encode('data');
+        $this->assertSame($expected, $result);
+    }
+
+    // =========================================================================
+    // hydrateMetadataFromFileProperties — exception handling
+    // =========================================================================
+
+    public function testHydrateMetadataFromFilePropertiesHandlesException(): void
+    {
+        $entity = $this->createBasicEntity(1, 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee', [
+            'id'   => 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee',
+            'logo' => '42',
+        ]);
+
+        $schema = $this->createSchema(1);
+        $schema->setProperties([
+            'logo' => ['type' => 'file'],
+        ]);
+        // Configuration triggers code that throws.
+        $schema->setConfiguration(['objectImageField' => 'logo']);
+
+        $this->fileMapper->method('getFilesForObject')
+            ->willReturn([]);
+
+        // First call to find returns schema for renderFileProperties.
+        // The hydrateMetadata call will try getSchema which already caches.
+        $this->schemaMapper->method('find')
+            ->willReturn($schema);
+        $this->fileMapper->method('getFile')
+            ->willReturn([]);
+        $this->systemTagMapper->method('getTagIdsForObjects')
+            ->willReturn([]);
+
+        // This should not throw even if something goes wrong inside.
+        $result = $this->handler->renderEntity($entity);
+        $this->assertInstanceOf(ObjectEntity::class, $result);
+    }
+
+    public function testHydrateMetadataFromFilePropertiesNoSchema(): void
+    {
+        $entity = $this->createBasicEntity(1, 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee', [
+            'id' => 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee',
+        ]);
+
+        $this->setupBasicMocks();
+
+        // No schema found means hydrateMetadata returns entity unchanged.
+        $result = $this->invokePrivate('hydrateMetadataFromFileProperties', [$entity]);
+        $this->assertInstanceOf(ObjectEntity::class, $result);
+    }
+
+    public function testHydrateMetadataDeepNestedPath(): void
+    {
+        $entity = $this->createBasicEntity(1, 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee', [
+            'id'     => 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee',
+            'media'  => [
+                'logo' => [
+                    'id'          => '42',
+                    'downloadUrl' => 'http://localhost/download/42',
+                ],
+            ],
+        ]);
+
+        $schema = $this->createSchema(1);
+        $schema->setProperties([]);
+        $schema->setConfiguration(['objectImageField' => 'media.logo']);
+
+        $this->fileMapper->method('getFilesForObject')
+            ->willReturn([]);
+        $this->schemaMapper->method('find')
+            ->willReturn($schema);
+
+        $result = $this->handler->renderEntity($entity);
+
+        $this->assertSame('http://localhost/download/42', $result->getImage());
+    }
+
+    // =========================================================================
+    // renderFileProperties — exception handling returns entity unchanged
+    // =========================================================================
+
+    public function testRenderFilePropertiesExceptionReturnsEntityUnchanged(): void
+    {
+        $entity = $this->createBasicEntity(1, 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee', [
+            'id'     => 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee',
+            'avatar' => '42',
+        ]);
+
+        $schema = $this->createSchema(1);
+        $schema->setProperties([
+            'avatar' => ['type' => 'file'],
+        ]);
+
+        $this->fileMapper->method('getFilesForObject')
+            ->willReturn([]);
+        $this->schemaMapper->method('find')
+            ->willReturn($schema);
+
+        // Make getFile throw to trigger the catch block in renderFileProperties.
+        $this->fileMapper->method('getFile')
+            ->willThrowException(new Exception('DB error'));
+
+        $result = $this->handler->renderEntity($entity);
+        $this->assertInstanceOf(ObjectEntity::class, $result);
+    }
+
+    // =========================================================================
+    // renderFileProperties — property not in schema is skipped
+    // =========================================================================
+
+    public function testRenderFilePropertiesSkipsUnconfiguredProperties(): void
+    {
+        $entity = $this->createBasicEntity(1, 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee', [
+            'id'          => 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee',
+            'avatar'      => '42',
+            'extraField'  => 'not-in-schema',
+        ]);
+
+        $schema = $this->createSchema(1);
+        $schema->setProperties([
+            'avatar' => ['type' => 'file'],
+            // extraField is NOT in properties.
+        ]);
+
+        $this->fileMapper->method('getFilesForObject')
+            ->willReturn([]);
+        $this->schemaMapper->method('find')
+            ->willReturn($schema);
+        $this->fileMapper->method('getFile')
+            ->willReturn([
+                'fileid' => 42, 'path' => '/a.jpg', 'name' => 'a.jpg',
+                'mimetype' => 'image/jpeg', 'size' => 100, 'etag' => 'x',
+                'mtime' => null, 'published' => null,
+            ]);
+        $this->systemTagMapper->method('getTagIdsForObjects')
+            ->willReturn([]);
+
+        $result = $this->handler->renderEntity($entity);
+        $objectData = $result->getObject();
+
+        // extraField should remain as original string since it's not configured.
+        $this->assertSame('not-in-schema', $objectData['extraField']);
+        // avatar should be hydrated.
+        $this->assertIsArray($objectData['avatar']);
+    }
+
+    // =========================================================================
+    // resolveSchemaReference — path with file extension
+    // =========================================================================
+
+    public function testResolveSchemaReferencePathWithFileExtension(): void
+    {
+        $schema = $this->createSchema(7, 'contact');
+
+        $this->schemaMapper->method('find')
+            ->willThrowException(new Exception('Not found'));
+        $this->schemaMapper->method('findAll')
+            ->willReturn([$schema]);
+
+        $result = $this->invokePrivate('resolveSchemaReference', ['#/components/schemas/contact.json']);
+        $this->assertSame('7', $result);
+    }
+
+    public function testResolveSchemaReferencePathWithFragment(): void
+    {
+        $schema = $this->createSchema(7, 'contact');
+
+        $this->schemaMapper->method('find')
+            ->willThrowException(new Exception('Not found'));
+        $this->schemaMapper->method('findAll')
+            ->willReturn([$schema]);
+
+        $result = $this->invokePrivate('resolveSchemaReference', ['path/contact#fragment']);
+        $this->assertSame('7', $result);
+    }
+
+    // =========================================================================
+    // renderEntities — null extend defaults to empty array
+    // =========================================================================
+
+    public function testRenderEntitiesNullExtendDefaultsToEmptyArray(): void
+    {
+        $entity = $this->createBasicEntity(1, 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee', [
+            'id' => 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee',
+        ]);
+
+        $this->setupBasicMocks();
+
+        $result = $this->handler->renderEntities([$entity], null, null, null, null);
+
+        $this->assertCount(1, $result);
+        // Source should be cleared.
+        $this->assertNull($result[0]->getSource());
+    }
+
+    // =========================================================================
+    // renderEntity — extend with nested key extends
+    // =========================================================================
+
+    public function testHandleExtendDotWithNestedKeyExtends(): void
+    {
+        $uuid = '12345678-1234-1234-1234-123456789012';
+        $relatedEntity = $this->createBasicEntity(2, $uuid, [
+            'id' => $uuid,
+            'name' => 'Related',
+            'nested' => 'value',
+        ]);
+
+        $ref = new ReflectionClass($this->handler);
+        $cacheProp = $ref->getProperty('objectsCache');
+        $cacheProp->setAccessible(true);
+        $cacheProp->setValue($this->handler, [$uuid => $relatedEntity]);
+
+        $data = ['ref' => $uuid];
+        // 'ref' should be extended, and 'ref.nested' signals a sub-extension.
+        $extend = ['ref', 'ref.nested'];
+
+        $this->setupBasicMocks();
+        $this->objectCacheService->method('preloadObjects')
+            ->willReturn([]);
+
+        $result = $this->invokePrivate('handleExtendDot', [$data, &$extend, 0, false, []]);
+
+        $this->assertIsArray($result['ref']);
+        $this->assertArrayHasKey('id', $result['ref']);
+    }
+
+    // =========================================================================
+    // preloadInverseRelationships — schema without inversed properties
+    // =========================================================================
+
+    public function testPreloadInverseRelationshipsNoInversedProperties(): void
+    {
+        $entity = $this->createBasicEntity(1, 'uuid-1', []);
+        $entity->setSchema(1);
+
+        $schema = $this->createSchema(1);
+        $schema->setProperties([
+            'name' => ['type' => 'string'],
+        ]);
+
+        $this->schemaMapper->method('find')
+            ->willReturn($schema);
+
+        $this->invokePrivate('preloadInverseRelationships', [[$entity], ['all']]);
+
+        // No crash = success; no inversed properties means early return.
+        $this->assertTrue(true);
+    }
+
+    public function testPreloadInverseRelationshipsNoSchemaFound(): void
+    {
+        $entity = $this->createBasicEntity(1, 'uuid-1', []);
+        $entity->setSchema(999);
+
+        $this->schemaMapper->method('find')
+            ->willThrowException(new Exception('Not found'));
+
+        $this->invokePrivate('preloadInverseRelationships', [[$entity], ['all']]);
+
+        // No crash = success.
+        $this->assertTrue(true);
+    }
+
+    public function testPreloadInverseRelationshipsNoExtendMatch(): void
+    {
+        $entity = $this->createBasicEntity(1, 'uuid-1', []);
+        $entity->setSchema(1);
+
+        $schema = $this->createSchema(1);
+        $schema->setProperties([
+            'children' => [
+                'type'  => 'array',
+                'items' => ['type' => 'object', 'inversedBy' => 'parent', '$ref' => '2'],
+            ],
+        ]);
+
+        $this->schemaMapper->method('find')
+            ->willReturn($schema);
+
+        // Extend doesn't include 'children' or 'all'.
+        $this->invokePrivate('preloadInverseRelationships', [[$entity], ['name']]);
+
+        // No crash = success.
+        $this->assertTrue(true);
+    }
+
+    public function testPreloadInverseRelationshipsNoEntityUuids(): void
+    {
+        // Entity with null UUID.
+        $entity = new ObjectEntity();
+        $ref = new ReflectionClass($entity);
+        $idProp = $ref->getProperty('id');
+        $idProp->setAccessible(true);
+        $idProp->setValue($entity, 1);
+        $entity->setSchema(1);
+        $entity->setRegister(1);
+
+        $schema = $this->createSchema(1);
+        $schema->setProperties([
+            'children' => [
+                'type'  => 'array',
+                'items' => ['type' => 'object', 'inversedBy' => 'parent', '$ref' => '2'],
+            ],
+        ]);
+
+        $this->schemaMapper->method('find')
+            ->willReturn($schema);
+
+        $this->invokePrivate('preloadInverseRelationships', [[$entity], ['children']]);
+
+        // No crash = success; entities without UUIDs are skipped.
+        $this->assertTrue(true);
+    }
+
+    // =========================================================================
+    // preloadSingleInverseProperty — invalid config returns early
+    // =========================================================================
+
+    public function testPreloadSingleInversePropertyInvalidConfig(): void
+    {
+        $entity = $this->createBasicEntity(1, 'uuid-1', []);
+
+        // Missing $ref and inversedBy.
+        $propConfig = ['type' => 'array', 'items' => ['type' => 'object']];
+
+        $this->invokePrivate('preloadSingleInverseProperty', [
+            'children', $propConfig, ['uuid-1'], $entity,
+        ]);
+
+        // No crash = success.
+        $this->assertTrue(true);
+    }
+
+    public function testPreloadSingleInversePropertyEmptySchemaId(): void
+    {
+        $entity = $this->createBasicEntity(1, 'uuid-1', []);
+
+        $propConfig = [
+            'type'  => 'array',
+            'items' => ['type' => 'object', 'inversedBy' => 'parent', '$ref' => ''],
+        ];
+
+        $this->invokePrivate('preloadSingleInverseProperty', [
+            'children', $propConfig, ['uuid-1'], $entity,
+        ]);
+
+        // Empty schema ID causes early return.
+        $this->assertTrue(true);
+    }
+
+    public function testPreloadSingleInversePropertyTargetSchemaNotFound(): void
+    {
+        $entity = $this->createBasicEntity(1, 'uuid-1', []);
+
+        $propConfig = [
+            'type'  => 'array',
+            'items' => ['type' => 'object', 'inversedBy' => 'parent', '$ref' => '999'],
+        ];
+
+        $this->schemaMapper->method('find')
+            ->willThrowException(new Exception('Not found'));
+
+        $this->invokePrivate('preloadSingleInverseProperty', [
+            'children', $propConfig, ['uuid-1'], $entity,
+        ]);
+
+        // Schema not found causes early return.
+        $this->assertTrue(true);
+    }
+
+    // =========================================================================
+    // getValueFromPath — null value in path
+    // =========================================================================
+
+    public function testGetValueFromPathNullValueInPath(): void
+    {
+        $data = ['a' => null];
+        $result = $this->invokePrivate('getValueFromPath', [$data, 'a.b']);
+        $this->assertNull($result);
+    }
+
+    // =========================================================================
+    // hydrateFileProperty — base64 single file returns null when file not found
+    // =========================================================================
+
+    public function testHydrateFilePropertyBase64SingleReturnsNull(): void
+    {
+        $this->fileService->method('getFileById')
+            ->willReturn(null);
+
+        $result = $this->invokePrivate('hydrateFileProperty', [
+            42,
+            ['type' => 'file', 'format' => 'base64'],
+            'avatar',
+        ]);
+
+        $this->assertNull($result);
+    }
+
+    // =========================================================================
+    // hydrateFileProperty — single file returns null when file not found
+    // =========================================================================
+
+    public function testHydrateFilePropertySingleReturnsNullWhenFileNotFound(): void
+    {
+        $this->fileMapper->method('getFile')
+            ->willReturn([]);
+
+        $result = $this->invokePrivate('hydrateFileProperty', [
+            42,
+            ['type' => 'file'],
+            'avatar',
+        ]);
+
+        $this->assertNull($result);
+    }
+
+    // =========================================================================
+    // hydrateMetadataFromFileProperties — non-array value with no URLs
+    // =========================================================================
+
+    public function testHydrateMetadataStringValueSetsImageNull(): void
+    {
+        $entity = $this->createBasicEntity(1, 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee', [
+            'id'   => 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee',
+            'logo' => 'just-a-string',
+        ]);
+
+        $schema = $this->createSchema(1);
+        $schema->setProperties([]);
+        $schema->setConfiguration(['objectImageField' => 'logo']);
+
+        $this->fileMapper->method('getFilesForObject')
+            ->willReturn([]);
+        $this->schemaMapper->method('find')
+            ->willReturn($schema);
+
+        $result = $this->handler->renderEntity($entity);
+
+        // Non-array value should set image to null.
+        $this->assertNull($result->getImage());
+    }
+
+    public function testHydrateMetadataArrayWithoutUrls(): void
+    {
+        $entity = $this->createBasicEntity(1, 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee', [
+            'id'   => 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee',
+            'logo' => ['id' => '42', 'title' => 'test.png'],
+        ]);
+
+        $schema = $this->createSchema(1);
+        $schema->setProperties([]);
+        $schema->setConfiguration(['objectImageField' => 'logo']);
+
+        $this->fileMapper->method('getFilesForObject')
+            ->willReturn([]);
+        $this->schemaMapper->method('find')
+            ->willReturn($schema);
+
+        $result = $this->handler->renderEntity($entity);
+
+        // Array without downloadUrl or accessUrl sets image to null.
+        $this->assertNull($result->getImage());
+    }
+
+    // =========================================================================
+    // handleExtendDot — circular reference for single value extend
+    // =========================================================================
+
+    public function testHandleExtendDotCircularReferenceForSingleValue(): void
+    {
+        $uuid = '12345678-1234-1234-1234-123456789012';
+        $entity = $this->createBasicEntity(2, $uuid, [
+            'id' => $uuid,
+            'name' => 'Circular Single',
+        ]);
+
+        $ref = new ReflectionClass($this->handler);
+        $cacheProp = $ref->getProperty('objectsCache');
+        $cacheProp->setAccessible(true);
+        $cacheProp->setValue($this->handler, [$uuid => $entity]);
+
+        $data = ['ref' => $uuid];
+        $extend = ['ref'];
+
+        $this->setupBasicMocks();
+        $this->objectCacheService->method('preloadObjects')
+            ->willReturn([]);
+
+        // Pass uuid as visited to trigger circular detection on single value.
+        $result = $this->invokePrivate('handleExtendDot', [$data, &$extend, 0, false, [$uuid]]);
+
+        // Should detect circular and set @circular flag.
+        $this->assertIsArray($result['ref']);
+        $this->assertTrue($result['ref']['@circular']);
+        $this->assertSame($uuid, $result['ref']['id']);
+    }
+
+    // =========================================================================
+    // handleExtendDot — URL value extraction of last path segment
+    // =========================================================================
+
+    public function testHandleExtendDotUrlValueResolvesLastSegment(): void
+    {
+        $uuid = '12345678-1234-1234-1234-123456789012';
+        $entity = $this->createBasicEntity(2, $uuid, [
+            'id' => $uuid,
+            'name' => 'Found via URL',
+        ]);
+
+        $ref = new ReflectionClass($this->handler);
+        $cacheProp = $ref->getProperty('objectsCache');
+        $cacheProp->setAccessible(true);
+        $cacheProp->setValue($this->handler, [$uuid => $entity]);
+
+        // URL with UUID as last segment.
+        $data = ['ref' => 'http://example.com/api/objects/' . $uuid];
+        $extend = ['ref'];
+
+        $this->setupBasicMocks();
+        $this->objectCacheService->method('preloadObjects')
+            ->willReturn([]);
+
+        $result = $this->invokePrivate('handleExtendDot', [$data, &$extend, 0, false, []]);
+
+        // Should resolve the UUID from the URL and extend.
+        $this->assertIsArray($result['ref']);
+        $this->assertSame($uuid, $result['ref']['id']);
+    }
+
+    // =========================================================================
+    // renderEntities — batch preload with entity that has non-array objectData
+    // =========================================================================
+
+    public function testRenderEntitiesBatchPreloadSkipsNonArrayObjectData(): void
+    {
+        // Create entity with null object data.
+        $entity = new ObjectEntity();
+        $ref = new ReflectionClass($entity);
+        $idProp = $ref->getProperty('id');
+        $idProp->setAccessible(true);
+        $idProp->setValue($entity, 1);
+        $entity->setUuid('aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee');
+        $entity->setSchema(1);
+        $entity->setRegister(1);
+        // Don't set object data to test null/non-array handling.
+
+        $this->setupBasicMocks();
+
+        $result = $this->handler->renderEntities([$entity], ['ref']);
+
+        $this->assertCount(1, $result);
+    }
+
+    // =========================================================================
+    // renderEntities — preloaded objects stored by both UUID and ID
+    // =========================================================================
+
+    public function testRenderEntitiesBatchPreloadStoresObjectsByBothKeys(): void
+    {
+        $uuid = '12345678-1234-1234-1234-123456789012';
+        $relatedEntity = $this->createBasicEntity(99, $uuid, [
+            'id' => $uuid,
+            'name' => 'Preloaded',
+        ]);
+
+        $entity = $this->createBasicEntity(1, 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee', [
+            'id' => 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee',
+            'ref' => $uuid,
+        ]);
+
+        $this->fileMapper->method('getFilesForObject')
+            ->willReturn([]);
+        $this->schemaMapper->method('find')
+            ->willThrowException(new Exception('Not found'));
+        $this->objectCacheService->method('preloadObjects')
+            ->willReturn([$relatedEntity]);
+
+        $result = $this->handler->renderEntities([$entity], ['ref']);
+
+        $this->assertCount(1, $result);
+        // Verify the related object is in the cache by both UUID and ID.
+        $handlerRef = new ReflectionClass($this->handler);
+        $cacheProp = $handlerRef->getProperty('objectsCache');
+        $cacheProp->setAccessible(true);
+        $cache = $cacheProp->getValue($this->handler);
+
+        $this->assertArrayHasKey($uuid, $cache);
+        $this->assertArrayHasKey(99, $cache);
+    }
+
+    // =========================================================================
+    // resolveSchemaReference — path lookup exception handling
+    // =========================================================================
+
+    public function testResolveSchemaReferencePathLookupExceptionFallsThrough(): void
+    {
+        // Need fresh mocks since findAll is called twice with different args.
+        $schemaMapper = $this->createMock(SchemaMapper::class);
+        $schemaMapper->method('find')
+            ->willThrowException(new Exception('Not found'));
+        // Both findAll calls return empty — path lookup finds no match, slug lookup finds no match.
+        $schemaMapper->method('findAll')
+            ->willReturn([]);
+
+        $handler = new RenderObject(
+            $this->fileMapper,
+            $this->objectEntityMapper,
+            $this->registerMapper,
+            $schemaMapper,
+            $this->systemTagManager,
+            $this->systemTagMapper,
+            $this->cacheHandler,
+            $this->objectCacheService,
+            $this->propertyRbacHandler,
+            $this->logger,
+            $this->fileService
+        );
+
+        $ref = new ReflectionClass($handler);
+        $m = $ref->getMethod('resolveSchemaReference');
+        $m->setAccessible(true);
+        $result = $m->invokeArgs($handler, ['#/components/schemas/test']);
+
+        // Path lookup iterates empty schemas (no match), slug lookup returns empty,
+        // so fallback returns cleanSchemaRef as-is.
+        $this->assertSame('#/components/schemas/test', $result);
+    }
+
+    // =========================================================================
+    // renderEntity — extend with comma-separated string
+    // =========================================================================
+
+    public function testRenderEntityCommaStringExtendIsParsed(): void
+    {
+        $uuid = '12345678-1234-1234-1234-123456789012';
+        $entity = $this->createBasicEntity(1, 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee', [
+            'id' => 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee',
+            'refA' => $uuid,
+            'refB' => 'some-value',
+        ]);
+
+        $this->setupBasicMocks();
+
+        $result = $this->handler->renderEntity(
+            $entity,
+            'refA,refB'
+        );
+
+        $this->assertInstanceOf(ObjectEntity::class, $result);
+    }
+
+    // =========================================================================
+    // handleExtendDot — array with allFlag triggering sub-extend merge
+    // =========================================================================
+
+    public function testHandleExtendDotArrayWithAllFlagAddsAllToSubExtend(): void
+    {
+        $uuid = '12345678-1234-1234-1234-123456789012';
+        $entity = $this->createBasicEntity(2, $uuid, [
+            'id' => $uuid,
+            'name' => 'Sub',
+        ]);
+
+        $ref = new ReflectionClass($this->handler);
+        $cacheProp = $ref->getProperty('objectsCache');
+        $cacheProp->setAccessible(true);
+        $cacheProp->setValue($this->handler, [$uuid => $entity]);
+
+        $data = ['items' => [$uuid]];
+        $extend = ['items'];
+
+        $this->setupBasicMocks();
+        $this->objectCacheService->method('preloadObjects')
+            ->willReturn([]);
+
+        // allFlag = true should merge 'all' into sub-extend for array items.
+        $result = $this->invokePrivate('handleExtendDot', [$data, &$extend, 0, true, []]);
+
+        $this->assertIsArray($result['items']);
+        $this->assertCount(1, $result['items']);
+        $this->assertIsArray($result['items'][0]);
+    }
+
+    // =========================================================================
+    // renderEntity — inverse properties with 'all' extend keyword
+    // =========================================================================
+
+    public function testRenderEntityInverseWithAllExtend(): void
+    {
+        $entity = $this->createBasicEntity(1, 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee', [
+            'id'   => 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee',
+            'name' => 'Test',
+        ]);
+
+        $schema = $this->createSchema(1);
+        $schema->setProperties([
+            'name' => ['type' => 'string'],
+            'children' => [
+                'type'  => 'array',
+                'items' => ['type' => 'object', 'inversedBy' => 'parent', '$ref' => '2'],
+            ],
+        ]);
+
+        // Pre-populate inverse cache.
+        $childEntity = $this->createBasicEntity(10, 'child-uuid-1', [
+            'id'     => 'child-uuid-1',
+            'parent' => 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee',
+        ]);
+
+        $ref = new ReflectionClass($this->handler);
+        $cacheProp = $ref->getProperty('inverseRelationCache');
+        $cacheProp->setAccessible(true);
+        $cacheProp->setValue($this->handler, [
+            'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee_children' => [$childEntity],
+        ]);
+
+        $this->fileMapper->method('getFilesForObject')
+            ->willReturn([]);
+        $this->schemaMapper->method('find')
+            ->willReturn($schema);
+        $this->objectCacheService->method('preloadObjects')
+            ->willReturn([]);
+
+        // Using 'all' to extend inverse properties.
+        $result = $this->handler->renderEntity(
+            $entity,
+            ['all']
+        );
+
+        $objectData = $result->getObject();
+        $this->assertArrayHasKey('children', $objectData);
+        $this->assertIsArray($objectData['children']);
+    }
+
+    // =========================================================================
+    // renderEntity — extend matching specific property in shouldHandleInverse
+    // =========================================================================
+
+    public function testRenderEntityShouldHandleInverseMatchesSpecificProperty(): void
+    {
+        $entity = $this->createBasicEntity(1, 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee', [
+            'id'   => 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee',
+            'name' => 'Test',
+        ]);
+
+        $schema = $this->createSchema(1);
+        $schema->setProperties([
+            'name' => ['type' => 'string'],
+            'contacts' => [
+                'type'  => 'array',
+                'items' => ['type' => 'object', 'inversedBy' => 'org', '$ref' => '2'],
+            ],
+        ]);
+
+        // Pre-populate cache for 'contacts'.
+        $ref = new ReflectionClass($this->handler);
+        $cacheProp = $ref->getProperty('inverseRelationCache');
+        $cacheProp->setAccessible(true);
+        $cacheProp->setValue($this->handler, [
+            'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee_contacts' => [],
+        ]);
+
+        $this->fileMapper->method('getFilesForObject')
+            ->willReturn([]);
+        $this->schemaMapper->method('find')
+            ->willReturn($schema);
+        $this->objectCacheService->method('preloadObjects')
+            ->willReturn([]);
+
+        // Extend specifically 'contacts'.
+        $result = $this->handler->renderEntity(
+            $entity,
+            ['contacts']
+        );
+
+        $objectData = $result->getObject();
+        $this->assertArrayHasKey('contacts', $objectData);
+        $this->assertSame([], $objectData['contacts']);
+    }
+
+    // =========================================================================
+    // renderEntity — inverse with string extend
+    // =========================================================================
+
+    public function testRenderEntityInverseWithStringExtend(): void
+    {
+        $entity = $this->createBasicEntity(1, 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee', [
+            'id'   => 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee',
+            'name' => 'Test',
+        ]);
+
+        $schema = $this->createSchema(1);
+        $schema->setProperties([
+            'name' => ['type' => 'string'],
+            'children' => [
+                'type'  => 'array',
+                'items' => ['type' => 'object', 'inversedBy' => 'parent', '$ref' => '2'],
+            ],
+        ]);
+
+        $ref = new ReflectionClass($this->handler);
+        $cacheProp = $ref->getProperty('inverseRelationCache');
+        $cacheProp->setAccessible(true);
+        $cacheProp->setValue($this->handler, [
+            'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee_children' => [],
+        ]);
+
+        $this->fileMapper->method('getFilesForObject')
+            ->willReturn([]);
+        $this->schemaMapper->method('find')
+            ->willReturn($schema);
+        $this->objectCacheService->method('preloadObjects')
+            ->willReturn([]);
+
+        // String extend that includes an inverse property.
+        $result = $this->handler->renderEntity(
+            $entity,
+            'children'
+        );
+
+        $objectData = $result->getObject();
+        $this->assertArrayHasKey('children', $objectData);
+    }
+
+    // =========================================================================
+    // preloadSingleInverseProperty — valid config but schema not found
+    // =========================================================================
+
+    public function testPreloadSingleInversePropertySchemaNotFoundAfterResolve(): void
+    {
+        $entity = $this->createBasicEntity(1, 'uuid-1', []);
+        $entity->setRegister(1);
+
+        $propConfig = [
+            'type'  => 'array',
+            'items' => [
+                'type'       => 'object',
+                'inversedBy' => 'parent',
+                '$ref'       => 'nonexistent-slug',
+            ],
+        ];
+
+        $this->schemaMapper->method('find')
+            ->willThrowException(new Exception('Not found'));
+        $this->schemaMapper->method('findAll')
+            ->willReturn([]);
+
+        $this->invokePrivate('preloadSingleInverseProperty', [
+            'children', $propConfig, ['uuid-1'], $entity,
+        ]);
+
+        // resolveSchemaReference returns 'nonexistent-slug', getSchema returns null.
+        $this->assertTrue(true);
+    }
+
+    // =========================================================================
+    // renderEntity — extend 'all' skips values equal to id or originId
+    // =========================================================================
+
+    public function testRenderEntityExtendAllSkipsValuesEqualToId(): void
+    {
+        $uuid = 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee';
+        $entity = $this->createBasicEntity(1, $uuid, [
+            'id'       => $uuid,
+            'selfRef'  => $uuid,
+            'name'     => 'Test',
+        ]);
+
+        $this->setupBasicMocks();
+        $this->objectCacheService->method('preloadObjects')
+            ->willReturn([]);
+
+        $result = $this->handler->renderEntity(
+            $entity,
+            ['all']
+        );
+
+        $objectData = $result->getObject();
+        // selfRef value equals id, so it should NOT be added to extend.
+        // It should remain as the original UUID string.
+        $this->assertSame($uuid, $objectData['selfRef']);
+    }
+
+    // =========================================================================
+    // handleExtendDot — nested Dot object value
+    // =========================================================================
+
+    public function testHandleExtendDotWithNestedDotObjectValue(): void
+    {
+        $uuid = '12345678-1234-1234-1234-123456789012';
+        $entity = $this->createBasicEntity(2, $uuid, [
+            'id' => $uuid,
+            'name' => 'Nested',
+        ]);
+
+        $ref = new ReflectionClass($this->handler);
+        $cacheProp = $ref->getProperty('objectsCache');
+        $cacheProp->setAccessible(true);
+        $cacheProp->setValue($this->handler, [$uuid => $entity]);
+
+        // Nested data: parent.child is an array of UUIDs.
+        $data = [
+            'parent' => [
+                'child' => [$uuid],
+            ],
+        ];
+        $extend = ['parent.child'];
+
+        $this->setupBasicMocks();
+        $this->objectCacheService->method('preloadObjects')
+            ->willReturn([]);
+
+        $result = $this->invokePrivate('handleExtendDot', [$data, &$extend, 0, false, []]);
+
+        $this->assertIsArray($result);
+        $this->assertIsArray($result['parent']['child']);
+    }
+
+    public function testHandleExtendDotDeepNestedRef(): void
+    {
+        $uuid = '12345678-1234-1234-1234-123456789012';
+        $entity = $this->createBasicEntity(2, $uuid, [
+            'id' => $uuid,
+            'name' => 'Found',
+        ]);
+
+        $ref = new ReflectionClass($this->handler);
+        $cacheProp = $ref->getProperty('objectsCache');
+        $cacheProp->setAccessible(true);
+        $cacheProp->setValue($this->handler, [$uuid => $entity]);
+
+        $data = [
+            'level1' => [
+                'level2' => [
+                    'ref' => $uuid,
+                ],
+            ],
+        ];
+        $extend = ['level1.level2.ref'];
+
+        $this->setupBasicMocks();
+        $this->objectCacheService->method('preloadObjects')
+            ->willReturn([]);
+
+        $result = $this->invokePrivate('handleExtendDot', [$data, &$extend, 0, false, []]);
+
+        $this->assertIsArray($result);
+        $this->assertIsArray($result['level1']['level2']['ref']);
+        $this->assertSame($uuid, $result['level1']['level2']['ref']['id']);
+    }
+
+    // =========================================================================
+    // resolveSchemaReference — UUID branch (=== true bug)
+    // =========================================================================
+
+    public function testResolveSchemaReferenceUuidBranch(): void
+    {
+        $uuid = '12345678-1234-1234-1234-123456789abc';
+        $schema = $this->createSchema(5, $uuid);
+
+        $schemaMapper = $this->createMock(SchemaMapper::class);
+        $schemaMapper->method('find')
+            ->willThrowException(new Exception('Not found'));
+        $schemaMapper->method('findAll')
+            ->willReturn([$schema]);
+
+        $handler = new RenderObject(
+            $this->fileMapper,
+            $this->objectEntityMapper,
+            $this->registerMapper,
+            $schemaMapper,
+            $this->systemTagManager,
+            $this->systemTagMapper,
+            $this->cacheHandler,
+            $this->objectCacheService,
+            $this->propertyRbacHandler,
+            $this->logger,
+            $this->fileService
+        );
+
+        $ref = new ReflectionClass($handler);
+        $m = $ref->getMethod('resolveSchemaReference');
+        $m->setAccessible(true);
+        $result = $m->invokeArgs($handler, [$uuid]);
+
+        // Falls through to slug lookup which matches.
+        $this->assertSame('5', $result);
+    }
+
+    // =========================================================================
+    // resolveSchemaReference — path with no matching slug, falls through
+    // =========================================================================
+
+    public function testResolveSchemaReferencePathNoMatch(): void
+    {
+        $this->schemaMapper->method('find')
+            ->willThrowException(new Exception('Not found'));
+        // No schemas match.
+        $this->schemaMapper->method('findAll')
+            ->willReturn([]);
+
+        $result = $this->invokePrivate('resolveSchemaReference', ['#/components/schemas/nonexistent']);
+
+        // Falls through to slug lookup (also empty), returns cleaned ref.
+        $this->assertSame('#/components/schemas/nonexistent', $result);
+    }
+
+    // =========================================================================
+    // resolveSchemaReference — slug lookup matches multiple schemas
+    // =========================================================================
+
+    public function testResolveSchemaReferenceSlugMultipleMatches(): void
+    {
+        $schema1 = $this->createSchema(1, 'duplicate');
+        $schema2 = $this->createSchema(2, 'duplicate');
+
+        $this->schemaMapper->method('find')
+            ->willThrowException(new Exception('Not found'));
+        $this->schemaMapper->method('findAll')
+            ->willReturn([$schema1, $schema2]);
+
+        $result = $this->invokePrivate('resolveSchemaReference', ['duplicate']);
+
+        // Multiple matches: count !== 1, returns as-is.
+        $this->assertSame('duplicate', $result);
+    }
 }

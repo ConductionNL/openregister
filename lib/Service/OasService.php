@@ -651,9 +651,7 @@ class OasService
         if (($cleanDef['allOf'] ?? null) !== null) {
             if (is_array($cleanDef['allOf']) === false || empty($cleanDef['allOf']) === true) {
                 unset($cleanDef['allOf']);
-            }
-
-            if (is_array($cleanDef['allOf']) === true && empty($cleanDef['allOf']) === false) {
+            } elseif (is_array($cleanDef['allOf']) === true && empty($cleanDef['allOf']) === false) {
                 // Validate each allOf element.
                 $validAllOfItems = [];
                 foreach ($cleanDef['allOf'] ?? [] as $item) {
@@ -1728,9 +1726,7 @@ class OasService
         if (($schema['allOf'] ?? null) !== null) {
             if (is_array($schema['allOf']) === false || empty($schema['allOf']) === true) {
                 unset($schema['allOf']);
-            }
-
-            if (is_array($schema['allOf']) === true && empty($schema['allOf']) === false) {
+            } elseif (is_array($schema['allOf']) === true && empty($schema['allOf']) === false) {
                 $validAllOfItems = [];
                 foreach ($schema['allOf'] ?? [] as $index => $item) {
                     // Suppress unused variable warning for $index - only processing items.
