@@ -76,6 +76,24 @@ class ObjectsControllerTest extends TestCase
         $this->webhookService = $this->createMock(WebhookService::class);
         $this->logger = $this->createMock(LoggerInterface::class);
 
+        // Register mappers in the DI container that resolveRegisterSchemaIds() resolves
+        // via \OC::$server->get(). These separate mocks default to throwing on find()
+        // so entities stay null (same as old stub behavior). The constructor-injected
+        // $this->registerMapper / $this->schemaMapper remain independent for other tests.
+        $diRegisterMapper = $this->createMock(RegisterMapper::class);
+        $diRegisterMapper->method('find')
+            ->willThrowException(new \OCP\AppFramework\Db\DoesNotExistException('Not found'));
+        $diSchemaMapper = $this->createMock(SchemaMapper::class);
+        $diSchemaMapper->method('find')
+            ->willThrowException(new \OCP\AppFramework\Db\DoesNotExistException('Not found'));
+
+        \OC::$server->registerService(RegisterMapper::class, function () use ($diRegisterMapper) {
+            return $diRegisterMapper;
+        });
+        \OC::$server->registerService(SchemaMapper::class, function () use ($diSchemaMapper) {
+            return $diSchemaMapper;
+        });
+
         $this->controller = new ObjectsController(
             'openregister',
             $this->request,

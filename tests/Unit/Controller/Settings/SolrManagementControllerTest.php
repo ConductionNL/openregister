@@ -36,34 +36,6 @@ class SolrManagementIndexServiceStub
     public function deleteCollection(?string $collectionName = null): array { return []; }
 }
 
-/**
- * Minimal OC server stub that can return a mock logger.
- */
-class SolrManagementOCServerStub
-{
-    private ?LoggerInterface $logger = null;
-
-    public function setLogger(LoggerInterface $logger): void
-    {
-        $this->logger = $logger;
-    }
-
-    /** @return mixed */
-    public function get(string $class): mixed
-    {
-        if ($class === \Psr\Log\LoggerInterface::class && $this->logger !== null) {
-            return $this->logger;
-        }
-        throw new \Exception("OC::server->get({$class}) not available in unit tests");
-    }
-
-    /** @return mixed */
-    public function __call(string $name, array $arguments): mixed
-    {
-        throw new \Exception("OC::server->{$name}() not available in unit tests");
-    }
-}
-
 class SolrManagementControllerTest extends TestCase
 {
     private SolrManagementController $controller;
@@ -73,9 +45,6 @@ class SolrManagementControllerTest extends TestCase
     private SettingsService&MockObject $settingsService;
     private IndexService&MockObject $indexService;
     private LoggerInterface&MockObject $logger;
-
-    /** @var mixed Original OC::$server value for restoration */
-    private mixed $originalServer = null;
 
     protected function setUp(): void
     {
@@ -97,16 +66,6 @@ class SolrManagementControllerTest extends TestCase
             $this->indexService,
             $this->logger
         );
-
-        // Save original OC::$server
-        $this->originalServer = \OC::$server;
-    }
-
-    protected function tearDown(): void
-    {
-        // Restore original OC::$server
-        \OC::$server = $this->originalServer;
-        parent::tearDown();
     }
 
     /**
@@ -118,16 +77,6 @@ class SolrManagementControllerTest extends TestCase
         $this->container->method('get')
             ->willReturn($mockService);
         return $mockService;
-    }
-
-    /**
-     * Setup OC::$server to return a logger mock for methods that use \OC::$server->get().
-     */
-    private function setupOCServer(): void
-    {
-        $serverStub = new SolrManagementOCServerStub();
-        $serverStub->setLogger($this->logger);
-        \OC::$server = $serverStub;
     }
 
     /**
@@ -771,8 +720,6 @@ class SolrManagementControllerTest extends TestCase
 
     public function testDeleteSolrFieldProtectedField(): void
     {
-        $this->setupOCServer();
-
         $protectedFields = ['id', '_version_', '_root_', '_text_'];
         foreach ($protectedFields as $field) {
             $result = $this->controller->deleteSolrField($field);
@@ -785,8 +732,6 @@ class SolrManagementControllerTest extends TestCase
 
     public function testDeleteSolrFieldSuccess(): void
     {
-        $this->setupOCServer();
-
         $mockService = $this->createMock(SolrManagementIndexServiceStub::class);
         $this->container->method('get')->willReturn($mockService);
         $mockService->method('deleteField')
@@ -805,8 +750,6 @@ class SolrManagementControllerTest extends TestCase
 
     public function testDeleteSolrFieldFailure(): void
     {
-        $this->setupOCServer();
-
         $mockService = $this->createMock(SolrManagementIndexServiceStub::class);
         $this->container->method('get')->willReturn($mockService);
         $mockService->method('deleteField')
@@ -827,8 +770,6 @@ class SolrManagementControllerTest extends TestCase
 
     public function testDeleteSolrFieldFailureNoError(): void
     {
-        $this->setupOCServer();
-
         $mockService = $this->createMock(SolrManagementIndexServiceStub::class);
         $this->container->method('get')->willReturn($mockService);
         $mockService->method('deleteField')
@@ -846,8 +787,6 @@ class SolrManagementControllerTest extends TestCase
 
     public function testDeleteSolrFieldException(): void
     {
-        $this->setupOCServer();
-
         $this->container->method('get')
             ->willThrowException(new \Exception('Connection failed'));
 
@@ -866,8 +805,6 @@ class SolrManagementControllerTest extends TestCase
 
     public function testDeleteSpecificSolrCollectionSuccess(): void
     {
-        $this->setupOCServer();
-
         $mockService = $this->createMock(SolrManagementIndexServiceStub::class);
         $this->container->method('get')->willReturn($mockService);
         $mockService->method('deleteCollection')
@@ -887,8 +824,6 @@ class SolrManagementControllerTest extends TestCase
 
     public function testDeleteSpecificSolrCollectionFailure(): void
     {
-        $this->setupOCServer();
-
         $mockService = $this->createMock(SolrManagementIndexServiceStub::class);
         $this->container->method('get')->willReturn($mockService);
         $mockService->method('deleteCollection')
@@ -912,8 +847,6 @@ class SolrManagementControllerTest extends TestCase
 
     public function testDeleteSpecificSolrCollectionFailureNoErrorCode(): void
     {
-        $this->setupOCServer();
-
         $mockService = $this->createMock(SolrManagementIndexServiceStub::class);
         $this->container->method('get')->willReturn($mockService);
         $mockService->method('deleteCollection')
@@ -932,8 +865,6 @@ class SolrManagementControllerTest extends TestCase
 
     public function testDeleteSpecificSolrCollectionException(): void
     {
-        $this->setupOCServer();
-
         $this->container->method('get')
             ->willThrowException(new \Exception('Service unavailable'));
 

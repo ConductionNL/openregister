@@ -1,9 +1,10 @@
 <?php
 /**
- * Bootstrap file for Unit Tests (without full Nextcloud bootstrap)
+ * Bootstrap file for Unit Tests
  *
- * This bootstrap loads only the minimal requirements for unit tests,
- * avoiding the full Nextcloud bootstrap that checks config writability.
+ * This bootstrap loads the full Nextcloud environment since tests run inside
+ * the Nextcloud Docker container. This gives access to \OC::$server and the
+ * full DI container, enabling tests to cover code that depends on Nextcloud services.
  *
  * @category Test
  * @package  OCA\OpenRegister\Tests
@@ -25,21 +26,13 @@ define('PHPUNIT_RUN', 1);
 // Include Composer's autoloader.
 require_once __DIR__ . '/../vendor/autoload.php';
 
-// Load Nextcloud's autoloader to access OCP classes, but skip the full bootstrap.
-// This gives us access to Nextcloud interfaces and classes without triggering
-// the config writability check or loading the entire application.
-if (file_exists(__DIR__ . '/../../../3rdparty/autoload.php')) {
-    require_once __DIR__ . '/../../../3rdparty/autoload.php';
+// Bootstrap Nextcloud — since we run inside the Docker container,
+// the full environment (including \OC::$server) is available.
+if (file_exists(__DIR__ . '/../../../lib/base.php')) {
+    require_once __DIR__ . '/../../../lib/base.php';
 }
 
-// Load Nextcloud's lib autoloader for OCP classes.
-if (file_exists(__DIR__ . '/../../../lib/composer/autoload.php')) {
-    require_once __DIR__ . '/../../../lib/composer/autoload.php';
-}
-
-// Register Test\ namespace for NC test classes (without triggering full bootstrap).
-// tests/autoload.php loads lib/base.php which requires a full NC install,
-// so we register the PSR-4 namespace directly for unit tests.
+// Register Test\ namespace for NC test classes.
 $serverTestsLib = __DIR__ . '/../../../tests/lib/';
 if (is_dir($serverTestsLib)) {
     $loader = new \Composer\Autoload\ClassLoader();
@@ -47,63 +40,4 @@ if (is_dir($serverTestsLib)) {
     $loader->register(true);
 }
 
-// Provide a minimal OC stub so unit tests can exercise code paths that
-// reference \OC::$server->get() without requiring the full Nextcloud bootstrap.
-// The stub's get() returns null, which is acceptable because all call-sites
-// wrap \OC::$server->get() in try-catch blocks.
-if (class_exists('OC', false) === false) {
-    // phpcs:disable PSR1.Classes.ClassDeclaration.MissingNamespace
-    // phpcs:disable Squiz.Classes.ClassFileName.NoMatch
-    class OC_ServerStub
-    {
-        /** @return mixed */
-        public function get(string $class): mixed
-        {
-            throw new \Exception("OC::server->get({$class}) not available in unit tests");
-        }
-
-        /** @return mixed */
-        public function getDatabaseConnection(): mixed
-        {
-            throw new \Exception("OC::server->getDatabaseConnection() not available in unit tests");
-        }
-
-        /** @return mixed */
-        public function getL10NFactory(): mixed
-        {
-            throw new \Exception("OC::server->getL10NFactory() not available in unit tests");
-        }
-
-        /** @return mixed */
-        public function getURLGenerator(): mixed
-        {
-            throw new \Exception("OC::server->getURLGenerator() not available in unit tests");
-        }
-
-        /**
-         * Catch-all for any other \OC::$server method calls.
-         *
-         * @param string $name      The method name
-         * @param array  $arguments The method arguments
-         *
-         * @return mixed
-         * @throws \Exception Always throws, indicating the method is not available
-         */
-        public function __call(string $name, array $arguments): mixed
-        {
-            throw new \Exception("OC::server->{$name}() not available in unit tests");
-        }
-    }
-
-    class OC
-    {
-        /** @var OC_ServerStub */
-        public static $server;
-    }
-
-    OC::$server = new OC_ServerStub();
-    // phpcs:enable
-}
-
-error_log("[UNIT TEST BOOTSTRAP] Minimal bootstrap complete - ready for unit tests");
-
+error_log('[UNIT TEST BOOTSTRAP] Full Nextcloud bootstrap complete - \OC::$server available');

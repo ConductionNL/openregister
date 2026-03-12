@@ -597,6 +597,18 @@ class SolrOperationsController extends Controller
     }//end getSolrMemoryPrediction()
 
     /**
+     * Get the count of schema IDs.
+     *
+     * @param array<int|string> $schemaIds The schema IDs to count.
+     *
+     * @return int The number of schema IDs.
+     */
+    private function getSchemaIdsCount(array $schemaIds): int
+    {
+        return count($schemaIds);
+    }//end getSchemaIdsCount()
+
+    /**
      * Perform SOLR management operations
      *
      * @param string $operation Operation to perform (commit, optimize, clear)

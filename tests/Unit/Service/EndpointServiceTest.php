@@ -95,13 +95,6 @@ class EndpointServiceTest extends TestCase
 
     private TestableEndpointService $service;
 
-    /**
-     * Store original OC::$server to restore after agent tests.
-     *
-     * @var mixed
-     */
-    private $originalServer;
-
     protected function setUp(): void
     {
         $this->endpointLogMapper = $this->createMock(EndpointLogMapper::class);
@@ -115,15 +108,6 @@ class EndpointServiceTest extends TestCase
             $this->userSession,
             $this->groupManager
         );
-
-        // Save original server stub.
-        $this->originalServer = \OC::$server;
-    }
-
-    protected function tearDown(): void
-    {
-        // Restore original server stub after each test.
-        \OC::$server = $this->originalServer;
     }
 
     /**
@@ -205,10 +189,10 @@ class EndpointServiceTest extends TestCase
     }
 
     /**
-     * Set up \OC::$server to return mock services for agent tests.
+     * Register mock services on \OC::$server for agent tests.
      *
-     * @param AgentMapper&MockObject    $agentMapper
-     * @param ToolRegistry&MockObject   $toolRegistry
+     * @param AgentMapper&MockObject     $agentMapper
+     * @param ToolRegistry&MockObject    $toolRegistry
      * @param SettingsService&MockObject $settingsService
      *
      * @return void
@@ -218,35 +202,15 @@ class EndpointServiceTest extends TestCase
         MockObject $toolRegistry,
         MockObject $settingsService
     ): void {
-        $serverStub = new class ($agentMapper, $toolRegistry, $settingsService) {
-            private $agentMapper;
-            private $toolRegistry;
-            private $settingsService;
-
-            public function __construct($agentMapper, $toolRegistry, $settingsService)
-            {
-                $this->agentMapper = $agentMapper;
-                $this->toolRegistry = $toolRegistry;
-                $this->settingsService = $settingsService;
-            }
-
-            public function get(string $class): mixed
-            {
-                return match ($class) {
-                    AgentMapper::class => $this->agentMapper,
-                    ToolRegistry::class => $this->toolRegistry,
-                    SettingsService::class => $this->settingsService,
-                    default => throw new \Exception("OC::server->get({$class}) not available in unit tests"),
-                };
-            }
-
-            public function __call(string $name, array $arguments): mixed
-            {
-                throw new \Exception("OC::server->{$name}() not available in unit tests");
-            }
-        };
-
-        \OC::$server = $serverStub;
+        \OC::$server->registerService(AgentMapper::class, function () use ($agentMapper) {
+            return $agentMapper;
+        });
+        \OC::$server->registerService(ToolRegistry::class, function () use ($toolRegistry) {
+            return $toolRegistry;
+        });
+        \OC::$server->registerService(SettingsService::class, function () use ($settingsService) {
+            return $settingsService;
+        });
     }
 
     // ====================================================================
@@ -381,17 +345,16 @@ class EndpointServiceTest extends TestCase
         $this->assertStringContainsString('Unknown target type: nonexistent', $result['error']);
     }
 
-    public function testExecuteEndpointAgentTypeFailsGracefullyInUnitTest(): void
+    public function testExecuteEndpointAgentTypeFailsGracefullyWhenAgentNotFound(): void
     {
-        // Agent endpoint calls \OC::$server->get() which will throw in unit tests.
-        // This exercises the catch block in executeAgentEndpoint.
+        // Agent endpoint resolves services via \OC::$server->get() and then
+        // tries to find the agent — returns an error when the agent UUID doesn't exist.
         $endpoint = $this->createEndpoint('agent', 'POST', '/api/agent', [], 1, 'agent-uuid-123');
         $request = ['method' => 'POST', 'path' => '/api/agent', 'data' => ['message' => 'hello'], 'headers' => []];
 
         $result = $this->service->publicExecuteEndpoint($endpoint, $request);
 
         $this->assertFalse($result['success']);
-        $this->assertSame(500, $result['statusCode']);
         $this->assertArrayHasKey('error', $result);
     }
 
@@ -1035,19 +998,15 @@ class EndpointServiceTest extends TestCase
 
     // --- testEndpoint: agent target type ---
 
-    public function testTestEndpointAgentTargetTypeReturnsErrorInUnitTest(): void
+    public function testTestEndpointAgentTargetTypeReturnsErrorWhenAgentNotFound(): void
     {
         $endpoint = $this->createEndpoint('agent', 'POST', '/api/agent', [], 1, 'some-agent-uuid');
         $this->setUpAdminUser();
 
-        $this->logger->expects($this->atLeastOnce())->method('error');
-
         $result = $this->service->testEndpoint($endpoint);
 
-        // Agent path hits \OC::$server which is not available in unit tests,
-        // so it will throw and be caught, returning 500.
+        // Agent endpoint resolves services but the agent UUID doesn't exist.
         $this->assertFalse($result['success']);
-        $this->assertSame(500, $result['statusCode']);
         $this->assertArrayHasKey('error', $result);
     }
 

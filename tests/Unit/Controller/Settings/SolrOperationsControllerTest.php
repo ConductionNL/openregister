@@ -86,24 +86,6 @@ class SolrOperationsControllerTest extends TestCase
     }
 
     // =========================================================================
-    // setupSolr() tests
-    // =========================================================================
-
-    /**
-     * Test setupSolr when \OC::$server is not available (unit test env).
-     * The method calls \OC::$server->get() first, which throws in unit tests.
-     * The catch block also calls \OC::$server->get() for logging, which throws again.
-     * This second exception propagates uncaught.
-     */
-    public function testSetupSolrExceptionWhenOcServerUnavailable(): void
-    {
-        $this->expectException(\Exception::class);
-        $this->expectExceptionMessage('OC::server->get(Psr\Log\LoggerInterface) not available in unit tests');
-
-        $this->controller->setupSolr();
-    }
-
-    // =========================================================================
     // testSolrConnection() tests
     // =========================================================================
 
@@ -191,8 +173,7 @@ class SolrOperationsControllerTest extends TestCase
 
     /**
      * Test warmup with mode 'parallel' passes validation.
-     * This hits \OC::$server->get() for logging, which throws in unit tests,
-     * exercising the catch block (lines 454-466).
+     * The container throws an exception, which the controller catches and returns as 500.
      */
     public function testWarmupSolrIndexParallelModeHitsException(): void
     {
@@ -204,10 +185,11 @@ class SolrOperationsControllerTest extends TestCase
                 ['collectErrors', false, false],
                 ['selectedSchemas', [], []],
             ]);
+        $this->container->method('get')
+            ->willThrowException(new \Exception('IndexService unavailable'));
 
         $result = $this->controller->warmupSolrIndex();
 
-        // Will hit \OC::$server->get() for logging, which throws in unit tests
         $this->assertEquals(500, $result->getStatus());
         $data = $result->getData();
         $this->assertArrayHasKey('error', $data);
@@ -216,6 +198,7 @@ class SolrOperationsControllerTest extends TestCase
 
     /**
      * Test warmup with mode 'hyper' passes validation.
+     * The container throws an exception, which the controller catches and returns as 500.
      */
     public function testWarmupSolrIndexHyperModeHitsException(): void
     {
@@ -227,6 +210,8 @@ class SolrOperationsControllerTest extends TestCase
                 ['collectErrors', false, true],
                 ['selectedSchemas', [], [1, 2, 3]],
             ]);
+        $this->container->method('get')
+            ->willThrowException(new \Exception('IndexService unavailable'));
 
         $result = $this->controller->warmupSolrIndex();
 
@@ -237,6 +222,7 @@ class SolrOperationsControllerTest extends TestCase
 
     /**
      * Test warmup with serial mode (default).
+     * The container throws an exception, which the controller catches and returns as 500.
      */
     public function testWarmupSolrIndexSerialModeHitsException(): void
     {
@@ -248,6 +234,8 @@ class SolrOperationsControllerTest extends TestCase
                 ['collectErrors', false, false],
                 ['selectedSchemas', [], []],
             ]);
+        $this->container->method('get')
+            ->willThrowException(new \Exception('IndexService unavailable'));
 
         $result = $this->controller->warmupSolrIndex();
 
@@ -257,6 +245,7 @@ class SolrOperationsControllerTest extends TestCase
     /**
      * Test warmup with maxObjects = 0 (triggers php://input read).
      * In unit tests, php://input is empty, so it falls through.
+     * The container throws an exception, which the controller catches and returns as 500.
      */
     public function testWarmupSolrIndexWithZeroMaxObjects(): void
     {
@@ -268,15 +257,18 @@ class SolrOperationsControllerTest extends TestCase
                 ['collectErrors', false, false],
                 ['selectedSchemas', [], []],
             ]);
+        $this->container->method('get')
+            ->willThrowException(new \Exception('IndexService unavailable'));
 
         $result = $this->controller->warmupSolrIndex();
 
-        // serial mode passes validation, then hits \OC::$server
         $this->assertEquals(500, $result->getStatus());
     }
 
     /**
      * Test warmup with string collectErrors value (tests filter_var conversion).
+     * Passes mode validation, string 'true' converted to bool via filter_var.
+     * The container throws an exception, which the controller catches and returns as 500.
      */
     public function testWarmupSolrIndexStringCollectErrors(): void
     {
@@ -288,15 +280,17 @@ class SolrOperationsControllerTest extends TestCase
                 ['collectErrors', false, 'true'],
                 ['selectedSchemas', [], []],
             ]);
+        $this->container->method('get')
+            ->willThrowException(new \Exception('IndexService unavailable'));
 
         $result = $this->controller->warmupSolrIndex();
 
-        // Passes mode validation, string 'true' converted to bool via filter_var
         $this->assertEquals(500, $result->getStatus());
     }
 
     /**
      * Test warmup with string collectErrors 'false'.
+     * The container throws an exception, which the controller catches and returns as 500.
      */
     public function testWarmupSolrIndexStringCollectErrorsFalse(): void
     {
@@ -308,6 +302,8 @@ class SolrOperationsControllerTest extends TestCase
                 ['collectErrors', false, 'false'],
                 ['selectedSchemas', [], []],
             ]);
+        $this->container->method('get')
+            ->willThrowException(new \Exception('IndexService unavailable'));
 
         $result = $this->controller->warmupSolrIndex();
 
@@ -539,8 +535,8 @@ class SolrOperationsControllerTest extends TestCase
 
     /**
      * Test inspectSolrIndex exception from container throws.
-     * This hits \OC::$server->get() in the catch block, which also throws.
-     * The outer catch should still produce a 500 response.
+     * The catch block calls \OC::$server->get() for logging (now real and works),
+     * then returns a 500 response.
      */
     public function testInspectSolrIndexException(): void
     {
@@ -555,20 +551,11 @@ class SolrOperationsControllerTest extends TestCase
         $this->container->method('get')
             ->willThrowException(new \Exception('Service unavailable'));
 
-        // The catch block also calls \OC::$server->get() for logging which will
-        // throw another exception. This might result in an uncaught exception
-        // or a 500 response depending on how deep it goes.
-        try {
-            $result = $this->controller->inspectSolrIndex();
-            // If we get here, check it's a 500
-            $this->assertEquals(500, $result->getStatus());
-            $data = $result->getData();
-            $this->assertFalse($data['success']);
-            $this->assertStringContainsString('Service unavailable', $data['error']);
-        } catch (\Throwable $e) {
-            // If the nested \OC::$server call throws unhandled, that's expected
-            $this->assertStringContainsString('server', strtolower($e->getMessage()));
-        }
+        $result = $this->controller->inspectSolrIndex();
+        $this->assertEquals(500, $result->getStatus());
+        $data = $result->getData();
+        $this->assertFalse($data['success']);
+        $this->assertStringContainsString('Service unavailable', $data['error']);
     }
 
     // =========================================================================
@@ -1125,6 +1112,8 @@ class SolrOperationsControllerTest extends TestCase
 
     /**
      * Test warmup with all three valid modes to ensure mode validation is correct.
+     * Valid mode passes validation, then the container throws an exception which
+     * the controller catches and returns as 500 (not 400 for invalid mode).
      *
      * @dataProvider validModeProvider
      */
@@ -1138,10 +1127,11 @@ class SolrOperationsControllerTest extends TestCase
                 ['collectErrors', false, false],
                 ['selectedSchemas', [], []],
             ]);
+        $this->container->method('get')
+            ->willThrowException(new \Exception('IndexService unavailable'));
 
         $result = $this->controller->warmupSolrIndex();
 
-        // Valid mode passes validation, then hits \OC::$server and throws
         $this->assertEquals(500, $result->getStatus());
         // Confirm it didn't return 400 (invalid mode)
         $this->assertArrayHasKey('error', $result->getData());
