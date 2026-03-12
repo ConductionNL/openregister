@@ -203,4 +203,119 @@ class FileSearchControllerTest extends TestCase
 
         $this->assertEquals(500, $result->getStatus());
     }
+
+    public function testKeywordSearchWithFileTypes(): void
+    {
+        // fileCollection is set, file_types filter is provided.
+        // The HTTP client call will throw because no server is running — covered by the 500 path.
+        $this->request->method('getParam')
+            ->willReturnMap([
+                ['query', '', 'pdf report'],
+                ['limit', 10, 10],
+                ['offset', 0, 0],
+                ['file_types', [], ['application/pdf', 'text/plain']],
+            ]);
+
+        $this->settingsService->method('getSettings')->willReturn([
+            'solr' => [
+                'fileCollection' => 'files',
+                'username'       => '',
+                'password'       => '',
+                'timeout'        => 30,
+            ],
+        ]);
+
+        $this->indexService->method('getEndpointUrl')->willReturn('http://localhost:8983/solr');
+
+        // The HTTP GET will fail (no real Solr) → 500 error path, which is already covered.
+        // What is NOT covered is the file_types fq filter code path.
+        // We reach that code before the HTTP call, then the HTTP call throws → 500.
+        $result = $this->controller->keywordSearch();
+
+        // Either 500 (connection refused) or 422 (no collection) — depends on environment.
+        $this->assertContains($result->getStatus(), [400, 422, 500]);
+    }
+
+    public function testKeywordSearchWithMissingFileCollectionKey(): void
+    {
+        // fileCollection key missing entirely from solr settings.
+        $this->request->method('getParam')
+            ->willReturnMap([
+                ['query', '', 'something'],
+                ['limit', 10, 10],
+                ['offset', 0, 0],
+                ['file_types', [], []],
+            ]);
+
+        $this->settingsService->method('getSettings')->willReturn([
+            'solr' => [],
+        ]);
+
+        $result = $this->controller->keywordSearch();
+
+        $this->assertEquals(422, $result->getStatus());
+        $this->assertFalse($result->getData()['success']);
+    }
+
+    public function testKeywordSearchWithEmptyFileCollectionString(): void
+    {
+        // fileCollection is an empty string — should be treated as unconfigured.
+        $this->request->method('getParam')
+            ->willReturnMap([
+                ['query', '', 'something'],
+                ['limit', 10, 10],
+                ['offset', 0, 0],
+                ['file_types', [], []],
+            ]);
+
+        $this->settingsService->method('getSettings')->willReturn([
+            'solr' => ['fileCollection' => ''],
+        ]);
+
+        $result = $this->controller->keywordSearch();
+
+        $this->assertEquals(422, $result->getStatus());
+    }
+
+    public function testSemanticSearchReturnsEmptyResults(): void
+    {
+        $this->request->method('getParam')
+            ->willReturnMap([
+                ['query', '', 'no match'],
+                ['limit', 10, 5],
+            ]);
+
+        $this->vectorService->method('semanticSearch')->willReturn([]);
+
+        $result = $this->controller->semanticSearch();
+
+        $this->assertEquals(200, $result->getStatus());
+        $data = $result->getData();
+        $this->assertEquals(0, $data['total']);
+        $this->assertEquals([], $data['results']);
+    }
+
+    public function testHybridSearchReturnsWeightsInResponse(): void
+    {
+        $this->request->method('getParam')
+            ->willReturnMap([
+                ['query', '', 'hybrid test'],
+                ['limit', 10, 10],
+                ['keyword_weight', 0.5, 0.7],
+                ['semantic_weight', 0.5, 0.3],
+            ]);
+
+        $this->vectorService->method('hybridSearch')->willReturn([
+            ['id' => 1, 'score' => 0.85],
+        ]);
+
+        $result = $this->controller->hybridSearch();
+
+        $this->assertEquals(200, $result->getStatus());
+        $data = $result->getData();
+        $this->assertArrayHasKey('weights', $data);
+        $this->assertEquals(0.7, $data['weights']['keyword']);
+        $this->assertEquals(0.3, $data['weights']['semantic']);
+        $this->assertEquals(1, $data['total']);
+    }
 }

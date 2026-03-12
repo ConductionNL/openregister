@@ -1173,4 +1173,264 @@ class ReferentialIntegrityServiceTest extends TestCase
         $this->assertSame('cascade-batch', $callOrder[2]);
         $this->assertContains('cascade-uuid', $cascadeDeletedUuids);
     }//end testApplyDeletionActionsExecutionOrder()
+
+    // ─── applyDeletionActions: SET_NULL on array property ────────────
+
+    /**
+     * Test that applySetNull removes a UUID from an array property.
+     *
+     * @return void
+     */
+    public function testApplyDeletionActionsSetNullOnArrayProperty(): void
+    {
+        $personSchema = $this->createTestSchema(1, 'person');
+        $teamSchema   = $this->createTestSchema(
+            id: 2,
+            slug: 'team',
+            properties: [
+                'members' => [
+                    'type'     => 'array',
+                    'items'    => ['$ref' => '1'],
+                    'onDelete' => 'SET_NULL',
+                ],
+            ],
+            required: []
+        );
+
+        $this->setupSchemas([$personSchema, $teamSchema]);
+
+        $personObj = $this->createTestObject('person-uuid', '1');
+        $teamObj   = $this->createTestObject(
+            'team-uuid',
+            '2',
+            ['members' => ['person-uuid', 'other-uuid']]
+        );
+
+        $this->objectEntityMapper->method('findByRelation')
+            ->willReturn([$teamObj]);
+
+        $analysis = $this->service->canDelete($personObj);
+
+        // Team object should be in nullifyTargets (since members is not required).
+        $this->assertTrue($analysis->deletable);
+        $this->assertNotEmpty($analysis->nullifyTargets);
+        $this->assertSame('team-uuid', $analysis->nullifyTargets[0]['objectUuid']);
+        $this->assertTrue($analysis->nullifyTargets[0]['isArray']);
+    }//end testApplyDeletionActionsSetNullOnArrayProperty()
+
+    /**
+     * Test that the schemaRegisterMap cache is rebuilt with relation index.
+     *
+     * @return void
+     */
+    public function testRelationIndexAndSchemaCacheBuiltTogether(): void
+    {
+        $personSchema  = $this->createTestSchema(1, 'person');
+        $contactSchema = $this->createTestSchema(
+            id: 2,
+            slug: 'contact',
+            properties: [
+                'person' => ['type' => 'string', '$ref' => '1', 'onDelete' => 'CASCADE'],
+            ]
+        );
+
+        $mockRegister = new Register();
+        $this->schemaMapper->method('findAll')->willReturn([$personSchema, $contactSchema]);
+
+        // Registers for each schema should be fetched.
+        $this->registerMapper->method('findAll')->willReturn([$mockRegister]);
+
+        // Force index rebuild by setting property to null.
+        $this->setProperty('relationIndex', null);
+        $this->setProperty('schemaCache', null);
+        $this->setProperty('schemaRegisterMap', null);
+
+        // First call builds everything.
+        $result = $this->service->hasIncomingOnDeleteReferences('1');
+        $this->assertTrue($result);
+    }//end testRelationIndexAndSchemaCacheBuiltTogether()
+
+    /**
+     * Test canDelete returns deletable=true for object with no schema context.
+     *
+     * @return void
+     */
+    public function testCanDeleteWithNullSchema(): void
+    {
+        $object = new ObjectEntity();
+        // Don't set schema — getSchema() returns null.
+
+        $this->setupSchemas([]);
+
+        $analysis = $this->service->canDelete($object);
+
+        $this->assertTrue($analysis->deletable);
+        $this->assertEmpty($analysis->cascadeTargets);
+        $this->assertEmpty($analysis->blockers);
+    }//end testCanDeleteWithNullSchema()
+
+    /**
+     * Test depth limiting prevents infinite recursion beyond MAX_DEPTH.
+     *
+     * @return void
+     */
+    public function testCanDeleteDepthLimitingPreventsDeepRecursion(): void
+    {
+        // Build a chain of 12 schemas (beyond the MAX_DEPTH=10 limit).
+        $schemas = [];
+        for ($i = 1; $i <= 12; $i++) {
+            $props = [];
+            if ($i > 1) {
+                $props['parent'] = [
+                    'type'     => 'string',
+                    '$ref'     => (string) ($i - 1),
+                    'onDelete' => 'CASCADE',
+                ];
+            }
+
+            $schemas[$i] = $this->createTestSchema($i, "schema-{$i}", $props);
+        }
+
+        $this->setupSchemas(array_values($schemas));
+
+        // Create a chain of objects.
+        $objects = [];
+        for ($i = 1; $i <= 12; $i++) {
+            $objData     = $i > 1 ? ['parent' => "uuid-".($i - 1)] : [];
+            $objects[$i] = $this->createTestObject("uuid-{$i}", (string) $i, $objData);
+        }
+
+        $this->objectEntityMapper->method('findByRelation')
+            ->willReturnCallback(
+                function (string $search) use ($objects) {
+                    foreach ($objects as $i => $obj) {
+                        if ($search === "uuid-{$i}" && isset($objects[$i + 1]) === true) {
+                            return [$objects[$i + 1]];
+                        }
+                    }
+
+                    return [];
+                }
+            );
+
+        // Should complete without infinite recursion.
+        $analysis = $this->service->canDelete($objects[1]);
+        $this->assertInstanceOf(DeletionAnalysis::class, $analysis);
+    }//end testCanDeleteDepthLimitingPreventsDeepRecursion()
+
+    /**
+     * Test applyDeletionActions with only cascade targets (no null/default).
+     *
+     * @return void
+     */
+    public function testApplyDeletionActionsOnlyCascade(): void
+    {
+        $cascadeTarget = [
+            'objectUuid' => 'cascade-uuid',
+            'schema'     => '2',
+            'property'   => 'ref',
+            'chain'      => [],
+        ];
+
+        $analysis = new DeletionAnalysis(
+            deletable: true,
+            cascadeTargets: [$cascadeTarget],
+            nullifyTargets: [],
+            defaultTargets: []
+        );
+
+        $mockRegister = new Register();
+        $mockSchema   = new Schema();
+
+        $this->registerMapper->method('find')->willReturn($mockRegister);
+        $this->schemaMapper->method('find')->willReturn($mockSchema);
+
+        $deletedUuids = [];
+        $this->objectEntityMapper->method('deleteObjects')
+            ->willReturnCallback(
+                function (array $uuids) use (&$deletedUuids) {
+                    $deletedUuids = array_merge($deletedUuids, $uuids);
+                    return ['deleted' => $uuids];
+                }
+            );
+
+        $this->objectEntityMapper->method('findAcrossAllSources')->willReturn([]);
+
+        $this->service->applyDeletionActions(
+            analysis: $analysis,
+            userId: 'admin',
+            cascadeSource: 'root-uuid'
+        );
+
+        $this->assertContains('cascade-uuid', $deletedUuids);
+    }//end testApplyDeletionActionsOnlyCascade()
+
+    /**
+     * Test applyDeletionActions with SET_DEFAULT: object gets default value.
+     *
+     * @return void
+     */
+    public function testApplyDeletionActionsSetDefaultUpdatesObject(): void
+    {
+        $defaultTarget = [
+            'objectUuid'   => 'default-uuid',
+            'schema'       => '2',
+            'property'     => 'assignee',
+            'defaultValue' => 'fallback-uuid',
+        ];
+
+        $analysis = new DeletionAnalysis(
+            deletable: true,
+            cascadeTargets: [],
+            nullifyTargets: [],
+            defaultTargets: [$defaultTarget]
+        );
+
+        $obj = $this->createTestObject('default-uuid', '2', ['assignee' => 'root-uuid']);
+
+        $mockRegister = new Register();
+        $mockSchema   = new Schema();
+
+        $this->objectEntityMapper->method('findAcrossAllSources')
+            ->willReturn([
+                'object'   => $obj,
+                'register' => $mockRegister,
+                'schema'   => $mockSchema,
+            ]);
+
+        $updatedObjects = [];
+        $this->objectEntityMapper->method('update')
+            ->willReturnCallback(
+                function ($o) use (&$updatedObjects) {
+                    $updatedObjects[] = $o;
+                    return $o;
+                }
+            );
+
+        $this->service->applyDeletionActions(
+            analysis: $analysis,
+            userId: 'admin',
+            cascadeSource: 'root-uuid'
+        );
+
+        $this->assertNotEmpty($updatedObjects);
+        // The assignee property should have been set to the default value.
+        $updatedObject = $updatedObjects[0];
+        $this->assertSame('fallback-uuid', $updatedObject->getObject()['assignee']);
+    }//end testApplyDeletionActionsSetDefaultUpdatesObject()
+
+    /**
+     * Test that VALID_ON_DELETE_ACTIONS constant contains expected values.
+     *
+     * @return void
+     */
+    public function testValidOnDeleteActionsConstant(): void
+    {
+        $this->assertContains('CASCADE', ReferentialIntegrityService::VALID_ON_DELETE_ACTIONS);
+        $this->assertContains('RESTRICT', ReferentialIntegrityService::VALID_ON_DELETE_ACTIONS);
+        $this->assertContains('SET_NULL', ReferentialIntegrityService::VALID_ON_DELETE_ACTIONS);
+        $this->assertContains('SET_DEFAULT', ReferentialIntegrityService::VALID_ON_DELETE_ACTIONS);
+        $this->assertContains('NO_ACTION', ReferentialIntegrityService::VALID_ON_DELETE_ACTIONS);
+        $this->assertCount(5, ReferentialIntegrityService::VALID_ON_DELETE_ACTIONS);
+    }//end testValidOnDeleteActionsConstant()
 }//end class

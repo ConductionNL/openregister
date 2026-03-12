@@ -8,6 +8,11 @@ use OC\Files\AppData\Factory;
 use OCA\OpenRegister\Controller\Settings\CacheSettingsController;
 use OCA\OpenRegister\Service\IndexService;
 use OCA\OpenRegister\Service\SettingsService;
+use OCP\Files\GenericFileException;
+use OCP\Files\IAppData;
+use OCP\Files\NotFoundException;
+use OCP\Files\SimpleFS\ISimpleFile;
+use OCP\Files\SimpleFS\ISimpleFolder;
 use OCP\IAppConfig;
 use OCP\IRequest;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -327,5 +332,192 @@ class CacheSettingsControllerTest extends TestCase
         $this->assertEquals(422, $result->getStatus());
         $this->assertEquals('Index not found', $result->getData()['message']);
         $this->assertEquals('bad-index', $result->getData()['collection']);
+    }
+
+    // ── clearAppStoreCache() ──
+
+    private function buildFileMock(array $json): ISimpleFile&MockObject
+    {
+        $file = $this->createMock(ISimpleFile::class);
+        $file->method('getContent')->willReturn(json_encode($json));
+        return $file;
+    }
+
+    public function testClearAppStoreCacheSuccess(): void
+    {
+        $this->request->method('getParams')->willReturn(['type' => 'apps']);
+
+        $file = $this->buildFileMock(['timestamp' => 9999999, 'data' => []]);
+        $file->expects($this->once())->method('putContent');
+
+        $folder = $this->createMock(ISimpleFolder::class);
+        $folder->method('getFile')->with('apps.json')->willReturn($file);
+
+        $appData = $this->createMock(IAppData::class);
+        $appData->method('getFolder')->willReturn($folder);
+
+        $this->appDataFactory->method('get')->with('appstore')->willReturn($appData);
+
+        $result = $this->controller->clearAppStoreCache();
+
+        $this->assertEquals(200, $result->getStatus());
+        $data = $result->getData();
+        $this->assertTrue($data['success']);
+        $this->assertContains('apps.json', $data['invalidated']);
+    }
+
+    public function testClearAppStoreCacheAllType(): void
+    {
+        $this->request->method('getParams')->willReturn(['type' => 'all']);
+
+        $makeFile = fn(string $name) => $this->buildFileMock(['timestamp' => 1000]);
+
+        $folder = $this->createMock(ISimpleFolder::class);
+        $folder->method('getFile')->willReturnCallback(fn($name) => $makeFile($name));
+
+        $appData = $this->createMock(IAppData::class);
+        $appData->method('getFolder')->willReturn($folder);
+
+        $this->appDataFactory->method('get')->willReturn($appData);
+
+        $result = $this->controller->clearAppStoreCache();
+
+        $this->assertEquals(200, $result->getStatus());
+        $data = $result->getData();
+        $this->assertCount(3, $data['invalidated']);
+    }
+
+    public function testClearAppStoreCacheFileNotFound(): void
+    {
+        $this->request->method('getParams')->willReturn(['type' => 'apps']);
+
+        $folder = $this->createMock(ISimpleFolder::class);
+        $folder->method('getFile')->willThrowException(new NotFoundException('apps.json'));
+
+        $appData = $this->createMock(IAppData::class);
+        $appData->method('getFolder')->willReturn($folder);
+
+        $this->appDataFactory->method('get')->willReturn($appData);
+
+        $result = $this->controller->clearAppStoreCache();
+
+        $this->assertEquals(200, $result->getStatus());
+        $data = $result->getData();
+        $this->assertEmpty($data['invalidated']);
+        $this->assertContains('apps.json (not found)', $data['skipped']);
+    }
+
+    public function testClearAppStoreCacheInvalidJsonFormat(): void
+    {
+        // File exists but has no 'timestamp' key → skipped as invalid format.
+        $this->request->method('getParams')->willReturn(['type' => 'categories']);
+
+        $file = $this->buildFileMock(['no_timestamp' => 'here']);
+        $folder = $this->createMock(ISimpleFolder::class);
+        $folder->method('getFile')->with('categories.json')->willReturn($file);
+
+        $appData = $this->createMock(IAppData::class);
+        $appData->method('getFolder')->willReturn($folder);
+
+        $this->appDataFactory->method('get')->willReturn($appData);
+
+        $result = $this->controller->clearAppStoreCache();
+
+        $this->assertEquals(200, $result->getStatus());
+        $data = $result->getData();
+        $this->assertEmpty($data['invalidated']);
+        $this->assertContains('categories.json (invalid format)', $data['skipped']);
+    }
+
+    public function testClearAppStoreCacheAppstoreFolderNotFound(): void
+    {
+        // Top-level NotFoundException — no appstore cache exists yet.
+        $this->request->method('getParams')->willReturn(['type' => 'apps']);
+
+        $this->appDataFactory->method('get')
+            ->willThrowException(new NotFoundException('appstore'));
+
+        $result = $this->controller->clearAppStoreCache();
+
+        $this->assertEquals(200, $result->getStatus());
+        $data = $result->getData();
+        $this->assertTrue($data['success']);
+        $this->assertEmpty($data['invalidated']);
+    }
+
+    public function testClearAppStoreCacheGeneralException(): void
+    {
+        $this->request->method('getParams')->willReturn(['type' => 'apps']);
+
+        $this->appDataFactory->method('get')
+            ->willThrowException(new \RuntimeException('Disk error'));
+
+        $result = $this->controller->clearAppStoreCache();
+
+        $this->assertEquals(500, $result->getStatus());
+        $data = $result->getData();
+        $this->assertFalse($data['success']);
+        $this->assertStringContainsString('Failed to invalidate', $data['error']);
+    }
+
+    public function testClearAppStoreCacheDefaultTypeIsApps(): void
+    {
+        // When 'type' is not specified, default is 'apps'.
+        $this->request->method('getParams')->willReturn([]);
+
+        $file = $this->buildFileMock(['timestamp' => 1]);
+        $folder = $this->createMock(ISimpleFolder::class);
+        $folder->method('getFile')->with('apps.json')->willReturn($file);
+
+        $appData = $this->createMock(IAppData::class);
+        $appData->method('getFolder')->willReturn($folder);
+
+        $this->appDataFactory->method('get')->willReturn($appData);
+
+        $result = $this->controller->clearAppStoreCache();
+
+        $this->assertEquals(200, $result->getStatus());
+        $data = $result->getData();
+        $this->assertContains('apps.json', $data['invalidated']);
+    }
+
+    public function testClearAppStoreCacheDiscoverType(): void
+    {
+        $this->request->method('getParams')->willReturn(['type' => 'discover']);
+
+        $file = $this->buildFileMock(['timestamp' => 5000]);
+        $folder = $this->createMock(ISimpleFolder::class);
+        $folder->method('getFile')->with('discover.json')->willReturn($file);
+
+        $appData = $this->createMock(IAppData::class);
+        $appData->method('getFolder')->willReturn($folder);
+
+        $this->appDataFactory->method('get')->willReturn($appData);
+
+        $result = $this->controller->clearAppStoreCache();
+
+        $this->assertEquals(200, $result->getStatus());
+        $this->assertContains('discover.json', $result->getData()['invalidated']);
+    }
+
+    public function testClearAppStoreCacheGenericFileException(): void
+    {
+        // GenericFileException during getFile should be caught per-file and added to skipped.
+        $this->request->method('getParams')->willReturn(['type' => 'apps']);
+
+        $folder = $this->createMock(ISimpleFolder::class);
+        $folder->method('getFile')
+            ->willThrowException(new GenericFileException('Read error'));
+
+        $appData = $this->createMock(IAppData::class);
+        $appData->method('getFolder')->willReturn($folder);
+
+        $this->appDataFactory->method('get')->willReturn($appData);
+
+        $result = $this->controller->clearAppStoreCache();
+
+        $this->assertEquals(200, $result->getStatus());
+        $data = $result->getData();
+        $this->assertContains('apps.json (not found)', $data['skipped']);
     }
 }

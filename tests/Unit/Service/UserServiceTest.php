@@ -2072,4 +2072,165 @@ class UserServiceTest extends TestCase
         // '0' is numeric but totalBytes = 0, so relative stays 0 (no division)
         $this->assertSame(0, $result['quota']['relative']);
     }
+
+    /**
+     * Test buildUserDataArray includes 'available' flag in organisations.
+     */
+    public function testBuildUserDataArrayOrganisationsHasAvailableTrue(): void
+    {
+        $user = $this->createUserMock();
+        $this->groupManager->method('getUserGroups')->willReturn([]);
+        $this->accountManager->method('getAccount')
+            ->willReturn($this->createMock(IAccount::class));
+        $this->config->method('getUserValue')->willReturn('');
+        $this->organisationService->method('getUserOrganisationStats')
+            ->willReturn(['total' => 0, 'active' => null, 'results' => []]);
+
+        $result = $this->service->buildUserDataArray($user);
+
+        $this->assertTrue($result['organisations']['available']);
+        $this->assertSame(0, $result['organisations']['total']);
+        $this->assertSame([], $result['organisations']['all']);
+    }
+
+    /**
+     * Test setCustomNameFields with integer values casts to string.
+     */
+    public function testSetCustomNameFieldsWithIntegerValue(): void
+    {
+        $user = $this->createUserMock('user42');
+
+        $this->config->expects($this->once())
+            ->method('setUserValue')
+            ->with('user42', 'core', 'firstName', '123');
+
+        $this->service->setCustomNameFields($user, ['firstName' => 123]);
+    }
+
+    /**
+     * Test updateUserProperties result structure contains organisation_updated=false by default.
+     */
+    public function testUpdateUserPropertiesResultContainsOrganisationUpdatedFalseByDefault(): void
+    {
+        $user = $this->createUserMock();
+        $this->groupManager->method('getUserGroups')->willReturn([]);
+        $account = $this->createMock(IAccount::class);
+        $account->method('getProperty')->willReturn($this->createPropertyMock(''));
+        $this->accountManager->method('getAccount')->willReturn($account);
+        $this->config->method('getUserValue')->willReturn('');
+        $this->organisationService->method('getUserOrganisationStats')
+            ->willReturn(['total' => 0, 'active' => null, 'results' => []]);
+
+        $result = $this->service->updateUserProperties($user, ['firstName' => 'John']);
+
+        $this->assertArrayHasKey('organisation_updated', $result);
+        $this->assertFalse($result['organisation_updated']);
+        $this->assertTrue($result['success']);
+    }
+
+    /**
+     * Test getCurrentUser delegates to userSession.
+     */
+    public function testGetCurrentUserDelegatesToUserSession(): void
+    {
+        $user = $this->createUserMock();
+        $this->userSession->method('getUser')->willReturn($user);
+
+        $result = $this->service->getCurrentUser();
+
+        $this->assertSame($user, $result);
+    }
+
+    /**
+     * Test updateUserProperties with activeOrganisation as non-string skips switching.
+     */
+    public function testUpdateUserPropertiesActiveOrganisationNonStringSkipsSwitch(): void
+    {
+        $user = $this->createUserMock();
+        $this->groupManager->method('getUserGroups')->willReturn([]);
+        $account = $this->createMock(IAccount::class);
+        $account->method('getProperty')->willReturn($this->createPropertyMock(''));
+        $this->accountManager->method('getAccount')->willReturn($account);
+        $this->config->method('getUserValue')->willReturn('');
+        $this->organisationService->method('getUserOrganisationStats')
+            ->willReturn(['total' => 0, 'active' => null, 'results' => []]);
+
+        // activeOrganisation as integer — should NOT trigger setActiveOrganisation.
+        $this->organisationService->expects($this->never())
+            ->method('setActiveOrganisation');
+
+        $result = $this->service->updateUserProperties($user, ['activeOrganisation' => 42]);
+
+        $this->assertFalse($result['organisation_updated']);
+    }
+
+    /**
+     * Test getCustomNameFields returns all three fields null when all empty.
+     */
+    public function testGetCustomNameFieldsAllNull(): void
+    {
+        $user = $this->createUserMock('emptyuser');
+
+        $this->config->method('getUserValue')->willReturn('');
+
+        $result = $this->service->getCustomNameFields($user);
+
+        $this->assertNull($result['firstName']);
+        $this->assertNull($result['lastName']);
+        $this->assertNull($result['middleName']);
+    }
+
+    /**
+     * Test buildUserDataArray: organisation 'naam' field matches 'name'.
+     */
+    public function testBuildUserDataArrayOrganisationNaamMatchesName(): void
+    {
+        $user = $this->createUserMock();
+        $this->groupManager->method('getUserGroups')->willReturn([]);
+        $account = $this->createMock(IAccount::class);
+        $account->method('getProperty')->willReturn($this->createPropertyMock(''));
+        $this->accountManager->method('getAccount')->willReturn($account);
+        $this->config->method('getUserValue')->willReturn('');
+        $this->organisationService->method('getUserOrganisationStats')
+            ->willReturn([
+                'total'   => 1,
+                'active'  => ['name' => 'Gemeente Amsterdam', 'uuid' => 'org-uuid'],
+                'results' => [['name' => 'Gemeente Amsterdam', 'uuid' => 'org-uuid']],
+            ]);
+
+        $result = $this->service->buildUserDataArray($user);
+
+        $active = $result['organisations']['active'];
+        $this->assertSame('Gemeente Amsterdam', $active['name']);
+        $this->assertSame('Gemeente Amsterdam', $active['naam']);
+
+        $allOrgs = $result['organisations']['all'];
+        $this->assertCount(1, $allOrgs);
+        $this->assertSame('Gemeente Amsterdam', $allOrgs[0]['naam']);
+    }
+
+    /**
+     * Test updateUserProperties: org message is set on successful switch.
+     */
+    public function testUpdateUserPropertiesOrgMessageOnSuccess(): void
+    {
+        $user = $this->createUserMock();
+        $this->groupManager->method('getUserGroups')->willReturn([]);
+        $account = $this->createMock(IAccount::class);
+        $account->method('getProperty')->willReturn($this->createPropertyMock(''));
+        $this->accountManager->method('getAccount')->willReturn($account);
+        $this->config->method('getUserValue')->willReturn('');
+        $this->organisationService->method('getUserOrganisationStats')
+            ->willReturn(['total' => 0, 'active' => null, 'results' => []]);
+        $this->organisationService->method('setActiveOrganisation')->willReturn(true);
+
+        $result = $this->service->updateUserProperties(
+            $user,
+            ['activeOrganisation' => 'org-uuid-123']
+        );
+
+        $this->assertTrue($result['organisation_updated']);
+        $this->assertArrayHasKey('organisation_message', $result);
+        $this->assertStringContainsString('successfully', $result['organisation_message']);
+    }
 }

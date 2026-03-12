@@ -2452,6 +2452,33 @@ class ImportHandlerTest extends TestCase
 
 
     /**
+     * getDuplicateRegisterInfo returns generic message when only one match found.
+     *
+     * When findAll() returns fewer than 2 registers with the same slug, the method
+     * returns the "Unable to retrieve detailed duplicate information" string.
+     */
+    public function testImportRegisterDuplicateInfoOneMatchReturnsGenericMessage(): void
+    {
+        $this->registerMapper->method('find')
+            ->willThrowException(new \OCP\AppFramework\Db\MultipleObjectsReturnedException('duplicate'));
+
+        // findAll returns only one register with that slug.
+        $r1 = $this->makeRegister(1, 'dup-register');
+        $this->registerMapper->method('findAll')->willReturn([$r1]);
+
+        $this->expectException(\Exception::class);
+        $this->expectExceptionMessageMatches('/Duplicate register detected/');
+
+        $this->handler->importRegister([
+            'slug'    => 'dup-register',
+            'version' => '1.0.0',
+            'title'   => 'Duplicate',
+        ]);
+
+    }//end testImportRegisterDuplicateInfoOneMatchReturnsGenericMessage()
+
+
+    /**
      * importRegister() sets only owner (no appId) — update still called once.
      */
     public function testImportRegisterSetsOnlyOwner(): void
@@ -4241,6 +4268,313 @@ class ImportHandlerTest extends TestCase
         $this->assertSame('keyed-mapping', $capturedData['name']);
 
     }//end testImportFromJsonSetsMappingNameFromKeyWhenAbsent()
+
+
+
+    // =========================================================================
+    // importFromJson() — version stored in appConfig only once per import
+    // =========================================================================
+
+    /**
+     * importFromJson() does NOT store version when appId is null.
+     */
+    public function testImportFromJsonDoesNotStoreVersionWithoutAppId(): void
+    {
+        $configuration = $this->makeConfiguration(1);
+
+        // setValueString must NOT be called — no appId.
+        $this->appConfig->expects($this->never())->method('setValueString');
+
+        $result = $this->handler->importFromJson(
+            data:          [],
+            configuration: $configuration
+        );
+
+        $this->assertIsArray($result);
+
+    }//end testImportFromJsonDoesNotStoreVersionWithoutAppId()
+
+
+    /**
+     * importFromJson() does NOT store version when version is null.
+     */
+    public function testImportFromJsonDoesNotStoreVersionWithoutVersion(): void
+    {
+        $configuration = $this->makeConfiguration(1);
+
+        $this->appConfig->expects($this->never())->method('setValueString');
+
+        $result = $this->handler->importFromJson(
+            data:          [],
+            configuration: $configuration,
+            appId:         'myapp'
+            // version intentionally omitted.
+        );
+
+        $this->assertIsArray($result);
+
+    }//end testImportFromJsonDoesNotStoreVersionWithoutVersion()
+
+
+    // =========================================================================
+    // importSchema() — force flag on existing schema
+    // =========================================================================
+
+    /**
+     * importSchema() force-updates existing schema even when version is equal.
+     */
+    public function testImportSchemaForceUpdatesWhenVersionEqual(): void
+    {
+        $existing = $this->makeSchema(10, 'force-schema', '1.0.0');
+        $updated  = $this->makeSchema(10, 'force-schema', '1.0.0');
+
+        $this->schemaMapper->method('find')->willReturn($existing);
+
+        $this->schemaMapper->expects($this->once())
+            ->method('updateFromArray')
+            ->willReturn($existing);
+
+        $this->schemaMapper->expects($this->once())
+            ->method('update')
+            ->willReturn($updated);
+
+        $result = $this->handler->importSchema(
+            data:           ['slug' => 'force-schema', 'version' => '1.0.0', 'title' => 'Forced'],
+            slugsAndIdsMap: [],
+            force:          true
+        );
+
+        $this->assertSame(10, $result->getId());
+
+    }//end testImportSchemaForceUpdatesWhenVersionEqual()
+
+
+    /**
+     * importSchema() skips when existing version is newer and force is false.
+     */
+    public function testImportSchemaSkipsWhenExistingVersionIsNewer(): void
+    {
+        $existing = $this->makeSchema(10, 'old-schema', '3.0.0');
+
+        $this->schemaMapper->method('find')->willReturn($existing);
+
+        $this->schemaMapper->expects($this->never())->method('createFromArray');
+        $this->schemaMapper->expects($this->never())->method('updateFromArray');
+
+        $result = $this->handler->importSchema(
+            data:           ['slug' => 'old-schema', 'version' => '1.0.0', 'title' => 'Old'],
+            slugsAndIdsMap: [],
+            force:          false
+        );
+
+        $this->assertSame(10, $result->getId());
+
+    }//end testImportSchemaSkipsWhenExistingVersionIsNewer()
+
+
+    // =========================================================================
+    // importRegister() — only appId provided (no owner)
+    // =========================================================================
+
+    /**
+     * importRegister() sets only appId — update called once.
+     */
+    public function testImportRegisterSetsOnlyApplication(): void
+    {
+        $register = $this->makeRegister(1, 'app-only-register');
+
+        $this->registerMapper->method('find')
+            ->willThrowException(new \OCP\AppFramework\Db\DoesNotExistException('not found'));
+
+        $this->registerMapper->expects($this->once())
+            ->method('createFromArray')
+            ->willReturn($register);
+
+        $this->registerMapper->expects($this->once())
+            ->method('update')
+            ->willReturn($register);
+
+        $result = $this->handler->importRegister(
+            data:  ['slug' => 'app-only-register', 'version' => '1.0.0', 'title' => 'App Only'],
+            appId: 'just-the-app'
+        );
+
+        $this->assertSame('just-the-app', $result->getApplication());
+
+    }//end testImportRegisterSetsOnlyApplication()
+
+
+    // =========================================================================
+    // getJSONfromURL() — YAML response
+    // =========================================================================
+
+    /**
+     * getJSONfromURL() parses YAML content-type response correctly.
+     */
+    public function testGetJSONfromURLParsesYamlResponse(): void
+    {
+        $yaml     = "title: YAML Config\nversion: 1.0.0\n";
+        $stream   = \GuzzleHttp\Psr7\Utils::streamFor($yaml);
+        $response = new \GuzzleHttp\Psr7\Response(200, ['Content-Type' => 'application/yaml'], $stream);
+        $this->client->method('request')->willReturn($response);
+
+        $result = $this->handler->getJSONfromURL('http://example.com/config.yaml');
+
+        $this->assertIsArray($result);
+        $this->assertSame('YAML Config', $result['title']);
+
+    }//end testGetJSONfromURLParsesYamlResponse()
+
+
+    // =========================================================================
+    // decode() — edge cases
+    // =========================================================================
+
+    /**
+     * decode() returns null when type is application/yaml and YAML is invalid.
+     */
+    public function testDecodeReturnsNullForInvalidYamlWithExplicitType(): void
+    {
+        // Symfony Yaml is lenient, so we use a value that json_decode can't handle
+        // AND Yaml::parse returns a scalar (not array). Using a bare string that's
+        // valid YAML scalar but not an array → ensureArrayStructure wraps it → but
+        // actually decode() returns null because $phpArray is not array/stdClass.
+        // A bare integer is valid YAML, but decode() calls ensureArrayStructure() on it
+        // which tries to iterate over it — but the null/false check fires first.
+        // Actually decode() returns null when $phpArray === null or false.
+        // An empty YAML string → Yaml::parse returns null → returns null.
+        $result = $this->handler->decode('', 'application/yaml');
+        $this->assertNull($result);
+
+    }//end testDecodeReturnsNullForInvalidYamlWithExplicitType()
+
+
+    /**
+     * ensureArrayStructure() handles mixed array containing both objects and scalars.
+     *
+     * When an array contains objects nested alongside scalar values, the recursive
+     * call should convert only the object entries while leaving scalars unchanged.
+     */
+    public function testEnsureArrayStructureHandlesMixedArray(): void
+    {
+        $inner      = new \stdClass();
+        $inner->key = 'value';
+
+        $input = [
+            'scalar' => 42,
+            'nested' => $inner,
+            'list'   => ['a', 'b'],
+        ];
+
+        $result = $this->handler->ensureArrayStructure($input);
+
+        $this->assertSame(42, $result['scalar']);
+        $this->assertIsArray($result['nested']);
+        $this->assertSame('value', $result['nested']['key']);
+        $this->assertSame(['a', 'b'], $result['list']);
+
+    }//end testEnsureArrayStructureHandlesMixedArray()
+
+
+    // =========================================================================
+    // importFromJson() — result structure completeness
+    // =========================================================================
+
+    /**
+     * importFromJson() always returns all expected keys in the result.
+     */
+    public function testImportFromJsonResultAlwaysHasAllExpectedKeys(): void
+    {
+        $configuration = $this->makeConfiguration(1);
+
+        $this->appConfig->method('getValueString')->willReturn('');
+        $this->appConfig->method('setValueString')->willReturn(true);
+        $this->schemaMapper->method('getSlugToIdMap')->willReturn([]);
+
+        $result = $this->handler->importFromJson(
+            data:          [],
+            configuration: $configuration
+        );
+
+        $expectedKeys = ['registers', 'schemas', 'workflows', 'endpoints', 'sources', 'mappings', 'jobs', 'synchronizations', 'rules', 'objects'];
+        foreach ($expectedKeys as $key) {
+            $this->assertArrayHasKey($key, $result, "Missing key: {$key}");
+        }
+
+    }//end testImportFromJsonResultAlwaysHasAllExpectedKeys()
+
+
+    // =========================================================================
+    // importFromJson() — mapping exception handled gracefully
+    // =========================================================================
+
+    /**
+     * importFromJson() logs error but continues when individual mapping import fails.
+     */
+    public function testImportFromJsonContinuesWhenMappingImportFails(): void
+    {
+        $configuration = $this->makeConfiguration(1);
+
+        $this->appConfig->method('getValueString')->willReturn('');
+        $this->appConfig->method('setValueString')->willReturn(true);
+        $this->schemaMapper->method('getSlugToIdMap')->willReturn([]);
+        $this->mappingMapper->method('getSlugToIdMap')->willReturn([]);
+        $this->mappingMapper->method('createFromArray')
+            ->willThrowException(new \Exception('DB error'));
+
+        $this->logger->expects($this->atLeastOnce())->method('error');
+
+        $data = [
+            'appId'   => 'myapp',
+            'version' => '1.0.0',
+            'components' => [
+                'mappings' => [
+                    'bad-mapping' => ['slug' => 'bad-mapping', 'name' => 'Bad Mapping', 'version' => '1.0.0'],
+                ],
+            ],
+        ];
+
+        // Should NOT throw — errors are caught per-mapping.
+        $result = $this->handler->importFromJson(
+            data:          $data,
+            configuration: $configuration,
+            version:       '1.0.0'
+        );
+
+        $this->assertSame([], $result['mappings']);
+
+    }//end testImportFromJsonContinuesWhenMappingImportFails()
+
+
+    // =========================================================================
+    // importFromJson() — storedVersion empty → no version skip
+    // =========================================================================
+
+    /**
+     * importFromJson() does not skip when stored version is empty string.
+     */
+    public function testImportFromJsonDoesNotSkipWhenStoredVersionIsEmpty(): void
+    {
+        $configuration = $this->makeConfiguration(1);
+
+        // Empty stored version → version_compare check is bypassed.
+        $this->appConfig->method('getValueString')->willReturn('');
+        $this->appConfig->method('setValueString')->willReturn(true);
+        $this->schemaMapper->method('getSlugToIdMap')->willReturn([]);
+
+        $result = $this->handler->importFromJson(
+            data:          ['appId' => 'myapp', 'version' => '1.0.0'],
+            configuration: $configuration,
+            appId:         'myapp',
+            version:       '1.0.0',
+            force:         false
+        );
+
+        // Full result structure means import ran (not early-exit).
+        $this->assertArrayHasKey('workflows', $result);
+        $this->assertIsArray($result['workflows']);
+
+    }//end testImportFromJsonDoesNotSkipWhenStoredVersionIsEmpty()
 
 
 }//end class

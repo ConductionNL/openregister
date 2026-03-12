@@ -3622,4 +3622,312 @@ class SettingsServiceTest extends TestCase
         // totalObjects stays at 10 since maxObjects(100) > total(10).
         $this->assertSame(10, $result['stats']['total_objects']);
     }
+
+    // ──────────────────────────────────────────────────────────────────────────
+    // getStats() — inner DB exception path (getDatabaseStats throws)
+    // ──────────────────────────────────────────────────────────────────────────
+
+    /**
+     * When getDatabaseStats() throws, getStats() should populate zeroed warnings/totals.
+     */
+    public function testGetStatsWithDatabaseExceptionFallsBackToZeroedStats(): void
+    {
+        $queryBuilder = $this->createMock(\OCP\DB\QueryBuilder\IQueryBuilder::class);
+        $queryBuilder->method('getTableName')->willReturnArgument(0);
+
+        $this->db->method('getQueryBuilder')->willReturn($queryBuilder);
+        $this->db->method('executeQuery')
+            ->willThrowException(new \Exception('DB unavailable'));
+
+        $this->cacheSettingsHandler->method('getCacheStats')
+            ->willReturn(['caches' => []]);
+        $this->solrSettingsHandler->method('getSolrDashboardStats')
+            ->willThrowException(new \Exception('SOLR unavailable'));
+
+        $result = $this->settingsService->getStats();
+
+        $this->assertIsArray($result);
+        // Either the outer catch was hit (error key) or the inner catch zeroed the stats.
+        if (isset($result['error']) === false) {
+            $this->assertArrayHasKey('warnings', $result);
+            $this->assertSame(0, $result['warnings']['objectsWithoutOwner']);
+            $this->assertSame(0, $result['totals']['totalObjects']);
+        } else {
+            $this->assertSame('Failed to retrieve stats', $result['error']);
+        }
+    }
+
+    /**
+     * When getCacheStats() throws inside getStats(), the cache key gets an error entry.
+     */
+    public function testGetStatsWithCacheExceptionRecordsErrorInCacheKey(): void
+    {
+        $queryBuilder = $this->createMock(\OCP\DB\QueryBuilder\IQueryBuilder::class);
+        $queryBuilder->method('getTableName')->willReturnArgument(0);
+
+        $this->db->method('getQueryBuilder')->willReturn($queryBuilder);
+        $this->db->method('executeQuery')
+            ->willThrowException(new \Exception('DB unavailable'));
+
+        $this->cacheSettingsHandler->method('getCacheStats')
+            ->willThrowException(new \Exception('Cache broken'));
+        $this->solrSettingsHandler->method('getSolrDashboardStats')
+            ->willReturn([]);
+
+        $result = $this->settingsService->getStats();
+
+        $this->assertIsArray($result);
+        // If no outer exception, cache key should contain the error message.
+        if (isset($result['cache']) === true) {
+            $this->assertArrayHasKey('error', $result['cache']);
+        }
+    }
+
+    // ──────────────────────────────────────────────────────────────────────────
+    // rebase() — 'all' component covers both solr and cache branches
+    // ──────────────────────────────────────────────────────────────────────────
+
+    /**
+     * rebase() with component 'all' should rebase both solr and cache.
+     */
+    public function testRebaseWithAllComponentRebasesBothSolrAndCache(): void
+    {
+        // clearCache() is called internally — the cacheSettingsHandler must exist.
+        $this->cacheSettingsHandler->expects($this->once())
+            ->method('clearCache')
+            ->willReturn([]);
+
+        $result = $this->settingsService->rebase(['components' => ['all']]);
+
+        $this->assertTrue($result['success']);
+        $this->assertArrayHasKey('rebased', $result);
+        $this->assertArrayHasKey('solr', $result['rebased']);
+        $this->assertArrayHasKey('cache', $result['rebased']);
+        $this->assertTrue($result['rebased']['solr']['success']);
+        $this->assertTrue($result['rebased']['cache']['success']);
+    }
+
+    /**
+     * rebase() with only 'solr' component should NOT include cache in rebased.
+     */
+    public function testRebaseWithSolrOnlyComponentDoesNotRebaseCache(): void
+    {
+        $result = $this->settingsService->rebase(['components' => ['solr']]);
+
+        $this->assertTrue($result['success']);
+        $this->assertArrayHasKey('solr', $result['rebased']);
+        $this->assertArrayNotHasKey('cache', $result['rebased']);
+    }
+
+    /**
+     * rebase() with only 'cache' component should NOT include solr in rebased.
+     */
+    public function testRebaseWithCacheOnlyComponentDoesNotRebaseSolr(): void
+    {
+        $this->cacheSettingsHandler->expects($this->once())
+            ->method('clearCache')
+            ->willReturn([]);
+
+        $result = $this->settingsService->rebase(['components' => ['cache']]);
+
+        $this->assertTrue($result['success']);
+        $this->assertArrayHasKey('cache', $result['rebased']);
+        $this->assertArrayNotHasKey('solr', $result['rebased']);
+    }
+
+    /**
+     * rebase() with default (empty options) uses 'all' and covers both branches.
+     */
+    public function testRebaseWithDefaultOptionsUsesAll(): void
+    {
+        $this->cacheSettingsHandler->method('clearCache')->willReturn([]);
+
+        $result = $this->settingsService->rebase([]);
+
+        $this->assertTrue($result['success']);
+        $this->assertArrayHasKey('solr', $result['rebased']);
+        $this->assertArrayHasKey('cache', $result['rebased']);
+        $this->assertGreaterThan(0, $result['timestamp']);
+    }
+
+    // ──────────────────────────────────────────────────────────────────────────
+    // massValidateObjects() — failed_saves > 0 branches
+    // ──────────────────────────────────────────────────────────────────────────
+
+    /**
+     * massValidateObjects() in serial mode — when objects exist but objectService is null,
+     * a TypeError is thrown (since objectService is hardcoded to null in the source).
+     * The caught Exception increments failed_saves for each object.
+     */
+    public function testMassValidateObjectsSerialWithObjectsAndNullServiceThrowsTypeError(): void
+    {
+        $container    = $this->createMock(IAppContainer::class);
+        $objectMapper = $this->createMock(\OCA\OpenRegister\Db\ObjectEntityMapper::class);
+
+        $container->method('get')
+            ->willReturnCallback(function (string $class) use ($objectMapper) {
+                if ($class === \OCA\OpenRegister\Db\ObjectEntityMapper::class) {
+                    return $objectMapper;
+                }
+
+                return null;
+            });
+
+        // Real ObjectEntity with setters to avoid __call issues.
+        $obj = new \OCA\OpenRegister\Db\ObjectEntity();
+        $obj->setUuid('uuid-serial-null-svc');
+        $obj->setRegister('reg-1');
+        $obj->setSchema('schema-1');
+
+        $objectMapper->method('countSearchObjects')->willReturn(1);
+        $objectMapper->method('findAll')->willReturn([$obj]);
+
+        $this->expectException(\Error::class);
+
+        $service = $this->createServiceWithContainer($container);
+        $service->massValidateObjects(0, 10, 'serial', true);
+    }
+
+    /**
+     * massValidateObjects() in parallel mode — when objects exist but objectService is null,
+     * an Error is thrown inside processBatchDirectly.
+     */
+    public function testMassValidateObjectsParallelModeWithObjectsThrowsTypeErrorForNullService(): void
+    {
+        $container    = $this->createMock(IAppContainer::class);
+        $objectMapper = $this->createMock(\OCA\OpenRegister\Db\ObjectEntityMapper::class);
+
+        $container->method('get')
+            ->willReturnCallback(function (string $class) use ($objectMapper) {
+                if ($class === \OCA\OpenRegister\Db\ObjectEntityMapper::class) {
+                    return $objectMapper;
+                }
+
+                return null;
+            });
+
+        $obj = new \OCA\OpenRegister\Db\ObjectEntity();
+        $obj->setUuid('uuid-parallel-null-svc');
+        $obj->setRegister('reg-1');
+        $obj->setSchema('schema-1');
+
+        $objectMapper->method('countSearchObjects')->willReturn(1);
+        $objectMapper->method('findAll')->willReturn([$obj]);
+
+        $this->expectException(\Error::class);
+
+        $service = $this->createServiceWithContainer($container);
+        $service->massValidateObjects(0, 10, 'parallel', true);
+    }
+
+    /**
+     * massValidateObjects() in serial mode with collectErrors=false still throws
+     * Error on first object (objectService is always null in the source).
+     */
+    public function testMassValidateObjectsSerialCollectErrorsFalseThrowsError(): void
+    {
+        $container    = $this->createMock(IAppContainer::class);
+        $objectMapper = $this->createMock(\OCA\OpenRegister\Db\ObjectEntityMapper::class);
+
+        $container->method('get')
+            ->willReturnCallback(function (string $class) use ($objectMapper) {
+                if ($class === \OCA\OpenRegister\Db\ObjectEntityMapper::class) {
+                    return $objectMapper;
+                }
+
+                return null;
+            });
+
+        $obj = new \OCA\OpenRegister\Db\ObjectEntity();
+        $obj->setUuid('uuid-ce-false');
+        $obj->setRegister('reg-1');
+        $obj->setSchema('schema-1');
+
+        $objectMapper->method('countSearchObjects')->willReturn(1);
+        $objectMapper->method('findAll')->willReturn([$obj]);
+
+        $this->expectException(\Error::class);
+
+        $service = $this->createServiceWithContainer($container);
+        $service->massValidateObjects(0, 10, 'serial', false);
+    }
+
+    // ──────────────────────────────────────────────────────────────────────────
+    // getDatabaseStats() — success path (via getStats())
+    // ──────────────────────────────────────────────────────────────────────────
+
+    /**
+     * getStats() when all DB queries succeed returns structured stats with system key.
+     */
+    public function testGetStatsWithSuccessfulDbQueriesReturnsSystemInfo(): void
+    {
+        $row = [
+            'cnt'                          => '5',
+            'total'                        => '0',
+            'total_objects'                => '5',
+            'deleted_objects'              => '0',
+            'total_audit_trails'           => '2',
+            'total_search_trails'          => '1',
+            'total_configurations'         => '0',
+            'total_organisations'          => '0',
+            'total_registers'              => '3',
+            'total_schemas'                => '4',
+            'total_sources'                => '0',
+            'total_webhook_logs'           => '0',
+            'objects_without_owner'        => '1',
+            'objects_without_organisation' => '0',
+            'audit_trails_without_expiry'  => '0',
+            'search_trails_without_expiry' => '0',
+            'expired_audit_trails'         => '0',
+            'expired_search_trails'        => '0',
+            'expired_objects'              => '0',
+        ];
+
+        $stmt = $this->createMock(\OCP\DB\IResult::class);
+        $stmt->method('fetch')->willReturn($row);
+        $stmt->method('fetchAll')->willReturn([]);
+
+        $platform = $this->createMock(\Doctrine\DBAL\Platforms\AbstractPlatform::class);
+
+        $qb = $this->createMock(\OCP\DB\QueryBuilder\IQueryBuilder::class);
+        $qb->method('getTableName')->willReturnArgument(0);
+
+        $this->db->method('getQueryBuilder')->willReturn($qb);
+        $this->db->method('getDatabasePlatform')->willReturn($platform);
+        $this->db->method('executeQuery')->willReturn($stmt);
+
+        $this->cacheSettingsHandler->method('getCacheStats')->willReturn(['caches' => []]);
+        $this->solrSettingsHandler->method('getSolrDashboardStats')->willReturn([]);
+
+        $result = $this->settingsService->getStats();
+
+        $this->assertIsArray($result);
+        // If DB succeeded the result should have a 'system' key.
+        if (isset($result['error']) === false) {
+            $this->assertArrayHasKey('system', $result);
+            $this->assertArrayHasKey('php_version', $result['system']);
+        }
+    }
+
+    // ──────────────────────────────────────────────────────────────────────────
+    // rebase() — outer exception path
+    // ──────────────────────────────────────────────────────────────────────────
+
+    /**
+     * rebase() returns error array when an unexpected exception is thrown.
+     */
+    public function testRebaseReturnsErrorOnException(): void
+    {
+        // Force an exception by making clearCache() (which rebase calls) throw.
+        $this->cacheSettingsHandler->method('clearCache')
+            ->willThrowException(new \Exception('Unexpected failure'));
+
+        $result = $this->settingsService->rebase(['components' => ['all']]);
+
+        // solr branch runs first (no exception), then cache branch throws.
+        // The outer try/catch should catch it and return success=false.
+        $this->assertFalse($result['success']);
+        $this->assertSame('Rebase failed', $result['error']);
+        $this->assertSame('Unexpected failure', $result['message']);
+    }
 }

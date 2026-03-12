@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Unit\Controller;
 
 use OCA\OpenRegister\Controller\ChatController;
+use OCA\OpenRegister\Db\Agent;
 use OCA\OpenRegister\Db\AgentMapper;
 use OCA\OpenRegister\Db\Conversation;
 use OCA\OpenRegister\Db\ConversationMapper;
@@ -15,6 +16,9 @@ use OCA\OpenRegister\Service\ChatService;
 use OCA\OpenRegister\Service\OrganisationService;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\AppFramework\Http\TemplateResponse;
+use OCP\DB\IResult;
+use OCP\DB\QueryBuilder\IQueryBuilder;
+use OCP\DB\QueryBuilder\IQueryFunction;
 use OCP\IDBConnection;
 use OCP\IRequest;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -425,5 +429,155 @@ class ChatControllerTest extends TestCase
         $result = $this->controller->sendFeedback('conv-uuid', 1);
 
         $this->assertEquals(500, $result->getStatus());
+    }
+
+    // ── getChatStats success path ──
+
+    public function testGetChatStatsSuccess(): void
+    {
+        // Build a mock result that returns a scalar count for fetchOne().
+        $resultMock = $this->createMock(IResult::class);
+        $resultMock->method('fetchOne')->willReturnOnConsecutiveCalls('3', '7', '42');
+
+        // The func() helper must return something that can be passed to select().
+        $funcMock = $this->createMock(IQueryFunction::class);
+
+        $qb = $this->createMock(IQueryBuilder::class);
+        $qb->method('select')->willReturnSelf();
+        $qb->method('from')->willReturnSelf();
+        $qb->method('func')->willReturn(
+            new class($funcMock) {
+                private $f;
+                public function __construct($f) { $this->f = $f; }
+                public function count(string $col, string $alias): mixed { return $this->f; }
+            }
+        );
+        $qb->method('executeQuery')->willReturn($resultMock);
+
+        $this->db->method('getQueryBuilder')->willReturn($qb);
+
+        $result = $this->controller->getChatStats();
+
+        $this->assertEquals(200, $result->getStatus());
+        $data = $result->getData();
+        $this->assertArrayHasKey('total_agents', $data);
+        $this->assertArrayHasKey('total_conversations', $data);
+        $this->assertArrayHasKey('total_messages', $data);
+    }
+
+    // ── sendMessage — new conversation via agentUuid ──
+
+    public function testSendMessageCreatesNewConversation(): void
+    {
+        $agent = new Agent();
+        $agent->setId(1);
+
+        $conv = new Conversation();
+        $conv->setId(5);
+        $conv->setUserId('testuser');
+
+        $this->request->method('getParam')
+            ->willReturnMap([
+                ['conversation', null, ''],
+                ['agentUuid', null, 'agent-uuid-123'],
+                ['message', null, 'Hello agent'],
+                ['views', null, []],
+                ['tools', null, []],
+                ['includeObjects', null, true],
+                ['includeFiles', null, true],
+                ['numSourcesFiles', null, 5],
+                ['numSourcesObjects', null, 5],
+            ]);
+
+        $this->agentMapper->method('findByUuid')->willReturn($agent);
+        $this->organisationService->method('getActiveOrganisation')->willReturn(null);
+        $this->chatService->method('ensureUniqueTitle')->willReturn('New Conversation');
+        $this->conversationMapper->method('insert')->willReturn($conv);
+        $this->chatService->method('processMessage')->willReturn(['response' => 'Hi']);
+
+        $result = $this->controller->sendMessage();
+
+        $this->assertEquals(200, $result->getStatus());
+        $data = $result->getData();
+        $this->assertArrayHasKey('conversation', $data);
+    }
+
+    // ── sendMessage — agentUuid not found ──
+
+    public function testSendMessageAgentNotFound(): void
+    {
+        $this->request->method('getParam')
+            ->willReturnMap([
+                ['conversation', null, ''],
+                ['agentUuid', null, 'nonexistent-agent'],
+                ['message', null, 'Hello'],
+                ['views', null, null],
+                ['tools', null, null],
+                ['includeObjects', null, true],
+                ['includeFiles', null, true],
+                ['numSourcesFiles', null, 5],
+                ['numSourcesObjects', null, 5],
+            ]);
+
+        $this->agentMapper->method('findByUuid')
+            ->willThrowException(new \Exception('Agent not found'));
+
+        $result = $this->controller->sendMessage();
+
+        $this->assertEquals(404, $result->getStatus());
+    }
+
+    // ── sendMessage — conversation not found by UUID ──
+
+    public function testSendMessageConversationNotFound(): void
+    {
+        $this->request->method('getParam')
+            ->willReturnMap([
+                ['conversation', null, 'missing-uuid'],
+                ['agentUuid', null, ''],
+                ['message', null, 'Hello'],
+                ['views', null, null],
+                ['tools', null, null],
+                ['includeObjects', null, true],
+                ['includeFiles', null, true],
+                ['numSourcesFiles', null, 5],
+                ['numSourcesObjects', null, 5],
+            ]);
+
+        $this->conversationMapper->method('findByUuid')
+            ->willThrowException(new \Exception('Not found'));
+
+        $result = $this->controller->sendMessage();
+
+        $this->assertEquals(404, $result->getStatus());
+    }
+
+    // ── sendMessage — selectedViews and selectedTools as arrays ──
+
+    public function testSendMessageWithViewsAndTools(): void
+    {
+        $conv = new Conversation();
+        $conv->setId(1);
+        $conv->setUserId('testuser');
+
+        $this->request->method('getParam')
+            ->willReturnMap([
+                ['conversation', null, 'conv-uuid'],
+                ['agentUuid', null, ''],
+                ['message', null, 'Query with views'],
+                ['views', null, ['view1', 'view2']],
+                ['tools', null, ['tool1']],
+                ['includeObjects', null, true],
+                ['includeFiles', null, false],
+                ['numSourcesFiles', null, 3],
+                ['numSourcesObjects', null, 3],
+            ]);
+
+        $this->conversationMapper->method('findByUuid')->willReturn($conv);
+        $this->chatService->method('processMessage')->willReturn(['response' => 'Done']);
+
+        $result = $this->controller->sendMessage();
+
+        $this->assertEquals(200, $result->getStatus());
     }
 }
