@@ -92,7 +92,7 @@ import { registerStore, navigationStore, configurationStore, schemaStore } from 
 
 			<!-- Custom card template -->
 			<template #card="{ object }">
-				<RegisterSchemaCard :register="object" @refresh="handleRefresh" />
+				<RegisterSchemaCard :item="object" type="register" @refresh="handleRefresh" />
 			</template>
 
 			<!-- Custom column: title with managed badge -->
