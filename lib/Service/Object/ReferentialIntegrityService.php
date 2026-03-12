@@ -1099,11 +1099,25 @@ class ReferentialIntegrityService
                 $schema   = null;
 
                 if ($group['registerId'] !== null) {
-                    $register = $this->registerMapper->find($group['registerId']);
+                    $register = $this->schemaRegisterMap[(string) $group['schemaId']] ?? null;
+                    if ($register === null) {
+                        $register = $this->registerMapper->find(
+                            $group['registerId'],
+                            _rbac: false,
+                            _multitenancy: false
+                        );
+                    }
                 }
 
                 if ($group['schemaId'] !== null) {
-                    $schema = $this->schemaMapper->find($group['schemaId']);
+                    $schema = $this->schemaCache[(string) $group['schemaId']] ?? null;
+                    if ($schema === null) {
+                        $schema = $this->schemaMapper->find(
+                            $group['schemaId'],
+                            _rbac: false,
+                            _multitenancy: false
+                        );
+                    }
                 }
 
                 $this->objectEntityMapper->deleteObjects(
