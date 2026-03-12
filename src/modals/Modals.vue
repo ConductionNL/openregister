@@ -4,7 +4,7 @@ import { navigationStore } from '../store/store.js'
 
 <template>
 	<!-- Placeholder Div -->
-	<div>
+	<Fragment>
 		<ImportRegister />
 		<ExportRegister />
 		<PublishRegister />
@@ -14,9 +14,9 @@ import { navigationStore } from '../store/store.js'
 		<ImportConfiguration />
 		<ExportConfiguration />
 		<PublishConfiguration />
-		<EditSchema v-if="navigationStore.modal === 'editSchema'" />
 		<ExploreSchema v-if="navigationStore.dialog === 'exploreSchema'" />
 		<DeleteSchema />
+		<EditSchema v-if="navigationStore.modal === 'editSchema'" />
 		<ValidateSchema v-if="navigationStore.dialog === 'validateSchema'" />
 		<DeleteSchemaObjects v-if="navigationStore.dialog === 'deleteSchemaObjects'" />
 		<PublishSchemaObjects v-if="navigationStore.dialog === 'publishSchemaObjects'" />
@@ -55,7 +55,7 @@ import { navigationStore } from '../store/store.js'
 		<ViewWebhookLog v-if="navigationStore.modal === 'viewWebhookLog'" />
 		<EditEndpoint v-if="navigationStore.modal === 'editEndpoint'" />
 		<DeleteEndpoint v-if="navigationStore.dialog === 'deleteEndpoint'" />
-	</div>
+	</Fragment>
 </template>
 
 <script>
