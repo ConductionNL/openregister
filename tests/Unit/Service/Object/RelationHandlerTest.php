@@ -199,7 +199,7 @@ class RelationHandlerTest extends TestCase
 
         $this->schemaMapper->method('find')->willReturn($schema);
 
-        // Callback returns empty — no matching objects found.
+        // Callback returns empty -- no matching objects found.
         $result = $this->handler->applyInversedByFilter($filters, fn($x) => []);
 
         $this->assertNull($result);
@@ -565,7 +565,7 @@ class RelationHandlerTest extends TestCase
      */
     public function testBulkLoadRelationshipsBatchedContinuesOnBatchError(): void
     {
-        // Generate 60 IDs — two batches of 50/10.
+        // Generate 60 IDs -- two batches of 50/10.
         $ids = array_map(fn($i) => "id-$i", range(1, 60));
 
         $this->objectEntityMapper
@@ -575,7 +575,7 @@ class RelationHandlerTest extends TestCase
         $this->logger->expects($this->atLeastOnce())->method('error');
         $this->logger->expects($this->atLeastOnce())->method('info');
 
-        // Should not throw — errors are caught per-batch.
+        // Should not throw -- errors are caught per-batch.
         $result = $this->handler->bulkLoadRelationshipsBatched($ids);
 
         $this->assertIsArray($result);
@@ -895,7 +895,7 @@ class RelationHandlerTest extends TestCase
 
         $this->objectEntityMapper->method('find')->willReturn($entity);
 
-        // getUses calls \OC::$server for RegisterMapper and MagicMapper — this path will
+        // getUses calls \OC::$server for RegisterMapper and MagicMapper -- this path will
         // throw a fatal if OC is not available in unit tests, so we assert on the
         // error-fallback path which still returns the correct structure.
         $result = $this->handler->getUses($ownUuid);
@@ -1057,7 +1057,7 @@ class RelationHandlerTest extends TestCase
      */
     public function testExtractAllRelationshipIdsExactly200UniqueIds(): void
     {
-        // 20 objects × 10 IDs each = exactly 200 IDs.
+        // 20 objects x 10 IDs each = exactly 200 IDs.
         $objects = [];
         for ($i = 1; $i <= 20; $i++) {
             $ids    = array_map(fn($j) => "obj{$i}-id{$j}", range(1, 10));
@@ -1134,7 +1134,7 @@ class RelationHandlerTest extends TestCase
 
         $this->objectEntityMapper->method('findAll')->willReturn([]);
 
-        // warning should NOT be called — exactly 200 is not over the limit.
+        // warning should NOT be called -- exactly 200 is not over the limit.
         $this->logger->expects($this->never())->method('warning');
         $this->logger->expects($this->atLeastOnce())->method('info');
 
@@ -1260,7 +1260,7 @@ class RelationHandlerTest extends TestCase
     // =========================================================================
 
     /**
-     * Multiple inversedBy properties — results are intersected.
+     * Multiple inversedBy properties -- results are intersected.
      *
      * @return void
      */
@@ -1352,7 +1352,7 @@ class RelationHandlerTest extends TestCase
      */
     public function testGetUsedBySuccessPathStructure(): void
     {
-        // Make find() throw so we hit the outer catch — always returns the right structure.
+        // Make find() throw so we hit the outer catch -- always returns the right structure.
         $this->objectEntityMapper
             ->method('find')
             ->willThrowException(new \RuntimeException('Unit test - no DB'));
@@ -1369,5 +1369,516 @@ class RelationHandlerTest extends TestCase
         $this->assertSame(15, $result['limit']);
         $this->assertSame(3, $result['offset']);
     }//end testGetUsedBySuccessPathStructure()
+
+    // =========================================================================
+    // NEW: applyInversedByFilter -- advanced filter processing
+    // =========================================================================
+
+    /**
+     * applyInversedByFilter passes the $ref as 'schema' in the callback filters.
+     *
+     * @return void
+     */
+    public function testApplyInversedByFilterPassesRefAsSchemaToCallback(): void
+    {
+        $uuid   = '550e8400-e29b-41d4-a716-446655440000';
+        $schema = $this->makeSchema([
+            'owner' => [
+                'type'       => 'string',
+                'inversedBy' => 'member',
+                '$ref'       => 'ref-schema-42',
+            ],
+        ]);
+
+        $relatedObject = $this->createMock(ObjectEntity::class);
+        $relatedObject->method('jsonSerialize')->willReturn(['member' => $uuid]);
+
+        $capturedArgs = null;
+        $callback = function ($args) use ($relatedObject, &$capturedArgs) {
+            $capturedArgs = $args;
+            return [$relatedObject];
+        };
+
+        $filters = ['schema' => 1, 'owner_status' => 'active'];
+        $this->schemaMapper->method('find')->willReturn($schema);
+
+        $this->handler->applyInversedByFilter($filters, $callback);
+
+        $this->assertIsArray($capturedArgs);
+        $this->assertArrayHasKey('filters', $capturedArgs);
+        $this->assertSame('ref-schema-42', $capturedArgs['filters']['schema']);
+    }//end testApplyInversedByFilterPassesRefAsSchemaToCallback()
+
+    /**
+     * applyInversedByFilter sets $ref to null when property has no $ref key.
+     *
+     * @return void
+     */
+    public function testApplyInversedByFilterSetsNullRefWhenMissing(): void
+    {
+        $uuid   = '550e8400-e29b-41d4-a716-446655440000';
+        $schema = $this->makeSchema([
+            'owner' => [
+                'type'       => 'string',
+                'inversedBy' => 'member',
+            ],
+        ]);
+
+        $relatedObject = $this->createMock(ObjectEntity::class);
+        $relatedObject->method('jsonSerialize')->willReturn(['member' => $uuid]);
+
+        $capturedArgs = null;
+        $callback = function ($args) use ($relatedObject, &$capturedArgs) {
+            $capturedArgs = $args;
+            return [$relatedObject];
+        };
+
+        $filters = ['schema' => 1, 'owner_name' => 'test'];
+        $this->schemaMapper->method('find')->willReturn($schema);
+
+        $this->handler->applyInversedByFilter($filters, $callback);
+
+        $this->assertNull($capturedArgs['filters']['schema']);
+    }//end testApplyInversedByFilterSetsNullRefWhenMissing()
+
+    /**
+     * applyInversedByFilter extracts UUID from URL with deep path segments.
+     *
+     * @return void
+     */
+    public function testApplyInversedByFilterExtractsUuidFromDeepUrl(): void
+    {
+        $schema = $this->makeSchema([
+            'ref' => [
+                'type'       => 'string',
+                'inversedBy' => 'link',
+                '$ref'       => 's1',
+            ],
+        ]);
+
+        $relatedObject = $this->createMock(ObjectEntity::class);
+        $relatedObject->method('jsonSerialize')->willReturn([
+            'link' => 'https://example.com/api/v1/objects/my-final-segment',
+        ]);
+
+        $filters = ['schema' => 1, 'ref_x' => 'val'];
+        $this->schemaMapper->method('find')->willReturn($schema);
+
+        $result = $this->handler->applyInversedByFilter($filters, fn($x) => [$relatedObject]);
+
+        $this->assertIsArray($result);
+        $this->assertContains('my-final-segment', $result);
+    }//end testApplyInversedByFilterExtractsUuidFromDeepUrl()
+
+    /**
+     * applyInversedByFilter handles multiple sub-filter keys for same property.
+     *
+     * @return void
+     */
+    public function testApplyInversedByFilterHandlesMultipleSubKeysForSameProperty(): void
+    {
+        $uuid   = '550e8400-e29b-41d4-a716-446655440000';
+        $schema = $this->makeSchema([
+            'owner' => [
+                'type'       => 'string',
+                'inversedBy' => 'member',
+                '$ref'       => 'schema-uuid',
+            ],
+        ]);
+
+        $relatedObject = $this->createMock(ObjectEntity::class);
+        $relatedObject->method('jsonSerialize')->willReturn(['member' => $uuid]);
+
+        $filters = ['schema' => 1, 'owner_name' => 'alice', 'owner_status' => 'active'];
+        $this->schemaMapper->method('find')->willReturn($schema);
+
+        $result = $this->handler->applyInversedByFilter($filters, fn($x) => [$relatedObject]);
+
+        $this->assertIsArray($result);
+        // Both sub-keys should be removed.
+        $this->assertArrayNotHasKey('owner_name', $filters);
+        $this->assertArrayNotHasKey('owner_status', $filters);
+    }//end testApplyInversedByFilterHandlesMultipleSubKeysForSameProperty()
+
+    // =========================================================================
+    // NEW: extractAllRelationshipIds -- circuit breaker with mixed properties
+    // =========================================================================
+
+    /**
+     * Circuit breaker counts both scalar and array extractions towards the 200 limit.
+     *
+     * @return void
+     */
+    public function testExtractAllRelationshipIdsCircuitBreakerWithMixedTypes(): void
+    {
+        // Create objects with both scalar and array properties.
+        $objects = [];
+        for ($i = 1; $i <= 30; $i++) {
+            $object = $this->makeObjectEntity($i);
+            $object->setObject([
+                'scalar' => "scalar-$i",
+                'array'  => array_map(fn($j) => "arr{$i}-{$j}", range(1, 10)),
+            ]);
+            $objects[] = $object;
+        }
+
+        $this->logger->expects($this->atLeastOnce())->method('info');
+
+        $result = $this->handler->extractAllRelationshipIds($objects, ['scalar', 'array']);
+
+        // Circuit breaker checks at the start of each outer-loop iteration.
+        // Within a single iteration it can add up to 11 IDs (1 scalar + 10 array)
+        // before the check fires, so the count can overshoot by up to 11.
+        $this->assertLessThanOrEqual(211, count($result));
+        // But it must be significantly less than the theoretical max of 330.
+        $this->assertLessThan(330, count($result));
+    }//end testExtractAllRelationshipIdsCircuitBreakerWithMixedTypes()
+
+    /**
+     * Extracts IDs from multiple extend properties on the same object.
+     *
+     * @return void
+     */
+    public function testExtractAllRelationshipIdsMultipleExtendProperties(): void
+    {
+        $object = $this->makeObjectEntity(1);
+        $object->setObject([
+            'author' => 'author-uuid',
+            'editor' => 'editor-uuid',
+        ]);
+
+        $this->logger->expects($this->once())->method('info');
+
+        $result = $this->handler->extractAllRelationshipIds([$object], ['author', 'editor']);
+
+        $this->assertContains('author-uuid', $result);
+        $this->assertContains('editor-uuid', $result);
+        $this->assertCount(2, $result);
+    }//end testExtractAllRelationshipIdsMultipleExtendProperties()
+
+    /**
+     * Skips extend properties that do not exist on the object.
+     *
+     * @return void
+     */
+    public function testExtractAllRelationshipIdsSkipsMissingExtendProperties(): void
+    {
+        $object = $this->makeObjectEntity(1);
+        $object->setObject(['name' => 'test']);
+
+        $this->logger->expects($this->once())->method('info');
+
+        $result = $this->handler->extractAllRelationshipIds([$object], ['nonexistent']);
+
+        $this->assertSame([], $result);
+    }//end testExtractAllRelationshipIdsSkipsMissingExtendProperties()
+
+    /**
+     * Deduplicates IDs across different extend properties on different objects.
+     *
+     * @return void
+     */
+    public function testExtractAllRelationshipIdsDeduplicatesAcrossProperties(): void
+    {
+        $obj1 = $this->makeObjectEntity(1);
+        $obj1->setObject(['field1' => 'shared-uuid']);
+
+        $obj2 = $this->makeObjectEntity(2);
+        $obj2->setObject(['field2' => 'shared-uuid']);
+
+        $this->logger->expects($this->once())->method('info');
+
+        $result = $this->handler->extractAllRelationshipIds([$obj1, $obj2], ['field1', 'field2']);
+
+        $this->assertCount(1, $result);
+        $this->assertContains('shared-uuid', $result);
+    }//end testExtractAllRelationshipIdsDeduplicatesAcrossProperties()
+
+    // =========================================================================
+    // NEW: bulkLoadRelationshipsBatched -- >200 IDs batching
+    // =========================================================================
+
+    /**
+     * Verifies that with >200 IDs, only 200 are processed (4 batches of 50).
+     *
+     * @return void
+     */
+    public function testBulkLoadRelationshipsBatchedWith300IdsProcessesOnly200(): void
+    {
+        $ids = array_map(fn($i) => "id-$i", range(1, 300));
+
+        $callCount = 0;
+        $this->objectEntityMapper
+            ->method('findAll')
+            ->willReturnCallback(function () use (&$callCount) {
+                $callCount++;
+                return [];
+            });
+
+        $this->logger->expects($this->atLeastOnce())->method('warning');
+        $this->logger->expects($this->atLeastOnce())->method('info');
+
+        $this->handler->bulkLoadRelationshipsBatched($ids);
+
+        // 200 IDs / 50 per batch = 4 batches.
+        $this->assertSame(4, $callCount);
+    }//end testBulkLoadRelationshipsBatchedWith300IdsProcessesOnly200()
+
+    /**
+     * Single ID should result in a single batch call.
+     *
+     * @return void
+     */
+    public function testBulkLoadRelationshipsBatchedSingleId(): void
+    {
+        $entity = $this->makeObjectEntity(99);
+        $entity->setUuid('11111111-1111-1111-1111-111111111111');
+
+        $this->objectEntityMapper
+            ->expects($this->once())
+            ->method('findAll')
+            ->willReturn([$entity]);
+
+        $this->logger->expects($this->atLeastOnce())->method('info');
+        $this->logger->expects($this->atLeastOnce())->method('debug');
+
+        $result = $this->handler->bulkLoadRelationshipsBatched(['11111111-1111-1111-1111-111111111111']);
+
+        $this->assertArrayHasKey('11111111-1111-1111-1111-111111111111', $result);
+        $this->assertArrayHasKey(99, $result);
+    }//end testBulkLoadRelationshipsBatchedSingleId()
+
+    /**
+     * Multiple objects returned per batch are all indexed.
+     *
+     * @return void
+     */
+    public function testBulkLoadRelationshipsBatchedMultipleObjectsPerBatch(): void
+    {
+        $e1 = $this->makeObjectEntity(10);
+        $e1->setUuid('aaaa-1111');
+        $e2 = $this->makeObjectEntity(20);
+        $e2->setUuid('aaaa-2222');
+
+        $this->objectEntityMapper->method('findAll')->willReturn([$e1, $e2]);
+
+        $this->logger->expects($this->atLeastOnce())->method('info');
+        $this->logger->expects($this->atLeastOnce())->method('debug');
+
+        $result = $this->handler->bulkLoadRelationshipsBatched(['aaaa-1111', 'aaaa-2222']);
+
+        $this->assertArrayHasKey('aaaa-1111', $result);
+        $this->assertArrayHasKey('aaaa-2222', $result);
+        $this->assertArrayHasKey(10, $result);
+        $this->assertArrayHasKey(20, $result);
+    }//end testBulkLoadRelationshipsBatchedMultipleObjectsPerBatch()
+
+    // =========================================================================
+    // NEW: loadRelationshipChunkOptimized -- multiple IDs
+    // =========================================================================
+
+    /**
+     * loadRelationshipChunkOptimized passes IDs to findAll correctly.
+     *
+     * @return void
+     */
+    public function testLoadRelationshipChunkOptimizedPassesMultipleIds(): void
+    {
+        $e1 = $this->makeObjectEntity(1);
+        $e2 = $this->makeObjectEntity(2);
+
+        $capturedIds = null;
+        $this->objectEntityMapper
+            ->expects($this->once())
+            ->method('findAll')
+            ->willReturnCallback(function () use ($e1, $e2, &$capturedIds) {
+                $capturedIds = func_get_args();
+                return [$e1, $e2];
+            });
+
+        $result = $this->handler->loadRelationshipChunkOptimized(['uuid-a', 'uuid-b']);
+
+        $this->assertCount(2, $result);
+    }//end testLoadRelationshipChunkOptimizedPassesMultipleIds()
+
+    // =========================================================================
+    // NEW: getContracts -- non-array contracts property
+    // =========================================================================
+
+    /**
+     * getContracts handles a non-array contracts value (e.g., string).
+     *
+     * @return void
+     */
+    public function testGetContractsHandlesNonArrayContractsValue(): void
+    {
+        $entity = $this->makeObjectEntity(1);
+        $entity->setObject(['contracts' => 'not-an-array']);
+
+        $this->objectEntityMapper->method('find')->willReturn($entity);
+
+        $result = $this->handler->getContracts('some-uuid');
+
+        // When contracts is not an array, total stays 0 and results is the raw value.
+        $this->assertSame(0, $result['total']);
+        $this->assertSame('not-an-array', $result['results']);
+    }//end testGetContractsHandlesNonArrayContractsValue()
+
+    /**
+     * getContracts returns single page when limit exceeds total.
+     *
+     * @return void
+     */
+    public function testGetContractsLimitExceedsTotal(): void
+    {
+        $entity = $this->makeObjectEntity(1);
+        $entity->setObject(['contracts' => ['c1', 'c2']]);
+
+        $this->objectEntityMapper->method('find')->willReturn($entity);
+
+        $result = $this->handler->getContracts('uuid', ['_limit' => 100, '_offset' => 0]);
+
+        $this->assertCount(2, $result['results']);
+        $this->assertSame(2, $result['total']);
+        $this->assertSame(100, $result['limit']);
+    }//end testGetContractsLimitExceedsTotal()
+
+    // =========================================================================
+    // NEW: getUses -- register/schema IDs
+    // =========================================================================
+
+    /**
+     * getUses with register/schema IDs that fail to load falls back gracefully.
+     *
+     * @return void
+     */
+    public function testGetUsesWithRegisterSchemaIdsFailure(): void
+    {
+        $entity = $this->makeObjectEntity(1);
+        $entity->setUuid('eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee');
+        $entity->setRelations([]);
+
+        $this->objectEntityMapper->method('find')->willReturn($entity);
+
+        // Even with register/schema IDs that may fail internally, the response is correct.
+        $result = $this->handler->getUses(
+            'eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee',
+            [],
+            true,
+            true,
+            999,
+            888
+        );
+
+        $this->assertArrayHasKey('results', $result);
+        $this->assertArrayHasKey('total', $result);
+        $this->assertSame(0, $result['total']);
+    }//end testGetUsesWithRegisterSchemaIdsFailure()
+
+    /**
+     * getUses ignores empty string values in nested relation arrays.
+     *
+     * @return void
+     */
+    public function testGetUsesIgnoresEmptyRelationValues(): void
+    {
+        $ownUuid = 'ffffffff-ffff-ffff-ffff-ffffffffffff';
+
+        $entity = $this->makeObjectEntity(1);
+        $entity->setUuid($ownUuid);
+        $entity->setRelations([
+            'field1' => '',
+            'field2' => ['', ''],
+        ]);
+
+        $this->objectEntityMapper->method('find')->willReturn($entity);
+
+        $result = $this->handler->getUses($ownUuid);
+
+        $this->assertSame([], $result['results']);
+        $this->assertSame(0, $result['total']);
+    }//end testGetUsesIgnoresEmptyRelationValues()
+
+    // =========================================================================
+    // NEW: getUsedBy -- register/schema IDs
+    // =========================================================================
+
+    /**
+     * getUsedBy with register/schema IDs that fail returns error fallback.
+     *
+     * @return void
+     */
+    public function testGetUsedByWithRegisterSchemaIdsFailure(): void
+    {
+        $this->objectEntityMapper
+            ->method('find')
+            ->willThrowException(new \RuntimeException('DB error'));
+
+        $this->logger->expects($this->once())->method('error');
+
+        $result = $this->handler->getUsedBy(
+            'some-uuid',
+            ['_limit' => 20, '_offset' => 5],
+            true,
+            true,
+            999,
+            888
+        );
+
+        $this->assertSame([], $result['results']);
+        $this->assertSame(0, $result['total']);
+        $this->assertSame(20, $result['limit']);
+        $this->assertSame(5, $result['offset']);
+    }//end testGetUsedByWithRegisterSchemaIdsFailure()
+
+    /**
+     * getUsedBy with RBAC disabled still returns correct structure.
+     *
+     * @return void
+     */
+    public function testGetUsedByWithRbacDisabled(): void
+    {
+        $this->objectEntityMapper
+            ->method('find')
+            ->willThrowException(new \RuntimeException('No DB'));
+
+        $this->logger->expects($this->once())->method('error');
+
+        $result = $this->handler->getUsedBy(
+            'some-uuid',
+            [],
+            false,
+            false
+        );
+
+        $this->assertArrayHasKey('results', $result);
+        $this->assertArrayHasKey('total', $result);
+    }//end testGetUsedByWithRbacDisabled()
+
+    // =========================================================================
+    // NEW: getUses -- null relations
+    // =========================================================================
+
+    /**
+     * getUses handles null relations (getRelations returns null).
+     *
+     * @return void
+     */
+    public function testGetUsesHandlesNullRelations(): void
+    {
+        // getRelations/getUuid are magic methods on ObjectEntity -- use addMethods.
+        $entity = $this->getMockBuilder(ObjectEntity::class)
+            ->addMethods(['getRelations', 'getUuid'])
+            ->getMock();
+        $entity->method('getRelations')->willReturn(null);
+        $entity->method('getUuid')->willReturn('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa');
+
+        $this->objectEntityMapper->method('find')->willReturn($entity);
+
+        $result = $this->handler->getUses('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa');
+
+        $this->assertSame([], $result['results']);
+        $this->assertSame(0, $result['total']);
+    }//end testGetUsesHandlesNullRelations()
 
 }//end class

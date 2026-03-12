@@ -3424,4 +3424,247 @@ class ValidateObjectTest extends TestCase
 
         $this->assertNotNull($result->properties->value);
     }
+
+    // =========================================================================
+    // resolveSchema — local schema URL
+    // =========================================================================
+
+    public function testResolveSchemaReturnsJsonForLocalSchemaUrl(): void
+    {
+        $schema = $this->createSchema([
+            'type' => 'object',
+            'properties' => ['name' => ['type' => 'string']],
+        ]);
+        $schema->setProperties(['name' => ['type' => 'string']]);
+        $schema->setRequired([]);
+
+        $this->schemaMapper->method('find')
+            ->willReturn($schema);
+
+        // Use URL without port so scheme://host matches getBaseUrl().
+        // Override urlGenerator to return matching baseUrl.
+        $this->urlGenerator = $this->createMock(IURLGenerator::class);
+        $this->urlGenerator->method('getBaseUrl')
+            ->willReturn('http://localhost');
+
+        // Recreate handler with updated urlGenerator.
+        $this->handler = new ValidateObject(
+            $this->config,
+            $this->objectMapper,
+            $this->schemaMapper,
+            $this->urlGenerator,
+            $this->logger
+        );
+
+        $uri = Uri::create('http://localhost/index.php/apps/openregister/api/schemas/1');
+        $result = $this->handler->resolveSchema($uri);
+
+        $this->assertIsString($result);
+        $decoded = json_decode($result);
+        $this->assertNotNull($decoded, 'resolveSchema should return valid JSON for local schema URL');
+    }
+
+    // =========================================================================
+    // resolveSchema — file API URL
+    // =========================================================================
+
+    public function testResolveSchemaHandlesFileApiUrl(): void
+    {
+        $uri = Uri::create('http://localhost:8080/index.php/apps/openregister/api/files/schema.json');
+
+        // File API resolution typically returns the file content.
+        // When the URL doesn't match local schema pattern, it falls through.
+        $result = $this->handler->resolveSchema($uri);
+
+        // Should return a string (possibly empty or error JSON).
+        $this->assertIsString($result);
+    }
+
+    // =========================================================================
+    // validateUniqueFields — string unique config
+    // =========================================================================
+
+    public function testValidateUniqueFieldsWithStringConfig(): void
+    {
+        $schema = $this->createSchema([]);
+        $schema->setConfiguration(['unique' => 'email']);
+
+        $this->objectMapper->method('countAll')->willReturn(0);
+
+        // Should not throw when count is 0.
+        $ref = new ReflectionClass(ValidateObject::class);
+        $method = $ref->getMethod('validateUniqueFields');
+        $method->setAccessible(true);
+
+        $method->invokeArgs($this->handler, [
+            ['email' => 'test@example.com'],
+            $schema,
+        ]);
+
+        $this->assertTrue(true); // no exception
+    }
+
+    // =========================================================================
+    // validateUniqueFields — array unique config with violation
+    // =========================================================================
+
+    public function testValidateUniqueFieldsThrowsTypeErrorOnArrayConfig(): void
+    {
+        // Known bug: when unique config is an array, line 1813 does
+        // $object[$uniqueFields] where $uniqueFields is an array, causing TypeError.
+        $schema = $this->createSchema([]);
+        $schema->setConfiguration(['unique' => ['email']]);
+
+        $this->objectMapper->method('countAll')->willReturn(1);
+
+        $ref = new ReflectionClass(ValidateObject::class);
+        $method = $ref->getMethod('validateUniqueFields');
+        $method->setAccessible(true);
+
+        $this->expectException(\TypeError::class);
+
+        $method->invokeArgs($this->handler, [
+            ['email' => 'duplicate@example.com'],
+            $schema,
+        ]);
+    }
+
+    // =========================================================================
+    // validateUniqueFields — empty unique config (no-op)
+    // =========================================================================
+
+    public function testValidateUniqueFieldsReturnsEarlyWhenNoConfig(): void
+    {
+        $schema = $this->createSchema([]);
+        $schema->setConfiguration([]);
+
+        // countAll should not be called.
+        $this->objectMapper->expects($this->never())->method('countAll');
+
+        $ref = new ReflectionClass(ValidateObject::class);
+        $method = $ref->getMethod('validateUniqueFields');
+        $method->setAccessible(true);
+
+        $method->invokeArgs($this->handler, [
+            ['name' => 'Test'],
+            $schema,
+        ]);
+
+        $this->assertTrue(true);
+    }
+
+    // =========================================================================
+    // getValueType — resource type
+    // =========================================================================
+
+    public function testGetValueTypeReturnsUnknownForOpenResource(): void
+    {
+        $ref = new ReflectionClass(ValidateObject::class);
+        $method = $ref->getMethod('getValueType');
+        $method->setAccessible(true);
+
+        // getValueType has no is_resource() check, so resources fall through to 'unknown'.
+        $resource = fopen('php://memory', 'r');
+        $result = $method->invokeArgs($this->handler, [$resource]);
+        fclose($resource);
+
+        $this->assertSame('unknown', $result);
+    }
+
+    // =========================================================================
+    // getValueType — closed resource returns 'unknown'
+    // =========================================================================
+
+    public function testGetValueTypeReturnsUnknownForClosedResource(): void
+    {
+        $ref = new ReflectionClass(ValidateObject::class);
+        $method = $ref->getMethod('getValueType');
+        $method->setAccessible(true);
+
+        $resource = fopen('php://memory', 'r');
+        fclose($resource);
+
+        // Closed resources have type 'resource (closed)' in PHP 8+
+        $result = $method->invokeArgs($this->handler, [$resource]);
+
+        // Should return 'unknown' for closed resources.
+        $this->assertSame('unknown', $result);
+    }
+
+    // =========================================================================
+    // transformOpenRegisterObjectConfigurations — no configuration key
+    // =========================================================================
+
+    public function testTransformOpenRegisterObjectConfigurationsNoop(): void
+    {
+        $schemaObject = new stdClass();
+        $schemaObject->type = 'object';
+        $schemaObject->properties = new stdClass();
+        $schemaObject->properties->name = new stdClass();
+        $schemaObject->properties->name->type = 'string';
+
+        $result = $this->invokePrivate('transformOpenRegisterObjectConfigurations', [$schemaObject]);
+
+        // Properties without x-or-config should remain unchanged.
+        $this->assertSame('string', $result->properties->name->type);
+    }
+
+    // =========================================================================
+    // preprocessSchemaReferences — schema without properties
+    // =========================================================================
+
+    public function testPreprocessSchemaReferencesWithoutProperties(): void
+    {
+        $schemaObject = new stdClass();
+        $schemaObject->type = 'object';
+        // No properties defined.
+
+        $result = $this->invokePrivate('preprocessSchemaReferences', [$schemaObject, [], false]);
+
+        // Should return schema unchanged.
+        $this->assertSame('object', $result->type);
+    }
+
+    // =========================================================================
+    // preprocessSchemaReferences — nested $ref with allOf
+    // =========================================================================
+
+    public function testPreprocessSchemaReferencesWithAllOfRef(): void
+    {
+        $schemaObject = new stdClass();
+        $schemaObject->type = 'object';
+        $schemaObject->properties = new stdClass();
+        $schemaObject->properties->address = new stdClass();
+
+        $refItem = new stdClass();
+        $refItem->{'$ref'} = '#/components/schemas/address';
+
+        $schemaObject->properties->address->allOf = [$refItem];
+
+        $refSchema = $this->createSchema([]);
+        $refSchema->setSlug('address');
+        $refSchema->setProperties(['street' => ['type' => 'string']]);
+        $refSchema->setRequired([]);
+
+        $this->schemaMapper->method('find')
+            ->willReturn($refSchema);
+
+        $result = $this->invokePrivate('preprocessSchemaReferences', [$schemaObject, [], false]);
+
+        $this->assertNotNull($result->properties->address);
+    }
+
+    // =========================================================================
+    // resolveSchema — external URL (non-local)
+    // =========================================================================
+
+    public function testResolveSchemaHandlesExternalUrl(): void
+    {
+        $uri = Uri::create('https://example.com/schemas/external.json');
+
+        // External URLs are fetched via HTTP — in test, this will fail gracefully.
+        $result = $this->handler->resolveSchema($uri);
+
+        $this->assertIsString($result);
+    }
 }

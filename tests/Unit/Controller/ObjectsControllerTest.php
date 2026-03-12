@@ -5767,4 +5767,1388 @@ class ObjectsControllerTest extends TestCase
 
         $this->assertSame(200, $result->getStatus());
     }
+
+    // =========================================================================
+    // export() — CSV export path
+    // =========================================================================
+
+    public function testExportReturnsCsvDownloadResponse(): void
+    {
+        $registerEntity = $this->getMockBuilder(\OCA\OpenRegister\Db\Register::class)
+            ->addMethods(['getSlug'])
+            ->getMock();
+        $registerEntity->method('getSlug')->willReturn('my-register');
+
+        $schemaEntity = $this->getMockBuilder(\OCA\OpenRegister\Db\Schema::class)
+            ->addMethods(['getSlug'])
+            ->getMock();
+        $schemaEntity->method('getSlug')->willReturn('my-schema');
+
+        $this->registerMapper->method('find')->willReturn($registerEntity);
+        $this->schemaMapper->method('find')->willReturn($schemaEntity);
+
+        $this->request->method('getParams')->willReturn(['format' => 'csv']);
+        $this->request->method('getParam')->willReturnCallback(function (string $key, $default = null) {
+            if ($key === 'format') {
+                return 'csv';
+            }
+            return $default;
+        });
+
+        $user = $this->createMock(\OCP\IUser::class);
+        $this->userSession->method('getUser')->willReturn($user);
+
+        $this->exportService->method('exportToCsv')->willReturn('col1,col2\nval1,val2');
+
+        $this->objectService->method('setRegister')->willReturnSelf();
+        $this->objectService->method('setSchema')->willReturnSelf();
+
+        $result = $this->controller->export('1', '2', $this->objectService);
+
+        $this->assertInstanceOf(\OCP\AppFramework\Http\DataDownloadResponse::class, $result);
+        $this->assertStringContainsString('.csv', $result->getHeaders()['Content-Disposition'] ?? '');
+    }
+
+    // =========================================================================
+    // export() — Excel export path (default)
+    // =========================================================================
+
+    public function testExportReturnsExcelDownloadResponseByDefault(): void
+    {
+        $registerEntity = $this->getMockBuilder(\OCA\OpenRegister\Db\Register::class)
+            ->addMethods(['getSlug'])
+            ->getMock();
+        $registerEntity->method('getSlug')->willReturn('test-reg');
+
+        $schemaEntity = $this->getMockBuilder(\OCA\OpenRegister\Db\Schema::class)
+            ->addMethods(['getSlug'])
+            ->getMock();
+        $schemaEntity->method('getSlug')->willReturn('test-schema');
+
+        $this->registerMapper->method('find')->willReturn($registerEntity);
+        $this->schemaMapper->method('find')->willReturn($schemaEntity);
+
+        $this->request->method('getParams')->willReturn([]);
+        $this->request->method('getParam')->willReturnCallback(function (string $key, $default = null) {
+            if ($key === 'type') {
+                return 'excel';
+            }
+            return $default;
+        });
+
+        $user = $this->createMock(\OCP\IUser::class);
+        $this->userSession->method('getUser')->willReturn($user);
+
+        $spreadsheet = new \PhpOffice\PhpSpreadsheet\Spreadsheet();
+        $spreadsheet->getActiveSheet()->setCellValue('A1', 'test');
+        $this->exportService->method('exportToExcel')->willReturn($spreadsheet);
+
+        $this->objectService->method('setRegister')->willReturnSelf();
+        $this->objectService->method('setSchema')->willReturnSelf();
+
+        $result = $this->controller->export('1', '2', $this->objectService);
+
+        $this->assertInstanceOf(\OCP\AppFramework\Http\DataDownloadResponse::class, $result);
+    }
+
+    // =========================================================================
+    // export() — Register/Schema with null slugs uses fallback names
+    // =========================================================================
+
+    public function testExportUsesDefaultSlugsWhenNull(): void
+    {
+        $registerEntity = $this->getMockBuilder(\OCA\OpenRegister\Db\Register::class)
+            ->addMethods(['getSlug'])
+            ->getMock();
+        $registerEntity->method('getSlug')->willReturn(null);
+
+        $schemaEntity = $this->getMockBuilder(\OCA\OpenRegister\Db\Schema::class)
+            ->addMethods(['getSlug'])
+            ->getMock();
+        $schemaEntity->method('getSlug')->willReturn(null);
+
+        $this->registerMapper->method('find')->willReturn($registerEntity);
+        $this->schemaMapper->method('find')->willReturn($schemaEntity);
+
+        $this->request->method('getParams')->willReturn(['format' => 'csv']);
+        $this->request->method('getParam')->willReturnCallback(function (string $key, $default = null) {
+            if ($key === 'format') {
+                return 'csv';
+            }
+            return $default;
+        });
+
+        $user = $this->createMock(\OCP\IUser::class);
+        $this->userSession->method('getUser')->willReturn($user);
+
+        $this->exportService->method('exportToCsv')->willReturn('data');
+
+        $this->objectService->method('setRegister')->willReturnSelf();
+        $this->objectService->method('setSchema')->willReturnSelf();
+
+        $result = $this->controller->export('1', '2', $this->objectService);
+
+        $this->assertInstanceOf(\OCP\AppFramework\Http\DataDownloadResponse::class, $result);
+    }
+
+    // =========================================================================
+    // export() — format=csv via 'type' param fallback
+    // =========================================================================
+
+    public function testExportCsvViaTypeParam(): void
+    {
+        $registerEntity = $this->getMockBuilder(\OCA\OpenRegister\Db\Register::class)
+            ->addMethods(['getSlug'])
+            ->getMock();
+        $registerEntity->method('getSlug')->willReturn('reg');
+
+        $schemaEntity = $this->getMockBuilder(\OCA\OpenRegister\Db\Schema::class)
+            ->addMethods(['getSlug'])
+            ->getMock();
+        $schemaEntity->method('getSlug')->willReturn('sch');
+
+        $this->registerMapper->method('find')->willReturn($registerEntity);
+        $this->schemaMapper->method('find')->willReturn($schemaEntity);
+
+        $this->request->method('getParams')->willReturn(['type' => 'csv']);
+        $this->request->method('getParam')->willReturnCallback(function (string $key, $default = null) {
+            if ($key === 'format') {
+                return null;
+            }
+            if ($key === 'type') {
+                return 'csv';
+            }
+            return $default;
+        });
+
+        $user = $this->createMock(\OCP\IUser::class);
+        $this->userSession->method('getUser')->willReturn($user);
+
+        $this->exportService->method('exportToCsv')->willReturn('csv-content');
+
+        $this->objectService->method('setRegister')->willReturnSelf();
+        $this->objectService->method('setSchema')->willReturnSelf();
+
+        $result = $this->controller->export('1', '2', $this->objectService);
+
+        $this->assertInstanceOf(\OCP\AppFramework\Http\DataDownloadResponse::class, $result);
+    }
+
+    // =========================================================================
+    // index() — cross-table search with comma-separated schemas
+    // =========================================================================
+
+    public function testIndexWithCommaSeparatedSchemasTriggersCrossTableSearch(): void
+    {
+        $this->request->method('getParams')->willReturn([
+            'schemas' => '1,2',
+        ]);
+
+        $this->objectService->method('setRegister')->willReturnSelf();
+        $this->objectService->method('setSchema')->willReturnSelf();
+        $this->objectService->method('getRegister')->willReturn(1);
+        $this->objectService->method('getSchema')->willReturn(1);
+
+        // crossTableSearch uses \OC::$server->get() which returns DI mocks that throw
+        // DoesNotExistException, resulting in a 404 with "No valid magic-mapped register+schema combinations found"
+        $result = $this->controller->index('1', '1', $this->objectService);
+
+        $this->assertSame(404, $result->getStatus());
+        $data = $result->getData();
+        $this->assertArrayHasKey('message', $data);
+        $this->assertStringContainsString('No valid magic-mapped', $data['message']);
+    }
+
+    // =========================================================================
+    // index() — cross-table search with array schemas param
+    // =========================================================================
+
+    public function testIndexWithArraySchemasTriggersCrossTableSearch(): void
+    {
+        $this->request->method('getParams')->willReturn([
+            'schemas' => ['1', '2'],
+        ]);
+
+        $this->objectService->method('setRegister')->willReturnSelf();
+        $this->objectService->method('setSchema')->willReturnSelf();
+        $this->objectService->method('getRegister')->willReturn(1);
+        $this->objectService->method('getSchema')->willReturn(1);
+
+        $result = $this->controller->index('1', '1', $this->objectService);
+
+        $this->assertSame(404, $result->getStatus());
+        $data = $result->getData();
+        $this->assertStringContainsString('No valid magic-mapped', $data['message']);
+    }
+
+    // =========================================================================
+    // index() — cross-table search with multiple registers
+    // =========================================================================
+
+    public function testIndexWithMultipleRegistersTriggersCrossTableSearch(): void
+    {
+        $this->request->method('getParams')->willReturn([
+            'registers' => '1,2',
+        ]);
+
+        $this->objectService->method('setRegister')->willReturnSelf();
+        $this->objectService->method('setSchema')->willReturnSelf();
+        $this->objectService->method('getRegister')->willReturn(1);
+        $this->objectService->method('getSchema')->willReturn(1);
+
+        $result = $this->controller->index('1', '1', $this->objectService);
+
+        $this->assertSame(404, $result->getStatus());
+    }
+
+    // =========================================================================
+    // objects() — cross-table search with multiple schemas
+    // =========================================================================
+
+    public function testObjectsWithMultipleSchemasTriggersCrossTableSearch(): void
+    {
+        $this->request->method('getParams')->willReturn([
+            'register' => '1',
+            'schemas' => '1,2',
+        ]);
+
+        $this->objectService->method('setRegister')->willReturnSelf();
+        $this->objectService->method('setSchema')->willReturnSelf();
+        $this->objectService->method('getRegister')->willReturn(1);
+        $this->objectService->method('getSchema')->willReturn(1);
+
+        $result = $this->controller->objects($this->objectService);
+
+        $this->assertSame(404, $result->getStatus());
+        $data = $result->getData();
+        $this->assertStringContainsString('No valid magic-mapped', $data['message']);
+    }
+
+    // =========================================================================
+    // objects() — cross-table search with multiple registers
+    // =========================================================================
+
+    public function testObjectsWithMultipleRegistersTriggersCrossTableSearch(): void
+    {
+        $this->request->method('getParams')->willReturn([
+            'schema' => '1',
+            'registers' => ['1', '2'],
+        ]);
+
+        $this->objectService->method('setRegister')->willReturnSelf();
+        $this->objectService->method('setSchema')->willReturnSelf();
+        $this->objectService->method('getRegister')->willReturn(1);
+        $this->objectService->method('getSchema')->willReturn(1);
+
+        $result = $this->controller->objects($this->objectService);
+
+        $this->assertSame(404, $result->getStatus());
+    }
+
+    // =========================================================================
+    // objects() — uses _register and _schema prefixed params
+    // =========================================================================
+
+    public function testObjectsWithUnderscorePrefixedMultiSchemas(): void
+    {
+        $this->request->method('getParams')->willReturn([
+            '_register' => '1',
+            'schemas' => '1,2,3',
+        ]);
+
+        $this->objectService->method('setRegister')->willReturnSelf();
+        $this->objectService->method('setSchema')->willReturnSelf();
+        $this->objectService->method('getRegister')->willReturn(1);
+        $this->objectService->method('getSchema')->willReturn(1);
+
+        $result = $this->controller->objects($this->objectService);
+
+        $this->assertSame(404, $result->getStatus());
+    }
+
+    // =========================================================================
+    // show() — _names with nested UUID arrays
+    // =========================================================================
+
+    public function testShowWithExtendNamesCollectsNestedUuids(): void
+    {
+        $this->setupAdminUser();
+        $this->request->method('getParams')->willReturn([
+            '_extend' => '_names',
+        ]);
+
+        $objectEntity = new \OCA\OpenRegister\Db\ObjectEntity();
+        $objectEntity->setUuid('uuid-123');
+        $objectEntity->setObject(['title' => 'Test']);
+
+        $uuid1 = '550e8400-e29b-41d4-a716-446655440000';
+        $uuid2 = '550e8400-e29b-41d4-a716-446655440001';
+        $uuid3 = '550e8400-e29b-41d4-a716-446655440002';
+
+        $cacheHandler = $this->createMock(\OCA\OpenRegister\Service\Object\CacheHandler::class);
+        $cacheHandler->method('getMultipleObjectNames')->willReturn([
+            $uuid1 => 'Name One',
+            $uuid2 => 'Name Two',
+            $uuid3 => 'Name Three',
+        ]);
+
+        $this->objectService->method('setRegister')->willReturnSelf();
+        $this->objectService->method('setSchema')->willReturnSelf();
+        $this->objectService->method('getRegister')->willReturn(1);
+        $this->objectService->method('getSchema')->willReturn(2);
+        $this->objectService->method('find')->willReturn($objectEntity);
+        $this->objectService->method('renderEntity')->willReturn([
+            'title' => 'Test',
+            'ref' => $uuid1,
+            'nested' => [
+                ['subref' => $uuid2],
+                ['deep' => ['innerref' => $uuid3]],
+            ],
+            '@self' => [
+                'uuid' => 'uuid-123',
+                'relations' => [],
+            ],
+        ]);
+        $this->objectService->method('getExtendedObjects')->willReturn([]);
+        $this->objectService->method('getCacheHandler')->willReturn($cacheHandler);
+
+        $result = $this->controller->show('uuid-123', '1', '2', $this->objectService);
+
+        $this->assertSame(200, $result->getStatus());
+        $data = $result->getData();
+        $this->assertArrayHasKey('names', $data['@self']);
+    }
+
+    // =========================================================================
+    // show() — _names skips @self, id, _id keys in collectUuidsFromArray
+    // =========================================================================
+
+    public function testShowWithExtendNamesSkipsMetadataKeys(): void
+    {
+        $this->setupAdminUser();
+        $this->request->method('getParams')->willReturn([
+            '_extend' => '_names',
+        ]);
+
+        $objectEntity = new \OCA\OpenRegister\Db\ObjectEntity();
+        $objectEntity->setUuid('uuid-123');
+        $objectEntity->setObject(['title' => 'Test']);
+
+        $validUuid = '550e8400-e29b-41d4-a716-446655440000';
+        $skippedUuid = '550e8400-e29b-41d4-a716-446655440099';
+
+        $cacheHandler = $this->createMock(\OCA\OpenRegister\Service\Object\CacheHandler::class);
+        // The skipped UUID should NOT be requested because it's under 'id' and '_id' keys
+        $cacheHandler->method('getMultipleObjectNames')->willReturn([
+            $validUuid => 'Valid Name',
+        ]);
+
+        $this->objectService->method('setRegister')->willReturnSelf();
+        $this->objectService->method('setSchema')->willReturnSelf();
+        $this->objectService->method('getRegister')->willReturn(1);
+        $this->objectService->method('getSchema')->willReturn(2);
+        $this->objectService->method('find')->willReturn($objectEntity);
+        $this->objectService->method('renderEntity')->willReturn([
+            'title' => 'Test',
+            'validField' => $validUuid,
+            'id' => $skippedUuid,
+            '_id' => $skippedUuid,
+            '@self' => [
+                'uuid' => 'uuid-123',
+                'relations' => [],
+            ],
+        ]);
+        $this->objectService->method('getExtendedObjects')->willReturn([]);
+        $this->objectService->method('getCacheHandler')->willReturn($cacheHandler);
+
+        $result = $this->controller->show('uuid-123', '1', '2', $this->objectService);
+
+        $this->assertSame(200, $result->getStatus());
+        $data = $result->getData();
+        $this->assertArrayHasKey('names', $data['@self']);
+    }
+
+    // =========================================================================
+    // show() — _names with relations containing non-string/non-uuid values
+    // =========================================================================
+
+    public function testShowWithExtendNamesIgnoresNonUuidRelations(): void
+    {
+        $this->setupAdminUser();
+        $this->request->method('getParams')->willReturn([
+            '_extend' => '_names',
+        ]);
+
+        $objectEntity = new \OCA\OpenRegister\Db\ObjectEntity();
+        $objectEntity->setUuid('uuid-123');
+        $objectEntity->setObject(['title' => 'Test']);
+
+        $cacheHandler = $this->createMock(\OCA\OpenRegister\Service\Object\CacheHandler::class);
+        // No valid UUIDs, so getMultipleObjectNames should not be called
+        // (or called with empty array). We return empty.
+        $cacheHandler->method('getMultipleObjectNames')->willReturn([]);
+
+        $this->objectService->method('setRegister')->willReturnSelf();
+        $this->objectService->method('setSchema')->willReturnSelf();
+        $this->objectService->method('getRegister')->willReturn(1);
+        $this->objectService->method('getSchema')->willReturn(2);
+        $this->objectService->method('find')->willReturn($objectEntity);
+        $this->objectService->method('renderEntity')->willReturn([
+            'title' => 'Test',
+            '@self' => [
+                'uuid' => 'uuid-123',
+                'relations' => [
+                    'not-a-uuid',
+                    12345,
+                    ['also-not-a-uuid'],
+                ],
+            ],
+        ]);
+        $this->objectService->method('getExtendedObjects')->willReturn([]);
+        $this->objectService->method('getCacheHandler')->willReturn($cacheHandler);
+
+        $result = $this->controller->show('uuid-123', '1', '2', $this->objectService);
+
+        $this->assertSame(200, $result->getStatus());
+    }
+
+    // =========================================================================
+    // downloadFiles() — success path (mocked FileService)
+    // =========================================================================
+
+    public function testDownloadFilesReturnsZipOnSuccess(): void
+    {
+        $objectEntity = new \OCA\OpenRegister\Db\ObjectEntity();
+        $objectEntity->setUuid('uuid-123');
+        $objectEntity->setRegister('1');
+        $objectEntity->setSchema('2');
+        $objectEntity->setObject(['title' => 'Test']);
+
+        $this->objectService->method('setRegister')->willReturnSelf();
+        $this->objectService->method('setSchema')->willReturnSelf();
+        $this->objectService->method('find')->willReturn($objectEntity);
+
+        // Create a real temp file for the zip
+        $tempZip = tempnam(sys_get_temp_dir(), 'test_zip_');
+        file_put_contents($tempZip, 'fake-zip-content');
+
+        $fileService = $this->createMock(\OCA\OpenRegister\Service\FileService::class);
+        $fileService->method('createObjectFilesZip')->willReturn([
+            'path' => $tempZip,
+            'filename' => 'test-files.zip',
+            'mimeType' => 'application/zip',
+        ]);
+
+        $this->container->method('get')->willReturn($fileService);
+        $this->request->method('getParam')->willReturn(null);
+
+        $result = $this->controller->downloadFiles('uuid-123', '1', '2', $this->objectService);
+
+        $this->assertInstanceOf(\OCP\AppFramework\Http\DataDownloadResponse::class, $result);
+
+        // Clean up if file still exists
+        if (file_exists($tempZip)) {
+            unlink($tempZip);
+        }
+    }
+
+    // =========================================================================
+    // downloadFiles() — returns 404 when object not found (via DoesNotExist)
+    // =========================================================================
+
+    public function testDownloadFilesReturns404WhenObjectDoesNotExistViaException(): void
+    {
+        $this->objectService->method('setRegister')->willReturnSelf();
+        $this->objectService->method('setSchema')->willReturnSelf();
+        $this->objectService->method('find')
+            ->willThrowException(new \OCP\AppFramework\Db\DoesNotExistException('Not found'));
+
+        $result = $this->controller->downloadFiles('nonexistent', '1', '2', $this->objectService);
+
+        $this->assertInstanceOf(\OCP\AppFramework\Http\JSONResponse::class, $result);
+        $this->assertSame(404, $result->getStatus());
+    }
+
+    // =========================================================================
+    // downloadFiles() — custom filename parameter
+    // =========================================================================
+
+    public function testDownloadFilesUsesCustomFilename(): void
+    {
+        $objectEntity = new \OCA\OpenRegister\Db\ObjectEntity();
+        $objectEntity->setUuid('uuid-123');
+        $objectEntity->setRegister('1');
+        $objectEntity->setSchema('2');
+        $objectEntity->setObject(['title' => 'Test']);
+
+        $this->objectService->method('setRegister')->willReturnSelf();
+        $this->objectService->method('setSchema')->willReturnSelf();
+        $this->objectService->method('find')->willReturn($objectEntity);
+
+        $tempZip = tempnam(sys_get_temp_dir(), 'test_zip_');
+        file_put_contents($tempZip, 'fake-zip-content');
+
+        $fileService = $this->createMock(\OCA\OpenRegister\Service\FileService::class);
+        $fileService->method('createObjectFilesZip')->willReturn([
+            'path' => $tempZip,
+            'filename' => 'custom-name.zip',
+            'mimeType' => 'application/zip',
+        ]);
+
+        $this->container->method('get')->willReturn($fileService);
+        $this->request->method('getParam')->willReturn('custom-name');
+
+        $result = $this->controller->downloadFiles('uuid-123', '1', '2', $this->objectService);
+
+        $this->assertInstanceOf(\OCP\AppFramework\Http\DataDownloadResponse::class, $result);
+
+        if (file_exists($tempZip)) {
+            unlink($tempZip);
+        }
+    }
+
+    // =========================================================================
+    // downloadFiles() — returns 500 when ZIP creation fails
+    // =========================================================================
+
+    public function testDownloadFilesReturns500WhenZipCreationFails(): void
+    {
+        $objectEntity = new \OCA\OpenRegister\Db\ObjectEntity();
+        $objectEntity->setUuid('uuid-123');
+        $objectEntity->setRegister('1');
+        $objectEntity->setSchema('2');
+        $objectEntity->setObject(['title' => 'Test']);
+
+        $this->objectService->method('setRegister')->willReturnSelf();
+        $this->objectService->method('setSchema')->willReturnSelf();
+        $this->objectService->method('find')->willReturn($objectEntity);
+
+        $fileService = $this->createMock(\OCA\OpenRegister\Service\FileService::class);
+        $fileService->method('createObjectFilesZip')
+            ->willThrowException(new \Exception('Disk full'));
+
+        $this->container->method('get')->willReturn($fileService);
+        $this->request->method('getParam')->willReturn(null);
+
+        $result = $this->controller->downloadFiles('uuid-123', '1', '2', $this->objectService);
+
+        $this->assertInstanceOf(\OCP\AppFramework\Http\JSONResponse::class, $result);
+        $this->assertSame(500, $result->getStatus());
+        $data = $result->getData();
+        $this->assertStringContainsString('Disk full', $data['error']);
+    }
+
+    // =========================================================================
+    // stripEmptyValues() — via show() - preserves 0, false, "0"
+    // =========================================================================
+
+    public function testShowStripEmptyValuesPreservesZeroAndFalse(): void
+    {
+        $this->setupAdminUser();
+        $this->request->method('getParams')->willReturn([]);
+
+        $objectEntity = new \OCA\OpenRegister\Db\ObjectEntity();
+        $objectEntity->setUuid('uuid-123');
+        $objectEntity->setObject(['title' => 'Test']);
+
+        $this->objectService->method('setRegister')->willReturnSelf();
+        $this->objectService->method('setSchema')->willReturnSelf();
+        $this->objectService->method('getRegister')->willReturn(1);
+        $this->objectService->method('getSchema')->willReturn(2);
+        $this->objectService->method('find')->willReturn($objectEntity);
+        $this->objectService->method('renderEntity')->willReturn([
+            'title' => 'Test',
+            'count' => 0,
+            'active' => false,
+            'code' => '0',
+            'empty_string' => '',
+            'null_val' => null,
+            '@self' => ['uuid' => 'uuid-123'],
+        ]);
+
+        $result = $this->controller->show('uuid-123', '1', '2', $this->objectService);
+
+        $this->assertSame(200, $result->getStatus());
+        $data = $result->getData();
+        $this->assertSame(0, $data['count']);
+        $this->assertSame(false, $data['active']);
+        $this->assertSame('0', $data['code']);
+        $this->assertArrayNotHasKey('empty_string', $data);
+        $this->assertArrayNotHasKey('null_val', $data);
+    }
+
+    // =========================================================================
+    // stripEmptyValues() — nested associative arrays with all empty values removed
+    // =========================================================================
+
+    public function testShowStripsNestedAssociativeArraysWithAllEmptyValues(): void
+    {
+        $this->setupAdminUser();
+        $this->request->method('getParams')->willReturn([]);
+
+        $objectEntity = new \OCA\OpenRegister\Db\ObjectEntity();
+        $objectEntity->setUuid('uuid-123');
+        $objectEntity->setObject(['title' => 'Test']);
+
+        $this->objectService->method('setRegister')->willReturnSelf();
+        $this->objectService->method('setSchema')->willReturnSelf();
+        $this->objectService->method('getRegister')->willReturn(1);
+        $this->objectService->method('getSchema')->willReturn(2);
+        $this->objectService->method('find')->willReturn($objectEntity);
+        $this->objectService->method('renderEntity')->willReturn([
+            'title' => 'Test',
+            'metadata' => [
+                'author' => '',
+                'date' => null,
+            ],
+            '@self' => ['uuid' => 'uuid-123'],
+        ]);
+
+        $result = $this->controller->show('uuid-123', '1', '2', $this->objectService);
+
+        $this->assertSame(200, $result->getStatus());
+        $data = $result->getData();
+        // metadata has only empty values, so it should be stripped entirely
+        $this->assertArrayNotHasKey('metadata', $data);
+    }
+
+    // =========================================================================
+    // stripEmptyValues() — sequential arrays preserve non-empty items
+    // =========================================================================
+
+    public function testShowStripsSequentialArraysPreservingNonEmptyItems(): void
+    {
+        $this->setupAdminUser();
+        $this->request->method('getParams')->willReturn([]);
+
+        $objectEntity = new \OCA\OpenRegister\Db\ObjectEntity();
+        $objectEntity->setUuid('uuid-123');
+        $objectEntity->setObject(['title' => 'Test']);
+
+        $this->objectService->method('setRegister')->willReturnSelf();
+        $this->objectService->method('setSchema')->willReturnSelf();
+        $this->objectService->method('getRegister')->willReturn(1);
+        $this->objectService->method('getSchema')->willReturn(2);
+        $this->objectService->method('find')->willReturn($objectEntity);
+        $this->objectService->method('renderEntity')->willReturn([
+            'title' => 'Test',
+            'tags' => ['php', 'nextcloud', 'test'],
+            'nested_list' => [
+                ['name' => 'Item1', 'desc' => ''],
+                ['name' => 'Item2', 'desc' => null],
+            ],
+            '@self' => ['uuid' => 'uuid-123'],
+        ]);
+
+        $result = $this->controller->show('uuid-123', '1', '2', $this->objectService);
+
+        $this->assertSame(200, $result->getStatus());
+        $data = $result->getData();
+        $this->assertSame(['php', 'nextcloud', 'test'], $data['tags']);
+        // nested_list items have desc stripped, but name remains
+        $this->assertCount(2, $data['nested_list']);
+        $this->assertSame('Item1', $data['nested_list'][0]['name']);
+        $this->assertArrayNotHasKey('desc', $data['nested_list'][0]);
+    }
+
+    // =========================================================================
+    // show() — _empty=true preserves all empty values including nested
+    // =========================================================================
+
+    public function testShowWithEmptyTruePreservesNestedEmptyValues(): void
+    {
+        $this->setupAdminUser();
+        $this->request->method('getParams')->willReturn([
+            '_empty' => 'true',
+        ]);
+
+        $objectEntity = new \OCA\OpenRegister\Db\ObjectEntity();
+        $objectEntity->setUuid('uuid-123');
+        $objectEntity->setObject(['title' => 'Test']);
+
+        $this->objectService->method('setRegister')->willReturnSelf();
+        $this->objectService->method('setSchema')->willReturnSelf();
+        $this->objectService->method('getRegister')->willReturn(1);
+        $this->objectService->method('getSchema')->willReturn(2);
+        $this->objectService->method('find')->willReturn($objectEntity);
+        $this->objectService->method('renderEntity')->willReturn([
+            'title' => 'Test',
+            'empty_string' => '',
+            'null_val' => null,
+            'metadata' => [
+                'author' => '',
+                'date' => null,
+            ],
+            '@self' => ['uuid' => 'uuid-123'],
+        ]);
+
+        $result = $this->controller->show('uuid-123', '1', '2', $this->objectService);
+
+        $this->assertSame(200, $result->getStatus());
+        $data = $result->getData();
+        $this->assertArrayHasKey('empty_string', $data);
+        $this->assertArrayHasKey('null_val', $data);
+        $this->assertArrayHasKey('metadata', $data);
+        $this->assertSame('', $data['metadata']['author']);
+    }
+
+    // =========================================================================
+    // show() — extend includes extended objects in @self
+    // =========================================================================
+
+    public function testShowWithExtendIncludesExtendedObjects(): void
+    {
+        $this->setupAdminUser();
+        $this->request->method('getParams')->willReturn([
+            '_extend' => ['relations'],
+        ]);
+
+        $objectEntity = new \OCA\OpenRegister\Db\ObjectEntity();
+        $objectEntity->setUuid('uuid-123');
+        $objectEntity->setObject(['title' => 'Test']);
+
+        $this->objectService->method('setRegister')->willReturnSelf();
+        $this->objectService->method('setSchema')->willReturnSelf();
+        $this->objectService->method('getRegister')->willReturn(1);
+        $this->objectService->method('getSchema')->willReturn(2);
+        $this->objectService->method('find')->willReturn($objectEntity);
+        $this->objectService->method('renderEntity')->willReturn([
+            'title' => 'Test',
+            '@self' => ['uuid' => 'uuid-123'],
+        ]);
+        $this->objectService->method('getExtendedObjects')->willReturn([
+            '550e8400-e29b-41d4-a716-446655440000' => ['title' => 'Extended Object'],
+        ]);
+
+        $result = $this->controller->show('uuid-123', '1', '2', $this->objectService);
+
+        $this->assertSame(200, $result->getStatus());
+        $data = $result->getData();
+        $this->assertArrayHasKey('objects', $data['@self']);
+        $this->assertArrayHasKey('550e8400-e29b-41d4-a716-446655440000', $data['@self']['objects']);
+    }
+
+    // =========================================================================
+    // show() — fields parameter as comma-separated string
+    // =========================================================================
+
+    public function testShowWithFieldsAsCommaSeparatedString(): void
+    {
+        $this->setupAdminUser();
+        $this->request->method('getParams')->willReturn([
+            '_fields' => 'title,description',
+        ]);
+
+        $objectEntity = new \OCA\OpenRegister\Db\ObjectEntity();
+        $objectEntity->setUuid('uuid-123');
+        $objectEntity->setObject(['title' => 'Test']);
+
+        $this->objectService->method('setRegister')->willReturnSelf();
+        $this->objectService->method('setSchema')->willReturnSelf();
+        $this->objectService->method('getRegister')->willReturn(1);
+        $this->objectService->method('getSchema')->willReturn(2);
+        $this->objectService->method('find')->willReturn($objectEntity);
+        $this->objectService->method('renderEntity')->willReturn([
+            'title' => 'Test',
+            '@self' => ['uuid' => 'uuid-123'],
+        ]);
+
+        $result = $this->controller->show('uuid-123', '1', '2', $this->objectService);
+
+        $this->assertSame(200, $result->getStatus());
+    }
+
+    // =========================================================================
+    // show() — unset parameter as comma-separated string
+    // =========================================================================
+
+    public function testShowWithUnsetAsString(): void
+    {
+        $this->setupAdminUser();
+        $this->request->method('getParams')->willReturn([
+            '_unset' => 'description,metadata',
+        ]);
+
+        $objectEntity = new \OCA\OpenRegister\Db\ObjectEntity();
+        $objectEntity->setUuid('uuid-123');
+        $objectEntity->setObject(['title' => 'Test']);
+
+        $this->objectService->method('setRegister')->willReturnSelf();
+        $this->objectService->method('setSchema')->willReturnSelf();
+        $this->objectService->method('getRegister')->willReturn(1);
+        $this->objectService->method('getSchema')->willReturn(2);
+        $this->objectService->method('find')->willReturn($objectEntity);
+        $this->objectService->method('renderEntity')->willReturn([
+            'title' => 'Test',
+            '@self' => ['uuid' => 'uuid-123'],
+        ]);
+
+        $result = $this->controller->show('uuid-123', '1', '2', $this->objectService);
+
+        $this->assertSame(200, $result->getStatus());
+    }
+
+    // =========================================================================
+    // show() — filter parameter as comma-separated string
+    // =========================================================================
+
+    public function testShowWithFilterAsString(): void
+    {
+        $this->setupAdminUser();
+        $this->request->method('getParams')->willReturn([
+            '_filter' => 'title,name',
+        ]);
+
+        $objectEntity = new \OCA\OpenRegister\Db\ObjectEntity();
+        $objectEntity->setUuid('uuid-123');
+        $objectEntity->setObject(['title' => 'Test']);
+
+        $this->objectService->method('setRegister')->willReturnSelf();
+        $this->objectService->method('setSchema')->willReturnSelf();
+        $this->objectService->method('getRegister')->willReturn(1);
+        $this->objectService->method('getSchema')->willReturn(2);
+        $this->objectService->method('find')->willReturn($objectEntity);
+        $this->objectService->method('renderEntity')->willReturn([
+            'title' => 'Test',
+            '@self' => ['uuid' => 'uuid-123'],
+        ]);
+
+        $result = $this->controller->show('uuid-123', '1', '2', $this->objectService);
+
+        $this->assertSame(200, $result->getStatus());
+    }
+
+    // =========================================================================
+    // show() — returns null from find() -> 404
+    // =========================================================================
+
+    public function testShowReturns404WhenFindReturnsNull(): void
+    {
+        $this->setupAdminUser();
+        $this->request->method('getParams')->willReturn([]);
+
+        $this->objectService->method('setRegister')->willReturnSelf();
+        $this->objectService->method('setSchema')->willReturnSelf();
+        $this->objectService->method('getRegister')->willReturn(1);
+        $this->objectService->method('getSchema')->willReturn(2);
+        $this->objectService->method('find')->willReturn(null);
+
+        $result = $this->controller->show('uuid-123', '1', '2', $this->objectService);
+
+        $this->assertSame(404, $result->getStatus());
+        $data = $result->getData();
+        $this->assertArrayHasKey('error', $data);
+        $this->assertStringContainsString('not found', $data['error']);
+    }
+
+    // =========================================================================
+    // show() — without @self key in rendered data (no extend processing)
+    // =========================================================================
+
+    public function testShowWithoutAtSelfKeyDoesNotAddExtendData(): void
+    {
+        $this->setupAdminUser();
+        $this->request->method('getParams')->willReturn([
+            '_extend' => ['_registers', '_schemas'],
+        ]);
+
+        $objectEntity = new \OCA\OpenRegister\Db\ObjectEntity();
+        $objectEntity->setUuid('uuid-123');
+        $objectEntity->setObject(['title' => 'Test']);
+
+        $this->objectService->method('setRegister')->willReturnSelf();
+        $this->objectService->method('setSchema')->willReturnSelf();
+        $this->objectService->method('getRegister')->willReturn(1);
+        $this->objectService->method('getSchema')->willReturn(2);
+        $this->objectService->method('find')->willReturn($objectEntity);
+        // renderEntity returns data without @self key
+        $this->objectService->method('renderEntity')->willReturn([
+            'title' => 'Test',
+        ]);
+
+        $result = $this->controller->show('uuid-123', '1', '2', $this->objectService);
+
+        $this->assertSame(200, $result->getStatus());
+        $data = $result->getData();
+        $this->assertArrayNotHasKey('@self', $data);
+        $this->assertArrayNotHasKey('registers', $data);
+    }
+
+    // =========================================================================
+    // create() — generic exception returns 403 (catches \Exception)
+    // =========================================================================
+
+    public function testCreateReturns403OnGenericExceptionIncludingDBException(): void
+    {
+        $this->setupAdminUser();
+
+        $this->request->method('getParams')->willReturn([
+            'title' => 'Test',
+        ]);
+        $this->request->method('getHeader')->willReturn('application/json');
+
+        $this->objectService->method('setRegister')->willReturnSelf();
+        $this->objectService->method('setSchema')->willReturnSelf();
+        $this->objectService->method('getRegister')->willReturn(1);
+        $this->objectService->method('getSchema')->willReturn(2);
+        $this->objectService->method('saveObject')->willThrowException(
+            new DBException('Unique constraint violation')
+        );
+
+        $result = $this->controller->create('1', '2', $this->objectService);
+
+        // DBException extends \Exception, caught by generic catch -> 403
+        $this->assertSame(403, $result->getStatus());
+        $data = $result->getData();
+        $this->assertArrayHasKey('error', $data);
+    }
+
+    // =========================================================================
+    // destroy() — generic exception returns 403 (catches \Exception)
+    // =========================================================================
+
+    public function testDestroyReturns403OnGenericExceptionIncludingDBException(): void
+    {
+        $this->setupAdminUser();
+
+        $this->objectService->method('deleteObject')->willThrowException(
+            new DBException('Foreign key violation')
+        );
+
+        $result = $this->controller->destroy('uuid-123', 'reg', 'schema', $this->objectService);
+
+        // DBException extends \Exception, caught by generic catch -> 403
+        $this->assertSame(403, $result->getStatus());
+    }
+
+    // =========================================================================
+    // update() — generic exception returns 403 with unlock attempt
+    // =========================================================================
+
+    public function testUpdateReturns403OnGenericExceptionWithUnlock(): void
+    {
+        $this->setupAdminUser();
+
+        $objectEntity = new \OCA\OpenRegister\Db\ObjectEntity();
+        $objectEntity->setUuid('uuid-123');
+        $objectEntity->setRegister('1');
+        $objectEntity->setSchema('2');
+        $objectEntity->setObject(['title' => 'Old']);
+
+        $this->request->method('getParams')->willReturn([
+            'title' => 'Updated',
+        ]);
+        $this->request->method('getHeader')->willReturn('application/json');
+
+        $this->objectService->method('setRegister')->willReturnSelf();
+        $this->objectService->method('setSchema')->willReturnSelf();
+        $this->objectService->method('getRegister')->willReturn(1);
+        $this->objectService->method('getSchema')->willReturn(2);
+        $this->objectService->method('findSilent')->willReturn($objectEntity);
+        $this->objectService->method('unlockObject')->willReturn(true);
+        $this->objectService->method('saveObject')->willThrowException(
+            new DBException('Constraint violation')
+        );
+
+        $result = $this->controller->update('uuid-123', '1', '2', $this->objectService);
+
+        $this->assertSame(403, $result->getStatus());
+    }
+
+    // =========================================================================
+    // patch() — generic exception returns 500 with unlock attempt
+    // =========================================================================
+
+    public function testPatchReturns500OnGenericExceptionWithUnlock(): void
+    {
+        $this->setupAdminUser();
+
+        $objectEntity = new \OCA\OpenRegister\Db\ObjectEntity();
+        $objectEntity->setUuid('uuid-123');
+        $objectEntity->setRegister('1');
+        $objectEntity->setSchema('2');
+        $objectEntity->setObject(['title' => 'Old']);
+
+        $this->request->method('getParams')->willReturn([
+            'title' => 'Updated',
+        ]);
+        $this->request->method('getHeader')->willReturn('application/json');
+
+        $this->objectService->method('setRegister')->willReturnSelf();
+        $this->objectService->method('setSchema')->willReturnSelf();
+        $this->objectService->method('getRegister')->willReturn(1);
+        $this->objectService->method('getSchema')->willReturn(2);
+        $this->objectService->method('find')->willReturn($objectEntity);
+        $this->objectService->method('unlockObject')->willReturn(true);
+        $this->objectService->method('saveObject')
+            ->willThrowException(new DBException('Constraint error'));
+
+        $result = $this->controller->patch('uuid-123', '1', '2', $this->objectService);
+
+        $this->assertSame(500, $result->getStatus());
+    }
+
+    // =========================================================================
+    // postPatch() — generic exception returns 500 with unlock attempt
+    // =========================================================================
+
+    public function testPostPatchReturns500OnGenericExceptionWithUnlock(): void
+    {
+        $this->setupAdminUser();
+
+        $objectEntity = new \OCA\OpenRegister\Db\ObjectEntity();
+        $objectEntity->setUuid('uuid-123');
+        $objectEntity->setRegister('1');
+        $objectEntity->setSchema('2');
+        $objectEntity->setObject(['title' => 'Old']);
+
+        $this->request->method('getParams')->willReturn([
+            'title' => 'Updated',
+            'id' => 'uuid-123',
+        ]);
+        $this->request->method('getHeader')->willReturn('application/json');
+
+        $this->objectService->method('setRegister')->willReturnSelf();
+        $this->objectService->method('setSchema')->willReturnSelf();
+        $this->objectService->method('getRegister')->willReturn(1);
+        $this->objectService->method('getSchema')->willReturn(2);
+        $this->objectService->method('find')->willReturn($objectEntity);
+        $this->objectService->method('unlockObject')->willReturn(true);
+        $this->objectService->method('saveObject')
+            ->willThrowException(new DBException('DB error'));
+
+        $result = $this->controller->postPatch('uuid-123', '1', '2', $this->objectService);
+
+        $this->assertSame(500, $result->getStatus());
+    }
+
+    // =========================================================================
+    // objects() — both register and registers params present
+    // =========================================================================
+
+    public function testObjectsWithRegistersArrayOverridesRegisterParam(): void
+    {
+        $this->request->method('getParams')->willReturn([
+            'register' => '1',
+            'schema' => '2',
+            'registers' => ['1', '3'],
+        ]);
+
+        $this->objectService->method('setRegister')->willReturnSelf();
+        $this->objectService->method('setSchema')->willReturnSelf();
+        $this->objectService->method('getRegister')->willReturn(1);
+        $this->objectService->method('getSchema')->willReturn(2);
+
+        $result = $this->controller->objects($this->objectService);
+
+        // Multiple registers triggers crossTableSearch, DI mocks throw -> 404
+        $this->assertSame(404, $result->getStatus());
+    }
+
+    // =========================================================================
+    // index() — schemas param with duplicates gets deduplicated to single
+    // =========================================================================
+
+    public function testIndexWithDuplicateSchemasDoesNotTriggerCrossTable(): void
+    {
+        $this->request->method('getParams')->willReturn([
+            'schemas' => ['1', '1', '1'],
+        ]);
+
+        $this->objectService->method('setRegister')->willReturnSelf();
+        $this->objectService->method('setSchema')->willReturnSelf();
+        $this->objectService->method('getRegister')->willReturn(1);
+        $this->objectService->method('getSchema')->willReturn(1);
+        $this->objectService->method('buildSearchQuery')->willReturn([]);
+        $this->objectService->method('searchObjectsPaginated')->willReturn([
+            'results' => [],
+            'total' => 0,
+            'pages' => 0,
+            'page' => 1,
+            'limit' => 20,
+            'facets' => [],
+        ]);
+
+        // parseMultiValue deduplicates, so ['1','1','1'] becomes ['1'] -> single, no cross-table
+        $result = $this->controller->index('1', '1', $this->objectService);
+
+        $this->assertSame(200, $result->getStatus());
+    }
+
+    // =========================================================================
+    // index() — with single schema param uses normal search
+    // =========================================================================
+
+    public function testIndexWithSingleSchemaParamUsesNormalSearch(): void
+    {
+        $this->request->method('getParams')->willReturn([
+            'schemas' => '5',
+        ]);
+
+        $this->objectService->method('setRegister')->willReturnSelf();
+        $this->objectService->method('setSchema')->willReturnSelf();
+        $this->objectService->method('getRegister')->willReturn(1);
+        $this->objectService->method('getSchema')->willReturn(5);
+        $this->objectService->method('buildSearchQuery')->willReturn([]);
+        $this->objectService->method('searchObjectsPaginated')->willReturn([
+            'results' => [],
+            'total' => 0,
+            'pages' => 0,
+            'page' => 1,
+            'limit' => 20,
+            'facets' => [],
+        ]);
+
+        $result = $this->controller->index('1', '5', $this->objectService);
+
+        $this->assertSame(200, $result->getStatus());
+    }
+
+    // =========================================================================
+    // index() — schemas param is empty string falls back to normal search
+    // =========================================================================
+
+    public function testIndexWithEmptySchemasParamUsesNormalSearch(): void
+    {
+        $this->request->method('getParams')->willReturn([
+            'schemas' => '',
+        ]);
+
+        $this->objectService->method('setRegister')->willReturnSelf();
+        $this->objectService->method('setSchema')->willReturnSelf();
+        $this->objectService->method('getRegister')->willReturn(1);
+        $this->objectService->method('getSchema')->willReturn(1);
+        $this->objectService->method('buildSearchQuery')->willReturn([]);
+        $this->objectService->method('searchObjectsPaginated')->willReturn([
+            'results' => [],
+            'total' => 0,
+            'pages' => 0,
+            'page' => 1,
+            'limit' => 20,
+            'facets' => [],
+        ]);
+
+        $result = $this->controller->index('1', '1', $this->objectService);
+
+        $this->assertSame(200, $result->getStatus());
+    }
+
+    // =========================================================================
+    // objects() — with schemas param array but only one value
+    // =========================================================================
+
+    public function testObjectsWithSingleSchemaArrayUsesNormalSearch(): void
+    {
+        $this->request->method('getParams')->willReturn([
+            'register' => '1',
+            'schema' => '2',
+            'schemas' => ['2'],
+        ]);
+
+        $this->objectService->method('setRegister')->willReturnSelf();
+        $this->objectService->method('setSchema')->willReturnSelf();
+        $this->objectService->method('getRegister')->willReturn(1);
+        $this->objectService->method('getSchema')->willReturn(2);
+        $this->objectService->method('buildSearchQuery')->willReturn([]);
+        $this->objectService->method('searchObjectsPaginated')->willReturn([
+            'results' => [],
+            'total' => 0,
+            'pages' => 0,
+            'page' => 1,
+            'limit' => 20,
+            'facets' => [],
+        ]);
+
+        $result = $this->controller->objects($this->objectService);
+
+        $this->assertSame(200, $result->getStatus());
+    }
+
+    // =========================================================================
+    // index() — cross-table with both schemas and registers arrays
+    // =========================================================================
+
+    public function testIndexWithBothMultipleSchemasAndRegisters(): void
+    {
+        $this->request->method('getParams')->willReturn([
+            'schemas' => ['1', '2'],
+            'registers' => ['3', '4'],
+        ]);
+
+        $this->objectService->method('setRegister')->willReturnSelf();
+        $this->objectService->method('setSchema')->willReturnSelf();
+        $this->objectService->method('getRegister')->willReturn(1);
+        $this->objectService->method('getSchema')->willReturn(1);
+
+        $result = $this->controller->index('1', '1', $this->objectService);
+
+        $this->assertSame(404, $result->getStatus());
+        $data = $result->getData();
+        $this->assertArrayHasKey('results', $data);
+        $this->assertSame(0, $data['total']);
+    }
+
+    // =========================================================================
+    // show() — extend parameter as non-array string gets normalized
+    // =========================================================================
+
+    public function testShowWithExtendAsCommaSeparatedStringParameterWorks(): void
+    {
+        $this->setupAdminUser();
+        $this->request->method('getParams')->willReturn([
+            'extend' => '_registers,_schemas',
+        ]);
+
+        $objectEntity = new \OCA\OpenRegister\Db\ObjectEntity();
+        $objectEntity->setUuid('uuid-123');
+        $objectEntity->setObject(['title' => 'Test']);
+
+        $this->objectService->method('setRegister')->willReturnSelf();
+        $this->objectService->method('setSchema')->willReturnSelf();
+        $this->objectService->method('getRegister')->willReturn(1);
+        $this->objectService->method('getSchema')->willReturn(2);
+        $this->objectService->method('find')->willReturn($objectEntity);
+        $this->objectService->method('renderEntity')->willReturn([
+            'title' => 'Test',
+            '@self' => ['uuid' => 'uuid-123'],
+        ]);
+        $this->objectService->method('getExtendedObjects')->willReturn([]);
+
+        $result = $this->controller->show('uuid-123', '1', '2', $this->objectService);
+
+        $this->assertSame(200, $result->getStatus());
+        $data = $result->getData();
+        // registerEntity/schemaEntity are null from DI mocks, so registers/schemas keys
+        // contain empty arrays which get stripped by stripEmptyValues
+        $this->assertArrayHasKey('@self', $data);
+    }
+
+    // =========================================================================
+    // show() — _names with relations containing nested arrays of UUIDs
+    // =========================================================================
+
+    public function testShowWithExtendNamesNestedRelationArrays(): void
+    {
+        $this->setupAdminUser();
+        $this->request->method('getParams')->willReturn([
+            '_extend' => '_names',
+        ]);
+
+        $objectEntity = new \OCA\OpenRegister\Db\ObjectEntity();
+        $objectEntity->setUuid('uuid-123');
+        $objectEntity->setObject(['title' => 'Test']);
+
+        $uuid1 = '550e8400-e29b-41d4-a716-446655440000';
+        $uuid2 = '550e8400-e29b-41d4-a716-446655440001';
+
+        $cacheHandler = $this->createMock(\OCA\OpenRegister\Service\Object\CacheHandler::class);
+        $cacheHandler->method('getMultipleObjectNames')->willReturn([
+            $uuid1 => 'First',
+            $uuid2 => 'Second',
+        ]);
+
+        $this->objectService->method('setRegister')->willReturnSelf();
+        $this->objectService->method('setSchema')->willReturnSelf();
+        $this->objectService->method('getRegister')->willReturn(1);
+        $this->objectService->method('getSchema')->willReturn(2);
+        $this->objectService->method('find')->willReturn($objectEntity);
+        $this->objectService->method('renderEntity')->willReturn([
+            'title' => 'Test',
+            '@self' => [
+                'uuid' => 'uuid-123',
+                'relations' => [
+                    [$uuid1, $uuid2],
+                ],
+            ],
+        ]);
+        $this->objectService->method('getExtendedObjects')->willReturn([]);
+        $this->objectService->method('getCacheHandler')->willReturn($cacheHandler);
+
+        $result = $this->controller->show('uuid-123', '1', '2', $this->objectService);
+
+        $this->assertSame(200, $result->getStatus());
+        $data = $result->getData();
+        $this->assertArrayHasKey('names', $data['@self']);
+    }
+
+    // =========================================================================
+    // show() — _names with @self.object used for UUID collection
+    // =========================================================================
+
+    public function testShowWithExtendNamesUsesAtSelfObjectForUuids(): void
+    {
+        $this->setupAdminUser();
+        $this->request->method('getParams')->willReturn([
+            '_extend' => '_names',
+        ]);
+
+        $objectEntity = new \OCA\OpenRegister\Db\ObjectEntity();
+        $objectEntity->setUuid('uuid-123');
+        $objectEntity->setObject(['title' => 'Test']);
+
+        $uuid1 = '550e8400-e29b-41d4-a716-446655440000';
+
+        $cacheHandler = $this->createMock(\OCA\OpenRegister\Service\Object\CacheHandler::class);
+        $cacheHandler->method('getMultipleObjectNames')->willReturn([
+            $uuid1 => 'Object Name',
+        ]);
+
+        $this->objectService->method('setRegister')->willReturnSelf();
+        $this->objectService->method('setSchema')->willReturnSelf();
+        $this->objectService->method('getRegister')->willReturn(1);
+        $this->objectService->method('getSchema')->willReturn(2);
+        $this->objectService->method('find')->willReturn($objectEntity);
+        $this->objectService->method('renderEntity')->willReturn([
+            'title' => 'Test',
+            '@self' => [
+                'uuid' => 'uuid-123',
+                'relations' => [],
+                'object' => [
+                    'reference' => $uuid1,
+                ],
+            ],
+        ]);
+        $this->objectService->method('getExtendedObjects')->willReturn([]);
+        $this->objectService->method('getCacheHandler')->willReturn($cacheHandler);
+
+        $result = $this->controller->show('uuid-123', '1', '2', $this->objectService);
+
+        $this->assertSame(200, $result->getStatus());
+        $data = $result->getData();
+        $this->assertArrayHasKey('names', $data['@self']);
+    }
+
+    // =========================================================================
+    // show() — extend with _registers (plural) with null entity
+    // =========================================================================
+
+    public function testShowWithExtendRegistersNullEntityCreatesEmptyRegisters(): void
+    {
+        $this->setupAdminUser();
+        $this->request->method('getParams')->willReturn([
+            '_extend' => ['_registers'],
+        ]);
+
+        $objectEntity = new \OCA\OpenRegister\Db\ObjectEntity();
+        $objectEntity->setUuid('uuid-123');
+        $objectEntity->setObject(['title' => 'Test']);
+
+        $this->objectService->method('setRegister')->willReturnSelf();
+        $this->objectService->method('setSchema')->willReturnSelf();
+        $this->objectService->method('getRegister')->willReturn(1);
+        $this->objectService->method('getSchema')->willReturn(2);
+        $this->objectService->method('find')->willReturn($objectEntity);
+        $this->objectService->method('renderEntity')->willReturn([
+            'title' => 'Test',
+            '@self' => ['uuid' => 'uuid-123'],
+        ]);
+        $this->objectService->method('getExtendedObjects')->willReturn([]);
+
+        $result = $this->controller->show('uuid-123', '1', '2', $this->objectService);
+
+        $this->assertSame(200, $result->getStatus());
+        $data = $result->getData();
+        // registerEntity is null (DI mapper throws), so registers is empty and stripped
+        $this->assertArrayHasKey('@self', $data);
+    }
 }
