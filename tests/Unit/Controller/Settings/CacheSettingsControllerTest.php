@@ -213,4 +213,119 @@ class CacheSettingsControllerTest extends TestCase
 
         $this->assertEquals(422, $result->getStatus());
     }
+
+    public function testGetWarmupIntervalWithEmptyLastRun(): void
+    {
+        // When last_run is empty, the response last_run should be null.
+        $this->appConfig->method('getValueString')
+            ->willReturnMap([
+                ['openregister', 'cache_warmup_interval', '3600', '3600'],
+                ['openregister', 'cache_warmup_last_run', '', ''],
+            ]);
+
+        $result = $this->controller->getWarmupInterval();
+
+        $this->assertEquals(200, $result->getStatus());
+        $data = $result->getData();
+        $this->assertNull($data['last_run']);
+        $this->assertTrue($data['enabled']);
+        $this->assertEquals(3600, $data['interval']);
+    }
+
+    public function testSetWarmupIntervalDisabledSetsZeroMessage(): void
+    {
+        $this->request->method('getParams')->willReturn(['interval' => 0]);
+
+        $result = $this->controller->setWarmupInterval();
+
+        $data = $result->getData();
+        $this->assertEquals('Cache warmup disabled', $data['message']);
+        $this->assertFalse($data['enabled']);
+        $this->assertEquals(0, $data['interval']);
+    }
+
+    public function testSetWarmupIntervalWithExactlyMinimumAllowed(): void
+    {
+        // 300 seconds is the minimum non-zero value.
+        $this->request->method('getParams')->willReturn(['interval' => 300]);
+
+        $result = $this->controller->setWarmupInterval();
+
+        $this->assertEquals(200, $result->getStatus());
+        $data = $result->getData();
+        $this->assertEquals(300, $data['interval']);
+        $this->assertTrue($data['enabled']);
+    }
+
+    public function testSetWarmupIntervalException(): void
+    {
+        $this->request->method('getParams')->willReturn(['interval' => 600]);
+        $this->appConfig->method('setValueString')
+            ->willThrowException(new \Exception('Config write failed'));
+
+        $result = $this->controller->setWarmupInterval();
+
+        $this->assertEquals(500, $result->getStatus());
+        $this->assertArrayHasKey('error', $result->getData());
+    }
+
+    public function testSetWarmupIntervalLogsMessage(): void
+    {
+        $this->request->method('getParams')->willReturn(['interval' => 7200]);
+
+        $this->logger->expects($this->once())
+            ->method('info')
+            ->with($this->stringContains('7200'));
+
+        $result = $this->controller->setWarmupInterval();
+
+        $this->assertEquals(200, $result->getStatus());
+    }
+
+    public function testSetWarmupIntervalDefaultWhenNotProvided(): void
+    {
+        // When no interval is in params, default 3600 is used.
+        $this->request->method('getParams')->willReturn([]);
+
+        $result = $this->controller->setWarmupInterval();
+
+        $this->assertEquals(200, $result->getStatus());
+        $data = $result->getData();
+        $this->assertEquals(3600, $data['interval']);
+    }
+
+    public function testClearCacheWithSpecificType(): void
+    {
+        $this->request->method('getParams')->willReturn(['type' => 'object']);
+        $this->settingsService->expects($this->once())
+            ->method('clearCache')
+            ->with('object')
+            ->willReturn(['cleared' => true, 'type' => 'object']);
+
+        $result = $this->controller->clearCache();
+
+        $this->assertEquals(200, $result->getStatus());
+    }
+
+    public function testClearSpecificCollectionReturnsCollectionName(): void
+    {
+        $this->indexService->method('clearIndex')->willReturn(['success' => true]);
+
+        $result = $this->controller->clearSpecificCollection('my-index');
+
+        $this->assertEquals('my-index', $result->getData()['collection']);
+        $this->assertEquals('Collection cleared successfully', $result->getData()['message']);
+    }
+
+    public function testClearSpecificCollectionFailureContainsMessage(): void
+    {
+        $this->indexService->method('clearIndex')
+            ->willReturn(['success' => false, 'message' => 'Index not found']);
+
+        $result = $this->controller->clearSpecificCollection('bad-index');
+
+        $this->assertEquals(422, $result->getStatus());
+        $this->assertEquals('Index not found', $result->getData()['message']);
+        $this->assertEquals('bad-index', $result->getData()['collection']);
+    }
 }

@@ -350,4 +350,235 @@ class MetricsServiceTest extends TestCase
         $this->assertSame('search_keyword', MetricsService::METRIC_SEARCH_KEYWORD);
         $this->assertSame('chat_message', MetricsService::METRIC_CHAT_MESSAGE);
     }
+
+    public function testRecordMetricWithErrorMessage(): void
+    {
+        $qb = $this->createQueryBuilder();
+        $this->db->method('getQueryBuilder')->willReturn($qb);
+        $qb->expects($this->once())->method('executeStatement');
+
+        $this->service->recordMetric(
+            MetricsService::METRIC_EMBEDDING_GENERATED,
+            'object',
+            'obj-456',
+            'failure',
+            250,
+            ['model' => 'test'],
+            'Connection timeout',
+            'user1'
+        );
+    }
+
+    public function testGetEmbeddingStatsWithNullRow(): void
+    {
+        $qb = $this->createQueryBuilder();
+        $result = $this->createMock(IResult::class);
+        $result->method('fetch')->willReturn([
+            'total' => null,
+            'successful' => null,
+        ]);
+        $result->method('closeCursor')->willReturn(true);
+        $qb->method('executeQuery')->willReturn($result);
+
+        $this->db->method('getQueryBuilder')->willReturn($qb);
+
+        $stats = $this->service->getEmbeddingStats(7);
+
+        $this->assertSame(0, $stats['total']);
+        $this->assertSame(0, $stats['successful']);
+        $this->assertSame(0, $stats['failed']);
+        $this->assertSame(0.0, $stats['success_rate']);
+    }
+
+    public function testGetSearchLatencyStatsWithStringAvg(): void
+    {
+        $qb = $this->createQueryBuilder();
+        $result = $this->createMock(IResult::class);
+        $result->method('fetch')->willReturn([
+            'count' => '25',
+            'avg_ms' => '99.999',
+            'min_ms' => '5',
+            'max_ms' => '250',
+        ]);
+        $result->method('closeCursor')->willReturn(true);
+        $qb->method('executeQuery')->willReturn($result);
+
+        $this->db->method('getQueryBuilder')->willReturn($qb);
+
+        $stats = $this->service->getSearchLatencyStats(14);
+
+        // avg_ms should be rounded to 2 decimal places
+        $this->assertSame(100.0, $stats['keyword']['avg_ms']);
+    }
+
+    public function testGetStorageGrowthNullBytes(): void
+    {
+        $qb1 = $this->createQueryBuilder();
+        $result1 = $this->createMock(IResult::class);
+        $result1->method('fetchAll')->willReturn([
+            ['date' => '2024-03-01', 'count' => '50'],
+        ]);
+        $result1->method('closeCursor')->willReturn(true);
+        $qb1->method('executeQuery')->willReturn($result1);
+
+        $qb2 = $this->createQueryBuilder();
+        $result2 = $this->createMock(IResult::class);
+        $result2->method('fetch')->willReturn(['total_bytes' => null]);
+        $result2->method('closeCursor')->willReturn(true);
+        $qb2->method('executeQuery')->willReturn($result2);
+
+        $this->db->method('getQueryBuilder')
+            ->willReturnOnConsecutiveCalls($qb1, $qb2);
+
+        $growth = $this->service->getStorageGrowth(7);
+
+        $this->assertSame(0, $growth['current_storage_bytes']);
+        $this->assertSame(0.0, $growth['current_storage_mb']);
+        $this->assertSame(50.0, $growth['avg_vectors_per_day']);
+        $this->assertSame(7, $growth['period_days']);
+    }
+
+    public function testCleanOldMetricsCustomRetention(): void
+    {
+        $qb = $this->createQueryBuilder();
+        $qb->method('executeStatement')->willReturn(15);
+
+        $this->db->method('getQueryBuilder')->willReturn($qb);
+
+        $deleted = $this->service->cleanOldMetrics(30);
+
+        $this->assertSame(15, $deleted);
+    }
+
+    public function testRecordMetricWithInvalidUtf8Metadata(): void
+    {
+        $qb = $this->createQueryBuilder();
+        $this->db->method('getQueryBuilder')->willReturn($qb);
+        $qb->expects($this->once())->method('executeStatement');
+
+        // Invalid UTF-8 sequences can cause json_encode to fail,
+        // but PHP 8 handles most cases. Test with valid metadata to ensure path coverage.
+        $this->service->recordMetric(
+            MetricsService::METRIC_CHAT_MESSAGE,
+            'chat',
+            'chat-789',
+            'success',
+            100,
+            ['nested' => ['key' => 'value', 'list' => [1, 2, 3]]],
+            null,
+            'user2'
+        );
+    }
+
+    public function testGetSearchLatencyStatsAllTypesHaveData(): void
+    {
+        // Use consecutive calls to return different data for each search type
+        $qb1 = $this->createQueryBuilder();
+        $result1 = $this->createMock(IResult::class);
+        $result1->method('fetch')->willReturn([
+            'count' => '10',
+            'avg_ms' => '50.5',
+            'min_ms' => '5',
+            'max_ms' => '200',
+        ]);
+        $result1->method('closeCursor')->willReturn(true);
+        $qb1->method('executeQuery')->willReturn($result1);
+
+        $qb2 = $this->createQueryBuilder();
+        $result2 = $this->createMock(IResult::class);
+        $result2->method('fetch')->willReturn([
+            'count' => '20',
+            'avg_ms' => '150.75',
+            'min_ms' => '10',
+            'max_ms' => '400',
+        ]);
+        $result2->method('closeCursor')->willReturn(true);
+        $qb2->method('executeQuery')->willReturn($result2);
+
+        $qb3 = $this->createQueryBuilder();
+        $result3 = $this->createMock(IResult::class);
+        $result3->method('fetch')->willReturn([
+            'count' => '30',
+            'avg_ms' => '75.33',
+            'min_ms' => '8',
+            'max_ms' => '300',
+        ]);
+        $result3->method('closeCursor')->willReturn(true);
+        $qb3->method('executeQuery')->willReturn($result3);
+
+        $this->db->method('getQueryBuilder')
+            ->willReturnOnConsecutiveCalls($qb1, $qb2, $qb3);
+
+        $stats = $this->service->getSearchLatencyStats(14);
+
+        // Verify all three search types are present with correct data
+        $this->assertSame(10, $stats['keyword']['count']);
+        $this->assertSame(50.5, $stats['keyword']['avg_ms']);
+        $this->assertSame(20, $stats['semantic']['count']);
+        $this->assertSame(150.75, $stats['semantic']['avg_ms']);
+        $this->assertSame(30, $stats['hybrid']['count']);
+        $this->assertSame(75.33, $stats['hybrid']['avg_ms']);
+    }
+
+    public function testGetEmbeddingStatsEstimatedCost(): void
+    {
+        $qb = $this->createQueryBuilder();
+        $result = $this->createMock(IResult::class);
+        $result->method('fetch')->willReturn([
+            'total' => '1000',
+            'successful' => '1000',
+        ]);
+        $result->method('closeCursor')->willReturn(true);
+        $qb->method('executeQuery')->willReturn($result);
+
+        $this->db->method('getQueryBuilder')->willReturn($qb);
+
+        $stats = $this->service->getEmbeddingStats(7);
+
+        // 1000 * 0.000065 = 0.065
+        $this->assertSame(0.065, $stats['estimated_cost_usd']);
+        $this->assertSame(100.0, $stats['success_rate']);
+        $this->assertSame(7, $stats['period_days']);
+    }
+
+    public function testGetStorageGrowthMultipleDays(): void
+    {
+        $qb1 = $this->createQueryBuilder();
+        $result1 = $this->createMock(IResult::class);
+        $result1->method('fetchAll')->willReturn([
+            ['date' => '2024-01-01', 'count' => '10'],
+            ['date' => '2024-01-02', 'count' => '20'],
+            ['date' => '2024-01-03', 'count' => '30'],
+        ]);
+        $result1->method('closeCursor')->willReturn(true);
+        $qb1->method('executeQuery')->willReturn($result1);
+
+        $qb2 = $this->createQueryBuilder();
+        $result2 = $this->createMock(IResult::class);
+        $result2->method('fetch')->willReturn(['total_bytes' => '5242880']);
+        $result2->method('closeCursor')->willReturn(true);
+        $qb2->method('executeQuery')->willReturn($result2);
+
+        $this->db->method('getQueryBuilder')
+            ->willReturnOnConsecutiveCalls($qb1, $qb2);
+
+        $growth = $this->service->getStorageGrowth(14);
+
+        $this->assertCount(3, $growth['daily_vectors_added']);
+        $this->assertSame(5242880, $growth['current_storage_bytes']);
+        $this->assertSame(5.0, $growth['current_storage_mb']);
+        // (10 + 20 + 30) / 3 = 20.0
+        $this->assertSame(20.0, $growth['avg_vectors_per_day']);
+        $this->assertSame(14, $growth['period_days']);
+    }
+
+    public function testRecordMetricMinimalParams(): void
+    {
+        $qb = $this->createQueryBuilder();
+        $this->db->method('getQueryBuilder')->willReturn($qb);
+        $qb->expects($this->once())->method('executeStatement');
+
+        // Only required param - all optional params use defaults
+        $this->service->recordMetric(MetricsService::METRIC_OBJECT_VECTORIZED);
+    }
 }

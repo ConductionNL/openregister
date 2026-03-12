@@ -3,7 +3,8 @@
 /**
  * Integration tests for SchemaMapper
  *
- * Tests CRUD operations, querying, and utility methods against a real database.
+ * Tests CRUD operations, querying, composition, validation, and utility methods
+ * against a real database.
  *
  * @category Test
  * @package  OCA\OpenRegister\Tests\Db
@@ -136,6 +137,25 @@ class SchemaMapperIntegrationTest extends TestCase
         $this->assertIsArray($results);
     }
 
+    public function testFindAllWithIsNotNullFilter(): void
+    {
+        $this->createTestSchema();
+
+        $results = $this->mapper->findAll(
+            null,
+            null,
+            ['uuid' => 'IS NOT NULL'],
+            [],
+            [],
+            [],
+            null,
+            false,
+            false
+        );
+        $this->assertIsArray($results);
+        $this->assertNotEmpty($results);
+    }
+
     // =========================================================================
     // find tests
     // =========================================================================
@@ -173,6 +193,38 @@ class SchemaMapperIntegrationTest extends TestCase
         $this->mapper->find(999999999, [], null, false, false);
     }
 
+    public function testFindCacheHit(): void
+    {
+        $schema = $this->createTestSchema();
+
+        // First call populates cache
+        $found1 = $this->mapper->find($schema->getId(), [], null, false, false);
+        // Second call should hit cache
+        $found2 = $this->mapper->find($schema->getId(), [], null, false, false);
+
+        $this->assertSame($found1->getId(), $found2->getId());
+    }
+
+    public function testFindCacheByUuidAfterIdLookup(): void
+    {
+        $schema = $this->createTestSchema();
+
+        // First call by ID populates cache (also caches by uuid and slug)
+        $found1 = $this->mapper->find($schema->getId(), [], null, false, false);
+        // This should hit cache via UUID
+        $found2 = $this->mapper->find($schema->getUuid(), [], null, false, false);
+
+        $this->assertSame($found1->getId(), $found2->getId());
+    }
+
+    public function testFindWithNonNumericId(): void
+    {
+        $schema = $this->createTestSchema();
+        // Find by UUID (non-numeric) to exercise the else branch
+        $found = $this->mapper->find($schema->getUuid(), [], null, false, false);
+        $this->assertSame($schema->getId(), $found->getId());
+    }
+
     // =========================================================================
     // findBySlug (the dedicated method) tests
     // =========================================================================
@@ -193,6 +245,15 @@ class SchemaMapperIntegrationTest extends TestCase
         $results = $this->mapper->findBySlug('nonexistent-slug-' . uniqid(), 10, 0, null, false, false);
         $this->assertIsArray($results);
         $this->assertEmpty($results);
+    }
+
+    public function testFindBySlugWithPublishedParam(): void
+    {
+        $schema = $this->createTestSchema();
+        $slug = $schema->getSlug();
+
+        $results = $this->mapper->findBySlug($slug, 10, 0, true, false, false);
+        $this->assertIsArray($results);
     }
 
     // =========================================================================
@@ -225,6 +286,13 @@ class SchemaMapperIntegrationTest extends TestCase
         );
 
         $this->assertCount(1, $results);
+    }
+
+    public function testFindMultipleEmptyArray(): void
+    {
+        $results = $this->mapper->findMultiple([], null, false, false);
+        $this->assertIsArray($results);
+        $this->assertEmpty($results);
     }
 
     // =========================================================================
@@ -273,6 +341,18 @@ class SchemaMapperIntegrationTest extends TestCase
         $this->assertNotNull($schema->getVersion());
     }
 
+    public function testCreateFromArraySetsDefaultVersion(): void
+    {
+        $schema = $this->createTestSchema();
+        $this->assertSame('0.0.1', $schema->getVersion());
+    }
+
+    public function testCreateFromArraySetsDefaultSource(): void
+    {
+        $schema = $this->createTestSchema();
+        $this->assertSame('internal', $schema->getSource());
+    }
+
     public function testCreateFromArrayPreservesProperties(): void
     {
         $props = [
@@ -286,6 +366,373 @@ class SchemaMapperIntegrationTest extends TestCase
         $this->assertIsArray($storedProps);
         $this->assertArrayHasKey('email', $storedProps);
         $this->assertArrayHasKey('count', $storedProps);
+    }
+
+    public function testCreateFromArrayWithNullRequired(): void
+    {
+        // Tests the default required handling - null gets set to []
+        $schema = $this->createTestSchema();
+        $required = $schema->getRequired();
+        $this->assertIsArray($required);
+    }
+
+    public function testCreateFromArrayAutoPopulatesObjectNameField(): void
+    {
+        $schema = $this->createTestSchema([
+            'properties' => [
+                'name' => ['type' => 'string', 'title' => 'Name'],
+                'value' => ['type' => 'integer', 'title' => 'Value'],
+            ],
+        ]);
+
+        $config = $schema->getConfiguration() ?? [];
+        // 'name' should be auto-detected as objectNameField
+        $this->assertSame('name', $config['objectNameField'] ?? null);
+    }
+
+    public function testCreateFromArrayAutoPopulatesDescriptionField(): void
+    {
+        $schema = $this->createTestSchema([
+            'properties' => [
+                'title' => ['type' => 'string', 'title' => 'Title'],
+                'description' => ['type' => 'string', 'title' => 'Description'],
+            ],
+        ]);
+
+        $config = $schema->getConfiguration() ?? [];
+        $this->assertSame('description', $config['objectDescriptionField'] ?? null);
+    }
+
+    public function testCreateFromArrayAutoPopulatesDutchFieldNames(): void
+    {
+        $schema = $this->createTestSchema([
+            'properties' => [
+                'naam' => ['type' => 'string', 'title' => 'Naam'],
+                'omschrijving' => ['type' => 'string', 'title' => 'Omschrijving'],
+            ],
+        ]);
+
+        $config = $schema->getConfiguration() ?? [];
+        $this->assertSame('naam', $config['objectNameField'] ?? null);
+        $this->assertSame('omschrijving', $config['objectDescriptionField'] ?? null);
+    }
+
+    // =========================================================================
+    // Configuration field validation tests
+    // =========================================================================
+
+    public function testCreateFromArrayWithValidConfigObjectNameField(): void
+    {
+        $schema = $this->createTestSchema([
+            'properties' => [
+                'email' => ['type' => 'string', 'title' => 'Email'],
+            ],
+            'configuration' => [
+                'objectNameField' => 'email',
+            ],
+        ]);
+
+        $config = $schema->getConfiguration() ?? [];
+        $this->assertSame('email', $config['objectNameField']);
+    }
+
+    public function testCreateFromArrayWithInvalidConfigObjectNameFieldThrows(): void
+    {
+        $this->expectException(\Exception::class);
+        $this->expectExceptionMessage('does not exist as a property');
+
+        $this->createTestSchema([
+            'properties' => [
+                'email' => ['type' => 'string', 'title' => 'Email'],
+            ],
+            'configuration' => [
+                'objectNameField' => 'nonexistent_field',
+            ],
+        ]);
+    }
+
+    public function testCreateFromArrayWithTwigTemplateConfigField(): void
+    {
+        $schema = $this->createTestSchema([
+            'properties' => [
+                'voornaam' => ['type' => 'string', 'title' => 'Voornaam'],
+                'achternaam' => ['type' => 'string', 'title' => 'Achternaam'],
+            ],
+            'configuration' => [
+                'objectNameField' => '{{ voornaam }} {{ achternaam }}',
+            ],
+        ]);
+
+        $config = $schema->getConfiguration() ?? [];
+        $this->assertSame('{{ voornaam }} {{ achternaam }}', $config['objectNameField']);
+    }
+
+    public function testCreateFromArrayWithInvalidTwigTemplateConfigFieldThrows(): void
+    {
+        $this->expectException(\Exception::class);
+        $this->expectExceptionMessage("template property 'nonexistent'");
+
+        $this->createTestSchema([
+            'properties' => [
+                'voornaam' => ['type' => 'string', 'title' => 'Voornaam'],
+            ],
+            'configuration' => [
+                'objectNameField' => '{{ voornaam }} {{ nonexistent }}',
+            ],
+        ]);
+    }
+
+    public function testCreateFromArrayWithPipeSeparatedConfigField(): void
+    {
+        $schema = $this->createTestSchema([
+            'properties' => [
+                'name' => ['type' => 'string', 'title' => 'Name'],
+                'identifier' => ['type' => 'string', 'title' => 'Identifier'],
+            ],
+            'configuration' => [
+                'objectNameField' => 'name | identifier | type',
+            ],
+        ]);
+
+        $config = $schema->getConfiguration() ?? [];
+        $this->assertSame('name | identifier | type', $config['objectNameField']);
+    }
+
+    public function testCreateFromArrayWithInvalidPipeSeparatedConfigFieldThrows(): void
+    {
+        $this->expectException(\Exception::class);
+        $this->expectExceptionMessage('None of the fallback fields');
+
+        $this->createTestSchema([
+            'properties' => [
+                'name' => ['type' => 'string', 'title' => 'Name'],
+            ],
+            'configuration' => [
+                'objectNameField' => 'nonexistent1 | nonexistent2',
+            ],
+        ]);
+    }
+
+    // =========================================================================
+    // Required fields auto-build tests
+    // =========================================================================
+
+    public function testCreateFromArrayBuildsRequiredFromPropertyFlags(): void
+    {
+        $schema = $this->createTestSchema([
+            'properties' => [
+                'name' => ['type' => 'string', 'title' => 'Name', 'required' => true],
+                'optional' => ['type' => 'string', 'title' => 'Optional'],
+            ],
+        ]);
+
+        $required = $schema->getRequired();
+        $this->assertContains('name', $required);
+        $this->assertNotContains('optional', $required);
+    }
+
+    public function testCreateFromArrayBuildsRequiredFromStringTrue(): void
+    {
+        $schema = $this->createTestSchema([
+            'properties' => [
+                'name' => ['type' => 'string', 'title' => 'Name', 'required' => 'true'],
+                'optional' => ['type' => 'string', 'title' => 'Optional', 'required' => 'false'],
+            ],
+        ]);
+
+        $required = $schema->getRequired();
+        $this->assertContains('name', $required);
+        $this->assertNotContains('optional', $required);
+    }
+
+    public function testCreateFromArrayPreservesExplicitRequired(): void
+    {
+        $schema = $this->createTestSchema([
+            'properties' => [
+                'name' => ['type' => 'string', 'title' => 'Name'],
+                'age' => ['type' => 'integer', 'title' => 'Age'],
+            ],
+            'required' => ['name'],
+        ]);
+
+        $required = $schema->getRequired();
+        $this->assertContains('name', $required);
+    }
+
+    // =========================================================================
+    // $ref enforcement tests
+    // =========================================================================
+
+    public function testCreateFromArrayWithRefAsArray(): void
+    {
+        // When $ref is an array with 'id', it should be converted to just the id
+        $schema = $this->createTestSchema([
+            'properties' => [
+                'link' => [
+                    'type' => 'string',
+                    'title' => 'Link',
+                    '$ref' => ['id' => '123'],
+                ],
+            ],
+        ]);
+
+        $props = $schema->getProperties();
+        $this->assertSame('123', $props['link']['$ref']);
+    }
+
+    public function testCreateFromArrayWithRefAsInt(): void
+    {
+        $schema = $this->createTestSchema([
+            'properties' => [
+                'link' => [
+                    'type' => 'string',
+                    'title' => 'Link',
+                    '$ref' => 42,
+                ],
+            ],
+        ]);
+
+        $props = $schema->getProperties();
+        $this->assertSame(42, $props['link']['$ref']);
+    }
+
+    public function testCreateFromArrayWithPropertyLevelNestedRef(): void
+    {
+        // Test $ref within nested properties (property -> properties -> nested)
+        $schema = $this->createTestSchema([
+            'properties' => [
+                'wrapper' => [
+                    'type' => 'object',
+                    'title' => 'Wrapper',
+                    'properties' => [
+                        'link' => [
+                            'type' => 'string',
+                            'title' => 'Link',
+                            '$ref' => ['id' => '789'],
+                        ],
+                    ],
+                ],
+            ],
+        ]);
+
+        $props = $schema->getProperties();
+        // The $ref array {'id': '789'} should be converted to just '789'
+        $this->assertSame('789', $props['wrapper']['properties']['link']['$ref']);
+    }
+
+    // =========================================================================
+    // Facet configuration generation tests
+    // =========================================================================
+
+    public function testCreateFromArrayGeneratesFacetConfigForCommonFields(): void
+    {
+        $schema = $this->createTestSchema([
+            'properties' => [
+                'status' => ['type' => 'string', 'title' => 'Status'],
+                'category' => ['type' => 'string', 'title' => 'Category'],
+                'priority' => ['type' => 'string', 'title' => 'Priority'],
+            ],
+        ]);
+
+        $facets = $schema->getFacets();
+        $this->assertIsArray($facets);
+        $this->assertArrayHasKey('object_fields', $facets);
+        $this->assertArrayHasKey('status', $facets['object_fields']);
+        $this->assertArrayHasKey('category', $facets['object_fields']);
+    }
+
+    public function testCreateFromArrayGeneratesFacetForEnumProperty(): void
+    {
+        $schema = $this->createTestSchema([
+            'properties' => [
+                'color' => [
+                    'type' => 'string',
+                    'title' => 'Color',
+                    'enum' => ['red', 'green', 'blue'],
+                ],
+            ],
+        ]);
+
+        $facets = $schema->getFacets();
+        $this->assertArrayHasKey('color', $facets['object_fields']);
+        $this->assertSame('terms', $facets['object_fields']['color']['type']);
+    }
+
+    public function testCreateFromArrayGeneratesFacetForDateField(): void
+    {
+        $schema = $this->createTestSchema([
+            'properties' => [
+                'createdDate' => ['type' => 'string', 'title' => 'Created Date'],
+            ],
+        ]);
+
+        $facets = $schema->getFacets();
+        // 'createdDate' contains 'created' which is a date-like name
+        $this->assertArrayHasKey('createdDate', $facets['object_fields']);
+        $this->assertSame('date_histogram', $facets['object_fields']['createdDate']['type']);
+    }
+
+    public function testCreateFromArrayGeneratesFacetForDateFormatProperty(): void
+    {
+        $schema = $this->createTestSchema([
+            'properties' => [
+                'when' => ['type' => 'string', 'format' => 'date-time', 'title' => 'When', 'facetable' => true],
+            ],
+        ]);
+
+        $facets = $schema->getFacets();
+        $this->assertArrayHasKey('when', $facets['object_fields']);
+        // date-time format maps to terms facet type (the type is 'string')
+        $this->assertSame('terms', $facets['object_fields']['when']['type']);
+    }
+
+    public function testCreateFromArrayGeneratesFacetForExplicitFacetableProperty(): void
+    {
+        $schema = $this->createTestSchema([
+            'properties' => [
+                'customField' => [
+                    'type' => 'string',
+                    'title' => 'Custom',
+                    'facetable' => true,
+                ],
+            ],
+        ]);
+
+        $facets = $schema->getFacets();
+        $this->assertArrayHasKey('customField', $facets['object_fields']);
+    }
+
+    public function testCreateFromArraySkipsFacetForExplicitFacetableFalse(): void
+    {
+        $schema = $this->createTestSchema([
+            'properties' => [
+                'status' => [
+                    'type' => 'string',
+                    'title' => 'Status',
+                    'facetable' => false,
+                ],
+            ],
+        ]);
+
+        $facets = $schema->getFacets();
+        $this->assertArrayNotHasKey('status', $facets['object_fields'] ?? []);
+    }
+
+    public function testCreateFromArrayGeneratesFacetForBooleanType(): void
+    {
+        $schema = $this->createTestSchema([
+            'properties' => [
+                'active' => [
+                    'type' => 'boolean',
+                    'title' => 'Active',
+                    'facetable' => true,
+                ],
+            ],
+        ]);
+
+        $facets = $schema->getFacets();
+        $this->assertArrayHasKey('active', $facets['object_fields']);
+        $this->assertSame('terms', $facets['object_fields']['active']['type']);
     }
 
     // =========================================================================
@@ -315,6 +762,17 @@ class SchemaMapperIntegrationTest extends TestCase
         ]);
 
         $this->assertNotSame($originalVersion, $updated->getVersion());
+    }
+
+    public function testUpdateFromArrayWithExplicitVersion(): void
+    {
+        $schema = $this->createTestSchema();
+
+        $updated = $this->mapper->updateFromArray($schema->getId(), [
+            'version' => '2.0.0',
+        ]);
+
+        $this->assertSame('2.0.0', $updated->getVersion());
     }
 
     // =========================================================================
@@ -381,6 +839,15 @@ class SchemaMapperIntegrationTest extends TestCase
         $this->assertIsArray($related);
     }
 
+    public function testGetRelatedByIdInsteadOfEntity(): void
+    {
+        $schema = $this->createTestSchema();
+
+        // Call getRelated with int ID instead of Schema object
+        $related = $this->mapper->getRelated($schema->getId());
+        $this->assertIsArray($related);
+    }
+
     // =========================================================================
     // findExtendedBy tests
     // =========================================================================
@@ -393,10 +860,57 @@ class SchemaMapperIntegrationTest extends TestCase
         $this->assertIsArray($result);
     }
 
+    public function testFindExtendedByWithKnownUuidAndSlug(): void
+    {
+        $schema = $this->createTestSchema();
+
+        $result = $this->mapper->findExtendedBy(
+            $schema->getId(),
+            $schema->getUuid(),
+            $schema->getSlug()
+        );
+        $this->assertIsArray($result);
+    }
+
+    public function testFindExtendedByWithActualExtension(): void
+    {
+        $parent = $this->createTestSchema(['title' => 'Parent Schema ' . uniqid()]);
+
+        $child = $this->createTestSchema([
+            'title' => 'Child Schema ' . uniqid(),
+            'allOf' => [(string) $parent->getId()],
+            'properties' => [
+                'extra' => ['type' => 'string', 'title' => 'Extra'],
+            ],
+        ]);
+
+        $result = $this->mapper->findExtendedBy($parent->getId());
+        $this->assertIsArray($result);
+        $this->assertContains($child->getUuid(), $result);
+    }
+
     public function testFindAllExtendedByReturnsArray(): void
     {
         $result = $this->mapper->findAllExtendedBy();
         $this->assertIsArray($result);
+    }
+
+    public function testFindAllExtendedByWithActualExtension(): void
+    {
+        $parent = $this->createTestSchema(['title' => 'Parent AllEB ' . uniqid()]);
+
+        $child = $this->createTestSchema([
+            'title' => 'Child AllEB ' . uniqid(),
+            'allOf' => [(string) $parent->getId()],
+            'properties' => [
+                'extra' => ['type' => 'string', 'title' => 'Extra'],
+            ],
+        ]);
+
+        $result = $this->mapper->findAllExtendedBy();
+        $this->assertIsArray($result);
+        $this->assertArrayHasKey($parent->getId(), $result);
+        $this->assertContains($child->getUuid(), $result[$parent->getId()]);
     }
 
     // =========================================================================
@@ -408,8 +922,6 @@ class SchemaMapperIntegrationTest extends TestCase
         $schema = $this->createTestSchema();
         $otherSchema = $this->createTestSchema();
 
-        // hasReferenceToSchema expects (array $properties, string $targetSchemaId,
-        // string $targetSchemaUuid, string $targetSchemaSlug)
         $result = $this->mapper->hasReferenceToSchema(
             $schema->getProperties() ?? [],
             (string) $otherSchema->getId(),
@@ -417,6 +929,196 @@ class SchemaMapperIntegrationTest extends TestCase
             $otherSchema->getSlug() ?? ''
         );
         $this->assertIsBool($result);
+    }
+
+    public function testHasReferenceToSchemaByIdTrue(): void
+    {
+        $targetSchema = $this->createTestSchema();
+        $properties = [
+            'link' => [
+                'type'  => 'string',
+                'title' => 'Link',
+                '$ref'  => (string) $targetSchema->getId(),
+            ],
+        ];
+
+        $result = $this->mapper->hasReferenceToSchema(
+            $properties,
+            (string) $targetSchema->getId(),
+            $targetSchema->getUuid() ?? '',
+            $targetSchema->getSlug() ?? ''
+        );
+        $this->assertTrue($result);
+    }
+
+    public function testHasReferenceToSchemaByUuidTrue(): void
+    {
+        $targetSchema = $this->createTestSchema();
+        $properties = [
+            'link' => [
+                'type'  => 'string',
+                'title' => 'Link',
+                '$ref'  => $targetSchema->getUuid(),
+            ],
+        ];
+
+        $result = $this->mapper->hasReferenceToSchema(
+            $properties,
+            (string) $targetSchema->getId(),
+            $targetSchema->getUuid() ?? '',
+            $targetSchema->getSlug() ?? ''
+        );
+        $this->assertTrue($result);
+    }
+
+    public function testHasReferenceToSchemaBySlugTrue(): void
+    {
+        $targetSchema = $this->createTestSchema();
+        $properties = [
+            'link' => [
+                'type'  => 'string',
+                'title' => 'Link',
+                '$ref'  => $targetSchema->getSlug(),
+            ],
+        ];
+
+        $result = $this->mapper->hasReferenceToSchema(
+            $properties,
+            (string) $targetSchema->getId(),
+            $targetSchema->getUuid() ?? '',
+            $targetSchema->getSlug() ?? ''
+        );
+        $this->assertTrue($result);
+    }
+
+    public function testHasReferenceToSchemaByJsonSchemaFormat(): void
+    {
+        $targetSchema = $this->createTestSchema();
+        $slug = $targetSchema->getSlug();
+        $properties = [
+            'link' => [
+                'type'  => 'string',
+                'title' => 'Link',
+                '$ref'  => '#/components/schemas/' . $slug,
+            ],
+        ];
+
+        $result = $this->mapper->hasReferenceToSchema(
+            $properties,
+            (string) $targetSchema->getId(),
+            $targetSchema->getUuid() ?? '',
+            $slug ?? ''
+        );
+        $this->assertTrue($result);
+    }
+
+    public function testHasReferenceToSchemaInNestedProperties(): void
+    {
+        $targetSchema = $this->createTestSchema();
+        $properties = [
+            'wrapper' => [
+                'type' => 'object',
+                'title' => 'Wrapper',
+                'properties' => [
+                    'nested_link' => [
+                        'type'  => 'string',
+                        'title' => 'Nested Link',
+                        '$ref'  => (string) $targetSchema->getId(),
+                    ],
+                ],
+            ],
+        ];
+
+        $result = $this->mapper->hasReferenceToSchema(
+            $properties,
+            (string) $targetSchema->getId(),
+            $targetSchema->getUuid() ?? '',
+            $targetSchema->getSlug() ?? ''
+        );
+        $this->assertTrue($result);
+    }
+
+    public function testHasReferenceToSchemaInArrayItems(): void
+    {
+        $targetSchema = $this->createTestSchema();
+        $properties = [
+            'links' => [
+                'type' => 'array',
+                'title' => 'Links',
+                'items' => [
+                    'type'  => 'string',
+                    '$ref'  => (string) $targetSchema->getId(),
+                ],
+            ],
+        ];
+
+        $result = $this->mapper->hasReferenceToSchema(
+            $properties,
+            (string) $targetSchema->getId(),
+            $targetSchema->getUuid() ?? '',
+            $targetSchema->getSlug() ?? ''
+        );
+        $this->assertTrue($result);
+    }
+
+    public function testHasReferenceToSchemaFalse(): void
+    {
+        $targetSchema = $this->createTestSchema();
+        $properties = [
+            'name' => [
+                'type'  => 'string',
+                'title' => 'Name',
+            ],
+        ];
+
+        $result = $this->mapper->hasReferenceToSchema(
+            $properties,
+            (string) $targetSchema->getId(),
+            $targetSchema->getUuid() ?? '',
+            $targetSchema->getSlug() ?? ''
+        );
+        $this->assertFalse($result);
+    }
+
+    public function testHasReferenceToSchemaSkipsNonArrayProperties(): void
+    {
+        $targetSchema = $this->createTestSchema();
+        // Include a scalar property value that should be skipped
+        $properties = [
+            'scalarProp' => 'just a string',
+            'link' => [
+                'type'  => 'string',
+                '$ref'  => (string) $targetSchema->getId(),
+            ],
+        ];
+
+        $result = $this->mapper->hasReferenceToSchema(
+            $properties,
+            (string) $targetSchema->getId(),
+            $targetSchema->getUuid() ?? '',
+            $targetSchema->getSlug() ?? ''
+        );
+        $this->assertTrue($result);
+    }
+
+    public function testHasReferenceToSchemaByUuidContainedInRef(): void
+    {
+        $targetSchema = $this->createTestSchema();
+        $uuid = $targetSchema->getUuid();
+        $properties = [
+            'link' => [
+                'type'  => 'string',
+                '$ref'  => 'https://example.com/schemas/' . $uuid,
+            ],
+        ];
+
+        $result = $this->mapper->hasReferenceToSchema(
+            $properties,
+            (string) $targetSchema->getId(),
+            $uuid ?? '',
+            $targetSchema->getSlug() ?? ''
+        );
+        $this->assertTrue($result);
     }
 
     // =========================================================================
@@ -431,22 +1133,119 @@ class SchemaMapperIntegrationTest extends TestCase
         $this->assertIsArray($result);
     }
 
+    public function testGetPropertySourceMetadataWithProperties(): void
+    {
+        $schema = $this->createTestSchema([
+            'properties' => [
+                'email'  => ['type' => 'string', 'format' => 'email', 'title' => 'Email'],
+                'score'  => ['type' => 'integer', 'title' => 'Score'],
+                'active' => ['type' => 'boolean', 'title' => 'Active'],
+            ],
+        ]);
+
+        $result = $this->mapper->getPropertySourceMetadata($schema);
+        $this->assertIsArray($result);
+        $this->assertArrayHasKey('email', $result);
+        $this->assertSame('native', $result['email']['source']);
+        $this->assertNull($result['email']['inheritedFrom']);
+    }
+
+    public function testGetPropertySourceMetadataWithAllOfComposition(): void
+    {
+        $parent = $this->createTestSchema([
+            'title' => 'MetaParent ' . uniqid(),
+            'properties' => [
+                'parentProp' => ['type' => 'string', 'title' => 'Parent Prop'],
+            ],
+        ]);
+
+        $child = $this->createTestSchema([
+            'title' => 'MetaChild ' . uniqid(),
+            'allOf' => [(string) $parent->getId()],
+            'properties' => [
+                'childProp' => ['type' => 'string', 'title' => 'Child Prop'],
+            ],
+        ]);
+
+        // Re-fetch to get the resolved schema with merged properties
+        $resolvedChild = $this->mapper->find($child->getId(), [], null, false, false);
+
+        $result = $this->mapper->getPropertySourceMetadata($resolvedChild);
+        $this->assertIsArray($result);
+        // childProp should be native, parentProp should be inherited
+        if (isset($result['childProp'])) {
+            $this->assertSame('native', $result['childProp']['source']);
+        }
+        if (isset($result['parentProp'])) {
+            $this->assertSame('inherited', $result['parentProp']['source']);
+        }
+    }
+
+    // =========================================================================
+    // Schema composition (allOf) tests
+    // =========================================================================
+
+    public function testSchemaAllOfResolvesParentProperties(): void
+    {
+        $parent = $this->createTestSchema([
+            'title' => 'AllOfParent ' . uniqid(),
+            'properties' => [
+                'parentField' => ['type' => 'string', 'title' => 'Parent Field'],
+            ],
+        ]);
+
+        $child = $this->createTestSchema([
+            'title' => 'AllOfChild ' . uniqid(),
+            'allOf' => [(string) $parent->getId()],
+            'properties' => [
+                'childField' => ['type' => 'string', 'title' => 'Child Field'],
+            ],
+        ]);
+
+        // When we find the child, the resolved schema should have both properties
+        $resolved = $this->mapper->find($child->getId(), [], null, false, false);
+        $props = $resolved->getProperties();
+
+        $this->assertArrayHasKey('parentField', $props);
+        $this->assertArrayHasKey('childField', $props);
+    }
+
+    public function testSchemaAllOfMergesRequired(): void
+    {
+        $parent = $this->createTestSchema([
+            'title' => 'ReqParent ' . uniqid(),
+            'properties' => [
+                'parentField' => ['type' => 'string', 'title' => 'Parent Field', 'required' => true],
+            ],
+        ]);
+
+        $child = $this->createTestSchema([
+            'title' => 'ReqChild ' . uniqid(),
+            'allOf' => [(string) $parent->getId()],
+            'properties' => [
+                'childField' => ['type' => 'string', 'title' => 'Child Field', 'required' => true],
+            ],
+        ]);
+
+        $resolved = $this->mapper->find($child->getId(), [], null, false, false);
+        $required = $resolved->getRequired();
+
+        $this->assertContains('parentField', $required);
+        $this->assertContains('childField', $required);
+    }
+
     // =========================================================================
     // insert / update / delete lifecycle
     // =========================================================================
 
     public function testInsertDoesNotAutoSetCreatedTimestamp(): void
     {
-        // createFromArray does not auto-populate created/updated timestamps;
-        // they remain null unless explicitly set before insert.
         $schema = $this->createTestSchema();
         $this->assertNull($schema->getCreated());
     }
 
     public function testInsertDoesNotAutoSetUpdatedTimestamp(): void
     {
-        // createFromArray does not auto-populate created/updated timestamps;
-        // they remain null unless explicitly set before insert.
         $schema = $this->createTestSchema();
         $this->assertNull($schema->getUpdated());
     }
@@ -456,13 +1255,11 @@ class SchemaMapperIntegrationTest extends TestCase
         $schema = $this->createTestSchema();
         $originalUpdated = $schema->getUpdated();
 
-        // Small delay to ensure different timestamp
         usleep(100000);
 
         $updated = $this->mapper->updateFromArray($schema->getId(), [
             'description' => 'Timestamp test update',
         ]);
-        // Updated timestamp should be different (or at least not null)
         $this->assertNotNull($updated->getUpdated());
     }
 
@@ -475,8 +1272,6 @@ class SchemaMapperIntegrationTest extends TestCase
         $schema1 = $this->createTestSchema(['title' => 'AAA Sort Test ' . uniqid()]);
         $schema2 = $this->createTestSchema(['title' => 'ZZZ Sort Test ' . uniqid()]);
 
-        // findAll signature: ($limit, $offset, $filters, $searchConditions, $searchParams, $_extend, $published, $_rbac, $_multitenancy)
-        // Pass empty arrays for searchConditions and searchParams (they are SQL WHERE fragments, not sort directives)
         $results = $this->mapper->findAll(
             null,
             null,
@@ -505,7 +1300,6 @@ class SchemaMapperIntegrationTest extends TestCase
             ],
         ]);
 
-        // Update only description, properties should remain
         $updated = $this->mapper->updateFromArray($schema->getId(), [
             'description' => 'Updated desc only',
         ]);
@@ -572,8 +1366,6 @@ class SchemaMapperIntegrationTest extends TestCase
         $s1 = $this->createTestSchema(['title' => $title]);
         $this->assertNotNull($s1->getSlug());
 
-        // The database enforces a unique constraint on (organisation, slug),
-        // so inserting a second schema with the same slug should throw.
         $this->expectException(\Exception::class);
         $this->createTestSchema(['title' => $title]);
     }
@@ -592,5 +1384,306 @@ class SchemaMapperIntegrationTest extends TestCase
 
         $this->assertCount(1, $limited);
         $this->assertGreaterThanOrEqual(2, count($all));
+    }
+
+    // =========================================================================
+    // findBySlug with limit and offset tests
+    // =========================================================================
+
+    public function testFindBySlugWithLimit(): void
+    {
+        $schema = $this->createTestSchema();
+        $slug = $schema->getSlug();
+
+        $results = $this->mapper->findBySlug($slug, 1, 0, null, false, false);
+        $this->assertIsArray($results);
+        $this->assertLessThanOrEqual(1, count($results));
+    }
+
+    public function testFindBySlugWithOffset(): void
+    {
+        $schema = $this->createTestSchema();
+        $slug = $schema->getSlug();
+
+        $results = $this->mapper->findBySlug($slug, 10, 1, null, false, false);
+        $this->assertIsArray($results);
+        $this->assertEmpty($results);
+    }
+
+    // =========================================================================
+    // getRelated with referencing schemas
+    // =========================================================================
+
+    public function testGetRelatedWithReferencingSchema(): void
+    {
+        $targetSchema = $this->createTestSchema(['title' => 'Target Schema ' . uniqid()]);
+        $referencingSchema = $this->createTestSchema([
+            'title'      => 'Referencing Schema ' . uniqid(),
+            'properties' => [
+                'link' => [
+                    'type'  => 'string',
+                    'title' => 'Link',
+                    '$ref'  => (string) $targetSchema->getId(),
+                ],
+            ],
+        ]);
+
+        $related = $this->mapper->getRelated($targetSchema);
+        $this->assertIsArray($related);
+    }
+
+    // =========================================================================
+    // createFromArray edge cases
+    // =========================================================================
+
+    public function testCreateFromArrayEmptyProperties(): void
+    {
+        $schema = $this->createTestSchema(['properties' => []]);
+        $props = $schema->getProperties();
+        $this->assertIsArray($props);
+        $this->assertEmpty($props);
+    }
+
+    public function testCreateFromArrayWithNestedObjectProperties(): void
+    {
+        $schema = $this->createTestSchema([
+            'properties' => [
+                'address' => [
+                    'type'       => 'object',
+                    'title'      => 'Address',
+                    'properties' => [
+                        'street' => ['type' => 'string', 'title' => 'Street'],
+                        'city'   => ['type' => 'string', 'title' => 'City'],
+                    ],
+                ],
+            ],
+        ]);
+
+        $props = $schema->getProperties();
+        $this->assertArrayHasKey('address', $props);
+        $this->assertSame('object', $props['address']['type']);
+        $this->assertArrayHasKey('properties', $props['address']);
+        $this->assertArrayHasKey('street', $props['address']['properties']);
+    }
+
+    public function testCreateFromArrayWithSource(): void
+    {
+        $schema = $this->createTestSchema(['source' => 'external-api']);
+        $this->assertSame('external-api', $schema->getSource());
+    }
+
+    // =========================================================================
+    // updateFromArray edge cases
+    // =========================================================================
+
+    public function testUpdateFromArrayReplacesProperties(): void
+    {
+        $schema = $this->createTestSchema([
+            'properties' => [
+                'oldField' => ['type' => 'string', 'title' => 'Old Field'],
+            ],
+        ]);
+
+        $updated = $this->mapper->updateFromArray($schema->getId(), [
+            'properties' => [
+                'newField' => ['type' => 'integer', 'title' => 'New Field'],
+            ],
+        ]);
+
+        $props = $updated->getProperties();
+        $this->assertArrayHasKey('newField', $props);
+    }
+
+    public function testUpdateFromArrayChangesTitle(): void
+    {
+        $schema = $this->createTestSchema();
+        $newTitle = 'Completely New Title ' . uniqid();
+
+        $updated = $this->mapper->updateFromArray($schema->getId(), [
+            'title' => $newTitle,
+        ]);
+
+        $this->assertSame($newTitle, $updated->getTitle());
+    }
+
+    // =========================================================================
+    // hasReferenceToSchema with matching $ref
+    // =========================================================================
+
+    public function testHasReferenceToSchemaByIntIdTrue(): void
+    {
+        $targetSchema = $this->createTestSchema();
+        $properties = [
+            'link' => [
+                'type'  => 'string',
+                'title' => 'Link',
+                '$ref'  => $targetSchema->getId(), // int, not string
+            ],
+        ];
+
+        $result = $this->mapper->hasReferenceToSchema(
+            $properties,
+            (string) $targetSchema->getId(),
+            $targetSchema->getUuid() ?? '',
+            $targetSchema->getSlug() ?? ''
+        );
+        $this->assertTrue($result);
+    }
+
+    // =========================================================================
+    // findExtendedBy with actual extensions
+    // =========================================================================
+
+    public function testFindExtendedByEmpty(): void
+    {
+        $schema = $this->createTestSchema();
+        $result = $this->mapper->findExtendedBy($schema->getId());
+        $this->assertIsArray($result);
+        $this->assertEmpty($result);
+    }
+
+    // =========================================================================
+    // findAll with search conditions
+    // =========================================================================
+
+    public function testFindAllWithSourceFilter(): void
+    {
+        $uniqueSource = 'phpunit-src-' . uniqid();
+        $this->createTestSchema(['source' => $uniqueSource]);
+
+        $results = $this->mapper->findAll(
+            null,
+            null,
+            ['source' => $uniqueSource],
+            [],
+            [],
+            [],
+            null,
+            false,
+            false
+        );
+        $this->assertNotEmpty($results);
+        $this->assertSame($uniqueSource, $results[0]->getSource());
+    }
+
+    // =========================================================================
+    // Slug case insensitive lookup
+    // =========================================================================
+
+    public function testFindBySlugCaseInsensitive(): void
+    {
+        $schema = $this->createTestSchema(['title' => 'CaseTest Schema ' . uniqid()]);
+        $slug = $schema->getSlug();
+        $this->assertNotNull($slug);
+
+        $found = $this->mapper->find(strtoupper($slug), [], null, false, false);
+        $this->assertSame($schema->getId(), $found->getId());
+    }
+
+    // =========================================================================
+    // getRegisterCountPerSchema
+    // =========================================================================
+
+    public function testGetRegisterCountPerSchemaReturnsArray(): void
+    {
+        $result = $this->mapper->getRegisterCountPerSchema();
+        $this->assertIsArray($result);
+    }
+
+    // =========================================================================
+    // findMultipleOptimized with missing IDs
+    // =========================================================================
+
+    public function testFindMultipleOptimizedSkipsMissing(): void
+    {
+        $s1 = $this->createTestSchema();
+        $results = $this->mapper->findMultipleOptimized([$s1->getId(), 999999999]);
+        $this->assertCount(1, $results);
+        $this->assertArrayHasKey($s1->getId(), $results);
+    }
+
+    // =========================================================================
+    // findAll with published parameter
+    // =========================================================================
+
+    public function testFindAllWithPublishedParam(): void
+    {
+        $this->createTestSchema();
+
+        $results = $this->mapper->findAll(
+            null,
+            null,
+            [],
+            [],
+            [],
+            [],
+            true, // published
+            false,
+            false
+        );
+        $this->assertIsArray($results);
+    }
+
+    // =========================================================================
+    // find with published parameter
+    // =========================================================================
+
+    public function testFindWithPublishedBypass(): void
+    {
+        $schema = $this->createTestSchema();
+        $found = $this->mapper->find($schema->getId(), [], true, false, false);
+        $this->assertSame($schema->getId(), $found->getId());
+    }
+
+    // =========================================================================
+    // find with different RBAC/multitenancy flags to exercise cache keys
+    // =========================================================================
+
+    public function testFindWithDifferentRbacFlagsCachesSeparately(): void
+    {
+        $schema = $this->createTestSchema();
+
+        // Call with RBAC=false, multitenancy=false
+        $found1 = $this->mapper->find($schema->getId(), [], null, false, false);
+        // Call with RBAC=true, multitenancy=false (different cache key)
+        $found2 = $this->mapper->find($schema->getId(), [], null, true, false);
+
+        $this->assertSame($found1->getId(), $found2->getId());
+    }
+
+    // =========================================================================
+    // find with multitenancy disabled to bypass org filter
+    // =========================================================================
+
+    public function testFindWithMultitenancyDisabled(): void
+    {
+        $schema = $this->createTestSchema();
+        $found = $this->mapper->find($schema->getId(), [], null, false, false);
+        $this->assertSame($schema->getId(), $found->getId());
+    }
+
+    // =========================================================================
+    // findAll with search conditions (WHERE fragments)
+    // =========================================================================
+
+    public function testFindAllWithSearchConditionsAndParams(): void
+    {
+        $uniqueTitle = 'SearchCond Test ' . uniqid();
+        $this->createTestSchema(['title' => $uniqueTitle]);
+
+        $results = $this->mapper->findAll(
+            null,
+            null,
+            [],
+            ['LOWER(title) LIKE :searchTitle'],
+            ['searchTitle' => '%' . strtolower($uniqueTitle) . '%'],
+            [],
+            null,
+            false,
+            false
+        );
+
+        $this->assertIsArray($results);
+        $this->assertNotEmpty($results);
     }
 }

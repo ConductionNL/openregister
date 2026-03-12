@@ -242,4 +242,188 @@ class ChatControllerTest extends TestCase
 
         $this->assertEquals(500, $result->getStatus());
     }
+
+    // ── sendMessage additional paths ──
+
+    public function testSendMessageException(): void
+    {
+        $this->request->method('getParam')
+            ->willReturnMap([
+                ['conversation', null, 'conv-uuid'],
+                ['agentUuid', null, 'agent-uuid'],
+                ['message', null, 'Hello'],
+                ['views', null, null],
+                ['tools', null, null],
+                ['includeObjects', null, true],
+                ['includeFiles', null, true],
+                ['numSourcesFiles', null, 5],
+                ['numSourcesObjects', null, 5],
+            ]);
+
+        $conv = new Conversation();
+        $conv->setId(1);
+        $conv->setUserId('testuser');
+        $this->conversationMapper->method('findByUuid')->willReturn($conv);
+        $this->chatService->method('processMessage')
+            ->willThrowException(new \Exception('AI error'));
+
+        $result = $this->controller->sendMessage();
+
+        $this->assertEquals(500, $result->getStatus());
+    }
+
+    public function testSendMessageAccessDeniedException(): void
+    {
+        $this->request->method('getParam')
+            ->willReturnMap([
+                ['conversation', null, 'conv-uuid'],
+                ['agentUuid', null, ''],
+                ['message', null, 'Hello'],
+                ['views', null, null],
+                ['tools', null, null],
+                ['includeObjects', null, true],
+                ['includeFiles', null, true],
+                ['numSourcesFiles', null, 5],
+                ['numSourcesObjects', null, 5],
+            ]);
+
+        $conv = new Conversation();
+        $conv->setId(1);
+        $conv->setUserId('otheruser');
+        $this->conversationMapper->method('findByUuid')->willReturn($conv);
+
+        $result = $this->controller->sendMessage();
+
+        $this->assertEquals(403, $result->getStatus());
+    }
+
+    // ── getHistory additional paths ──
+
+    public function testGetHistoryException(): void
+    {
+        $this->request->method('getParam')
+            ->willReturnMap([
+                ['conversationId', null, 1],
+                ['limit', null, 100],
+                ['offset', null, 0],
+            ]);
+        $this->conversationMapper->method('find')
+            ->willThrowException(new \Exception('DB error'));
+
+        $result = $this->controller->getHistory();
+
+        $this->assertEquals(500, $result->getStatus());
+    }
+
+    // ── clearHistory additional paths ──
+
+    public function testClearHistoryException(): void
+    {
+        $this->request->method('getParam')
+            ->willReturnMap([
+                ['conversationId', null, 1],
+            ]);
+        $this->conversationMapper->method('find')
+            ->willThrowException(new \Exception('DB error'));
+
+        $result = $this->controller->clearHistory();
+
+        $this->assertEquals(500, $result->getStatus());
+    }
+
+    // ── sendFeedback additional paths ──
+
+    public function testSendFeedbackSuccess(): void
+    {
+        $conversation = new Conversation();
+        $conversation->setId(1);
+        $conversation->setUserId('testuser');
+
+        $message = new Message();
+        $message->setConversationId(1);
+
+        $feedback = new \OCA\OpenRegister\Db\Feedback();
+        $feedback->setId(1);
+
+        $this->request->method('getParam')
+            ->willReturnMap([
+                ['type', null, 'positive'],
+                ['comment', '', 'Great answer!'],
+            ]);
+        $this->conversationMapper->method('findByUuid')->willReturn($conversation);
+        $this->messageMapper->method('find')->willReturn($message);
+        $this->organisationService->method('getActiveOrganisation')->willReturn(null);
+        $this->feedbackMapper->method('findByMessage')->willReturn(null);
+        $this->feedbackMapper->method('insert')->willReturn($feedback);
+
+        $result = $this->controller->sendFeedback('conv-uuid', 1);
+
+        $this->assertEquals(200, $result->getStatus());
+    }
+
+    public function testSendFeedbackUpdateExisting(): void
+    {
+        $conversation = new Conversation();
+        $conversation->setId(1);
+        $conversation->setUserId('testuser');
+
+        $message = new Message();
+        $message->setConversationId(1);
+
+        $existingFeedback = new \OCA\OpenRegister\Db\Feedback();
+        $existingFeedback->setId(1);
+        $existingFeedback->setType('negative');
+
+        $this->request->method('getParam')
+            ->willReturnMap([
+                ['type', null, 'positive'],
+                ['comment', '', 'Updated comment'],
+            ]);
+        $this->conversationMapper->method('findByUuid')->willReturn($conversation);
+        $this->messageMapper->method('find')->willReturn($message);
+        $this->organisationService->method('getActiveOrganisation')->willReturn(null);
+        $this->feedbackMapper->method('findByMessage')->willReturn($existingFeedback);
+        $this->feedbackMapper->method('update')->willReturn($existingFeedback);
+
+        $result = $this->controller->sendFeedback('conv-uuid', 1);
+
+        $this->assertEquals(200, $result->getStatus());
+    }
+
+    public function testSendFeedbackMessageNotInConversation(): void
+    {
+        $conversation = new Conversation();
+        $conversation->setId(1);
+        $conversation->setUserId('testuser');
+
+        $message = new Message();
+        $message->setConversationId(999);
+
+        $this->request->method('getParam')
+            ->willReturnMap([
+                ['type', null, 'positive'],
+                ['comment', '', ''],
+            ]);
+        $this->conversationMapper->method('findByUuid')->willReturn($conversation);
+        $this->messageMapper->method('find')->willReturn($message);
+
+        $result = $this->controller->sendFeedback('conv-uuid', 1);
+
+        $this->assertEquals(404, $result->getStatus());
+    }
+
+    public function testSendFeedbackException(): void
+    {
+        $this->request->method('getParam')
+            ->willReturnMap([
+                ['type', null, 'positive'],
+                ['comment', '', ''],
+            ]);
+        $this->conversationMapper->method('findByUuid')
+            ->willThrowException(new \Exception('DB error'));
+
+        $result = $this->controller->sendFeedback('conv-uuid', 1);
+
+        $this->assertEquals(500, $result->getStatus());
+    }
 }

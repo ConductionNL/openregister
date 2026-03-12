@@ -1,9 +1,10 @@
 <?php
 /**
- * Bootstrap file for Unit Tests (without full Nextcloud bootstrap)
+ * Bootstrap file for Unit Tests
  *
- * This bootstrap loads only the minimal requirements for unit tests,
- * avoiding the full Nextcloud bootstrap that checks config writability.
+ * This bootstrap loads the full Nextcloud environment since tests run inside
+ * the Nextcloud Docker container. This gives access to \OC::$server and the
+ * full DI container, enabling tests to cover code that depends on Nextcloud services.
  *
  * @category Test
  * @package  OCA\OpenRegister\Tests
@@ -25,21 +26,13 @@ define('PHPUNIT_RUN', 1);
 // Include Composer's autoloader.
 require_once __DIR__ . '/../vendor/autoload.php';
 
-// Load Nextcloud's autoloader to access OCP classes, but skip the full bootstrap.
-// This gives us access to Nextcloud interfaces and classes without triggering
-// the config writability check or loading the entire application.
-if (file_exists(__DIR__ . '/../../../3rdparty/autoload.php')) {
-    require_once __DIR__ . '/../../../3rdparty/autoload.php';
+// Bootstrap Nextcloud — since we run inside the Docker container,
+// the full environment (including \OC::$server) is available.
+if (file_exists(__DIR__ . '/../../../lib/base.php')) {
+    require_once __DIR__ . '/../../../lib/base.php';
 }
 
-// Load Nextcloud's lib autoloader for OCP classes.
-if (file_exists(__DIR__ . '/../../../lib/composer/autoload.php')) {
-    require_once __DIR__ . '/../../../lib/composer/autoload.php';
-}
-
-// Register Test\ namespace for NC test classes (without triggering full bootstrap).
-// tests/autoload.php loads lib/base.php which requires a full NC install,
-// so we register the PSR-4 namespace directly for unit tests.
+// Register Test\ namespace for NC test classes.
 $serverTestsLib = __DIR__ . '/../../../tests/lib/';
 if (is_dir($serverTestsLib)) {
     $loader = new \Composer\Autoload\ClassLoader();
@@ -47,5 +40,4 @@ if (is_dir($serverTestsLib)) {
     $loader->register(true);
 }
 
-error_log("[UNIT TEST BOOTSTRAP] Minimal bootstrap complete - ready for unit tests");
-
+error_log('[UNIT TEST BOOTSTRAP] Full Nextcloud bootstrap complete - \OC::$server available');

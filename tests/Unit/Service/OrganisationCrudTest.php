@@ -693,6 +693,416 @@ class OrganisationCrudTest extends TestCase
     }
 
     /**
+     * Test getOrganisationSettingsOnly returns default values when config is empty
+     *
+     * @return void
+     */
+    public function testGetOrganisationSettingsOnlyEmptyConfig(): void
+    {
+        // Arrange: appConfig returns empty string (no stored config).
+        $this->appConfig->method('getValueString')
+            ->with('openregister', 'organisation', '')
+            ->willReturn('');
+
+        // Act.
+        $result = $this->organisationService->getOrganisationSettingsOnly();
+
+        // Assert: defaults returned.
+        $this->assertArrayHasKey('organisation', $result);
+        $this->assertNull($result['organisation']['default_organisation']);
+        $this->assertTrue($result['organisation']['auto_create_default_organisation']);
+    }
+
+    /**
+     * Test getOrganisationSettingsOnly returns stored values when config exists
+     *
+     * @return void
+     */
+    public function testGetOrganisationSettingsOnlyWithStoredConfig(): void
+    {
+        // Arrange: appConfig returns stored JSON data.
+        $storedConfig = json_encode([
+            'default_organisation' => 'stored-uuid-123',
+            'auto_create_default_organisation' => false,
+        ]);
+        $this->appConfig->method('getValueString')
+            ->with('openregister', 'organisation', '')
+            ->willReturn($storedConfig);
+
+        // Act.
+        $result = $this->organisationService->getOrganisationSettingsOnly();
+
+        // Assert: stored values returned.
+        $this->assertEquals('stored-uuid-123', $result['organisation']['default_organisation']);
+        $this->assertFalse($result['organisation']['auto_create_default_organisation']);
+    }
+
+    /**
+     * Test getDefaultOrganisationUuid returns direct config key value
+     *
+     * @return void
+     */
+    public function testGetDefaultOrganisationUuidDirectKey(): void
+    {
+        // Arrange: appConfig returns UUID from direct key (newer format).
+        $this->appConfig->method('getValueString')
+            ->willReturnMap([
+                ['openregister', 'defaultOrganisation', '', 'direct-uuid-456'],
+                ['openregister', 'organisation', '', ''],
+            ]);
+
+        // Act.
+        $result = $this->organisationService->getDefaultOrganisationUuid();
+
+        // Assert.
+        $this->assertEquals('direct-uuid-456', $result);
+    }
+
+    /**
+     * Test getDefaultOrganisationUuid falls back to nested config
+     *
+     * @return void
+     */
+    public function testGetDefaultOrganisationUuidFallbackToNested(): void
+    {
+        // Arrange: direct key empty, nested config has value.
+        $nestedConfig = json_encode([
+            'default_organisation' => 'nested-uuid-789',
+        ]);
+        $this->appConfig->method('getValueString')
+            ->willReturnMap([
+                ['openregister', 'defaultOrganisation', '', ''],
+                ['openregister', 'organisation', '', $nestedConfig],
+            ]);
+
+        // Act.
+        $result = $this->organisationService->getDefaultOrganisationUuid();
+
+        // Assert.
+        $this->assertEquals('nested-uuid-789', $result);
+    }
+
+    /**
+     * Test getDefaultOrganisationUuid returns null when nothing configured
+     *
+     * @return void
+     */
+    public function testGetDefaultOrganisationUuidReturnsNullWhenEmpty(): void
+    {
+        // Arrange: both config sources empty.
+        $this->appConfig->method('getValueString')
+            ->willReturnMap([
+                ['openregister', 'defaultOrganisation', '', ''],
+                ['openregister', 'organisation', '', ''],
+            ]);
+
+        // Act.
+        $result = $this->organisationService->getDefaultOrganisationUuid();
+
+        // Assert.
+        $this->assertNull($result);
+    }
+
+    /**
+     * Test getDefaultOrganisationId returns UUID when configured
+     *
+     * @return void
+     */
+    public function testGetDefaultOrganisationIdReturnsUuid(): void
+    {
+        // Arrange.
+        $this->appConfig->method('getValueString')
+            ->with('openregister', 'defaultOrganisation', '')
+            ->willReturn('config-uuid-123');
+
+        // Act.
+        $result = $this->organisationService->getDefaultOrganisationId();
+
+        // Assert.
+        $this->assertEquals('config-uuid-123', $result);
+    }
+
+    /**
+     * Test getDefaultOrganisationId returns null when not configured
+     *
+     * @return void
+     */
+    public function testGetDefaultOrganisationIdReturnsNull(): void
+    {
+        // Arrange.
+        $this->appConfig->method('getValueString')
+            ->with('openregister', 'defaultOrganisation', '')
+            ->willReturn('');
+
+        // Act.
+        $result = $this->organisationService->getDefaultOrganisationId();
+
+        // Assert.
+        $this->assertNull($result);
+    }
+
+    /**
+     * Test setDefaultOrganisationId stores UUID and clears cache
+     *
+     * @return void
+     */
+    public function testSetDefaultOrganisationId(): void
+    {
+        // Arrange: expect appConfig to be called with the UUID.
+        $this->appConfig->expects($this->once())
+            ->method('setValueString')
+            ->with('openregister', 'defaultOrganisation', 'new-default-uuid');
+
+        // Act.
+        $this->organisationService->setDefaultOrganisationId('new-default-uuid');
+
+        // Assert: static cache was cleared (verify by checking property via reflection).
+        $reflection = new \ReflectionClass(OrganisationService::class);
+        $cacheProperty = $reflection->getProperty('defaultOrgCache');
+        $cacheProperty->setAccessible(true);
+        $this->assertNull($cacheProperty->getValue());
+    }
+
+    /**
+     * Test createOrganisation with invalid UUID format throws exception
+     *
+     * @return void
+     */
+    public function testCreateOrganisationWithInvalidUuid(): void
+    {
+        // Arrange: Mock user session.
+        $this->mockUser->method('getUID')->willReturn('alice');
+        $this->userSession->method('getUser')->willReturn($this->mockUser);
+
+        // Act & Assert: Invalid UUID should throw.
+        $this->expectException(\Exception::class);
+        $this->expectExceptionMessage('Invalid UUID format');
+
+        $this->organisationService->createOrganisation(
+            'Test Org',
+            'Description',
+            true,
+            'not-a-valid-uuid'
+        );
+    }
+
+    /**
+     * Test createOrganisation without logged-in user (no current user)
+     *
+     * @return void
+     */
+    public function testCreateOrganisationWithoutUser(): void
+    {
+        // Arrange: No user logged in.
+        $this->userSession->method('getUser')->willReturn(null);
+
+        // Mock: groupManager for addAdminUsersToOrganisation.
+        $this->groupManager->method('get')->willReturn(null);
+
+        // Mock: mapper save.
+        $savedOrg = new Organisation();
+        $savedOrg->setName('No User Org');
+        $savedOrg->setUuid('no-user-uuid');
+
+        $this->organisationMapper
+            ->expects($this->once())
+            ->method('save')
+            ->willReturn($savedOrg);
+
+        // Mock: appConfig for default organisation check.
+        $this->appConfig->method('getValueString')
+            ->willReturn('existing-default-uuid');
+
+        // Act: Create without user - should succeed but with no owner.
+        $result = $this->organisationService->createOrganisation('No User Org', 'test');
+
+        // Assert: Organisation created without owner.
+        $this->assertInstanceOf(Organisation::class, $result);
+        $this->assertEquals('No User Org', $result->getName());
+    }
+
+    /**
+     * Test createOrganisation sets as default when no default exists
+     *
+     * @return void
+     */
+    public function testCreateOrganisationSetsAsDefaultWhenNoneExists(): void
+    {
+        // Arrange: Mock user session.
+        $this->mockUser->method('getUID')->willReturn('alice');
+        $this->userSession->method('getUser')->willReturn($this->mockUser);
+
+        // Mock: No existing default organisation.
+        $this->appConfig->method('getValueString')
+            ->with('openregister', 'defaultOrganisation', '')
+            ->willReturn('');
+
+        // Mock: groupManager for addAdminUsersToOrganisation.
+        $this->groupManager->method('get')->willReturn(null);
+
+        // Mock: mapper save returns org with UUID.
+        $savedOrg = new Organisation();
+        $savedOrg->setName('First Org');
+        $savedOrg->setUuid('first-org-uuid');
+        $savedOrg->setOwner('alice');
+        $savedOrg->setUsers(['alice']);
+
+        $this->organisationMapper
+            ->method('save')
+            ->willReturn($savedOrg);
+
+        // Expect: setValueString called to set this as default.
+        $this->appConfig->expects($this->once())
+            ->method('setValueString')
+            ->with('openregister', 'defaultOrganisation', 'first-org-uuid');
+
+        // Act.
+        $result = $this->organisationService->createOrganisation('First Org', 'desc');
+
+        // Assert.
+        $this->assertEquals('first-org-uuid', $result->getUuid());
+    }
+
+    /**
+     * Test createOrganisation with a valid specific UUID
+     *
+     * @return void
+     */
+    public function testCreateOrganisationWithValidUuid(): void
+    {
+        // Arrange: Mock user session.
+        $this->mockUser->method('getUID')->willReturn('alice');
+        $this->userSession->method('getUser')->willReturn($this->mockUser);
+
+        $specificUuid = '550e8400-e29b-41d4-a716-446655440000';
+
+        // Mock: groupManager for addAdminUsersToOrganisation.
+        $this->groupManager->method('get')->willReturn(null);
+
+        // Mock: mapper save verifies UUID was set.
+        $savedOrg = new Organisation();
+        $savedOrg->setName('UUID Org');
+        $savedOrg->setUuid($specificUuid);
+        $savedOrg->setOwner('alice');
+        $savedOrg->setUsers(['alice']);
+
+        $this->organisationMapper
+            ->expects($this->once())
+            ->method('save')
+            ->with($this->callback(function ($org) use ($specificUuid) {
+                return $org instanceof Organisation
+                    && $org->getUuid() === $specificUuid;
+            }))
+            ->willReturn($savedOrg);
+
+        // Mock: appConfig for default organisation check.
+        $this->appConfig->method('getValueString')
+            ->willReturn('existing-default');
+
+        // Act.
+        $result = $this->organisationService->createOrganisation(
+            'UUID Org',
+            'desc',
+            true,
+            $specificUuid
+        );
+
+        // Assert.
+        $this->assertEquals($specificUuid, $result->getUuid());
+    }
+
+    /**
+     * Test createOrganisation adds admin group users when admin group exists
+     *
+     * @return void
+     */
+    public function testCreateOrganisationAddsAdminGroupUsers(): void
+    {
+        // Arrange: Mock user session.
+        $this->mockUser->method('getUID')->willReturn('alice');
+        $this->userSession->method('getUser')->willReturn($this->mockUser);
+
+        // Mock: admin group exists with users.
+        $adminUser1 = $this->createMock(\OCP\IUser::class);
+        $adminUser1->method('getUID')->willReturn('admin1');
+
+        $adminUser2 = $this->createMock(\OCP\IUser::class);
+        $adminUser2->method('getUID')->willReturn('admin2');
+
+        $adminGroup = $this->createMock(\OCP\IGroup::class);
+        $adminGroup->method('getUsers')->willReturn([$adminUser1, $adminUser2]);
+
+        $this->groupManager->method('get')
+            ->with('admin')
+            ->willReturn($adminGroup);
+
+        // Mock: mapper save captures the org with admin users added.
+        $savedOrg = new Organisation();
+        $savedOrg->setName('Admin Org');
+        $savedOrg->setUuid('admin-org-uuid');
+        $savedOrg->setOwner('alice');
+        $savedOrg->setUsers(['alice', 'admin1', 'admin2']);
+
+        $this->organisationMapper
+            ->expects($this->once())
+            ->method('save')
+            ->with($this->callback(function ($org) {
+                // Verify admin users were added.
+                return $org instanceof Organisation
+                    && $org->hasUser('admin1')
+                    && $org->hasUser('admin2')
+                    && $org->hasUser('alice');
+            }))
+            ->willReturn($savedOrg);
+
+        // Mock: appConfig for default organisation check.
+        $this->appConfig->method('getValueString')
+            ->willReturn('existing-default');
+
+        // Act.
+        $result = $this->organisationService->createOrganisation('Admin Org', 'desc');
+
+        // Assert.
+        $this->assertInstanceOf(Organisation::class, $result);
+    }
+
+    /**
+     * Test getOrganisationSettingsOnly throws RuntimeException on failure
+     *
+     * @return void
+     */
+    public function testGetOrganisationSettingsOnlyThrowsOnFailure(): void
+    {
+        // Arrange: appConfig throws an exception.
+        $this->appConfig->method('getValueString')
+            ->willThrowException(new \Exception('Config error'));
+
+        // Act & Assert.
+        $this->expectException(\RuntimeException::class);
+        $this->expectExceptionMessage('Failed to retrieve Organisation settings');
+
+        $this->organisationService->getOrganisationSettingsOnly();
+    }
+
+    /**
+     * Test getDefaultOrganisationUuid returns null on exception
+     *
+     * @return void
+     */
+    public function testGetDefaultOrganisationUuidReturnsNullOnException(): void
+    {
+        // Arrange: appConfig throws an exception.
+        $this->appConfig->method('getValueString')
+            ->willThrowException(new \Exception('Config error'));
+
+        // Act.
+        $result = $this->organisationService->getDefaultOrganisationUuid();
+
+        // Assert: returns null, does not throw.
+        $this->assertNull($result);
+    }
+
+    /**
      * Test organisation __toString method
      *
      * Scenario: Test string conversion of organisation objects

@@ -31,6 +31,7 @@ use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\ObjectEntityMapper;
 use OCA\OpenRegister\Db\Register;
+use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Dto\DeletionAnalysis;
@@ -77,6 +78,13 @@ class ReferentialIntegrityServiceTest extends TestCase
     private AuditTrailMapper $auditTrailMapper;
 
     /**
+     * Mock register mapper.
+     *
+     * @var RegisterMapper&MockObject
+     */
+    private RegisterMapper $registerMapper;
+
+    /**
      * Mock logger.
      *
      * @var LoggerInterface&MockObject
@@ -98,12 +106,14 @@ class ReferentialIntegrityServiceTest extends TestCase
     protected function setUp(): void
     {
         $this->schemaMapper       = $this->createMock(SchemaMapper::class);
+        $this->registerMapper     = $this->createMock(RegisterMapper::class);
         $this->objectEntityMapper = $this->createMock(ObjectEntityMapper::class);
         $this->auditTrailMapper   = $this->createMock(AuditTrailMapper::class);
         $this->logger = $this->createMock(LoggerInterface::class);
 
         $this->service = new ReferentialIntegrityService(
             schemaMapper: $this->schemaMapper,
+            registerMapper: $this->registerMapper,
             objectEntityMapper: $this->objectEntityMapper,
             auditTrailMapper: $this->auditTrailMapper,
             logger: $this->logger
@@ -1135,6 +1145,22 @@ class ReferentialIntegrityServiceTest extends TestCase
 
         $this->objectEntityMapper->method('update')->willReturnArgument(0);
 
+        // CASCADE now goes through applyBatchCascadeDelete which calls
+        // registerMapper->find() + schemaMapper->find() + deleteObjects(),
+        // not findAcrossAllSources. Track cascade via deleteObjects.
+        $cascadeDeletedUuids = [];
+        $this->registerMapper->method('find')->willReturn($mockRegister);
+        $this->schemaMapper->method('find')->willReturn($mockSchema);
+        $this->objectEntityMapper->method('deleteObjects')
+            ->willReturnCallback(
+                function (array $uuids) use (&$callOrder, &$cascadeDeletedUuids) {
+                    $cascadeDeletedUuids = array_merge($cascadeDeletedUuids, $uuids);
+                    // Track that cascade happened after SET_NULL and SET_DEFAULT.
+                    $callOrder[] = 'cascade-batch';
+                    return ['deleted' => $uuids];
+                }
+            );
+
         $this->service->applyDeletionActions(
             analysis: $analysis,
             userId: 'admin',
@@ -1144,6 +1170,7 @@ class ReferentialIntegrityServiceTest extends TestCase
         // SET_NULL first, SET_DEFAULT second, CASCADE third.
         $this->assertSame('null-uuid', $callOrder[0]);
         $this->assertSame('default-uuid', $callOrder[1]);
-        $this->assertSame('cascade-uuid', $callOrder[2]);
+        $this->assertSame('cascade-batch', $callOrder[2]);
+        $this->assertContains('cascade-uuid', $cascadeDeletedUuids);
     }//end testApplyDeletionActionsExecutionOrder()
 }//end class

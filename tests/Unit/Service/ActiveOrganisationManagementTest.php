@@ -601,4 +601,305 @@ class ActiveOrganisationManagementTest extends TestCase
     {
         $this->markTestSkipped('OrganisationMapper no longer has findDefault() method. Default organisation flow was refactored to use findByUuid() internally.');
     }
+
+    /**
+     * Test getActiveOrganisation returns null when no user is logged in
+     *
+     * @return void
+     */
+    public function testGetActiveOrganisationNoUser(): void
+    {
+        // Arrange: No user logged in.
+        $this->userSession->method('getUser')->willReturn(null);
+
+        // Act.
+        $result = $this->organisationService->getActiveOrganisation();
+
+        // Assert.
+        $this->assertNull($result);
+    }
+
+    /**
+     * Test setActiveOrganisation throws exception when no user is logged in
+     *
+     * @return void
+     */
+    public function testSetActiveOrganisationNoUser(): void
+    {
+        // Arrange: No user logged in.
+        $this->userSession->method('getUser')->willReturn(null);
+
+        // Act & Assert.
+        $this->expectException(\Exception::class);
+        $this->expectExceptionMessage('No user logged in');
+
+        $this->organisationService->setActiveOrganisation('some-uuid');
+    }
+
+    /**
+     * Test getUserOrganisationStats returns empty stats when no user is logged in
+     *
+     * @return void
+     */
+    public function testGetUserOrganisationStatsNoUser(): void
+    {
+        // Arrange: No user logged in.
+        $this->userSession->method('getUser')->willReturn(null);
+
+        // Act.
+        $result = $this->organisationService->getUserOrganisationStats();
+
+        // Assert.
+        $this->assertEquals(0, $result['total']);
+        $this->assertNull($result['active']);
+        $this->assertEmpty($result['results']);
+    }
+
+    /**
+     * Test getUserOrganisations returns empty array when no user is logged in
+     *
+     * @return void
+     */
+    public function testGetUserOrganisationsNoUser(): void
+    {
+        // Arrange: No user logged in.
+        $this->userSession->method('getUser')->willReturn(null);
+
+        // Act.
+        $result = $this->organisationService->getUserOrganisations();
+
+        // Assert.
+        $this->assertIsArray($result);
+        $this->assertEmpty($result);
+    }
+
+    /**
+     * Test getUserOrganisations uses in-memory cache on second call
+     *
+     * @return void
+     */
+    public function testGetUserOrganisationsUsesCache(): void
+    {
+        // Arrange: Mock user session.
+        $this->mockUser->method('getUID')->willReturn('cache-user');
+        $this->userSession->method('getUser')->willReturn($this->mockUser);
+
+        // Mock: User has one organisation.
+        $org = new Organisation();
+        $org->setUuid('cached-org-uuid');
+        $org->setName('Cached Org');
+        $org->setUsers(['cache-user']);
+
+        $this->organisationMapper
+            ->expects($this->once())  // Should only be called once due to cache.
+            ->method('findByUserId')
+            ->with('cache-user')
+            ->willReturn([$org]);
+
+        // Act: Call twice.
+        $result1 = $this->organisationService->getUserOrganisations();
+        $result2 = $this->organisationService->getUserOrganisations();
+
+        // Assert: Same result, mapper only called once.
+        $this->assertCount(1, $result1);
+        $this->assertCount(1, $result2);
+        $this->assertEquals('cached-org-uuid', $result1[0]->getUuid());
+    }
+
+    /**
+     * Test clearCache returns false when no user is logged in
+     *
+     * @return void
+     */
+    public function testClearCacheNoUser(): void
+    {
+        // Arrange: No user logged in.
+        $this->userSession->method('getUser')->willReturn(null);
+
+        // Act.
+        $result = $this->organisationService->clearCache();
+
+        // Assert.
+        $this->assertFalse($result);
+    }
+
+    /**
+     * Test clearCache with clearPersistent=true also deletes user config value
+     *
+     * @return void
+     */
+    public function testClearCacheWithPersistent(): void
+    {
+        // Arrange: Mock user session.
+        $this->mockUser->method('getUID')->willReturn('persist-user');
+        $this->userSession->method('getUser')->willReturn($this->mockUser);
+
+        // Expect: deleteUserValue called when clearPersistent is true.
+        $this->config->expects($this->once())
+            ->method('deleteUserValue')
+            ->with('persist-user', 'openregister', 'active_organisation');
+
+        // Mock: session remove called.
+        $this->session->expects($this->atLeastOnce())
+            ->method('remove');
+
+        // Act.
+        $result = $this->organisationService->clearCache(true);
+
+        // Assert.
+        $this->assertTrue($result);
+    }
+
+    /**
+     * Test getUserActiveOrganisations returns empty array when no active organisation
+     *
+     * @return void
+     */
+    public function testGetUserActiveOrganisationsNoActiveOrg(): void
+    {
+        // Arrange: No user logged in.
+        $this->userSession->method('getUser')->willReturn(null);
+
+        // Act.
+        $result = $this->organisationService->getUserActiveOrganisations();
+
+        // Assert.
+        $this->assertIsArray($result);
+        $this->assertEmpty($result);
+    }
+
+    /**
+     * Test getUserActiveOrganisations returns active org UUID plus parent chain
+     *
+     * @return void
+     */
+    public function testGetUserActiveOrganisationsWithParentChain(): void
+    {
+        // Arrange: Mock user session.
+        $this->mockUser->method('getUID')->willReturn('alice');
+        $this->userSession->method('getUser')->willReturn($this->mockUser);
+
+        $activeOrgUuid = 'child-org-uuid';
+
+        // Mock: Active organisation in session cache.
+        $cachedOrgData = [
+            'id' => 1,
+            'uuid' => $activeOrgUuid,
+            'name' => 'Child Org',
+            'description' => '',
+            'owner' => 'alice',
+            'users' => ['alice'],
+            'created' => '2024-01-01T00:00:00+00:00',
+            'updated' => '2024-01-01T00:00:00+00:00',
+        ];
+
+        $this->session->method('get')
+            ->willReturnCallback(function (string $key) use ($cachedOrgData) {
+                if ($key === 'openregister_active_organisation_alice') {
+                    return $cachedOrgData;
+                }
+                if ($key === 'openregister_active_organisation_timestamp_alice') {
+                    return time();
+                }
+                return null;
+            });
+
+        // Mock: Parent chain returns parent and grandparent UUIDs.
+        $this->organisationMapper
+            ->expects($this->once())
+            ->method('findParentChain')
+            ->with($activeOrgUuid)
+            ->willReturn(['parent-org-uuid', 'grandparent-org-uuid']);
+
+        // Act.
+        $result = $this->organisationService->getUserActiveOrganisations();
+
+        // Assert: active + parents.
+        $this->assertCount(3, $result);
+        $this->assertEquals($activeOrgUuid, $result[0]);
+        $this->assertEquals('parent-org-uuid', $result[1]);
+        $this->assertEquals('grandparent-org-uuid', $result[2]);
+    }
+
+    /**
+     * Test getUserActiveOrganisations returns only active org when no parents
+     *
+     * @return void
+     */
+    public function testGetUserActiveOrganisationsNoParents(): void
+    {
+        // Arrange: Mock user session.
+        $this->mockUser->method('getUID')->willReturn('bob');
+        $this->userSession->method('getUser')->willReturn($this->mockUser);
+
+        $activeOrgUuid = 'root-org-uuid';
+
+        // Mock: Active organisation in session cache.
+        $cachedOrgData = [
+            'id' => 2,
+            'uuid' => $activeOrgUuid,
+            'name' => 'Root Org',
+            'description' => '',
+            'owner' => 'bob',
+            'users' => ['bob'],
+            'created' => '2024-01-01T00:00:00+00:00',
+            'updated' => '2024-01-01T00:00:00+00:00',
+        ];
+
+        $this->session->method('get')
+            ->willReturnCallback(function (string $key) use ($cachedOrgData) {
+                if ($key === 'openregister_active_organisation_bob') {
+                    return $cachedOrgData;
+                }
+                if ($key === 'openregister_active_organisation_timestamp_bob') {
+                    return time();
+                }
+                return null;
+            });
+
+        // Mock: No parent chain (root org).
+        $this->organisationMapper
+            ->method('findParentChain')
+            ->with($activeOrgUuid)
+            ->willReturn([]);
+
+        // Act.
+        $result = $this->organisationService->getUserActiveOrganisations();
+
+        // Assert: Only active org.
+        $this->assertCount(1, $result);
+        $this->assertEquals($activeOrgUuid, $result[0]);
+    }
+
+    /**
+     * Test getOrganisationForNewEntity falls back to default when no active org
+     *
+     * @return void
+     */
+    public function testGetOrganisationForNewEntityFallbackToDefault(): void
+    {
+        // Arrange: No user logged in, so getActiveOrganisation returns null.
+        $this->userSession->method('getUser')->willReturn(null);
+
+        // Mock: ensureDefaultOrganisation returns a default org from static cache.
+        $defaultOrg = new Organisation();
+        $defaultOrg->setUuid('default-fallback-uuid');
+        $defaultOrg->setName('Default Organisation');
+        $defaultOrg->setUsers(['admin']);
+
+        // Pre-populate static cache so ensureDefaultOrganisation hits cache.
+        $reflection = new \ReflectionClass(OrganisationService::class);
+        $cacheProperty = $reflection->getProperty('defaultOrgCache');
+        $cacheProperty->setAccessible(true);
+        $cacheProperty->setValue($defaultOrg);
+        $tsProperty = $reflection->getProperty('defaultOrgCacheTs');
+        $tsProperty->setAccessible(true);
+        $tsProperty->setValue(time());
+
+        // Act.
+        $result = $this->organisationService->getOrganisationForNewEntity();
+
+        // Assert: Falls back to default org UUID.
+        $this->assertEquals('default-fallback-uuid', $result);
+    }
 }

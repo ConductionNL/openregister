@@ -563,7 +563,7 @@ class SettingsService
      */
     public function clearCache(?string $cacheType=null): array
     {
-        return $this->cacheSettingsHandler->clearCache($cacheType);
+        return $this->cacheSettingsHandler->clearCache($cacheType ?? 'all');
     }//end clearCache()
 
     /**
@@ -973,7 +973,7 @@ class SettingsService
         // Get total object count.
         $totalObjects = $objectMapper->countSearchObjects(
             query: [],
-            activeOrganisationUuid: null,
+            _activeOrgUuid: null,
             _rbac: false,
             _multitenancy: false
         );
