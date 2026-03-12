@@ -22,6 +22,3 @@ jobs:
       enable-phpunit: true
       enable-newman: true
       enable-coverage-guard: true
-    permissions:
-      contents: write
-      pull-requests: write
