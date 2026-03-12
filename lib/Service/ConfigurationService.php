@@ -464,8 +464,12 @@ class ConfigurationService
     ): array {
 
         // If a OpenConnector specific object is in the data, enable installing OpenConnector resources.
-        if (count(array_intersect(array_keys($data['components']), ['mappings', 'jobs', 'synchronizations', 'rules', 'sources'])) > 0
-            && $this->hasOpenConnector()) {
+        if (count(array_intersect(array_keys(
+                $data['components']),
+                ['mappings', 'jobs', 'synchronizations', 'rules', 'sources']
+            )) > 0
+            && $this->hasOpenConnector() === true
+        ) {
             $this->getImportHandler()->setOpenConnectorConfigurationService($this->openConnectorConfigurationService);
         }
 
