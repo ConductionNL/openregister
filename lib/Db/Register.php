@@ -314,10 +314,10 @@ class Register extends Entity implements JsonSerializable
             }
         );
 
-		// phpcs:disable CustomSniffs.Functions.NamedParameters
-		// Reason: the "setSchemas" function in parent is a call to the magic method which does not take named parameters
-		parent::setSchemas($schemas);
-		// phpcs:enable CustomSniffs.Functions.NamedParameters
+        // phpcs:disable CustomSniffs.Functions.NamedParameters
+        // Reason: the "setSchemas" function in parent is a call to the magic method which does not take named parameter.
+        parent::setSchemas($schemas);
+        // phpcs:enable CustomSniffs.Functions.NamedParameters
 
         return $this;
     }//end setSchemas()
