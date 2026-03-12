@@ -344,6 +344,131 @@ class LlmSettingsControllerTest extends TestCase
         $this->assertFalse($result->getData()['success']);
     }
 
+    public function testUpdateLLMSettingsWithArrayModelMissingId(): void
+    {
+        // When array model has no 'id' key, it should be set to null.
+        $this->request->method('getParams')->willReturn([
+            'fireworksConfig' => [
+                'embeddingModel' => ['name' => 'no-id-model'],
+            ],
+        ]);
+        $this->settingsService->expects($this->once())
+            ->method('updateLLMSettingsOnly')
+            ->with($this->callback(function ($data) {
+                return $data['fireworksConfig']['embeddingModel'] === null;
+            }))
+            ->willReturn(['updated' => true]);
+
+        $result = $this->controller->updateLLMSettings();
+        $this->assertEquals(200, $result->getStatus());
+    }
+
+    public function testUpdateLLMSettingsResponseContainsMessage(): void
+    {
+        $this->request->method('getParams')->willReturn([]);
+        $this->settingsService->method('updateLLMSettingsOnly')->willReturn(['provider' => 'ollama']);
+
+        $result = $this->controller->updateLLMSettings();
+
+        $data = $result->getData();
+        $this->assertEquals('LLM settings updated successfully', $data['message']);
+        $this->assertArrayHasKey('data', $data);
+    }
+
+    public function testTestEmbeddingWithDefaultTestText(): void
+    {
+        // When testText is not provided, the default text is used.
+        $this->request->method('getParam')
+            ->willReturnMap([
+                ['provider', null, 'ollama'],
+                ['config', [], ['url' => 'http://localhost:11434']],
+                ['testText', 'This is a test embedding to verify the LLM configuration.', 'This is a test embedding to verify the LLM configuration.'],
+            ]);
+        $this->vectorizationService->method('testEmbedding')
+            ->willReturn(['success' => true, 'dimensions' => 768]);
+
+        $result = $this->controller->testEmbedding();
+
+        $this->assertEquals(200, $result->getStatus());
+        $this->assertTrue($result->getData()['success']);
+    }
+
+    public function testTestChatWithDefaultMessage(): void
+    {
+        // When testMessage is not provided, the default message is used.
+        // Container.get throws, which exercises the exception path.
+        $this->request->method('getParam')
+            ->willReturnMap([
+                ['provider', null, 'openai'],
+                ['config', [], ['apiKey' => 'test-key']],
+                ['testMessage', 'Hello! Please respond with a brief greeting.', 'Hello! Please respond with a brief greeting.'],
+            ]);
+        $this->container->method('get')
+            ->willThrowException(new \Exception('ChatService unavailable'));
+
+        $result = $this->controller->testChat();
+
+        $this->assertEquals(400, $result->getStatus());
+        $this->assertFalse($result->getData()['success']);
+        $this->assertStringContainsString('ChatService unavailable', $result->getData()['error']);
+    }
+
+    public function testCheckEmbeddingModelMismatchReturnsMismatchData(): void
+    {
+        $mismatchData = [
+            'has_vectors' => true,
+            'mismatch'    => true,
+            'current_model' => 'text-embedding-3-small',
+            'stored_model'  => 'text-embedding-ada-002',
+        ];
+        $this->vectorizationService->method('checkEmbeddingModelMismatch')
+            ->willReturn($mismatchData);
+
+        $result = $this->controller->checkEmbeddingModelMismatch();
+
+        $this->assertEquals(200, $result->getStatus());
+        $this->assertTrue($result->getData()['mismatch']);
+    }
+
+    public function testClearAllEmbeddingsReturns500WhenSuccessFalse(): void
+    {
+        $this->vectorizationService->method('clearAllEmbeddings')
+            ->willReturn(['success' => false, 'error' => 'Permission denied']);
+
+        $result = $this->controller->clearAllEmbeddings();
+
+        $this->assertEquals(500, $result->getStatus());
+        $this->assertFalse($result->getData()['success']);
+    }
+
+    public function testGetVectorStatsContainsTimestamp(): void
+    {
+        $this->vectorizationService->method('getVectorStats')
+            ->willReturn(['total' => 100, 'by_schema' => []]);
+
+        $result = $this->controller->getVectorStats();
+
+        $this->assertEquals(200, $result->getStatus());
+        $this->assertArrayHasKey('timestamp', $result->getData());
+        $this->assertIsString($result->getData()['timestamp']);
+    }
+
+    public function testPatchLLMSettingsWithAllModelConfigs(): void
+    {
+        // patchLLMSettings delegates to updateLLMSettings — test end-to-end with all configs.
+        $this->request->method('getParams')->willReturn([
+            'fireworksConfig' => ['embeddingModel' => ['id' => 'fw-embed'], 'chatModel' => ['id' => 'fw-chat']],
+            'openaiConfig'    => ['model' => ['id' => 'oai-embed'], 'chatModel' => ['id' => 'oai-chat']],
+            'ollamaConfig'    => ['model' => ['id' => 'oll-embed'], 'chatModel' => ['id' => 'oll-chat']],
+        ]);
+        $this->settingsService->method('updateLLMSettingsOnly')->willReturn(['ok' => true]);
+
+        $result = $this->controller->patchLLMSettings();
+
+        $this->assertEquals(200, $result->getStatus());
+        $this->assertTrue($result->getData()['success']);
+    }
+
     public function testCheckEmbeddingModelMismatchSuccess(): void
     {
         $this->vectorizationService->method('checkEmbeddingModelMismatch')

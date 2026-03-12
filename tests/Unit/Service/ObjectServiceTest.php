@@ -2332,6 +2332,269 @@ class ObjectServiceTest extends TestCase
 		$this->assertArrayHasKey('objects', $result['@self']);
 	}
 
+	// ── 55b. getActiveOrganisationForContext (private) ───────────────────
+
+	/**
+	 * Test getActiveOrganisationForContext returns UUID when org is found.
+	 */
+	public function testGetActiveOrganisationReturnsUuidWhenOrgFound(): void
+	{
+		$orgMock = $this->getMockBuilder(\OCA\OpenRegister\Db\Organisation::class)
+			->disableOriginalConstructor()
+			->addMethods(['getUuid'])
+			->getMock();
+		$orgMock->method('getUuid')->willReturn('org-uuid-abc');
+
+		$this->organisationService->method('getActiveOrganisation')->willReturn($orgMock);
+
+		$result = $this->invokePrivate('getActiveOrganisationForContext', []);
+
+		$this->assertSame('org-uuid-abc', $result);
+	}
+
+	/**
+	 * Test getActiveOrganisationForContext returns null when no org found.
+	 */
+	public function testGetActiveOrganisationReturnsNullWhenNoOrg(): void
+	{
+		$this->organisationService->method('getActiveOrganisation')->willReturn(null);
+
+		$result = $this->invokePrivate('getActiveOrganisationForContext', []);
+
+		$this->assertNull($result);
+	}
+
+	/**
+	 * Test getActiveOrganisationForContext returns null when exception thrown.
+	 */
+	public function testGetActiveOrganisationReturnsNullOnException(): void
+	{
+		$this->organisationService->method('getActiveOrganisation')
+			->willThrowException(new Exception('Organisation service unavailable'));
+
+		$result = $this->invokePrivate('getActiveOrganisationForContext', []);
+
+		$this->assertNull($result);
+	}
+
+	// ── 55c. validateObjectIfRequired (private) ─────────────────────────
+
+	/**
+	 * Test validateObjectIfRequired does nothing when hardValidation is false.
+	 */
+	public function testValidateObjectIfRequiredSkipsWhenNotHardValidation(): void
+	{
+		$schema = new Schema();
+		$schema->setId(1);
+		$schema->setHardValidation(false);
+		$this->setProperty('currentSchema', $schema);
+
+		// validateHandler should not be called.
+		$this->validateHandler->expects($this->never())->method('validateObject');
+
+		$this->invokePrivate('validateObjectIfRequired', [['name' => 'Test']]);
+	}
+
+	/**
+	 * Test validateObjectIfRequired validates when hardValidation is true and passes.
+	 */
+	public function testValidateObjectIfRequiredValidatesWhenHardValidationEnabled(): void
+	{
+		$schema = new Schema();
+		$schema->setId(1);
+		$schema->setHardValidation(true);
+		$this->setProperty('currentSchema', $schema);
+
+		$validResult = $this->createMock(\Opis\JsonSchema\ValidationResult::class);
+		$validResult->method('isValid')->willReturn(true);
+
+		$this->validateHandler->expects($this->once())
+			->method('validateObject')
+			->willReturn($validResult);
+
+		// Should not throw.
+		$this->invokePrivate('validateObjectIfRequired', [['name' => 'Test']]);
+	}
+
+	/**
+	 * Test validateObjectIfRequired throws ValidationException when validation fails.
+	 */
+	public function testValidateObjectIfRequiredThrowsOnValidationFailure(): void
+	{
+		$schema = new Schema();
+		$schema->setId(1);
+		$schema->setHardValidation(true);
+		$this->setProperty('currentSchema', $schema);
+
+		$invalidResult = $this->createMock(\Opis\JsonSchema\ValidationResult::class);
+		$invalidResult->method('isValid')->willReturn(false);
+		$invalidResult->method('error')->willReturn(null);
+
+		$this->validateHandler->method('validateObject')->willReturn($invalidResult);
+		$this->validateHandler->method('generateErrorMessage')->willReturn('Validation failed: name is required');
+
+		$this->expectException(\OCA\OpenRegister\Exception\ValidationException::class);
+
+		$this->invokePrivate('validateObjectIfRequired', [[]]);
+	}
+
+	// ── 55d. ensureObjectFolderExists when getFolderId returns null ───────
+
+	/**
+	 * Test ensureObjectFolderExists sets folder to null and still calls update
+	 * when folderNode->getId() returns null (entity needs persisting regardless).
+	 */
+	public function testEnsureObjectFolderExistsCallsUpdateWhenNodeIdNull(): void
+	{
+		$entity = new ObjectEntity();
+		$entity->setUuid('test-uuid');
+		$entity->setFolder(null);
+
+		$folderNode = $this->createMock(\OCP\Files\Folder::class);
+		$folderNode->method('getId')->willReturn(null);
+
+		$this->fileService->expects($this->once())
+			->method('createEntityFolder')
+			->willReturn($folderNode);
+
+		// When folderNode->getId() returns null, the entity is still updated
+		// (folder set to null, then update called).
+		$this->objectEntityMapper->expects($this->once())
+			->method('update')
+			->willReturnArgument(0);
+
+		$this->service->ensureObjectFolderExists($entity);
+
+		// Folder should be null since getId() returned null.
+		$this->assertNull($entity->getFolder());
+	}
+
+	// ── 55e. getFacetableFields delegation ───────────────────────────────
+
+	/**
+	 * Test getFacetableFields delegates to facetHandler.
+	 */
+	public function testGetFacetableFieldsDelegatesToFacetHandler(): void
+	{
+		$expected = ['@self' => [], 'object_fields' => ['name' => ['type' => 'string']]];
+
+		$this->facetHandler->expects($this->once())
+			->method('getFacetableFields')
+			->with(baseQuery: [], _sampleSize: 100)
+			->willReturn($expected);
+
+		$result = $this->service->getFacetableFields(baseQuery: [], sampleSize: 100);
+
+		$this->assertSame($expected, $result);
+	}
+
+	// ── 55f. setRegister fallback path (numeric ID, cache returns non-Register) ──
+
+	/**
+	 * Test setRegister falls back to mapper when cache returns unexpected type.
+	 */
+	public function testSetRegisterFallsBackToMapperWhenCacheReturnsWrong(): void
+	{
+		// Return an item that is NOT a Register instance.
+		$this->performanceHandler->method('getCachedEntities')
+			->willReturn([new \stdClass()]);
+
+		$this->registerMapper->expects($this->once())
+			->method('find')
+			->willReturn($this->register);
+
+		$this->service->setRegister(register: 1);
+
+		$this->assertSame($this->register, $this->getProperty('currentRegister'));
+	}
+
+	// ── 55g. setSchema fallback path (numeric ID, cache returns non-Schema) ──
+
+	/**
+	 * Test setSchema falls back to mapper when cache returns unexpected type.
+	 */
+	public function testSetSchemaFallsBackToMapperWhenCacheReturnsWrong(): void
+	{
+		$this->performanceHandler->method('getCachedEntities')
+			->willReturn([new \stdClass()]);
+
+		$this->schemaMapper->expects($this->once())
+			->method('find')
+			->willReturn($this->schema);
+
+		$this->service->setSchema(schema: 2);
+
+		$this->assertSame($this->schema, $this->getProperty('currentSchema'));
+	}
+
+	// ── 55h. countSearchObjects with active organisation ─────────────────
+
+	/**
+	 * Test countSearchObjects passes org UUID when multitenancy enabled and org found.
+	 */
+	public function testCountSearchObjectsPassesOrgUuidWhenFound(): void
+	{
+		$orgMock = $this->getMockBuilder(\OCA\OpenRegister\Db\Organisation::class)
+			->disableOriginalConstructor()
+			->addMethods(['getUuid'])
+			->getMock();
+		$orgMock->method('getUuid')->willReturn('org-uuid-123');
+
+		$this->organisationService->method('getActiveOrganisation')->willReturn($orgMock);
+
+		$this->objectEntityMapper->expects($this->once())
+			->method('countSearchObjects')
+			->with(
+				$this->anything(),
+				'org-uuid-123',
+				$this->anything(),
+				$this->anything(),
+				$this->anything(),
+				$this->anything()
+			)
+			->willReturn(7);
+
+		$result = $this->service->countSearchObjects(query: [], _multitenancy: true);
+
+		$this->assertSame(7, $result);
+	}
+
+	// ── 55i. searchObjectsPaginated bypasses multitenancy for public schema ──
+
+	/**
+	 * Test searchObjectsPaginated bypasses multitenancy when schema has public read access.
+	 */
+	public function testSearchObjectsPaginatedBypassesMultitenancyForPublicSchema(): void
+	{
+		$publicSchema = new Schema();
+		$publicSchema->setId(3);
+		$publicSchema->setAuthorization(['read' => ['public']]);
+		$this->setProperty('currentSchema', $publicSchema);
+
+		$this->searchQueryHandler->method('isSolrAvailable')->willReturn(false);
+
+		// The effective multitenancy passed to queryHandler should be false.
+		$this->queryHandler->expects($this->once())
+			->method('searchObjectsPaginatedDatabase')
+			->with(
+				$this->anything(),
+				$this->anything(),
+				false, // effectiveMt should be false for public schema
+				$this->anything(),
+				$this->anything(),
+				$this->anything(),
+				$this->anything()
+			)
+			->willReturn(['results' => [], 'total' => 0, '@self' => []]);
+
+		$result = $this->service->searchObjectsPaginated(
+			query: [],
+			_multitenancy: true // passed as true but bypassed for public schema
+		);
+
+		$this->assertSame('database', $result['@self']['source']);
+	}
+
 	// ── 57. searchObjectsPaginated with _source=database ────────────────
 
 	public function testSearchObjectsPaginatedExplicitDatabaseSource(): void

@@ -4977,4 +4977,602 @@ class RenderObjectTest extends TestCase
         // Multiple matches: count !== 1, returns as-is.
         $this->assertSame('duplicate', $result);
     }
+
+    // =========================================================================
+    // getRegister — cache hit path
+    // =========================================================================
+
+    public function testGetRegisterReturnsCachedRegister(): void
+    {
+        $register = $this->createRegister(5, 'Cached Register');
+
+        // First call — populate cache.
+        $this->registerMapper->expects($this->once())
+            ->method('find')
+            ->willReturn($register);
+
+        $result1 = $this->invokePrivate('getRegister', [5]);
+        // Second call — should come from cache (mapper only called once).
+        $result2 = $this->invokePrivate('getRegister', [5]);
+
+        $this->assertSame($register, $result1);
+        $this->assertSame($register, $result2);
+    }
+
+    // =========================================================================
+    // getSchema — cache hit path
+    // =========================================================================
+
+    public function testGetSchemaReturnsCachedSchema(): void
+    {
+        $schema = $this->createSchema(7, 'cached-schema');
+
+        $this->schemaMapper->expects($this->once())
+            ->method('find')
+            ->willReturn($schema);
+
+        $result1 = $this->invokePrivate('getSchema', [7]);
+        $result2 = $this->invokePrivate('getSchema', [7]);
+
+        $this->assertSame($schema, $result1);
+        $this->assertSame($schema, $result2);
+    }
+
+    public function testGetSchemaReturnsNullOnException(): void
+    {
+        $this->schemaMapper->method('find')
+            ->willThrowException(new Exception('DB error'));
+
+        $result = $this->invokePrivate('getSchema', [99]);
+
+        $this->assertNull($result);
+    }
+
+    // =========================================================================
+    // removeQueryParameters
+    // =========================================================================
+
+    public function testRemoveQueryParametersStripsQueryString(): void
+    {
+        $result = $this->invokePrivate('removeQueryParameters', ['myschema?key=value&other=foo']);
+        $this->assertSame('myschema', $result);
+    }
+
+    public function testRemoveQueryParametersNoQueryStringUnchanged(): void
+    {
+        $result = $this->invokePrivate('removeQueryParameters', ['myschema']);
+        $this->assertSame('myschema', $result);
+    }
+
+    // =========================================================================
+    // extractInverseConfig
+    // =========================================================================
+
+    public function testExtractInverseConfigWithItemsRefAndInversedBy(): void
+    {
+        $propConfig = [
+            'type'  => 'array',
+            'items' => [
+                '$ref'       => '#/components/schemas/Contact',
+                'inversedBy' => 'organisation',
+            ],
+        ];
+
+        $result = $this->invokePrivate('extractInverseConfig', [$propConfig]);
+
+        $this->assertNotNull($result);
+        $this->assertSame('#/components/schemas/Contact', $result['targetSchemaRef']);
+        $this->assertSame(['organisation'], $result['inversedByFields']);
+    }
+
+    public function testExtractInverseConfigWithArrayInversedBy(): void
+    {
+        $propConfig = [
+            'type'  => 'array',
+            'items' => [
+                '$ref'       => '5',
+                'inversedBy' => ['moduleA', 'moduleB'],
+            ],
+        ];
+
+        $result = $this->invokePrivate('extractInverseConfig', [$propConfig]);
+
+        $this->assertNotNull($result);
+        $this->assertSame(['moduleA', 'moduleB'], $result['inversedByFields']);
+    }
+
+    public function testExtractInverseConfigMissingRefReturnsNull(): void
+    {
+        $propConfig = [
+            'inversedBy' => 'parent',
+        ];
+
+        $result = $this->invokePrivate('extractInverseConfig', [$propConfig]);
+
+        $this->assertNull($result);
+    }
+
+    public function testExtractInverseConfigMissingInversedByReturnsNull(): void
+    {
+        $propConfig = [
+            '$ref' => '#/components/schemas/SomeSchema',
+        ];
+
+        $result = $this->invokePrivate('extractInverseConfig', [$propConfig]);
+
+        $this->assertNull($result);
+    }
+
+    // =========================================================================
+    // getFileTags
+    // =========================================================================
+
+    public function testGetFileTagsWithObjectPrefixFiltered(): void
+    {
+        $tag1 = $this->createMockTag('1', 'object:some-uuid');
+        $tag2 = $this->createMockTag('2', 'public');
+
+        $this->systemTagMapper->method('getTagIdsForObjects')
+            ->willReturn(['42' => ['1', '2']]);
+        $this->systemTagManager->method('getTagsByIds')
+            ->willReturn([$tag1, $tag2]);
+
+        $result = $this->invokePrivate('getFileTags', ['42']);
+
+        // 'object:' prefix should be filtered out.
+        $this->assertContains('public', $result);
+        $this->assertNotContains('object:some-uuid', $result);
+        $this->assertCount(1, $result);
+    }
+
+    public function testGetFileTagsWithNoTagsReturnsEmpty(): void
+    {
+        $this->systemTagMapper->method('getTagIdsForObjects')
+            ->willReturn([]);
+
+        $result = $this->invokePrivate('getFileTags', ['99']);
+
+        $this->assertSame([], $result);
+    }
+
+    public function testGetFileTagsWithEmptyTagIdsReturnsEmpty(): void
+    {
+        $this->systemTagMapper->method('getTagIdsForObjects')
+            ->willReturn(['99' => []]);
+
+        $result = $this->invokePrivate('getFileTags', ['99']);
+
+        $this->assertSame([], $result);
+    }
+
+    // =========================================================================
+    // renderFiles — with file records and tags (via private method directly)
+    // =========================================================================
+
+    public function testRenderFilesDirectlyWithTagsViaPrivateMethod(): void
+    {
+        $entity = $this->createBasicEntity(1, 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee', []);
+
+        $fileRecord = [
+            'fileid'      => '101',
+            'path'        => '/files/doc.pdf',
+            'name'        => 'doc.pdf',
+            'mimetype'    => 'application/pdf',
+            'size'        => 1024,
+            'etag'        => 'abc123',
+            'mtime'       => 1700000000,
+            'accessUrl'   => 'http://example.com/access/101',
+            'downloadUrl' => 'http://example.com/download/101',
+            'published'   => null,
+        ];
+
+        $this->fileMapper->method('getFilesForObject')
+            ->willReturn([$fileRecord]);
+        $this->systemTagMapper->method('getTagIdsForObjects')
+            ->willReturn(['101' => ['5']]);
+        $this->systemTagManager->method('getTagsByIds')
+            ->willReturn([$this->createMockTag('5', 'report')]);
+
+        $result = $this->invokePrivate('renderFiles', [$entity]);
+
+        $files = $result->getFiles();
+        $this->assertCount(1, $files);
+        $this->assertSame('101', $files[0]['id']);
+        $this->assertSame('doc.pdf', $files[0]['title']);
+        $this->assertSame(['report'], $files[0]['labels']);
+    }
+
+    public function testRenderFilesFiltersObjectPrefixTags(): void
+    {
+        $entity = $this->createBasicEntity(1, 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee', []);
+
+        $fileRecord = [
+            'fileid'      => '200',
+            'path'        => '/files/img.png',
+            'name'        => 'img.png',
+            'mimetype'    => 'image/png',
+            'size'        => 512,
+            'etag'        => 'def456',
+            'mtime'       => null,
+            'accessUrl'   => null,
+            'downloadUrl' => null,
+            'published'   => null,
+        ];
+
+        $this->fileMapper->method('getFilesForObject')
+            ->willReturn([$fileRecord]);
+        $this->systemTagMapper->method('getTagIdsForObjects')
+            ->willReturn(['200' => ['7', '8']]);
+        $this->systemTagManager->method('getTagsByIds')
+            ->willReturn([
+                $this->createMockTag('7', 'object:some-ref'),
+                $this->createMockTag('8', 'visible-tag'),
+            ]);
+
+        $result = $this->invokePrivate('renderFiles', [$entity]);
+
+        $files = $result->getFiles();
+        $this->assertCount(1, $files);
+        // object: tag should be filtered out.
+        $this->assertNotContains('object:some-ref', $files[0]['labels']);
+        $this->assertContains('visible-tag', $files[0]['labels']);
+    }
+
+    // =========================================================================
+    // renderFileProperties — initializes empty array for array file property
+    // =========================================================================
+
+    public function testRenderFilePropertiesInitializesArrayFileProperty(): void
+    {
+        $schema = $this->createSchema(1);
+        $schema->setProperties([
+            'attachments' => [
+                'type'  => 'array',
+                'items' => ['type' => 'file'],
+            ],
+        ]);
+
+        // Object data does NOT have 'attachments' key — should be initialized to [].
+        $entity = $this->createBasicEntity(1, 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee', [
+            'id' => 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee',
+        ]);
+        $entity->setSchema(1);
+
+        $this->schemaMapper->method('find')
+            ->willReturn($schema);
+
+        $result = $this->invokePrivate('renderFileProperties', [$entity]);
+
+        $objectData = $result->getObject();
+        $this->assertArrayHasKey('attachments', $objectData);
+        $this->assertSame([], $objectData['attachments']);
+    }
+
+    // =========================================================================
+    // hydrateFileProperty — non-numeric single value returns unchanged
+    // =========================================================================
+
+    public function testHydrateFilePropertyNonNumericStringUnchanged(): void
+    {
+        $config = ['type' => 'file'];
+        $result = $this->invokePrivate('hydrateFileProperty', ['not-a-number', $config, 'prop']);
+
+        $this->assertSame('not-a-number', $result);
+    }
+
+    public function testHydrateFilePropertyArrayWithBase64Format(): void
+    {
+        $config = [
+            'type'  => 'array',
+            'items' => ['type' => 'file', 'format' => 'base64'],
+        ];
+
+        // getFileAsBase64 delegates to fileService->getFileById, mock it.
+        $mockNode = $this->createMock(\OCP\Files\File::class);
+        $mockNode->method('getContent')->willReturn('filecontentbytes');
+        $mockNode->method('getMimeType')->willReturn('image/jpeg');
+
+        $this->fileService->method('getFileById')
+            ->willReturn($mockNode);
+
+        $result = $this->invokePrivate('hydrateFileProperty', [[123], $config, 'images']);
+
+        $this->assertIsArray($result);
+        $this->assertCount(1, $result);
+        $this->assertStringStartsWith('data:image/jpeg;base64,', $result[0]);
+    }
+
+    public function testHydrateFilePropertyArrayNonArrayValueUnchanged(): void
+    {
+        $config = [
+            'type'  => 'array',
+            'items' => ['type' => 'file'],
+        ];
+
+        // Non-array value for array property — should be returned unchanged.
+        $result = $this->invokePrivate('hydrateFileProperty', ['single-string', $config, 'prop']);
+
+        $this->assertSame('single-string', $result);
+    }
+
+    // =========================================================================
+    // getFileAsBase64
+    // =========================================================================
+
+    public function testGetFileAsBase64WithZeroFileIdReturnsNull(): void
+    {
+        $result = $this->invokePrivate('getFileAsBase64', [0]);
+
+        $this->assertNull($result);
+    }
+
+    public function testGetFileAsBase64WithNegativeFileIdReturnsNull(): void
+    {
+        $result = $this->invokePrivate('getFileAsBase64', [-5]);
+
+        $this->assertNull($result);
+    }
+
+    public function testGetFileAsBase64FileNotFoundReturnsNull(): void
+    {
+        $this->fileService->method('getFileById')
+            ->willReturn(null);
+
+        $result = $this->invokePrivate('getFileAsBase64', [42]);
+
+        $this->assertNull($result);
+    }
+
+    public function testGetFileAsBase64EmptyContentReturnsNull(): void
+    {
+        $mockNode = $this->createMock(\OCP\Files\File::class);
+        $mockNode->method('getContent')->willReturn('');
+        $mockNode->method('getMimeType')->willReturn('image/png');
+
+        $this->fileService->method('getFileById')
+            ->willReturn($mockNode);
+
+        $result = $this->invokePrivate('getFileAsBase64', [42]);
+
+        $this->assertNull($result);
+    }
+
+    public function testGetFileAsBase64ReturnsCorrectDataUri(): void
+    {
+        $mockNode = $this->createMock(\OCP\Files\File::class);
+        $mockNode->method('getContent')->willReturn('binarydata');
+        $mockNode->method('getMimeType')->willReturn('image/png');
+
+        $this->fileService->method('getFileById')
+            ->willReturn($mockNode);
+
+        $result = $this->invokePrivate('getFileAsBase64', [42]);
+
+        $this->assertNotNull($result);
+        $this->assertStringStartsWith('data:image/png;base64,', $result);
+        $this->assertSame('data:image/png;base64,'.base64_encode('binarydata'), $result);
+    }
+
+    // =========================================================================
+    // hydrateMetadataFromFileProperties — objectImageField configured
+    // =========================================================================
+
+    public function testHydrateMetadataFromFilePropertiesSetsImageFromDownloadUrl(): void
+    {
+        $schema = $this->createSchema(1);
+        $schema->setConfiguration(['objectImageField' => 'logo']);
+        $schema->setProperties([]);
+
+        $entity = $this->createBasicEntity(1, 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee', [
+            'id'   => 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee',
+            'logo' => [
+                'downloadUrl' => 'http://example.com/dl/logo.png',
+                'accessUrl'   => 'http://example.com/access/logo.png',
+            ],
+        ]);
+
+        $this->schemaMapper->method('find')
+            ->willReturn($schema);
+
+        $result = $this->invokePrivate('hydrateMetadataFromFileProperties', [$entity]);
+
+        // downloadUrl is preferred over accessUrl.
+        $this->assertSame('http://example.com/dl/logo.png', $result->getImage());
+    }
+
+    public function testHydrateMetadataFromFilePropertiesFallsBackToAccessUrlViaPrivate(): void
+    {
+        $schema = $this->createSchema(1);
+        $schema->setConfiguration(['objectImageField' => 'logo']);
+        $schema->setProperties([]);
+
+        $entity = $this->createBasicEntity(1, 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee', [
+            'id'   => 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee',
+            'logo' => [
+                'downloadUrl' => null,
+                'accessUrl'   => 'http://example.com/access/logo.png',
+            ],
+        ]);
+
+        $this->schemaMapper->method('find')
+            ->willReturn($schema);
+
+        $result = $this->invokePrivate('hydrateMetadataFromFileProperties', [$entity]);
+
+        $this->assertSame('http://example.com/access/logo.png', $result->getImage());
+    }
+
+    public function testHydrateMetadataFromFilePropertiesSetsNullWhenNoUrls(): void
+    {
+        $schema = $this->createSchema(1);
+        $schema->setConfiguration(['objectImageField' => 'logo']);
+        $schema->setProperties([]);
+
+        // logo is set but has no downloadUrl or accessUrl.
+        $entity = $this->createBasicEntity(1, 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee', [
+            'id'   => 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee',
+            'logo' => ['id' => '5', 'title' => 'logo.png'],
+        ]);
+
+        $this->schemaMapper->method('find')
+            ->willReturn($schema);
+
+        $result = $this->invokePrivate('hydrateMetadataFromFileProperties', [$entity]);
+
+        $this->assertNull($result->getImage());
+    }
+
+    public function testHydrateMetadataFromFilePropertiesNoImageFieldConfigured(): void
+    {
+        $schema = $this->createSchema(1);
+        $schema->setConfiguration([]);
+        $schema->setProperties([]);
+
+        $entity = $this->createBasicEntity(1, 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee', [
+            'id' => 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee',
+        ]);
+        $entity->setImage('previously-set');
+
+        $this->schemaMapper->method('find')
+            ->willReturn($schema);
+
+        $result = $this->invokePrivate('hydrateMetadataFromFileProperties', [$entity]);
+
+        // Image not modified when no objectImageField configured.
+        $this->assertSame('previously-set', $result->getImage());
+    }
+
+    // =========================================================================
+    // renderEntity — shorthand _schema / _register normalization
+    // =========================================================================
+
+    public function testRenderEntitySchemaNormalization(): void
+    {
+        $entity = $this->createBasicEntity(1, 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee', [
+            'id'   => 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee',
+            'name' => 'Test',
+        ]);
+
+        $schema = $this->createSchema(1);
+        $register = $this->createRegister(1);
+
+        $this->fileMapper->method('getFilesForObject')
+            ->willReturn([]);
+        $this->schemaMapper->method('find')
+            ->willReturn($schema);
+        $this->registerMapper->method('find')
+            ->willReturn($register);
+        $this->objectCacheService->method('preloadObjects')
+            ->willReturn([]);
+
+        // _schema shorthand should be normalized to @self.schema.
+        $result = $this->handler->renderEntity(
+            $entity,
+            ['_schema']
+        );
+
+        $objectData = $result->getObject();
+        $this->assertArrayHasKey('@self', $objectData);
+        $this->assertArrayHasKey('schema', $objectData['@self']);
+    }
+
+    public function testRenderEntityRegisterNormalization(): void
+    {
+        $entity = $this->createBasicEntity(1, 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee', [
+            'id'   => 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee',
+            'name' => 'Test',
+        ]);
+
+        $schema = $this->createSchema(1);
+        $register = $this->createRegister(1);
+
+        $this->fileMapper->method('getFilesForObject')
+            ->willReturn([]);
+        $this->schemaMapper->method('find')
+            ->willReturn($schema);
+        $this->registerMapper->method('find')
+            ->willReturn($register);
+        $this->objectCacheService->method('preloadObjects')
+            ->willReturn([]);
+
+        // _register shorthand should be normalized to @self.register.
+        $result = $this->handler->renderEntity(
+            $entity,
+            ['_register']
+        );
+
+        $objectData = $result->getObject();
+        $this->assertArrayHasKey('@self', $objectData);
+        $this->assertArrayHasKey('register', $objectData['@self']);
+    }
+
+    // =========================================================================
+    // handleInversedPropertiesFromCache — single (non-array) property empty
+    // =========================================================================
+
+    public function testHandleInversedPropertiesFromCacheSinglePropertyEmptyCache(): void
+    {
+        $entity = $this->createBasicEntity(1, 'entity-uuid-1', ['id' => 'entity-uuid-1']);
+
+        $ref = new ReflectionClass($this->handler);
+        $cacheProp = $ref->getProperty('inverseRelationCache');
+        $cacheProp->setAccessible(true);
+        $cacheProp->setValue($this->handler, [
+            'entity-uuid-1_parent' => [],
+        ]);
+
+        // Single-value (non-array) inversed property with empty cache.
+        $inversedProperties = [
+            'parent' => [
+                'type'       => 'object',
+                'inversedBy' => 'children',
+                '$ref'       => '2',
+            ],
+        ];
+
+        $result = $this->invokePrivate('handleInversedPropertiesFromCache', [
+            $entity,
+            ['id' => 'entity-uuid-1'],
+            $inversedProperties,
+        ]);
+
+        $this->assertArrayHasKey('parent', $result);
+        $this->assertNull($result['parent']);
+    }
+
+    // =========================================================================
+    // collectEntityUuids — mixed array with non-entity
+    // =========================================================================
+
+    public function testCollectEntityUuidsSkipsNonEntities(): void
+    {
+        $entity1 = $this->createObjectEntity(1, 'uuid-1', []);
+        $entity2 = $this->createObjectEntity(2, 'uuid-2', []);
+
+        $result = $this->invokePrivate('collectEntityUuids', [[$entity1, 'not-an-entity', $entity2]]);
+
+        $this->assertSame(['uuid-1', 'uuid-2'], $result);
+    }
+
+    public function testCollectEntityUuidsSkipsEntityWithNullUuid(): void
+    {
+        $entity = new ObjectEntity();
+        // No UUID set — getUuid() returns null.
+
+        $result = $this->invokePrivate('collectEntityUuids', [[$entity]]);
+
+        $this->assertSame([], $result);
+    }
+
+    // =========================================================================
+    // renderEntities — empty entities array (asserting empty result)
+    // =========================================================================
+
+    public function testRenderEntitiesWithEmptyArrayReturnsEmpty(): void
+    {
+        $result = $this->handler->renderEntities([]);
+
+        $this->assertSame([], $result);
+    }
+
 }

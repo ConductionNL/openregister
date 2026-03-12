@@ -1997,6 +1997,639 @@ class ObjectsControllerTest extends TestCase
     }
 
     // =========================================================================
+    // update() — additional uncovered paths
+    // =========================================================================
+
+    /**
+     * Test update() returns 423 when the object is locked by another user.
+     * The object has isLocked() === true and lockedBy !== current user.
+     * Uses addMethods() because getRegister/getSchema/isLocked/getLockedBy are __call magic methods.
+     */
+    public function testUpdateReturns423WhenObjectLocked(): void
+    {
+        $this->setupAdminUser();
+
+        $existingObject = $this->getMockBuilder(\OCA\OpenRegister\Db\ObjectEntity::class)
+            ->onlyMethods(['isLocked', 'getLockedBy'])
+            ->addMethods(['getRegister', 'getSchema'])
+            ->getMock();
+        $existingObject->method('isLocked')->willReturn(true);
+        $existingObject->method('getLockedBy')->willReturn('other-user');
+        $existingObject->method('getRegister')->willReturn(1);
+        $existingObject->method('getSchema')->willReturn(2);
+
+        $this->request->method('getParams')->willReturn(['title' => 'Updated']);
+        $this->request->method('getHeader')->willReturn('application/json');
+        $this->objectService->method('setRegister')->willReturnSelf();
+        $this->objectService->method('setSchema')->willReturnSelf();
+        $this->objectService->method('getRegister')->willReturn(1);
+        $this->objectService->method('getSchema')->willReturn(2);
+        $this->objectService->method('findSilent')->willReturn($existingObject);
+
+        // container->get('userId') returns a different user ID than the lock holder
+        $this->container->method('get')->willReturn('current-user');
+
+        $result = $this->controller->update('1', '2', 'uuid-123', $this->objectService);
+
+        $this->assertSame(423, $result->getStatus());
+        $data = $result->getData();
+        $this->assertArrayHasKey('error', $data);
+        $this->assertArrayHasKey('lockedBy', $data);
+        $this->assertSame('other-user', $data['lockedBy']);
+    }
+
+    /**
+     * Test update() returns 500 when findSilent throws a generic \Exception.
+     * Covers the catch(\Exception) block at line ~1840.
+     */
+    public function testUpdateReturns500OnGenericExceptionFromFindSilent(): void
+    {
+        $this->setupAdminUser();
+
+        $this->request->method('getParams')->willReturn(['title' => 'Updated']);
+        $this->request->method('getHeader')->willReturn('application/json');
+        $this->objectService->method('setRegister')->willReturnSelf();
+        $this->objectService->method('setSchema')->willReturnSelf();
+        $this->objectService->method('getRegister')->willReturn(1);
+        $this->objectService->method('getSchema')->willReturn(2);
+        $this->objectService->method('findSilent')
+            ->willThrowException(new \RuntimeException('Database connection lost'));
+
+        $result = $this->controller->update('1', '2', 'uuid-123', $this->objectService);
+
+        $this->assertSame(500, $result->getStatus());
+        $data = $result->getData();
+        $this->assertArrayHasKey('error', $data);
+        $this->assertStringContainsString('Database connection lost', $data['error']);
+    }
+
+    /**
+     * Test update() returns 404 when object has wrong schema (register matches, schema doesn't).
+     * This variant uses schema 99 vs expected 2 (complementary to testUpdateReturns404WhenObjectInWrongRegisterSchema).
+     */
+    public function testUpdateReturns404WhenObjectHasWrongSchemaOnly(): void
+    {
+        $this->setupAdminUser();
+
+        $existingObject = new \OCA\OpenRegister\Db\ObjectEntity();
+        $existingObject->setUuid('uuid-123');
+        $existingObject->setRegister(1);
+        $existingObject->setSchema(99); // different schema
+
+        $this->request->method('getParams')->willReturn(['title' => 'Updated']);
+        $this->request->method('getHeader')->willReturn('application/json');
+        $this->objectService->method('setRegister')->willReturnSelf();
+        $this->objectService->method('setSchema')->willReturnSelf();
+        $this->objectService->method('getRegister')->willReturn(1);
+        $this->objectService->method('getSchema')->willReturn(2);
+        $this->objectService->method('findSilent')->willReturn($existingObject);
+
+        $result = $this->controller->update('1', '2', 'uuid-123', $this->objectService);
+
+        $this->assertSame(404, $result->getStatus());
+        $data = $result->getData();
+        $this->assertArrayHasKey('error', $data);
+    }
+
+    // =========================================================================
+    // patch() — additional uncovered paths
+    // =========================================================================
+
+    /**
+     * Test patch() returns 400 via handleValidationException (admin user variant).
+     */
+    public function testPatchReturns400OnValidationExceptionAdminUser(): void
+    {
+        $this->setupAdminUser();
+
+        $existingObject = new \OCA\OpenRegister\Db\ObjectEntity();
+        $existingObject->setUuid('uuid-123');
+        $existingObject->setObject(['title' => 'Old']);
+
+        $validationResponse = new \OCP\AppFramework\Http\JSONResponse(['error' => 'Invalid field'], 400);
+
+        $this->request->method('getParams')->willReturn(['title' => 'Bad']);
+        $this->request->method('getHeader')->willReturn('application/json');
+        $this->objectService->method('setRegister')->willReturnSelf();
+        $this->objectService->method('setSchema')->willReturnSelf();
+        $this->objectService->method('getRegister')->willReturn(1);
+        $this->objectService->method('getSchema')->willReturn(2);
+        $this->objectService->method('findSilent')->willReturn($existingObject);
+        $this->objectService->method('saveObject')
+            ->willThrowException(new \OCA\OpenRegister\Exception\ValidationException('Invalid'));
+        $this->objectService->method('handleValidationException')
+            ->willReturn($validationResponse);
+
+        $result = $this->controller->patch('1', '2', 'uuid-123', $this->objectService);
+
+        $this->assertSame(400, $result->getStatus());
+    }
+
+    // =========================================================================
+    // postPatch() — additional uncovered paths
+    // =========================================================================
+
+    /**
+     * Test postPatch() returns 400 via handleValidationException (admin user variant).
+     */
+    public function testPostPatchReturns400OnValidationExceptionAdminUser(): void
+    {
+        $this->setupAdminUser();
+
+        $existingObject = new \OCA\OpenRegister\Db\ObjectEntity();
+        $existingObject->setUuid('uuid-123');
+        $existingObject->setObject(['title' => 'Old']);
+
+        $validationResponse = new \OCP\AppFramework\Http\JSONResponse(['error' => 'Bad data'], 400);
+
+        $this->request->method('getParams')->willReturn(['title' => 'Bad']);
+        $this->request->method('getHeader')->willReturn('application/json');
+        $this->objectService->method('setRegister')->willReturnSelf();
+        $this->objectService->method('setSchema')->willReturnSelf();
+        $this->objectService->method('getRegister')->willReturn(1);
+        $this->objectService->method('getSchema')->willReturn(2);
+        $this->objectService->method('findSilent')->willReturn($existingObject);
+        $this->objectService->method('saveObject')
+            ->willThrowException(new \OCA\OpenRegister\Exception\ValidationException('Invalid'));
+        $this->objectService->method('handleValidationException')
+            ->willReturn($validationResponse);
+
+        $result = $this->controller->postPatch('1', '2', 'uuid-123', $this->objectService);
+
+        $this->assertSame(400, $result->getStatus());
+    }
+
+    // =========================================================================
+    // index() — success path
+    // =========================================================================
+
+    /**
+     * Test index() success path: resolves register+schema and returns searchObjectsPaginated result.
+     */
+    public function testIndexReturnsSearchResults(): void
+    {
+        $this->request->method('getParams')->willReturn([]);
+        $this->request->method('getRequestUri')->willReturn('/api/objects/1/2');
+
+        $this->objectService->method('setRegister')->willReturnSelf();
+        $this->objectService->method('setSchema')->willReturnSelf();
+        $this->objectService->method('getRegister')->willReturn(1);
+        $this->objectService->method('getSchema')->willReturn(2);
+        $this->objectService->method('buildSearchQuery')->willReturn([
+            '_limit'  => 20,
+            '_offset' => 0,
+        ]);
+        $this->objectService->method('searchObjectsPaginated')->willReturn([
+            'results' => [],
+            'total'   => 0,
+            'pages'   => 1,
+            'page'    => 1,
+            'limit'   => 20,
+        ]);
+
+        $result = $this->controller->index('1', '2', $this->objectService);
+
+        $this->assertInstanceOf(\OCP\AppFramework\Http\JSONResponse::class, $result);
+        $this->assertSame(200, $result->getStatus());
+        $data = $result->getData();
+        $this->assertArrayHasKey('results', $data);
+        $this->assertSame(0, $data['total']);
+    }
+
+    /**
+     * Test index() with results — verifies pagination data structure.
+     */
+    public function testIndexReturnsPaginatedData(): void
+    {
+        $this->request->method('getParams')->willReturn(['_limit' => '10']);
+        $this->request->method('getRequestUri')->willReturn('/api/objects/1/2?_limit=10');
+
+        $this->objectService->method('setRegister')->willReturnSelf();
+        $this->objectService->method('setSchema')->willReturnSelf();
+        $this->objectService->method('getRegister')->willReturn(1);
+        $this->objectService->method('getSchema')->willReturn(2);
+        $this->objectService->method('buildSearchQuery')->willReturn([
+            '_limit'  => 10,
+            '_offset' => 0,
+        ]);
+        $this->objectService->method('searchObjectsPaginated')->willReturn([
+            'results' => [['uuid' => 'abc'], ['uuid' => 'def']],
+            'total'   => 2,
+            'pages'   => 1,
+            'page'    => 1,
+            'limit'   => 10,
+        ]);
+
+        $result = $this->controller->index('1', '2', $this->objectService);
+
+        $this->assertSame(200, $result->getStatus());
+        $data = $result->getData();
+        $this->assertSame(2, $data['total']);
+        $this->assertCount(2, $data['results']);
+    }
+
+    // =========================================================================
+    // objects() — with register+schema params
+    // =========================================================================
+
+    /**
+     * Test objects() with register and schema query params that resolve (but no magic mapping).
+     * When resolveRegisterSchemaIds resolves but entities are null (DI mapper throws),
+     * falls through to normal searchObjectsPaginated path.
+     */
+    public function testObjectsWithRegisterSchemaParamsResolvesToNormalSearch(): void
+    {
+        $this->request->method('getParams')->willReturn([
+            'register' => '1',
+            'schema'   => '2',
+        ]);
+
+        $this->objectService->method('setRegister')->willReturnSelf();
+        $this->objectService->method('setSchema')->willReturnSelf();
+        $this->objectService->method('getRegister')->willReturn(1);
+        $this->objectService->method('getSchema')->willReturn(2);
+        $this->objectService->method('buildSearchQuery')->willReturn([
+            '_limit' => 20,
+        ]);
+        $this->objectService->method('searchObjectsPaginated')->willReturn([
+            'results' => [],
+            'total'   => 0,
+        ]);
+
+        $result = $this->controller->objects($this->objectService);
+
+        $this->assertInstanceOf(\OCP\AppFramework\Http\JSONResponse::class, $result);
+        $this->assertSame(200, $result->getStatus());
+    }
+
+    /**
+     * Test objects() without register/schema params uses plain searchObjectsPaginated.
+     */
+    public function testObjectsWithoutRegisterSchemaParams(): void
+    {
+        $this->request->method('getParams')->willReturn([]);
+
+        $this->objectService->method('buildSearchQuery')->willReturn([
+            '_limit' => 20,
+        ]);
+        $this->objectService->method('searchObjectsPaginated')->willReturn([
+            'results' => [['uuid' => 'test-1']],
+            'total'   => 1,
+        ]);
+
+        $result = $this->controller->objects($this->objectService);
+
+        $this->assertSame(200, $result->getStatus());
+        $data = $result->getData();
+        $this->assertSame(1, $data['total']);
+    }
+
+    /**
+     * Test objects() with register+schema that throws RegisterNotFoundException (returns 404).
+     * Variant: uses register=99 (schema=2).
+     */
+    public function testObjectsReturns404WhenRegisterNotFoundViaQueryParam(): void
+    {
+        $this->request->method('getParams')->willReturn([
+            'register' => '99',
+            'schema'   => '2',
+        ]);
+
+        $this->objectService->method('setRegister')
+            ->willThrowException(new \OCP\AppFramework\Db\DoesNotExistException('Not found'));
+
+        $result = $this->controller->objects($this->objectService);
+
+        $this->assertSame(404, $result->getStatus());
+    }
+
+    // =========================================================================
+    // logs() — additional paths
+    // =========================================================================
+
+    /**
+     * Test logs() returns 404 when register does not match (with message key check).
+     */
+    public function testLogsReturns404WhenRegisterDoesNotMatchWithMessage(): void
+    {
+        $objectEntity = new \OCA\OpenRegister\Db\ObjectEntity();
+        $objectEntity->setUuid('uuid-123');
+        $objectEntity->setRegister('99'); // different register
+        $objectEntity->setSchema('2');
+
+        $this->request->method('getParams')->willReturn([]);
+        $this->request->method('getRequestUri')->willReturn('/api/objects/1/2/uuid-123/logs');
+
+        $this->objectService->method('setSchema')->willReturnSelf();
+        $this->objectService->method('setRegister')->willReturnSelf();
+        $this->objectService->method('getSchema')->willReturn(2);
+        $this->objectService->method('getRegister')->willReturn(1);
+        $this->objectService->method('find')->willReturn($objectEntity);
+
+        $result = $this->controller->logs('uuid-123', '1', '2', $this->objectService);
+
+        $this->assertSame(404, $result->getStatus());
+        $data = $result->getData();
+        $this->assertArrayHasKey('message', $data);
+        $this->assertStringContainsString('does not belong', $data['message']);
+    }
+
+    /**
+     * Test logs() returns 404 when schema does not match (with message content).
+     */
+    public function testLogsReturns404WhenSchemaDoesNotMatchWithMessage(): void
+    {
+        $objectEntity = new \OCA\OpenRegister\Db\ObjectEntity();
+        $objectEntity->setUuid('uuid-123');
+        $objectEntity->setRegister('1');
+        $objectEntity->setSchema('99'); // different schema
+
+        $this->request->method('getParams')->willReturn([]);
+        $this->request->method('getRequestUri')->willReturn('/api/objects/1/2/uuid-123/logs');
+
+        $this->objectService->method('setSchema')->willReturnSelf();
+        $this->objectService->method('setRegister')->willReturnSelf();
+        $this->objectService->method('getSchema')->willReturn(2);
+        $this->objectService->method('getRegister')->willReturn(1);
+        $this->objectService->method('find')->willReturn($objectEntity);
+
+        $result = $this->controller->logs('uuid-123', '1', '2', $this->objectService);
+
+        $this->assertSame(404, $result->getStatus());
+        $data = $result->getData();
+        $this->assertArrayHasKey('message', $data);
+    }
+
+    // =========================================================================
+    // create() — regular user path (RBAC enabled)
+    // =========================================================================
+
+    /**
+     * Test create() with regular user (non-admin) sets rbac=true and still returns 201 on success.
+     */
+    public function testCreateWithRegularUserReturns201(): void
+    {
+        $this->setupRegularUser();
+
+        $objectEntity = new \OCA\OpenRegister\Db\ObjectEntity();
+        $objectEntity->setUuid('new-uuid');
+        $objectEntity->setObject(['title' => 'Created']);
+
+        $this->request->method('getParams')->willReturn(['title' => 'Created']);
+        $this->request->method('getHeader')->willReturn('application/json');
+        $this->objectService->method('setRegister')->willReturnSelf();
+        $this->objectService->method('setSchema')->willReturnSelf();
+        $this->objectService->method('getRegister')->willReturn(1);
+        $this->objectService->method('getSchema')->willReturn(2);
+        $this->objectService->method('saveObject')->willReturn($objectEntity);
+
+        $result = $this->controller->create('1', '2', $this->objectService);
+
+        $this->assertSame(201, $result->getStatus());
+    }
+
+    /**
+     * Test create() with no user session (returns isAdmin=false, rbac=true).
+     */
+    public function testCreateWithNoUserSessionReturns201OnSuccess(): void
+    {
+        $this->userSession->method('getUser')->willReturn(null);
+
+        $objectEntity = new \OCA\OpenRegister\Db\ObjectEntity();
+        $objectEntity->setUuid('new-uuid');
+        $objectEntity->setObject(['title' => 'Created']);
+
+        $this->request->method('getParams')->willReturn(['title' => 'Public']);
+        $this->request->method('getHeader')->willReturn('application/json');
+        $this->objectService->method('setRegister')->willReturnSelf();
+        $this->objectService->method('setSchema')->willReturnSelf();
+        $this->objectService->method('getRegister')->willReturn(1);
+        $this->objectService->method('getSchema')->willReturn(2);
+        $this->objectService->method('saveObject')->willReturn($objectEntity);
+
+        $result = $this->controller->create('1', '2', $this->objectService);
+
+        $this->assertSame(201, $result->getStatus());
+    }
+
+    // =========================================================================
+    // destroy() — additional paths
+    // =========================================================================
+
+    /**
+     * Test destroy() with regular user (non-admin, rbac=true) and successful delete.
+     */
+    public function testDestroyWithRegularUserReturns204(): void
+    {
+        $this->setupRegularUser();
+
+        $this->objectService->method('setRegister')->willReturnSelf();
+        $this->objectService->method('setSchema')->willReturnSelf();
+        $this->objectService->method('deleteObject')->willReturn(true);
+
+        $result = $this->controller->destroy('uuid-123', 'reg', 'schema', $this->objectService);
+
+        $this->assertSame(204, $result->getStatus());
+    }
+
+    /**
+     * Test destroy() returns 500 when deleteObject returns false with regular user.
+     */
+    public function testDestroyWithRegularUserReturns500WhenDeleteFails(): void
+    {
+        $this->setupRegularUser();
+
+        $this->objectService->method('setRegister')->willReturnSelf();
+        $this->objectService->method('setSchema')->willReturnSelf();
+        $this->objectService->method('deleteObject')->willReturn(false);
+
+        $result = $this->controller->destroy('uuid-123', 'reg', 'schema', $this->objectService);
+
+        $this->assertSame(500, $result->getStatus());
+    }
+
+    // =========================================================================
+    // show() — with _empty=true param
+    // =========================================================================
+
+    /**
+     * Test show() with _empty=true preserves null/empty values in response.
+     */
+    public function testShowWithEmptyTruePreservesNullValues(): void
+    {
+        $this->setupAdminUser();
+        $this->request->method('getParams')->willReturn(['_empty' => 'true']);
+
+        $objectEntity = new \OCA\OpenRegister\Db\ObjectEntity();
+        $objectEntity->setUuid('uuid-123');
+        $objectEntity->setObject(['title' => 'Test', 'empty_field' => null]);
+
+        $this->objectService->method('setRegister')->willReturnSelf();
+        $this->objectService->method('setSchema')->willReturnSelf();
+        $this->objectService->method('getRegister')->willReturn(1);
+        $this->objectService->method('getSchema')->willReturn(2);
+        $this->objectService->method('find')->willReturn($objectEntity);
+        $this->objectService->method('renderEntity')->willReturn([
+            'title'       => 'Test',
+            'empty_field' => null,
+            '@self'       => ['uuid' => 'uuid-123'],
+        ]);
+
+        $result = $this->controller->show('uuid-123', '1', '2', $this->objectService);
+
+        $this->assertSame(200, $result->getStatus());
+        // With _empty=true, stripEmptyValues is NOT called, null values remain
+        $data = $result->getData();
+        $this->assertArrayHasKey('empty_field', $data);
+        $this->assertNull($data['empty_field']);
+    }
+
+    // =========================================================================
+    // vectorizeBatch() — additional paths
+    // =========================================================================
+
+    /**
+     * Test vectorizeBatch() with views param set.
+     */
+    public function testVectorizeBatchWithViewsParam(): void
+    {
+        $this->request->method('getParams')->willReturn([
+            'views'     => ['view1', 'view2'],
+            'batchSize' => 5,
+        ]);
+
+        $this->objectService->method('vectorizeBatchObjects')->willReturn([
+            'processed' => 5,
+            'views'     => ['view1', 'view2'],
+        ]);
+
+        $result = $this->controller->vectorizeBatch();
+
+        $this->assertSame(200, $result->getStatus());
+        $data = $result->getData();
+        $this->assertTrue($data['success']);
+    }
+
+    // =========================================================================
+    // canDelete() — success with canDelete returning false (blocked)
+    // =========================================================================
+
+    /**
+     * Test canDelete() returns 200 even when analysis says deletion is blocked.
+     */
+    public function testCanDeleteReturns200WhenDeletionBlocked(): void
+    {
+        $objectEntity = new \OCA\OpenRegister\Db\ObjectEntity();
+        $ref = new \ReflectionClass($objectEntity);
+        $prop = $ref->getProperty('id');
+        $prop->setAccessible(true);
+        $prop->setValue($objectEntity, 2);
+
+        $this->objectService->method('setSchema')->willReturnSelf();
+        $this->objectService->method('setRegister')->willReturnSelf();
+        $this->objectEntityMapper->method('findAcrossAllSources')->willReturn([
+            'object' => $objectEntity,
+        ]);
+
+        $analysis = new \OCA\OpenRegister\Dto\DeletionAnalysis(
+            false,
+            [],
+            [],
+            [],
+            [['uuid' => 'blocker', 'reason' => 'RESTRICT']],
+            []
+        );
+
+        $deleteHandler = $this->createMock(\OCA\OpenRegister\Service\Object\DeleteObject::class);
+        $deleteHandler->method('canDelete')->willReturn($analysis);
+        $this->objectService->method('getDeleteHandler')->willReturn($deleteHandler);
+
+        $result = $this->controller->canDelete('uuid-123', 'reg1', 'schema1', $this->objectService);
+
+        $this->assertSame(200, $result->getStatus());
+        $data = $result->getData();
+        // DeletionAnalysis with canDelete=false should still return 200 with analysis data
+        $this->assertIsArray($data);
+    }
+
+    // =========================================================================
+    // contracts() / uses() / used() — with pagination params
+    // =========================================================================
+
+    /**
+     * Test contracts() with pagination params including offset and page.
+     */
+    public function testContractsWithPaginationParamsAndOffset(): void
+    {
+        $this->request->method('getParams')->willReturn([
+            '_limit'  => '10',
+            '_offset' => '20',
+            '_page'   => '3',
+        ]);
+
+        $this->objectService->method('setSchema')->willReturnSelf();
+        $this->objectService->method('setRegister')->willReturnSelf();
+        $this->objectService->method('getObjectContracts')->willReturn([
+            'results' => [['uuid' => 'contract-1']],
+            'total'   => 1,
+        ]);
+
+        $result = $this->controller->contracts('uuid-123', 'reg1', 'schema1', $this->objectService);
+
+        $this->assertSame(200, $result->getStatus());
+        $data = $result->getData();
+        $this->assertArrayHasKey('results', $data);
+        $this->assertSame(10, $data['limit']);
+    }
+
+    /**
+     * Test uses() with search params in request.
+     */
+    public function testUsesWithSearchParams(): void
+    {
+        $this->request->method('getParams')->willReturn([
+            '_search' => 'test',
+            '_limit'  => '5',
+        ]);
+
+        $this->objectService->method('setSchema')->willReturnSelf();
+        $this->objectService->method('setRegister')->willReturnSelf();
+        $this->objectService->method('getObjectUses')->willReturn([
+            'results' => [],
+            'total'   => 0,
+            'limit'   => 5,
+            'offset'  => 0,
+        ]);
+
+        $result = $this->controller->uses('uuid-123', 'reg1', 'schema1', $this->objectService);
+
+        $this->assertSame(200, $result->getStatus());
+    }
+
+    /**
+     * Test used() with search params in request.
+     */
+    public function testUsedWithSearchParams(): void
+    {
+        $this->request->method('getParams')->willReturn([
+            '_search' => 'referenced',
+        ]);
+
+        $this->objectService->method('setSchema')->willReturnSelf();
+        $this->objectService->method('setRegister')->willReturnSelf();
+        $this->objectService->method('getObjectUsedBy')->willReturn([
+            'results' => [],
+            'total'   => 0,
+            'limit'   => 30,
+            'offset'  => 0,
+        ]);
+
+        $result = $this->controller->used('uuid-123', 'reg1', 'schema1', $this->objectService);
+
+        $this->assertSame(200, $result->getStatus());
+    }
+
+    // =========================================================================
     // unlock() — error path
     // =========================================================================
 
