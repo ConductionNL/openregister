@@ -345,8 +345,6 @@ class ExportService
             '@self'                  => $objectFilters,
             '_limit'                 => 999999,
             // Very high limit to get all objects.
-            '_published'             => false,
-            // Export all objects, not just published ones.
             '_includeDeleted'        => false,
             '_multitenancy_explicit' => $multiExplicitlySet,
         ];

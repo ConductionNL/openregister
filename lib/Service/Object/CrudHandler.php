@@ -23,7 +23,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Object;
 
 use Exception;
-use OCA\OpenRegister\Db\ObjectEntityMapper;
+use OCA\OpenRegister\Db\UnifiedObjectMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService;
 use Psr\Log\LoggerInterface;
@@ -52,12 +52,12 @@ class CrudHandler
     /**
      * Constructor
      *
-     * @param ObjectEntityMapper $objectEntityMapper Object entity mapper
-     * @param ObjectService      $objectService      Object service for save/search operations
-     * @param LoggerInterface    $logger             PSR-3 logger
+     * @param UnifiedObjectMapper $objectMapper  Object entity mapper
+     * @param ObjectService       $objectService Object service for save/search operations
+     * @param LoggerInterface     $logger        PSR-3 logger
      */
     public function __construct(
-        private readonly ObjectEntityMapper $objectEntityMapper,
+        private readonly UnifiedObjectMapper $objectMapper,
         private readonly ObjectService $objectService,
         private readonly LoggerInterface $logger
     ) {
@@ -69,7 +69,6 @@ class CrudHandler
      * @param array       $query         Search query parameters
      * @param bool        $rbac          Apply RBAC filters
      * @param bool        $_multitenancy Apply multitenancy filters
-     * @param bool        $published     Only return published objects
      * @param bool        $deleted       Include deleted objects
      * @param array|null  $_ids          Optional array of object IDs to filter
      * @param string|null $_uses         Optional object ID that results must use
@@ -87,7 +86,6 @@ class CrudHandler
         array $query=[],
         bool $rbac=true,
         bool $_multitenancy=true,
-        bool $published=false,
         bool $deleted=false,
         ?array $_ids=null,
         ?string $_uses=null,
@@ -101,7 +99,6 @@ class CrudHandler
                 'query_params'  => array_keys($query),
                 'rbac'          => $rbac,
                 '_multitenancy' => $_multitenancy,
-                'published'     => $published,
                 'deleted'       => $deleted,
             ]
         );
@@ -109,7 +106,7 @@ class CrudHandler
         try {
             // TODO: Implement proper search logic (placeholder).
             $result = ['results' => [], 'total' => 0];
-            // $this->objectEntityMapper->searchObjectsPaginated(
+            // $this->objectMapper->searchObjectsPaginated(
             // Query: $query,
             // _rbac: $rbac,
             // _multitenancy: $multi,
@@ -403,7 +400,7 @@ class CrudHandler
 
         try {
             // TODO: Implement proper delete logic
-            // $this->objectEntityMapper->deleteObject(
+            // $this->objectMapper->deleteObject(
             // Uuid: $objectId,
             // _rbac: $rbac,
             // _multitenancy: $multi.

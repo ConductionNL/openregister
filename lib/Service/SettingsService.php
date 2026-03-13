@@ -39,7 +39,7 @@ use OCP\IUserManager;
 use OCA\OpenRegister\Db\OrganisationMapper;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\SearchTrailMapper;
-use OCA\OpenRegister\Db\ObjectEntityMapper;
+use OCA\OpenRegister\Db\UnifiedObjectMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\Object\CacheHandler;
@@ -239,11 +239,11 @@ class SettingsService
     private LoggerInterface $logger;
 
     /**
-     * REMOVED: Object entity mapper (unused, caused circular dependency)
+     * REMOVED: Object mapper (unused, caused circular dependency)
      *
-     * @var ObjectEntityMapper|null
+     * @var UnifiedObjectMapper|null
      */
-    // Private ?ObjectEntityMapper $objectEntityMapper;.
+    // Private ?UnifiedObjectMapper $objectMapper;.
 
     /**
      * Organisation mapper
@@ -817,7 +817,6 @@ class SettingsService
      *
      * @psalm-return array{multitenancy: array{enabled: false|mixed,
      *     defaultUserTenant: ''|mixed, defaultObjectTenant: ''|mixed,
-     *     publishedObjectsBypassMultiTenancy: false|mixed,
      *     adminOverride: mixed|true}, availableTenants: array}
      */
     public function getMultitenancySettingsOnly(): array
@@ -968,7 +967,7 @@ class SettingsService
         // CIRCULAR DEPENDENCY FIX: Cannot lazy-load ObjectService from SettingsService.
         $objectService = null;
         // $this->container->get(\OCA\OpenRegister\Service\ObjectService::class);
-        $objectMapper = $this->container->get(\OCA\OpenRegister\Db\ObjectEntityMapper::class);
+        $objectMapper = $this->container->get(\OCA\OpenRegister\Db\UnifiedObjectMapper::class);
 
         // Get total object count.
         $totalObjects = $objectMapper->countSearchObjects(
@@ -1172,7 +1171,7 @@ class SettingsService
      * Process batch jobs in serial mode
      *
      * @param array                                   $batchJobs     Array of batch job definitions.
-     * @param \OCA\OpenRegister\Db\ObjectEntityMapper $objectMapper  The object entity mapper.
+     * @param \OCA\OpenRegister\Db\UnifiedObjectMapper $objectMapper  The object entity mapper.
      * @param ObjectService|null                      $objectService The object service instance.
      * @param array                                   $results       Results array to update.
      * @param bool                                    $collectErrors Whether to collect all errors.
@@ -1184,7 +1183,7 @@ class SettingsService
      */
     private function processJobsSerial(
         array $batchJobs,
-        \OCA\OpenRegister\Db\ObjectEntityMapper $objectMapper,
+        \OCA\OpenRegister\Db\UnifiedObjectMapper $objectMapper,
         ?\OCA\OpenRegister\Service\ObjectService $objectService,
         array &$results,
         bool $collectErrors
@@ -1311,7 +1310,7 @@ class SettingsService
      * Process batch jobs in parallel mode
      *
      * @param array                                   $batchJobs       Array of batch job definitions.
-     * @param \OCA\OpenRegister\Db\ObjectEntityMapper $objectMapper    The object entity mapper.
+     * @param \OCA\OpenRegister\Db\UnifiedObjectMapper $objectMapper    The object entity mapper.
      * @param ObjectService|null                      $objectService   The object service instance.
      * @param array                                   $results         Results array to update.
      * @param bool                                    $collectErrors   Whether to collect all errors.
@@ -1321,7 +1320,7 @@ class SettingsService
      */
     private function processJobsParallel(
         array $batchJobs,
-        \OCA\OpenRegister\Db\ObjectEntityMapper $objectMapper,
+        \OCA\OpenRegister\Db\UnifiedObjectMapper $objectMapper,
         ?\OCA\OpenRegister\Service\ObjectService $objectService,
         array &$results,
         bool $collectErrors,
@@ -1387,7 +1386,7 @@ class SettingsService
     /**
      * Process a single batch directly
      *
-     * @param \OCA\OpenRegister\Db\ObjectEntityMapper $objectMapper  The object entity mapper.
+     * @param \OCA\OpenRegister\Db\UnifiedObjectMapper $objectMapper  The object entity mapper.
      * @param \OCA\OpenRegister\Service\ObjectService $objectService The object service instance.
      * @param array                                   $job           Batch job definition.
      * @param bool                                    $collectErrors Whether to collect all errors.
@@ -1402,7 +1401,7 @@ class SettingsService
      * @SuppressWarnings(PHPMD.ElseExpression) Else needed for success vs failure handling
      */
     private function processBatchDirectly(
-        \OCA\OpenRegister\Db\ObjectEntityMapper $objectMapper,
+        \OCA\OpenRegister\Db\UnifiedObjectMapper $objectMapper,
         \OCA\OpenRegister\Service\ObjectService $objectService,
         array $job,
         bool $collectErrors

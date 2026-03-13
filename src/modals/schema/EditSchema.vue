@@ -805,12 +805,7 @@ import { schemaStore, navigationStore, registerStore } from '../../store/store.j
 								:checked.sync="schemaItem.configuration.allowFiles">
 								Allow Files
 							</NcCheckboxRadioSwitch>
-							<NcCheckboxRadioSwitch
-								:disabled="loading"
-								:checked.sync="schemaItem.configuration.autoPublish">
-								Auto-Publish Objects
-							</NcCheckboxRadioSwitch>
-							<NcTextField
+														<NcTextField
 								v-model="allowedTagsInput"
 								:disabled="loading"
 								label="Allowed Tags (comma-separated)"
@@ -1048,15 +1043,6 @@ import { schemaStore, navigationStore, registerStore } from '../../store/store.j
 					{{ t('openregister', 'Delete Objects') }}
 				</NcButton>
 				<NcButton
-					v-tooltip="schemaItem.stats?.objects?.total > 0 ? t('openregister', 'Publish all objects in this schema') : t('openregister', 'No objects to publish')"
-					:disabled="loading || schemaItem.stats?.objects?.total === 0"
-					@click="publishObjects()">
-					<template #icon>
-						<Upload :size="20" />
-					</template>
-					{{ t('openregister', 'Publish Objects') }}
-				</NcButton>
-				<NcButton
 					v-tooltip="schemaItem.stats?.objects?.total > 0 ? t('openregister', 'Cannot delete: objects are still attached') : ''"
 					:disabled="loading || schemaItem.stats?.objects?.total > 0"
 					type="error"
@@ -1184,8 +1170,7 @@ export default {
 					objectSummaryField: '',
 					allowFiles: false,
 					allowedTags: [],
-					autoPublish: false,
-				},
+					},
 				authorization: {},
 				hardValidation: false,
 				immutable: false,
@@ -1509,10 +1494,7 @@ export default {
 					if (!this.schemaItem.configuration.allowedTags) {
 						this.schemaItem.configuration.allowedTags = []
 					}
-					if (this.schemaItem.configuration.autoPublish === undefined) {
-						this.schemaItem.configuration.autoPublish = false
-					}
-				}
+									}
 
 				// Initialize allowedTagsInput from existing allowedTags array
 				this.allowedTagsInput = (this.schemaItem.configuration.allowedTags || []).join(', ')
@@ -1558,8 +1540,7 @@ export default {
 					objectSummaryField: '',
 					allowFiles: false,
 					allowedTags: [],
-					autoPublish: false,
-				}
+					}
 				this.allowedTagsInput = ''
 				this.originalProperties = {}
 			}
@@ -1779,8 +1760,7 @@ export default {
 								objectSummaryField: '',
 								allowFiles: false,
 								allowedTags: [],
-								autoPublish: false,
-							},
+											},
 							hardValidation: false,
 							immutable: false,
 							searchable: true,
@@ -3276,16 +3256,6 @@ export default {
 		deleteObjects() {
 		// The current schema is already set in schemaStore, just open the dialog
 			navigationStore.setDialog('deleteSchemaObjects')
-		},
-
-		/**
-		 * Open the Publish Objects modal
-		 *
-		 * @return {void}
-		 */
-		publishObjects() {
-		// The current schema is already set in schemaStore, just open the modal
-			navigationStore.setDialog('publishSchemaObjects')
 		},
 
 		/**

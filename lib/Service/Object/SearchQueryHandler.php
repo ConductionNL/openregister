@@ -241,15 +241,6 @@ class SearchQueryHandler
         }
 
         // Add all special parameters (they'll be handled by searchObjectsPaginated).
-        // Convert boolean-like parameters to actual booleans for consistency.
-        if (isset($specialParams['_published']) === true) {
-            $specialParams['_published'] = filter_var(
-                $specialParams['_published'],
-                FILTER_VALIDATE_BOOLEAN,
-                FILTER_NULL_ON_FAILURE
-            ) ?? false;
-        }
-
         $query = array_merge($query, $specialParams);
 
         // Normalize _ids from comma-separated string to array.

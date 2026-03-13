@@ -33,8 +33,6 @@ export class ObjectEntity implements TObject {
 		size: string | null
 		updated: string
 		created: string
-		published: string | null
-		depublished: string | null
 	}
 
 	[key: string]: unknown
@@ -67,8 +65,6 @@ export class ObjectEntity implements TObject {
 			size: object['@self']?.size || null,
 			updated: object['@self']?.updated || '',
 			created: object['@self']?.created || '',
-			published: object['@self']?.published || null,
-			depublished: object['@self']?.depublished || null,
 		}
 
 		// Copy any additional properties
@@ -111,8 +107,6 @@ export class ObjectEntity implements TObject {
 				size: z.string().nullable(),
 				updated: z.string().min(1),
 				created: z.string().min(1),
-				published: z.string().nullable(),
-				depublished: z.string().nullable(),
 			}),
 		}).passthrough()
 

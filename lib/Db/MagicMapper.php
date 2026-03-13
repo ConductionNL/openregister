@@ -2029,10 +2029,6 @@ class MagicMapper
      *     nullable: true, index: true},
      *     _updated: array{name: '_updated', type: 'datetime',
      *     nullable: true, index: true},
-     *     _published: array{name: '_published', type: 'datetime',
-     *     nullable: true, index: true},
-     *     _depublished: array{name: '_depublished', type: 'datetime',
-     *     nullable: true, index: true},
      *     _expires: array{name: '_expires', type: 'datetime',
      *     nullable: true, index: true},
      *     _files: array{name: '_files', type: 'json', nullable: true},
@@ -5303,13 +5299,12 @@ class MagicMapper
     /**
      * Find all objects in register+schema table with filtering and pagination.
      *
-     * @param Register   $register  The register context.
-     * @param Schema     $schema    The schema context.
-     * @param int|null   $limit     Maximum number of results.
-     * @param int|null   $offset    Offset for pagination.
-     * @param array|null $filters   Filters to apply.
-     * @param array      $sort      Sort order.
-     * @param bool|null  $published Whether to filter by published status.
+     * @param Register   $register The register context.
+     * @param Schema     $schema   The schema context.
+     * @param int|null   $limit    Maximum number of results.
+     * @param int|null   $offset   Offset for pagination.
+     * @param array|null $filters  Filters to apply.
+     * @param array      $sort     Sort order.
      *
      * @return ObjectEntity[]
      *
@@ -5321,8 +5316,7 @@ class MagicMapper
         ?int $limit=null,
         ?int $offset=null,
         ?array $filters=null,
-        array $sort=[],
-        ?bool $published=null
+        array $sort=[]
     ): array {
         $query = [];
 
@@ -5340,16 +5334,6 @@ class MagicMapper
 
         if ($filters !== null) {
             $query = array_merge($query, $filters);
-        }
-
-        // Add published filter if specified.
-        if ($published !== null) {
-            // Only unpublished objects.
-            $query['@self']['published'] = 'IS NULL';
-            if ($published === true) {
-                // Only published objects.
-                $query['@self']['published'] = 'IS NOT NULL';
-            }
         }
 
         return $this->searchObjectsInRegisterSchemaTable(query: $query, register: $register, schema: $schema);
@@ -6398,15 +6382,12 @@ class MagicMapper
             return ['', []];
         }
 
-        // Unauthenticated: allow objects with no organisation set OR published objects.
+        // Unauthenticated: only allow objects with no organisation set.
         // This prevents PII exposure (names, emails, phone numbers) of.
-        // gemeente/samenwerking contact persons to the public internet,.
-        // while still allowing published objects (e.g. diensten) to appear.
-        // in inverse relationship lookups like _extend=diensten on modules.
-        $now = (new DateTime())->format(format: 'Y-m-d H:i:s');
+        // gemeente/samenwerking contact persons to the public internet.
         return [
-            " AND (_organisation IS NULL OR (_published IS NOT NULL AND _published <= ? AND (_depublished IS NULL OR _depublished > ?)))",
-            [$now, $now],
+            " AND _organisation IS NULL",
+            [],
         ];
     }//end buildOrganisationFilterForRelation()
 

@@ -939,9 +939,6 @@ class SearchTrailMapper extends QBMapper
 
         $searchTrail->setSortParameters($sortParams);
 
-        // Extract published filter.
-        $searchTrail->setPublishedOnly($query['_published'] ?? false);
-
         // Extract non-system parameters as filters.
         $filters = [];
         foreach ($query as $key => $value) {

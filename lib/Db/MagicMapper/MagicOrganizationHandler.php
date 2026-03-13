@@ -18,7 +18,6 @@
  * MULTI-TENANCY FEATURES:
  * - Organization-based object isolation
  * - Default organization special handling
- * - Published object cross-organization visibility
  * - Admin users cross-organization access (configurable)
  * - Unauthenticated user organization filtering
  *
@@ -37,7 +36,6 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Db\MagicMapper;
 
-use DateTime;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\IUserSession;
 use OCP\IGroupManager;
@@ -81,11 +79,9 @@ class MagicOrganizationHandler
      * 1. Admin users can optionally bypass organization filtering
      * 2. Objects belonging to the user's active organization are accessible
      * 3. Objects belonging to parent organizations are accessible
-     * 4. Published objects may be accessible across organizations (if configured)
-     * 5. Objects with null organization are accessible to all (legacy/global data)
+     * 4. Objects with null organization are accessible to all (legacy/global data)
      *
      * @param IQueryBuilder $qb                   Query builder to modify
-     * @param bool          $allowPublishedAccess Whether to allow access to published objects from other orgs
      * @param bool          $adminBypassEnabled   Whether admin users can bypass org filtering
      *
      * @return void
@@ -96,7 +92,6 @@ class MagicOrganizationHandler
      */
     public function applyOrganizationFilter(
         IQueryBuilder $qb,
-        bool $allowPublishedAccess=false,
         bool $adminBypassEnabled=false
     ): void {
         $user = $this->userSession->getUser();
@@ -126,34 +121,13 @@ class MagicOrganizationHandler
                 context: ['file' => __FILE__, 'line' => __LINE__]
             );
 
-            // No active organization - only show published objects (NOT null org objects for non-admins).
-            $conditions = [];
-
-            // Admins can see objects with null organization.
+            // No active organization - admins can see null-org objects, others get no results.
             if ($isAdmin === true) {
-                $conditions[] = $qb->expr()->isNull('t._organisation');
-            }
-
-            // Published objects (if allowed).
-            if ($allowPublishedAccess === true) {
-                $now          = (new DateTime())->format('Y-m-d H:i:s');
-                $conditions[] = $qb->expr()->andX(
-                    $qb->expr()->isNotNull('t._published'),
-                    $qb->expr()->lte('t._published', $qb->createNamedParameter($now)),
-                    $qb->expr()->orX(
-                        $qb->expr()->isNull('t._depublished'),
-                        $qb->expr()->gt('t._depublished', $qb->createNamedParameter($now))
-                    )
-                );
-            }
-
-            // If no conditions (non-admin, no published access), return no results.
-            if (empty($conditions) === true) {
+                $qb->andWhere($qb->expr()->isNull('t._organisation'));
+            } else {
                 $qb->andWhere('1 = 0');
-                return;
             }
 
-            $qb->andWhere($qb->expr()->orX(...$conditions));
             return;
         }//end if
 
@@ -178,19 +152,6 @@ class MagicOrganizationHandler
             $conditions[] = $qb->expr()->isNull('t._organisation');
         }
 
-        // Condition 3: Published objects from other organizations (if allowed).
-        if ($allowPublishedAccess === true) {
-            $now          = (new DateTime())->format('Y-m-d H:i:s');
-            $conditions[] = $qb->expr()->andX(
-                $qb->expr()->isNotNull('t._published'),
-                $qb->expr()->lte('t._published', $qb->createNamedParameter($now)),
-                $qb->expr()->orX(
-                    $qb->expr()->isNull('t._depublished'),
-                    $qb->expr()->gt('t._depublished', $qb->createNamedParameter($now))
-                )
-            );
-        }
-
         // Apply OR of all conditions.
         $qb->andWhere($qb->expr()->orX(...$conditions));
 
@@ -200,7 +161,6 @@ class MagicOrganizationHandler
                 'file'                 => __FILE__,
                 'line'                 => __LINE__,
                 'activeOrgUuids'       => $activeOrgUuids,
-                'allowPublishedAccess' => $allowPublishedAccess,
                 'conditionsCount'      => count($conditions),
                 'isAdmin'              => $isAdmin,
             ]
@@ -320,26 +280,6 @@ class MagicOrganizationHandler
 
         return null;
     }//end getDefaultOrganizationUuid()
-
-    /**
-     * Check if published objects should bypass multi-tenancy filtering
-     *
-     * @return bool True if published objects can be seen across organizations
-     */
-    public function shouldPublishedBypassMultiTenancy(): bool
-    {
-        $multitenancyConfig = $this->appConfig->getValueString('openregister', 'multitenancy', '');
-        if (empty($multitenancyConfig) === true) {
-            return false;
-        }
-
-        $multitenancyData = json_decode($multitenancyConfig, true);
-        if ($multitenancyData === null) {
-            return false;
-        }
-
-        return $multitenancyData['publishedObjectsBypassMultiTenancy'] ?? false;
-    }//end shouldPublishedBypassMultiTenancy()
 
     /**
      * Check if admin users should bypass multi-tenancy filtering

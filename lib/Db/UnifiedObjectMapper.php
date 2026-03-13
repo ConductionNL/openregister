@@ -288,7 +288,6 @@ class UnifiedObjectMapper extends AbstractObjectMapper
      * @param bool          $includeDeleted   Whether to include deleted objects.
      * @param Register|null $register         Optional register to filter objects.
      * @param Schema|null   $schema           Optional schema to filter objects.
-     * @param bool|null     $published        If true, only return currently published objects.
      *
      * @return ObjectEntity[]
      *
@@ -311,8 +310,7 @@ class UnifiedObjectMapper extends AbstractObjectMapper
         ?string $uses=null,
         bool $includeDeleted=false,
         ?Register $register=null,
-        ?Schema $schema=null,
-        ?bool $published=null
+        ?Schema $schema=null
     ): array {
         if ($register === null || $schema === null) {
             $this->logger->warning(
@@ -328,8 +326,7 @@ class UnifiedObjectMapper extends AbstractObjectMapper
             limit: $limit,
             offset: $offset,
             filters: $filters,
-            sort: $sort,
-            published: $published
+            sort: $sort
         );
         foreach ($entities as $entity) {
             $entity->setSource('orm');
@@ -824,42 +821,6 @@ class UnifiedObjectMapper extends AbstractObjectMapper
     }//end deleteObjects()
 
     /**
-     * Publish multiple objects.
-     *
-     * @param array         $uuids    Object UUIDs to publish
-     * @param DateTime|bool $datetime Publish datetime or true for now
-     *
-     * @return array Publish results
-     *
-     * @psalm-return list<mixed>
-     *
-     * @SuppressWarnings(PHPMD.BooleanArgumentFlag) DateTime or bool controls publish timing
-     */
-    public function publishObjects(array $uuids=[], DateTime|bool $datetime=true): array
-    {
-        // Publish/depublish is being deprecated in favour of RBAC.
-        // Keep delegating to objectEntityMapper for backwards compatibility.
-        return $this->objectEntityMapper->publishObjects(uuids: $uuids, datetime: $datetime);
-    }//end publishObjects()
-
-    /**
-     * Depublish multiple objects.
-     *
-     * @param array         $uuids    Object UUIDs to depublish
-     * @param DateTime|bool $datetime Depublish datetime or true for now
-     *
-     * @return array Depublish results
-     *
-     * @psalm-return list<mixed>
-     *
-     * @SuppressWarnings(PHPMD.BooleanArgumentFlag) DateTime or bool controls depublish timing
-     */
-    public function depublishObjects(array $uuids=[], DateTime|bool $datetime=true): array
-    {
-        return $this->objectEntityMapper->depublishObjects(uuids: $uuids, datetime: $datetime);
-    }//end depublishObjects()
-
-    /**
      * Get statistics.
      *
      * @param int|array|null $registerId Register ID filter
@@ -868,7 +829,7 @@ class UnifiedObjectMapper extends AbstractObjectMapper
      *
      * @return int[] Statistics data
      *
-     * @psalm-return array{total: int, size: int, invalid: int, deleted: int, locked: int, published: int}
+     * @psalm-return array{total: int, size: int, invalid: int, deleted: int, locked: int}
      */
     public function getStatistics(
         int|array|null $registerId=null,

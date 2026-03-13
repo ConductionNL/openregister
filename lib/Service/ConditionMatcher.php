@@ -24,6 +24,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service;
 
+use DateTime;
 use OCP\IUserSession;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
@@ -184,6 +185,10 @@ class ConditionMatcher
      * Supports special variables:
      * - $organisation / $activeOrganisation: Current user's active organisation UUID
      * - $userId / $user: Current user's ID
+     * - $now: Current datetime in ISO 8601 format
+     *
+     * For operator arrays (e.g. {"$lte": "$now"}), resolves dynamic values
+     * inside operator operands recursively.
      *
      * @param mixed $value The value to resolve
      *
@@ -191,6 +196,16 @@ class ConditionMatcher
      */
     private function resolveDynamicValue(mixed $value): mixed
     {
+        // For operator arrays, resolve dynamic values inside operands.
+        if (is_array($value) === true) {
+            $resolved = [];
+            foreach ($value as $key => $operand) {
+                $resolved[$key] = $this->resolveDynamicValue(value: $operand);
+            }
+
+            return $resolved;
+        }
+
         if (is_string($value) === false) {
             return $value;
         }
@@ -203,6 +218,11 @@ class ConditionMatcher
         // Check for $userId variable.
         if ($value === '$userId' || $value === '$user') {
             return $this->userSession->getUser()?->getUID();
+        }
+
+        // Check for $now variable.
+        if ($value === '$now') {
+            return (new DateTime())->format('c');
         }
 
         return $value;

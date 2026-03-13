@@ -932,7 +932,6 @@ class ObjectsController extends Controller
         // Check both _multi and multi params (URL uses _multi, but we also support multi).
         $multiExplicitlySet = isset($params['_multi']) || isset($params['multi']);
         $multi     = filter_var($params['_multi'] ?? $params['multi'] ?? true, FILTER_VALIDATE_BOOLEAN);
-        $published = filter_var($params['_published'] ?? false, FILTER_VALIDATE_BOOLEAN);
         $deleted   = filter_var($params['deleted'] ?? false, FILTER_VALIDATE_BOOLEAN);
 
         // Check if magic mapping is enabled for this register+schema.
@@ -1072,7 +1071,6 @@ class ObjectsController extends Controller
                         'query'              => $query,
                         'rbac'               => $rbac,
                         'multi'              => $multi,
-                        'published'          => $published,
                         'deleted'            => $deleted,
                         'activeOrganisation' => $activeOrganisation,
                     ],
@@ -1178,7 +1176,6 @@ class ObjectsController extends Controller
             query: $query,
             _rbac: $rbac,
             _multitenancy: $multi,
-            published: $published,
             deleted: $deleted
         );
 
@@ -2769,7 +2766,6 @@ class ObjectsController extends Controller
             $events     = filter_var($this->request->getParam(key: 'events', default: false), FILTER_VALIDATE_BOOLEAN);
             $rbac       = filter_var($this->request->getParam(key: 'rbac', default: true), FILTER_VALIDATE_BOOLEAN);
             $multi      = filter_var($this->request->getParam(key: 'multi', default: true), FILTER_VALIDATE_BOOLEAN);
-            $publish    = filter_var($this->request->getParam(key: 'publish', default: false), FILTER_VALIDATE_BOOLEAN);
 
             // Use ObjectService delegation to ExportHandler.
             $result = $this->objectService->importObjects(
@@ -2780,7 +2776,6 @@ class ObjectsController extends Controller
                 _events: $events,
                 _rbac: $rbac,
                 _multitenancy: $multi,
-                _publish: $publish,
                 _currentUser: $this->userSession->getUser()
             );
 
@@ -2794,106 +2789,6 @@ class ObjectsController extends Controller
             return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 500);
         }//end try
     }//end import()
-
-    /**
-     * Publish an object
-     *
-     * This method publishes an object by setting its publication date to now or a specified date.
-     *
-     * @param string        $id            The ID of the object to publish
-     * @param string        $register      The register slug or identifier
-     * @param string        $schema        The schema slug or identifier
-     * @param ObjectService $objectService The object service
-     *
-     * @NoAdminRequired
-     *
-     * @NoCSRFRequired
-     *
-     * @return JSONResponse JSON response with published object or error
-     */
-    public function publish(
-        string $id,
-        string $register,
-        string $schema,
-        ObjectService $objectService
-    ): JSONResponse {
-        // Set the schema and register to the object service.
-        $objectService->setSchema(schema: $schema);
-        $objectService->setRegister(register: $register);
-
-        // Determine RBAC and multitenancy settings based on admin status.
-        $isAdmin = $this->isCurrentUserAdmin();
-        $rbac    = $isAdmin === false;
-        // If admin, disable RBAC.
-        $multi = $isAdmin === false;
-        // If admin, disable multitenancy.
-        try {
-            // Get the publication date from request if provided.
-            $date = null;
-            if ($this->request->getParam(key: 'date') !== null) {
-                $date = new DateTime($this->request->getParam(key: 'date'));
-            }
-
-            // Publish the object.
-            $object = $objectService->publish(uuid: $id, date: $date, _rbac: $rbac, _multitenancy: $multi);
-
-            // Return the object data with @self unpacked for simpler response structure.
-            $response = $object->jsonSerialize();
-            return new JSONResponse(data: $response['@self'] ?? $response);
-        } catch (Exception $e) {
-            return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 400);
-        }
-    }//end publish()
-
-    /**
-     * Depublish an object
-     *
-     * This method depublishes an object by setting its depublication date to now or a specified date.
-     *
-     * @param string        $id            The ID of the object to depublish
-     * @param string        $register      The register slug or identifier
-     * @param string        $schema        The schema slug or identifier
-     * @param ObjectService $objectService The object service
-     *
-     * @NoAdminRequired
-     *
-     * @NoCSRFRequired
-     *
-     * @return JSONResponse JSON response with depublished object or error
-     */
-    public function depublish(
-        string $id,
-        string $register,
-        string $schema,
-        ObjectService $objectService
-    ): JSONResponse {
-        // Set the schema and register to the object service.
-        $objectService->setSchema(schema: $schema);
-        $objectService->setRegister(register: $register);
-
-        // Determine RBAC and multitenancy settings based on admin status.
-        $isAdmin = $this->isCurrentUserAdmin();
-        $rbac    = $isAdmin === false;
-        // If admin, disable RBAC.
-        $multi = $isAdmin === false;
-        // If admin, disable multitenancy.
-        try {
-            // Get the depublication date from request if provided.
-            $date = null;
-            if ($this->request->getParam(key: 'date') !== null) {
-                $date = new DateTime($this->request->getParam(key: 'date'));
-            }
-
-            // Depublish the object.
-            $object = $objectService->depublish(uuid: $id, date: $date, _rbac: $rbac, _multitenancy: $multi);
-
-            // Return the object data with @self unpacked for simpler response structure.
-            $response = $object->jsonSerialize();
-            return new JSONResponse(data: $response['@self'] ?? $response);
-        } catch (Exception $e) {
-            return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 400);
-        }
-    }//end depublish()
 
     /**
      * Merge two objects

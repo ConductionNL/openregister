@@ -24,7 +24,7 @@ namespace OCA\OpenRegister\Service\Object;
 use DateTime;
 use Exception;
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Db\ObjectEntityMapper;
+use OCA\OpenRegister\Db\UnifiedObjectMapper;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
@@ -78,7 +78,7 @@ class SaveObjects
     /**
      * Constructor for SaveObjects handler
      *
-     * @param ObjectEntityMapper     $objectEntityMapper  Mapper for object entity database operations
+     * @param UnifiedObjectMapper    $objectMapper        Mapper for object entity database operations
      * @param SchemaMapper           $schemaMapper        Mapper for schema operations
      * @param RegisterMapper         $registerMapper      Mapper for register operations
      * @param SaveObject             $saveHandler         Handler for individual object operations
@@ -94,7 +94,7 @@ class SaveObjects
      * @SuppressWarnings(PHPMD.ExcessiveParameterList) Nextcloud DI requires constructor injection
      */
     public function __construct(
-        private readonly ObjectEntityMapper $objectEntityMapper,
+        private readonly UnifiedObjectMapper $objectMapper,
         private readonly SchemaMapper $schemaMapper,
         private readonly RegisterMapper $registerMapper,
         private readonly SaveObject $saveHandler,
@@ -780,40 +780,6 @@ class SaveObjects
                 $this->saveHandler->hydrateObjectMetadata(entity: $tempEntity, schema: $schemaObj);
             }
 
-                // AUTO-PUBLISH LOGIC: Only set published for NEW objects if not already set from CSV.
-                // Note: For updates to existing objects, published status should be preserved unless explicitly changed.
-                $config      = $schemaObj->getConfiguration();
-                $isNewObject = empty($selfData['uuid']) === true || isset($selfData['uuid']) === false;
-            if (($config['autoPublish'] ?? null) !== null && $config['autoPublish'] === true && ($isNewObject === true)) {
-                // Check if published date was already set from @self data (CSV).
-                $publishedFromCsv = ($selfData['published'] ?? null) !== null && (empty($selfData['published']) === false);
-                if (($publishedFromCsv === false) === true && $tempEntity->getPublished() === null) {
-                    $this->logger->debug(
-                        message: '[SaveObjects] Auto-publishing NEW object in bulk creation (single schema)',
-                        context: [
-                            'file'             => __FILE__,
-                            'line'             => __LINE__,
-                            'schema'           => $schemaObj->getTitle(),
-                            'autoPublish'      => true,
-                            'isNewObject'      => true,
-                            'publishedFromCsv' => false,
-                        ]
-                    );
-                    $tempEntity->setPublished(new DateTime());
-                } else if ($publishedFromCsv === true) {
-                    $this->logger->debug(
-                        message: '[SaveObjects] Skipping auto-publish - published date provided from CSV',
-                        context: [
-                            'file'             => __FILE__,
-                            'line'             => __LINE__,
-                            'schema'           => $schemaObj->getTitle(),
-                            'publishedFromCsv' => true,
-                            'csvPublishedDate' => $selfData['published'],
-                        ]
-                    );
-                }//end if
-            }//end if
-
                 // Extract hydrated metadata back to @self data AND top level (for bulk SQL).
             if ($tempEntity->getName() !== null) {
                 $selfData['name'] = $tempEntity->getName();
@@ -836,18 +802,6 @@ class SaveObjects
 
             if ($tempEntity->getSlug() !== null) {
                 $selfData['slug'] = $tempEntity->getSlug();
-                // TOP LEVEL for bulk SQL.
-            }
-
-            if ($tempEntity->getPublished() !== null) {
-                $publishedFormatted    = $tempEntity->getPublished()->format('c');
-                $selfData['published'] = $publishedFormatted;
-                // TOP LEVEL for bulk SQL.
-            }
-
-            if ($tempEntity->getDepublished() !== null) {
-                $depublishedFormatted    = $tempEntity->getDepublished()->format('c');
-                $selfData['depublished'] = $depublishedFormatted;
                 // TOP LEVEL for bulk SQL.
             }
 

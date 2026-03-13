@@ -384,21 +384,6 @@ class OptimizedFacetHandler
             $queryBuilder->andWhere($queryBuilder->expr()->isNull('deleted'));
         }
 
-        $published = $baseQuery['_published'] ?? false;
-        if ($published === true) {
-            $now = (new DateTime())->format('Y-m-d H:i:s');
-            $queryBuilder->andWhere(
-                $queryBuilder->expr()->andX(
-                    $queryBuilder->expr()->isNotNull('published'),
-                    $queryBuilder->expr()->lte('published', $queryBuilder->createNamedParameter($now)),
-                    $queryBuilder->expr()->orX(
-                        $queryBuilder->expr()->isNull('depublished'),
-                        $queryBuilder->expr()->gt('depublished', $queryBuilder->createNamedParameter($now))
-                    )
-                )
-            );
-        }
-
         // 4. Low selectivity: organization filters.
         if (($baseQuery['@self']['organisation'] ?? null) !== null) {
             $queryBuilder->andWhere(

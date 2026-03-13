@@ -331,13 +331,20 @@ class MariaDbFacetHandler
     {
         $queryBuilder = $this->db->getQueryBuilder();
 
-        $jsonPath   = '$.'.$field;
-        $dateFormat = $this->getDateFormatForInterval(interval: $interval);
-
+        $jsonPath      = '$.'.$field;
         $jsonPathParam = $queryBuilder->createNamedParameter($jsonPath);
-        $dateFormatSql = "DATE_FORMAT(JSON_UNQUOTE(JSON_EXTRACT(object, ".$jsonPathParam.")), '$dateFormat')";
+        $extractSql    = "JSON_UNQUOTE(JSON_EXTRACT(object, ".$jsonPathParam."))";
+
+        // Build interval-specific grouping expression.
+        if ($interval === 'quarter') {
+            $dateKeySql = "CONCAT(YEAR(".$extractSql."), '-Q', QUARTER(".$extractSql."))";
+        } else {
+            $dateFormat = $this->getDateFormatForInterval(interval: $interval);
+            $dateKeySql = "DATE_FORMAT(".$extractSql.", '$dateFormat')";
+        }
+
         $queryBuilder->selectAlias(
-            $queryBuilder->createFunction($dateFormatSql),
+            $queryBuilder->createFunction($dateKeySql),
             'date_key'
         )
             ->selectAlias($queryBuilder->createFunction('COUNT(*)'), 'doc_count')
@@ -358,10 +365,19 @@ class MariaDbFacetHandler
 
         while (($row = $result->fetch()) !== false) {
             if ($row['date_key'] !== null) {
-                $buckets[] = [
+                $bucket = [
                     'key'     => $row['date_key'],
                     'results' => (int) $row['doc_count'],
                 ];
+
+                // Add from/to bounds based on interval.
+                $bounds = $this->getDateBoundsForBucket(dateKey: $row['date_key'], interval: $interval);
+                if ($bounds !== null) {
+                    $bucket['from'] = $bounds['from'];
+                    $bucket['to']   = $bounds['to'];
+                }
+
+                $buckets[] = $bucket;
             }
         }
 
@@ -371,6 +387,70 @@ class MariaDbFacetHandler
             'buckets'  => $buckets,
         ];
     }//end getDateHistogramFacet()
+
+    /**
+     * Get date bounds (from/to) for a histogram bucket based on interval.
+     *
+     * @param string $dateKey  The bucket key (e.g., '2025', '2025-03', '2025-Q1').
+     * @param string $interval The histogram interval.
+     *
+     * @return array{from: string, to: string}|null The date bounds or null if unparseable.
+     */
+    private function getDateBoundsForBucket(string $dateKey, string $interval): ?array
+    {
+        switch ($interval) {
+            case 'year':
+                $year = (int) $dateKey;
+                return [
+                    'from' => $year.'-01-01',
+                    'to'   => $year.'-12-31',
+                ];
+
+            case 'quarter':
+                // Format: 2025-Q1.
+                if (preg_match('/^(\d{4})-Q(\d)$/', $dateKey, $matches) === 1) {
+                    $year       = (int) $matches[1];
+                    $quarter    = (int) $matches[2];
+                    $startMonth = (($quarter - 1) * 3) + 1;
+                    $endMonth   = $startMonth + 2;
+                    $lastDay    = (int) date('t', mktime(0, 0, 0, $endMonth, 1, $year));
+                    return [
+                        'from' => sprintf('%04d-%02d-01', $year, $startMonth),
+                        'to'   => sprintf('%04d-%02d-%02d', $year, $endMonth, $lastDay),
+                    ];
+                }
+                return null;
+
+            case 'month':
+                // Format: 2025-03.
+                $date = \DateTime::createFromFormat('Y-m', $dateKey);
+                if ($date !== false) {
+                    return [
+                        'from' => $date->format('Y-m-01'),
+                        'to'   => $date->format('Y-m-t'),
+                    ];
+                }
+                return null;
+
+            case 'week':
+                // Format: 2025-12 (year-week).
+                if (preg_match('/^(\d{4})-(\d{1,2})$/', $dateKey, $matches) === 1) {
+                    $date = new \DateTime();
+                    $date->setISODate((int) $matches[1], (int) $matches[2], 1);
+                    $from = $date->format('Y-m-d');
+                    $date->setISODate((int) $matches[1], (int) $matches[2], 7);
+                    $to = $date->format('Y-m-d');
+                    return ['from' => $from, 'to' => $to];
+                }
+                return null;
+
+            case 'day':
+                return ['from' => $dateKey, 'to' => $dateKey];
+
+            default:
+                return null;
+        }//end switch
+    }//end getDateBoundsForBucket()
 
     /**
      * Get range facet for a JSON object field
@@ -463,6 +543,74 @@ class MariaDbFacetHandler
     }//end getRangeFacet()
 
     /**
+     * Get date range facet for a JSON object field.
+     *
+     * Returns named date range buckets with counts. Each range has resolved
+     * absolute from/to dates and a count of matching objects.
+     *
+     * @param string $field          The JSON field name (supports dot notation).
+     * @param array  $resolvedRanges Resolved range definitions with absolute from/to dates.
+     * @param array  $baseQuery      Base query filters to apply.
+     *
+     * @throws \OCP\DB\Exception If a database error occurs.
+     *
+     * @return array The date_range facet result with buckets.
+     */
+    public function getDateRangeFacet(string $field, array $resolvedRanges, array $baseQuery=[]): array
+    {
+        $buckets  = [];
+        $jsonPath = '$.'.$field;
+
+        foreach ($resolvedRanges as $range) {
+            $queryBuilder  = $this->db->getQueryBuilder();
+            $jsonPathParam = $queryBuilder->createNamedParameter($jsonPath);
+            $extractSql    = "JSON_UNQUOTE(JSON_EXTRACT(object, ".$jsonPathParam."))";
+
+            $queryBuilder->selectAlias($queryBuilder->createFunction('COUNT(*)'), 'doc_count')
+                ->from('openregister_objects')
+                ->where(
+                    $queryBuilder->expr()->isNotNull(
+                        $queryBuilder->createFunction("JSON_EXTRACT(object, ".$jsonPathParam.")")
+                    )
+                );
+
+            // Apply date range conditions using string comparison (ISO dates sort correctly).
+            if (($range['from'] ?? null) !== null) {
+                $fromParam = $queryBuilder->createNamedParameter($range['from']);
+                $queryBuilder->andWhere(
+                    $queryBuilder->createFunction($extractSql).' >= '.$fromParam
+                );
+            }
+
+            if (($range['to'] ?? null) !== null) {
+                $toParam = $queryBuilder->createNamedParameter($range['to'].' 23:59:59');
+                $queryBuilder->andWhere(
+                    $queryBuilder->createFunction($extractSql).' <= '.$toParam
+                );
+            }
+
+            // Apply base filters.
+            $this->applyBaseFilters(queryBuilder: $queryBuilder, baseQuery: $baseQuery);
+
+            $result = $queryBuilder->executeQuery();
+            $count  = (int) $result->fetchOne();
+
+            $buckets[] = [
+                'key'     => $range['key'] ?? 'unknown',
+                'label'   => $range['label'] ?? $range['key'] ?? 'Unknown',
+                'results' => $count,
+                'from'    => $range['from'] ?? null,
+                'to'      => $range['to'] ?? null,
+            ];
+        }//end foreach
+
+        return [
+            'type'    => 'date_range',
+            'buckets' => $buckets,
+        ];
+    }//end getDateRangeFacet()
+
+    /**
      * Apply base query filters to the query builder
      *
      * This method applies the base search filters to ensure facets
@@ -484,30 +632,14 @@ class MariaDbFacetHandler
      */
     private function applyBaseFilters(IQueryBuilder $queryBuilder, array $baseQuery): void
     {
-        // Apply basic filters like deleted, published, etc.
+        // Apply basic filters like deleted, etc.
         $includeDeleted = $baseQuery['_includeDeleted'] ?? false;
-        $published      = $baseQuery['_published'] ?? false;
         $search         = $baseQuery['_search'] ?? null;
         $ids            = $baseQuery['_ids'] ?? null;
 
         // By default, only include objects where 'deleted' is NULL unless $includeDeleted is true.
         if ($includeDeleted === false) {
             $queryBuilder->andWhere($queryBuilder->expr()->isNull('deleted'));
-        }
-
-        // If published filter is set, only include objects that are currently published.
-        if ($published === true) {
-            $now = (new DateTime())->format('Y-m-d H:i:s');
-            $queryBuilder->andWhere(
-                $queryBuilder->expr()->andX(
-                    $queryBuilder->expr()->isNotNull('published'),
-                    $queryBuilder->expr()->lte('published', $queryBuilder->createNamedParameter($now)),
-                    $queryBuilder->expr()->orX(
-                        $queryBuilder->expr()->isNull('depublished'),
-                        $queryBuilder->expr()->gt('depublished', $queryBuilder->createNamedParameter($now))
-                    )
-                )
-            );
         }
 
         // Apply full-text search if provided.
@@ -1105,6 +1237,9 @@ class MariaDbFacetHandler
             case 'week':
                 return '%Y-%u';
             case 'month':
+                return '%Y-%m';
+            case 'quarter':
+                // Quarter is handled specially in getDateHistogramFacet via CONCAT.
                 return '%Y-%m';
             case 'year':
                 return '%Y';

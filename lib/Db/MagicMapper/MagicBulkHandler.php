@@ -141,26 +141,6 @@ class MagicBulkHandler
 
             $preparedObject['_updated'] = $now->format('Y-m-d H:i:s');
 
-            $publishedValue = $selfData['published'] ?? $object['published'] ?? null;
-            if ($publishedValue !== null) {
-                $preparedObject['_published'] = $this->formatDateTimeForDatabase(
-                    value: $publishedValue,
-                    default: null
-                );
-            } else {
-                $preparedObject['_published'] = null;
-            }
-
-            $depublishedValue = $selfData['depublished'] ?? $object['depublished'] ?? null;
-            if ($depublishedValue !== null) {
-                $preparedObject['_depublished'] = $this->formatDateTimeForDatabase(
-                    value: $depublishedValue,
-                    default: null
-                );
-            } else {
-                $preparedObject['_depublished'] = null;
-            }
-
             $preparedObject['_name']        = $selfData['name'] ?? $object['name'] ?? null;
             $preparedObject['_description'] = $selfData['description'] ?? $object['description'] ?? null;
             $preparedObject['_summary']     = $selfData['summary'] ?? $object['summary'] ?? null;
