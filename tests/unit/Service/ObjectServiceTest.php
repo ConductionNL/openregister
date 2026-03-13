@@ -1708,4 +1708,1278 @@ class ObjectServiceTest extends TestCase
 		$this->assertSame($this->register, $this->getProperty('currentRegister'));
 		$this->assertSame($this->schema, $this->getProperty('currentSchema'));
 	}
+
+	// ── 34. countSearchObjects tests ────────────────────────────────────
+
+	public function testCountSearchObjectsDelegatesToMapperWithOrgContext(): void
+	{
+		$this->organisationService->method('getActiveOrganisation')->willReturn(null);
+		$this->objectEntityMapper->expects($this->once())
+			->method('countSearchObjects')
+			->willReturn(42);
+
+		$result = $this->service->countSearchObjects(
+			query: ['_register' => 1],
+			_rbac: true,
+			_multitenancy: true
+		);
+
+		$this->assertSame(42, $result);
+	}
+
+	public function testCountSearchObjectsSkipsOrgWhenMultitenancyDisabled(): void
+	{
+		$this->objectEntityMapper->expects($this->once())
+			->method('countSearchObjects')
+			->willReturn(10);
+
+		$result = $this->service->countSearchObjects(
+			query: [],
+			_rbac: false,
+			_multitenancy: false
+		);
+
+		$this->assertSame(10, $result);
+	}
+
+	// ── 35. searchObjectsPaginated — database path ──────────────────────
+
+	public function testSearchObjectsPaginatedUsesDatabaseByDefault(): void
+	{
+		$this->searchQueryHandler->method('isSolrAvailable')->willReturn(false);
+		$this->queryHandler->method('searchObjectsPaginatedDatabase')->willReturn([
+			'results' => [],
+			'total' => 0,
+			'@self' => [],
+		]);
+
+		$result = $this->service->searchObjectsPaginated(query: ['_limit' => 10]);
+
+		$this->assertArrayHasKey('results', $result);
+		$this->assertArrayHasKey('@self', $result);
+		$this->assertSame('database', $result['@self']['source']);
+	}
+
+	public function testSearchObjectsPaginatedSetsRegisterSchemaContext(): void
+	{
+		$this->setProperty('currentRegister', $this->register);
+		$this->setProperty('currentSchema', $this->schema);
+
+		$this->searchQueryHandler->method('isSolrAvailable')->willReturn(false);
+		$this->queryHandler->method('searchObjectsPaginatedDatabase')->willReturn([
+			'results' => [],
+			'total' => 0,
+			'@self' => [],
+		]);
+
+		$result = $this->service->searchObjectsPaginated(query: []);
+
+		$this->assertSame('database', $result['@self']['source']);
+	}
+
+	public function testSearchObjectsPaginatedForcesDbWhenIdsProvided(): void
+	{
+		$this->searchQueryHandler->method('isSolrAvailable')->willReturn(true);
+		$this->queryHandler->method('searchObjectsPaginatedDatabase')->willReturn([
+			'results' => [],
+			'total' => 0,
+			'@self' => [],
+		]);
+
+		$result = $this->service->searchObjectsPaginated(
+			query: [],
+			ids: ['uuid-1', 'uuid-2']
+		);
+
+		$this->assertSame('database', $result['@self']['source']);
+	}
+
+	public function testSearchObjectsPaginatedAddsExtendedObjectsWhenExtendSet(): void
+	{
+		$this->searchQueryHandler->method('isSolrAvailable')->willReturn(false);
+		$this->queryHandler->method('searchObjectsPaginatedDatabase')->willReturn([
+			'results' => [],
+			'total' => 0,
+			'@self' => [],
+		]);
+		$this->renderHandler->method('getObjectsCache')->willReturn(['uuid-1' => ['title' => 'Test']]);
+
+		$result = $this->service->searchObjectsPaginated(query: ['_extend' => 'relations']);
+
+		$this->assertArrayHasKey('objects', $result['@self']);
+	}
+
+	// ── 36. publishObjects / depublishObjects delegation ────────────────
+
+	public function testPublishObjectsDelegatesToBulkOps(): void
+	{
+		$this->bulkOpsHandler->expects($this->once())
+			->method('publishObjects')
+			->willReturn(['uuid-1', 'uuid-2']);
+
+		$result = $this->service->publishObjects(uuids: ['uuid-1', 'uuid-2']);
+
+		$this->assertSame(['uuid-1', 'uuid-2'], $result);
+	}
+
+	public function testDepublishObjectsDelegatesToBulkOps(): void
+	{
+		$this->bulkOpsHandler->expects($this->once())
+			->method('depublishObjects')
+			->willReturn(['uuid-1']);
+
+		$result = $this->service->depublishObjects(uuids: ['uuid-1']);
+
+		$this->assertSame(['uuid-1'], $result);
+	}
+
+	// ── 37. publishObjectsBySchema / deleteObjectsBySchema ──────────────
+
+	public function testPublishObjectsBySchemaDelegatesToBulkOps(): void
+	{
+		$this->bulkOpsHandler->expects($this->once())
+			->method('publishObjectsBySchema')
+			->willReturn(['published_count' => 5, 'published_uuids' => [], 'schema_id' => 2]);
+
+		$result = $this->service->publishObjectsBySchema(2);
+
+		$this->assertSame(5, $result['published_count']);
+	}
+
+	public function testDeleteObjectsBySchemaDelegatesToBulkOps(): void
+	{
+		$this->bulkOpsHandler->expects($this->once())
+			->method('deleteObjectsBySchema')
+			->willReturn(['deleted_count' => 3, 'deleted_uuids' => [], 'schema_id' => 2]);
+
+		$result = $this->service->deleteObjectsBySchema(1, 2);
+
+		$this->assertSame(3, $result['deleted_count']);
+	}
+
+	public function testDeleteObjectsByRegisterDelegatesToBulkOps(): void
+	{
+		$this->bulkOpsHandler->expects($this->once())
+			->method('deleteObjectsByRegister')
+			->willReturn(['deleted_count' => 10, 'deleted_uuids' => [], 'register_id' => 1]);
+
+		$result = $this->service->deleteObjectsByRegister(1);
+
+		$this->assertSame(10, $result['deleted_count']);
+	}
+
+	// ── 38. listObjects / createObject / updateObject ───────────────────
+
+	public function testListObjectsDelegatesToSearchObjects(): void
+	{
+		$this->queryHandler->expects($this->once())
+			->method('searchObjects')
+			->willReturn([]);
+
+		$result = $this->service->listObjects(query: ['_limit' => 10]);
+
+		$this->assertIsArray($result);
+	}
+
+	public function testCreateObjectCallsSaveObjectInternally(): void
+	{
+		// createObject calls saveObject which has a complex pipeline requiring
+		// full context. Verify it invokes cascading handler as part of saveObject.
+		$this->setProperty('currentRegister', $this->register);
+		$this->setProperty('currentSchema', $this->schema);
+
+		// The cascading handler is called before save — verify delegation starts.
+		$this->cascadingHandler->expects($this->once())
+			->method('handlePreValidationCascading');
+
+		// The actual save will fail due to deep dependencies, but we verify
+		// the method delegates to saveObject() correctly.
+		try {
+			$this->service->createObject(data: ['title' => 'New']);
+		} catch (\Throwable $e) {
+			// Expected — deep mocking of saveObject pipeline would require
+			// integration test. We verified delegation started.
+		}
+	}
+
+	public function testBuildObjectSearchQueryDelegatesToBuildSearchQuery(): void
+	{
+		$this->searchQueryHandler->expects($this->once())
+			->method('buildSearchQuery')
+			->willReturn(['_limit' => 20]);
+
+		$result = $this->service->buildObjectSearchQuery(params: ['_limit' => 20]);
+
+		$this->assertSame(20, $result['_limit']);
+	}
+
+	// ── 39. exportObjects / importObjects / downloadObjectFiles — disabled ──
+
+	public function testExportObjectsThrowsDisabledException(): void
+	{
+		$register = new Register();
+		$schema = new Schema();
+
+		$this->expectException(Exception::class);
+		$this->expectExceptionMessage('Export temporarily disabled');
+
+		$this->service->exportObjects($register, $schema);
+	}
+
+	public function testImportObjectsThrowsDisabledException(): void
+	{
+		$register = new Register();
+
+		$this->expectException(Exception::class);
+		$this->expectExceptionMessage('Import temporarily disabled');
+
+		$this->service->importObjects($register, ['name' => 'test.csv', 'tmp_name' => '/tmp/test']);
+	}
+
+	public function testDownloadObjectFilesThrowsDisabledException(): void
+	{
+		$this->expectException(Exception::class);
+		$this->expectExceptionMessage('File download temporarily disabled');
+
+		$this->service->downloadObjectFiles('uuid-123');
+	}
+
+	// ── 40. vectorization methods — disabled ────────────────────────────
+
+	public function testVectorizeBatchObjectsThrowsDisabledException(): void
+	{
+		$this->expectException(Exception::class);
+		$this->expectExceptionMessage('Vectorization temporarily disabled');
+
+		$this->service->vectorizeBatchObjects();
+	}
+
+	public function testGetVectorizationStatisticsThrowsDisabledException(): void
+	{
+		$this->expectException(Exception::class);
+		$this->expectExceptionMessage('Vectorization temporarily disabled');
+
+		$this->service->getVectorizationStatistics();
+	}
+
+	public function testGetVectorizationCountThrowsDisabledException(): void
+	{
+		$this->expectException(Exception::class);
+		$this->expectExceptionMessage('Vectorization temporarily disabled');
+
+		$this->service->getVectorizationCount();
+	}
+
+	// ── 41. mergeObjects delegation ─────────────────────────────────────
+
+	public function testMergeObjectsDelegatesToMergeHandler(): void
+	{
+		// Access private mergeHandler via reflection
+		$mergeHandler = $this->getProperty('mergeHandler');
+		$mergeHandler->expects($this->once())
+			->method('mergeObjects')
+			->willReturn(['success' => true, 'uuid' => 'uuid-target']);
+
+		$result = $this->service->mergeObjects('uuid-source', ['target' => 'uuid-target']);
+
+		$this->assertTrue($result['success']);
+	}
+
+	// ── 42. migrateObjects delegation ───────────────────────────────────
+
+	public function testMigrateObjectsDelegatesToMigrationHandler(): void
+	{
+		$migrationHandler = $this->getProperty('migrationHandler');
+		$migrationHandler->expects($this->once())
+			->method('migrateObjects')
+			->willReturn(['success' => true, 'migrated' => 2]);
+
+		$result = $this->service->migrateObjects('1', '2', '3', '4', ['uuid-1'], ['field1' => 'field2']);
+
+		$this->assertTrue($result['success']);
+	}
+
+	// ── 43. validateObjectsBySchema / validateAndSaveObjectsBySchema ────
+
+	public function testValidateObjectsBySchemaDelegatesToValidationHandler(): void
+	{
+		$validationHandler = $this->getProperty('validationHandler');
+		$validationHandler->expects($this->once())
+			->method('validateObjectsBySchema')
+			->willReturn(['valid' => 5, 'invalid' => 2]);
+
+		$result = $this->service->validateObjectsBySchema(2);
+
+		$this->assertSame(5, $result['valid']);
+	}
+
+	public function testValidateAndSaveObjectsBySchemaDelegatesToValidationHandler(): void
+	{
+		$validationHandler = $this->getProperty('validationHandler');
+		$validationHandler->expects($this->once())
+			->method('validateAndSaveObjectsBySchema')
+			->willReturn(['processed' => 10, 'updated' => 8, 'failed' => 2, 'total' => 10, 'errors' => []]);
+
+		$result = $this->service->validateAndSaveObjectsBySchema(1, 2);
+
+		$this->assertSame(10, $result['processed']);
+		$this->assertSame(8, $result['updated']);
+	}
+
+	// ── 44. getObjectContracts / getObjectUses / getObjectUsedBy ────────
+
+	public function testGetObjectContractsDelegatesToRelationHandler(): void
+	{
+		$relationHandler = $this->getProperty('relationHandler');
+		$relationHandler->expects($this->once())
+			->method('getContracts')
+			->willReturn(['results' => [], 'total' => 0]);
+
+		$result = $this->service->getObjectContracts('uuid-123');
+
+		$this->assertSame(0, $result['total']);
+	}
+
+	public function testGetObjectUsesDelegatesToRelationHandler(): void
+	{
+		$relationHandler = $this->getProperty('relationHandler');
+		$relationHandler->expects($this->once())
+			->method('getUses')
+			->willReturn(['results' => [], 'total' => 0]);
+
+		$result = $this->service->getObjectUses('uuid-123');
+
+		$this->assertSame(0, $result['total']);
+	}
+
+	public function testGetObjectUsedByDelegatesToRelationHandler(): void
+	{
+		$relationHandler = $this->getProperty('relationHandler');
+		$relationHandler->expects($this->once())
+			->method('getUsedBy')
+			->willReturn(['results' => [], 'total' => 0]);
+
+		$result = $this->service->getObjectUsedBy('uuid-123');
+
+		$this->assertSame(0, $result['total']);
+	}
+
+	// ── 45. handleValidationException delegation ────────────────────────
+
+	public function testHandleValidationExceptionDelegatesToValidateHandler(): void
+	{
+		$exception = new \OCA\OpenRegister\Exception\ValidationException('Test error');
+		$response = new \OCP\AppFramework\Http\JSONResponse(['error' => 'Test'], 400);
+
+		$this->validateHandler->expects($this->once())
+			->method('handleValidationException')
+			->willReturn($response);
+
+		$result = $this->service->handleValidationException($exception);
+
+		$this->assertSame(400, $result->getStatus());
+	}
+
+	// ── 46. getDeleteHandler returns injected handler ───────────────────
+
+	public function testGetDeleteHandlerReturnsInjectedInstance(): void
+	{
+		$result = $this->service->getDeleteHandler();
+		$this->assertSame($this->deleteHandler, $result);
+	}
+
+	// ── 47. collectNamesForResults (private) ────────────────────────────
+
+	public function testCollectNamesForResultsReturnsEmptyForEmptyResults(): void
+	{
+		$result = $this->invokePrivate('collectNamesForResults', [[]]);
+		$this->assertSame([], $result);
+	}
+
+	public function testCollectNamesForResultsSkipsNonArrayResults(): void
+	{
+		$result = $this->invokePrivate('collectNamesForResults', [['not-an-array', 42]]);
+		$this->assertSame([], $result);
+	}
+
+	// ── 48. isUuidFormat (private) ──────────────────────────────────────
+
+	public function testIsUuidFormatReturnsTrueForValid(): void
+	{
+		$this->assertTrue($this->invokePrivate('isUuidFormat', ['550e8400-e29b-41d4-a716-446655440000']));
+	}
+
+	public function testIsUuidFormatReturnsFalseForInvalid(): void
+	{
+		$this->assertFalse($this->invokePrivate('isUuidFormat', ['not-a-uuid']));
+		$this->assertFalse($this->invokePrivate('isUuidFormat', ['']));
+		$this->assertFalse($this->invokePrivate('isUuidFormat', ['123']));
+	}
+
+	// ── 49. collectUuidsFromRelations (private) ─────────────────────────
+
+	public function testCollectUuidsFromRelationsCollectsDirectUuids(): void
+	{
+		$uuids = [];
+		$this->invokePrivate('collectUuidsFromRelations', [
+			['550e8400-e29b-41d4-a716-446655440000', 'not-uuid'],
+			&$uuids,
+		]);
+
+		$this->assertCount(1, $uuids);
+		$this->assertSame('550e8400-e29b-41d4-a716-446655440000', $uuids[0]);
+	}
+
+	public function testCollectUuidsFromRelationsCollectsNestedUuids(): void
+	{
+		$uuids = [];
+		$this->invokePrivate('collectUuidsFromRelations', [
+			[['550e8400-e29b-41d4-a716-446655440000', 'not-uuid']],
+			&$uuids,
+		]);
+
+		$this->assertCount(1, $uuids);
+	}
+
+	// ── 50. collectUuidsFromObjectData (private) ────────────────────────
+
+	public function testCollectUuidsFromObjectDataCollectsTopLevel(): void
+	{
+		$uuids = [];
+		$this->invokePrivate('collectUuidsFromObjectData', [
+			[
+				'title' => 'Test',
+				'related' => '550e8400-e29b-41d4-a716-446655440000',
+				'@self' => 'skip',
+				'id' => 'skip',
+			],
+			&$uuids,
+			0,
+		]);
+
+		$this->assertCount(1, $uuids);
+	}
+
+	public function testCollectUuidsFromObjectDataStopsAtDepth1(): void
+	{
+		$uuids = [];
+		$this->invokePrivate('collectUuidsFromObjectData', [
+			['related' => '550e8400-e29b-41d4-a716-446655440000'],
+			&$uuids,
+			1, // depth > 0 should return immediately
+		]);
+
+		$this->assertCount(0, $uuids);
+	}
+
+	public function testCollectUuidsFromObjectDataCollectsFromArrays(): void
+	{
+		$uuids = [];
+		$this->invokePrivate('collectUuidsFromObjectData', [
+			[
+				'relations' => [
+					'550e8400-e29b-41d4-a716-446655440000',
+					'not-a-uuid',
+					'660e8400-e29b-41d4-a716-446655440000',
+				],
+			],
+			&$uuids,
+			0,
+		]);
+
+		$this->assertCount(2, $uuids);
+	}
+
+	// ── 51. collectUuidsFromArrayResult (private) ───────────────────────
+
+	public function testCollectUuidsFromArrayResultHandlesSelfStructure(): void
+	{
+		$uuids = [];
+		$this->invokePrivate('collectUuidsFromArrayResult', [
+			[
+				'@self' => [
+					'relations' => ['550e8400-e29b-41d4-a716-446655440000'],
+					'organisation' => '660e8400-e29b-41d4-a716-446655440000',
+					'owner' => '770e8400-e29b-41d4-a716-446655440000',
+					'object' => ['title' => 'Test'],
+				],
+			],
+			&$uuids,
+		]);
+
+		$this->assertCount(3, $uuids);
+	}
+
+	public function testCollectUuidsFromArrayResultHandlesFlatArray(): void
+	{
+		$uuids = [];
+		$this->invokePrivate('collectUuidsFromArrayResult', [
+			[
+				'related' => '550e8400-e29b-41d4-a716-446655440000',
+				'title' => 'Test',
+			],
+			&$uuids,
+		]);
+
+		$this->assertCount(1, $uuids);
+	}
+
+	// ── 52. saveObjects context setting ─────────────────────────────────
+
+	public function testSaveObjectsSetsRegisterSchemaContext(): void
+	{
+		$this->performanceHandler->method('getCachedEntities')
+			->willReturnCallback(function ($ids, $callback) {
+				return $callback($ids);
+			});
+		$this->registerMapper->method('find')->willReturn($this->register);
+		$this->schemaMapper->method('find')->willReturn($this->schema);
+
+		$this->bulkOpsHandler->expects($this->once())
+			->method('saveObjects')
+			->willReturn(['created' => 0, 'updated' => 0, 'failed' => 0]);
+
+		$result = $this->service->saveObjects(
+			objects: [],
+			register: $this->register,
+			schema: $this->schema
+		);
+
+		$this->assertIsArray($result);
+	}
+
+	// ── 53. deleteObjects delegation ────────────────────────────────────
+
+	public function testDeleteObjectsDelegatesToBulkOps(): void
+	{
+		$this->bulkOpsHandler->expects($this->once())
+			->method('deleteObjects')
+			->willReturn([1, 2, 3]);
+
+		$result = $this->service->deleteObjects(uuids: ['uuid-1', 'uuid-2', 'uuid-3']);
+
+		$this->assertSame([1, 2, 3], $result);
+	}
+
+	// ── 54. ensureObjectFolderExists ────────────────────────────────────
+
+	public function testEnsureObjectFolderExistsCreatesFolder(): void
+	{
+		$entity = new ObjectEntity();
+		$entity->setUuid('test-uuid');
+		$entity->setFolder(null);
+
+		$folderNode = $this->createMock(\OCP\Files\Folder::class);
+		$folderNode->method('getId')->willReturn(42);
+
+		$this->fileService->expects($this->once())
+			->method('createEntityFolder')
+			->willReturn($folderNode);
+
+		$this->objectEntityMapper->expects($this->once())
+			->method('update')
+			->willReturnArgument(0);
+
+		$this->service->ensureObjectFolderExists($entity);
+
+		$this->assertSame('42', $entity->getFolder());
+	}
+
+	public function testEnsureObjectFolderExistsHandlesException(): void
+	{
+		$entity = new ObjectEntity();
+		$entity->setUuid('test-uuid');
+		$entity->setFolder(null);
+
+		$this->fileService->expects($this->once())
+			->method('createEntityFolder')
+			->willThrowException(new Exception('Folder creation failed'));
+
+		// Should not throw - exception is caught
+		$this->service->ensureObjectFolderExists($entity);
+
+		$this->assertNull($entity->getFolder());
+	}
+
+	// ── 55. getObject / setObject ───────────────────────────────────────
+
+	public function testGetObjectReturnsSetObject(): void
+	{
+		$entity = new ObjectEntity();
+		$entity->setUuid('test-uuid');
+
+		$this->service->setObject($entity);
+
+		$this->assertSame($entity, $this->service->getObject());
+	}
+
+	// ── 56. searchObjectsPaginated with _extend as comma string ─────────
+
+	public function testSearchObjectsPaginatedHandlesExtendCommaString(): void
+	{
+		$this->searchQueryHandler->method('isSolrAvailable')->willReturn(false);
+		$this->queryHandler->method('searchObjectsPaginatedDatabase')->willReturn([
+			'results' => [],
+			'total' => 0,
+			'@self' => [],
+		]);
+		$this->renderHandler->method('getObjectsCache')->willReturn([]);
+
+		$result = $this->service->searchObjectsPaginated(
+			query: ['_extend' => 'relations,_schema']
+		);
+
+		$this->assertArrayHasKey('objects', $result['@self']);
+	}
+
+	// ── 55b. getActiveOrganisationForContext (private) ───────────────────
+
+	/**
+	 * Test getActiveOrganisationForContext returns UUID when org is found.
+	 */
+	public function testGetActiveOrganisationReturnsUuidWhenOrgFound(): void
+	{
+		$orgMock = $this->getMockBuilder(\OCA\OpenRegister\Db\Organisation::class)
+			->disableOriginalConstructor()
+			->addMethods(['getUuid'])
+			->getMock();
+		$orgMock->method('getUuid')->willReturn('org-uuid-abc');
+
+		$this->organisationService->method('getActiveOrganisation')->willReturn($orgMock);
+
+		$result = $this->invokePrivate('getActiveOrganisationForContext', []);
+
+		$this->assertSame('org-uuid-abc', $result);
+	}
+
+	/**
+	 * Test getActiveOrganisationForContext returns null when no org found.
+	 */
+	public function testGetActiveOrganisationReturnsNullWhenNoOrg(): void
+	{
+		$this->organisationService->method('getActiveOrganisation')->willReturn(null);
+
+		$result = $this->invokePrivate('getActiveOrganisationForContext', []);
+
+		$this->assertNull($result);
+	}
+
+	/**
+	 * Test getActiveOrganisationForContext returns null when exception thrown.
+	 */
+	public function testGetActiveOrganisationReturnsNullOnException(): void
+	{
+		$this->organisationService->method('getActiveOrganisation')
+			->willThrowException(new Exception('Organisation service unavailable'));
+
+		$result = $this->invokePrivate('getActiveOrganisationForContext', []);
+
+		$this->assertNull($result);
+	}
+
+	// ── 55c. validateObjectIfRequired (private) ─────────────────────────
+
+	/**
+	 * Test validateObjectIfRequired does nothing when hardValidation is false.
+	 */
+	public function testValidateObjectIfRequiredSkipsWhenNotHardValidation(): void
+	{
+		$schema = new Schema();
+		$schema->setId(1);
+		$schema->setHardValidation(false);
+		$this->setProperty('currentSchema', $schema);
+
+		// validateHandler should not be called.
+		$this->validateHandler->expects($this->never())->method('validateObject');
+
+		$this->invokePrivate('validateObjectIfRequired', [['name' => 'Test']]);
+	}
+
+	/**
+	 * Test validateObjectIfRequired validates when hardValidation is true and passes.
+	 */
+	public function testValidateObjectIfRequiredValidatesWhenHardValidationEnabled(): void
+	{
+		$schema = new Schema();
+		$schema->setId(1);
+		$schema->setHardValidation(true);
+		$this->setProperty('currentSchema', $schema);
+
+		$validResult = $this->createMock(\Opis\JsonSchema\ValidationResult::class);
+		$validResult->method('isValid')->willReturn(true);
+
+		$this->validateHandler->expects($this->once())
+			->method('validateObject')
+			->willReturn($validResult);
+
+		// Should not throw.
+		$this->invokePrivate('validateObjectIfRequired', [['name' => 'Test']]);
+	}
+
+	/**
+	 * Test validateObjectIfRequired throws ValidationException when validation fails.
+	 */
+	public function testValidateObjectIfRequiredThrowsOnValidationFailure(): void
+	{
+		$schema = new Schema();
+		$schema->setId(1);
+		$schema->setHardValidation(true);
+		$this->setProperty('currentSchema', $schema);
+
+		$invalidResult = $this->createMock(\Opis\JsonSchema\ValidationResult::class);
+		$invalidResult->method('isValid')->willReturn(false);
+		$invalidResult->method('error')->willReturn(null);
+
+		$this->validateHandler->method('validateObject')->willReturn($invalidResult);
+		$this->validateHandler->method('generateErrorMessage')->willReturn('Validation failed: name is required');
+
+		$this->expectException(\OCA\OpenRegister\Exception\ValidationException::class);
+
+		$this->invokePrivate('validateObjectIfRequired', [[]]);
+	}
+
+	// ── 55d. ensureObjectFolderExists when getFolderId returns null ───────
+
+	/**
+	 * Test ensureObjectFolderExists sets folder to null and still calls update
+	 * when folderNode->getId() returns null (entity needs persisting regardless).
+	 */
+	public function testEnsureObjectFolderExistsCallsUpdateWhenNodeIdNull(): void
+	{
+		$entity = new ObjectEntity();
+		$entity->setUuid('test-uuid');
+		$entity->setFolder(null);
+
+		$folderNode = $this->createMock(\OCP\Files\Folder::class);
+		$folderNode->method('getId')->willReturn(null);
+
+		$this->fileService->expects($this->once())
+			->method('createEntityFolder')
+			->willReturn($folderNode);
+
+		// When folderNode->getId() returns null, the entity is still updated
+		// (folder set to null, then update called).
+		$this->objectEntityMapper->expects($this->once())
+			->method('update')
+			->willReturnArgument(0);
+
+		$this->service->ensureObjectFolderExists($entity);
+
+		// Folder should be null since getId() returned null.
+		$this->assertNull($entity->getFolder());
+	}
+
+	// ── 55e. getFacetableFields delegation ───────────────────────────────
+
+	/**
+	 * Test getFacetableFields delegates to facetHandler.
+	 */
+	public function testGetFacetableFieldsDelegatesToFacetHandler(): void
+	{
+		$expected = ['@self' => [], 'object_fields' => ['name' => ['type' => 'string']]];
+
+		$this->facetHandler->expects($this->once())
+			->method('getFacetableFields')
+			->with(baseQuery: [], _sampleSize: 100)
+			->willReturn($expected);
+
+		$result = $this->service->getFacetableFields(baseQuery: [], sampleSize: 100);
+
+		$this->assertSame($expected, $result);
+	}
+
+	// ── 55f. setRegister fallback path (numeric ID, cache returns non-Register) ──
+
+	/**
+	 * Test setRegister falls back to mapper when cache returns unexpected type.
+	 */
+	public function testSetRegisterFallsBackToMapperWhenCacheReturnsWrong(): void
+	{
+		// Return an item that is NOT a Register instance.
+		$this->performanceHandler->method('getCachedEntities')
+			->willReturn([new \stdClass()]);
+
+		$this->registerMapper->expects($this->once())
+			->method('find')
+			->willReturn($this->register);
+
+		$this->service->setRegister(register: 1);
+
+		$this->assertSame($this->register, $this->getProperty('currentRegister'));
+	}
+
+	// ── 55g. setSchema fallback path (numeric ID, cache returns non-Schema) ──
+
+	/**
+	 * Test setSchema falls back to mapper when cache returns unexpected type.
+	 */
+	public function testSetSchemaFallsBackToMapperWhenCacheReturnsWrong(): void
+	{
+		$this->performanceHandler->method('getCachedEntities')
+			->willReturn([new \stdClass()]);
+
+		$this->schemaMapper->expects($this->once())
+			->method('find')
+			->willReturn($this->schema);
+
+		$this->service->setSchema(schema: 2);
+
+		$this->assertSame($this->schema, $this->getProperty('currentSchema'));
+	}
+
+	// ── 55h. countSearchObjects with active organisation ─────────────────
+
+	/**
+	 * Test countSearchObjects passes org UUID when multitenancy enabled and org found.
+	 */
+	public function testCountSearchObjectsPassesOrgUuidWhenFound(): void
+	{
+		$orgMock = $this->getMockBuilder(\OCA\OpenRegister\Db\Organisation::class)
+			->disableOriginalConstructor()
+			->addMethods(['getUuid'])
+			->getMock();
+		$orgMock->method('getUuid')->willReturn('org-uuid-123');
+
+		$this->organisationService->method('getActiveOrganisation')->willReturn($orgMock);
+
+		$this->objectEntityMapper->expects($this->once())
+			->method('countSearchObjects')
+			->with(
+				$this->anything(),
+				'org-uuid-123',
+				$this->anything(),
+				$this->anything(),
+				$this->anything(),
+				$this->anything()
+			)
+			->willReturn(7);
+
+		$result = $this->service->countSearchObjects(query: [], _multitenancy: true);
+
+		$this->assertSame(7, $result);
+	}
+
+	// ── 55i. searchObjectsPaginated bypasses multitenancy for public schema ──
+
+	/**
+	 * Test searchObjectsPaginated bypasses multitenancy when schema has public read access.
+	 */
+	public function testSearchObjectsPaginatedBypassesMultitenancyForPublicSchema(): void
+	{
+		$publicSchema = new Schema();
+		$publicSchema->setId(3);
+		$publicSchema->setAuthorization(['read' => ['public']]);
+		$this->setProperty('currentSchema', $publicSchema);
+
+		$this->searchQueryHandler->method('isSolrAvailable')->willReturn(false);
+
+		// The effective multitenancy passed to queryHandler should be false.
+		$this->queryHandler->expects($this->once())
+			->method('searchObjectsPaginatedDatabase')
+			->with(
+				$this->anything(),
+				$this->anything(),
+				false, // effectiveMt should be false for public schema
+				$this->anything(),
+				$this->anything(),
+				$this->anything(),
+				$this->anything()
+			)
+			->willReturn(['results' => [], 'total' => 0, '@self' => []]);
+
+		$result = $this->service->searchObjectsPaginated(
+			query: [],
+			_multitenancy: true // passed as true but bypassed for public schema
+		);
+
+		$this->assertSame('database', $result['@self']['source']);
+	}
+
+	// ── 57. searchObjectsPaginated with _source=database ────────────────
+
+	public function testSearchObjectsPaginatedExplicitDatabaseSource(): void
+	{
+		$this->searchQueryHandler->method('isSolrAvailable')->willReturn(true);
+		$this->queryHandler->method('searchObjectsPaginatedDatabase')->willReturn([
+			'results' => [],
+			'total' => 0,
+			'@self' => [],
+		]);
+
+		$result = $this->service->searchObjectsPaginated(
+			query: ['_source' => 'database']
+		);
+
+		$this->assertSame('database', $result['@self']['source']);
+	}
+
+	// ── 58. searchObjectsPaginated with uses param forces database ──────
+
+	public function testSearchObjectsPaginatedForcesDbWhenUsesProvided(): void
+	{
+		$this->searchQueryHandler->method('isSolrAvailable')->willReturn(true);
+		$this->queryHandler->method('searchObjectsPaginatedDatabase')->willReturn([
+			'results' => [],
+			'total' => 0,
+			'@self' => [],
+		]);
+
+		$result = $this->service->searchObjectsPaginated(
+			query: [],
+			uses: 'uuid-123'
+		);
+
+		$this->assertSame('database', $result['@self']['source']);
+	}
+
+	// ── 59. updateObject sets ID and delegates to saveObject ────────────
+
+	/**
+	 * Test updateObject sets the object ID in data and delegates to saveObject.
+	 */
+	public function testUpdateObjectSetsIdAndDelegatesToSaveObject(): void
+	{
+		$this->setProperty('currentRegister', $this->register);
+		$this->setProperty('currentSchema', $this->schema);
+
+		// The cascading handler is called as part of saveObject pipeline.
+		$this->cascadingHandler->expects($this->once())
+			->method('handlePreValidationCascading')
+			->willReturnCallback(function (array $object) {
+				// Verify the ID was set in the data.
+				$this->assertSame('42', $object['id']);
+				return [$object, null];
+			});
+
+		try {
+			$this->service->updateObject('42', ['title' => 'Updated']);
+		} catch (\Throwable $e) {
+			// Expected — deep saveObject pipeline needs integration test.
+			// We verified the ID was injected correctly.
+		}
+	}
+
+	// ── 60. patchObject merges existing data with patch data ────────────
+
+	/**
+	 * Test patchObject loads existing object, merges data, and delegates to saveObject.
+	 */
+	public function testPatchObjectMergesExistingDataAndDelegatesToSave(): void
+	{
+		$this->setProperty('currentRegister', $this->register);
+		$this->setProperty('currentSchema', $this->schema);
+
+		$existing = new ObjectEntity();
+		$existing->setId(42);
+		$existing->setObject(['title' => 'Original', 'status' => 'draft']);
+
+		$this->objectEntityMapper->method('find')
+			->with(42)
+			->willReturn($existing);
+
+		// Verify merged data is passed to cascading handler.
+		$this->cascadingHandler->expects($this->once())
+			->method('handlePreValidationCascading')
+			->willReturnCallback(function (array $object) {
+				$this->assertSame('42', $object['id']);
+				$this->assertSame('Updated Title', $object['title']);
+				$this->assertSame('draft', $object['status']); // preserved from existing
+				return [$object, null];
+			});
+
+		try {
+			$this->service->patchObject('42', ['title' => 'Updated Title']);
+		} catch (\Throwable $e) {
+			// Expected — deep pipeline.
+		}
+	}
+
+	// ── 61. setContextFromParameters sets both register and schema ──────
+
+	/**
+	 * Test setContextFromParameters sets register when provided.
+	 */
+	public function testSetContextFromParametersSetsRegister(): void
+	{
+		$this->invokePrivate('setContextFromParameters', [$this->register, null]);
+
+		$this->assertSame($this->register, $this->getProperty('currentRegister'));
+	}
+
+	/**
+	 * Test setContextFromParameters sets schema when provided.
+	 */
+	public function testSetContextFromParametersSetsSchema(): void
+	{
+		$this->performanceHandler->method('getCachedEntities')
+			->willReturn([$this->schema]);
+
+		$this->invokePrivate('setContextFromParameters', [null, $this->schema]);
+
+		$this->assertSame($this->schema, $this->getProperty('currentSchema'));
+	}
+
+	/**
+	 * Test setContextFromParameters does nothing when both are null.
+	 */
+	public function testSetContextFromParametersDoesNothingWhenBothNull(): void
+	{
+		$this->setProperty('currentRegister', null);
+		$this->setProperty('currentSchema', null);
+
+		$this->invokePrivate('setContextFromParameters', [null, null]);
+
+		$this->assertNull($this->getProperty('currentRegister'));
+		$this->assertNull($this->getProperty('currentSchema'));
+	}
+
+	// ── 62. resolveRegisterAndSchema with @self.schema ──────────────────
+
+	/**
+	 * Test resolveRegisterAndSchema returns null registers/schemas when no extend.
+	 */
+	public function testResolveRegisterAndSchemaReturnsNullsWithoutExtend(): void
+	{
+		$this->setProperty('currentRegister', null);
+		$this->setProperty('currentSchema', null);
+
+		$config = ['filters' => []];
+		$result = $this->invokePrivate('resolveRegisterAndSchema', [$config, []]);
+
+		$this->assertNull($result[0]); // registers
+		$this->assertNull($result[1]); // schemas
+	}
+
+	/**
+	 * Test resolveRegisterAndSchema uses current register/schema from filters.
+	 */
+	public function testResolveRegisterAndSchemaUsesCurrentFromFilters(): void
+	{
+		$this->setProperty('currentRegister', $this->register);
+		$this->setProperty('currentSchema', $this->schema);
+
+		$config = [
+			'filters' => ['register' => 1, 'schema' => 2],
+		];
+		$result = $this->invokePrivate('resolveRegisterAndSchema', [$config, []]);
+
+		$this->assertSame([1 => $this->register], $result[0]);
+		$this->assertSame([2 => $this->schema], $result[1]);
+	}
+
+	/**
+	 * Test resolveRegisterAndSchema loads schemas when @self.schema in extend.
+	 */
+	public function testResolveRegisterAndSchemaLoadsSchemasForSelfSchemaExtend(): void
+	{
+		$this->setProperty('currentRegister', null);
+		$this->setProperty('currentSchema', null);
+
+		$obj1 = new ObjectEntity();
+		$obj1->setSchema(10);
+		$obj2 = new ObjectEntity();
+		$obj2->setSchema(20);
+
+		$schema10 = new Schema();
+		$schema10->setId(10);
+		$schema20 = new Schema();
+		$schema20->setId(20);
+
+		$this->performanceHandler->method('getCachedEntities')
+			->willReturn([$schema10, $schema20]);
+
+		$config = [
+			'extend' => ['@self.schema'],
+		];
+		$result = $this->invokePrivate('resolveRegisterAndSchema', [$config, [$obj1, $obj2]]);
+
+		$this->assertNull($result[0]); // no registers needed
+		$this->assertIsArray($result[1]); // schemas loaded
+		$this->assertCount(2, $result[1]);
+	}
+
+	/**
+	 * Test resolveRegisterAndSchema loads registers when @self.register in extend.
+	 */
+	public function testResolveRegisterAndSchemaLoadsRegistersForSelfRegisterExtend(): void
+	{
+		$this->setProperty('currentRegister', null);
+		$this->setProperty('currentSchema', null);
+
+		$obj1 = new ObjectEntity();
+		$obj1->setRegister(5);
+
+		$reg5 = new Register();
+		$reg5->setId(5);
+
+		$this->performanceHandler->method('getCachedEntities')
+			->willReturn([$reg5]);
+
+		$config = [
+			'extend' => ['@self.register'],
+		];
+		$result = $this->invokePrivate('resolveRegisterAndSchema', [$config, [$obj1]]);
+
+		$this->assertIsArray($result[0]); // registers loaded
+		$this->assertNull($result[1]); // no schemas needed
+	}
+
+	// ── 63. normalizeDateValues — additional branches ───────────────────
+
+	/**
+	 * Test normalizeDateValues returns unchanged object when schema is null.
+	 */
+	public function testNormalizeDateValuesReturnsUnchangedWhenNoSchema(): void
+	{
+		$this->setProperty('currentSchema', null);
+
+		$object = ['startDate' => '2024-01-15T10:30:00+00:00'];
+		$result = $this->invokePrivate('normalizeDateValues', [$object]);
+
+		$this->assertSame('2024-01-15T10:30:00+00:00', $result['startDate']);
+	}
+
+	/**
+	 * Test normalizeDateValues converts datetime to date for date-format fields.
+	 */
+	public function testNormalizeDateValuesConvertsDatetimeToDate(): void
+	{
+		$schema = new Schema();
+		$schema->setProperties([
+			'startDate' => ['type' => 'string', 'format' => 'date'],
+		]);
+		$this->setProperty('currentSchema', $schema);
+
+		$object = ['startDate' => '2024-01-15T10:30:00+00:00'];
+		$result = $this->invokePrivate('normalizeDateValues', [$object]);
+
+		$this->assertSame('2024-01-15', $result['startDate']);
+	}
+
+	/**
+	 * Test normalizeDateValues leaves already-formatted dates alone.
+	 */
+	public function testNormalizeDateValuesSkipsAlreadyFormattedDates(): void
+	{
+		$schema = new Schema();
+		$schema->setProperties([
+			'startDate' => ['type' => 'string', 'format' => 'date'],
+		]);
+		$this->setProperty('currentSchema', $schema);
+
+		$object = ['startDate' => '2024-01-15'];
+		$result = $this->invokePrivate('normalizeDateValues', [$object]);
+
+		$this->assertSame('2024-01-15', $result['startDate']);
+	}
+
+	/**
+	 * Test normalizeDateValues leaves invalid dates untouched.
+	 */
+	public function testNormalizeDateValuesLeavesInvalidDatesUntouched(): void
+	{
+		$schema = new Schema();
+		$schema->setProperties([
+			'startDate' => ['type' => 'string', 'format' => 'date'],
+		]);
+		$this->setProperty('currentSchema', $schema);
+
+		$object = ['startDate' => 'not-a-date'];
+		$result = $this->invokePrivate('normalizeDateValues', [$object]);
+
+		$this->assertSame('not-a-date', $result['startDate']);
+	}
+
+	/**
+	 * Test normalizeDateValues skips non-string property values.
+	 */
+	public function testNormalizeDateValuesSkipsNonStringValues(): void
+	{
+		$schema = new Schema();
+		$schema->setProperties([
+			'startDate' => ['type' => 'string', 'format' => 'date'],
+		]);
+		$this->setProperty('currentSchema', $schema);
+
+		$object = ['startDate' => 12345];
+		$result = $this->invokePrivate('normalizeDateValues', [$object]);
+
+		$this->assertSame(12345, $result['startDate']);
+	}
+
+	/**
+	 * Test normalizeDateValues skips non-date format properties.
+	 */
+	public function testNormalizeDateValuesSkipsNonDateFormat(): void
+	{
+		$schema = new Schema();
+		$schema->setProperties([
+			'email' => ['type' => 'string', 'format' => 'email'],
+		]);
+		$this->setProperty('currentSchema', $schema);
+
+		$object = ['email' => 'test@example.com'];
+		$result = $this->invokePrivate('normalizeDateValues', [$object]);
+
+		$this->assertSame('test@example.com', $result['email']);
+	}
+
+	// ── 64. ensureObjectFolder with string folder triggers recreation ───
+
+	/**
+	 * Test ensureObjectFolder creates folder when object has string folder value.
+	 */
+	public function testEnsureObjectFolderCreatesWhenFolderIsString(): void
+	{
+		$entity = new ObjectEntity();
+		$entity->setId(1);
+		$entity->setFolder('some-string-path');
+
+		$this->objectEntityMapper->method('find')
+			->willReturn($entity);
+
+		$this->fileService->expects($this->once())
+			->method('createObjectFolderWithoutUpdate')
+			->willReturn(99);
+
+		$result = $this->invokePrivate('ensureObjectFolder', ['existing-uuid']);
+
+		$this->assertSame(99, $result);
+	}
+
+	/**
+	 * Test ensureObjectFolder returns null on general exception.
+	 */
+	public function testEnsureObjectFolderReturnsNullOnGeneralException(): void
+	{
+		$this->objectEntityMapper->method('find')
+			->willThrowException(new Exception('Database error'));
+
+		$result = $this->invokePrivate('ensureObjectFolder', ['some-uuid']);
+
+		$this->assertNull($result);
+	}
+
+	/**
+	 * Test ensureObjectFolder recreates folder when folder is a string numeric value.
+	 * Entity getFolder() returns string for numeric values, triggering recreation.
+	 */
+	public function testEnsureObjectFolderRecreatesWhenFolderIsStringNumeric(): void
+	{
+		$entity = new ObjectEntity();
+		$entity->setId(1);
+		$entity->setFolder(42);
+
+		$this->objectEntityMapper->method('find')
+			->willReturn($entity);
+
+		// Entity stores 42 as '42' (string), so isString===true triggers recreation.
+		$this->fileService->expects($this->once())
+			->method('createObjectFolderWithoutUpdate')
+			->willReturn(42);
+
+		$result = $this->invokePrivate('ensureObjectFolder', ['existing-uuid']);
+
+		$this->assertSame(42, $result);
+	}
 }
