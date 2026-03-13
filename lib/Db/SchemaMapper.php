@@ -280,17 +280,10 @@ class SchemaMapper extends QBMapper
         // Set $_multitenancy=false to bypass organization filter (e.g., when expanding schemas for registers).
         // ApplyOrganisationFilter handles $multiTenancyEnabled=false internally.
         // Use $published parameter if provided, otherwise check config.
-        $enablePublished = $this->shouldPublishedObjectsBypassMultiTenancy();
-        if ($published !== null) {
-            $enablePublished = $published;
-        }
-
         $this->applyOrganisationFilter(
             qb: $qb,
             columnName: 'organisation',
             allowNullOrg: true,
-            tableAlias: '',
-            enablePublished: $enablePublished,
             multiTenancyEnabled: $_multitenancy
         );
 
@@ -451,17 +444,10 @@ class SchemaMapper extends QBMapper
             );
 
         // Apply organisation filter with published entity bypass support.
-        $enablePublished = $this->shouldPublishedObjectsBypassMultiTenancy();
-        if ($published !== null) {
-            $enablePublished = $published;
-        }
-
         $this->applyOrganisationFilter(
             qb: $qb,
             columnName: 'organisation',
             allowNullOrg: true,
-            tableAlias: '',
-            enablePublished: $enablePublished,
             multiTenancyEnabled: $_multitenancy
         );
 
@@ -551,17 +537,10 @@ class SchemaMapper extends QBMapper
         // Published schemas can bypass multi-tenancy restrictions if configured.
         // ApplyOrganisationFilter handles $multiTenancyEnabled=false internally.
         // Use $published parameter if provided, otherwise check config.
-        $enablePublished = $this->shouldPublishedObjectsBypassMultiTenancy();
-        if ($published !== null) {
-            $enablePublished = $published;
-        }
-
         $this->applyOrganisationFilter(
             qb: $qb,
             columnName: 'organisation',
             allowNullOrg: true,
-            tableAlias: '',
-            enablePublished: $enablePublished,
             multiTenancyEnabled: $_multitenancy
         );
 

@@ -307,56 +307,11 @@ class RegisterMapper extends QBMapper
             }
         }//end try
 
-        // Apply organisation filter with published entity bypass support
-        // Published registers can bypass multi-tenancy restrictions if configured
-        // ApplyOrganisationFilter handles $multiTenancyEnabled=false internally
-        // Use $published parameter if provided, otherwise check config.
-        $enablePublished = $this->shouldPublishedObjectsBypassMultiTenancy();
-        if ($published !== null) {
-            $enablePublished = $published;
-        }
-
-        // Log multitenancy configuration.
-        if (isset($this->logger) === true) {
-            $activeOrgUuids = $this->getActiveOrganisationUuids();
-            $isAdmin        = false;
-            $adminOverrideEnabled = false;
-            $user = $this->userSession->getUser();
-            if ($user !== null && isset($this->groupManager) === true) {
-                $userGroups = $this->groupManager->getUserGroupIds($user);
-                $isAdmin    = in_array('admin', $userGroups);
-            }
-
-            if ($isAdmin === true && isset($this->appConfig) === true) {
-                $multitenancyConfig = $this->appConfig->getValueString('openregister', 'multitenancy', '');
-                if (empty($multitenancyConfig) === false) {
-                    $multitenancyData     = json_decode($multitenancyConfig, true);
-                    $adminOverrideEnabled = $multitenancyData['adminOverride'] ?? false;
-                }
-            }
-
-            $this->logger->info(
-                message: '[RegisterMapper] Applying multitenancy filters',
-                context: [
-                    'file'                 => __FILE__,
-                    'line'                 => __LINE__,
-                    'identifier'           => $id,
-                    'multiEnabled'         => $_multitenancy,
-                    'enablePublished'      => $enablePublished,
-                    'activeOrganisations'  => $activeOrgUuids,
-                    'isAdmin'              => $isAdmin,
-                    'adminOverrideEnabled' => $adminOverrideEnabled,
-                    'existsBeforeFilter'   => $existsBeforeFilter,
-                ]
-            );
-        }//end if
-
+        // Apply organisation filter.
         $this->applyOrganisationFilter(
             qb: $qb,
             columnName: 'organisation',
             allowNullOrg: true,
-            tableAlias: '',
-            enablePublished: $enablePublished,
             multiTenancyEnabled: $_multitenancy
         );
 
@@ -397,7 +352,6 @@ class RegisterMapper extends QBMapper
                         'identifier'         => $id,
                         'existsBeforeFilter' => $existsBeforeFilter,
                         'multiEnabled'       => $_multitenancy,
-                        'enablePublished'    => $enablePublished,
                         'rbacEnabled'        => $_rbac,
                         'error'              => $e->getMessage(),
                     ]
@@ -547,18 +501,11 @@ class RegisterMapper extends QBMapper
         // Apply organisation filter with published entity bypass support
         // Published registers can bypass multi-tenancy restrictions if configured
         // ApplyOrganisationFilter handles $multiTenancyEnabled=false internally
-        // Use $published parameter if provided, otherwise check config.
-        $enablePublished = $this->shouldPublishedObjectsBypassMultiTenancy();
-        if ($published !== null) {
-            $enablePublished = $published;
-        }
-
+        // Apply organisation filter.
         $this->applyOrganisationFilter(
             qb: $qb,
             columnName: 'organisation',
             allowNullOrg: true,
-            tableAlias: '',
-            enablePublished: $enablePublished,
             multiTenancyEnabled: $_multitenancy
         );
 

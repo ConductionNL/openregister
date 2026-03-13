@@ -159,7 +159,6 @@ class NewFacetingExample
             ],
             'category'   => 'electronics',
             'in_stock'   => true,
-            '_published' => true,
             '_search'    => 'smartphone',
 
             // Comprehensive faceting.
@@ -328,7 +327,6 @@ class NewFacetingExample
             // Array search.
             // Search and options.
             '_search'      => 'important project',
-            '_published'   => true,
 
             // Comprehensive faceting.
             '_facets'      => [
@@ -381,8 +379,6 @@ class NewFacetingExample
             ],
             'status'     => 'active',
             // Pre-filter to reduce dataset.
-            '_published' => true,
-            // Only published objects.
             // Focused faceting - only what's needed.
             '_facets'    => [
                 // Only essential metadata facets.

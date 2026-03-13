@@ -267,13 +267,6 @@ class SearchTrail extends Entity implements JsonSerializable
     protected ?array $sortParameters = null;
 
     /**
-     * Whether the search was performed on published objects only
-     *
-     * @var boolean|null Whether the search was performed on published objects only
-     */
-    protected ?bool $publishedOnly = null;
-
-    /**
      * Search execution type (sync or async)
      *
      * @var string|null Search execution type (sync or async)
@@ -348,7 +341,7 @@ class SearchTrail extends Entity implements JsonSerializable
         $this->addType(fieldName: 'facetableRequested', type: 'boolean');
         $this->addType(fieldName: 'filters', type: 'json');
         $this->addType(fieldName: 'sortParameters', type: 'json');
-        $this->addType(fieldName: 'publishedOnly', type: 'boolean');
+
         $this->addType(fieldName: 'executionType', type: 'string');
         $this->addType(fieldName: 'created', type: 'datetime');
         $this->addType(fieldName: 'organisationId', type: 'string');
@@ -497,7 +490,6 @@ class SearchTrail extends Entity implements JsonSerializable
      *     facetableRequested: bool|null,
      *     filters: array|null,
      *     sortParameters: array|null,
-     *     publishedOnly: bool|null,
      *     executionType: null|string,
      *     created: null|string,
      *     organisationId: null|string,
@@ -546,7 +538,6 @@ class SearchTrail extends Entity implements JsonSerializable
             'facetableRequested' => $this->facetableRequested,
             'filters'            => $this->filters,
             'sortParameters'     => $this->sortParameters,
-            'publishedOnly'      => $this->publishedOnly,
             'executionType'      => $this->executionType,
             'created'            => $created,
             'organisationId'     => $this->organisationId,

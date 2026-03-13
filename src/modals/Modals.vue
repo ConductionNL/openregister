@@ -20,7 +20,6 @@ import { navigationStore } from '../store/store.js'
 		<DeleteSchema />
 		<ValidateSchema v-if="navigationStore.dialog === 'validateSchema'" />
 		<DeleteSchemaObjects v-if="navigationStore.dialog === 'deleteSchemaObjects'" />
-		<PublishSchemaObjects v-if="navigationStore.dialog === 'publishSchemaObjects'" />
 		<UploadSchema />
 		<EditSchemaProperty v-if="navigationStore.modal === 'editSchemaProperty'" />
 		<DeleteSchemaProperty />
@@ -36,8 +35,6 @@ import { navigationStore } from '../store/store.js'
 		<UploadObject v-if="navigationStore.modal === 'uploadObject'" />
 		<ViewObjectAuditTrail v-if="navigationStore.modal === 'viewObjectAuditTrail'" />
 		<MassDeleteObject v-if="navigationStore.dialog === 'massDeleteObject'" />
-		<MassPublishObjects v-if="navigationStore.dialog === 'massPublishObjects'" />
-		<MassDepublishObjects v-if="navigationStore.dialog === 'massDepublishObjects'" />
 		<MassValidateObjects v-if="navigationStore.dialog === 'massValidateObjects'" />
 		<RestoreMultiple v-if="navigationStore.dialog === 'restoreMultiple'" />
 		<PurgeMultiple v-if="navigationStore.dialog === 'permanentlyDeleteMultiple'" />
@@ -75,7 +72,6 @@ import ExploreSchema from './schema/ExploreSchema.vue'
 import DeleteSchema from './schema/DeleteSchema.vue'
 import ValidateSchema from './schema/ValidateSchema.vue'
 import DeleteSchemaObjects from './schema/DeleteSchemaObjects.vue'
-import PublishSchemaObjects from './schema/PublishSchemaObjects.vue'
 import UploadSchema from './schema/UploadSchema.vue'
 import EditSchemaProperty from './schema/EditSchemaProperty.vue'
 import DeleteSchemaProperty from './schema/DeleteSchemaProperty.vue'
@@ -92,8 +88,6 @@ import ViewObject from './object/ViewObject.vue'
 import DownloadObject from './object/DownloadObject.vue'
 import UploadFiles from './file/UploadFiles.vue'
 import MassDeleteObject from './object/MassDeleteObject.vue'
-import MassPublishObjects from './object/MassPublishObjects.vue'
-import MassDepublishObjects from './object/MassDepublishObjects.vue'
 import MassValidateObjects from './object/MassValidateObjects.vue'
 import RestoreMultiple from './deleted/RestoreMultiple.vue'
 import PurgeMultiple from './deleted/PurgeMultiple.vue'
@@ -128,7 +122,6 @@ export default {
 		DeleteSchema,
 		ValidateSchema,
 		DeleteSchemaObjects,
-		PublishSchemaObjects,
 		UploadSchema,
 		EditSchemaProperty,
 		DeleteSchemaProperty,
@@ -145,8 +138,6 @@ export default {
 		DownloadObject,
 		UploadFiles,
 		MassDeleteObject,
-		MassPublishObjects,
-		MassDepublishObjects,
 		MassValidateObjects,
 		RestoreMultiple,
 		PurgeMultiple,

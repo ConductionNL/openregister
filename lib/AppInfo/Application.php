@@ -28,7 +28,6 @@ use OCA\OpenRegister\Db\SearchTrailMapper;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Db\ViewMapper;
-use OCA\OpenRegister\Db\ObjectEntityMapper;
 use OCA\OpenRegister\Db\MappingMapper;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\MagicMapper\MagicRbacHandler;
@@ -75,10 +74,8 @@ use OCA\OpenRegister\Service\Object\PerformanceOptimizationHandler;
 use OCA\OpenRegister\Service\ObjectService\MergeHandler;
 use OCA\OpenRegister\Service\ObjectService\UtilityHandler;
 use OCA\OpenRegister\Service\Object\PublishObject;
-use OCA\OpenRegister\Service\Object\DepublishObject;
 use OCA\OpenRegister\Service\Object\Handlers\LockHandler;
 use OCA\OpenRegister\Service\Object\Handlers\AuditHandler;
-use OCA\OpenRegister\Service\Object\Handlers\PublishHandler as PublishHandlerNew;
 use OCA\OpenRegister\Service\Object\Handlers\RelationHandler as RelationHandlerNew;
 use OCA\OpenRegister\Service\Object\Handlers\MergeHandler as MergeHandlerNew;
 use OCA\OpenRegister\Service\Object\Handlers\ExportHandler;
@@ -129,6 +126,7 @@ use OCA\OpenRegister\Event\DeepLinkRegistrationEvent;
 use OCA\OpenRegister\BackgroundJob\SolrWarmupJob;
 use OCA\OpenRegister\BackgroundJob\SolrNightlyWarmupJob;
 use OCA\OpenRegister\BackgroundJob\NameCacheWarmupJob;
+use OCA\OpenRegister\BackgroundJob\BlobMigrationJob;
 use OCA\OpenRegister\BackgroundJob\CronFileTextExtractionJob;
 use OCA\OpenRegister\Cron\WebhookRetryJob;
 use OCP\AppFramework\App;
@@ -418,7 +416,6 @@ class Application extends App implements IBootstrap
             CacheHandler::class,
             function (ContainerInterface $container) {
                 return new CacheHandler(
-                    objectEntityMapper: $container->get(ObjectEntityMapper::class),
                     organisationMapper: $container->get(OrganisationMapper::class),
                     logger: $container->get('Psr\Log\LoggerInterface'),
                     cacheFactory: $container->get('OCP\ICacheFactory'),
@@ -437,7 +434,7 @@ class Application extends App implements IBootstrap
             function (ContainerInterface $container) {
                 return new FolderManagementHandler(
                     rootFolder: $container->get('OCP\Files\IRootFolder'),
-                    objectEntityMapper: $container->get(ObjectEntityMapper::class),
+                    objectMapper: $container->get(UnifiedObjectMapper::class),
                     registerMapper: $container->get(RegisterMapper::class),
                     userSession: $container->get('OCP\IUserSession'),
                     groupManager: $container->get('OCP\IGroupManager'),
@@ -493,7 +490,7 @@ class Application extends App implements IBootstrap
             $importHandler = new ConfigurationImportHandler(
                 schemaMapper: $container->get(SchemaMapper::class),
                 registerMapper: $container->get(RegisterMapper::class),
-                objectEntityMapper: $container->get(ObjectEntityMapper::class),
+                objectMapper: $container->get(UnifiedObjectMapper::class),
                 configurationMapper: $container->get('OCA\OpenRegister\Db\ConfigurationMapper'),
                 mappingMapper: $container->get(MappingMapper::class),
                 client: new Client(),
@@ -535,7 +532,7 @@ class Application extends App implements IBootstrap
                 $exportHandler = new ConfigurationExportHandler(
                     schemaMapper: $container->get(SchemaMapper::class),
                     registerMapper: $container->get(RegisterMapper::class),
-                    objectEntityMapper: $container->get(ObjectEntityMapper::class),
+                    objectMapper: $container->get(UnifiedObjectMapper::class),
                     configurationMapper: $container->get('OCA\OpenRegister\Db\ConfigurationMapper'),
                     mappingMapper: $container->get(MappingMapper::class),
                     logger: $container->get('Psr\Log\LoggerInterface')

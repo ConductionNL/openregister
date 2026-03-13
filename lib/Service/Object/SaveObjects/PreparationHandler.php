@@ -192,39 +192,6 @@ class PreparationHandler
 
             $this->saveHandler->hydrateObjectMetadata(entity: $tempEntity, schema: $schema);
 
-            // AUTO-PUBLISH LOGIC: Only set published for NEW objects if not already set from CSV.
-            $config      = $schema->getConfiguration();
-            $isNewObject = empty($selfData['id']) === true || isset($selfData['id']) === false;
-            if (($config['autoPublish'] ?? null) !== null && $config['autoPublish'] === true && ($isNewObject === true)) {
-                // Check if published date was already set from @self data (CSV).
-                $publishedFromCsv = ($selfData['published'] ?? null) !== null && (empty($selfData['published']) === false);
-                if (($publishedFromCsv === false) === true && $tempEntity->getPublished() === null) {
-                    $this->logger->debug(
-                        message: '[PreparationHandler] Auto-publishing NEW object in bulk creation',
-                        context: [
-                            'file'             => __FILE__,
-                            'line'             => __LINE__,
-                            'schema'           => $schema->getTitle(),
-                            'autoPublish'      => true,
-                            'isNewObject'      => true,
-                            'publishedFromCsv' => false,
-                        ]
-                    );
-                    $tempEntity->setPublished(new DateTime());
-                } else if ($publishedFromCsv === true) {
-                    $this->logger->debug(
-                        message: '[PreparationHandler] Skipping auto-publish - published date provided from CSV',
-                        context: [
-                            'file'             => __FILE__,
-                            'line'             => __LINE__,
-                            'schema'           => $schema->getTitle(),
-                            'publishedFromCsv' => true,
-                            'csvPublishedDate' => $selfData['published'],
-                        ]
-                    );
-                }//end if
-            }//end if
-
             // Extract hydrated metadata back to object's @self data.
             $selfData = $object['@self'] ?? [];
             if ($tempEntity->getName() !== null) {
@@ -245,16 +212,6 @@ class PreparationHandler
 
             if ($tempEntity->getSlug() !== null) {
                 $selfData['slug'] = $tempEntity->getSlug();
-            }
-
-            if ($tempEntity->getPublished() !== null) {
-                $publishedFormatted    = $tempEntity->getPublished()->format('c');
-                $selfData['published'] = $publishedFormatted;
-            }
-
-            if ($tempEntity->getDepublished() !== null) {
-                $depublishedFormatted    = $tempEntity->getDepublished()->format('c');
-                $selfData['depublished'] = $depublishedFormatted;
             }
 
             // RELATIONS EXTRACTION: Scan the object data for relations.

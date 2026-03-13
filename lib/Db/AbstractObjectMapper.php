@@ -92,7 +92,6 @@ abstract class AbstractObjectMapper
      * @param bool          $includeDeleted   Whether to include deleted objects.
      * @param Register|null $register         Optional register to filter objects.
      * @param Schema|null   $schema           Optional schema to filter objects.
-     * @param bool|null     $published        If true, only return currently published objects.
      *
      * @return ObjectEntity[]
      *
@@ -115,8 +114,7 @@ abstract class AbstractObjectMapper
         ?string $uses=null,
         bool $includeDeleted=false,
         ?Register $register=null,
-        ?Schema $schema=null,
-        ?bool $published=null
+        ?Schema $schema=null
     ): array;
 
     /**
@@ -228,30 +226,6 @@ abstract class AbstractObjectMapper
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Hard delete toggle controls permanent vs soft delete
      */
     abstract public function deleteObjects(array $uuids=[], bool $hardDelete=false): array;
-
-    /**
-     * Perform bulk publish operations on objects by UUID.
-     *
-     * @param array         $uuids    Array of object UUIDs to publish.
-     * @param DateTime|bool $datetime Optional datetime for publishing.
-     *
-     * @return array Array of UUIDs of published objects.
-     *
-     * @SuppressWarnings(PHPMD.BooleanArgumentFlag) DateTime or bool controls publish timing
-     */
-    abstract public function publishObjects(array $uuids=[], DateTime|bool $datetime=true): array;
-
-    /**
-     * Perform bulk depublish operations on objects by UUID.
-     *
-     * @param array         $uuids    Array of object UUIDs to depublish.
-     * @param DateTime|bool $datetime Optional datetime for depublishing.
-     *
-     * @return array Array of UUIDs of depublished objects.
-     *
-     * @SuppressWarnings(PHPMD.BooleanArgumentFlag) DateTime or bool controls depublish timing
-     */
-    abstract public function depublishObjects(array $uuids=[], DateTime|bool $datetime=true): array;
 
     // ==================================================================================
     // STATISTICS OPERATIONS

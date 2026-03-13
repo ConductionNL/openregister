@@ -267,7 +267,6 @@ class MagicSearchHandler
         // Extract options from query (prefixed with _).
         $search         = $query['_search'] ?? null;
         $includeDeleted = $query['_includeDeleted'] ?? false;
-        $published      = $query['_published'] ?? false;
         $ids            = $query['_ids'] ?? null;
         $rbac           = $query['_rbac'] ?? true;
         $multitenancy   = $query['_multitenancy'] ?? true;
@@ -296,8 +295,8 @@ class MagicSearchHandler
         $queryBuilder = $this->db->getQueryBuilder();
         $queryBuilder->from($tableName, 't');
 
-        // Apply basic filters (deleted, published, etc.).
-        $this->applyBasicFilters(qb: $queryBuilder, includeDeleted: $includeDeleted, published: $published);
+        // Apply basic filters (deleted, etc.).
+        $this->applyBasicFilters(qb: $queryBuilder, includeDeleted: $includeDeleted);
 
         // Apply multi-tenancy and RBAC access control filters.
         $this->applyAccessControlFilters(
@@ -368,7 +367,6 @@ class MagicSearchHandler
         // Extract options from query.
         $search         = $query['_search'] ?? null;
         $includeDeleted = $query['_includeDeleted'] ?? false;
-        $published      = $query['_published'] ?? false;
         $rbac           = $query['_rbac'] ?? true;
 
         // 1. Deleted filter.
@@ -376,12 +374,7 @@ class MagicSearchHandler
             $conditions[] = '_deleted IS NULL';
         }
 
-        // 2. Published filter.
-        if ($published === true) {
-            $conditions[] = $this->buildPublishedConditionSql(connection: $connection);
-        }
-
-        // 3. RBAC filter (role-based access control).
+        // 2. RBAC filter (role-based access control).
         if ($rbac === true) {
             $rbacCondition = $this->buildRbacConditionSql(schema: $schema);
             if ($rbacCondition !== null) {
@@ -412,21 +405,6 @@ class MagicSearchHandler
 
         return $conditions;
     }//end buildWhereConditionsSql()
-
-    /**
-     * Build the published status SQL condition
-     *
-     * @param object $connection Database connection for value quoting
-     *
-     * @return string SQL condition for published filter
-     */
-    private function buildPublishedConditionSql(object $connection): string
-    {
-        $now       = (new DateTime())->format('Y-m-d H:i:s');
-        $quotedNow = $connection->quote($now);
-
-        return "(_published IS NOT NULL AND _published <= {$quotedNow} AND (_depublished IS NULL OR _depublished > {$quotedNow}))";
-    }//end buildPublishedConditionSql()
 
     /**
      * Build the RBAC SQL condition
@@ -638,7 +616,6 @@ class MagicSearchHandler
             '_aggregations',
             '_debug',
             '_source',
-            '_published',
             '_rbac',
             '_multitenancy',
             '_validation',
@@ -662,35 +639,20 @@ class MagicSearchHandler
     }//end getReservedParams()
 
     /**
-     * Apply basic filters like deleted and published status
+     * Apply basic filters like deleted status
      *
      * @param IQueryBuilder $qb             Query builder to modify
      * @param bool          $includeDeleted Whether to include deleted objects
-     * @param bool          $published      Whether to filter for published objects only
      *
      * @return void
      */
-    private function applyBasicFilters(IQueryBuilder $qb, bool $includeDeleted, bool $published): void
+    private function applyBasicFilters(IQueryBuilder $qb, bool $includeDeleted): void
     {
         // Handle deleted filter.
         if ($includeDeleted === false) {
             $qb->andWhere($qb->expr()->isNull('t._deleted'));
         }
 
-        // Handle published filter.
-        if ($published === true) {
-            $now = (new DateTime())->format('Y-m-d H:i:s');
-            $qb->andWhere(
-                $qb->expr()->andX(
-                    $qb->expr()->isNotNull('t._published'),
-                    $qb->expr()->lte('t._published', $qb->createNamedParameter($now)),
-                    $qb->expr()->orX(
-                        $qb->expr()->isNull('t._depublished'),
-                        $qb->expr()->gt('t._depublished', $qb->createNamedParameter($now))
-                    )
-                )
-            );
-        }
     }//end applyBasicFilters()
 
     /**
@@ -795,7 +757,6 @@ class MagicSearchHandler
             if ($applyMultitenancy === true) {
                 $this->organizationHandler->applyOrganizationFilter(
                     qb: $qb,
-                    allowPublishedAccess: $this->organizationHandler->shouldPublishedBypassMultiTenancy(),
                     adminBypassEnabled: $this->organizationHandler->isAdminOverrideEnabled()
                 );
             }
@@ -1183,8 +1144,6 @@ class MagicSearchHandler
                         '_schema',
                         '_owner',
                         '_organisation',
-                        '_published',
-                        '_depublished',
                     ],
                     true
                     ) === true
@@ -1334,10 +1293,6 @@ class MagicSearchHandler
                 $objectEntity->setUpdated(new DateTime($metadataData['updated']));
             }
 
-            if (($metadataData['published'] ?? null) !== null) {
-                $objectEntity->setPublished(new DateTime($metadataData['published']));
-            }
-
             if (($metadataData['deleted'] ?? null) !== null) {
                 // Convert deleted timestamp to array format expected by setDeleted.
                 $deletedDateTime = new DateTime($metadataData['deleted']);
@@ -1347,10 +1302,6 @@ class MagicSearchHandler
                         'deletedBy' => $metadataData['deletedBy'] ?? null,
                     ]
                 );
-            }
-
-            if (($metadataData['depublished'] ?? null) !== null) {
-                $objectEntity->setDepublished(new DateTime($metadataData['depublished']));
             }
 
             // Set relevance score if present (from fuzzy search).

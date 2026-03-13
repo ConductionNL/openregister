@@ -157,7 +157,6 @@ class ObjectServiceFacetExample
             ],
             'category'   => 'electronics',
             'in_stock'   => true,
-            '_published' => true,
 
             // Search and pagination.
             '_search'    => 'smartphone',
@@ -239,7 +238,6 @@ class ObjectServiceFacetExample
         // Multiple data sources.
                 'organisation' => 'IS NOT NULL',
             ],
-            '_published' => true,
 
             // Time-based facets for analytics.
             '_facets'    => [

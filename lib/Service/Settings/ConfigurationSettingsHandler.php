@@ -162,7 +162,6 @@ class ConfigurationSettingsHandler
      *         enabled: mixed|true,
      *         defaultUserTenant: ''|mixed,
      *         defaultObjectTenant: ''|mixed,
-     *         publishedObjectsBypassMultiTenancy: false|mixed,
      *         adminOverride: mixed|true
      *     },
      *     availableGroups: array<string, string>,
@@ -251,8 +250,7 @@ class ConfigurationSettingsHandler
                     'enabled'                            => true,
                     'defaultUserTenant'                  => '',
                     'defaultObjectTenant'                => '',
-                    'publishedObjectsBypassMultiTenancy' => false,
-                    'adminOverride'                      => true,
+                    'adminOverride' => true,
                 ];
             }
 
@@ -262,8 +260,7 @@ class ConfigurationSettingsHandler
                     'enabled'                            => $multitenancyData['enabled'] ?? true,
                     'defaultUserTenant'                  => $multitenancyData['defaultUserTenant'] ?? '',
                     'defaultObjectTenant'                => $multitenancyData['defaultObjectTenant'] ?? '',
-                    'publishedObjectsBypassMultiTenancy' => $multitenancyData['publishedObjectsBypassMultiTenancy'] ?? false,
-                    'adminOverride'                      => $multitenancyData['adminOverride'] ?? true,
+                    'adminOverride' => $multitenancyData['adminOverride'] ?? true,
                 ];
             }
 
@@ -370,6 +367,18 @@ class ConfigurationSettingsHandler
                 ];
             }//end if
 
+            // Blob Migration Status.
+            $data['blobMigration'] = [
+                'processed' => (int) $this->appConfig->getValueString($this->appName, 'blob_migration_processed', '0'),
+                'remaining' => (int) $this->appConfig->getValueString($this->appName, 'blob_migration_remaining', '0'),
+                'complete'  => $this->appConfig->getValueString(
+                    $this->appName,
+                    'blob_migration_complete',
+                    'false'
+                ) === 'true',
+                'lastRun'   => $this->appConfig->getValueString($this->appName, 'blob_migration_last_run', ''),
+            ];
+
             return $data;
         } catch (Exception $e) {
             throw new RuntimeException('Failed to retrieve settings: '.$e->getMessage());
@@ -468,7 +477,6 @@ class ConfigurationSettingsHandler
      *         enabled: mixed|true,
      *         defaultUserTenant: ''|mixed,
      *         defaultObjectTenant: ''|mixed,
-     *         publishedObjectsBypassMultiTenancy: false|mixed,
      *         adminOverride: mixed|true
      *     },
      *     availableGroups: array<string, string>,
@@ -541,8 +549,7 @@ class ConfigurationSettingsHandler
                     'enabled'                            => $multitenancyData['enabled'] ?? true,
                     'defaultUserTenant'                  => $multitenancyData['defaultUserTenant'] ?? '',
                     'defaultObjectTenant'                => $multitenancyData['defaultObjectTenant'] ?? '',
-                    'publishedObjectsBypassMultiTenancy' => $multitenancyData['publishedObjectsBypassMultiTenancy'] ?? false,
-                    'adminOverride'                      => $multitenancyData['adminOverride'] ?? true,
+                    'adminOverride' => $multitenancyData['adminOverride'] ?? true,
                 ];
                 $this->appConfig->setValueString($this->appName, 'multitenancy', json_encode($multitenancyConfig));
             }
@@ -893,7 +900,6 @@ class ConfigurationSettingsHandler
      *
      * @psalm-return array{multitenancy: array{enabled: false|mixed,
      *     defaultUserTenant: ''|mixed, defaultObjectTenant: ''|mixed,
-     *     publishedObjectsBypassMultiTenancy: false|mixed,
      *     adminOverride: mixed|true}, availableTenants: array}
      */
     public function getMultitenancySettingsOnly(): array
@@ -908,8 +914,7 @@ class ConfigurationSettingsHandler
                     'enabled'                            => true,
                     'defaultUserTenant'                  => '',
                     'defaultObjectTenant'                => '',
-                    'publishedObjectsBypassMultiTenancy' => false,
-                    'adminOverride'                      => true,
+                    'adminOverride' => true,
                 ];
             }
 
@@ -919,8 +924,7 @@ class ConfigurationSettingsHandler
                     'enabled'                            => $storedData['enabled'] ?? true,
                     'defaultUserTenant'                  => $storedData['defaultUserTenant'] ?? '',
                     'defaultObjectTenant'                => $storedData['defaultObjectTenant'] ?? '',
-                    'publishedObjectsBypassMultiTenancy' => $storedData['publishedObjectsBypassMultiTenancy'] ?? false,
-                    'adminOverride'                      => $storedData['adminOverride'] ?? true,
+                    'adminOverride' => $storedData['adminOverride'] ?? true,
                 ];
             }
 
@@ -950,8 +954,7 @@ class ConfigurationSettingsHandler
                 'enabled'                            => $multitenancyData['enabled'] ?? true,
                 'defaultUserTenant'                  => $multitenancyData['defaultUserTenant'] ?? '',
                 'defaultObjectTenant'                => $multitenancyData['defaultObjectTenant'] ?? '',
-                'publishedObjectsBypassMultiTenancy' => $multitenancyData['publishedObjectsBypassMultiTenancy'] ?? false,
-                'adminOverride'                      => $multitenancyData['adminOverride'] ?? true,
+                'adminOverride' => $multitenancyData['adminOverride'] ?? true,
             ];
 
             $this->appConfig->setValueString($this->appName, 'multitenancy', json_encode($multitenancyConfig));
