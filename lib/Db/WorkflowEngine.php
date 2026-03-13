@@ -169,9 +169,18 @@ class WorkflowEngine extends Entity implements JsonSerializable
     public function hydrate(array $object): self
     {
         $fields = [
-            'uuid', 'name', 'engineType', 'baseUrl', 'authType',
-            'authConfig', 'enabled', 'defaultTimeout', 'healthStatus',
-            'lastHealthCheck', 'created', 'updated',
+            'uuid',
+            'name',
+            'engineType',
+            'baseUrl',
+            'authType',
+            'authConfig',
+            'enabled',
+            'defaultTimeout',
+            'healthStatus',
+            'lastHealthCheck',
+            'created',
+            'updated',
         ];
 
         foreach ($object as $key => $value) {

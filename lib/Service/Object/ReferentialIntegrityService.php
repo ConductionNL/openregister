@@ -96,6 +96,7 @@ class ReferentialIntegrityService
      * Constructor for ReferentialIntegrityService.
      *
      * @param SchemaMapper       $schemaMapper       Schema data mapper.
+     * @param RegisterMapper     $registerMapper     Register data mapper.
      * @param ObjectEntityMapper $objectEntityMapper Object entity data mapper.
      * @param AuditTrailMapper   $auditTrailMapper   Audit trail mapper for integrity action logging.
      * @param LoggerInterface    $logger             Logger for debugging.
@@ -155,8 +156,8 @@ class ReferentialIntegrityService
         DeletionAnalysis $analysis,
         string $userId,
         string $cascadeSource,
-        ?string $organisationId = null,
-        ?string $triggerSchemaSlug = null
+        ?string $organisationId=null,
+        ?string $triggerSchemaSlug=null
     ): void {
         // 1. Apply SET_NULL targets first (objects survive with cleared reference).
         foreach ($analysis->nullifyTargets as $target) {
@@ -294,8 +295,8 @@ class ReferentialIntegrityService
             return;
         }
 
-        $this->relationIndex   = [];
-        $this->schemaCache     = [];
+        $this->relationIndex     = [];
+        $this->schemaCache       = [];
         $this->schemaRegisterMap = [];
 
         try {
@@ -314,7 +315,7 @@ class ReferentialIntegrityService
         // Build schema-to-register map by scanning magic table names.
         // Tables follow convention: openregister_table_{registerId}_{schemaId}.
         try {
-            $allRegisters = $this->registerMapper->findAll(
+            $allRegisters  = $this->registerMapper->findAll(
                 _rbac: false,
                 _multitenancy: false
             );
@@ -323,17 +324,17 @@ class ReferentialIntegrityService
                 $registerCache[(string) $register->getId()] = $register;
             }
 
-            $db     = \OC::$server->getDatabaseConnection();
-            $stmt   = $db->prepare(
-                "SELECT table_name FROM information_schema.tables "
-                . "WHERE table_name LIKE 'oc_openregister_table_%' AND table_schema = current_schema()"
-            );
+            $db = \OC::$server->getDatabaseConnection();
+            // phpcs:ignore Generic.Files.LineLength.MaxExceeded -- SQL query must stay as single string.
+            $sql  = "SELECT table_name FROM information_schema.tables WHERE table_name LIKE 'oc_openregister_table_%' AND table_schema = current_schema()";
+            $stmt = $db->prepare($sql);
             $stmt->execute();
             $tables = [];
-            while ($row = $stmt->fetch()) {
+            while (($row = $stmt->fetch()) !== false) {
                 // Strip oc_ prefix to match naming convention.
                 $tables[] = substr($row['table_name'], 3);
             }
+
             foreach ($tables as $tableName) {
                 // Parse: openregister_table_{registerId}_{schemaId}.
                 if (preg_match('/^openregister_table_(\d+)_(\d+)$/', $tableName, $m) === 1) {
@@ -351,7 +352,7 @@ class ReferentialIntegrityService
                 message: '[ReferentialIntegrity] Failed to build schema-register map',
                 context: ['error' => $e->getMessage()]
             );
-        }
+        }//end try
 
         foreach ($allSchemas as $schema) {
             $schemaId = (string) $schema->getId();
@@ -491,8 +492,8 @@ class ReferentialIntegrityService
     private function walkDeletionGraph(
         ObjectEntity $object,
         array &$visited,
-        array $chain = [],
-        int $depth = 0
+        array $chain=[],
+        int $depth=0
     ): DeletionAnalysis {
         // Cycle detection.
         $uuid = $object->getUuid();
@@ -575,8 +576,7 @@ class ReferentialIntegrityService
                         break;
 
                     case 'SET_NULL':
-                        if (
-                            $this->isRequiredProperty(
+                        if ($this->isRequiredProperty(
                                 schemaId: $dep['sourceSchemaId'],
                                 propertyName: $dep['property']
                             ) === true
@@ -607,8 +607,7 @@ class ReferentialIntegrityService
                         );
                         if ($defaultValue === null) {
                             // Falls back to SET_NULL → RESTRICT chain.
-                            if (
-                                $this->isRequiredProperty(
+                            if ($this->isRequiredProperty(
                                     schemaId: $dep['sourceSchemaId'],
                                     propertyName: $dep['property']
                                 ) === true
@@ -771,17 +770,18 @@ class ReferentialIntegrityService
      *
      * @return ObjectEntity[] Matching objects.
      */
+
     /**
      * Search a specific magic table for objects whose property column contains the target UUID.
      *
      * Queries the property column directly (not _relations JSONB), avoiding full-table scans.
      * Constructs minimal ObjectEntity objects from the results for use in cascade analysis.
      *
-     * @param Register $register    The register entity.
-     * @param Schema   $schema      The schema entity.
+     * @param Register $register     The register entity.
+     * @param Schema   $schema       The schema entity.
      * @param string   $propertyName The property holding the reference.
-     * @param string   $targetUuid  The UUID being referenced.
-     * @param bool     $isArray     Whether the property is an array type.
+     * @param string   $targetUuid   The UUID being referenced.
+     * @param bool     $isArray      Whether the property is an array type.
      *
      * @return ObjectEntity[] Matching objects.
      *
@@ -794,11 +794,11 @@ class ReferentialIntegrityService
         string $targetUuid,
         bool $isArray
     ): array {
-        $fullTableName = 'oc_openregister_table_' . $register->getId() . '_' . $schema->getId();
+        $fullTableName = 'oc_openregister_table_'.$register->getId().'_'.$schema->getId();
 
         // Convert camelCase property name to snake_case column name and quote it.
-        $columnName  = strtolower(preg_replace('/[A-Z]/', '_$0', $propertyName));
-        $quotedCol   = '"' . str_replace('"', '""', $columnName) . '"';
+        $columnName = strtolower(preg_replace('/[A-Z]/', '_$0', $propertyName));
+        $quotedCol  = '"'.str_replace('"', '""', $columnName).'"';
 
         $db         = \OC::$server->getDatabaseConnection();
         $platform   = $db->getDatabasePlatform();
@@ -842,18 +842,35 @@ class ReferentialIntegrityService
 
             $deleted = $row['_deleted'] ?? null;
             if ($deleted !== null && $deleted !== 'null') {
-                $decoded = is_string($deleted) ? json_decode($deleted, true) : $deleted;
-                $entity->setDeleted(is_array($decoded) ? $decoded : []);
+                if (is_string($deleted) === true) {
+                    $decoded = json_decode($deleted, true);
+                } else {
+                    $decoded = $deleted;
+                }
+
+                if (is_array($decoded) === true) {
+                    $entity->setDeleted($decoded);
+                } else {
+                    $entity->setDeleted([]);
+                }
             }
 
             // Set object with at least the property that matched.
             $entity->setObject([$propertyName => $row['_prop'] ?? $targetUuid]);
             $results[] = $entity;
-        }
+        }//end foreach
 
         return $results;
     }//end findReferencingInMagicTable()
 
+    /**
+     * Check whether a property is required by the given schema.
+     *
+     * @param string $schemaId     The schema identifier.
+     * @param string $propertyName The property name to check.
+     *
+     * @return bool True if the property is required.
+     */
     private function isRequiredProperty(string $schemaId, string $propertyName): bool
     {
         $schema = $this->schemaCache[$schemaId] ?? null;
@@ -1051,9 +1068,9 @@ class ReferentialIntegrityService
      * once per group, and calls ObjectEntityMapper::deleteObjects() in bulk.
      * Falls back to individual deletion for targets without register info.
      *
-     * @param array       $cascadeTargets   The cascade targets from DeletionAnalysis (already reversed).
-     * @param string      $userId           The user performing the deletion.
-     * @param string      $cascadeSource    The UUID of the root object triggering the cascade.
+     * @param array       $cascadeTargets    The cascade targets from DeletionAnalysis (already reversed).
+     * @param string      $userId            The user performing the deletion.
+     * @param string      $cascadeSource     The UUID of the root object triggering the cascade.
      * @param string|null $triggerSchemaSlug Schema slug of the trigger object for logging.
      *
      * @return void
@@ -1073,13 +1090,13 @@ class ReferentialIntegrityService
             $schemaId   = $target['schema'] ?? null;
 
             if ($registerId !== null && $schemaId !== null) {
-                $groupKey = $registerId . '::' . $schemaId;
+                $groupKey = $registerId.'::'.$schemaId;
                 $groups[$groupKey]['registerId'] = $registerId;
                 $groups[$groupKey]['schemaId']   = $schemaId;
                 $groups[$groupKey]['targets'][]  = $target;
             } else {
                 // Fallback: targets without register info get their own single-item group.
-                $groups['fallback_' . $target['objectUuid']] = [
+                $groups['fallback_'.$target['objectUuid']] = [
                     'registerId' => $registerId,
                     'schemaId'   => $schemaId,
                     'targets'    => [$target],

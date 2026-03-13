@@ -989,7 +989,7 @@ class ObjectEntityMapper extends QBMapper
                     context: ['file' => __FILE__, 'line' => __LINE__, 'count' => count($uuids)]
                 );
 
-                $magicMapper = \OC::$server->get(MagicMapper::class);
+                $magicMapper  = \OC::$server->get(MagicMapper::class);
                 $deletedCount = $magicMapper->deleteObjectsByUuids(
                     register: $register,
                     schema: $schema,

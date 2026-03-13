@@ -76,8 +76,8 @@ class McpProtocolService
     /**
      * McpProtocolService constructor
      *
-     * @param ICacheFactory  $cacheFactory Nextcloud cache factory
-     * @param ISecureRandom  $secureRandom Secure random generator
+     * @param ICacheFactory   $cacheFactory Nextcloud cache factory
+     * @param ISecureRandom   $secureRandom Secure random generator
      * @param LoggerInterface $logger       Logger
      */
     public function __construct(
@@ -113,13 +113,12 @@ class McpProtocolService
                     'listChanged' => false,
                 ],
             ],
-            'serverInfo' => [
+            'serverInfo'      => [
                 'name'    => self::SERVER_NAME,
                 'version' => self::SERVER_VERSION,
             ],
-            'instructions' => 'OpenRegister is a flexible data register platform for Nextcloud. '
-                .'Use tools to manage registers, schemas, and objects. '
-                .'Use resources to browse available data.',
+            // phpcs:ignore Generic.Files.LineLength.MaxExceeded
+            'instructions'    => 'OpenRegister is a flexible data register platform for Nextcloud. Use tools to manage registers, schemas, and objects. Use resources to browse available data.',
         ];
 
         return [
