@@ -4599,11 +4599,12 @@ class MagicMapper
      *
      * This method provides ObjectEntity compatibility for the UnifiedObjectMapper.
      *
-     * @param string|int $identifier   Object identifier (ID, UUID, slug, or URI).
-     * @param Register   $register     The register context.
-     * @param Schema     $schema       The schema context.
-     * @param bool       $rbac         Whether to apply RBAC.
-     * @param bool       $multitenancy Whether to apply multi-tenancy.
+     * @param string|int $identifier     Object identifier (ID, UUID, slug, or URI).
+     * @param Register   $register       The register context.
+     * @param Schema     $schema         The schema context.
+     * @param bool       $rbac           Whether to apply RBAC.
+     * @param bool       $multitenancy   Whether to apply multi-tenancy.
+     * @param bool       $includeDeleted Whether to include soft-deleted objects.
      *
      * @throws \OCP\AppFramework\Db\DoesNotExistException If object not found.
      * @throws \OCP\AppFramework\Db\MultipleObjectsReturnedException If multiple objects found.

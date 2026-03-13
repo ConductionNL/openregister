@@ -541,4 +541,46 @@ class LlmSettingsControllerTest extends TestCase
         $this->assertEquals(500, $result->getStatus());
         $this->assertFalse($result->getData()['success']);
     }
+
+    // =========================================================================
+    // getOllamaModels() — curl execution paths
+    // =========================================================================
+
+    /**
+     * Test getOllamaModels with settings returned — curl connects to
+     * unreachable host, covering the curl error path (lines 336-363).
+     */
+    public function testGetOllamaModelsCurlErrorPath(): void
+    {
+        $this->settingsService->method('getLLMSettingsOnly')->willReturn([
+            'ollamaConfig' => ['url' => 'http://192.0.2.1:19999'],
+        ]);
+
+        $result = $this->controller->getOllamaModels();
+
+        $this->assertEquals(200, $result->getStatus());
+        $data = $result->getData();
+        $this->assertFalse($data['success']);
+        $this->assertStringContainsString('Failed to connect to Ollama', $data['error']);
+        $this->assertEmpty($data['models']);
+    }
+
+    /**
+     * Test getOllamaModels with URL returning non-200 HTTP code
+     * (covers HTTP status check path, lines 366-373).
+     */
+    public function testGetOllamaModelsHttpNon200(): void
+    {
+        $this->settingsService->method('getLLMSettingsOnly')->willReturn([
+            'ollamaConfig' => ['url' => 'http://localhost:80'],
+        ]);
+
+        $result = $this->controller->getOllamaModels();
+
+        $this->assertEquals(200, $result->getStatus());
+        $data = $result->getData();
+        $this->assertFalse($data['success']);
+        $this->assertEmpty($data['models']);
+        $this->assertArrayHasKey('error', $data);
+    }
 }

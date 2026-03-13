@@ -108,7 +108,7 @@ class RelationHandler
             }
         );
 
-        $filtersWithSub = array_intersect_key(array: $filters, array2: array_flip(array: $filterKeysWithSub));
+        $filtersWithSub = array_intersect_key($filters, array_flip($filterKeysWithSub));
 
         if (empty($filtersWithSub) === true) {
             return [];
@@ -169,7 +169,7 @@ class RelationHandler
             }
 
             if ($ids !== []) {
-                $ids = array_intersect(array1: $ids, array2: $foundIds);
+                $ids = array_intersect($ids, $foundIds);
             }
 
             foreach (array_keys($value) as $k) {
@@ -265,7 +265,7 @@ class RelationHandler
 
                     if (is_array($value) === true) {
                         // **PERFORMANCE LIMIT**: Limit array relationships per object.
-                        $limitedArray = array_slice(array: $value, offset: 0, length: 10);
+                        $limitedArray = array_slice($value, 0, 10);
                         // Max 10 relationships per array.
                         foreach ($limitedArray as $id) {
                             if (empty($id) === false && is_string($id) === true) {
@@ -359,13 +359,13 @@ class RelationHandler
                     'reason'    => 'prevent_timeout',
                 ]
             );
-            $relationshipIds = array_slice(array: $relationshipIds, offset: 0, length: 200);
+            $relationshipIds = array_slice($relationshipIds, 0, 200);
         }
 
         $startTime = microtime(true);
         $batchSize = 50;
         // Load 50 relationships at a time.
-        $batches       = array_chunk(array: $relationshipIds, length: $batchSize);
+        $batches       = array_chunk($relationshipIds, $batchSize);
         $loadedObjects = [];
 
         $this->logger->info(

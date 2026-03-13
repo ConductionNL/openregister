@@ -218,4 +218,188 @@ class TaskServiceTest extends TestCase
 
         $service->deleteTask('1', 'task.ics');
     }
+
+    // ── createTask with due date ──
+
+    public function testCreateTaskWithDueDate(): void
+    {
+        [$service, $calDavBackend] = $this->createServiceWithBackend();
+        $this->mockUserWithCalendar('testuser', $calDavBackend);
+        $calDavBackend->expects($this->once())->method('createCalendarObject');
+
+        $result = $service->createTask(
+            1, 2, 'uuid-123', 'My Object',
+            [
+                'summary'     => 'Task with due',
+                'description' => 'Some description',
+                'due'         => '2024-12-31 12:00:00',
+                'priority'    => 5,
+                'status'      => 'IN-PROCESS',
+            ]
+        );
+
+        $this->assertIsArray($result);
+        $this->assertSame('Task with due', $result['summary']);
+        $this->assertSame('uuid-123', $result['objectUuid']);
+        $this->assertSame(1, $result['registerId']);
+        $this->assertSame(2, $result['schemaId']);
+        $this->assertSame('in-process', $result['status']);
+    }
+
+    // ── createTask with special characters in summary ──
+
+    public function testCreateTaskEscapesSpecialCharacters(): void
+    {
+        [$service, $calDavBackend] = $this->createServiceWithBackend();
+        $this->mockUserWithCalendar('testuser', $calDavBackend);
+        $calDavBackend->expects($this->once())->method('createCalendarObject');
+
+        $result = $service->createTask(
+            1, 2, 'uuid-456', 'Title, with; special\chars',
+            ['summary' => 'Task, with; special\nchars']
+        );
+
+        $this->assertIsArray($result);
+        // Summary should be returned (after ical round-trip).
+        $this->assertStringContainsString('Task', $result['summary']);
+    }
+
+    // ── updateTask sets COMPLETED timestamp ──
+
+    public function testUpdateTaskSetsCompletedTimestamp(): void
+    {
+        [$service, $calDavBackend] = $this->createServiceWithBackend();
+
+        $calendarData = "BEGIN:VCALENDAR\r\nVERSION:2.0\r\nBEGIN:VTODO\r\nUID:abc\r\n"
+            . "SUMMARY:Task\r\nSTATUS:NEEDS-ACTION\r\nPRIORITY:0\r\n"
+            . "DTSTAMP:20240101T000000Z\r\n"
+            . "X-OPENREGISTER-REGISTER:1\r\nX-OPENREGISTER-SCHEMA:2\r\n"
+            . "X-OPENREGISTER-OBJECT:uuid-123\r\n"
+            . "END:VTODO\r\nEND:VCALENDAR\r\n";
+
+        $calDavBackend->method('getCalendarObject')->willReturn([
+            'calendardata' => $calendarData,
+        ]);
+        $calDavBackend->expects($this->once())->method('updateCalendarObject');
+
+        $result = $service->updateTask('1', 'task.ics', ['status' => 'COMPLETED']);
+
+        $this->assertSame('completed', $result['status']);
+        $this->assertNotNull($result['completed']);
+    }
+
+    // ── updateTask with due date removal ──
+
+    public function testUpdateTaskRemovesDueDate(): void
+    {
+        [$service, $calDavBackend] = $this->createServiceWithBackend();
+
+        $calendarData = "BEGIN:VCALENDAR\r\nVERSION:2.0\r\nBEGIN:VTODO\r\nUID:abc\r\n"
+            . "SUMMARY:Task\r\nSTATUS:NEEDS-ACTION\r\nPRIORITY:0\r\n"
+            . "DUE:20241231T120000Z\r\n"
+            . "DTSTAMP:20240101T000000Z\r\n"
+            . "X-OPENREGISTER-REGISTER:1\r\nX-OPENREGISTER-SCHEMA:2\r\n"
+            . "X-OPENREGISTER-OBJECT:uuid-123\r\n"
+            . "END:VTODO\r\nEND:VCALENDAR\r\n";
+
+        $calDavBackend->method('getCalendarObject')->willReturn([
+            'calendardata' => $calendarData,
+        ]);
+        $calDavBackend->expects($this->once())->method('updateCalendarObject');
+
+        $result = $service->updateTask('1', 'task.ics', ['due' => '']);
+
+        $this->assertIsArray($result);
+        // Due should be removed.
+        $this->assertNull($result['due']);
+    }
+
+    // ── updateTask sets new due date ──
+
+    public function testUpdateTaskSetsDueDate(): void
+    {
+        [$service, $calDavBackend] = $this->createServiceWithBackend();
+
+        $calendarData = "BEGIN:VCALENDAR\r\nVERSION:2.0\r\nBEGIN:VTODO\r\nUID:abc\r\n"
+            . "SUMMARY:Task\r\nSTATUS:NEEDS-ACTION\r\nPRIORITY:0\r\n"
+            . "DTSTAMP:20240101T000000Z\r\n"
+            . "X-OPENREGISTER-REGISTER:1\r\nX-OPENREGISTER-SCHEMA:2\r\n"
+            . "X-OPENREGISTER-OBJECT:uuid-123\r\n"
+            . "END:VTODO\r\nEND:VCALENDAR\r\n";
+
+        $calDavBackend->method('getCalendarObject')->willReturn([
+            'calendardata' => $calendarData,
+        ]);
+        $calDavBackend->expects($this->once())->method('updateCalendarObject');
+
+        $result = $service->updateTask('1', 'task.ics', ['due' => '2025-06-15 10:00:00']);
+
+        $this->assertNotNull($result['due']);
+    }
+
+    // ── getTasksForObject skips objects with missing calendardata ──
+
+    public function testGetTasksForObjectSkipsEmptyCalendarData(): void
+    {
+        [$service, $calDavBackend] = $this->createServiceWithBackend();
+        $this->mockUserWithCalendar('testuser', $calDavBackend);
+
+        $calDavBackend->method('getCalendarObjects')->willReturn([
+            ['uri' => 'obj1.ics'],
+            ['uri' => 'obj2.ics'],
+        ]);
+        // First object has no calendardata.
+        $calDavBackend->method('getCalendarObject')->willReturnOnConsecutiveCalls(
+            ['calendardata' => ''],
+            null
+        );
+
+        $result = $service->getTasksForObject('some-uuid');
+        $this->assertSame([], $result);
+    }
+
+    // ── getTasksForObject skips non-matching UUIDs ──
+
+    public function testGetTasksForObjectSkipsNonMatchingUuid(): void
+    {
+        [$service, $calDavBackend] = $this->createServiceWithBackend();
+        $this->mockUserWithCalendar('testuser', $calDavBackend);
+
+        $calendarData = "BEGIN:VCALENDAR\r\nVERSION:2.0\r\nBEGIN:VTODO\r\nUID:abc\r\n"
+            . "SUMMARY:Task\r\nSTATUS:NEEDS-ACTION\r\nPRIORITY:0\r\n"
+            . "X-OPENREGISTER-REGISTER:1\r\nX-OPENREGISTER-SCHEMA:2\r\n"
+            . "X-OPENREGISTER-OBJECT:different-uuid\r\n"
+            . "END:VTODO\r\nEND:VCALENDAR\r\n";
+
+        $calDavBackend->method('getCalendarObjects')->willReturn([['uri' => 'abc.ics']]);
+        $calDavBackend->method('getCalendarObject')->willReturn([
+            'calendardata' => $calendarData,
+        ]);
+
+        $result = $service->getTasksForObject('search-uuid');
+        $this->assertSame([], $result);
+    }
+
+    // ── calendar with object-style component set ──
+
+    public function testFindUserCalendarWithArrayComponentSet(): void
+    {
+        [$service, $calDavBackend] = $this->createServiceWithBackend();
+
+        $user = $this->createMock(\OCP\IUser::class);
+        $user->method('getUID')->willReturn('testuser');
+        $this->userSession->method('getUser')->willReturn($user);
+
+        $calDavBackend->method('getCalendarsForUser')->willReturn([
+            [
+                'id'  => 10,
+                'uri' => 'personal',
+                '{urn:ietf:params:xml:ns:caldav}supported-calendar-component-set' => ['VEVENT', 'VTODO'],
+            ],
+        ]);
+        $calDavBackend->method('getCalendarObjects')->willReturn([]);
+
+        $result = $service->getTasksForObject('any-uuid');
+        $this->assertSame([], $result);
+    }
 }

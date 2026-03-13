@@ -302,4 +302,148 @@ class MigrationServiceTest extends TestCase
 
         $this->service->migrateToMagicTable($register, $schema, 100, true);
     }
+
+    public function testMigrateToMagicTableActualMigration(): void
+    {
+        $register = $this->createRegister(1);
+        $schema = $this->createSchema(2);
+        $obj = $this->createObjectEntity(1, 'uuid-1');
+
+        $this->objectEntityMapper->method('countAll')->willReturn(1);
+        $this->objectEntityMapper->method('findAllDirectBlobStorage')
+            ->willReturnOnConsecutiveCalls([$obj], []);
+        $this->objectEntityMapper->expects($this->once())->method('deleteEntity');
+
+        $this->magicMapper->method('findInRegisterSchemaTable')
+            ->willThrowException(new DoesNotExistException('not found'));
+        $this->magicMapper->expects($this->once())->method('insertObjectEntity');
+
+        $report = $this->service->migrateToMagicTable($register, $schema);
+
+        $this->assertFalse($report['dryRun']);
+        $this->assertSame(1, $report['migrated']);
+        $this->assertSame(0, $report['failed']);
+    }
+
+    public function testMigrateToBlobStorageActualMigration(): void
+    {
+        $register = $this->createRegister(1);
+        $schema = $this->createSchema(2);
+        $obj = $this->createObjectEntity(1, 'uuid-1');
+        $magicObj = $this->createObjectEntity(1, 'uuid-1');
+
+        $this->magicMapper->method('existsTableForRegisterSchema')->willReturn(true);
+        $this->magicMapper->method('countObjectsInRegisterSchemaTable')->willReturn(1);
+        $this->magicMapper->method('searchObjectsInRegisterSchemaTable')
+            ->willReturnOnConsecutiveCalls([$obj], []);
+        $this->magicMapper->method('findInRegisterSchemaTable')->willReturn($magicObj);
+        $this->magicMapper->expects($this->once())->method('deleteObjectEntity');
+
+        $this->objectEntityMapper->method('findDirectBlobStorage')
+            ->willThrowException(new DoesNotExistException('not found'));
+        $this->objectEntityMapper->expects($this->once())->method('insertEntity');
+
+        $report = $this->service->migrateToBlobStorage($register, $schema);
+
+        $this->assertSame(1, $report['migrated']);
+        $this->assertSame(0, $report['failed']);
+    }
+
+    public function testMigrateToBlobStorageHandlesFailure(): void
+    {
+        $register = $this->createRegister(1);
+        $schema = $this->createSchema(2);
+        $obj = $this->createObjectEntity(1, 'uuid-1');
+
+        $this->magicMapper->method('existsTableForRegisterSchema')->willReturn(true);
+        $this->magicMapper->method('countObjectsInRegisterSchemaTable')->willReturn(1);
+        $this->magicMapper->method('searchObjectsInRegisterSchemaTable')
+            ->willReturnOnConsecutiveCalls([$obj], []);
+
+        $this->objectEntityMapper->method('findDirectBlobStorage')
+            ->willThrowException(new DoesNotExistException('not found'));
+        $this->objectEntityMapper->method('insertEntity')
+            ->willThrowException(new \Exception('Insert failed'));
+
+        $report = $this->service->migrateToBlobStorage($register, $schema);
+
+        $this->assertSame(1, $report['failed']);
+        $this->assertSame(0, $report['migrated']);
+        $this->assertNotEmpty($report['errors']);
+        $this->assertSame('uuid-1', $report['errors'][0]['uuid']);
+    }
+
+    public function testGetStorageStatusWithMagicTableExists(): void
+    {
+        $register = $this->createRegister(1);
+        $schema = $this->createSchema(2);
+
+        $this->objectEntityMapper->method('countAll')->willReturn(0);
+        $this->magicMapper->method('existsTableForRegisterSchema')->willReturn(true);
+        $this->magicMapper->method('countObjectsInRegisterSchemaTable')->willReturn(15);
+
+        $result = $this->service->getStorageStatus($register, $schema);
+
+        $this->assertTrue($result['magicTable']['exists']);
+        $this->assertSame(15, $result['magicTable']['count']);
+    }
+
+    public function testGetStorageStatusRegisterSchemaIds(): void
+    {
+        $register = $this->createRegister(5);
+        $schema = $this->createSchema(9);
+
+        $this->objectEntityMapper->method('countAll')->willReturn(3);
+        $this->magicMapper->method('existsTableForRegisterSchema')->willReturn(false);
+
+        $result = $this->service->getStorageStatus($register, $schema);
+
+        $this->assertSame(5, $result['register']['id']);
+        $this->assertSame(9, $result['schema']['id']);
+        $this->assertSame('test-register', $result['register']['slug']);
+        $this->assertSame('test-schema', $result['schema']['slug']);
+    }
+
+    public function testResolveRegisterAndSchemaThrowsOnMissingRegister(): void
+    {
+        $this->registerMapper->method('find')
+            ->willThrowException(new \Exception('Register not found'));
+
+        $this->expectException(\Exception::class);
+        $this->expectExceptionMessage('Register not found');
+
+        $this->service->resolveRegisterAndSchema(999, 1);
+    }
+
+    public function testMigrateToMagicTableBreaksLoopWhenNoBatchReturned(): void
+    {
+        $register = $this->createRegister(1);
+        $schema = $this->createSchema(2);
+
+        $this->objectEntityMapper->method('countAll')->willReturn(5);
+        // First batch returns empty immediately — loop should break.
+        $this->objectEntityMapper->method('findAllDirectBlobStorage')
+            ->willReturn([]);
+
+        $report = $this->service->migrateToMagicTable($register, $schema);
+
+        $this->assertSame(0, $report['migrated']);
+        $this->assertSame(0, $report['failed']);
+    }
+
+    public function testMigrateToBlobStorageBreaksLoopWhenNoBatchReturned(): void
+    {
+        $register = $this->createRegister(1);
+        $schema = $this->createSchema(2);
+
+        $this->magicMapper->method('existsTableForRegisterSchema')->willReturn(true);
+        $this->magicMapper->method('countObjectsInRegisterSchemaTable')->willReturn(5);
+        $this->magicMapper->method('searchObjectsInRegisterSchemaTable')
+            ->willReturn([]);
+
+        $report = $this->service->migrateToBlobStorage($register, $schema);
+
+        $this->assertSame(0, $report['migrated']);
+        $this->assertSame(0, $report['failed']);
+    }
 }

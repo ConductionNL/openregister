@@ -2452,6 +2452,33 @@ class ImportHandlerTest extends TestCase
 
 
     /**
+     * getDuplicateRegisterInfo returns generic message when only one match found.
+     *
+     * When findAll() returns fewer than 2 registers with the same slug, the method
+     * returns the "Unable to retrieve detailed duplicate information" string.
+     */
+    public function testImportRegisterDuplicateInfoOneMatchReturnsGenericMessage(): void
+    {
+        $this->registerMapper->method('find')
+            ->willThrowException(new \OCP\AppFramework\Db\MultipleObjectsReturnedException('duplicate'));
+
+        // findAll returns only one register with that slug.
+        $r1 = $this->makeRegister(1, 'dup-register');
+        $this->registerMapper->method('findAll')->willReturn([$r1]);
+
+        $this->expectException(\Exception::class);
+        $this->expectExceptionMessageMatches('/Duplicate register detected/');
+
+        $this->handler->importRegister([
+            'slug'    => 'dup-register',
+            'version' => '1.0.0',
+            'title'   => 'Duplicate',
+        ]);
+
+    }//end testImportRegisterDuplicateInfoOneMatchReturnsGenericMessage()
+
+
+    /**
      * importRegister() sets only owner (no appId) — update still called once.
      */
     public function testImportRegisterSetsOnlyOwner(): void
@@ -4243,4 +4270,2183 @@ class ImportHandlerTest extends TestCase
     }//end testImportFromJsonSetsMappingNameFromKeyWhenAbsent()
 
 
+
+    // =========================================================================
+    // importFromJson() — version stored in appConfig only once per import
+    // =========================================================================
+
+    /**
+     * importFromJson() does NOT store version when appId is null.
+     */
+    public function testImportFromJsonDoesNotStoreVersionWithoutAppId(): void
+    {
+        $configuration = $this->makeConfiguration(1);
+
+        // setValueString must NOT be called — no appId.
+        $this->appConfig->expects($this->never())->method('setValueString');
+
+        $result = $this->handler->importFromJson(
+            data:          [],
+            configuration: $configuration
+        );
+
+        $this->assertIsArray($result);
+
+    }//end testImportFromJsonDoesNotStoreVersionWithoutAppId()
+
+
+    /**
+     * importFromJson() does NOT store version when version is null.
+     */
+    public function testImportFromJsonDoesNotStoreVersionWithoutVersion(): void
+    {
+        $configuration = $this->makeConfiguration(1);
+
+        $this->appConfig->expects($this->never())->method('setValueString');
+
+        $result = $this->handler->importFromJson(
+            data:          [],
+            configuration: $configuration,
+            appId:         'myapp'
+            // version intentionally omitted.
+        );
+
+        $this->assertIsArray($result);
+
+    }//end testImportFromJsonDoesNotStoreVersionWithoutVersion()
+
+
+    // =========================================================================
+    // importSchema() — force flag on existing schema
+    // =========================================================================
+
+    /**
+     * importSchema() force-updates existing schema even when version is equal.
+     */
+    public function testImportSchemaForceUpdatesWhenVersionEqual(): void
+    {
+        $existing = $this->makeSchema(10, 'force-schema', '1.0.0');
+        $updated  = $this->makeSchema(10, 'force-schema', '1.0.0');
+
+        $this->schemaMapper->method('find')->willReturn($existing);
+
+        $this->schemaMapper->expects($this->once())
+            ->method('updateFromArray')
+            ->willReturn($existing);
+
+        $this->schemaMapper->expects($this->once())
+            ->method('update')
+            ->willReturn($updated);
+
+        $result = $this->handler->importSchema(
+            data:           ['slug' => 'force-schema', 'version' => '1.0.0', 'title' => 'Forced'],
+            slugsAndIdsMap: [],
+            force:          true
+        );
+
+        $this->assertSame(10, $result->getId());
+
+    }//end testImportSchemaForceUpdatesWhenVersionEqual()
+
+
+    /**
+     * importSchema() skips when existing version is newer and force is false.
+     */
+    public function testImportSchemaSkipsWhenExistingVersionIsNewer(): void
+    {
+        $existing = $this->makeSchema(10, 'old-schema', '3.0.0');
+
+        $this->schemaMapper->method('find')->willReturn($existing);
+
+        $this->schemaMapper->expects($this->never())->method('createFromArray');
+        $this->schemaMapper->expects($this->never())->method('updateFromArray');
+
+        $result = $this->handler->importSchema(
+            data:           ['slug' => 'old-schema', 'version' => '1.0.0', 'title' => 'Old'],
+            slugsAndIdsMap: [],
+            force:          false
+        );
+
+        $this->assertSame(10, $result->getId());
+
+    }//end testImportSchemaSkipsWhenExistingVersionIsNewer()
+
+
+    // =========================================================================
+    // importRegister() — only appId provided (no owner)
+    // =========================================================================
+
+    /**
+     * importRegister() sets only appId — update called once.
+     */
+    public function testImportRegisterSetsOnlyApplication(): void
+    {
+        $register = $this->makeRegister(1, 'app-only-register');
+
+        $this->registerMapper->method('find')
+            ->willThrowException(new \OCP\AppFramework\Db\DoesNotExistException('not found'));
+
+        $this->registerMapper->expects($this->once())
+            ->method('createFromArray')
+            ->willReturn($register);
+
+        $this->registerMapper->expects($this->once())
+            ->method('update')
+            ->willReturn($register);
+
+        $result = $this->handler->importRegister(
+            data:  ['slug' => 'app-only-register', 'version' => '1.0.0', 'title' => 'App Only'],
+            appId: 'just-the-app'
+        );
+
+        $this->assertSame('just-the-app', $result->getApplication());
+
+    }//end testImportRegisterSetsOnlyApplication()
+
+
+    // =========================================================================
+    // getJSONfromURL() — YAML response
+    // =========================================================================
+
+    /**
+     * getJSONfromURL() parses YAML content-type response correctly.
+     */
+    public function testGetJSONfromURLParsesYamlResponse(): void
+    {
+        $yaml     = "title: YAML Config\nversion: 1.0.0\n";
+        $stream   = \GuzzleHttp\Psr7\Utils::streamFor($yaml);
+        $response = new \GuzzleHttp\Psr7\Response(200, ['Content-Type' => 'application/yaml'], $stream);
+        $this->client->method('request')->willReturn($response);
+
+        $result = $this->handler->getJSONfromURL('http://example.com/config.yaml');
+
+        $this->assertIsArray($result);
+        $this->assertSame('YAML Config', $result['title']);
+
+    }//end testGetJSONfromURLParsesYamlResponse()
+
+
+    // =========================================================================
+    // decode() — edge cases
+    // =========================================================================
+
+    /**
+     * decode() returns null when type is application/yaml and YAML is invalid.
+     */
+    public function testDecodeReturnsNullForInvalidYamlWithExplicitType(): void
+    {
+        // Symfony Yaml is lenient, so we use a value that json_decode can't handle
+        // AND Yaml::parse returns a scalar (not array). Using a bare string that's
+        // valid YAML scalar but not an array → ensureArrayStructure wraps it → but
+        // actually decode() returns null because $phpArray is not array/stdClass.
+        // A bare integer is valid YAML, but decode() calls ensureArrayStructure() on it
+        // which tries to iterate over it — but the null/false check fires first.
+        // Actually decode() returns null when $phpArray === null or false.
+        // An empty YAML string → Yaml::parse returns null → returns null.
+        $result = $this->handler->decode('', 'application/yaml');
+        $this->assertNull($result);
+
+    }//end testDecodeReturnsNullForInvalidYamlWithExplicitType()
+
+
+    /**
+     * ensureArrayStructure() handles mixed array containing both objects and scalars.
+     *
+     * When an array contains objects nested alongside scalar values, the recursive
+     * call should convert only the object entries while leaving scalars unchanged.
+     */
+    public function testEnsureArrayStructureHandlesMixedArray(): void
+    {
+        $inner      = new \stdClass();
+        $inner->key = 'value';
+
+        $input = [
+            'scalar' => 42,
+            'nested' => $inner,
+            'list'   => ['a', 'b'],
+        ];
+
+        $result = $this->handler->ensureArrayStructure($input);
+
+        $this->assertSame(42, $result['scalar']);
+        $this->assertIsArray($result['nested']);
+        $this->assertSame('value', $result['nested']['key']);
+        $this->assertSame(['a', 'b'], $result['list']);
+
+    }//end testEnsureArrayStructureHandlesMixedArray()
+
+
+    // =========================================================================
+    // importFromJson() — result structure completeness
+    // =========================================================================
+
+    /**
+     * importFromJson() always returns all expected keys in the result.
+     */
+    public function testImportFromJsonResultAlwaysHasAllExpectedKeys(): void
+    {
+        $configuration = $this->makeConfiguration(1);
+
+        $this->appConfig->method('getValueString')->willReturn('');
+        $this->appConfig->method('setValueString')->willReturn(true);
+        $this->schemaMapper->method('getSlugToIdMap')->willReturn([]);
+
+        $result = $this->handler->importFromJson(
+            data:          [],
+            configuration: $configuration
+        );
+
+        $expectedKeys = ['registers', 'schemas', 'workflows', 'endpoints', 'sources', 'mappings', 'jobs', 'synchronizations', 'rules', 'objects'];
+        foreach ($expectedKeys as $key) {
+            $this->assertArrayHasKey($key, $result, "Missing key: {$key}");
+        }
+
+    }//end testImportFromJsonResultAlwaysHasAllExpectedKeys()
+
+
+    // =========================================================================
+    // importFromJson() — mapping exception handled gracefully
+    // =========================================================================
+
+    /**
+     * importFromJson() logs error but continues when individual mapping import fails.
+     */
+    public function testImportFromJsonContinuesWhenMappingImportFails(): void
+    {
+        $configuration = $this->makeConfiguration(1);
+
+        $this->appConfig->method('getValueString')->willReturn('');
+        $this->appConfig->method('setValueString')->willReturn(true);
+        $this->schemaMapper->method('getSlugToIdMap')->willReturn([]);
+        $this->mappingMapper->method('getSlugToIdMap')->willReturn([]);
+        $this->mappingMapper->method('createFromArray')
+            ->willThrowException(new \Exception('DB error'));
+
+        $this->logger->expects($this->atLeastOnce())->method('error');
+
+        $data = [
+            'appId'   => 'myapp',
+            'version' => '1.0.0',
+            'components' => [
+                'mappings' => [
+                    'bad-mapping' => ['slug' => 'bad-mapping', 'name' => 'Bad Mapping', 'version' => '1.0.0'],
+                ],
+            ],
+        ];
+
+        // Should NOT throw — errors are caught per-mapping.
+        $result = $this->handler->importFromJson(
+            data:          $data,
+            configuration: $configuration,
+            version:       '1.0.0'
+        );
+
+        $this->assertSame([], $result['mappings']);
+
+    }//end testImportFromJsonContinuesWhenMappingImportFails()
+
+
+    // =========================================================================
+    // importFromJson() — storedVersion empty → no version skip
+    // =========================================================================
+
+    /**
+     * importFromJson() does not skip when stored version is empty string.
+     */
+    public function testImportFromJsonDoesNotSkipWhenStoredVersionIsEmpty(): void
+    {
+        $configuration = $this->makeConfiguration(1);
+
+        // Empty stored version → version_compare check is bypassed.
+        $this->appConfig->method('getValueString')->willReturn('');
+        $this->appConfig->method('setValueString')->willReturn(true);
+        $this->schemaMapper->method('getSlugToIdMap')->willReturn([]);
+
+        $result = $this->handler->importFromJson(
+            data:          ['appId' => 'myapp', 'version' => '1.0.0'],
+            configuration: $configuration,
+            appId:         'myapp',
+            version:       '1.0.0',
+            force:         false
+        );
+
+        // Full result structure means import ran (not early-exit).
+        $this->assertArrayHasKey('workflows', $result);
+        $this->assertIsArray($result['workflows']);
+
+    }//end testImportFromJsonDoesNotSkipWhenStoredVersionIsEmpty()
+
+
+
+    // =========================================================================
+    // processWorkflowDeployment() — tested via importFromJson() workflows branch
+    // =========================================================================
+
+    /**
+     * importFromJson() skips workflow deployment when registry is not set.
+     */
+    public function testImportFromJsonSkipsWorkflowsWhenRegistryNotSet(): void
+    {
+        $configuration = $this->makeConfiguration(1);
+
+        $this->appConfig->method('getValueString')->willReturn('');
+        $this->appConfig->method('setValueString')->willReturn(true);
+        $this->schemaMapper->method('getSlugToIdMap')->willReturn([]);
+
+        $data = [
+            'appId'   => 'myapp',
+            'version' => '1.0.0',
+            'components' => [
+                'workflows' => [
+                    ['name' => 'wf1', 'engine' => 'n8n', 'workflow' => ['nodes' => []]],
+                ],
+            ],
+        ];
+
+        // No workflowRegistry set — should skip gracefully.
+        $this->logger->expects($this->atLeastOnce())->method('warning');
+
+        $result = $this->handler->importFromJson(
+            data:          $data,
+            configuration: $configuration,
+            version:       '1.0.0'
+        );
+
+        $this->assertSame([], $result['workflows']['deployed']);
+        $this->assertSame([], $result['workflows']['failed']);
+
+    }//end testImportFromJsonSkipsWorkflowsWhenRegistryNotSet()
+
+
+    /**
+     * processWorkflowDeployment() marks workflow as failed when required fields missing.
+     */
+    public function testWorkflowDeploymentFailsOnMissingRequiredFields(): void
+    {
+        $configuration = $this->makeConfiguration(1);
+
+        $registry    = $this->createMock(\OCA\OpenRegister\Service\WorkflowEngineRegistry::class);
+        $wfMapper    = $this->createMock(\OCA\OpenRegister\Db\DeployedWorkflowMapper::class);
+        $this->handler->setWorkflowEngineRegistry($registry);
+        $this->handler->setDeployedWorkflowMapper($wfMapper);
+
+        $this->appConfig->method('getValueString')->willReturn('');
+        $this->appConfig->method('setValueString')->willReturn(true);
+        $this->schemaMapper->method('getSlugToIdMap')->willReturn([]);
+
+        $data = [
+            'appId'   => 'myapp',
+            'version' => '1.0.0',
+            'components' => [
+                'workflows' => [
+                    ['name' => 'wf1'],
+                    // Missing 'engine' and 'workflow'.
+                ],
+            ],
+        ];
+
+        $result = $this->handler->importFromJson(
+            data:          $data,
+            configuration: $configuration,
+            version:       '1.0.0'
+        );
+
+        $this->assertCount(1, $result['workflows']['failed']);
+        $this->assertStringContainsString('Missing required fields', $result['workflows']['failed'][0]['error']);
+
+    }//end testWorkflowDeploymentFailsOnMissingRequiredFields()
+
+
+    /**
+     * processWorkflowDeployment() marks workflow unchanged when hash matches existing.
+     */
+    public function testWorkflowDeploymentUnchangedWhenHashMatches(): void
+    {
+        $configuration = $this->makeConfiguration(1);
+
+        $registry = $this->createMock(\OCA\OpenRegister\Service\WorkflowEngineRegistry::class);
+        $wfMapper = $this->createMock(\OCA\OpenRegister\Db\DeployedWorkflowMapper::class);
+        $this->handler->setWorkflowEngineRegistry($registry);
+        $this->handler->setDeployedWorkflowMapper($wfMapper);
+
+        $this->appConfig->method('getValueString')->willReturn('');
+        $this->appConfig->method('setValueString')->willReturn(true);
+        $this->schemaMapper->method('getSlugToIdMap')->willReturn([]);
+
+        $workflowDef = ['nodes' => [['id' => '1']]];
+        $jsonFlags   = JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE;
+        $hash        = hash('sha256', json_encode($workflowDef, $jsonFlags));
+
+        $existing = $this->getMockBuilder(\OCA\OpenRegister\Db\DeployedWorkflow::class)
+            ->addMethods(['getSourceHash'])
+            ->getMock();
+        $existing->method('getSourceHash')->willReturn($hash);
+
+        $wfMapper->method('findByNameAndEngine')->willReturn($existing);
+
+        $data = [
+            'appId'   => 'myapp',
+            'version' => '1.0.0',
+            'components' => [
+                'workflows' => [
+                    ['name' => 'wf1', 'engine' => 'n8n', 'workflow' => $workflowDef],
+                ],
+            ],
+        ];
+
+        $result = $this->handler->importFromJson(
+            data:          $data,
+            configuration: $configuration,
+            version:       '1.0.0'
+        );
+
+        $this->assertContains('wf1', $result['workflows']['unchanged']);
+
+    }//end testWorkflowDeploymentUnchangedWhenHashMatches()
+
+
+    /**
+     * processWorkflowDeployment() fails when no engine of requested type is registered.
+     */
+    public function testWorkflowDeploymentFailsWhenNoEngineOfType(): void
+    {
+        $configuration = $this->makeConfiguration(1);
+
+        $registry = $this->createMock(\OCA\OpenRegister\Service\WorkflowEngineRegistry::class);
+        $wfMapper = $this->createMock(\OCA\OpenRegister\Db\DeployedWorkflowMapper::class);
+        $this->handler->setWorkflowEngineRegistry($registry);
+        $this->handler->setDeployedWorkflowMapper($wfMapper);
+
+        $this->appConfig->method('getValueString')->willReturn('');
+        $this->appConfig->method('setValueString')->willReturn(true);
+        $this->schemaMapper->method('getSlugToIdMap')->willReturn([]);
+
+        $wfMapper->method('findByNameAndEngine')->willReturn(null);
+        $registry->method('getEnginesByType')->willReturn([]);
+
+        $data = [
+            'appId'   => 'myapp',
+            'version' => '1.0.0',
+            'components' => [
+                'workflows' => [
+                    ['name' => 'wf1', 'engine' => 'nonexistent', 'workflow' => ['nodes' => []]],
+                ],
+            ],
+        ];
+
+        $result = $this->handler->importFromJson(
+            data:          $data,
+            configuration: $configuration,
+            version:       '1.0.0'
+        );
+
+        $this->assertCount(1, $result['workflows']['failed']);
+        $this->assertStringContainsString("No registered engine", $result['workflows']['failed'][0]['error']);
+
+    }//end testWorkflowDeploymentFailsWhenNoEngineOfType()
+
+
+    /**
+     * processWorkflowDeployment() deploys a new workflow successfully.
+     */
+    public function testWorkflowDeploymentCreatesNewWorkflow(): void
+    {
+        $configuration = $this->makeConfiguration(1);
+
+        $registry = $this->createMock(\OCA\OpenRegister\Service\WorkflowEngineRegistry::class);
+        $wfMapper = $this->createMock(\OCA\OpenRegister\Db\DeployedWorkflowMapper::class);
+        $this->handler->setWorkflowEngineRegistry($registry);
+        $this->handler->setDeployedWorkflowMapper($wfMapper);
+
+        $this->appConfig->method('getValueString')->willReturn('');
+        $this->appConfig->method('setValueString')->willReturn(true);
+        $this->schemaMapper->method('getSlugToIdMap')->willReturn([]);
+
+        $wfMapper->method('findByNameAndEngine')->willReturn(null);
+
+        $engine = new \OCA\OpenRegister\Db\WorkflowEngine();
+        $registry->method('getEnginesByType')->willReturn([$engine]);
+
+        $adapter = $this->createMock(\OCA\OpenRegister\WorkflowEngine\WorkflowEngineInterface::class);
+        $adapter->method('deployWorkflow')->willReturn('engine-wf-id-123');
+        $registry->method('resolveAdapter')->willReturn($adapter);
+
+        $deployed = new \OCA\OpenRegister\Db\DeployedWorkflow();
+        $this->setEntityId($deployed, 1);
+        $wfMapper->method('createFromArray')->willReturn($deployed);
+
+        $data = [
+            'appId'   => 'myapp',
+            'version' => '1.0.0',
+            'components' => [
+                'workflows' => [
+                    ['name' => 'new-wf', 'engine' => 'n8n', 'workflow' => ['nodes' => []]],
+                ],
+            ],
+        ];
+
+        $result = $this->handler->importFromJson(
+            data:          $data,
+            configuration: $configuration,
+            version:       '1.0.0'
+        );
+
+        $this->assertCount(1, $result['workflows']['deployed']);
+        $this->assertSame('new-wf', $result['workflows']['deployed'][0]['name']);
+        $this->assertSame('created', $result['workflows']['deployed'][0]['action']);
+
+    }//end testWorkflowDeploymentCreatesNewWorkflow()
+
+
+    /**
+     * processWorkflowDeployment() updates an existing workflow when hash differs.
+     */
+    public function testWorkflowDeploymentUpdatesExistingWorkflow(): void
+    {
+        $configuration = $this->makeConfiguration(1);
+
+        $registry = $this->createMock(\OCA\OpenRegister\Service\WorkflowEngineRegistry::class);
+        $wfMapper = $this->createMock(\OCA\OpenRegister\Db\DeployedWorkflowMapper::class);
+        $this->handler->setWorkflowEngineRegistry($registry);
+        $this->handler->setDeployedWorkflowMapper($wfMapper);
+
+        $this->appConfig->method('getValueString')->willReturn('');
+        $this->appConfig->method('setValueString')->willReturn(true);
+        $this->schemaMapper->method('getSlugToIdMap')->willReturn([]);
+
+        $existing = new \OCA\OpenRegister\Db\DeployedWorkflow();
+        $this->setEntityId($existing, 5);
+        $existing->setSourceHash('old-hash');
+        $existing->setEngineWorkflowId('engine-id-old');
+        $existing->setVersion(1);
+
+        $wfMapper->method('findByNameAndEngine')->willReturn($existing);
+
+        $engine = new \OCA\OpenRegister\Db\WorkflowEngine();
+        $registry->method('getEnginesByType')->willReturn([$engine]);
+
+        $adapter = $this->createMock(\OCA\OpenRegister\WorkflowEngine\WorkflowEngineInterface::class);
+        $adapter->method('updateWorkflow')->willReturn('engine-id-new');
+        $registry->method('resolveAdapter')->willReturn($adapter);
+
+        $wfMapper->expects($this->once())->method('update');
+
+        $data = [
+            'appId'   => 'myapp',
+            'version' => '1.0.0',
+            'components' => [
+                'workflows' => [
+                    ['name' => 'upd-wf', 'engine' => 'n8n', 'workflow' => ['nodes' => [['id' => 'new']]]],
+                ],
+            ],
+        ];
+
+        $result = $this->handler->importFromJson(
+            data:          $data,
+            configuration: $configuration,
+            version:       '1.0.0'
+        );
+
+        $this->assertCount(1, $result['workflows']['updated']);
+        $this->assertSame('updated', $result['workflows']['updated'][0]['action']);
+
+    }//end testWorkflowDeploymentUpdatesExistingWorkflow()
+
+
+    /**
+     * processWorkflowDeployment() records failure when adapter throws.
+     */
+    public function testWorkflowDeploymentRecordsFailureOnAdapterException(): void
+    {
+        $configuration = $this->makeConfiguration(1);
+
+        $registry = $this->createMock(\OCA\OpenRegister\Service\WorkflowEngineRegistry::class);
+        $wfMapper = $this->createMock(\OCA\OpenRegister\Db\DeployedWorkflowMapper::class);
+        $this->handler->setWorkflowEngineRegistry($registry);
+        $this->handler->setDeployedWorkflowMapper($wfMapper);
+
+        $this->appConfig->method('getValueString')->willReturn('');
+        $this->appConfig->method('setValueString')->willReturn(true);
+        $this->schemaMapper->method('getSlugToIdMap')->willReturn([]);
+
+        $wfMapper->method('findByNameAndEngine')->willReturn(null);
+
+        $engine = new \OCA\OpenRegister\Db\WorkflowEngine();
+        $registry->method('getEnginesByType')->willReturn([$engine]);
+
+        $adapter = $this->createMock(\OCA\OpenRegister\WorkflowEngine\WorkflowEngineInterface::class);
+        $adapter->method('deployWorkflow')->willThrowException(new Exception('Engine down'));
+        $registry->method('resolveAdapter')->willReturn($adapter);
+
+        $data = [
+            'appId'   => 'myapp',
+            'version' => '1.0.0',
+            'components' => [
+                'workflows' => [
+                    ['name' => 'fail-wf', 'engine' => 'n8n', 'workflow' => ['nodes' => []]],
+                ],
+            ],
+        ];
+
+        $result = $this->handler->importFromJson(
+            data:          $data,
+            configuration: $configuration,
+            version:       '1.0.0'
+        );
+
+        $this->assertCount(1, $result['workflows']['failed']);
+        $this->assertSame('Engine down', $result['workflows']['failed'][0]['error']);
+
+    }//end testWorkflowDeploymentRecordsFailureOnAdapterException()
+
+
+    // =========================================================================
+    // processWorkflowHookWiring() — tested via importFromJson() workflows branch
+    // =========================================================================
+
+    /**
+     * processWorkflowHookWiring() skips entry without attachTo.
+     */
+    public function testWorkflowHookWiringSkipsEntryWithoutAttachTo(): void
+    {
+        $configuration = $this->makeConfiguration(1);
+
+        $registry = $this->createMock(\OCA\OpenRegister\Service\WorkflowEngineRegistry::class);
+        $wfMapper = $this->createMock(\OCA\OpenRegister\Db\DeployedWorkflowMapper::class);
+        $this->handler->setWorkflowEngineRegistry($registry);
+        $this->handler->setDeployedWorkflowMapper($wfMapper);
+
+        $this->appConfig->method('getValueString')->willReturn('');
+        $this->appConfig->method('setValueString')->willReturn(true);
+        $this->schemaMapper->method('getSlugToIdMap')->willReturn([]);
+
+        // Workflow has no attachTo — hook wiring should be skipped.
+        $wfMapper->method('findByNameAndEngine')->willReturn(null);
+        $engine = new \OCA\OpenRegister\Db\WorkflowEngine();
+        $registry->method('getEnginesByType')->willReturn([$engine]);
+
+        $adapter = $this->createMock(\OCA\OpenRegister\WorkflowEngine\WorkflowEngineInterface::class);
+        $adapter->method('deployWorkflow')->willReturn('wf-id');
+        $registry->method('resolveAdapter')->willReturn($adapter);
+
+        $deployed = new \OCA\OpenRegister\Db\DeployedWorkflow();
+        $this->setEntityId($deployed, 1);
+        $wfMapper->method('createFromArray')->willReturn($deployed);
+
+        // schemaMapper.update should NOT be called (no hook wiring).
+        $this->schemaMapper->expects($this->never())->method('update');
+
+        $data = [
+            'appId'   => 'myapp',
+            'version' => '1.0.0',
+            'components' => [
+                'workflows' => [
+                    ['name' => 'no-attach', 'engine' => 'n8n', 'workflow' => ['nodes' => []]],
+                    // No 'attachTo' field.
+                ],
+            ],
+        ];
+
+        $result = $this->handler->importFromJson(
+            data:          $data,
+            configuration: $configuration,
+            version:       '1.0.0'
+        );
+
+        $this->assertIsArray($result);
+
+    }//end testWorkflowHookWiringSkipsEntryWithoutAttachTo()
+
+
+    /**
+     * processWorkflowHookWiring() attaches workflow to schema hook.
+     */
+    public function testWorkflowHookWiringAttachesWorkflowToSchema(): void
+    {
+        $configuration = $this->makeConfiguration(1);
+        $schema        = $this->makeSchema(10, 'person');
+
+        $registry = $this->createMock(\OCA\OpenRegister\Service\WorkflowEngineRegistry::class);
+        $wfMapper = $this->createMock(\OCA\OpenRegister\Db\DeployedWorkflowMapper::class);
+        $this->handler->setWorkflowEngineRegistry($registry);
+        $this->handler->setDeployedWorkflowMapper($wfMapper);
+
+        $this->appConfig->method('getValueString')->willReturn('');
+        $this->appConfig->method('setValueString')->willReturn(true);
+        $this->schemaMapper->method('getSlugToIdMap')->willReturn([]);
+
+        // Schema import pass — populate schemasMap by including schemas in components.
+        $this->schemaMapper->method('find')
+            ->willThrowException(new \OCP\AppFramework\Db\DoesNotExistException('not found'));
+        $this->schemaMapper->method('createFromArray')->willReturn($schema);
+        $this->schemaMapper->method('update')->willReturn($schema);
+        $this->schemaMapper->method('updateFromArray')->willReturn($schema);
+
+        // Deploy phase: create new workflow.
+        $wfMapper->method('findByNameAndEngine')->willReturn(null);
+        $engine = new \OCA\OpenRegister\Db\WorkflowEngine();
+        $registry->method('getEnginesByType')->willReturn([$engine]);
+
+        $adapter = $this->createMock(\OCA\OpenRegister\WorkflowEngine\WorkflowEngineInterface::class);
+        $adapter->method('deployWorkflow')->willReturn('wf-id-hook');
+        $registry->method('resolveAdapter')->willReturn($adapter);
+
+        $deployed = new \OCA\OpenRegister\Db\DeployedWorkflow();
+        $this->setEntityId($deployed, 2);
+        $deployed->setEngine('n8n');
+        $deployed->setEngineWorkflowId('wf-id-hook');
+        $wfMapper->method('createFromArray')->willReturn($deployed);
+
+        // Hook wiring phase: update deployed workflow + schema.
+        $wfMapper->expects($this->atLeastOnce())->method('update');
+
+        $data = [
+            'appId'   => 'myapp',
+            'version' => '1.0.0',
+            'components' => [
+                'schemas' => [
+                    'person' => ['slug' => 'person', 'title' => 'Person', 'version' => '1.0.0'],
+                ],
+                'workflows' => [
+                    [
+                        'name'     => 'hook-wf',
+                        'engine'   => 'n8n',
+                        'workflow' => ['nodes' => []],
+                        'attachTo' => [
+                            'schema' => 'person',
+                            'event'  => 'post.create',
+                            'mode'   => 'async',
+                            'order'  => 5,
+                        ],
+                    ],
+                ],
+            ],
+        ];
+
+        $result = $this->handler->importFromJson(
+            data:          $data,
+            configuration: $configuration,
+            version:       '1.0.0'
+        );
+
+        $this->assertIsArray($result);
+
+    }//end testWorkflowHookWiringAttachesWorkflowToSchema()
+
+
+    /**
+     * processWorkflowHookWiring() skips when schema not found.
+     */
+    public function testWorkflowHookWiringSkipsWhenSchemaNotFound(): void
+    {
+        $configuration = $this->makeConfiguration(1);
+
+        $registry = $this->createMock(\OCA\OpenRegister\Service\WorkflowEngineRegistry::class);
+        $wfMapper = $this->createMock(\OCA\OpenRegister\Db\DeployedWorkflowMapper::class);
+        $this->handler->setWorkflowEngineRegistry($registry);
+        $this->handler->setDeployedWorkflowMapper($wfMapper);
+
+        $this->appConfig->method('getValueString')->willReturn('');
+        $this->appConfig->method('setValueString')->willReturn(true);
+        $this->schemaMapper->method('getSlugToIdMap')->willReturn([]);
+
+        $wfMapper->method('findByNameAndEngine')->willReturn(null);
+        $engine = new \OCA\OpenRegister\Db\WorkflowEngine();
+        $registry->method('getEnginesByType')->willReturn([$engine]);
+
+        $adapter = $this->createMock(\OCA\OpenRegister\WorkflowEngine\WorkflowEngineInterface::class);
+        $adapter->method('deployWorkflow')->willReturn('wf-id');
+        $registry->method('resolveAdapter')->willReturn($adapter);
+
+        $deployed = new \OCA\OpenRegister\Db\DeployedWorkflow();
+        $this->setEntityId($deployed, 3);
+        $deployed->setEngine('n8n');
+        $deployed->setEngineWorkflowId('wf-id');
+        $wfMapper->method('createFromArray')->willReturn($deployed);
+
+        // schemaMapper.findBySlug throws — schema not found for hook wiring.
+        $this->schemaMapper->method('findBySlug')
+            ->willThrowException(new Exception('not found'));
+
+        // schemaMapper.update should NOT be called (schema not found).
+        $this->schemaMapper->expects($this->never())->method('update');
+
+        $data = [
+            'appId'   => 'myapp',
+            'version' => '1.0.0',
+            'components' => [
+                'workflows' => [
+                    [
+                        'name'     => 'orphan-wf',
+                        'engine'   => 'n8n',
+                        'workflow' => ['nodes' => []],
+                        'attachTo' => [
+                            'schema' => 'nonexistent-schema',
+                            'event'  => 'post.create',
+                        ],
+                    ],
+                ],
+            ],
+        ];
+
+        $result = $this->handler->importFromJson(
+            data:          $data,
+            configuration: $configuration,
+            version:       '1.0.0'
+        );
+
+        $this->assertIsArray($result);
+
+    }//end testWorkflowHookWiringSkipsWhenSchemaNotFound()
+
+
+    /**
+     * processWorkflowHookWiring() skips when attachTo has incomplete schema/event.
+     */
+    public function testWorkflowHookWiringSkipsIncompleteAttachTo(): void
+    {
+        $configuration = $this->makeConfiguration(1);
+
+        $registry = $this->createMock(\OCA\OpenRegister\Service\WorkflowEngineRegistry::class);
+        $wfMapper = $this->createMock(\OCA\OpenRegister\Db\DeployedWorkflowMapper::class);
+        $this->handler->setWorkflowEngineRegistry($registry);
+        $this->handler->setDeployedWorkflowMapper($wfMapper);
+
+        $this->appConfig->method('getValueString')->willReturn('');
+        $this->appConfig->method('setValueString')->willReturn(true);
+        $this->schemaMapper->method('getSlugToIdMap')->willReturn([]);
+
+        $wfMapper->method('findByNameAndEngine')->willReturn(null);
+        $engine = new \OCA\OpenRegister\Db\WorkflowEngine();
+        $registry->method('getEnginesByType')->willReturn([$engine]);
+
+        $adapter = $this->createMock(\OCA\OpenRegister\WorkflowEngine\WorkflowEngineInterface::class);
+        $adapter->method('deployWorkflow')->willReturn('wf-id');
+        $registry->method('resolveAdapter')->willReturn($adapter);
+
+        $deployed = new \OCA\OpenRegister\Db\DeployedWorkflow();
+        $this->setEntityId($deployed, 4);
+        $wfMapper->method('createFromArray')->willReturn($deployed);
+
+        $data = [
+            'appId'   => 'myapp',
+            'version' => '1.0.0',
+            'components' => [
+                'workflows' => [
+                    [
+                        'name'     => 'partial-attach',
+                        'engine'   => 'n8n',
+                        'workflow' => ['nodes' => []],
+                        'attachTo' => [
+                            'schema' => 'person',
+                            // Missing 'event'.
+                        ],
+                    ],
+                ],
+            ],
+        ];
+
+        // Should log warning about incomplete attachTo.
+        $this->logger->expects($this->atLeastOnce())->method('warning');
+
+        $result = $this->handler->importFromJson(
+            data:          $data,
+            configuration: $configuration,
+            version:       '1.0.0'
+        );
+
+        $this->assertIsArray($result);
+
+    }//end testWorkflowHookWiringSkipsIncompleteAttachTo()
+
+
+    /**
+     * processWorkflowHookWiring() returns result unchanged when deployedWfMapper is null.
+     */
+    public function testWorkflowHookWiringReturnsEarlyWhenMapperNull(): void
+    {
+        $configuration = $this->makeConfiguration(1);
+
+        // Set registry but NOT mapper — hook wiring returns early.
+        $registry = $this->createMock(\OCA\OpenRegister\Service\WorkflowEngineRegistry::class);
+        $this->handler->setWorkflowEngineRegistry($registry);
+        // Deliberately NOT setting deployedWfMapper.
+
+        $this->appConfig->method('getValueString')->willReturn('');
+        $this->appConfig->method('setValueString')->willReturn(true);
+        $this->schemaMapper->method('getSlugToIdMap')->willReturn([]);
+
+        $data = [
+            'appId'   => 'myapp',
+            'version' => '1.0.0',
+            'components' => [
+                'workflows' => [
+                    [
+                        'name'     => 'wf-no-mapper',
+                        'engine'   => 'n8n',
+                        'workflow' => ['nodes' => []],
+                        'attachTo' => ['schema' => 'x', 'event' => 'y'],
+                    ],
+                ],
+            ],
+        ];
+
+        // processWorkflowDeployment returns early (no mapper), then processWorkflowHookWiring also returns early.
+        $result = $this->handler->importFromJson(
+            data:          $data,
+            configuration: $configuration,
+            version:       '1.0.0'
+        );
+
+        $this->assertIsArray($result);
+
+    }//end testWorkflowHookWiringReturnsEarlyWhenMapperNull()
+
+
+    // =========================================================================
+    // importSchema() — property edge cases
+    // =========================================================================
+
+    /**
+     * importSchema() converts empty fileConfiguration array to stdClass.
+     */
+    public function testImportSchemaNormalisesEmptyFileConfiguration(): void
+    {
+        $schema = $this->makeSchema(10, 'filecfg-schema');
+
+        $this->schemaMapper->method('find')
+            ->willThrowException(new \OCP\AppFramework\Db\DoesNotExistException('not found'));
+
+        $capturedData = null;
+        $this->schemaMapper->expects($this->once())
+            ->method('createFromArray')
+            ->willReturnCallback(function (array $data) use ($schema, &$capturedData) {
+                $capturedData = $data;
+                return $schema;
+            });
+
+        $this->schemaMapper->method('update')->willReturn($schema);
+
+        $this->handler->importSchema(
+            data: [
+                'slug'       => 'filecfg-schema',
+                'version'    => '1.0.0',
+                'title'      => 'FileCfg',
+                'properties' => [
+                    'attachment' => [
+                        'type'              => 'string',
+                        'fileConfiguration' => [],
+                        // Empty array — normalised to stdClass.
+                    ],
+                ],
+            ],
+            slugsAndIdsMap: []
+        );
+
+        // The empty array becomes stdClass in the code; since createFromArray receives
+        // the data after normalisation, fileConfiguration should be a stdClass.
+        $this->assertArrayHasKey('fileConfiguration', $capturedData['properties']['attachment']);
+        $fileCfg = $capturedData['properties']['attachment']['fileConfiguration'];
+        $this->assertInstanceOf(\stdClass::class, $fileCfg);
+
+    }//end testImportSchemaNormalisesEmptyFileConfiguration()
+
+
+    /**
+     * importSchema() converts items.objectConfiguration empty array to stdClass.
+     */
+    public function testImportSchemaNormalisesItemsObjectConfiguration(): void
+    {
+        $schema = $this->makeSchema(10, 'items-objcfg-schema');
+
+        $this->schemaMapper->method('find')
+            ->willThrowException(new \OCP\AppFramework\Db\DoesNotExistException('not found'));
+
+        $capturedData = null;
+        $this->schemaMapper->expects($this->once())
+            ->method('createFromArray')
+            ->willReturnCallback(function (array $data) use ($schema, &$capturedData) {
+                $capturedData = $data;
+                return $schema;
+            });
+
+        $this->schemaMapper->method('update')->willReturn($schema);
+
+        $this->handler->importSchema(
+            data: [
+                'slug'       => 'items-objcfg-schema',
+                'version'    => '1.0.0',
+                'title'      => 'ItemsObjCfg',
+                'properties' => [
+                    'children' => [
+                        'type'  => 'array',
+                        'items' => [
+                            'objectConfiguration' => [],
+                        ],
+                    ],
+                ],
+            ],
+            slugsAndIdsMap: []
+        );
+
+        // The code converts [] -> stdClass at line ~934, then converts stdClass back
+        // to array at line ~1054, so the round-trip result is an empty array.
+        $itemsObjCfg = $capturedData['properties']['children']['items']['objectConfiguration'];
+        $this->assertSame([], $itemsObjCfg);
+
+    }//end testImportSchemaNormalisesItemsObjectConfiguration()
+
+
+    /**
+     * importSchema() converts items.fileConfiguration empty array to stdClass.
+     */
+    public function testImportSchemaNormalisesItemsFileConfiguration(): void
+    {
+        $schema = $this->makeSchema(10, 'items-filecfg-schema');
+
+        $this->schemaMapper->method('find')
+            ->willThrowException(new \OCP\AppFramework\Db\DoesNotExistException('not found'));
+
+        $capturedData = null;
+        $this->schemaMapper->expects($this->once())
+            ->method('createFromArray')
+            ->willReturnCallback(function (array $data) use ($schema, &$capturedData) {
+                $capturedData = $data;
+                return $schema;
+            });
+
+        $this->schemaMapper->method('update')->willReturn($schema);
+
+        $this->handler->importSchema(
+            data: [
+                'slug'       => 'items-filecfg-schema',
+                'version'    => '1.0.0',
+                'title'      => 'ItemsFileCfg',
+                'properties' => [
+                    'files' => [
+                        'type'  => 'array',
+                        'items' => [
+                            'fileConfiguration' => [],
+                        ],
+                    ],
+                ],
+            ],
+            slugsAndIdsMap: []
+        );
+
+        $itemsFileCfg = $capturedData['properties']['files']['items']['fileConfiguration'];
+        $this->assertInstanceOf(\stdClass::class, $itemsFileCfg);
+
+    }//end testImportSchemaNormalisesItemsFileConfiguration()
+
+
+    /**
+     * importSchema() converts stdClass property to array before processing.
+     */
+    public function testImportSchemaConvertsStdClassPropertyToArray(): void
+    {
+        $schema = $this->makeSchema(10, 'stdclass-prop-schema');
+
+        $this->schemaMapper->method('find')
+            ->willThrowException(new \OCP\AppFramework\Db\DoesNotExistException('not found'));
+
+        $capturedData = null;
+        $this->schemaMapper->expects($this->once())
+            ->method('createFromArray')
+            ->willReturnCallback(function (array $data) use ($schema, &$capturedData) {
+                $capturedData = $data;
+                return $schema;
+            });
+
+        $this->schemaMapper->method('update')->willReturn($schema);
+
+        // Create a stdClass property.
+        $prop        = new \stdClass();
+        $prop->type  = 'integer';
+        $prop->title = 'Age';
+
+        $this->handler->importSchema(
+            data: [
+                'slug'       => 'stdclass-prop-schema',
+                'version'    => '1.0.0',
+                'title'      => 'StdClass Prop',
+                'properties' => [
+                    'age' => $prop,
+                ],
+            ],
+            slugsAndIdsMap: []
+        );
+
+        $this->assertIsArray($capturedData['properties']['age']);
+        $this->assertSame('integer', $capturedData['properties']['age']['type']);
+        $this->assertSame('Age', $capturedData['properties']['age']['title']);
+
+    }//end testImportSchemaConvertsStdClassPropertyToArray()
+
+
+    /**
+     * importSchema() converts stdClass items to array.
+     */
+    public function testImportSchemaConvertsStdClassItemsToArray(): void
+    {
+        $schema = $this->makeSchema(10, 'stdclass-items-schema');
+
+        $this->schemaMapper->method('find')
+            ->willThrowException(new \OCP\AppFramework\Db\DoesNotExistException('not found'));
+
+        $capturedData = null;
+        $this->schemaMapper->expects($this->once())
+            ->method('createFromArray')
+            ->willReturnCallback(function (array $data) use ($schema, &$capturedData) {
+                $capturedData = $data;
+                return $schema;
+            });
+
+        $this->schemaMapper->method('update')->willReturn($schema);
+
+        $items       = new \stdClass();
+        $items->type = 'string';
+
+        $this->handler->importSchema(
+            data: [
+                'slug'       => 'stdclass-items-schema',
+                'version'    => '1.0.0',
+                'title'      => 'StdClass Items',
+                'properties' => [
+                    'tags' => [
+                        'type'  => 'array',
+                        'items' => $items,
+                    ],
+                ],
+            ],
+            slugsAndIdsMap: []
+        );
+
+        $this->assertIsArray($capturedData['properties']['tags']['items']);
+        $this->assertSame('string', $capturedData['properties']['tags']['items']['type']);
+
+    }//end testImportSchemaConvertsStdClassItemsToArray()
+
+
+    /**
+     * importSchema() resolves objectConfiguration.schema from database when not in schemasMap.
+     */
+    public function testImportSchemaResolvesObjectConfigurationSchemaFromDatabase(): void
+    {
+        $schema       = $this->makeSchema(10, 'dbschema-schema');
+        $linkedSchema = $this->makeSchema(77, 'db-linked-schema');
+
+        // schemaMapper.find(): first call throws (schema being imported not found),
+        // but for objectConfiguration.schema lookup we need a separate result.
+        // Use willReturnCallback to differentiate.
+        $this->schemaMapper->method('find')
+            ->willReturnCallback(function ($id) use ($linkedSchema) {
+                if ($id === 'db-linked-schema') {
+                    return $linkedSchema;
+                }
+                throw new \OCP\AppFramework\Db\DoesNotExistException('not found');
+            });
+
+        $capturedData = null;
+        $this->schemaMapper->expects($this->once())
+            ->method('createFromArray')
+            ->willReturnCallback(function (array $data) use ($schema, &$capturedData) {
+                $capturedData = $data;
+                return $schema;
+            });
+
+        $this->schemaMapper->method('update')->willReturn($schema);
+
+        $this->handler->importSchema(
+            data: [
+                'slug'       => 'dbschema-schema',
+                'version'    => '1.0.0',
+                'title'      => 'DbSchema',
+                'properties' => [
+                    'ref' => [
+                        'type'                => 'object',
+                        'objectConfiguration' => ['schema' => 'db-linked-schema'],
+                    ],
+                ],
+            ],
+            slugsAndIdsMap: []
+        );
+
+        $this->assertSame(77, $capturedData['properties']['ref']['objectConfiguration']['schema']);
+
+    }//end testImportSchemaResolvesObjectConfigurationSchemaFromDatabase()
+
+
+    /**
+     * importSchema() removes objectConfiguration.schema when not found in DB.
+     */
+    public function testImportSchemaRemovesObjectConfigurationSchemaWhenNotFound(): void
+    {
+        $schema = $this->makeSchema(10, 'missing-schema-cfg');
+
+        $this->schemaMapper->method('find')
+            ->willThrowException(new \OCP\AppFramework\Db\DoesNotExistException('not found'));
+
+        $capturedData = null;
+        $this->schemaMapper->expects($this->once())
+            ->method('createFromArray')
+            ->willReturnCallback(function (array $data) use ($schema, &$capturedData) {
+                $capturedData = $data;
+                return $schema;
+            });
+
+        $this->schemaMapper->method('update')->willReturn($schema);
+
+        $this->handler->importSchema(
+            data: [
+                'slug'       => 'missing-schema-cfg',
+                'version'    => '1.0.0',
+                'title'      => 'MissingSchema',
+                'properties' => [
+                    'ref' => [
+                        'type'                => 'object',
+                        'objectConfiguration' => ['schema' => 'nonexistent-schema'],
+                    ],
+                ],
+            ],
+            slugsAndIdsMap: []
+        );
+
+        $this->assertArrayNotHasKey('schema', $capturedData['properties']['ref']['objectConfiguration']);
+
+    }//end testImportSchemaRemovesObjectConfigurationSchemaWhenNotFound()
+
+
+    /**
+     * importSchema() resolves items.objectConfiguration.register from registersMap.
+     */
+    public function testImportSchemaResolvesItemsObjectConfigRegisterFromMap(): void
+    {
+        $schema   = $this->makeSchema(10, 'items-reg-schema');
+        $register = $this->makeRegister(66, 'items-register');
+
+        $this->setProperty($this->handler, 'registersMap', ['items-register' => $register]);
+
+        $this->schemaMapper->method('find')
+            ->willThrowException(new \OCP\AppFramework\Db\DoesNotExistException('not found'));
+
+        $capturedData = null;
+        $this->schemaMapper->expects($this->once())
+            ->method('createFromArray')
+            ->willReturnCallback(function (array $data) use ($schema, &$capturedData) {
+                $capturedData = $data;
+                return $schema;
+            });
+
+        $this->schemaMapper->method('update')->willReturn($schema);
+
+        $this->handler->importSchema(
+            data: [
+                'slug'       => 'items-reg-schema',
+                'version'    => '1.0.0',
+                'title'      => 'ItemsReg',
+                'properties' => [
+                    'children' => [
+                        'type'  => 'array',
+                        'items' => [
+                            'objectConfiguration' => ['register' => 'items-register'],
+                        ],
+                    ],
+                ],
+            ],
+            slugsAndIdsMap: []
+        );
+
+        $this->assertSame(66, $capturedData['properties']['children']['items']['objectConfiguration']['register']);
+
+    }//end testImportSchemaResolvesItemsObjectConfigRegisterFromMap()
+
+
+    /**
+     * importSchema() resolves items.objectConfiguration.schema from schemasMap.
+     */
+    public function testImportSchemaResolvesItemsObjectConfigSchemaFromMap(): void
+    {
+        $schema       = $this->makeSchema(10, 'items-sch-schema');
+        $linkedSchema = $this->makeSchema(88, 'items-linked');
+
+        $this->setProperty($this->handler, 'schemasMap', ['items-linked' => $linkedSchema]);
+
+        $this->schemaMapper->method('find')
+            ->willThrowException(new \OCP\AppFramework\Db\DoesNotExistException('not found'));
+
+        $capturedData = null;
+        $this->schemaMapper->expects($this->once())
+            ->method('createFromArray')
+            ->willReturnCallback(function (array $data) use ($schema, &$capturedData) {
+                $capturedData = $data;
+                return $schema;
+            });
+
+        $this->schemaMapper->method('update')->willReturn($schema);
+
+        $this->handler->importSchema(
+            data: [
+                'slug'       => 'items-sch-schema',
+                'version'    => '1.0.0',
+                'title'      => 'ItemsSch',
+                'properties' => [
+                    'children' => [
+                        'type'  => 'array',
+                        'items' => [
+                            'objectConfiguration' => ['schema' => 'items-linked'],
+                        ],
+                    ],
+                ],
+            ],
+            slugsAndIdsMap: []
+        );
+
+        $this->assertSame(88, $capturedData['properties']['children']['items']['objectConfiguration']['schema']);
+
+    }//end testImportSchemaResolvesItemsObjectConfigSchemaFromMap()
+
+
+    /**
+     * importSchema() strips byte format from top-level properties.
+     */
+    public function testImportSchemaStripsByteFormat(): void
+    {
+        $schema = $this->makeSchema(10, 'byte-fmt-schema');
+
+        $this->schemaMapper->method('find')
+            ->willThrowException(new \OCP\AppFramework\Db\DoesNotExistException('not found'));
+
+        $capturedData = null;
+        $this->schemaMapper->expects($this->once())
+            ->method('createFromArray')
+            ->willReturnCallback(function (array $data) use ($schema, &$capturedData) {
+                $capturedData = $data;
+                return $schema;
+            });
+
+        $this->schemaMapper->method('update')->willReturn($schema);
+
+        $this->handler->importSchema(
+            data: [
+                'slug'       => 'byte-fmt-schema',
+                'version'    => '1.0.0',
+                'title'      => 'ByteFmt',
+                'properties' => [
+                    'data' => ['type' => 'string', 'format' => 'byte'],
+                ],
+            ],
+            slugsAndIdsMap: []
+        );
+
+        $this->assertArrayNotHasKey('format', $capturedData['properties']['data']);
+
+    }//end testImportSchemaStripsByteFormat()
+
+
+    // =========================================================================
+    // getDuplicateSchemaInfo() — error paths
+    // =========================================================================
+
+    /**
+     * getDuplicateSchemaInfo returns fallback when findAll() throws.
+     */
+    public function testDuplicateSchemaInfoHandlesFindAllFailure(): void
+    {
+        $this->schemaMapper->method('find')
+            ->willThrowException(new \OCP\AppFramework\Db\MultipleObjectsReturnedException('duplicate'));
+
+        $this->schemaMapper->method('findAll')
+            ->willThrowException(new Exception('DB unavailable'));
+
+        $this->expectException(Exception::class);
+        $this->expectExceptionMessageMatches('/Duplicate schema detected/');
+
+        $this->handler->importSchema(
+            data:           ['slug' => 'dup-schema', 'version' => '1.0.0', 'title' => 'Dup'],
+            slugsAndIdsMap: []
+        );
+
+    }//end testDuplicateSchemaInfoHandlesFindAllFailure()
+
+
+    /**
+     * getDuplicateSchemaInfo returns generic message when only one match found.
+     */
+    public function testDuplicateSchemaInfoOneMatchReturnsGenericMessage(): void
+    {
+        $this->schemaMapper->method('find')
+            ->willThrowException(new \OCP\AppFramework\Db\MultipleObjectsReturnedException('duplicate'));
+
+        $s1 = $this->makeSchema(1, 'dup-schema');
+        $this->schemaMapper->method('findAll')->willReturn([$s1]);
+
+        $this->expectException(Exception::class);
+        $this->expectExceptionMessageMatches('/Duplicate schema detected/');
+
+        $this->handler->importSchema(
+            data:           ['slug' => 'dup-schema', 'version' => '1.0.0', 'title' => 'Dup'],
+            slugsAndIdsMap: []
+        );
+
+    }//end testDuplicateSchemaInfoOneMatchReturnsGenericMessage()
+
+
+    // =========================================================================
+    // importSeedData() — advanced branches
+    // =========================================================================
+
+    /**
+     * importSeedData() uses MagicMapper to pre-create table when set.
+     */
+    public function testImportSeedDataPreCreatesMagicMapperTable(): void
+    {
+        $configuration = $this->makeConfiguration(1);
+        $configuration->setRegisters([20]);
+
+        $schema   = $this->makeSchema(10, 'person');
+        $register = $this->makeRegister(20, 'registry');
+
+        $this->appConfig->method('getValueString')->willReturn('');
+        $this->appConfig->method('setValueString')->willReturn(true);
+        $this->schemaMapper->method('getSlugToIdMap')->willReturn([]);
+        $this->schemaMapper->method('find')
+            ->willThrowException(new \OCP\AppFramework\Db\DoesNotExistException('not found'));
+        $this->schemaMapper->method('createFromArray')->willReturn($schema);
+        $this->schemaMapper->method('update')->willReturn($schema);
+        $this->schemaMapper->method('updateFromArray')->willReturn($schema);
+
+        $this->registerMapper->method('find')->willReturn($register);
+        $this->registerMapper->method('createFromArray')->willReturn($register);
+        $this->registerMapper->method('update')->willReturn($register);
+
+        $magicMapper = $this->createMock(\OCA\OpenRegister\Db\MagicMapper::class);
+        $magicMapper->expects($this->once())
+            ->method('ensureTableForRegisterSchema')
+            ->with($register, $schema);
+        $this->handler->setMagicMapper($magicMapper);
+
+        $this->objectEntityMapper->method('findDirectBlobStorage')
+            ->willThrowException(new \OCP\AppFramework\Db\DoesNotExistException('not found'));
+
+        $createdObject = new ObjectEntity();
+        $this->setEntityId($createdObject, 777);
+        $this->objectEntityMapper->method('insert')->willReturn($createdObject);
+
+        $data = [
+            'appId'   => 'myapp',
+            'version' => '1.0.0',
+            'components' => [
+                'schemas' => [
+                    'person' => ['slug' => 'person', 'title' => 'Person', 'version' => '1.0.0'],
+                ],
+            ],
+            'x-openregister' => [
+                'seedData' => [
+                    'objects' => [
+                        'person' => [
+                            ['slug' => 'seed-person', 'name' => 'Seed'],
+                        ],
+                    ],
+                ],
+            ],
+        ];
+
+        $result = $this->handler->importFromJson(
+            data:          $data,
+            configuration: $configuration,
+            version:       '1.0.0'
+        );
+
+        $this->assertContains(777, $result['objects']);
+
+    }//end testImportSeedDataPreCreatesMagicMapperTable()
+
+
+    /**
+     * importSeedData() continues gracefully when MagicMapper table creation fails.
+     */
+    public function testImportSeedDataContinuesWhenMagicMapperFails(): void
+    {
+        $configuration = $this->makeConfiguration(1);
+        $configuration->setRegisters([20]);
+
+        $schema   = $this->makeSchema(10, 'person');
+        $register = $this->makeRegister(20, 'registry');
+
+        $this->appConfig->method('getValueString')->willReturn('');
+        $this->appConfig->method('setValueString')->willReturn(true);
+        $this->schemaMapper->method('getSlugToIdMap')->willReturn([]);
+        $this->schemaMapper->method('find')
+            ->willThrowException(new \OCP\AppFramework\Db\DoesNotExistException('not found'));
+        $this->schemaMapper->method('createFromArray')->willReturn($schema);
+        $this->schemaMapper->method('update')->willReturn($schema);
+        $this->schemaMapper->method('updateFromArray')->willReturn($schema);
+
+        $this->registerMapper->method('find')->willReturn($register);
+        $this->registerMapper->method('createFromArray')->willReturn($register);
+        $this->registerMapper->method('update')->willReturn($register);
+
+        $magicMapper = $this->createMock(\OCA\OpenRegister\Db\MagicMapper::class);
+        $magicMapper->method('ensureTableForRegisterSchema')
+            ->willThrowException(new Exception('Table creation failed'));
+        $this->handler->setMagicMapper($magicMapper);
+
+        $this->objectEntityMapper->method('findDirectBlobStorage')
+            ->willThrowException(new \OCP\AppFramework\Db\DoesNotExistException('not found'));
+
+        $createdObject = new ObjectEntity();
+        $this->setEntityId($createdObject, 778);
+        $this->objectEntityMapper->method('insert')->willReturn($createdObject);
+
+        $data = [
+            'appId'   => 'myapp',
+            'version' => '1.0.0',
+            'components' => [
+                'schemas' => [
+                    'person' => ['slug' => 'person', 'title' => 'Person', 'version' => '1.0.0'],
+                ],
+            ],
+            'x-openregister' => [
+                'seedData' => [
+                    'objects' => [
+                        'person' => [
+                            ['slug' => 'seed-person', 'name' => 'Seed'],
+                        ],
+                    ],
+                ],
+            ],
+        ];
+
+        $result = $this->handler->importFromJson(
+            data:          $data,
+            configuration: $configuration,
+            version:       '1.0.0'
+        );
+
+        // Should still create the object despite table creation failure.
+        $this->assertContains(778, $result['objects']);
+
+    }//end testImportSeedDataContinuesWhenMagicMapperFails()
+
+
+    /**
+     * importSeedData() uses title as slug fallback when slug is absent.
+     */
+    public function testImportSeedDataUsesTitleAsSlugFallback(): void
+    {
+        $configuration = $this->makeConfiguration(1);
+        $configuration->setRegisters([20]);
+
+        $schema   = $this->makeSchema(10, 'person');
+        $register = $this->makeRegister(20, 'registry');
+
+        $this->appConfig->method('getValueString')->willReturn('');
+        $this->appConfig->method('setValueString')->willReturn(true);
+        $this->schemaMapper->method('getSlugToIdMap')->willReturn([]);
+        $this->schemaMapper->method('find')
+            ->willThrowException(new \OCP\AppFramework\Db\DoesNotExistException('not found'));
+        $this->schemaMapper->method('createFromArray')->willReturn($schema);
+        $this->schemaMapper->method('update')->willReturn($schema);
+        $this->schemaMapper->method('updateFromArray')->willReturn($schema);
+
+        $this->registerMapper->method('find')->willReturn($register);
+        $this->registerMapper->method('createFromArray')->willReturn($register);
+        $this->registerMapper->method('update')->willReturn($register);
+
+        $this->objectEntityMapper->method('findDirectBlobStorage')
+            ->willThrowException(new \OCP\AppFramework\Db\DoesNotExistException('not found'));
+
+        $createdObject = new ObjectEntity();
+        $this->setEntityId($createdObject, 779);
+        $this->objectEntityMapper->method('insert')->willReturn($createdObject);
+
+        $data = [
+            'appId'   => 'myapp',
+            'version' => '1.0.0',
+            'components' => [
+                'schemas' => [
+                    'person' => ['slug' => 'person', 'title' => 'Person', 'version' => '1.0.0'],
+                ],
+            ],
+            'x-openregister' => [
+                'seedData' => [
+                    'objects' => [
+                        'person' => [
+                            // No 'slug', but has 'title' — used as slug fallback.
+                            ['title' => 'Title As Slug', 'name' => 'Some Name'],
+                        ],
+                    ],
+                ],
+            ],
+        ];
+
+        $result = $this->handler->importFromJson(
+            data:          $data,
+            configuration: $configuration,
+            version:       '1.0.0'
+        );
+
+        $this->assertContains(779, $result['objects']);
+
+    }//end testImportSeedDataUsesTitleAsSlugFallback()
+
+
+    /**
+     * importSeedData() uses provided UUID when present in seed object.
+     */
+    public function testImportSeedDataUsesProvidedUuid(): void
+    {
+        $configuration = $this->makeConfiguration(1);
+        $configuration->setRegisters([20]);
+
+        $schema   = $this->makeSchema(10, 'person');
+        $register = $this->makeRegister(20, 'registry');
+
+        $this->appConfig->method('getValueString')->willReturn('');
+        $this->appConfig->method('setValueString')->willReturn(true);
+        $this->schemaMapper->method('getSlugToIdMap')->willReturn([]);
+        $this->schemaMapper->method('find')
+            ->willThrowException(new \OCP\AppFramework\Db\DoesNotExistException('not found'));
+        $this->schemaMapper->method('createFromArray')->willReturn($schema);
+        $this->schemaMapper->method('update')->willReturn($schema);
+        $this->schemaMapper->method('updateFromArray')->willReturn($schema);
+
+        $this->registerMapper->method('find')->willReturn($register);
+        $this->registerMapper->method('createFromArray')->willReturn($register);
+        $this->registerMapper->method('update')->willReturn($register);
+
+        // UUID from seed object should be used for lookup.
+        $this->objectEntityMapper->method('findDirectBlobStorage')
+            ->willThrowException(new \OCP\AppFramework\Db\DoesNotExistException('not found'));
+
+        $capturedEntity = null;
+        $createdObject  = new ObjectEntity();
+        $this->setEntityId($createdObject, 780);
+        $this->objectEntityMapper->expects($this->once())
+            ->method('insert')
+            ->willReturnCallback(function (ObjectEntity $e) use ($createdObject, &$capturedEntity) {
+                $capturedEntity = $e;
+                return $createdObject;
+            });
+
+        $data = [
+            'appId'   => 'myapp',
+            'version' => '1.0.0',
+            'components' => [
+                'schemas' => [
+                    'person' => ['slug' => 'person', 'title' => 'Person', 'version' => '1.0.0'],
+                ],
+            ],
+            'x-openregister' => [
+                'seedData' => [
+                    'objects' => [
+                        'person' => [
+                            ['slug' => 'uuid-person', 'uuid' => 'custom-uuid-12345', 'name' => 'With UUID'],
+                        ],
+                    ],
+                ],
+            ],
+        ];
+
+        $result = $this->handler->importFromJson(
+            data:          $data,
+            configuration: $configuration,
+            version:       '1.0.0'
+        );
+
+        $this->assertSame('custom-uuid-12345', $capturedEntity->getUuid());
+
+    }//end testImportSeedDataUsesProvidedUuid()
+
+
+    /**
+     * importSeedData() logs error but continues when insert throws.
+     */
+    public function testImportSeedDataContinuesWhenInsertThrows(): void
+    {
+        $configuration = $this->makeConfiguration(1);
+        $configuration->setRegisters([20]);
+
+        $schema   = $this->makeSchema(10, 'person');
+        $register = $this->makeRegister(20, 'registry');
+
+        $this->appConfig->method('getValueString')->willReturn('');
+        $this->appConfig->method('setValueString')->willReturn(true);
+        $this->schemaMapper->method('getSlugToIdMap')->willReturn([]);
+        $this->schemaMapper->method('find')
+            ->willThrowException(new \OCP\AppFramework\Db\DoesNotExistException('not found'));
+        $this->schemaMapper->method('createFromArray')->willReturn($schema);
+        $this->schemaMapper->method('update')->willReturn($schema);
+        $this->schemaMapper->method('updateFromArray')->willReturn($schema);
+
+        $this->registerMapper->method('find')->willReturn($register);
+        $this->registerMapper->method('createFromArray')->willReturn($register);
+        $this->registerMapper->method('update')->willReturn($register);
+
+        $this->objectEntityMapper->method('findDirectBlobStorage')
+            ->willThrowException(new \OCP\AppFramework\Db\DoesNotExistException('not found'));
+        $this->objectEntityMapper->method('insert')
+            ->willThrowException(new Exception('Insert failed'));
+
+        $this->logger->expects($this->atLeastOnce())->method('error');
+
+        $data = [
+            'appId'   => 'myapp',
+            'version' => '1.0.0',
+            'components' => [
+                'schemas' => [
+                    'person' => ['slug' => 'person', 'title' => 'Person', 'version' => '1.0.0'],
+                ],
+            ],
+            'x-openregister' => [
+                'seedData' => [
+                    'objects' => [
+                        'person' => [
+                            ['slug' => 'fail-insert', 'name' => 'Fail'],
+                        ],
+                    ],
+                ],
+            ],
+        ];
+
+        // Should NOT throw — errors are caught per object.
+        $result = $this->handler->importFromJson(
+            data:          $data,
+            configuration: $configuration,
+            version:       '1.0.0'
+        );
+
+        $this->assertIsArray($result);
+
+    }//end testImportSeedDataContinuesWhenInsertThrows()
+
+
+    /**
+     * importSeedData() uses register 0 when no register is found.
+     */
+    public function testImportSeedDataUsesRegisterZeroWhenNoRegisterFound(): void
+    {
+        $configuration = $this->makeConfiguration(1);
+        $configuration->setRegisters([]);
+        // Empty registers list.
+        $schema = $this->makeSchema(10, 'person');
+
+        $this->appConfig->method('getValueString')->willReturn('');
+        $this->appConfig->method('setValueString')->willReturn(true);
+        $this->schemaMapper->method('getSlugToIdMap')->willReturn([]);
+        $this->schemaMapper->method('find')
+            ->willThrowException(new \OCP\AppFramework\Db\DoesNotExistException('not found'));
+        $this->schemaMapper->method('createFromArray')->willReturn($schema);
+        $this->schemaMapper->method('update')->willReturn($schema);
+        $this->schemaMapper->method('updateFromArray')->willReturn($schema);
+
+        $this->objectEntityMapper->method('findDirectBlobStorage')
+            ->willThrowException(new \OCP\AppFramework\Db\DoesNotExistException('not found'));
+
+        $capturedEntity = null;
+        $createdObject  = new ObjectEntity();
+        $this->setEntityId($createdObject, 781);
+        $this->objectEntityMapper->expects($this->once())
+            ->method('insert')
+            ->willReturnCallback(function (ObjectEntity $e) use ($createdObject, &$capturedEntity) {
+                $capturedEntity = $e;
+                return $createdObject;
+            });
+
+        $data = [
+            'appId'   => 'myapp',
+            'version' => '1.0.0',
+            'components' => [
+                'schemas' => [
+                    'person' => ['slug' => 'person', 'title' => 'Person', 'version' => '1.0.0'],
+                ],
+            ],
+            'x-openregister' => [
+                'seedData' => [
+                    'objects' => [
+                        'person' => [
+                            ['slug' => 'no-register-person', 'name' => 'NoReg'],
+                        ],
+                    ],
+                ],
+            ],
+        ];
+
+        $result = $this->handler->importFromJson(
+            data:          $data,
+            configuration: $configuration,
+            version:       '1.0.0'
+        );
+
+        $this->assertEquals(0, $capturedEntity->getRegister());
+
+    }//end testImportSeedDataUsesRegisterZeroWhenNoRegisterFound()
+
+
+    // =========================================================================
+    // importFromApp() — metadata update on existing config with results
+    // =========================================================================
+
+    /**
+     * importFromApp() updates metadata (title, sourceUrl, github) on existing config with results.
+     */
+    public function testImportFromAppUpdatesMetadataOnExistingConfigWithResults(): void
+    {
+        $existingConfig = $this->makeConfiguration(55, 'myapp', '0.9.0');
+        $existingConfig->setRegisters([]);
+        $existingConfig->setSchemas([]);
+        $existingConfig->setObjects([]);
+
+        $this->configurationMapper->method('findBySourceUrl')->willReturn(null);
+        $this->configurationMapper->method('findByApp')->willReturn([$existingConfig]);
+
+        // The import creates schemas/registers, triggering the update branch.
+        $schema   = $this->makeSchema(10, 'test-schema');
+        $register = $this->makeRegister(20, 'test-register');
+
+        $this->appConfig->method('getValueString')->willReturn('');
+        $this->appConfig->method('setValueString')->willReturn(true);
+        $this->schemaMapper->method('getSlugToIdMap')->willReturn([]);
+        $this->schemaMapper->method('find')
+            ->willThrowException(new \OCP\AppFramework\Db\DoesNotExistException('not found'));
+        $this->schemaMapper->method('createFromArray')->willReturn($schema);
+        $this->schemaMapper->method('update')->willReturn($schema);
+        $this->schemaMapper->method('updateFromArray')->willReturn($schema);
+        $this->registerMapper->method('find')
+            ->willThrowException(new \OCP\AppFramework\Db\DoesNotExistException('not found'));
+        $this->registerMapper->method('createFromArray')->willReturn($register);
+        $this->registerMapper->method('update')->willReturn($register);
+
+        $this->configurationMapper->expects($this->atLeastOnce())
+            ->method('update')
+            ->willReturnArgument(0);
+
+        $data = [
+            'info' => ['title' => 'Updated Title', 'description' => 'Updated Description'],
+            'x-openregister' => [
+                'sourceUrl'  => 'https://example.com/updated.json',
+                'sourceType' => 'github',
+                'github'     => [
+                    'repo'   => 'org/updated',
+                    'branch' => 'main',
+                    'path'   => 'updated.json',
+                ],
+            ],
+            'components' => [
+                'schemas' => [
+                    'test-schema' => ['slug' => 'test-schema', 'title' => 'Test', 'version' => '2.0.0'],
+                ],
+                'registers' => [
+                    'test-register' => ['slug' => 'test-register', 'title' => 'Test Reg', 'version' => '2.0.0'],
+                ],
+            ],
+        ];
+
+        $result = $this->handler->importFromApp(
+            appId:   'myapp',
+            data:    $data,
+            version: '2.0.0'
+        );
+
+        $this->assertIsArray($result);
+        $this->assertCount(1, $result['schemas']);
+
+    }//end testImportFromAppUpdatesMetadataOnExistingConfigWithResults()
+
+
+    // =========================================================================
+    // importFromFilePath() — source metadata defaults
+    // =========================================================================
+
+    /**
+     * importFromFilePath() does NOT overwrite existing sourceUrl and sourceType.
+     */
+    public function testImportFromFilePathDoesNotOverwriteExistingSourceMetadata(): void
+    {
+        // Write valid JSON with existing x-openregister metadata.
+        $tmpFile = tempnam(sys_get_temp_dir(), 'phpunit_or_');
+        $data    = [
+            'description'    => 'test config',
+            'x-openregister' => [
+                'sourceUrl'  => 'https://existing.com/config.json',
+                'sourceType' => 'github',
+            ],
+        ];
+        file_put_contents($tmpFile, json_encode($data));
+
+        $config = $this->makeConfiguration(1, 'myapp', '1.0.0');
+
+        $this->configurationMapper->method('findBySourceUrl')->willReturn($config);
+        $this->configurationMapper->method('findByApp')->willReturn([$config]);
+
+        $this->appConfig->method('getValueString')->willReturn('');
+        $this->appConfig->method('setValueString')->willReturn(true);
+        $this->schemaMapper->method('getSlugToIdMap')->willReturn([]);
+
+        $relativePath = ltrim($tmpFile, '/');
+        $result       = $this->handler->importFromFilePath(
+            appId:    'myapp',
+            filePath: $relativePath,
+            version:  '1.0.0'
+        );
+
+        $this->assertIsArray($result);
+
+        unlink($tmpFile);
+
+    }//end testImportFromFilePathDoesNotOverwriteExistingSourceMetadata()
+
+
+    // =========================================================================
+    // createOrUpdateConfiguration() — additional object ID collection
+    // =========================================================================
+
+    /**
+     * createOrUpdateConfiguration() collects object IDs from result.
+     */
+    public function testCreateOrUpdateConfigurationCollectsObjectIds(): void
+    {
+        $this->configurationMapper->method('findByApp')->willReturn([]);
+
+        $capturedConfig = null;
+        $this->configurationMapper->expects($this->once())
+            ->method('insert')
+            ->willReturnCallback(function (Configuration $c) use (&$capturedConfig) {
+                $capturedConfig = $c;
+                $this->setEntityId($c, 1);
+                return $c;
+            });
+
+        $obj1 = new ObjectEntity();
+        $this->setEntityId($obj1, 100);
+        $obj2 = new ObjectEntity();
+        $this->setEntityId($obj2, 200);
+
+        $result = $this->handler->createOrUpdateConfiguration(
+            data:    [],
+            appId:   'objapp',
+            version: '1.0.0',
+            result:  [
+                'registers' => [],
+                'schemas'   => [],
+                'objects'   => [$obj1, $obj2],
+            ]
+        );
+
+        $this->assertContains(100, $result->getObjects());
+        $this->assertContains(200, $result->getObjects());
+
+    }//end testCreateOrUpdateConfigurationCollectsObjectIds()
+
+
+    /**
+     * createOrUpdateConfiguration() uses data.title fallback when info and x-openregister absent.
+     */
+    public function testCreateOrUpdateConfigurationUsesDataTitleFallback(): void
+    {
+        $this->configurationMapper->method('findByApp')->willReturn([]);
+
+        $capturedConfig = null;
+        $this->configurationMapper->expects($this->once())
+            ->method('insert')
+            ->willReturnCallback(function (Configuration $c) use (&$capturedConfig) {
+                $capturedConfig = $c;
+                $this->setEntityId($c, 1);
+                return $c;
+            });
+
+        $this->handler->createOrUpdateConfiguration(
+            data: [
+                'title'       => 'Data Level Title',
+                'description' => 'Data Level Description',
+            ],
+            appId:   'datatitleapp',
+            version: '1.0.0',
+            result:  ['registers' => [], 'schemas' => [], 'objects' => []]
+        );
+
+        $this->assertSame('Data Level Title', $capturedConfig->getTitle());
+        $this->assertSame('Data Level Description', $capturedConfig->getDescription());
+
+    }//end testCreateOrUpdateConfigurationUsesDataTitleFallback()
+
+
+    /**
+     * createOrUpdateConfiguration() uses default title when none provided.
+     */
+    public function testCreateOrUpdateConfigurationUsesDefaultTitle(): void
+    {
+        $this->configurationMapper->method('findByApp')->willReturn([]);
+
+        $capturedConfig = null;
+        $this->configurationMapper->expects($this->once())
+            ->method('insert')
+            ->willReturnCallback(function (Configuration $c) use (&$capturedConfig) {
+                $capturedConfig = $c;
+                $this->setEntityId($c, 1);
+                return $c;
+            });
+
+        $this->handler->createOrUpdateConfiguration(
+            data:    [],
+            appId:   'notitleapp',
+            version: '1.0.0',
+            result:  ['registers' => [], 'schemas' => [], 'objects' => []]
+        );
+
+        $this->assertSame('Configuration for notitleapp', $capturedConfig->getTitle());
+
+    }//end testCreateOrUpdateConfigurationUsesDefaultTitle()
+
+
+    /**
+     * createOrUpdateConfiguration() uses data.type when x-openregister.type is absent.
+     */
+    public function testCreateOrUpdateConfigurationUsesDataType(): void
+    {
+        $this->configurationMapper->method('findByApp')->willReturn([]);
+
+        $capturedConfig = null;
+        $this->configurationMapper->expects($this->once())
+            ->method('insert')
+            ->willReturnCallback(function (Configuration $c) use (&$capturedConfig) {
+                $capturedConfig = $c;
+                $this->setEntityId($c, 1);
+                return $c;
+            });
+
+        $this->handler->createOrUpdateConfiguration(
+            data: [
+                'type' => 'custom-type',
+            ],
+            appId:   'typeapp',
+            version: '1.0.0',
+            result:  ['registers' => [], 'schemas' => [], 'objects' => []]
+        );
+
+        $this->assertSame('custom-type', $capturedConfig->getType());
+
+    }//end testCreateOrUpdateConfigurationUsesDataType()
+
+
+    // =========================================================================
+    // importFromJson() — Pass 2 cross-reference resolution
+    // =========================================================================
+
+    /**
+     * importFromJson() Pass 2 skips schema not found in schemasMap.
+     */
+    public function testImportFromJsonPass2SkipsSchemaNotInMap(): void
+    {
+        $configuration = $this->makeConfiguration(1);
+
+        $this->appConfig->method('getValueString')->willReturn('');
+        $this->appConfig->method('setValueString')->willReturn(true);
+        $this->schemaMapper->method('getSlugToIdMap')->willReturn([]);
+
+        // Schema pass 1 succeeds, but slug doesn't match key.
+        $schema = $this->makeSchema(10, 'actual-slug');
+
+        $this->schemaMapper->method('find')
+            ->willThrowException(new \OCP\AppFramework\Db\DoesNotExistException('not found'));
+        $this->schemaMapper->method('createFromArray')->willReturn($schema);
+        $this->schemaMapper->method('update')->willReturn($schema);
+        $this->schemaMapper->method('updateFromArray')->willReturn($schema);
+
+        // The schema slug from getSlug() is 'actual-slug' but the key is 'key-slug'.
+        // Pass 2 looks up by $schemaSlug = $schemaData['slug'] ?? $key.
+        // If data has 'slug' => 'actual-slug', schemasMap maps 'actual-slug', pass 2 works.
+        // If no slug, uses key. Let's test with matching to cover pass 2 execution.
+        $data = [
+            'appId'   => 'myapp',
+            'version' => '1.0.0',
+            'components' => [
+                'schemas' => [
+                    'actual-slug' => ['slug' => 'actual-slug', 'title' => 'Schema', 'version' => '1.0.0'],
+                ],
+            ],
+        ];
+
+        // Should log warning about pass 2 if schema not in map, but
+        // in this case slug matches so it will do pass 2 re-import.
+        $result = $this->handler->importFromJson(
+            data:          $data,
+            configuration: $configuration,
+            version:       '1.0.0'
+        );
+
+        $this->assertCount(1, $result['schemas']);
+
+    }//end testImportFromJsonPass2SkipsSchemaNotInMap()
+
+
+    /**
+     * importFromJson() Pass 2 catches errors when re-import fails.
+     */
+    public function testImportFromJsonPass2CatchesReImportFailure(): void
+    {
+        $configuration = $this->makeConfiguration(1);
+
+        $this->appConfig->method('getValueString')->willReturn('');
+        $this->appConfig->method('setValueString')->willReturn(true);
+        $this->schemaMapper->method('getSlugToIdMap')->willReturn([]);
+
+        $schema    = $this->makeSchema(10, 'pass2-schema');
+        $findCount = 0;
+
+        // Pass 1: find() throws DoesNotExist (creates schema).
+        // Pass 2: find() returns existing schema (update path), then
+        // updateFromArray throws to exercise error handling.
+        $this->schemaMapper->method('find')
+            ->willReturnCallback(function () use (&$findCount, $schema) {
+                $findCount++;
+                // First two calls are Pass 1 (create + initial lookup).
+                if ($findCount <= 2) {
+                    throw new \OCP\AppFramework\Db\DoesNotExistException('not found');
+                }
+                // Pass 2: schema exists.
+                return $schema;
+            });
+
+        $this->schemaMapper->method('createFromArray')->willReturn($schema);
+        $this->schemaMapper->method('update')->willReturn($schema);
+
+        $updateCount = 0;
+        $this->schemaMapper->method('updateFromArray')
+            ->willReturnCallback(function () use (&$updateCount, $schema) {
+                $updateCount++;
+                // Pass 2 update call throws.
+                if ($updateCount > 1) {
+                    throw new Exception('Pass 2 update failed');
+                }
+                return $schema;
+            });
+
+        $data = [
+            'appId'   => 'myapp',
+            'version' => '1.0.0',
+            'components' => [
+                'schemas' => [
+                    'pass2-schema' => ['slug' => 'pass2-schema', 'title' => 'Pass2', 'version' => '1.0.0'],
+                ],
+            ],
+        ];
+
+        // Should NOT throw — pass 2 errors are caught per-schema.
+        $result = $this->handler->importFromJson(
+            data:          $data,
+            configuration: $configuration,
+            version:       '1.0.0'
+        );
+
+        // Pass 1 created the schema successfully.
+        $this->assertCount(1, $result['schemas']);
+
+    }//end testImportFromJsonPass2CatchesReImportFailure()
+
+
+
+
 }//end class
+

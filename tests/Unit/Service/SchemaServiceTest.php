@@ -1373,4 +1373,673 @@ class SchemaServiceTest extends TestCase
     }
 
 
+
+    // =========================================================================
+    // compareType tests
+    // =========================================================================
+
+
+    /**
+     * Test compareType with missing type in config suggests type.
+     *
+     * @return void
+     */
+    public function testCompareTypeWithMissingType(): void
+    {
+        $currentConfig   = [];
+        // No 'type' key.
+        $recommendedType = 'string';
+
+        $result = $this->invokePrivate('compareType', [$currentConfig, $recommendedType]);
+
+        $this->assertEmpty($result['issues']);
+        $this->assertNotEmpty($result['suggestions']);
+        $this->assertEquals('type', $result['suggestions'][0]['type']);
+        $this->assertEquals('string', $result['suggestions'][0]['recommended']);
+    }
+
+
+    /**
+     * Test compareType with matching type produces no issues.
+     *
+     * @return void
+     */
+    public function testCompareTypeWithMatchingType(): void
+    {
+        $currentConfig   = ['type' => 'integer'];
+        $recommendedType = 'integer';
+
+        $result = $this->invokePrivate('compareType', [$currentConfig, $recommendedType]);
+
+        $this->assertEmpty($result['issues']);
+        $this->assertEmpty($result['suggestions']);
+    }
+
+
+    /**
+     * Test compareType with mismatched type produces issue.
+     *
+     * @return void
+     */
+    public function testCompareTypeWithMismatchedType(): void
+    {
+        $currentConfig   = ['type' => 'string'];
+        $recommendedType = 'integer';
+
+        $result = $this->invokePrivate('compareType', [$currentConfig, $recommendedType]);
+
+        $this->assertNotEmpty($result['issues']);
+        $this->assertStringContainsString('string', $result['issues'][0]);
+        $this->assertStringContainsString('integer', $result['issues'][0]);
+    }
+
+
+    // =========================================================================
+    // compareStringConstraints tests
+    // =========================================================================
+
+
+    /**
+     * Test compareStringConstraints skips non-string types.
+     *
+     * @return void
+     */
+    public function testCompareStringConstraintsSkipsNonStringTypes(): void
+    {
+        $currentConfig   = ['type' => 'integer'];
+        $analysis        = ['max_length' => 10, 'detected_format' => 'email', 'string_patterns' => ['snake_case']];
+        $recommendedType = 'integer';
+
+        $result = $this->invokePrivate('compareStringConstraints', [$currentConfig, $analysis, $recommendedType]);
+
+        $this->assertEmpty($result['issues']);
+        $this->assertEmpty($result['suggestions']);
+    }
+
+
+    /**
+     * Test compareStringConstraints detects missing maxLength.
+     *
+     * @return void
+     */
+    public function testCompareStringConstraintsDetectsMissingMaxLength(): void
+    {
+        $currentConfig   = ['type' => 'string'];
+        // No maxLength.
+        $analysis        = ['max_length' => 50, 'detected_format' => null, 'string_patterns' => []];
+        $recommendedType = 'string';
+
+        $result = $this->invokePrivate('compareStringConstraints', [$currentConfig, $analysis, $recommendedType]);
+
+        $this->assertContains('missing_max_length', $result['issues']);
+        $this->assertNotEmpty($result['suggestions']);
+        $this->assertEquals('maxLength', $result['suggestions'][0]['field']);
+    }
+
+
+    /**
+     * Test compareStringConstraints detects maxLength too small.
+     *
+     * @return void
+     */
+    public function testCompareStringConstraintsDetectsMaxLengthTooSmall(): void
+    {
+        $currentConfig   = ['type' => 'string', 'maxLength' => 10];
+        $analysis        = ['max_length' => 50, 'detected_format' => null, 'string_patterns' => []];
+        $recommendedType = 'string';
+
+        $result = $this->invokePrivate('compareStringConstraints', [$currentConfig, $analysis, $recommendedType]);
+
+        $this->assertContains('max_length_too_small', $result['issues']);
+        $this->assertEquals(50, $result['suggestions'][0]['recommended']);
+    }
+
+
+    /**
+     * Test compareStringConstraints detects missing format.
+     *
+     * @return void
+     */
+    public function testCompareStringConstraintsDetectsMissingFormat(): void
+    {
+        $currentConfig   = ['type' => 'string'];
+        // No format.
+        $analysis        = ['max_length' => 0, 'detected_format' => 'email', 'string_patterns' => []];
+        $recommendedType = 'string';
+
+        $result = $this->invokePrivate('compareStringConstraints', [$currentConfig, $analysis, $recommendedType]);
+
+        $this->assertContains('missing_format', $result['issues']);
+        $formatSuggestion = array_filter($result['suggestions'], fn($s) => $s['field'] === 'format');
+        $this->assertNotEmpty($formatSuggestion);
+    }
+
+
+    /**
+     * Test compareStringConstraints detects missing pattern.
+     *
+     * @return void
+     */
+    public function testCompareStringConstraintsDetectsMissingPattern(): void
+    {
+        $currentConfig   = ['type' => 'string'];
+        // No pattern.
+        $analysis        = ['max_length' => 0, 'detected_format' => null, 'string_patterns' => ['snake_case']];
+        $recommendedType = 'string';
+
+        $result = $this->invokePrivate('compareStringConstraints', [$currentConfig, $analysis, $recommendedType]);
+
+        $this->assertContains('missing_pattern', $result['issues']);
+    }
+
+
+    // =========================================================================
+    // compareNullableConstraint tests
+    // =========================================================================
+
+
+    /**
+     * Test compareNullableConstraint with required=true and nullable analysis.
+     *
+     * @return void
+     */
+    public function testCompareNullableConstraintWithRequiredAndNullable(): void
+    {
+        $currentConfig = ['type' => 'string', 'required' => true];
+        $analysis      = ['nullable' => true];
+
+        $result = $this->invokePrivate('compareNullableConstraint', [$currentConfig, $analysis]);
+
+        $this->assertNotEmpty($result['issues']);
+        $this->assertStringContainsString('null values', $result['issues'][0]);
+    }
+
+
+    /**
+     * Test compareNullableConstraint with non-required config and nullable is fine.
+     *
+     * @return void
+     */
+    public function testCompareNullableConstraintWithNonRequiredConfig(): void
+    {
+        $currentConfig = ['type' => 'string', 'required' => false];
+        $analysis      = ['nullable' => true];
+
+        $result = $this->invokePrivate('compareNullableConstraint', [$currentConfig, $analysis]);
+
+        // No issues because required is false.
+        $this->assertEmpty($result['issues']);
+    }
+
+
+    /**
+     * Test compareNullableConstraint with not-nullable analysis produces no issues.
+     *
+     * @return void
+     */
+    public function testCompareNullableConstraintWithNonNullableAnalysis(): void
+    {
+        $currentConfig = ['type' => 'string', 'required' => true];
+        $analysis      = ['nullable' => false];
+
+        $result = $this->invokePrivate('compareNullableConstraint', [$currentConfig, $analysis]);
+
+        $this->assertEmpty($result['issues']);
+        $this->assertEmpty($result['suggestions']);
+    }
+
+
+    // =========================================================================
+    // compareEnumConstraint tests
+    // =========================================================================
+
+
+    /**
+     * Test compareEnumConstraint suggests adding enum values.
+     *
+     * @return void
+     */
+    public function testCompareEnumConstraintSuggestsAddingEnum(): void
+    {
+        $currentConfig = ['type' => 'string'];
+        // No enum.
+        $analysis      = ['enum_values' => ['active', 'inactive', 'pending']];
+
+        $result = $this->invokePrivate('compareEnumConstraint', [$currentConfig, $analysis]);
+
+        $this->assertNotEmpty($result['suggestions']);
+        $this->assertEquals('enum', $result['suggestions'][0]['type']);
+    }
+
+
+    /**
+     * Test compareEnumConstraint detects enum mismatch.
+     *
+     * @return void
+     */
+    public function testCompareEnumConstraintDetectsEnumMismatch(): void
+    {
+        $currentConfig = ['type' => 'string', 'enum' => ['active', 'inactive']];
+        $analysis      = ['enum_values' => ['active', 'inactive', 'deleted']];
+
+        $result = $this->invokePrivate('compareEnumConstraint', [$currentConfig, $analysis]);
+
+        $this->assertNotEmpty($result['issues']);
+        $this->assertStringContainsString('Enum values', $result['issues'][0]);
+    }
+
+
+    /**
+     * Test compareEnumConstraint with null enum_values produces no changes.
+     *
+     * @return void
+     */
+    public function testCompareEnumConstraintWithNullEnumValues(): void
+    {
+        $currentConfig = ['type' => 'string'];
+        $analysis      = ['enum_values' => null];
+
+        $result = $this->invokePrivate('compareEnumConstraint', [$currentConfig, $analysis]);
+
+        $this->assertEmpty($result['issues']);
+        $this->assertEmpty($result['suggestions']);
+    }
+
+
+    /**
+     * Test compareEnumConstraint with too many enum values (>20) skips suggestion.
+     *
+     * @return void
+     */
+    public function testCompareEnumConstraintSkipsWhenTooManyValues(): void
+    {
+        $currentConfig = ['type' => 'string'];
+        $manyValues    = range(1, 25);
+        $analysis      = ['enum_values' => $manyValues];
+
+        $result = $this->invokePrivate('compareEnumConstraint', [$currentConfig, $analysis]);
+
+        $this->assertEmpty($result['suggestions']);
+    }
+
+
+    // =========================================================================
+    // analyzeExistingProperties tests
+    // =========================================================================
+
+
+    /**
+     * Test analyzeExistingProperties returns improvements for type mismatch.
+     *
+     * @return void
+     */
+    public function testAnalyzeExistingPropertiesReturnsMismatchImprovements(): void
+    {
+        $existingProperties = [
+            'age' => ['type' => 'string'],
+            // Should be integer
+        ];
+
+        $discoveredProperties = [
+            'age' => [
+                'types'            => ['integer'],
+                'examples'         => [30],
+                'nullable'         => false,
+                'enum_values'      => [],
+                'max_length'       => 0,
+                'min_length'       => PHP_INT_MAX,
+                'object_structure' => null,
+                'array_structure'  => null,
+                'detected_format'  => null,
+                'string_patterns'  => [],
+                'numeric_range'    => ['min' => 18, 'max' => 99, 'type' => 'integer'],
+                'usage_count'      => 5,
+                'usage_percentage' => 100,
+            ],
+        ];
+
+        $result = $this->invokePrivate('analyzeExistingProperties', [$existingProperties, $discoveredProperties, []]);
+
+        $this->assertNotEmpty($result);
+        $this->assertEquals('age', $result[0]['property_name']);
+        $this->assertEquals('existing', $result[0]['improvement_status']);
+    }
+
+
+    /**
+     * Test analyzeExistingProperties skips properties not in discovered.
+     *
+     * @return void
+     */
+    public function testAnalyzeExistingPropertiesSkipsUndiscoveredProperties(): void
+    {
+        $existingProperties   = ['name' => ['type' => 'string']];
+        $discoveredProperties = [];
+        // name not discovered.
+
+        $result = $this->invokePrivate('analyzeExistingProperties', [$existingProperties, $discoveredProperties, []]);
+
+        $this->assertEmpty($result);
+    }
+
+
+    // =========================================================================
+    // generateNestedProperties tests
+    // =========================================================================
+
+
+    /**
+     * Test generateNestedProperties creates property definitions for all keys.
+     *
+     * @return void
+     */
+    public function testGenerateNestedPropertiesCreatesDefinitions(): void
+    {
+        $objectStructure = ['type' => 'object', 'keys' => ['first_name', 'last_name', 'age'], 'key_count' => 3];
+
+        $result = $this->invokePrivate('generateNestedProperties', [$objectStructure]);
+
+        $this->assertArrayHasKey('first_name', $result);
+        $this->assertArrayHasKey('last_name', $result);
+        $this->assertArrayHasKey('age', $result);
+        $this->assertEquals('string', $result['first_name']['type']);
+    }
+
+
+    /**
+     * Test generateNestedProperties with null keys returns empty.
+     *
+     * @return void
+     */
+    public function testGenerateNestedPropertiesWithNullKeys(): void
+    {
+        $objectStructure = ['type' => 'object'];
+        // No 'keys'.
+
+        $result = $this->invokePrivate('generateNestedProperties', [$objectStructure]);
+
+        $this->assertEmpty($result);
+    }
+
+
+    // =========================================================================
+    // generateArrayItemType tests
+    // =========================================================================
+
+
+    /**
+     * Test generateArrayItemType returns type from item_types.
+     *
+     * @return void
+     */
+    public function testGenerateArrayItemTypeReturnsItemType(): void
+    {
+        $arrayStructure = ['type' => 'list', 'item_types' => ['string' => 3], 'length' => 3];
+
+        $result = $this->invokePrivate('generateArrayItemType', [$arrayStructure]);
+
+        $this->assertArrayHasKey('type', $result);
+        $this->assertEquals('string', $result['type']);
+    }
+
+
+    /**
+     * Test generateArrayItemType with empty item_types returns string default.
+     *
+     * @return void
+     */
+    public function testGenerateArrayItemTypeWithEmptyItemTypesReturnsString(): void
+    {
+        $arrayStructure = ['type' => 'list', 'item_types' => [], 'length' => 0];
+
+        $result = $this->invokePrivate('generateArrayItemType', [$arrayStructure]);
+
+        $this->assertEquals('string', $result['type']);
+    }
+
+
+    // =========================================================================
+    // normalizeSingleType tests
+    // =========================================================================
+
+
+    /**
+     * Test normalizeSingleType handles null type (returns string fallback).
+     *
+     * @return void
+     */
+    public function testNormalizeSingleTypeHandlesNullType(): void
+    {
+        // 'null' maps to 'null' in the switch.
+        $result = $this->invokePrivate('normalizeSingleType', ['null', []]);
+
+        $this->assertEquals('null', $result);
+    }
+
+
+    /**
+     * Test normalizeSingleType handles object type.
+     *
+     * @return void
+     */
+    public function testNormalizeSingleTypeHandlesObjectType(): void
+    {
+        $result = $this->invokePrivate('normalizeSingleType', ['object', []]);
+
+        $this->assertEquals('object', $result);
+    }
+
+
+    /**
+     * Test normalizeSingleType handles array type.
+     *
+     * @return void
+     */
+    public function testNormalizeSingleTypeHandlesArrayType(): void
+    {
+        $result = $this->invokePrivate('normalizeSingleType', ['array', []]);
+
+        $this->assertEquals('array', $result);
+    }
+
+
+    /**
+     * Test normalizeSingleType handles boolean type.
+     *
+     * @return void
+     */
+    public function testNormalizeSingleTypeHandlesBooleanType(): void
+    {
+        $result = $this->invokePrivate('normalizeSingleType', ['boolean', []]);
+
+        $this->assertEquals('boolean', $result);
+    }
+
+
+    /**
+     * Test normalizeSingleType handles unknown type returns string.
+     *
+     * @return void
+     */
+    public function testNormalizeSingleTypeHandlesUnknownType(): void
+    {
+        $result = $this->invokePrivate('normalizeSingleType', ['unknown_custom_type', []]);
+
+        $this->assertEquals('string', $result);
+    }
+
+
+    /**
+     * Test normalizeSingleType handles float type.
+     *
+     * @return void
+     */
+    public function testNormalizeSingleTypeHandlesFloatType(): void
+    {
+        $result = $this->invokePrivate('normalizeSingleType', ['float', []]);
+
+        $this->assertEquals('number', $result);
+    }
+
+
+    // =========================================================================
+    // getDominantType tests
+    // =========================================================================
+
+
+    /**
+     * Test getDominantType with float_string pattern returns number.
+     *
+     * @return void
+     */
+    public function testGetDominantTypeWithFloatStringPattern(): void
+    {
+        $result = $this->invokePrivate('getDominantType', [['string', 'string', 'string'], ['float_string']]);
+
+        $this->assertEquals('number', $result);
+    }
+
+
+    /**
+     * Test getDominantType with boolean_string pattern returns boolean.
+     *
+     * @return void
+     */
+    public function testGetDominantTypeWithBooleanStringPattern(): void
+    {
+        $result = $this->invokePrivate('getDominantType', [['string', 'string', 'string'], ['boolean_string']]);
+
+        $this->assertEquals('boolean', $result);
+    }
+
+
+    /**
+     * Test getDominantType with integer dominant type.
+     *
+     * @return void
+     */
+    public function testGetDominantTypeWithIntegerDominant(): void
+    {
+        $result = $this->invokePrivate('getDominantType', [['integer', 'integer', 'string'], []]);
+
+        $this->assertEquals('integer', $result);
+    }
+
+
+    // =========================================================================
+    // mergeNumericRanges - additional edge cases
+    // =========================================================================
+
+
+    /**
+     * Test mergeNumericRanges with number->integer keeps number.
+     *
+     * @return void
+     */
+    public function testMergeNumericRangesNumberDominatesInteger(): void
+    {
+        $existing = ['min' => 1.5, 'max' => 10.5, 'type' => 'number'];
+        $newRange = ['min' => 2, 'max' => 8, 'type' => 'integer'];
+
+        $result = $this->invokePrivate('mergeNumericRanges', [$existing, $newRange]);
+
+        // number type is kept when existing is number and new is integer.
+        $this->assertEquals('number', $result['type']);
+    }
+
+
+    /**
+     * Test mergeNumericRanges with incompatible types defaults to number.
+     *
+     * @return void
+     */
+    public function testMergeNumericRangesIncompatibleTypesDefaultsToNumber(): void
+    {
+        $existing = ['min' => 1, 'max' => 10, 'type' => 'string'];
+        // Invalid but possible edge case.
+        $newRange = ['min' => 5, 'max' => 15, 'type' => 'integer'];
+
+        $result = $this->invokePrivate('mergeNumericRanges', [$existing, $newRange]);
+
+        $this->assertEquals('number', $result['type']);
+        $this->assertEquals(1, $result['min']);
+        $this->assertEquals(15, $result['max']);
+    }
+
+
+    // =========================================================================
+    // generateSuggestions - object and array property types
+    // =========================================================================
+
+
+    /**
+     * Test generateSuggestions creates object type suggestion for nested objects.
+     *
+     * @return void
+     */
+    public function testGenerateSuggestionsCreatesObjectTypeSuggestion(): void
+    {
+        $discovered = [
+            'address' => [
+                'name'             => 'address',
+                'types'            => ['array'],
+                'examples'         => [['street' => 'Main St', 'city' => 'Amsterdam']],
+                'nullable'         => true,
+                'enum_values'      => [],
+                'max_length'       => 0,
+                'min_length'       => PHP_INT_MAX,
+                'object_structure' => ['type' => 'object', 'keys' => ['street', 'city'], 'key_count' => 2],
+                'array_structure'  => null,
+                'detected_format'  => null,
+                'string_patterns'  => [],
+                'numeric_range'    => null,
+                'usage_count'      => 5,
+                'usage_percentage' => 100,
+            ],
+        ];
+
+        $result = $this->invokePrivate('generateSuggestions', [$discovered, []]);
+
+        $this->assertNotEmpty($result);
+        $objectSuggestion = $result[0];
+        $this->assertEquals('object', $objectSuggestion['type']);
+        $this->assertArrayHasKey('properties', $objectSuggestion);
+    }
+
+
+    /**
+     * Test generateSuggestions creates array type suggestion for list arrays.
+     *
+     * @return void
+     */
+    public function testGenerateSuggestionsCreatesArrayTypeSuggestion(): void
+    {
+        $discovered = [
+            'tags' => [
+                'name'             => 'tags',
+                'types'            => ['array'],
+                'examples'         => [['php', 'nextcloud', 'api']],
+                'nullable'         => true,
+                'enum_values'      => [],
+                'max_length'       => 0,
+                'min_length'       => PHP_INT_MAX,
+                'object_structure' => null,
+                'array_structure'  => ['type' => 'list', 'item_types' => ['string' => 3], 'length' => 3],
+                'detected_format'  => null,
+                'string_patterns'  => [],
+                'numeric_range'    => null,
+                'usage_count'      => 5,
+                'usage_percentage' => 100,
+            ],
+        ];
+
+        $result = $this->invokePrivate('generateSuggestions', [$discovered, []]);
+
+        $this->assertNotEmpty($result);
+        $arraySuggestion = $result[0];
+        $this->assertEquals('array', $arraySuggestion['type']);
+        $this->assertArrayHasKey('items', $arraySuggestion);
+    }
+
+
 }//end class

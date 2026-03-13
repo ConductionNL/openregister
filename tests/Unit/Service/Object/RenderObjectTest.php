@@ -5575,4 +5575,834 @@ class RenderObjectTest extends TestCase
         $this->assertSame([], $result);
     }
 
+    // =========================================================================
+    // extractInverseConfig — various property config formats
+    // =========================================================================
+
+    /**
+     * Test extractInverseConfig with items.$ref and items.inversedBy.
+     *
+     * @return void
+     */
+    public function testExtractInverseConfigFromItemsRef(): void
+    {
+        $propConfig = [
+            'type' => 'array',
+            'items' => [
+                '$ref' => 'schema-123',
+                'inversedBy' => 'parentField',
+            ],
+        ];
+
+        $result = $this->invokePrivate('extractInverseConfig', [$propConfig]);
+
+        $this->assertIsArray($result);
+        $this->assertSame('schema-123', $result['targetSchemaRef']);
+        $this->assertSame(['parentField'], $result['inversedByFields']);
+    }
+
+    /**
+     * Test extractInverseConfig with direct $ref and inversedBy.
+     *
+     * @return void
+     */
+    public function testExtractInverseConfigFromDirectRef(): void
+    {
+        $propConfig = [
+            '$ref' => 'schema-456',
+            'inversedBy' => 'otherField',
+        ];
+
+        $result = $this->invokePrivate('extractInverseConfig', [$propConfig]);
+
+        $this->assertIsArray($result);
+        $this->assertSame('schema-456', $result['targetSchemaRef']);
+        $this->assertSame(['otherField'], $result['inversedByFields']);
+    }
+
+    /**
+     * Test extractInverseConfig with multi-field inversedBy array.
+     *
+     * @return void
+     */
+    public function testExtractInverseConfigMultiFieldInversedBy(): void
+    {
+        $propConfig = [
+            'items' => [
+                '$ref' => 'schema-789',
+                'inversedBy' => ['moduleA', 'moduleB'],
+            ],
+        ];
+
+        $result = $this->invokePrivate('extractInverseConfig', [$propConfig]);
+
+        $this->assertIsArray($result);
+        $this->assertSame(['moduleA', 'moduleB'], $result['inversedByFields']);
+    }
+
+    /**
+     * Test extractInverseConfig returns null when $ref is missing.
+     *
+     * @return void
+     */
+    public function testExtractInverseConfigReturnsNullWhenMissingRef(): void
+    {
+        $propConfig = [
+            'inversedBy' => 'someField',
+        ];
+
+        $result = $this->invokePrivate('extractInverseConfig', [$propConfig]);
+        $this->assertNull($result);
+    }
+
+    /**
+     * Test extractInverseConfig returns null when inversedBy is missing.
+     *
+     * @return void
+     */
+    public function testExtractInverseConfigReturnsNullWhenMissingInversedBy(): void
+    {
+        $propConfig = [
+            '$ref' => 'schema-123',
+        ];
+
+        $result = $this->invokePrivate('extractInverseConfig', [$propConfig]);
+        $this->assertNull($result);
+    }
+
+    // =========================================================================
+    // collectEntityUuids — additional coverage
+    // =========================================================================
+
+    /**
+     * Test collectEntityUuids with valid entities returns all UUIDs.
+     *
+     * @return void
+     */
+    public function testCollectEntityUuidsFromValidEntities(): void
+    {
+        $entity1 = $this->createObjectEntity(1, 'uuid-aaa');
+        $entity2 = $this->createObjectEntity(2, 'uuid-bbb');
+
+        $result = $this->invokePrivate('collectEntityUuids', [[$entity1, $entity2]]);
+
+        $this->assertSame(['uuid-aaa', 'uuid-bbb'], $result);
+    }
+
+    /**
+     * Test collectEntityUuids with empty array returns empty.
+     *
+     * @return void
+     */
+    public function testCollectEntityUuidsEmptyArrayReturnsEmpty(): void
+    {
+        $result = $this->invokePrivate('collectEntityUuids', [[]]);
+        $this->assertSame([], $result);
+    }
+
+    // =========================================================================
+    // filterExtendedInverseProperties — filters based on extend array
+    // =========================================================================
+
+    /**
+     * Test filterExtendedInverseProperties matches exact property name.
+     *
+     * @return void
+     */
+    public function testFilterExtendedInversePropertiesMatchesExactName(): void
+    {
+        $inversedProperties = [
+            'contacts' => ['inversedBy' => 'org', '$ref' => '1'],
+            'orders' => ['inversedBy' => 'customer', '$ref' => '2'],
+        ];
+        $extend = ['contacts'];
+
+        $result = $this->invokePrivate('filterExtendedInverseProperties', [
+            $inversedProperties, $extend,
+        ]);
+
+        $this->assertCount(1, $result);
+        $this->assertArrayHasKey('contacts', $result);
+        $this->assertArrayNotHasKey('orders', $result);
+    }
+
+    /**
+     * Test filterExtendedInverseProperties with 'all' flag includes everything.
+     *
+     * @return void
+     */
+    public function testFilterExtendedInversePropertiesAllFlagIncludesAll(): void
+    {
+        $inversedProperties = [
+            'contacts' => ['inversedBy' => 'org', '$ref' => '1'],
+            'orders' => ['inversedBy' => 'customer', '$ref' => '2'],
+        ];
+        $extend = ['all'];
+
+        $result = $this->invokePrivate('filterExtendedInverseProperties', [
+            $inversedProperties, $extend,
+        ]);
+
+        $this->assertCount(2, $result);
+        $this->assertArrayHasKey('contacts', $result);
+        $this->assertArrayHasKey('orders', $result);
+    }
+
+    /**
+     * Test filterExtendedInverseProperties with no matching extend returns empty.
+     *
+     * @return void
+     */
+    public function testFilterExtendedInversePropertiesNoMatchReturnsEmptyArray(): void
+    {
+        $inversedProperties = [
+            'contacts' => ['inversedBy' => 'org', '$ref' => '1'],
+        ];
+        $extend = ['somethingElse'];
+
+        $result = $this->invokePrivate('filterExtendedInverseProperties', [
+            $inversedProperties, $extend,
+        ]);
+
+        $this->assertSame([], $result);
+    }
+
+    // =========================================================================
+    // initializeInverseCacheEntries — populates cache with empty arrays
+    // =========================================================================
+
+    /**
+     * Test initializeInverseCacheEntries sets empty arrays for each UUID.
+     *
+     * @return void
+     */
+    public function testInitializeInverseCacheEntriesSetsEmptyArrays(): void
+    {
+        $uuids = ['uuid-1', 'uuid-2', 'uuid-3'];
+
+        $this->invokePrivate('initializeInverseCacheEntries', [$uuids, 'contacts']);
+
+        $ref = new ReflectionClass($this->handler);
+        $cacheProp = $ref->getProperty('inverseRelationCache');
+        $cacheProp->setAccessible(true);
+        $cache = $cacheProp->getValue($this->handler);
+
+        $this->assertSame([], $cache['uuid-1_contacts']);
+        $this->assertSame([], $cache['uuid-2_contacts']);
+        $this->assertSame([], $cache['uuid-3_contacts']);
+    }
+
+    /**
+     * Test initializeInverseCacheEntries does not overwrite existing entries.
+     *
+     * @return void
+     */
+    public function testInitializeInverseCacheEntriesPreservesExisting(): void
+    {
+        $ref = new ReflectionClass($this->handler);
+        $cacheProp = $ref->getProperty('inverseRelationCache');
+        $cacheProp->setAccessible(true);
+
+        $existingObj = $this->createObjectEntity(99, 'existing-ref');
+        $cacheProp->setValue($this->handler, ['uuid-1_contacts' => [$existingObj]]);
+
+        $this->invokePrivate('initializeInverseCacheEntries', [['uuid-1', 'uuid-2'], 'contacts']);
+
+        $cache = $cacheProp->getValue($this->handler);
+        $this->assertCount(1, $cache['uuid-1_contacts']);
+        $this->assertSame($existingObj, $cache['uuid-1_contacts'][0]);
+        $this->assertSame([], $cache['uuid-2_contacts']);
+    }
+
+    // =========================================================================
+    // indexReferencingObjects — indexes objects into inverse cache
+    // =========================================================================
+
+    /**
+     * Test indexReferencingObjects with simple string reference.
+     *
+     * @return void
+     */
+    public function testIndexReferencingObjectsSimpleStringRef(): void
+    {
+        $ref = new ReflectionClass($this->handler);
+        $cacheProp = $ref->getProperty('inverseRelationCache');
+        $cacheProp->setAccessible(true);
+        $cacheProp->setValue($this->handler, ['target-uuid_contacts' => []]);
+
+        $refObject = $this->createObjectEntity(10, 'ref-obj-uuid', [
+            'orgField' => 'target-uuid',
+        ]);
+
+        $this->invokePrivate('indexReferencingObjects', [
+            [$refObject],
+            ['orgField'],
+            ['target-uuid'],
+            'contacts',
+        ]);
+
+        $cache = $cacheProp->getValue($this->handler);
+        $this->assertCount(1, $cache['target-uuid_contacts']);
+        $this->assertSame('ref-obj-uuid', $cache['target-uuid_contacts'][0]->getUuid());
+    }
+
+    /**
+     * Test indexReferencingObjects handles value object format.
+     *
+     * @return void
+     */
+    public function testIndexReferencingObjectsHandlesValueObjectFormat(): void
+    {
+        $ref = new ReflectionClass($this->handler);
+        $cacheProp = $ref->getProperty('inverseRelationCache');
+        $cacheProp->setAccessible(true);
+        $cacheProp->setValue($this->handler, ['target-uuid_links' => []]);
+
+        $refObject = $this->createObjectEntity(11, 'ref-obj-2', [
+            'parentRef' => ['value' => 'target-uuid'],
+        ]);
+
+        $this->invokePrivate('indexReferencingObjects', [
+            [$refObject],
+            ['parentRef'],
+            ['target-uuid'],
+            'links',
+        ]);
+
+        $cache = $cacheProp->getValue($this->handler);
+        $this->assertCount(1, $cache['target-uuid_links']);
+    }
+
+    /**
+     * Test indexReferencingObjects matches array of UUIDs.
+     *
+     * @return void
+     */
+    public function testIndexReferencingObjectsMatchesArrayUuids(): void
+    {
+        $ref = new ReflectionClass($this->handler);
+        $cacheProp = $ref->getProperty('inverseRelationCache');
+        $cacheProp->setAccessible(true);
+        $cacheProp->setValue($this->handler, [
+            'uuid-a_members' => [],
+            'uuid-b_members' => [],
+        ]);
+
+        $refObject = $this->createObjectEntity(12, 'ref-obj-3', [
+            'memberOf' => ['uuid-a', 'uuid-b', 'uuid-c'],
+        ]);
+
+        $this->invokePrivate('indexReferencingObjects', [
+            [$refObject],
+            ['memberOf'],
+            ['uuid-a', 'uuid-b'],
+            'members',
+        ]);
+
+        $cache = $cacheProp->getValue($this->handler);
+        $this->assertCount(1, $cache['uuid-a_members']);
+        $this->assertCount(1, $cache['uuid-b_members']);
+    }
+
+    /**
+     * Test indexReferencingObjects deduplicates multi-field matches.
+     *
+     * @return void
+     */
+    public function testIndexReferencingObjectsDeduplicatesMultiField(): void
+    {
+        $ref = new ReflectionClass($this->handler);
+        $cacheProp = $ref->getProperty('inverseRelationCache');
+        $cacheProp->setAccessible(true);
+        $cacheProp->setValue($this->handler, ['target-uuid_contacts' => []]);
+
+        $refObject = $this->createObjectEntity(13, 'ref-obj-4', [
+            'fieldA' => 'target-uuid',
+            'fieldB' => 'target-uuid',
+        ]);
+
+        $this->invokePrivate('indexReferencingObjects', [
+            [$refObject],
+            ['fieldA', 'fieldB'],
+            ['target-uuid'],
+            'contacts',
+        ]);
+
+        $cache = $cacheProp->getValue($this->handler);
+        $this->assertCount(1, $cache['target-uuid_contacts']);
+    }
+
+    /**
+     * Test indexReferencingObjects populates objectsCache.
+     *
+     * @return void
+     */
+    public function testIndexReferencingObjectsPopulatesObjectsCache(): void
+    {
+        $ref = new ReflectionClass($this->handler);
+        $cacheProp = $ref->getProperty('inverseRelationCache');
+        $cacheProp->setAccessible(true);
+        $cacheProp->setValue($this->handler, ['target-uuid_items' => []]);
+
+        $refObject = $this->createObjectEntity(14, 'ref-obj-5', [
+            'parent' => 'target-uuid',
+        ]);
+
+        $this->invokePrivate('indexReferencingObjects', [
+            [$refObject],
+            ['parent'],
+            ['target-uuid'],
+            'items',
+        ]);
+
+        $objectsCacheProp = $ref->getProperty('objectsCache');
+        $objectsCacheProp->setAccessible(true);
+        $objectsCache = $objectsCacheProp->getValue($this->handler);
+        $this->assertArrayHasKey('ref-obj-5', $objectsCache);
+    }
+
+    // =========================================================================
+    // getInversedProperties — extracts inversedBy properties from schema
+    // =========================================================================
+
+    /**
+     * Test getInversedProperties from items.inversedBy.
+     *
+     * @return void
+     */
+    public function testGetInversedPropertiesFromItemsInversedBy(): void
+    {
+        $schema = $this->createSchema(1, 'test');
+        $schema->setProperties([
+            'contacts' => [
+                'type' => 'array',
+                'items' => [
+                    'inversedBy' => 'organization',
+                    '$ref' => 'contact-schema',
+                ],
+            ],
+            'name' => [
+                'type' => 'string',
+            ],
+        ]);
+
+        $result = $this->invokePrivate('getInversedProperties', [$schema]);
+
+        $this->assertCount(1, $result);
+        $this->assertArrayHasKey('contacts', $result);
+    }
+
+    /**
+     * Test getInversedProperties from direct inversedBy.
+     *
+     * @return void
+     */
+    public function testGetInversedPropertiesFromDirectInversedBy(): void
+    {
+        $schema = $this->createSchema(1, 'test');
+        $schema->setProperties([
+            'parent' => [
+                'type' => 'object',
+                'inversedBy' => 'children',
+                '$ref' => 'self-schema',
+            ],
+        ]);
+
+        $result = $this->invokePrivate('getInversedProperties', [$schema]);
+
+        $this->assertCount(1, $result);
+        $this->assertArrayHasKey('parent', $result);
+    }
+
+    /**
+     * Test getInversedProperties skips empty inversedBy.
+     *
+     * @return void
+     */
+    public function testGetInversedPropertiesSkipsEmptyInversedBy(): void
+    {
+        $schema = $this->createSchema(1, 'test');
+        $schema->setProperties([
+            'field' => [
+                'type' => 'string',
+                'inversedBy' => '',
+            ],
+        ]);
+
+        $result = $this->invokePrivate('getInversedProperties', [$schema]);
+        $this->assertSame([], $result);
+    }
+
+    // =========================================================================
+    // resolveSchemaReference — path reference with slash
+    // =========================================================================
+
+    /**
+     * Test resolveSchemaReference finds schema by slug from path reference.
+     *
+     * @return void
+     */
+    public function testResolveSchemaReferencePathRefFindsSchemaBySlug(): void
+    {
+        $schema = $this->createSchema(55, 'organisatie');
+
+        $this->schemaMapper->method('find')
+            ->willThrowException(new Exception('Not found'));
+        $this->schemaMapper->method('findAll')
+            ->willReturn([$schema]);
+
+        $result = $this->invokePrivate('resolveSchemaReference', [
+            '#/components/schemas/organisatie',
+        ]);
+
+        $this->assertSame('55', $result);
+    }
+
+    /**
+     * Test resolveSchemaReference path ref is case insensitive.
+     *
+     * @return void
+     */
+    public function testResolveSchemaReferencePathRefCaseInsensitive(): void
+    {
+        $schema = $this->createSchema(66, 'MySchema');
+
+        $this->schemaMapper->method('find')
+            ->willThrowException(new Exception('Not found'));
+        $this->schemaMapper->method('findAll')
+            ->willReturn([$schema]);
+
+        $result = $this->invokePrivate('resolveSchemaReference', [
+            '#/definitions/myschema',
+        ]);
+
+        $this->assertSame('66', $result);
+    }
+
+    // =========================================================================
+    // renderEntities — string parameter conversion
+    // =========================================================================
+
+    /**
+     * Test renderEntities converts string extend to array.
+     *
+     * @return void
+     */
+    public function testRenderEntitiesConvertsStringExtendToArray(): void
+    {
+        $entity = $this->createBasicEntity(1, 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee', ['name' => 'Test']);
+        $this->setupBasicMocks();
+
+        $result = $this->handler->renderEntities(
+            [$entity],
+            'field1,field2'
+        );
+
+        $this->assertCount(1, $result);
+        $this->assertInstanceOf(ObjectEntity::class, $result[0]);
+    }
+
+    /**
+     * Test renderEntities converts string fields to array.
+     *
+     * @return void
+     */
+    public function testRenderEntitiesConvertsStringFieldsToArray(): void
+    {
+        $entity = $this->createBasicEntity(1, 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee', ['name' => 'Test']);
+        $this->setupBasicMocks();
+
+        $result = $this->handler->renderEntities(
+            [$entity],
+            [],
+            null,
+            'name,id'
+        );
+
+        $this->assertCount(1, $result);
+    }
+
+    /**
+     * Test renderEntities converts string filter to array.
+     *
+     * @return void
+     */
+    public function testRenderEntitiesConvertsStringFilterToArray(): void
+    {
+        $entity = $this->createBasicEntity(1, 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee', ['name' => 'Test']);
+        $this->setupBasicMocks();
+
+        $result = $this->handler->renderEntities(
+            [$entity],
+            [],
+            'status=active',
+            null
+        );
+
+        $this->assertCount(1, $result);
+    }
+
+    /**
+     * Test renderEntities converts string unset to array.
+     *
+     * @return void
+     */
+    public function testRenderEntitiesConvertsStringUnsetToArray(): void
+    {
+        $entity = $this->createBasicEntity(1, 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee', ['name' => 'Test']);
+        $this->setupBasicMocks();
+
+        $result = $this->handler->renderEntities(
+            [$entity],
+            [],
+            null,
+            null,
+            'internalField,secretField'
+        );
+
+        $this->assertCount(1, $result);
+    }
+
+    /**
+     * Test renderEntities removes source from self in list responses.
+     *
+     * @return void
+     */
+    public function testRenderEntitiesRemovesSourceFromSelf(): void
+    {
+        $entity = $this->createBasicEntity(1, 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee', ['name' => 'Test']);
+        $entity->setSource('some-source-value');
+        $this->setupBasicMocks();
+
+        $result = $this->handler->renderEntities([$entity]);
+
+        $this->assertCount(1, $result);
+        $this->assertNull($result[0]->getSource());
+    }
+
+    /**
+     * Test renderEntities batch preloads when extend is provided.
+     *
+     * @return void
+     */
+    public function testRenderEntitiesBatchPreloadsWhenExtendProvided(): void
+    {
+        $relatedUuid = 'bbbbbbbb-cccc-dddd-eeee-ffffffffffff';
+        $entity = $this->createBasicEntity(1, 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee', [
+            'related' => $relatedUuid,
+        ]);
+
+        $relatedEntity = $this->createBasicEntity(2, $relatedUuid, ['name' => 'Related']);
+
+        $this->setupBasicMocks();
+        $this->objectCacheService->method('preloadObjects')
+            ->willReturn([$relatedEntity]);
+
+        $result = $this->handler->renderEntities(
+            [$entity],
+            ['related']
+        );
+
+        $this->assertCount(1, $result);
+    }
+
+    // =========================================================================
+    // removeQueryParameters — no query string branch
+    // =========================================================================
+
+    /**
+     * Test removeQueryParameters without query string returns as-is.
+     *
+     * @return void
+     */
+    public function testRemoveQueryParametersWithoutQueryStringReturnsAsIs(): void
+    {
+        $result = $this->invokePrivate('removeQueryParameters', ['schema-reference']);
+        $this->assertSame('schema-reference', $result);
+    }
+
+    /**
+     * Test removeQueryParameters strips complex query string.
+     *
+     * @return void
+     */
+    public function testRemoveQueryParametersStripsComplexQueryString(): void
+    {
+        $result = $this->invokePrivate('removeQueryParameters', ['schema?key=value&other=1']);
+        $this->assertSame('schema', $result);
+    }
+
+    // =========================================================================
+    // hydrateMetadataFromFileProperties — catch path
+    // =========================================================================
+
+    /**
+     * Test hydrateMetadataFromFileProperties catches exception gracefully.
+     *
+     * @return void
+     */
+    public function testHydrateMetadataFromFilePropertiesCatchesExceptionGracefully(): void
+    {
+        $entity = $this->createBasicEntity(1, 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee', [
+            'avatar' => ['downloadUrl' => 'http://example.com/img.png'],
+        ]);
+
+        $this->schemaMapper->method('find')
+            ->willThrowException(new Exception('DB error'));
+
+        $result = $this->invokePrivate('hydrateMetadataFromFileProperties', [$entity]);
+
+        $this->assertInstanceOf(ObjectEntity::class, $result);
+    }
+
+    // =========================================================================
+    // handleInversedProperties — early return paths
+    // =========================================================================
+
+    /**
+     * Test handleInversedProperties returns early when schema is null.
+     *
+     * @return void
+     */
+    public function testHandleInversedPropertiesReturnsEarlyWhenSchemaNull(): void
+    {
+        $entity = $this->createBasicEntity(1, 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee', ['name' => 'Test']);
+        $objectData = ['name' => 'Test'];
+
+        $this->schemaMapper->method('find')
+            ->willThrowException(new Exception('Not found'));
+
+        $result = $this->invokePrivate('handleInversedProperties', [
+            $entity, $objectData, 0, [], [], [], [], [], [],
+        ]);
+
+        $this->assertSame($objectData, $result);
+    }
+
+    /**
+     * Test handleInversedProperties returns early when no inversed properties.
+     *
+     * @return void
+     */
+    public function testHandleInversedPropertiesReturnsEarlyWhenNoInversedProps(): void
+    {
+        $entity = $this->createBasicEntity(1, 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee', ['name' => 'Test']);
+        $objectData = ['name' => 'Test'];
+
+        $schema = $this->createSchema(1, 'test-schema');
+        $schema->setProperties([
+            'name' => ['type' => 'string'],
+        ]);
+
+        $this->schemaMapper->method('find')
+            ->willReturn($schema);
+
+        $result = $this->invokePrivate('handleInversedProperties', [
+            $entity, $objectData, 0, [], [], [], [], [], [],
+        ]);
+
+        $this->assertSame($objectData, $result);
+    }
+
+    // =========================================================================
+    // resolveSchemaReference — numeric ID returns immediately
+    // =========================================================================
+
+    /**
+     * Test resolveSchemaReference returns numeric ID as-is.
+     *
+     * @return void
+     */
+    public function testResolveSchemaReferenceReturnsNumericIdAsIs(): void
+    {
+        $result = $this->invokePrivate('resolveSchemaReference', ['42']);
+        $this->assertSame('42', $result);
+    }
+
+    // =========================================================================
+    // resolveSchemaReference — query parameters stripped
+    // =========================================================================
+
+    /**
+     * Test resolveSchemaReference strips query parameters before resolving.
+     *
+     * @return void
+     */
+    public function testResolveSchemaReferenceStripsQueryParamsBeforeNumericCheck(): void
+    {
+        $result = $this->invokePrivate('resolveSchemaReference', ['42?key=value']);
+        $this->assertSame('42', $result);
+    }
+
+    // =========================================================================
+    // resolveSchemaReference — slug filter match
+    // =========================================================================
+
+    /**
+     * Test resolveSchemaReference falls to slug filter for plain string.
+     *
+     * @return void
+     */
+    public function testResolveSchemaReferenceSlugFilterMatch(): void
+    {
+        $schema = $this->createSchema(88, 'my-slug');
+
+        $this->schemaMapper->method('find')
+            ->willThrowException(new Exception('Not found'));
+        $this->schemaMapper->method('findAll')
+            ->willReturn([$schema]);
+
+        $result = $this->invokePrivate('resolveSchemaReference', ['my-slug']);
+
+        $this->assertSame('88', $result);
+    }
+
+    // =========================================================================
+    // handleInversedProperties — cache hit path
+    // =========================================================================
+
+    /**
+     * Test handleInversedProperties uses cache when available.
+     *
+     * @return void
+     */
+    public function testHandleInversedPropertiesUsesCacheWhenAvailable(): void
+    {
+        $entityUuid = 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee';
+        $entity = $this->createBasicEntity(1, $entityUuid, ['name' => 'Test']);
+
+        $schema = $this->createSchema(1, 'test-schema');
+        $schema->setProperties([
+            'contacts' => [
+                'type' => 'array',
+                'items' => [
+                    'inversedBy' => 'org',
+                    '$ref' => '1',
+                ],
+            ],
+        ]);
+
+        $this->schemaMapper->method('find')
+            ->willReturn($schema);
+
+        // Pre-populate inverse relation cache so it takes the cache path.
+        $ref = new ReflectionClass($this->handler);
+        $cacheProp = $ref->getProperty('inverseRelationCache');
+        $cacheProp->setAccessible(true);
+        $cacheProp->setValue($this->handler, [
+            $entityUuid . '_contacts' => [],
+        ]);
+
+        $objectData = ['name' => 'Test'];
+
+        $result = $this->invokePrivate('handleInversedProperties', [
+            $entity, $objectData, 0, [], [], [], [], [], [],
+        ]);
+
+        // Should return object data with contacts set (empty from cache).
+        $this->assertIsArray($result);
+        $this->assertArrayHasKey('contacts', $result);
+        $this->assertSame([], $result['contacts']);
+    }
+
 }

@@ -3574,4 +3574,198 @@ class SaveObjectsTest extends TestCase
 
         $this->assertCount(1, $result['saved']);
     }
+
+    // =========================================================================
+    // saveObjects — validation=true path passes flag through to chunk processor
+    // =========================================================================
+
+    public function testSaveObjectsWithValidationEnabled(): void
+    {
+        $schema = $this->createSchema(1);
+        $schema->setProperties([]);
+        $schema->setConfiguration([]);
+        $register = $this->createRegister(1);
+
+        $this->userSession->method('getUser')->willReturn(null);
+        $this->organisationService->method('ensureDefaultOrganisation')
+            ->willThrowException(new \Exception('No org'));
+
+        $this->bulkValidHandler->method('performComprehensiveSchemaAnalysis')
+            ->willReturn([
+                'metadataFields'     => [],
+                'inverseProperties'  => [],
+                'validationRequired' => true,
+                'properties'         => null,
+                'configuration'      => null,
+            ]);
+
+        $this->saveHandler->method('applyPropertyDefaults')->willReturnArgument(1);
+
+        $chunkResult = [
+            'saved'      => [['uuid' => 'val-uuid']],
+            'updated'    => [],
+            'unchanged'  => [],
+            'invalid'    => [],
+            'errors'     => [],
+            'statistics' => [
+                'saved' => 1, 'updated' => 0, 'unchanged' => 0, 'invalid' => 0, 'errors' => 0,
+            ],
+        ];
+
+        // Expect the chunk processor is called with _validation=true.
+        $this->chunkProcHandler->expects($this->once())
+            ->method('processObjectsChunk')
+            ->with(
+                $this->anything(),
+                $this->anything(),
+                $this->anything(),
+                $this->anything(),
+                $this->equalTo(true),  // validation=true
+                $this->anything(),
+                $this->anything(),
+                $this->anything()
+            )
+            ->willReturn($chunkResult);
+
+        $result = $this->handler->saveObjects(
+            [['name' => 'Test']],
+            $register,
+            $schema,
+            true,    // _rbac
+            true,    // _multitenancy
+            true     // validation=true
+        );
+
+        $this->assertCount(1, $result['saved']);
+    }
+
+    // =========================================================================
+    // saveObjects — events=true path passes flag through to chunk processor
+    // =========================================================================
+
+    public function testSaveObjectsWithEventsEnabled(): void
+    {
+        $schema = $this->createSchema(1);
+        $schema->setProperties([]);
+        $schema->setConfiguration([]);
+        $register = $this->createRegister(1);
+
+        $this->userSession->method('getUser')->willReturn(null);
+        $this->organisationService->method('ensureDefaultOrganisation')
+            ->willThrowException(new \Exception('No org'));
+
+        $this->bulkValidHandler->method('performComprehensiveSchemaAnalysis')
+            ->willReturn([
+                'metadataFields'     => [],
+                'inverseProperties'  => [],
+                'validationRequired' => false,
+                'properties'         => null,
+                'configuration'      => null,
+            ]);
+
+        $this->saveHandler->method('applyPropertyDefaults')->willReturnArgument(1);
+
+        $chunkResult = [
+            'saved'      => [['uuid' => 'ev-uuid']],
+            'updated'    => [],
+            'unchanged'  => [],
+            'invalid'    => [],
+            'errors'     => [],
+            'statistics' => [
+                'saved' => 1, 'updated' => 0, 'unchanged' => 0, 'invalid' => 0, 'errors' => 0,
+            ],
+        ];
+
+        // Expect the chunk processor is called with _events=true.
+        $this->chunkProcHandler->expects($this->once())
+            ->method('processObjectsChunk')
+            ->with(
+                $this->anything(),
+                $this->anything(),
+                $this->anything(),
+                $this->anything(),
+                $this->anything(),
+                $this->equalTo(true),   // events=true
+                $this->anything(),
+                $this->anything()
+            )
+            ->willReturn($chunkResult);
+
+        $result = $this->handler->saveObjects(
+            [['name' => 'Test']],
+            $register,
+            $schema,
+            true,    // _rbac
+            true,    // _multitenancy
+            false,   // validation
+            true     // events=true
+        );
+
+        $this->assertCount(1, $result['saved']);
+    }
+
+    // =========================================================================
+    // saveObjects — result includes objectsCreated/Updated/Unchanged keys
+    // =========================================================================
+
+    public function testSaveObjectsResultHasAggregateStatisticsKeys(): void
+    {
+        $schema = $this->createSchema(1);
+        $schema->setProperties([]);
+        $schema->setConfiguration([]);
+        $register = $this->createRegister(1);
+
+        $this->userSession->method('getUser')->willReturn(null);
+        $this->organisationService->method('ensureDefaultOrganisation')
+            ->willThrowException(new \Exception('No org'));
+
+        $this->bulkValidHandler->method('performComprehensiveSchemaAnalysis')
+            ->willReturn([
+                'metadataFields'     => [],
+                'inverseProperties'  => [],
+                'validationRequired' => false,
+                'properties'         => null,
+                'configuration'      => null,
+            ]);
+
+        $this->saveHandler->method('applyPropertyDefaults')->willReturnArgument(1);
+
+        $this->chunkProcHandler->method('processObjectsChunk')->willReturn([
+            'saved'      => [['uuid' => 'agg-uuid']],
+            'updated'    => [],
+            'unchanged'  => [['uuid' => 'unch-uuid']],
+            'invalid'    => [],
+            'errors'     => [],
+            'statistics' => [
+                'saved' => 1, 'updated' => 0, 'unchanged' => 1, 'invalid' => 0, 'errors' => 0,
+            ],
+        ]);
+
+        $result = $this->handler->saveObjects([['name' => 'Test']], $register, $schema);
+
+        $this->assertArrayHasKey('objectsCreated', $result['statistics']);
+        $this->assertArrayHasKey('objectsUpdated', $result['statistics']);
+        $this->assertArrayHasKey('objectsUnchanged', $result['statistics']);
+        $this->assertSame(1, $result['statistics']['objectsCreated']);
+        $this->assertSame(0, $result['statistics']['objectsUpdated']);
+        $this->assertSame(1, $result['statistics']['objectsUnchanged']);
+    }
+
+    // =========================================================================
+    // saveObjects — no objects prepared returns error
+    // =========================================================================
+
+    public function testSaveObjectsReturnsErrorWhenNoObjectsPrepared(): void
+    {
+        // Mixed schema (no schema param) with all invalid objects from preparationHandler.
+        $this->preparationHandler->method('prepareObjectsForBulkSave')
+            ->willReturn([[], [], [['name' => 'bad', 'error' => 'Invalid']]]);
+
+        $result = $this->handler->saveObjects([['name' => 'bad']]);
+
+        // No objects prepared — should have error.
+        $this->assertNotEmpty($result['errors']);
+        $errorMessages = array_column($result['errors'], 'type');
+        $this->assertContains('NoObjectsPreparedException', $errorMessages);
+    }
 }

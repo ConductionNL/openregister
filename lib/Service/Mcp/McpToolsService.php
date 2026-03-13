@@ -39,7 +39,6 @@ use Psr\Log\LoggerInterface;
  */
 class McpToolsService
 {
-
     /**
      * McpToolsService constructor
      *
@@ -163,7 +162,7 @@ class McpToolsService
                         'description' => 'Number of results to skip (for list)',
                     ],
                 ],
-                'required' => ['action'],
+                'required'   => ['action'],
             ],
         ];
     }//end getRegistersTool()
@@ -203,7 +202,7 @@ class McpToolsService
                         'description' => 'Number of results to skip (for list)',
                     ],
                 ],
-                'required' => ['action'],
+                'required'   => ['action'],
             ],
         ];
     }//end getSchemasTool()
@@ -251,7 +250,7 @@ class McpToolsService
                         'description' => 'Number of results to skip (for list)',
                     ],
                 ],
-                'required' => ['action', 'register', 'schema'],
+                'required'   => ['action', 'register', 'schema'],
             ],
         ];
     }//end getObjectsTool()

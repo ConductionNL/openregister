@@ -514,4 +514,204 @@ class BulkOperationsHandlerTest extends TestCase
 
         $this->assertSame($result, $actual);
     }
+
+    // =========================================================================
+    // deleteObjectsBySchema — magic table path
+    // =========================================================================
+
+    public function testDeleteObjectsBySchemaUsesMagicTableWhenEnabled(): void
+    {
+        $schema = new Schema();
+        $ref = new ReflectionClass($schema);
+        $idProp = $ref->getProperty('id');
+        $idProp->setAccessible(true);
+        $idProp->setValue($schema, 20);
+        $schema->setSlug('magic-schema');
+
+        $register = new Register();
+        $refReg = new ReflectionClass($register);
+        $idPropReg = $refReg->getProperty('id');
+        $idPropReg->setAccessible(true);
+        $idPropReg->setValue($register, 2);
+        // Enable magic mapping via configuration: new format {"schemas": {"<slug>": {"magicMapping": true}}}.
+        $register->setConfiguration(['schemas' => ['magic-schema' => ['magicMapping' => true]]]);
+
+        $this->schemaMapper->method('find')->willReturn($schema);
+        $this->registerMapper->method('find')->willReturn($register);
+
+        $this->magicMapper->expects($this->once())
+            ->method('deleteObjectsBySchema')
+            ->willReturn(7);
+
+        $this->objectEntityMapper->expects($this->never())
+            ->method('deleteObjectsBySchema');
+
+        $this->cacheHandler->expects($this->once())
+            ->method('invalidateForObjectChange');
+
+        $result = $this->handler->deleteObjectsBySchema(2, 20);
+
+        $this->assertSame(7, $result['deleted_count']);
+        $this->assertSame([], $result['deleted_uuids']);
+        $this->assertSame(20, $result['schema_id']);
+    }
+
+    public function testDeleteObjectsBySchemaSkipsCacheWhenNoneDeleted(): void
+    {
+        $schema = new Schema();
+        $ref = new ReflectionClass($schema);
+        $idProp = $ref->getProperty('id');
+        $idProp->setAccessible(true);
+        $idProp->setValue($schema, 10);
+        $schema->setSlug('test-schema');
+
+        $register = new Register();
+        $refReg = new ReflectionClass($register);
+        $idPropReg = $refReg->getProperty('id');
+        $idPropReg->setAccessible(true);
+        $idPropReg->setValue($register, 1);
+
+        $this->schemaMapper->method('find')->willReturn($schema);
+        $this->registerMapper->method('find')->willReturn($register);
+
+        $this->objectEntityMapper->method('deleteObjectsBySchema')
+            ->willReturn(['deleted_count' => 0, 'deleted_uuids' => []]);
+
+        $this->cacheHandler->expects($this->never())
+            ->method('invalidateForObjectChange');
+
+        $result = $this->handler->deleteObjectsBySchema(1, 10);
+
+        $this->assertSame(0, $result['deleted_count']);
+    }
+
+    public function testDeleteObjectsBySchemaWithHardDelete(): void
+    {
+        $schema = new Schema();
+        $ref = new ReflectionClass($schema);
+        $idProp = $ref->getProperty('id');
+        $idProp->setAccessible(true);
+        $idProp->setValue($schema, 10);
+        $schema->setSlug('test-schema');
+
+        $register = new Register();
+        $refReg = new ReflectionClass($register);
+        $idPropReg = $refReg->getProperty('id');
+        $idPropReg->setAccessible(true);
+        $idPropReg->setValue($register, 1);
+
+        $this->schemaMapper->method('find')->willReturn($schema);
+        $this->registerMapper->method('find')->willReturn($register);
+
+        $this->objectEntityMapper->expects($this->once())
+            ->method('deleteObjectsBySchema')
+            ->with($this->equalTo(10), $this->equalTo(true))
+            ->willReturn(['deleted_count' => 3, 'deleted_uuids' => ['x', 'y', 'z']]);
+
+        $result = $this->handler->deleteObjectsBySchema(1, 10, true);
+
+        $this->assertSame(3, $result['deleted_count']);
+    }
+
+    // =========================================================================
+    // publishObjectsBySchema — publishAll flag
+    // =========================================================================
+
+    public function testPublishObjectsBySchemaWithPublishAll(): void
+    {
+        $result = [
+            'published_count' => 10,
+            'published_uuids' => array_fill(0, 10, 'uuid'),
+            'schema_id' => 5,
+        ];
+
+        $this->objectEntityMapper->expects($this->once())
+            ->method('publishObjectsBySchema')
+            ->with($this->equalTo(5), $this->equalTo(true))
+            ->willReturn($result);
+
+        $this->cacheHandler->expects($this->once())
+            ->method('invalidateForObjectChange');
+
+        $actual = $this->handler->publishObjectsBySchema(5, true);
+
+        $this->assertSame(10, $actual['published_count']);
+    }
+
+    public function testPublishObjectsBySchemaPublishCacheFailureDoesNotBreak(): void
+    {
+        $result = [
+            'published_count' => 2,
+            'published_uuids' => ['a', 'b'],
+            'schema_id' => 7,
+        ];
+
+        $this->objectEntityMapper->method('publishObjectsBySchema')
+            ->willReturn($result);
+
+        $this->cacheHandler->method('invalidateForObjectChange')
+            ->willThrowException(new Exception('Cache fail'));
+
+        $this->logger->expects($this->atLeastOnce())
+            ->method('warning');
+
+        $actual = $this->handler->publishObjectsBySchema(7);
+
+        $this->assertSame($result, $actual);
+    }
+
+    // =========================================================================
+    // depublishObjects — without rbac/multitenancy
+    // =========================================================================
+
+    public function testDepublishObjectsWithoutRbacOrMultitenancy(): void
+    {
+        $this->permissionHandler->expects($this->never())
+            ->method('filterUuidsForPermissions');
+
+        $this->objectEntityMapper->expects($this->once())
+            ->method('depublishObjects')
+            ->willReturn(['uuid-1']);
+
+        $result = $this->handler->depublishObjects(['uuid-1'], true, false, false);
+
+        $this->assertSame(['uuid-1'], $result);
+    }
+
+    public function testDepublishObjectsSkipsCacheWhenNoneDepublished(): void
+    {
+        $this->permissionHandler->method('filterUuidsForPermissions')
+            ->willReturn([]);
+
+        $this->objectEntityMapper->method('depublishObjects')
+            ->willReturn([]);
+
+        $this->cacheHandler->expects($this->never())
+            ->method('invalidateForObjectChange');
+
+        $result = $this->handler->depublishObjects(['uuid-1']);
+
+        $this->assertSame([], $result);
+    }
+
+    // =========================================================================
+    // saveObjects — stats with only updated objects
+    // =========================================================================
+
+    public function testSaveObjectsCacheInvalidationCountsUpdates(): void
+    {
+        $bulkResult = [
+            'statistics' => ['objectsCreated' => 0, 'objectsUpdated' => 3],
+        ];
+
+        $this->saveObjectsHandler->method('saveObjects')
+            ->willReturn($bulkResult);
+
+        $this->cacheHandler->expects($this->once())
+            ->method('invalidateForObjectChange');
+
+        $result = $this->handler->saveObjects([['name' => 'A'], ['name' => 'B'], ['name' => 'C']]);
+
+        $this->assertSame($bulkResult, $result);
+    }
 }

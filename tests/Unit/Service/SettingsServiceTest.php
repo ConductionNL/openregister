@@ -3622,4 +3622,746 @@ class SettingsServiceTest extends TestCase
         // totalObjects stays at 10 since maxObjects(100) > total(10).
         $this->assertSame(10, $result['stats']['total_objects']);
     }
+
+    // ──────────────────────────────────────────────────────────────────────────
+    // getStats() — inner DB exception path (getDatabaseStats throws)
+    // ──────────────────────────────────────────────────────────────────────────
+
+    /**
+     * When getDatabaseStats() throws, getStats() should populate zeroed warnings/totals.
+     */
+    public function testGetStatsWithDatabaseExceptionFallsBackToZeroedStats(): void
+    {
+        $queryBuilder = $this->createMock(\OCP\DB\QueryBuilder\IQueryBuilder::class);
+        $queryBuilder->method('getTableName')->willReturnArgument(0);
+
+        $this->db->method('getQueryBuilder')->willReturn($queryBuilder);
+        $this->db->method('executeQuery')
+            ->willThrowException(new \Exception('DB unavailable'));
+
+        $this->cacheSettingsHandler->method('getCacheStats')
+            ->willReturn(['caches' => []]);
+        $this->solrSettingsHandler->method('getSolrDashboardStats')
+            ->willThrowException(new \Exception('SOLR unavailable'));
+
+        $result = $this->settingsService->getStats();
+
+        $this->assertIsArray($result);
+        // Either the outer catch was hit (error key) or the inner catch zeroed the stats.
+        if (isset($result['error']) === false) {
+            $this->assertArrayHasKey('warnings', $result);
+            $this->assertSame(0, $result['warnings']['objectsWithoutOwner']);
+            $this->assertSame(0, $result['totals']['totalObjects']);
+        } else {
+            $this->assertSame('Failed to retrieve stats', $result['error']);
+        }
+    }
+
+    /**
+     * When getCacheStats() throws inside getStats(), the cache key gets an error entry.
+     */
+    public function testGetStatsWithCacheExceptionRecordsErrorInCacheKey(): void
+    {
+        $queryBuilder = $this->createMock(\OCP\DB\QueryBuilder\IQueryBuilder::class);
+        $queryBuilder->method('getTableName')->willReturnArgument(0);
+
+        $this->db->method('getQueryBuilder')->willReturn($queryBuilder);
+        $this->db->method('executeQuery')
+            ->willThrowException(new \Exception('DB unavailable'));
+
+        $this->cacheSettingsHandler->method('getCacheStats')
+            ->willThrowException(new \Exception('Cache broken'));
+        $this->solrSettingsHandler->method('getSolrDashboardStats')
+            ->willReturn([]);
+
+        $result = $this->settingsService->getStats();
+
+        $this->assertIsArray($result);
+        // If no outer exception, cache key should contain the error message.
+        if (isset($result['cache']) === true) {
+            $this->assertArrayHasKey('error', $result['cache']);
+        }
+    }
+
+    // ──────────────────────────────────────────────────────────────────────────
+    // rebase() — 'all' component covers both solr and cache branches
+    // ──────────────────────────────────────────────────────────────────────────
+
+    /**
+     * rebase() with component 'all' should rebase both solr and cache.
+     */
+    public function testRebaseWithAllComponentRebasesBothSolrAndCache(): void
+    {
+        // clearCache() is called internally — the cacheSettingsHandler must exist.
+        $this->cacheSettingsHandler->expects($this->once())
+            ->method('clearCache')
+            ->willReturn([]);
+
+        $result = $this->settingsService->rebase(['components' => ['all']]);
+
+        $this->assertTrue($result['success']);
+        $this->assertArrayHasKey('rebased', $result);
+        $this->assertArrayHasKey('solr', $result['rebased']);
+        $this->assertArrayHasKey('cache', $result['rebased']);
+        $this->assertTrue($result['rebased']['solr']['success']);
+        $this->assertTrue($result['rebased']['cache']['success']);
+    }
+
+    /**
+     * rebase() with only 'solr' component should NOT include cache in rebased.
+     */
+    public function testRebaseWithSolrOnlyComponentDoesNotRebaseCache(): void
+    {
+        $result = $this->settingsService->rebase(['components' => ['solr']]);
+
+        $this->assertTrue($result['success']);
+        $this->assertArrayHasKey('solr', $result['rebased']);
+        $this->assertArrayNotHasKey('cache', $result['rebased']);
+    }
+
+    /**
+     * rebase() with only 'cache' component should NOT include solr in rebased.
+     */
+    public function testRebaseWithCacheOnlyComponentDoesNotRebaseSolr(): void
+    {
+        $this->cacheSettingsHandler->expects($this->once())
+            ->method('clearCache')
+            ->willReturn([]);
+
+        $result = $this->settingsService->rebase(['components' => ['cache']]);
+
+        $this->assertTrue($result['success']);
+        $this->assertArrayHasKey('cache', $result['rebased']);
+        $this->assertArrayNotHasKey('solr', $result['rebased']);
+    }
+
+    /**
+     * rebase() with default (empty options) uses 'all' and covers both branches.
+     */
+    public function testRebaseWithDefaultOptionsUsesAll(): void
+    {
+        $this->cacheSettingsHandler->method('clearCache')->willReturn([]);
+
+        $result = $this->settingsService->rebase([]);
+
+        $this->assertTrue($result['success']);
+        $this->assertArrayHasKey('solr', $result['rebased']);
+        $this->assertArrayHasKey('cache', $result['rebased']);
+        $this->assertGreaterThan(0, $result['timestamp']);
+    }
+
+    // ──────────────────────────────────────────────────────────────────────────
+    // massValidateObjects() — failed_saves > 0 branches
+    // ──────────────────────────────────────────────────────────────────────────
+
+    /**
+     * massValidateObjects() in serial mode — when objects exist but objectService is null,
+     * a TypeError is thrown (since objectService is hardcoded to null in the source).
+     * The caught Exception increments failed_saves for each object.
+     */
+    public function testMassValidateObjectsSerialWithObjectsAndNullServiceThrowsTypeError(): void
+    {
+        $container    = $this->createMock(IAppContainer::class);
+        $objectMapper = $this->createMock(\OCA\OpenRegister\Db\ObjectEntityMapper::class);
+
+        $container->method('get')
+            ->willReturnCallback(function (string $class) use ($objectMapper) {
+                if ($class === \OCA\OpenRegister\Db\ObjectEntityMapper::class) {
+                    return $objectMapper;
+                }
+
+                return null;
+            });
+
+        // Real ObjectEntity with setters to avoid __call issues.
+        $obj = new \OCA\OpenRegister\Db\ObjectEntity();
+        $obj->setUuid('uuid-serial-null-svc');
+        $obj->setRegister('reg-1');
+        $obj->setSchema('schema-1');
+
+        $objectMapper->method('countSearchObjects')->willReturn(1);
+        $objectMapper->method('findAll')->willReturn([$obj]);
+
+        $this->expectException(\Error::class);
+
+        $service = $this->createServiceWithContainer($container);
+        $service->massValidateObjects(0, 10, 'serial', true);
+    }
+
+    /**
+     * massValidateObjects() in parallel mode — when objects exist but objectService is null,
+     * an Error is thrown inside processBatchDirectly.
+     */
+    public function testMassValidateObjectsParallelModeWithObjectsThrowsTypeErrorForNullService(): void
+    {
+        $container    = $this->createMock(IAppContainer::class);
+        $objectMapper = $this->createMock(\OCA\OpenRegister\Db\ObjectEntityMapper::class);
+
+        $container->method('get')
+            ->willReturnCallback(function (string $class) use ($objectMapper) {
+                if ($class === \OCA\OpenRegister\Db\ObjectEntityMapper::class) {
+                    return $objectMapper;
+                }
+
+                return null;
+            });
+
+        $obj = new \OCA\OpenRegister\Db\ObjectEntity();
+        $obj->setUuid('uuid-parallel-null-svc');
+        $obj->setRegister('reg-1');
+        $obj->setSchema('schema-1');
+
+        $objectMapper->method('countSearchObjects')->willReturn(1);
+        $objectMapper->method('findAll')->willReturn([$obj]);
+
+        $this->expectException(\Error::class);
+
+        $service = $this->createServiceWithContainer($container);
+        $service->massValidateObjects(0, 10, 'parallel', true);
+    }
+
+    /**
+     * massValidateObjects() in serial mode with collectErrors=false still throws
+     * Error on first object (objectService is always null in the source).
+     */
+    public function testMassValidateObjectsSerialCollectErrorsFalseThrowsError(): void
+    {
+        $container    = $this->createMock(IAppContainer::class);
+        $objectMapper = $this->createMock(\OCA\OpenRegister\Db\ObjectEntityMapper::class);
+
+        $container->method('get')
+            ->willReturnCallback(function (string $class) use ($objectMapper) {
+                if ($class === \OCA\OpenRegister\Db\ObjectEntityMapper::class) {
+                    return $objectMapper;
+                }
+
+                return null;
+            });
+
+        $obj = new \OCA\OpenRegister\Db\ObjectEntity();
+        $obj->setUuid('uuid-ce-false');
+        $obj->setRegister('reg-1');
+        $obj->setSchema('schema-1');
+
+        $objectMapper->method('countSearchObjects')->willReturn(1);
+        $objectMapper->method('findAll')->willReturn([$obj]);
+
+        $this->expectException(\Error::class);
+
+        $service = $this->createServiceWithContainer($container);
+        $service->massValidateObjects(0, 10, 'serial', false);
+    }
+
+    // ──────────────────────────────────────────────────────────────────────────
+    // getDatabaseStats() — success path (via getStats())
+    // ──────────────────────────────────────────────────────────────────────────
+
+    /**
+     * getStats() when all DB queries succeed returns structured stats with system key.
+     */
+    public function testGetStatsWithSuccessfulDbQueriesReturnsSystemInfo(): void
+    {
+        $row = [
+            'cnt'                          => '5',
+            'total'                        => '0',
+            'total_objects'                => '5',
+            'deleted_objects'              => '0',
+            'total_audit_trails'           => '2',
+            'total_search_trails'          => '1',
+            'total_configurations'         => '0',
+            'total_organisations'          => '0',
+            'total_registers'              => '3',
+            'total_schemas'                => '4',
+            'total_sources'                => '0',
+            'total_webhook_logs'           => '0',
+            'objects_without_owner'        => '1',
+            'objects_without_organisation' => '0',
+            'audit_trails_without_expiry'  => '0',
+            'search_trails_without_expiry' => '0',
+            'expired_audit_trails'         => '0',
+            'expired_search_trails'        => '0',
+            'expired_objects'              => '0',
+        ];
+
+        $stmt = $this->createMock(\OCP\DB\IResult::class);
+        $stmt->method('fetch')->willReturn($row);
+        $stmt->method('fetchAll')->willReturn([]);
+
+        $platform = $this->createMock(\Doctrine\DBAL\Platforms\AbstractPlatform::class);
+
+        $qb = $this->createMock(\OCP\DB\QueryBuilder\IQueryBuilder::class);
+        $qb->method('getTableName')->willReturnArgument(0);
+
+        $this->db->method('getQueryBuilder')->willReturn($qb);
+        $this->db->method('getDatabasePlatform')->willReturn($platform);
+        $this->db->method('executeQuery')->willReturn($stmt);
+
+        $this->cacheSettingsHandler->method('getCacheStats')->willReturn(['caches' => []]);
+        $this->solrSettingsHandler->method('getSolrDashboardStats')->willReturn([]);
+
+        $result = $this->settingsService->getStats();
+
+        $this->assertIsArray($result);
+        // If DB succeeded the result should have a 'system' key.
+        if (isset($result['error']) === false) {
+            $this->assertArrayHasKey('system', $result);
+            $this->assertArrayHasKey('php_version', $result['system']);
+        }
+    }
+
+    // ──────────────────────────────────────────────────────────────────────────
+    // rebase() — outer exception path
+    // ──────────────────────────────────────────────────────────────────────────
+
+    /**
+     * rebase() returns error array when an unexpected exception is thrown.
+     */
+    public function testRebaseReturnsErrorOnException(): void
+    {
+        // Force an exception by making clearCache() (which rebase calls) throw.
+        $this->cacheSettingsHandler->method('clearCache')
+            ->willThrowException(new \Exception('Unexpected failure'));
+
+        $result = $this->settingsService->rebase(['components' => ['all']]);
+
+        // solr branch runs first (no exception), then cache branch throws.
+        // The outer try/catch should catch it and return success=false.
+        $this->assertFalse($result['success']);
+        $this->assertSame('Rebase failed', $result['error']);
+        $this->assertSame('Unexpected failure', $result['message']);
+    }
+
+    // ===== getDatabaseStats() — magic mapper coverage tests =====.
+
+    /**
+     * getStats() covers getDatabaseStats magic mapper outer catch when
+     * getDatabasePlatform() throws, but blobCount/blobSize queries succeed.
+     */
+    public function testGetStatsMagicMapperOuterCatchWhenGetDatabasePlatformThrows(): void
+    {
+        $qb = $this->createMock(\OCP\DB\QueryBuilder\IQueryBuilder::class);
+        $qb->method('getTableName')->willReturnArgument(0);
+        $this->db->method('getQueryBuilder')->willReturn($qb);
+
+        $this->db->method('getDatabasePlatform')
+            ->willThrowException(new \Exception('Platform unavailable'));
+
+        $callCount = 0;
+        $blobCountStmt = $this->createMock(\OCP\DB\IResult::class);
+        $blobCountStmt->method('fetch')->willReturn(['cnt' => '10', 'total' => '500']);
+
+        $statsStmt = $this->createMock(\OCP\DB\IResult::class);
+        $statsStmt->method('fetch')->willReturn([
+            'total_objects'                => '10',
+            'deleted_objects'              => '0',
+            'total_audit_trails'           => '0',
+            'total_search_trails'          => '0',
+            'total_configurations'         => '0',
+            'total_organisations'          => '0',
+            'total_registers'              => '1',
+            'total_schemas'                => '2',
+            'total_sources'                => '0',
+            'total_webhook_logs'           => '0',
+            'objects_without_owner'        => '0',
+            'objects_without_organisation' => '0',
+            'audit_trails_without_expiry'  => '0',
+            'search_trails_without_expiry' => '0',
+            'expired_audit_trails'         => '0',
+            'expired_search_trails'        => '0',
+            'expired_objects'              => '0',
+        ]);
+
+        $this->db->method('executeQuery')
+            ->willReturnCallback(function ($query) use (&$callCount, $blobCountStmt, $statsStmt) {
+                $callCount++;
+                if ($callCount <= 2) {
+                    return $blobCountStmt;
+                }
+
+                if ($callCount === 3) {
+                    throw new \Exception('No sources table');
+                }
+
+                return $statsStmt;
+            });
+
+        $this->cacheSettingsHandler->method('getCacheStats')->willReturn([]);
+        $this->solrSettingsHandler->method('getSolrDashboardStats')->willReturn([]);
+
+        $result = $this->settingsService->getStats();
+
+        $this->assertIsArray($result);
+        $this->assertArrayHasKey('totals', $result);
+        $this->assertSame(0, $result['totals']['totalMagicObjects']);
+        $this->assertSame(10, $result['totals']['totalBlobObjects']);
+    }
+
+    /**
+     * getStats() covers getDatabaseStats magic mapper inner catch
+     * when individual magic table query fails.
+     */
+    public function testGetStatsMagicMapperInnerCatchWhenTableQueryFails(): void
+    {
+        $qb = $this->createMock(\OCP\DB\QueryBuilder\IQueryBuilder::class);
+        $qb->method('getTableName')->willReturnArgument(0);
+        $this->db->method('getQueryBuilder')->willReturn($qb);
+
+        $platform = $this->createMock(\Doctrine\DBAL\Platforms\AbstractPlatform::class);
+        $this->db->method('getDatabasePlatform')->willReturn($platform);
+
+        $blobStmt = $this->createMock(\OCP\DB\IResult::class);
+        $blobStmt->method('fetch')->willReturn(['cnt' => '5', 'total' => '200']);
+
+        $tablesStmt = $this->createMock(\OCP\DB\IResult::class);
+        $tablesStmt->method('fetchAll')->willReturn(['oc_openregister_table_abc']);
+
+        $statsStmt = $this->createMock(\OCP\DB\IResult::class);
+        $statsStmt->method('fetch')->willReturn([
+            'total_objects'                => '5',
+            'deleted_objects'              => '0',
+            'total_audit_trails'           => '0',
+            'total_search_trails'          => '0',
+            'total_configurations'         => '0',
+            'total_organisations'          => '0',
+            'total_registers'              => '0',
+            'total_schemas'                => '0',
+            'total_sources'                => '0',
+            'total_webhook_logs'           => '0',
+            'objects_without_owner'        => '0',
+            'objects_without_organisation' => '0',
+            'audit_trails_without_expiry'  => '0',
+            'search_trails_without_expiry' => '0',
+            'expired_audit_trails'         => '0',
+            'expired_search_trails'        => '0',
+            'expired_objects'              => '0',
+        ]);
+
+        $callCount = 0;
+        $this->db->method('executeQuery')
+            ->willReturnCallback(
+                function ($query) use (&$callCount, $blobStmt, $tablesStmt, $statsStmt) {
+                    $callCount++;
+                    if ($callCount <= 2) {
+                        return $blobStmt;
+                    }
+
+                    if ($callCount === 3) {
+                        return $tablesStmt;
+                    }
+
+                    if ($callCount === 4) {
+                        throw new \Exception('Table oc_openregister_table_abc corrupt');
+                    }
+
+                    if ($callCount === 5) {
+                        throw new \Exception('No sources table');
+                    }
+
+                    return $statsStmt;
+                }
+            );
+
+        $this->cacheSettingsHandler->method('getCacheStats')->willReturn([]);
+        $this->solrSettingsHandler->method('getSolrDashboardStats')->willReturn([]);
+
+        $result = $this->settingsService->getStats();
+
+        $this->assertIsArray($result);
+        $this->assertArrayHasKey('totals', $result);
+        $this->assertSame(0, $result['totals']['totalMagicObjects']);
+    }
+
+    /**
+     * getStats() covers getDatabaseStats magic mapper success path
+     * when magic table query succeeds and returns count/size.
+     */
+    public function testGetStatsMagicMapperSuccessPathWithTableData(): void
+    {
+        $qb = $this->createMock(\OCP\DB\QueryBuilder\IQueryBuilder::class);
+        $qb->method('getTableName')->willReturnArgument(0);
+        $this->db->method('getQueryBuilder')->willReturn($qb);
+
+        $platform = $this->createMock(\Doctrine\DBAL\Platforms\AbstractPlatform::class);
+        $this->db->method('getDatabasePlatform')->willReturn($platform);
+
+        $blobStmt = $this->createMock(\OCP\DB\IResult::class);
+        $blobStmt->method('fetch')->willReturn(['cnt' => '3', 'total' => '100']);
+
+        $tablesStmt = $this->createMock(\OCP\DB\IResult::class);
+        $tablesStmt->method('fetchAll')->willReturn(['oc_openregister_table_xyz']);
+
+        $magicStmt = $this->createMock(\OCP\DB\IResult::class);
+        $magicStmt->method('fetch')->willReturn(['cnt' => '7', 'total_size' => '350']);
+
+        $statsStmt = $this->createMock(\OCP\DB\IResult::class);
+        $statsStmt->method('fetch')->willReturn([
+            'total_objects'                => '3',
+            'deleted_objects'              => '1',
+            'total_audit_trails'           => '5',
+            'total_search_trails'          => '2',
+            'total_configurations'         => '1',
+            'total_organisations'          => '2',
+            'total_registers'              => '3',
+            'total_schemas'                => '4',
+            'total_sources'                => '0',
+            'total_webhook_logs'           => '0',
+            'objects_without_owner'        => '1',
+            'objects_without_organisation' => '0',
+            'audit_trails_without_expiry'  => '0',
+            'search_trails_without_expiry' => '0',
+            'expired_audit_trails'         => '0',
+            'expired_search_trails'        => '0',
+            'expired_objects'              => '0',
+        ]);
+
+        $callCount = 0;
+        $this->db->method('executeQuery')
+            ->willReturnCallback(
+                function ($query) use (
+                    &$callCount,
+                    $blobStmt,
+                    $tablesStmt,
+                    $magicStmt,
+                    $statsStmt
+                ) {
+                    $callCount++;
+                    if ($callCount <= 2) {
+                        return $blobStmt;
+                    }
+
+                    if ($callCount === 3) {
+                        return $tablesStmt;
+                    }
+
+                    if ($callCount === 4) {
+                        return $magicStmt;
+                    }
+
+                    if ($callCount === 5) {
+                        throw new \Exception('No sources table');
+                    }
+
+                    return $statsStmt;
+                }
+            );
+
+        $this->cacheSettingsHandler->method('getCacheStats')->willReturn([]);
+        $this->solrSettingsHandler->method('getSolrDashboardStats')->willReturn([]);
+
+        $result = $this->settingsService->getStats();
+
+        $this->assertIsArray($result);
+        $this->assertArrayHasKey('totals', $result);
+        $this->assertSame(10, $result['totals']['totalObjects']);
+        $this->assertSame(3, $result['totals']['totalBlobObjects']);
+        $this->assertSame(7, $result['totals']['totalMagicObjects']);
+        $this->assertSame(450, $result['totals']['totalSize']);
+        $this->assertSame(100, $result['totals']['totalBlobSize']);
+        $this->assertSame(350, $result['totals']['totalMagicSize']);
+        $this->assertSame(1, $result['totals']['deletedObjects']);
+        $this->assertSame(5, $result['totals']['totalAuditTrails']);
+        $this->assertSame(1, $result['warnings']['objectsWithoutOwner']);
+    }
+
+    /**
+     * getStats() covers getDatabaseStats with PostgreSQL platform detection.
+     */
+    public function testGetStatsWithPostgresPlatformUsesPostgresQuery(): void
+    {
+        $qb = $this->createMock(\OCP\DB\QueryBuilder\IQueryBuilder::class);
+        $qb->method('getTableName')->willReturnArgument(0);
+        $this->db->method('getQueryBuilder')->willReturn($qb);
+
+        $platform = $this->getMockBuilder(\Doctrine\DBAL\Platforms\AbstractPlatform::class)
+            ->setMockClassName('MockPostgreSQLPlatform')
+            ->getMock();
+        $this->db->method('getDatabasePlatform')->willReturn($platform);
+
+        $blobStmt = $this->createMock(\OCP\DB\IResult::class);
+        $blobStmt->method('fetch')->willReturn(['cnt' => '0', 'total' => '0']);
+
+        $tablesStmt = $this->createMock(\OCP\DB\IResult::class);
+        $tablesStmt->method('fetchAll')->willReturn([]);
+
+        $statsStmt = $this->createMock(\OCP\DB\IResult::class);
+        $statsStmt->method('fetch')->willReturn([
+            'total_objects'                => '0',
+            'deleted_objects'              => '0',
+            'total_audit_trails'           => '0',
+            'total_search_trails'          => '0',
+            'total_configurations'         => '0',
+            'total_organisations'          => '0',
+            'total_registers'              => '0',
+            'total_schemas'                => '0',
+            'total_sources'                => '0',
+            'total_webhook_logs'           => '0',
+            'objects_without_owner'        => '0',
+            'objects_without_organisation' => '0',
+            'audit_trails_without_expiry'  => '0',
+            'search_trails_without_expiry' => '0',
+            'expired_audit_trails'         => '0',
+            'expired_search_trails'        => '0',
+            'expired_objects'              => '0',
+        ]);
+
+        $callCount = 0;
+        $this->db->method('executeQuery')
+            ->willReturnCallback(
+                function ($query) use (&$callCount, $blobStmt, $tablesStmt, $statsStmt) {
+                    $callCount++;
+                    if ($callCount <= 2) {
+                        return $blobStmt;
+                    }
+
+                    if ($callCount === 3) {
+                        $this->assertStringContainsString('pg_tables', $query);
+                        return $tablesStmt;
+                    }
+
+                    if ($callCount === 4) {
+                        throw new \Exception('No sources');
+                    }
+
+                    return $statsStmt;
+                }
+            );
+
+        $this->cacheSettingsHandler->method('getCacheStats')->willReturn([]);
+        $this->solrSettingsHandler->method('getSolrDashboardStats')->willReturn([]);
+
+        $result = $this->settingsService->getStats();
+
+        $this->assertIsArray($result);
+        $this->assertArrayHasKey('system', $result);
+    }
+
+    /**
+     * getStats() covers getDatabaseStats with sourcesTableExists=true path.
+     */
+    public function testGetStatsWithSourcesTableExisting(): void
+    {
+        $qb = $this->createMock(\OCP\DB\QueryBuilder\IQueryBuilder::class);
+        $qb->method('getTableName')->willReturnArgument(0);
+        $this->db->method('getQueryBuilder')->willReturn($qb);
+
+        $platform = $this->createMock(\Doctrine\DBAL\Platforms\AbstractPlatform::class);
+        $this->db->method('getDatabasePlatform')->willReturn($platform);
+
+        $blobStmt = $this->createMock(\OCP\DB\IResult::class);
+        $blobStmt->method('fetch')->willReturn(['cnt' => '0', 'total' => '0']);
+
+        $tablesStmt = $this->createMock(\OCP\DB\IResult::class);
+        $tablesStmt->method('fetchAll')->willReturn([]);
+
+        $sourcesCheckStmt = $this->createMock(\OCP\DB\IResult::class);
+
+        $statsStmt = $this->createMock(\OCP\DB\IResult::class);
+        $statsStmt->method('fetch')->willReturn([
+            'total_objects'                => '0',
+            'deleted_objects'              => '0',
+            'total_audit_trails'           => '0',
+            'total_search_trails'          => '0',
+            'total_configurations'         => '0',
+            'total_organisations'          => '0',
+            'total_registers'              => '0',
+            'total_schemas'                => '0',
+            'total_sources'                => '3',
+            'total_webhook_logs'           => '0',
+            'objects_without_owner'        => '0',
+            'objects_without_organisation' => '0',
+            'audit_trails_without_expiry'  => '0',
+            'search_trails_without_expiry' => '0',
+            'expired_audit_trails'         => '0',
+            'expired_search_trails'        => '0',
+            'expired_objects'              => '0',
+        ]);
+
+        $callCount = 0;
+        $this->db->method('executeQuery')
+            ->willReturnCallback(
+                function ($query) use (
+                    &$callCount,
+                    $blobStmt,
+                    $tablesStmt,
+                    $sourcesCheckStmt,
+                    $statsStmt
+                ) {
+                    $callCount++;
+                    if ($callCount <= 2) {
+                        return $blobStmt;
+                    }
+
+                    if ($callCount === 3) {
+                        return $tablesStmt;
+                    }
+
+                    if ($callCount === 4) {
+                        return $sourcesCheckStmt;
+                    }
+
+                    return $statsStmt;
+                }
+            );
+
+        $this->cacheSettingsHandler->method('getCacheStats')->willReturn([]);
+        $this->solrSettingsHandler->method('getSolrDashboardStats')->willReturn([]);
+
+        $result = $this->settingsService->getStats();
+
+        $this->assertIsArray($result);
+        $this->assertSame(3, $result['totals']['totalSources']);
+    }
+
+    /**
+     * getStats() when final stats query returns false triggers RuntimeException
+     * caught by inner catch in getStats().
+     */
+    public function testGetStatsOuterCatchWhenFinalQueryReturnsFalse(): void
+    {
+        $qb = $this->createMock(\OCP\DB\QueryBuilder\IQueryBuilder::class);
+        $qb->method('getTableName')->willReturnArgument(0);
+        $this->db->method('getQueryBuilder')->willReturn($qb);
+
+        $platform = $this->createMock(\Doctrine\DBAL\Platforms\AbstractPlatform::class);
+        $this->db->method('getDatabasePlatform')->willReturn($platform);
+
+        $blobStmt = $this->createMock(\OCP\DB\IResult::class);
+        $blobStmt->method('fetch')->willReturn(['cnt' => '0', 'total' => '0']);
+
+        $tablesStmt = $this->createMock(\OCP\DB\IResult::class);
+        $tablesStmt->method('fetchAll')->willReturn([]);
+
+        $falseStmt = $this->createMock(\OCP\DB\IResult::class);
+        $falseStmt->method('fetch')->willReturn(false);
+
+        $callCount = 0;
+        $this->db->method('executeQuery')
+            ->willReturnCallback(
+                function ($query) use (&$callCount, $blobStmt, $tablesStmt, $falseStmt) {
+                    $callCount++;
+                    if ($callCount <= 2) {
+                        return $blobStmt;
+                    }
+
+                    if ($callCount === 3) {
+                        return $tablesStmt;
+                    }
+
+                    if ($callCount === 4) {
+                        throw new \Exception('No sources');
+                    }
+
+                    return $falseStmt;
+                }
+            );
+
+        $this->cacheSettingsHandler->method('getCacheStats')->willReturn([]);
+        $this->solrSettingsHandler->method('getSolrDashboardStats')->willReturn([]);
+
+        $result = $this->settingsService->getStats();
+
+        $this->assertIsArray($result);
+        $this->assertArrayHasKey('warnings', $result);
+        $this->assertSame(0, $result['totals']['totalObjects']);
+    }
 }

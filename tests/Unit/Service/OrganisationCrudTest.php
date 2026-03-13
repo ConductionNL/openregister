@@ -1103,6 +1103,492 @@ class OrganisationCrudTest extends TestCase
     }
 
     /**
+     * Test getUserOrganisations returns empty array when no user is logged in
+     *
+     * @return void
+     */
+    public function testGetUserOrganisationsReturnsEmptyWhenNoUser(): void
+    {
+        // Arrange: No user.
+        $this->userSession->method('getUser')->willReturn(null);
+
+        // Act.
+        $result = $this->organisationService->getUserOrganisations();
+
+        // Assert.
+        $this->assertSame([], $result);
+    }
+
+    /**
+     * Test getUserOrganisations returns organisations for logged-in user
+     *
+     * @return void
+     */
+    public function testGetUserOrganisationsReturnsOrganisationsForUser(): void
+    {
+        // Arrange.
+        $this->mockUser->method('getUID')->willReturn('alice');
+        $this->userSession->method('getUser')->willReturn($this->mockUser);
+
+        $org = new Organisation();
+        $org->setName('Alice Org');
+        $org->setUuid('alice-org-uuid');
+        $org->addUser('alice');
+
+        $this->organisationMapper
+            ->method('findByUserId')
+            ->with('alice')
+            ->willReturn([$org]);
+
+        // Act.
+        $result = $this->organisationService->getUserOrganisations();
+
+        // Assert.
+        $this->assertCount(1, $result);
+        $this->assertEquals('Alice Org', $result[0]->getName());
+    }
+
+    /**
+     * Test hasAccessToOrganisation returns true for admin users
+     *
+     * @return void
+     */
+    public function testHasAccessToOrganisationReturnsTrueForAdmin(): void
+    {
+        // Arrange.
+        $this->mockUser->method('getUID')->willReturn('admin');
+        $this->userSession->method('getUser')->willReturn($this->mockUser);
+
+        $org = new Organisation();
+        $org->setUuid('some-org-uuid');
+        $org->setName('Some Org');
+        $org->setUsers(['other-user']);
+
+        $this->organisationMapper
+            ->method('findByUuid')
+            ->with('some-org-uuid')
+            ->willReturn($org);
+
+        // Admin check returns true.
+        $this->groupManager->method('isAdmin')->willReturn(true);
+
+        // Act.
+        $result = $this->organisationService->hasAccessToOrganisation('some-org-uuid');
+
+        // Assert.
+        $this->assertTrue($result);
+    }
+
+    /**
+     * Test hasAccessToOrganisation returns false when not a member
+     *
+     * @return void
+     */
+    public function testHasAccessToOrganisationReturnsFalseForNonMember(): void
+    {
+        // Arrange.
+        $this->mockUser->method('getUID')->willReturn('bob');
+        $this->userSession->method('getUser')->willReturn($this->mockUser);
+
+        $org = new Organisation();
+        $org->setUuid('alice-org');
+        $org->setUsers(['alice']);
+
+        $this->organisationMapper
+            ->method('findByUuid')
+            ->with('alice-org')
+            ->willReturn($org);
+
+        $this->groupManager->method('isAdmin')->willReturn(false);
+
+        // Act.
+        $result = $this->organisationService->hasAccessToOrganisation('alice-org');
+
+        // Assert.
+        $this->assertFalse($result);
+    }
+
+    /**
+     * Test hasAccessToOrganisation returns false when no user logged in
+     *
+     * @return void
+     */
+    public function testHasAccessToOrganisationReturnsFalseWhenNoUser(): void
+    {
+        // Arrange.
+        $this->userSession->method('getUser')->willReturn(null);
+
+        $org = new Organisation();
+        $org->setUuid('some-uuid');
+        $org->setUsers(['alice']);
+
+        $this->organisationMapper
+            ->method('findByUuid')
+            ->willReturn($org);
+
+        // Act.
+        $result = $this->organisationService->hasAccessToOrganisation('some-uuid');
+
+        // Assert.
+        $this->assertFalse($result);
+    }
+
+    /**
+     * Test hasAccessToOrganisation returns false when organisation not found
+     *
+     * @return void
+     */
+    public function testHasAccessToOrganisationReturnsFalseWhenOrgNotFound(): void
+    {
+        // Arrange.
+        $this->mockUser->method('getUID')->willReturn('alice');
+        $this->userSession->method('getUser')->willReturn($this->mockUser);
+
+        $this->organisationMapper
+            ->method('findByUuid')
+            ->willThrowException(new DoesNotExistException('Not found'));
+
+        // Act.
+        $result = $this->organisationService->hasAccessToOrganisation('nonexistent-uuid');
+
+        // Assert.
+        $this->assertFalse($result);
+    }
+
+    /**
+     * Test setActiveOrganisation throws when no user is logged in
+     *
+     * @return void
+     */
+    public function testSetActiveOrganisationThrowsWhenNoUser(): void
+    {
+        // Arrange.
+        $this->userSession->method('getUser')->willReturn(null);
+
+        // Act & Assert.
+        $this->expectException(\Exception::class);
+        $this->expectExceptionMessage('No user logged in');
+
+        $this->organisationService->setActiveOrganisation('some-uuid');
+    }
+
+    /**
+     * Test setActiveOrganisation throws when organisation not found
+     *
+     * @return void
+     */
+    public function testSetActiveOrganisationThrowsWhenOrgNotFound(): void
+    {
+        // Arrange.
+        $this->mockUser->method('getUID')->willReturn('alice');
+        $this->userSession->method('getUser')->willReturn($this->mockUser);
+
+        $this->organisationMapper
+            ->method('findByUuid')
+            ->willThrowException(new DoesNotExistException('Not found'));
+
+        // Act & Assert.
+        $this->expectException(\Exception::class);
+        $this->expectExceptionMessage('Organisation not found');
+
+        $this->organisationService->setActiveOrganisation('nonexistent-uuid');
+    }
+
+    /**
+     * Test setActiveOrganisation throws when user not a member
+     *
+     * @return void
+     */
+    public function testSetActiveOrganisationThrowsWhenUserNotMember(): void
+    {
+        // Arrange.
+        $this->mockUser->method('getUID')->willReturn('bob');
+        $this->userSession->method('getUser')->willReturn($this->mockUser);
+
+        $aliceOrg = new Organisation();
+        $aliceOrg->setUuid('alice-org');
+        $aliceOrg->setUsers(['alice']);
+        // bob not in users.
+
+        $this->organisationMapper
+            ->method('findByUuid')
+            ->willReturn($aliceOrg);
+
+        // Act & Assert.
+        $this->expectException(\Exception::class);
+        $this->expectExceptionMessage('User does not belong to this organisation');
+
+        $this->organisationService->setActiveOrganisation('alice-org');
+    }
+
+    /**
+     * Test setActiveOrganisation succeeds for member user
+     *
+     * @return void
+     */
+    public function testSetActiveOrganisationSucceedsForMember(): void
+    {
+        // Arrange.
+        $this->mockUser->method('getUID')->willReturn('alice');
+        $this->userSession->method('getUser')->willReturn($this->mockUser);
+
+        $org = new Organisation();
+        $org->setUuid('alice-org');
+        $org->setUsers(['alice']);
+        $org->setName('Alice Org');
+
+        $this->organisationMapper
+            ->method('findByUuid')
+            ->willReturn($org);
+
+        $this->config->expects($this->once())
+            ->method('setUserValue')
+            ->with('alice', 'openregister', 'active_organisation', 'alice-org');
+
+        $this->session->method('remove')->willReturn(null);
+        $this->session->method('set')->willReturn(null);
+        $this->session->method('get')->willReturn(null);
+
+        // Act.
+        $result = $this->organisationService->setActiveOrganisation('alice-org');
+
+        // Assert.
+        $this->assertTrue($result);
+    }
+
+    /**
+     * Test joinOrganisation throws when no user logged in
+     *
+     * @return void
+     */
+    public function testJoinOrganisationThrowsWhenNoUser(): void
+    {
+        // Arrange.
+        $this->userSession->method('getUser')->willReturn(null);
+
+        // Act & Assert.
+        $this->expectException(\Exception::class);
+        $this->expectExceptionMessage('No user logged in');
+
+        $this->organisationService->joinOrganisation('some-uuid');
+    }
+
+    /**
+     * Test joinOrganisation throws when org not found
+     *
+     * @return void
+     */
+    public function testJoinOrganisationThrowsWhenOrgNotFound(): void
+    {
+        // Arrange.
+        $this->mockUser->method('getUID')->willReturn('alice');
+        $this->userSession->method('getUser')->willReturn($this->mockUser);
+
+        $this->organisationMapper
+            ->method('addUserToOrganisation')
+            ->willThrowException(new DoesNotExistException('Not found'));
+
+        // Act & Assert.
+        $this->expectException(\Exception::class);
+        $this->expectExceptionMessage('Organisation not found');
+
+        $this->organisationService->joinOrganisation('nonexistent-uuid');
+    }
+
+    /**
+     * Test joinOrganisation succeeds for current user
+     *
+     * @return void
+     */
+    public function testJoinOrganisationSucceedsForCurrentUser(): void
+    {
+        // Arrange.
+        $this->mockUser->method('getUID')->willReturn('alice');
+        $this->userSession->method('getUser')->willReturn($this->mockUser);
+
+        $this->organisationMapper
+            ->expects($this->once())
+            ->method('addUserToOrganisation')
+            ->with('org-uuid', 'alice');
+
+        $this->session->method('remove')->willReturn(null);
+
+        // Act.
+        $result = $this->organisationService->joinOrganisation('org-uuid');
+
+        // Assert.
+        $this->assertTrue($result);
+    }
+
+    /**
+     * Test joinOrganisation throws when target user doesn't exist
+     *
+     * @return void
+     */
+    public function testJoinOrganisationThrowsWhenTargetUserDoesNotExist(): void
+    {
+        // Arrange.
+        $this->mockUser->method('getUID')->willReturn('alice');
+        $this->userSession->method('getUser')->willReturn($this->mockUser);
+
+        // Target user 'ghost' doesn't exist.
+        $this->userManager->method('get')
+            ->with('ghost')
+            ->willReturn(null);
+
+        // Act & Assert.
+        $this->expectException(\Exception::class);
+        $this->expectExceptionMessage('Target user not found');
+
+        $this->organisationService->joinOrganisation('org-uuid', 'ghost');
+    }
+
+    /**
+     * Test leaveOrganisation throws when no user logged in
+     *
+     * @return void
+     */
+    public function testLeaveOrganisationThrowsWhenNoUser(): void
+    {
+        // Arrange.
+        $this->userSession->method('getUser')->willReturn(null);
+
+        // Act & Assert.
+        $this->expectException(\Exception::class);
+        $this->expectExceptionMessage('No user logged in');
+
+        $this->organisationService->leaveOrganisation('some-uuid');
+    }
+
+    /**
+     * Test leaveOrganisation throws when it's the user's last organisation
+     *
+     * @return void
+     */
+    public function testLeaveOrganisationThrowsWhenLastOrg(): void
+    {
+        // Arrange.
+        $this->mockUser->method('getUID')->willReturn('alice');
+        $this->userSession->method('getUser')->willReturn($this->mockUser);
+
+        // Alice has only one organisation.
+        $org = new Organisation();
+        $org->setUuid('only-org');
+        $org->setUsers(['alice']);
+
+        $this->organisationMapper
+            ->method('findByUserId')
+            ->willReturn([$org]);
+
+        // Act & Assert.
+        $this->expectException(\Exception::class);
+        $this->expectExceptionMessage('Cannot leave last organisation');
+
+        $this->organisationService->leaveOrganisation('only-org');
+    }
+
+    /**
+     * Test clearCache returns false when no user logged in
+     *
+     * @return void
+     */
+    public function testClearCacheReturnsFalseWhenNoUser(): void
+    {
+        // Arrange.
+        $this->userSession->method('getUser')->willReturn(null);
+
+        // Act.
+        $result = $this->organisationService->clearCache();
+
+        // Assert.
+        $this->assertFalse($result);
+    }
+
+    /**
+     * Test clearCache returns true and clears caches when user is logged in
+     *
+     * @return void
+     */
+    public function testClearCacheReturnsTrueForLoggedInUser(): void
+    {
+        // Arrange.
+        $this->mockUser->method('getUID')->willReturn('alice');
+        $this->userSession->method('getUser')->willReturn($this->mockUser);
+
+        $this->session->expects($this->atLeastOnce())
+            ->method('remove');
+
+        // Act.
+        $result = $this->organisationService->clearCache();
+
+        // Assert.
+        $this->assertTrue($result);
+    }
+
+    /**
+     * Test clearCache with clearPersistent=true deletes user value
+     *
+     * @return void
+     */
+    public function testClearCacheWithPersistentDeletesUserValue(): void
+    {
+        // Arrange.
+        $this->mockUser->method('getUID')->willReturn('alice');
+        $this->userSession->method('getUser')->willReturn($this->mockUser);
+
+        $this->config->expects($this->once())
+            ->method('deleteUserValue')
+            ->with('alice', 'openregister', 'active_organisation');
+
+        // Act.
+        $result = $this->organisationService->clearCache(true);
+
+        // Assert.
+        $this->assertTrue($result);
+    }
+
+    /**
+     * Test getUserOrganisationStats returns empty stats when no user
+     *
+     * @return void
+     */
+    public function testGetUserOrganisationStatsReturnsEmptyWhenNoUser(): void
+    {
+        // Arrange.
+        $this->userSession->method('getUser')->willReturn(null);
+
+        // Act.
+        $result = $this->organisationService->getUserOrganisationStats();
+
+        // Assert.
+        $this->assertEquals(0, $result['total']);
+        $this->assertNull($result['active']);
+        $this->assertSame([], $result['results']);
+    }
+
+    /**
+     * Test clearDefaultOrganisationCache clears the static cache
+     *
+     * @return void
+     */
+    public function testClearDefaultOrganisationCacheResetsStaticCache(): void
+    {
+        // Act: Clear the cache.
+        $this->organisationService->clearDefaultOrganisationCache();
+
+        // Assert: Static cache is null after clear (verified via reflection).
+        $reflection = new \ReflectionClass(OrganisationService::class);
+
+        $defaultOrgCache = $reflection->getProperty('defaultOrgCache');
+        $defaultOrgCache->setAccessible(true);
+        $this->assertNull($defaultOrgCache->getValue());
+
+        $defaultOrgCacheTs = $reflection->getProperty('defaultOrgCacheTs');
+        $defaultOrgCacheTs->setAccessible(true);
+        $this->assertNull($defaultOrgCacheTs->getValue());
+    }
+
+    /**
      * Test organisation __toString method
      *
      * Scenario: Test string conversion of organisation objects

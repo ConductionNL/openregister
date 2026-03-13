@@ -3103,6 +3103,415 @@ class SaveObjectTest extends TestCase
         $this->invokePrivateMethod('resolveSchemaAndRegister', ['nonexistent', null]);
     }
 
+    // =========================================================================
+    // updateInverseRelations — the actual update path
+    // =========================================================================
+
+    public function testUpdateInverseRelationsUpdatesRelatedObject(): void
+    {
+        $schema = $this->createMockSchema(
+            1,
+            'test',
+            [],
+            ['org' => ['$ref' => '#/components/schemas/organisation', 'type' => 'string']]
+        );
+        $register = $this->createMockRegister(1, 'test');
+
+        $entity = new ObjectEntity();
+        $entity->setUuid('test-uuid');
+        $entity->setRelations(['org' => 'dec9ac6e-a4fd-40fc-be5f-e7ef6e5defb4']);
+
+        $targetSchema = $this->createMockSchema(2, 'organisation');
+        $this->schemaMapper->method('find')->willReturn($targetSchema);
+
+        $relatedEntity = new ObjectEntity();
+        $relatedEntity->setUuid('dec9ac6e-a4fd-40fc-be5f-e7ef6e5defb4');
+        $relatedEntity->setRelations([]);
+
+        $this->objectEntityMapper->method('find')->willReturn($relatedEntity);
+        $this->objectEntityMapper->expects($this->once())->method('update');
+
+        $this->invokePrivateMethod('updateInverseRelations', [$entity, $register, $schema]);
+
+        $updatedRelations = $relatedEntity->getRelations();
+        $this->assertContains('test-uuid', $updatedRelations);
+    }
+
+    public function testUpdateInverseRelationsSkipsWhenAlreadyRelated(): void
+    {
+        $schema = $this->createMockSchema(
+            1,
+            'test',
+            [],
+            ['org' => ['$ref' => '#/components/schemas/organisation', 'type' => 'string']]
+        );
+        $register = $this->createMockRegister(1, 'test');
+
+        $entity = new ObjectEntity();
+        $entity->setUuid('already-there-uuid');
+        $entity->setRelations(['org' => 'dec9ac6e-a4fd-40fc-be5f-e7ef6e5defb4']);
+
+        $targetSchema = $this->createMockSchema(2, 'organisation');
+        $this->schemaMapper->method('find')->willReturn($targetSchema);
+
+        $relatedEntity = new ObjectEntity();
+        $relatedEntity->setUuid('dec9ac6e-a4fd-40fc-be5f-e7ef6e5defb4');
+        // already-there-uuid is already in relations
+        $relatedEntity->setRelations(['already-there-uuid']);
+
+        $this->objectEntityMapper->method('find')->willReturn($relatedEntity);
+        // Should NOT update since UUID is already in relations.
+        $this->objectEntityMapper->expects($this->never())->method('update');
+
+        $this->invokePrivateMethod('updateInverseRelations', [$entity, $register, $schema]);
+    }
+
+    public function testUpdateInverseRelationsSkipsNoRefInProperty(): void
+    {
+        $schema = $this->createMockSchema(
+            1,
+            'test',
+            [],
+            ['org' => ['type' => 'string']] // No $ref
+        );
+        $register = $this->createMockRegister(1, 'test');
+
+        $entity = new ObjectEntity();
+        $entity->setUuid('test-uuid');
+        $entity->setRelations(['org' => 'dec9ac6e-a4fd-40fc-be5f-e7ef6e5defb4']);
+
+        $this->objectEntityMapper->expects($this->never())->method('update');
+
+        $this->invokePrivateMethod('updateInverseRelations', [$entity, $register, $schema]);
+    }
+
+    public function testUpdateInverseRelationsHandlesSchemaResolutionFailure(): void
+    {
+        $schema = $this->createMockSchema(
+            1,
+            'test',
+            [],
+            ['org' => ['$ref' => '#/components/schemas/nonexistent', 'type' => 'string']]
+        );
+        $register = $this->createMockRegister(1, 'test');
+
+        $entity = new ObjectEntity();
+        $entity->setUuid('test-uuid');
+        $entity->setRelations(['org' => 'dec9ac6e-a4fd-40fc-be5f-e7ef6e5defb4']);
+
+        $this->schemaMapper->method('find')
+            ->willThrowException(new \Exception('Schema not found'));
+        $this->schemaMapper->method('findAll')->willReturn([]);
+
+        $this->objectEntityMapper->expects($this->never())->method('update');
+
+        // Should log warning and continue — not throw.
+        $this->logger->expects($this->atLeastOnce())->method('warning');
+
+        $this->invokePrivateMethod('updateInverseRelations', [$entity, $register, $schema]);
+    }
+
+    public function testUpdateInverseRelationsUsesItemsRefForArray(): void
+    {
+        $schema = $this->createMockSchema(
+            1,
+            'test',
+            [],
+            [
+                'contacts' => [
+                    'type' => 'array',
+                    'items' => ['$ref' => '#/components/schemas/contact'],
+                ],
+            ]
+        );
+        $register = $this->createMockRegister(1, 'test');
+
+        $entity = new ObjectEntity();
+        $entity->setUuid('parent-uuid');
+        $entity->setRelations(['contacts.0' => 'dec9ac6e-a4fd-40fc-be5f-e7ef6e5defb4']);
+
+        $targetSchema = $this->createMockSchema(2, 'contact');
+        $this->schemaMapper->method('find')->willReturn($targetSchema);
+
+        $relatedEntity = new ObjectEntity();
+        $relatedEntity->setUuid('dec9ac6e-a4fd-40fc-be5f-e7ef6e5defb4');
+        $relatedEntity->setRelations([]);
+
+        $this->objectEntityMapper->method('find')->willReturn($relatedEntity);
+        $this->objectEntityMapper->expects($this->once())->method('update');
+
+        $this->invokePrivateMethod('updateInverseRelations', [$entity, $register, $schema]);
+    }
+
+    // =========================================================================
+    // resolveRegisterReference — UUID pattern branch
+    // =========================================================================
+
+    public function testResolveRegisterReferenceByUuid(): void
+    {
+        $register = $this->createMockRegister(7, 'uuid-reg');
+        $this->registerMapper->method('find')->willReturn($register);
+
+        $result = $this->invokePrivateMethod(
+            'resolveRegisterReference',
+            ['dec9ac6e-a4fd-40fc-be5f-e7ef6e5defb4']
+        );
+
+        $this->assertSame('7', $result);
+    }
+
+    public function testResolveRegisterReferenceDirectFindFallsToSlug(): void
+    {
+        $register = $this->createMockRegister(3, 'test-reg');
+        // First call (numeric/UUID) throws, second call (slug direct) succeeds.
+        $this->registerMapper->method('find')
+            ->willReturnOnConsecutiveCalls(
+                $this->throwException(new DoesNotExistException('Not found')),
+                $register
+            );
+        $this->registerMapper->method('findAll')->willReturn([$register]);
+
+        $result = $this->invokePrivateMethod('resolveRegisterReference', ['test-reg']);
+
+        $this->assertSame('3', $result);
+    }
+
+    // =========================================================================
+    // setSelfMetadata — depublished empty string sets null
+    // =========================================================================
+
+    public function testSetSelfMetadataSetsDepublishedToNullWhenEmptyString(): void
+    {
+        $entity = new ObjectEntity();
+        $entity->setDepublished(new DateTime());
+        $selfData = ['depublished' => ''];
+
+        $this->invokePrivateMethod('setSelfMetadata', [$entity, $selfData]);
+
+        $this->assertNull($entity->getDepublished());
+    }
+
+    public function testSetSelfMetadataHandlesInvalidDepublishedDate(): void
+    {
+        $entity = new ObjectEntity();
+        $selfData = ['depublished' => 'not-a-date-!!!'];
+
+        // Invalid date is silently ignored — no exception thrown.
+        $this->invokePrivateMethod('setSelfMetadata', [$entity, $selfData]);
+
+        // The depublished field should remain null since the date was invalid.
+        $this->assertNull($entity->getDepublished());
+    }
+
+    // =========================================================================
+    // hydrateObjectMetadata — numeric image array branch (file IDs)
+    // =========================================================================
+
+    public function testHydrateObjectMetadataWithArrayOfFileIds(): void
+    {
+        $entity = new ObjectEntity();
+        $entity->setObject(['photos' => [123, 456]]);
+
+        $schema = $this->createMockSchema(1, 'test', ['objectImageField' => 'photos']);
+
+        $this->metaHydrationHandler->method('getValueFromPath')
+            ->willReturn([123, 456]);
+
+        // Numeric file IDs path — file loading is not yet implemented, image stays null.
+        $this->handler->hydrateObjectMetadata($entity, $schema);
+
+        $this->assertNull($entity->getImage());
+    }
+
+    public function testHydrateObjectMetadataPublishedFieldNull(): void
+    {
+        $entity = new ObjectEntity();
+        $entity->setObject(['pubDate' => null]);
+
+        $schema = $this->createMockSchema(1, 'test', ['objectPublishedField' => 'pubDate']);
+
+        $this->metaHydrationHandler->method('extractMetadataValue')
+            ->willReturn(null);
+
+        $this->handler->hydrateObjectMetadata($entity, $schema);
+
+        // Null published date should not be set.
+        $this->assertNull($entity->getPublished());
+    }
+
+    public function testHydrateObjectMetadataDepublishedFieldNull(): void
+    {
+        $entity = new ObjectEntity();
+        $entity->setObject(['endDate' => null]);
+
+        $schema = $this->createMockSchema(1, 'test', ['objectDepublishedField' => 'endDate']);
+
+        $this->metaHydrationHandler->method('extractMetadataValue')
+            ->willReturn(null);
+
+        $this->handler->hydrateObjectMetadata($entity, $schema);
+
+        $this->assertNull($entity->getDepublished());
+    }
+
+    // =========================================================================
+    // isEffectivelyEmptyObject — with false value (truthy check)
+    // =========================================================================
+
+    public function testIsEffectivelyEmptyObjectWithFalse(): void
+    {
+        $result = $this->invokePrivateMethod('isEffectivelyEmptyObject', [['active' => false]]);
+        // false is not considered "empty" by isValueNotEmpty
+        $this->assertFalse($result);
+    }
+
+    public function testIsEffectivelyEmptyObjectWithZero(): void
+    {
+        $result = $this->invokePrivateMethod('isEffectivelyEmptyObject', [['count' => 0]]);
+        // 0 is not empty
+        $this->assertFalse($result);
+    }
+
+    // =========================================================================
+    // scanForRelations — array of objects scanning with schema
+    // =========================================================================
+
+    public function testScanForRelationsWithArrayOfObjectsAndNestedArrayItems(): void
+    {
+        $schemaObject = new \stdClass();
+        $schemaObject->properties = [
+            'items' => [
+                'type' => 'array',
+                'items' => [
+                    'type' => 'object',
+                ],
+            ],
+        ];
+        $schema = $this->createSchemaWithSchemaObject($schemaObject);
+
+        $data = [
+            'items' => [
+                ['ref' => 'dec9ac6e-a4fd-40fc-be5f-e7ef6e5defb4'],
+                'uuid-string-value',
+            ],
+        ];
+
+        $result = $this->handler->scanForRelations($data, '', $schema);
+
+        // Nested array item with a UUID ref.
+        $this->assertArrayHasKey('items.0.ref', $result);
+        // String items in object arrays are also treated as relations.
+        $this->assertArrayHasKey('items.1', $result);
+    }
+
+    public function testScanForRelationsWithTextUriFormatProperty(): void
+    {
+        $schemaObject = new \stdClass();
+        $schemaObject->properties = [
+            'link' => [
+                'type' => 'text',
+                'format' => 'uri',
+            ],
+        ];
+        $schema = $this->createSchemaWithSchemaObject($schemaObject);
+
+        $data = [
+            'link' => 'some-value',
+        ];
+
+        $result = $this->handler->scanForRelations($data, '', $schema);
+
+        // text+uri format should be treated as relation.
+        $this->assertArrayHasKey('link', $result);
+    }
+
+    public function testScanForRelationsWithTextUrlFormatProperty(): void
+    {
+        $schemaObject = new \stdClass();
+        $schemaObject->properties = [
+            'website' => [
+                'type' => 'text',
+                'format' => 'url',
+            ],
+        ];
+        $schema = $this->createSchemaWithSchemaObject($schemaObject);
+
+        $data = [
+            'website' => 'any-value',
+        ];
+
+        $result = $this->handler->scanForRelations($data, '', $schema);
+
+        $this->assertArrayHasKey('website', $result);
+    }
+
+    // =========================================================================
+    // isReference — edge cases for the identifier-like pattern
+    // =========================================================================
+
+    public function testIsReferenceWithShortHyphenatedString(): void
+    {
+        // 7 chars — less than 8, should return false (pattern requires min 8).
+        $result = $this->invokePrivateMethod('isReference', ['ab-cdef']);
+        $this->assertFalse($result);
+    }
+
+    public function testIsReferenceWithCommonWordClosedSource(): void
+    {
+        $result = $this->invokePrivateMethod('isReference', ['closed-source']);
+        $this->assertFalse($result);
+    }
+
+    public function testIsReferenceWithUnderscoreId(): void
+    {
+        // 8+ chars with underscore — should be a reference.
+        $result = $this->invokePrivateMethod('isReference', ['my_object_id']);
+        $this->assertTrue($result);
+    }
+
+    // =========================================================================
+    // setDefaultValues — merges existing object data for Twig context
+    // =========================================================================
+
+    public function testSetDefaultValuesUsesMergedContextForTwig(): void
+    {
+        $schemaObject = new \stdClass();
+        $schemaObject->properties = [
+            'displayName' => ['type' => 'string', 'default' => '{{ name }}'],
+        ];
+        $schema = $this->createSchemaWithSchemaObject($schemaObject);
+
+        $entity = new ObjectEntity();
+
+        // The twig context = array_merge($entity->getObjectArray(), $data).
+        // $data includes 'name', so {{ name }} should resolve to 'Test'.
+        $data = ['name' => 'Test'];
+        $result = $this->invokePrivateMethod('setDefaultValues', [$entity, $schema, $data]);
+
+        // {{ name }} resolves to 'Test' from $data via merged context.
+        $this->assertSame('Test', $result['displayName']);
+    }
+
+    public function testSetDefaultValuesNullTemplateSourceMissing(): void
+    {
+        $schemaObject = new \stdClass();
+        $schemaObject->properties = [
+            'displayName' => ['type' => 'string', 'default' => '{{ nonExistentProp }}'],
+        ];
+        $schema = $this->createSchemaWithSchemaObject($schemaObject);
+
+        $entity = new ObjectEntity();
+
+        $data = ['name' => 'Test'];
+        $result = $this->invokePrivateMethod('setDefaultValues', [$entity, $schema, $data]);
+
+        // Missing source property => null is set in renderedDefaults, then merged into data.
+        // null value means displayName is in the result but set to null.
+        // array_merge(['name' => 'Test'], ['displayName' => null]) => displayName key exists with null.
+        $this->assertArrayHasKey('displayName', $result);
+        $this->assertNull($result['displayName']);
+    }
+
     public function testResolveSchemaAndRegisterWithStringRegister(): void
     {
         $schema = $this->createMockSchema(5, 'test');
@@ -3188,16 +3597,6 @@ class SaveObjectTest extends TestCase
     // resolveRegisterReference — additional edge cases
     // =========================================================================
 
-    public function testResolveRegisterReferenceByUuid(): void
-    {
-        $register = $this->createMockRegister(5, 'test-reg');
-        $this->registerMapper->method('find')->willReturn($register);
-
-        $result = $this->invokePrivateMethod('resolveRegisterReference', ['dec9ac6e-a4fd-40fc-be5f-e7ef6e5defb4']);
-
-        $this->assertSame('5', $result);
-    }
-
     public function testResolveRegisterReferenceDirectSlugLastResort(): void
     {
         $register = $this->createMockRegister(7, 'my-register');
@@ -3216,18 +3615,6 @@ class SaveObjectTest extends TestCase
     // =========================================================================
     // setSelfMetadata — additional edge cases
     // =========================================================================
-
-    public function testSetSelfMetadataHandlesInvalidDepublishedDate(): void
-    {
-        $entity = new ObjectEntity();
-        $selfData = ['depublished' => 'not-a-date-!!!'];
-
-        // Should not throw.
-        $this->invokePrivateMethod('setSelfMetadata', [$entity, $selfData]);
-
-        // Invalid date is silently ignored.
-        $this->assertNull($entity->getDepublished());
-    }
 
     public function testSetSelfMetadataPreservesPublishedWhenNotInSelfData(): void
     {
@@ -3393,28 +3780,6 @@ class SaveObjectTest extends TestCase
 
         // Template references missing property — resolveDefaultTemplateValue returns null.
         $this->assertArrayNotHasKey('computed', $result);
-    }
-
-    // =========================================================================
-    // scanForRelations — additional edge cases with schema
-    // =========================================================================
-
-    public function testScanForRelationsWithTextUriFormatProperty(): void
-    {
-        $schemaObject = new \stdClass();
-        $schemaObject->properties = [
-            'website' => [
-                'type' => 'text',
-                'format' => 'uri',
-            ],
-        ];
-        $schema = $this->createSchemaWithSchemaObject($schemaObject);
-
-        $data = ['website' => 'some-value'];
-
-        $result = $this->handler->scanForRelations($data, '', $schema);
-
-        $this->assertArrayHasKey('website', $result);
     }
 
     // =========================================================================
@@ -3642,25 +4007,6 @@ class SaveObjectTest extends TestCase
         $this->assertArrayHasKey('ref', $result);
     }
 
-    public function testScanForRelationsWithTextUrlFormatProperty(): void
-    {
-        $schemaObject = new \stdClass();
-        $schemaObject->properties = [
-            'homepage' => [
-                'type' => 'text',
-                'format' => 'url',
-            ],
-        ];
-        $schema = $this->createSchemaWithSchemaObject($schemaObject);
-
-        $data = ['homepage' => 'some-value'];
-
-        $result = $this->handler->scanForRelations($data, '', $schema);
-
-        // text+url format should be treated as relation.
-        $this->assertArrayHasKey('homepage', $result);
-    }
-
     public function testScanForRelationsWithArrayOfObjectsContainingNestedArrays(): void
     {
         $schemaObject = new \stdClass();
@@ -3792,55 +4138,6 @@ class SaveObjectTest extends TestCase
 
         $this->assertArrayHasKey('items.0.ref', $result);
         $this->assertArrayHasKey('items.1', $result);
-    }
-
-    // =========================================================================
-    // updateInverseRelations — happy path where relation IS updated
-    // =========================================================================
-
-    public function testUpdateInverseRelationsUpdatesRelatedObject(): void
-    {
-        $savedUuid = 'aaa00001-aaaa-aaaa-aaaa-aaaaaaaaaaaa';
-        $relatedUuid = 'bbb00002-bbbb-bbbb-bbbb-bbbbbbbbbbbb';
-
-        $entity = new ObjectEntity();
-        $entity->setUuid($savedUuid);
-        $entity->setRelations(['org' => $relatedUuid]);
-
-        $schema = $this->createMockSchema(
-            1,
-            'test',
-            [],
-            [
-                'org' => [
-                    '$ref' => '#/components/schemas/organisatie',
-                ],
-            ]
-        );
-
-        $register = $this->createMockRegister(1, 'test');
-
-        // The target schema for the related object.
-        $targetSchema = $this->createMockSchema(2, 'organisatie');
-
-        $this->schemaMapper->method('find')
-            ->willReturn($targetSchema);
-
-        $relatedObject = new ObjectEntity();
-        $relatedObject->setUuid($relatedUuid);
-        $relatedObject->setRelations([]);
-
-        $this->objectEntityMapper->method('find')
-            ->willReturn($relatedObject);
-
-        $this->objectEntityMapper->expects($this->once())
-            ->method('update')
-            ->with($relatedObject);
-
-        $this->invokePrivateMethod('updateInverseRelations', [$entity, $register, $schema]);
-
-        $updatedRelations = $relatedObject->getRelations();
-        $this->assertContains($savedUuid, $updatedRelations);
     }
 
     public function testUpdateInverseRelationsSkipsWhenAlreadyInRelations(): void

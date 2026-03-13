@@ -116,27 +116,8 @@ class UnifiedObjectMapper extends AbstractObjectMapper
      */
     private function shouldUseMagicMapper(?Register $register, ?Schema $schema): bool
     {
-        // No context → use blob storage.
-        if ($register === null || $schema === null) {
-            $this->logger->debug(
-                message: '[UnifiedObjectMapper] No register/schema context, using blob storage',
-                context: ['file' => __FILE__, 'line' => __LINE__]
-            );
-            return false;
-        }
-
-        // Always use MagicMapper when we have register+schema context.
-        $this->logger->debug(
-            message: '[UnifiedObjectMapper] Using MagicMapper for register+schema combination',
-            context: [
-                'file'       => __FILE__,
-                'line'       => __LINE__,
-                'registerId' => $register->getId(),
-                'schemaId'   => $schema->getId(),
-                'schemaSlug' => $schema->getSlug(),
-            ]
-        );
-
+        // Always use MagicMapper. Blob storage has been retired.
+        // When register/schema is null, callers should use findAcrossAllMagicTables().
         return true;
     }//end shouldUseMagicMapper()
 
@@ -232,11 +213,8 @@ class UnifiedObjectMapper extends AbstractObjectMapper
         bool $rbac=true,
         bool $multitenancy=true
     ): ObjectEntity {
-        if ($this->shouldUseMagicMapper(register: $register, schema: $schema) === true) {
-            $this->logger->debug(
-                message: '[UnifiedObjectMapper] Routing find() to MagicMapper',
-                context: ['file' => __FILE__, 'line' => __LINE__]
-            );
+        // When register+schema context is available, search in the specific magic table.
+        if ($register !== null && $schema !== null) {
             $entity = $this->magicMapper->findInRegisterSchemaTable(
                 identifier: $identifier,
                 register: $register,
@@ -244,26 +222,19 @@ class UnifiedObjectMapper extends AbstractObjectMapper
                 rbac: $rbac,
                 multitenancy: $multitenancy
             );
-            // Set source to indicate data came from magic tables (ORM).
             $entity->setSource('orm');
             return $entity;
         }
 
-        $this->logger->debug(
-            message: '[UnifiedObjectMapper] Routing find() to ObjectEntityMapper (blob storage direct)',
-            context: ['file' => __FILE__, 'line' => __LINE__]
-        );
-        $entity = $this->objectEntityMapper->findDirectBlobStorage(
+        // No register/schema context — search across all magic tables.
+        $result = $this->magicMapper->findAcrossAllMagicTables(
             identifier: $identifier,
-            register: $register,
-            schema: $schema,
             includeDeleted: $includeDeleted,
             _rbac: $rbac,
             _multitenancy: $multitenancy
         );
-        // Set source to indicate data came from blob storage.
-        $entity->setSource('blob');
-        return $entity;
+        $result['object']->setSource('orm');
+        return $result['object'];
     }//end find()
 
     /**
@@ -289,19 +260,12 @@ class UnifiedObjectMapper extends AbstractObjectMapper
     public function findAcrossAllSources(
         string|int $identifier,
         bool $includeDeleted=false,
+        // phpcs:ignore Squiz.NamingConventions.ValidVariableName.MemberNotCamelCaps -- named arg convention.
         bool $_rbac=true,
+        // phpcs:ignore Squiz.NamingConventions.ValidVariableName.MemberNotCamelCaps -- named arg convention.
         bool $_multitenancy=true
     ): array {
-        $this->logger->debug(
-            message: '[UnifiedObjectMapper] findAcrossAllSources called',
-            context: [
-                'file'       => __FILE__,
-                'line'       => __LINE__,
-                'identifier' => $identifier,
-            ]
-                );
-
-        return $this->objectEntityMapper->findAcrossAllSources(
+        return $this->magicMapper->findAcrossAllMagicTables(
             identifier: $identifier,
             includeDeleted: $includeDeleted,
             _rbac: $_rbac,
@@ -350,50 +314,25 @@ class UnifiedObjectMapper extends AbstractObjectMapper
         ?Schema $schema=null,
         ?bool $published=null
     ): array {
-        if ($this->shouldUseMagicMapper(register: $register, schema: $schema) === true) {
-            $this->logger->debug(
-                message: '[UnifiedObjectMapper] Routing findAll() to MagicMapper',
+        if ($register === null || $schema === null) {
+            $this->logger->warning(
+                message: '[UnifiedObjectMapper] findAll() called without register/schema context',
                 context: ['file' => __FILE__, 'line' => __LINE__]
             );
-            $entities = $this->magicMapper->findAllInRegisterSchemaTable(
-                register: $register,
-                schema: $schema,
-                limit: $limit,
-                offset: $offset,
-                filters: $filters,
-                sort: $sort,
-                published: $published
-            );
-            // Set source to indicate data came from magic tables (ORM).
-            foreach ($entities as $entity) {
-                $entity->setSource('orm');
-            }
+            return [];
+        }
 
-            return $entities;
-        }//end if
-
-        $this->logger->debug(
-            message: '[UnifiedObjectMapper] Routing findAll() to ObjectEntityMapper (blob storage direct)',
-            context: ['file' => __FILE__, 'line' => __LINE__]
-        );
-        $entities = $this->objectEntityMapper->findAllDirectBlobStorage(
+        $entities = $this->magicMapper->findAllInRegisterSchemaTable(
+            register: $register,
+            schema: $schema,
             limit: $limit,
             offset: $offset,
             filters: $filters,
-            searchConditions: $searchConditions,
-            searchParams: $searchParams,
             sort: $sort,
-            search: $search,
-            ids: $ids,
-            uses: $uses,
-            includeDeleted: $includeDeleted,
-            register: $register,
-            schema: $schema,
             published: $published
         );
-        // Set source to indicate data came from blob storage.
         foreach ($entities as $entity) {
-            $entity->setSource('blob');
+            $entity->setSource('orm');
         }
 
         return $entities;
@@ -413,11 +352,7 @@ class UnifiedObjectMapper extends AbstractObjectMapper
      */
     public function findMultiple(array $ids): array
     {
-        $this->logger->debug(
-            message: '[UnifiedObjectMapper] Routing findMultiple() to ObjectEntityMapper (cross-schema operation)',
-            context: ['file' => __FILE__, 'line' => __LINE__]
-        );
-        return $this->objectEntityMapper->findMultiple($ids);
+        return $this->magicMapper->findMultipleAcrossAllMagicTables(identifiers: $ids);
     }//end findMultiple()
 
     /**
@@ -433,10 +368,9 @@ class UnifiedObjectMapper extends AbstractObjectMapper
      */
     public function findBySchema(int $schemaId): array
     {
-        $this->logger->debug(
-            message: '[UnifiedObjectMapper] Routing findBySchema() to ObjectEntityMapper (cross-register)',
-            context: ['file' => __FILE__, 'line' => __LINE__]
-        );
+        // Find objects by schema across all magic tables.
+        // MagicMapper doesn't have a dedicated findBySchema - use the existing
+        // ObjectEntityMapper for now as it also searches magic tables.
         return $this->objectEntityMapper->findBySchema($schemaId);
     }//end findBySchema()
 
@@ -464,22 +398,11 @@ class UnifiedObjectMapper extends AbstractObjectMapper
             [$register, $schema] = $this->getResolvedRegisterAndSchema(entity: $entity);
         }
 
-        if ($this->shouldUseMagicMapper(register: $register, schema: $schema) === true) {
-            $this->logger->debug(
-                message: '[UnifiedObjectMapper] Routing insert() to MagicMapper',
-                context: ['file' => __FILE__, 'line' => __LINE__]
-            );
-            $insertedEntity = $this->magicMapper->insertObjectEntity(entity: $entity, register: $register, schema: $schema);
-        } else {
-            $this->logger->debug(
-                message: '[UnifiedObjectMapper] Using blob storage (via ObjectEntityMapper parent::insert)',
-                context: ['file' => __FILE__, 'line' => __LINE__]
-            );
-            // Call ObjectEntityMapper's blob storage insert directly by using its parent insert.
-            // This avoids the circular loop where ObjectEntityMapper->insert() calls us back.
-            // We replicate the blob storage logic here: parent::insert() + events.
-            $insertedEntity = $this->objectEntityMapper->insertDirectBlobStorage($entity);
+        if ($register === null || $schema === null) {
+            throw new Exception('Cannot insert object without register and schema context (blob storage retired)');
         }
+
+        $insertedEntity = $this->magicMapper->insertObjectEntity(entity: $entity, register: $register, schema: $schema);
 
         // Dispatch ObjectCreatedEvent after successful insert.
         $this->logger->debug(
@@ -557,24 +480,16 @@ class UnifiedObjectMapper extends AbstractObjectMapper
             }//end try
         }//end if
 
-        if ($this->shouldUseMagicMapper(register: $register, schema: $schema) === true) {
-            $this->logger->debug(
-                message: '[UnifiedObjectMapper] Routing update() to MagicMapper',
-                context: ['file' => __FILE__, 'line' => __LINE__]
-            );
-            $updatedEntity = $this->magicMapper->updateObjectEntity(
-                entity: $entity,
-                register: $register,
-                schema: $schema,
-                oldEntity: $oldEntity
-            );
-        } else {
-            $this->logger->debug(
-                message: '[UnifiedObjectMapper] Using blob storage (via ObjectEntityMapper parent::update)',
-                context: ['file' => __FILE__, 'line' => __LINE__]
-            );
-            $updatedEntity = $this->objectEntityMapper->updateDirectBlobStorage($entity, $oldEntity);
+        if ($register === null || $schema === null) {
+            throw new Exception('Cannot update object without register and schema context (blob storage retired)');
         }
+
+        $updatedEntity = $this->magicMapper->updateObjectEntity(
+            entity: $entity,
+            register: $register,
+            schema: $schema,
+            oldEntity: $oldEntity
+        );
 
         // Dispatch ObjectUpdatedEvent after successful update.
         $this->logger->debug(
@@ -609,37 +524,19 @@ class UnifiedObjectMapper extends AbstractObjectMapper
 
         [$register, $schema] = $this->getResolvedRegisterAndSchema(entity: $entity);
 
-        if ($this->shouldUseMagicMapper(register: $register, schema: $schema) === true) {
-            $this->logger->debug(
-                message: '[UnifiedObjectMapper] Routing delete() to MagicMapper',
-                context: ['file' => __FILE__, 'line' => __LINE__]
-            );
-            $deletedEntity = $this->magicMapper->deleteObjectEntity(
-                entity: $entity,
-                register: $register,
-                schema: $schema,
-                hardDelete: true
-            );
+        if ($register === null || $schema === null) {
+            throw new Exception('Cannot delete object without register and schema context (blob storage retired)');
+        }
 
-            // Dispatch ObjectDeletedEvent after successful delete (MagicMapper doesn't dispatch events).
-            $this->logger->debug(
-                message: '[UnifiedObjectMapper] Dispatching ObjectDeletedEvent',
-                context: [
-                    'file'       => __FILE__,
-                    'line'       => __LINE__,
-                    'entityUuid' => $deletedEntity->getUuid(),
-                ]
-            );
-            $this->eventDispatcher->dispatchTyped(new ObjectDeletedEvent(object: $deletedEntity));
-        } else {
-            $this->logger->debug(
-                message: '[UnifiedObjectMapper] Routing delete() to ObjectEntityMapper',
-                context: ['file' => __FILE__, 'line' => __LINE__]
-            );
-            // NOTE: ObjectEntityMapper.delete() handles its own event dispatching for blob storage.
-            // Do NOT dispatch ObjectDeletedEvent here to avoid duplicates.
-            $deletedEntity = $this->objectEntityMapper->delete(entity: $entity);
-        }//end if
+        $deletedEntity = $this->magicMapper->deleteObjectEntity(
+            entity: $entity,
+            register: $register,
+            schema: $schema,
+            hardDelete: true
+        );
+
+        // Dispatch ObjectDeletedEvent after successful delete.
+        $this->eventDispatcher->dispatchTyped(new ObjectDeletedEvent(object: $deletedEntity));
 
         return $deletedEntity;
     }//end delete()
@@ -656,7 +553,7 @@ class UnifiedObjectMapper extends AbstractObjectMapper
      */
     public function lockObject(string $uuid, ?int $lockDuration=null): array
     {
-        return $this->objectEntityMapper->lockObject(uuid: $uuid, lockDuration: $lockDuration);
+        return $this->magicMapper->lockObjectEntity(uuid: $uuid, lockDuration: $lockDuration);
     }//end lockObject()
 
     /**
@@ -668,7 +565,7 @@ class UnifiedObjectMapper extends AbstractObjectMapper
      */
     public function unlockObject(string $uuid): bool
     {
-        return $this->objectEntityMapper->unlockObject($uuid);
+        return $this->magicMapper->unlockObjectEntity(uuid: $uuid);
     }//end unlockObject()
 
     /**
@@ -905,22 +802,8 @@ class UnifiedObjectMapper extends AbstractObjectMapper
             return $result;
         }//end if
 
-        // Fallback to blob storage.
-        $this->logger->debug(
-            message: '[UnifiedObjectMapper] Routing bulk save to ObjectEntityMapper (blob storage)',
-            context: [
-                'file'         => __FILE__,
-                'line'         => __LINE__,
-                'register'     => $register?->getId(),
-                'schema'       => $schema?->getId(),
-                'object_count' => count($insertObjects),
-            ]
-        );
-
-        return $this->objectEntityMapper->ultraFastBulkSave(
-            insertObjects: $insertObjects,
-            updateObjects: $updateObjects
-        );
+        // No fallback to blob storage — register+schema is required for magic mapper.
+        throw new Exception('Cannot bulk save without register and schema context (blob storage retired)');
     }//end ultraFastBulkSaveSingleSchema()
 
     /**
@@ -937,7 +820,7 @@ class UnifiedObjectMapper extends AbstractObjectMapper
      */
     public function deleteObjects(array $uuids=[], bool $hardDelete=false): array
     {
-        return $this->objectEntityMapper->deleteObjects(uuids: $uuids, hardDelete: $hardDelete);
+        return $this->magicMapper->deleteObjectsByUuids(uuids: $uuids);
     }//end deleteObjects()
 
     /**
@@ -954,6 +837,8 @@ class UnifiedObjectMapper extends AbstractObjectMapper
      */
     public function publishObjects(array $uuids=[], DateTime|bool $datetime=true): array
     {
+        // Publish/depublish is being deprecated in favour of RBAC.
+        // Keep delegating to objectEntityMapper for backwards compatibility.
         return $this->objectEntityMapper->publishObjects(uuids: $uuids, datetime: $datetime);
     }//end publishObjects()
 
@@ -1075,23 +960,21 @@ class UnifiedObjectMapper extends AbstractObjectMapper
                 $register = $this->registerMapper->find((int) $registerId, _multitenancy: false, _rbac: false);
                 $schema   = $this->schemaMapper->find((int) $schemaId, _multitenancy: false, _rbac: false);
 
-                if ($this->shouldUseMagicMapper(register: $register, schema: $schema) === true) {
-                    return $this->magicMapper->getSimpleFacetsFromRegisterSchemaTable(
-                        query: $query,
-                        register: $register,
-                        schema: $schema
-                    );
-                }
+                return $this->magicMapper->getSimpleFacetsFromRegisterSchemaTable(
+                    query: $query,
+                    register: $register,
+                    schema: $schema
+                );
             } catch (\Exception $e) {
                 $this->logger->warning(
                     message: '[UnifiedObjectMapper] Failed to resolve register/schema for magic mapper facets',
                     context: ['file' => __FILE__, 'line' => __LINE__, 'error' => $e->getMessage()]
                 );
-                // Fall through to blob storage.
+                return [];
             }
         }//end if
 
-        return $this->objectEntityMapper->getSimpleFacets($query);
+        return [];
     }//end getSimpleFacets()
 
     /**
@@ -1399,53 +1282,39 @@ class UnifiedObjectMapper extends AbstractObjectMapper
         bool $multitenancy=true,
         ?array $ids=null,
         ?string $uses=null
-    ): array|int {
+    ): array | int {
         // Check if register and schema are specified in query for magic mapper routing.
         // Support both top-level keys (_register, register) and @self nested keys.
         $registerId = $query['@self']['register'] ?? $query['_register'] ?? $query['register'] ?? null;
-        $schemaId   = $query['@self']['schema'] ?? $query['_schema'] ?? $query['schema'] ?? null;
+
+        $schemaId = $query['@self']['schema'] ?? $query['_schema'] ?? $query['schema'] ?? null;
 
         if ($registerId !== null && $schemaId !== null) {
             try {
-                // Disable multitenancy for register/schema resolution (they're system-level).
                 $register = $this->registerMapper->find((int) $registerId, _multitenancy: false, _rbac: false);
                 $schema   = $this->schemaMapper->find((int) $schemaId, _multitenancy: false, _rbac: false);
 
-                if ($this->shouldUseMagicMapper(register: $register, schema: $schema) === true) {
-                    $this->logger->info(
-                        message: '[UnifiedObjectMapper] Routing searchObjects() to MagicMapper',
-                        context: ['file' => __FILE__, 'line' => __LINE__]
-                    );
-                    // Add RBAC and multitenancy flags to query for MagicSearchHandler.
-                    $query['_rbac']         = $rbac;
-                    $query['_multitenancy'] = $multitenancy;
-                    return $this->magicMapper->searchObjectsInRegisterSchemaTable(
-                        query: $query,
-                        register: $register,
-                        schema: $schema
-                    );
-                }
+                $query['_rbac']         = $rbac;
+                $query['_multitenancy'] = $multitenancy;
+                return $this->magicMapper->searchObjectsInRegisterSchemaTable(
+                    query: $query,
+                    register: $register,
+                    schema: $schema
+                );
             } catch (\Exception $e) {
                 $this->logger->warning(
                     message: '[UnifiedObjectMapper] Failed to resolve register/schema for magic mapper',
                     context: ['file' => __FILE__, 'line' => __LINE__, 'error' => $e->getMessage()]
                 );
-                // Fall through to blob storage.
             }//end try
         }//end if
 
-        $this->logger->debug(
-            message: '[UnifiedObjectMapper] Routing searchObjects() to blob storage (ObjectEntityMapper)',
+        // No register/schema context — return empty (blob storage retired).
+        $this->logger->warning(
+            message: '[UnifiedObjectMapper] searchObjects() called without register/schema context',
             context: ['file' => __FILE__, 'line' => __LINE__]
         );
-        return $this->objectEntityMapper->searchObjects(
-            query: $query,
-            _activeOrgUuid: $activeOrgUuid,
-            _rbac: $rbac,
-            _multitenancy: $multitenancy,
-            ids: $ids,
-            uses: $uses
-        );
+        return [];
     }//end searchObjects()
 
     /**
@@ -1477,64 +1346,46 @@ class UnifiedObjectMapper extends AbstractObjectMapper
 
         if ($registerId !== null && $schemaId !== null) {
             try {
-                // Disable multitenancy for register/schema resolution (they're system-level).
                 $register = $this->registerMapper->find((int) $registerId, _multitenancy: false, _rbac: false);
                 $schema   = $this->schemaMapper->find((int) $schemaId, _multitenancy: false, _rbac: false);
 
-                if ($this->shouldUseMagicMapper(register: $register, schema: $schema) === true) {
-                    $this->logger->info(
-                        message: '[UnifiedObjectMapper] Routing countSearchObjects() to MagicMapper',
-                        context: ['file' => __FILE__, 'line' => __LINE__]
-                    );
-                    return $this->magicMapper->countObjectsInRegisterSchemaTable(
-                        query: $query,
-                        register: $register,
-                        schema: $schema
-                    );
-                }
+                return $this->magicMapper->countObjectsInRegisterSchemaTable(
+                    query: $query,
+                    register: $register,
+                    schema: $schema
+                );
             } catch (\Exception $e) {
                 $this->logger->warning(
                     message: '[UnifiedObjectMapper] Failed to resolve register/schema for magic mapper count',
                     context: ['file' => __FILE__, 'line' => __LINE__, 'error' => $e->getMessage()]
                 );
-                // Fall through to blob storage.
             }//end try
         }//end if
 
-        $this->logger->debug(
-            message: '[UnifiedObjectMapper] Routing countSearchObjects() to blob storage (ObjectEntityMapper)',
-            context: ['file' => __FILE__, 'line' => __LINE__]
-        );
-        return $this->objectEntityMapper->countSearchObjects(
-            query: $query,
-            _activeOrgUuid: $activeOrgUuid,
-            _rbac: $rbac,
-            _multitenancy: $multitenancy,
-            ids: $ids,
-            uses: $uses
-        );
+        // No register/schema context — return 0 (blob storage retired).
+        return 0;
     }//end countSearchObjects()
 
-    /**
-     * Optimized paginated search that loads register/schema once and performs both search and count.
-     *
-     * This method eliminates duplicate register/schema lookups by:
-     * 1. Loading register and schema once at the start
-     * 2. Performing both search and count with the cached objects
-     * 3. Returning the register/schema for inclusion in response metadata
-     *
-     * @param array       $searchQuery   Query for search (with _limit, _offset).
-     * @param array       $countQuery    Query for count (without pagination).
-     * @param string|null $activeOrgUuid Active organization UUID.
-     * @param bool        $rbac          Whether to apply RBAC.
-     * @param bool        $multitenancy  Whether to apply multitenancy.
-     * @param array|null  $ids           Optional ID filter.
-     * @param string|null $uses          Optional uses filter.
-     *
-     * @return array{results: ObjectEntity[], total: int, register: ?array, schema: ?array}
-     *
-     * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Flags control security filtering behavior
-     */
+        /**
+         * Optimized paginated search that loads register/schema once and performs both search and count.
+         *
+         * This method eliminates duplicate register/schema lookups by:
+         * 1. Loading register and schema once at the start
+         * 2. Performing both search and count with the cached objects
+         * 3. Returning the register/schema for inclusion in response metadata
+         *
+         * @param array       $searchQuery   Query for search (with _limit, _offset).
+         * @param array       $countQuery    Query for count (without pagination).
+         * @param string|null $activeOrgUuid Active organization UUID.
+         * @param bool        $rbac          Whether to apply RBAC.
+         * @param bool        $multitenancy  Whether to apply multitenancy.
+         * @param array|null  $ids           Optional ID filter.
+         * @param string|null $uses          Optional uses filter.
+         *
+         * @return array{results: ObjectEntity[], total: int, register: ?array, schema: ?array}
+         *
+         * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Flags control security filtering behavior
+         */
     public function searchObjectsPaginated(
         array $searchQuery=[],
         array $countQuery=[],
@@ -1677,15 +1528,7 @@ class UnifiedObjectMapper extends AbstractObjectMapper
                 includeDeleted: false
             );
 
-            // Also check blob storage for any objects not found in magic tables.
-            $foundUuids   = array_map(fn($obj) => $obj->getUuid(), $idResults);
-            $missingUuids = array_diff($queryIds, $foundUuids);
-
-            if (empty($missingUuids) === false) {
-                $blobResults = $this->objectEntityMapper->findMultiple(ids: $missingUuids);
-                $idResults   = array_merge($idResults, $blobResults);
-            }
-
+            // Blob storage retired — all objects are in magic tables.
             return $this->getGlobalSearchResult(results: $idResults, searchQuery: $searchQuery, rbac: $rbac);
         }
 
@@ -1727,77 +1570,15 @@ class UnifiedObjectMapper extends AbstractObjectMapper
             );
         }
 
-        // Fallback: Use objectEntityMapper for blob storage.
-        // NOTE: The ORM blob storage does NOT enforce RBAC at the SQL level.
-        // We apply RBAC post-filtering below via filterBySchemaRbac().
+        // Blob storage retired — return empty result when no register/schema context.
         $this->logger->warning(
-            message: '[UnifiedObjectMapper] Using blob storage fallback - magic mapper unavailable',
-            context: [
-                'file'       => __FILE__,
-                'line'       => __LINE__,
-                'registerId' => $registerId,
-                'schemaId'   => $schemaId,
-            ]
+            message: '[UnifiedObjectMapper] searchObjectsPaginated() called without register/schema context',
+            context: ['file' => __FILE__, 'line' => __LINE__]
         );
 
-        $results = $this->objectEntityMapper->searchObjects(
-            query: $searchQuery,
-            _activeOrgUuid: $activeOrgUuid,
-            _rbac: $rbac,
-            _multitenancy: $multitenancy,
-            ids: $ids,
-            uses: $uses
-        );
-
-        // For blob storage results, collect unique register/schema IDs from results.
-        // This handles queries that span multiple schemas.
-        $uniqueRegisterIds = [];
-        $uniqueSchemaIds   = [];
-
-        foreach ($results as $result) {
-            if ($result instanceof ObjectEntity) {
-                $regId = $result->getRegister();
-                $schId = $result->getSchema();
-
-                if ($regId !== null && isset($registersCache[$regId]) === false) {
-                    $uniqueRegisterIds[$regId] = true;
-                }
-
-                if ($schId !== null && isset($schemasCache[$schId]) === false) {
-                    $uniqueSchemaIds[$schId] = true;
-                }
-            }
-        }
-
-        // Load any missing registers.
-        foreach (array_keys($uniqueRegisterIds) as $regId) {
-            try {
-                $reg = $this->registerMapper->find((int) $regId, _multitenancy: false, _rbac: false);
-                $registersCache[$reg->getId()] = $reg->jsonSerialize();
-            } catch (\Exception $e) {
-                // Skip if not found.
-            }
-        }
-
-        // Load any missing schemas.
-        foreach (array_keys($uniqueSchemaIds) as $schId) {
-            try {
-                $sch = $this->schemaMapper->find((int) $schId, _multitenancy: false, _rbac: false);
-                $schemasCache[$sch->getId()] = $sch->jsonSerialize();
-            } catch (\Exception $e) {
-                // Skip if not found.
-            }
-        }
-
-        // Apply RBAC post-filtering since the ORM blob storage does not enforce RBAC.
-        // This ensures schema-level authorization (including conditional rules) is always applied.
-        $results = $this->filterBySchemaRbac(objects: $results, schemasCache: $schemasCache, rbac: $rbac);
-        $total   = count($results);
-
-        // Return results with registers/schemas indexed by ID for frontend lookup.
         return [
-            'results'   => $results,
-            'total'     => $total,
+            'results'   => [],
+            'total'     => 0,
             'registers' => $registersCache,
             'schemas'   => $schemasCache,
         ];

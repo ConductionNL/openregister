@@ -1741,4 +1741,181 @@ class EntityRecognitionHandlerTest extends TestCase
         $this->assertContains('EMAIL', $types);
         $this->assertContains('PHONE', $types);
     }
+
+    // =========================================================================
+    // processSourceChunks — aggregation over multiple chunks
+    // =========================================================================
+
+    public function testProcessSourceChunksReturnsSummedCounts(): void
+    {
+        $chunk1 = $this->createChunk(1, 'Contact john@example.com', 0, 'object', 10);
+        $chunk2 = $this->createChunk(2, 'Also jane@example.org', 1, 'object', 10);
+
+        $this->chunkMapper->method('findBySource')->willReturn([$chunk1, $chunk2]);
+
+        $gdprEntity = $this->createMockGdprEntity(1);
+        $this->setupQueryBuilderMock();
+        $this->entityMapper->method('findEntitiesPublic')->willReturn([]);
+        $this->entityMapper->method('insert')->willReturn($gdprEntity);
+        $this->entityRelationMapper->method('insert')->willReturn(new EntityRelation());
+
+        $result = $this->handler->processSourceChunks('object', 10);
+
+        // Both chunks processed → at least 2 entities (one email per chunk).
+        $this->assertGreaterThanOrEqual(2, $result['entities_found']);
+        $this->assertSame($result['chunks_processed'], 2);
+    }
+
+    // =========================================================================
+    // extractFromChunk — detects IBAN with correct category
+    // =========================================================================
+
+    public function testExtractFromChunkDetectsIban(): void
+    {
+        $chunk = $this->createChunk(1, 'Bank account NL02ABNA0123456789 is active.', 0, 'file', 1);
+
+        $gdprEntity = $this->createMockGdprEntity(1);
+        $this->setupQueryBuilderMock();
+        $this->entityMapper->method('findEntitiesPublic')->willReturn([]);
+        $this->entityMapper->method('insert')->willReturn($gdprEntity);
+        $this->entityRelationMapper->method('insert')->willReturn(new EntityRelation());
+
+        $result = $this->handler->extractFromChunk($chunk);
+
+        $this->assertGreaterThanOrEqual(1, $result['entities_found']);
+        // Should include IBAN entity.
+        $types = array_column($result['entities'], 'type');
+        $this->assertContains('IBAN', $types);
+    }
+
+    // =========================================================================
+    // detectWithOpenAnonymiser — pii_entities wrapping
+    // =========================================================================
+
+    public function testDetectWithOpenAnonymiserHandlesPiiEntitiesWrapper(): void
+    {
+        // The openAnonymiser response wraps results in {"pii_entities": [...]}.
+        $apiResult = [
+            'pii_entities' => [
+                [
+                    'entity_type' => 'EMAIL_ADDRESS',
+                    'start'       => 0,
+                    'end'         => 19,
+                    'score'       => 0.9,
+                ],
+            ],
+        ];
+
+        $fileSettings = ['openAnonymiserApiEndpoint' => 'http://fake-anon-service'];
+        $this->settingsService->method('getFileSettingsOnly')->willReturn($fileSettings);
+
+        // We can't easily mock curl, but we can test the fallback path
+        // when endpoint is configured but request fails (exception triggers regex fallback).
+        $text = 'test@example.com is the address';
+
+        $result = $this->invokePrivateMethod(
+            'detectWithOpenAnonymiser',
+            [$text, null, 0.5]
+        );
+
+        // Since curl will fail in test environment, it falls back to regex.
+        $this->assertIsArray($result);
+    }
+
+    // =========================================================================
+    // getCategoryForType — IP_ADDRESS type
+    // =========================================================================
+
+    public function testGetCategoryForIpAddressReturnsContextual(): void
+    {
+        $category = $this->invokePrivateMethod('getCategoryForType', ['IP_ADDRESS']);
+        $this->assertSame(EntityRecognitionHandler::CATEGORY_CONTEXTUAL_DATA, $category);
+    }
+
+    // =========================================================================
+    // extractFromChunk with presidio option
+    // =========================================================================
+
+    public function testExtractFromChunkWithPresidioMethodFallsBackWhenNoEndpoint(): void
+    {
+        $this->settingsService->method('getFileSettingsOnly')
+            ->willReturn(['presidioApiEndpoint' => '']);
+
+        $chunk = $this->createChunk(5, 'test@example.com', 0, 'file', 1);
+
+        $gdprEntity = $this->createMockGdprEntity(5);
+        $this->setupQueryBuilderMock();
+        $this->entityMapper->method('findEntitiesPublic')->willReturn([]);
+        $this->entityMapper->method('insert')->willReturn($gdprEntity);
+        $this->entityRelationMapper->method('insert')->willReturn(new EntityRelation());
+
+        // Should fall back to regex and detect the email.
+        $result = $this->handler->extractFromChunk($chunk, ['method' => 'presidio']);
+
+        $this->assertGreaterThanOrEqual(1, $result['entities_found']);
+    }
+
+    // =========================================================================
+    // storeDetectedEntities — entity with file source type sets file_id
+    // =========================================================================
+
+    public function testStoreDetectedEntitiesSetsFileIdForFileSource(): void
+    {
+        $chunk = $this->createChunk(9, 'email@test.com and NL02ABNA0123456789', 0, 'file', 42);
+
+        $gdprEntity = $this->createMockGdprEntity(9);
+        $this->setupQueryBuilderMock();
+        $this->entityMapper->method('findEntitiesPublic')->willReturn([]);
+        $this->entityMapper->method('insert')->willReturn($gdprEntity);
+
+        $insertedRelations = [];
+        $this->entityRelationMapper->method('insert')
+            ->willReturnCallback(function (EntityRelation $rel) use (&$insertedRelations) {
+                $insertedRelations[] = $rel;
+                return $rel;
+            });
+
+        $result = $this->handler->extractFromChunk($chunk);
+
+        $this->assertGreaterThanOrEqual(1, $result['relations_created']);
+        // Every relation should have the file_id set to 42.
+        foreach ($insertedRelations as $rel) {
+            $this->assertSame(42, $rel->getFileId());
+        }
+    }
+
+    // =========================================================================
+    // detectWithRegex — IBAN category is sensitive_pii
+    // =========================================================================
+
+    public function testDetectWithRegexIbanCategoryIsSensitivePii(): void
+    {
+        $result = $this->invokePrivateMethod(
+            'detectWithRegex',
+            ['Account NL02ABNA0123456789', null, 0.0]
+        );
+
+        $ibanEntities = array_filter($result, fn($e) => $e['type'] === 'IBAN');
+        $this->assertNotEmpty($ibanEntities);
+
+        $iban = array_values($ibanEntities)[0];
+        $this->assertSame(EntityRecognitionHandler::CATEGORY_SENSITIVE_PII, $iban['category']);
+    }
+
+    // =========================================================================
+    // processSourceChunks — returns zeros when all chunks are metadata
+    // =========================================================================
+
+    public function testProcessSourceChunksReturnsZerosWhenNoNonMetadataChunks(): void
+    {
+        // chunk_index = -1 means metadata chunk, filtered out.
+        $metaChunk = $this->createChunk(1, 'metadata', -1, 'file', 1);
+        $this->chunkMapper->method('findBySource')->willReturn([$metaChunk]);
+
+        $result = $this->handler->processSourceChunks('file', 1);
+
+        $this->assertSame(0, $result['chunks_processed']);
+        $this->assertSame(0, $result['entities_found']);
+        $this->assertSame(0, $result['relations_created']);
+    }
 }

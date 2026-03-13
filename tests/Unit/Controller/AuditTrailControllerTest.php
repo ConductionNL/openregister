@@ -267,4 +267,134 @@ class AuditTrailControllerTest extends TestCase
         $data = $result->getData();
         $this->assertFalse($data['success']);
     }
+
+    // ── extractRequestParameters branch coverage ──
+
+    public function testIndexWithUnderscoreLimitAndOffset(): void
+    {
+        // Covers the _limit / _offset / _page alternate param names.
+        $this->request->method('getParams')->willReturn([
+            '_limit'  => '5',
+            '_offset' => '10',
+        ]);
+        $this->logService->method('getAllLogs')->willReturn([]);
+        $this->logService->method('countAllLogs')->willReturn(0);
+
+        $result = $this->controller->index();
+
+        $this->assertEquals(200, $result->getStatus());
+        $data = $result->getData();
+        $this->assertEquals(5, $data['limit']);
+        $this->assertEquals(10, $data['offset']);
+    }
+
+    public function testIndexWithPageCalculatesOffset(): void
+    {
+        // page=3, limit=20 → offset = (3-1)*20 = 40.
+        $this->request->method('getParams')->willReturn([
+            'page' => '3',
+        ]);
+        $this->logService->method('getAllLogs')->willReturn([]);
+        $this->logService->method('countAllLogs')->willReturn(0);
+
+        $result = $this->controller->index();
+
+        $this->assertEquals(200, $result->getStatus());
+        $data = $result->getData();
+        $this->assertEquals(40, $data['offset']);
+        $this->assertEquals(3, $data['page']);
+    }
+
+    public function testIndexWithUnderscorePageParam(): void
+    {
+        // _page alternate name.
+        $this->request->method('getParams')->willReturn([
+            '_page' => '2',
+        ]);
+        $this->logService->method('getAllLogs')->willReturn([]);
+        $this->logService->method('countAllLogs')->willReturn(0);
+
+        $result = $this->controller->index();
+
+        $this->assertEquals(200, $result->getStatus());
+        $data = $result->getData();
+        $this->assertEquals(20, $data['offset']);
+    }
+
+    public function testIndexWithSortParam(): void
+    {
+        // Covers the sort extraction branch.
+        $this->request->method('getParams')->willReturn([
+            'sort'  => 'updated',
+            'order' => 'ASC',
+        ]);
+        $this->logService->method('getAllLogs')->willReturn([]);
+        $this->logService->method('countAllLogs')->willReturn(0);
+
+        $result = $this->controller->index();
+
+        $this->assertEquals(200, $result->getStatus());
+    }
+
+    public function testIndexWithUnderscoreSortParam(): void
+    {
+        // Covers the _sort / _order alternate names.
+        $this->request->method('getParams')->willReturn([
+            '_sort'  => 'action',
+            '_order' => 'DESC',
+        ]);
+        $this->logService->method('getAllLogs')->willReturn([]);
+        $this->logService->method('countAllLogs')->willReturn(0);
+
+        $result = $this->controller->index();
+
+        $this->assertEquals(200, $result->getStatus());
+    }
+
+    public function testIndexWithSearchParam(): void
+    {
+        // Covers _search alternate name.
+        $this->request->method('getParams')->willReturn([
+            '_search' => 'create',
+        ]);
+        $this->logService->method('getAllLogs')->willReturn([]);
+        $this->logService->method('countAllLogs')->willReturn(0);
+
+        $result = $this->controller->index();
+
+        $this->assertEquals(200, $result->getStatus());
+    }
+
+    public function testDestroyGeneralException(): void
+    {
+        // Covers the generic \Exception branch in destroy() (lines 378-384).
+        $this->logService->method('deleteLog')
+            ->willThrowException(new \Exception('Unexpected error'));
+
+        $result = $this->controller->destroy(1);
+
+        $this->assertEquals(500, $result->getStatus());
+        $data = $result->getData();
+        $this->assertStringContainsString('Deletion failed', $data['error']);
+    }
+
+    public function testDestroyMultipleWithArrayIds(): void
+    {
+        // Covers the is_array($ids) branch in destroyMultiple() (lines 417-418).
+        $this->request->method('getParams')->willReturn([]);
+        $this->request->method('getParam')
+            ->willReturnMap([
+                ['ids', null, ['1', '2', '3']],
+            ]);
+
+        $this->logService->method('deleteLogs')->willReturn([
+            'deleted' => 3,
+            'failed'  => 0,
+        ]);
+
+        $result = $this->controller->destroyMultiple();
+
+        $this->assertEquals(200, $result->getStatus());
+        $this->assertTrue($result->getData()['success']);
+    }
 }
