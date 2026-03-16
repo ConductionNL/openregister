@@ -2,10 +2,10 @@
   "$schema": "http://cyclonedx.org/schema/bom-1.5.schema.json",
   "bomFormat": "CycloneDX",
   "specVersion": "1.5",
-  "serialNumber": "urn:uuid:b2d2775e-5371-45f7-9eef-ec8d1d5689fd",
+  "serialNumber": "urn:uuid:36b4353c-914c-4c9e-9484-0ccf32571303",
   "version": 1,
   "metadata": {
-    "timestamp": "2026-03-16T08:57:55Z",
+    "timestamp": "2026-03-16T09:39:30Z",
     "tools": [
       {
         "name": "composer",
@@ -82,10 +82,10 @@
       }
     ],
     "component": {
-      "bom-ref": "conductionnl/openregister-dev-feature/add-sbom-generation",
+      "bom-ref": "conductionnl/openregister-dev-feature/php-linting",
       "type": "application",
       "name": "openregister",
-      "version": "dev-feature/add-sbom-generation",
+      "version": "dev-feature/php-linting",
       "group": "conductionnl",
       "description": "Quickly build data registers based on schema.json",
       "author": "Conduction b.v.",
@@ -96,15 +96,15 @@
           }
         }
       ],
-      "purl": "pkg:composer/conductionnl/openregister@dev-feature/add-sbom-generation",
+      "purl": "pkg:composer/conductionnl/openregister@dev-feature/php-linting",
       "properties": [
         {
           "name": "cdx:composer:package:distReference",
-          "value": "ef8ed0dcbfcb72ce502db98f9f5f0535d05a1b33"
+          "value": "463213dc7510c4f0097646a4960a7b3b77405944"
         },
         {
           "name": "cdx:composer:package:sourceReference",
-          "value": "ef8ed0dcbfcb72ce502db98f9f5f0535d05a1b33"
+          "value": "463213dc7510c4f0097646a4960a7b3b77405944"
         },
         {
           "name": "cdx:composer:package:type",
@@ -55593,7 +55593,7 @@
       ]
     },
     {
-      "ref": "conductionnl/openregister-dev-feature/add-sbom-generation",
+      "ref": "conductionnl/openregister-dev-feature/php-linting",
       "dependsOn": [
         "adbario/php-dot-notation-3.3.0.0",
         "elasticsearch/elasticsearch-8.15.0.0",
