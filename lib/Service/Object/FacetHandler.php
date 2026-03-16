@@ -158,10 +158,20 @@ class FacetHandler
             return ['facets' => []];
         }
 
-        // **BUGFIX**: Handle _facets as string (e.g., _facets=extend) by converting to array.
+        // Handle _facets as string (e.g., _facets=extend or _facets=field1,field2).
         if (is_string($facetConfig) === true) {
-            // Handle special string values like "extend" or comma-separated field names.
-            $facetConfig = [$facetConfig];
+            if ($facetConfig === 'extend') {
+                // Expand "extend" to all facetable fields from the schema.
+                $schemas     = $this->getSchemasForQuery(baseQuery: $query);
+                $facetConfig = $this->expandExtendToFacetConfig(schemas: $schemas);
+            } else {
+                // Treat as comma-separated field names.
+                $fields      = array_map('trim', explode(',', $facetConfig));
+                $facetConfig = [];
+                foreach ($fields as $field) {
+                    $facetConfig[$field] = ['type' => 'terms'];
+                }
+            }
         }
 
         // Handle _facets as numerically-indexed array (e.g., _facets[]=standaardversies).
@@ -170,6 +180,9 @@ class FacetHandler
         if (is_array($facetConfig) === true && array_is_list($facetConfig) === true) {
             $facetConfig = array_values(array: $facetConfig);
         }
+
+        // Write expanded facet config back to query so downstream methods receive it.
+        $query['_facets'] = $facetConfig;
 
         // **PAGINATION INDEPENDENCE**: Remove pagination params for facet calculation.
         $facetQuery = $query;
@@ -1156,6 +1169,38 @@ class FacetHandler
      *
      * @psalm-return array{'@self': array, object_fields: array, non_aggregated_fields: array}
      */
+    /**
+     * Expand the "extend" facet shorthand to a full facet config array.
+     *
+     * Reads all schemas and returns an associative facet config for every
+     * property that has facetable=true set.
+     *
+     * @param Schema[] $schemas Schemas to inspect.
+     *
+     * @return array Associative facet config, e.g. ['confidentiality' => ['type' => 'terms'], ...].
+     */
+    private function expandExtendToFacetConfig(array $schemas): array
+    {
+        $config = [];
+
+        foreach ($schemas as $schema) {
+            if (($schema instanceof Schema) === false) {
+                continue;
+            }
+
+            $properties = $schema->getProperties() ?? [];
+            foreach ($properties as $propertyKey => $property) {
+                $facetable = $property['facetable'] ?? false;
+                if ($facetable === true || (is_array($facetable) === true && empty($facetable) === false)) {
+                    $facetType              = $this->determineFacetTypeFromProperty(property: $property);
+                    $config[$propertyKey] = ['type' => $facetType];
+                }
+            }
+        }
+
+        return $config;
+    }//end expandExtendToFacetConfig()
+
     private function getFacetableFieldsFromSchemas(array $schemas): array
     {
         $facetableFields = [
