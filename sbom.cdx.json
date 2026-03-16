@@ -2,10 +2,10 @@
   "$schema": "http://cyclonedx.org/schema/bom-1.5.schema.json",
   "bomFormat": "CycloneDX",
   "specVersion": "1.5",
-  "serialNumber": "urn:uuid:4ac7643a-43df-486f-b125-619086e30026",
+  "serialNumber": "urn:uuid:485d2f00-34bd-4b2a-917e-1904981ecbef",
   "version": 1,
   "metadata": {
-    "timestamp": "2026-03-16T13:46:04Z",
+    "timestamp": "2026-03-16T13:56:49Z",
     "tools": [
       {
         "name": "composer",
@@ -100,11 +100,11 @@
       "properties": [
         {
           "name": "cdx:composer:package:distReference",
-          "value": "fb180f4ac6d105caa0102c0174cbdf9078509cf1"
+          "value": "f16abc8cefb2406c3358a41e4de01326858bc4c1"
         },
         {
           "name": "cdx:composer:package:sourceReference",
-          "value": "fb180f4ac6d105caa0102c0174cbdf9078509cf1"
+          "value": "f16abc8cefb2406c3358a41e4de01326858bc4c1"
         },
         {
           "name": "cdx:composer:package:type",
@@ -4582,6 +4582,42 @@
         {
           "name": "cdx:npm:package:path",
           "value": "node_modules/@codemirror/view"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "nextcloud-vue",
+      "group": "@conduction",
+      "version": "0.1.0-beta.3",
+      "bom-ref": "openregister@1.0.0|@conduction/nextcloud-vue@0.1.0-beta.3",
+      "author": "Conduction B.V.",
+      "description": "Shared Vue component library for Conduction Nextcloud apps — complements @nextcloud/vue with higher-level components, OpenRegister integration, and NL Design System support",
+      "licenses": [
+        {
+          "license": {
+            "id": "EUPL-1.2"
+          }
+        }
+      ],
+      "purl": "pkg:npm/%40conduction/nextcloud-vue@0.1.0-beta.3",
+      "externalReferences": [
+        {
+          "url": "https://registry.npmjs.org/@conduction/nextcloud-vue/-/nextcloud-vue-0.1.0-beta.3.tgz",
+          "type": "distribution",
+          "hashes": [
+            {
+              "alg": "SHA-512",
+              "content": "f81d36cf6bd480df014d9d1945df66b6b215a39e4a3044f3bc4b32b7b834016e7484d538e3177d20b0478cabd994a41c96c2d6cd3dfa2b4f915886dc0b6d9054"
+            }
+          ],
+          "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
+        }
+      ],
+      "properties": [
+        {
+          "name": "cdx:npm:package:path",
+          "value": "node_modules/@conduction/nextcloud-vue"
         }
       ]
     },
