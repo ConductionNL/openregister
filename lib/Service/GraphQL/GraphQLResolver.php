@@ -166,11 +166,22 @@ class GraphQLResolver
         $register = $this->findRegisterForSchema(schema: $schema);
 
         // Set register/schema context on ObjectService (required for QueryHandler routing).
-        $this->objectService->setRegister($register);
+        if ($register !== null) {
+            $this->objectService->setRegister($register);
+        }
+
         $this->objectService->setSchema($schema);
 
-        // Build the query array for QueryHandler.
-        $query = $this->buildQueryFromArgs(args: $args, register: $register, schema: $schema);
+        // Build request params from GraphQL args.
+        $requestParams = $this->argsToRequestParams(args: $args);
+
+        // Use ObjectService.buildSearchQuery which properly routes register/schema.
+        $registerId = ($register !== null ? $register->getId() : null);
+        $query = $this->objectService->buildSearchQuery(
+            requestParams: $requestParams,
+            register: $registerId,
+            schema: $schema->getId()
+        );
 
         // Handle cursor-based pagination.
         $cursorData = null;
@@ -178,7 +189,13 @@ class GraphQLResolver
             $cursorData = $this->decodeCursor(cursor: $args['after']);
         }
 
-        $result = $this->queryHandler->searchObjectsPaginated($query);
+        // Multitenancy is handled by the query context (ObjectService checks active org).
+        // RBAC is handled by checkSchemaPermission above.
+        $result = $this->objectService->searchObjectsPaginated(
+            query: $query,
+            _rbac: true,
+            _multitenancy: true
+        );
 
         // Build connection response.
         $results    = ($result['results'] ?? []);
@@ -186,9 +203,13 @@ class GraphQLResolver
         $limit      = ($result['limit'] ?? ($args['first'] ?? 20));
         $offset     = ($result['offset'] ?? ($args['offset'] ?? 0));
 
-        // Apply property-level RBAC to each result.
+        // Convert results to arrays and apply property-level RBAC.
         $filteredResults = [];
         foreach ($results as $item) {
+            if ($item instanceof \OCA\OpenRegister\Db\ObjectEntity) {
+                $item = $this->objectToArray(object: $item);
+            }
+
             if (is_array(value: $item) === true) {
                 $filteredResults[] = $this->filterProperties(schema: $schema, data: $item);
             }
@@ -600,6 +621,64 @@ class GraphQLResolver
         return $query;
 
     }//end buildQueryFromArgs()
+
+
+    /**
+     * Convert GraphQL args to HTTP request params format for ObjectService.buildSearchQuery().
+     *
+     * @param array $args The GraphQL arguments
+     *
+     * @return array<string, mixed> Request params compatible with buildSearchQuery
+     */
+    private function argsToRequestParams(array $args): array
+    {
+        $params = [];
+
+        // Pagination.
+        $params['_limit']  = ($args['first'] ?? 20);
+        $params['_offset'] = ($args['offset'] ?? 0);
+
+        // Search.
+        if (isset($args['search']) === true) {
+            $params['_search'] = $args['search'];
+        }
+
+        if (isset($args['fuzzy']) === true && $args['fuzzy'] === true) {
+            $params['_fuzzy'] = 'true';
+        }
+
+        // Sort.
+        if (isset($args['sort']) === true) {
+            $params['_order'] = json_encode(value: [[
+                'field'     => $args['sort']['field'],
+                'direction' => strtoupper(string: ($args['sort']['order'] ?? 'ASC')),
+            ]]);
+        }
+
+        // Facets.
+        if (isset($args['facets']) === true && empty($args['facets']) === false) {
+            $params['_facets'] = implode(separator: ',', array: $args['facets']);
+        }
+
+        // Filter (property values).
+        if (isset($args['filter']) === true && is_array(value: $args['filter']) === true) {
+            foreach ($args['filter'] as $field => $value) {
+                $params[$field] = $value;
+            }
+        }
+
+        // Self filter (metadata columns).
+        if (isset($args['selfFilter']) === true && is_array(value: $args['selfFilter']) === true) {
+            foreach ($args['selfFilter'] as $field => $value) {
+                if ($value !== null) {
+                    $params['@self'][$field] = $value;
+                }
+            }
+        }
+
+        return $params;
+
+    }//end argsToRequestParams()
 
     /**
      * Convert an ObjectEntity to an array for GraphQL output.
