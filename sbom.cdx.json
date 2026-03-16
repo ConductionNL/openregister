@@ -2,10 +2,10 @@
   "$schema": "http://cyclonedx.org/schema/bom-1.5.schema.json",
   "bomFormat": "CycloneDX",
   "specVersion": "1.5",
-  "serialNumber": "urn:uuid:5dfc5c49-8c0a-4fa9-9f37-fe1e68ec6439",
+  "serialNumber": "urn:uuid:6470e176-4a1d-4a49-93f3-2f1863491c7c",
   "version": 1,
   "metadata": {
-    "timestamp": "2026-03-16T11:49:44Z",
+    "timestamp": "2026-03-16T13:38:54Z",
     "tools": [
       {
         "name": "composer",
@@ -82,10 +82,10 @@
       }
     ],
     "component": {
-      "bom-ref": "conductionnl/openregister-dev-feature/php-linting",
+      "bom-ref": "conductionnl/openregister-dev-feature/nextcloud-package-3-schemas-page",
       "type": "application",
       "name": "openregister",
-      "version": "dev-feature/php-linting",
+      "version": "dev-feature/nextcloud-package-3-schemas-page",
       "group": "conductionnl",
       "description": "Quickly build data registers based on schema.json",
       "author": "Conduction b.v.",
@@ -96,15 +96,15 @@
           }
         }
       ],
-      "purl": "pkg:composer/conductionnl/openregister@dev-feature/php-linting",
+      "purl": "pkg:composer/conductionnl/openregister@dev-feature/nextcloud-package-3-schemas-page",
       "properties": [
         {
           "name": "cdx:composer:package:distReference",
-          "value": "e76c30d481704d331927c4a5f29957179645230e"
+          "value": "9577a6799c852911422ac5e1b7aaf3a0fecf9ad3"
         },
         {
           "name": "cdx:composer:package:sourceReference",
-          "value": "e76c30d481704d331927c4a5f29957179645230e"
+          "value": "9577a6799c852911422ac5e1b7aaf3a0fecf9ad3"
         },
         {
           "name": "cdx:composer:package:type",
@@ -6208,58 +6208,6 @@
           "name": "cdx:npm:package:path",
           "value": "node_modules/@nextcloud/axios"
         }
-      ],
-      "components": [
-        {
-          "type": "library",
-          "name": "router",
-          "group": "@nextcloud",
-          "version": "3.0.1",
-          "bom-ref": "openregister@1.0.0|@nextcloud/axios@2.5.2|@nextcloud/router@3.0.1",
-          "author": "Christoph Wurst",
-          "licenses": [
-            {
-              "license": {
-                "id": "GPL-3.0-or-later"
-              }
-            }
-          ],
-          "purl": "pkg:npm/%40nextcloud/router@3.0.1",
-          "externalReferences": [
-            {
-              "url": "git+https://github.com/nextcloud-libraries/nextcloud-router.git",
-              "type": "vcs",
-              "comment": "as detected from PackageJson property \"repository.url\""
-            },
-            {
-              "url": "https://github.com/nextcloud-libraries/nextcloud-router#readme",
-              "type": "website",
-              "comment": "as detected from PackageJson property \"homepage\""
-            },
-            {
-              "url": "https://github.com/nextcloud-libraries/nextcloud-router/issues",
-              "type": "issue-tracker",
-              "comment": "as detected from PackageJson property \"bugs.url\""
-            },
-            {
-              "url": "https://registry.npmjs.org/@nextcloud/router/-/router-3.0.1.tgz",
-              "type": "distribution",
-              "hashes": [
-                {
-                  "alg": "SHA-512",
-                  "content": "0a2fee0f7c7c38a1ddc52a972fa81127e98624e1178de8878e3ee1aac66a553b13ee43ab0a30dfd3f27ccf94722e5a24299d08a527be846c608b7601ec6a70dd"
-                }
-              ],
-              "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
-            }
-          ],
-          "properties": [
-            {
-              "name": "cdx:npm:package:path",
-              "value": "node_modules/@nextcloud/axios/node_modules/@nextcloud/router"
-            }
-          ]
-        }
       ]
     },
     {
@@ -6520,57 +6468,6 @@
         },
         {
           "type": "library",
-          "name": "router",
-          "group": "@nextcloud",
-          "version": "3.1.0",
-          "bom-ref": "openregister@1.0.0|@nextcloud/dialogs@6.4.2|@nextcloud/router@3.1.0",
-          "author": "Nextcloud GmbH and Nextcloud contributors",
-          "description": "Utils for generating Nextcloud URLs",
-          "licenses": [
-            {
-              "license": {
-                "id": "GPL-3.0-or-later"
-              }
-            }
-          ],
-          "purl": "pkg:npm/%40nextcloud/router@3.1.0",
-          "externalReferences": [
-            {
-              "url": "git+https://github.com/nextcloud-libraries/nextcloud-router.git",
-              "type": "vcs",
-              "comment": "as detected from PackageJson property \"repository.url\""
-            },
-            {
-              "url": "https://github.com/nextcloud-libraries/nextcloud-router#readme",
-              "type": "website",
-              "comment": "as detected from PackageJson property \"homepage\""
-            },
-            {
-              "url": "https://github.com/nextcloud-libraries/nextcloud-router/issues",
-              "type": "issue-tracker",
-              "comment": "as detected from PackageJson property \"bugs.url\""
-            },
-            {
-              "url": "https://registry.npmjs.org/@nextcloud/router/-/router-3.1.0.tgz",
-              "type": "distribution",
-              "hashes": [
-                {
-                  "alg": "SHA-512",
-                  "content": "7b876421ac514b0759265645a67f71d37420067fd26b684dd61a7f040efe01bcf292648094ab967dd997f23ffc7b0acba50c18999476dc864ef57c29257ab653"
-                }
-              ],
-              "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
-            }
-          ],
-          "properties": [
-            {
-              "name": "cdx:npm:package:path",
-              "value": "node_modules/@nextcloud/dialogs/node_modules/@nextcloud/router"
-            }
-          ]
-        },
-        {
-          "type": "library",
           "name": "core",
           "group": "@vueuse",
           "version": "11.3.0",
@@ -6824,59 +6721,6 @@
         {
           "name": "cdx:npm:package:path",
           "value": "node_modules/@nextcloud/files"
-        }
-      ],
-      "components": [
-        {
-          "type": "library",
-          "name": "router",
-          "group": "@nextcloud",
-          "version": "3.1.0",
-          "bom-ref": "openregister@1.0.0|@nextcloud/files@3.12.2|@nextcloud/router@3.1.0",
-          "author": "Nextcloud GmbH and Nextcloud contributors",
-          "description": "Utils for generating Nextcloud URLs",
-          "licenses": [
-            {
-              "license": {
-                "id": "GPL-3.0-or-later"
-              }
-            }
-          ],
-          "purl": "pkg:npm/%40nextcloud/router@3.1.0",
-          "externalReferences": [
-            {
-              "url": "git+https://github.com/nextcloud-libraries/nextcloud-router.git",
-              "type": "vcs",
-              "comment": "as detected from PackageJson property \"repository.url\""
-            },
-            {
-              "url": "https://github.com/nextcloud-libraries/nextcloud-router#readme",
-              "type": "website",
-              "comment": "as detected from PackageJson property \"homepage\""
-            },
-            {
-              "url": "https://github.com/nextcloud-libraries/nextcloud-router/issues",
-              "type": "issue-tracker",
-              "comment": "as detected from PackageJson property \"bugs.url\""
-            },
-            {
-              "url": "https://registry.npmjs.org/@nextcloud/router/-/router-3.1.0.tgz",
-              "type": "distribution",
-              "hashes": [
-                {
-                  "alg": "SHA-512",
-                  "content": "7b876421ac514b0759265645a67f71d37420067fd26b684dd61a7f040efe01bcf292648094ab967dd997f23ffc7b0acba50c18999476dc864ef57c29257ab653"
-                }
-              ],
-              "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
-            }
-          ],
-          "properties": [
-            {
-              "name": "cdx:npm:package:path",
-              "value": "node_modules/@nextcloud/files/node_modules/@nextcloud/router"
-            }
-          ]
         }
       ]
     },
@@ -7140,9 +6984,10 @@
       "type": "library",
       "name": "router",
       "group": "@nextcloud",
-      "version": "2.1.2",
-      "bom-ref": "openregister@1.0.0|@nextcloud/router@2.1.2",
-      "author": "Christoph Wurst",
+      "version": "3.1.0",
+      "bom-ref": "openregister@1.0.0|@nextcloud/router@3.1.0",
+      "author": "Nextcloud GmbH and Nextcloud contributors",
+      "description": "Utils for generating Nextcloud URLs",
       "licenses": [
         {
           "license": {
@@ -7150,30 +6995,30 @@
           }
         }
       ],
-      "purl": "pkg:npm/%40nextcloud/router@2.1.2",
+      "purl": "pkg:npm/%40nextcloud/router@3.1.0",
       "externalReferences": [
         {
-          "url": "git+https://github.com/nextcloud/nextcloud-router.git",
+          "url": "git+https://github.com/nextcloud-libraries/nextcloud-router.git",
           "type": "vcs",
           "comment": "as detected from PackageJson property \"repository.url\""
         },
         {
-          "url": "https://github.com/nextcloud/nextcloud-router#readme",
+          "url": "https://github.com/nextcloud-libraries/nextcloud-router#readme",
           "type": "website",
           "comment": "as detected from PackageJson property \"homepage\""
         },
         {
-          "url": "https://github.com/nextcloud/nextcloud-router/issues",
+          "url": "https://github.com/nextcloud-libraries/nextcloud-router/issues",
           "type": "issue-tracker",
           "comment": "as detected from PackageJson property \"bugs.url\""
         },
         {
-          "url": "https://registry.npmjs.org/@nextcloud/router/-/router-2.1.2.tgz",
+          "url": "https://registry.npmjs.org/@nextcloud/router/-/router-3.1.0.tgz",
           "type": "distribution",
           "hashes": [
             {
               "alg": "SHA-512",
-              "content": "263e5f8237874f5bd52203b250639e1dfc24d8a81a3bbed019fa99013e86597be902c3749a4ab0963920e05907ad0468b98a82138567279a3cff0d0300df3db4"
+              "content": "7b876421ac514b0759265645a67f71d37420067fd26b684dd61a7f040efe01bcf292648094ab967dd997f23ffc7b0acba50c18999476dc864ef57c29257ab653"
             }
           ],
           "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
@@ -7428,57 +7273,6 @@
         }
       ],
       "components": [
-        {
-          "type": "library",
-          "name": "router",
-          "group": "@nextcloud",
-          "version": "3.1.0",
-          "bom-ref": "openregister@1.0.0|@nextcloud/vue@8.37.0|@nextcloud/router@3.1.0",
-          "author": "Nextcloud GmbH and Nextcloud contributors",
-          "description": "Utils for generating Nextcloud URLs",
-          "licenses": [
-            {
-              "license": {
-                "id": "GPL-3.0-or-later"
-              }
-            }
-          ],
-          "purl": "pkg:npm/%40nextcloud/router@3.1.0",
-          "externalReferences": [
-            {
-              "url": "git+https://github.com/nextcloud-libraries/nextcloud-router.git",
-              "type": "vcs",
-              "comment": "as detected from PackageJson property \"repository.url\""
-            },
-            {
-              "url": "https://github.com/nextcloud-libraries/nextcloud-router#readme",
-              "type": "website",
-              "comment": "as detected from PackageJson property \"homepage\""
-            },
-            {
-              "url": "https://github.com/nextcloud-libraries/nextcloud-router/issues",
-              "type": "issue-tracker",
-              "comment": "as detected from PackageJson property \"bugs.url\""
-            },
-            {
-              "url": "https://registry.npmjs.org/@nextcloud/router/-/router-3.1.0.tgz",
-              "type": "distribution",
-              "hashes": [
-                {
-                  "alg": "SHA-512",
-                  "content": "7b876421ac514b0759265645a67f71d37420067fd26b684dd61a7f040efe01bcf292648094ab967dd997f23ffc7b0acba50c18999476dc864ef57c29257ab653"
-                }
-              ],
-              "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
-            }
-          ],
-          "properties": [
-            {
-              "name": "cdx:npm:package:path",
-              "value": "node_modules/@nextcloud/vue/node_modules/@nextcloud/router"
-            }
-          ]
-        },
         {
           "type": "library",
           "name": "sharing",
@@ -55593,7 +55387,7 @@
       ]
     },
     {
-      "ref": "conductionnl/openregister-dev-feature/php-linting",
+      "ref": "conductionnl/openregister-dev-feature/nextcloud-package-3-schemas-page",
       "dependsOn": [
         "adbario/php-dot-notation-3.3.0.0",
         "elasticsearch/elasticsearch-8.15.0.0",
