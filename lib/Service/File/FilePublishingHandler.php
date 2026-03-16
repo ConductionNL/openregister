@@ -19,7 +19,7 @@ namespace OCA\OpenRegister\Service\File;
 use Exception;
 use OCA\OpenRegister\Db\FileMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Db\ObjectEntityMapper;
+use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Service\FileService;
 use OCP\Files\File;
 use OCP\Files\NotFoundException;
@@ -55,12 +55,12 @@ class FilePublishingHandler
     /**
      * Constructor for FilePublishingHandler.
      *
-     * @param ObjectEntityMapper $objectEntityMapper Object entity mapper for fetching objects.
+     * @param MagicMapper $objectEntityMapper Object entity mapper for fetching objects.
      * @param FileMapper         $fileMapper         File mapper for share operations.
      * @param LoggerInterface    $logger             Logger for logging operations.
      */
     public function __construct(
-        private readonly ObjectEntityMapper $objectEntityMapper,
+        private readonly MagicMapper $objectEntityMapper,
         private readonly FileMapper $fileMapper,
         private readonly LoggerInterface $logger
     ) {

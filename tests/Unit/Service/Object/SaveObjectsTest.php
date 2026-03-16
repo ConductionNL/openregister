@@ -15,7 +15,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service\Object;
 
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Db\ObjectEntityMapper;
+use OCA\OpenRegister\Db\UnifiedObjectMapper;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
@@ -46,8 +46,8 @@ class SaveObjectsTest extends TestCase
     /** @var SaveObjects */
     private SaveObjects $handler;
 
-    /** @var ObjectEntityMapper&MockObject */
-    private ObjectEntityMapper $objectEntityMapper;
+    /** @var UnifiedObjectMapper&MockObject */
+    private UnifiedObjectMapper $objectMapper;
 
     /** @var SchemaMapper&MockObject */
     private SchemaMapper $schemaMapper;
@@ -86,7 +86,7 @@ class SaveObjectsTest extends TestCase
     {
         parent::setUp();
 
-        $this->objectEntityMapper = $this->createMock(ObjectEntityMapper::class);
+        $this->objectMapper = $this->createMock(UnifiedObjectMapper::class);
         $this->schemaMapper = $this->createMock(SchemaMapper::class);
         $this->registerMapper = $this->createMock(RegisterMapper::class);
         $this->saveHandler = $this->createMock(SaveObject::class);
@@ -100,7 +100,7 @@ class SaveObjectsTest extends TestCase
         $this->logger = $this->createMock(LoggerInterface::class);
 
         $this->handler = new SaveObjects(
-            $this->objectEntityMapper,
+            $this->objectMapper,
             $this->schemaMapper,
             $this->registerMapper,
             $this->saveHandler,

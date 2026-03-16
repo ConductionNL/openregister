@@ -328,6 +328,83 @@ import { navigationStore, schemaStore, registerStore } from '../../store/store.j
 				<div class="helper-text">
 					Lower numbers appear first in the filter sidebar. Leave empty for automatic ordering.
 				</div>
+
+				<!-- Date faceting options (shown for date/datetime properties) -->
+				<div v-if="isDateProperty" class="facetDateConfig">
+					<div class="facetConfigTitle">
+						Date Faceting:
+					</div>
+					<NcSelect
+						:disabled="loading"
+						:value="facetTypeOption"
+						:options="facetTypeOptions"
+						label="label"
+						track-by="value"
+						:input-label="'Facet Type'"
+						:clearable="false"
+						@input="updateFacetType" />
+
+					<!-- Histogram options -->
+					<div v-if="facetType === 'date_histogram'" class="facetDateOptions">
+						<NcSelect
+							:disabled="loading"
+							:value="facetIntervalOption"
+							:options="facetIntervalOptions"
+							label="label"
+							track-by="value"
+							:input-label="'Interval'"
+							:clearable="false"
+							@input="(opt) => facetInterval = opt.value" />
+						<NcTextField :disabled="loading"
+							label="Display Format"
+							:value.sync="facetFormat"
+							placeholder="Auto (e.g. Y for year, F Y for month)" />
+					</div>
+
+					<!-- Date range options -->
+					<div v-if="facetType === 'date_range'" class="facetDateOptions">
+						<NcCheckboxRadioSwitch
+							:disabled="loading"
+							:checked.sync="facetUseDefaultRanges">
+							Use default ranges (Last 7/30/90 days, Last year, Older)
+						</NcCheckboxRadioSwitch>
+
+						<!-- Custom range editor -->
+						<div v-if="!facetUseDefaultRanges" class="customRangeEditor">
+							<div class="facetConfigTitle">
+								Custom Ranges:
+							</div>
+							<div v-for="(range, index) in facetCustomRanges"
+								:key="index"
+								class="customRangeRow">
+								<NcTextField :disabled="loading"
+									label="Label"
+									:value.sync="range.label" />
+								<NcTextField :disabled="loading"
+									label="From (e.g. -7 days or 2025-01-01)"
+									:value.sync="range.from" />
+								<NcTextField :disabled="loading"
+									label="To (e.g. -1 year or 2025-12-31)"
+									:value.sync="range.to" />
+								<NcButton :disabled="loading"
+									type="tertiary-no-background"
+									@click="removeCustomRange(index)">
+									<template #icon>
+										<Cancel :size="20" />
+									</template>
+								</NcButton>
+							</div>
+							<NcButton :disabled="loading"
+								type="secondary"
+								@click="addCustomRange">
+								<template #icon>
+									<Plus :size="20" />
+								</template>
+								Add range
+							</NcButton>
+						</div>
+					</div>
+				</div>
 			</div>
 
 			<NcTextField :disabled="loading"
@@ -558,6 +635,11 @@ export default {
 				description: '',
 				order: '',
 			},
+			facetType: '',
+			facetInterval: 'month',
+			facetFormat: '',
+			facetUseDefaultRanges: true,
+			facetCustomRanges: [],
 			properties: {
 				description: '',
 				title: '',
@@ -642,6 +724,32 @@ export default {
 		}
 	},
 	computed: {
+		isDateProperty() {
+			return this.properties.type === 'string'
+				&& (this.properties.format === 'date' || this.properties.format === 'date-time')
+		},
+		facetTypeOptions() {
+			return [
+				{ value: 'date_histogram', label: 'Date Histogram (group by interval)' },
+				{ value: 'date_range', label: 'Date Range (predefined ranges)' },
+				{ value: 'terms', label: 'Terms (exact values)' },
+			]
+		},
+		facetTypeOption() {
+			return this.facetTypeOptions.find(opt => opt.value === this.facetType) || this.facetTypeOptions[0]
+		},
+		facetIntervalOptions() {
+			return [
+				{ value: 'day', label: 'Day' },
+				{ value: 'week', label: 'Week' },
+				{ value: 'month', label: 'Month' },
+				{ value: 'quarter', label: 'Quarter' },
+				{ value: 'year', label: 'Year' },
+			]
+		},
+		facetIntervalOption() {
+			return this.facetIntervalOptions.find(opt => opt.value === this.facetInterval) || this.facetIntervalOptions[2]
+		},
 		objectConfiguration() {
 			return {
 				handling: {
@@ -760,6 +868,15 @@ export default {
 			// Remove the entry at the specified index
 			this.properties.oneOf.splice(index, 1)
 		},
+		updateFacetType(option) {
+			this.facetType = option.value
+		},
+		addCustomRange() {
+			this.facetCustomRanges.push({ label: '', from: '', to: '' })
+		},
+		removeCustomRange(index) {
+			this.facetCustomRanges.splice(index, 1)
+		},
 		initializeSchemaItem() {
 			if (schemaStore.schemaPropertyKey) {
 				const schemaProperty = schemaStore.schemaItem.properties[schemaStore.schemaPropertyKey]
@@ -776,6 +893,22 @@ export default {
 						title: facetableValue.title || '',
 						description: facetableValue.description || '',
 						order: facetableValue.order != null ? String(facetableValue.order) : '',
+					}
+					// Initialize date faceting options from config
+					if (facetableValue.type) {
+						this.facetType = facetableValue.type
+					}
+					if (facetableValue.options) {
+						this.facetInterval = facetableValue.options.interval || 'month'
+						this.facetFormat = facetableValue.options.format || ''
+						this.facetUseDefaultRanges = facetableValue.options.useDefaultRanges !== false
+						if (Array.isArray(facetableValue.options.ranges)) {
+							this.facetCustomRanges = facetableValue.options.ranges.map(r => ({
+								label: r.label || '',
+								from: r.from || '',
+								to: r.to || '',
+							}))
+						}
 					}
 				} else {
 					this.facetableEnabled = false
@@ -845,10 +978,12 @@ export default {
 			// Compute facetable value: boolean true for defaults, config object otherwise.
 			let facetableValue = false
 			if (this.facetableEnabled) {
+				const hasDateConfig = this.isDateProperty && this.facetType
 				const hasCustomConfig = !this.facetConfig.aggregated
 					|| (this.facetConfig.title && this.facetConfig.title.trim())
 					|| (this.facetConfig.description && this.facetConfig.description.trim())
 					|| (this.facetConfig.order !== '' && this.facetConfig.order != null)
+					|| hasDateConfig
 
 				if (hasCustomConfig) {
 					facetableValue = {
@@ -858,6 +993,32 @@ export default {
 						order: this.facetConfig.order !== '' && this.facetConfig.order != null
 							? parseFloat(this.facetConfig.order) || null
 							: null,
+					}
+					// Add date faceting type and options
+					if (hasDateConfig) {
+						facetableValue.type = this.facetType
+						const options = {}
+						if (this.facetType === 'date_histogram') {
+							options.interval = this.facetInterval
+							if (this.facetFormat) {
+								options.format = this.facetFormat
+							}
+						} else if (this.facetType === 'date_range') {
+							options.useDefaultRanges = this.facetUseDefaultRanges
+							if (!this.facetUseDefaultRanges && this.facetCustomRanges.length > 0) {
+								options.ranges = this.facetCustomRanges
+									.filter(r => r.label)
+									.map(r => {
+										const range = { label: r.label }
+										if (r.from) range.from = r.from
+										if (r.to) range.to = r.to
+										return range
+									})
+							}
+						}
+						if (Object.keys(options).length > 0) {
+							facetableValue.options = options
+						}
 					}
 				} else {
 					facetableValue = true
@@ -1059,5 +1220,27 @@ export default {
 	margin-bottom: 8px;
 	margin-left: 8px;
 	font-style: italic;
+}
+
+.facetDateConfig {
+	margin-top: 8px;
+	padding-left: 8px;
+	border-left: 2px solid var(--color-border);
+}
+
+.facetDateOptions {
+	margin-top: 4px;
+}
+
+.customRangeEditor {
+	margin-top: 8px;
+}
+
+.customRangeRow {
+	display: grid;
+	grid-template-columns: 1fr 1fr 1fr auto;
+	gap: 4px;
+	align-items: end;
+	margin-bottom: 4px;
 }
 </style>

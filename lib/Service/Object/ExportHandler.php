@@ -29,7 +29,7 @@ use RuntimeException;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
-use OCA\OpenRegister\Db\ObjectEntityMapper;
+use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Service\ExportService;
 use OCA\OpenRegister\Service\ImportService;
 use OCA\OpenRegister\Service\FileService;
@@ -64,7 +64,7 @@ class ExportHandler
     /**
      * Constructor
      *
-     * @param ObjectEntityMapper $objectEntityMapper Object entity mapper
+     * @param MagicMapper $objectEntityMapper Object entity mapper
      * @param SchemaMapper       $schemaMapper       Schema mapper
      * @param ExportService      $exportService      Export service
      * @param ImportService      $importService      Import service
@@ -72,7 +72,7 @@ class ExportHandler
      * @param LoggerInterface    $logger             PSR-3 logger
      */
     public function __construct(
-        private readonly ObjectEntityMapper $objectEntityMapper,
+        private readonly MagicMapper $objectEntityMapper,
         private readonly SchemaMapper $schemaMapper,
         private readonly ExportService $exportService,
         private readonly ImportService $importService,
@@ -195,8 +195,8 @@ class ExportHandler
      * @param Schema|null $schema       Schema entity (optional for Excel, required for CSV unless auto-detected)
      * @param bool        $validation   Enable validation
      * @param bool        $events       Enable events
-     * @param bool        $rbac         Apply RBAC checks
-     * @param bool        $multitenancy Apply multitenancy filtering
+     * @param bool        $_rbac         Apply RBAC checks
+     * @param bool        $_multitenancy Apply multitenancy filtering
      * @param bool        $publish      Publish imported objects (Excel only)
      * @param IUser|null  $currentUser  Current user
      *
@@ -214,8 +214,8 @@ class ExportHandler
         ?Schema $schema=null,
         bool $validation=false,
         bool $events=false,
-        bool $rbac=true,
-        bool $multitenancy=true,
+        bool $_rbac=true,
+        bool $_multitenancy=true,
         bool $publish=false,
         ?IUser $currentUser=null
     ): array {
@@ -231,8 +231,8 @@ class ExportHandler
                 'schema'       => $schema?->getSlug(),
                 'validation'   => $validation,
                 'events'       => $events,
-                'rbac'         => $rbac,
-                'multitenancy' => $multitenancy,
+                'rbac'         => $_rbac,
+                'multitenancy' => $_multitenancy,
             ]
         );
 
@@ -272,8 +272,8 @@ class ExportHandler
                     schema: $schema,
                     validation: $validation,
                     events: $events,
-                    _rbac: $rbac,
-                    _multitenancy: $multitenancy,
+                    _rbac: $_rbac,
+                    _multitenancy: $_multitenancy,
                     publish: $publish,
                     currentUser: $currentUser
                 );
@@ -284,8 +284,8 @@ class ExportHandler
                     schema: $schema,
                     validation: $validation,
                     events: $events,
-                    _rbac: $rbac,
-                    _multitenancy: $multitenancy,
+                    _rbac: $_rbac,
+                    _multitenancy: $_multitenancy,
                     publish: $publish,
                     currentUser: $currentUser
                 );

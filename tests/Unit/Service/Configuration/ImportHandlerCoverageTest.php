@@ -37,7 +37,6 @@ use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
-use OCA\OpenRegister\Db\UnifiedObjectMapper;
 use OCA\OpenRegister\Db\WorkflowEngine;
 use OCA\OpenRegister\Service\Configuration\ImportHandler;
 use OCA\OpenRegister\Service\Configuration\UploadHandler;
@@ -1263,7 +1262,7 @@ class ImportHandlerCoverageTest extends TestCase
         $this->schemaMapper->method('findBySlug')
             ->willReturn([$extSchema]);
 
-        $unifiedMapper = $this->createMock(UnifiedObjectMapper::class);
+        $unifiedMapper = $this->createMock(MagicMapper::class);
         $unifiedMapper->method('find')
             ->willThrowException(new \OCP\AppFramework\Db\DoesNotExistException(''));
         $unifiedMapper->method('insert')
@@ -1271,7 +1270,7 @@ class ImportHandlerCoverageTest extends TestCase
                 $this->setEntityId($entity, 500);
                 return $entity;
             });
-        $this->handler->setUnifiedObjectMapper($unifiedMapper);
+        $this->handler->setObjectMapper($unifiedMapper);
 
         $configData = [
             'info' => ['title' => 'External test'],
@@ -1322,7 +1321,7 @@ class ImportHandlerCoverageTest extends TestCase
         $schema = $this->makeSchema(40, 'seed-schema');
         $this->setProperty($this->handler, 'schemasMap', ['seed-schema' => $schema]);
 
-        $unifiedMapper = $this->createMock(UnifiedObjectMapper::class);
+        $unifiedMapper = $this->createMock(MagicMapper::class);
         $unifiedMapper->method('find')
             ->willThrowException(new \OCP\AppFramework\Db\DoesNotExistException(''));
         $unifiedMapper->method('insert')
@@ -1330,7 +1329,7 @@ class ImportHandlerCoverageTest extends TestCase
                 $this->setEntityId($entity, 501);
                 return $entity;
             });
-        $this->handler->setUnifiedObjectMapper($unifiedMapper);
+        $this->handler->setObjectMapper($unifiedMapper);
 
         $configData = [
             'info' => ['title' => 'Missing reg test'],
@@ -1381,7 +1380,7 @@ class ImportHandlerCoverageTest extends TestCase
         $this->schemaMapper->method('findBySlug')
             ->willReturn([]);
 
-        $unifiedMapper = $this->createMock(UnifiedObjectMapper::class);
+        $unifiedMapper = $this->createMock(MagicMapper::class);
         $unifiedMapper->method('find')
             ->willThrowException(new \OCP\AppFramework\Db\DoesNotExistException(''));
         $unifiedMapper->method('insert')
@@ -1389,7 +1388,7 @@ class ImportHandlerCoverageTest extends TestCase
                 $this->setEntityId($entity, 502);
                 return $entity;
             });
-        $this->handler->setUnifiedObjectMapper($unifiedMapper);
+        $this->handler->setObjectMapper($unifiedMapper);
 
         $configData = [
             'info' => ['title' => 'Missing schema test'],
@@ -1444,7 +1443,7 @@ class ImportHandlerCoverageTest extends TestCase
         $schema = $this->makeSchema(40, 'seed-schema');
         $this->setProperty($this->handler, 'schemasMap', ['seed-schema' => $schema]);
 
-        $unifiedMapper = $this->createMock(UnifiedObjectMapper::class);
+        $unifiedMapper = $this->createMock(MagicMapper::class);
         $unifiedMapper->method('find')
             ->willThrowException(new \OCP\AppFramework\Db\DoesNotExistException(''));
         $unifiedMapper->method('insert')
@@ -1452,7 +1451,7 @@ class ImportHandlerCoverageTest extends TestCase
                 $this->setEntityId($entity, 503);
                 return $entity;
             });
-        $this->handler->setUnifiedObjectMapper($unifiedMapper);
+        $this->handler->setObjectMapper($unifiedMapper);
 
         $configData = [
             'info' => ['title' => 'Err reg test'],
@@ -1503,7 +1502,7 @@ class ImportHandlerCoverageTest extends TestCase
         $this->schemaMapper->method('findBySlug')
             ->willThrowException(new Exception('Schema DB error'));
 
-        $unifiedMapper = $this->createMock(UnifiedObjectMapper::class);
+        $unifiedMapper = $this->createMock(MagicMapper::class);
         $unifiedMapper->method('find')
             ->willThrowException(new \OCP\AppFramework\Db\DoesNotExistException(''));
         $unifiedMapper->method('insert')
@@ -1511,7 +1510,7 @@ class ImportHandlerCoverageTest extends TestCase
                 $this->setEntityId($entity, 504);
                 return $entity;
             });
-        $this->handler->setUnifiedObjectMapper($unifiedMapper);
+        $this->handler->setObjectMapper($unifiedMapper);
 
         $configData = [
             'info' => ['title' => 'Err schema test'],
@@ -1560,7 +1559,7 @@ class ImportHandlerCoverageTest extends TestCase
         $this->schemaMapper->method('find')
             ->willReturn($dbSchema);
 
-        $unifiedMapper = $this->createMock(UnifiedObjectMapper::class);
+        $unifiedMapper = $this->createMock(MagicMapper::class);
         $unifiedMapper->method('find')
             ->willThrowException(new \OCP\AppFramework\Db\DoesNotExistException(''));
         $unifiedMapper->method('insert')
@@ -1568,7 +1567,7 @@ class ImportHandlerCoverageTest extends TestCase
                 $this->setEntityId($entity, 505);
                 return $entity;
             });
-        $this->handler->setUnifiedObjectMapper($unifiedMapper);
+        $this->handler->setObjectMapper($unifiedMapper);
 
         $configData = [
             'info' => ['title' => 'DB schema test'],
@@ -1902,11 +1901,11 @@ class ImportHandlerCoverageTest extends TestCase
 
 
     // =========================================================================
-    // importSeedData — fallback to blob storage without UnifiedObjectMapper
+    // importSeedData — fallback to blob storage without MagicMapper
     // =========================================================================
 
     /**
-     * importSeedData uses objectEntityMapper when unifiedObjectMapper is not set.
+     * importSeedData uses objectEntityMapper when objectMapperForRouting is not set.
      */
     public function testImportSeedDataFallsToBlobStorageWithoutUnifiedMapper(): void
     {
@@ -1920,7 +1919,7 @@ class ImportHandlerCoverageTest extends TestCase
         $schema = $this->makeSchema(40, 'blob-schema');
         $this->setProperty($this->handler, 'schemasMap', ['blob-schema' => $schema]);
 
-        // No unifiedObjectMapper set
+        // No objectMapperForRouting set
         $this->objectEntityMapper->method('findDirectBlobStorage')
             ->willThrowException(new \OCP\AppFramework\Db\DoesNotExistException(''));
         $this->objectEntityMapper->method('insert')
@@ -2221,20 +2220,20 @@ class ImportHandlerCoverageTest extends TestCase
 
 
     /**
-     * setUnifiedObjectMapper sets the unified object mapper instance.
+     * setObjectMapper sets the object mapper for routing instance.
      */
-    public function testSetUnifiedObjectMapper(): void
+    public function testSetObjectMapper(): void
     {
-        $uom = $this->createMock(UnifiedObjectMapper::class);
-        $this->handler->setUnifiedObjectMapper($uom);
+        $uom = $this->createMock(MagicMapper::class);
+        $this->handler->setObjectMapper($uom);
 
         $ref  = new ReflectionClass($this->handler);
-        $prop = $ref->getProperty('unifiedObjectMapper');
+        $prop = $ref->getProperty('objectMapperForRouting');
         $prop->setAccessible(true);
 
         $this->assertSame($uom, $prop->getValue($this->handler));
 
-    }//end testSetUnifiedObjectMapper()
+    }//end testSetMagicMapper()
 
 
     /**

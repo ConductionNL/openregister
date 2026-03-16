@@ -15,26 +15,6 @@
 namespace OCA\OpenRegister\Service;
 
 use DateTime;
-use Jose\Component\Checker\AlgorithmChecker;
-use Jose\Component\Checker\HeaderCheckerManager;
-use Jose\Component\Checker\InvalidHeaderException;
-use Jose\Component\Core\AlgorithmManager;
-use Jose\Component\Core\JWKSet;
-use Jose\Component\KeyManagement\JWKFactory;
-use Jose\Component\Signature\Algorithm\HS256;
-use Jose\Component\Signature\Algorithm\HS384;
-use Jose\Component\Signature\Algorithm\HS512;
-use Jose\Component\Signature\Algorithm\PS256;
-use Jose\Component\Signature\Algorithm\PS384;
-use Jose\Component\Signature\Algorithm\PS512;
-use Jose\Component\Signature\Algorithm\RS256;
-use Jose\Component\Signature\Algorithm\RS384;
-use Jose\Component\Signature\Algorithm\RS512;
-use Jose\Component\Signature\JWS;
-use Jose\Component\Signature\JWSTokenSupport;
-use Jose\Component\Signature\JWSVerifier;
-use Jose\Component\Signature\Serializer\CompactSerializer;
-use Jose\Component\Signature\Serializer\JWSSerializerManager;
 use OC\AppFramework\Middleware\Security\Exceptions\SecurityException;
 use OCA\OpenRegister\Db\Consumer;
 use OCA\OpenRegister\Db\ConsumerMapper;
@@ -48,7 +28,7 @@ use OCP\IUserSession;
 /**
  * Service class for handling authorization on incoming calls.
  *
- * Supports JWT, JWT-ZGW, Basic Auth, OAuth2 Bearer, and API Key validation.
+ * Supports JWT (HMAC), Basic Auth, OAuth2 Bearer, and API Key validation.
  *
  * @package OCA\OpenRegister\Service
  *
@@ -58,30 +38,14 @@ class AuthorizationService
 {
 
     /**
-     * Supported HMAC algorithms.
+     * Map of JWT algorithm names to hash_hmac algorithm strings.
+     *
+     * @var array<string, string>
      */
-    const HMAC_ALGORITHMS = [
-        'HS256',
-        'HS384',
-        'HS512',
-    ];
-
-    /**
-     * Supported PKCS1 (RSA) algorithms.
-     */
-    const PKCS1_ALGORITHMS = [
-        'RS256',
-        'RS384',
-        'RS512',
-    ];
-
-    /**
-     * Supported PSS algorithms.
-     */
-    const PSS_ALGORITHMS = [
-        'PS256',
-        'PS384',
-        'PS512',
+    private const HMAC_MAP = [
+        'HS256' => 'sha256',
+        'HS384' => 'sha384',
+        'HS512' => 'sha512',
     ];
 
     /**
@@ -126,71 +90,46 @@ class AuthorizationService
     }//end findIssuer()
 
     /**
-     * Check if the headers of a JWT token are valid.
+     * Base64url-decode a string per RFC 7515.
      *
-     * @param JWS $token The unserialized token.
+     * @param string $data The base64url-encoded string
      *
-     * @return void
+     * @return string|false The decoded data or false on failure
      */
-    private function checkHeaders(JWS $token): void
+    private function base64urlDecode(string $data): string|false
     {
-        $headerChecker = new HeaderCheckerManager(
-            [
-                new AlgorithmChecker(
-                    array_merge(
-                        self::HMAC_ALGORITHMS,
-                        self::PKCS1_ALGORITHMS,
-                        self::PSS_ALGORITHMS
-                    )
-                ),
-            ],
-            [new JWSTokenSupport()]
-        );
+        return base64_decode(strtr($data, '-_', '+/'));
 
-        $headerChecker->check($token, 0);
-
-    }//end checkHeaders()
+    }//end base64urlDecode()
 
     /**
-     * Get the JSON Web Key Set for a public key and algorithm.
+     * Verify an HMAC JWT signature using PHP built-in functions.
      *
-     * @param string $publicKey The public key or shared secret
-     * @param string $algorithm The algorithm deciding how the key should be defined
+     * @param string $headerB64  The base64url-encoded header
+     * @param string $payloadB64 The base64url-encoded payload
+     * @param string $signature  The raw signature bytes
+     * @param string $secret     The HMAC shared secret
+     * @param string $algorithm  The JWT algorithm (HS256, HS384, HS512)
      *
-     * @return JWKSet The resulting JWK set.
-     *
-     * @throws AuthenticationException If the algorithm is not supported.
+     * @return bool True if the signature is valid
      */
-    private function getJWK(string $publicKey, string $algorithm): JWKSet
-    {
-        if (in_array(needle: $algorithm, haystack: self::HMAC_ALGORITHMS) === true) {
-            return new JWKSet(
-                [
-                    JWKFactory::createFromSecret(
-                        $publicKey,
-                        ['alg' => $algorithm, 'use' => 'sig']
-                    ),
-                ]
-            );
+    private function verifyHmac(
+        string $headerB64,
+        string $payloadB64,
+        string $signature,
+        string $secret,
+        string $algorithm
+    ): bool {
+        $hashAlg = self::HMAC_MAP[$algorithm] ?? null;
+        if ($hashAlg === null) {
+            return false;
         }
 
-        if (in_array(needle: $algorithm, haystack: self::PKCS1_ALGORITHMS) === true
-            || in_array(needle: $algorithm, haystack: self::PSS_ALGORITHMS) === true
-        ) {
-            $stamp    = microtime().getmypid();
-            $filename = "/var/tmp/publickey-$stamp";
-            file_put_contents(filename: $filename, data: base64_decode(string: $publicKey));
-            $jwk = new JWKSet([JWKFactory::createFromKeyFile($filename)]);
-            unlink(filename: $filename);
-            return $jwk;
-        }
+        $expected = hash_hmac($hashAlg, $headerB64.'.'.$payloadB64, $secret, true);
 
-        throw new AuthenticationException(
-            message: 'The token algorithm is not supported',
-            details: ['algorithm' => $algorithm]
-        );
+        return hash_equals($expected, $signature);
 
-    }//end getJWK()
+    }//end verifyHmac()
 
     /**
      * Validate data in the JWT payload.
@@ -251,35 +190,48 @@ class AuthorizationService
             throw new AuthenticationException(message: 'No token has been provided', details: []);
         }
 
-        $algorithmManager = new AlgorithmManager(
-            [
-                new HS256(),
-                new HS384(),
-                new HS512(),
-                new RS256(),
-                new RS384(),
-                new RS512(),
-                new PS256(),
-                new PS384(),
-                new PS512(),
-            ]
-        );
-
-        $verifier          = new JWSVerifier($algorithmManager);
-        $serializerManager = new JWSSerializerManager([new CompactSerializer()]);
-
-        $jws = $serializerManager->unserialize($token);
-
-        try {
-            $this->checkHeaders(token: $jws);
-        } catch (InvalidHeaderException $exception) {
+        $parts = explode('.', $token);
+        if (count($parts) !== 3) {
             throw new AuthenticationException(
                 message: 'The token could not be validated',
-                details: ['reason' => $exception->getMessage()]
+                details: ['reason' => 'Invalid JWT format']
             );
         }
 
-        $payload = json_decode(json: $jws->getPayload(), associative: true);
+        [$headerB64, $payloadB64, $signatureB64] = $parts;
+
+        $headerJson = $this->base64urlDecode($headerB64);
+        if ($headerJson === false) {
+            throw new AuthenticationException(
+                message: 'The token could not be validated',
+                details: ['reason' => 'Invalid header encoding']
+            );
+        }
+
+        $header = json_decode($headerJson, true);
+        if (is_array($header) === false || isset($header['alg']) === false) {
+            throw new AuthenticationException(
+                message: 'The token could not be validated',
+                details: ['reason' => 'Invalid header']
+            );
+        }
+
+        $payloadJson = $this->base64urlDecode($payloadB64);
+        if ($payloadJson === false) {
+            throw new AuthenticationException(
+                message: 'The token could not be validated',
+                details: ['reason' => 'Invalid payload encoding']
+            );
+        }
+
+        $payload = json_decode($payloadJson, true);
+        if (is_array($payload) === false) {
+            throw new AuthenticationException(
+                message: 'The token could not be validated',
+                details: ['reason' => 'Invalid payload']
+            );
+        }
+
         if (isset($payload['iss']) === false || empty($payload['iss']) === true) {
             throw new AuthenticationException(
                 message: 'The token could not be validated',
@@ -287,17 +239,32 @@ class AuthorizationService
             );
         }
 
-        $issuer = $this->findIssuer(issuer: $payload['iss']);
+        $issuer   = $this->findIssuer(issuer: $payload['iss']);
+        $authConf = $issuer->getAuthorizationConfiguration();
 
-        $publicKey = $issuer->getAuthorizationConfiguration()['publicKey'];
-        $algorithm = $issuer->getAuthorizationConfiguration()['algorithm'];
+        $publicKey = $authConf['publicKey'] ?? '';
+        $algorithm = $authConf['algorithm'] ?? $header['alg'];
 
-        $jwkSet = $this->getJWK(publicKey: $publicKey, algorithm: $algorithm);
-
-        if ($verifier->verifyWithKeySet($jws, $jwkSet, 0) === false) {
+        $signature = $this->base64urlDecode($signatureB64);
+        if ($signature === false) {
             throw new AuthenticationException(
                 message: 'The token could not be validated',
-                details: ['reason' => 'The token does not match the public key']
+                details: ['reason' => 'Invalid signature encoding']
+            );
+        }
+
+        // Verify HMAC signature.
+        if (isset(self::HMAC_MAP[$algorithm]) === true) {
+            if ($this->verifyHmac($headerB64, $payloadB64, $signature, $publicKey, $algorithm) === false) {
+                throw new AuthenticationException(
+                    message: 'The token could not be validated',
+                    details: ['reason' => 'The token does not match the public key']
+                );
+            }
+        } else {
+            throw new AuthenticationException(
+                message: 'The token algorithm is not supported',
+                details: ['algorithm' => $algorithm]
             );
         }
 

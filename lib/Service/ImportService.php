@@ -19,7 +19,6 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service;
 
-use OCA\OpenRegister\Db\ObjectEntityMapper;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
@@ -65,13 +64,6 @@ use React\EventLoop\Loop;
 
 class ImportService
 {
-
-    /**
-     * Object entity mapper instance
-     *
-     * @var ObjectEntityMapper
-     */
-    private readonly ObjectEntityMapper $objectEntityMapper;
 
     /**
      * Schema mapper instance
@@ -146,22 +138,19 @@ class ImportService
     /**
      * Constructor for the ImportService
      *
-     * @param ObjectEntityMapper $objectEntityMapper The object entity mapper
-     * @param SchemaMapper       $schemaMapper       The schema mapper
-     * @param ObjectService      $objectService      The object service
-     * @param LoggerInterface    $logger             The logger interface
-     * @param IGroupManager      $groupManager       The group manager
-     * @param IJobList           $jobList            The background job list
+     * @param SchemaMapper    $schemaMapper  The schema mapper
+     * @param ObjectService  $objectService The object service
+     * @param LoggerInterface $logger       The logger interface
+     * @param IGroupManager  $groupManager  The group manager
+     * @param IJobList       $jobList       The background job list
      */
     public function __construct(
-        ObjectEntityMapper $objectEntityMapper,
         SchemaMapper $schemaMapper,
         ObjectService $objectService,
         LoggerInterface $logger,
         IGroupManager $groupManager,
         IJobList $jobList
     ) {
-        $this->objectEntityMapper = $objectEntityMapper;
         $this->schemaMapper       = $schemaMapper;
         $this->objectService      = $objectService;
         $this->logger       = $logger;

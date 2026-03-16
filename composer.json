@@ -95,10 +95,11 @@
 		"symfony/uid": "^6.4",
 		"symfony/yaml": "^6.4",
 		"theodo-group/llphant": "^0.9.3",
-		"twig/twig": "^3.18"
+		"twig/twig": "^3.18",
+		"web-token/jwt-framework": "^3"
 	},
 	"require-dev": {
-		"doctrine/dbal": "^4.2",
+		"cyclonedx/cyclonedx-php-composer": "^6.2",
 		"edgedesign/phpqa": "^1.27",
 		"nextcloud/coding-standard": "^1.4",
 		"nextcloud/ocp": "^31.0",
@@ -116,7 +117,8 @@
 		"allow-plugins": {
 			"bamarni/composer-bin-plugin": true,
 			"php-http/discovery": true,
-			"dealerdirect/phpcodesniffer-composer-installer": true
+			"dealerdirect/phpcodesniffer-composer-installer": true,
+			"cyclonedx/cyclonedx-php-composer": true
 		},
 		"optimize-autoloader": true,
 		"sort-packages": true,

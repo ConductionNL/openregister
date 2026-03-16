@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Object;
 
-use OCA\OpenRegister\Db\ObjectEntityMapper;
+use OCA\OpenRegister\Db\UnifiedObjectMapper;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Object\SaveObject;
@@ -28,7 +28,7 @@ use Psr\Log\LoggerInterface;
 class SaveObjectsBranchCoverageTest extends TestCase
 {
     private SaveObjects $service;
-    private ObjectEntityMapper&MockObject $objectEntityMapper;
+    private UnifiedObjectMapper&MockObject $objectMapper;
     private SchemaMapper&MockObject $schemaMapper;
     private RegisterMapper&MockObject $registerMapper;
     private SaveObject&MockObject $saveHandler;
@@ -45,7 +45,7 @@ class SaveObjectsBranchCoverageTest extends TestCase
     {
         parent::setUp();
 
-        $this->objectEntityMapper = $this->createMock(ObjectEntityMapper::class);
+        $this->objectMapper = $this->createMock(UnifiedObjectMapper::class);
         $this->schemaMapper = $this->createMock(SchemaMapper::class);
         $this->registerMapper = $this->createMock(RegisterMapper::class);
         $this->saveHandler = $this->createMock(SaveObject::class);
@@ -66,7 +66,7 @@ class SaveObjectsBranchCoverageTest extends TestCase
         }
 
         $this->service = new SaveObjects(
-            $this->objectEntityMapper,
+            $this->objectMapper,
             $this->schemaMapper,
             $this->registerMapper,
             $this->saveHandler,

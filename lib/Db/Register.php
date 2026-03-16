@@ -713,7 +713,7 @@ class Register extends Entity implements JsonSerializable
      * Check if magic mapping is enabled for a specific schema in this register.
      *
      * This is the SINGLE SOURCE OF TRUTH for magic mapping checks.
-     * All other classes (ObjectEntityMapper, UnifiedObjectMapper) should delegate to this method.
+     * All other classes should delegate to this method.
      *
      * Supports two configuration formats:
      * - New format: { "schemas": { "<slug>": { "magicMapping": true } } }

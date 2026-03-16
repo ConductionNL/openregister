@@ -15,7 +15,7 @@
 namespace OCA\OpenRegister\Service\Object;
 
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Db\UnifiedObjectMapper;
+use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Service\IndexService;
 use OCA\OpenRegister\Service\Object\GetObject;
 use OCA\OpenRegister\Service\Object\RenderObject;
@@ -56,7 +56,7 @@ class QueryHandler
     /**
      * Constructor for QueryHandler.
      *
-     * @param UnifiedObjectMapper                      $objectMapper        Unified mapper for objects.
+     * @param MagicMapper                      $objectMapper        Unified mapper for objects.
      * @param GetObject                                $getHandler          Get handler.
      * @param RenderObject                             $renderHandler       Render handler.
      * @param SearchQueryHandler                       $searchQueryHandler  Search handler.
@@ -69,7 +69,7 @@ class QueryHandler
      * @SuppressWarnings(PHPMD.ExcessiveParameterList) Nextcloud DI requires constructor injection
      */
     public function __construct(
-        private readonly UnifiedObjectMapper $objectMapper,
+        private readonly MagicMapper $objectMapper,
         private readonly GetObject $getHandler,
         private readonly RenderObject $renderHandler,
         private readonly SearchQueryHandler $searchQueryHandler,
@@ -116,8 +116,8 @@ class QueryHandler
         return $this->objectMapper->countSearchObjects(
             query: $query,
             activeOrgUuid: $activeOrgUuid,
-            rbac: $_rbac,
-            multitenancy: $_multitenancy,
+            _rbac: $_rbac,
+            _multitenancy: $_multitenancy,
             ids: $ids,
             uses: $uses
         );
@@ -177,8 +177,8 @@ class QueryHandler
         $result = $this->objectMapper->searchObjects(
             query: $query,
             activeOrgUuid: $activeOrgUuid,
-            rbac: $_rbac,
-            multitenancy: $_multitenancy,
+            _rbac: $_rbac,
+            _multitenancy: $_multitenancy,
             ids: $ids,
             uses: $uses
         );
@@ -397,8 +397,8 @@ class QueryHandler
             searchQuery: $paginatedQuery,
             countQuery: $countQuery,
             activeOrgUuid: $activeOrgUuid,
-            rbac: $_rbac,
-            multitenancy: $_multitenancy,
+            _rbac: $_rbac,
+            _multitenancy: $_multitenancy,
             ids: $ids,
             uses: $uses
         );
@@ -436,7 +436,7 @@ class QueryHandler
 
         // Check if any schema has property-level authorization.
         // If yes, we need to render to filter unauthorized properties.
-        // Schemas may be Entity objects or serialized arrays from UnifiedObjectMapper.
+        // Schemas may be Entity objects or serialized arrays from MagicMapper.
         $hasPropAuth = false;
         foreach ($schemas as $schema) {
             if ($schema instanceof \OCA\OpenRegister\Db\Schema

@@ -22,7 +22,6 @@ namespace OCA\OpenRegister\Service;
 use DateTime;
 use Exception;
 use InvalidArgumentException;
-use OCA\OpenRegister\Db\ObjectEntityMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
@@ -92,7 +91,6 @@ class ExportService
     /**
      * Constructor for the ExportService
      *
-     * @param ObjectEntityMapper  $_objectEntityMapper The object entity mapper (unused but kept for future use)
      * @param RegisterMapper      $registerMapper      The register mapper
      * @param IUserManager        $_userManager        The user manager (unused but kept for future use)
      * @param IGroupManager       $groupManager        The group manager
@@ -103,7 +101,6 @@ class ExportService
      * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      */
     public function __construct(
-        ObjectEntityMapper $_objectEntityMapper,
         RegisterMapper $registerMapper,
         IUserManager $_userManager,
         IGroupManager $groupManager,
@@ -305,7 +302,7 @@ class ExportService
      */
     private function fetchObjectsForExport(?Register $register, ?Schema $schema, array $filters): array
     {
-        // Build filters for ObjectEntityMapper->findAll() method.
+        // Build filters for MagicMapper->findAll() method.
         $objectFilters = [];
 
         if ($register !== null) {
@@ -321,7 +318,7 @@ class ExportService
             if (str_starts_with($key, '@self.') === false) {
                 // These are JSON object property filters - not supported by findAll.
                 // For now, we'll skip them to get basic functionality working.
-                // TODO: Add support for JSON property filtering in ObjectEntityMapper.
+                // TODO: Add support for JSON property filtering in MagicMapper.
                 continue;
             }
 

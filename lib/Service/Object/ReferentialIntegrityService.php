@@ -30,7 +30,7 @@ use DateTime;
 use OCA\OpenRegister\Db\AuditTrail;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Db\ObjectEntityMapper;
+use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
@@ -97,14 +97,14 @@ class ReferentialIntegrityService
      *
      * @param SchemaMapper       $schemaMapper       Schema data mapper.
      * @param RegisterMapper     $registerMapper     Register data mapper.
-     * @param ObjectEntityMapper $objectEntityMapper Object entity data mapper.
-     * @param AuditTrailMapper   $auditTrailMapper   Audit trail mapper for integrity action logging.
-     * @param LoggerInterface    $logger             Logger for debugging.
+     * @param MagicMapper $objectEntityMapper Object entity data mapper.
+     * @param AuditTrailMapper    $auditTrailMapper   Audit trail mapper for integrity action logging.
+     * @param LoggerInterface     $logger             Logger for debugging.
      */
     public function __construct(
         private readonly SchemaMapper $schemaMapper,
         private readonly RegisterMapper $registerMapper,
-        private readonly ObjectEntityMapper $objectEntityMapper,
+        private readonly MagicMapper $objectEntityMapper,
         private readonly AuditTrailMapper $auditTrailMapper,
         private readonly LoggerInterface $logger
     ) {
@@ -704,9 +704,7 @@ class ReferentialIntegrityService
         // Fallback: broad search across all sources (only for schemas without register mapping).
         try {
             $candidates = $this->objectEntityMapper->findByRelation(
-                search: $targetUuid,
-                partialMatch: false,
-                includeMagicTables: true
+                uuid: $targetUuid
             );
         } catch (\Exception $e) {
             $this->logger->warning(
@@ -1065,7 +1063,7 @@ class ReferentialIntegrityService
      * Apply CASCADE deletes in batch, grouped by register+schema.
      *
      * Groups cascade targets by their register+schema pair, resolves entities
-     * once per group, and calls ObjectEntityMapper::deleteObjects() in bulk.
+     * once per group, and calls MagicMapper::deleteObjects() in bulk.
      * Falls back to individual deletion for targets without register info.
      *
      * @param array       $cascadeTargets    The cascade targets from DeletionAnalysis (already reversed).
@@ -1112,36 +1110,9 @@ class ReferentialIntegrityService
             );
 
             try {
-                $register = null;
-                $schema   = null;
-
-                if ($group['registerId'] !== null) {
-                    $register = $this->schemaRegisterMap[(string) $group['schemaId']] ?? null;
-                    if ($register === null) {
-                        $register = $this->registerMapper->find(
-                            $group['registerId'],
-                            _rbac: false,
-                            _multitenancy: false
-                        );
-                    }
-                }
-
-                if ($group['schemaId'] !== null) {
-                    $schema = $this->schemaCache[(string) $group['schemaId']] ?? null;
-                    if ($schema === null) {
-                        $schema = $this->schemaMapper->find(
-                            $group['schemaId'],
-                            _rbac: false,
-                            _multitenancy: false
-                        );
-                    }
-                }
-
                 $this->objectEntityMapper->deleteObjects(
                     uuids: $uuids,
-                    hardDelete: false,
-                    register: $register,
-                    schema: $schema
+                    hardDelete: false
                 );
             } catch (\Exception $e) {
                 $this->logger->warning(

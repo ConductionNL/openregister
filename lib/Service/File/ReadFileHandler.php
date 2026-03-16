@@ -18,8 +18,7 @@ namespace OCA\OpenRegister\Service\File;
 
 use Exception;
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Db\ObjectEntityMapper;
-use OCA\OpenRegister\Db\UnifiedObjectMapper;
+use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Service\FileService;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\Files\File;
@@ -64,8 +63,8 @@ class ReadFileHandler
      * @param FolderManagementHandler $folderMgmtHandler    Folder management handler.
      * @param FileValidationHandler   $fileValidHandler     File validation handler.
      * @param FileOwnershipHandler    $fileOwnershipHandler File ownership handler.
-     * @param ObjectEntityMapper      $objectEntityMapper   Object entity mapper.
-     * @param UnifiedObjectMapper     $unifiedObjectMapper  Unified object mapper.
+     * @param MagicMapper      $objectEntityMapper   Object entity mapper.
+     * @param MagicMapper     $objectMapper  Object mapper for magic table operations.
      * @param LoggerInterface         $logger               Logger for logging operations.
      */
     public function __construct(
@@ -73,8 +72,8 @@ class ReadFileHandler
         private readonly FolderManagementHandler $folderMgmtHandler,
         private readonly FileValidationHandler $fileValidHandler,
         private readonly FileOwnershipHandler $fileOwnershipHandler,
-        private readonly ObjectEntityMapper $objectEntityMapper,
-        private readonly UnifiedObjectMapper $unifiedObjectMapper,
+        private readonly MagicMapper $objectEntityMapper,
+        private readonly MagicMapper $objectMapper,
         private readonly LoggerInterface $logger
     ) {
     }//end __construct()
@@ -255,7 +254,7 @@ class ReadFileHandler
     public function getFiles(ObjectEntity|string $object, ?bool $sharedFilesOnly=false): array
     {
         // If string ID provided, try to find the object entity.
-        // Use findAcrossAllSources to search both blob storage AND magic tables.
+        // Use findAcrossAllSources to search across all magic tables.
         if (is_string($object) === true) {
             $result = $this->unifiedObjectMapper->findAcrossAllSources(
                 identifier: $object,

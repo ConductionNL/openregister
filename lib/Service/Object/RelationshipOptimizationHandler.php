@@ -15,7 +15,6 @@
 namespace OCA\OpenRegister\Service\Object;
 
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Db\ObjectEntityMapper;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -40,11 +39,9 @@ class RelationshipOptimizationHandler
     /**
      * Constructor for RelationshipOptimizationHandler.
      *
-     * @param ObjectEntityMapper $objectEntityMapper Mapper for object entities.
-     * @param LoggerInterface    $logger             Logger for logging operations.
+     * @param LoggerInterface $logger Logger for logging operations.
      */
     public function __construct(
-        private readonly ObjectEntityMapper $objectEntityMapper,
         private readonly LoggerInterface $logger
     ) {
     }//end __construct()

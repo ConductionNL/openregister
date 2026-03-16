@@ -62,7 +62,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Db\ObjectEntityMapper;
+use OCA\OpenRegister\Db\UnifiedObjectMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Service\ObjectHandlers\DeleteObject;
@@ -104,8 +104,8 @@ class ObjectServiceRbacTest extends TestCase
     /** @var MockObject|RegisterMapper */
     private $registerMapper;
 
-    /** @var MockObject|ObjectEntityMapper */
-    private $objectEntityMapper;
+    /** @var MockObject|UnifiedObjectMapper */
+    private $objectMapper;
 
     /** @var MockObject|DeleteObject */
     private $deleteHandler;
@@ -142,7 +142,7 @@ class ObjectServiceRbacTest extends TestCase
         $this->mockUser = $this->createMock(IUser::class);
         $this->schemaMapper = $this->createMock(SchemaMapper::class);
         $this->registerMapper = $this->createMock(RegisterMapper::class);
-        $this->objectEntityMapper = $this->createMock(ObjectEntityMapper::class);
+        $this->objectMapper = $this->createMock(UnifiedObjectMapper::class);
         $this->deleteHandler = $this->createMock(DeleteObject::class);
         $this->getHandler = $this->createMock(GetObject::class);
         $this->saveHandler = $this->createMock(SaveObject::class);
@@ -158,7 +158,7 @@ class ObjectServiceRbacTest extends TestCase
             $this->validateHandler,
             $this->registerMapper,
             $this->schemaMapper,
-            $this->objectEntityMapper,
+            $this->objectMapper,
             $this->fileService,
             $this->userSession,
             $this->groupManager,

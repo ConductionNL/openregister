@@ -6,7 +6,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Object;
 
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Db\ObjectEntityMapper;
+use OCA\OpenRegister\Db\UnifiedObjectMapper;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Dto\DeletionAnalysis;
@@ -25,7 +25,7 @@ class ReferentialIntegrityServiceBranchTest extends TestCase
     private ReferentialIntegrityService $service;
     private SchemaMapper&MockObject $schemaMapper;
     private RegisterMapper&MockObject $registerMapper;
-    private ObjectEntityMapper&MockObject $objectEntityMapper;
+    private UnifiedObjectMapper&MockObject $objectMapper;
     private AuditTrailMapper&MockObject $auditTrailMapper;
     private LoggerInterface&MockObject $logger;
 
@@ -35,14 +35,14 @@ class ReferentialIntegrityServiceBranchTest extends TestCase
 
         $this->schemaMapper = $this->createMock(SchemaMapper::class);
         $this->registerMapper = $this->createMock(RegisterMapper::class);
-        $this->objectEntityMapper = $this->createMock(ObjectEntityMapper::class);
+        $this->objectMapper = $this->createMock(UnifiedObjectMapper::class);
         $this->auditTrailMapper = $this->createMock(AuditTrailMapper::class);
         $this->logger = $this->createMock(LoggerInterface::class);
 
         $this->service = new ReferentialIntegrityService(
             $this->schemaMapper,
             $this->registerMapper,
-            $this->objectEntityMapper,
+            $this->objectMapper,
             $this->auditTrailMapper,
             $this->logger
         );

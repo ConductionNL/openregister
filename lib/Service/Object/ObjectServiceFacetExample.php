@@ -149,26 +149,26 @@ class ObjectServiceFacetExample
 
         $query = [
             // Product filters.
-            '@self'      => [
+            '@self'    => [
                 'register' => 1,
         // Products register.
                 'schema'   => 2,
         // Product schema.
             ],
-            'category'   => 'electronics',
-            'in_stock'   => true,
+            'category' => 'electronics',
+            'in_stock' => true,
 
             // Search and pagination.
-            '_search'    => 'smartphone',
-            '_limit'     => 20,
-            '_page'      => 1,
-            '_order'     => [
+            '_search'  => 'smartphone',
+            '_limit'   => 20,
+            '_page'    => 1,
+            '_order'   => [
                 'popularity' => 'DESC',
                 'price'      => 'ASC',
             ],
 
             // E-commerce facets.
-            '_facets'    => [
+            '_facets'  => [
                 // Product metadata.
                 '@self'        => [
                     'register' => ['type' => 'terms'],
@@ -233,14 +233,14 @@ class ObjectServiceFacetExample
     {
         $query = [
             // Analytics filters.
-            '@self'      => [
+            '@self'   => [
                 'register'     => [1, 2, 3],
         // Multiple data sources.
                 'organisation' => 'IS NOT NULL',
             ],
 
             // Time-based facets for analytics.
-            '_facets'    => [
+            '_facets' => [
                 '@self'         => [
                     'register'     => ['type' => 'terms'],
                     'schema'       => ['type' => 'terms'],

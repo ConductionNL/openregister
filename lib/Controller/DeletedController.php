@@ -21,7 +21,7 @@
 namespace OCA\OpenRegister\Controller;
 
 use DateTime;
-use OCA\OpenRegister\Db\ObjectEntityMapper;
+use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\ObjectService;
@@ -46,7 +46,7 @@ class DeletedController extends Controller
      *
      * @param string             $appName            The name of the app
      * @param IRequest           $request            The request object
-     * @param ObjectEntityMapper $objectEntityMapper The object entity mapper
+     * @param MagicMapper $objectEntityMapper The object entity mapper
      * @param RegisterMapper     $registerMapper     The register mapper
      * @param SchemaMapper       $schemaMapper       The schema mapper
      * @param ObjectService      $objectService      The object service
@@ -57,7 +57,7 @@ class DeletedController extends Controller
     public function __construct(
         string $appName,
         IRequest $request,
-        private readonly ObjectEntityMapper $objectEntityMapper,
+        private readonly MagicMapper $objectEntityMapper,
         private readonly RegisterMapper $registerMapper,
         private readonly SchemaMapper $schemaMapper,
         private readonly ObjectService $objectService,

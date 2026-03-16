@@ -310,7 +310,6 @@ class ObjectEntity extends Entity implements JsonSerializable
      *
      * Indicates where this object was loaded from:
      * - "orm": Magic tables (structured storage)
-     * - "blob": Blob storage (openregister_objects table)
      * - "index": Search index
      *
      * @var string|null
@@ -971,7 +970,6 @@ class ObjectEntity extends Entity implements JsonSerializable
      *
      * Returns where this object was loaded from:
      * - "orm": Magic tables (structured storage)
-     * - "blob": Blob storage (openregister_objects table)
      * - "index": Search index
      *
      * @return string|null The source identifier, or null if not set
@@ -984,7 +982,7 @@ class ObjectEntity extends Entity implements JsonSerializable
     /**
      * Set the source of this object data (runtime only)
      *
-     * @param string|null $source The source identifier ("orm", "blob", or "index")
+     * @param string|null $source The source identifier ("orm" or "index")
      *
      * @return void
      */

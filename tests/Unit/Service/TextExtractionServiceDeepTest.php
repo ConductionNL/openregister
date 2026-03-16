@@ -39,7 +39,7 @@ use OCA\OpenRegister\Db\EntityRelationMapper;
 use OCA\OpenRegister\Db\FileMapper;
 use OCA\OpenRegister\Db\GdprEntityMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Db\ObjectEntityMapper;
+use OCA\OpenRegister\Db\UnifiedObjectMapper;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\RiskLevelService;
@@ -71,7 +71,7 @@ class TextExtractionServiceDeepTest extends TestCase
 
     private MockObject|LoggerInterface $logger;
 
-    private MockObject|ObjectEntityMapper $objectEntityMapper;
+    private MockObject|UnifiedObjectMapper $objectMapper;
 
     private MockObject|SchemaMapper $schemaMapper;
 
@@ -100,7 +100,7 @@ class TextExtractionServiceDeepTest extends TestCase
         $this->rootFolder           = $this->createMock(IRootFolder::class);
         $this->db                   = $this->createMock(IDBConnection::class);
         $this->logger               = $this->createMock(LoggerInterface::class);
-        $this->objectEntityMapper   = $this->createMock(ObjectEntityMapper::class);
+        $this->objectMapper   = $this->createMock(UnifiedObjectMapper::class);
         $this->schemaMapper         = $this->createMock(SchemaMapper::class);
         $this->registerMapper       = $this->createMock(RegisterMapper::class);
         $this->entityHandler        = $this->createMock(EntityRecognitionHandler::class);
@@ -115,7 +115,7 @@ class TextExtractionServiceDeepTest extends TestCase
             $this->rootFolder,
             $this->db,
             $this->logger,
-            $this->objectEntityMapper,
+            $this->objectMapper,
             $this->schemaMapper,
             $this->registerMapper,
             $this->entityHandler,
@@ -848,7 +848,7 @@ class TextExtractionServiceDeepTest extends TestCase
      */
     public function testExtractObjectDeletedObject(): void
     {
-        $this->objectEntityMapper->method('find')
+        $this->objectMapper->method('find')
             ->willThrowException(new DoesNotExistException('not found'));
 
         // Should not throw — gracefully skips.

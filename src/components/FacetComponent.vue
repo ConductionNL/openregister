@@ -170,6 +170,95 @@
 						{{ t('openregister', 'Property Filters') }}
 					</h4>
 
+					<!-- Date Range facets for object date fields -->
+					<div v-if="Object.keys(dateRangeObjectFields).length > 0" class="facet-date-ranges">
+						<div
+							v-for="(facet, fieldName) in dateRangeObjectFields"
+							:key="`date-range-${fieldName}`"
+							class="facet-date-item">
+							<label class="facet-date-label">
+								{{ facet.title || capitalizeFieldName(fieldName) }}
+							</label>
+
+							<!-- Predefined range radio buttons -->
+							<div v-if="facet.data && facet.data.buckets" class="date-range-presets">
+								<NcCheckboxRadioSwitch
+									v-for="bucket in facet.data.buckets"
+									:key="bucket.value"
+									:checked="isDateRangeSelected(fieldName, bucket.value)"
+									type="radio"
+									name="date-range-${fieldName}"
+									@update:checked="selectDateRangeBucket(fieldName, bucket)">
+									{{ bucket.label || bucket.value }}
+									<span v-if="bucket.count !== undefined" class="value-count">({{ bucket.count }})</span>
+								</NcCheckboxRadioSwitch>
+							</div>
+
+							<!-- Custom date range picker -->
+							<div class="date-range-custom">
+								<span class="date-separator">{{ t('openregister', 'or pick a range') }}</span>
+								<div class="date-range-inputs">
+									<NcDateTimePickerNative
+										:model-value="getObjectDateRangeValue(fieldName, 'from')"
+										:placeholder="t('openregister', 'From date')"
+										type="date"
+										@update:model-value="updateObjectDateRange(fieldName, 'from', $event)" />
+									<span class="date-separator">{{ t('openregister', 'to') }}</span>
+									<NcDateTimePickerNative
+										:model-value="getObjectDateRangeValue(fieldName, 'to')"
+										:placeholder="t('openregister', 'To date')"
+										type="date"
+										@update:model-value="updateObjectDateRange(fieldName, 'to', $event)" />
+									<NcButton
+										v-if="hasObjectDateRange(fieldName)"
+										type="tertiary"
+										size="small"
+										:aria-label="t('openregister', 'Clear date range')"
+										@click="clearObjectDateRange(fieldName)">
+										<template #icon>
+											<Close :size="16" />
+										</template>
+									</NcButton>
+								</div>
+							</div>
+						</div>
+					</div>
+
+					<!-- Date Histogram facets for object date fields -->
+					<div v-if="Object.keys(dateHistogramObjectFields).length > 0" class="facet-dropdowns">
+						<div
+							v-for="(facet, fieldName) in dateHistogramObjectFields"
+							:key="`date-hist-${fieldName}`"
+							class="facet-dropdown-item">
+							<label class="facet-dropdown-label">
+								{{ facet.title || capitalizeFieldName(fieldName) }}
+								<span v-if="facet.config && facet.config.interval" class="field-coverage">
+									({{ facet.config.interval }})
+								</span>
+							</label>
+							<NcSelect
+								:model-value="getSelectedDateHistogramValues(fieldName)"
+								:options="getDateHistogramOptions(fieldName)"
+								:placeholder="t('openregister', 'Select {fieldName} values', { fieldName: facet.title || capitalizeFieldName(fieldName) })"
+								:input-label="facet.title || capitalizeFieldName(fieldName)"
+								:multiple="true"
+								:close-on-select="false"
+								:searchable="true"
+								:loading="objectStore.facetsLoading"
+								@update:model-value="updateDateHistogramSelection(fieldName, $event)">
+								<template #option="{ option }">
+									<div v-if="option" class="dropdown-option">
+										<span class="option-label">{{ option.label || option.value || '' }}</span>
+										<span v-if="option.count" class="option-count">({{ option.count }})</span>
+									</div>
+								</template>
+								<template #selected-option="{ option }">
+									<span v-if="option" class="selected-option">{{ option.label || option.value || '' }}</span>
+								</template>
+							</NcSelect>
+						</div>
+					</div>
+
 					<!-- Terms-based dropdowns for object fields (excluding id) -->
 					<div class="facet-dropdowns">
 						<div
@@ -207,7 +296,7 @@
 						</div>
 					</div>
 
-					<!-- Checkbox-based facets for non-terms fields (excluding id) -->
+					<!-- Checkbox-based facets for non-terms fields (excluding id and date fields) -->
 					<div v-if="Object.keys(nonTermsObjectFieldFacets).length > 0" class="facet-list">
 						<div
 							v-for="(field, fieldName) in nonTermsObjectFieldFacets"
@@ -335,6 +424,32 @@ export default {
 		 * Get metadata fields that support terms faceting (excluding id and uuid)
 		 * These will be shown as dropdowns
 		 */
+		/**
+		 * Get object fields that use date_range faceting from current facet results
+		 * @return {object} Date range facet entries keyed by field name
+		 */
+		dateRangeObjectFields() {
+			const fields = {}
+			Object.entries(this.objectStore.currentFacets || {}).forEach(([fieldName, facet]) => {
+				if (fieldName !== '@self' && facet.type === 'date_range') {
+					fields[fieldName] = facet
+				}
+			})
+			return fields
+		},
+		/**
+		 * Get object fields that use date_histogram faceting from current facet results
+		 * @return {object} Date histogram facet entries keyed by field name
+		 */
+		dateHistogramObjectFields() {
+			const fields = {}
+			Object.entries(this.objectStore.currentFacets || {}).forEach(([fieldName, facet]) => {
+				if (fieldName !== '@self' && facet.type === 'date_histogram') {
+					fields[fieldName] = facet
+				}
+			})
+			return fields
+		},
 		termsMetadataFields() {
 			const fields = {}
 			Object.entries(this.objectStore.availableMetadataFacets).forEach(([fieldName, field]) => {
@@ -591,6 +706,176 @@ export default {
 			await this.objectStore.refreshObjectList()
 			// eslint-disable-next-line no-console
 			console.log('Object list refreshed')
+		},
+		/**
+		 * Check if a predefined date range bucket is selected
+		 * @param {string} fieldName - Name of the field
+		 * @param {string} bucketValue - The bucket key/value
+		 * @return {boolean} True if selected
+		 */
+		isDateRangeSelected(fieldName, bucketValue) {
+			const filterKey = `${fieldName}._dateRange`
+			return this.objectStore.activeFilters[filterKey] === bucketValue
+		},
+		/**
+		 * Select a predefined date range bucket
+		 * @param {string} fieldName - Name of the field
+		 * @param {object} bucket - The bucket with from/to/value/label
+		 */
+		async selectDateRangeBucket(fieldName, bucket) {
+			const currentFilters = { ...this.objectStore.activeFilters }
+
+			// Clear any existing date range filters for this field
+			Object.keys(currentFilters).forEach(key => {
+				if (key.startsWith(fieldName + '[')) {
+					delete currentFilters[key]
+				}
+			})
+			delete currentFilters[`${fieldName}._dateRange`]
+
+			// Set the range filters using from/to from the bucket
+			if (bucket.from) {
+				currentFilters[`${fieldName}[>=]`] = [bucket.from]
+			}
+			if (bucket.to) {
+				currentFilters[`${fieldName}[<=]`] = [bucket.to]
+			}
+			// Track which preset is selected
+			currentFilters[`${fieldName}._dateRange`] = bucket.value
+
+			this.objectStore.setActiveFilters(currentFilters)
+			await this.objectStore.refreshObjectList()
+		},
+		/**
+		 * Get current custom date range value for an object date field
+		 * @param {string} fieldName - Name of the field
+		 * @param {string} bound - 'from' or 'to'
+		 * @return {string|null} Date value
+		 */
+		getObjectDateRangeValue(fieldName, bound) {
+			const operator = bound === 'from' ? '>=' : '<='
+			const filterValues = this.objectStore.activeFilters[`${fieldName}[${operator}]`]
+			if (filterValues && Array.isArray(filterValues) && filterValues.length > 0) {
+				return filterValues[0]
+			}
+			return null
+		},
+		/**
+		 * Update custom date range for an object date field
+		 * @param {string} fieldName - Name of the field
+		 * @param {string} bound - 'from' or 'to'
+		 * @param {string} value - Date value
+		 */
+		async updateObjectDateRange(fieldName, bound, value) {
+			const currentFilters = { ...this.objectStore.activeFilters }
+
+			// Clear preset selection
+			delete currentFilters[`${fieldName}._dateRange`]
+
+			const operator = bound === 'from' ? '>=' : '<='
+			if (value) {
+				currentFilters[`${fieldName}[${operator}]`] = [value]
+			} else {
+				delete currentFilters[`${fieldName}[${operator}]`]
+			}
+
+			this.objectStore.setActiveFilters(currentFilters)
+			await this.objectStore.refreshObjectList()
+		},
+		/**
+		 * Check if an object date field has an active custom date range
+		 * @param {string} fieldName - Name of the field
+		 * @return {boolean} True if has active date range
+		 */
+		hasObjectDateRange(fieldName) {
+			return Boolean(
+				this.objectStore.activeFilters[`${fieldName}[>=]`]
+				|| this.objectStore.activeFilters[`${fieldName}[<=]`],
+			)
+		},
+		/**
+		 * Clear date range for an object date field
+		 * @param {string} fieldName - Name of the field
+		 */
+		async clearObjectDateRange(fieldName) {
+			const currentFilters = { ...this.objectStore.activeFilters }
+			delete currentFilters[`${fieldName}[>=]`]
+			delete currentFilters[`${fieldName}[<=]`]
+			delete currentFilters[`${fieldName}._dateRange`]
+
+			this.objectStore.setActiveFilters(currentFilters)
+			await this.objectStore.refreshObjectList()
+		},
+		/**
+		 * Get dropdown options for a date histogram facet
+		 * @param {string} fieldName - Name of the field
+		 * @return {Array} Array of options with value, label, count, from, to
+		 */
+		getDateHistogramOptions(fieldName) {
+			const facet = this.objectStore.currentFacets?.[fieldName]
+			if (!facet || !facet.data || !facet.data.buckets) {
+				return []
+			}
+
+			return facet.data.buckets.map(bucket => ({
+				value: bucket.value,
+				label: bucket.label || bucket.value,
+				count: bucket.count,
+				from: bucket.from,
+				to: bucket.to,
+			}))
+		},
+		/**
+		 * Get currently selected date histogram values
+		 * @param {string} fieldName - Name of the field
+		 * @return {Array} Array of selected options
+		 */
+		getSelectedDateHistogramValues(fieldName) {
+			// Check for active range filters on this field
+			const fromFilter = this.objectStore.activeFilters[`${fieldName}[>=]`]
+			const toFilter = this.objectStore.activeFilters[`${fieldName}[<=]`]
+
+			if (!fromFilter && !toFilter) {
+				return []
+			}
+
+			// Find matching buckets based on from/to
+			const options = this.getDateHistogramOptions(fieldName)
+			return options.filter(opt => {
+				if (fromFilter && toFilter) {
+					return fromFilter.includes(opt.from) && toFilter.includes(opt.to)
+				}
+				return false
+			})
+		},
+		/**
+		 * Update date histogram selection (using from/to for query params)
+		 * @param {string} fieldName - Name of the field
+		 * @param {Array} selectedOptions - Array of selected options with from/to
+		 */
+		async updateDateHistogramSelection(fieldName, selectedOptions) {
+			const currentFilters = { ...this.objectStore.activeFilters }
+
+			// Clear existing date range filters for this field
+			delete currentFilters[`${fieldName}[>=]`]
+			delete currentFilters[`${fieldName}[<=]`]
+
+			if (selectedOptions && selectedOptions.length > 0) {
+				// Use the from/to bounds from the selected buckets
+				// For multiple selections, use the min from and max to
+				const froms = selectedOptions.map(opt => opt.from).filter(Boolean).sort()
+				const tos = selectedOptions.map(opt => opt.to).filter(Boolean).sort()
+
+				if (froms.length > 0) {
+					currentFilters[`${fieldName}[>=]`] = [froms[0]]
+				}
+				if (tos.length > 0) {
+					currentFilters[`${fieldName}[<=]`] = [tos[tos.length - 1]]
+				}
+			}
+
+			this.objectStore.setActiveFilters(currentFilters)
+			await this.objectStore.refreshObjectList()
 		},
 		/**
 		 * Capitalize field names for display
@@ -1119,6 +1404,25 @@ export default {
 	font-size: 12px;
 	color: var(--color-text-maxcontrast);
 	margin-top: 4px;
+}
+
+.date-range-presets {
+	display: flex;
+	flex-direction: column;
+	gap: 4px;
+	margin-bottom: 8px;
+}
+
+.date-range-custom {
+	border-top: 1px solid var(--color-border);
+	padding-top: 8px;
+}
+
+.date-range-custom .date-separator {
+	display: block;
+	font-size: 12px;
+	color: var(--color-text-maxcontrast);
+	margin-bottom: 4px;
 }
 
 .facet-empty {

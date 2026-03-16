@@ -19,7 +19,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Listener;
 
-use OCA\OpenRegister\Db\ObjectEntityMapper;
+use OCA\OpenRegister\Db\MagicMapper;
 use OCP\Comments\CommentsEntityEvent;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventListener;
@@ -30,7 +30,7 @@ use Psr\Log\LoggerInterface;
  *
  * When Nextcloud's Comments system dispatches CommentsEntityEvent, this listener
  * adds "openregister" with a validation closure that checks if the object UUID
- * exists in the ObjectEntityMapper.
+ * exists in the MagicMapper.
  *
  * @category Listener
  * @package  OCA\OpenRegister\Listener
@@ -43,9 +43,9 @@ class CommentsEntityListener implements IEventListener
     /**
      * Object entity mapper for validating object existence.
      *
-     * @var ObjectEntityMapper
+     * @var MagicMapper
      */
-    private readonly ObjectEntityMapper $objectEntityMapper;
+    private readonly MagicMapper $objectEntityMapper;
 
     /**
      * Logger for error reporting.
@@ -57,13 +57,13 @@ class CommentsEntityListener implements IEventListener
     /**
      * Constructor.
      *
-     * @param ObjectEntityMapper $objectEntityMapper Mapper for object validation
+     * @param MagicMapper $objectEntityMapper Mapper for object validation
      * @param LoggerInterface    $logger             Logger for error reporting
      *
      * @return void
      */
     public function __construct(
-        ObjectEntityMapper $objectEntityMapper,
+        MagicMapper $objectEntityMapper,
         LoggerInterface $logger
     ) {
         $this->objectEntityMapper = $objectEntityMapper;

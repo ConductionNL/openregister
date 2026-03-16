@@ -306,7 +306,7 @@ class BulkController extends Controller
      *
      * This endpoint provides a convenient way to delete all objects for a given
      * register/schema combination from the frontend action menu. It uses optimized
-     * SQL queries to delete objects efficiently from both blob storage and magic tables.
+     * SQL queries to delete objects efficiently from magic tables.
      *
      * @param string $register The register identifier (ID or slug).
      * @param string $schema   The schema identifier (ID or slug).

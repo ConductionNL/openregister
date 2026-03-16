@@ -30,7 +30,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Object;
 
 use OCA\OpenRegister\Db\MagicMapper\MagicRbacHandler;
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Db\ObjectEntityMapper;
+use OCA\OpenRegister\Db\UnifiedObjectMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Object\PerformanceHandler;
@@ -49,8 +49,8 @@ class RelationHandlerTest extends TestCase
 {
     private RelationHandler $handler;
 
-    /** @var ObjectEntityMapper&MockObject */
-    private ObjectEntityMapper $objectEntityMapper;
+    /** @var UnifiedObjectMapper&MockObject */
+    private UnifiedObjectMapper $objectMapper;
 
     /** @var SchemaMapper&MockObject */
     private SchemaMapper $schemaMapper;
@@ -73,14 +73,14 @@ class RelationHandlerTest extends TestCase
     {
         parent::setUp();
 
-        $this->objectEntityMapper = $this->createMock(ObjectEntityMapper::class);
+        $this->objectMapper = $this->createMock(UnifiedObjectMapper::class);
         $this->schemaMapper       = $this->createMock(SchemaMapper::class);
         $this->performanceHandler = $this->createMock(PerformanceHandler::class);
         $this->rbacHandler        = $this->createMock(MagicRbacHandler::class);
         $this->logger             = $this->createMock(LoggerInterface::class);
 
         $this->handler = new RelationHandler(
-            objectEntityMapper: $this->objectEntityMapper,
+            objectMapper: $this->objectMapper,
             schemaMapper: $this->schemaMapper,
             performanceHandler: $this->performanceHandler,
             rbacHandler: $this->rbacHandler,
@@ -523,7 +523,7 @@ class RelationHandlerTest extends TestCase
     {
         $ids = array_map(fn($i) => "id-$i", range(1, 250));
 
-        $this->objectEntityMapper
+        $this->objectMapper
             ->method('findAll')
             ->willReturn([]);
 
@@ -545,7 +545,7 @@ class RelationHandlerTest extends TestCase
         $entity = $this->makeObjectEntity(42);
         $entity->setUuid('550e8400-e29b-41d4-a716-446655440000');
 
-        $this->objectEntityMapper
+        $this->objectMapper
             ->method('findAll')
             ->willReturn([$entity]);
 
@@ -568,7 +568,7 @@ class RelationHandlerTest extends TestCase
         // Generate 60 IDs -- two batches of 50/10.
         $ids = array_map(fn($i) => "id-$i", range(1, 60));
 
-        $this->objectEntityMapper
+        $this->objectMapper
             ->method('findAll')
             ->willThrowException(new \RuntimeException('DB error'));
 
@@ -592,7 +592,7 @@ class RelationHandlerTest extends TestCase
      */
     public function testLoadRelationshipChunkOptimizedReturnsEmptyForNoIds(): void
     {
-        $this->objectEntityMapper->expects($this->never())->method('findAll');
+        $this->objectMapper->expects($this->never())->method('findAll');
 
         $result = $this->handler->loadRelationshipChunkOptimized([]);
 
@@ -600,7 +600,7 @@ class RelationHandlerTest extends TestCase
     }//end testLoadRelationshipChunkOptimizedReturnsEmptyForNoIds()
 
     /**
-     * Delegates to objectEntityMapper->findAll and returns its result.
+     * Delegates to objectMapper->findAll and returns its result.
      *
      * @return void
      */
@@ -608,7 +608,7 @@ class RelationHandlerTest extends TestCase
     {
         $entity = $this->makeObjectEntity(7);
 
-        $this->objectEntityMapper
+        $this->objectMapper
             ->expects($this->once())
             ->method('findAll')
             ->with($this->anything())
@@ -627,7 +627,7 @@ class RelationHandlerTest extends TestCase
      */
     public function testLoadRelationshipChunkOptimizedReturnsEmptyOnMapperException(): void
     {
-        $this->objectEntityMapper
+        $this->objectMapper
             ->method('findAll')
             ->willThrowException(new \RuntimeException('DB error'));
 
@@ -701,7 +701,7 @@ class RelationHandlerTest extends TestCase
         $entity = $this->makeObjectEntity(1);
         $entity->setObject(['contracts' => ['contract-a', 'contract-b', 'contract-c']]);
 
-        $this->objectEntityMapper
+        $this->objectMapper
             ->method('find')
             ->willReturn($entity);
 
@@ -728,7 +728,7 @@ class RelationHandlerTest extends TestCase
         $entity = $this->makeObjectEntity(1);
         $entity->setObject(['contracts' => []]);
 
-        $this->objectEntityMapper->method('find')->willReturn($entity);
+        $this->objectMapper->method('find')->willReturn($entity);
 
         $result = $this->handler->getContracts('some-uuid');
 
@@ -747,7 +747,7 @@ class RelationHandlerTest extends TestCase
         $entity = $this->makeObjectEntity(1);
         $entity->setObject(['name' => 'Test Object']);
 
-        $this->objectEntityMapper->method('find')->willReturn($entity);
+        $this->objectMapper->method('find')->willReturn($entity);
 
         $result = $this->handler->getContracts('some-uuid');
 
@@ -762,7 +762,7 @@ class RelationHandlerTest extends TestCase
      */
     public function testGetContractsReturnsErrorResponseOnException(): void
     {
-        $this->objectEntityMapper
+        $this->objectMapper
             ->method('find')
             ->willThrowException(new \RuntimeException('Not found'));
 
@@ -786,7 +786,7 @@ class RelationHandlerTest extends TestCase
         $entity = $this->makeObjectEntity(1);
         $entity->setObject(['contracts' => ['a', 'b', 'c', 'd', 'e']]);
 
-        $this->objectEntityMapper->method('find')->willReturn($entity);
+        $this->objectMapper->method('find')->willReturn($entity);
 
         $result = $this->handler->getContracts('some-uuid', ['_limit' => 2, '_offset' => 3]);
 
@@ -810,7 +810,7 @@ class RelationHandlerTest extends TestCase
         $entity->setUuid('550e8400-e29b-41d4-a716-446655440000');
         $entity->setRelations([]);
 
-        $this->objectEntityMapper->method('find')->willReturn($entity);
+        $this->objectMapper->method('find')->willReturn($entity);
 
         $result = $this->handler->getUses('550e8400-e29b-41d4-a716-446655440000');
 
@@ -831,7 +831,7 @@ class RelationHandlerTest extends TestCase
         $entity->setUuid($ownUuid);
         $entity->setRelations(['self' => $ownUuid]);
 
-        $this->objectEntityMapper->method('find')->willReturn($entity);
+        $this->objectMapper->method('find')->willReturn($entity);
 
         $result = $this->handler->getUses($ownUuid);
 
@@ -846,7 +846,7 @@ class RelationHandlerTest extends TestCase
      */
     public function testGetUsesReturnsErrorResponseOnException(): void
     {
-        $this->objectEntityMapper
+        $this->objectMapper
             ->method('find')
             ->willThrowException(new \RuntimeException('Not found'));
 
@@ -871,7 +871,7 @@ class RelationHandlerTest extends TestCase
         $entity->setUuid('aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee');
         $entity->setRelations([]);
 
-        $this->objectEntityMapper->method('find')->willReturn($entity);
+        $this->objectMapper->method('find')->willReturn($entity);
 
         $result = $this->handler->getUses('aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee');
 
@@ -893,7 +893,7 @@ class RelationHandlerTest extends TestCase
         // Relations stored as ['field' => ['uuid1', 'uuid2']].
         $entity->setRelations(['members' => ['rel-uuid-1', 'rel-uuid-2']]);
 
-        $this->objectEntityMapper->method('find')->willReturn($entity);
+        $this->objectMapper->method('find')->willReturn($entity);
 
         // getUses calls \OC::$server for RegisterMapper and MagicMapper -- this path will
         // throw a fatal if OC is not available in unit tests, so we assert on the
@@ -915,7 +915,7 @@ class RelationHandlerTest extends TestCase
      */
     public function testGetUsedByReturnsErrorResponseOnException(): void
     {
-        $this->objectEntityMapper
+        $this->objectMapper
             ->method('find')
             ->willThrowException(new \RuntimeException('Not found'));
 
@@ -936,7 +936,7 @@ class RelationHandlerTest extends TestCase
      */
     public function testGetUsedByUsesDefaultPaginationInErrorFallback(): void
     {
-        $this->objectEntityMapper
+        $this->objectMapper
             ->method('find')
             ->willThrowException(new \RuntimeException('Not found'));
 
@@ -955,7 +955,7 @@ class RelationHandlerTest extends TestCase
      */
     public function testGetUsedByResponseAlwaysHasRequiredKeys(): void
     {
-        $this->objectEntityMapper
+        $this->objectMapper
             ->method('find')
             ->willThrowException(new \RuntimeException('Not found'));
 
@@ -979,7 +979,7 @@ class RelationHandlerTest extends TestCase
         $entity = $this->makeObjectEntity(1);
         $entity->setObject([]);
 
-        $this->objectEntityMapper->method('find')->willReturn($entity);
+        $this->objectMapper->method('find')->willReturn($entity);
 
         $result = $this->handler->getContracts('some-uuid');
 
@@ -1089,7 +1089,7 @@ class RelationHandlerTest extends TestCase
         $entity1 = $this->makeObjectEntity(1);
         $entity1->setUuid('aaaaaaaa-bbbb-cccc-dddd-000000000001');
 
-        $this->objectEntityMapper
+        $this->objectMapper
             ->method('findAll')
             ->willReturn([$entity1]);
 
@@ -1111,7 +1111,7 @@ class RelationHandlerTest extends TestCase
     {
         $ids = array_map(fn($i) => "id-$i", range(1, 5));
 
-        $this->objectEntityMapper
+        $this->objectMapper
             ->method('findAll')
             ->willThrowException(new \RuntimeException('DB error'));
 
@@ -1132,7 +1132,7 @@ class RelationHandlerTest extends TestCase
     {
         $ids = array_map(fn($i) => "id-$i", range(1, 200));
 
-        $this->objectEntityMapper->method('findAll')->willReturn([]);
+        $this->objectMapper->method('findAll')->willReturn([]);
 
         // warning should NOT be called -- exactly 200 is not over the limit.
         $this->logger->expects($this->never())->method('warning');
@@ -1157,7 +1157,7 @@ class RelationHandlerTest extends TestCase
         $entity = $this->makeObjectEntity(1);
         $entity->setObject(['contracts' => ['a', 'b']]);
 
-        $this->objectEntityMapper->method('find')->willReturn($entity);
+        $this->objectMapper->method('find')->willReturn($entity);
 
         $result = $this->handler->getContracts('some-uuid', ['_limit' => 5, '_offset' => 10]);
 
@@ -1172,7 +1172,7 @@ class RelationHandlerTest extends TestCase
      */
     public function testGetContractsErrorResponseRespectsFilters(): void
     {
-        $this->objectEntityMapper
+        $this->objectMapper
             ->method('find')
             ->willThrowException(new \RuntimeException('DB fail'));
 
@@ -1199,7 +1199,7 @@ class RelationHandlerTest extends TestCase
         $entity->setUuid('bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb');
         $entity->setRelations([]);
 
-        $this->objectEntityMapper->method('find')->willReturn($entity);
+        $this->objectMapper->method('find')->willReturn($entity);
 
         $result = $this->handler->getUses('bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb', []);
 
@@ -1222,7 +1222,7 @@ class RelationHandlerTest extends TestCase
         // Flat structure: ['field1' => 'some-uuid', 'field2' => 'other-uuid'].
         $entity->setRelations(['field1' => 'some-uuid-a', 'field2' => 'some-uuid-b']);
 
-        $this->objectEntityMapper->method('find')->willReturn($entity);
+        $this->objectMapper->method('find')->willReturn($entity);
 
         // getUses will attempt \OC::$server calls, which may fail in unit test context.
         // We just assert the response has the required structure.
@@ -1241,7 +1241,7 @@ class RelationHandlerTest extends TestCase
      */
     public function testGetUsesResponseStructureOnError(): void
     {
-        $this->objectEntityMapper
+        $this->objectMapper
             ->method('find')
             ->willThrowException(new \RuntimeException('Not found'));
 
@@ -1343,7 +1343,7 @@ class RelationHandlerTest extends TestCase
     // =========================================================================
 
     /**
-     * getUsedBy returns correct structure when objectEntityMapper throws (error path).
+     * getUsedBy returns correct structure when objectMapper throws (error path).
      *
      * In unit tests OC::$server calls may succeed but may fail deep in MagicMapper.
      * We exercise the error fallback which always returns the correct structure.
@@ -1353,7 +1353,7 @@ class RelationHandlerTest extends TestCase
     public function testGetUsedBySuccessPathStructure(): void
     {
         // Make find() throw so we hit the outer catch -- always returns the right structure.
-        $this->objectEntityMapper
+        $this->objectMapper
             ->method('find')
             ->willThrowException(new \RuntimeException('Unit test - no DB'));
 
@@ -1608,7 +1608,7 @@ class RelationHandlerTest extends TestCase
         $ids = array_map(fn($i) => "id-$i", range(1, 300));
 
         $callCount = 0;
-        $this->objectEntityMapper
+        $this->objectMapper
             ->method('findAll')
             ->willReturnCallback(function () use (&$callCount) {
                 $callCount++;
@@ -1634,7 +1634,7 @@ class RelationHandlerTest extends TestCase
         $entity = $this->makeObjectEntity(99);
         $entity->setUuid('11111111-1111-1111-1111-111111111111');
 
-        $this->objectEntityMapper
+        $this->objectMapper
             ->expects($this->once())
             ->method('findAll')
             ->willReturn([$entity]);
@@ -1660,7 +1660,7 @@ class RelationHandlerTest extends TestCase
         $e2 = $this->makeObjectEntity(20);
         $e2->setUuid('aaaa-2222');
 
-        $this->objectEntityMapper->method('findAll')->willReturn([$e1, $e2]);
+        $this->objectMapper->method('findAll')->willReturn([$e1, $e2]);
 
         $this->logger->expects($this->atLeastOnce())->method('info');
         $this->logger->expects($this->atLeastOnce())->method('debug');
@@ -1688,7 +1688,7 @@ class RelationHandlerTest extends TestCase
         $e2 = $this->makeObjectEntity(2);
 
         $capturedIds = null;
-        $this->objectEntityMapper
+        $this->objectMapper
             ->expects($this->once())
             ->method('findAll')
             ->willReturnCallback(function () use ($e1, $e2, &$capturedIds) {
@@ -1715,7 +1715,7 @@ class RelationHandlerTest extends TestCase
         $entity = $this->makeObjectEntity(1);
         $entity->setObject(['contracts' => 'not-an-array']);
 
-        $this->objectEntityMapper->method('find')->willReturn($entity);
+        $this->objectMapper->method('find')->willReturn($entity);
 
         $result = $this->handler->getContracts('some-uuid');
 
@@ -1734,7 +1734,7 @@ class RelationHandlerTest extends TestCase
         $entity = $this->makeObjectEntity(1);
         $entity->setObject(['contracts' => ['c1', 'c2']]);
 
-        $this->objectEntityMapper->method('find')->willReturn($entity);
+        $this->objectMapper->method('find')->willReturn($entity);
 
         $result = $this->handler->getContracts('uuid', ['_limit' => 100, '_offset' => 0]);
 
@@ -1758,7 +1758,7 @@ class RelationHandlerTest extends TestCase
         $entity->setUuid('eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee');
         $entity->setRelations([]);
 
-        $this->objectEntityMapper->method('find')->willReturn($entity);
+        $this->objectMapper->method('find')->willReturn($entity);
 
         // Even with register/schema IDs that may fail internally, the response is correct.
         $result = $this->handler->getUses(
@@ -1791,7 +1791,7 @@ class RelationHandlerTest extends TestCase
             'field2' => ['', ''],
         ]);
 
-        $this->objectEntityMapper->method('find')->willReturn($entity);
+        $this->objectMapper->method('find')->willReturn($entity);
 
         $result = $this->handler->getUses($ownUuid);
 
@@ -1810,7 +1810,7 @@ class RelationHandlerTest extends TestCase
      */
     public function testGetUsedByWithRegisterSchemaIdsFailure(): void
     {
-        $this->objectEntityMapper
+        $this->objectMapper
             ->method('find')
             ->willThrowException(new \RuntimeException('DB error'));
 
@@ -1838,7 +1838,7 @@ class RelationHandlerTest extends TestCase
      */
     public function testGetUsedByWithRbacDisabled(): void
     {
-        $this->objectEntityMapper
+        $this->objectMapper
             ->method('find')
             ->willThrowException(new \RuntimeException('No DB'));
 
@@ -1873,7 +1873,7 @@ class RelationHandlerTest extends TestCase
         $entity->method('getRelations')->willReturn(null);
         $entity->method('getUuid')->willReturn('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa');
 
-        $this->objectEntityMapper->method('find')->willReturn($entity);
+        $this->objectMapper->method('find')->willReturn($entity);
 
         $result = $this->handler->getUses('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa');
 

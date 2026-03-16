@@ -272,8 +272,8 @@ class SolrBackend implements SearchBackendInterface
     ): array {
         return $this->queryExecutor->searchPaginated(
             query: $query,
-            rbac: $_rbac,
-            multitenancy: $_multitenancy,
+            _rbac: $_rbac,
+            _multitenancy: $_multitenancy,
             published: $published,
             deleted: $deleted
         );
