@@ -64,18 +64,12 @@ class AuditTrailMapper extends QBMapper
      * @param IDBConnection      $db                 The database connection
      * @param MagicMapper $objectEntityMapper The object entity mapper
      */
-    public function __construct(IDBConnection $db, MagicMapper $objectEntityMapper)
-    {
+    public function __construct(
+        IDBConnection $db,
+        private readonly \Psr\Container\ContainerInterface $container
+    ) {
         parent::__construct(db: $db, tableName: 'openregister_audit_trails', entityClass: AuditTrail::class);
-        $this->objectEntityMapper = $objectEntityMapper;
     }//end __construct()
-
-    /**
-     * The object entity mapper instance
-     *
-     * @var MagicMapper
-     */
-    private MagicMapper $objectEntityMapper;
 
 
 
@@ -443,8 +437,9 @@ class AuditTrailMapper extends QBMapper
      */
     public function revertObject($identifier, $until=null, bool $overwriteVersion=false): ObjectEntity
     {
-        // Get the current object.
-        $object = $this->objectEntityMapper->find($identifier);
+        // Get the current object (lazy-resolved to avoid circular DI).
+        $objectEntityMapper = $this->container->get(MagicMapper::class);
+        $object = $objectEntityMapper->find($identifier);
 
         // Get audit trail entries until the specified point.
         $auditTrails = $this->findByObjectUntil(

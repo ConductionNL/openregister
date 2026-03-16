@@ -553,7 +553,7 @@ class Application extends App implements IBootstrap
             ValidationOperationsHandler::class,
             function (ContainerInterface $container) {
                 return new ValidationOperationsHandler(
-                    validateHandler: $container->get(ValidateObject::class),
+                    validateHandler: null,
                     schemaMapper: $container->get(SchemaMapper::class),
                     logger: $container->get('Psr\Log\LoggerInterface'),
                     container: $container
