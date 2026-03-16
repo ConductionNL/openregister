@@ -22,7 +22,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service;
 
 use OCA\OpenRegister\Db\MagicMapper\MagicRbacHandler;
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Db\ObjectEntityMapper;
+use OCA\OpenRegister\Db\UnifiedObjectMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Object\PerformanceHandler;
@@ -47,8 +47,8 @@ class RelationHandlerTest extends TestCase
     /** @var RelationHandler */
     private RelationHandler $handler;
 
-    /** @var MockObject|ObjectEntityMapper */
-    private $objectEntityMapper;
+    /** @var MockObject|UnifiedObjectMapper */
+    private $objectMapper;
 
     /** @var MockObject|SchemaMapper */
     private $schemaMapper;
@@ -69,14 +69,14 @@ class RelationHandlerTest extends TestCase
      */
     protected function setUp(): void
     {
-        $this->objectEntityMapper = $this->createMock(ObjectEntityMapper::class);
+        $this->objectMapper = $this->createMock(UnifiedObjectMapper::class);
         $this->schemaMapper       = $this->createMock(SchemaMapper::class);
         $this->performanceHandler = $this->createMock(PerformanceHandler::class);
         $this->rbacHandler        = $this->createMock(MagicRbacHandler::class);
         $this->logger             = $this->createMock(LoggerInterface::class);
 
         $this->handler = new RelationHandler(
-            $this->objectEntityMapper,
+            $this->objectMapper,
             $this->schemaMapper,
             $this->performanceHandler,
             $this->rbacHandler,
@@ -270,7 +270,7 @@ class RelationHandlerTest extends TestCase
         $obj->method('getUuid')->willReturn('test-uuid-123');
         $obj->method('getId')->willReturn(42);
 
-        $this->objectEntityMapper
+        $this->objectMapper
             ->method('findAll')
             ->willReturn([$obj]);
 
@@ -294,7 +294,7 @@ class RelationHandlerTest extends TestCase
             $ids[] = 'uuid-' . $i;
         }
 
-        $this->objectEntityMapper
+        $this->objectMapper
             ->method('findAll')
             ->willReturn([]);
 
@@ -310,7 +310,7 @@ class RelationHandlerTest extends TestCase
      */
     public function testBulkLoadRelationshipsBatchedHandlesExceptions(): void
     {
-        $this->objectEntityMapper
+        $this->objectMapper
             ->method('findAll')
             ->willThrowException(new \Exception('DB error'));
 
@@ -344,7 +344,7 @@ class RelationHandlerTest extends TestCase
     {
         $obj = $this->createMock(ObjectEntity::class);
 
-        $this->objectEntityMapper
+        $this->objectMapper
             ->expects($this->once())
             ->method('findAll')
             ->willReturn([$obj]);
@@ -361,7 +361,7 @@ class RelationHandlerTest extends TestCase
      */
     public function testLoadRelationshipChunkOptimizedReturnsEmptyOnException(): void
     {
-        $this->objectEntityMapper
+        $this->objectMapper
             ->method('findAll')
             ->willThrowException(new \Exception('DB error'));
 
@@ -385,7 +385,7 @@ class RelationHandlerTest extends TestCase
             'contracts' => ['contract-1', 'contract-2', 'contract-3'],
         ]);
 
-        $this->objectEntityMapper
+        $this->objectMapper
             ->method('find')
             ->willReturn($object);
 
@@ -414,7 +414,7 @@ class RelationHandlerTest extends TestCase
             'contracts' => $contracts,
         ]);
 
-        $this->objectEntityMapper
+        $this->objectMapper
             ->method('find')
             ->willReturn($object);
 
@@ -439,7 +439,7 @@ class RelationHandlerTest extends TestCase
         $object = $this->createMock(ObjectEntity::class);
         $object->method('getObject')->willReturn([]);
 
-        $this->objectEntityMapper
+        $this->objectMapper
             ->method('find')
             ->willReturn($object);
 
@@ -456,7 +456,7 @@ class RelationHandlerTest extends TestCase
      */
     public function testGetContractsReturnsEmptyOnException(): void
     {
-        $this->objectEntityMapper
+        $this->objectMapper
             ->method('find')
             ->willThrowException(new \Exception('Not found'));
 

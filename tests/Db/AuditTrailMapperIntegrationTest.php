@@ -16,7 +16,7 @@ use DateTime;
 use OCA\OpenRegister\Db\AuditTrail;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Db\ObjectEntityMapper;
+use OCA\OpenRegister\Db\UnifiedObjectMapper;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
@@ -31,7 +31,7 @@ use Symfony\Component\Uid\Uuid;
 class AuditTrailMapperIntegrationTest extends TestCase
 {
     private AuditTrailMapper $mapper;
-    private ObjectEntityMapper $objectEntityMapper;
+    private UnifiedObjectMapper $objectMapper;
     private RegisterMapper $registerMapper;
     private SchemaMapper $schemaMapper;
 
@@ -48,7 +48,7 @@ class AuditTrailMapperIntegrationTest extends TestCase
     {
         parent::setUp();
         $this->mapper = \OC::$server->get(AuditTrailMapper::class);
-        $this->objectEntityMapper = \OC::$server->get(ObjectEntityMapper::class);
+        $this->objectMapper = \OC::$server->get(UnifiedObjectMapper::class);
         $this->registerMapper = \OC::$server->get(RegisterMapper::class);
         $this->schemaMapper = \OC::$server->get(SchemaMapper::class);
     }
@@ -157,7 +157,7 @@ class AuditTrailMapperIntegrationTest extends TestCase
         $entity->setSchema((string) $schema->getId());
         $entity->setObject(['name' => 'phpunit-test-' . uniqid()]);
 
-        $result = $this->objectEntityMapper->insertEntity($entity);
+        $result = $this->objectMapper->insertEntity($entity);
         $this->createdObjectIds[] = $result->getId();
 
         return $result;

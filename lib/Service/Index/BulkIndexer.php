@@ -21,7 +21,7 @@ namespace OCA\OpenRegister\Service\Index;
 
 use Exception;
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Db\ObjectEntityMapper;
+use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCP\IDBConnection;
 use Psr\Log\LoggerInterface;
@@ -48,9 +48,9 @@ class BulkIndexer
     /**
      * Object entity mapper for DB queries.
      *
-     * @var ObjectEntityMapper
+     * @var MagicMapper
      */
-    private readonly ObjectEntityMapper $objectMapper;
+    private readonly MagicMapper $objectMapper;
 
     /**
      * Schema mapper for schema validation.
@@ -90,7 +90,7 @@ class BulkIndexer
     /**
      * BulkIndexer constructor
      *
-     * @param ObjectEntityMapper     $objectMapper    DB mapper for objects
+     * @param MagicMapper     $objectMapper    DB mapper for objects
      * @param SchemaMapper           $schemaMapper    DB mapper for schemas
      * @param DocumentBuilder        $documentBuilder Document builder
      * @param SearchBackendInterface $searchBackend   Search backend (Solr/Elastic)
@@ -100,7 +100,7 @@ class BulkIndexer
      * @return void
      */
     public function __construct(
-        ObjectEntityMapper $objectMapper,
+        MagicMapper $objectMapper,
         SchemaMapper $schemaMapper,
         DocumentBuilder $documentBuilder,
         SearchBackendInterface $searchBackend,

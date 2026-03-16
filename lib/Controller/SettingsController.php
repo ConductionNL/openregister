@@ -770,7 +770,7 @@ class SettingsController extends Controller
             $solrService = $this->container->get(IndexService::class);
 
             // Get required dependencies from container.
-            $objectMapper = $this->container->get(\OCA\OpenRegister\Db\ObjectEntityMapper::class);
+            $objectMapper = $this->container->get(\OCA\OpenRegister\Db\MagicMapper::class);
             $schemaMapper = $this->container->get(\OCA\OpenRegister\Db\SchemaMapper::class);
 
             // Run the test.

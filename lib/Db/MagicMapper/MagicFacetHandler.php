@@ -45,6 +45,7 @@ use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\ICache;
 use OCP\ICacheFactory;
 use OCP\IDBConnection;
+use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -159,6 +160,20 @@ class MagicFacetHandler
     private ?MagicSearchHandler $searchHandler = null;
 
     /**
+     * Container for lazy resolution of CacheHandler (avoids circular DI).
+     *
+     * @var ContainerInterface|null
+     */
+    private ?ContainerInterface $container = null;
+
+    /**
+     * Whether lazy dependencies have been resolved.
+     *
+     * @var bool
+     */
+    private bool $lazyResolved = false;
+
+    /**
      * Constructor for MagicFacetHandler
      *
      * @param IDBConnection                                      $db            Database connection for queries
@@ -166,17 +181,20 @@ class MagicFacetHandler
      * @param \OCA\OpenRegister\Service\Object\CacheHandler|null $cacheHandler  Cache handler for name resolution
      * @param ICacheFactory|null                                 $cacheFactory  Cache factory for distributed caching
      * @param MagicSearchHandler|null                            $searchHandler Search handler for shared query building
+     * @param ContainerInterface|null                            $container     Container for lazy resolution
      */
     public function __construct(
         private readonly IDBConnection $db,
         private readonly LoggerInterface $logger,
         ?\OCA\OpenRegister\Service\Object\CacheHandler $cacheHandler=null,
         ?ICacheFactory $cacheFactory=null,
-        ?MagicSearchHandler $searchHandler=null
+        ?MagicSearchHandler $searchHandler=null,
+        ?ContainerInterface $container=null
     ) {
         $this->cacheHandler  = $cacheHandler;
         $this->cacheFactory  = $cacheFactory;
         $this->searchHandler = $searchHandler;
+        $this->container     = $container;
 
         // Initialize distributed cache for facet labels.
         if ($this->cacheFactory !== null) {
@@ -192,11 +210,47 @@ class MagicFacetHandler
     }//end __construct()
 
     /**
+     * Lazily resolve CacheHandler and ICacheFactory from container.
+     *
+     * Called on first use to avoid circular DI during app bootstrap:
+     * MagicMapper → CacheHandler → RegisterMapper → MagicMapper.
+     *
+     * @return void
+     */
+    private function resolveLazyDependencies(): void
+    {
+        if ($this->lazyResolved === true || $this->container === null) {
+            return;
+        }
+
+        $this->lazyResolved = true;
+
+        try {
+            $this->cacheHandler = $this->container->get(\OCA\OpenRegister\Service\Object\CacheHandler::class);
+        } catch (\Exception $e) {
+            $this->logger->debug(
+                message: '[MagicFacetHandler] CacheHandler not available: '.$e->getMessage(),
+                context: ['file' => __FILE__, 'line' => __LINE__]
+            );
+        }
+
+        try {
+            $cacheFactory = $this->container->get(ICacheFactory::class);
+            $this->cacheFactory   = $cacheFactory;
+            $this->distLabelCache = $cacheFactory->createDistributed('openregister_facet_labels');
+        } catch (\Exception $e) {
+            $this->logger->debug(
+                message: '[MagicFacetHandler] ICacheFactory not available: '.$e->getMessage(),
+                context: ['file' => __FILE__, 'line' => __LINE__]
+            );
+        }
+    }//end resolveLazyDependencies()
+
+    /**
      * Get simple facets for a magic mapper table.
      *
      * This method provides faceting capabilities for dynamically created
-     * schema-based tables, similar to the blob storage faceting but optimized
-     * for column-based storage.
+     * schema-based tables, optimized for column-based storage.
      *
      * @param string   $tableName The magic mapper table name (without oc_ prefix).
      * @param array    $query     The search query array containing filters and facet configuration.
@@ -1874,6 +1928,7 @@ class MagicFacetHandler
         $result        = $result ?? [];
         $uncachedUuids = $uncachedUuids ?? $uuids;
 
+        $this->resolveLazyDependencies();
         if ($this->cacheHandler !== null && empty($uncachedUuids) === false) {
             $this->cacheStats['cache_handler_calls']++;
             $batchedLabels = $this->cacheHandler->getMultipleObjectNames($uncachedUuids);
@@ -1948,6 +2003,8 @@ class MagicFacetHandler
         Register $register,
         Schema $schema
     ): string {
+        $this->resolveLazyDependencies();
+
         // For register field, try to get the register title.
         if ($field === self::METADATA_PREFIX.'register' && is_numeric($value) === true) {
             try {

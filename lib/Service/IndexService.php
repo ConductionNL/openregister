@@ -146,8 +146,8 @@ class IndexService
      * Delegates to ObjectHandler.
      *
      * @param array $query        Search query
-     * @param bool  $rbac         Apply RBAC filters
-     * @param bool  $multitenancy Apply multitenancy filters
+     * @param bool  $_rbac         Apply RBAC filters
+     * @param bool  $_multitenancy Apply multitenancy filters
      * @param bool  $published    Filter published objects
      * @param bool  $deleted      Include deleted objects
      *
@@ -159,15 +159,15 @@ class IndexService
      */
     public function searchObjects(
         array $query=[],
-        bool $rbac=true,
-        bool $multitenancy=true,
+        bool $_rbac=true,
+        bool $_multitenancy=true,
         bool $published=false,
         bool $deleted=false
     ): array {
         return $this->objectHandler->searchObjects(
             query: $query,
-            rbac: $rbac,
-            multitenancy: $multitenancy,
+            _rbac: $_rbac,
+            _multitenancy: $_multitenancy,
             published: $published,
             deleted: $deleted
         );

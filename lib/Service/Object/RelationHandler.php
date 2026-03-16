@@ -17,7 +17,7 @@ namespace OCA\OpenRegister\Service\Object;
 use Adbar\Dot;
 use OCA\OpenRegister\Db\MagicMapper\MagicRbacHandler;
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Db\ObjectEntityMapper;
+use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Object\PerformanceHandler;
@@ -52,14 +52,14 @@ class RelationHandler
     /**
      * Constructor for RelationHandler.
      *
-     * @param ObjectEntityMapper $objectEntityMapper Mapper for object entities.
+     * @param MagicMapper $objectEntityMapper Mapper for object entities.
      * @param SchemaMapper       $schemaMapper       Mapper for schemas.
      * @param PerformanceHandler $performanceHandler Handler for performance operations.
      * @param MagicRbacHandler   $rbacHandler        Handler for RBAC operations.
      * @param LoggerInterface    $logger             Logger for logging operations.
      */
     public function __construct(
-        private readonly ObjectEntityMapper $objectEntityMapper,
+        private readonly MagicMapper $objectEntityMapper,
         private readonly SchemaMapper $schemaMapper,
         private readonly PerformanceHandler $performanceHandler,
         private readonly MagicRbacHandler $rbacHandler,

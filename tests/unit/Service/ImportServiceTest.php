@@ -6,7 +6,7 @@ namespace OCA\OpenRegister\Tests\Service;
 
 use OCA\OpenRegister\Service\ImportService;
 use OCA\OpenRegister\Service\ObjectService;
-use OCA\OpenRegister\Db\ObjectEntityMapper;
+use OCA\OpenRegister\Db\UnifiedObjectMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Db\Entity\Register;
 use OCA\OpenRegister\Db\Entity\Schema;
@@ -28,7 +28,7 @@ class ImportServiceTest extends TestCase
 {
     private ImportService $importService;
     private ObjectService $objectService;
-    private ObjectEntityMapper $objectEntityMapper;
+    private UnifiedObjectMapper $objectMapper;
     private SchemaMapper $schemaMapper;
 
     protected function setUp(): void
@@ -37,12 +37,12 @@ class ImportServiceTest extends TestCase
 
         // Create mock dependencies.
         $this->objectService = $this->createMock(ObjectService::class);
-        $this->objectEntityMapper = $this->createMock(ObjectEntityMapper::class);
+        $this->objectMapper = $this->createMock(UnifiedObjectMapper::class);
         $this->schemaMapper = $this->createMock(SchemaMapper::class);
 
         // Create ImportService instance.
         $this->importService = new ImportService(
-            $this->objectEntityMapper,
+            $this->objectMapper,
             $this->schemaMapper,
             $this->objectService
         );
@@ -334,7 +334,7 @@ class ImportServiceTest extends TestCase
             ->willReturn([$existingObject, $newObject]);
         
         $importService = new ImportService(
-            $this->createMock(ObjectEntityMapper::class),
+            $this->createMock(UnifiedObjectMapper::class),
             $this->createMock(SchemaMapper::class),
             $mockObjectService
         );

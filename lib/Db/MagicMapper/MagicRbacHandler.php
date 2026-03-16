@@ -4,8 +4,8 @@
  * MagicMapper RBAC Handler
  *
  * This handler provides role-based access control (RBAC) filtering for dynamic
- * schema-based tables. It implements the same RBAC logic as ObjectEntityMapper
- * but optimized for schema-specific table structures.
+ * schema-based tables, providing RBAC logic optimized for schema-specific
+ * table structures.
  *
  * KEY RESPONSIBILITIES:
  * - Apply RBAC permission filters to dynamic table queries

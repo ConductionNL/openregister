@@ -7,7 +7,7 @@ use Exception;
 use OCA\OpenRegister\Db\AuditTrail;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Db\ObjectEntityMapper;
+use OCA\OpenRegister\Db\UnifiedObjectMapper;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
@@ -22,9 +22,9 @@ class DashboardServiceTest extends TestCase
 {
 
     /**
-     * @var ObjectEntityMapper&MockObject
+     * @var UnifiedObjectMapper&MockObject
      */
-    private ObjectEntityMapper $objectMapper;
+    private UnifiedObjectMapper $objectMapper;
 
     /**
      * @var AuditTrailMapper&MockObject
@@ -55,7 +55,7 @@ class DashboardServiceTest extends TestCase
 
     protected function setUp(): void
     {
-        $this->objectMapper = $this->createMock(ObjectEntityMapper::class);
+        $this->objectMapper = $this->createMock(UnifiedObjectMapper::class);
         $this->auditTrailMapper = $this->createMock(AuditTrailMapper::class);
         $this->webhookLogMapper = $this->createMock(WebhookLogMapper::class);
         $this->registerMapper = $this->createMock(RegisterMapper::class);

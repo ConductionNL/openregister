@@ -27,7 +27,7 @@ use stdClass;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Db\ObjectEntityMapper;
+use OCA\OpenRegister\Db\MagicMapper;
 use OCP\IDBConnection;
 use Psr\Log\LoggerInterface;
 
@@ -57,9 +57,9 @@ class SchemaService
     /**
      * Object entity mapper for object queries
      *
-     * @var ObjectEntityMapper
+     * @var MagicMapper
      */
-    private ObjectEntityMapper $objectEntityMapper;
+    private MagicMapper $objectEntityMapper;
 
     /**
      * Logger for debugging and monitoring
@@ -72,12 +72,12 @@ class SchemaService
      * SchemaService constructor
      *
      * @param SchemaMapper       $schemaMapper       Schema mapper for schema operations.
-     * @param ObjectEntityMapper $objectEntityMapper Object entity mapper for object queries.
+     * @param MagicMapper $objectEntityMapper Object entity mapper for object queries.
      * @param LoggerInterface    $logger             Logger for debugging and monitoring.
      */
     public function __construct(
         SchemaMapper $schemaMapper,
-        ObjectEntityMapper $objectEntityMapper,
+        MagicMapper $objectEntityMapper,
         LoggerInterface $logger
     ) {
         $this->schemaMapper       = $schemaMapper;

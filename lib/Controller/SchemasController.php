@@ -26,7 +26,7 @@ use DateTime;
 use GuzzleHttp\Exception\GuzzleException;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
-use OCA\OpenRegister\Db\ObjectEntityMapper;
+use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Service\DownloadService;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\OrganisationService;
@@ -82,7 +82,7 @@ class SchemasController extends Controller
      * @param IRequest            $request             HTTP request object
      * @param IAppConfig          $config              App configuration for settings
      * @param SchemaMapper        $schemaMapper        Schema mapper for database operations
-     * @param ObjectEntityMapper  $objectEntityMapper  Object entity mapper for object queries
+     * @param MagicMapper  $objectEntityMapper  Object entity mapper for object queries
      * @param DownloadService     $downloadService     Download service for file downloads
      * @param UploadService       $uploadService       Upload service for file uploads
      * @param AuditTrailMapper    $auditTrailMapper    Audit trail mapper for log statistics
@@ -101,7 +101,7 @@ class SchemasController extends Controller
         IRequest $request,
         private readonly IAppConfig $config,
         private readonly SchemaMapper $schemaMapper,
-        private readonly ObjectEntityMapper $objectEntityMapper,
+        private readonly MagicMapper $objectEntityMapper,
         private readonly DownloadService $downloadService,
         private readonly UploadService $uploadService,
         private readonly AuditTrailMapper $auditTrailMapper,

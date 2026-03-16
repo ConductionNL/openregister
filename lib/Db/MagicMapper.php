@@ -40,11 +40,11 @@ use Exception;
 use DateTime;
 use stdClass;
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Db\ObjectEntityMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
+use OCP\AppFramework\Db\Entity;
 use OCA\OpenRegister\Db\MagicMapper\MagicSearchHandler;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Db\MultipleObjectsReturnedException;
@@ -143,7 +143,7 @@ use Doctrine\DBAL\Platforms\PostgreSQLPlatform;
  * @SuppressWarnings(PHPMD.CyclomaticComplexity)
  * @SuppressWarnings(PHPMD.NPathComplexity)
  */
-class MagicMapper
+class MagicMapper extends AbstractObjectMapper
 {
     /**
      * Table name prefix for register+schema-specific tables
@@ -259,25 +259,25 @@ class MagicMapper
      * Initializes the service with required dependencies for database operations,
      * schema and register management, configuration handling, logging, and specialized handlers.
      *
-     * @param IDBConnection      $db                 Database connection for table operations
-     * @param ObjectEntityMapper $objectEntityMapper Mapper for object operations
-     * @param SchemaMapper       $schemaMapper       Mapper for schema operations
-     * @param RegisterMapper     $registerMapper     Mapper for register operations
-     * @param IConfig            $config             Nextcloud config for settings
-     * @param IEventDispatcher   $eventDispatcher    Event dispatcher for audit trail events
-     * @param IUserSession       $userSession        User session for authentication context
-     * @param IGroupManager      $groupManager       Group manager for RBAC operations
-     * @param IUserManager       $userManager        User manager for user operations
-     * @param IAppConfig         $appConfig          App configuration for feature flags
-     * @param LoggerInterface    $logger             Logger for debugging and monitoring
-     * @param SettingsService    $settingsService    Settings service for configuration
-     * @param ContainerInterface $container          Container for lazy loading services
+     * @param IDBConnection      $db               Database connection for table operations
+     * @param SchemaMapper       $schemaMapper     Mapper for schema operations
+     * @param RegisterMapper     $registerMapper   Mapper for register operations
+     * @param IConfig            $config           Nextcloud config for settings
+     * @param IEventDispatcher   $eventDispatcher  Event dispatcher for audit trail events
+     * @param IUserSession       $userSession      User session for authentication context
+     * @param IGroupManager      $groupManager     Group manager for RBAC operations
+     * @param IUserManager       $userManager      User manager for user operations
+     * @param IAppConfig         $appConfig        App configuration for feature flags
+     * @param LoggerInterface    $logger           Logger for debugging and monitoring
+     * @param SettingsService    $settingsService  Settings service for configuration
+     * @param ContainerInterface $container        Container for lazy loading services
      *
      * @SuppressWarnings(PHPMD.ExcessiveParameterList) Nextcloud DI requires constructor injection
      */
+    private static int $constructCount = 0;
+
     public function __construct(
         private readonly IDBConnection $db,
-        private readonly ObjectEntityMapper $objectEntityMapper,
         private readonly SchemaMapper $schemaMapper,
         private readonly RegisterMapper $registerMapper,
         private readonly IConfig $config,
@@ -290,6 +290,12 @@ class MagicMapper
         private readonly SettingsService $settingsService,
         private readonly ContainerInterface $container
     ) {
+        self::$constructCount++;
+        file_put_contents('/tmp/or-debug.log', "MagicMapper::__construct #".self::$constructCount."\n", FILE_APPEND);
+        if (self::$constructCount > 2) {
+            file_put_contents('/tmp/or-debug.log', "CIRCULAR! Stack:\n".(new \Exception())->getTraceAsString()."\n", FILE_APPEND);
+            return;
+        }
         // Initialize specialized handlers for modular functionality.
         $this->initializeHandlers();
     }//end __construct()
@@ -334,34 +340,15 @@ class MagicMapper
             eventDispatcher: $this->eventDispatcher
         );
 
-        // Get CacheHandler from container for facet label resolution.
-        $cacheHandler = null;
-        try {
-            $cacheHandler = $this->container->get(\OCA\OpenRegister\Service\Object\CacheHandler::class);
-        } catch (\Exception $e) {
-            $this->logger->debug(
-                message: '[MagicMapper] CacheHandler not available for MagicFacetHandler: '.$e->getMessage(),
-                context: ['file' => __FILE__, 'line' => __LINE__]
-            );
-        }
-
-        // Get ICacheFactory from container for distributed facet label caching.
-        $cacheFactory = null;
-        try {
-            $cacheFactory = $this->container->get(\OCP\ICacheFactory::class);
-        } catch (\Exception $e) {
-            $this->logger->debug(
-                message: '[MagicMapper] ICacheFactory not available for MagicFacetHandler: '.$e->getMessage(),
-                context: ['file' => __FILE__, 'line' => __LINE__]
-            );
-        }
-
+        // CacheHandler and ICacheFactory are resolved lazily via container
+        // to avoid circular DI: MagicMapper → CacheHandler → RegisterMapper → MagicMapper.
         $this->facetHandler = new MagicFacetHandler(
             db: $this->db,
             logger: $this->logger,
-            cacheHandler: $cacheHandler,
-            cacheFactory: $cacheFactory,
-            searchHandler: $this->searchHandler
+            cacheHandler: null,
+            cacheFactory: null,
+            searchHandler: $this->searchHandler,
+            container: $this->container
         );
     }//end initializeHandlers()
 
@@ -4587,19 +4574,19 @@ class MagicMapper
     }//end isMagicMappingEnabledForSchema()
 
     // ==================================================================================.
-    // OBJECTENTITY-COMPATIBLE METHODS (UnifiedObjectMapper Integration).
+    // OBJECTENTITY-COMPATIBLE METHODS (Internal Magic Table Operations).
     // ==================================================================================.
 
     /**
      * Find object in register+schema table by identifier (ID, UUID, slug, or URI).
      *
-     * This method provides ObjectEntity compatibility for the UnifiedObjectMapper.
+     * This method provides ObjectEntity compatibility for the public find() method.
      *
      * @param string|int $identifier     Object identifier (ID, UUID, slug, or URI).
      * @param Register   $register       The register context.
      * @param Schema     $schema         The schema context.
-     * @param bool       $rbac           Whether to apply RBAC.
-     * @param bool       $multitenancy   Whether to apply multi-tenancy.
+     * @param bool       $_rbac           Whether to apply RBAC.
+     * @param bool       $_multitenancy   Whether to apply multi-tenancy.
      * @param bool       $includeDeleted Whether to include soft-deleted objects.
      *
      * @throws \OCP\AppFramework\Db\DoesNotExistException If object not found.
@@ -4611,8 +4598,8 @@ class MagicMapper
         string|int $identifier,
         Register $register,
         Schema $schema,
-        bool $rbac=true,
-        bool $multitenancy=true,
+        bool $_rbac=true,
+        bool $_multitenancy=true,
         bool $includeDeleted=false
     ): ObjectEntity {
         // Ensure table exists if magic mapping is enabled.
@@ -4644,8 +4631,8 @@ class MagicMapper
                 'line'         => __LINE__,
                 'identifier'   => $identifier,
                 'tableName'    => $tableName,
-                'rbac'         => $rbac,
-                'multitenancy' => $multitenancy,
+                'rbac'         => $_rbac,
+                'multitenancy' => $_multitenancy,
             ]
         );
 
@@ -4678,12 +4665,12 @@ class MagicMapper
 
         // Apply multitenancy filtering if enabled.
         // Note: For MagicMapper, we rely on the table structure itself for multitenancy,.
-        // as the organisation column is part of the schema. The $multitenancy parameter.
+        // as the organisation column is part of the schema. The $_multitenancy parameter.
         // is primarily used to decide whether to filter at all.
         // For now, we skip adding explicit organisation filters in MagicMapper.
         // as that's handled by RBAC and the table structure.
         // Apply RBAC filtering if enabled.
-        if ($rbac === true) {
+        if ($_rbac === true) {
             // Add RBAC filtering logic here if needed.
             // Currently skipped as owner/authorization logic is complex.
         }
@@ -5447,7 +5434,7 @@ class MagicMapper
             $insertedEntity = $entity;
         }
 
-        // NOTE: Event dispatching is handled by UnifiedObjectMapper (the facade) to avoid duplicate events.
+        // NOTE: Event dispatching is handled by the public insert/update/delete methods to avoid duplicate events.
         // Do NOT dispatch ObjectCreatedEvent here.
         return $insertedEntity;
     }//end insertObjectEntity()
@@ -5552,7 +5539,7 @@ class MagicMapper
             $updatedEntity = $entity;
         }
 
-        // NOTE: Event dispatching is handled by UnifiedObjectMapper (the facade) to avoid duplicate events.
+        // NOTE: Event dispatching is handled by the public insert/update/delete methods to avoid duplicate events.
         // Do NOT dispatch ObjectUpdatedEvent here.
         return $updatedEntity;
     }//end updateObjectEntity()
@@ -5652,7 +5639,7 @@ class MagicMapper
             );
         }
 
-        // NOTE: Event dispatching is handled by UnifiedObjectMapper (the facade) to avoid duplicate events.
+        // NOTE: Event dispatching is handled by the public insert/update/delete methods to avoid duplicate events.
         // Do NOT dispatch ObjectDeletedEvent here.
         return $entity;
     }//end deleteObjectEntity()
@@ -6699,4 +6686,1773 @@ class MagicMapper
             return false;
         }//end try
     }//end columnExistsInTable()
+
+    // ==================================================================================
+    // ABSTRACT OBJECT MAPPER IMPLEMENTATION (public API facade methods)
+    // ==================================================================================
+
+    /**
+     * Extract register and schema from ObjectEntity if not explicitly provided.
+     *
+     * @param ObjectEntity  $entity   The object entity.
+     * @param Register|null $register Optional register (will be fetched if null).
+     * @param Schema|null   $schema   Optional schema (will be fetched if null).
+     *
+     * @return array{Register|null, Schema|null} Array with [register, schema].
+     */
+    private function getResolvedRegisterAndSchema(
+        ObjectEntity $entity,
+        ?Register $register=null,
+        ?Schema $schema=null
+    ): array {
+        if ($register === null && $entity->getRegister() !== null) {
+            try {
+                $register = $this->registerMapper->find((int) $entity->getRegister(), [], null, true, false);
+            } catch (Exception $e) {
+                $this->logger->warning(
+                    message: '[MagicMapper] Failed to resolve register from entity',
+                    context: [
+                        'file'       => __FILE__,
+                        'line'       => __LINE__,
+                        'registerId' => $entity->getRegister(),
+                        'error'      => $e->getMessage(),
+                    ]
+                );
+            }
+        }
+
+        if ($schema === null && $entity->getSchema() !== null) {
+            try {
+                $schema = $this->schemaMapper->find((int) $entity->getSchema(), [], null, true, false);
+            } catch (Exception $e) {
+                $this->logger->warning(
+                    message: '[MagicMapper] Failed to resolve schema from entity',
+                    context: [
+                        'file'     => __FILE__,
+                        'line'     => __LINE__,
+                        'schemaId' => $entity->getSchema(),
+                        'error'    => $e->getMessage(),
+                    ]
+                );
+            }
+        }
+
+        return [$register, $schema];
+    }//end getResolvedRegisterAndSchema()
+
+    /**
+     * Find an object entity by identifier (ID, UUID, slug, or URI).
+     *
+     * When register+schema context is available, searches the specific magic table.
+     * Otherwise searches across all magic tables.
+     *
+     * @param string|int    $identifier     Object identifier (ID, UUID, slug, or URI).
+     * @param Register|null $register       Optional register to filter by.
+     * @param Schema|null   $schema         Optional schema to filter by.
+     * @param bool          $includeDeleted Whether to include deleted objects.
+     * @param bool          $_rbac           Whether to apply RBAC checks (default: true).
+     * @param bool          $_multitenancy   Whether to apply multitenancy filtering (default: true).
+     *
+     * @return ObjectEntity The found object.
+     *
+     * @throws \OCP\AppFramework\Db\DoesNotExistException If object not found.
+     * @throws \OCP\AppFramework\Db\MultipleObjectsReturnedException If multiple objects found.
+     *
+     * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Flags control security filtering behavior
+     */
+    public function find(
+        string|int $identifier,
+        ?Register $register=null,
+        ?Schema $schema=null,
+        bool $includeDeleted=false,
+        bool $_rbac=true,
+        bool $_multitenancy=true
+    ): ObjectEntity {
+        if ($register !== null && $schema !== null) {
+            $entity = $this->findInRegisterSchemaTable(
+                identifier: $identifier,
+                register: $register,
+                schema: $schema,
+                _rbac: $_rbac,
+                _multitenancy: $_multitenancy
+            );
+            $entity->setSource('orm');
+            return $entity;
+        }
+
+        $result = $this->findAcrossAllMagicTables(
+            identifier: $identifier,
+            includeDeleted: $includeDeleted,
+            _rbac: $_rbac,
+            _multitenancy: $_multitenancy
+        );
+        $result['object']->setSource('orm');
+        return $result['object'];
+    }//end find()
+
+    /**
+     * Find an object across all storage sources (all magic tables).
+     *
+     * Searches all magic tables to find an object by its identifier without
+     * requiring register/schema context.
+     *
+     * @param string|int $identifier     Object identifier (ID, UUID, slug, or URI).
+     * @param bool       $includeDeleted Whether to include deleted objects.
+     * @param bool       $_rbac          Whether to apply RBAC checks.
+     * @param bool       $_multitenancy  Whether to apply multitenancy filtering.
+     *
+     * @return array{object: ObjectEntity, register: Register|null, schema: Schema|null}
+     *
+     * @throws \OCP\AppFramework\Db\DoesNotExistException If object not found in any source.
+     *
+     * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Flags control security filtering behavior
+     */
+    public function findAcrossAllSources(
+        string|int $identifier,
+        bool $includeDeleted=false,
+        // phpcs:ignore Squiz.NamingConventions.ValidVariableName.MemberNotCamelCaps -- named arg convention.
+        bool $_rbac=true,
+        // phpcs:ignore Squiz.NamingConventions.ValidVariableName.MemberNotCamelCaps -- named arg convention.
+        bool $_multitenancy=true
+    ): array {
+        return $this->findAcrossAllMagicTables(
+            identifier: $identifier,
+            includeDeleted: $includeDeleted,
+            _rbac: $_rbac,
+            _multitenancy: $_multitenancy
+        );
+    }//end findAcrossAllSources()
+
+    /**
+     * Find all ObjectEntities with filtering, pagination, and search.
+     *
+     * @param int|null      $limit            The number of objects to return.
+     * @param int|null      $offset           The offset of the objects to return.
+     * @param array|null    $filters          The filters to apply to the objects.
+     * @param array|null    $searchConditions The search conditions to apply to the objects.
+     * @param array|null    $searchParams     The search parameters to apply to the objects.
+     * @param array         $sort             The sort order to apply.
+     * @param string|null   $search           The search string to apply.
+     * @param array|null    $ids              Array of IDs or UUIDs to filter by.
+     * @param string|null   $uses             Value that must be present in relations.
+     * @param bool          $includeDeleted   Whether to include deleted objects.
+     * @param Register|null $register         Optional register to filter objects.
+     * @param Schema|null   $schema           Optional schema to filter objects.
+     *
+     * @return ObjectEntity[]
+     *
+     * @throws \OCP\DB\Exception If a database error occurs.
+     *
+     * @psalm-return list<ObjectEntity>
+     *
+     * @SuppressWarnings(PHPMD.BooleanArgumentFlag)    Include deleted toggle is intentional
+     * @SuppressWarnings(PHPMD.ExcessiveParameterList) Required for flexible query interface
+     */
+    public function findAll(
+        ?int $limit=null,
+        ?int $offset=null,
+        ?array $filters=null,
+        ?array $searchConditions=null,
+        ?array $searchParams=null,
+        array $sort=[],
+        ?string $search=null,
+        ?array $ids=null,
+        ?string $uses=null,
+        bool $includeDeleted=false,
+        ?Register $register=null,
+        ?Schema $schema=null
+    ): array {
+        if ($register === null || $schema === null) {
+            $this->logger->warning(
+                message: '[MagicMapper] findAll() called without register/schema context',
+                context: ['file' => __FILE__, 'line' => __LINE__]
+            );
+            return [];
+        }
+
+        $entities = $this->findAllInRegisterSchemaTable(
+            register: $register,
+            schema: $schema,
+            limit: $limit,
+            offset: $offset,
+            filters: $filters,
+            sort: $sort
+        );
+        foreach ($entities as $entity) {
+            $entity->setSource('orm');
+        }
+
+        return $entities;
+    }//end findAll()
+
+    /**
+     * Find multiple objects by their IDs or UUIDs.
+     *
+     * @param array $ids Array of IDs or UUIDs.
+     *
+     * @return ObjectEntity[]
+     *
+     * @psalm-return list<ObjectEntity>
+     */
+    public function findMultiple(array $ids): array
+    {
+        return $this->findMultipleAcrossAllMagicTables(uuids: $ids);
+    }//end findMultiple()
+
+    /**
+     * Find all objects for a given schema.
+     *
+     * Searches across all magic tables that belong to the given schema.
+     *
+     * @param int $schemaId Schema ID.
+     *
+     * @return ObjectEntity[]
+     *
+     * @psalm-return list<ObjectEntity>
+     */
+    public function findBySchema(int $schemaId): array
+    {
+        // Find all register+schema pairs that include this schema.
+        $allPairs = $this->getAllRegisterSchemaPairs();
+        $results  = [];
+
+        foreach ($allPairs as $pair) {
+            if ((int) $pair['schemaId'] !== $schemaId) {
+                continue;
+            }
+
+            try {
+                $register = $this->registerMapper->find($pair['registerId'], _multitenancy: false, _rbac: false);
+                $schema   = $this->schemaMapper->find($pair['schemaId'], _multitenancy: false, _rbac: false);
+
+                $entities = $this->findAllInRegisterSchemaTable(
+                    register: $register,
+                    schema: $schema
+                );
+                $results = array_merge($results, $entities);
+            } catch (\Exception $e) {
+                $this->logger->warning(
+                    message: '[MagicMapper] Failed to search table for findBySchema',
+                    context: [
+                        'file'       => __FILE__,
+                        'line'       => __LINE__,
+                        'registerId' => $pair['registerId'],
+                        'schemaId'   => $pair['schemaId'],
+                        'error'      => $e->getMessage(),
+                    ]
+                );
+            }
+        }
+
+        return $results;
+    }//end findBySchema()
+
+    /**
+     * Insert a new object entity with event dispatching.
+     *
+     * @param Entity        $entity   Entity to insert.
+     * @param Register|null $register Optional register for routing.
+     * @param Schema|null   $schema   Optional schema for routing.
+     *
+     * @return ObjectEntity Inserted entity.
+     *
+     * @throws Exception If insertion fails.
+     */
+    public function insert(Entity $entity, ?Register $register=null, ?Schema $schema=null): Entity
+    {
+        if ($entity instanceof ObjectEntity === false) {
+            throw new Exception('Entity must be an instance of ObjectEntity');
+        }
+
+        if ($register === null || $schema === null) {
+            [$register, $schema] = $this->getResolvedRegisterAndSchema(entity: $entity);
+        }
+
+        if ($register === null || $schema === null) {
+            throw new Exception('Cannot insert object without register and schema context');
+        }
+
+        $insertedEntity = $this->insertObjectEntity(entity: $entity, register: $register, schema: $schema);
+
+        $this->logger->debug(
+            message: '[MagicMapper] Dispatching ObjectCreatedEvent',
+            context: [
+                'file'       => __FILE__,
+                'line'       => __LINE__,
+                'entityUuid' => $insertedEntity->getUuid(),
+            ]
+        );
+        $this->eventDispatcher->dispatchTyped(new ObjectCreatedEvent(object: $insertedEntity));
+
+        return $insertedEntity;
+    }//end insert()
+
+    /**
+     * Update an existing object entity with event dispatching.
+     *
+     * @param Entity            $entity    Entity to update.
+     * @param Register|null     $register  Optional register for routing.
+     * @param Schema|null       $schema    Optional schema for routing.
+     * @param ObjectEntity|null $oldEntity Old entity for comparison.
+     *
+     * @return ObjectEntity Updated entity.
+     *
+     * @throws Exception If update fails.
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+     */
+    public function update(
+        Entity $entity,
+        ?Register $register=null,
+        ?Schema $schema=null,
+        ?ObjectEntity $oldEntity=null
+    ): Entity {
+        if ($entity instanceof ObjectEntity === false) {
+            throw new Exception('Entity must be an instance of ObjectEntity');
+        }
+
+        if ($register === null || $schema === null) {
+            [$register, $schema] = $this->getResolvedRegisterAndSchema(entity: $entity);
+        }
+
+        if ($oldEntity === null) {
+            try {
+                $oldEntity = $this->find(
+                    identifier: $entity->getUuid(),
+                    register: $register,
+                    schema: $schema,
+                    includeDeleted: false,
+                    _rbac: false,
+                    _multitenancy: false
+                );
+            } catch (\Exception $e) {
+                $this->logger->warning(
+                    message: '[MagicMapper] Could not fetch old entity for update event',
+                    context: [
+                        'file'       => __FILE__,
+                        'line'       => __LINE__,
+                        'entityId'   => $entity->getId(),
+                        'entityUuid' => $entity->getUuid(),
+                        'error'      => $e->getMessage(),
+                    ]
+                );
+                $oldEntity = $entity;
+            }
+        }
+
+        if ($register === null || $schema === null) {
+            throw new Exception('Cannot update object without register and schema context');
+        }
+
+        $updatedEntity = $this->updateObjectEntity(
+            entity: $entity,
+            register: $register,
+            schema: $schema,
+            oldEntity: $oldEntity
+        );
+
+        $this->logger->debug(
+            message: '[MagicMapper] Dispatching ObjectUpdatedEvent',
+            context: [
+                'file'       => __FILE__,
+                'line'       => __LINE__,
+                'entityUuid' => $updatedEntity->getUuid(),
+            ]
+        );
+        $this->eventDispatcher->dispatchTyped(new ObjectUpdatedEvent(newObject: $updatedEntity, oldObject: $oldEntity));
+
+        return $updatedEntity;
+    }//end update()
+
+    /**
+     * Delete an object entity with event dispatching.
+     *
+     * @param Entity $entity Entity to delete.
+     *
+     * @return ObjectEntity Deleted entity.
+     *
+     * @throws Exception If deletion fails.
+     */
+    public function delete(Entity $entity): Entity
+    {
+        if ($entity instanceof ObjectEntity === false) {
+            throw new Exception('Entity must be an instance of ObjectEntity');
+        }
+
+        [$register, $schema] = $this->getResolvedRegisterAndSchema(entity: $entity);
+
+        if ($register === null || $schema === null) {
+            throw new Exception('Cannot delete object without register and schema context');
+        }
+
+        $deletedEntity = $this->deleteObjectEntity(
+            entity: $entity,
+            register: $register,
+            schema: $schema,
+            hardDelete: true
+        );
+
+        $this->eventDispatcher->dispatchTyped(new ObjectDeletedEvent(object: $deletedEntity));
+
+        return $deletedEntity;
+    }//end delete()
+
+    /**
+     * Lock an object.
+     *
+     * @param string   $uuid         The object UUID
+     * @param int|null $lockDuration Lock duration in seconds
+     *
+     * @return array Lock result.
+     *
+     * @psalm-return array{locked: mixed, uuid: string}
+     */
+    public function lockObject(string $uuid, ?int $lockDuration=null): array
+    {
+        return $this->lockObjectEntity(uuid: $uuid, lockDuration: $lockDuration);
+    }//end lockObject()
+
+    /**
+     * Unlock an object.
+     *
+     * @param string $uuid The object UUID
+     *
+     * @return bool True on success
+     */
+    public function unlockObject(string $uuid): bool
+    {
+        return $this->unlockObjectEntity(uuid: $uuid);
+    }//end unlockObject()
+
+    /**
+     * Ultra-fast bulk save operation with automatic routing.
+     *
+     * Returns complete objects with database-computed classification (created/updated/unchanged).
+     *
+     * @param array         $insertObjects Objects to insert/upsert
+     * @param array         $updateObjects Objects to update (legacy parameter)
+     * @param Register|null $register      Optional register context
+     * @param Schema|null   $schema        Optional schema context
+     *
+     * @return array Array of complete objects with object_status field
+     *
+     * @throws \OCP\DB\Exception If a database error occurs
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+     * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
+     * @SuppressWarnings(PHPMD.NPathComplexity)
+     */
+    public function ultraFastBulkSave(
+        array $insertObjects=[],
+        array $updateObjects=[],
+        ?Register $register=null,
+        ?Schema $schema=null
+    ): array {
+        $this->logger->info(
+            message: '[MagicMapper] ultraFastBulkSave called',
+            context: [
+                'file'        => __FILE__,
+                'line'        => __LINE__,
+                'insertCount' => count($insertObjects),
+                'updateCount' => count($updateObjects),
+                'hasRegister' => $register !== null,
+                'hasSchema'   => $schema !== null,
+            ]
+        );
+
+        // MIXED SCHEMA SUPPORT: If schema is null and we have objects with different schemas,
+        // group them by register+schema and process each group separately.
+        if ($schema === null && count($insertObjects) > 0) {
+            $schemaGroups = [];
+            foreach ($insertObjects as $obj) {
+                $objSchemaId   = $obj['@self']['schema'] ?? null;
+                $objRegisterId = $obj['@self']['register'] ?? ($register?->getId());
+                if ($objSchemaId !== null) {
+                    $groupKey = "{$objRegisterId}_{$objSchemaId}";
+                    $schemaGroups[$groupKey][] = $obj;
+                }
+            }
+
+            if (count($schemaGroups) > 1) {
+                $allResults = [];
+                foreach ($schemaGroups as $groupKey => $groupObjects) {
+                    [$groupRegisterId, $groupSchemaId] = explode('_', $groupKey);
+
+                    $groupRegister = $register;
+                    $groupSchema   = null;
+
+                    if ($groupRegister === null && $groupRegisterId !== null) {
+                        try {
+                            $groupRegister = $this->registerMapper->find(id: (int) $groupRegisterId, _multitenancy: false);
+                        } catch (\Exception $e) {
+                            $this->logger->warning(
+                                message: '[MagicMapper] Failed to resolve register for group',
+                                context: ['file' => __FILE__, 'line' => __LINE__, 'id' => $groupRegisterId]
+                            );
+                        }
+                    }
+
+                    if ($groupSchemaId !== null) {
+                        try {
+                            $groupSchema = $this->schemaMapper->find(id: (int) $groupSchemaId, _multitenancy: false);
+                        } catch (\Exception $e) {
+                            $this->logger->warning(
+                                message: '[MagicMapper] Failed to resolve schema for group',
+                                context: ['file' => __FILE__, 'line' => __LINE__, 'id' => $groupSchemaId]
+                            );
+                        }
+                    }
+
+                    $groupResults = $this->ultraFastBulkSaveSingleSchema(
+                        insertObjects: $groupObjects,
+                        updateObjects: [],
+                        register: $groupRegister,
+                        schema: $groupSchema
+                    );
+
+                    $allResults = array_merge($allResults, $groupResults);
+                }
+
+                return $allResults;
+            }
+        }
+
+        return $this->ultraFastBulkSaveSingleSchema(
+            insertObjects: $insertObjects,
+            updateObjects: $updateObjects,
+            register: $register,
+            schema: $schema
+        );
+    }//end ultraFastBulkSave()
+
+    /**
+     * Ultra-fast bulk save for a single schema (internal method).
+     *
+     * @param array         $insertObjects Objects to insert/upsert
+     * @param array         $updateObjects Objects to update
+     * @param Register|null $register      Register context
+     * @param Schema|null   $schema        Schema context
+     *
+     * @return array Array of complete objects with object_status field
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+     */
+    private function ultraFastBulkSaveSingleSchema(
+        array $insertObjects,
+        array $updateObjects,
+        ?Register $register,
+        ?Schema $schema
+    ): array {
+        if ($register === null || $schema === null) {
+            $firstObject = $insertObjects[0] ?? [];
+            $registerId  = $firstObject['@self']['register'] ?? null;
+            $schemaId    = $firstObject['@self']['schema'] ?? null;
+
+            if ($registerId !== null && $register === null) {
+                try {
+                    $register = $this->registerMapper->find(id: $registerId, _multitenancy: false);
+                } catch (\Exception $e) {
+                    $this->logger->warning(
+                        message: '[MagicMapper] Failed to resolve register',
+                        context: ['file' => __FILE__, 'line' => __LINE__, 'id' => $registerId]
+                    );
+                }
+            }
+
+            if ($schemaId !== null && $schema === null) {
+                try {
+                    $schema = $this->schemaMapper->find(id: $schemaId, _multitenancy: false);
+                } catch (\Exception $e) {
+                    $this->logger->warning(
+                        message: '[MagicMapper] Failed to resolve schema',
+                        context: ['file' => __FILE__, 'line' => __LINE__, 'id' => $schemaId]
+                    );
+                }
+            }
+        }
+
+        if ($register === null || $schema === null) {
+            throw new Exception('Cannot bulk save without register and schema context');
+        }
+
+        $tableName = 'openregister_table_'.$register->getId().'_'.$schema->getId();
+
+        $this->ensureTableForRegisterSchema(register: $register, schema: $schema);
+
+        $result = $this->bulkUpsert(
+            objects: $insertObjects,
+            register: $register,
+            schema: $schema,
+            tableName: $tableName
+        );
+
+        return $result;
+    }//end ultraFastBulkSaveSingleSchema()
+
+    /**
+     * Delete multiple objects.
+     *
+     * @param array $uuids      Object UUIDs to delete
+     * @param bool  $hardDelete Whether to hard delete
+     *
+     * @return array Delete results
+     *
+     * @psalm-return list<mixed>
+     *
+     * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Hard delete toggle controls permanent vs soft delete
+     */
+    public function deleteObjects(array $uuids=[], bool $hardDelete=false): array
+    {
+        return $this->deleteObjectsByUuids(uuids: $uuids);
+    }//end deleteObjects()
+
+    /**
+     * Get statistics for objects across all magic tables.
+     *
+     * @param int|array|null $registerId Register ID filter
+     * @param int|array|null $schemaId   Schema ID filter
+     * @param array          $exclude    Exclusions
+     *
+     * @return int[] Statistics data
+     *
+     * @psalm-return array{total: int, size: int, invalid: int, deleted: int, locked: int}
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+     * @SuppressWarnings(PHPMD.NPathComplexity)
+     */
+    public function getStatistics(
+        int|array|null $registerId=null,
+        int|array|null $schemaId=null,
+        array $exclude=[]
+    ): array {
+        $total   = 0;
+        $deleted = 0;
+        $locked  = 0;
+
+        $allPairs = $this->getAllRegisterSchemaPairs();
+
+        foreach ($allPairs as $pair) {
+            $pairRegisterId = (int) $pair['registerId'];
+            $pairSchemaId   = (int) $pair['schemaId'];
+
+            // Apply register filter.
+            if ($registerId !== null) {
+                if (is_array($registerId) === true) {
+                    if (in_array($pairRegisterId, $registerId, true) === false) {
+                        continue;
+                    }
+                } elseif ($pairRegisterId !== $registerId) {
+                    continue;
+                }
+            }
+
+            // Apply schema filter.
+            if ($schemaId !== null) {
+                if (is_array($schemaId) === true) {
+                    if (in_array($pairSchemaId, $schemaId, true) === false) {
+                        continue;
+                    }
+                } elseif ($pairSchemaId !== $schemaId) {
+                    continue;
+                }
+            }
+
+            // Apply exclusion filter.
+            $excluded = false;
+            foreach ($exclude as $ex) {
+                if (isset($ex['register'], $ex['schema'])
+                    && (int) $ex['register'] === $pairRegisterId
+                    && (int) $ex['schema'] === $pairSchemaId
+                ) {
+                    $excluded = true;
+                    break;
+                }
+            }
+
+            if ($excluded === true) {
+                continue;
+            }
+
+            try {
+                $register = $this->registerMapper->find($pairRegisterId, _multitenancy: false, _rbac: false);
+                $schema   = $this->schemaMapper->find($pairSchemaId, _multitenancy: false, _rbac: false);
+
+                $count = $this->countObjectsInRegisterSchemaTable(
+                    query: [],
+                    register: $register,
+                    schema: $schema
+                );
+                $total += $count;
+            } catch (\Exception $e) {
+                // Skip tables that can't be queried.
+            }
+        }
+
+        return [
+            'total'   => $total,
+            'size'    => 0,
+            'invalid' => 0,
+            'deleted' => $deleted,
+            'locked'  => $locked,
+        ];
+    }//end getStatistics()
+
+    /**
+     * Get register chart data.
+     *
+     * @param int|null $registerId Register ID filter
+     * @param int|null $schemaId   Schema ID filter
+     *
+     * @return (int|mixed|string)[][] Chart data
+     *
+     * @psalm-return array{labels: array<'Unknown'|mixed>, series: array<int>}
+     */
+    public function getRegisterChartData(?int $registerId=null, ?int $schemaId=null): array
+    {
+        $labels = [];
+        $series = [];
+
+        $allPairs = $this->getAllRegisterSchemaPairs();
+        $registerCounts = [];
+
+        foreach ($allPairs as $pair) {
+            $pairRegisterId = (int) $pair['registerId'];
+            $pairSchemaId   = (int) $pair['schemaId'];
+
+            if ($registerId !== null && $pairRegisterId !== $registerId) {
+                continue;
+            }
+
+            if ($schemaId !== null && $pairSchemaId !== $schemaId) {
+                continue;
+            }
+
+            try {
+                $register = $this->registerMapper->find($pairRegisterId, _multitenancy: false, _rbac: false);
+                $schema   = $this->schemaMapper->find($pairSchemaId, _multitenancy: false, _rbac: false);
+
+                $count = $this->countObjectsInRegisterSchemaTable(
+                    query: [],
+                    register: $register,
+                    schema: $schema
+                );
+
+                $regName = $register->getTitle() ?? 'Register '.$pairRegisterId;
+                if (isset($registerCounts[$regName]) === false) {
+                    $registerCounts[$regName] = 0;
+                }
+
+                $registerCounts[$regName] += $count;
+            } catch (\Exception $e) {
+                // Skip.
+            }
+        }
+
+        foreach ($registerCounts as $name => $count) {
+            $labels[] = $name;
+            $series[] = $count;
+        }
+
+        return ['labels' => $labels, 'series' => $series];
+    }//end getRegisterChartData()
+
+    /**
+     * Get schema chart data.
+     *
+     * @param int|null $registerId Register ID filter
+     * @param int|null $schemaId   Schema ID filter
+     *
+     * @return (int|mixed|string)[][] Chart data
+     *
+     * @psalm-return array{labels: array<'Unknown'|mixed>, series: array<int>}
+     */
+    public function getSchemaChartData(?int $registerId=null, ?int $schemaId=null): array
+    {
+        $labels = [];
+        $series = [];
+
+        $allPairs = $this->getAllRegisterSchemaPairs();
+        $schemaCounts = [];
+
+        foreach ($allPairs as $pair) {
+            $pairRegisterId = (int) $pair['registerId'];
+            $pairSchemaId   = (int) $pair['schemaId'];
+
+            if ($registerId !== null && $pairRegisterId !== $registerId) {
+                continue;
+            }
+
+            if ($schemaId !== null && $pairSchemaId !== $schemaId) {
+                continue;
+            }
+
+            try {
+                $register = $this->registerMapper->find($pairRegisterId, _multitenancy: false, _rbac: false);
+                $schema   = $this->schemaMapper->find($pairSchemaId, _multitenancy: false, _rbac: false);
+
+                $count = $this->countObjectsInRegisterSchemaTable(
+                    query: [],
+                    register: $register,
+                    schema: $schema
+                );
+
+                $schName = $schema->getTitle() ?? 'Schema '.$pairSchemaId;
+                if (isset($schemaCounts[$schName]) === false) {
+                    $schemaCounts[$schName] = 0;
+                }
+
+                $schemaCounts[$schName] += $count;
+            } catch (\Exception $e) {
+                // Skip.
+            }
+        }
+
+        foreach ($schemaCounts as $name => $count) {
+            $labels[] = $name;
+            $series[] = $count;
+        }
+
+        return ['labels' => $labels, 'series' => $series];
+    }//end getSchemaChartData()
+
+    /**
+     * Get simple facets.
+     *
+     * Routes to the correct faceting method based on query parameters.
+     *
+     * @param array $query Search query containing register, schema, and _facets configuration.
+     *
+     * @return array Facets data.
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+     * @SuppressWarnings(PHPMD.NPathComplexity)
+     */
+    public function getSimpleFacets(array $query=[]): array
+    {
+        $registerId  = $query['@self']['register'] ?? $query['_register'] ?? $query['register'] ?? null;
+        $schemaIds   = $query['@self']['schemas'] ?? $query['_schemas'] ?? null;
+        $schemaId    = $query['@self']['schema'] ?? $query['_schema'] ?? $query['schema'] ?? null;
+        $registerIds = $query['@self']['registers'] ?? $query['_registers'] ?? null;
+
+        // Multi-schema faceting.
+        if ($schemaIds !== null && is_array($schemaIds) === true
+            && ($registerId !== null
+            || ($registerIds !== null
+            && is_array($registerIds) === true
+            && count($registerIds) > 0))
+        ) {
+            if ($registerIds !== null && is_array($registerIds) === true && count($registerIds) > 0) {
+                $allRegisterIds = array_map('intval', $registerIds);
+            } else {
+                $allRegisterIds = [(int) $registerId];
+            }
+
+            return $this->getSimpleFacetsMultiSchema(
+                query: $query,
+                registerIds: $allRegisterIds,
+                schemaIds: array_map('intval', $schemaIds)
+            );
+        }
+
+        // Single schema faceting.
+        if ($registerId !== null && $schemaId !== null) {
+            try {
+                $register = $this->registerMapper->find((int) $registerId, _multitenancy: false, _rbac: false);
+                $schema   = $this->schemaMapper->find((int) $schemaId, _multitenancy: false, _rbac: false);
+
+                return $this->getSimpleFacetsFromRegisterSchemaTable(
+                    query: $query,
+                    register: $register,
+                    schema: $schema
+                );
+            } catch (\Exception $e) {
+                $this->logger->warning(
+                    message: '[MagicMapper] Failed to resolve register/schema for facets',
+                    context: ['file' => __FILE__, 'line' => __LINE__, 'error' => $e->getMessage()]
+                );
+                return [];
+            }
+        }
+
+        return [];
+    }//end getSimpleFacets()
+
+    /**
+     * Get facets aggregated across multiple schemas and registers.
+     *
+     * @param array $query       The search query.
+     * @param array $registerIds Array of register IDs to search.
+     * @param array $schemaIds   Array of schema IDs to aggregate.
+     *
+     * @return array Merged facet results.
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+     * @SuppressWarnings(PHPMD.NPathComplexity)
+     */
+    private function getSimpleFacetsMultiSchema(array $query, array $registerIds, array $schemaIds): array
+    {
+        $registers = [];
+        foreach ($registerIds as $regId) {
+            try {
+                $register = $this->registerMapper->find($regId, _multitenancy: false, _rbac: false);
+                $registers[$register->getId()] = $register;
+            } catch (\Exception $e) {
+                $this->logger->warning(
+                    message: '[MagicMapper] Failed to find register for multi-schema facets',
+                    context: ['file' => __FILE__, 'line' => __LINE__, 'registerId' => $regId, 'error' => $e->getMessage()]
+                );
+            }
+        }
+
+        if (empty($registers) === true) {
+            return [];
+        }
+
+        $registerSchemaPairs = [];
+        foreach ($schemaIds as $sId) {
+            try {
+                $schema = $this->schemaMapper->find($sId, _multitenancy: false, _rbac: false);
+
+                $matchedRegister = null;
+                foreach ($registers as $register) {
+                    $registerSchemas = $register->getSchemas();
+                    if (is_string($registerSchemas) === true) {
+                        $registerSchemas = json_decode($registerSchemas, true) ?? [];
+                    }
+
+                    if (is_array($registerSchemas) === true) {
+                        $schemaIdStr = (string) $sId;
+                        $schemaIdInt = (int) $sId;
+                        $inValues    = in_array($schemaIdInt, $registerSchemas, false)
+                            || in_array($schemaIdStr, $registerSchemas, false);
+                        $inKeys      = array_key_exists($schemaIdInt, $registerSchemas)
+                            || array_key_exists($schemaIdStr, $registerSchemas);
+                        if ($inValues === true || $inKeys === true) {
+                            $matchedRegister = $register;
+                            break;
+                        }
+                    }
+                }
+
+                if ($matchedRegister === null) {
+                    $matchedRegister = reset($registers);
+                }
+
+                $registerSchemaPairs[] = ['register' => $matchedRegister, 'schema' => $schema];
+            } catch (\Exception $e) {
+                $this->logger->warning(
+                    message: '[MagicMapper] Failed to find schema for multi-schema facets',
+                    context: ['file' => __FILE__, 'line' => __LINE__, 'schemaId' => $sId, 'error' => $e->getMessage()]
+                );
+            }
+        }
+
+        if (empty($registerSchemaPairs) === true) {
+            return [];
+        }
+
+        return $this->getSimpleFacetsUnion(
+            query: $query,
+            registerSchemaPairs: $registerSchemaPairs
+        );
+    }//end getSimpleFacetsMultiSchema()
+
+    /**
+     * Get facetable fields from schemas.
+     *
+     * Collects facetable fields from all schemas referenced in the query.
+     *
+     * @param array $baseQuery Base query
+     *
+     * @return array[] Facetable fields
+     *
+     * @psalm-return array<string, array>
+     */
+    public function getFacetableFieldsFromSchemas(array $baseQuery=[]): array
+    {
+        $facetableFields = [];
+        $schemaIds       = $baseQuery['@self']['schemas'] ?? $baseQuery['_schemas'] ?? null;
+        $schemaId        = $baseQuery['@self']['schema'] ?? $baseQuery['_schema'] ?? $baseQuery['schema'] ?? null;
+
+        if ($schemaId !== null && $schemaIds === null) {
+            $schemaIds = [$schemaId];
+        }
+
+        if ($schemaIds === null || is_array($schemaIds) === false) {
+            return $facetableFields;
+        }
+
+        foreach ($schemaIds as $sId) {
+            try {
+                $schema     = $this->schemaMapper->find((int) $sId, _multitenancy: false, _rbac: false);
+                $properties = $schema->getProperties();
+                if (is_string($properties) === true) {
+                    $properties = json_decode($properties, true) ?? [];
+                }
+
+                if (is_array($properties) === false) {
+                    continue;
+                }
+
+                foreach ($properties as $propName => $propConfig) {
+                    if (isset($facetableFields[$propName]) === false) {
+                        $facetableFields[$propName] = $propConfig;
+                    }
+                }
+            } catch (\Exception $e) {
+                // Skip missing schemas.
+            }
+        }
+
+        return $facetableFields;
+    }//end getFacetableFieldsFromSchemas()
+
+    /**
+     * Search objects.
+     *
+     * @param array       $query         Search query
+     * @param string|null $activeOrgUuid Organisation UUID
+     * @param bool        $_rbac          Apply RBAC
+     * @param bool        $_multitenancy  Apply multitenancy
+     * @param array|null  $ids           Specific IDs
+     * @param string|null $uses          Uses filter
+     *
+     * @return ObjectEntity[]|int
+     *
+     * @psalm-return list<OCA\OpenRegister\Db\ObjectEntity>
+     *
+     * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Flags control security filtering behavior
+     */
+    public function searchObjects(
+        array $query=[],
+        ?string $activeOrgUuid=null,
+        bool $_rbac=true,
+        bool $_multitenancy=true,
+        ?array $ids=null,
+        ?string $uses=null
+    ): array | int {
+        $registerId = $query['@self']['register'] ?? $query['_register'] ?? $query['register'] ?? null;
+        $schemaId   = $query['@self']['schema'] ?? $query['_schema'] ?? $query['schema'] ?? null;
+
+        if ($registerId !== null && $schemaId !== null) {
+            try {
+                $register = $this->registerMapper->find((int) $registerId, _multitenancy: false, _rbac: false);
+                $schema   = $this->schemaMapper->find((int) $schemaId, _multitenancy: false, _rbac: false);
+
+                $query['_rbac']         = $_rbac;
+                $query['_multitenancy'] = $_multitenancy;
+                return $this->searchObjectsInRegisterSchemaTable(
+                    query: $query,
+                    register: $register,
+                    schema: $schema
+                );
+            } catch (\Exception $e) {
+                $this->logger->warning(
+                    message: '[MagicMapper] Failed to resolve register/schema for search',
+                    context: ['file' => __FILE__, 'line' => __LINE__, 'error' => $e->getMessage()]
+                );
+            }
+        }
+
+        $this->logger->warning(
+            message: '[MagicMapper] searchObjects() called without register/schema context',
+            context: ['file' => __FILE__, 'line' => __LINE__]
+        );
+        return [];
+    }//end searchObjects()
+
+    /**
+     * Count search objects.
+     *
+     * @param array       $query         Search query
+     * @param string|null $activeOrgUuid Organisation UUID
+     * @param bool        $_rbac          Apply RBAC
+     * @param bool        $_multitenancy  Apply multitenancy
+     * @param array|null  $ids           Specific IDs
+     * @param string|null $uses          Uses filter
+     *
+     * @return int Object count
+     *
+     * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Flags control security filtering behavior
+     */
+    public function countSearchObjects(
+        array $query=[],
+        ?string $activeOrgUuid=null,
+        bool $_rbac=true,
+        bool $_multitenancy=true,
+        ?array $ids=null,
+        ?string $uses=null
+    ): int {
+        $registerId = $query['@self']['register'] ?? $query['_register'] ?? $query['register'] ?? null;
+        $schemaId   = $query['@self']['schema'] ?? $query['_schema'] ?? $query['schema'] ?? null;
+
+        if ($registerId !== null && $schemaId !== null) {
+            try {
+                $register = $this->registerMapper->find((int) $registerId, _multitenancy: false, _rbac: false);
+                $schema   = $this->schemaMapper->find((int) $schemaId, _multitenancy: false, _rbac: false);
+
+                return $this->countObjectsInRegisterSchemaTable(
+                    query: $query,
+                    register: $register,
+                    schema: $schema
+                );
+            } catch (\Exception $e) {
+                $this->logger->warning(
+                    message: '[MagicMapper] Failed to resolve register/schema for count',
+                    context: ['file' => __FILE__, 'line' => __LINE__, 'error' => $e->getMessage()]
+                );
+            }
+        }
+
+        return 0;
+    }//end countSearchObjects()
+
+    /**
+     * Count all objects with optional filtering.
+     *
+     * @param array|null    $filters  Filters
+     * @param Schema|null   $schema   Schema filter
+     * @param Register|null $register Register filter
+     *
+     * @return int Object count
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+     */
+    public function countAll(?array $filters=null, ?Schema $schema=null, ?Register $register=null): int
+    {
+        // If register+schema context provided, count in the specific table.
+        if ($register !== null && $schema !== null) {
+            return $this->countObjectsInRegisterSchemaTable(
+                query: $filters ?? [],
+                register: $register,
+                schema: $schema
+            );
+        }
+
+        // Count across all magic tables.
+        $total    = 0;
+        $allPairs = $this->getAllRegisterSchemaPairs();
+
+        foreach ($allPairs as $pair) {
+            if ($register !== null && (int) $pair['registerId'] !== $register->getId()) {
+                continue;
+            }
+
+            if ($schema !== null && (int) $pair['schemaId'] !== $schema->getId()) {
+                continue;
+            }
+
+            try {
+                $pairRegister = $this->registerMapper->find($pair['registerId'], _multitenancy: false, _rbac: false);
+                $pairSchema   = $this->schemaMapper->find($pair['schemaId'], _multitenancy: false, _rbac: false);
+
+                $total += $this->countObjectsInRegisterSchemaTable(
+                    query: $filters ?? [],
+                    register: $pairRegister,
+                    schema: $pairSchema
+                );
+            } catch (\Exception $e) {
+                // Skip.
+            }
+        }
+
+        return $total;
+    }//end countAll()
+
+    /**
+     * Get query builder instance.
+     *
+     * @return IQueryBuilder Query builder instance
+     */
+    public function getQueryBuilder(): IQueryBuilder
+    {
+        return $this->db->getQueryBuilder();
+    }//end getQueryBuilder()
+
+    /**
+     * Get max allowed packet size.
+     *
+     * @return int Max packet size
+     */
+    public function getMaxAllowedPacketSize(): int
+    {
+        try {
+            $result = $this->db->executeQuery("SHOW VARIABLES LIKE 'max_allowed_packet'");
+            $row    = $result->fetch();
+            if ($row !== false && isset($row['Value']) === true) {
+                return (int) $row['Value'];
+            }
+        } catch (\Exception $e) {
+            $this->logger->warning(
+                message: '[MagicMapper] Failed to get max_allowed_packet',
+                context: ['file' => __FILE__, 'line' => __LINE__, 'error' => $e->getMessage()]
+            );
+        }
+
+        // Default to 16MB.
+        return 16777216;
+    }//end getMaxAllowedPacketSize()
+
+    /**
+     * Optimized paginated search that loads register/schema once and performs both search and count.
+     *
+     * @param array       $searchQuery   Query for search (with _limit, _offset).
+     * @param array       $countQuery    Query for count (without pagination).
+     * @param string|null $activeOrgUuid Active organization UUID.
+     * @param bool        $_rbac          Whether to apply RBAC.
+     * @param bool        $_multitenancy  Whether to apply multitenancy.
+     * @param array|null  $ids           Optional ID filter.
+     * @param string|null $uses          Optional uses filter.
+     *
+     * @return array{results: ObjectEntity[], total: int, register: ?array, schema: ?array}
+     *
+     * @SuppressWarnings(PHPMD.BooleanArgumentFlag)      Flags control security filtering behavior
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+     * @SuppressWarnings(PHPMD.NPathComplexity)
+     * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
+     */
+    public function searchObjectsPaginated(
+        array $searchQuery=[],
+        array $countQuery=[],
+        ?string $activeOrgUuid=null,
+        bool $_rbac=true,
+        bool $_multitenancy=true,
+        ?array $ids=null,
+        ?string $uses=null
+    ): array {
+        $registerId = $searchQuery['@self']['register'] ?? $searchQuery['_register'] ?? $searchQuery['register'] ?? null;
+        $schemaId   = $searchQuery['@self']['schema'] ?? $searchQuery['_schema'] ?? $searchQuery['schema'] ?? null;
+        $schemaIds  = $searchQuery['@self']['schemas'] ?? $searchQuery['_schemas'] ?? null;
+
+        // Handle case where @self.schema is an array.
+        if (is_array($schemaId) === true && count($schemaId) > 0) {
+            $schemaIds = $schemaId;
+            $schemaId  = null;
+        }
+
+        $register       = null;
+        $schema         = null;
+        $registersCache = [];
+        $schemasCache   = [];
+
+        $registerIds = $searchQuery['@self']['registers'] ?? $searchQuery['_registers'] ?? null;
+
+        // Multi-schema search.
+        $isMultiSchemaSearch = $schemaId === null
+            && $schemaIds !== null
+            && is_array($schemaIds) === true
+            && count($schemaIds) > 0
+            && ($registerId !== null
+                || ($registerIds !== null
+                    && is_array($registerIds) === true
+                    && count($registerIds) > 0));
+        if ($isMultiSchemaSearch === true) {
+            if ($registerIds !== null && is_array($registerIds) === true && count($registerIds) > 0) {
+                $allRegisterIds = array_map('intval', $registerIds);
+            } else {
+                $allRegisterIds = [(int) $registerId];
+            }
+
+            return $this->searchObjectsPaginatedMultiSchema(
+                searchQuery: $searchQuery,
+                countQuery: $countQuery,
+                registerIds: $allRegisterIds,
+                schemaIds: $schemaIds,
+                activeOrgUuid: $activeOrgUuid,
+                _rbac: $_rbac,
+                _multitenancy: $_multitenancy,
+                ids: $ids,
+                uses: $uses
+            );
+        }
+
+        // Single schema search.
+        if ($registerId !== null && $schemaId !== null) {
+            try {
+                $register = $this->registerMapper->find((int) $registerId, _multitenancy: false, _rbac: false);
+                $schema   = $this->schemaMapper->find((int) $schemaId, _multitenancy: false, _rbac: false);
+
+                $registersCache[$register->getId()] = $register->jsonSerialize();
+                $schemasCache[$schema->getId()]     = $schema->jsonSerialize();
+            } catch (\Exception $e) {
+                $this->logger->warning(
+                    message: '[MagicMapper] Failed to resolve register/schema',
+                    context: ['file' => __FILE__, 'line' => __LINE__, 'error' => $e->getMessage()]
+                );
+            }
+        }
+
+        if ($register !== null && $schema !== null) {
+            $searchQuery['_rbac']         = $_rbac;
+            $searchQuery['_multitenancy'] = $_multitenancy;
+
+            $searchStart = microtime(true);
+            $results     = $this->searchObjectsInRegisterSchemaTable(
+                query: $searchQuery,
+                register: $register,
+                schema: $schema
+            );
+            $searchTime  = round((microtime(true) - $searchStart) * 1000, 2);
+
+            $countQuery['_rbac']         = $_rbac;
+            $countQuery['_multitenancy'] = $_multitenancy;
+
+            $countStart = microtime(true);
+            $total      = $this->countObjectsInRegisterSchemaTable(
+                query: $countQuery,
+                register: $register,
+                schema: $schema
+            );
+            $countTime  = round((microtime(true) - $countStart) * 1000, 2);
+
+            $ignoredFilters = $this->getIgnoredFilters();
+
+            return [
+                'results'        => $results,
+                'total'          => $total,
+                'registers'      => $registersCache,
+                'schemas'        => $schemasCache,
+                'ignoredFilters' => $ignoredFilters,
+                'metrics'        => [
+                    'search_ms' => $searchTime,
+                    'count_ms'  => $countTime,
+                ],
+            ];
+        }
+
+        // ID search across all tables.
+        $queryIds   = $searchQuery['_ids'] ?? null;
+        $isIdSearch = $queryIds !== null
+            && is_array($queryIds) === true
+            && count($queryIds) > 0;
+
+        if ($isIdSearch === true) {
+            $idResults = $this->findMultipleAcrossAllMagicTables(
+                uuids: $queryIds,
+                includeDeleted: false
+            );
+
+            return $this->getGlobalSearchResult(results: $idResults, searchQuery: $searchQuery, _rbac: $_rbac);
+        }
+
+        // Global relations search.
+        $relationsContains = $searchQuery['_relations_contains'] ?? null;
+        $isGlobalRelSearch = $registerId === null
+            && $schemaId === null
+            && $relationsContains !== null
+            && is_string($relationsContains) === true
+            && empty($relationsContains) === false;
+
+        if ($isGlobalRelSearch === true) {
+            $relResults = $this->findByRelationAcrossAllMagicTables(
+                uuid: $relationsContains,
+                includeDeleted: false
+            );
+
+            return $this->getGlobalSearchResult(results: $relResults, searchQuery: $searchQuery, _rbac: $_rbac);
+        }
+
+        // Global text search.
+        $searchTerm         = $searchQuery['_search'] ?? null;
+        $isGlobalTextSearch = $registerId === null
+            && $schemaId === null
+            && $searchTerm !== null
+            && is_string($searchTerm) === true
+            && trim($searchTerm) !== '';
+
+        if ($isGlobalTextSearch === true) {
+            return $this->searchObjectsGloballyBySearch(
+                searchQuery: $searchQuery,
+                countQuery: $countQuery,
+                activeOrgUuid: $activeOrgUuid,
+                _rbac: $_rbac,
+                _multitenancy: $_multitenancy
+            );
+        }
+
+        $this->logger->warning(
+            message: '[MagicMapper] searchObjectsPaginated() called without register/schema context',
+            context: ['file' => __FILE__, 'line' => __LINE__]
+        );
+
+        return [
+            'results'   => [],
+            'total'     => 0,
+            'registers' => $registersCache,
+            'schemas'   => $schemasCache,
+        ];
+    }//end searchObjectsPaginated()
+
+    /**
+     * Search objects across multiple schemas using UNION queries.
+     *
+     * @param array       $searchQuery   Search query parameters.
+     * @param array       $countQuery    Count query parameters.
+     * @param array       $registerIds   Register IDs to search.
+     * @param array       $schemaIds     Array of schema IDs to search.
+     * @param string|null $activeOrgUuid Organisation UUID.
+     * @param bool        $_rbac          Apply RBAC.
+     * @param bool        $_multitenancy  Apply multitenancy.
+     * @param array|null  $ids           Specific IDs to filter.
+     * @param string|null $uses          Uses filter.
+     *
+     * @return array{results: ObjectEntity[], total: int, registers: array, schemas: array}
+     *
+     * @SuppressWarnings(PHPMD.BooleanArgumentFlag)      Flags control security filtering behavior
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+     * @SuppressWarnings(PHPMD.NPathComplexity)
+     * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
+     * @psalm-suppress UnusedParam Parameters reserved for future per-schema security filtering.
+     */
+    private function searchObjectsPaginatedMultiSchema(
+        array $searchQuery,
+        array $countQuery,
+        array $registerIds,
+        array $schemaIds,
+        ?string $activeOrgUuid=null,
+        bool $_rbac=true,
+        bool $_multitenancy=true,
+        ?array $ids=null,
+        ?string $uses=null
+    ): array {
+        $registersCache = [];
+        $schemasCache   = [];
+
+        $registers = [];
+        foreach ($registerIds as $regId) {
+            try {
+                $register = $this->registerMapper->find($regId, _multitenancy: false, _rbac: false);
+                $registers[$register->getId()]      = $register;
+                $registersCache[$register->getId()] = $register->jsonSerialize();
+            } catch (\Exception $e) {
+                $this->logger->warning(
+                    message: '[MagicMapper] Failed to find register for multi-schema search',
+                    context: ['file' => __FILE__, 'line' => __LINE__, 'registerId' => $regId, 'error' => $e->getMessage()]
+                );
+            }
+        }
+
+        if (empty($registers) === true) {
+            return [
+                'results'   => [],
+                'total'     => 0,
+                'registers' => [],
+                'schemas'   => [],
+            ];
+        }
+
+        $registerSchemaPairs = [];
+        $totalCount          = 0;
+
+        foreach ($schemaIds as $sId) {
+            try {
+                $schema = $this->schemaMapper->find((int) $sId, _multitenancy: false, _rbac: false);
+                $schemasCache[$schema->getId()] = $schema->jsonSerialize();
+
+                $matchedRegister = null;
+                foreach ($registers as $register) {
+                    $registerSchemas = $register->getSchemas();
+                    if (is_string($registerSchemas) === true) {
+                        $registerSchemas = json_decode($registerSchemas, true) ?? [];
+                    }
+
+                    if (is_array($registerSchemas) === true) {
+                        $schemaIdStr = (string) $sId;
+                        $schemaIdInt = (int) $sId;
+                        $inValues    = in_array($schemaIdInt, $registerSchemas, false)
+                            || in_array($schemaIdStr, $registerSchemas, false);
+                        $inKeys      = array_key_exists($schemaIdInt, $registerSchemas)
+                            || array_key_exists($schemaIdStr, $registerSchemas);
+                        if ($inValues === true || $inKeys === true) {
+                            $matchedRegister = $register;
+                            break;
+                        }
+                    }
+                }
+
+                if ($matchedRegister === null) {
+                    $matchedRegister = reset($registers);
+                }
+
+                $registerSchemaPairs[] = ['register' => $matchedRegister, 'schema' => $schema];
+
+                $schemaCountQuery                  = $countQuery;
+                $schemaCountQuery['_rbac']         = $_rbac;
+                $schemaCountQuery['_multitenancy'] = $_multitenancy;
+                $schemaCount = $this->countObjectsInRegisterSchemaTable(
+                    query: $schemaCountQuery,
+                    register: $matchedRegister,
+                    schema: $schema
+                );
+                $totalCount += $schemaCount;
+            } catch (\Exception $e) {
+                $this->logger->warning(
+                    message: '[MagicMapper] Failed to load schema for multi-schema search',
+                    context: ['file' => __FILE__, 'line' => __LINE__, 'schemaId' => $sId, 'error' => $e->getMessage()]
+                );
+            }
+        }
+
+        if (empty($registerSchemaPairs) === true) {
+            return [
+                'results'        => [],
+                'total'          => 0,
+                'registers'      => $registersCache,
+                'schemas'        => $schemasCache,
+                'ignoredFilters' => [],
+                'source'         => 'magic_mapper',
+            ];
+        }
+
+        $unionQuery                  = $searchQuery;
+        $unionQuery['_rbac']         = $_rbac;
+        $unionQuery['_multitenancy'] = $_multitenancy;
+
+        $results = $this->searchAcrossMultipleTables(
+            query: $unionQuery,
+            registerSchemaPairs: $registerSchemaPairs
+        );
+
+        return [
+            'results'        => $results,
+            'total'          => $totalCount,
+            'registers'      => $registersCache,
+            'schemas'        => $schemasCache,
+            'ignoredFilters' => [],
+            'source'         => 'magic_mapper',
+        ];
+    }//end searchObjectsPaginatedMultiSchema()
+
+    /**
+     * Filter objects by schema RBAC permissions.
+     *
+     * @param array $objects      Array of ObjectEntity objects to filter.
+     * @param array $schemasCache Cache of schema data by ID.
+     * @param bool  $_rbac         Whether RBAC is enabled.
+     *
+     * @return array Filtered array of ObjectEntity objects.
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+     * @SuppressWarnings(PHPMD.NPathComplexity)
+     */
+    private function filterBySchemaRbac(array $objects, array &$schemasCache, bool $_rbac): array
+    {
+        if ($_rbac === false) {
+            return $objects;
+        }
+
+        if ($this->rbacHandler->isAdmin() === true) {
+            return $objects;
+        }
+
+        $schemaEntityCache = [];
+        $filtered          = [];
+
+        foreach ($objects as $object) {
+            if (($object instanceof ObjectEntity) === false) {
+                $filtered[] = $object;
+                continue;
+            }
+
+            $schemaId = $object->getSchema();
+
+            if ($schemaId === null) {
+                $filtered[] = $object;
+                continue;
+            }
+
+            if (isset($schemaEntityCache[$schemaId]) === false) {
+                try {
+                    $schema = $this->schemaMapper->find((int) $schemaId, _multitenancy: false, _rbac: false);
+                    $schemaEntityCache[$schemaId] = $schema;
+
+                    if (isset($schemasCache[$schemaId]) === false) {
+                        $schemasCache[$schemaId] = $schema->jsonSerialize();
+                    }
+                } catch (\Exception $e) {
+                    continue;
+                }
+            }
+
+            $schema = $schemaEntityCache[$schemaId];
+
+            $objectData = $object->getObject() ?? [];
+            $objectData['_organisation'] = $object->getOrganisation();
+            $objectData['_owner']        = $object->getOwner();
+
+            if ($this->rbacHandler->hasPermission(
+                schema: $schema,
+                action: 'read',
+                objectOwner: $object->getOwner(),
+                objectData: $objectData
+            ) === true
+            ) {
+                $filtered[] = $object;
+            }
+        }
+
+        return $filtered;
+    }//end filterBySchemaRbac()
+
+    /**
+     * Build a global search result with register/schema caches, RBAC filtering, and pagination.
+     *
+     * @param array $results     Array of ObjectEntity results from the storage search.
+     * @param array $searchQuery The original search query parameters (for _limit/_offset).
+     * @param bool  $_rbac        Whether to apply RBAC filtering.
+     *
+     * @return array{results: array, total: int, registers: array, schemas: array}
+     */
+    private function getGlobalSearchResult(array $results, array $searchQuery, bool $_rbac): array
+    {
+        $registersCache = [];
+        $schemasCache   = [];
+
+        foreach ($results as $result) {
+            if (($result instanceof ObjectEntity) === false) {
+                continue;
+            }
+
+            $regId = $result->getRegister();
+            $schId = $result->getSchema();
+
+            if ($regId !== null && isset($registersCache[$regId]) === false) {
+                try {
+                    $reg = $this->registerMapper->find(id: (int) $regId, _multitenancy: false, _rbac: false);
+                    $registersCache[$reg->getId()] = $reg->jsonSerialize();
+                } catch (\Exception $e) {
+                    // Skip if register not found.
+                }
+            }
+
+            if ($schId !== null && isset($schemasCache[$schId]) === false) {
+                try {
+                    $sch = $this->schemaMapper->find((int) $schId, _multitenancy: false, _rbac: false);
+                    $schemasCache[$sch->getId()] = $sch->jsonSerialize();
+                } catch (\Exception $e) {
+                    // Skip if schema not found.
+                }
+            }
+        }
+
+        $results = $this->filterBySchemaRbac(objects: $results, schemasCache: $schemasCache, _rbac: $_rbac);
+
+        $total = count($results);
+
+        $limit   = $searchQuery['_limit'] ?? 1000;
+        $offset  = $searchQuery['_offset'] ?? 0;
+        $results = array_slice($results, $offset, $limit);
+
+        $finalSchemaIds   = [];
+        $finalRegisterIds = [];
+        foreach ($results as $object) {
+            $schId = $object->getSchema();
+            $regId = $object->getRegister();
+            if ($schId !== null) {
+                $finalSchemaIds[$schId] = true;
+            }
+
+            if ($regId !== null) {
+                $finalRegisterIds[$regId] = true;
+            }
+        }
+
+        $schemasCache   = array_intersect_key($schemasCache, $finalSchemaIds);
+        $registersCache = array_intersect_key($registersCache, $finalRegisterIds);
+
+        return [
+            'results'   => $results,
+            'total'     => $total,
+            'registers' => $registersCache,
+            'schemas'   => $schemasCache,
+        ];
+    }//end getGlobalSearchResult()
+
+    /**
+     * Search for objects across ALL magic tables using a text search term.
+     *
+     * @param array       $searchQuery   The search query parameters (must contain _search).
+     * @param array       $countQuery    The count query parameters.
+     * @param string|null $activeOrgUuid The active organisation UUID for multitenancy.
+     * @param bool        $_rbac          Whether to apply RBAC filtering.
+     * @param bool        $_multitenancy  Whether to apply multitenancy filtering.
+     *
+     * @return array Search results with pagination info.
+     *
+     * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Flags control security filtering behavior
+     */
+    private function searchObjectsGloballyBySearch(
+        array $searchQuery,
+        array $countQuery,
+        ?string $activeOrgUuid=null,
+        bool $_rbac=true,
+        bool $_multitenancy=true
+    ): array {
+        $registersCache      = [];
+        $schemasCache        = [];
+        $registerSchemaPairs = [];
+
+        $idPairs = $this->getAllRegisterSchemaPairs();
+
+        foreach ($idPairs as $idPair) {
+            try {
+                $regId  = $idPair['registerId'];
+                $schId  = $idPair['schemaId'];
+
+                $register = $this->registerMapper->find($regId, _multitenancy: false, _rbac: false);
+                $schema   = $this->schemaMapper->find($schId, _multitenancy: false, _rbac: false);
+
+                if (isset($registersCache[$regId]) === false) {
+                    $registersCache[$regId] = $register->jsonSerialize();
+                }
+
+                if (isset($schemasCache[$schId]) === false) {
+                    $schemasCache[$schId] = $schema->jsonSerialize();
+                }
+
+                $registerSchemaPairs[] = ['register' => $register, 'schema' => $schema];
+            } catch (\Exception $e) {
+                continue;
+            }
+        }
+
+        if (empty($registerSchemaPairs) === true) {
+            return [
+                'results'   => [],
+                'total'     => 0,
+                'registers' => $registersCache,
+                'schemas'   => $schemasCache,
+                '@self'     => ['source' => 'magic_mapper'],
+            ];
+        }
+
+        $unionQuery                  = $searchQuery;
+        $unionQuery['_rbac']         = $_rbac;
+        $unionQuery['_multitenancy'] = $_multitenancy;
+
+        $results = $this->searchAcrossMultipleTables(
+            query: $unionQuery,
+            registerSchemaPairs: $registerSchemaPairs
+        );
+
+        $countQuery['_rbac']         = $_rbac;
+        $countQuery['_multitenancy'] = $_multitenancy;
+        $totalCount = 0;
+        foreach ($registerSchemaPairs as $pair) {
+            $totalCount += $this->countObjectsInRegisterSchemaTable(
+                query: $countQuery,
+                register: $pair['register'],
+                schema: $pair['schema']
+            );
+        }
+
+        return [
+            'results'        => $results,
+            'total'          => $totalCount,
+            'registers'      => $registersCache,
+            'schemas'        => $schemasCache,
+            'ignoredFilters' => [],
+            '@self'          => ['source' => 'magic_mapper'],
+        ];
+    }//end searchObjectsGloballyBySearch()
 }//end class

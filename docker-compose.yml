@@ -623,6 +623,7 @@ services:
       - ../procest:/var/www/html/custom_apps/procest
       - ../pipelinq:/var/www/html/custom_apps/pipelinq
       - ../zaakafhandelapp:/var/www/html/custom_apps/zaakafhandelapp
+      - ../larpingapp:/var/www/html/custom_apps/larpingapp
     environment:
       # Database configuration (PostgreSQL)
       - POSTGRES_DB=nextcloud

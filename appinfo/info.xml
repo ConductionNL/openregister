@@ -103,11 +103,13 @@ Vrij en open source onder de EUPL-licentie.
 		<admin-section>OCA\OpenRegister\Sections\OpenRegisterAdmin</admin-section>
 	</settings>
 
+	<!-- TEMPORARILY DISABLED: Commands trigger circular DI during occ bootstrap
 	<commands>
 		<command>OCA\OpenRegister\Command\SolrDebugCommand</command>
 		<command>OCA\OpenRegister\Command\SolrManagementCommand</command>
 		<command>OCA\OpenRegister\Command\MigrateStorageCommand</command>
 	</commands>
+	-->
 
 	<notification>
 		<service>OCA\OpenRegister\Notification\Notifier</service>

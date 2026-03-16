@@ -23,7 +23,6 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Controller;
 
 use OCA\OpenRegister\Db\AuditTrailMapper;
-use OCA\OpenRegister\Db\ObjectEntityMapper;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Exception\CustomValidationException;
@@ -99,7 +98,6 @@ class ObjectsController extends Controller
      * @param IAppConfig         $config             The app configuration object
      * @param IAppManager        $appManager         The app manager
      * @param ContainerInterface $container          The DI container
-     * @param ObjectEntityMapper $objectEntityMapper The object entity mapper
      * @param RegisterMapper     $registerMapper     The register mapper
      * @param SchemaMapper       $schemaMapper       The schema mapper
      * @param AuditTrailMapper   $auditTrailMapper   The audit trail mapper
@@ -121,7 +119,6 @@ class ObjectsController extends Controller
         private readonly IAppConfig $config,
         private readonly IAppManager $appManager,
         private readonly ContainerInterface $container,
-        private readonly ObjectEntityMapper $objectEntityMapper,
         private readonly RegisterMapper $registerMapper,
         private readonly SchemaMapper $schemaMapper,
         private readonly AuditTrailMapper $auditTrailMapper,
@@ -528,7 +525,7 @@ class ObjectsController extends Controller
             'offset'  => $offset,
             'page'    => $page,
             'filters' => $params,
-            'sort'    => ($params['order'] ?? $params['_order'] ?? []),
+            'sort'    => $this->normalizeOrderParameter($params['order'] ?? $params['_order'] ?? []),
             '_search' => ($params['_search'] ?? null),
             '_extend' => $this->normalizeExtendParameter(extend: $params['extend'] ?? $params['_extend'] ?? null),
             '_fields' => ($params['fields'] ?? $params['_fields'] ?? null),
@@ -536,6 +533,33 @@ class ObjectsController extends Controller
             'ids'     => $ids,
         ];
     }//end getConfig()
+
+    /**
+     * Normalize order parameter from request.
+     *
+     * The _order parameter may arrive as a JSON-encoded string from URL query
+     * parameters (e.g., _order={"deadline":"asc"}). This method ensures it
+     * is always returned as an array.
+     *
+     * @param mixed $order The order parameter from the request.
+     *
+     * @return array The normalized order array.
+     */
+    private function normalizeOrderParameter(mixed $order): array
+    {
+        if (is_array($order) === true) {
+            return $order;
+        }
+
+        if (is_string($order) === true && $order !== '') {
+            $decoded = json_decode($order, true);
+            if (is_array($decoded) === true) {
+                return $decoded;
+            }
+        }
+
+        return [];
+    }//end normalizeOrderParameter()
 
     /**
      * Normalize extend parameter for backwards compatibility
@@ -1386,7 +1410,7 @@ class ObjectsController extends Controller
             }//end try
         }//end if
 
-        // Build search query and execute via normal route (blob storage or SOLR).
+        // Build search query and execute via normal route (magic tables or SOLR).
         $query = $objectService->buildSearchQuery($this->request->getParams());
 
         // **INTELLIGENT SOURCE SELECTION**: ObjectService automatically chooses optimal source.
@@ -1702,7 +1726,7 @@ class ObjectsController extends Controller
             );
 
             // TODO: Unlock the object after saving using LockingHandler through ObjectService.
-            // The unlockObject() method on ObjectEntityMapper is deprecated.
+            // The unlockObject() method on the old ObjectEntityMapper is deprecated.
             // For now, skipping unlock to allow CRUD operations to complete.
         } catch (ValidationException | CustomValidationException $exception) {
             // Handle validation errors.
@@ -2266,13 +2290,16 @@ class ObjectsController extends Controller
             $objectService->setRegister(register: $register);
             $objectService->setSchema(schema: $schema);
 
-            $context      = $this->objectEntityMapper->findAcrossAllSources(
-                identifier: $id,
-                includeDeleted: false,
+            $objectEntity = $objectService->find(
+                id: $id,
+                register: $register,
+                schema: $schema,
                 _rbac: false,
                 _multitenancy: false
             );
-            $objectEntity = $context['object'];
+            if ($objectEntity === null) {
+                return new JSONResponse(data: ['error' => 'Object not found'], statusCode: 404);
+            }
 
             $deleteHandler = $objectService->getDeleteHandler();
             $analysis      = $deleteHandler->canDelete($objectEntity);
@@ -2402,7 +2429,7 @@ class ObjectsController extends Controller
         $result = $objectService->getObjectUses(
             objectId: $id,
             query: $searchQuery,
-            rbac: true,
+            _rbac: true,
             _multitenancy: true
         );
 
@@ -2449,7 +2476,7 @@ class ObjectsController extends Controller
         $result = $objectService->getObjectUsedBy(
             objectId: $id,
             query: $searchQuery,
-            rbac: true,
+            _rbac: true,
             _multitenancy: true
         );
 
@@ -3343,60 +3370,29 @@ class ObjectsController extends Controller
     }//end isUuid()
 
     /**
-     * Clear all blob storage objects
+     * Clear all blob storage objects (deprecated)
      *
-     * This endpoint deletes all objects stored in blob storage mode (openregister_objects table).
-     * Magic Mapper objects are NOT affected by this operation.
+     * The blob objects table has been retired. All objects now live in per-schema
+     * magic tables. This endpoint is kept for backwards compatibility but is a no-op.
      *
      * @NoAdminRequired
      * @NoCSRFRequired
      *
-     * @return JSONResponse JSON response with deletion results
+     * @return JSONResponse JSON response indicating the operation is no longer applicable
      *
      * @psalm-return JSONResponse
+     *
+     * @deprecated Blob storage has been retired; this endpoint is a no-op.
      */
     public function clearBlob(): JSONResponse
     {
-        try {
-            $this->logger->info(
-                message: '[ObjectsController] Starting clear blob storage objects operation',
-                context: ['file' => __FILE__, 'line' => __LINE__]
-            );
-
-            // Use the object entity mapper to delete all blob objects.
-            $result = $this->objectEntityMapper->clearBlobObjects();
-
-            $this->logger->info(
-                message: '[ObjectsController] Successfully cleared blob storage objects',
-                context: ['file' => __FILE__, 'line' => __LINE__, 'deleted' => $result['deleted'] ?? 0]
-            );
-
-            return new JSONResponse(
-                data: [
-                    'success' => true,
-                    'deleted' => $result['deleted'] ?? 0,
-                    'message' => 'Successfully cleared blob storage objects',
-                ]
-            );
-        } catch (Exception $e) {
-            $this->logger->error(
-                message: '[ObjectsController] Failed to clear blob storage objects',
-                context: [
-                    'file'  => __FILE__,
-                    'line'  => __LINE__,
-                    'error' => $e->getMessage(),
-                    'trace' => $e->getTraceAsString(),
-                ]
-            );
-
-            return new JSONResponse(
-                data: [
-                    'success' => false,
-                    'error'   => $e->getMessage(),
-                ],
-                statusCode: 500
-            );
-        }//end try
+        return new JSONResponse(
+            data: [
+                'success' => true,
+                'deleted' => 0,
+                'message' => 'Blob storage has been retired. All objects now use magic tables.',
+            ]
+        );
     }//end clearBlob()
 
     /**

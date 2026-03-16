@@ -26,7 +26,7 @@ use DateTime;
 use OCA\OpenRegister\Db\Mapping;
 use OCA\OpenRegister\Db\MappingMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Db\ObjectEntityMapper;
+use OCA\OpenRegister\Db\UnifiedObjectMapper;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
@@ -65,7 +65,7 @@ class ServicesIntegrationTest extends TestCase
     private IDBConnection $db;
     private RegisterMapper $registerMapper;
     private SchemaMapper $schemaMapper;
-    private ObjectEntityMapper $objectEntityMapper;
+    private UnifiedObjectMapper $objectMapper;
     private ?Register $testRegister = null;
     private ?Schema $testSchema = null;
 
@@ -115,7 +115,7 @@ class ServicesIntegrationTest extends TestCase
         $this->db = \OC::$server->get(IDBConnection::class);
         $this->registerMapper = \OC::$server->get(RegisterMapper::class);
         $this->schemaMapper = \OC::$server->get(SchemaMapper::class);
-        $this->objectEntityMapper = \OC::$server->get(ObjectEntityMapper::class);
+        $this->objectMapper = \OC::$server->get(UnifiedObjectMapper::class);
 
         $this->createTestRegisterAndSchema();
     }
@@ -305,7 +305,7 @@ class ServicesIntegrationTest extends TestCase
         $object->setOwner('admin');
         $object->setOrganisation('default');
 
-        $inserted = $this->objectEntityMapper->insert($object);
+        $inserted = $this->objectMapper->insert($object);
         $this->createdObjectUuids[] = $uuid;
         return $inserted;
     }

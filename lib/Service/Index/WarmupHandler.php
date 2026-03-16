@@ -20,7 +20,6 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Index;
 
 use Exception;
-use OCA\OpenRegister\Db\ObjectEntityMapper;
 use OCA\OpenRegister\Service\SolrSchemaService;
 use OCP\IDBConnection;
 use Psr\Log\LoggerInterface;
@@ -55,13 +54,6 @@ class WarmupHandler
     private readonly BulkIndexer $bulkIndexer;
 
     /**
-     * Object mapper.
-     *
-     * @var ObjectEntityMapper
-     */
-    private readonly ObjectEntityMapper $objectMapper;
-
-    /**
      * Database connection.
      *
      * @var IDBConnection
@@ -80,7 +72,6 @@ class WarmupHandler
      *
      * @param SearchBackendInterface $searchBackend Search backend
      * @param BulkIndexer            $bulkIndexer   Bulk indexer
-     * @param ObjectEntityMapper     $objectMapper  Object mapper
      * @param IDBConnection          $db            Database connection
      * @param LoggerInterface        $logger        Logger
      *
@@ -89,13 +80,11 @@ class WarmupHandler
     public function __construct(
         SearchBackendInterface $searchBackend,
         BulkIndexer $bulkIndexer,
-        ObjectEntityMapper $objectMapper,
         IDBConnection $db,
         LoggerInterface $logger
     ) {
         $this->searchBackend = $searchBackend;
         $this->bulkIndexer   = $bulkIndexer;
-        $this->objectMapper  = $objectMapper;
         $this->db            = $db;
         $this->logger        = $logger;
     }//end __construct()

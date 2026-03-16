@@ -15,7 +15,7 @@
 namespace OCA\OpenRegister\Service\Object;
 
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Db\ObjectEntityMapper;
+use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\FileService;
@@ -45,12 +45,12 @@ class MergeHandler
     /**
      * Constructor for MergeHandler.
      *
-     * @param ObjectEntityMapper $objectEntityMapper Mapper for object entities.
+     * @param MagicMapper $objectEntityMapper Mapper for object entities.
      * @param FileService        $fileService        Service for file operations.
      * @param IUserSession       $userSession        User session for tracking deletions.
      */
     public function __construct(
-        private readonly ObjectEntityMapper $objectEntityMapper,
+        private readonly MagicMapper $objectEntityMapper,
         private readonly FileService $fileService,
         private readonly IUserSession $userSession
     ) {
@@ -124,7 +124,7 @@ class MergeHandler
         ];
 
         try {
-            // Fetch both objects with context (searches both blob and magic tables).
+            // Fetch both objects with context (searches across all magic tables).
             $sourceContext = null;
             $targetContext = null;
 

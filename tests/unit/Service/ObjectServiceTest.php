@@ -21,7 +21,7 @@
 namespace OCA\OpenRegister\Tests\Unit\Service;
 
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Db\ObjectEntityMapper;
+use OCA\OpenRegister\Db\UnifiedObjectMapper;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
@@ -87,8 +87,8 @@ class ObjectServiceTest extends TestCase
     /** @var MockObject|SchemaMapper */
     private $schemaMapper;
 
-    /** @var MockObject|ObjectEntityMapper */
-    private $objectEntityMapper;
+    /** @var MockObject|UnifiedObjectMapper */
+    private $objectMapper;
 
     /** @var MockObject|FileService */
     private $fileService;
@@ -127,7 +127,7 @@ class ObjectServiceTest extends TestCase
         $this->depublishHandler = $this->createMock(DepublishObject::class);
         $this->registerMapper = $this->createMock(RegisterMapper::class);
         $this->schemaMapper = $this->createMock(SchemaMapper::class);
-        $this->objectEntityMapper = $this->createMock(ObjectEntityMapper::class);
+        $this->objectMapper = $this->createMock(UnifiedObjectMapper::class);
         $this->fileService = $this->createMock(FileService::class);
         $this->userSession = $this->createMock(IUserSession::class);
         $this->searchTrailService = $this->createMock(SearchTrailService::class);
@@ -155,7 +155,7 @@ class ObjectServiceTest extends TestCase
             $this->depublishHandler,
             $this->registerMapper,
             $this->schemaMapper,
-            $this->objectEntityMapper,
+            $this->objectMapper,
             $this->fileService,
             $this->userSession,
             $this->searchTrailService
@@ -312,7 +312,7 @@ class ObjectServiceTest extends TestCase
         $existingObject->setUuid($uuid);
         $existingObject->setFolder(null);
 
-        $this->objectEntityMapper
+        $this->objectMapper
             ->method('find')
             ->with($uuid)
             ->willReturn($existingObject);
@@ -499,7 +499,7 @@ class ObjectServiceTest extends TestCase
         $existingObject->setUuid($uuid);
         $existingObject->setFolder(null);
 
-        $this->objectEntityMapper
+        $this->objectMapper
             ->method('find')
             ->with($uuid)
             ->willReturn($existingObject);
@@ -553,7 +553,7 @@ class ObjectServiceTest extends TestCase
         $data = ['name' => 'Test Object'];
 
         // Mock that object doesn't exist.
-        $this->objectEntityMapper
+        $this->objectMapper
             ->method('find')
             ->with($uuid)
             ->willThrowException(new DoesNotExistException('Object not found'));
@@ -737,13 +737,13 @@ class ObjectServiceTest extends TestCase
         $existingObject->setUpdated(new \DateTime('2024-01-01 10:00:00'));
         $existingObject->setObject(['name' => 'Original Object']);
 
-        // Mock the objectEntityMapper to return existing objects.
-        $this->objectEntityMapper
+        // Mock the objectMapper to return existing objects.
+        $this->objectMapper
             ->method('findAll')
             ->willReturn(['existing-uuid-123' => $existingObject]);
 
         // Mock successful save operation.
-        $this->objectEntityMapper
+        $this->objectMapper
             ->method('saveObjects')
             ->willReturn(['new-uuid-456', 'existing-uuid-123']);
 
@@ -762,7 +762,7 @@ class ObjectServiceTest extends TestCase
         $updatedObject->setUpdated(new \DateTime()); // This should be updated
         $updatedObject->setObject(['name' => 'Updated Object']);
 
-        $this->objectEntityMapper
+        $this->objectMapper
             ->method('find')
             ->willReturnMap([
                 ['new-uuid-456', null, null, false, true, true, $newObject],

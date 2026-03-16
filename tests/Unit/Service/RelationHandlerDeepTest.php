@@ -20,7 +20,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service;
 
 use OCA\OpenRegister\Db\MagicMapper\MagicRbacHandler;
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Db\ObjectEntityMapper;
+use OCA\OpenRegister\Db\UnifiedObjectMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Object\PerformanceHandler;
@@ -37,7 +37,7 @@ class RelationHandlerDeepTest extends TestCase
 
     private RelationHandler $handler;
 
-    private MockObject|ObjectEntityMapper $objectEntityMapper;
+    private MockObject|UnifiedObjectMapper $objectMapper;
 
     private MockObject|SchemaMapper $schemaMapper;
 
@@ -55,14 +55,14 @@ class RelationHandlerDeepTest extends TestCase
      */
     protected function setUp(): void
     {
-        $this->objectEntityMapper = $this->createMock(ObjectEntityMapper::class);
+        $this->objectMapper = $this->createMock(UnifiedObjectMapper::class);
         $this->schemaMapper       = $this->createMock(SchemaMapper::class);
         $this->performanceHandler = $this->createMock(PerformanceHandler::class);
         $this->rbacHandler        = $this->createMock(MagicRbacHandler::class);
         $this->logger             = $this->createMock(LoggerInterface::class);
 
         $this->handler = new RelationHandler(
-            $this->objectEntityMapper,
+            $this->objectMapper,
             $this->schemaMapper,
             $this->performanceHandler,
             $this->rbacHandler,
@@ -320,7 +320,7 @@ class RelationHandlerDeepTest extends TestCase
         }
 
         // The method will cap at 200 and then batch load.
-        $this->objectEntityMapper->method('findAll')->willReturn([]);
+        $this->objectMapper->method('findAll')->willReturn([]);
 
         $result = $this->handler->bulkLoadRelationshipsBatched($ids);
         // Should still work (returns empty because mock returns []).
@@ -340,7 +340,7 @@ class RelationHandlerDeepTest extends TestCase
         $obj->method('getUuid')->willReturn('uuid-1');
         $obj->method('getId')->willReturn(1);
 
-        $this->objectEntityMapper->method('findAll')->willReturn([$obj]);
+        $this->objectMapper->method('findAll')->willReturn([$obj]);
 
         $result = $this->handler->bulkLoadRelationshipsBatched(['uuid-1']);
         $this->assertArrayHasKey('uuid-1', $result);
@@ -356,7 +356,7 @@ class RelationHandlerDeepTest extends TestCase
      */
     public function testBulkLoadRelationshipsBatchedBatchException(): void
     {
-        $this->objectEntityMapper->method('findAll')
+        $this->objectMapper->method('findAll')
             ->willThrowException(new \Exception('DB error'));
 
         // Should not throw — continues past failed batch.
@@ -390,7 +390,7 @@ class RelationHandlerDeepTest extends TestCase
      */
     public function testLoadRelationshipChunkOptimizedException(): void
     {
-        $this->objectEntityMapper->method('findAll')
+        $this->objectMapper->method('findAll')
             ->willThrowException(new \Exception('Query failed'));
 
         $result = $this->handler->loadRelationshipChunkOptimized(['uuid-1']);
@@ -407,7 +407,7 @@ class RelationHandlerDeepTest extends TestCase
     public function testLoadRelationshipChunkOptimizedReturns(): void
     {
         $obj = $this->createMock(ObjectEntity::class);
-        $this->objectEntityMapper->method('findAll')->willReturn([$obj]);
+        $this->objectMapper->method('findAll')->willReturn([$obj]);
 
         $result = $this->handler->loadRelationshipChunkOptimized(['uuid-1']);
         $this->assertCount(1, $result);
@@ -431,7 +431,7 @@ class RelationHandlerDeepTest extends TestCase
             'contracts' => ['c1', 'c2', 'c3'],
         ]);
 
-        $this->objectEntityMapper->method('find')->willReturn($obj);
+        $this->objectMapper->method('find')->willReturn($obj);
 
         $result = $this->handler->getContracts('obj-1');
         $this->assertEquals(3, $result['total']);
@@ -454,7 +454,7 @@ class RelationHandlerDeepTest extends TestCase
             'contracts' => ['c1', 'c2', 'c3', 'c4', 'c5'],
         ]);
 
-        $this->objectEntityMapper->method('find')->willReturn($obj);
+        $this->objectMapper->method('find')->willReturn($obj);
 
         $result = $this->handler->getContracts('obj-1', ['_limit' => 2, '_offset' => 1]);
         $this->assertEquals(5, $result['total']);
@@ -475,7 +475,7 @@ class RelationHandlerDeepTest extends TestCase
         $obj = $this->createMock(ObjectEntity::class);
         $obj->method('getObject')->willReturn([]);
 
-        $this->objectEntityMapper->method('find')->willReturn($obj);
+        $this->objectMapper->method('find')->willReturn($obj);
 
         $result = $this->handler->getContracts('obj-1');
         $this->assertEquals(0, $result['total']);
@@ -491,7 +491,7 @@ class RelationHandlerDeepTest extends TestCase
      */
     public function testGetContractsException(): void
     {
-        $this->objectEntityMapper->method('find')
+        $this->objectMapper->method('find')
             ->willThrowException(new \Exception('Not found'));
 
         $result = $this->handler->getContracts('obj-1');

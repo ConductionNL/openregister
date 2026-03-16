@@ -38,7 +38,7 @@ use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
-use OCA\OpenRegister\Db\UnifiedObjectMapper;
+use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Service\Configuration\ImportHandler;
 use OCA\OpenRegister\Service\Configuration\UploadHandler;
 use OCA\OpenRegister\Service\ObjectService;
@@ -2380,20 +2380,20 @@ class ImportHandlerTest extends TestCase
 
 
     /**
-     * setUnifiedObjectMapper() stores the unified object mapper.
+     * setObjectMapper() stores the object mapper for routing.
      */
-    public function testSetUnifiedObjectMapper(): void
+    public function testSetObjectMapper(): void
     {
-        $unifiedMapper = $this->createMock(UnifiedObjectMapper::class);
-        $this->handler->setUnifiedObjectMapper($unifiedMapper);
+        $objectMapper = $this->createMock(MagicMapper::class);
+        $this->handler->setObjectMapper($objectMapper);
 
         $ref  = new ReflectionClass($this->handler);
-        $prop = $ref->getProperty('unifiedObjectMapper');
+        $prop = $ref->getProperty('objectMapperForRouting');
         $prop->setAccessible(true);
 
-        $this->assertSame($unifiedMapper, $prop->getValue($this->handler));
+        $this->assertSame($objectMapper, $prop->getValue($this->handler));
 
-    }//end testSetUnifiedObjectMapper()
+    }//end testSetMagicMapper()
 
 
     // =========================================================================
@@ -3911,9 +3911,9 @@ class ImportHandlerTest extends TestCase
 
 
     /**
-     * importSeedData() uses UnifiedObjectMapper when set for both lookup and insert.
+     * importSeedData() uses MagicMapper when set for both lookup and insert.
      */
-    public function testImportFromJsonUseUnifiedObjectMapperForSeedData(): void
+    public function testImportFromJsonUseMagicMapperForSeedData(): void
     {
         $configuration = $this->makeConfiguration(1);
         $configuration->setRegisters([20]);
@@ -3934,7 +3934,7 @@ class ImportHandlerTest extends TestCase
         $this->registerMapper->method('createFromArray')->willReturn($register);
         $this->registerMapper->method('update')->willReturn($register);
 
-        $unifiedMapper = $this->createMock(UnifiedObjectMapper::class);
+        $unifiedMapper = $this->createMock(MagicMapper::class);
 
         // find() throws DoesNotExistException → create path.
         $unifiedMapper->method('find')
@@ -3946,7 +3946,7 @@ class ImportHandlerTest extends TestCase
             ->method('insert')
             ->willReturn($createdObject);
 
-        $this->handler->setUnifiedObjectMapper($unifiedMapper);
+        $this->handler->setObjectMapper($unifiedMapper);
 
         $data = [
             'appId'   => 'myapp',
@@ -3975,7 +3975,7 @@ class ImportHandlerTest extends TestCase
 
         $this->assertContains(555, $result['objects']);
 
-    }//end testImportFromJsonUseUnifiedObjectMapperForSeedData()
+    }//end testImportFromJsonUseMagicMapperForSeedData()
 
 
     /**

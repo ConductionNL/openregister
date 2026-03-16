@@ -33,7 +33,7 @@ use ReflectionClass;
 use InvalidArgumentException;
 use JsonSerializable;
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Db\UnifiedObjectMapper;
+use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Service\FacetableAnalyzer;
 use OCA\OpenRegister\Service\FileService;
 use OCA\OpenRegister\Db\Register;
@@ -41,7 +41,6 @@ use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Db\ViewMapper;
-use OCA\OpenRegister\Service\Object\BulkOperationsHandler;
 use OCA\OpenRegister\Service\Object\CacheHandler;
 use OCA\OpenRegister\Service\Schemas\SchemaCacheHandler;
 use OCA\OpenRegister\Service\Schemas\FacetCacheHandler;
@@ -199,7 +198,6 @@ class ObjectService
      * @param AuditHandler                   $auditHandler        Handler for audit trail operations.
      * @param RelationHandler                $relationHandler     Handler for object relationships.
      * @param MergeHandler                   $mergeHandler        Handler for merge and migration.
-     * @param BulkOperationsHandler          $bulkOpsHandler      Handler for bulk operations.
      * @param FacetHandler                   $facetHandler        Handler for facet operations.
      * @param MetadataHandler                $metadataHandler     Handler for metadata operations.
      * @param PerformanceOptimizationHandler $perfOptHandler      Handler for performance optimization.
@@ -212,7 +210,7 @@ class ObjectService
      * @param RegisterMapper                 $registerMapper      Mapper for register operations.
      * @param SchemaMapper                   $schemaMapper        Mapper for schema operations.
      * @param ViewMapper                     $viewMapper          Mapper for view operations.
-     * @param UnifiedObjectMapper            $objectMapper        Unified mapper for object
+     * @param MagicMapper            $objectMapper        Unified mapper for object
      *                                                            operations (routes to magic tables).
      * @param FileService                    $fileService         Service for file operations.
      * @param IUserSession                   $userSession         User session for getting current user.
@@ -245,8 +243,7 @@ class ObjectService
         private readonly RelationHandler $relationHandler,
         private readonly MergeHandler $mergeHandler,
         // REFACTORED: CrudHandler removed - was unimplemented stub causing circular dependency.
-        // REFACTORED: BulkOperationsHandler re-enabled - has no circular dependencies (only uses handlers/mappers).
-        private readonly BulkOperationsHandler $bulkOpsHandler,
+        // REFACTORED: BulkOperationsHandler removed - retired with blob objects table.
         // TODO: CIRCULAR DEPENDENCY ISSUE - These handlers still cause timeouts.
         // Temporarily disabled until full architectural refactoring is complete.
         // See DEBUGGING_REGISTER_CREATION_TIMEOUT.md for details.
@@ -266,7 +263,7 @@ class ObjectService
         private readonly RegisterMapper $registerMapper,
         private readonly SchemaMapper $schemaMapper,
         private readonly ViewMapper $viewMapper,
-        private readonly UnifiedObjectMapper $objectMapper,
+        private readonly MagicMapper $objectMapper,
         private readonly FileService $fileService,
         private readonly IUserSession $userSession,
         private readonly SearchTrailService $searchTrailService,
@@ -324,7 +321,7 @@ class ObjectService
             action: $action,
             userId: $userId,
             objectOwner: $objectOwner,
-            rbac: $_rbac,
+            _rbac: $_rbac,
             object: $object
         );
     }//end checkPermission()
@@ -512,7 +509,7 @@ class ObjectService
     {
         if (is_string($object) === true || is_int($object) === true) {
             // Look up the object by ID or UUID.
-            // Use UnifiedObjectMapper when register and schema context are available
+            // Use MagicMapper when register and schema context are available
             // (routes to magic tables for better performance).
             if ($this->currentRegister !== null && $this->currentSchema !== null) {
                 $object = $this->objectMapper->find(
@@ -521,7 +518,7 @@ class ObjectService
                     schema: $this->currentSchema
                 );
             } else {
-                // Fall back to ObjectEntityMapper for blob storage when no context.
+                // Fall back to MagicMapper without register/schema context.
                 $object = $this->objectMapper->find($object);
             }
         }
@@ -958,7 +955,7 @@ class ObjectService
      */
     public function findByRelations(string $search, bool $partialMatch=true): array
     {
-        // Use the findByRelation method from the ObjectEntityMapper to find objects by their relations.
+        // Use the findByRelation method from MagicMapper to find objects by their relations.
         return $this->objectMapper->findByRelation(search: $search, partialMatch: $partialMatch);
     }//end findByRelations()
 
@@ -1560,8 +1557,8 @@ class ObjectService
     /**
      * Search objects using clean query structure
      *
-     * This method provides a cleaner search interface that uses the new searchObjects
-     * method from ObjectEntityMapper with proper query structure. It automatically
+     * This method provides a cleaner search interface that uses the searchObjects
+     * method from MagicMapper with proper query structure. It automatically
      * handles metadata filters, object field searches, and search options.
      *
      * @param array       $query         The search query array containing filters and options
@@ -1649,7 +1646,7 @@ class ObjectService
             $activeOrgUuid = $this->getActiveOrganisationForContext();
         }
 
-        // Use the new optimized countSearchObjects method from ObjectEntityMapper with organization context.
+        // Use the optimized countSearchObjects method from MagicMapper with organization context.
         return $this->objectMapper->countSearchObjects(
             query: $query,
             _activeOrgUuid: $activeOrgUuid,
@@ -1888,8 +1885,8 @@ class ObjectService
             $indexService = $this->container->get(IndexService::class);
             $result       = $indexService->searchObjects(
                 query: $query,
-                rbac: $_rbac,
-                multitenancy: $_multitenancy,
+                _rbac: $_rbac,
+                _multitenancy: $_multitenancy,
                 deleted: $deleted
             );
             $result['@self']['source']  = 'index';
@@ -2429,7 +2426,7 @@ class ObjectService
      * RESPONSIBILITY SEPARATION:
      * - ObjectService.saveObjects() = Bulk orchestration, performance optimization, chunking
      * - SaveObject methods = Individual object complexities (cascading, writeBack)
-     * - ObjectEntityMapper.saveObjects() = Actual database bulk operations
+     * - MagicMapper.saveObjects() = Actual database bulk operations
      *
      * WORKFLOW:
      * 1. Comprehensive schema analysis and caching
@@ -2489,11 +2486,11 @@ class ObjectService
             $this->setSchema(schema: $schema);
         }
 
-        // ARCHITECTURAL DELEGATION: Delegate to BulkOperationsHandler which includes cache invalidation.
-        return $this->bulkOpsHandler->saveObjects(
+        // Delegate to SaveObjects handler for bulk save operations.
+        $bulkResult = $this->saveObjectsHandler->saveObjects(
             objects: $objects,
-            currentRegister: $this->currentRegister,
-            currentSchema: $this->currentSchema,
+            register: $this->currentRegister,
+            schema: $this->currentSchema,
             _rbac: $_rbac,
             _multitenancy: $_multitenancy,
             validation: $validation,
@@ -2501,6 +2498,32 @@ class ObjectService
             deduplicateIds: $deduplicateIds,
             enrich: $enrich
         );
+
+        // Invalidate collection caches after successful bulk operations.
+        $createdCount  = $bulkResult['statistics']['objectsCreated'] ?? 0;
+        $updatedCount  = $bulkResult['statistics']['objectsUpdated'] ?? 0;
+        $totalAffected = $createdCount + $updatedCount;
+
+        if ($totalAffected > 0) {
+            try {
+                $this->cacheHandler->invalidateForObjectChange(
+                    object: null,
+                    operation: 'bulk_save',
+                    registerId: $this->currentRegister?->getId(),
+                    schemaId: $this->currentSchema?->getId()
+                );
+            } catch (\Exception $e) {
+                $this->logger->warning(
+                    message: '[ObjectService] Bulk save cache invalidation failed',
+                    context: [
+                        'error'         => $e->getMessage(),
+                        'totalAffected' => $totalAffected,
+                    ]
+                );
+            }
+        }
+
+        return $bulkResult;
     }//end saveObjects()
 
     /**
@@ -2578,15 +2601,47 @@ class ObjectService
      */
     public function deleteObjects(array $uuids=[], bool $_rbac=true, bool $_multitenancy=true): array
     {
-        // ARCHITECTURAL DELEGATION: Delegate to BulkOperationsHandler for all bulk delete logic.
-        // Pass register and schema context for magic mapper support.
-        return $this->bulkOpsHandler->deleteObjects(
-            uuids: $uuids,
-            _rbac: $_rbac,
-            _multitenancy: $_multitenancy,
-            register: $this->currentRegister,
-            schema: $this->currentSchema
+        if (empty($uuids) === true) {
+            return [];
+        }
+
+        // Apply RBAC and multi-organization filtering if enabled.
+        $filteredUuids = $uuids;
+        if ($_rbac === true || $_multitenancy === true) {
+            $filteredUuids = $this->permissionHandler->filterUuidsForPermissions(
+                uuids: $uuids,
+                _rbac: $_rbac,
+                _multitenancy: $_multitenancy
+            );
+        }
+
+        // Use the unified mapper's bulk delete operation.
+        $deletedObjectIds = $this->objectMapper->deleteObjects(
+            uuids: $filteredUuids,
+            hardDelete: false
         );
+
+        // Invalidate collection caches after bulk delete operations.
+        if (empty($deletedObjectIds) === false) {
+            try {
+                $this->cacheHandler->invalidateForObjectChange(
+                    object: null,
+                    operation: 'bulk_delete',
+                    registerId: null,
+                    schemaId: null
+                );
+            } catch (\Exception $e) {
+                $this->logger->warning(
+                    message: '[ObjectService] Bulk delete cache invalidation failed',
+                    context: [
+                        'error'         => $e->getMessage(),
+                        'deletedCount'  => count($deletedObjectIds),
+                    ]
+                );
+            }
+        }
+
+        return $deletedObjectIds;
     }//end deleteObjects()
 
 
@@ -2610,11 +2665,9 @@ class ObjectService
      */
     public function deleteObjectsBySchema(int $registerId, int $schemaId, bool $hardDelete=false): array
     {
-        // ARCHITECTURAL DELEGATION: Delegate to BulkOperationsHandler for schema-wide delete.
-        return $this->bulkOpsHandler->deleteObjectsBySchema(
-            registerId: $registerId,
-            schemaId: $schemaId,
-            hardDelete: $hardDelete
+        // TODO: Reimplement using MagicMapper for schema-wide delete on magic tables.
+        throw new \RuntimeException(
+            'deleteObjectsBySchema needs reimplementation using MagicMapper (blob objects table retired)'
         );
     }//end deleteObjectsBySchema()
 
@@ -2636,8 +2689,10 @@ class ObjectService
      */
     public function deleteObjectsByRegister(int $registerId): array
     {
-        // ARCHITECTURAL DELEGATION: Delegate to BulkOperationsHandler for register-wide delete.
-        return $this->bulkOpsHandler->deleteObjectsByRegister($registerId);
+        // TODO: Reimplement using MagicMapper for register-wide delete on magic tables.
+        throw new \RuntimeException(
+            'deleteObjectsByRegister needs reimplementation using MagicMapper (blob objects table retired)'
+        );
     }//end deleteObjectsByRegister()
 
     // **REMOVED**: clearResponseCache method removed since SOLR is now our index.
@@ -2666,7 +2721,7 @@ class ObjectService
      *
      * @param string $objectId      Object ID or UUID
      * @param array  $query         Search query parameters
-     * @param bool   $rbac          Apply RBAC filters
+     * @param bool   $_rbac          Apply RBAC filters
      * @param bool   $_multitenancy Apply multitenancy filters
      *
      * @return array Results with object entities and pagination info.
@@ -2676,13 +2731,13 @@ class ObjectService
     public function getObjectUses(
         string $objectId,
         array $query=[],
-        bool $rbac=true,
+        bool $_rbac=true,
         bool $_multitenancy=true
     ): array {
         return $this->relationHandler->getUses(
             objectId: $objectId,
             query: $query,
-            _rbac: $rbac,
+            _rbac: $_rbac,
             _multitenancy: $_multitenancy,
             _registerId: $this->currentRegister?->getId(),
             _schemaId: $this->currentSchema?->getId()
@@ -2694,7 +2749,7 @@ class ObjectService
      *
      * @param string $objectId      Object ID or UUID
      * @param array  $query         Search query parameters
-     * @param bool   $rbac          Apply RBAC filters
+     * @param bool   $_rbac          Apply RBAC filters
      * @param bool   $_multitenancy Apply multitenancy filters
      *
      * @return array Paginated results with referencing objects
@@ -2704,13 +2759,13 @@ class ObjectService
     public function getObjectUsedBy(
         string $objectId,
         array $query=[],
-        bool $rbac=true,
+        bool $_rbac=true,
         bool $_multitenancy=true
     ): array {
         return $this->relationHandler->getUsedBy(
             objectId: $objectId,
             query: $query,
-            _rbac: $rbac,
+            _rbac: $_rbac,
             _multitenancy: $_multitenancy,
             _registerId: $this->currentRegister?->getId(),
             _schemaId: $this->currentSchema?->getId()
@@ -2772,7 +2827,7 @@ class ObjectService
      * List objects with filtering and pagination
      *
      * @param array       $query         Search query parameters
-     * @param bool        $rbac          Apply RBAC filters
+     * @param bool        $_rbac          Apply RBAC filters
      * @param bool        $_multitenancy Apply multitenancy filters
      * @param bool        $_deleted      Include deleted objects
      * @param array|null  $_ids          Optional array of object IDs to filter
@@ -2787,7 +2842,7 @@ class ObjectService
      */
     public function listObjects(
         array $query=[],
-        bool $rbac=true,
+        bool $_rbac=true,
         bool $_multitenancy=true,
         bool $_deleted=false,
         ?array $_ids=null,
@@ -2798,7 +2853,7 @@ class ObjectService
         // Use searchObjects() for actual object listing.
         return $this->searchObjects(
             query: $query,
-            _rbac: $rbac,
+            _rbac: $_rbac,
             _multitenancy: $_multitenancy
         );
     }//end listObjects()

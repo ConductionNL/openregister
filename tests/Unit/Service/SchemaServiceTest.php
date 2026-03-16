@@ -23,7 +23,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Db\ObjectEntityMapper;
+use OCA\OpenRegister\Db\UnifiedObjectMapper;
 use OCA\OpenRegister\Service\SchemaService;
 use PHPUnit\Framework\TestCase;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -67,11 +67,11 @@ class SchemaServiceTest extends TestCase
     private $schemaMapper;
 
     /**
-     * Mock for ObjectEntityMapper
+     * Mock for UnifiedObjectMapper
      *
-     * @var MockObject|ObjectEntityMapper
+     * @var MockObject|UnifiedObjectMapper
      */
-    private $objectEntityMapper;
+    private $objectMapper;
 
     /**
      * Mock for LoggerInterface
@@ -91,12 +91,12 @@ class SchemaServiceTest extends TestCase
         parent::setUp();
 
         $this->schemaMapper       = $this->createMock(SchemaMapper::class);
-        $this->objectEntityMapper = $this->createMock(ObjectEntityMapper::class);
+        $this->objectMapper = $this->createMock(UnifiedObjectMapper::class);
         $this->logger             = $this->createMock(LoggerInterface::class);
 
         $this->service = new SchemaService(
             schemaMapper: $this->schemaMapper,
-            objectEntityMapper: $this->objectEntityMapper,
+            objectMapper: $this->objectMapper,
             logger: $this->logger
         );
     }
@@ -1238,7 +1238,7 @@ class SchemaServiceTest extends TestCase
             ->with(1)
             ->willReturn($schema);
 
-        $this->objectEntityMapper->method('findBySchema')
+        $this->objectMapper->method('findBySchema')
             ->with(1)
             ->willReturn([]);
 
@@ -1298,7 +1298,7 @@ class SchemaServiceTest extends TestCase
             ->with(1)
             ->willReturn($schema);
 
-        $this->objectEntityMapper->method('findBySchema')
+        $this->objectMapper->method('findBySchema')
             ->with(1)
             ->willReturn([$object1, $object2]);
 

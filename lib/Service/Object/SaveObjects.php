@@ -24,7 +24,7 @@ namespace OCA\OpenRegister\Service\Object;
 use DateTime;
 use Exception;
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Db\UnifiedObjectMapper;
+use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
@@ -78,7 +78,7 @@ class SaveObjects
     /**
      * Constructor for SaveObjects handler
      *
-     * @param UnifiedObjectMapper    $objectMapper        Mapper for object entity database operations
+     * @param MagicMapper    $objectMapper        Mapper for object entity database operations
      * @param SchemaMapper           $schemaMapper        Mapper for schema operations
      * @param RegisterMapper         $registerMapper      Mapper for register operations
      * @param SaveObject             $saveHandler         Handler for individual object operations
@@ -94,7 +94,7 @@ class SaveObjects
      * @SuppressWarnings(PHPMD.ExcessiveParameterList) Nextcloud DI requires constructor injection
      */
     public function __construct(
-        private readonly UnifiedObjectMapper $objectMapper,
+        private readonly MagicMapper $objectMapper,
         private readonly SchemaMapper $schemaMapper,
         private readonly RegisterMapper $registerMapper,
         private readonly SaveObject $saveHandler,

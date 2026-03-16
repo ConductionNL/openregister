@@ -21,7 +21,7 @@ namespace OCA\OpenRegister\Service\Object;
 
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Db\ObjectEntityMapper;
+use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
@@ -64,9 +64,9 @@ class RevertHandler
     /**
      * Object entity mapper
      *
-     * @var ObjectEntityMapper
+     * @var MagicMapper
      */
-    private ObjectEntityMapper $objectEntityMapper;
+    private MagicMapper $objectEntityMapper;
 
     /**
      * Revert an object to a previous state
@@ -93,7 +93,7 @@ class RevertHandler
         mixed $until,
         bool $overwriteVersion=false
     ): ObjectEntity {
-        // Get the object with context (searches both blob and magic tables).
+        // Get the object with context (searches across all magic tables).
         $context        = $this->objectEntityMapper->findAcrossAllSources(
             identifier: $id,
             includeDeleted: false,

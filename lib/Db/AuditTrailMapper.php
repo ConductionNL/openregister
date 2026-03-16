@@ -62,9 +62,9 @@ class AuditTrailMapper extends QBMapper
      * Constructor for the AuditTrailMapper
      *
      * @param IDBConnection      $db                 The database connection
-     * @param ObjectEntityMapper $objectEntityMapper The object entity mapper
+     * @param MagicMapper $objectEntityMapper The object entity mapper
      */
-    public function __construct(IDBConnection $db, ObjectEntityMapper $objectEntityMapper)
+    public function __construct(IDBConnection $db, MagicMapper $objectEntityMapper)
     {
         parent::__construct(db: $db, tableName: 'openregister_audit_trails', entityClass: AuditTrail::class);
         $this->objectEntityMapper = $objectEntityMapper;
@@ -73,9 +73,9 @@ class AuditTrailMapper extends QBMapper
     /**
      * The object entity mapper instance
      *
-     * @var ObjectEntityMapper
+     * @var MagicMapper
      */
-    private ObjectEntityMapper $objectEntityMapper;
+    private MagicMapper $objectEntityMapper;
 
 
 

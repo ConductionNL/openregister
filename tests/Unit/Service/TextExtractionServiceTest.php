@@ -11,7 +11,7 @@ use OCA\OpenRegister\Db\ChunkMapper;
 use OCA\OpenRegister\Db\EntityRelationMapper;
 use OCA\OpenRegister\Db\FileMapper;
 use OCA\OpenRegister\Db\GdprEntityMapper;
-use OCA\OpenRegister\Db\ObjectEntityMapper;
+use OCA\OpenRegister\Db\UnifiedObjectMapper;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\RiskLevelService;
@@ -42,7 +42,7 @@ class TextExtractionServiceTest extends TestCase
     private ChunkMapper&MockObject $chunkMapper;
     private EntityRelationMapper&MockObject $entityRelationMapper;
     private GdprEntityMapper&MockObject $gdprEntityMapper;
-    private ObjectEntityMapper&MockObject $objectEntityMapper;
+    private UnifiedObjectMapper&MockObject $objectMapper;
     private RegisterMapper&MockObject $registerMapper;
     private SchemaMapper&MockObject $schemaMapper;
     private RiskLevelService&MockObject $riskLevelService;
@@ -59,7 +59,7 @@ class TextExtractionServiceTest extends TestCase
         $this->rootFolder = $this->createMock(IRootFolder::class);
         $this->db = $this->createMock(IDBConnection::class);
         $this->logger = $this->createMock(LoggerInterface::class);
-        $this->objectEntityMapper = $this->createMock(ObjectEntityMapper::class);
+        $this->objectMapper = $this->createMock(UnifiedObjectMapper::class);
         $this->schemaMapper = $this->createMock(SchemaMapper::class);
         $this->registerMapper = $this->createMock(RegisterMapper::class);
         $this->entityHandler = $this->createMock(EntityRecognitionHandler::class);
@@ -74,7 +74,7 @@ class TextExtractionServiceTest extends TestCase
             $this->rootFolder,
             $this->db,
             $this->logger,
-            $this->objectEntityMapper,
+            $this->objectMapper,
             $this->schemaMapper,
             $this->registerMapper,
             $this->entityHandler,
@@ -1125,7 +1125,7 @@ class TextExtractionServiceTest extends TestCase
 
     public function testExtractObjectSkipsDeletedObject(): void
     {
-        $this->objectEntityMapper->method('find')
+        $this->objectMapper->method('find')
             ->willThrowException(new DoesNotExistException('Object not found'));
 
         // Should return gracefully, not throw.
@@ -1141,7 +1141,7 @@ class TextExtractionServiceTest extends TestCase
         $object = new \OCA\OpenRegister\Db\ObjectEntity();
         $object->setUpdated($updated);
 
-        $this->objectEntityMapper->method('find')->willReturn($object);
+        $this->objectMapper->method('find')->willReturn($object);
         $this->chunkMapper->method('getLatestUpdatedTimestamp')->willReturn(200);
 
         // Should not attempt extraction.
@@ -2096,7 +2096,7 @@ class TextExtractionServiceTest extends TestCase
         $object = new \OCA\OpenRegister\Db\ObjectEntity();
         // Updated is null by default.
 
-        $this->objectEntityMapper->method('find')->willReturn($object);
+        $this->objectMapper->method('find')->willReturn($object);
         $this->chunkMapper->method('getLatestUpdatedTimestamp')->willReturn(null);
 
         // Since ObjectHandler is instantiated internally and we can't mock it,
@@ -2118,7 +2118,7 @@ class TextExtractionServiceTest extends TestCase
         $object = new \OCA\OpenRegister\Db\ObjectEntity();
         $object->setUpdated($updated);
 
-        $this->objectEntityMapper->method('find')->willReturn($object);
+        $this->objectMapper->method('find')->willReturn($object);
         // Chunks are newer, but force=true should bypass.
         $this->chunkMapper->method('getLatestUpdatedTimestamp')->willReturn(200);
 
@@ -3092,7 +3092,7 @@ class TextExtractionServiceTest extends TestCase
         $object = new \OCA\OpenRegister\Db\ObjectEntity();
         $object->setUpdated($updated);
 
-        $this->objectEntityMapper->method('find')->willReturn($object);
+        $this->objectMapper->method('find')->willReturn($object);
         $this->chunkMapper->method('getLatestUpdatedTimestamp')->willReturn(null);
 
         // ObjectHandler will be created with real mappers (which are mocks).
@@ -3498,7 +3498,7 @@ class TextExtractionServiceTest extends TestCase
 
     public function testExtractObjectSkipsWhenObjectNotFound(): void
     {
-        $this->objectEntityMapper->method('find')
+        $this->objectMapper->method('find')
             ->willThrowException(new DoesNotExistException('Object not found'));
 
         // Should return without error — the method catches DoesNotExistException.
@@ -3522,7 +3522,7 @@ class TextExtractionServiceTest extends TestCase
         $updated = new DateTime('2024-01-15 10:30:00');
         $object->method('getUpdated')->willReturn($updated);
 
-        $this->objectEntityMapper->method('find')->willReturn($object);
+        $this->objectMapper->method('find')->willReturn($object);
 
         // Mock isSourceUpToDate to return true.
         $chunkMock = $this->getMockBuilder(Chunk::class)
