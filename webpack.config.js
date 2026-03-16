@@ -1,4 +1,5 @@
 const path = require('path')
+const { VueLoaderPlugin } = require('vue-loader')
 const webpackConfig = require('@nextcloud/webpack-vue-config')
 
 const buildMode = process.env.NODE_ENV
@@ -35,11 +36,31 @@ webpackConfig.resolve.extensions = [
 	'.json',
 	...(webpackConfig.resolve.extensions || []),
 ]
+// ==================================================
+//                      NOTE:
+//           DO NOT REMOVE THE ALIASES,
+// THESE MAKE THE DEVELOPMENT ENVIRONMENT FUNCTIONAL
+// ==================================================
 webpackConfig.resolve.alias = {
 	...(webpackConfig.resolve.alias || {}),
 	'@': path.resolve(__dirname, 'src'),
+	// Local development: resolve package to sibling nextcloud-vue source (UNCOMMENT THIS FOR LOCAL DEVELOPMENT)
 	'@conduction/nextcloud-vue': path.resolve(__dirname, '../nextcloud-vue/src'),
+	// Deduplication — prevent dual Vue/Pinia/NcVue instances when using local @conduction/nextcloud-vue
+	vue: path.resolve(__dirname, 'node_modules/vue'),
+	pinia: path.resolve(__dirname, 'node_modules/pinia'),
+	'@nextcloud/vue$': path.resolve(__dirname, 'node_modules/@nextcloud/vue'),
 }
+// @nextcloud/vue ships .cjs/.mjs; allow .js requests to resolve to .cjs (for dist subpaths)
+webpackConfig.resolve.extensionAlias = {
+	'.js': ['.cjs', '.js'],
+	...webpackConfig.resolve.extensionAlias,
+}
+// When using local nextcloud-vue (../nextcloud-vue/src), resolve its deps from this app's node_modules
+webpackConfig.resolve.modules = [
+	path.resolve(__dirname, 'node_modules'),
+	...(webpackConfig.resolve.modules || ['node_modules']),
+]
 
 const appId = 'openregister'
 webpackConfig.entry = {
@@ -52,5 +73,9 @@ webpackConfig.entry = {
 		filename: appId + '-settings.js',
 	},
 }
+
+// Replace VueLoaderPlugin (don't push — duplicates break templates when using local package)
+const otherPlugins = (webpackConfig.plugins || []).filter((p) => p.constructor.name !== 'VueLoaderPlugin')
+webpackConfig.plugins = [new VueLoaderPlugin(), ...otherPlugins]
 
 module.exports = webpackConfig
