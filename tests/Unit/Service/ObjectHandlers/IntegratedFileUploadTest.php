@@ -29,7 +29,7 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use stdClass;
 use OCA\OpenRegister\Db\AuditTrailMapper;
-use OCA\OpenRegister\Db\UnifiedObjectMapper;
+use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Service\Object\SaveObject;
 use OCA\OpenRegister\Service\Object\SaveObject\MetadataHydrationHandler;
 use OCA\OpenRegister\Service\Object\SaveObject\FilePropertyHandler;
@@ -118,7 +118,7 @@ class IntegratedFileUploadTest extends TestCase
     /** @var MockObject|ObjectEntityMapper */
     private $objectEntityMapper;
 
-    /** @var MockObject|UnifiedObjectMapper */
+    /** @var MockObject|MagicMapper */
     private $unifiedObjectMapper;
 
     /** @var MockObject|MetadataHydrationHandler */
@@ -177,7 +177,7 @@ class IntegratedFileUploadTest extends TestCase
 
         // Create mocks for all dependencies.
         $this->objectEntityMapper = $this->createMock(ObjectEntityMapper::class);
-        $this->unifiedObjectMapper = $this->createMock(UnifiedObjectMapper::class);
+        $this->unifiedObjectMapper = $this->createMock(MagicMapper::class);
         $this->metaHydrationHandler = $this->createMock(MetadataHydrationHandler::class);
         $this->filePropertyHandler = $this->createMock(FilePropertyHandler::class);
         $this->userSession = $this->createMock(IUserSession::class);
@@ -230,7 +230,7 @@ class IntegratedFileUploadTest extends TestCase
     }
 
     /**
-     * Helper to set up a standard object insertion mock on UnifiedObjectMapper.
+     * Helper to set up a standard object insertion mock on MagicMapper.
      *
      * The insert returns a real ObjectEntity with the given data applied.
      *

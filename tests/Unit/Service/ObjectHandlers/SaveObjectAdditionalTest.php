@@ -37,7 +37,7 @@ use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Db\AuditTrailMapper;
-use OCA\OpenRegister\Db\UnifiedObjectMapper;
+use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Service\Object\SaveObject;
 use OCA\OpenRegister\Service\Object\SaveObject\MetadataHydrationHandler;
 use OCA\OpenRegister\Service\Object\SaveObject\FilePropertyHandler;
@@ -128,7 +128,7 @@ class SaveObjectAdditionalTest extends TestCase
     /** @var MockObject&ObjectEntityMapper */
     private $objectEntityMapper;
 
-    /** @var MockObject&UnifiedObjectMapper */
+    /** @var MockObject&MagicMapper */
     private $unifiedObjectMapper;
 
     /** @var MockObject&MetadataHydrationHandler */
@@ -186,7 +186,7 @@ class SaveObjectAdditionalTest extends TestCase
         parent::setUp();
 
         $this->objectEntityMapper = $this->createMock(ObjectEntityMapper::class);
-        $this->unifiedObjectMapper = $this->createMock(UnifiedObjectMapper::class);
+        $this->unifiedObjectMapper = $this->createMock(MagicMapper::class);
         $this->metaHydrationHandler = $this->createMock(MetadataHydrationHandler::class);
         $this->filePropertyHandler = $this->createMock(FilePropertyHandler::class);
         $this->userSession = $this->createMock(IUserSession::class);

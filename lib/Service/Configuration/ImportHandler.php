@@ -34,11 +34,10 @@ use OCA\OpenRegister\Db\ConfigurationMapper;
 use OCA\OpenRegister\Db\DeployedWorkflow;
 use OCA\OpenRegister\Db\DeployedWorkflowMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Db\ObjectEntityMapper;
+use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\Mapping;
 use OCA\OpenRegister\Db\MappingMapper;
-use OCA\OpenRegister\Db\MagicMapper;
-use OCA\OpenRegister\Db\UnifiedObjectMapper;
+
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\WorkflowEngineRegistry;
 use OCP\AppFramework\Http\JSONResponse;
@@ -105,9 +104,9 @@ class ImportHandler
     /**
      * Object mapper instance for handling object operations.
      *
-     * @var ObjectEntityMapper The object mapper instance.
+     * @var MagicMapper The object mapper instance.
      */
-    private readonly ObjectEntityMapper $objectEntityMapper;
+    private readonly MagicMapper $objectEntityMapper;
 
     /**
      * Magic mapper instance for handling magic table operations.
@@ -117,11 +116,11 @@ class ImportHandler
     private ?MagicMapper $magicMapper = null;
 
     /**
-     * Unified object mapper for routing to magic/blob storage.
+     * MagicMapper for routing objects to correct magic table.
      *
-     * @var UnifiedObjectMapper|null The unified object mapper instance (optional, set via setter).
+     * @var MagicMapper|null The object mapper instance (optional, set via setObjectMapper).
      */
-    private ?UnifiedObjectMapper $unifiedObjectMapper = null;
+    private ?MagicMapper $objectMapperForRouting = null;
 
     /**
      * Configuration mapper instance for handling configuration operations.
@@ -228,7 +227,7 @@ class ImportHandler
      *
      * @param SchemaMapper        $schemaMapper        The schema mapper.
      * @param RegisterMapper      $registerMapper      The register mapper.
-     * @param ObjectEntityMapper  $objectEntityMapper  The object entity mapper.
+     * @param MagicMapper  $objectEntityMapper  The object entity mapper.
      * @param ConfigurationMapper $configurationMapper The configuration mapper.
      * @param MappingMapper       $mappingMapper       The mapping mapper.
      * @param Client              $client              The HTTP client for URL fetching.
@@ -241,7 +240,7 @@ class ImportHandler
     public function __construct(
         SchemaMapper $schemaMapper,
         RegisterMapper $registerMapper,
-        ObjectEntityMapper $objectEntityMapper,
+        MagicMapper $objectEntityMapper,
         ConfigurationMapper $configurationMapper,
         MappingMapper $mappingMapper,
         Client $client,
@@ -334,19 +333,19 @@ class ImportHandler
     }//end setMagicMapper()
 
     /**
-     * Set the UnifiedObjectMapper dependency for routing objects to storage.
+     * Set the MagicMapper dependency for routing objects to storage.
      *
-     * This method allows setting the UnifiedObjectMapper after construction for
-     * routing seed data objects to the correct storage (magic mapper or blob).
+     * This method allows setting the MagicMapper after construction for
+     * routing seed data objects to the correct magic table.
      *
-     * @param UnifiedObjectMapper $unifiedObjectMapper The unified object mapper instance.
+     * @param MagicMapper $objectMapper The object mapper instance.
      *
      * @return void
      */
-    public function setUnifiedObjectMapper(UnifiedObjectMapper $unifiedObjectMapper): void
+    public function setObjectMapper(MagicMapper $objectMapper): void
     {
-        $this->unifiedObjectMapper = $unifiedObjectMapper;
-    }//end setUnifiedObjectMapper()
+        $this->objectMapperForRouting = $objectMapper;
+    }//end setObjectMapper()
 
     /**
      * Decode JSON or YAML string data into PHP array.
@@ -2794,8 +2793,6 @@ class ImportHandler
             );
 
             // PRE-CREATE MAGIC MAPPER TABLE: Ensure the magic mapper table exists BEFORE inserting objects.
-            // This prevents the race condition where the first object goes to blob storage because
-            // the magic mapper table doesn't exist yet (it would only be created by the second insert).
             if ($this->magicMapper !== null && $targetRegister !== null) {
                 try {
                     $this->logger->debug(
@@ -2813,9 +2810,9 @@ class ImportHandler
                         schema: $schema
                     );
                 } catch (\Exception $e) {
-                    // Non-fatal: if table creation fails, objects will go to blob storage (existing behavior).
+                    // Non-fatal: if table creation fails, object saving may fail.
                     $this->logger->warning(
-                        message: "[ImportHandler] Failed to pre-create magic mapper table - objects may go to blob storage",
+                        message: "[ImportHandler] Failed to pre-create magic mapper table",
                         context: [
                             'file'        => __FILE__,
                             'line'        => __LINE__,
@@ -2976,27 +2973,20 @@ class ImportHandler
                     $lookupIdentifier = $objectData['uuid'] ?? $objectSlug;
 
                     try {
-                        // Try to find existing object using UnifiedObjectMapper (checks both MagicMapper and blob storage).
+                        // Try to find existing object using MagicMapper.
                         // Disable RBAC/multitenancy to find objects from any app/tenant.
-                        if ($this->unifiedObjectMapper !== null && $objectRegister !== null) {
-                            $existingObject = $this->unifiedObjectMapper->find(
+                        if ($this->objectMapperForRouting !== null && $objectRegister !== null) {
+                            $existingObject = $this->objectMapperForRouting->find(
                                 identifier: $lookupIdentifier,
                                 register: $objectRegister,
                                 schema: $objectSchema,
                                 includeDeleted: false,
-                                rbac: false,
-                                multitenancy: false
-                            );
-                        } else {
-                            // Fallback to blob storage only if UnifiedObjectMapper not available or no register.
-                            $existingObject = $this->objectEntityMapper->findDirectBlobStorage(
-                                identifier: $lookupIdentifier,
-                                register: null,
-                                schema: null,
-                                includeDeleted: false,
                                 _rbac: false,
                                 _multitenancy: false
                             );
+                        } else {
+                            // No MagicMapper or register context available - cannot look up.
+                            $existingObject = null;
                         }
                     } catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
                         // Object doesn't exist - this is expected, we'll create it.
@@ -3033,7 +3023,7 @@ class ImportHandler
                         continue;
                     }
 
-                    // Use ObjectEntityMapper directly for seedData objects to avoid complex ObjectService dependencies.
+                    // Use MagicMapper directly for seedData objects to avoid complex ObjectService dependencies.
                     // SeedData objects are simple and don't require cascading or complex validation.
                     $objectEntity = new ObjectEntity();
 
@@ -3059,13 +3049,11 @@ class ImportHandler
                     $objectEntity->setCreated($now);
                     $objectEntity->setUpdated($now);
 
-                    // Insert into database using UnifiedObjectMapper if available.
-                    // UnifiedObjectMapper routes objects to magic mapper or blob storage
-                    // based on register configuration, ensuring consistent storage.
-                    if ($this->unifiedObjectMapper !== null) {
-                        $createdObject = $this->unifiedObjectMapper->insert($objectEntity);
+                    // Insert into database using MagicMapper if available.
+                    if ($this->objectMapperForRouting !== null) {
+                        $createdObject = $this->objectMapperForRouting->insert($objectEntity);
                     } else {
-                        // Fallback to ObjectEntityMapper (blob storage only).
+                        // Fallback: MagicMapper not available, use objectEntityMapper.
                         $createdObject = $this->objectEntityMapper->insert($objectEntity);
                     }
 

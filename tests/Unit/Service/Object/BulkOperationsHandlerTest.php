@@ -17,7 +17,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Object;
 use DateTime;
 use Exception;
 use OCA\OpenRegister\Db\MagicMapper;
-use OCA\OpenRegister\Db\ObjectEntityMapper;
+use OCA\OpenRegister\Db\UnifiedObjectMapper;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
@@ -44,8 +44,8 @@ class BulkOperationsHandlerTest extends TestCase
     /** @var SaveObjects&MockObject */
     private SaveObjects $saveObjectsHandler;
 
-    /** @var ObjectEntityMapper&MockObject */
-    private ObjectEntityMapper $objectEntityMapper;
+    /** @var UnifiedObjectMapper&MockObject */
+    private UnifiedObjectMapper $objectMapper;
 
     /** @var PermissionHandler&MockObject */
     private PermissionHandler $permissionHandler;
@@ -70,7 +70,7 @@ class BulkOperationsHandlerTest extends TestCase
         parent::setUp();
 
         $this->saveObjectsHandler = $this->createMock(SaveObjects::class);
-        $this->objectEntityMapper = $this->createMock(ObjectEntityMapper::class);
+        $this->objectMapper = $this->createMock(UnifiedObjectMapper::class);
         $this->permissionHandler = $this->createMock(PermissionHandler::class);
         $this->cacheHandler = $this->createMock(CacheHandler::class);
         $this->magicMapper = $this->createMock(MagicMapper::class);
@@ -80,7 +80,7 @@ class BulkOperationsHandlerTest extends TestCase
 
         $this->handler = new BulkOperationsHandler(
             $this->saveObjectsHandler,
-            $this->objectEntityMapper,
+            $this->objectMapper,
             $this->permissionHandler,
             $this->cacheHandler,
             $this->magicMapper,
@@ -196,7 +196,7 @@ class BulkOperationsHandlerTest extends TestCase
             ->method('filterUuidsForPermissions')
             ->willReturn($filteredUuids);
 
-        $this->objectEntityMapper->expects($this->once())
+        $this->objectMapper->expects($this->once())
             ->method('deleteObjects')
             ->willReturn([1, 3]);
 
@@ -215,7 +215,7 @@ class BulkOperationsHandlerTest extends TestCase
         $this->permissionHandler->expects($this->never())
             ->method('filterUuidsForPermissions');
 
-        $this->objectEntityMapper->expects($this->once())
+        $this->objectMapper->expects($this->once())
             ->method('deleteObjects')
             ->willReturn([1]);
 
@@ -229,7 +229,7 @@ class BulkOperationsHandlerTest extends TestCase
         $this->permissionHandler->method('filterUuidsForPermissions')
             ->willReturn([]);
 
-        $this->objectEntityMapper->method('deleteObjects')
+        $this->objectMapper->method('deleteObjects')
             ->willReturn([]);
 
         $this->cacheHandler->expects($this->never())
@@ -245,7 +245,7 @@ class BulkOperationsHandlerTest extends TestCase
         $this->permissionHandler->method('filterUuidsForPermissions')
             ->willReturn(['uuid-1']);
 
-        $this->objectEntityMapper->method('deleteObjects')
+        $this->objectMapper->method('deleteObjects')
             ->willReturn([1]);
 
         $this->cacheHandler->method('invalidateForObjectChange')
@@ -275,7 +275,7 @@ class BulkOperationsHandlerTest extends TestCase
             ->method('filterUuidsForPermissions')
             ->willReturn(['uuid-1']);
 
-        $this->objectEntityMapper->expects($this->once())
+        $this->objectMapper->expects($this->once())
             ->method('publishObjects')
             ->willReturn(['uuid-1']);
 
@@ -294,7 +294,7 @@ class BulkOperationsHandlerTest extends TestCase
         $this->permissionHandler->method('filterUuidsForPermissions')
             ->willReturn(['uuid-1']);
 
-        $this->objectEntityMapper->expects($this->once())
+        $this->objectMapper->expects($this->once())
             ->method('publishObjects')
             ->willReturn(['uuid-1']);
 
@@ -308,7 +308,7 @@ class BulkOperationsHandlerTest extends TestCase
         $this->permissionHandler->method('filterUuidsForPermissions')
             ->willReturn([]);
 
-        $this->objectEntityMapper->method('publishObjects')
+        $this->objectMapper->method('publishObjects')
             ->willReturn([]);
 
         $this->cacheHandler->expects($this->never())
@@ -335,7 +335,7 @@ class BulkOperationsHandlerTest extends TestCase
         $this->permissionHandler->method('filterUuidsForPermissions')
             ->willReturn(['uuid-1']);
 
-        $this->objectEntityMapper->expects($this->once())
+        $this->objectMapper->expects($this->once())
             ->method('depublishObjects')
             ->willReturn(['uuid-1']);
 
@@ -352,7 +352,7 @@ class BulkOperationsHandlerTest extends TestCase
         $this->permissionHandler->method('filterUuidsForPermissions')
             ->willReturn(['uuid-1']);
 
-        $this->objectEntityMapper->method('depublishObjects')
+        $this->objectMapper->method('depublishObjects')
             ->willReturn(['uuid-1']);
 
         $this->cacheHandler->method('invalidateForObjectChange')
@@ -375,7 +375,7 @@ class BulkOperationsHandlerTest extends TestCase
             'schema_id' => 42,
         ];
 
-        $this->objectEntityMapper->expects($this->once())
+        $this->objectMapper->expects($this->once())
             ->method('publishObjectsBySchema')
             ->willReturn($result);
 
@@ -395,7 +395,7 @@ class BulkOperationsHandlerTest extends TestCase
             'schema_id' => 42,
         ];
 
-        $this->objectEntityMapper->method('publishObjectsBySchema')
+        $this->objectMapper->method('publishObjectsBySchema')
             ->willReturn($result);
 
         $this->cacheHandler->expects($this->never())
@@ -428,7 +428,7 @@ class BulkOperationsHandlerTest extends TestCase
         $this->schemaMapper->method('find')->willReturn($schema);
         $this->registerMapper->method('find')->willReturn($register);
 
-        $this->objectEntityMapper->expects($this->once())
+        $this->objectMapper->expects($this->once())
             ->method('deleteObjectsBySchema')
             ->willReturn(['deleted_count' => 5, 'deleted_uuids' => ['a', 'b', 'c', 'd', 'e']]);
 
@@ -465,7 +465,7 @@ class BulkOperationsHandlerTest extends TestCase
             'register_id' => 5,
         ];
 
-        $this->objectEntityMapper->expects($this->once())
+        $this->objectMapper->expects($this->once())
             ->method('deleteObjectsByRegister')
             ->willReturn($result);
 
@@ -485,7 +485,7 @@ class BulkOperationsHandlerTest extends TestCase
             'register_id' => 5,
         ];
 
-        $this->objectEntityMapper->method('deleteObjectsByRegister')
+        $this->objectMapper->method('deleteObjectsByRegister')
             ->willReturn($result);
 
         $this->cacheHandler->expects($this->never())
@@ -504,7 +504,7 @@ class BulkOperationsHandlerTest extends TestCase
             'register_id' => 5,
         ];
 
-        $this->objectEntityMapper->method('deleteObjectsByRegister')
+        $this->objectMapper->method('deleteObjectsByRegister')
             ->willReturn($result);
 
         $this->cacheHandler->method('invalidateForObjectChange')
@@ -543,7 +543,7 @@ class BulkOperationsHandlerTest extends TestCase
             ->method('deleteObjectsBySchema')
             ->willReturn(7);
 
-        $this->objectEntityMapper->expects($this->never())
+        $this->objectMapper->expects($this->never())
             ->method('deleteObjectsBySchema');
 
         $this->cacheHandler->expects($this->once())
@@ -574,7 +574,7 @@ class BulkOperationsHandlerTest extends TestCase
         $this->schemaMapper->method('find')->willReturn($schema);
         $this->registerMapper->method('find')->willReturn($register);
 
-        $this->objectEntityMapper->method('deleteObjectsBySchema')
+        $this->objectMapper->method('deleteObjectsBySchema')
             ->willReturn(['deleted_count' => 0, 'deleted_uuids' => []]);
 
         $this->cacheHandler->expects($this->never())
@@ -603,7 +603,7 @@ class BulkOperationsHandlerTest extends TestCase
         $this->schemaMapper->method('find')->willReturn($schema);
         $this->registerMapper->method('find')->willReturn($register);
 
-        $this->objectEntityMapper->expects($this->once())
+        $this->objectMapper->expects($this->once())
             ->method('deleteObjectsBySchema')
             ->with($this->equalTo(10), $this->equalTo(true))
             ->willReturn(['deleted_count' => 3, 'deleted_uuids' => ['x', 'y', 'z']]);
@@ -625,7 +625,7 @@ class BulkOperationsHandlerTest extends TestCase
             'schema_id' => 5,
         ];
 
-        $this->objectEntityMapper->expects($this->once())
+        $this->objectMapper->expects($this->once())
             ->method('publishObjectsBySchema')
             ->with($this->equalTo(5), $this->equalTo(true))
             ->willReturn($result);
@@ -646,7 +646,7 @@ class BulkOperationsHandlerTest extends TestCase
             'schema_id' => 7,
         ];
 
-        $this->objectEntityMapper->method('publishObjectsBySchema')
+        $this->objectMapper->method('publishObjectsBySchema')
             ->willReturn($result);
 
         $this->cacheHandler->method('invalidateForObjectChange')
@@ -669,7 +669,7 @@ class BulkOperationsHandlerTest extends TestCase
         $this->permissionHandler->expects($this->never())
             ->method('filterUuidsForPermissions');
 
-        $this->objectEntityMapper->expects($this->once())
+        $this->objectMapper->expects($this->once())
             ->method('depublishObjects')
             ->willReturn(['uuid-1']);
 
@@ -683,7 +683,7 @@ class BulkOperationsHandlerTest extends TestCase
         $this->permissionHandler->method('filterUuidsForPermissions')
             ->willReturn([]);
 
-        $this->objectEntityMapper->method('depublishObjects')
+        $this->objectMapper->method('depublishObjects')
             ->willReturn([]);
 
         $this->cacheHandler->expects($this->never())

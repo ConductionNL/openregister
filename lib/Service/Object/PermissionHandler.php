@@ -27,7 +27,7 @@ use Exception;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
-use OCA\OpenRegister\Db\ObjectEntityMapper;
+use OCA\OpenRegister\Db\MagicMapper;
 use OCP\IUserSession;
 use OCP\IUserManager;
 use OCP\IGroupManager;
@@ -57,7 +57,7 @@ class PermissionHandler
      * @param IUserManager       $userManager        User manager for getting user objects.
      * @param IGroupManager      $groupManager       Group manager for checking user groups.
      * @param SchemaMapper       $schemaMapper       Mapper for schema operations.
-     * @param ObjectEntityMapper $objectEntityMapper Mapper for object entity operations.
+     * @param MagicMapper $objectEntityMapper Mapper for object entity operations.
      * @param LoggerInterface    $logger             Logger for permission auditing.
      * @param ContainerInterface $container          Container for lazy loading services.
      */
@@ -66,7 +66,7 @@ class PermissionHandler
         private readonly IUserManager $userManager,
         private readonly IGroupManager $groupManager,
         private readonly SchemaMapper $schemaMapper,
-        private readonly ObjectEntityMapper $objectEntityMapper,
+        private readonly MagicMapper $objectEntityMapper,
         private readonly LoggerInterface $logger,
         private readonly ContainerInterface $container
     ) {
@@ -88,7 +88,7 @@ class PermissionHandler
      * @param string            $action      The CRUD action (create, read, update, delete).
      * @param string|null       $userId      Optional user ID (defaults to current user).
      * @param string|null       $objectOwner Optional object owner for ownership check.
-     * @param bool              $rbac        Whether to apply RBAC checks (default: true).
+     * @param bool              $_rbac        Whether to apply RBAC checks (default: true).
      * @param ObjectEntity|null $object      Optional object entity for conditional authorization matching.
      *
      * @return bool True if user has permission, false otherwise
@@ -104,11 +104,11 @@ class PermissionHandler
         string $action,
         ?string $userId=null,
         ?string $objectOwner=null,
-        bool $rbac=true,
+        bool $_rbac=true,
         ?ObjectEntity $object=null
     ): bool {
         // If RBAC is disabled, always return true (bypass all permission checks).
-        if ($rbac === false) {
+        if ($_rbac === false) {
             return true;
         }
 
@@ -222,7 +222,7 @@ class PermissionHandler
      * @param string            $action      Action to check permission for.
      * @param string|null       $userId      User ID to check permissions for.
      * @param string|null       $objectOwner Object owner ID.
-     * @param bool              $rbac        Whether to enforce RBAC checks.
+     * @param bool              $_rbac        Whether to enforce RBAC checks.
      * @param ObjectEntity|null $object      Optional object entity for conditional authorization matching.
      *
      * @return void
@@ -236,7 +236,7 @@ class PermissionHandler
         string $action,
         ?string $userId=null,
         ?string $objectOwner=null,
-        bool $rbac=true,
+        bool $_rbac=true,
         ?ObjectEntity $object=null
     ): void {
         if ($this->hasPermission(
@@ -244,7 +244,7 @@ class PermissionHandler
                 action: $action,
                 userId: $userId,
                 objectOwner: $objectOwner,
-                rbac: $rbac,
+                _rbac: $_rbac,
                 object: $object
             ) === false
         ) {
@@ -267,8 +267,8 @@ class PermissionHandler
      * or that belong to a different organization in multi-tenant mode.
      *
      * @param array<array<string, mixed>> $objects      Array of objects to filter.
-     * @param bool                        $rbac         Whether to apply RBAC filtering.
-     * @param bool                        $multitenancy Whether to apply multitenancy filtering.
+     * @param bool                        $_rbac         Whether to apply RBAC filtering.
+     * @param bool                        $_multitenancy Whether to apply multitenancy filtering.
      *
      * @return array[] Filtered array of objects
      *
@@ -277,7 +277,7 @@ class PermissionHandler
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Permission filtering requires multiple conditional checks
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag)  RBAC/multitenancy flags follow established API patterns
      */
-    public function filterObjectsForPermissions(array $objects, bool $rbac, bool $multitenancy): array
+    public function filterObjectsForPermissions(array $objects, bool $_rbac, bool $_multitenancy): array
     {
         $filteredObjects = [];
         $currentUser     = $this->userSession->getUser();
@@ -292,7 +292,7 @@ class PermissionHandler
             $self = $object['@self'] ?? [];
 
             // Check RBAC permissions if enabled.
-            if ($rbac === true && $userId !== null) {
+            if ($_rbac === true && $userId !== null) {
                 $objectOwner  = $self['owner'] ?? null;
                 $objectSchema = $self['schema'] ?? null;
 
@@ -306,7 +306,7 @@ class PermissionHandler
                                 action: 'create',
                                 userId: $userId,
                                 objectOwner: $objectOwner,
-                                rbac: $rbac
+                                _rbac: $_rbac
                             ) === false
                         ) {
                             continue;
@@ -320,7 +320,7 @@ class PermissionHandler
             }//end if
 
             // Check multi-organization filtering if enabled.
-            if ($multitenancy === true && $activeOrganisation !== null) {
+            if ($_multitenancy === true && $activeOrganisation !== null) {
                 $objectOrganisation = $self['organisation'] ?? null;
                 if ($objectOrganisation !== null && $objectOrganisation !== $activeOrganisation) {
                     continue;
@@ -341,8 +341,8 @@ class PermissionHandler
      * based on current user permissions and organization context.
      *
      * @param array<string> $uuids        Array of object UUIDs to filter.
-     * @param bool          $rbac         Whether to apply RBAC filtering.
-     * @param bool          $multitenancy Whether to apply multitenancy filtering.
+     * @param bool          $_rbac         Whether to apply RBAC filtering.
+     * @param bool          $_multitenancy Whether to apply multitenancy filtering.
      *
      * @return string[] Filtered array of UUIDs
      *
@@ -351,7 +351,7 @@ class PermissionHandler
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) UUID filtering with permission checks requires multiple conditions
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag)  RBAC/multitenancy flags follow established API patterns
      */
-    public function filterUuidsForPermissions(array $uuids, bool $rbac, bool $multitenancy): array
+    public function filterUuidsForPermissions(array $uuids, bool $_rbac, bool $_multitenancy): array
     {
         $filteredUuids = [];
         $currentUser   = $this->userSession->getUser();
@@ -369,7 +369,7 @@ class PermissionHandler
             $objectUuid = $object->getUuid();
 
             // Check RBAC permissions if enabled.
-            if ($rbac === true && $userId !== null) {
+            if ($_rbac === true && $userId !== null) {
                 $objectOwner  = $object->getOwner();
                 $objectSchema = $object->getSchema();
 
@@ -384,7 +384,7 @@ class PermissionHandler
                                 action: 'delete',
                                 userId: $userId,
                                 objectOwner: $objectOwner,
-                                rbac: $rbac
+                                _rbac: $_rbac
                             ) === false
                         ) {
                             continue;
@@ -398,7 +398,7 @@ class PermissionHandler
             }//end if
 
             // Check multi-organization permissions if enabled.
-            if ($multitenancy === true && $activeOrganisation !== null) {
+            if ($_multitenancy === true && $activeOrganisation !== null) {
                 $objectOrganisation = $object->getOrganisation();
 
                 if ($objectOrganisation !== null && $objectOrganisation !== $activeOrganisation) {

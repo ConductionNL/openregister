@@ -6,7 +6,7 @@ namespace Unit\Controller;
 
 use OCA\OpenRegister\Controller\DeletedController;
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Db\ObjectEntityMapper;
+use OCA\OpenRegister\Db\UnifiedObjectMapper;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\ObjectService;
@@ -23,7 +23,7 @@ class DeletedControllerGapTest extends TestCase
 {
     private DeletedController $controller;
     private IRequest&MockObject $request;
-    private ObjectEntityMapper&MockObject $objectEntityMapper;
+    private UnifiedObjectMapper&MockObject $objectMapper;
     private RegisterMapper&MockObject $registerMapper;
     private SchemaMapper&MockObject $schemaMapper;
     private ObjectService&MockObject $objectService;
@@ -34,7 +34,7 @@ class DeletedControllerGapTest extends TestCase
         parent::setUp();
 
         $this->request = $this->createMock(IRequest::class);
-        $this->objectEntityMapper = $this->createMock(ObjectEntityMapper::class);
+        $this->objectMapper = $this->createMock(UnifiedObjectMapper::class);
         $this->registerMapper = $this->createMock(RegisterMapper::class);
         $this->schemaMapper = $this->createMock(SchemaMapper::class);
         $this->objectService = $this->createMock(ObjectService::class);
@@ -43,7 +43,7 @@ class DeletedControllerGapTest extends TestCase
         $this->controller = new DeletedController(
             'openregister',
             $this->request,
-            $this->objectEntityMapper,
+            $this->objectMapper,
             $this->registerMapper,
             $this->schemaMapper,
             $this->objectService,
@@ -307,9 +307,9 @@ class DeletedControllerGapTest extends TestCase
                 ['ids', [], ['uuid-1', 'uuid-2', 'uuid-missing']],
             ]);
 
-        $this->objectEntityMapper->method('findAll')
+        $this->objectMapper->method('findAll')
             ->willReturn([$deletedObject, $notDeletedObject]);
-        $this->objectEntityMapper->method('update')
+        $this->objectMapper->method('update')
             ->willReturn($deletedObject);
 
         $result = $this->controller->restoreMultiple();
@@ -349,7 +349,7 @@ class DeletedControllerGapTest extends TestCase
                 ['ids', [], ['uuid-1', 'uuid-2', 'uuid-missing']],
             ]);
 
-        $this->objectEntityMapper->method('findAll')
+        $this->objectMapper->method('findAll')
             ->willReturn([$deletedObject, $notDeletedObject]);
 
         $result = $this->controller->destroyMultiple();
@@ -382,9 +382,9 @@ class DeletedControllerGapTest extends TestCase
                 ['ids', [], ['uuid-1']],
             ]);
 
-        $this->objectEntityMapper->method('findAll')
+        $this->objectMapper->method('findAll')
             ->willReturn([$deletedObject]);
-        $this->objectEntityMapper->method('update')
+        $this->objectMapper->method('update')
             ->willThrowException(new \Exception('DB error'));
 
         $result = $this->controller->restoreMultiple();
@@ -413,9 +413,9 @@ class DeletedControllerGapTest extends TestCase
                 ['ids', [], ['uuid-1']],
             ]);
 
-        $this->objectEntityMapper->method('findAll')
+        $this->objectMapper->method('findAll')
             ->willReturn([$deletedObject]);
-        $this->objectEntityMapper->method('delete')
+        $this->objectMapper->method('delete')
             ->willThrowException(new \Exception('DB error'));
 
         $result = $this->controller->destroyMultiple();
@@ -434,7 +434,7 @@ class DeletedControllerGapTest extends TestCase
     {
         $object = new ObjectEntity();
         // getDeleted returns [] for null (Entity __call behavior)
-        $this->objectEntityMapper->method('find')->willReturn($object);
+        $this->objectMapper->method('find')->willReturn($object);
 
         $result = $this->controller->restore('uuid-123');
 
@@ -460,9 +460,9 @@ class DeletedControllerGapTest extends TestCase
                 ['ids', [], ['uuid-1']],
             ]);
 
-        $this->objectEntityMapper->method('findAll')
+        $this->objectMapper->method('findAll')
             ->willReturn([$deletedObject]);
-        $this->objectEntityMapper->method('update')
+        $this->objectMapper->method('update')
             ->willReturn($deletedObject);
 
         $result = $this->controller->restoreMultiple();
@@ -489,7 +489,7 @@ class DeletedControllerGapTest extends TestCase
                 ['ids', [], ['uuid-1']],
             ]);
 
-        $this->objectEntityMapper->method('findAll')
+        $this->objectMapper->method('findAll')
             ->willReturn([$deletedObject]);
 
         $result = $this->controller->destroyMultiple();

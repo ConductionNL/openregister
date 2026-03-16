@@ -22,7 +22,7 @@
 namespace OCA\OpenRegister\Controller;
 
 use GuzzleHttp\Exception\GuzzleException;
-use OCA\OpenRegister\Db\ObjectEntityMapper;
+use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Service\ObjectService;
@@ -151,7 +151,7 @@ class RegistersController extends Controller
      * @param string               $appName              Application name
      * @param IRequest             $request              HTTP request object
      * @param RegisterService      $registerService      Register service for business logic
-     * @param ObjectEntityMapper   $objectEntityMapper   Object entity mapper for database operations
+     * @param MagicMapper   $objectEntityMapper   Object entity mapper for database operations
      * @param UploadService        $uploadService        Upload service for file uploads
      * @param LoggerInterface      $logger               Logger for error tracking
      * @param IUserSession         $userSession          User session service
@@ -173,7 +173,7 @@ class RegistersController extends Controller
         string $appName,
         IRequest $request,
         private readonly RegisterService $registerService,
-        private readonly ObjectEntityMapper $objectEntityMapper,
+        private readonly MagicMapper $objectEntityMapper,
         private readonly UploadService $uploadService,
         private readonly LoggerInterface $logger,
         private readonly IUserSession $userSession,

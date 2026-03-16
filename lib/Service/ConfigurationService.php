@@ -31,7 +31,6 @@ use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Db\ObjectEntityMapper;
 use OCA\OpenRegister\Db\Configuration;
 use OCA\OpenRegister\Db\ConfigurationMapper;
 use RuntimeException;
@@ -88,13 +87,6 @@ class ConfigurationService
      * @var RegisterMapper The register mapper instance.
      */
     private RegisterMapper $registerMapper;
-
-    /**
-     * Object mapper instance for handling object operations.
-     *
-     * @var ObjectEntityMapper The object mapper instance.
-     */
-    private ObjectEntityMapper $objectEntityMapper;
 
     /**
      * Configuration mapper instance for handling configuration operations.
@@ -214,7 +206,6 @@ class ConfigurationService
      *
      * @param SchemaMapper        $schemaMapper        Schema mapper for schema operations
      * @param RegisterMapper      $registerMapper      Register mapper for register operations
-     * @param ObjectEntityMapper  $objectEntityMapper  Object entity mapper for object operations
      * @param ConfigurationMapper $configurationMapper Configuration mapper for configuration operations
      * @param IAppManager         $appManager          App manager for checking installed apps
      * @param ContainerInterface  $container           Container for lazy service loading
@@ -237,7 +228,6 @@ class ConfigurationService
     public function __construct(
         SchemaMapper $schemaMapper,
         RegisterMapper $registerMapper,
-        ObjectEntityMapper $objectEntityMapper,
         ConfigurationMapper $configurationMapper,
         IAppManager $appManager,
         ContainerInterface $container,
@@ -257,7 +247,6 @@ class ConfigurationService
         // Store dependencies for use in service methods.
         $this->schemaMapper        = $schemaMapper;
         $this->registerMapper      = $registerMapper;
-        $this->objectEntityMapper  = $objectEntityMapper;
         $this->configurationMapper = $configurationMapper;
         $this->appManager          = $appManager;
         $this->container           = $container;

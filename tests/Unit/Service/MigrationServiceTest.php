@@ -4,7 +4,7 @@ namespace Unit\Service;
 
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Db\ObjectEntityMapper;
+use OCA\OpenRegister\Db\UnifiedObjectMapper;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
@@ -18,7 +18,7 @@ use Psr\Log\LoggerInterface;
 
 class MigrationServiceTest extends TestCase
 {
-    private ObjectEntityMapper&MockObject $objectEntityMapper;
+    private UnifiedObjectMapper&MockObject $objectMapper;
     private MagicMapper&MockObject $magicMapper;
     private RegisterMapper&MockObject $registerMapper;
     private SchemaMapper&MockObject $schemaMapper;
@@ -28,7 +28,7 @@ class MigrationServiceTest extends TestCase
 
     protected function setUp(): void
     {
-        $this->objectEntityMapper = $this->createMock(ObjectEntityMapper::class);
+        $this->objectMapper = $this->createMock(UnifiedObjectMapper::class);
         $this->magicMapper = $this->createMock(MagicMapper::class);
         $this->registerMapper = $this->createMock(RegisterMapper::class);
         $this->schemaMapper = $this->createMock(SchemaMapper::class);
@@ -36,7 +36,7 @@ class MigrationServiceTest extends TestCase
         $this->logger = $this->createMock(LoggerInterface::class);
 
         $this->service = new MigrationService(
-            $this->objectEntityMapper,
+            $this->objectMapper,
             $this->magicMapper,
             $this->registerMapper,
             $this->schemaMapper,
@@ -121,7 +121,7 @@ class MigrationServiceTest extends TestCase
         $register = $this->createRegister(1);
         $schema = $this->createSchema(2);
 
-        $this->objectEntityMapper->method('countAll')->willReturn(50);
+        $this->objectMapper->method('countAll')->willReturn(50);
         $this->magicMapper->method('existsTableForRegisterSchema')->willReturn(false);
 
         $result = $this->service->getStorageStatus($register, $schema);
@@ -138,7 +138,7 @@ class MigrationServiceTest extends TestCase
         $register = $this->createRegister(1);
         $schema = $this->createSchema(2);
 
-        $this->objectEntityMapper->method('countAll')->willReturn(0);
+        $this->objectMapper->method('countAll')->willReturn(0);
 
         $report = $this->service->migrateToMagicTable($register, $schema);
 
@@ -155,8 +155,8 @@ class MigrationServiceTest extends TestCase
         $obj1 = $this->createObjectEntity(1, 'uuid-1');
         $obj2 = $this->createObjectEntity(2, 'uuid-2');
 
-        $this->objectEntityMapper->method('countAll')->willReturn(2);
-        $this->objectEntityMapper->method('findAllDirectBlobStorage')
+        $this->objectMapper->method('countAll')->willReturn(2);
+        $this->objectMapper->method('findAllDirectBlobStorage')
             ->willReturnOnConsecutiveCalls([$obj1, $obj2], []);
 
         // Objects don't exist in magic table
@@ -177,8 +177,8 @@ class MigrationServiceTest extends TestCase
         $schema = $this->createSchema(2);
         $obj = $this->createObjectEntity(1, 'uuid-1');
 
-        $this->objectEntityMapper->method('countAll')->willReturn(1);
-        $this->objectEntityMapper->method('findAllDirectBlobStorage')
+        $this->objectMapper->method('countAll')->willReturn(1);
+        $this->objectMapper->method('findAllDirectBlobStorage')
             ->willReturnOnConsecutiveCalls([$obj], []);
 
         // Object already in magic table
@@ -196,8 +196,8 @@ class MigrationServiceTest extends TestCase
         $schema = $this->createSchema(2);
         $obj = $this->createObjectEntity(1, 'uuid-1');
 
-        $this->objectEntityMapper->method('countAll')->willReturn(1);
-        $this->objectEntityMapper->method('findAllDirectBlobStorage')
+        $this->objectMapper->method('countAll')->willReturn(1);
+        $this->objectMapper->method('findAllDirectBlobStorage')
             ->willReturnOnConsecutiveCalls([$obj], []);
 
         $this->magicMapper->method('findInRegisterSchemaTable')
@@ -252,7 +252,7 @@ class MigrationServiceTest extends TestCase
             ->willReturnOnConsecutiveCalls([$obj], []);
 
         // Object doesn't exist in blob storage
-        $this->objectEntityMapper->method('findDirectBlobStorage')
+        $this->objectMapper->method('findDirectBlobStorage')
             ->willThrowException(new DoesNotExistException('not found'));
 
         $report = $this->service->migrateToBlobStorage($register, $schema, 100, true);
@@ -273,7 +273,7 @@ class MigrationServiceTest extends TestCase
             ->willReturnOnConsecutiveCalls([$obj], []);
 
         // Object already in blob storage
-        $this->objectEntityMapper->method('findDirectBlobStorage')->willReturn($obj);
+        $this->objectMapper->method('findDirectBlobStorage')->willReturn($obj);
 
         $report = $this->service->migrateToBlobStorage($register, $schema, 100, true);
 
@@ -286,7 +286,7 @@ class MigrationServiceTest extends TestCase
         $register = $this->createRegister(1);
         $schema = $this->createSchema(2);
 
-        $this->objectEntityMapper->method('countAll')->willReturn(0);
+        $this->objectMapper->method('countAll')->willReturn(0);
         $this->magicMapper->expects($this->once())->method('ensureTableForRegisterSchema');
 
         $this->service->migrateToMagicTable($register, $schema);
@@ -297,7 +297,7 @@ class MigrationServiceTest extends TestCase
         $register = $this->createRegister(1);
         $schema = $this->createSchema(2);
 
-        $this->objectEntityMapper->method('countAll')->willReturn(0);
+        $this->objectMapper->method('countAll')->willReturn(0);
         $this->magicMapper->expects($this->never())->method('ensureTableForRegisterSchema');
 
         $this->service->migrateToMagicTable($register, $schema, 100, true);
@@ -309,10 +309,10 @@ class MigrationServiceTest extends TestCase
         $schema = $this->createSchema(2);
         $obj = $this->createObjectEntity(1, 'uuid-1');
 
-        $this->objectEntityMapper->method('countAll')->willReturn(1);
-        $this->objectEntityMapper->method('findAllDirectBlobStorage')
+        $this->objectMapper->method('countAll')->willReturn(1);
+        $this->objectMapper->method('findAllDirectBlobStorage')
             ->willReturnOnConsecutiveCalls([$obj], []);
-        $this->objectEntityMapper->expects($this->once())->method('deleteEntity');
+        $this->objectMapper->expects($this->once())->method('deleteEntity');
 
         $this->magicMapper->method('findInRegisterSchemaTable')
             ->willThrowException(new DoesNotExistException('not found'));
@@ -339,9 +339,9 @@ class MigrationServiceTest extends TestCase
         $this->magicMapper->method('findInRegisterSchemaTable')->willReturn($magicObj);
         $this->magicMapper->expects($this->once())->method('deleteObjectEntity');
 
-        $this->objectEntityMapper->method('findDirectBlobStorage')
+        $this->objectMapper->method('findDirectBlobStorage')
             ->willThrowException(new DoesNotExistException('not found'));
-        $this->objectEntityMapper->expects($this->once())->method('insertEntity');
+        $this->objectMapper->expects($this->once())->method('insertEntity');
 
         $report = $this->service->migrateToBlobStorage($register, $schema);
 
@@ -360,9 +360,9 @@ class MigrationServiceTest extends TestCase
         $this->magicMapper->method('searchObjectsInRegisterSchemaTable')
             ->willReturnOnConsecutiveCalls([$obj], []);
 
-        $this->objectEntityMapper->method('findDirectBlobStorage')
+        $this->objectMapper->method('findDirectBlobStorage')
             ->willThrowException(new DoesNotExistException('not found'));
-        $this->objectEntityMapper->method('insertEntity')
+        $this->objectMapper->method('insertEntity')
             ->willThrowException(new \Exception('Insert failed'));
 
         $report = $this->service->migrateToBlobStorage($register, $schema);
@@ -378,7 +378,7 @@ class MigrationServiceTest extends TestCase
         $register = $this->createRegister(1);
         $schema = $this->createSchema(2);
 
-        $this->objectEntityMapper->method('countAll')->willReturn(0);
+        $this->objectMapper->method('countAll')->willReturn(0);
         $this->magicMapper->method('existsTableForRegisterSchema')->willReturn(true);
         $this->magicMapper->method('countObjectsInRegisterSchemaTable')->willReturn(15);
 
@@ -393,7 +393,7 @@ class MigrationServiceTest extends TestCase
         $register = $this->createRegister(5);
         $schema = $this->createSchema(9);
 
-        $this->objectEntityMapper->method('countAll')->willReturn(3);
+        $this->objectMapper->method('countAll')->willReturn(3);
         $this->magicMapper->method('existsTableForRegisterSchema')->willReturn(false);
 
         $result = $this->service->getStorageStatus($register, $schema);
@@ -420,9 +420,9 @@ class MigrationServiceTest extends TestCase
         $register = $this->createRegister(1);
         $schema = $this->createSchema(2);
 
-        $this->objectEntityMapper->method('countAll')->willReturn(5);
+        $this->objectMapper->method('countAll')->willReturn(5);
         // First batch returns empty immediately — loop should break.
-        $this->objectEntityMapper->method('findAllDirectBlobStorage')
+        $this->objectMapper->method('findAllDirectBlobStorage')
             ->willReturn([]);
 
         $report = $this->service->migrateToMagicTable($register, $schema);

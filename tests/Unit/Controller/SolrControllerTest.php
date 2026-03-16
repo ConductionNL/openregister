@@ -7,7 +7,7 @@ namespace Unit\Controller;
 use Exception;
 use OCA\OpenRegister\Controller\SolrController;
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Db\ObjectEntityMapper;
+use OCA\OpenRegister\Db\UnifiedObjectMapper;
 use OCA\OpenRegister\Service\IndexService;
 use OCA\OpenRegister\Service\VectorizationService;
 use OCP\AppFramework\Http\JSONResponse;
@@ -39,7 +39,7 @@ class SolrControllerIndexServiceStub
 }
 
 /**
- * Stub for ObjectEntityMapper methods used by SolrController.
+ * Stub for UnifiedObjectMapper methods used by SolrController.
  */
 class SolrControllerObjectMapperStub
 {
@@ -98,7 +98,7 @@ class SolrControllerTest extends TestCase
             ->willReturnMap([
                 [VectorizationService::class, $this->vectorService],
                 [IndexService::class, $this->indexService],
-                [ObjectEntityMapper::class, $this->objectMapper],
+                [UnifiedObjectMapper::class, $this->objectMapper],
             ]);
 
         $this->controller = new SolrController(

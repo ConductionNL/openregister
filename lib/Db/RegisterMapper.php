@@ -34,7 +34,7 @@ use OCP\IGroupManager;
 use OCP\IUserSession;
 use OCP\IAppConfig;
 use Symfony\Component\Uid\Uuid;
-use OCA\OpenRegister\Db\ObjectEntityMapper;
+use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Service\FileService;
 
 /**
@@ -111,11 +111,11 @@ class RegisterMapper extends QBMapper
     private readonly IEventDispatcher $eventDispatcher;
 
     /**
-     * The object entity mapper instance
+     * Container for lazy resolution of MagicMapper (avoids circular DI).
      *
-     * @var ObjectEntityMapper
+     * @var \Psr\Container\ContainerInterface
      */
-    private readonly ObjectEntityMapper $objectEntityMapper;
+    private readonly \Psr\Container\ContainerInterface $container;
 
     /**
      * Organisation mapper for multi-tenancy (from trait)
@@ -151,14 +151,14 @@ class RegisterMapper extends QBMapper
      * Initializes mapper with database connection and required dependencies
      * for multi-tenancy, RBAC, and event dispatching.
      *
-     * @param IDBConnection      $db                 Database connection for queries
-     * @param SchemaMapper       $schemaMapper       Schema mapper for schema operations
-     * @param IEventDispatcher   $eventDispatcher    Event dispatcher for register events
-     * @param ObjectEntityMapper $objectEntityMapper Object entity mapper for object queries
-     * @param OrganisationMapper $organisationMapper Organisation mapper for multi-tenancy
-     * @param IUserSession       $userSession        User session for current user context
-     * @param IGroupManager      $groupManager       Group manager for RBAC checks
-     * @param IAppConfig         $appConfig          App configuration for multitenancy settings
+     * @param IDBConnection                    $db                 Database connection for queries
+     * @param SchemaMapper                    $schemaMapper       Schema mapper for schema operations
+     * @param IEventDispatcher                $eventDispatcher    Event dispatcher for register events
+     * @param \Psr\Container\ContainerInterface $container        Container for lazy MagicMapper resolution
+     * @param OrganisationMapper              $organisationMapper Organisation mapper for multi-tenancy
+     * @param IUserSession                    $userSession        User session for current user context
+     * @param IGroupManager                   $groupManager       Group manager for RBAC checks
+     * @param IAppConfig                      $appConfig          App configuration for multitenancy settings
      *
      * @return void
      */
@@ -166,7 +166,7 @@ class RegisterMapper extends QBMapper
         IDBConnection $db,
         SchemaMapper $schemaMapper,
         IEventDispatcher $eventDispatcher,
-        ObjectEntityMapper $objectEntityMapper,
+        \Psr\Container\ContainerInterface $container,
         OrganisationMapper $organisationMapper,
         IUserSession $userSession,
         IGroupManager $groupManager,
@@ -178,7 +178,7 @@ class RegisterMapper extends QBMapper
         // Store dependencies for use in mapper methods.
         $this->schemaMapper       = $schemaMapper;
         $this->eventDispatcher    = $eventDispatcher;
-        $this->objectEntityMapper = $objectEntityMapper;
+        $this->container          = $container;
         $this->organisationMapper = $organisationMapper;
         $this->userSession        = $userSession;
         $this->groupManager       = $groupManager;
@@ -694,7 +694,8 @@ class RegisterMapper extends QBMapper
             $registerId = $entity->getId();
         }
 
-        $stats = $this->objectEntityMapper->getStatistics(registerId: $registerId, schemaId: null);
+        $objectEntityMapper = $this->container->get(MagicMapper::class);
+        $stats = $objectEntityMapper->getStatistics(registerId: $registerId, schemaId: null);
         if (($stats['total'] ?? 0) > 0) {
             throw new ValidationException(message: 'Cannot delete register: objects are still attached.');
         }

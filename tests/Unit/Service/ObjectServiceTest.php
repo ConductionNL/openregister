@@ -26,7 +26,7 @@ use Exception;
 use RuntimeException;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\ObjectEntityMapper;
-use OCA\OpenRegister\Db\UnifiedObjectMapper;
+use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
@@ -119,7 +119,7 @@ class ObjectServiceTest extends TestCase
 	private $searchQueryHandler;
 	/** @var MockObject&ObjectEntityMapper */
 	private $objectEntityMapper;
-	/** @var MockObject&UnifiedObjectMapper */
+	/** @var MockObject&MagicMapper */
 	private $unifiedObjectMapper;
 	/** @var MockObject&RegisterMapper */
 	private $registerMapper;
@@ -162,7 +162,7 @@ class ObjectServiceTest extends TestCase
 		$this->facetHandler = $this->createMock(FacetHandler::class);
 		$this->searchQueryHandler = $this->createMock(SearchQueryHandler::class);
 		$this->objectEntityMapper = $this->createMock(ObjectEntityMapper::class);
-		$this->unifiedObjectMapper = $this->createMock(UnifiedObjectMapper::class);
+		$this->unifiedObjectMapper = $this->createMock(MagicMapper::class);
 		$this->registerMapper = $this->createMock(RegisterMapper::class);
 		$this->schemaMapper = $this->createMock(SchemaMapper::class);
 		$this->fileService = $this->createMock(FileService::class);
@@ -377,7 +377,7 @@ class ObjectServiceTest extends TestCase
 	}
 
 	/**
-	 * Test setObject with string ID uses UnifiedObjectMapper when context is set.
+	 * Test setObject with string ID uses MagicMapper when context is set.
 	 */
 	public function testSetObjectWithStringIdUsesUnifiedMapperWhenContextSet(): void
 	{

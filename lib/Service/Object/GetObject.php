@@ -28,7 +28,7 @@ namespace OCA\OpenRegister\Service\Object;
 
 use Exception;
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Db\UnifiedObjectMapper;
+use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -54,12 +54,12 @@ class GetObject
     /**
      * Constructor for GetObject handler.
      *
-     * @param UnifiedObjectMapper $objectMapper     Object entity data mapper.
+     * @param MagicMapper $objectMapper     Object entity data mapper.
      * @param AuditTrailMapper    $auditTrailMapper Audit trail mapper for logs.
      * @param SettingsService     $settingsService  Settings service for accessing trail settings.
      */
     public function __construct(
-        private readonly UnifiedObjectMapper $objectMapper,
+        private readonly MagicMapper $objectMapper,
         private readonly AuditTrailMapper $auditTrailMapper,
         private readonly SettingsService $settingsService
     ) {

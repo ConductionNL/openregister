@@ -8,7 +8,7 @@ on:
 
 jobs:
   quality:
-    uses: ConductionNL/.github/.github/workflows/quality.yml@main
+    uses: ConductionNL/.github/.github/workflows/quality.yml@feature/add-sbom-generation
     with:
       app-name: openregister
       php-version: "8.3"
@@ -22,3 +22,4 @@ jobs:
       enable-phpunit: true
       enable-newman: true
       enable-coverage-guard: true
+      enable-sbom: true

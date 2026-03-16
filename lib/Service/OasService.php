@@ -264,7 +264,7 @@ class OasService
                     $this->addCrudPaths(
                         register: $register,
                         schema: $schema,
-                        rbac: $rbac,
+                        _rbac: $rbac,
                         operationIdPrefix: $operationIdPrefix
                     );
                     $this->addExtendedPaths(register: $register, schema: $schema);

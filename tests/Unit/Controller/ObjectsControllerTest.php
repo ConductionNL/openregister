@@ -8,7 +8,7 @@ use Exception;
 use OCP\DB\Exception as DBException;
 use OCA\OpenRegister\Controller\ObjectsController;
 use OCA\OpenRegister\Db\AuditTrailMapper;
-use OCA\OpenRegister\Db\ObjectEntityMapper;
+use OCA\OpenRegister\Db\UnifiedObjectMapper;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Dto\DeletionAnalysis;
@@ -44,7 +44,7 @@ class ObjectsControllerTest extends TestCase
     private IAppConfig&MockObject $config;
     private IAppManager&MockObject $appManager;
     private ContainerInterface&MockObject $container;
-    private ObjectEntityMapper&MockObject $objectEntityMapper;
+    private UnifiedObjectMapper&MockObject $objectMapper;
     private RegisterMapper&MockObject $registerMapper;
     private SchemaMapper&MockObject $schemaMapper;
     private AuditTrailMapper&MockObject $auditTrailMapper;
@@ -64,7 +64,7 @@ class ObjectsControllerTest extends TestCase
         $this->config = $this->createMock(IAppConfig::class);
         $this->appManager = $this->createMock(IAppManager::class);
         $this->container = $this->createMock(ContainerInterface::class);
-        $this->objectEntityMapper = $this->createMock(ObjectEntityMapper::class);
+        $this->objectMapper = $this->createMock(UnifiedObjectMapper::class);
         $this->registerMapper = $this->createMock(RegisterMapper::class);
         $this->schemaMapper = $this->createMock(SchemaMapper::class);
         $this->auditTrailMapper = $this->createMock(AuditTrailMapper::class);
@@ -100,7 +100,7 @@ class ObjectsControllerTest extends TestCase
             $this->config,
             $this->appManager,
             $this->container,
-            $this->objectEntityMapper,
+            $this->objectMapper,
             $this->registerMapper,
             $this->schemaMapper,
             $this->auditTrailMapper,
@@ -710,7 +710,7 @@ class ObjectsControllerTest extends TestCase
 
     public function testClearBlobSuccess(): void
     {
-        $this->objectEntityMapper->method('clearBlobObjects')->willReturn([
+        $this->objectMapper->method('clearBlobObjects')->willReturn([
             'deleted' => 25,
         ]);
 
@@ -724,7 +724,7 @@ class ObjectsControllerTest extends TestCase
 
     public function testClearBlobReturns500OnException(): void
     {
-        $this->objectEntityMapper->method('clearBlobObjects')
+        $this->objectMapper->method('clearBlobObjects')
             ->willThrowException(new DBException('Clear failed'));
 
         $result = $this->controller->clearBlob();
@@ -799,7 +799,7 @@ class ObjectsControllerTest extends TestCase
 
         $this->objectService->method('setSchema')->willReturnSelf();
         $this->objectService->method('setRegister')->willReturnSelf();
-        $this->objectEntityMapper->method('findAcrossAllSources')->willReturn([
+        $this->objectMapper->method('findAcrossAllSources')->willReturn([
             'object' => $objectEntity,
         ]);
 
@@ -817,7 +817,7 @@ class ObjectsControllerTest extends TestCase
     {
         $this->objectService->method('setSchema')->willReturnSelf();
         $this->objectService->method('setRegister')->willReturnSelf();
-        $this->objectEntityMapper->method('findAcrossAllSources')
+        $this->objectMapper->method('findAcrossAllSources')
             ->willThrowException(new \OCP\AppFramework\Db\DoesNotExistException('Not found'));
 
         $result = $this->controller->canDelete('uuid-123', 'reg1', 'schema1', $this->objectService);
@@ -829,7 +829,7 @@ class ObjectsControllerTest extends TestCase
     {
         $this->objectService->method('setSchema')->willReturnSelf();
         $this->objectService->method('setRegister')->willReturnSelf();
-        $this->objectEntityMapper->method('findAcrossAllSources')
+        $this->objectMapper->method('findAcrossAllSources')
             ->willThrowException(new Exception('Permission denied'));
 
         $result = $this->controller->canDelete('uuid-123', 'reg1', 'schema1', $this->objectService);
@@ -1361,7 +1361,7 @@ class ObjectsControllerTest extends TestCase
     {
         $this->objectService->method('setSchema')->willReturnSelf();
         $this->objectService->method('setRegister')->willReturnSelf();
-        $this->objectEntityMapper->method('findAcrossAllSources')
+        $this->objectMapper->method('findAcrossAllSources')
             ->willThrowException(new Exception('Analysis error'));
 
         $result = $this->controller->canDelete('uuid-123', 'reg1', 'schema1', $this->objectService);
@@ -2527,7 +2527,7 @@ class ObjectsControllerTest extends TestCase
 
         $this->objectService->method('setSchema')->willReturnSelf();
         $this->objectService->method('setRegister')->willReturnSelf();
-        $this->objectEntityMapper->method('findAcrossAllSources')->willReturn([
+        $this->objectMapper->method('findAcrossAllSources')->willReturn([
             'object' => $objectEntity,
         ]);
 
@@ -4008,7 +4008,7 @@ class ObjectsControllerTest extends TestCase
 
     public function testClearBlobSuccessWithZeroDeleted(): void
     {
-        $this->objectEntityMapper->method('clearBlobObjects')->willReturn([
+        $this->objectMapper->method('clearBlobObjects')->willReturn([
             'deleted' => 0,
         ]);
 
@@ -4052,7 +4052,7 @@ class ObjectsControllerTest extends TestCase
 
         $this->objectService->method('setSchema')->willReturnSelf();
         $this->objectService->method('setRegister')->willReturnSelf();
-        $this->objectEntityMapper->method('findAcrossAllSources')->willReturn([
+        $this->objectMapper->method('findAcrossAllSources')->willReturn([
             'object' => $objectEntity,
         ]);
 
@@ -4624,7 +4624,7 @@ class ObjectsControllerTest extends TestCase
             $this->config,
             $this->appManager,
             $this->container,
-            $this->objectEntityMapper,
+            $this->objectMapper,
             $this->registerMapper,
             $this->schemaMapper,
             $this->auditTrailMapper,

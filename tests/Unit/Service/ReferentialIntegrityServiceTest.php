@@ -29,7 +29,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service;
 
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Db\ObjectEntityMapper;
+use OCA\OpenRegister\Db\UnifiedObjectMapper;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
@@ -66,9 +66,9 @@ class ReferentialIntegrityServiceTest extends TestCase
     /**
      * Mock object entity mapper.
      *
-     * @var ObjectEntityMapper&MockObject
+     * @var UnifiedObjectMapper&MockObject
      */
-    private ObjectEntityMapper $objectEntityMapper;
+    private UnifiedObjectMapper $objectMapper;
 
     /**
      * Mock audit trail mapper.
@@ -107,14 +107,14 @@ class ReferentialIntegrityServiceTest extends TestCase
     {
         $this->schemaMapper       = $this->createMock(SchemaMapper::class);
         $this->registerMapper     = $this->createMock(RegisterMapper::class);
-        $this->objectEntityMapper = $this->createMock(ObjectEntityMapper::class);
+        $this->objectMapper = $this->createMock(UnifiedObjectMapper::class);
         $this->auditTrailMapper   = $this->createMock(AuditTrailMapper::class);
         $this->logger = $this->createMock(LoggerInterface::class);
 
         $this->service = new ReferentialIntegrityService(
             schemaMapper: $this->schemaMapper,
             registerMapper: $this->registerMapper,
-            objectEntityMapper: $this->objectEntityMapper,
+            objectMapper: $this->objectMapper,
             auditTrailMapper: $this->auditTrailMapper,
             logger: $this->logger
         );
@@ -509,7 +509,7 @@ class ReferentialIntegrityServiceTest extends TestCase
             ['person' => 'person-uuid']
         );
 
-        $this->objectEntityMapper->method('findByRelation')
+        $this->objectMapper->method('findByRelation')
             ->willReturn([$contactObj]);
 
         $analysis = $this->service->canDelete($personObj);
@@ -544,7 +544,7 @@ class ReferentialIntegrityServiceTest extends TestCase
             ['manager' => 'person-uuid']
         );
 
-        $this->objectEntityMapper->method('findByRelation')
+        $this->objectMapper->method('findByRelation')
             ->willReturn([$serviceObj]);
 
         $analysis = $this->service->canDelete($personObj);
@@ -581,7 +581,7 @@ class ReferentialIntegrityServiceTest extends TestCase
             ['coupon' => 'person-uuid']
         );
 
-        $this->objectEntityMapper->method('findByRelation')
+        $this->objectMapper->method('findByRelation')
             ->willReturn([$orderObj]);
 
         $analysis = $this->service->canDelete($personObj);
@@ -617,7 +617,7 @@ class ReferentialIntegrityServiceTest extends TestCase
             ['coupon' => 'person-uuid']
         );
 
-        $this->objectEntityMapper->method('findByRelation')
+        $this->objectMapper->method('findByRelation')
             ->willReturn([$orderObj]);
 
         $analysis = $this->service->canDelete($personObj);
@@ -658,7 +658,7 @@ class ReferentialIntegrityServiceTest extends TestCase
             ['assignee' => 'person-uuid']
         );
 
-        $this->objectEntityMapper->method('findByRelation')
+        $this->objectMapper->method('findByRelation')
             ->willReturn([$taskObj]);
 
         $analysis = $this->service->canDelete($personObj);
@@ -699,7 +699,7 @@ class ReferentialIntegrityServiceTest extends TestCase
             ['assignee' => 'person-uuid']
         );
 
-        $this->objectEntityMapper->method('findByRelation')
+        $this->objectMapper->method('findByRelation')
             ->willReturn([$taskObj]);
 
         $analysis = $this->service->canDelete($personObj);
@@ -739,7 +739,7 @@ class ReferentialIntegrityServiceTest extends TestCase
             ['assignee' => 'person-uuid']
         );
 
-        $this->objectEntityMapper->method('findByRelation')
+        $this->objectMapper->method('findByRelation')
             ->willReturn([$taskObj]);
 
         $analysis = $this->service->canDelete($personObj);
@@ -770,7 +770,7 @@ class ReferentialIntegrityServiceTest extends TestCase
         $personObj = $this->createTestObject('person-uuid', '1');
 
         // No objects reference this person.
-        $this->objectEntityMapper->method('findByRelation')
+        $this->objectMapper->method('findByRelation')
             ->willReturn([]);
 
         $analysis = $this->service->canDelete($personObj);
@@ -810,7 +810,7 @@ class ReferentialIntegrityServiceTest extends TestCase
 
         // First call (for person-uuid): returns contactObj.
         // Second call (for contact-uuid, recursion): returns phoneObj.
-        $this->objectEntityMapper->method('findByRelation')
+        $this->objectMapper->method('findByRelation')
             ->willReturnCallback(
                     function (string $search) use ($contactObj, $phoneObj) {
                         if ($search === 'person-uuid') {
@@ -860,7 +860,7 @@ class ReferentialIntegrityServiceTest extends TestCase
         $contactObj = $this->createTestObject('contact-uuid', '2', ['person' => 'person-uuid']);
         $auditObj   = $this->createTestObject('audit-uuid', '3', ['contact' => 'contact-uuid']);
 
-        $this->objectEntityMapper->method('findByRelation')
+        $this->objectMapper->method('findByRelation')
             ->willReturnCallback(
                     function (string $search) use ($contactObj, $auditObj) {
                         if ($search === 'person-uuid') {
@@ -908,7 +908,7 @@ class ReferentialIntegrityServiceTest extends TestCase
             ['deletedBy' => 'admin', 'deletedAt' => '2024-01-01']
         );
 
-        $this->objectEntityMapper->method('findByRelation')
+        $this->objectMapper->method('findByRelation')
             ->willReturn([$serviceObj]);
 
         $analysis = $this->service->canDelete($personObj);
@@ -945,7 +945,7 @@ class ReferentialIntegrityServiceTest extends TestCase
         $objA = $this->createTestObject('uuid-a', '1', ['refB' => 'uuid-b']);
         $objB = $this->createTestObject('uuid-b', '2', ['refA' => 'uuid-a']);
 
-        $this->objectEntityMapper->method('findByRelation')
+        $this->objectMapper->method('findByRelation')
             ->willReturnCallback(
                     function (string $search) use ($objA, $objB) {
                         if ($search === 'uuid-a') {
@@ -1006,7 +1006,7 @@ class ReferentialIntegrityServiceTest extends TestCase
         $orderObj   = $this->createTestObject('order-uuid', '3', ['assignee' => 'person-uuid']);
         $serviceObj = $this->createTestObject('service-uuid', '4', ['manager' => 'person-uuid']);
 
-        $this->objectEntityMapper->method('findByRelation')
+        $this->objectMapper->method('findByRelation')
             ->willReturn([$contactObj, $orderObj, $serviceObj]);
 
         $analysis = $this->service->canDelete($personObj);
@@ -1067,7 +1067,7 @@ class ReferentialIntegrityServiceTest extends TestCase
         $analysis = DeletionAnalysis::empty();
 
         // Should not call any mapper methods.
-        $this->objectEntityMapper->expects($this->never())
+        $this->objectMapper->expects($this->never())
             ->method('findAcrossAllSources');
 
         $this->service->applyDeletionActions(
@@ -1126,7 +1126,7 @@ class ReferentialIntegrityServiceTest extends TestCase
         $mockRegister = new Register();
         $mockSchema   = new Schema();
 
-        $this->objectEntityMapper->method('findAcrossAllSources')
+        $this->objectMapper->method('findAcrossAllSources')
             ->willReturnCallback(
                 function (string $identifier) use (&$callOrder, $nullObj, $defaultObj, $cascadeObj, $mockRegister, $mockSchema) {
                     $callOrder[] = $identifier;
@@ -1143,7 +1143,7 @@ class ReferentialIntegrityServiceTest extends TestCase
                 }
             );
 
-        $this->objectEntityMapper->method('update')->willReturnArgument(0);
+        $this->objectMapper->method('update')->willReturnArgument(0);
 
         // CASCADE now goes through applyBatchCascadeDelete which calls
         // registerMapper->find() + schemaMapper->find() + deleteObjects(),
@@ -1151,7 +1151,7 @@ class ReferentialIntegrityServiceTest extends TestCase
         $cascadeDeletedUuids = [];
         $this->registerMapper->method('find')->willReturn($mockRegister);
         $this->schemaMapper->method('find')->willReturn($mockSchema);
-        $this->objectEntityMapper->method('deleteObjects')
+        $this->objectMapper->method('deleteObjects')
             ->willReturnCallback(
                 function (array $uuids) use (&$callOrder, &$cascadeDeletedUuids) {
                     $cascadeDeletedUuids = array_merge($cascadeDeletedUuids, $uuids);
@@ -1206,7 +1206,7 @@ class ReferentialIntegrityServiceTest extends TestCase
             ['members' => ['person-uuid', 'other-uuid']]
         );
 
-        $this->objectEntityMapper->method('findByRelation')
+        $this->objectMapper->method('findByRelation')
             ->willReturn([$teamObj]);
 
         $analysis = $this->service->canDelete($personObj);
@@ -1300,7 +1300,7 @@ class ReferentialIntegrityServiceTest extends TestCase
             $objects[$i] = $this->createTestObject("uuid-{$i}", (string) $i, $objData);
         }
 
-        $this->objectEntityMapper->method('findByRelation')
+        $this->objectMapper->method('findByRelation')
             ->willReturnCallback(
                 function (string $search) use ($objects) {
                     foreach ($objects as $i => $obj) {
@@ -1346,7 +1346,7 @@ class ReferentialIntegrityServiceTest extends TestCase
         $this->schemaMapper->method('find')->willReturn($mockSchema);
 
         $deletedUuids = [];
-        $this->objectEntityMapper->method('deleteObjects')
+        $this->objectMapper->method('deleteObjects')
             ->willReturnCallback(
                 function (array $uuids) use (&$deletedUuids) {
                     $deletedUuids = array_merge($deletedUuids, $uuids);
@@ -1354,7 +1354,7 @@ class ReferentialIntegrityServiceTest extends TestCase
                 }
             );
 
-        $this->objectEntityMapper->method('findAcrossAllSources')->willReturn([]);
+        $this->objectMapper->method('findAcrossAllSources')->willReturn([]);
 
         $this->service->applyDeletionActions(
             analysis: $analysis,
@@ -1391,7 +1391,7 @@ class ReferentialIntegrityServiceTest extends TestCase
         $mockRegister = new Register();
         $mockSchema   = new Schema();
 
-        $this->objectEntityMapper->method('findAcrossAllSources')
+        $this->objectMapper->method('findAcrossAllSources')
             ->willReturn([
                 'object'   => $obj,
                 'register' => $mockRegister,
@@ -1399,7 +1399,7 @@ class ReferentialIntegrityServiceTest extends TestCase
             ]);
 
         $updatedObjects = [];
-        $this->objectEntityMapper->method('update')
+        $this->objectMapper->method('update')
             ->willReturnCallback(
                 function ($o) use (&$updatedObjects) {
                     $updatedObjects[] = $o;

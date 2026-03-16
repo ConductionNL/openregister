@@ -362,8 +362,8 @@ class RegisterService
     /**
      * Get object counts per schema for a register using optimized SQL
      *
-     * This method builds a single SQL query that counts objects for each schema,
-     * handling both magic table and blob storage configurations efficiently.
+     * This method builds a single SQL query that counts objects for each schema
+     * from their magic tables.
      *
      * @param int   $registerId The register ID to get counts for
      * @param array $schemas    Array of schema objects with their configurations
@@ -387,17 +387,40 @@ class RegisterService
                 context: ['file' => __FILE__, 'line' => __LINE__]
             );
 
-            // Classify schemas into magic table and blob storage groups.
-            $classified = $this->classifySchemasForCounting(registerId: $registerId, schemas: $schemas);
+            // Build UNION queries for each schema's magic table.
+            $unionQueries = [];
 
-            $unionQueries = $classified['unionQueries'];
-            $blobSchemas  = $classified['blobSchemas'];
-            $result       = $classified['zeroResults'];
+            foreach ($schemas as $schema) {
+                $schemaId = $schema['id'] ?? null;
+                if ($schemaId === null) {
+                    $this->logger->warning(
+                        message: '[RegisterService] Schema without ID found, skipping',
+                        context: ['file' => __FILE__, 'line' => __LINE__]
+                    );
+                    continue;
+                }
 
-            // Add blob storage query if there are any blob schemas.
-            if (empty($blobSchemas) === false) {
-                $unionQueries[] = $this->buildBlobCountQuery(registerId: $registerId, blobSchemas: $blobSchemas);
-            }
+                $tableName   = 'openregister_table_'.$registerId.'_'.$schemaId;
+                $tableExists = $this->db->tableExists($tableName);
+
+                if ($tableExists === true) {
+                    $quotedTableName = $this->db->getQueryBuilder()->getTableName($tableName);
+                    $unionQueries[]  = "
+                        SELECT
+                            CAST({$schemaId} AS VARCHAR) as schema_id,
+                            COUNT(*) as total,
+                            COUNT(CASE WHEN _deleted IS NOT NULL THEN 1 END) as deleted,
+                            0 as invalid,
+                            0 as locked,
+                            0 as published,
+                            0 as size
+                        FROM {$quotedTableName}
+                    ";
+                } else {
+                    // Table doesn't exist yet, return 0 for all stats.
+                    $result[$schemaId] = $this->getZeroCountStats();
+                }
+            }//end foreach
 
             if (empty($unionQueries) === true) {
                 return $result;
@@ -422,13 +445,6 @@ class RegisterService
             }
 
             $stmt->closeCursor();
-
-            // Ensure all blob schemas have an entry (even if 0).
-            foreach ($blobSchemas as $schemaId) {
-                if (isset($result[$schemaId]) === false) {
-                    $result[$schemaId] = $this->getZeroCountStats();
-                }
-            }
         } catch (\Exception $e) {
             // Log error but don't fail - return empty counts.
             $this->logger->error(
@@ -443,125 +459,6 @@ class RegisterService
 
         return $result;
     }//end getSchemaObjectCounts()
-
-    /**
-     * Classify schemas into magic table and blob storage groups for counting.
-     *
-     * Iterates over schemas, determines which use magic tables vs blob storage,
-     * and builds UNION query fragments for magic table schemas.
-     *
-     * @param int   $registerId The register ID.
-     * @param array $schemas    Array of schema data arrays.
-     *
-     * @return array{unionQueries: string[], blobSchemas: int[], zeroResults: array} Classification result.
-     */
-    private function classifySchemasForCounting(int $registerId, array $schemas): array
-    {
-        $unionQueries = [];
-        $blobSchemas  = [];
-        $zeroResults  = [];
-
-        foreach ($schemas as $schema) {
-            $schemaId = $schema['id'] ?? null;
-            if ($schemaId === null) {
-                $this->logger->warning(
-                    message: '[RegisterService] Schema without ID found, skipping',
-                    context: ['file' => __FILE__, 'line' => __LINE__]
-                );
-                continue;
-            }
-
-            // Check if this schema uses magic table (has 'table' configuration in properties).
-            $isMagicTable = $this->schemaHasMagicTable(schema: $schema);
-
-            if ($isMagicTable === true) {
-                $tableName   = 'openregister_table_'.$registerId.'_'.$schemaId;
-                $tableExists = $this->db->tableExists($tableName);
-
-                if ($tableExists === true) {
-                    $quotedTableName = $this->db->getQueryBuilder()->getTableName($tableName);
-                    $unionQueries[]  = "
-                        SELECT
-                            CAST({$schemaId} AS VARCHAR) as schema_id,
-                            COUNT(*) as total,
-                            COUNT(CASE WHEN _deleted IS NOT NULL THEN 1 END) as deleted,
-                            0 as invalid,
-                            0 as locked,
-                            0 as published,
-                            0 as size
-                        FROM {$quotedTableName}
-                    ";
-                } else {
-                    // Table doesn't exist yet, return 0 for all stats.
-                    $zeroResults[$schemaId] = $this->getZeroCountStats();
-                }//end if
-            } else {
-                // Blob storage: add to blob schemas list.
-                $blobSchemas[] = (int) $schemaId;
-            }//end if
-        }//end foreach
-
-        return [
-            'unionQueries' => $unionQueries,
-            'blobSchemas'  => $blobSchemas,
-            'zeroResults'  => $zeroResults,
-        ];
-    }//end classifySchemasForCounting()
-
-    /**
-     * Check if a schema uses magic table storage.
-     *
-     * A schema uses magic tables if any of its properties has a 'table' array configuration.
-     *
-     * @param array $schema The schema data array.
-     *
-     * @return bool True if the schema uses magic tables.
-     */
-    private function schemaHasMagicTable(array $schema): bool
-    {
-        if (isset($schema['properties']) === false || is_array($schema['properties']) === false) {
-            return false;
-        }
-
-        foreach ($schema['properties'] as $property) {
-            if (isset($property['table']) === true && is_array($property['table']) === true) {
-                return true;
-            }
-        }
-
-        return false;
-    }//end schemaHasMagicTable()
-
-    /**
-     * Build the blob storage count query for the given schemas.
-     *
-     * @param int   $registerId  The register ID.
-     * @param int[] $blobSchemas Array of schema IDs using blob storage.
-     *
-     * @return string The SQL query string.
-     */
-    private function buildBlobCountQuery(int $registerId, array $blobSchemas): string
-    {
-        $schemaIdsList = implode("','", $blobSchemas);
-        $qb            = $this->db->getQueryBuilder();
-        $tableName     = $qb->getTableName('openregister_objects');
-
-        return "
-            SELECT
-                schema as schema_id,
-                COUNT(*) as total,
-                COUNT(CASE WHEN deleted IS NOT NULL THEN 1 END) as deleted,
-                COUNT(CASE WHEN validation IS NOT NULL THEN 1 END) as invalid,
-                COUNT(CASE WHEN locked IS NOT NULL THEN 1 END) as locked,
-                COUNT(CASE WHEN published IS NOT NULL AND published <= NOW()
-                      AND (depublished IS NULL OR depublished > NOW()) THEN 1 END) as published,
-                COALESCE(SUM(size), 0) as size
-            FROM {$tableName}
-            WHERE register = '{$registerId}'
-              AND schema IN ('{$schemaIdsList}')
-            GROUP BY schema
-        ";
-    }//end buildBlobCountQuery()
 
     /**
      * Get a zero-initialized count stats array, optionally populated from a database row.

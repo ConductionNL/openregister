@@ -23,7 +23,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Object;
 use Exception;
 use OCA\OpenRegister\Db\FileMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Db\ObjectEntityMapper;
+use OCA\OpenRegister\Db\UnifiedObjectMapper;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
@@ -54,8 +54,8 @@ class RenderObjectDeepTest extends TestCase
     /** @var FileMapper&MockObject */
     private FileMapper $fileMapper;
 
-    /** @var ObjectEntityMapper&MockObject */
-    private ObjectEntityMapper $objectEntityMapper;
+    /** @var UnifiedObjectMapper&MockObject */
+    private UnifiedObjectMapper $objectMapper;
 
     /** @var RegisterMapper&MockObject */
     private RegisterMapper $registerMapper;
@@ -89,7 +89,7 @@ class RenderObjectDeepTest extends TestCase
         parent::setUp();
 
         $this->fileMapper = $this->createMock(FileMapper::class);
-        $this->objectEntityMapper = $this->createMock(ObjectEntityMapper::class);
+        $this->objectMapper = $this->createMock(UnifiedObjectMapper::class);
         $this->registerMapper = $this->createMock(RegisterMapper::class);
         $this->schemaMapper = $this->createMock(SchemaMapper::class);
         $this->systemTagManager = $this->createMock(ISystemTagManager::class);
@@ -102,7 +102,7 @@ class RenderObjectDeepTest extends TestCase
 
         $this->handler = new RenderObject(
             $this->fileMapper,
-            $this->objectEntityMapper,
+            $this->objectMapper,
             $this->registerMapper,
             $this->schemaMapper,
             $this->systemTagManager,

@@ -173,7 +173,6 @@ class ElasticsearchBackend implements SearchBackendInterface
      * @param array $query         The search query
      * @param bool  $_rbac         Whether to apply RBAC
      * @param bool  $_multitenancy Whether to apply multitenancy
-     * @param bool  $published     Whether to filter by published status
      * @param bool  $deleted       Whether to include deleted objects
      *
      * @return ((array|mixed)[]|int|mixed)[] Search results with pagination metadata
@@ -186,7 +185,6 @@ class ElasticsearchBackend implements SearchBackendInterface
         array $query=[],
         bool $_rbac=true,
         bool $_multitenancy=true,
-        bool $published=false,
         bool $deleted=false
     ): array {
         $result = $this->queryExecutor->search($query);

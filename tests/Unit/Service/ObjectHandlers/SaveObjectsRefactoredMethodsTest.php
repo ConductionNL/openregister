@@ -21,7 +21,7 @@
 namespace OCA\OpenRegister\Tests\Unit\Service\ObjectHandlers;
 
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Db\ObjectEntityMapper;
+use OCA\OpenRegister\Db\UnifiedObjectMapper;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
@@ -55,8 +55,8 @@ class SaveObjectsRefactoredMethodsTest extends TestCase
     private SaveObjects $saveObjects;
     private ReflectionClass $reflection;
 
-    /** @var MockObject|ObjectEntityMapper */
-    private $objectEntityMapper;
+    /** @var MockObject|UnifiedObjectMapper */
+    private $objectMapper;
 
     /** @var MockObject|SchemaMapper */
     private $schemaMapper;
@@ -107,7 +107,7 @@ class SaveObjectsRefactoredMethodsTest extends TestCase
         parent::setUp();
 
         // Create mocks for all dependencies.
-        $this->objectEntityMapper = $this->createMock(ObjectEntityMapper::class);
+        $this->objectMapper = $this->createMock(UnifiedObjectMapper::class);
         $this->schemaMapper = $this->createMock(SchemaMapper::class);
         $this->registerMapper = $this->createMock(RegisterMapper::class);
         $this->saveHandler = $this->createMock(SaveObject::class);
@@ -131,7 +131,7 @@ class SaveObjectsRefactoredMethodsTest extends TestCase
 
         // Create SaveObjects instance with positional params (correct constructor order).
         $this->saveObjects = new SaveObjects(
-            $this->objectEntityMapper,
+            $this->objectMapper,
             $this->schemaMapper,
             $this->registerMapper,
             $this->saveHandler,

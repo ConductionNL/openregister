@@ -19,7 +19,7 @@ use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
-use OCA\OpenRegister\Db\UnifiedObjectMapper;
+use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Service\Object\SaveObjects\ChunkProcessingHandler;
 use OCA\OpenRegister\Service\Object\SaveObjects\TransformationHandler;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -50,8 +50,8 @@ class ChunkProcessingHandlerTest extends TestCase
     /** @var ObjectEntityMapper&MockObject */
     private ObjectEntityMapper $objectEntityMapper;
 
-    /** @var UnifiedObjectMapper&MockObject */
-    private UnifiedObjectMapper $unifiedObjectMapper;
+    /** @var MagicMapper&MockObject */
+    private MagicMapper $unifiedObjectMapper;
 
     /** @var RegisterMapper&MockObject */
     private RegisterMapper $registerMapper;
@@ -120,7 +120,7 @@ class ChunkProcessingHandlerTest extends TestCase
 
         $this->transformHandler    = $this->createMock(TransformationHandler::class);
         $this->objectEntityMapper  = $this->createMock(ObjectEntityMapper::class);
-        $this->unifiedObjectMapper = $this->createMock(UnifiedObjectMapper::class);
+        $this->unifiedObjectMapper = $this->createMock(MagicMapper::class);
         $this->registerMapper      = $this->createMock(RegisterMapper::class);
         $this->schemaMapper        = $this->createMock(SchemaMapper::class);
         $this->logger              = $this->createMock(LoggerInterface::class);

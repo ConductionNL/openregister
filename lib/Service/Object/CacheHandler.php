@@ -26,7 +26,7 @@ namespace OCA\OpenRegister\Service\Object;
 
 use RuntimeException;
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Db\UnifiedObjectMapper;
+use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\OrganisationMapper;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
@@ -148,11 +148,11 @@ class CacheHandler
     private ?IAppContainer $container = null;
 
     /**
-     * Lazily loaded UnifiedObjectMapper to break circular dependency
+     * Lazily loaded MagicMapper to break circular dependency
      *
-     * @var UnifiedObjectMapper|null
+     * @var MagicMapper|null
      */
-    private ?UnifiedObjectMapper $objectMapper = null;
+    private ?MagicMapper $objectMapper = null;
 
     /**
      * Constructor for CacheHandler
@@ -208,20 +208,20 @@ class CacheHandler
     }//end __construct()
 
     /**
-     * Get the UnifiedObjectMapper lazily to break circular dependency.
+     * Get the MagicMapper lazily to break circular dependency.
      *
-     * @return UnifiedObjectMapper The unified object mapper.
+     * @return MagicMapper The unified object mapper.
      *
      * @throws RuntimeException When container is not available.
      */
-    private function getObjectMapper(): UnifiedObjectMapper
+    private function getObjectMapper(): MagicMapper
     {
         if ($this->objectMapper === null) {
             if ($this->container === null) {
-                throw new RuntimeException('[CacheHandler] Container required for lazy loading UnifiedObjectMapper');
+                throw new RuntimeException('[CacheHandler] Container required for lazy loading MagicMapper');
             }
 
-            $this->objectMapper = $this->container->get(UnifiedObjectMapper::class);
+            $this->objectMapper = $this->container->get(MagicMapper::class);
         }
 
         return $this->objectMapper;
@@ -1140,7 +1140,7 @@ class CacheHandler
                 // Organisation not found, continue to objects.
             }
 
-            // STEP 2: Try to find as object using unified interface (searches both blob and magic tables).
+            // STEP 2: Try to find as object using unified interface (searches across all magic tables).
             $result = $this->getObjectMapper()->findAcrossAllSources(
                 identifier: $identifier,
                 includeDeleted: false,
@@ -1249,7 +1249,7 @@ class CacheHandler
                     $missingIdentifiers = array_diff($missingIdentifiers, [$key]);
                 }
 
-                // STEP 2: Try to find remaining identifiers as objects in blob storage.
+                // STEP 2: Try to find remaining identifiers as objects across magic tables.
                 if (empty($missingIdentifiers) === false) {
                     $objects = $this->getObjectMapper()->findMultiple($missingIdentifiers);
                     foreach ($objects as $object) {

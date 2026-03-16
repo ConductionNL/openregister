@@ -6,7 +6,7 @@ namespace Unit\Controller;
 
 use OCA\OpenRegister\Controller\DeletedController;
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Db\ObjectEntityMapper;
+use OCA\OpenRegister\Db\UnifiedObjectMapper;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\ObjectService;
@@ -20,7 +20,7 @@ class DeletedControllerTest extends TestCase
 {
     private DeletedController $controller;
     private IRequest&MockObject $request;
-    private ObjectEntityMapper&MockObject $objectEntityMapper;
+    private UnifiedObjectMapper&MockObject $objectMapper;
     private RegisterMapper&MockObject $registerMapper;
     private SchemaMapper&MockObject $schemaMapper;
     private ObjectService&MockObject $objectService;
@@ -31,7 +31,7 @@ class DeletedControllerTest extends TestCase
         parent::setUp();
 
         $this->request = $this->createMock(IRequest::class);
-        $this->objectEntityMapper = $this->createMock(ObjectEntityMapper::class);
+        $this->objectMapper = $this->createMock(UnifiedObjectMapper::class);
         $this->registerMapper = $this->createMock(RegisterMapper::class);
         $this->schemaMapper = $this->createMock(SchemaMapper::class);
         $this->objectService = $this->createMock(ObjectService::class);
@@ -40,7 +40,7 @@ class DeletedControllerTest extends TestCase
         $this->controller = new DeletedController(
             'openregister',
             $this->request,
-            $this->objectEntityMapper,
+            $this->objectMapper,
             $this->registerMapper,
             $this->schemaMapper,
             $this->objectService,
@@ -80,7 +80,7 @@ class DeletedControllerTest extends TestCase
 
     public function testStatisticsSuccess(): void
     {
-        $this->objectEntityMapper->method('countAll')
+        $this->objectMapper->method('countAll')
             ->willReturnOnConsecutiveCalls(100, 5, 20);
 
         $result = $this->controller->statistics();
@@ -94,7 +94,7 @@ class DeletedControllerTest extends TestCase
 
     public function testStatisticsException(): void
     {
-        $this->objectEntityMapper->method('countAll')
+        $this->objectMapper->method('countAll')
             ->willThrowException(new \Exception('Error'));
 
         $result = $this->controller->statistics();
@@ -115,7 +115,7 @@ class DeletedControllerTest extends TestCase
     {
         $object = new ObjectEntity();
         $object->setDeleted(null);
-        $this->objectEntityMapper->method('find')->willReturn($object);
+        $this->objectMapper->method('find')->willReturn($object);
 
         $result = $this->controller->restore('uuid-123');
 
@@ -124,7 +124,7 @@ class DeletedControllerTest extends TestCase
 
     public function testRestoreException(): void
     {
-        $this->objectEntityMapper->method('find')
+        $this->objectMapper->method('find')
             ->willThrowException(new \Exception('Not found'));
 
         $result = $this->controller->restore('bad-uuid');
@@ -153,7 +153,7 @@ class DeletedControllerTest extends TestCase
         // checks both null and []).
         $object = new ObjectEntity();
         $object->setDeleted(null);
-        $this->objectEntityMapper->method('find')->willReturn($object);
+        $this->objectMapper->method('find')->willReturn($object);
 
         $result = $this->controller->destroy('uuid-123');
 
@@ -164,7 +164,7 @@ class DeletedControllerTest extends TestCase
     {
         $object = new ObjectEntity();
         $object->setDeleted(['deleted' => '2024-01-01']);
-        $this->objectEntityMapper->method('find')->willReturn($object);
+        $this->objectMapper->method('find')->willReturn($object);
 
         $result = $this->controller->destroy('uuid-123');
 
@@ -175,7 +175,7 @@ class DeletedControllerTest extends TestCase
 
     public function testDestroyException(): void
     {
-        $this->objectEntityMapper->method('find')
+        $this->objectMapper->method('find')
             ->willThrowException(new \Exception('Error'));
 
         $result = $this->controller->destroy('bad-uuid');
@@ -199,7 +199,7 @@ class DeletedControllerTest extends TestCase
     {
         $object = new ObjectEntity();
         $object->setDeleted(['deleted' => '2024-01-01']);
-        $this->objectEntityMapper->method('find')->willReturn($object);
+        $this->objectMapper->method('find')->willReturn($object);
 
         // Mock the query builder chain
         $qb = $this->createMock(\OCP\DB\QueryBuilder\IQueryBuilder::class);
@@ -213,7 +213,7 @@ class DeletedControllerTest extends TestCase
         $qb->method('expr')->willReturn($expr);
         $qb->method('executeStatement')->willReturn(1);
 
-        $this->objectEntityMapper->method('getQueryBuilder')->willReturn($qb);
+        $this->objectMapper->method('getQueryBuilder')->willReturn($qb);
 
         $result = $this->controller->restore('uuid-123');
 
@@ -236,8 +236,8 @@ class DeletedControllerTest extends TestCase
                 ['ids', [], ['uuid-1']],
             ]);
 
-        $this->objectEntityMapper->method('findAll')->willReturn([$deletedObject]);
-        $this->objectEntityMapper->method('update')->willReturn($deletedObject);
+        $this->objectMapper->method('findAll')->willReturn([$deletedObject]);
+        $this->objectMapper->method('update')->willReturn($deletedObject);
 
         $result = $this->controller->restoreMultiple();
 
@@ -253,7 +253,7 @@ class DeletedControllerTest extends TestCase
                 ['ids', [], ['uuid-1']],
             ]);
 
-        $this->objectEntityMapper->method('findAll')
+        $this->objectMapper->method('findAll')
             ->willThrowException(new \Exception('Error'));
 
         $result = $this->controller->restoreMultiple();
@@ -275,8 +275,8 @@ class DeletedControllerTest extends TestCase
                 ['ids', [], ['uuid-1']],
             ]);
 
-        $this->objectEntityMapper->method('findAll')->willReturn([$deletedObject]);
-        $this->objectEntityMapper->method('delete')->willReturn($deletedObject);
+        $this->objectMapper->method('findAll')->willReturn([$deletedObject]);
+        $this->objectMapper->method('delete')->willReturn($deletedObject);
 
         $result = $this->controller->destroyMultiple();
 
@@ -292,7 +292,7 @@ class DeletedControllerTest extends TestCase
                 ['ids', [], ['uuid-1']],
             ]);
 
-        $this->objectEntityMapper->method('findAll')
+        $this->objectMapper->method('findAll')
             ->willThrowException(new \Exception('Error'));
 
         $result = $this->controller->destroyMultiple();
