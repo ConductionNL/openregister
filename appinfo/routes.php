@@ -505,5 +505,12 @@ return [
 
 		// MCP Standard Protocol — JSON-RPC 2.0 Streamable HTTP endpoint.
 		['name' => 'mcpServer#handle', 'url' => '/api/mcp', 'verb' => 'POST'],
+
+		// GraphQL API.
+		['name' => 'graphQL#execute', 'url' => '/api/graphql', 'verb' => 'POST'],
+		['name' => 'graphQL#explorer', 'url' => '/api/graphql/explorer', 'verb' => 'GET'],
+
+		// GraphQL Subscriptions (SSE).
+		['name' => 'graphQLSubscription#subscribe', 'url' => '/api/graphql/subscribe', 'verb' => 'GET'],
     ],
 ];

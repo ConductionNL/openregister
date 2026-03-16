@@ -162,3 +162,51 @@ The tilburg-woo-ui facet sidebar MUST sort facets by their `order` field when pr
 - GIVEN the facet response contains facets with `order: 1`, `order: 5`, and `order: 10`
 - WHEN the facets are rendered in the sidebar
 - THEN they MUST appear in order: 1, 5, 10 (ascending)
+
+### Current Implementation Status
+- **Fully implemented — facetable config object support**: `FacetHandler` (`lib/Service/Object/FacetHandler.php`) supports both boolean `true`/`false` and config objects with `aggregated`, `title`, `description`, `order`, `type`, and `options` fields. The `normalizeFacetableConfig()` method (line ~1123) handles both formats.
+- **Fully implemented — non-aggregated facet isolation**: `FacetHandler::calculateFacetsWithFallback()` (line ~334) makes separate schema-scoped queries for non-aggregated fields and generates unique keys via `generateNonAggregatedKey()` (line ~459). Non-aggregated fields are tracked separately in `getFacetableFields()` (line ~1160).
+- **Fully implemented — schema ID in non-aggregated facet response**: Non-aggregated facets include `schema` ID in the response (line ~846) so the frontend can scope queries via `_schema` parameter.
+- **Fully implemented — custom title/description/order**: `transformNonAggregatedFieldFacet()` (line ~651) and `transformAggregatedFieldFacet()` (line ~719) apply config overrides for title, description, and order.
+- **Fully implemented — facet type support**: `determineFacetType()` (line ~1287) supports `terms`, `date_range`, and `date_histogram` types with auto-detection based on property type/format.
+- **Backend support in MagicFacetHandler**: `lib/Db/MagicMapper/MagicFacetHandler.php` handles SQL-level facet queries. `MariaDbFacetHandler` (`lib/Db/ObjectHandlers/MariaDbFacetHandler.php`) handles MariaDB-specific JSON facet queries.
+- **Partially implemented — schema editor UI**: The `EditSchemaProperty.vue` modal likely needs verification for full support of the `type` and `options` config fields in the frontend.
+- **Not yet verified — tilburg-woo-ui `_schema` parameter support**: The frontend integration for non-aggregated facets adding `_schema` to query params needs verification in the `tilburg-woo-ui` repo (separate from this app).
+
+### Standards & References
+- JSON Schema specification for property-level metadata extensions
+- OpenRegister internal faceting API conventions (documented in `docs/Features/search.md`)
+- Solr faceting via `SolrFacetProcessor` (`lib/Service/Index/Backends/Solr/SolrFacetProcessor.php`) for indexed search backends
+
+### Specificity Assessment
+- **Highly specific and implementable as-is**: The spec provides detailed scenarios for every facet configuration option, including backward compatibility, non-aggregated isolation, and UI interaction.
+- **Well-defined edge cases**: Covers partial config objects, default values, and backward-compatible boolean handling.
+- **Open question**: How should `date_histogram` and `date_range` facets interact with the Solr backend? The spec defines behavior at the FacetHandler level but does not specify Solr-specific configuration.
+- **Open question**: What happens when multiple non-aggregated facets from different schemas are active simultaneously? The `_schema` parameter is singular, which could conflict.
+
+### Requirement: Faceting MUST be available through GraphQL connection types
+GraphQL list queries MUST expose facets and facetable field discovery through the connection type, reusing the existing FacetHandler.
+
+#### Scenario: Request facets in a GraphQL list query
+- **WHEN** a client queries `meldingen(facets: ["status", "priority"]) { edges { node { title } } facets facetable }`
+- **THEN** the `facets` field MUST contain value counts per requested field matching FacetHandler output
+- **AND** facets MUST be calculated on the full filtered dataset independent of pagination (`first`/`offset`/`after`)
+
+#### Scenario: Discover facetable fields via GraphQL
+- **WHEN** a client queries `meldingen { facetable }`
+- **THEN** all property names with `facetable` configuration (boolean `true` or config object) MUST be listed
+
+#### Scenario: Non-aggregated facets include schema context in GraphQL
+- **WHEN** a schema property has `"facetable": { "aggregated": false, "title": "Organisatie Type" }`
+- **AND** the facets are returned through GraphQL
+- **THEN** the facet entry MUST include `schema` ID and `queryParameter` fields matching the REST response format
+
+#### Scenario: Facet title and order respected in GraphQL
+- **WHEN** facets with custom `title` and `order` are returned through GraphQL
+- **THEN** the custom titles MUST be used instead of auto-generated ones
+- **AND** the `order` field MUST be included for client-side sorting
+
+#### Scenario: Facets with date histogram type in GraphQL
+- **WHEN** a date property has `"facetable": { "type": "date_histogram", "options": { "interval": "month" } }`
+- **AND** the facet is requested through GraphQL
+- **THEN** the facet buckets MUST be grouped by month intervals matching the REST API behavior
