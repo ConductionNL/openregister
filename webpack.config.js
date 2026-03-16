@@ -38,6 +38,7 @@ webpackConfig.resolve.extensions = [
 webpackConfig.resolve.alias = {
 	...(webpackConfig.resolve.alias || {}),
 	'@': path.resolve(__dirname, 'src'),
+	'@conduction/nextcloud-vue': path.resolve(__dirname, '../nextcloud-vue/src'),
 }
 
 const appId = 'openregister'

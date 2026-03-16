@@ -18,10 +18,9 @@ namespace OCA\OpenRegister\Service\File;
 
 use Exception;
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Db\ObjectEntityMapper;
+use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
-use OCA\OpenRegister\Db\UnifiedObjectMapper;
 use OCA\OpenRegister\Service\FileService;
 use OCP\Files\Folder;
 use OCP\Files\IRootFolder;
@@ -78,7 +77,7 @@ class FolderManagementHandler
      * Constructor for FolderManagementHandler.
      *
      * @param IRootFolder        $rootFolder         Root folder for file operations.
-     * @param ObjectEntityMapper $objectEntityMapper Mapper for object entities.
+     * @param MagicMapper $objectEntityMapper Mapper for object entities.
      * @param RegisterMapper     $registerMapper     Mapper for registers.
      * @param IUserSession       $userSession        User session for user context.
      * @param IGroupManager      $groupManager       Group manager for group operations.
@@ -88,7 +87,7 @@ class FolderManagementHandler
      */
     public function __construct(
         private readonly IRootFolder $rootFolder,
-        private readonly UnifiedObjectMapper $objectEntityMapper,
+        private readonly MagicMapper $objectEntityMapper,
         private readonly RegisterMapper $registerMapper,
         private readonly IUserSession $userSession,
         private readonly IGroupManager $groupManager,

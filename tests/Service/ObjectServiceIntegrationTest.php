@@ -17,7 +17,7 @@ namespace OCA\OpenRegister\Tests\Service;
 
 use DateTime;
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Db\ObjectEntityMapper;
+use OCA\OpenRegister\Db\UnifiedObjectMapper;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
@@ -62,9 +62,9 @@ class ObjectServiceIntegrationTest extends TestCase
     /**
      * Object entity mapper
      *
-     * @var ObjectEntityMapper
+     * @var UnifiedObjectMapper
      */
-    private ObjectEntityMapper $objectEntityMapper;
+    private UnifiedObjectMapper $objectMapper;
 
     /**
      * Test register
@@ -105,7 +105,7 @@ class ObjectServiceIntegrationTest extends TestCase
         $this->service = \OC::$server->get(ObjectService::class);
         $this->registerMapper = \OC::$server->get(RegisterMapper::class);
         $this->schemaMapper = \OC::$server->get(SchemaMapper::class);
-        $this->objectEntityMapper = \OC::$server->get(ObjectEntityMapper::class);
+        $this->objectMapper = \OC::$server->get(UnifiedObjectMapper::class);
 
         // Create test register and schema
         $this->createTestRegisterAndSchema();

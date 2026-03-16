@@ -11,30 +11,40 @@ The system MUST accept `facetable` as either a boolean (`true`/`false`) or a con
 - `title` (string) — custom display title for the facet
 - `description` (string) — custom description for the facet
 - `order` (integer) — numeric display order (lower = shown first)
+- `type` (string) — facet type override: `terms`, `date_range`, or `date_histogram`. When omitted, the system auto-detects based on property type/format.
+- `options` (object) — type-specific configuration options. Structure depends on `type`. When omitted, sensible defaults are used.
 
 All fields in the configuration object MUST be optional with sensible defaults.
 
 #### Scenario: Property with boolean facetable (backward compatibility)
-- GIVEN a schema property has `"facetable": true`
-- WHEN the FacetHandler discovers facetable fields
-- THEN the property MUST be treated as facetable with `aggregated: true` and all other config fields as `null`
-- AND the facet MUST behave identically to current behavior
+- **WHEN** a schema property has `"facetable": true`
+- **THEN** the property MUST be treated as facetable with `aggregated: true`, `type: null` (auto-detect), `options: null`, and all other config fields as `null`
+- **AND** the facet MUST behave identically to current behavior
+
+#### Scenario: Property with facetable config object including type
+- **WHEN** a schema property has `"facetable": { "aggregated": false, "title": "Publication Date", "type": "date_histogram", "options": { "interval": "year" } }`
+- **THEN** the property MUST be treated as facetable with the specified type and options
+- **AND** the `type` field MUST override the auto-detected facet type
+
+#### Scenario: Property with facetable config object without type
+- **WHEN** a schema property has `"facetable": { "title": "My Date Field" }` (no type specified)
+- **THEN** the system MUST auto-detect the facet type based on the property's type and format
+- **AND** date/datetime properties MUST default to `date_histogram` with `month` interval
 
 #### Scenario: Property with facetable config object
-- GIVEN a schema property has `"facetable": { "aggregated": false, "title": "Organisatie Type", "description": "Filter by organisation type", "order": 2 }`
-- WHEN the FacetHandler discovers facetable fields
-- THEN the property MUST be treated as facetable with the specified configuration values
+- **WHEN** a schema property has `"facetable": { "aggregated": false, "title": "Organisatie Type", "description": "Filter by organisation type", "order": 2 }`
+- **THEN** the property MUST be treated as facetable with the specified configuration values
 
 #### Scenario: Property with partial config object
-- GIVEN a schema property has `"facetable": { "aggregated": false, "title": "Organisatie Type" }`
-- WHEN the FacetHandler normalizes the config
-- THEN `description` MUST default to `null` (falling back to auto-generated)
-- AND `order` MUST default to `null` (falling back to auto-incremented)
+- **WHEN** a schema property has `"facetable": { "aggregated": false, "title": "Organisatie Type" }`
+- **THEN** `description` MUST default to `null` (falling back to auto-generated)
+- **AND** `order` MUST default to `null` (falling back to auto-incremented)
+- **AND** `type` MUST default to `null` (auto-detected)
+- **AND** `options` MUST default to `null` (type-specific defaults)
 
 #### Scenario: Property with facetable false
-- GIVEN a schema property has `"facetable": false`
-- WHEN the FacetHandler discovers facetable fields
-- THEN the property MUST NOT appear in the facet results
+- **WHEN** a schema property has `"facetable": false`
+- **THEN** the property MUST NOT appear in the facet results
 
 ### Requirement: Non-aggregated facet isolation
 When a property has `aggregated: false` in its faceting config, its facet values MUST NOT be merged with same-named properties from other schemas. The facet MUST appear as a distinct entry in the API response.
@@ -102,27 +112,30 @@ When a faceting config specifies an `order`, the facet response MUST use that va
 - THEN the `order` field MUST be auto-incremented based on processing order (current behavior)
 
 ### Requirement: Schema editor faceting configuration UI
-The `EditSchemaProperty.vue` modal MUST allow configuring faceting options when the facetable toggle is enabled. The config fields MUST be shown conditionally.
+The `EditSchemaProperty.vue` modal MUST allow configuring faceting options when the facetable toggle is enabled. The config fields MUST be shown conditionally. For date/datetime properties, additional type-specific fields MUST be available.
 
 #### Scenario: Facetable toggle enables config fields
-- GIVEN a user is editing a schema property in the EditSchemaProperty modal
-- WHEN the user enables the "Facetable" toggle
-- THEN additional fields MUST appear: "Aggregated" toggle (default: checked), "Facet Title", "Facet Description", "Facet Order"
+- **WHEN** a user is editing a schema property in the EditSchemaProperty modal
+- **AND** the user enables the "Facetable" toggle
+- **THEN** additional fields MUST appear: "Aggregated" toggle (default: checked), "Facet Title", "Facet Description", "Facet Order"
+- **AND** if the property has `format: date` or `format: date-time`, a "Facet Type" dropdown MUST also appear
 
 #### Scenario: Facetable toggle disabled hides config fields
-- GIVEN the "Facetable" toggle is unchecked
-- WHEN the user views the property form
-- THEN the faceting config fields MUST NOT be visible
+- **WHEN** the "Facetable" toggle is unchecked
+- **THEN** the faceting config fields MUST NOT be visible
+
+#### Scenario: Saving property with faceting config including type
+- **WHEN** a user has set facetable to enabled, type to "date_histogram", and interval to "year"
+- **THEN** the property MUST be saved with `"facetable": { "type": "date_histogram", "options": { "interval": "year" } }`
+- **AND** any other config values (title, description, order, aggregated) MUST be included if set
 
 #### Scenario: Saving property with faceting config
-- GIVEN a user has set facetable to enabled, aggregated to unchecked, and title to "Organisatie Type"
-- WHEN the user saves the property
-- THEN the property MUST be saved with `"facetable": { "aggregated": false, "title": "Organisatie Type", "description": null, "order": null }`
+- **WHEN** a user has set facetable to enabled, aggregated to unchecked, and title to "Organisatie Type"
+- **THEN** the property MUST be saved with `"facetable": { "aggregated": false, "title": "Organisatie Type", "description": null, "order": null }`
 
 #### Scenario: Saving property with default faceting config
-- GIVEN a user has set facetable to enabled and left all config fields at defaults (aggregated checked, title empty, description empty, order empty)
-- WHEN the user saves the property
-- THEN the property MUST be saved with `"facetable": true` (not a config object) for backward compatibility
+- **WHEN** a user has set facetable to enabled and left all config fields at defaults (aggregated checked, title empty, description empty, order empty, type auto)
+- **THEN** the property MUST be saved with `"facetable": true` (not a config object) for backward compatibility
 
 ### Requirement: Frontend _schema parameter for non-aggregated facets
 The tilburg-woo-ui search page MUST add `_schema=<schemaId>` to the query parameters when a user selects a non-aggregated facet.

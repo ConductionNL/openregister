@@ -31,7 +31,7 @@ use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
-use OCA\OpenRegister\Db\UnifiedObjectMapper;
+use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ViewMapper;
 use OCA\OpenRegister\Service\FileService;
 use OCA\OpenRegister\Service\Object\AuditHandler;
@@ -88,7 +88,7 @@ class ObjectServiceDeepTest extends TestCase
 
     private MockObject|ObjectEntityMapper $objectEntityMapper;
 
-    private MockObject|UnifiedObjectMapper $unifiedObjectMapper;
+    private MockObject|MagicMapper $unifiedObjectMapper;
 
     private MockObject|LoggerInterface $logger;
 
@@ -149,7 +149,7 @@ class ObjectServiceDeepTest extends TestCase
         $this->schemaMapper       = $this->createMock(SchemaMapper::class);
         $viewMapper               = $this->createMock(ViewMapper::class);
         $this->objectEntityMapper = $this->createMock(ObjectEntityMapper::class);
-        $this->unifiedObjectMapper = $this->createMock(UnifiedObjectMapper::class);
+        $this->unifiedObjectMapper = $this->createMock(MagicMapper::class);
         $this->fileService        = $this->createMock(FileService::class);
         $userSession              = $this->createMock(IUserSession::class);
         $searchTrailService       = $this->createMock(SearchTrailService::class);

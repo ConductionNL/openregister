@@ -33,8 +33,7 @@ use Exception;
 use RuntimeException;
 use ReflectionClass;
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Db\ObjectEntityMapper;
-use OCA\OpenRegister\Db\UnifiedObjectMapper;
+use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
@@ -169,8 +168,8 @@ class SaveObject
     /**
      * Constructor for SaveObject handler.
      *
-     * @param ObjectEntityMapper       $objectEntityMapper   Object entity mapper
-     * @param UnifiedObjectMapper      $unifiedObjectMapper  Unified object mapper for object operations
+     * @param MagicMapper              $objectEntityMapper   Object entity mapper
+     * @param MagicMapper      $unifiedObjectMapper  Unified object mapper for object operations
      * @param MetadataHydrationHandler $metaHydrationHandler Handler for metadata extraction
      * @param FilePropertyHandler      $filePropertyHandler  Handler for file property operations
      * @param IUserSession             $userSession          User session service
@@ -188,8 +187,8 @@ class SaveObject
      * @SuppressWarnings(PHPMD.ExcessiveParameterList) Nextcloud DI requires constructor injection
      */
     public function __construct(
-        private readonly ObjectEntityMapper $objectEntityMapper,
-        private readonly UnifiedObjectMapper $unifiedObjectMapper,
+        private readonly MagicMapper $objectEntityMapper,
+        private readonly MagicMapper $unifiedObjectMapper,
         private readonly MetadataHydrationHandler $metaHydrationHandler,
         private readonly FilePropertyHandler $filePropertyHandler,
         private readonly IUserSession $userSession,
@@ -1016,57 +1015,6 @@ class SaveObject
             }//end if
         }//end if
 
-        // Published field mapping.
-        if (($config['objectPublishedField'] ?? null) !== null) {
-            $publishedPath = $config['objectPublishedField'];
-            $published     = $this->metaHydrationHandler->extractMetadataValue(
-                data: $objectData,
-                fieldPath: $publishedPath
-            );
-            if ($published !== null && trim($published) !== '') {
-                try {
-                    $publishedDate = new DateTime(trim($published));
-                    $entity->setPublished($publishedDate);
-                } catch (Exception $e) {
-                    // Log warning but don't fail the entire operation.
-                    $this->logger->warning(
-                        message: '[SaveObject] Invalid published date format',
-                        context: [
-                            'file'  => __FILE__,
-                            'line'  => __LINE__,
-                            'value' => $published,
-                            'error' => $e->getMessage(),
-                        ]
-                    );
-                }
-            }
-        }//end if
-
-        // Depublished field mapping.
-        if (($config['objectDepublishedField'] ?? null) !== null) {
-            $depublishedPath = $config['objectDepublishedField'];
-            $depublished     = $this->metaHydrationHandler->extractMetadataValue(
-                data: $objectData,
-                fieldPath: $depublishedPath
-            );
-            if ($depublished !== null && trim($depublished) !== '') {
-                try {
-                    $depublishedDate = new DateTime(trim($depublished));
-                    $entity->setDepublished($depublishedDate);
-                } catch (Exception $e) {
-                    // Log warning but don't fail the entire operation.
-                    $this->logger->warning(
-                        message: '[SaveObject] Invalid depublished date format',
-                        context: [
-                            'file'  => __FILE__,
-                            'line'  => __LINE__,
-                            'value' => $depublished,
-                            'error' => $e->getMessage(),
-                        ]
-                    );
-                }//end try
-            }//end if
-        }//end if
     }//end hydrateObjectMetadata()
 
     /**
@@ -2575,8 +2523,8 @@ class SaveObject
                         identifier: $uuid,
                         register: $register,
                         schema: $schema,
-                        rbac: false,
-                        multitenancy: false
+                        _rbac: false,
+                        _multitenancy: false
                     );
                     if ($tempExistingObject !== null) {
                         $existingObjectData = $tempExistingObject->getObject();
@@ -2968,7 +2916,7 @@ class SaveObject
         }
 
         // Save the object to database FIRST (so it gets an ID).
-        // Use UnifiedObjectMapper to route to MagicMapper when magic mapping is enabled.
+        // Use MagicMapper to route to MagicMapper when magic mapping is enabled.
         $savedEntity = $this->unifiedObjectMapper->insert(entity: $preparedObject, register: $register, schema: $schema);
 
         // Update the name cache with the saved object's name.
@@ -3224,37 +3172,6 @@ class SaveObject
             throw new Exception('Object metadata hydration failed: '.$e->getMessage().'. '.$mismatchHint, 0, $e);
         }
 
-        // Auto-publish logic: Set published date to now if autoPublish is enabled in schema configuration.
-        // And no published date has been set yet (either from field mapping or explicit data).
-        $config = $schema->getConfiguration();
-        if (($config['autoPublish'] ?? null) !== null && $config['autoPublish'] === true) {
-            if ($objectEntity->getPublished() !== null) {
-                $this->logger->debug(
-                    message: '[SaveObject] Object already has published date, skipping auto-publish',
-                    context: [
-                        'file'          => __FILE__,
-                        'line'          => __LINE__,
-                        'uuid'          => $objectEntity->getUuid(),
-                        'publishedDate' => $objectEntity->getPublished()->format('Y-m-d H:i:s'),
-                    ]
-                );
-            }
-
-            if ($objectEntity->getPublished() === null) {
-                $this->logger->debug(
-                    message: '[SaveObject] Auto-publishing object on creation',
-                    context: [
-                        'file'        => __FILE__,
-                        'line'        => __LINE__,
-                        'uuid'        => $objectEntity->getUuid(),
-                        'schema'      => $schema->getTitle(),
-                        'autoPublish' => true,
-                    ]
-                );
-                $objectEntity->setPublished(new DateTime());
-            }
-        }//end if
-
         // Set user information if available.
         $user = $this->userSession->getUser();
         if ($user !== null) {
@@ -3388,81 +3305,6 @@ class SaveObject
                 'selfDataKeys' => array_keys($selfData),
             ]
         );
-
-        if (array_key_exists('published', $selfData) === true) {
-            $publishedValue = $selfData['published'];
-            $isEmpty        = empty($publishedValue);
-
-            $this->logger->debug(
-                message: '[SaveObject] Published field found in object data',
-                context: [
-                    'file'           => __FILE__,
-                    'line'           => __LINE__,
-                    'publishedValue' => $publishedValue,
-                    'isEmpty'        => $isEmpty,
-                ]
-            );
-
-            if (empty($publishedValue) === false) {
-                try {
-                    // Convert string to DateTime if it's a valid date string.
-                    if (is_string($publishedValue) === true) {
-                        $this->logger->debug(
-                            message: '[SaveObject] Setting published date on object entity',
-                            context: [
-                                'file'           => __FILE__,
-                                'line'           => __LINE__,
-                                'publishedValue' => $publishedValue,
-                            ]
-                        );
-                        $objectEntity->setPublished(new DateTime($publishedValue));
-                    }
-                } catch (Exception $exception) {
-                    $this->logger->warning(
-                        message: '[SaveObject] Failed to convert published date',
-                        context: [
-                            'file'           => __FILE__,
-                            'line'           => __LINE__,
-                            'publishedValue' => $publishedValue,
-                            'error'          => $exception->getMessage(),
-                        ]
-                    );
-                    // Silently ignore invalid date formats.
-                }//end try
-            }//end if
-
-            if (empty($publishedValue) === true) {
-                $this->logger->debug(
-                    message: '[SaveObject] Published value is empty, setting to null',
-                    context: ['file' => __FILE__, 'line' => __LINE__]
-                );
-                $objectEntity->setPublished(null);
-            }//end if
-        }//end if
-
-//        if (array_key_exists('published', $selfData) === false) {
-//            $this->logger->debug(
-//                message: '[SaveObject] No published field found in selfData, setting to existing value',
-//                context: ['file' => __FILE__, 'line' => __LINE__]
-//            );
-//            $objectEntity->setPublished($objectEntity->getPublished());
-//        }//end if
-//
-//        // Extract and set depublished property if present.
-//        if (array_key_exists('depublished', $selfData) === false || empty($selfData['depublished']) === true) {
-//            $objectEntity->setDepublished(null);
-//        }
-//
-//        if (array_key_exists('depublished', $selfData) === true && empty($selfData['depublished']) === false) {
-//            try {
-//                // Convert string to DateTime if it's a valid date string.
-//                if (is_string($selfData['depublished']) === true) {
-//                    $objectEntity->setDepublished(new DateTime($selfData['depublished']));
-//                }
-//            } catch (Exception $exception) {
-//                // Silently ignore invalid date formats.
-//            }
-//        }
 
         if (array_key_exists('owner', $selfData) === true && empty($selfData['owner']) === false) {
             $objectEntity->setOwner($selfData['owner']);
@@ -3601,7 +3443,7 @@ class SaveObject
             // Use the raw reference as the slug in the error message.
         }
 
-        // Resolve register and schema to entity objects for UnifiedObjectMapper.
+        // Resolve register and schema to entity objects for MagicMapper.
         $registerEntity = null;
         if ($register !== null) {
             try {
@@ -3628,8 +3470,8 @@ class SaveObject
                 identifier: $uuid,
                 register: $registerEntity,
                 schema: $targetSchemaEntity,
-                rbac: false,
-                multitenancy: false
+                _rbac: false,
+                _multitenancy: false
             );
         } catch (DoesNotExistException $e) {
             throw new ValidationException(
@@ -3828,9 +3670,9 @@ class SaveObject
         $preparedObject->setSchema((string) $schemaId);
         $preparedObject->setUpdated(new DateTime());
 
-        // Log that we're about to update using UnifiedObjectMapper.
+        // Log that we're about to update using MagicMapper.
         $this->logger->debug(
-            message: '[SaveObject] Updating object using UnifiedObjectMapper',
+            message: '[SaveObject] Updating object using MagicMapper',
             context: [
                 'file' => __FILE__,
                 'line' => __LINE__,
@@ -3838,8 +3680,8 @@ class SaveObject
             ]
                 );
 
-        // Save the object to database using UnifiedObjectMapper.
-        // This ensures proper event dispatching for both magic-mapped and blob storage objects.
+        // Save the object to database using MagicMapper.
+        // This ensures proper event dispatching for magic table objects.
         // Pass the oldObject to ensure accurate status change detection in events.
         $updatedEntity = $this->unifiedObjectMapper->update(
             entity: $preparedObject,

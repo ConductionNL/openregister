@@ -30,7 +30,7 @@ use stdClass;
 use Exception;
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\GuzzleException;
-use OCA\OpenRegister\Db\ObjectEntityMapper;
+use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Exception\ValidationException;
@@ -79,14 +79,14 @@ class ValidateObject
      * Constructor for ValidateObject
      *
      * @param IAppConfig         $config       Configuration service.
-     * @param ObjectEntityMapper $objectMapper Object mapper.
+     * @param MagicMapper $objectMapper Object mapper.
      * @param SchemaMapper       $schemaMapper Schema mapper.
      * @param IURLGenerator      $urlGenerator URL generator.
      * @param LoggerInterface    $logger       Logger for logging operations.
      */
     public function __construct(
         private IAppConfig $config,
-        private ObjectEntityMapper $objectMapper,
+        private MagicMapper $objectMapper,
         private SchemaMapper $schemaMapper,
         private IURLGenerator $urlGenerator,
         private LoggerInterface $logger
@@ -399,6 +399,10 @@ class ValidateObject
             foreach ($propertySchema->properties ?? [] as $nestedPropertyName => $nestedPropertySchema) {
                 // Suppress unused variable warning for $nestedPropertyName - only processing schemas.
                 unset($nestedPropertyName);
+                // Ensure nested property schema is an object (deeply nested JSON may decode as array).
+                if (is_array($nestedPropertySchema) === true) {
+                    $nestedPropertySchema = (object) $nestedPropertySchema;
+                }
                 $this->transformPropertyForOpenRegister(propertySchema: $nestedPropertySchema);
             }
         }

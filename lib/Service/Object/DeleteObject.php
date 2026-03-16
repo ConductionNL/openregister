@@ -30,7 +30,7 @@ use DateTime;
 use Exception;
 use JsonSerializable;
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Db\ObjectEntityMapper;
+use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Dto\DeletionAnalysis;
@@ -95,7 +95,7 @@ class DeleteObject
     /**
      * Constructor for DeleteObject handler.
      *
-     * @param ObjectEntityMapper          $objectEntityMapper Object entity data mapper.
+     * @param MagicMapper         $objectEntityMapper Object entity data mapper.
      * @param CacheHandler                $cacheHandler       Object cache service for entity and query caching
      * @param IUserSession                $userSession        User session service for tracking who deletes
      * @param AuditTrailMapper            $auditTrailMapper   Audit trail mapper for logs
@@ -104,7 +104,7 @@ class DeleteObject
      * @param ReferentialIntegrityService $integrityService   Referential integrity service
      */
     public function __construct(
-        private readonly ObjectEntityMapper $objectEntityMapper,
+        private readonly MagicMapper $objectEntityMapper,
         private readonly CacheHandler $cacheHandler,
         private readonly IUserSession $userSession,
         AuditTrailMapper $auditTrailMapper,
@@ -148,7 +148,7 @@ class DeleteObject
             $registerEntity = $context['register'];
             $schemaEntity   = $context['schema'];
         } else {
-            // Handle array input - find object with context (searches both blob and magic tables).
+            // Handle array input - find object with context (searches across all magic tables).
             // @psalm-suppress UndefinedInterfaceMethod.
             $context        = $this->objectEntityMapper->findAcrossAllSources(
                 identifier: $object['id'],
@@ -294,7 +294,7 @@ class DeleteObject
         bool $_rbac=true,
         bool $_multitenancy=true
     ): bool {
-        // Find object with context (searches both blob and magic tables).
+        // Find object with context (searches across all magic tables).
         $context = $this->objectEntityMapper->findAcrossAllSources(
             identifier: $uuid,
             includeDeleted: true,

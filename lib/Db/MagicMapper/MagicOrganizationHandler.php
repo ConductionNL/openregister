@@ -81,8 +81,8 @@ class MagicOrganizationHandler
      * 3. Objects belonging to parent organizations are accessible
      * 4. Objects with null organization are accessible to all (legacy/global data)
      *
-     * @param IQueryBuilder $qb                   Query builder to modify
-     * @param bool          $adminBypassEnabled   Whether admin users can bypass org filtering
+     * @param IQueryBuilder $qb                 Query builder to modify
+     * @param bool          $adminBypassEnabled Whether admin users can bypass org filtering
      *
      * @return void
      *
@@ -158,11 +158,11 @@ class MagicOrganizationHandler
         $this->logger->debug(
             message: '[MagicOrganizationHandler] Applied organization filter',
             context: [
-                'file'                 => __FILE__,
-                'line'                 => __LINE__,
-                'activeOrgUuids'       => $activeOrgUuids,
-                'conditionsCount'      => count($conditions),
-                'isAdmin'              => $isAdmin,
+                'file'            => __FILE__,
+                'line'            => __LINE__,
+                'activeOrgUuids'  => $activeOrgUuids,
+                'conditionsCount' => count($conditions),
+                'isAdmin'         => $isAdmin,
             ]
                 );
     }//end applyOrganizationFilter()

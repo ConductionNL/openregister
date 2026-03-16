@@ -267,7 +267,14 @@ class MetadataHydrationHandler
         }
 
         // Simple field path - use existing method.
-        return $this->getValueFromPath(data: $data, path: $fieldPath);
+        $value = $this->getValueFromPath(data: $data, path: $fieldPath);
+
+        // Convert arrays/objects to JSON string to satisfy the ?string return type.
+        if (is_array($value) === true) {
+            return json_encode($value);
+        }
+
+        return $value;
     }//end extractMetadataValue()
 
     /**

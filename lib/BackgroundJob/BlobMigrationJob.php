@@ -25,7 +25,6 @@ namespace OCA\OpenRegister\BackgroundJob;
 
 use Exception;
 use OCA\OpenRegister\Db\MagicMapper;
-use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCP\AppFramework\Utility\ITimeFactory;
@@ -160,16 +159,12 @@ class BlobMigrationJob extends TimedJob
                 try {
                     $register = $registerMapper->find(
                         id: (int) $registerId,
-                        filters: [],
-                        search: null,
-                        _calledFromMigration: true,
+                        _rbac: false,
                         _multitenancy: false
                     );
                     $schema   = $schemaMapper->find(
                         id: (int) $schemaId,
-                        filters: [],
-                        search: null,
-                        _calledFromMigration: true,
+                        _rbac: false,
                         _multitenancy: false
                     );
                 } catch (Exception $e) {

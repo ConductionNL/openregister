@@ -7,7 +7,7 @@ namespace Unit\Controller;
 use Exception;
 use OCA\OpenRegister\Controller\RegistersController;
 use OCA\OpenRegister\Db\AuditTrailMapper;
-use OCA\OpenRegister\Db\ObjectEntityMapper;
+use OCA\OpenRegister\Db\UnifiedObjectMapper;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
@@ -40,7 +40,7 @@ class RegistersControllerTest extends TestCase
     private RegistersController $controller;
     private IRequest&MockObject $request;
     private RegisterService&MockObject $registerService;
-    private ObjectEntityMapper&MockObject $objectEntityMapper;
+    private UnifiedObjectMapper&MockObject $objectMapper;
     private UploadService&MockObject $uploadService;
     private LoggerInterface&MockObject $logger;
     private IUserSession&MockObject $userSession;
@@ -60,7 +60,7 @@ class RegistersControllerTest extends TestCase
 
         $this->request = $this->createMock(IRequest::class);
         $this->registerService = $this->createMock(RegisterService::class);
-        $this->objectEntityMapper = $this->createMock(ObjectEntityMapper::class);
+        $this->objectMapper = $this->createMock(UnifiedObjectMapper::class);
         $this->uploadService = $this->createMock(UploadService::class);
         $this->logger = $this->createMock(LoggerInterface::class);
         $this->userSession = $this->createMock(IUserSession::class);
@@ -78,7 +78,7 @@ class RegistersControllerTest extends TestCase
             'openregister',
             $this->request,
             $this->registerService,
-            $this->objectEntityMapper,
+            $this->objectMapper,
             $this->uploadService,
             $this->logger,
             $this->userSession,
@@ -365,7 +365,7 @@ class RegistersControllerTest extends TestCase
 
     public function testObjectsReturnsSearchResults(): void
     {
-        $this->objectEntityMapper->method('searchObjects')->willReturn([
+        $this->objectMapper->method('searchObjects')->willReturn([
             'results' => [],
             'total' => 0,
         ]);
@@ -514,7 +514,7 @@ class RegistersControllerTest extends TestCase
 
     public function testObjectsThrowsOnException(): void
     {
-        $this->objectEntityMapper->method('searchObjects')
+        $this->objectMapper->method('searchObjects')
             ->willThrowException(new Exception('Search error'));
 
         $this->expectException(Exception::class);
@@ -779,7 +779,7 @@ class RegistersControllerTest extends TestCase
 
     public function testObjectsWithPaginationParams(): void
     {
-        $this->objectEntityMapper->method('searchObjects')->willReturn([
+        $this->objectMapper->method('searchObjects')->willReturn([
             'results' => [['id' => 1], ['id' => 2]],
             'total' => 2,
         ]);
@@ -929,7 +929,7 @@ class RegistersControllerTest extends TestCase
             '_extend' => ['@self.stats'],
         ]);
         $this->registerService->method('findAll')->willReturn([$register]);
-        $this->objectEntityMapper->method('getStatistics')->willReturn(['total' => 5]);
+        $this->objectMapper->method('getStatistics')->willReturn(['total' => 5]);
         $this->auditTrailMapper->method('getStatistics')->willReturn(['total' => 3]);
 
         $result = $this->controller->index();
@@ -959,7 +959,7 @@ class RegistersControllerTest extends TestCase
         $this->registerService->method('getSchemaObjectCounts')->willReturn([
             10 => ['total' => 42],
         ]);
-        $this->objectEntityMapper->method('getStatistics')->willReturn(['total' => 5]);
+        $this->objectMapper->method('getStatistics')->willReturn(['total' => 5]);
         $this->auditTrailMapper->method('getStatistics')->willReturn(['total' => 3]);
 
         $result = $this->controller->index();
@@ -987,7 +987,7 @@ class RegistersControllerTest extends TestCase
         $this->schemaMapper->method('find')->willReturn($schema);
         // Return empty counts — schema 10 is not in the map
         $this->registerService->method('getSchemaObjectCounts')->willReturn([]);
-        $this->objectEntityMapper->method('getStatistics')->willReturn(['total' => 0]);
+        $this->objectMapper->method('getStatistics')->willReturn(['total' => 0]);
         $this->auditTrailMapper->method('getStatistics')->willReturn(['total' => 0]);
 
         $result = $this->controller->index();
@@ -1029,7 +1029,7 @@ class RegistersControllerTest extends TestCase
 
         $this->request->method('getParam')->willReturn('@self.stats');
         $this->registerService->method('find')->willReturn($register);
-        $this->objectEntityMapper->method('getStatistics')->willReturn(['total' => 10]);
+        $this->objectMapper->method('getStatistics')->willReturn(['total' => 10]);
         $this->auditTrailMapper->method('getStatistics')->willReturn(['total' => 5]);
 
         $result = $this->controller->show(1);
@@ -1048,7 +1048,7 @@ class RegistersControllerTest extends TestCase
 
         $this->request->method('getParam')->willReturn(['@self.stats']);
         $this->registerService->method('find')->willReturn($register);
-        $this->objectEntityMapper->method('getStatistics')->willReturn(['total' => 10]);
+        $this->objectMapper->method('getStatistics')->willReturn(['total' => 10]);
         $this->auditTrailMapper->method('getStatistics')->willReturn(['total' => 5]);
 
         $result = $this->controller->show(1);

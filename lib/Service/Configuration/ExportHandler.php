@@ -28,8 +28,7 @@ use OCA\OpenRegister\Db\Configuration;
 use OCA\OpenRegister\Db\ConfigurationMapper;
 use OCA\OpenRegister\Db\DeployedWorkflowMapper;
 use OCA\OpenRegister\Db\MappingMapper;
-use OCA\OpenRegister\Db\ObjectEntityMapper;
-use OCA\OpenRegister\Db\UnifiedObjectMapper;
+use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Service\WorkflowEngineRegistry;
 use Exception;
 use Psr\Log\LoggerInterface;
@@ -61,6 +60,13 @@ class ExportHandler
      * @var RegisterMapper The register mapper instance.
      */
     private readonly RegisterMapper $registerMapper;
+
+    /**
+     * Object mapper instance for handling object operations.
+     *
+     * @var MagicMapper The object mapper instance.
+     */
+    private readonly MagicMapper $objectEntityMapper;
 
     /**
      * Configuration mapper instance for handling configuration operations.
@@ -116,7 +122,7 @@ class ExportHandler
      *
      * @param SchemaMapper        $schemaMapper        The schema mapper.
      * @param RegisterMapper      $registerMapper      The register mapper.
-     * @param ObjectEntityMapper  $objectEntityMapper  The object entity mapper.
+     * @param MagicMapper  $objectEntityMapper  The object entity mapper.
      * @param ConfigurationMapper $configurationMapper The configuration mapper.
      * @param MappingMapper       $mappingMapper       The mapping mapper.
      * @param LoggerInterface     $logger              The logger interface.
@@ -124,13 +130,14 @@ class ExportHandler
     public function __construct(
         SchemaMapper $schemaMapper,
         RegisterMapper $registerMapper,
-        private readonly UnifiedObjectMapper $objectEntityMapper,
+        MagicMapper $objectEntityMapper,
         ConfigurationMapper $configurationMapper,
         MappingMapper $mappingMapper,
         LoggerInterface $logger
     ) {
         $this->schemaMapper        = $schemaMapper;
         $this->registerMapper      = $registerMapper;
+        $this->objectEntityMapper  = $objectEntityMapper;
         $this->configurationMapper = $configurationMapper;
         $this->mappingMapper       = $mappingMapper;
         $this->logger = $logger;

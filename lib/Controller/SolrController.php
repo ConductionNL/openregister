@@ -16,7 +16,7 @@ use OCP\IRequest;
 use Psr\Container\ContainerInterface;
 use OCA\OpenRegister\Service\VectorizationService;
 use OCA\OpenRegister\Service\IndexService;
-use OCA\OpenRegister\Db\ObjectEntityMapper;
+use OCA\OpenRegister\Db\MagicMapper;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -932,7 +932,7 @@ class SolrController extends Controller
     {
         try {
             // Get services from container.
-            $objectMapper      = $this->container->get(ObjectEntityMapper::class);
+            $objectMapper      = $this->container->get(MagicMapper::class);
             $solrObjectService = $this->container->get(IndexService::class);
 
             // Fetch the object.
@@ -1043,12 +1043,12 @@ class SolrController extends Controller
             }
 
             // Get services from container.
-            $objectMapper      = $this->container->get(ObjectEntityMapper::class);
+            $objectMapper      = $this->container->get(MagicMapper::class);
             $solrObjectService = $this->container->get(IndexService::class);
 
             // Fetch objects.
-            // Note: This is a simplified example - adjust based on actual ObjectEntityMapper methods.
-            // TODO: Apply schema/register filters when ObjectEntityMapper supports them.
+            // Note: This is a simplified example - adjust based on actual MagicMapper methods.
+            // TODO: Apply schema/register filters when MagicMapper supports them.
             $objects = $objectMapper->findAll(limit: $limit, offset: $offset);
 
             if (count($objects) === 0) {
@@ -1149,7 +1149,7 @@ class SolrController extends Controller
         try {
             // Get services from container.
             $vectorService = $this->container->get(VectorizationService::class);
-            $objectMapper  = $this->container->get(ObjectEntityMapper::class);
+            $objectMapper  = $this->container->get(MagicMapper::class);
 
             // Get vector stats.
             $vectorStats = $vectorService->getVectorStats();

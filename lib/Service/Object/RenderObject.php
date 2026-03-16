@@ -32,7 +32,7 @@ use OCA\OpenRegister\Db\FileMapper;
 use OCA\OpenRegister\Service\FileService;
 use OCP\IURLGenerator;
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Db\ObjectEntityMapper;
+use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
@@ -109,7 +109,7 @@ class RenderObject
      * Constructor for RenderObject handler.
      *
      * @param FileMapper             $fileMapper          File mapper for database operations.
-     * @param ObjectEntityMapper     $objectEntityMapper  Object entity mapper for database operations.
+     * @param MagicMapper     $objectEntityMapper  Object entity mapper for database operations.
      * @param RegisterMapper         $registerMapper      Register mapper for database operations.
      * @param SchemaMapper           $schemaMapper        Schema mapper for database operations.
      * @param ISystemTagManager      $systemTagManager    System tag manager for file tags.
@@ -124,7 +124,7 @@ class RenderObject
      */
     public function __construct(
         private readonly FileMapper $fileMapper,
-        private readonly ObjectEntityMapper $objectEntityMapper,
+        private readonly MagicMapper $objectEntityMapper,
         private readonly RegisterMapper $registerMapper,
         private readonly SchemaMapper $schemaMapper,
         private readonly ISystemTagManager $systemTagManager,
@@ -1644,7 +1644,7 @@ class RenderObject
 
             // Pre-initialize cache entries for ALL entities with empty arrays.
             // This prevents fallback to the slow per-entity findByRelation() path,
-            // which does expensive LIKE scans on the blob table and iterates all magic tables.
+            // which does expensive LIKE scans iterating all magic tables.
             $this->initializeInverseCacheEntries(entityUuids: $entityUuids, propName: $propName);
 
             // Index the results by which entity UUID they reference.
@@ -1719,7 +1719,7 @@ class RenderObject
      * Pre-initialize inverse relation cache entries for all entities with empty arrays.
      *
      * This prevents fallback to the slow per-entity findByRelation() path,
-     * which does expensive LIKE scans on the blob table and iterates all magic tables.
+     * which does expensive LIKE scans iterating all magic tables.
      *
      * @param array  $entityUuids Array of entity UUIDs
      * @param string $propName    The inverse property name

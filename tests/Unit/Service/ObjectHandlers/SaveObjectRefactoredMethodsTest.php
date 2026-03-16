@@ -28,7 +28,7 @@ use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Db\AuditTrailMapper;
-use OCA\OpenRegister\Db\UnifiedObjectMapper;
+use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Service\Object\SaveObject;
 use OCA\OpenRegister\Service\Object\SaveObject\MetadataHydrationHandler;
 use OCA\OpenRegister\Service\Object\SaveObject\FilePropertyHandler;
@@ -121,7 +121,7 @@ class SaveObjectRefactoredMethodsTest extends TestCase
     /** @var MockObject|ObjectEntityMapper */
     private $objectEntityMapper;
 
-    /** @var MockObject|UnifiedObjectMapper */
+    /** @var MockObject|MagicMapper */
     private $unifiedObjectMapper;
 
     /** @var MockObject|MetadataHydrationHandler */
@@ -180,7 +180,7 @@ class SaveObjectRefactoredMethodsTest extends TestCase
 
         // Create mocks for all dependencies.
         $this->objectEntityMapper = $this->createMock(ObjectEntityMapper::class);
-        $this->unifiedObjectMapper = $this->createMock(UnifiedObjectMapper::class);
+        $this->unifiedObjectMapper = $this->createMock(MagicMapper::class);
         $this->metaHydrationHandler = $this->createMock(MetadataHydrationHandler::class);
         $this->filePropertyHandler = $this->createMock(FilePropertyHandler::class);
         $this->userSession = $this->createMock(IUserSession::class);
@@ -588,7 +588,7 @@ class SaveObjectRefactoredMethodsTest extends TestCase
             ->method('find')
             ->willThrowException(new DoesNotExistException('Object not found.'));
 
-        // Mock successful creation via UnifiedObjectMapper (used by handleObjectCreation).
+        // Mock successful creation via MagicMapper (used by handleObjectCreation).
         $this->unifiedObjectMapper
             ->method('insert')
             ->willReturnCallback(function ($entity) {

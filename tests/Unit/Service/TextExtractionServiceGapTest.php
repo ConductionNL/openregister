@@ -24,7 +24,7 @@ use OCA\OpenRegister\Db\ChunkMapper;
 use OCA\OpenRegister\Db\EntityRelationMapper;
 use OCA\OpenRegister\Db\FileMapper;
 use OCA\OpenRegister\Db\GdprEntityMapper;
-use OCA\OpenRegister\Db\ObjectEntityMapper;
+use OCA\OpenRegister\Db\UnifiedObjectMapper;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\RiskLevelService;
@@ -68,8 +68,8 @@ class TextExtractionServiceGapTest extends TestCase
     /** @var MockObject|LoggerInterface */
     private $logger;
 
-    /** @var MockObject|ObjectEntityMapper */
-    private $objectEntityMapper;
+    /** @var MockObject|UnifiedObjectMapper */
+    private $objectMapper;
 
     /** @var MockObject|SchemaMapper */
     private $schemaMapper;
@@ -104,7 +104,7 @@ class TextExtractionServiceGapTest extends TestCase
         $this->rootFolder           = $this->createMock(IRootFolder::class);
         $this->db                   = $this->createMock(IDBConnection::class);
         $this->logger               = $this->createMock(LoggerInterface::class);
-        $this->objectEntityMapper   = $this->createMock(ObjectEntityMapper::class);
+        $this->objectMapper   = $this->createMock(UnifiedObjectMapper::class);
         $this->schemaMapper         = $this->createMock(SchemaMapper::class);
         $this->registerMapper       = $this->createMock(RegisterMapper::class);
         $this->entityHandler        = $this->createMock(EntityRecognitionHandler::class);
@@ -119,7 +119,7 @@ class TextExtractionServiceGapTest extends TestCase
             $this->rootFolder,
             $this->db,
             $this->logger,
-            $this->objectEntityMapper,
+            $this->objectMapper,
             $this->schemaMapper,
             $this->registerMapper,
             $this->entityHandler,

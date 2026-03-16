@@ -52,21 +52,43 @@ class ValidationOperationsHandler
     private IAppContainer $container;
 
     /**
+     * Lazily loaded ValidateObject to break circular dependency.
+     *
+     * @var ValidateObject|null
+     */
+    private ?ValidateObject $validateHandler = null;
+
+    /**
      * Constructor for ValidationOperationsHandler.
      *
-     * @param ValidateObject  $validateHandler Handler for validation operations
-     * @param SchemaMapper    $schemaMapper    Mapper for schema entities
-     * @param LoggerInterface $logger          Logger for logging operations
-     * @param IAppContainer   $container       Application container
+     * @param ValidateObject|null $validateHandler Handler for validation operations (nullable for lazy loading)
+     * @param SchemaMapper        $schemaMapper    Mapper for schema entities
+     * @param LoggerInterface     $logger          Logger for logging operations
+     * @param IAppContainer       $container       Application container
      */
     public function __construct(
-        private readonly ValidateObject $validateHandler,
+        ?ValidateObject $validateHandler,
         private readonly SchemaMapper $schemaMapper,
         private readonly LoggerInterface $logger,
         IAppContainer $container
     ) {
-        $this->container = $container;
+        $this->validateHandler = $validateHandler;
+        $this->container       = $container;
     }//end __construct()
+
+    /**
+     * Get ValidateObject lazily to break circular dependency.
+     *
+     * @return ValidateObject The validate handler.
+     */
+    private function getValidateHandler(): ValidateObject
+    {
+        if ($this->validateHandler === null) {
+            $this->validateHandler = $this->container->get(ValidateObject::class);
+        }
+
+        return $this->validateHandler;
+    }//end getValidateHandler()
 
     /**
      * Get ObjectService via lazy loading to break circular dependency.
@@ -133,7 +155,7 @@ class ValidationOperationsHandler
                 $schema = $this->schemaMapper->find(id: $object->getSchema());
 
                 // Validate the object against its schema using the ValidateObject handler.
-                $validationResult = $this->validateHandler->validateObject(
+                $validationResult = $this->getValidateHandler()->validateObject(
                     $object->getObject(),
                     schema: $schema
                 );

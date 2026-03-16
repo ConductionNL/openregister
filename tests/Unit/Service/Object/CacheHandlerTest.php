@@ -22,7 +22,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Object;
 use Exception;
 use RuntimeException;
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Db\ObjectEntityMapper;
+use OCA\OpenRegister\Db\UnifiedObjectMapper;
 use OCA\OpenRegister\Db\Organisation;
 use OCA\OpenRegister\Db\OrganisationMapper;
 use OCA\OpenRegister\Db\Register;
@@ -52,8 +52,8 @@ class CacheHandlerTest extends TestCase
     /** @var CacheHandler */
     private CacheHandler $handler;
 
-    /** @var ObjectEntityMapper&MockObject */
-    private ObjectEntityMapper $objectEntityMapper;
+    /** @var UnifiedObjectMapper&MockObject */
+    private UnifiedObjectMapper $objectMapper;
 
     /** @var OrganisationMapper&MockObject */
     private OrganisationMapper $organisationMapper;
@@ -82,7 +82,7 @@ class CacheHandlerTest extends TestCase
     {
         parent::setUp();
 
-        $this->objectEntityMapper = $this->createMock(ObjectEntityMapper::class);
+        $this->objectMapper = $this->createMock(UnifiedObjectMapper::class);
         $this->organisationMapper = $this->createMock(OrganisationMapper::class);
         $this->logger = $this->createMock(LoggerInterface::class);
         $this->cacheFactory = $this->createMock(ICacheFactory::class);
@@ -102,7 +102,7 @@ class CacheHandlerTest extends TestCase
             ->willReturn(null);
 
         $this->handler = new CacheHandler(
-            $this->objectEntityMapper,
+            $this->objectMapper,
             $this->organisationMapper,
             $this->logger,
             $this->cacheFactory,
@@ -201,7 +201,7 @@ class CacheHandlerTest extends TestCase
             ->willReturn($indexService);
 
         return new CacheHandler(
-            $this->objectEntityMapper,
+            $this->objectMapper,
             $this->organisationMapper,
             $this->logger,
             $this->cacheFactory,
@@ -227,7 +227,7 @@ class CacheHandlerTest extends TestCase
         IDBConnection $db
     ): CacheHandler {
         return new CacheHandler(
-            $this->objectEntityMapper,
+            $this->objectMapper,
             $this->organisationMapper,
             $this->logger,
             $this->cacheFactory,
@@ -252,7 +252,7 @@ class CacheHandlerTest extends TestCase
     {
         $entity = $this->createObjectEntity(1, 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee');
 
-        $this->objectEntityMapper->expects($this->once())
+        $this->objectMapper->expects($this->once())
             ->method('find')
             ->willReturn($entity);
 
@@ -272,7 +272,7 @@ class CacheHandlerTest extends TestCase
      */
     public function testGetObjectReturnsNullOnException(): void
     {
-        $this->objectEntityMapper->method('find')
+        $this->objectMapper->method('find')
             ->willThrowException(new Exception('Not found'));
 
         $result = $this->handler->getObject(999);
@@ -290,7 +290,7 @@ class CacheHandlerTest extends TestCase
         $uuid = 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee';
         $entity = $this->createObjectEntity(1, $uuid);
 
-        $this->objectEntityMapper->expects($this->once())
+        $this->objectMapper->expects($this->once())
             ->method('find')
             ->willReturn($entity);
 
@@ -311,7 +311,7 @@ class CacheHandlerTest extends TestCase
     {
         $entity = $this->createObjectEntity(42, 'uuid-42');
 
-        $this->objectEntityMapper->expects($this->once())
+        $this->objectMapper->expects($this->once())
             ->method('find')
             ->willReturn($entity);
 
@@ -349,7 +349,7 @@ class CacheHandlerTest extends TestCase
         $entity1 = $this->createObjectEntity(1, 'uuid-1');
         $entity2 = $this->createObjectEntity(2, 'uuid-2');
 
-        $this->objectEntityMapper->expects($this->once())
+        $this->objectMapper->expects($this->once())
             ->method('findMultiple')
             ->willReturn([$entity1, $entity2]);
 
@@ -368,12 +368,12 @@ class CacheHandlerTest extends TestCase
         $entity = $this->createObjectEntity(1, 'uuid-1');
 
         // First load to cache it.
-        $this->objectEntityMapper->method('find')
+        $this->objectMapper->method('find')
             ->willReturn($entity);
         $this->handler->getObject(1);
 
         // Now preload should not call findMultiple for already cached object.
-        $this->objectEntityMapper->expects($this->never())
+        $this->objectMapper->expects($this->never())
             ->method('findMultiple');
 
         $result = $this->handler->preloadObjects([1]);
@@ -388,7 +388,7 @@ class CacheHandlerTest extends TestCase
      */
     public function testPreloadObjectsReturnsEmptyOnException(): void
     {
-        $this->objectEntityMapper->method('findMultiple')
+        $this->objectMapper->method('findMultiple')
             ->willThrowException(new Exception('DB error'));
 
         $result = $this->handler->preloadObjects([1, 2]);
@@ -405,7 +405,7 @@ class CacheHandlerTest extends TestCase
     {
         $entity1 = $this->createObjectEntity(1, 'uuid-1');
 
-        $this->objectEntityMapper->expects($this->once())
+        $this->objectMapper->expects($this->once())
             ->method('findMultiple')
             ->willReturn([$entity1]);
 
@@ -424,7 +424,7 @@ class CacheHandlerTest extends TestCase
         $entity1 = $this->createObjectEntity(1, 'uuid-1');
         $entity2 = $this->createObjectEntity(2, 'uuid-2');
 
-        $this->objectEntityMapper->method('findMultiple')
+        $this->objectMapper->method('findMultiple')
             ->willReturn([$entity1, $entity2]);
 
         $this->handler->preloadObjects([1, 2]);
@@ -444,12 +444,12 @@ class CacheHandlerTest extends TestCase
         $entity2 = $this->createObjectEntity(2, 'uuid-2');
 
         // Load entity1 into cache first.
-        $this->objectEntityMapper->method('find')
+        $this->objectMapper->method('find')
             ->willReturn($entity1);
         $this->handler->getObject(1);
 
         // Now preload both - only entity2 should be loaded from DB.
-        $this->objectEntityMapper->method('findMultiple')
+        $this->objectMapper->method('findMultiple')
             ->willReturn([$entity2]);
 
         $result = $this->handler->preloadObjects([1, 2]);
@@ -486,7 +486,7 @@ class CacheHandlerTest extends TestCase
     public function testGetStatsTracksHitsAndMisses(): void
     {
         $entity = $this->createObjectEntity(1, 'uuid-1');
-        $this->objectEntityMapper->method('find')
+        $this->objectMapper->method('find')
             ->willReturn($entity);
 
         // Miss.
@@ -528,7 +528,7 @@ class CacheHandlerTest extends TestCase
         $entity1 = $this->createObjectEntity(1, 'uuid-1');
         $entity2 = $this->createObjectEntity(2, 'uuid-2');
 
-        $this->objectEntityMapper->method('find')
+        $this->objectMapper->method('find')
             ->willReturnOnConsecutiveCalls($entity1, $entity2);
 
         $this->handler->getObject(1);
@@ -579,7 +579,7 @@ class CacheHandlerTest extends TestCase
         // Miss (unknown uuid, DB will fail).
         $this->organisationMapper->method('findByUuid')
             ->willThrowException(new Exception('Not found'));
-        $this->objectEntityMapper->method('findAcrossAllSources')
+        $this->objectMapper->method('findAcrossAllSources')
             ->willThrowException(new Exception('Not found'));
         $this->nameDistributedCache->method('get')
             ->willReturn(null);
@@ -668,7 +668,7 @@ class CacheHandlerTest extends TestCase
     public function testClearSearchCacheWithoutDistributedCache(): void
     {
         $handler = new CacheHandler(
-            $this->objectEntityMapper,
+            $this->objectMapper,
             $this->organisationMapper,
             $this->logger,
             null,
@@ -750,7 +750,7 @@ class CacheHandlerTest extends TestCase
 
         // After invalidation, the object should be removed from cache.
         // Re-fetching should result in a DB call.
-        $this->objectEntityMapper->expects($this->once())
+        $this->objectMapper->expects($this->once())
             ->method('find')
             ->willReturn($entity);
 
@@ -769,7 +769,7 @@ class CacheHandlerTest extends TestCase
         $entity->setSchema(10);
 
         // First load the object into cache.
-        $this->objectEntityMapper->method('find')
+        $this->objectMapper->method('find')
             ->willReturn($entity);
         $this->handler->getObject(1);
 
@@ -1111,7 +1111,7 @@ class CacheHandlerTest extends TestCase
     {
         // Load an object to populate cache.
         $entity = $this->createObjectEntity(1, 'uuid-1');
-        $this->objectEntityMapper->method('find')
+        $this->objectMapper->method('find')
             ->willReturn($entity);
         $this->handler->getObject(1);
 
@@ -1130,7 +1130,7 @@ class CacheHandlerTest extends TestCase
     public function testClearCache(): void
     {
         $entity = $this->createObjectEntity(1, 'uuid-1');
-        $this->objectEntityMapper->method('find')
+        $this->objectMapper->method('find')
             ->willReturn($entity);
         $this->handler->getObject(1);
 
@@ -1148,7 +1148,7 @@ class CacheHandlerTest extends TestCase
     public function testClearAllCachesResetsStats(): void
     {
         $entity = $this->createObjectEntity(1, 'uuid-1');
-        $this->objectEntityMapper->method('find')
+        $this->objectMapper->method('find')
             ->willReturn($entity);
         $this->handler->getObject(1);
         $this->handler->getObject(1);
@@ -1241,7 +1241,7 @@ class CacheHandlerTest extends TestCase
         $this->organisationMapper->method('findByUuid')
             ->willThrowException(new Exception('Not found'));
 
-        $this->objectEntityMapper->method('findAcrossAllSources')
+        $this->objectMapper->method('findAcrossAllSources')
             ->willThrowException(new Exception('Not found'));
 
         // Return null from distributed cache.
@@ -1291,7 +1291,7 @@ class CacheHandlerTest extends TestCase
         // Falls through to DB lookup.
         $this->organisationMapper->method('findByUuid')
             ->willThrowException(new Exception('Not found'));
-        $this->objectEntityMapper->method('findAcrossAllSources')
+        $this->objectMapper->method('findAcrossAllSources')
             ->willThrowException(new Exception('Not found'));
 
         $this->logger->expects($this->atLeastOnce())
@@ -1334,7 +1334,7 @@ class CacheHandlerTest extends TestCase
         $this->organisationMapper->method('findByUuid')
             ->willThrowException(new Exception('Not found'));
 
-        $this->objectEntityMapper->method('findAcrossAllSources')
+        $this->objectMapper->method('findAcrossAllSources')
             ->willReturn(['object' => $entity]);
 
         $result = $this->handler->getSingleObjectName('obj-uuid-1');
@@ -1356,7 +1356,7 @@ class CacheHandlerTest extends TestCase
         $this->organisationMapper->method('findByUuid')
             ->willThrowException(new Exception('Not found'));
 
-        $this->objectEntityMapper->method('findAcrossAllSources')
+        $this->objectMapper->method('findAcrossAllSources')
             ->willReturn(['object' => $entity]);
 
         $result = $this->handler->getSingleObjectName('obj-uuid-2');
@@ -1460,7 +1460,7 @@ class CacheHandlerTest extends TestCase
         $this->organisationMapper->method('findByUuid')
             ->willThrowException(new Exception('Not found'));
 
-        $this->objectEntityMapper->method('findAcrossAllSources')
+        $this->objectMapper->method('findAcrossAllSources')
             ->willReturn(['object' => null]);
 
         $result = $this->handler->getSingleObjectName('uuid-null-result');
@@ -1519,7 +1519,7 @@ class CacheHandlerTest extends TestCase
 
         $this->organisationMapper->method('findMultipleByUuid')
             ->willReturn([]);
-        $this->objectEntityMapper->method('findMultiple')
+        $this->objectMapper->method('findMultiple')
             ->willReturn([]);
 
         $result = $this->handler->getMultipleObjectNames(['uuid-1', 'uuid-2']);
@@ -1542,7 +1542,7 @@ class CacheHandlerTest extends TestCase
         $this->organisationMapper->method('findMultipleByUuid')
             ->willReturn([$org]);
 
-        $this->objectEntityMapper->method('findMultiple')
+        $this->objectMapper->method('findMultiple')
             ->willReturn([]);
 
         $result = $this->handler->getMultipleObjectNames(['org-uuid-1']);
@@ -1565,7 +1565,7 @@ class CacheHandlerTest extends TestCase
         $this->organisationMapper->method('findMultipleByUuid')
             ->willReturn([]);
 
-        $this->objectEntityMapper->method('findMultiple')
+        $this->objectMapper->method('findMultiple')
             ->willReturn([$entity]);
 
         $result = $this->handler->getMultipleObjectNames(['obj-uuid-1']);
@@ -1645,7 +1645,7 @@ class CacheHandlerTest extends TestCase
         $this->organisationMapper->method('findMultipleByUuid')
             ->willReturn([]);
 
-        $this->objectEntityMapper->method('findMultiple')
+        $this->objectMapper->method('findMultiple')
             ->willReturn([$entity]);
 
         $result = $this->handler->getMultipleObjectNames(['obj-uuid-noname']);
@@ -1668,7 +1668,7 @@ class CacheHandlerTest extends TestCase
         $this->organisationMapper->method('findMultipleByUuid')
             ->willReturn([]);
 
-        $this->objectEntityMapper->method('findMultiple')
+        $this->objectMapper->method('findMultiple')
             ->willReturn([$entity]);
 
         // Request by numeric ID string "42" - the code matches by object->getId().
@@ -1694,7 +1694,7 @@ class CacheHandlerTest extends TestCase
         $this->organisationMapper->method('findMultipleByUuid')
             ->willReturn([$org]);
 
-        $this->objectEntityMapper->method('findMultiple')
+        $this->objectMapper->method('findMultiple')
             ->willReturn([]);
 
         $result = $this->handler->getMultipleObjectNames(['org-uuid-noname']);
@@ -1717,7 +1717,7 @@ class CacheHandlerTest extends TestCase
         $this->nameDistributedCache->method('get')->willReturn(null);
         $this->organisationMapper->method('findMultipleByUuid')
             ->willReturn([]);
-        $this->objectEntityMapper->method('findMultiple')
+        $this->objectMapper->method('findMultiple')
             ->willReturn([]);
 
         // Magic table setup: empty registers to avoid complex mocking.
@@ -1743,7 +1743,7 @@ class CacheHandlerTest extends TestCase
     {
         $this->organisationMapper->method('findAllWithUserCount')
             ->willReturn([]);
-        $this->objectEntityMapper->method('findAll')
+        $this->objectMapper->method('findAll')
             ->willReturn([]);
 
         $result = $this->handler->getAllObjectNames();
@@ -1762,7 +1762,7 @@ class CacheHandlerTest extends TestCase
 
         $this->organisationMapper->method('findAllWithUserCount')
             ->willReturn([]);
-        $this->objectEntityMapper->method('findAll')
+        $this->objectMapper->method('findAll')
             ->willReturn([]);
 
         $result = $this->handler->getAllObjectNames(true);
@@ -1822,7 +1822,7 @@ class CacheHandlerTest extends TestCase
         $this->organisationMapper->method('findAllWithUserCount')
             ->willReturn([$org]);
 
-        $this->objectEntityMapper->method('findAll')
+        $this->objectMapper->method('findAll')
             ->willReturn([$entity]);
 
         $count = $this->handler->warmupNameCache();
@@ -1844,7 +1844,7 @@ class CacheHandlerTest extends TestCase
 
         $this->organisationMapper->method('findAllWithUserCount')
             ->willReturn([$org]);
-        $this->objectEntityMapper->method('findAll')
+        $this->objectMapper->method('findAll')
             ->willReturn([$entity]);
 
         $this->handler->warmupNameCache();
@@ -1880,7 +1880,7 @@ class CacheHandlerTest extends TestCase
     {
         $this->organisationMapper->method('findAllWithUserCount')
             ->willReturn([]);
-        $this->objectEntityMapper->method('findAll')
+        $this->objectMapper->method('findAll')
             ->willReturn([]);
 
         $this->handler->warmupNameCache();
@@ -1902,7 +1902,7 @@ class CacheHandlerTest extends TestCase
 
         $this->organisationMapper->method('findAllWithUserCount')
             ->willReturn([]);
-        $this->objectEntityMapper->method('findAll')
+        $this->objectMapper->method('findAll')
             ->willReturn([$entity]);
 
         $count = $this->handler->warmupNameCache();
@@ -1921,7 +1921,7 @@ class CacheHandlerTest extends TestCase
 
         $this->organisationMapper->method('findAllWithUserCount')
             ->willReturn([$org]);
-        $this->objectEntityMapper->method('findAll')
+        $this->objectMapper->method('findAll')
             ->willReturn([]);
 
         $count = $this->handler->warmupNameCache();
@@ -1941,7 +1941,7 @@ class CacheHandlerTest extends TestCase
 
         $this->organisationMapper->method('findAllWithUserCount')
             ->willReturn([]);
-        $this->objectEntityMapper->method('findAll')
+        $this->objectMapper->method('findAll')
             ->willReturn([]);
 
         // Set up a register with schema that has magic mapping.
@@ -1985,7 +1985,7 @@ class CacheHandlerTest extends TestCase
 
         $this->organisationMapper->method('findAllWithUserCount')
             ->willReturn([]);
-        $this->objectEntityMapper->method('findAll')
+        $this->objectMapper->method('findAll')
             ->willReturn([]);
 
         // Create a register with magic mapping enabled via configuration.
@@ -2036,7 +2036,7 @@ class CacheHandlerTest extends TestCase
 
         $this->organisationMapper->method('findAllWithUserCount')
             ->willReturn([]);
-        $this->objectEntityMapper->method('findAll')
+        $this->objectMapper->method('findAll')
             ->willReturn([]);
 
         $register = $this->createRegister(1, [5], [
@@ -2075,7 +2075,7 @@ class CacheHandlerTest extends TestCase
 
         $this->organisationMapper->method('findAllWithUserCount')
             ->willReturn([]);
-        $this->objectEntityMapper->method('findAll')
+        $this->objectMapper->method('findAll')
             ->willReturn([]);
 
         $registerMapper->method('findAll')
@@ -2103,7 +2103,7 @@ class CacheHandlerTest extends TestCase
 
         $this->organisationMapper->method('findAllWithUserCount')
             ->willReturn([]);
-        $this->objectEntityMapper->method('findAll')
+        $this->objectMapper->method('findAll')
             ->willReturn([]);
 
         $register = $this->createRegister(1, [5]);
@@ -2182,7 +2182,7 @@ class CacheHandlerTest extends TestCase
     public function testConstructorWithoutCacheFactory(): void
     {
         $handler = new CacheHandler(
-            $this->objectEntityMapper,
+            $this->objectMapper,
             $this->organisationMapper,
             $this->logger,
             null,
@@ -2209,7 +2209,7 @@ class CacheHandlerTest extends TestCase
             ->method('warning');
 
         $handler = new CacheHandler(
-            $this->objectEntityMapper,
+            $this->objectMapper,
             $this->organisationMapper,
             $this->logger,
             $failingCacheFactory,
@@ -2228,7 +2228,7 @@ class CacheHandlerTest extends TestCase
     public function testConstructorWithNullCacheFactoryAndUserSession(): void
     {
         $handler = new CacheHandler(
-            $this->objectEntityMapper,
+            $this->objectMapper,
             $this->organisationMapper,
             $this->logger,
             null,
@@ -2299,7 +2299,7 @@ class CacheHandlerTest extends TestCase
     public function testGetDistributedNameCacheCountWithoutDistributedCache(): void
     {
         $handler = new CacheHandler(
-            $this->objectEntityMapper,
+            $this->objectMapper,
             $this->organisationMapper,
             $this->logger,
             null,
@@ -2571,7 +2571,7 @@ class CacheHandlerTest extends TestCase
             ->willThrowException(new Exception('Service not found'));
 
         $handler = new CacheHandler(
-            $this->objectEntityMapper,
+            $this->objectMapper,
             $this->organisationMapper,
             $this->logger,
             $this->cacheFactory,
@@ -2609,7 +2609,7 @@ class CacheHandlerTest extends TestCase
         }
 
         $callIndex = 0;
-        $this->objectEntityMapper->method('find')
+        $this->objectMapper->method('find')
             ->willReturnCallback(function () use (&$callIndex, $entities) {
                 return $entities[$callIndex++];
             });
@@ -2638,7 +2638,7 @@ class CacheHandlerTest extends TestCase
         $idProp->setValue($entity, 99);
         // UUID remains null.
 
-        $this->objectEntityMapper->method('find')
+        $this->objectMapper->method('find')
             ->willReturn($entity);
 
         $result = $this->handler->getObject(99);
@@ -2666,7 +2666,7 @@ class CacheHandlerTest extends TestCase
 
         $this->organisationMapper->method('findAllWithUserCount')
             ->willReturn([]);
-        $this->objectEntityMapper->method('findAll')
+        $this->objectMapper->method('findAll')
             ->willReturn([]);
 
         // warmupNameCache calls persistNameCacheToDistributed.
@@ -2685,7 +2685,7 @@ class CacheHandlerTest extends TestCase
     public function testPersistNameCacheToDistributedWithoutCache(): void
     {
         $handler = new CacheHandler(
-            $this->objectEntityMapper,
+            $this->objectMapper,
             $this->organisationMapper,
             $this->logger,
             null,
@@ -2696,7 +2696,7 @@ class CacheHandlerTest extends TestCase
 
         $this->organisationMapper->method('findAllWithUserCount')
             ->willReturn([]);
-        $this->objectEntityMapper->method('findAll')
+        $this->objectMapper->method('findAll')
             ->willReturn([]);
 
         // Should not throw, returns 0.
@@ -2717,7 +2717,7 @@ class CacheHandlerTest extends TestCase
 
         $this->organisationMapper->method('findAllWithUserCount')
             ->willReturn([$org]);
-        $this->objectEntityMapper->method('findAll')
+        $this->objectMapper->method('findAll')
             ->willReturn([]);
 
         // Make distributed cache set fail.
@@ -2750,7 +2750,7 @@ class CacheHandlerTest extends TestCase
         $this->nameDistributedCache->method('get')->willReturn(null);
         $this->organisationMapper->method('findMultipleByUuid')
             ->willReturn([]);
-        $this->objectEntityMapper->method('findMultiple')
+        $this->objectMapper->method('findMultiple')
             ->willReturn([]);
 
         // registerMapper.findAll should NOT be called since all IDs are non-UUID.
@@ -2778,7 +2778,7 @@ class CacheHandlerTest extends TestCase
         $this->nameDistributedCache->method('get')->willReturn(null);
         $this->organisationMapper->method('findMultipleByUuid')
             ->willReturn([]);
-        $this->objectEntityMapper->method('findMultiple')
+        $this->objectMapper->method('findMultiple')
             ->willReturn([]);
 
         $registerMapper->method('findAll')
@@ -2807,7 +2807,7 @@ class CacheHandlerTest extends TestCase
         $this->nameDistributedCache->method('get')->willReturn(null);
         $this->organisationMapper->method('findMultipleByUuid')
             ->willReturn([]);
-        $this->objectEntityMapper->method('findMultiple')
+        $this->objectMapper->method('findMultiple')
             ->willReturn([]);
 
         $register = $this->createRegister(1, [5]);
@@ -2839,7 +2839,7 @@ class CacheHandlerTest extends TestCase
         $this->nameDistributedCache->method('get')->willReturn(null);
         $this->organisationMapper->method('findMultipleByUuid')
             ->willReturn([]);
-        $this->objectEntityMapper->method('findMultiple')
+        $this->objectMapper->method('findMultiple')
             ->willReturn([]);
 
         // Register without magic mapping configuration.
@@ -2882,7 +2882,7 @@ class CacheHandlerTest extends TestCase
         $this->nameDistributedCache->method('get')->willReturn(null);
         $this->organisationMapper->method('findMultipleByUuid')
             ->willReturn([]);
-        $this->objectEntityMapper->method('findMultiple')
+        $this->objectMapper->method('findMultiple')
             ->willReturn([]);
 
         $register = $this->createRegister(1, [5], [
@@ -2922,7 +2922,7 @@ class CacheHandlerTest extends TestCase
         $this->nameDistributedCache->method('get')->willReturn(null);
         $this->organisationMapper->method('findMultipleByUuid')
             ->willReturn([]);
-        $this->objectEntityMapper->method('findMultiple')
+        $this->objectMapper->method('findMultiple')
             ->willReturn([]);
 
         $register = $this->createRegister(1, [5], [
@@ -3222,7 +3222,7 @@ class CacheHandlerTest extends TestCase
 
         $this->organisationMapper->method('findAllWithUserCount')
             ->willReturn([]);
-        $this->objectEntityMapper->method('findAll')
+        $this->objectMapper->method('findAll')
             ->willReturn([]);
 
         // Pre-populate a name.
@@ -3259,7 +3259,7 @@ class CacheHandlerTest extends TestCase
         $this->organisationMapper->method('findMultipleByUuid')
             ->willReturn([]);
 
-        $this->objectEntityMapper->method('findMultiple')
+        $this->objectMapper->method('findMultiple')
             ->willReturn([$entity]);
 
         // Empty registers to avoid magic table lookups.
@@ -3294,7 +3294,7 @@ class CacheHandlerTest extends TestCase
         $this->organisationMapper->method('findMultipleByUuid')
             ->willReturn([]);
 
-        $this->objectEntityMapper->method('findMultiple')
+        $this->objectMapper->method('findMultiple')
             ->willReturn([$entity]);
 
         // Empty registers to avoid magic table lookups.
@@ -3593,7 +3593,7 @@ class CacheHandlerTest extends TestCase
             });
 
         $handler = new CacheHandler(
-            $this->objectEntityMapper,
+            $this->objectMapper,
             $this->organisationMapper,
             $this->logger,
             $this->cacheFactory,
@@ -3641,7 +3641,7 @@ class CacheHandlerTest extends TestCase
             ->willReturn($stmt);
 
         $handler = new CacheHandler(
-            $this->objectEntityMapper,
+            $this->objectMapper,
             $this->organisationMapper,
             $this->logger,
             $this->cacheFactory,
@@ -3686,7 +3686,7 @@ class CacheHandlerTest extends TestCase
         $this->nameDistributedCache->method('get')->willReturn(null);
         $this->organisationMapper->method('findMultipleByUuid')
             ->willReturn([]);
-        $this->objectEntityMapper->method('findMultiple')
+        $this->objectMapper->method('findMultiple')
             ->willReturn([]);
 
         // No registers — batchLoad returns empty result quickly.
@@ -3730,7 +3730,7 @@ class CacheHandlerTest extends TestCase
 
         $this->organisationMapper->method('findAllWithUserCount')
             ->willReturn([]);
-        $this->objectEntityMapper->method('findAll')
+        $this->objectMapper->method('findAll')
             ->willReturn([]);
 
         // Register with magic mapping enabled.

@@ -7,7 +7,7 @@ namespace Unit\Controller;
 use Exception;
 use OCA\OpenRegister\Controller\SchemasController;
 use OCA\OpenRegister\Db\AuditTrailMapper;
-use OCA\OpenRegister\Db\ObjectEntityMapper;
+use OCA\OpenRegister\Db\UnifiedObjectMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\DownloadService;
@@ -39,7 +39,7 @@ class SchemasControllerTest extends TestCase
     private IRequest&MockObject $request;
     private IAppConfig&MockObject $config;
     private SchemaMapper&MockObject $schemaMapper;
-    private ObjectEntityMapper&MockObject $objectEntityMapper;
+    private UnifiedObjectMapper&MockObject $objectMapper;
     private DownloadService&MockObject $downloadService;
     private UploadService&MockObject $uploadService;
     private AuditTrailMapper&MockObject $auditTrailMapper;
@@ -56,7 +56,7 @@ class SchemasControllerTest extends TestCase
         $this->request = $this->createMock(IRequest::class);
         $this->config = $this->createMock(IAppConfig::class);
         $this->schemaMapper = $this->createMock(SchemaMapper::class);
-        $this->objectEntityMapper = $this->createMock(ObjectEntityMapper::class);
+        $this->objectMapper = $this->createMock(UnifiedObjectMapper::class);
         $this->downloadService = $this->createMock(DownloadService::class);
         $this->uploadService = $this->createMock(UploadService::class);
         $this->auditTrailMapper = $this->createMock(AuditTrailMapper::class);
@@ -71,7 +71,7 @@ class SchemasControllerTest extends TestCase
             $this->request,
             $this->config,
             $this->schemaMapper,
-            $this->objectEntityMapper,
+            $this->objectMapper,
             $this->downloadService,
             $this->uploadService,
             $this->auditTrailMapper,
@@ -289,7 +289,7 @@ class SchemasControllerTest extends TestCase
         $schema = $this->createRealSchema(1, 'Stats Schema');
         $this->schemaMapper->method('find')->willReturn($schema);
 
-        $this->objectEntityMapper->method('getStatistics')->willReturn([
+        $this->objectMapper->method('getStatistics')->willReturn([
             'total' => 50,
             'invalid' => 3,
             'deleted' => 5,
@@ -506,7 +506,7 @@ class SchemasControllerTest extends TestCase
         $this->schemaMapper->method('findAll')->willReturn([$schema]);
         $this->schemaMapper->method('findAllExtendedBy')->willReturn([]);
         $this->schemaMapper->method('getRegisterCountPerSchema')->willReturn([1 => 2]);
-        $this->objectEntityMapper->method('getStatisticsGroupedBySchema')->willReturn([
+        $this->objectMapper->method('getStatisticsGroupedBySchema')->willReturn([
             1 => ['total' => 10, 'size' => 500, 'invalid' => 1, 'deleted' => 0, 'locked' => 0, 'published' => 9],
         ]);
         $this->auditTrailMapper->method('getStatisticsGroupedBySchema')->willReturn([
@@ -533,7 +533,7 @@ class SchemasControllerTest extends TestCase
         $this->schemaMapper->method('findAll')->willReturn([$schema]);
         $this->schemaMapper->method('findAllExtendedBy')->willReturn([]);
         $this->schemaMapper->method('getRegisterCountPerSchema')->willReturn([]);
-        $this->objectEntityMapper->method('getStatisticsGroupedBySchema')->willReturn([]);
+        $this->objectMapper->method('getStatisticsGroupedBySchema')->willReturn([]);
         $this->auditTrailMapper->method('getStatisticsGroupedBySchema')->willReturn([]);
 
         $result = $this->controller->index();
@@ -622,7 +622,7 @@ class SchemasControllerTest extends TestCase
         $this->schemaMapper->method('find')->willReturn($schema);
         $this->schemaMapper->method('findExtendedBy')->willReturn([]);
         $this->schemaMapper->method('getRegisterCountPerSchema')->willReturn([1 => 5]);
-        $this->objectEntityMapper->method('getStatistics')->willReturn([
+        $this->objectMapper->method('getStatistics')->willReturn([
             'total' => 25, 'invalid' => 0, 'deleted' => 0,
             'published' => 25, 'locked' => 0, 'size' => 5000,
         ]);
@@ -666,7 +666,7 @@ class SchemasControllerTest extends TestCase
         $this->schemaMapper->method('find')->willReturn($schema);
         $this->schemaMapper->method('findExtendedBy')->willReturn([]);
         $this->schemaMapper->method('getRegisterCountPerSchema')->willReturn([]);
-        $this->objectEntityMapper->method('getStatistics')->willReturn([
+        $this->objectMapper->method('getStatistics')->willReturn([
             'total' => 0, 'invalid' => 0, 'deleted' => 0,
             'published' => 0, 'locked' => 0, 'size' => 0,
         ]);

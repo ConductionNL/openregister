@@ -22,7 +22,7 @@ namespace OCA\OpenRegister\Service\Object;
 
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Db\UnifiedObjectMapper;
+use OCA\OpenRegister\Db\MagicMapper;
 use OCP\ICacheFactory;
 use OCP\IMemcache;
 use OCP\IUserSession;
@@ -81,7 +81,7 @@ class FacetHandler
     /**
      * Constructor for FacetHandler.
      *
-     * @param UnifiedObjectMapper $unifiedObjectMapper Unified object mapper with storage routing.
+     * @param MagicMapper $unifiedObjectMapper Unified object mapper with storage routing.
      * @param SchemaMapper        $schemaMapper        Schema database mapper.
      * @param ICacheFactory       $cacheFactory        Cache factory for distributed caching.
      * @param IUserSession        $userSession         User session for tenant isolation.
@@ -90,7 +90,7 @@ class FacetHandler
      * @return void
      */
     public function __construct(
-        private readonly UnifiedObjectMapper $unifiedObjectMapper,
+        private readonly MagicMapper $unifiedObjectMapper,
         private readonly SchemaMapper $schemaMapper,
         /**
          * Logger for facet operations

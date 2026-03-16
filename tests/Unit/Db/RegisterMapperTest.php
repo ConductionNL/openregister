@@ -2,7 +2,7 @@
 
 namespace OCA\OpenRegister\Tests\Unit\Db;
 
-use OCA\OpenRegister\Db\ObjectEntityMapper;
+use OCA\OpenRegister\Db\UnifiedObjectMapper;
 use OCA\OpenRegister\Db\OrganisationMapper;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
@@ -27,7 +27,7 @@ class RegisterMapperTest extends TestCase
     private IDBConnection&MockObject $db;
     private SchemaMapper&MockObject $schemaMapper;
     private IEventDispatcher&MockObject $eventDispatcher;
-    private ObjectEntityMapper&MockObject $objectEntityMapper;
+    private UnifiedObjectMapper&MockObject $objectMapper;
     private OrganisationMapper&MockObject $organisationMapper;
     private IUserSession&MockObject $userSession;
     private IGroupManager&MockObject $groupManager;
@@ -39,7 +39,7 @@ class RegisterMapperTest extends TestCase
         $this->db = $this->createMock(IDBConnection::class);
         $this->schemaMapper = $this->createMock(SchemaMapper::class);
         $this->eventDispatcher = $this->createMock(IEventDispatcher::class);
-        $this->objectEntityMapper = $this->createMock(ObjectEntityMapper::class);
+        $this->objectMapper = $this->createMock(UnifiedObjectMapper::class);
         $this->organisationMapper = $this->createMock(OrganisationMapper::class);
         $this->userSession = $this->createMock(IUserSession::class);
         $this->groupManager = $this->createMock(IGroupManager::class);
@@ -49,7 +49,7 @@ class RegisterMapperTest extends TestCase
             $this->db,
             $this->schemaMapper,
             $this->eventDispatcher,
-            $this->objectEntityMapper,
+            $this->objectMapper,
             $this->organisationMapper,
             $this->userSession,
             $this->groupManager,

@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service\Object;
 
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Db\ObjectEntityMapper;
+use OCA\OpenRegister\Db\UnifiedObjectMapper;
 use OCA\OpenRegister\Db\OrganisationMapper;
 use OCA\OpenRegister\Service\Object\CacheHandler;
 use OCP\ICacheFactory;
@@ -23,7 +23,7 @@ use Psr\Log\LoggerInterface;
 class CacheHandlerBranchCoverageTest extends TestCase
 {
     private CacheHandler $handler;
-    private ObjectEntityMapper&MockObject $objectEntityMapper;
+    private UnifiedObjectMapper&MockObject $objectMapper;
     private OrganisationMapper&MockObject $organisationMapper;
     private LoggerInterface&MockObject $logger;
     private ICacheFactory&MockObject $cacheFactory;
@@ -35,7 +35,7 @@ class CacheHandlerBranchCoverageTest extends TestCase
     {
         parent::setUp();
 
-        $this->objectEntityMapper = $this->createMock(ObjectEntityMapper::class);
+        $this->objectMapper = $this->createMock(UnifiedObjectMapper::class);
         $this->organisationMapper = $this->createMock(OrganisationMapper::class);
         $this->logger = $this->createMock(LoggerInterface::class);
         $this->cacheFactory = $this->createMock(ICacheFactory::class);
@@ -52,7 +52,7 @@ class CacheHandlerBranchCoverageTest extends TestCase
             });
 
         $this->handler = new CacheHandler(
-            $this->objectEntityMapper,
+            $this->objectMapper,
             $this->organisationMapper,
             $this->logger,
             $this->cacheFactory,
@@ -93,7 +93,7 @@ class CacheHandlerBranchCoverageTest extends TestCase
     {
         $object = $this->createObjectMock(42, 'uuid-123');
 
-        $this->objectEntityMapper->method('find')
+        $this->objectMapper->method('find')
             ->with(42)
             ->willReturn($object);
 
@@ -107,7 +107,7 @@ class CacheHandlerBranchCoverageTest extends TestCase
 
     public function testGetObjectReturnsNullOnException(): void
     {
-        $this->objectEntityMapper->method('find')
+        $this->objectMapper->method('find')
             ->willThrowException(new \Exception('Not found'));
 
         $result = $this->handler->getObject(999);
@@ -127,7 +127,7 @@ class CacheHandlerBranchCoverageTest extends TestCase
     public function testPreloadObjectsAllAlreadyCached(): void
     {
         $object = $this->createObjectMock(1, 'uuid-1');
-        $this->objectEntityMapper->method('find')->willReturn($object);
+        $this->objectMapper->method('find')->willReturn($object);
         $this->handler->getObject(1);
 
         $result = $this->handler->preloadObjects([1]);
@@ -136,7 +136,7 @@ class CacheHandlerBranchCoverageTest extends TestCase
 
     public function testPreloadObjectsBulkLoadFailure(): void
     {
-        $this->objectEntityMapper->method('findMultiple')
+        $this->objectMapper->method('findMultiple')
             ->willThrowException(new \Exception('DB error'));
 
         $result = $this->handler->preloadObjects([1, 2, 3]);
@@ -148,7 +148,7 @@ class CacheHandlerBranchCoverageTest extends TestCase
         $obj1 = $this->createObjectMock(1, 'uuid-1');
         $obj2 = $this->createObjectMock(2, 'uuid-2');
 
-        $this->objectEntityMapper->method('findMultiple')
+        $this->objectMapper->method('findMultiple')
             ->willReturn([$obj1, $obj2]);
 
         $result = $this->handler->preloadObjects([1, 2]);
@@ -170,7 +170,7 @@ class CacheHandlerBranchCoverageTest extends TestCase
 
     public function testGetStatsAfterCacheMiss(): void
     {
-        $this->objectEntityMapper->method('find')
+        $this->objectMapper->method('find')
             ->willThrowException(new \Exception('Not found'));
         $this->handler->getObject(1);
 
@@ -233,7 +233,7 @@ class CacheHandlerBranchCoverageTest extends TestCase
     public function testClearAllCaches(): void
     {
         $object = $this->createObjectMock(1, 'uuid-1');
-        $this->objectEntityMapper->method('find')->willReturn($object);
+        $this->objectMapper->method('find')->willReturn($object);
         $this->handler->getObject(1);
 
         $this->queryCache->expects($this->once())->method('clear');
@@ -312,7 +312,7 @@ class CacheHandlerBranchCoverageTest extends TestCase
             ->willThrowException(new \Exception('Cache init failed'));
 
         $handler = new CacheHandler(
-            $this->objectEntityMapper,
+            $this->objectMapper,
             $this->organisationMapper,
             $this->logger,
             $cacheFactory,

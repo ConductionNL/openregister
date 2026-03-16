@@ -55,7 +55,6 @@ use ZipArchive;
 use OCP\AppFramework\Http\StreamResponse;
 use OCA\OpenRegister\Db\FileMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Db\ObjectEntityMapper;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
@@ -138,13 +137,6 @@ class FileService
      * @var LoggerInterface
      */
     private LoggerInterface $logger;
-
-    /**
-     * Object entity mapper
-     *
-     * @var ObjectEntityMapper
-     */
-    private ObjectEntityMapper $objectEntityMapper;
 
     /**
      * REMOVED: Register mapper (unused, caused circular dependency)
@@ -329,7 +321,6 @@ class FileService
      * @param FileMapper                $fileMapper           File mapper
      * @param IGroupManager             $groupManager         Group manager
      * @param LoggerInterface           $logger               Logger
-     * @param ObjectEntityMapper        $objectEntityMapper   Object entity mapper
      * @param IRootFolder               $rootFolder           Root folder
      * @param IManager                  $shareManager         Share manager
      * @param ISystemTagManager         $systemTagManager     System tag manager
@@ -357,7 +348,6 @@ class FileService
         FileMapper $fileMapper,
         IGroupManager $groupManager,
         LoggerInterface $logger,
-        ObjectEntityMapper $objectEntityMapper,
         IRootFolder $rootFolder,
         IManager $shareManager,
         ISystemTagManager $systemTagManager,
@@ -386,7 +376,6 @@ class FileService
         $this->config       = $config;
         $this->fileMapper   = $fileMapper;
         $this->groupManager = $groupManager;
-        $this->objectEntityMapper = $objectEntityMapper;
         // REMOVED: registerMapper assignment (unused, caused circular dependency).
         $this->rootFolder            = $rootFolder;
         $this->shareManager          = $shareManager;

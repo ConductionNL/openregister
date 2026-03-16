@@ -43,7 +43,6 @@ use OCP\IUserSession;
 use OCP\IAppConfig;
 use Symfony\Component\Uid\Uuid;
 use OCA\OpenRegister\Service\Schemas\PropertyValidatorHandler;
-use OCA\OpenRegister\Db\ObjectEntityMapper;
 
 /**
  * SchemaMapper handles database operations for Schema entities

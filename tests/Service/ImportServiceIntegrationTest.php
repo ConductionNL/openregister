@@ -19,7 +19,7 @@ use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
-use OCA\OpenRegister\Db\ObjectEntityMapper;
+use OCA\OpenRegister\Db\UnifiedObjectMapper;
 use OCA\OpenRegister\Service\ImportService;
 use OCA\OpenRegister\Service\ObjectService;
 use OCP\IDBConnection;
@@ -72,9 +72,9 @@ class ImportServiceIntegrationTest extends TestCase
     /**
      * Object entity mapper for direct DB cleanup
      *
-     * @var ObjectEntityMapper
+     * @var UnifiedObjectMapper
      */
-    private ObjectEntityMapper $objectEntityMapper;
+    private UnifiedObjectMapper $objectMapper;
 
     /**
      * Test register
@@ -116,7 +116,7 @@ class ImportServiceIntegrationTest extends TestCase
         $this->objectService = \OC::$server->get(ObjectService::class);
         $this->registerMapper = \OC::$server->get(RegisterMapper::class);
         $this->schemaMapper = \OC::$server->get(SchemaMapper::class);
-        $this->objectEntityMapper = \OC::$server->get(ObjectEntityMapper::class);
+        $this->objectMapper = \OC::$server->get(UnifiedObjectMapper::class);
 
         $this->createTestRegisterAndSchema();
     }
@@ -511,7 +511,7 @@ class ImportServiceIntegrationTest extends TestCase
         // Verify the object was created with correct type by fetching it
         $uuid = $sheetResult['created'][0];
         if ($uuid !== null) {
-            $obj = $this->objectEntityMapper->find($uuid);
+            $obj = $this->objectMapper->find($uuid);
             $data = $obj->getObject();
             $this->assertSame(42, $data['age']);
         }
@@ -569,7 +569,7 @@ class ImportServiceIntegrationTest extends TestCase
         // Verify boolean and array coercion
         $uuid = $sheetResult['created'][0];
         if ($uuid !== null) {
-            $obj = $this->objectEntityMapper->find($uuid);
+            $obj = $this->objectMapper->find($uuid);
             $data = $obj->getObject();
             $this->assertSame(true, $data['active']);
             $this->assertIsArray($data['tags']);
@@ -621,7 +621,7 @@ class ImportServiceIntegrationTest extends TestCase
         // Verify underscore column was NOT included in object data
         $uuid = $sheetResult['created'][0];
         if ($uuid !== null) {
-            $obj = $this->objectEntityMapper->find($uuid);
+            $obj = $this->objectMapper->find($uuid);
             $data = $obj->getObject();
             $this->assertArrayNotHasKey('_internal_id', $data);
         }
@@ -1015,7 +1015,7 @@ class ImportServiceIntegrationTest extends TestCase
         // Verify the comma in the name was preserved
         $uuid = $sheetResult['created'][0];
         if ($uuid !== null) {
-            $obj = $this->objectEntityMapper->find($uuid);
+            $obj = $this->objectMapper->find($uuid);
             $data = $obj->getObject();
             $this->assertSame('Last, First', $data['name']);
         }
@@ -1068,7 +1068,7 @@ class ImportServiceIntegrationTest extends TestCase
 
         $uuid = $sheetResult['created'][0];
         if ($uuid !== null) {
-            $obj = $this->objectEntityMapper->find($uuid);
+            $obj = $this->objectMapper->find($uuid);
             $data = $obj->getObject();
             $this->assertSame(19.99, $data['price']);
         }
