@@ -5,7 +5,6 @@ import { navigationStore } from '../store/store.js'
 <template>
 	<!-- Placeholder Div -->
 	<div>
-		<EditRegister />
 		<ImportRegister />
 		<ExportRegister />
 		<PublishRegister />
@@ -57,7 +56,6 @@ import { navigationStore } from '../store/store.js'
 </template>
 
 <script>
-import EditRegister from './register/EditRegister.vue'
 import ImportRegister from './register/ImportRegister.vue'
 import ExportRegister from './register/ExportRegister.vue'
 import PublishRegister from './register/PublishRegister.vue'
@@ -107,7 +105,6 @@ import DeleteEndpoint from './endpoint/DeleteEndpoint.vue'
 export default {
 	name: 'Modals',
 	components: {
-		EditRegister,
 		ImportRegister,
 		ExportRegister,
 		PublishRegister,
