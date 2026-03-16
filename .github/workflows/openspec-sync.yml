@@ -2,7 +2,7 @@ name: OpenSpec Sync
 
 on:
   push:
-    branches: [main, development]
+    branches: [development]
     paths: ['openspec/**']
   workflow_dispatch:
 
