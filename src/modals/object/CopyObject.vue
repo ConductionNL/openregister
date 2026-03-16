@@ -159,23 +159,22 @@ export default {
 				}
 
 				// Create the new object using the proper register and schema
-				const response = await objectStore.saveObject(objectToCopy, {
-					register: objectStore.objectItem['@self'].register,
-					schema: objectStore.objectItem['@self'].schema,
-				})
+				const register = objectStore.objectItem['@self'].register
+				const schema = objectStore.objectItem['@self'].schema
+				const type = `${register}-${schema}`
+				objectStore.registerObjectType(type, schema, register)
+				const data = await objectStore.saveObject(type, objectToCopy)
+				await objectStore.refreshObjectList({ register, schema })
 
-				if (response.response.ok) {
+				if (data) {
 					this.success = true
 					this.closeModalTimeout = setTimeout(() => {
 						this.closeDialog()
 
 						// Set the new object as selected and open ViewObject modal
-						objectStore.setObjectItem(response.data)
+						objectStore.setObjectItem(data)
 						navigationStore.setModal('viewObject')
 					}, 2000)
-
-					// Refresh the object list to show the new copy
-					objectStore.refreshObjectList()
 				} else {
 					throw new Error('Failed to create copy')
 				}

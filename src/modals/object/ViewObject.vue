@@ -1,12 +1,3 @@
-/**
- * @file ViewObject.vue
- * @module Modals/Object
- * @author Your Name
- * @copyright 2024 Your Organization
- * @license AGPL-3.0-or-later
- * @version 1.0.0
- */
-
 <script setup>
 import { objectStore, navigationStore, registerStore, schemaStore } from '../../store/store.js'
 </script>
@@ -1295,12 +1286,13 @@ export default {
 					dataToSave = this.formData
 				}
 
-				const { response } = await objectStore.saveObject(dataToSave, {
-					register: this.currentRegister.id,
-					schema: this.currentSchema.id,
-				})
-				console.info('Save object response:', response)
-				this.success = response.ok
+				const type = `${this.currentRegister.id}-${this.currentSchema.id}`
+				objectStore.registerObjectType(type, this.currentSchema.id, this.currentRegister.id)
+				const data = await objectStore.saveObject(type, dataToSave)
+				if (data) objectStore.setObjectItem(data)
+				await objectStore.refreshObjectList({ register: this.currentRegister.id, schema: this.currentSchema.id })
+				console.info('Save object data:', data)
+				this.success = !!data
 				if (this.success) {
 					// Re-initialize data to refresh jsonData with the newly created object
 					this.initializeData()

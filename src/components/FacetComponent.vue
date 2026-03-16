@@ -119,7 +119,7 @@
 								:title="field.description">
 								{{ capitalizeFieldName(fieldName) }}
 								<span v-if="field.appearance_rate" class="field-coverage">
-									({{ field.appearance_rate }}/{{ objectStore.objectList?.total || 0 }} objects)
+									({{ field.appearance_rate }}/{{ objectStore.getPagination(objectStore.currentType).total || 0 }} objects)
 								</span>
 							</label>
 							<NcSelect
@@ -181,7 +181,7 @@
 								:title="field.description">
 								{{ capitalizeFieldName(fieldName) }}
 								<span v-if="field.appearance_rate" class="field-coverage">
-									({{ field.appearance_rate }}/{{ objectStore.objectList?.total || 0 }} objects)
+									({{ field.appearance_rate }}/{{ objectStore.getPagination(objectStore.currentType).total || 0 }} objects)
 								</span>
 							</label>
 							<NcSelect

@@ -1,14 +1,12 @@
 <template>
-	<div>
-		<DashboardSideBar v-if="$route.path === '/'" />
-		<SearchSideBar v-else-if="$route.path.startsWith('/tables')" />
-		<RegistersSideBar v-else-if="$route.path.startsWith('/registers')" />
-		<RegisterSideBar v-else-if="/^\/registers\/.+/.test($route.path)" />
-		<ChatSideBar v-else-if="$route.path.startsWith('/chat')" />
-		<DeletedSideBar v-else-if="$route.path.startsWith('/deleted')" />
-		<AuditTrailSideBar v-else-if="$route.path.startsWith('/audit-trails')" />
-		<SearchTrailSideBar v-else-if="$route.path.startsWith('/search-trails')" />
-	</div>
+	<DashboardSideBar v-if="$route.path === '/'" />
+	<SearchSideBar v-else-if="$route.path.startsWith('/tables')" />
+	<RegistersSideBar v-else-if="$route.path.startsWith('/registers')" />
+	<RegisterSideBar v-else-if="/^\/registers\/.+/.test($route.path)" />
+	<ChatSideBar v-else-if="$route.path.startsWith('/chat')" />
+	<DeletedSideBar v-else-if="$route.path.startsWith('/deleted')" />
+	<AuditTrailSideBar v-else-if="$route.path.startsWith('/audit-trails')" />
+	<SearchTrailSideBar v-else-if="$route.path.startsWith('/search-trails')" />
 </template>
 
 <script>
