@@ -176,7 +176,11 @@ class GraphQLResolver
         $requestParams = $this->argsToRequestParams(args: $args);
 
         // Use ObjectService.buildSearchQuery which properly routes register/schema.
-        $registerId = ($register !== null ? $register->getId() : null);
+        $registerId = null;
+        if ($register !== null) {
+            $registerId = $register->getId();
+        }
+
         $query = $this->objectService->buildSearchQuery(
             requestParams: $requestParams,
             register: $registerId,
@@ -622,7 +626,6 @@ class GraphQLResolver
 
     }//end buildQueryFromArgs()
 
-
     /**
      * Convert GraphQL args to HTTP request params format for ObjectService.buildSearchQuery().
      *
@@ -649,10 +652,14 @@ class GraphQLResolver
 
         // Sort.
         if (isset($args['sort']) === true) {
-            $params['_order'] = json_encode(value: [[
-                'field'     => $args['sort']['field'],
-                'direction' => strtoupper(string: ($args['sort']['order'] ?? 'ASC')),
-            ]]);
+            $params['_order'] = json_encode(
+                    value: [
+                        [
+                            'field'     => $args['sort']['field'],
+                            'direction' => strtoupper(string: ($args['sort']['order'] ?? 'ASC')),
+                        ],
+                    ]
+                    );
         }
 
         // Facets.
