@@ -109,3 +109,43 @@ Specific schemas MUST be configurable to allow unauthenticated read access for p
 - WHEN an unauthenticated request lists schemas
 - THEN only `producten` MUST be visible
 - AND `interne-notities` MUST NOT be discoverable
+
+### Current Implementation Status
+- **Implemented:**
+  - `Consumer` entity (`lib/Db/Consumer.php`) with fields: uuid, name, description, domains (CORS), IPs, authType, secret, mappedUserId — supports JWT, Basic Auth, OAuth2, API Key
+  - `ConsumerMapper` (`lib/Db/ConsumerMapper.php`) for CRUD operations on consumers
+  - `ConsumersController` (`lib/Controller/ConsumersController.php`) for API consumer management
+  - `AuthenticationService` (`lib/Service/AuthenticationService.php`) handling multi-method authentication
+  - `AuthorizationService` (`lib/Service/AuthorizationService.php`) with ConsumerMapper integration for RBAC checks
+  - `SecurityService` (`lib/Service/SecurityService.php`) for security enforcement
+  - Twig authentication extensions (`lib/Twig/AuthenticationExtension.php`, `lib/Twig/AuthenticationRuntime.php`) providing `oauthToken` function for mapping templates
+  - Nextcloud session auth works natively via the Nextcloud framework
+  - Public endpoint support via `@PublicPage` annotations on controllers
+- **NOT implemented:**
+  - Explicit rate limiting per API consumer (configured limits, `Retry-After` headers)
+  - Authentication event auditing (success/failure logging to audit trail)
+  - SAML/OIDC integration within OpenRegister (relies on Nextcloud's SSO apps, but no explicit mapping/sync code)
+  - JWT token auto-generation and one-time display workflow
+  - Consumer revocation with immediate token invalidation
+- **Partial:**
+  - Rate limiting exists at Nextcloud level (bruteforce protection) but not configurable per consumer within OpenRegister
+  - Public schema access exists via public API endpoints but mixed public/private schema discovery filtering is not explicitly implemented
+
+### Standards & References
+- **OAuth 2.0 (RFC 6749)** — Authorization framework
+- **JWT (RFC 7519)** — JSON Web Token for API consumer authentication
+- **SAML 2.0** — Via Nextcloud's user_saml app
+- **OpenID Connect Core 1.0** — Via Nextcloud's user_oidc app
+- **BIO (Baseline Informatiebeveiliging Overheid)** — Authentication and access control requirements
+- **DigiD/eHerkenning** — Dutch government authentication standards (via SAML/OIDC)
+- **RFC 6585** — HTTP 429 Too Many Requests for rate limiting
+- **Nextcloud AppFramework** — `@PublicPage`, `@NoCSRFRequired`, `@CORS` annotations
+
+### Specificity Assessment
+- The spec covers the major auth methods well with clear scenarios.
+- Missing: API endpoint definitions for consumer CRUD; JWT claim structure (required claims, audience, issuer); consumer entity schema (which fields are required vs optional).
+- Ambiguous: how JWT validation works (symmetric vs asymmetric keys, key rotation); how SAML group-to-Nextcloud-group mapping is configured specifically for OpenRegister.
+- Open questions:
+  - Should API consumers be manageable via API or only via the admin UI?
+  - What is the relationship between OpenRegister's Consumer entity and Nextcloud's built-in app passwords?
+  - Should rate limiting be per-IP, per-consumer, or both? What are sensible defaults?

@@ -82,3 +82,31 @@ Applications MUST optionally be accessible via a custom URL path or subdomain.
 - GIVEN application `Meldingen Portaal` with custom path `/meldingen`
 - WHEN a user navigates to `https://gemeente.nl/meldingen`
 - THEN the application MUST be served at that path
+
+### Current Implementation Status
+- **Not implemented — application definitions**: No `Application` entity in the context of no-code app building exists. The existing `lib/Db/Application.php` is unrelated (it handles OpenRegister's own app-level entities like configurations, not user-built applications).
+- **Not implemented — drag-and-drop page editor**: No visual page builder, canvas, or component placement system exists in the frontend codebase.
+- **Not implemented — component library**: No data table, form, chart, or detail view components are available as drag-and-drop widgets.
+- **Not implemented — custom domains or paths**: No routing mechanism for user-defined application slugs or custom domain mapping exists.
+- **Tangentially related — Views system**: `ViewsController` (`lib/Controller/ViewsController.php`) and the `ViewHandler` (`lib/Service/Handler/ViewHandler.php`) provide saved view configurations for register data, which could serve as a foundation for read-only data display components.
+- **Tangentially related — Dashboard service**: `DashboardService` (`lib/Service/DashboardService.php`) and `DashboardController` (`lib/Controller/DashboardController.php`) provide aggregate metrics, which could feed chart components.
+
+### Standards & References
+- WCAG 2.1 AA for accessibility of the visual editor and generated applications
+- NL Design System for consistent Dutch government theming
+- JSON Schema for data binding configuration
+- Nextcloud App Framework for authentication and access control integration
+
+### Specificity Assessment
+- **Moderately specific but very large scope**: The spec covers application definitions, drag-and-drop editors, component libraries, access control, data binding, and custom domains -- each of which is a major feature on its own.
+- **Missing details**:
+  - Data model for application definitions (what entity stores pages, components, layout?)
+  - Component rendering engine (Vue components? Server-side rendering?)
+  - Layout system specifics (CSS Grid? Flexbox? Fixed grid?)
+  - How data sources are configured and bound to components
+  - State management between pages (URL parameters? Shared store?)
+  - Versioning/publishing workflow for applications
+- **Open questions**:
+  - Should this be a separate Nextcloud app rather than part of OpenRegister?
+  - How does this relate to the existing Procest/Pipelinq apps that already build custom UIs on top of OpenRegister?
+  - What is the minimum viable component set for an initial release?

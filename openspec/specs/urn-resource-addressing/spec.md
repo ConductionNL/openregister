@@ -83,3 +83,40 @@ Schema properties MUST support a URN reference type for cross-system linking.
 - WHEN the user sets `bronZaak` to `urn:gemeente-utrecht:zaaksysteem:zaken:zaak:xyz-789`
 - THEN the system MUST store the URN reference
 - AND the UI MUST display the resolved resource name (if resolvable) with a link to the URL
+
+### Current Implementation Status
+
+**Not implemented.** No URN support exists in the codebase:
+
+- No URN generation on object creation
+- No URN resolution endpoint (`/api/urn/resolve`)
+- No reverse resolution endpoint (`/api/urn/reverse`)
+- No URN mapping table or entity
+- No URN property type in schema definitions
+- No organisation-level URN configuration
+- Objects have `uuid` fields but no `urn` field
+
+The only URN-like patterns found in the codebase are unrelated (e.g., `urn:ietf:params:...` in authentication service for JWT handling).
+
+### Standards & References
+- RFC 8141 -- Uniform Resource Names (URNs) syntax
+- RFC 2141 -- URN Syntax (superseded by RFC 8141)
+- NEN 3610 -- Dutch geographic information standard (uses URN-based identifiers for geo-objects)
+- VNG Common Ground -- recommends URN-based resource identification for interoperability
+- NL GOV API Design Rules (API-49) -- stable identifiers for government resources
+- PURL (Persistent URL) -- alternative approach to stable resource addressing
+
+### Specificity Assessment
+- **Specific enough to implement?** Partially -- the URN pattern and resolution endpoints are clear, but several details are missing.
+- **Missing/ambiguous:**
+  - No specification for URN validation (what characters are allowed in each segment?)
+  - No specification for how URN pattern is stored (register-level config, global config?)
+  - No specification for URN uniqueness enforcement (can two objects have the same URN?)
+  - No specification for the URN mapping table schema (what entity stores external mappings?)
+  - No specification for URN in GraphQL or MCP API (only REST)
+  - No specification for performance of URN resolution (indexed lookup? cache?)
+  - No specification for bulk URN resolution
+- **Open questions:**
+  - Should URNs be auto-generated as a computed field or stored as a dedicated column?
+  - How should URN resolution work for federated/distributed deployments?
+  - Is the URN pattern `urn:{org}:{system}:{component}:{resource}:{uuid}` aligned with RFC 8141 NID requirements?

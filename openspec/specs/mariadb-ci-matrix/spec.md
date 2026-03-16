@@ -1,5 +1,5 @@
 ---
-status: draft
+status: implemented
 ---
 
 # MariaDB Support & Dual-Database CI Matrix
@@ -199,3 +199,24 @@ The testing documentation SHALL be updated to reflect:
 | Remove/deprecate `run-dual-storage-tests.sh` | `tests/integration/run-dual-storage-tests.sh` |
 | Update testing documentation | `docs/testing.md` |
 | Update development testing docs | `docs/development/testing.md` |
+
+### Current Implementation Status
+- **Implemented — CI matrix workflow**: `.github/workflows/database-tests.yml` implements the 2-line matrix with PHPUnit and Newman jobs running against both PostgreSQL 16 (PHP 8.3, NC stable32) and MariaDB 10.11 (PHP 8.2, NC stable31). Uses Docker containers started dynamically from matrix variables with health-check polling.
+- **Implemented — quality.yml updated**: PHPUnit and Newman disabled in the shared quality workflow call (`quality.yml`) since they now run in `database-tests.yml` with real database backends instead of SQLite.
+- **Implemented — MagicMapper-only testing**: Newman runs once per matrix job (MagicMapper only); no dual-storage testing in CI.
+- **Implemented — MariaDB code support**: `MariaDbFacetHandler` (`lib/Db/ObjectHandlers/MariaDbFacetHandler.php`) and `MariaDbSearchHandler` (`lib/Db/ObjectHandlers/MariaDbSearchHandler.php`) exist with MySQL JSON functions. `MagicMapper` (`lib/Db/MagicMapper.php`) and `MagicSearchHandler` (`lib/Db/MagicMapper/MagicSearchHandler.php`) contain MySQL/MariaDB-specific code paths.
+- **Exists but deprecated — dual storage testing**: `run-dual-storage-tests.sh` still exists but is no longer used in CI.
+- **Not yet implemented — documentation updates**: `docs/testing.md` does not yet exist; local MariaDB testing instructions and version update procedures are not documented.
+
+### Standards & References
+- GitHub Actions matrix strategy documentation
+- Nextcloud server `stable31` and `stable32` release branches
+- PostgreSQL 16 documentation
+- MariaDB 10.11 LTS documentation
+- Newman CLI for Postman collection execution
+
+### Specificity Assessment
+- **Highly specific and implementable as-is**: The spec provides exact matrix configurations, YAML snippets, Docker container setup instructions, and parameterized install commands.
+- **Clear scope**: Only modifies `.github/workflows/quality.yml`, test scripts, and documentation.
+- **Well-defined maintenance procedure**: Describes the version bump process when a new Nextcloud stable is released.
+- **No ambiguity**: Matrix entries, service containers, health checks, and parameterized install steps are all fully specified.

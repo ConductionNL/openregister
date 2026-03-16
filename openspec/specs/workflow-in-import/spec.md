@@ -221,3 +221,40 @@ When exporting schemas, deployed workflows attached to those schemas SHALL be in
 - WHEN the schema is exported and the resulting JSON is re-imported
 - THEN the re-import detects unchanged workflows (matching hashes)
 - AND no redundant deployments occur
+
+### Current Implementation Status
+
+**Fully implemented.** All core requirements are in place:
+
+- `lib/Service/Configuration/ImportHandler.php` -- Extended import pipeline processes `workflows` array after schemas, before objects:
+  - Deploys workflows via `WorkflowEngineInterface::deployWorkflow()`
+  - Wires schema hooks from `attachTo` configuration
+  - Supports hash-based idempotent re-import (SHA-256 comparison)
+  - Handles engine-not-available and invalid-definition errors gracefully (non-fatal)
+  - Reports deployment results in import summary
+- `lib/Service/Configuration/ExportHandler.php` -- Export includes deployed workflows attached to schemas:
+  - Fetches workflow definitions from engines via `WorkflowEngineInterface`
+  - Includes `attachTo` configuration in export
+- `lib/Db/DeployedWorkflow.php` -- Entity tracking deployed workflows with UUID, name, engine reference, workflow ID, source hash, version, import source
+- `lib/Db/DeployedWorkflowMapper.php` -- Database mapper for DeployedWorkflow entities
+- `lib/WorkflowEngine/WorkflowEngineInterface.php` -- Defines `deployWorkflow()` used by import pipeline
+- `lib/WorkflowEngine/N8nAdapter.php` and `WindmillAdapter.php` -- Engine adapters for deployment
+
+**What is NOT yet implemented:**
+- All requirements appear to be implemented as specified
+- `updateWorkflow()` method on interface (needs verification -- may use delete+deploy pattern instead)
+
+### Standards & References
+- SHA-256 content hashing for idempotent deployment detection
+- n8n workflow JSON format (https://docs.n8n.io/workflows/)
+- Windmill flow definition format
+- Semantic versioning for workflow version tracking
+
+### Specificity Assessment
+- **Specific enough to implement?** Yes -- the spec is detailed with clear import/export scenarios and edge cases.
+- **Missing/ambiguous:**
+  - No specification for workflow definition schema validation before deployment
+  - No specification for cleanup of deployed workflows when import is rolled back
+- **Open questions:**
+  - Should workflow definitions be validated against engine-specific schemas before deployment?
+  - How should workflow versions relate to schema configuration versions?

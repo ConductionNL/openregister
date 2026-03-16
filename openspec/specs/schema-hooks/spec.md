@@ -164,3 +164,42 @@ All hook executions MUST be logged for debugging and audit purposes.
 #### Scenario: Async hook logged
 - GIVEN an async hook fires
 - THEN a log entry is created with: hook ID, event type, object UUID, engine name, workflow ID, delivery status (sent/failed)
+
+### Current Implementation Status
+
+**Fully implemented.** All core requirements are in place:
+
+- `lib/Db/Schema.php` -- Schema entity supports `hooks` JSON property storing hook configuration arrays
+- `lib/Service/HookExecutor.php` -- Main hook execution service:
+  - Processes sync/async hooks with CloudEvents 1.0 payload format
+  - Supports ordered execution (ascending `order` value)
+  - Handles `WorkflowResult` responses (approved, rejected, modified, error)
+  - Applies failure mode behavior (reject, allow, flag, queue)
+  - Integrates with `WorkflowEngineRegistry` to resolve engine adapters per hook
+- `lib/Listener/HookListener.php` -- PSR-14 event listener that delegates to HookExecutor on object lifecycle events
+- `lib/Event/ObjectCreatingEvent.php`, `ObjectUpdatingEvent.php`, `ObjectDeletingEvent.php` -- All implement `StoppableEventInterface` for hook-based rejection
+- `lib/Exception/HookStoppedException.php` -- Exception with validation errors for rejected saves (returns HTTP 422)
+- `lib/Service/Webhook/CloudEventFormatter.php` -- CloudEvents 1.0 structured content mode formatting
+- `lib/BackgroundJob/HookRetryJob.php` -- Background job for "queue" failure mode (retry when engine recovers)
+- `lib/Db/MagicMapper.php` -- Checks `isPropagationStopped()` after event dispatch
+
+**Valid event values supported:** `creating`, `updating`, `deleting`, `created`, `updated`, `deleted` (plus `locked`, `unlocked`, `reverted` per spec)
+
+**What is NOT yet implemented:**
+- `filterCondition` on hooks (conditional hook execution based on object data)
+- Comprehensive hook execution logging with duration metrics (basic logging exists)
+
+### Standards & References
+- CloudEvents 1.0 Specification (https://cloudevents.io/) -- structured content mode with JSON encoding
+- PSR-14 Event Dispatcher (https://www.php-fig.org/psr/psr-14/) -- `StoppableEventInterface` for sync hooks
+- HTTP 422 Unprocessable Entity (RFC 4918) -- for hook rejections
+
+### Specificity Assessment
+- **Specific enough to implement?** Yes -- this spec is very detailed and the implementation closely matches the scenarios.
+- **Missing/ambiguous:**
+  - The `filterCondition` field is mentioned but not specified (what expression language? Same as RBAC conditions?)
+  - No specification for hook execution timeout behavior per-engine vs per-hook
+  - No specification for hook execution metrics/monitoring dashboard
+- **Open questions:**
+  - Should hook execution logs be stored in the database or only in Nextcloud's log file?
+  - How should the `reverted` event interact with content versioning?

@@ -92,3 +92,49 @@ The map MUST support toggling between different base layers and overlay layers.
   - Satellite imagery
   - Cadastral overlay (Dutch cadastral data)
 - AND switching layers MUST preserve the current zoom level and marker positions
+
+### Using Mock Register Data
+
+The **BAG** mock register provides test data for BAG address resolution and geospatial features.
+
+**Loading the register:**
+```bash
+# Load BAG register (32 addresses + 21 objects + 21 buildings, register slug: "bag", schemas: "nummeraanduiding", "verblijfsobject", "pand")
+docker exec -u www-data nextcloud php occ openregister:load-register /var/www/html/custom_apps/openregister/lib/Settings/bag_register.json
+```
+
+**Test data for this spec's use cases:**
+- **BAG address references**: BAG `nummeraanduiding` records with 16-digit identification numbers -- test `geo:bag` property type resolution
+- **Verblijfsobject coordinates**: BAG `verblijfsobject` records can be used for map marker display
+- **Cross-municipality coverage**: BAG records span multiple municipalities (Amsterdam 0363, Rotterdam 0599, Den Haag 0518, etc.) -- test map clustering
+- **Building data**: BAG `pand` records include `oorspronkelijkBouwjaar` -- test property display on map popups
+
+### Current Implementation Status
+- **Not implemented — geospatial data types**: No `geo:point`, `geo:polygon`, or `geo:bag` property types exist in the schema system. The current property types (`lib/Db/Schema.php`, `lib/Service/SchemaService.php`) do not include geospatial formats.
+- **Not implemented — map widget**: No Leaflet or map-related components exist in the `src/` frontend directory. No map visualization code is present.
+- **Not implemented — spatial queries**: No `geo.bbox`, `geo.near`, or `geo.radius` query parameters are handled in `MagicSearchHandler` (`lib/Db/MagicMapper/MagicSearchHandler.php`) or `ObjectsController` (`lib/Controller/ObjectsController.php`).
+- **Not implemented — BAG/BGT integration**: No BAG API client or address resolution service exists in the codebase.
+- **Not implemented — map layer toggling**: No UI layer controls exist.
+- **Tangentially related**: `ObjectEntity` (`lib/Db/ObjectEntity.php`) stores arbitrary JSON properties, so GeoJSON data could be stored as-is, but no parsing, validation, or indexing logic exists.
+
+### Standards & References
+- GeoJSON specification (RFC 7946) for coordinate and polygon format
+- WGS84 (EPSG:4326) coordinate reference system
+- BAG API (Basisregistratie Adressen en Gebouwen) — Dutch national address registry, see https://bag.basisregistraties.overheid.nl/
+- BGT (Basisregistratie Grootschalige Topografie) — Dutch topographic data
+- PDOK (Publieke Dienstverlening Op de Kaart) — for OpenStreetMap, satellite, and cadastral tile layers
+- Leaflet.js for map rendering (https://leafletjs.com/)
+- Leaflet.markercluster for clustering support
+
+### Specificity Assessment
+- **Moderately specific**: The spec defines clear scenarios for point/polygon/BAG types, map rendering, spatial queries, and layer toggling.
+- **Missing details**:
+  - How geospatial data is indexed for spatial queries (PostGIS extension? Application-level filtering?)
+  - Database requirements (PostgreSQL with PostGIS vs. application-level spatial calculations)
+  - How Solr/Elasticsearch backends should handle spatial queries
+  - Performance expectations for spatial queries on large datasets
+  - Mobile/responsive behavior of the map widget
+- **Open questions**:
+  - Should the map widget be a standalone page or embeddable in the object list view?
+  - What happens with objects that have invalid/missing coordinates?
+  - Should BAG resolution happen synchronously on save or asynchronously?

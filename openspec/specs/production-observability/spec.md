@@ -7,8 +7,28 @@ Implement production-grade observability using Prometheus metrics, structured lo
 
 ## ADDED Requirements
 
-### Requirement: The system MUST expose Prometheus metrics
-A /metrics endpoint MUST expose operational metrics in Prometheus exposition format.
+### REQ-PROM-001: Metrics Endpoint
+- MUST expose `GET /index.php/apps/openregister/api/metrics` returning `text/plain; version=0.0.4; charset=utf-8`
+- MUST require admin authentication (Nextcloud admin or API token)
+- MUST return metrics in Prometheus text exposition format
+
+### REQ-PROM-002: Standard Metrics
+Every app MUST expose these standard metrics:
+- `openregister_info` (gauge, labels: version, php_version, nextcloud_version) — always 1
+- `openregister_up` (gauge) — 1 if app is healthy, 0 if degraded
+- `openregister_requests_total` (counter, labels: method, endpoint, status) — HTTP request count
+- `openregister_request_duration_seconds` (histogram, labels: method, endpoint) — request latency
+- `openregister_errors_total` (counter, labels: type) — error count by type
+
+### REQ-PROM-003: App-Specific Metrics
+
+#### CRUD operation counters
+- `openregister_objects_created_total` (counter, labels: register, schema) — objects created
+- `openregister_objects_updated_total` (counter, labels: register, schema) — objects updated
+- `openregister_objects_deleted_total` (counter, labels: register, schema) — objects deleted
+- `openregister_objects_total` (gauge, labels: register, schema) — total objects per register/schema
+- `openregister_registers_total` (gauge) — total registers
+- `openregister_schemas_total` (gauge) — total schemas
 
 #### Scenario: CRUD operation counters
 - GIVEN the metrics endpoint is enabled
@@ -52,6 +72,10 @@ All log entries MUST be structured JSON for integration with log aggregation sys
   - `error_message`: the exception message
   - `stack_trace`: full stack trace
   - `context`: the operation that failed (register, schema, action)
+
+### REQ-PROM-004: Health Check
+- MUST expose `GET /index.php/apps/openregister/api/health` returning JSON `{"status": "ok"|"degraded"|"error", "checks": {...}}`
+- Checks: database connectivity, required dependencies available, search backend reachability
 
 ### Requirement: The system MUST expose health check endpoints
 Standard health and readiness endpoints MUST be available for container orchestration.
@@ -99,3 +123,35 @@ The /metrics endpoint MUST be accessible without Nextcloud authentication for Pr
 - WHEN Prometheus requests /metrics from an allowed IP
 - THEN metrics MUST be returned in Prometheus exposition format without authentication
 - AND requests from non-allowed IPs MUST be rejected with HTTP 403
+
+### Current Implementation Status
+- **Partially implemented — metrics service**: `MetricsService` (`lib/Service/MetricsService.php`) exists and provides operational metrics using database queries. It tracks object counts and other aggregate statistics.
+- **Partially implemented — heartbeat/health check**: `HeartbeatController` (`lib/Controller/HeartbeatController.php`) exposes a health check endpoint that verifies the application is running.
+- **Not implemented — Prometheus metrics endpoint**: No `/metrics` endpoint exists that exposes data in Prometheus exposition format. The `MetricsService` provides internal metrics but does not format them for Prometheus scraping.
+- **Not implemented — request duration histograms**: No middleware or interceptor tracks per-request duration as histogram data.
+- **Not implemented — structured JSON logging**: The application uses Nextcloud's `ILogger`/`LoggerInterface` for logging, which outputs to Nextcloud's log format, not structured JSON. `LogService` (`lib/Service/LogService.php`) handles some logging but not in structured JSON format.
+- **Not implemented — readiness endpoint**: No `/ready` endpoint distinguishes between startup and fully-initialized states.
+- **Not implemented — alerting thresholds**: No configurable alert threshold system exists.
+- **Not implemented — IP-restricted metrics access**: No IP-based access control for a metrics endpoint.
+- **Tangentially related — performance tracking**: `PerformanceHandler` (`lib/Service/Object/PerformanceHandler.php`) and `PerformanceOptimizationHandler` (`lib/Service/Object/PerformanceOptimizationHandler.php`) track internal performance but do not expose Prometheus metrics.
+
+### Standards & References
+- Prometheus exposition format (https://prometheus.io/docs/instrumenting/exposition_formats/)
+- OpenMetrics specification (https://openmetrics.io/)
+- Kubernetes health check conventions (`/health`, `/ready`, `/live`)
+- JSON structured logging best practices (ECS - Elastic Common Schema)
+- Nextcloud logging framework (`ILogger`, `LoggerInterface`)
+- SLA monitoring standards for government IT (BIO - Baseline Informatiebeveiliging Overheid)
+
+### Specificity Assessment
+- **Moderately specific**: The spec defines metric names, histogram buckets, health check response formats, and alerting thresholds.
+- **Missing details**:
+  - How to integrate Prometheus metrics within Nextcloud's PHP architecture (no long-running process for in-memory counters)
+  - Storage mechanism for counters (APCu? Database? File-based?)
+  - How structured logging integrates with or replaces Nextcloud's native logging
+  - Deployment instructions for Prometheus/Grafana alongside the Nextcloud instance
+  - How alerting thresholds connect to notification channels (email, Slack, etc.)
+- **Open questions**:
+  - Can PHP/Nextcloud effectively expose Prometheus metrics without a sidecar exporter?
+  - Should metrics be stored in APCu (fast but per-process) or a shared store?
+  - How does the readiness check determine that migrations have completed?

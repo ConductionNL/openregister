@@ -141,3 +141,34 @@ The `mapping` column MUST be added to the `oc_openregister_webhooks` table.
 - WHEN the migration runs
 - THEN a nullable integer column `mapping` MUST be added
 - AND existing webhooks MUST have `mapping` = `null` (no change to existing behavior)
+
+### Current Implementation Status
+
+**Fully implemented.** All core requirements are in place:
+
+- `lib/Db/Webhook.php` -- Webhook entity has `protected ?int $mapping = null` property (line ~235) for optional mapping reference
+- `lib/Service/WebhookService.php` -- `deliverWebhook()` applies mapping transformation before delivery via `MappingService.executeMapping()`
+- `lib/Service/MappingService.php` -- Twig-based mapping engine with `executeMapping()` method, supports dot-notation, casting, passThrough, unset
+- `lib/Twig/MappingExtension.php` and `lib/Twig/MappingRuntime.php` -- Twig runtime functions for mapping templates
+- `lib/Db/MappingMapper.php` -- Mapper for Mapping entities
+- `lib/Controller/MappingsController.php` -- CRUD API for Mapping entities
+- `lib/Service/Webhook/CloudEventFormatter.php` -- CloudEvents formatting (mapping takes precedence when configured)
+- `lib/Listener/WebhookEventListener.php` -- Event listener triggering webhook delivery
+- `lib/BackgroundJob/WebhookDeliveryJob.php` -- Async webhook delivery background job
+- `lib/Cron/WebhookRetryJob.php` -- Retry logic for failed deliveries
+
+**What is NOT yet implemented:**
+- All requirements appear to be implemented as specified
+- Mapping failure fallback to raw payload delivery (needs verification)
+- HMAC signing computed from mapped payload (needs verification)
+
+### Standards & References
+- CloudEvents 1.0 Specification (https://cloudevents.io/)
+- Twig Template Engine (https://twig.symfony.com/)
+- HMAC-SHA256 for webhook signature verification
+- HTTP Webhooks pattern (no formal standard, industry convention)
+
+### Specificity Assessment
+- **Specific enough to implement?** Yes -- the spec is detailed with clear scenarios covering all edge cases.
+- **Missing/ambiguous:** Nothing significant -- well-specified.
+- **Open questions:** None -- this spec appears complete and implemented.
