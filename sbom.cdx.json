@@ -2,10 +2,10 @@
   "$schema": "http://cyclonedx.org/schema/bom-1.5.schema.json",
   "bomFormat": "CycloneDX",
   "specVersion": "1.5",
-  "serialNumber": "urn:uuid:ca55198f-3229-4a16-9618-70063cf3a104",
+  "serialNumber": "urn:uuid:5b10d9a0-d569-41bb-9ec5-b0d7d3c43f26",
   "version": 1,
   "metadata": {
-    "timestamp": "2026-03-16T15:59:38Z",
+    "timestamp": "2026-03-16T16:06:47Z",
     "tools": [
       {
         "name": "composer",
@@ -100,11 +100,11 @@
       "properties": [
         {
           "name": "cdx:composer:package:distReference",
-          "value": "cbc46dad19fe60e0a3bec0c8b21af27387fe87ca"
+          "value": "bffb7d8d0340ac2addc20e61f7f44be987114008"
         },
         {
           "name": "cdx:composer:package:sourceReference",
-          "value": "cbc46dad19fe60e0a3bec0c8b21af27387fe87ca"
+          "value": "bffb7d8d0340ac2addc20e61f7f44be987114008"
         },
         {
           "name": "cdx:composer:package:type",
@@ -3764,6 +3764,63 @@
         {
           "name": "cdx:composer:package:type",
           "value": "symfony-bundle"
+        }
+      ]
+    },
+    {
+      "bom-ref": "webonyx/graphql-php-15.31.0.0",
+      "type": "library",
+      "name": "graphql-php",
+      "version": "v15.31.0",
+      "group": "webonyx",
+      "description": "A PHP port of GraphQL reference implementation",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "purl": "pkg:composer/webonyx/graphql-php@v15.31.0",
+      "externalReferences": [
+        {
+          "type": "distribution",
+          "url": "https://api.github.com/repos/webonyx/graphql-php/zipball/ef79ce18c14dd0d88bfc3a6c02a00f2adcbdf1bd",
+          "comment": "dist reference: ef79ce18c14dd0d88bfc3a6c02a00f2adcbdf1bd"
+        },
+        {
+          "type": "vcs",
+          "url": "https://github.com/webonyx/graphql-php.git",
+          "comment": "source reference: ef79ce18c14dd0d88bfc3a6c02a00f2adcbdf1bd"
+        },
+        {
+          "type": "website",
+          "url": "https://github.com/webonyx/graphql-php",
+          "comment": "as detected from Composer manifest 'homepage'"
+        },
+        {
+          "type": "issue-tracker",
+          "url": "https://github.com/webonyx/graphql-php/issues",
+          "comment": "as detected from Composer manifest 'support.issues'"
+        },
+        {
+          "type": "vcs",
+          "url": "https://github.com/webonyx/graphql-php/tree/v15.31.0",
+          "comment": "as detected from Composer manifest 'support.source'"
+        }
+      ],
+      "properties": [
+        {
+          "name": "cdx:composer:package:distReference",
+          "value": "ef79ce18c14dd0d88bfc3a6c02a00f2adcbdf1bd"
+        },
+        {
+          "name": "cdx:composer:package:sourceReference",
+          "value": "ef79ce18c14dd0d88bfc3a6c02a00f2adcbdf1bd"
+        },
+        {
+          "name": "cdx:composer:package:type",
+          "value": "library"
         }
       ]
     },
@@ -55593,6 +55650,9 @@
       ]
     },
     {
+      "ref": "webonyx/graphql-php-15.31.0.0"
+    },
+    {
       "ref": "conductionnl/openregister-dev-feature/php-linting",
       "dependsOn": [
         "adbario/php-dot-notation-3.3.0.0",
@@ -55608,7 +55668,8 @@
         "symfony/yaml-6.4.30.0",
         "theodo-group/llphant-0.9.3.0",
         "twig/twig-3.22.1.0",
-        "web-token/jwt-framework-3.4.9.0"
+        "web-token/jwt-framework-3.4.9.0",
+        "webonyx/graphql-php-15.31.0.0"
       ]
     }
   ]
