@@ -241,20 +241,11 @@ class SearchQueryHandler
         }
 
         // Add all special parameters (they'll be handled by searchObjectsPaginated).
-        // Convert boolean-like parameters to actual booleans for consistency.
-        if (isset($specialParams['_published']) === true) {
-            $specialParams['_published'] = filter_var(
-                $specialParams['_published'],
-                FILTER_VALIDATE_BOOLEAN,
-                FILTER_NULL_ON_FAILURE
-            ) ?? false;
-        }
-
         $query = array_merge($query, $specialParams);
 
         // Normalize _ids from comma-separated string to array.
         // URL query parameters like _ids=uuid1,uuid2 arrive as a single string,
-        // but downstream code (UnifiedObjectMapper, MagicMapper) expects an array.
+        // but downstream code (MagicMapper) expects an array.
         if (isset($query['_ids']) === true && is_string($query['_ids']) === true) {
             $query['_ids'] = array_filter(array_map('trim', explode(',', $query['_ids'])));
         }
@@ -297,7 +288,7 @@ class SearchQueryHandler
                 $view      = $this->viewMapper->find($viewId);
                 $viewQuery = $view->getQuery();
 
-                // Apply registers filter using @self metadata (format ObjectEntityMapper understands).
+                // Apply registers filter using @self metadata (format MagicMapper understands).
                 if (empty($viewQuery['registers']) === false) {
                     if (isset($query['@self']) === false) {
                         $query['@self'] = [];
@@ -319,7 +310,7 @@ class SearchQueryHandler
                     );
                 }//end if
 
-                // Apply schemas filter using @self metadata (format ObjectEntityMapper understands).
+                // Apply schemas filter using @self metadata (format MagicMapper understands).
                 if (empty($viewQuery['schemas']) === false) {
                     if (isset($query['@self']) === false) {
                         $query['@self'] = [];
@@ -400,7 +391,7 @@ class SearchQueryHandler
     /**
      * Clean and normalize query parameters
      *
-     * Converts legacy query parameter formats to the standard format used by ObjectEntityMapper.
+     * Converts legacy query parameter formats to the standard format used by MagicMapper.
      * Handles ordering, operator suffixes (_in, _gt, _lt, etc.), and normalizes parameter names.
      *
      * @param array<string, mixed> $parameters Query parameters to clean.

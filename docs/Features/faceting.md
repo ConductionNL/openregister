@@ -63,6 +63,89 @@ Use an object to configure facet behavior:
 | `title` | string | `null` | Display name in the filter panel. Falls back to the property `title` or key name. |
 | `description` | string | `null` | Help text explaining what the facet filters on. |
 | `order` | integer | `null` | Controls display position relative to other facets. Lower numbers appear first. |
+| `type` | string | `null` | Override the auto-detected facet type. Valid values: `date_histogram`, `date_range`, `terms`. When `null`, the type is auto-detected from the property format. |
+| `options` | object | `null` | Type-specific options (see below). |
+
+#### Date Faceting Options
+
+For `date` and `date-time` properties, you can control how dates are faceted using the `type` and `options` fields:
+
+**Date Histogram** — groups dates by interval:
+
+```json
+{
+  "published_date": {
+    "type": "string",
+    "format": "date",
+    "facetable": {
+      "type": "date_histogram",
+      "options": {
+        "interval": "month",
+        "format": "F Y"
+      }
+    }
+  }
+}
+```
+
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `interval` | string | `"month"` | Grouping interval: `day`, `week`, `month`, `quarter`, `year` |
+| `format` | string | auto | PHP date format for bucket labels. Auto-detected from interval (e.g., `"Y"` for year, `"F Y"` for month). |
+
+**Date Range** — predefined date ranges:
+
+```json
+{
+  "created_at": {
+    "type": "string",
+    "format": "date-time",
+    "facetable": {
+      "type": "date_range",
+      "options": {
+        "useDefaultRanges": true
+      }
+    }
+  }
+}
+```
+
+Default ranges: Last 7 days, Last 30 days, Last 90 days, Last year, Older.
+
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `useDefaultRanges` | boolean | `true` | Use the built-in predefined ranges. |
+| `ranges` | array | — | Custom range definitions (overrides defaults). Each range has `label`, and optional `from`/`to` as relative date expressions (e.g., `"-7 days"`, `"-1 year"`). |
+
+Custom ranges example:
+```json
+{
+  "options": {
+    "ranges": [
+      { "label": "This week", "from": "-7 days" },
+      { "label": "This month", "from": "-30 days", "to": "-7 days" },
+      { "label": "This quarter", "from": "-90 days", "to": "-30 days" },
+      { "label": "Older", "to": "-90 days" }
+    ]
+  }
+}
+```
+
+Relative date expressions (e.g., `"-7 days"`) are resolved to absolute dates on each request using PHP `strtotime()`. Facets with relative date ranges use a shorter cache TTL (300s vs 3600s) to keep counts accurate.
+
+**Terms** — override date auto-detection to use exact value matching:
+
+```json
+{
+  "event_date": {
+    "type": "string",
+    "format": "date",
+    "facetable": {
+      "type": "terms"
+    }
+  }
+}
+```
 
 ### Backward Compatibility
 
@@ -157,7 +240,12 @@ Properties without `facetable` (like `title` and `internal_notes`) are not avail
 2. Open the schema you want to configure
 3. In the **Properties** tab, click the **three-dot menu** next to a property
 4. Enable **Facetable** and configure the settings (aggregated, title, description, order)
-5. Click **Save** on the schema
+5. For `date` or `date-time` properties, additional options appear:
+   - **Facet Type**: Choose between Date Histogram, Date Range, or Terms (exact values)
+   - **Interval** (histogram only): Group by Day, Week, Month, Quarter, or Year
+   - **Display Format** (histogram only): Custom PHP date format for bucket labels
+   - **Use default ranges** (date range only): Toggle predefined ranges (Last 7/30/90 days, Last year, Older)
+6. Click **Save** on the schema
 
 ## Automatic Facet Type Detection
 
@@ -200,7 +288,7 @@ Response (facets section):
 
 ### 2. Date Histogram
 
-For time-based data with configurable intervals (`day`, `week`, `month`, `year`).
+For time-based data with configurable intervals (`day`, `week`, `month`, `quarter`, `year`).
 
 Request:
 ```bash
@@ -214,18 +302,49 @@ Response:
   "@self": {
     "created": {
       "type": "date_histogram",
-      "interval": "month",
+      "config": {
+        "interval": "month",
+        "format": "F Y"
+      },
       "buckets": [
-        { "key": "2024-01", "results": 45 },
-        { "key": "2024-02", "results": 67 },
-        { "key": "2024-03", "results": 52 }
+        { "key": "2024-01", "results": 45, "label": "January 2024", "from": "2024-01-01", "to": "2024-01-31" },
+        { "key": "2024-02", "results": 67, "label": "February 2024", "from": "2024-02-01", "to": "2024-02-29" },
+        { "key": "2024-03", "results": 52, "label": "March 2024", "from": "2024-03-01", "to": "2024-03-31" }
       ]
     }
   }
 }
 ```
 
-### 3. Range Aggregation
+The `from`/`to` fields on each bucket define the date boundaries, which the frontend uses to construct range query parameters (`property[>=]` / `property[<=]`).
+
+### 3. Date Range
+
+For time-based data with predefined ranges (e.g., "Last 7 days", "Last month"):
+
+Request (configured via schema, no extra query params needed):
+```bash
+curl "http://localhost:8080/index.php/apps/openregister/api/objects/5/24?_facets[published_date][type]=date_range" \
+  -u admin:admin
+```
+
+Response:
+```json
+{
+  "published_date": {
+    "type": "date_range",
+    "buckets": [
+      { "key": "last_7_days", "results": 12, "label": "Last 7 days", "from": "2026-03-06", "to": "2026-03-13" },
+      { "key": "last_30_days", "results": 45, "label": "Last 30 days", "from": "2026-02-11", "to": "2026-03-13" },
+      { "key": "last_90_days", "results": 89, "label": "Last 90 days", "from": "2025-12-14", "to": "2026-03-13" },
+      { "key": "last_year", "results": 230, "label": "Last year", "from": "2025-03-13", "to": "2026-03-13" },
+      { "key": "older", "results": 58, "label": "Older", "to": "2025-03-13" }
+    ]
+  }
+}
+```
+
+### 4. Range Aggregation
 
 For numeric data with custom buckets.
 

@@ -26,8 +26,6 @@ export type TObject = {
         size: string | null
         updated: string
         created: string
-        published: string | null
-        depublished: string | null
     }
     [key: string]: unknown // Allow for additional properties
 }

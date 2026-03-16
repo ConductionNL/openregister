@@ -23,7 +23,6 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Object;
 
 use OCA\OpenRegister\Db\AuditTrailMapper;
-use OCA\OpenRegister\Db\ObjectEntityMapper;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -44,13 +43,11 @@ class AuditHandler
     /**
      * Constructor
      *
-     * @param AuditTrailMapper   $auditTrailMapper   Audit trail mapper
-     * @param ObjectEntityMapper $objectEntityMapper Object entity mapper
-     * @param LoggerInterface    $logger             PSR-3 logger
+     * @param AuditTrailMapper $auditTrailMapper Audit trail mapper
+     * @param LoggerInterface  $logger           PSR-3 logger
      */
     public function __construct(
         private readonly AuditTrailMapper $auditTrailMapper,
-        private readonly ObjectEntityMapper $objectEntityMapper,
         private readonly LoggerInterface $logger
     ) {
     }//end __construct()

@@ -20,7 +20,7 @@ namespace OCA\OpenRegister\Tests\Service;
 
 use InvalidArgumentException;
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Db\ObjectEntityMapper;
+use OCA\OpenRegister\Db\UnifiedObjectMapper;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
@@ -57,7 +57,7 @@ class ObjectHandlersIntegrationTest extends TestCase
     private SaveObject $saveHandler;
     private RegisterMapper $registerMapper;
     private SchemaMapper $schemaMapper;
-    private ObjectEntityMapper $objectEntityMapper;
+    private UnifiedObjectMapper $objectMapper;
 
     private ?Register $testRegister = null;
     private ?Schema $testSchema = null;
@@ -83,7 +83,7 @@ class ObjectHandlersIntegrationTest extends TestCase
         $this->saveHandler = \OC::$server->get(SaveObject::class);
         $this->registerMapper = \OC::$server->get(RegisterMapper::class);
         $this->schemaMapper = \OC::$server->get(SchemaMapper::class);
-        $this->objectEntityMapper = \OC::$server->get(ObjectEntityMapper::class);
+        $this->objectMapper = \OC::$server->get(UnifiedObjectMapper::class);
 
         $this->createTestFixtures();
     }

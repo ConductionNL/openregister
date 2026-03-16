@@ -137,7 +137,6 @@ interface SearchBackendInterface
         array $query=[],
         bool $_rbac=true,
         bool $_multitenancy=true,
-        bool $published=false,
         bool $deleted=false
     ): array;
 

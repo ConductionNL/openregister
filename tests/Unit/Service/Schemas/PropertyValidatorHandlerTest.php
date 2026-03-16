@@ -379,4 +379,216 @@ class PropertyValidatorHandlerTest extends TestCase
             'badField'  => ['type' => 'totally_invalid_type'],
         ], '/props');
     }
+
+    // =========================================================================
+    // validateProperty - file type validation
+    // =========================================================================
+
+    public function testValidateFilePropertyBasic(): void
+    {
+        $result = $this->validator->validateProperty(['type' => 'file']);
+        $this->assertTrue($result);
+    }
+
+    public function testValidateFilePropertyWithValidAllowedTypes(): void
+    {
+        $result = $this->validator->validateProperty([
+            'type' => 'file',
+            'allowedTypes' => ['application/pdf', 'image/png', 'text/plain'],
+        ]);
+        $this->assertTrue($result);
+    }
+
+    public function testValidateFilePropertyRejectsNonArrayAllowedTypes(): void
+    {
+        $this->expectException(Exception::class);
+        $this->expectExceptionMessage("'allowedTypes' at '' must be an array");
+
+        $this->validator->validateProperty([
+            'type' => 'file',
+            'allowedTypes' => 'application/pdf',
+        ]);
+    }
+
+    public function testValidateFilePropertyRejectsNonStringMimeType(): void
+    {
+        $this->expectException(Exception::class);
+        $this->expectExceptionMessage("must be a string");
+
+        $this->validator->validateProperty([
+            'type' => 'file',
+            'allowedTypes' => [123],
+        ]);
+    }
+
+    public function testValidateFilePropertyRejectsInvalidMimeFormat(): void
+    {
+        $this->expectException(Exception::class);
+        $this->expectExceptionMessage("invalid MIME type format");
+
+        $this->validator->validateProperty([
+            'type' => 'file',
+            'allowedTypes' => ['not-a-mime-type'],
+        ]);
+    }
+
+    public function testValidateFilePropertyWithValidMaxSize(): void
+    {
+        $result = $this->validator->validateProperty([
+            'type' => 'file',
+            'maxSize' => 1048576,
+        ]);
+        $this->assertTrue($result);
+    }
+
+    public function testValidateFilePropertyRejectsNonNumericMaxSize(): void
+    {
+        $this->expectException(Exception::class);
+        $this->expectExceptionMessage("'maxSize' at '' must be a numeric value");
+
+        $this->validator->validateProperty([
+            'type' => 'file',
+            'maxSize' => 'large',
+        ]);
+    }
+
+    public function testValidateFilePropertyRejectsNegativeMaxSize(): void
+    {
+        $this->expectException(Exception::class);
+        $this->expectExceptionMessage("'maxSize' at '' must be a positive number");
+
+        $this->validator->validateProperty([
+            'type' => 'file',
+            'maxSize' => -100,
+        ]);
+    }
+
+    public function testValidateFilePropertyRejectsExcessiveMaxSize(): void
+    {
+        $this->expectException(Exception::class);
+        $this->expectExceptionMessage("exceeds maximum allowed size");
+
+        $this->validator->validateProperty([
+            'type' => 'file',
+            'maxSize' => 200000000,
+        ]);
+    }
+
+    public function testValidateFilePropertyWithValidAllowedTags(): void
+    {
+        $result = $this->validator->validateProperty([
+            'type' => 'file',
+            'allowedTags' => ['document', 'important'],
+        ]);
+        $this->assertTrue($result);
+    }
+
+    public function testValidateFilePropertyRejectsNonArrayAllowedTags(): void
+    {
+        $this->expectException(Exception::class);
+        $this->expectExceptionMessage("'allowedTags' at '' must be an array");
+
+        $this->validator->validateProperty([
+            'type' => 'file',
+            'allowedTags' => 'tag',
+        ]);
+    }
+
+    public function testValidateFilePropertyRejectsNonStringTag(): void
+    {
+        $this->expectException(Exception::class);
+        $this->expectExceptionMessage("must be a string");
+
+        $this->validator->validateProperty([
+            'type' => 'file',
+            'allowedTags' => [42],
+        ]);
+    }
+
+    public function testValidateFilePropertyRejectsEmptyTag(): void
+    {
+        $this->expectException(Exception::class);
+        $this->expectExceptionMessage("cannot be empty");
+
+        $this->validator->validateProperty([
+            'type' => 'file',
+            'allowedTags' => [''],
+        ]);
+    }
+
+    public function testValidateFilePropertyRejectsLongTag(): void
+    {
+        $this->expectException(Exception::class);
+        $this->expectExceptionMessage("exceeds maximum length");
+
+        $this->validator->validateProperty([
+            'type' => 'file',
+            'allowedTags' => [str_repeat('a', 51)],
+        ]);
+    }
+
+    public function testValidateFilePropertyWithValidAutoTags(): void
+    {
+        $result = $this->validator->validateProperty([
+            'type' => 'file',
+            'autoTags' => ['auto-classify', 'extract'],
+        ]);
+        $this->assertTrue($result);
+    }
+
+    public function testValidateFilePropertyRejectsNonArrayAutoTags(): void
+    {
+        $this->expectException(Exception::class);
+        $this->expectExceptionMessage("'autoTags' at '' must be an array");
+
+        $this->validator->validateProperty([
+            'type' => 'file',
+            'autoTags' => 'tag',
+        ]);
+    }
+
+    public function testValidateFilePropertyRejectsNonStringAutoTag(): void
+    {
+        $this->expectException(Exception::class);
+        $this->expectExceptionMessage("must be a string");
+
+        $this->validator->validateProperty([
+            'type' => 'file',
+            'autoTags' => [false],
+        ]);
+    }
+
+    public function testValidateFilePropertyRejectsEmptyAutoTag(): void
+    {
+        $this->expectException(Exception::class);
+        $this->expectExceptionMessage("cannot be empty");
+
+        $this->validator->validateProperty([
+            'type' => 'file',
+            'autoTags' => ['  '],
+        ]);
+    }
+
+    public function testValidateFilePropertyRejectsLongAutoTag(): void
+    {
+        $this->expectException(Exception::class);
+        $this->expectExceptionMessage("exceeds maximum length");
+
+        $this->validator->validateProperty([
+            'type' => 'file',
+            'autoTags' => [str_repeat('b', 51)],
+        ]);
+    }
+
+    // ── onDelete with items.$ref ──
+
+    public function testValidatePropertyOnDeleteWithItemsRef(): void
+    {
+        $result = $this->validator->validateProperty([
+            'type' => 'array',
+            'items' => ['$ref' => 'some-schema'],
+            'onDelete' => 'cascade',
+        ]);
+        $this->assertTrue($result);
+    }
 }

@@ -39,7 +39,7 @@ use OCP\IUserManager;
 use OCA\OpenRegister\Db\OrganisationMapper;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\SearchTrailMapper;
-use OCA\OpenRegister\Db\ObjectEntityMapper;
+use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\Object\CacheHandler;
@@ -239,11 +239,11 @@ class SettingsService
     private LoggerInterface $logger;
 
     /**
-     * REMOVED: Object entity mapper (unused, caused circular dependency)
+     * REMOVED: Object mapper (unused, caused circular dependency)
      *
-     * @var ObjectEntityMapper|null
+     * @var MagicMapper|null
      */
-    // Private ?ObjectEntityMapper $objectEntityMapper;.
+    // Private ?MagicMapper $objectMapper;.
 
     /**
      * Organisation mapper
@@ -817,7 +817,6 @@ class SettingsService
      *
      * @psalm-return array{multitenancy: array{enabled: false|mixed,
      *     defaultUserTenant: ''|mixed, defaultObjectTenant: ''|mixed,
-     *     publishedObjectsBypassMultiTenancy: false|mixed,
      *     adminOverride: mixed|true}, availableTenants: array}
      */
     public function getMultitenancySettingsOnly(): array
@@ -968,12 +967,12 @@ class SettingsService
         // CIRCULAR DEPENDENCY FIX: Cannot lazy-load ObjectService from SettingsService.
         $objectService = null;
         // $this->container->get(\OCA\OpenRegister\Service\ObjectService::class);
-        $objectMapper = $this->container->get(\OCA\OpenRegister\Db\ObjectEntityMapper::class);
+        $objectMapper = $this->container->get(\OCA\OpenRegister\Db\MagicMapper::class);
 
         // Get total object count.
         $totalObjects = $objectMapper->countSearchObjects(
             query: [],
-            activeOrganisationUuid: null,
+            _activeOrgUuid: null,
             _rbac: false,
             _multitenancy: false
         );
@@ -1172,7 +1171,7 @@ class SettingsService
      * Process batch jobs in serial mode
      *
      * @param array                                   $batchJobs     Array of batch job definitions.
-     * @param \OCA\OpenRegister\Db\ObjectEntityMapper $objectMapper  The object entity mapper.
+     * @param \OCA\OpenRegister\Db\MagicMapper $objectMapper  The object entity mapper.
      * @param ObjectService|null                      $objectService The object service instance.
      * @param array                                   $results       Results array to update.
      * @param bool                                    $collectErrors Whether to collect all errors.
@@ -1184,7 +1183,7 @@ class SettingsService
      */
     private function processJobsSerial(
         array $batchJobs,
-        \OCA\OpenRegister\Db\ObjectEntityMapper $objectMapper,
+        \OCA\OpenRegister\Db\MagicMapper $objectMapper,
         ?\OCA\OpenRegister\Service\ObjectService $objectService,
         array &$results,
         bool $collectErrors
@@ -1311,7 +1310,7 @@ class SettingsService
      * Process batch jobs in parallel mode
      *
      * @param array                                   $batchJobs       Array of batch job definitions.
-     * @param \OCA\OpenRegister\Db\ObjectEntityMapper $objectMapper    The object entity mapper.
+     * @param \OCA\OpenRegister\Db\MagicMapper $objectMapper    The object entity mapper.
      * @param ObjectService|null                      $objectService   The object service instance.
      * @param array                                   $results         Results array to update.
      * @param bool                                    $collectErrors   Whether to collect all errors.
@@ -1321,7 +1320,7 @@ class SettingsService
      */
     private function processJobsParallel(
         array $batchJobs,
-        \OCA\OpenRegister\Db\ObjectEntityMapper $objectMapper,
+        \OCA\OpenRegister\Db\MagicMapper $objectMapper,
         ?\OCA\OpenRegister\Service\ObjectService $objectService,
         array &$results,
         bool $collectErrors,
@@ -1387,7 +1386,7 @@ class SettingsService
     /**
      * Process a single batch directly
      *
-     * @param \OCA\OpenRegister\Db\ObjectEntityMapper $objectMapper  The object entity mapper.
+     * @param \OCA\OpenRegister\Db\MagicMapper $objectMapper  The object entity mapper.
      * @param \OCA\OpenRegister\Service\ObjectService $objectService The object service instance.
      * @param array                                   $job           Batch job definition.
      * @param bool                                    $collectErrors Whether to collect all errors.
@@ -1402,7 +1401,7 @@ class SettingsService
      * @SuppressWarnings(PHPMD.ElseExpression) Else needed for success vs failure handling
      */
     private function processBatchDirectly(
-        \OCA\OpenRegister\Db\ObjectEntityMapper $objectMapper,
+        \OCA\OpenRegister\Db\MagicMapper $objectMapper,
         \OCA\OpenRegister\Service\ObjectService $objectService,
         array $job,
         bool $collectErrors
@@ -1886,18 +1885,7 @@ class SettingsService
             context: ['file' => __FILE__, 'line' => __LINE__]
         );
 
-        // First, get the count of blob objects (stored in openregister_objects).
-        $blobCount = (int) $this->db->executeQuery(
-            "SELECT COUNT(*) as cnt FROM {$qb->getTableName('openregister_objects')} WHERE deleted IS NULL"
-        )->fetch()['cnt'];
-
-        // Get total size of blob objects (size column is INTEGER, no casting needed).
-        $blobSizeQuery = "SELECT COALESCE(SUM(size), 0) as total 
-                          FROM {$qb->getTableName('openregister_objects')} 
-                          WHERE deleted IS NULL AND size IS NOT NULL";
-        $blobSize      = (int) $this->db->executeQuery($blobSizeQuery)->fetch()['total'];
-
-        // Then, get the count and size of magic mapper objects by summing from all openregister_table_* tables.
+        // Get the count and size of objects by summing from all magic tables (openregister_table_*).
         $magicCount = 0;
         $magicSize  = 0;
         try {
@@ -1981,14 +1969,10 @@ class SettingsService
         }
 
         // Build a single query that gets all other counts at once using subqueries.
-        $objTable    = $qb->getTableName('openregister_objects');
         $auditTable  = $qb->getTableName('openregister_audit_trails');
         $searchTable = $qb->getTableName('openregister_search_trails');
 
         $query = "SELECT
-            -- Total counts (blob objects only for backward compatibility)
-            (SELECT COUNT(*) FROM {$objTable} WHERE deleted IS NULL) as total_objects,
-            (SELECT COUNT(*) FROM {$objTable} WHERE deleted IS NOT NULL) as deleted_objects,
             (SELECT COUNT(*) FROM {$auditTable}) as total_audit_trails,
             (SELECT COUNT(*) FROM {$searchTable}) as total_search_trails,
             (SELECT COUNT(*) FROM {$qb->getTableName('openregister_configurations')})
@@ -2002,20 +1986,14 @@ class SettingsService
             {$sourcesCountQuery} as total_sources,
             (SELECT COUNT(*) FROM {$qb->getTableName('openregister_webhook_logs')})
                 as total_webhook_logs,
-            
-            -- Warning counts (only for blob objects, as magic mapper handles validation differently)
-            (SELECT COUNT(*) FROM {$objTable}
-                WHERE deleted IS NULL AND (owner IS NULL OR owner = '')) as objects_without_owner,
-            (SELECT COUNT(*) FROM {$objTable}
-                WHERE deleted IS NULL AND (organisation IS NULL OR organisation = '')) as objects_without_organisation,
+
+            -- Warning counts for audit/search trails.
             (SELECT COUNT(*) FROM {$auditTable} WHERE expires IS NULL) as audit_trails_without_expiry,
             (SELECT COUNT(*) FROM {$searchTable} WHERE expires IS NULL) as search_trails_without_expiry,
             (SELECT COUNT(*) FROM {$auditTable}
                 WHERE expires IS NOT NULL AND expires < NOW()) as expired_audit_trails,
             (SELECT COUNT(*) FROM {$searchTable}
-                WHERE expires IS NOT NULL AND expires < NOW()) as expired_search_trails,
-            (SELECT COUNT(*) FROM {$objTable}
-                WHERE deleted IS NULL AND expires IS NOT NULL AND expires < NOW()) as expired_objects";
+                WHERE expires IS NOT NULL AND expires < NOW()) as expired_search_trails";
 
         $result = $this->db->executeQuery($query);
         $row    = $result->fetch();
@@ -2024,26 +2002,16 @@ class SettingsService
             throw new RuntimeException('Failed to fetch database statistics');
         }
 
-        $totalObjects = $blobCount + $magicCount;
-        $totalSize    = $blobSize + $magicSize;
-
         return [
             'warnings' => [
-                'objectsWithoutOwner'        => (int) ($row['objects_without_owner'] ?? 0),
-                'objectsWithoutOrganisation' => (int) ($row['objects_without_organisation'] ?? 0),
                 'auditTrailsWithoutExpiry'   => (int) ($row['audit_trails_without_expiry'] ?? 0),
                 'searchTrailsWithoutExpiry'  => (int) ($row['search_trails_without_expiry'] ?? 0),
                 'expiredAuditTrails'         => (int) ($row['expired_audit_trails'] ?? 0),
                 'expiredSearchTrails'        => (int) ($row['expired_search_trails'] ?? 0),
-                'expiredObjects'             => (int) ($row['expired_objects'] ?? 0),
             ],
             'totals'   => [
-                'totalObjects'        => $totalObjects,
-                'totalBlobObjects'    => $blobCount,
-                'totalMagicObjects'   => $magicCount,
-                'totalSize'           => $totalSize,
-                'totalBlobSize'       => $blobSize,
-                'totalMagicSize'      => $magicSize,
+                'totalObjects'        => $magicCount,
+                'totalSize'           => $magicSize,
                 'totalAuditTrails'    => (int) ($row['total_audit_trails'] ?? 0),
                 'totalSearchTrails'   => (int) ($row['total_search_trails'] ?? 0),
                 'totalConfigurations' => (int) ($row['total_configurations'] ?? 0),
@@ -2052,7 +2020,6 @@ class SettingsService
                 'totalSchemas'        => (int) ($row['total_schemas'] ?? 0),
                 'totalSources'        => (int) ($row['total_sources'] ?? 0),
                 'totalWebhookLogs'    => (int) ($row['total_webhook_logs'] ?? 0),
-                'deletedObjects'      => (int) ($row['deleted_objects'] ?? 0),
             ],
         ];
     }//end getDatabaseStats()

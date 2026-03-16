@@ -15,8 +15,7 @@
 namespace OCA\OpenRegister\Service\Object\SaveObjects;
 
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Db\ObjectEntityMapper;
-use OCA\OpenRegister\Db\UnifiedObjectMapper;
+use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Db\Schema;
@@ -45,18 +44,14 @@ class ChunkProcessingHandler
      * Constructor for ChunkProcessingHandler.
      *
      * @param TransformationHandler $transformHandler    Handler for object transformation.
-     * @param ObjectEntityMapper    $objectEntityMapper  Mapper for database operations (blob storage).
-     * @param UnifiedObjectMapper   $unifiedObjectMapper Mapper for routing to magic/blob storage.
+     * @param MagicMapper           $unifiedObjectMapper Mapper for magic table operations.
      * @param RegisterMapper        $registerMapper      Mapper for register operations.
      * @param SchemaMapper          $schemaMapper        Mapper for schema operations.
      * @param LoggerInterface       $logger              Logger for logging operations.
-     *
-     * @SuppressWarnings(PHPMD.ExcessiveParameterList) Many dependencies required for chunk processing
      */
     public function __construct(
         private readonly TransformationHandler $transformHandler,
-        private readonly ObjectEntityMapper $objectEntityMapper,
-        private readonly UnifiedObjectMapper $unifiedObjectMapper,
+        private readonly MagicMapper $unifiedObjectMapper,
         private readonly RegisterMapper $registerMapper,
         private readonly SchemaMapper $schemaMapper,
         private readonly LoggerInterface $logger
@@ -220,7 +215,7 @@ class ChunkProcessingHandler
 
         // STEP 3: ULTRA-FAST BULK DATABASE OPERATIONS.
         // Register & schema are now passed as parameters (already resolved in function entry).
-        // Route through UnifiedObjectMapper for automatic magic/blob routing.
+        // Route through MagicMapper for magic table operations.
         $bulkResult = $this->unifiedObjectMapper->ultraFastBulkSave(
             insertObjects: $transformedObjects,
             updateObjects: [],

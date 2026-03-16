@@ -436,7 +436,10 @@ class CacheSettingsHandler
 
             // Calculate total cleared entries.
             foreach ($results['results'] as $serviceResult) {
-                $results['totalCleared'] += $serviceResult['cleared'] ?? 0;
+                $cleared = $serviceResult['cleared'] ?? 0;
+                if (is_int($cleared) === true) {
+                    $results['totalCleared'] += $cleared;
+                }
             }
 
             return $results;

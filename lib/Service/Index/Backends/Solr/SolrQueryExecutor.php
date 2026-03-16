@@ -139,8 +139,8 @@ class SolrQueryExecutor
      * Search with pagination.
      *
      * @param array $query        Query parameters
-     * @param bool  $rbac         Apply RBAC filters
-     * @param bool  $multitenancy Apply multitenancy filters
+     * @param bool  $_rbac         Apply RBAC filters
+     * @param bool  $_multitenancy Apply multitenancy filters
      * @param bool  $published    Filter for published only
      * @param bool  $deleted      Include deleted items
      *
@@ -152,8 +152,8 @@ class SolrQueryExecutor
      */
     public function searchPaginated(
         array $query=[],
-        bool $rbac=true,
-        bool $multitenancy=true,
+        bool $_rbac=true,
+        bool $_multitenancy=true,
         bool $published=false,
         bool $deleted=false
     ): array {
@@ -161,7 +161,7 @@ class SolrQueryExecutor
         $solrQuery = $this->buildSolrQuery(query: $query);
 
         // Apply filters.
-        if ($rbac === true || $multitenancy === true || $published === true || $deleted === false) {
+        if ($_rbac === true || $_multitenancy === true || $published === true || $deleted === false) {
             $filters = [];
 
             if ($published === true) {

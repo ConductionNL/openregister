@@ -28,11 +28,10 @@ use OCA\OpenRegister\Db\SearchTrailMapper;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Db\ViewMapper;
-use OCA\OpenRegister\Db\ObjectEntityMapper;
 use OCA\OpenRegister\Db\MappingMapper;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\MagicMapper\MagicRbacHandler;
-use OCA\OpenRegister\Db\UnifiedObjectMapper;
+
 use OCA\OpenRegister\Db\OrganisationMapper;
 use OCA\OpenRegister\Db\ChunkMapper;
 use OCA\OpenRegister\Db\GdprEntityMapper;
@@ -68,17 +67,14 @@ use OCA\OpenRegister\Service\Object\ValidateObject;
 use OCA\OpenRegister\Service\ObjectService\ValidationHandler;
 use OCA\OpenRegister\Service\ObjectService\FacetHandler;
 use OCA\OpenRegister\Service\ObjectService\MetadataHandler;
-use OCA\OpenRegister\Service\ObjectService\BulkOperationsHandler;
 use OCA\OpenRegister\Service\ObjectService\RelationHandler;
 use OCA\OpenRegister\Service\ObjectService\QueryHandler;
 use OCA\OpenRegister\Service\Object\PerformanceOptimizationHandler;
 use OCA\OpenRegister\Service\ObjectService\MergeHandler;
 use OCA\OpenRegister\Service\ObjectService\UtilityHandler;
 use OCA\OpenRegister\Service\Object\PublishObject;
-use OCA\OpenRegister\Service\Object\DepublishObject;
 use OCA\OpenRegister\Service\Object\Handlers\LockHandler;
 use OCA\OpenRegister\Service\Object\Handlers\AuditHandler;
-use OCA\OpenRegister\Service\Object\Handlers\PublishHandler as PublishHandlerNew;
 use OCA\OpenRegister\Service\Object\Handlers\RelationHandler as RelationHandlerNew;
 use OCA\OpenRegister\Service\Object\Handlers\MergeHandler as MergeHandlerNew;
 use OCA\OpenRegister\Service\Object\Handlers\ExportHandler;
@@ -129,6 +125,7 @@ use OCA\OpenRegister\Event\DeepLinkRegistrationEvent;
 use OCA\OpenRegister\BackgroundJob\SolrWarmupJob;
 use OCA\OpenRegister\BackgroundJob\SolrNightlyWarmupJob;
 use OCA\OpenRegister\BackgroundJob\NameCacheWarmupJob;
+use OCA\OpenRegister\BackgroundJob\BlobMigrationJob;
 use OCA\OpenRegister\BackgroundJob\CronFileTextExtractionJob;
 use OCA\OpenRegister\Cron\WebhookRetryJob;
 use OCP\AppFramework\App;
@@ -259,9 +256,8 @@ class Application extends App implements IBootstrap
      * These must be registered in the correct order to resolve dependencies:
      * 1. OrganisationService (breaks circular dependency with SettingsService)
      * 2. SchemaMapper (depends on OrganisationMapper)
-     * 3. ObjectEntityMapper (depends on SchemaMapper)
-     * 4. RegisterMapper (depends on both SchemaMapper and ObjectEntityMapper)
-     * 5. MagicMapper and UnifiedObjectMapper (depend on the above)
+     * 3. RegisterMapper (depends on SchemaMapper)
+     * 4. MagicMapper and MagicMapper (depend on the above)
      *
      * @param IRegistrationContext $context The registration context
      *
@@ -322,30 +318,13 @@ class Application extends App implements IBootstrap
         );
 
         $context->registerService(
-            ObjectEntityMapper::class,
-            function (ContainerInterface $container) {
-                return new ObjectEntityMapper(
-                    db: $container->get('OCP\IDBConnection'),
-                    eventDispatcher: $container->get('OCP\EventDispatcher\IEventDispatcher'),
-                    userSession: $container->get('OCP\IUserSession'),
-                    schemaMapper: $container->get(SchemaMapper::class),
-                    groupManager: $container->get('OCP\IGroupManager'),
-                    userManager: $container->get('OCP\IUserManager'),
-                    appConfig: $container->get('OCP\IAppConfig'),
-                    logger: $container->get('Psr\Log\LoggerInterface'),
-                    organisationMapper: $container->get(OrganisationMapper::class)
-                );
-            }
-        );
-
-        $context->registerService(
             RegisterMapper::class,
             function (ContainerInterface $container) {
                 return new RegisterMapper(
                     db: $container->get('OCP\IDBConnection'),
                     schemaMapper: $container->get(SchemaMapper::class),
                     eventDispatcher: $container->get('OCP\EventDispatcher\IEventDispatcher'),
-                    objectEntityMapper: $container->get(ObjectEntityMapper::class),
+                    container: $container,
                     organisationMapper: $container->get(OrganisationMapper::class),
                     userSession: $container->get('OCP\IUserSession'),
                     groupManager: $container->get('OCP\IGroupManager'),
@@ -372,7 +351,6 @@ class Application extends App implements IBootstrap
             function (ContainerInterface $container) {
                 return new MagicMapper(
                     db: $container->get('OCP\IDBConnection'),
-                    objectEntityMapper: $container->get(ObjectEntityMapper::class),
                     schemaMapper: $container->get(SchemaMapper::class),
                     registerMapper: $container->get(RegisterMapper::class),
                     config: $container->get('OCP\IConfig'),
@@ -388,20 +366,6 @@ class Application extends App implements IBootstrap
             }
         );
 
-        $context->registerService(
-            UnifiedObjectMapper::class,
-            function (ContainerInterface $container) {
-                return new UnifiedObjectMapper(
-                    objectEntityMapper: $container->get(ObjectEntityMapper::class),
-                    magicMapper: $container->get(MagicMapper::class),
-                    registerMapper: $container->get(RegisterMapper::class),
-                    schemaMapper: $container->get(SchemaMapper::class),
-                    logger: $container->get('Psr\Log\LoggerInterface'),
-                    eventDispatcher: $container->get(\OCP\EventDispatcher\IEventDispatcher::class),
-                    rbacHandler: $container->get(MagicRbacHandler::class)
-                );
-            }
-        );
     }//end registerMappersWithCircularDependencies()
 
     /**
@@ -418,7 +382,6 @@ class Application extends App implements IBootstrap
             CacheHandler::class,
             function (ContainerInterface $container) {
                 return new CacheHandler(
-                    objectEntityMapper: $container->get(ObjectEntityMapper::class),
                     organisationMapper: $container->get(OrganisationMapper::class),
                     logger: $container->get('Psr\Log\LoggerInterface'),
                     cacheFactory: $container->get('OCP\ICacheFactory'),
@@ -437,7 +400,7 @@ class Application extends App implements IBootstrap
             function (ContainerInterface $container) {
                 return new FolderManagementHandler(
                     rootFolder: $container->get('OCP\Files\IRootFolder'),
-                    objectEntityMapper: $container->get(ObjectEntityMapper::class),
+                    objectEntityMapper: $container->get(MagicMapper::class),
                     registerMapper: $container->get(RegisterMapper::class),
                     userSession: $container->get('OCP\IUserSession'),
                     groupManager: $container->get('OCP\IGroupManager'),
@@ -493,7 +456,7 @@ class Application extends App implements IBootstrap
             $importHandler = new ConfigurationImportHandler(
                 schemaMapper: $container->get(SchemaMapper::class),
                 registerMapper: $container->get(RegisterMapper::class),
-                objectEntityMapper: $container->get(ObjectEntityMapper::class),
+                objectEntityMapper: $container->get(MagicMapper::class),
                 configurationMapper: $container->get('OCA\OpenRegister\Db\ConfigurationMapper'),
                 mappingMapper: $container->get(MappingMapper::class),
                 client: new Client(),
@@ -505,12 +468,10 @@ class Application extends App implements IBootstrap
             );
 
             // Inject MagicMapper for pre-creating magic mapper tables before seed data import.
-            // This prevents the race condition where the first seed object goes to blob storage.
             $importHandler->setMagicMapper($container->get(MagicMapper::class));
 
-            // Inject UnifiedObjectMapper for routing seed data to correct storage (magic/blob).
-            // This ensures objects go to the magic mapper table when the register is configured for it.
-            $importHandler->setUnifiedObjectMapper($container->get(UnifiedObjectMapper::class));
+            // Inject MagicMapper for routing seed data to correct magic table.
+            $importHandler->setObjectMapper($container->get(MagicMapper::class));
 
             // Inject workflow dependencies for deploying workflows during import.
             $importHandler->setWorkflowEngineRegistry($container->get(WorkflowEngineRegistry::class));
@@ -535,7 +496,7 @@ class Application extends App implements IBootstrap
                 $exportHandler = new ConfigurationExportHandler(
                     schemaMapper: $container->get(SchemaMapper::class),
                     registerMapper: $container->get(RegisterMapper::class),
-                    objectEntityMapper: $container->get(ObjectEntityMapper::class),
+                    objectEntityMapper: $container->get(MagicMapper::class),
                     configurationMapper: $container->get('OCA\OpenRegister\Db\ConfigurationMapper'),
                     mappingMapper: $container->get(MappingMapper::class),
                     logger: $container->get('Psr\Log\LoggerInterface')
@@ -557,7 +518,6 @@ class Application extends App implements IBootstrap
                 return new ConfigurationService(
                     schemaMapper: $container->get(SchemaMapper::class),
                     registerMapper: $container->get(RegisterMapper::class),
-                    objectEntityMapper: $container->get(ObjectEntityMapper::class),
                     configurationMapper: $container->get('OCA\OpenRegister\Db\ConfigurationMapper'),
                     appManager: $container->get('OCP\App\IAppManager'),
                     container: $container,
@@ -593,7 +553,7 @@ class Application extends App implements IBootstrap
             ValidationOperationsHandler::class,
             function (ContainerInterface $container) {
                 return new ValidationOperationsHandler(
-                    validateHandler: $container->get(ValidateObject::class),
+                    validateHandler: null,
                     schemaMapper: $container->get(SchemaMapper::class),
                     logger: $container->get('Psr\Log\LoggerInterface'),
                     container: $container
@@ -780,11 +740,9 @@ class Application extends App implements IBootstrap
      */
     public function boot(IBootContext $context): void
     {
-        // Dispatch deep link registration event so consuming apps can register
-        // their URL patterns for OpenRegister's unified search provider.
-        $server     = $context->getServerContainer();
-        $dispatcher = $server->get(IEventDispatcher::class);
-        $registry   = $server->get(DeepLinkRegistryService::class);
-        $dispatcher->dispatchTyped(event: new DeepLinkRegistrationEvent(registry: $registry));
+        // Deep link registration is deferred to avoid circular DI resolution.
+        // DeepLinkRegistryService depends on RegisterMapper/SchemaMapper which
+        // trigger circular resolution chains when resolved during boot.
+        // Consuming apps register their patterns lazily on first use instead.
     }//end boot()
 }//end class

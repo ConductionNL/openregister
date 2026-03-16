@@ -151,19 +151,18 @@ class NewFacetingExample
     {
         $query = [
             // Base filters.
-            '@self'      => [
+            '@self'    => [
                 'register' => 1,
         // Products register.
                 'schema'   => 2,
         // Product schema.
             ],
-            'category'   => 'electronics',
-            'in_stock'   => true,
-            '_published' => true,
-            '_search'    => 'smartphone',
+            'category' => 'electronics',
+            'in_stock' => true,
+            '_search'  => 'smartphone',
 
             // Comprehensive faceting.
-            '_facets'    => [
+            '_facets'  => [
                 // Metadata facets.
                 '@self'        => [
                     'register' => ['type' => 'terms'],
@@ -328,7 +327,6 @@ class NewFacetingExample
             // Array search.
             // Search and options.
             '_search'      => 'important project',
-            '_published'   => true,
 
             // Comprehensive faceting.
             '_facets'      => [
@@ -373,18 +371,16 @@ class NewFacetingExample
     {
         $query = [
             // Use specific filters to reduce dataset.
-            '@self'      => [
+            '@self'   => [
                 'register' => 1,
         // Single register for better performance.
                 'schema'   => 2,
         // Single schema for better performance.
             ],
-            'status'     => 'active',
+            'status'  => 'active',
             // Pre-filter to reduce dataset.
-            '_published' => true,
-            // Only published objects.
             // Focused faceting - only what's needed.
-            '_facets'    => [
+            '_facets' => [
                 // Only essential metadata facets.
                 '@self'    => [
                     'schema' => ['type' => 'terms'],

@@ -142,4 +142,15 @@ class SecuritySettingsControllerTest extends TestCase
 
         $this->assertEquals(500, $result->getStatus());
     }
+
+    public function testClearAllRateLimitsUsernameOnly(): void
+    {
+        $this->request->method('getParams')->willReturn(['username' => 'blockeduser']);
+
+        $result = $this->controller->clearAllRateLimits();
+
+        $this->assertEquals(200, $result->getStatus());
+        $this->assertArrayHasKey('username', $result->getData()['cleared']);
+        $this->assertArrayNotHasKey('ip_address', $result->getData()['cleared']);
+    }
 }

@@ -26,7 +26,7 @@ namespace OCA\OpenRegister\Service\Object;
 
 use RuntimeException;
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Db\ObjectEntityMapper;
+use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\OrganisationMapper;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
@@ -141,27 +141,32 @@ class CacheHandler
     private IUserSession $userSession;
 
     /**
-     * Container for lazy loading IndexService to break circular dependency
+     * Container for lazy loading dependencies to break circular dependency
      *
      * @var IAppContainer|null
      */
     private ?IAppContainer $container = null;
 
     /**
+     * Lazily loaded MagicMapper to break circular dependency
+     *
+     * @var MagicMapper|null
+     */
+    private ?MagicMapper $objectMapper = null;
+
+    /**
      * Constructor for CacheHandler
      *
-     * @param ObjectEntityMapper  $objectEntityMapper The object entity mapper
      * @param OrganisationMapper  $organisationMapper The organisation entity mapper
      * @param LoggerInterface     $logger             Logger for performance monitoring
      * @param ICacheFactory|null  $cacheFactory       Cache factory for query result caching
      * @param IUserSession|null   $userSession        User session for cache key generation
-     * @param IAppContainer|null  $container          Container for lazy loading IndexService (optional)
+     * @param IAppContainer|null  $container          Container for lazy loading dependencies (optional)
      * @param RegisterMapper|null $registerMapper     Register mapper for magic table queries
      * @param SchemaMapper|null   $schemaMapper       Schema mapper for magic table queries
      * @param IDBConnection|null  $db                 Database connection for magic table queries
      */
     public function __construct(
-        private readonly ObjectEntityMapper $objectEntityMapper,
         private readonly OrganisationMapper $organisationMapper,
         private readonly LoggerInterface $logger,
         ?ICacheFactory $cacheFactory=null,
@@ -199,8 +204,28 @@ class CacheHandler
                 return null;
             }//end getUser()
         };
-        $this->container   = $container;
+        $this->container = $container;
     }//end __construct()
+
+    /**
+     * Get the MagicMapper lazily to break circular dependency.
+     *
+     * @return MagicMapper The unified object mapper.
+     *
+     * @throws RuntimeException When container is not available.
+     */
+    private function getObjectMapper(): MagicMapper
+    {
+        if ($this->objectMapper === null) {
+            if ($this->container === null) {
+                throw new RuntimeException('[CacheHandler] Container required for lazy loading MagicMapper');
+            }
+
+            $this->objectMapper = $this->container->get(MagicMapper::class);
+        }
+
+        return $this->objectMapper;
+    }//end getObjectMapper()
 
     /**
      * Get IndexService instance using lazy loading from container
@@ -260,7 +285,7 @@ class CacheHandler
         $this->stats['misses']++;
 
         try {
-            $object = $this->objectEntityMapper->find($identifier);
+            $object = $this->getObjectMapper()->find($identifier);
 
             // Cache the object with both ID and UUID as keys.
             $this->cacheObject(object: $object);
@@ -522,7 +547,7 @@ class CacheHandler
 
         // Bulk load from database.
         try {
-            $objects = $this->objectEntityMapper->findMultiple($identifiersToLoad);
+            $objects = $this->getObjectMapper()->findMultiple($identifiersToLoad);
 
             // Cache all loaded objects.
             foreach ($objects as $object) {
@@ -1115,8 +1140,8 @@ class CacheHandler
                 // Organisation not found, continue to objects.
             }
 
-            // STEP 2: Try to find as object using unified interface (searches both blob and magic tables).
-            $result = $this->objectEntityMapper->findAcrossAllSources(
+            // STEP 2: Try to find as object using unified interface (searches across all magic tables).
+            $result = $this->getObjectMapper()->findAcrossAllSources(
                 identifier: $identifier,
                 includeDeleted: false,
                 _rbac: false,
@@ -1224,9 +1249,9 @@ class CacheHandler
                     $missingIdentifiers = array_diff($missingIdentifiers, [$key]);
                 }
 
-                // STEP 2: Try to find remaining identifiers as objects in blob storage.
+                // STEP 2: Try to find remaining identifiers as objects across magic tables.
                 if (empty($missingIdentifiers) === false) {
-                    $objects = $this->objectEntityMapper->findMultiple($missingIdentifiers);
+                    $objects = $this->getObjectMapper()->findMultiple($missingIdentifiers);
                     foreach ($objects as $object) {
                         $name = $object->getName() ?? $object->getUuid();
                         $uuid = $object->getUuid();
@@ -1391,7 +1416,7 @@ class CacheHandler
             }
 
             // STEP 2: Load all objects from main table.
-            $objects = $this->objectEntityMapper->findAll();
+            $objects = $this->getObjectMapper()->findAll();
             foreach ($objects as $object) {
                 $name = $object->getName() ?? $object->getUuid();
 
@@ -1495,9 +1520,9 @@ class CacheHandler
 
                     try {
                         // Check if table exists and has the name column.
-                        // Magic table columns have underscore prefix: _id, _name, _deleted, _published, _depublished.
+                        // Magic table columns have underscore prefix: _id, _name, _deleted, etc.
                         // Note: _id is bigint (internal DB ID), we need _uuid (the UUID) for mapping.
-                        // Filter: only exclude deleted objects. Include all others regardless of publish status.
+                        // Filter: only exclude deleted objects.
                         $sql    = 'SELECT "_uuid", "_name" FROM '.$tableName.' WHERE "_deleted" IS NULL';
                         $result = $this->db->executeQuery($sql);
 

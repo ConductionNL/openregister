@@ -41,7 +41,6 @@ use Psr\Log\LoggerInterface;
  */
 class McpResourcesService
 {
-
     /**
      * McpResourcesService constructor
      *
@@ -90,13 +89,11 @@ class McpResourcesService
                 $schemaIds = $register->getSchemas() ?? [];
                 foreach ($schemaIds as $schemaId) {
                     try {
-                        $schema = $this->schemaMapper->find($schemaId);
+                        $schema      = $this->schemaMapper->find($schemaId);
                         $resources[] = [
-                            'uri'         => 'openregister://objects/'
-                                .$register->getId().'/'.$schema->getId(),
+                            'uri'         => 'openregister://objects/'.$register->getId().'/'.$schema->getId(),
                             'name'        => $register->getTitle().' — '.$schema->getTitle(),
-                            'description' => 'Objects in register "'.$register->getTitle()
-                                .'" with schema "'.$schema->getTitle().'"',
+                            'description' => 'Objects in register "'.$register->getTitle().'" with schema "'.$schema->getTitle().'"',
                             'mimeType'    => 'application/json',
                         ];
                     } catch (DoesNotExistException $e) {
@@ -214,23 +211,27 @@ class McpResourcesService
             );
         }
 
-        $path = substr(string: $uri, offset: strlen('openregister://'));
+        $path     = substr(string: $uri, offset: strlen('openregister://'));
         $segments = explode(separator: '/', string: $path);
 
         $type = $segments[0] ?? '';
 
         if ($type === 'registers' || $type === 'schemas') {
+            $id = null;
+            if (isset($segments[1]) === true) {
+                $id = (int) $segments[1];
+            }
+
             return [
                 'type' => $type,
-                'id'   => isset($segments[1]) ? (int) $segments[1] : null,
+                'id'   => $id,
             ];
         }
 
         if ($type === 'objects') {
             if (isset($segments[1], $segments[2]) === false) {
                 throw new \InvalidArgumentException(
-                    message: 'Objects URI requires register and schema IDs: '
-                        .'openregister://objects/{registerId}/{schemaId}'
+                    message: 'Objects URI requires register and schema IDs: openregister://objects/{registerId}/{schemaId}'
                 );
             }
 
@@ -254,7 +255,7 @@ class McpResourcesService
      *
      * @return array Register data (single or list)
      */
-    private function readRegisters(?int $id = null): array
+    private function readRegisters(?int $id=null): array
     {
         if ($id !== null) {
             $register = $this->registerMapper->find($id);
@@ -275,7 +276,7 @@ class McpResourcesService
      *
      * @return array Schema data (single or list)
      */
-    private function readSchemas(?int $id = null): array
+    private function readSchemas(?int $id=null): array
     {
         if ($id !== null) {
             $schema = $this->schemaMapper->find($id);
@@ -298,7 +299,7 @@ class McpResourcesService
      *
      * @return array Object data (single or list)
      */
-    private function readObjects(int $registerId, int $schemaId, ?string $objectId = null): array
+    private function readObjects(int $registerId, int $schemaId, ?string $objectId=null): array
     {
         $this->objectService->setRegister($registerId);
         $this->objectService->setSchema($schemaId);

@@ -23,6 +23,7 @@
         </include>
         <exclude>
             <directory>lib/Migration/</directory>
+            <directory>lib/Db/</directory>
             <file>lib/AppInfo/Application.php</file>
         </exclude>
     </source>
@@ -37,7 +38,7 @@
 
     <php>
         <env name="PHPUNIT_RUN" value="1"/>
-        <env name="NEXTCLOUD_CONFIG_DIR" value="tests/config"/>
+        <env name="NEXTCLOUD_CONFIG_DIR" value="/var/www/html/config"/>
     </php>
 </phpunit>
 

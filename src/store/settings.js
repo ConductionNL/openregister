@@ -103,7 +103,6 @@ export const useSettingsStore = defineStore('settings', {
 			enabled: false,
 			defaultUserTenant: '',
 			defaultObjectTenant: '',
-			publishedObjectsBypassMultiTenancy: false,
 			adminOverride: true,
 		},
 

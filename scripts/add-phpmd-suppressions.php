@@ -73,7 +73,7 @@ $suppressions = [
     'ExcessiveClassLength' => [
         'reason' => 'Mapper class handles comprehensive data operations and query building',
         'files' => [
-            'lib/Db/UnifiedObjectMapper.php',
+            'lib/Db/MagicMapper.php',
         ]
     ],
     

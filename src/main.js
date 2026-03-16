@@ -6,6 +6,7 @@ import App from './App.vue'
 import router from './router/index.js'
 import { registerIcons } from '@conduction/nextcloud-vue'
 import '@conduction/nextcloud-vue/css/index.css'
+import { Fragment } from 'vue-frag'
 
 import AccountGroupOutline from 'vue-material-design-icons/AccountGroupOutline.vue'
 import FileDocumentOutline from 'vue-material-design-icons/FileDocumentOutline.vue'
@@ -23,6 +24,8 @@ Vue.mixin({ methods: { t, n } })
 
 Vue.use(PiniaVuePlugin)
 Vue.directive('tooltip', Tooltip)
+
+Vue.component('Fragment', Fragment)
 
 new Vue(
 	{

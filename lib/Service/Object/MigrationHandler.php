@@ -14,7 +14,7 @@
 
 namespace OCA\OpenRegister\Service\Object;
 
-use OCA\OpenRegister\Db\ObjectEntityMapper;
+use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Object\SaveObject;
@@ -46,7 +46,7 @@ class MigrationHandler
     /**
      * Constructor for MigrationHandler.
      *
-     * @param ObjectEntityMapper      $objectMapper     Mapper for object entities.
+     * @param MagicMapper             $objectMapper     Mapper for object entities.
      * @param SchemaMapper            $schemaMapper     Mapper for schema entities.
      * @param RegisterMapper          $registerMapper   Mapper for register entities.
      * @param SaveObject              $saveHandler      Handler for saving objects.
@@ -55,7 +55,7 @@ class MigrationHandler
      * @param LoggerInterface         $logger           Logger for logging operations.
      */
     public function __construct(
-        private readonly ObjectEntityMapper $objectMapper,
+        private readonly MagicMapper $objectMapper,
         private readonly SchemaMapper $schemaMapper,
         private readonly RegisterMapper $registerMapper,
         private readonly SaveObject $saveHandler,
@@ -137,7 +137,7 @@ class MigrationHandler
                 throw new OcpDoesNotExistException('One or more registers/schemas not found');
             }
 
-            // Get all source objects at once using ObjectEntityMapper.
+            // Get all source objects at once using MagicMapper.
             $sourceObjects = $this->objectMapper->findMultiple($objectIds);
 
             // Keep track of remaining object IDs to find which ones weren't found.

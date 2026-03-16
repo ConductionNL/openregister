@@ -98,9 +98,11 @@ class MetadataHydrationHandler
         // If object data has 'object' key that is an array (structured format), use that for property access.
         // Otherwise use the objectData directly (flat format).
         // Note: 'object' may also be a regular string property (e.g., a URL in ObjectInformatieObject).
-        $businessData = (isset($objectData['object']) === true && is_array($objectData['object']) === true)
-            ? $objectData['object']
-            : $objectData;
+        if (isset($objectData['object']) === true && is_array($objectData['object']) === true) {
+            $businessData = $objectData['object'];
+        } else {
+            $businessData = $objectData;
+        }
 
         // Get schema properties for relation field detection.
         $schemaProperties = $schema->getProperties() ?? [];
@@ -265,7 +267,14 @@ class MetadataHydrationHandler
         }
 
         // Simple field path - use existing method.
-        return $this->getValueFromPath(data: $data, path: $fieldPath);
+        $value = $this->getValueFromPath(data: $data, path: $fieldPath);
+
+        // Convert arrays/objects to JSON string to satisfy the ?string return type.
+        if (is_array($value) === true) {
+            return json_encode($value);
+        }
+
+        return $value;
     }//end extractMetadataValue()
 
     /**

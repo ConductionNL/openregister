@@ -40,7 +40,7 @@ Open Register drijft apps zoals OpenCatalogi, Procest, Pipelinq en Software Cata
 
 Vrij en open source onder de EUPL-licentie.
     ]]></description>
-    <version>0.2.13-unstable.45</version>
+    <version>0.2.13-unstable.65</version>
     <licence>agpl</licence>
     <author mail="info@conduction.nl" homepage="https://www.conduction.nl/">Conduction</author>
     <namespace>OpenRegister</namespace>
@@ -85,6 +85,7 @@ Vrij en open source onder de EUPL-licentie.
 		<job>OCA\OpenRegister\BackgroundJob\NameCacheWarmupJob</job>
 		<job>OCA\OpenRegister\BackgroundJob\CronFileTextExtractionJob</job>
 		<job>OCA\OpenRegister\Cron\WebhookRetryJob</job>
+		<job>OCA\OpenRegister\BackgroundJob\BlobMigrationJob</job>
 	</background-jobs>
 
     <navigations>
@@ -102,11 +103,13 @@ Vrij en open source onder de EUPL-licentie.
 		<admin-section>OCA\OpenRegister\Sections\OpenRegisterAdmin</admin-section>
 	</settings>
 
+	<!-- TEMPORARILY DISABLED: Commands trigger circular DI during occ bootstrap
 	<commands>
 		<command>OCA\OpenRegister\Command\SolrDebugCommand</command>
 		<command>OCA\OpenRegister\Command\SolrManagementCommand</command>
 		<command>OCA\OpenRegister\Command\MigrateStorageCommand</command>
 	</commands>
+	-->
 
 	<notification>
 		<service>OCA\OpenRegister\Notification\Notifier</service>

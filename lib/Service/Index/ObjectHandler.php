@@ -38,7 +38,7 @@ use Psr\Log\LoggerInterface;
  * - Does NOT extract text or vectorize - only indexes existing data.
  *
  * RESPONSIBILITIES:
- * - Read objects from database (ObjectEntityMapper).
+ * - Read objects from database (MagicMapper).
  * - Index objects to Solr objectCollection.
  * - Search objects in Solr.
  * - Commit changes to Solr.
@@ -69,8 +69,8 @@ class ObjectHandler
      * Search objects in Solr.
      *
      * @param array $query        Search query parameters
-     * @param bool  $rbac         Apply RBAC filters
-     * @param bool  $multitenancy Apply multitenancy filters
+     * @param bool  $_rbac         Apply RBAC filters
+     * @param bool  $_multitenancy Apply multitenancy filters
      * @param bool  $published    Filter published objects
      * @param bool  $deleted      Include deleted objects
      *
@@ -84,8 +84,8 @@ class ObjectHandler
      */
     public function searchObjects(
         array $query=[],
-        bool $rbac=true,
-        bool $multitenancy=true,
+        bool $_rbac=true,
+        bool $_multitenancy=true,
         bool $published=false,
         bool $deleted=false
     ): array {
@@ -95,16 +95,16 @@ class ObjectHandler
                 'file'         => __FILE__,
                 'line'         => __LINE__,
                 'query'        => $query,
-                'rbac'         => $rbac,
-                'multitenancy' => $multitenancy,
+                'rbac'         => $_rbac,
+                'multitenancy' => $_multitenancy,
             ]
         );
 
         // Build Solr query from OpenRegister query.
         $solrQuery = $this->buildSolrQuery(
             query: $query,
-            rbac: $rbac,
-            multitenancy: $multitenancy,
+            _rbac: $_rbac,
+            _multitenancy: $_multitenancy,
             published: $published,
             deleted: $deleted
         );
@@ -120,8 +120,8 @@ class ObjectHandler
      * Build Solr query from OpenRegister query parameters.
      *
      * @param array $query        OpenRegister query
-     * @param bool  $rbac         Apply RBAC filters
-     * @param bool  $multitenancy Apply multitenancy filters
+     * @param bool  $_rbac         Apply RBAC filters
+     * @param bool  $_multitenancy Apply multitenancy filters
      * @param bool  $published    Filter published objects
      * @param bool  $deleted      Include deleted objects
      *
@@ -134,7 +134,7 @@ class ObjectHandler
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Query building requires handling multiple filter conditions
      * @SuppressWarnings(PHPMD.NPathComplexity)      Multiple filter combinations create many execution paths
      */
-    private function buildSolrQuery(array $query, bool $rbac, bool $multitenancy, bool $published, bool $deleted): array
+    private function buildSolrQuery(array $query, bool $_rbac, bool $_multitenancy, bool $published, bool $deleted): array
     {
         $solrQuery = [
             'q'     => $query['q'] ?? '*:*',
@@ -145,11 +145,11 @@ class ObjectHandler
         // Add filters.
         $filters = [];
 
-        if ($rbac === true) {
+        if ($_rbac === true) {
             // TODO: Add RBAC filters based on current user.
         }
 
-        if ($multitenancy === true) {
+        if ($_multitenancy === true) {
             // TODO: Add multitenancy filters based on current organisation.
         }
 

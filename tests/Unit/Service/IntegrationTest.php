@@ -23,7 +23,7 @@ use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Controller\SearchController;
 use OCA\OpenRegister\Service\IndexService;
 use OCA\OpenRegister\Db\OrganisationMapper;
-use OCA\OpenRegister\Db\ObjectEntityMapper;
+use OCA\OpenRegister\Db\UnifiedObjectMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\Organisation;
@@ -47,7 +47,7 @@ class IntegrationTest extends TestCase
     private ObjectService|MockObject $objectService;
     private SearchController $searchController;
     private OrganisationMapper|MockObject $organisationMapper;
-    private ObjectEntityMapper|MockObject $objectEntityMapper;
+    private UnifiedObjectMapper|MockObject $objectMapper;
     private SchemaMapper|MockObject $schemaMapper;
     private AuditTrailMapper|MockObject $auditTrailMapper;
     private IUserSession|MockObject $userSession;
@@ -64,7 +64,7 @@ class IntegrationTest extends TestCase
         parent::setUp();
         
         $this->organisationMapper = $this->createMock(OrganisationMapper::class);
-        $this->objectEntityMapper = $this->createMock(ObjectEntityMapper::class);
+        $this->objectMapper = $this->createMock(UnifiedObjectMapper::class);
         $this->schemaMapper = $this->createMock(SchemaMapper::class);
         $this->auditTrailMapper = $this->createMock(AuditTrailMapper::class);
         $this->userSession = $this->createMock(IUserSession::class);
@@ -128,7 +128,7 @@ class IntegrationTest extends TestCase
         $protectedObject->setOwner('alice');
         
         // Mock: RBAC permission check within organisation context.
-        $this->objectEntityMapper->expects($this->once())
+        $this->objectMapper->expects($this->once())
             ->method('findAll')
             ->with(
                 $this->anything(),
@@ -141,7 +141,7 @@ class IntegrationTest extends TestCase
             ->willReturn([$protectedObject]);
 
         // Act: Search within organisation with RBAC filtering.
-        $results = $this->objectEntityMapper->findAll(
+        $results = $this->objectMapper->findAll(
             null, // limit
             null, // offset
             ['organisation' => 'acme-org-uuid'] // Organisation filter
@@ -156,7 +156,7 @@ class IntegrationTest extends TestCase
     /**
      * Test 10.2: Search Filtering by Organisation
      *
-     * Note: SearchController::search() delegates to IndexService, not ObjectEntityMapper directly.
+     * Note: SearchController::search() delegates to IndexService, not UnifiedObjectMapper directly.
      * The IndexService mock returns results. This test verifies the search endpoint response format.
      */
     public function testSearchFilteringByOrganisation(): void
@@ -259,7 +259,7 @@ class IntegrationTest extends TestCase
             ->willReturn($bobOrgs);
 
         // Mock: Attempt to search Organisation B's data.
-        $this->objectEntityMapper->expects($this->once())
+        $this->objectMapper->expects($this->once())
             ->method('findAll')
             ->with(
                 $this->anything(),
@@ -274,7 +274,7 @@ class IntegrationTest extends TestCase
             ->willReturn([]); // No results from different org
 
         // Act: Search should be filtered by user's organisations.
-        $results = $this->objectEntityMapper->findAll(
+        $results = $this->objectMapper->findAll(
             null,
             null, 
             ['organisation' => ['orgA-uuid']] // Only Bob's orgs
@@ -306,11 +306,11 @@ class IntegrationTest extends TestCase
         ]);
         
         // Mock: Organisation service validates all objects in same org.
-        $this->objectEntityMapper->method('findAll')
+        $this->objectMapper->method('findAll')
             ->willReturn(array_merge([$parentObject], $childObjects));
 
         // Act: Verify all related objects are in same organisation.
-        $allObjects = $this->objectEntityMapper->findAll();
+        $allObjects = $this->objectMapper->findAll();
         
         // Assert: Relationship integrity within organisation.
         foreach ($allObjects as $object) {

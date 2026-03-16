@@ -28,7 +28,6 @@ use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
 use Exception;
-use DateTime;
 
 /**
  * Bulk operations controller for OpenRegister
@@ -166,163 +165,6 @@ class BulkController extends Controller
     }//end delete()
 
     /**
-     * Perform bulk publish operations on objects
-     *
-     * @param string $register The register identifier
-     * @param string $schema   The schema identifier
-     *
-     * @NoAdminRequired
-     * @NoCSRFRequired
-     *
-     * @return JSONResponse JSON response with bulk publish result
-     *
-     * @suppressWarnings(PHPMD.CyclomaticComplexity)
-     */
-    public function publish(string $register, string $schema): JSONResponse
-    {
-        try {
-            // Get request data.
-            $data     = $this->request->getParams();
-            $uuids    = $data['uuids'] ?? [];
-            $datetime = $data['datetime'] ?? true;
-
-            // Validate input.
-            if (empty($uuids) === true || is_array($uuids) === false) {
-                return new JSONResponse(
-                    data: ['error' => 'Invalid input. "uuids" array is required.'],
-                    statusCode: Http::STATUS_BAD_REQUEST
-                );
-            }
-
-            // Parse datetime if provided.
-            if ($datetime !== true && $datetime !== false && $datetime !== null) {
-                try {
-                    $datetime = new DateTime($datetime);
-                } catch (Exception $e) {
-                    return new JSONResponse(
-                        data: ['error' => 'Invalid datetime format. Use ISO 8601 format (e.g., "2024-01-01T12:00:00Z").'],
-                        statusCode: Http::STATUS_BAD_REQUEST
-                    );
-                }
-            }
-
-            // Set register and schema context.
-            $this->objectService->setRegister($register);
-            $this->objectService->setSchema($schema);
-
-            // Perform bulk publish operation.
-            $publishedUuids = $this->objectService->publishObjects(uuids: $uuids, datetime: $datetime ?? true);
-
-            // Format datetime for response.
-            $datetimeUsed = $datetime;
-            if ($datetime instanceof \DateTime) {
-                $datetimeUsed = $datetime->format('Y-m-d H:i:s');
-            }
-
-            return new JSONResponse(
-                data: [
-                    'success'         => true,
-                    'message'         => 'Bulk publish operation completed successfully',
-                    'published_count' => count($publishedUuids),
-                    'published_uuids' => $publishedUuids,
-                    'requested_count' => count($uuids),
-                    'skipped_count'   => count($uuids) - count($publishedUuids),
-                    'datetime_used'   => $datetimeUsed,
-                ]
-            );
-        } catch (Exception $e) {
-            return new JSONResponse(
-                data: ['error' => 'Bulk publish operation failed: '.$e->getMessage()],
-                statusCode: Http::STATUS_INTERNAL_SERVER_ERROR
-            );
-        }//end try
-    }//end publish()
-
-    /**
-     * Perform bulk depublish operations on objects
-     *
-     * @param string $register The register identifier
-     * @param string $schema   The schema identifier
-     *
-     * @NoAdminRequired
-     * @NoCSRFRequired
-     *
-     * @suppressWarnings(PHPMD.CyclomaticComplexity)
-     *
-     * @return JSONResponse JSON response with bulk depublish result
-     */
-    public function depublish(string $register, string $schema): JSONResponse
-    {
-        try {
-            // Resolve slugs to numeric IDs.
-            try {
-                $resolved = $this->resolveRegisterSchemaIds(
-                    register: $register,
-                    schema: $schema,
-                    objectService: $this->objectService
-                );
-            } catch (RegisterNotFoundException | SchemaNotFoundException $e) {
-                return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: Http::STATUS_NOT_FOUND);
-            }
-
-            // Get request data.
-            $data     = $this->request->getParams();
-            $uuids    = $data['uuids'] ?? [];
-            $datetime = $data['datetime'] ?? true;
-
-            // Validate input.
-            if (empty($uuids) === true || is_array($uuids) === false) {
-                return new JSONResponse(
-                    data: ['error' => 'Invalid input. "uuids" array is required.'],
-                    statusCode: Http::STATUS_BAD_REQUEST
-                );
-            }
-
-            // Parse datetime if provided.
-            if ($datetime !== true && $datetime !== false && $datetime !== null) {
-                try {
-                    $datetime = new DateTime($datetime);
-                } catch (Exception $e) {
-                    return new JSONResponse(
-                        data: ['error' => 'Invalid datetime format. Use ISO 8601 format (e.g., "2024-01-01T12:00:00Z").'],
-                        statusCode: Http::STATUS_BAD_REQUEST
-                    );
-                }
-            }
-
-            // Set register and schema context using resolved IDs.
-            $this->objectService->setRegister((string) $resolved['register']);
-            $this->objectService->setSchema((string) $resolved['schema']);
-
-            // Perform bulk depublish operation.
-            $depublishedUuids = $this->objectService->depublishObjects(uuids: $uuids, datetime: $datetime ?? true);
-
-            // Format datetime for response.
-            $datetimeUsed = $datetime;
-            if ($datetime instanceof \DateTime) {
-                $datetimeUsed = $datetime->format('Y-m-d H:i:s');
-            }
-
-            return new JSONResponse(
-                data: [
-                    'success'           => true,
-                    'message'           => 'Bulk depublish operation completed successfully',
-                    'depublished_count' => count($depublishedUuids),
-                    'depublished_uuids' => $depublishedUuids,
-                    'requested_count'   => count($uuids),
-                    'skipped_count'     => count($uuids) - count($depublishedUuids),
-                    'datetime_used'     => $datetimeUsed,
-                ]
-            );
-        } catch (Exception $e) {
-            return new JSONResponse(
-                data: ['error' => 'Bulk depublish operation failed: '.$e->getMessage()],
-                statusCode: Http::STATUS_INTERNAL_SERVER_ERROR
-            );
-        }//end try
-    }//end depublish()
-
-    /**
      * Perform bulk save operations on objects
      *
      * @param string $register The register identifier
@@ -405,57 +247,6 @@ class BulkController extends Controller
     }//end save()
 
     /**
-     * Publish all objects belonging to a specific schema
-     *
-     * @param string $register The register identifier
-     * @param string $schema   The schema identifier
-     *
-     * @NoAdminRequired
-     * @NoCSRFRequired
-     *
-     * @return JSONResponse JSON response with schema publish result
-     */
-    public function publishSchema(string $register, string $schema): JSONResponse
-    {
-        try {
-            // Validate input.
-            if (is_numeric($schema) === false) {
-                return new JSONResponse(
-                    data: ['error' => 'Invalid schema ID. Must be numeric.'],
-                    statusCode: Http::STATUS_BAD_REQUEST
-                );
-            }
-
-            // Get request data.
-            $data       = $this->request->getParams();
-            $publishAll = $data['publishAll'] ?? false;
-
-            // Set register and schema context.
-            $this->objectService->setRegister($register);
-            $this->objectService->setSchema($schema);
-
-            // Perform schema publishing operation.
-            $result = $this->objectService->publishObjectsBySchema(schemaId: (int) $schema, publishAll: $publishAll);
-
-            return new JSONResponse(
-                data: [
-                    'success'         => true,
-                    'message'         => 'Schema objects publishing completed successfully',
-                    'published_count' => $result['published_count'],
-                    'published_uuids' => $result['published_uuids'],
-                    'schema_id'       => $result['schema_id'],
-                    'publish_all'     => $publishAll,
-                ]
-            );
-        } catch (Exception $e) {
-            return new JSONResponse(
-                data: ['error' => 'Schema objects publishing failed: '.$e->getMessage()],
-                statusCode: Http::STATUS_INTERNAL_SERVER_ERROR
-            );
-        }//end try
-    }//end publishSchema()
-
-    /**
      * Delete all objects belonging to a specific schema
      *
      * @param string $register The register identifier
@@ -515,7 +306,7 @@ class BulkController extends Controller
      *
      * This endpoint provides a convenient way to delete all objects for a given
      * register/schema combination from the frontend action menu. It uses optimized
-     * SQL queries to delete objects efficiently from both blob storage and magic tables.
+     * SQL queries to delete objects efficiently from magic tables.
      *
      * @param string $register The register identifier (ID or slug).
      * @param string $schema   The schema identifier (ID or slug).

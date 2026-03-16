@@ -45,6 +45,7 @@ use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\ICache;
 use OCP\ICacheFactory;
 use OCP\IDBConnection;
+use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -159,6 +160,20 @@ class MagicFacetHandler
     private ?MagicSearchHandler $searchHandler = null;
 
     /**
+     * Container for lazy resolution of CacheHandler (avoids circular DI).
+     *
+     * @var ContainerInterface|null
+     */
+    private ?ContainerInterface $container = null;
+
+    /**
+     * Whether lazy dependencies have been resolved.
+     *
+     * @var bool
+     */
+    private bool $lazyResolved = false;
+
+    /**
      * Constructor for MagicFacetHandler
      *
      * @param IDBConnection                                      $db            Database connection for queries
@@ -166,17 +181,20 @@ class MagicFacetHandler
      * @param \OCA\OpenRegister\Service\Object\CacheHandler|null $cacheHandler  Cache handler for name resolution
      * @param ICacheFactory|null                                 $cacheFactory  Cache factory for distributed caching
      * @param MagicSearchHandler|null                            $searchHandler Search handler for shared query building
+     * @param ContainerInterface|null                            $container     Container for lazy resolution
      */
     public function __construct(
         private readonly IDBConnection $db,
         private readonly LoggerInterface $logger,
         ?\OCA\OpenRegister\Service\Object\CacheHandler $cacheHandler=null,
         ?ICacheFactory $cacheFactory=null,
-        ?MagicSearchHandler $searchHandler=null
+        ?MagicSearchHandler $searchHandler=null,
+        ?ContainerInterface $container=null
     ) {
         $this->cacheHandler  = $cacheHandler;
         $this->cacheFactory  = $cacheFactory;
         $this->searchHandler = $searchHandler;
+        $this->container     = $container;
 
         // Initialize distributed cache for facet labels.
         if ($this->cacheFactory !== null) {
@@ -192,11 +210,47 @@ class MagicFacetHandler
     }//end __construct()
 
     /**
+     * Lazily resolve CacheHandler and ICacheFactory from container.
+     *
+     * Called on first use to avoid circular DI during app bootstrap:
+     * MagicMapper → CacheHandler → RegisterMapper → MagicMapper.
+     *
+     * @return void
+     */
+    private function resolveLazyDependencies(): void
+    {
+        if ($this->lazyResolved === true || $this->container === null) {
+            return;
+        }
+
+        $this->lazyResolved = true;
+
+        try {
+            $this->cacheHandler = $this->container->get(\OCA\OpenRegister\Service\Object\CacheHandler::class);
+        } catch (\Exception $e) {
+            $this->logger->debug(
+                message: '[MagicFacetHandler] CacheHandler not available: '.$e->getMessage(),
+                context: ['file' => __FILE__, 'line' => __LINE__]
+            );
+        }
+
+        try {
+            $cacheFactory = $this->container->get(ICacheFactory::class);
+            $this->cacheFactory   = $cacheFactory;
+            $this->distLabelCache = $cacheFactory->createDistributed('openregister_facet_labels');
+        } catch (\Exception $e) {
+            $this->logger->debug(
+                message: '[MagicFacetHandler] ICacheFactory not available: '.$e->getMessage(),
+                context: ['file' => __FILE__, 'line' => __LINE__]
+            );
+        }
+    }//end resolveLazyDependencies()
+
+    /**
      * Get simple facets for a magic mapper table.
      *
      * This method provides faceting capabilities for dynamically created
-     * schema-based tables, similar to the blob storage faceting but optimized
-     * for column-based storage.
+     * schema-based tables, optimized for column-based storage.
      *
      * @param string   $tableName The magic mapper table name (without oc_ prefix).
      * @param array    $query     The search query array containing filters and facet configuration.
@@ -755,7 +809,9 @@ class MagicFacetHandler
                 continue;
             }
 
-            $subSql = "SELECT TO_CHAR({$field}, '{$dateFormat}') as date_key, COUNT(*) as cnt FROM {$fullTableName} WHERE {$field} IS NOT NULL";
+            $selectExpr  = "TO_CHAR({$field}, '{$dateFormat}')";
+            $whereClause = "{$field} IS NOT NULL";
+            $subSql      = "SELECT {$selectExpr} as date_key, COUNT(*) as cnt FROM {$fullTableName} WHERE {$whereClause}";
 
             // Use shared method for all filter conditions (single source of truth).
             if ($this->searchHandler !== null && $tcSchema !== null) {
@@ -781,7 +837,8 @@ class MagicFacetHandler
         }
 
         $unionSql = implode("\nUNION ALL\n", $unionParts);
-        $sql      = "SELECT date_key, SUM(cnt) as doc_count FROM (\n".$unionSql."\n) combined GROUP BY date_key ORDER BY date_key ASC";
+        $innerSql = "(\n{$unionSql}\n) combined";
+        $sql      = "SELECT date_key, SUM(cnt) as doc_count FROM {$innerSql} GROUP BY date_key ORDER BY date_key ASC";
 
         try {
             $stmt = $this->db->prepare($sql);
@@ -789,10 +846,18 @@ class MagicFacetHandler
 
             $buckets = [];
             while (($row = $stmt->fetch()) !== false) {
-                $buckets[] = [
+                $bucket = [
                     'key'     => $row['date_key'],
                     'results' => (int) $row['doc_count'],
                 ];
+
+                $bounds = $this->getDateBoundsForBucket(dateKey: $row['date_key'], interval: $interval);
+                if ($bounds !== null) {
+                    $bucket['from'] = $bounds['from'];
+                    $bucket['to']   = $bounds['to'];
+                }
+
+                $buckets[] = $bucket;
             }
 
             return ['type' => 'date_histogram', 'interval' => $interval, 'buckets' => $buckets];
@@ -802,7 +867,7 @@ class MagicFacetHandler
                 context: ['file' => __FILE__, 'line' => __LINE__, 'field' => $field, 'error' => $e->getMessage()]
             );
             return ['type' => 'date_histogram', 'interval' => $interval, 'buckets' => []];
-        }
+        }//end try
     }//end getDateHistogramFacetUnion()
 
     /**
@@ -848,14 +913,27 @@ class MagicFacetHandler
                 // Check if property is marked as facetable (boolean true or config object).
                 $facetable = $property['facetable'] ?? false;
                 if ($facetable === true || (is_array($facetable) === true && empty($facetable) === false)) {
-                    // Determine facet type based on property type.
-                    $facetType            = $this->determineFacetTypeFromProperty(property: $property);
-                    $config[$propertyKey] = [
+                    // Determine facet type based on property type and config.
+                    $facetType  = $this->determineFacetTypeFromProperty(property: $property);
+                    $facetEntry = [
                         'type'  => $facetType,
                         'title' => $property['title'] ?? null,
                     ];
-                }
-            }
+
+                    // Pass through options from facetable config.
+                    if (is_array($facetable) === true) {
+                        if (isset($facetable['options']) === true) {
+                            $facetEntry['options'] = $facetable['options'];
+                        }
+
+                        if ($facetType === 'date_histogram') {
+                            $facetEntry['interval'] = $facetable['options']['interval'] ?? 'month';
+                        }
+                    }
+
+                    $config[$propertyKey] = $facetEntry;
+                }//end if
+            }//end foreach
 
             return $config;
         }//end if
@@ -978,6 +1056,15 @@ class MagicFacetHandler
      */
     private function determineFacetTypeFromProperty(array $property): string
     {
+        // Check explicit type override from facetable config object.
+        $facetable = $property['facetable'] ?? false;
+        if (is_array($facetable) === true && isset($facetable['type']) === true) {
+            $configType = $facetable['type'];
+            if (in_array($configType, ['terms', 'date_histogram', 'date_range'], true) === true) {
+                return $configType;
+            }
+        }
+
         $type   = $property['type'] ?? 'string';
         $format = $property['format'] ?? '';
 
@@ -1262,10 +1349,18 @@ class MagicFacetHandler
         $buckets = [];
 
         while (($row = $result->fetch()) !== false) {
-            $buckets[] = [
+            $bucket = [
                 'key'     => $row['date_key'],
                 'results' => (int) $row['doc_count'],
             ];
+
+            $bounds = $this->getDateBoundsForBucket(dateKey: $row['date_key'], interval: $interval);
+            if ($bounds !== null) {
+                $bucket['from'] = $bounds['from'];
+                $bucket['to']   = $bounds['to'];
+            }
+
+            $buckets[] = $bucket;
         }
 
         return [
@@ -1274,6 +1369,64 @@ class MagicFacetHandler
             'buckets'  => $buckets,
         ];
     }//end getDateHistogramFacet()
+
+    /**
+     * Calculate from/to date bounds for a histogram bucket.
+     *
+     * @param string $dateKey  The bucket key (e.g. "2025", "2025-02").
+     * @param string $interval The histogram interval.
+     *
+     * @return array{from: string, to: string}|null The bounds or null.
+     */
+    private function getDateBoundsForBucket(string $dateKey, string $interval): ?array
+    {
+        switch ($interval) {
+            case 'year':
+                return [
+                    'from' => $dateKey.'-01-01',
+                    'to'   => $dateKey.'-12-31',
+                ];
+            case 'quarter':
+                if (preg_match('/^(\d{4})-Q(\d)$/', $dateKey, $matches) === 1) {
+                    $year       = (int) $matches[1];
+                    $quarter    = (int) $matches[2];
+                    $startMonth = (($quarter - 1) * 3) + 1;
+                    $endMonth   = $startMonth + 2;
+                    $lastDay    = cal_days_in_month(CAL_GREGORIAN, $endMonth, $year);
+
+                    return [
+                        'from' => sprintf('%04d-%02d-01', $year, $startMonth),
+                        'to'   => sprintf('%04d-%02d-%02d', $year, $endMonth, $lastDay),
+                    ];
+                }
+                return null;
+            case 'month':
+                $timestamp = strtotime($dateKey.'-01');
+                if ($timestamp === false) {
+                    return null;
+                }
+                return [
+                    'from' => date('Y-m-01', $timestamp),
+                    'to'   => date('Y-m-t', $timestamp),
+                ];
+            case 'week':
+                $timestamp = strtotime($dateKey);
+                if ($timestamp === false) {
+                    return null;
+                }
+                return [
+                    'from' => date('Y-m-d', $timestamp),
+                    'to'   => date('Y-m-d', strtotime('+6 days', $timestamp)),
+                ];
+            case 'day':
+                return [
+                    'from' => $dateKey,
+                    'to'   => $dateKey,
+                ];
+            default:
+                return null;
+        }//end switch
+    }//end getDateBoundsForBucket()
 
     /**
      * Check if a column exists in the table.
@@ -1358,11 +1511,6 @@ class MagicFacetHandler
             $queryBuilder->andWhere($queryBuilder->expr()->isNull(self::METADATA_PREFIX.'deleted'));
         }
 
-        // NOTE: The _published filter is intentionally NOT applied here.
-        // The main search in MagicMapper::applySearchFilters() also skips _published
-        // (it's in the reservedParams list), so facets should match the main search
-        // behavior and include all non-deleted objects regardless of published status.
-        // This allows facets to show the full distribution of data visible to users.
         // Apply metadata filters from @self.
         if (($baseQuery['@self'] ?? null) !== null && is_array($baseQuery['@self']) === true) {
             foreach ($baseQuery['@self'] as $field => $value) {
@@ -1445,7 +1593,6 @@ class MagicFacetHandler
             '_aggregations',
             '_debug',
             '_source',
-            '_published',
             '_rbac',
             '_multitenancy',
             '_validation',
@@ -1658,6 +1805,8 @@ class MagicFacetHandler
                 return 'YYYY-MM';
             case 'year':
                 return 'YYYY';
+            case 'quarter':
+                return 'YYYY-"Q"Q';
             default:
                 return 'YYYY-MM';
         }
@@ -1779,6 +1928,7 @@ class MagicFacetHandler
         $result        = $result ?? [];
         $uncachedUuids = $uncachedUuids ?? $uuids;
 
+        $this->resolveLazyDependencies();
         if ($this->cacheHandler !== null && empty($uncachedUuids) === false) {
             $this->cacheStats['cache_handler_calls']++;
             $batchedLabels = $this->cacheHandler->getMultipleObjectNames($uncachedUuids);
@@ -1853,6 +2003,8 @@ class MagicFacetHandler
         Register $register,
         Schema $schema
     ): string {
+        $this->resolveLazyDependencies();
+
         // For register field, try to get the register title.
         if ($field === self::METADATA_PREFIX.'register' && is_numeric($value) === true) {
             try {

@@ -12,7 +12,7 @@ use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
-use OCA\OpenRegister\Db\UnifiedObjectMapper;
+use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Service\LogService;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
@@ -21,7 +21,7 @@ class LogServiceTest extends TestCase
 {
     private AuditTrailMapper&MockObject $auditTrailMapper;
     private ObjectEntityMapper&MockObject $objectEntityMapper;
-    private UnifiedObjectMapper&MockObject $unifiedObjectMapper;
+    private MagicMapper&MockObject $unifiedObjectMapper;
     private RegisterMapper&MockObject $registerMapper;
     private SchemaMapper&MockObject $schemaMapper;
     private LogService $service;
@@ -30,7 +30,7 @@ class LogServiceTest extends TestCase
     {
         $this->auditTrailMapper = $this->createMock(AuditTrailMapper::class);
         $this->objectEntityMapper = $this->createMock(ObjectEntityMapper::class);
-        $this->unifiedObjectMapper = $this->createMock(UnifiedObjectMapper::class);
+        $this->unifiedObjectMapper = $this->createMock(MagicMapper::class);
         $this->registerMapper = $this->createMock(RegisterMapper::class);
         $this->schemaMapper = $this->createMock(SchemaMapper::class);
 

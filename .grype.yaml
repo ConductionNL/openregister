@@ -1,0 +1,6 @@
+ignore:
+  # False positives: Grype matches the unscoped package name against malware
+  # advisories for typosquatting packages. Our actual deps are the scoped
+  # @jridgewell/gen-mapping and @babel/helper-validator-identifier.
+  - vulnerability: GHSA-8rmg-jf7p-4p22
+  - vulnerability: GHSA-pvjq-589m-3mc8
