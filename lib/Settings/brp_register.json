@@ -1,0 +1,1699 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "BRP Mock Register",
+    "description": "Mock BRP (Basisregistratie Personen) register with RVIG test data for development and testing. Contains fictional person records aligned to the Haal Centraal BRP Personen Bevragen API v2 data model.",
+    "version": "1.0.0"
+  },
+  "x-openregister": {
+    "type": "mock",
+    "app": "openregister",
+    "openregister": "^v0.2.10",
+    "description": "BRP mock register for development and testing — self-contained, no external API credentials needed"
+  },
+  "paths": {},
+  "components": {
+    "registers": {
+      "brp": {
+        "slug": "brp",
+        "title": "BRP (Basisregistratie Personen)",
+        "description": "Mock BRP register with fictional RVIG test persons. Contains 32 person records covering family relationships, foreign nationals, deceased persons, minors, and persons in onderzoek.",
+        "schemas": [
+          "ingeschreven-persoon"
+        ],
+        "folder": "Open Registers/BRP"
+      }
+    },
+    "schemas": {
+      "ingeschreven-persoon": {
+        "slug": "ingeschreven-persoon",
+        "title": "Ingeschreven Persoon",
+        "version": "1.0.0",
+        "published": "2026-03-16T00:00:00+00:00",
+        "summary": "A person registered in the BRP (Basisregistratie Personen)",
+        "description": "Represents an ingeschreven persoon as defined by the Haal Centraal BRP Personen Bevragen API v2 data model. Contains personal details, address information, family relationships, nationality, and life events.",
+        "required": [
+          "burgerservicenummer",
+          "geslachtsnaam",
+          "geslachtsaanduiding",
+          "geboortedatum"
+        ],
+        "properties": {
+          "burgerservicenummer": {
+            "type": "string",
+            "description": "Burgerservicenummer (BSN) — 9 digits, must pass 11-proef validation",
+            "pattern": "^[0-9]{9}$",
+            "minLength": 9,
+            "maxLength": 9,
+            "facetable": true
+          },
+          "voornamen": {
+            "type": "string",
+            "description": "First names (space-separated)",
+            "maxLength": 200,
+            "facetable": false
+          },
+          "voorletters": {
+            "type": "string",
+            "description": "Initials derived from voornamen",
+            "maxLength": 20,
+            "facetable": false
+          },
+          "voorvoegsel": {
+            "type": "string",
+            "description": "Name prefix (e.g. 'de', 'van der', 'van')",
+            "maxLength": 10,
+            "facetable": true
+          },
+          "geslachtsnaam": {
+            "type": "string",
+            "description": "Family name / surname",
+            "maxLength": 200,
+            "minLength": 1,
+            "facetable": true
+          },
+          "aanduidingNaamgebruik": {
+            "type": "string",
+            "description": "Name usage indicator: E=eigen, P=partner, V=partner+eigen, N=eigen+partner",
+            "enum": [
+              "E",
+              "P",
+              "V",
+              "N"
+            ],
+            "facetable": true
+          },
+          "geslachtsaanduiding": {
+            "type": "string",
+            "description": "Gender: M=man, V=vrouw, O=onbekend",
+            "enum": [
+              "M",
+              "V",
+              "O"
+            ],
+            "facetable": true
+          },
+          "geboortedatum": {
+            "type": "string",
+            "description": "Date of birth in ISO 8601 format",
+            "format": "date",
+            "facetable": true
+          },
+          "geboorteplaats": {
+            "type": "string",
+            "description": "Place of birth",
+            "maxLength": 80,
+            "facetable": true
+          },
+          "geboorteland": {
+            "type": "string",
+            "description": "Country of birth",
+            "maxLength": 80,
+            "facetable": true
+          },
+          "geboortelandCode": {
+            "type": "string",
+            "description": "Country of birth code (Tabel 34 Landentabel)",
+            "maxLength": 4,
+            "facetable": false
+          },
+          "nationaliteit": {
+            "type": "string",
+            "description": "Nationality description",
+            "maxLength": 80,
+            "facetable": true
+          },
+          "nationaliteitCode": {
+            "type": "string",
+            "description": "Nationality code (Tabel 32 Nationaliteitentabel)",
+            "maxLength": 4,
+            "facetable": false
+          },
+          "verblijfplaats": {
+            "type": "object",
+            "description": "Current residential address",
+            "properties": {
+              "straat": {
+                "type": "string",
+                "description": "Street name (naam openbare ruimte)",
+                "maxLength": 80
+              },
+              "huisnummer": {
+                "type": "integer",
+                "description": "House number",
+                "minimum": 1,
+                "maximum": 99999
+              },
+              "huisletter": {
+                "type": "string",
+                "description": "House letter (optional)",
+                "maxLength": 1
+              },
+              "huisnummertoevoeging": {
+                "type": "string",
+                "description": "House number addition (optional)",
+                "maxLength": 4
+              },
+              "postcode": {
+                "type": "string",
+                "description": "Dutch postal code (####XX)",
+                "pattern": "^[0-9]{4}[A-Z]{2}$"
+              },
+              "woonplaats": {
+                "type": "string",
+                "description": "City / woonplaats",
+                "maxLength": 80
+              },
+              "adresseerbaarObjectIdentificatie": {
+                "type": "string",
+                "description": "BAG verblijfsobject identification (16 digits)",
+                "pattern": "^[0-9]{16}$"
+              },
+              "nummeraanduidingIdentificatie": {
+                "type": "string",
+                "description": "BAG nummeraanduiding identification (16 digits)",
+                "pattern": "^[0-9]{16}$"
+              },
+              "functieAdres": {
+                "type": "string",
+                "description": "Address function: W=woonadres, B=briefadres",
+                "enum": [
+                  "W",
+                  "B"
+                ]
+              }
+            },
+            "facetable": false
+          },
+          "gemeenteVanInschrijving": {
+            "type": "string",
+            "description": "Municipality of registration",
+            "maxLength": 80,
+            "facetable": true
+          },
+          "gemeenteVanInschrijvingCode": {
+            "type": "string",
+            "description": "Municipality code (4 digits)",
+            "pattern": "^[0-9]{4}$",
+            "facetable": true
+          },
+          "datumInschrijvingInGemeente": {
+            "type": "string",
+            "description": "Date of registration in the municipality",
+            "format": "date",
+            "facetable": false
+          },
+          "immigratie": {
+            "type": "object",
+            "description": "Immigration details (optional, only for persons who immigrated)",
+            "properties": {
+              "datumVestiging": {
+                "type": "string",
+                "description": "Date of settlement in the Netherlands",
+                "format": "date"
+              },
+              "landVanHerkomst": {
+                "type": "string",
+                "description": "Country of origin",
+                "maxLength": 80
+              }
+            },
+            "facetable": false
+          },
+          "overlijden": {
+            "type": "object",
+            "description": "Death details (optional, only for deceased persons)",
+            "properties": {
+              "datum": {
+                "type": "string",
+                "description": "Date of death",
+                "format": "date"
+              },
+              "plaats": {
+                "type": "string",
+                "description": "Place of death",
+                "maxLength": 80
+              }
+            },
+            "facetable": false
+          },
+          "partners": {
+            "type": "array",
+            "description": "Partner references (huwelijk or geregistreerd partnerschap)",
+            "items": {
+              "type": "object",
+              "properties": {
+                "burgerservicenummer": {
+                  "type": "string",
+                  "description": "Partner's BSN"
+                },
+                "naam": {
+                  "type": "string",
+                  "description": "Partner's full name"
+                },
+                "soortVerbintenis": {
+                  "type": "string",
+                  "description": "Type of partnership: H=huwelijk, P=geregistreerd partnerschap",
+                  "enum": [
+                    "H",
+                    "P"
+                  ]
+                }
+              }
+            },
+            "facetable": false
+          },
+          "ouders": {
+            "type": "array",
+            "description": "Parent references",
+            "items": {
+              "type": "object",
+              "properties": {
+                "burgerservicenummer": {
+                  "type": "string",
+                  "description": "Parent's BSN"
+                },
+                "naam": {
+                  "type": "string",
+                  "description": "Parent's full name"
+                },
+                "ouderAanduiding": {
+                  "type": "string",
+                  "description": "Parent indicator: 1 or 2",
+                  "enum": [
+                    "1",
+                    "2"
+                  ]
+                }
+              }
+            },
+            "facetable": false
+          },
+          "kinderen": {
+            "type": "array",
+            "description": "Children references",
+            "items": {
+              "type": "object",
+              "properties": {
+                "burgerservicenummer": {
+                  "type": "string",
+                  "description": "Child's BSN"
+                },
+                "naam": {
+                  "type": "string",
+                  "description": "Child's full name"
+                }
+              }
+            },
+            "facetable": false
+          }
+        },
+        "hardValidation": false,
+        "searchable": true,
+        "authorization": {
+          "read": [
+            "public"
+          ]
+        }
+      }
+    },
+    "objects": [
+      {
+        "@self": {
+          "register": "brp",
+          "schema": "ingeschreven-persoon",
+          "slug": "suzanne-moulin"
+        },
+        "burgerservicenummer": "999993653",
+        "voornamen": "Suzanne",
+        "voorletters": "S.",
+        "geslachtsnaam": "Moulin",
+        "aanduidingNaamgebruik": "E",
+        "geslachtsaanduiding": "V",
+        "geboortedatum": "1985-12-01",
+        "geboorteplaats": "Lyon",
+        "geboorteland": "Frankrijk",
+        "geboortelandCode": "5002",
+        "nationaliteit": "Franse",
+        "nationaliteitCode": "0057",
+        "verblijfplaats": {
+          "straat": "Boterdiep",
+          "huisnummer": 31,
+          "postcode": "3077AW",
+          "woonplaats": "Rotterdam",
+          "adresseerbaarObjectIdentificatie": "0599010000208579",
+          "nummeraanduidingIdentificatie": "0599200000219678",
+          "functieAdres": "W"
+        },
+        "gemeenteVanInschrijving": "Rotterdam",
+        "gemeenteVanInschrijvingCode": "0599",
+        "datumInschrijvingInGemeente": "2010-03-15",
+        "immigratie": {
+          "datumVestiging": "2008-06-01",
+          "landVanHerkomst": "Frankrijk"
+        },
+        "partners": [],
+        "ouders": [],
+        "kinderen": []
+      },
+      {
+        "@self": {
+          "register": "brp",
+          "schema": "ingeschreven-persoon",
+          "slug": "stephan-janssen"
+        },
+        "burgerservicenummer": "999990627",
+        "voornamen": "Stephan",
+        "voorletters": "S.",
+        "geslachtsnaam": "Janssen",
+        "aanduidingNaamgebruik": "E",
+        "geslachtsaanduiding": "M",
+        "geboortedatum": "1978-04-22",
+        "geboorteplaats": "Amsterdam",
+        "geboorteland": "Nederland",
+        "geboortelandCode": "6030",
+        "nationaliteit": "Nederlandse",
+        "nationaliteitCode": "0001",
+        "verblijfplaats": {
+          "straat": "Keizersgracht",
+          "huisnummer": 100,
+          "postcode": "1015AA",
+          "woonplaats": "Amsterdam",
+          "adresseerbaarObjectIdentificatie": "0363010000100100",
+          "nummeraanduidingIdentificatie": "0363200000100100",
+          "functieAdres": "W"
+        },
+        "gemeenteVanInschrijving": "Amsterdam",
+        "gemeenteVanInschrijvingCode": "0363",
+        "datumInschrijvingInGemeente": "2005-08-01",
+        "partners": [],
+        "ouders": [],
+        "kinderen": [
+          {
+            "burgerservicenummer": "999997580",
+            "naam": "Nina Overvaart"
+          },
+          {
+            "burgerservicenummer": "999995145",
+            "naam": "Roos Janssen"
+          }
+        ]
+      },
+      {
+        "@self": {
+          "register": "brp",
+          "schema": "ingeschreven-persoon",
+          "slug": "nina-overvaart"
+        },
+        "burgerservicenummer": "999997580",
+        "voornamen": "Nina",
+        "voorletters": "N.",
+        "geslachtsnaam": "Overvaart",
+        "aanduidingNaamgebruik": "E",
+        "geslachtsaanduiding": "V",
+        "geboortedatum": "2005-09-14",
+        "geboorteplaats": "Amsterdam",
+        "geboorteland": "Nederland",
+        "geboortelandCode": "6030",
+        "nationaliteit": "Nederlandse",
+        "nationaliteitCode": "0001",
+        "verblijfplaats": {
+          "straat": "Keizersgracht",
+          "huisnummer": 100,
+          "postcode": "1015AA",
+          "woonplaats": "Amsterdam",
+          "adresseerbaarObjectIdentificatie": "0363010000100100",
+          "nummeraanduidingIdentificatie": "0363200000100100",
+          "functieAdres": "W"
+        },
+        "gemeenteVanInschrijving": "Amsterdam",
+        "gemeenteVanInschrijvingCode": "0363",
+        "datumInschrijvingInGemeente": "2005-09-14",
+        "partners": [],
+        "ouders": [
+          {
+            "burgerservicenummer": "999990627",
+            "naam": "Stephan Janssen",
+            "ouderAanduiding": "1"
+          }
+        ],
+        "kinderen": []
+      },
+      {
+        "@self": {
+          "register": "brp",
+          "schema": "ingeschreven-persoon",
+          "slug": "roos-janssen"
+        },
+        "burgerservicenummer": "999995145",
+        "voornamen": "Roos",
+        "voorletters": "R.",
+        "geslachtsnaam": "Janssen",
+        "aanduidingNaamgebruik": "E",
+        "geslachtsaanduiding": "V",
+        "geboortedatum": "2008-02-28",
+        "geboorteplaats": "Amsterdam",
+        "geboorteland": "Nederland",
+        "geboortelandCode": "6030",
+        "nationaliteit": "Nederlandse",
+        "nationaliteitCode": "0001",
+        "verblijfplaats": {
+          "straat": "Keizersgracht",
+          "huisnummer": 100,
+          "postcode": "1015AA",
+          "woonplaats": "Amsterdam",
+          "adresseerbaarObjectIdentificatie": "0363010000100100",
+          "nummeraanduidingIdentificatie": "0363200000100100",
+          "functieAdres": "W"
+        },
+        "gemeenteVanInschrijving": "Amsterdam",
+        "gemeenteVanInschrijvingCode": "0363",
+        "datumInschrijvingInGemeente": "2008-02-28",
+        "partners": [],
+        "ouders": [
+          {
+            "burgerservicenummer": "999990627",
+            "naam": "Stephan Janssen",
+            "ouderAanduiding": "1"
+          }
+        ],
+        "kinderen": []
+      },
+      {
+        "@self": {
+          "register": "brp",
+          "schema": "ingeschreven-persoon",
+          "slug": "albert-vogel"
+        },
+        "burgerservicenummer": "999992570",
+        "voornamen": "Albert",
+        "voorletters": "A.",
+        "geslachtsnaam": "Vogel",
+        "aanduidingNaamgebruik": "E",
+        "geslachtsaanduiding": "M",
+        "geboortedatum": "1975-07-10",
+        "geboorteplaats": "Utrecht",
+        "geboorteland": "Nederland",
+        "geboortelandCode": "6030",
+        "nationaliteit": "Nederlandse",
+        "nationaliteitCode": "0001",
+        "verblijfplaats": {
+          "straat": "Oude Gracht",
+          "huisnummer": 50,
+          "postcode": "3511AR",
+          "woonplaats": "Utrecht",
+          "adresseerbaarObjectIdentificatie": "0344010000050050",
+          "nummeraanduidingIdentificatie": "0344200000050050",
+          "functieAdres": "W"
+        },
+        "gemeenteVanInschrijving": "Utrecht",
+        "gemeenteVanInschrijvingCode": "0344",
+        "datumInschrijvingInGemeente": "2000-01-15",
+        "partners": [
+          {
+            "burgerservicenummer": "111222333",
+            "naam": "Elisabeth Vogel-de Groot",
+            "soortVerbintenis": "H"
+          }
+        ],
+        "ouders": [
+          {
+            "burgerservicenummer": "123456782",
+            "naam": "Hendrikus Vogel",
+            "ouderAanduiding": "1"
+          },
+          {
+            "burgerservicenummer": "900000004",
+            "naam": "Maria Vogel-Smit",
+            "ouderAanduiding": "2"
+          }
+        ],
+        "kinderen": [
+          {
+            "burgerservicenummer": "999994116",
+            "naam": "Katinka Vogel"
+          }
+        ]
+      },
+      {
+        "@self": {
+          "register": "brp",
+          "schema": "ingeschreven-persoon",
+          "slug": "katinka-vogel"
+        },
+        "burgerservicenummer": "999994116",
+        "voornamen": "Katinka",
+        "voorletters": "K.",
+        "geslachtsnaam": "Vogel",
+        "aanduidingNaamgebruik": "E",
+        "geslachtsaanduiding": "V",
+        "geboortedatum": "2010-11-03",
+        "geboorteplaats": "Utrecht",
+        "geboorteland": "Nederland",
+        "geboortelandCode": "6030",
+        "nationaliteit": "Nederlandse",
+        "nationaliteitCode": "0001",
+        "verblijfplaats": {
+          "straat": "Oude Gracht",
+          "huisnummer": 50,
+          "postcode": "3511AR",
+          "woonplaats": "Utrecht",
+          "adresseerbaarObjectIdentificatie": "0344010000050050",
+          "nummeraanduidingIdentificatie": "0344200000050050",
+          "functieAdres": "W"
+        },
+        "gemeenteVanInschrijving": "Utrecht",
+        "gemeenteVanInschrijvingCode": "0344",
+        "datumInschrijvingInGemeente": "2010-11-03",
+        "partners": [],
+        "ouders": [
+          {
+            "burgerservicenummer": "999992570",
+            "naam": "Albert Vogel",
+            "ouderAanduiding": "1"
+          },
+          {
+            "burgerservicenummer": "111222333",
+            "naam": "Elisabeth Vogel-de Groot",
+            "ouderAanduiding": "2"
+          }
+        ],
+        "kinderen": []
+      },
+      {
+        "@self": {
+          "register": "brp",
+          "schema": "ingeschreven-persoon",
+          "slug": "brigitte-moulin"
+        },
+        "burgerservicenummer": "999995376",
+        "voornamen": "Brigitte",
+        "voorletters": "B.",
+        "geslachtsnaam": "Moulin",
+        "aanduidingNaamgebruik": "V",
+        "geslachtsaanduiding": "V",
+        "geboortedatum": "1980-03-18",
+        "geboorteplaats": "Parijs",
+        "geboorteland": "Frankrijk",
+        "geboortelandCode": "5002",
+        "nationaliteit": "Franse",
+        "nationaliteitCode": "0057",
+        "verblijfplaats": {
+          "straat": "Buitenhof",
+          "huisnummer": 1,
+          "postcode": "2513AH",
+          "woonplaats": "Den Haag",
+          "adresseerbaarObjectIdentificatie": "0518010000610966",
+          "nummeraanduidingIdentificatie": "0518200000610966",
+          "functieAdres": "W"
+        },
+        "gemeenteVanInschrijving": "'s-Gravenhage",
+        "gemeenteVanInschrijvingCode": "0518",
+        "datumInschrijvingInGemeente": "2007-09-01",
+        "immigratie": {
+          "datumVestiging": "2007-09-01",
+          "landVanHerkomst": "Frankrijk"
+        },
+        "partners": [
+          {
+            "burgerservicenummer": "800000006",
+            "naam": "Jean Rousseau",
+            "soortVerbintenis": "H"
+          }
+        ],
+        "ouders": [],
+        "kinderen": []
+      },
+      {
+        "@self": {
+          "register": "brp",
+          "schema": "ingeschreven-persoon",
+          "slug": "astrid-abels"
+        },
+        "burgerservicenummer": "999999655",
+        "voornamen": "Astrid",
+        "voorletters": "A.",
+        "geslachtsnaam": "Abels",
+        "aanduidingNaamgebruik": "E",
+        "geslachtsaanduiding": "V",
+        "geboortedatum": "1960-05-20",
+        "geboorteplaats": "Den Haag",
+        "geboorteland": "Nederland",
+        "geboortelandCode": "6030",
+        "nationaliteit": "Nederlandse",
+        "nationaliteitCode": "0001",
+        "verblijfplaats": {
+          "straat": "Laan van Meerdervoort",
+          "huisnummer": 200,
+          "postcode": "2517BJ",
+          "woonplaats": "Den Haag",
+          "adresseerbaarObjectIdentificatie": "0518010000200200",
+          "nummeraanduidingIdentificatie": "0518200000200200",
+          "functieAdres": "W"
+        },
+        "gemeenteVanInschrijving": "'s-Gravenhage",
+        "gemeenteVanInschrijvingCode": "0518",
+        "datumInschrijvingInGemeente": "1985-01-10",
+        "overlijden": {
+          "datum": "2020-06-06",
+          "plaats": "Den Haag"
+        },
+        "partners": [],
+        "ouders": [],
+        "kinderen": []
+      },
+      {
+        "@self": {
+          "register": "brp",
+          "schema": "ingeschreven-persoon",
+          "slug": "thanatos-olympos"
+        },
+        "burgerservicenummer": "999995091",
+        "voornamen": "Thanatos",
+        "voorletters": "T.",
+        "geslachtsnaam": "Olympos",
+        "aanduidingNaamgebruik": "E",
+        "geslachtsaanduiding": "M",
+        "geboortedatum": "1965-08-15",
+        "geboorteplaats": "Athene",
+        "geboorteland": "Griekenland",
+        "geboortelandCode": "6003",
+        "nationaliteit": "Griekse",
+        "nationaliteitCode": "0059",
+        "verblijfplaats": {
+          "straat": "Grote Markt",
+          "huisnummer": 1,
+          "postcode": "9711LV",
+          "woonplaats": "Groningen",
+          "adresseerbaarObjectIdentificatie": "0014010000001001",
+          "nummeraanduidingIdentificatie": "0014200000001001",
+          "functieAdres": "W"
+        },
+        "gemeenteVanInschrijving": "Groningen",
+        "gemeenteVanInschrijvingCode": "0014",
+        "datumInschrijvingInGemeente": "1989-11-20",
+        "immigratie": {
+          "datumVestiging": "1989-11-20",
+          "landVanHerkomst": "Griekenland"
+        },
+        "partners": [],
+        "ouders": [],
+        "kinderen": []
+      },
+      {
+        "@self": {
+          "register": "brp",
+          "schema": "ingeschreven-persoon",
+          "slug": "jan-kees-brouwers"
+        },
+        "burgerservicenummer": "999993355",
+        "voornamen": "Jan-Kees",
+        "voorletters": "J.K.",
+        "geslachtsnaam": "Brouwers",
+        "aanduidingNaamgebruik": "E",
+        "geslachtsaanduiding": "M",
+        "geboortedatum": "1990-01-05",
+        "geboorteplaats": "Almere",
+        "geboorteland": "Nederland",
+        "geboortelandCode": "6030",
+        "nationaliteit": "Nederlandse",
+        "nationaliteitCode": "0001",
+        "verblijfplaats": {
+          "straat": "Stadshuisplein",
+          "huisnummer": 1,
+          "postcode": "1315HR",
+          "woonplaats": "Almere",
+          "adresseerbaarObjectIdentificatie": "0034010000001001",
+          "nummeraanduidingIdentificatie": "0034200000001001",
+          "functieAdres": "W"
+        },
+        "gemeenteVanInschrijving": "Almere",
+        "gemeenteVanInschrijvingCode": "0034",
+        "datumInschrijvingInGemeente": "1990-01-05",
+        "partners": [],
+        "ouders": [],
+        "kinderen": []
+      },
+      {
+        "@self": {
+          "register": "brp",
+          "schema": "ingeschreven-persoon",
+          "slug": "mira-maasland"
+        },
+        "burgerservicenummer": "999970033",
+        "voornamen": "Mira",
+        "voorletters": "M.",
+        "geslachtsnaam": "Maasland",
+        "aanduidingNaamgebruik": "E",
+        "geslachtsaanduiding": "V",
+        "geboortedatum": "2017-01-01",
+        "geboorteplaats": "Enschede",
+        "geboorteland": "Nederland",
+        "geboortelandCode": "6030",
+        "nationaliteit": "Nederlandse",
+        "nationaliteitCode": "0001",
+        "verblijfplaats": {
+          "straat": "Marktplein",
+          "huisnummer": 15,
+          "postcode": "7511GD",
+          "woonplaats": "Enschede",
+          "adresseerbaarObjectIdentificatie": "0153010000015015",
+          "nummeraanduidingIdentificatie": "0153200000015015",
+          "functieAdres": "W"
+        },
+        "gemeenteVanInschrijving": "Enschede",
+        "gemeenteVanInschrijvingCode": "0153",
+        "datumInschrijvingInGemeente": "2017-01-01",
+        "partners": [],
+        "ouders": [
+          {
+            "burgerservicenummer": "700000008",
+            "naam": "Femke Maasland",
+            "ouderAanduiding": "1"
+          }
+        ],
+        "kinderen": []
+      },
+      {
+        "@self": {
+          "register": "brp",
+          "schema": "ingeschreven-persoon",
+          "slug": "meike-maasland"
+        },
+        "burgerservicenummer": "999970045",
+        "voornamen": "Meike",
+        "voorletters": "M.",
+        "geslachtsnaam": "Maasland",
+        "aanduidingNaamgebruik": "E",
+        "geslachtsaanduiding": "V",
+        "geboortedatum": "2019-06-15",
+        "geboorteplaats": "Enschede",
+        "geboorteland": "Nederland",
+        "geboortelandCode": "6030",
+        "nationaliteit": "Nederlandse",
+        "nationaliteitCode": "0001",
+        "verblijfplaats": {
+          "straat": "Marktplein",
+          "huisnummer": 15,
+          "postcode": "7511GD",
+          "woonplaats": "Enschede",
+          "adresseerbaarObjectIdentificatie": "0153010000015015",
+          "nummeraanduidingIdentificatie": "0153200000015015",
+          "functieAdres": "W"
+        },
+        "gemeenteVanInschrijving": "Enschede",
+        "gemeenteVanInschrijvingCode": "0153",
+        "datumInschrijvingInGemeente": "2019-06-15",
+        "partners": [],
+        "ouders": [
+          {
+            "burgerservicenummer": "700000008",
+            "naam": "Femke Maasland",
+            "ouderAanduiding": "1"
+          }
+        ],
+        "kinderen": []
+      },
+      {
+        "@self": {
+          "register": "brp",
+          "schema": "ingeschreven-persoon",
+          "slug": "marianne-de-jong"
+        },
+        "burgerservicenummer": "999990949",
+        "voornamen": "Marianne",
+        "voorletters": "M.",
+        "voorvoegsel": "de",
+        "geslachtsnaam": "Jong",
+        "aanduidingNaamgebruik": "E",
+        "geslachtsaanduiding": "V",
+        "geboortedatum": "1972-03-28",
+        "geboorteplaats": "Maastricht",
+        "geboorteland": "Nederland",
+        "geboortelandCode": "6030",
+        "nationaliteit": "Nederlandse",
+        "nationaliteitCode": "0001",
+        "verblijfplaats": {
+          "straat": "Vrijthof",
+          "huisnummer": 46,
+          "postcode": "6211LE",
+          "woonplaats": "Maastricht",
+          "adresseerbaarObjectIdentificatie": "0935010000046046",
+          "nummeraanduidingIdentificatie": "0935200000046046",
+          "functieAdres": "W"
+        },
+        "gemeenteVanInschrijving": "Maastricht",
+        "gemeenteVanInschrijvingCode": "0935",
+        "datumInschrijvingInGemeente": "1972-03-28",
+        "partners": [],
+        "ouders": [],
+        "kinderen": []
+      },
+      {
+        "@self": {
+          "register": "brp",
+          "schema": "ingeschreven-persoon",
+          "slug": "anna-maria-petra-wesseling"
+        },
+        "burgerservicenummer": "999990196",
+        "voornamen": "Anna Maria Petra",
+        "voorletters": "A.M.P.",
+        "geslachtsnaam": "Wesseling",
+        "aanduidingNaamgebruik": "E",
+        "geslachtsaanduiding": "V",
+        "geboortedatum": "1988-11-12",
+        "geboorteplaats": "Amsterdam",
+        "geboorteland": "Nederland",
+        "geboortelandCode": "6030",
+        "nationaliteit": "Nederlandse",
+        "nationaliteitCode": "0001",
+        "verblijfplaats": {
+          "straat": "Herengracht",
+          "huisnummer": 502,
+          "postcode": "1017CB",
+          "woonplaats": "Amsterdam",
+          "adresseerbaarObjectIdentificatie": "0363010000502502",
+          "nummeraanduidingIdentificatie": "0363200000502502",
+          "functieAdres": "W"
+        },
+        "gemeenteVanInschrijving": "Amsterdam",
+        "gemeenteVanInschrijvingCode": "0363",
+        "datumInschrijvingInGemeente": "1988-11-12",
+        "partners": [],
+        "ouders": [],
+        "kinderen": []
+      },
+      {
+        "@self": {
+          "register": "brp",
+          "schema": "ingeschreven-persoon",
+          "slug": "mirjam-goulouse"
+        },
+        "burgerservicenummer": "999994025",
+        "voornamen": "Mirjam",
+        "voorletters": "M.",
+        "geslachtsnaam": "Goulouse",
+        "aanduidingNaamgebruik": "E",
+        "geslachtsaanduiding": "V",
+        "geboortedatum": "1992-07-04",
+        "geboorteplaats": "Rotterdam",
+        "geboorteland": "Nederland",
+        "geboortelandCode": "6030",
+        "nationaliteit": "Nederlandse",
+        "nationaliteitCode": "0001",
+        "verblijfplaats": {
+          "straat": "Coolsingel",
+          "huisnummer": 40,
+          "postcode": "3011AD",
+          "woonplaats": "Rotterdam",
+          "adresseerbaarObjectIdentificatie": "0599010000040040",
+          "nummeraanduidingIdentificatie": "0599200000040040",
+          "functieAdres": "W"
+        },
+        "gemeenteVanInschrijving": "Rotterdam",
+        "gemeenteVanInschrijvingCode": "0599",
+        "datumInschrijvingInGemeente": "1992-07-04",
+        "partners": [],
+        "ouders": [],
+        "kinderen": []
+      },
+      {
+        "@self": {
+          "register": "brp",
+          "schema": "ingeschreven-persoon",
+          "slug": "margriet-maassen"
+        },
+        "burgerservicenummer": "999990044",
+        "voornamen": "Margriet",
+        "voorletters": "M.",
+        "geslachtsnaam": "Maassen",
+        "aanduidingNaamgebruik": "E",
+        "geslachtsaanduiding": "V",
+        "geboortedatum": "1968-02-14",
+        "geboorteplaats": "Den Haag",
+        "geboorteland": "Nederland",
+        "geboortelandCode": "6030",
+        "nationaliteit": "Nederlandse",
+        "nationaliteitCode": "0001",
+        "verblijfplaats": {
+          "straat": "Noordeinde",
+          "huisnummer": 68,
+          "postcode": "2514GL",
+          "woonplaats": "Den Haag",
+          "adresseerbaarObjectIdentificatie": "0518010000068068",
+          "nummeraanduidingIdentificatie": "0518200000068068",
+          "functieAdres": "W"
+        },
+        "gemeenteVanInschrijving": "'s-Gravenhage",
+        "gemeenteVanInschrijvingCode": "0518",
+        "datumInschrijvingInGemeente": "1968-02-14",
+        "partners": [],
+        "ouders": [],
+        "kinderen": []
+      },
+      {
+        "@self": {
+          "register": "brp",
+          "schema": "ingeschreven-persoon",
+          "slug": "zach-precise"
+        },
+        "burgerservicenummer": "999995273",
+        "voornamen": "Zach",
+        "voorletters": "Z.",
+        "geslachtsnaam": "Precise",
+        "aanduidingNaamgebruik": "E",
+        "geslachtsaanduiding": "M",
+        "geboortedatum": "1983-09-30",
+        "geboorteplaats": "Chicago",
+        "geboorteland": "Verenigde Staten van Amerika",
+        "geboortelandCode": "6014",
+        "nationaliteit": "Amerikaans burger",
+        "nationaliteitCode": "0223",
+        "verblijfplaats": {
+          "straat": "Oudegracht",
+          "huisnummer": 120,
+          "postcode": "3511AX",
+          "woonplaats": "Utrecht",
+          "adresseerbaarObjectIdentificatie": "0344010000120120",
+          "nummeraanduidingIdentificatie": "0344200000120120",
+          "functieAdres": "W"
+        },
+        "gemeenteVanInschrijving": "Utrecht",
+        "gemeenteVanInschrijvingCode": "0344",
+        "datumInschrijvingInGemeente": "2012-04-01",
+        "immigratie": {
+          "datumVestiging": "2012-04-01",
+          "landVanHerkomst": "Verenigde Staten van Amerika"
+        },
+        "partners": [],
+        "ouders": [],
+        "kinderen": []
+      },
+      {
+        "@self": {
+          "register": "brp",
+          "schema": "ingeschreven-persoon",
+          "slug": "jan-de-cuykelaer"
+        },
+        "burgerservicenummer": "999990792",
+        "voornamen": "Jan",
+        "voorletters": "J.",
+        "voorvoegsel": "de",
+        "geslachtsnaam": "Cuykelaer",
+        "aanduidingNaamgebruik": "E",
+        "geslachtsaanduiding": "M",
+        "geboortedatum": "1955-12-25",
+        "geboorteplaats": "Groningen",
+        "geboorteland": "Nederland",
+        "geboortelandCode": "6030",
+        "nationaliteit": "Nederlandse",
+        "nationaliteitCode": "0001",
+        "verblijfplaats": {
+          "straat": "Oosterstraat",
+          "huisnummer": 75,
+          "postcode": "9711NR",
+          "woonplaats": "Groningen",
+          "adresseerbaarObjectIdentificatie": "0014010000075075",
+          "nummeraanduidingIdentificatie": "0014200000075075",
+          "functieAdres": "W"
+        },
+        "gemeenteVanInschrijving": "Groningen",
+        "gemeenteVanInschrijvingCode": "0014",
+        "datumInschrijvingInGemeente": "1955-12-25",
+        "partners": [],
+        "ouders": [],
+        "kinderen": []
+      },
+      {
+        "@self": {
+          "register": "brp",
+          "schema": "ingeschreven-persoon",
+          "slug": "waclaw-komar"
+        },
+        "burgerservicenummer": "999996915",
+        "voornamen": "Waclaw",
+        "voorletters": "W.",
+        "geslachtsnaam": "Komar",
+        "aanduidingNaamgebruik": "E",
+        "geslachtsaanduiding": "M",
+        "geboortedatum": "1979-04-01",
+        "geboorteplaats": "Warschau",
+        "geboorteland": "Polen",
+        "geboortelandCode": "6033",
+        "nationaliteit": "Nederlandse",
+        "nationaliteitCode": "0001",
+        "verblijfplaats": {
+          "straat": "Damrak",
+          "huisnummer": 70,
+          "postcode": "1012LM",
+          "woonplaats": "Amsterdam",
+          "adresseerbaarObjectIdentificatie": "0363010000070070",
+          "nummeraanduidingIdentificatie": "0363200000070070",
+          "functieAdres": "W"
+        },
+        "gemeenteVanInschrijving": "Amsterdam",
+        "gemeenteVanInschrijvingCode": "0363",
+        "datumInschrijvingInGemeente": "2004-06-15",
+        "immigratie": {
+          "datumVestiging": "2004-06-15",
+          "landVanHerkomst": "Polen"
+        },
+        "partners": [],
+        "ouders": [],
+        "kinderen": []
+      },
+      {
+        "@self": {
+          "register": "brp",
+          "schema": "ingeschreven-persoon",
+          "slug": "malikastes-vulkovasose"
+        },
+        "burgerservicenummer": "999990457",
+        "voornamen": "Malikastes",
+        "voorletters": "M.",
+        "geslachtsnaam": "Vulkovasose",
+        "aanduidingNaamgebruik": "E",
+        "geslachtsaanduiding": "M",
+        "geboortedatum": "1987-06-22",
+        "geboorteplaats": "Skopje",
+        "geboorteland": "Noord-Macedonie",
+        "geboortelandCode": "6040",
+        "nationaliteit": "Nederlandse",
+        "nationaliteitCode": "0001",
+        "verblijfplaats": {
+          "straat": "Grote Markt",
+          "huisnummer": 8,
+          "postcode": "1315HR",
+          "woonplaats": "Almere",
+          "adresseerbaarObjectIdentificatie": "0034010000008008",
+          "nummeraanduidingIdentificatie": "0034200000008008",
+          "functieAdres": "W"
+        },
+        "gemeenteVanInschrijving": "Almere",
+        "gemeenteVanInschrijvingCode": "0034",
+        "datumInschrijvingInGemeente": "2009-03-10",
+        "immigratie": {
+          "datumVestiging": "2009-03-10",
+          "landVanHerkomst": "Noord-Macedonie"
+        },
+        "partners": [],
+        "ouders": [],
+        "kinderen": []
+      },
+      {
+        "@self": {
+          "register": "brp",
+          "schema": "ingeschreven-persoon",
+          "slug": "jean-rousseau"
+        },
+        "burgerservicenummer": "800000006",
+        "voornamen": "Jean",
+        "voorletters": "J.",
+        "geslachtsnaam": "Rousseau",
+        "aanduidingNaamgebruik": "E",
+        "geslachtsaanduiding": "M",
+        "geboortedatum": "1977-11-08",
+        "geboorteplaats": "Marseille",
+        "geboorteland": "Frankrijk",
+        "geboortelandCode": "5002",
+        "nationaliteit": "Franse",
+        "nationaliteitCode": "0057",
+        "verblijfplaats": {
+          "straat": "Buitenhof",
+          "huisnummer": 1,
+          "postcode": "2513AH",
+          "woonplaats": "Den Haag",
+          "adresseerbaarObjectIdentificatie": "0518010000610966",
+          "nummeraanduidingIdentificatie": "0518200000610966",
+          "functieAdres": "W"
+        },
+        "gemeenteVanInschrijving": "'s-Gravenhage",
+        "gemeenteVanInschrijvingCode": "0518",
+        "datumInschrijvingInGemeente": "2007-09-01",
+        "immigratie": {
+          "datumVestiging": "2007-09-01",
+          "landVanHerkomst": "Frankrijk"
+        },
+        "partners": [
+          {
+            "burgerservicenummer": "999995376",
+            "naam": "Brigitte Moulin",
+            "soortVerbintenis": "H"
+          }
+        ],
+        "ouders": [],
+        "kinderen": []
+      },
+      {
+        "@self": {
+          "register": "brp",
+          "schema": "ingeschreven-persoon",
+          "slug": "elisabeth-vogel-de-groot"
+        },
+        "burgerservicenummer": "111222333",
+        "voornamen": "Elisabeth",
+        "voorletters": "E.",
+        "voorvoegsel": "de",
+        "geslachtsnaam": "Groot",
+        "aanduidingNaamgebruik": "V",
+        "geslachtsaanduiding": "V",
+        "geboortedatum": "1977-02-14",
+        "geboorteplaats": "Utrecht",
+        "geboorteland": "Nederland",
+        "geboortelandCode": "6030",
+        "nationaliteit": "Nederlandse",
+        "nationaliteitCode": "0001",
+        "verblijfplaats": {
+          "straat": "Oude Gracht",
+          "huisnummer": 50,
+          "postcode": "3511AR",
+          "woonplaats": "Utrecht",
+          "adresseerbaarObjectIdentificatie": "0344010000050050",
+          "nummeraanduidingIdentificatie": "0344200000050050",
+          "functieAdres": "W"
+        },
+        "gemeenteVanInschrijving": "Utrecht",
+        "gemeenteVanInschrijvingCode": "0344",
+        "datumInschrijvingInGemeente": "2000-01-15",
+        "partners": [
+          {
+            "burgerservicenummer": "999992570",
+            "naam": "Albert Vogel",
+            "soortVerbintenis": "H"
+          }
+        ],
+        "ouders": [],
+        "kinderen": [
+          {
+            "burgerservicenummer": "999994116",
+            "naam": "Katinka Vogel"
+          }
+        ]
+      },
+      {
+        "@self": {
+          "register": "brp",
+          "schema": "ingeschreven-persoon",
+          "slug": "hendrikus-vogel"
+        },
+        "burgerservicenummer": "123456782",
+        "voornamen": "Hendrikus",
+        "voorletters": "H.",
+        "geslachtsnaam": "Vogel",
+        "aanduidingNaamgebruik": "E",
+        "geslachtsaanduiding": "M",
+        "geboortedatum": "1945-04-05",
+        "geboorteplaats": "Amersfoort",
+        "geboorteland": "Nederland",
+        "geboortelandCode": "6030",
+        "nationaliteit": "Nederlandse",
+        "nationaliteitCode": "0001",
+        "verblijfplaats": {
+          "straat": "Wittevrouwenstraat",
+          "huisnummer": 12,
+          "postcode": "3512CS",
+          "woonplaats": "Utrecht",
+          "adresseerbaarObjectIdentificatie": "0344010000012012",
+          "nummeraanduidingIdentificatie": "0344200000012012",
+          "functieAdres": "W"
+        },
+        "gemeenteVanInschrijving": "Utrecht",
+        "gemeenteVanInschrijvingCode": "0344",
+        "datumInschrijvingInGemeente": "1970-05-01",
+        "partners": [
+          {
+            "burgerservicenummer": "900000004",
+            "naam": "Maria Vogel-Smit",
+            "soortVerbintenis": "H"
+          }
+        ],
+        "ouders": [],
+        "kinderen": [
+          {
+            "burgerservicenummer": "999992570",
+            "naam": "Albert Vogel"
+          }
+        ]
+      },
+      {
+        "@self": {
+          "register": "brp",
+          "schema": "ingeschreven-persoon",
+          "slug": "maria-vogel-smit"
+        },
+        "burgerservicenummer": "900000004",
+        "voornamen": "Maria",
+        "voorletters": "M.",
+        "geslachtsnaam": "Smit",
+        "aanduidingNaamgebruik": "V",
+        "geslachtsaanduiding": "V",
+        "geboortedatum": "1948-09-17",
+        "geboorteplaats": "Utrecht",
+        "geboorteland": "Nederland",
+        "geboortelandCode": "6030",
+        "nationaliteit": "Nederlandse",
+        "nationaliteitCode": "0001",
+        "verblijfplaats": {
+          "straat": "Wittevrouwenstraat",
+          "huisnummer": 12,
+          "postcode": "3512CS",
+          "woonplaats": "Utrecht",
+          "adresseerbaarObjectIdentificatie": "0344010000012012",
+          "nummeraanduidingIdentificatie": "0344200000012012",
+          "functieAdres": "W"
+        },
+        "gemeenteVanInschrijving": "Utrecht",
+        "gemeenteVanInschrijvingCode": "0344",
+        "datumInschrijvingInGemeente": "1970-05-01",
+        "partners": [
+          {
+            "burgerservicenummer": "123456782",
+            "naam": "Hendrikus Vogel",
+            "soortVerbintenis": "H"
+          }
+        ],
+        "ouders": [],
+        "kinderen": [
+          {
+            "burgerservicenummer": "999992570",
+            "naam": "Albert Vogel"
+          }
+        ]
+      },
+      {
+        "@self": {
+          "register": "brp",
+          "schema": "ingeschreven-persoon",
+          "slug": "femke-maasland"
+        },
+        "burgerservicenummer": "700000008",
+        "voornamen": "Femke",
+        "voorletters": "F.",
+        "geslachtsnaam": "Maasland",
+        "aanduidingNaamgebruik": "E",
+        "geslachtsaanduiding": "V",
+        "geboortedatum": "1990-08-22",
+        "geboorteplaats": "Enschede",
+        "geboorteland": "Nederland",
+        "geboortelandCode": "6030",
+        "nationaliteit": "Nederlandse",
+        "nationaliteitCode": "0001",
+        "verblijfplaats": {
+          "straat": "Marktplein",
+          "huisnummer": 15,
+          "postcode": "7511GD",
+          "woonplaats": "Enschede",
+          "adresseerbaarObjectIdentificatie": "0153010000015015",
+          "nummeraanduidingIdentificatie": "0153200000015015",
+          "functieAdres": "W"
+        },
+        "gemeenteVanInschrijving": "Enschede",
+        "gemeenteVanInschrijvingCode": "0153",
+        "datumInschrijvingInGemeente": "1990-08-22",
+        "partners": [],
+        "ouders": [],
+        "kinderen": [
+          {
+            "burgerservicenummer": "999970033",
+            "naam": "Mira Maasland"
+          },
+          {
+            "burgerservicenummer": "999970045",
+            "naam": "Meike Maasland"
+          }
+        ]
+      },
+      {
+        "@self": {
+          "register": "brp",
+          "schema": "ingeschreven-persoon",
+          "slug": "willem-van-den-berg"
+        },
+        "burgerservicenummer": "555555525",
+        "voornamen": "Willem",
+        "voorletters": "W.",
+        "voorvoegsel": "van den",
+        "geslachtsnaam": "Berg",
+        "aanduidingNaamgebruik": "E",
+        "geslachtsaanduiding": "M",
+        "geboortedatum": "1970-06-15",
+        "geboorteplaats": "Rotterdam",
+        "geboorteland": "Nederland",
+        "geboortelandCode": "6030",
+        "nationaliteit": "Nederlandse",
+        "nationaliteitCode": "0001",
+        "verblijfplaats": {
+          "straat": "Witte de Withstraat",
+          "huisnummer": 55,
+          "postcode": "3012BM",
+          "woonplaats": "Rotterdam",
+          "adresseerbaarObjectIdentificatie": "0599010000055055",
+          "nummeraanduidingIdentificatie": "0599200000055055",
+          "functieAdres": "W"
+        },
+        "gemeenteVanInschrijving": "Rotterdam",
+        "gemeenteVanInschrijvingCode": "0599",
+        "datumInschrijvingInGemeente": "1995-03-01",
+        "partners": [
+          {
+            "burgerservicenummer": "666666623",
+            "naam": "Annelies Bakker",
+            "soortVerbintenis": "H"
+          }
+        ],
+        "ouders": [],
+        "kinderen": []
+      },
+      {
+        "@self": {
+          "register": "brp",
+          "schema": "ingeschreven-persoon",
+          "slug": "annelies-bakker"
+        },
+        "burgerservicenummer": "666666623",
+        "voornamen": "Annelies",
+        "voorletters": "A.",
+        "geslachtsnaam": "Bakker",
+        "aanduidingNaamgebruik": "N",
+        "geslachtsaanduiding": "V",
+        "geboortedatum": "1973-10-09",
+        "geboorteplaats": "Dordrecht",
+        "geboorteland": "Nederland",
+        "geboortelandCode": "6030",
+        "nationaliteit": "Nederlandse",
+        "nationaliteitCode": "0001",
+        "verblijfplaats": {
+          "straat": "Witte de Withstraat",
+          "huisnummer": 55,
+          "postcode": "3012BM",
+          "woonplaats": "Rotterdam",
+          "adresseerbaarObjectIdentificatie": "0599010000055055",
+          "nummeraanduidingIdentificatie": "0599200000055055",
+          "functieAdres": "W"
+        },
+        "gemeenteVanInschrijving": "Rotterdam",
+        "gemeenteVanInschrijvingCode": "0599",
+        "datumInschrijvingInGemeente": "1995-03-01",
+        "partners": [
+          {
+            "burgerservicenummer": "555555525",
+            "naam": "Willem van den Berg",
+            "soortVerbintenis": "H"
+          }
+        ],
+        "ouders": [],
+        "kinderen": []
+      },
+      {
+        "@self": {
+          "register": "brp",
+          "schema": "ingeschreven-persoon",
+          "slug": "pieter-visser"
+        },
+        "burgerservicenummer": "444444440",
+        "voornamen": "Pieter",
+        "voorletters": "P.",
+        "geslachtsnaam": "Visser",
+        "aanduidingNaamgebruik": "E",
+        "geslachtsaanduiding": "M",
+        "geboortedatum": "1982-01-20",
+        "geboorteplaats": "Groningen",
+        "geboorteland": "Nederland",
+        "geboortelandCode": "6030",
+        "nationaliteit": "Nederlandse",
+        "nationaliteitCode": "0001",
+        "verblijfplaats": {
+          "straat": "Herestraat",
+          "huisnummer": 33,
+          "postcode": "9711LG",
+          "woonplaats": "Groningen",
+          "adresseerbaarObjectIdentificatie": "0014010000033033",
+          "nummeraanduidingIdentificatie": "0014200000033033",
+          "functieAdres": "W"
+        },
+        "gemeenteVanInschrijving": "Groningen",
+        "gemeenteVanInschrijvingCode": "0014",
+        "datumInschrijvingInGemeente": "2010-07-01",
+        "partners": [],
+        "ouders": [],
+        "kinderen": []
+      },
+      {
+        "@self": {
+          "register": "brp",
+          "schema": "ingeschreven-persoon",
+          "slug": "fatima-el-amrani"
+        },
+        "burgerservicenummer": "333333329",
+        "voornamen": "Fatima",
+        "voorletters": "F.",
+        "geslachtsnaam": "El Amrani",
+        "aanduidingNaamgebruik": "E",
+        "geslachtsaanduiding": "V",
+        "geboortedatum": "1991-05-12",
+        "geboorteplaats": "Casablanca",
+        "geboorteland": "Marokko",
+        "geboortelandCode": "6029",
+        "nationaliteit": "Nederlandse",
+        "nationaliteitCode": "0001",
+        "verblijfplaats": {
+          "straat": "Javastraat",
+          "huisnummer": 88,
+          "postcode": "1094HN",
+          "woonplaats": "Amsterdam",
+          "adresseerbaarObjectIdentificatie": "0363010000088088",
+          "nummeraanduidingIdentificatie": "0363200000088088",
+          "functieAdres": "W"
+        },
+        "gemeenteVanInschrijving": "Amsterdam",
+        "gemeenteVanInschrijvingCode": "0363",
+        "datumInschrijvingInGemeente": "1997-09-01",
+        "immigratie": {
+          "datumVestiging": "1997-09-01",
+          "landVanHerkomst": "Marokko"
+        },
+        "partners": [],
+        "ouders": [],
+        "kinderen": []
+      },
+      {
+        "@self": {
+          "register": "brp",
+          "schema": "ingeschreven-persoon",
+          "slug": "hendrik-jan-mulder"
+        },
+        "burgerservicenummer": "222222219",
+        "voornamen": "Hendrik Jan",
+        "voorletters": "H.J.",
+        "geslachtsnaam": "Mulder",
+        "aanduidingNaamgebruik": "E",
+        "geslachtsaanduiding": "M",
+        "geboortedatum": "1958-03-30",
+        "geboorteplaats": "Almere",
+        "geboorteland": "Nederland",
+        "geboortelandCode": "6030",
+        "nationaliteit": "Nederlandse",
+        "nationaliteitCode": "0001",
+        "verblijfplaats": {
+          "straat": "Markerkant",
+          "huisnummer": 10,
+          "postcode": "1316AA",
+          "woonplaats": "Almere",
+          "adresseerbaarObjectIdentificatie": "0034010000010010",
+          "nummeraanduidingIdentificatie": "0034200000010010",
+          "functieAdres": "W"
+        },
+        "gemeenteVanInschrijving": "Almere",
+        "gemeenteVanInschrijvingCode": "0034",
+        "datumInschrijvingInGemeente": "1986-04-01",
+        "partners": [],
+        "ouders": [],
+        "kinderen": []
+      },
+      {
+        "@self": {
+          "register": "brp",
+          "schema": "ingeschreven-persoon",
+          "slug": "sophia-van-der-linden"
+        },
+        "burgerservicenummer": "777777708",
+        "voornamen": "Sophia",
+        "voorletters": "S.",
+        "voorvoegsel": "van der",
+        "geslachtsnaam": "Linden",
+        "aanduidingNaamgebruik": "E",
+        "geslachtsaanduiding": "V",
+        "geboortedatum": "1995-12-03",
+        "geboorteplaats": "Leiden",
+        "geboorteland": "Nederland",
+        "geboortelandCode": "6030",
+        "nationaliteit": "Nederlandse",
+        "nationaliteitCode": "0001",
+        "verblijfplaats": {
+          "straat": "Rapenburg",
+          "huisnummer": 73,
+          "postcode": "2311GJ",
+          "woonplaats": "Leiden",
+          "adresseerbaarObjectIdentificatie": "0546010000073073",
+          "nummeraanduidingIdentificatie": "0546200000073073",
+          "functieAdres": "W"
+        },
+        "gemeenteVanInschrijving": "Leiden",
+        "gemeenteVanInschrijvingCode": "0546",
+        "datumInschrijvingInGemeente": "2018-09-01",
+        "partners": [],
+        "ouders": [],
+        "kinderen": []
+      },
+      {
+        "@self": {
+          "register": "brp",
+          "schema": "ingeschreven-persoon",
+          "slug": "thomas-de-vries"
+        },
+        "burgerservicenummer": "888888806",
+        "voornamen": "Thomas",
+        "voorletters": "T.",
+        "voorvoegsel": "de",
+        "geslachtsnaam": "Vries",
+        "aanduidingNaamgebruik": "E",
+        "geslachtsaanduiding": "M",
+        "geboortedatum": "2000-07-07",
+        "geboorteplaats": "Eindhoven",
+        "geboorteland": "Nederland",
+        "geboortelandCode": "6030",
+        "nationaliteit": "Nederlandse",
+        "nationaliteitCode": "0001",
+        "verblijfplaats": {
+          "straat": "Stratumseind",
+          "huisnummer": 22,
+          "postcode": "5611EN",
+          "woonplaats": "Eindhoven",
+          "adresseerbaarObjectIdentificatie": "0772010000022022",
+          "nummeraanduidingIdentificatie": "0772200000022022",
+          "functieAdres": "W"
+        },
+        "gemeenteVanInschrijving": "Eindhoven",
+        "gemeenteVanInschrijvingCode": "0772",
+        "datumInschrijvingInGemeente": "2000-07-07",
+        "partners": [],
+        "ouders": [],
+        "kinderen": []
+      },
+      {
+        "@self": {
+          "register": "brp",
+          "schema": "ingeschreven-persoon",
+          "slug": "eva-peters"
+        },
+        "burgerservicenummer": "100000009",
+        "voornamen": "Eva",
+        "voorletters": "E.",
+        "geslachtsnaam": "Peters",
+        "aanduidingNaamgebruik": "E",
+        "geslachtsaanduiding": "V",
+        "geboortedatum": "1997-08-18",
+        "geboorteplaats": "Nijmegen",
+        "geboorteland": "Nederland",
+        "geboortelandCode": "6030",
+        "nationaliteit": "Nederlandse",
+        "nationaliteitCode": "0001",
+        "verblijfplaats": {
+          "straat": "Lange Hezelstraat",
+          "huisnummer": 5,
+          "postcode": "6511CB",
+          "woonplaats": "Nijmegen",
+          "adresseerbaarObjectIdentificatie": "0268010000005005",
+          "nummeraanduidingIdentificatie": "0268200000005005",
+          "functieAdres": "W"
+        },
+        "gemeenteVanInschrijving": "Nijmegen",
+        "gemeenteVanInschrijvingCode": "0268",
+        "datumInschrijvingInGemeente": "2019-09-01",
+        "partners": [],
+        "ouders": [],
+        "kinderen": []
+      },
+      {
+        "@self": {
+          "register": "brp",
+          "schema": "ingeschreven-persoon",
+          "slug": "lars-hendriks"
+        },
+        "burgerservicenummer": "200000019",
+        "voornamen": "Lars",
+        "voorletters": "L.",
+        "geslachtsnaam": "Hendriks",
+        "aanduidingNaamgebruik": "E",
+        "geslachtsaanduiding": "M",
+        "geboortedatum": "1985-11-25",
+        "geboorteplaats": "Tilburg",
+        "geboorteland": "Nederland",
+        "geboortelandCode": "6030",
+        "nationaliteit": "Nederlandse",
+        "nationaliteitCode": "0001",
+        "verblijfplaats": {
+          "straat": "Spoorlaan",
+          "huisnummer": 44,
+          "postcode": "5038CC",
+          "woonplaats": "Tilburg",
+          "adresseerbaarObjectIdentificatie": "0855010000044044",
+          "nummeraanduidingIdentificatie": "0855200000044044",
+          "functieAdres": "W"
+        },
+        "gemeenteVanInschrijving": "Tilburg",
+        "gemeenteVanInschrijvingCode": "0855",
+        "datumInschrijvingInGemeente": "2015-02-01",
+        "partners": [
+          {
+            "burgerservicenummer": "300000029",
+            "naam": "Sandra Hendriks-Kok",
+            "soortVerbintenis": "P"
+          }
+        ],
+        "ouders": [],
+        "kinderen": []
+      },
+      {
+        "@self": {
+          "register": "brp",
+          "schema": "ingeschreven-persoon",
+          "slug": "sandra-kok"
+        },
+        "burgerservicenummer": "300000029",
+        "voornamen": "Sandra",
+        "voorletters": "S.",
+        "geslachtsnaam": "Kok",
+        "aanduidingNaamgebruik": "N",
+        "geslachtsaanduiding": "V",
+        "geboortedatum": "1987-04-14",
+        "geboorteplaats": "Breda",
+        "geboorteland": "Nederland",
+        "geboortelandCode": "6030",
+        "nationaliteit": "Nederlandse",
+        "nationaliteitCode": "0001",
+        "verblijfplaats": {
+          "straat": "Spoorlaan",
+          "huisnummer": 44,
+          "postcode": "5038CC",
+          "woonplaats": "Tilburg",
+          "adresseerbaarObjectIdentificatie": "0855010000044044",
+          "nummeraanduidingIdentificatie": "0855200000044044",
+          "functieAdres": "W"
+        },
+        "gemeenteVanInschrijving": "Tilburg",
+        "gemeenteVanInschrijvingCode": "0855",
+        "datumInschrijvingInGemeente": "2015-02-01",
+        "partners": [
+          {
+            "burgerservicenummer": "200000019",
+            "naam": "Lars Hendriks",
+            "soortVerbintenis": "P"
+          }
+        ],
+        "ouders": [],
+        "kinderen": []
+      }
+    ]
+  }
+}

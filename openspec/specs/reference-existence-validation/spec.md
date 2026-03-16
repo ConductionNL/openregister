@@ -133,3 +133,31 @@ On updates (PUT/PATCH), properties whose values have not changed MUST NOT be re-
 - WHEN the object is updated with `assignee` = `"new-person-uuid"`
 - AND `new-person-uuid` does not exist
 - THEN the save MUST fail with HTTP 422
+
+### Current Implementation Status
+
+**Fully implemented.** All core requirements are in place:
+
+- `lib/Service/Object/SaveObject.php`:
+  - `validateReferences()` (line ~3335) -- iterates schema properties, finds those with `$ref` and `validateReference: true`, checks existence
+  - `validateReferenceExists()` (line ~3416) -- validates individual UUID against target schema using `resolveSchemaReference()`
+  - `resolveSchemaReference()` (line ~326) -- resolves `$ref` by numeric ID, UUID, or slug
+  - Called in both `createObject()` (line ~3160) and `updateObject()` (line ~3238)
+  - On updates, unchanged references are skipped (line ~3239: compares old vs new data)
+- Array references are validated (each UUID in array checked individually)
+- Null/empty values are skipped (not validated)
+- Cross-register reference support via `register` property config
+- Returns HTTP 422 with descriptive error messages including property name, UUID, and target schema name
+
+**What is NOT yet implemented:**
+- All requirements appear to be implemented as specified
+
+### Standards & References
+- JSON Schema `$ref` keyword (RFC draft-bhutton-json-schema-01)
+- OpenRegister internal schema property format (custom `validateReference` extension to JSON Schema)
+- HTTP 422 Unprocessable Entity (RFC 4918)
+
+### Specificity Assessment
+- **Specific enough to implement?** Yes -- this spec is fully implemented and the scenarios match the code behavior.
+- **Missing/ambiguous:** Nothing significant -- the spec is well-defined and matches the implementation.
+- **Open questions:** None -- this spec is complete.

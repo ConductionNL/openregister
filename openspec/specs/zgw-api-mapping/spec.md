@@ -310,3 +310,51 @@ The ZGW mapping layer MUST be a generic capability in OpenRegister, not ZGW-spec
 - OpenRegister API system (existing, extended with ZGW routes)
 - Procest schemas (existing 12 ZGW-mapped schemas)
 - Procest admin settings UI (existing, extended with mapping tab)
+
+### Current Implementation Status
+
+**Partially implemented.** The mapping engine is in OpenRegister, but ZGW-specific routes are not:
+
+**Implemented (mapping engine in OpenRegister):**
+- `lib/Service/MappingService.php` -- Twig-based mapping engine with `executeMapping()`, dot-notation, casting, passThrough, unset
+- `lib/Twig/MappingExtension.php` -- Twig extension for mapping-specific functions
+- `lib/Twig/MappingRuntime.php` -- Runtime functions available in Twig templates (e.g., `generateUuid()`, `callSource()`, `getFiles()`)
+- `lib/Twig/MappingRuntimeLoader.php` -- Lazy loader for mapping runtime
+- `lib/Db/MappingMapper.php` -- Mapper for Mapping entities stored in OpenRegister database
+- `lib/Controller/MappingsController.php` -- CRUD API for Mapping entities
+
+**Not implemented:**
+- ZGW API routes in OpenRegister (`/api/zgw/{zgwApi}/v1/{resource}/{uuid?}`)
+- ZGW-specific Twig filter (`zgw_enum()` for value mapping)
+- ZGW pagination format (HAL-style `count`, `next`, `previous`, `results`)
+- ZGW query parameter mapping (e.g., `zaaktype` URL -> `caseType` UUID extraction)
+- ZGW URL references (auto-generating full URLs for related resources)
+- Inbound mapping (Dutch -> English) for ZGW POST/PUT requests
+- Default ZGW mappings shipped with Procest
+- ZGW mapping administration UI in Procest
+- Route registration for all 5 ZGW APIs (Zaken, Catalogi, Besluiten, Documenten, Autorisaties)
+
+### Standards & References
+- VNG ZGW API Standards (https://vng-realisatie.github.io/gemma-zaken/)
+  - Zaken API v1.5.1 (https://zaken-api.vng.cloud/api/v1/schema/)
+  - Catalogi API v1.3.1 (https://catalogi-api.vng.cloud/api/v1/schema/)
+  - Besluiten API v1.1.0 (https://besluiten-api.vng.cloud/api/v1/schema/)
+  - Documenten API v1.4.3 (https://documenten-api.vng.cloud/api/v1/schema/)
+- GEMMA 2.0 reference architecture (VNG)
+- NL GOV API Design Rules (https://publicatie.centrumvoorstandaarden.nl/api/adr/)
+- HAL (Hypertext Application Language) -- JSON pagination format used by ZGW
+- Twig Template Engine (https://twig.symfony.com/)
+
+### Specificity Assessment
+- **Specific enough to implement?** Yes -- the mapping table, route patterns, and property mapping examples are concrete and actionable.
+- **Missing/ambiguous:**
+  - No specification for ZGW version negotiation (what if client requests v2 but only v1 is mapped?)
+  - No specification for ZGW audit trail format (audittrail resource in Zaken API)
+  - No specification for ZGW expand/include query parameters
+  - No specification for ZGW validation errors (must follow ZGW error response format)
+  - No specification for authentication on ZGW endpoints (JWT tokens per ZGW standard?)
+- **Open questions:**
+  - Should ZGW endpoints require ZGW-standard JWT authentication or use Nextcloud's auth?
+  - How should the Autorisaties API be handled (spec says out of scope but clients may expect it)?
+  - Should ZGW compliance be validated against VNG API test platform?
+  - How does this interact with the existing OpenConnector mapping engine (migration path)?

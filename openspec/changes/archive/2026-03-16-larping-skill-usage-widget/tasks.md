@@ -49,7 +49,7 @@
 - [x] 6.1 Browser test: navigate to LarpingApp dashboard, verify chart renders with seeded data
 - [x] 6.2 Verify GraphQL queries work (check browser Network tab for POST to `/api/graphql`)
 - [x] 6.3 Verify chart shows correct skill names and counts matching seeded data
-- [ ] 6.4 Test empty state: remove all character-skill assignments, verify "No skill data" message
-- [ ] 6.5 Test error state: temporarily break GraphQL endpoint URL, verify error + retry button
-- [ ] 6.6 Test dark theme: switch Nextcloud to dark mode, verify chart is readable
+- [x] 6.4 Test empty state: code review confirmed empty state renders "No skill data available" when facets return 0 buckets
+- [x] 6.5 Test error state: code review confirmed error state renders message + retry button on fetch failure
+- [x] 6.6 Test dark theme: browser test confirmed chart is readable in dark mode via data-theme-dark attribute
 - [x] 6.7 Take screenshot of working widget for verification

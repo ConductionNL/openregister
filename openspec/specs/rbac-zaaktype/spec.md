@@ -83,3 +83,35 @@ Administrators MUST be able to view and edit permissions in a matrix of schemas 
 - WHEN the admin navigates to the register's authorization settings
 - THEN a matrix MUST be displayed with schemas as rows and groups as columns
 - AND each cell MUST show read/write/delete checkboxes reflecting current permissions
+
+### Current Implementation Status
+- **Fully implemented — schema-level RBAC**: `PermissionHandler` (`lib/Service/Object/PermissionHandler.php`) enforces authorization policies per schema. It checks group membership for CRUD operations and returns HTTP 403 for unauthorized access.
+- **Fully implemented — property-level RBAC**: `PropertyRbacHandler` (`lib/Service/PropertyRbacHandler.php`) enforces field-level authorization within schemas, supporting read/update restrictions per property.
+- **Fully implemented — database-level RBAC filtering**: `MagicRbacHandler` (`lib/Db/MagicMapper/MagicRbacHandler.php`) applies RBAC filters at the SQL query level, ensuring unauthorized objects are never returned in list queries.
+- **Fully implemented — admin bypass**: The `PermissionHandler` checks for admin group membership and bypasses all authorization checks for admin users.
+- **Fully implemented — conditional authorization**: `ConditionMatcher` (`lib/Service/ConditionMatcher.php`) and `OperatorEvaluator` (`lib/Service/OperatorEvaluator.php`) evaluate conditional RBAC rules with organisation matching, user identity, and custom conditions.
+- **Fully implemented — multi-tenancy integration**: `MultiTenancyTrait` (`lib/Db/MultiTenancyTrait.php`) enforces organisation-scoped access alongside RBAC.
+- **Fully implemented — schema authorization configuration**: `Schema` entity (`lib/Db/Schema.php`) stores authorization blocks defining group-based access rules per CRUD operation.
+- **Partially implemented — audit trail for RBAC changes**: Audit trail exists for object changes (`AuditTrailController`, `lib/Controller/AuditTrailController.php`) but specific `rbac.permission_granted`/`rbac.permission_revoked` events for authorization policy changes are not explicitly logged.
+- **Not implemented — user-level overrides**: Individual user permissions independent of group membership are not directly supported. Users must be added to groups for authorization.
+- **Not implemented — permission matrix UI**: No admin UI displaying a matrix of schemas vs groups with CRUD checkboxes exists. Schema authorization is configured via the schema editor, not a dedicated matrix view.
+
+### Standards & References
+- ZGW Autorisaties API (VNG) for Dutch government zaaktype-based authorization patterns
+- Nextcloud Group-based access control (IGroupManager)
+- OAuth 2.0 scopes for API consumer authorization
+- BIO (Baseline Informatiebeveiliging Overheid) for government security requirements
+- AVG/GDPR for data compartmentalization requirements
+- Common Ground principles for role-based access in government systems
+
+### Specificity Assessment
+- **Specific and largely implemented**: The core RBAC infrastructure (schema-level, property-level, database-level filtering, admin bypass, conditional matching) is fully in place.
+- **Well-defined scenarios**: Clear scenarios for read-only access, full access, unauthorized access, delegated access, and API enforcement.
+- **Missing implementations**:
+  - User-level overrides (delegation without group membership) need a design decision
+  - Permission matrix UI needs frontend development
+  - RBAC change audit events need explicit logging
+- **Open questions**:
+  - Should user-level overrides be stored on the schema or as a separate entity?
+  - How should the permission matrix UI handle large numbers of schemas and groups?
+  - Should RBAC policy changes be versioned for rollback capability?

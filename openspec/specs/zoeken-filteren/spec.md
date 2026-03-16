@@ -106,3 +106,66 @@ The search system MUST work with the built-in database and optionally with Elast
 - WHEN the user performs a full-text search
 - THEN the system MUST query the external engine for results
 - AND benefit from improved relevance ranking, highlighting, and faceting performance
+
+### Current Implementation Status
+
+**Substantially implemented.** Most search and faceting requirements are in place:
+
+**Implemented (full-text search):**
+- `lib/Db/MagicMapper/MagicSearchHandler.php` (also `MariaDbSearchHandler`) -- SQL-based full-text search with LIKE queries and JSON field extraction
+- `lib/Service/Index/Backends/SolrBackend.php` -- Solr integration for advanced search with relevance ranking
+- `lib/Service/Index/SearchBackendInterface.php` -- Backend-agnostic search interface
+- `lib/Service/IndexService.php` -- Orchestrates search operations across backends
+- `lib/Search/ObjectsProvider.php` -- Nextcloud unified search provider (implements `IFilteringProvider`)
+- `lib/Controller/SearchController.php` -- REST API for search operations
+- `lib/Controller/FileSearchController.php` -- File-specific search controller
+- `lib/Service/Object/SearchQueryHandler.php` -- Builds search queries from API parameters
+
+**Implemented (faceted filtering):**
+- `lib/Db/MagicMapper/MagicFacetHandler.php` -- SQL-based facet computation for magic tables (with configurable max buckets)
+- `lib/Service/Index/Backends/Solr/SolrFacetProcessor.php` -- Solr-native faceting with field facets
+- `lib/Service/Index/FacetBuilder.php` -- Builds facet configurations for Solr queries
+- `lib/Db/ObjectHandlers/MetaDataFacetHandler.php` -- Metadata-based facets (@self fields)
+- `lib/Db/ObjectHandlers/OptimizedFacetHandler.php`, `HyperFacetHandler.php`, `MariaDbFacetHandler.php` -- Various facet computation strategies
+- `lib/Service/Schemas/FacetCacheHandler.php` -- Facet result caching for performance
+- `lib/Service/Object/FacetHandler.php` -- Facet processing in object service
+
+**Implemented (saved searches / search trails):**
+- `lib/Db/SearchTrail.php` -- Entity for saved search queries with filters
+- `lib/Db/SearchTrailMapper.php` -- Database mapper for search trails
+- `lib/Controller/SearchTrailController.php` -- CRUD API for search trails
+- `lib/Service/SearchTrailService.php` -- Service with self-clearing capability
+
+**Implemented (backend-agnostic):**
+- Database (SQL LIKE) search works without external engines
+- Solr backend with full indexing, warmup jobs (`SolrWarmupJob`, `SolrNightlyWarmupJob`)
+- `lib/Command/SolrManagementCommand.php` and `SolrDebugCommand.php` -- CLI tools for Solr management
+
+**Not fully implemented:**
+- Search result highlighting (Solr supports it but not exposed in API responses)
+- Dutch language analysis/stemming in SQL-based search (Solr has Dutch analyzers)
+- Cross-register search at register level
+- Numeric range filters (date ranges partially supported via Solr)
+- Elasticsearch backend (interface exists but no implementation found)
+- UI for saved searches (backend exists, frontend integration unclear)
+
+### Standards & References
+- Apache Solr (https://solr.apache.org/) -- primary external search engine
+- Elasticsearch (https://www.elastic.co/) -- planned alternative backend
+- Nextcloud Unified Search API (`IFilteringProvider`)
+- Dutch language analysis (Snowball stemmer, Dutch stop words)
+- JSON API filtering conventions
+
+### Specificity Assessment
+- **Specific enough to implement?** Mostly yes -- the scenarios cover the main use cases clearly.
+- **Missing/ambiguous:**
+  - No specification for relevance ranking algorithm or boost configuration
+  - No specification for search result highlighting format (HTML tags? markers?)
+  - No specification for search indexing latency (real-time vs. background sync)
+  - No specification for search permissions (should search respect RLS/FLS?)
+  - No specification for fuzzy/typo-tolerant search
+  - No specification for search analytics (popular queries, zero-result queries)
+- **Open questions:**
+  - Should Elasticsearch be supported alongside Solr, or is Solr the sole external backend?
+  - How should search highlighting be rendered in the Vue frontend?
+  - Should saved searches support notification on new matches (saved search alerts)?

@@ -89,3 +89,23 @@ The Tier 1 response MUST be optimized for minimal token consumption by AI agents
 - GIVEN the discovery endpoint is called
 - WHEN the response is serialized to JSON
 - THEN the total character count MUST be under 3000 characters (approximately 500 tokens)
+
+### Current Implementation Status
+- **Fully implemented — Tier 1 discovery catalog**: `McpDiscoveryService` (`lib/Service/McpDiscoveryService.php`) builds the Tier 1 catalog with `version`, `name`, `authentication`, `base_url`, and `capabilities` array. The `getDiscoveryCatalog()` method (line ~119) constructs the public catalog.
+- **Fully implemented — Tier 2 capability detail**: `getCapabilityDetail()` (line ~235) returns detailed endpoint docs and live context data for each capability area. `getCapabilityIds()` (line ~208) returns valid capability IDs.
+- **Fully implemented — versioned URL path**: Routes are under `/api/mcp/v1/` prefix. The `getCapabilityHref()` method (line ~110) generates versioned URLs using `routeName: 'openregister.mcp.discoverCapability'`.
+- **Fully implemented — controller layer**: `McpController` (`lib/Controller/McpController.php`) handles HTTP routing for discovery endpoints. `McpServerController` (`lib/Controller/McpServerController.php`) handles the MCP standard protocol (JSON-RPC 2.0).
+- **Fully implemented — MCP standard protocol**: `McpProtocolService` (`lib/Service/Mcp/McpProtocolService.php`), `McpResourcesService` (`lib/Service/Mcp/McpResourcesService.php`), and `McpToolsService` (`lib/Service/Mcp/McpToolsService.php`) implement the full MCP standard with tools and resources.
+- **Fully implemented — live data in Tier 2**: Context objects include register/schema listings with IDs, titles, and object counts.
+- **Fully implemented — capability coverage**: The discovery catalog covers registers, schemas, objects, search, files, audit, bulk, webhooks, chat, and views.
+
+### Standards & References
+- Model Context Protocol (MCP) specification — https://modelcontextprotocol.io/
+- JSON-RPC 2.0 specification for the MCP standard protocol transport
+- OAuth 2.0 / Basic Auth for authentication as described in the discovery response
+- CORS (Cross-Origin Resource Sharing) W3C specification for public endpoint access
+
+### Specificity Assessment
+- **Highly specific and fully implemented**: The spec is clear, well-scoped, and the implementation matches all requirements.
+- **No open questions**: All scenarios are covered by the existing implementation.
+- **Potential improvement**: The spec could specify the exact structure of the `authentication` object in the Tier 1 response for completeness.

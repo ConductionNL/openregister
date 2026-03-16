@@ -105,3 +105,47 @@ Users MUST only import into and export from schemas they have appropriate permis
 - GIVEN user `medewerker-1` has only `read` access to schema `meldingen`
 - WHEN they attempt to import a CSV
 - THEN the system MUST return HTTP 403: insufficient permissions for import
+
+### Current Implementation Status
+- **Implemented:**
+  - `ImportService` (`lib/Service/ImportService.php`) with `importFromCsv()` and `importFromExcel()` methods for batch import
+  - `ExportService` (`lib/Service/ExportService.php`) with `exportToCsv()` and `exportToExcel()` methods for structured export
+  - `Configuration/ImportHandler` (`lib/Service/Configuration/ImportHandler.php`) for importing configuration data
+  - `Configuration/ExportHandler` (`lib/Service/Configuration/ExportHandler.php`) for exporting configuration data
+  - `Object/ExportHandler` (`lib/Service/Object/ExportHandler.php`) for object-level export
+  - Magic Mapper import tested via Newman collection (`tests/integration/magic-mapper-import.postman_collection.json`)
+  - `SaveObjects` (`lib/Service/Object/SaveObjects.php`) with `ChunkProcessingHandler` for bulk operations
+  - `BulkRelationHandler` (`lib/Service/Object/SaveObjects/BulkRelationHandler.php`) for handling relations during bulk import
+- **NOT implemented:**
+  - Interactive column mapping UI (upload CSV, map columns to schema properties, preview)
+  - Default values for unmapped properties during import
+  - Progress tracking UI for large imports
+  - Validation error reports as downloadable CSV
+  - Duplicate detection with configurable matching rules (skip/update/create options)
+  - Import template generation (downloadable CSV/Excel with headers and example data)
+  - RBAC enforcement on import/export operations
+  - JSON export format
+  - Excel formatting (date/number column formatting, property labels vs internal names)
+  - UTF-8 BOM for CSV export
+- **Partial:**
+  - CSV and Excel import/export exists at the service level but lacks the full user-facing workflow (mapping, preview, validation reporting)
+  - Bulk operations exist but without duplicate detection or conflict resolution
+
+### Standards & References
+- **RFC 4180** — CSV format specification
+- **ECMA-376 / ISO/IEC 29500** — Office Open XML (XLSX) format
+- **PhpSpreadsheet** — PHP library for Excel file generation (likely already used)
+- **UTF-8 BOM (U+FEFF)** — Required for Excel CSV compatibility
+- **Nextcloud Files WebDAV** — For import template storage
+- **JSON Lines (JSONL)** — Alternative to JSON for large dataset export
+
+### Specificity Assessment
+- The spec is comprehensive with good coverage of import workflow, validation, duplicate detection, and export formats.
+- The core import/export services exist and provide a foundation; the gap is primarily in UI workflow and advanced features.
+- Missing: API endpoints for import workflow (upload, map, preview, confirm); async import job implementation details; how import interacts with computed fields and referential integrity.
+- Ambiguous: how "current view filters" are passed to the export endpoint; whether export should include related objects or just the primary schema.
+- Open questions:
+  - Should import be synchronous (blocking request) or async (background job with status polling)?
+  - How should import handle objects with references ($ref) — resolve by external ID or UUID?
+  - Should export support selecting specific columns/properties or always export all?
+  - What is the maximum file size for import?

@@ -93,3 +93,48 @@ Users MUST be able to download all dossier documents as a ZIP archive.
 - WHEN the user clicks "Download dossier"
 - THEN the system MUST generate a ZIP archive containing all 8 documents
 - AND the ZIP MUST preserve the document type folder structure
+
+### Current Implementation Status
+- **Partial:**
+  - `FileService` (`lib/Service/FileService.php`) provides file operations including upload, download, and management
+  - `FolderManagementHandler` (`lib/Service/File/FolderManagementHandler.php`) manages folder structures for objects in Nextcloud Files
+  - `FilePublishingHandler` (`lib/Service/File/FilePublishingHandler.php`) handles file publication workflows
+  - `ReadFileHandler` (`lib/Service/File/ReadFileHandler.php`) and `CreateFileHandler` (`lib/Service/File/CreateFileHandler.php`) for file CRUD
+  - Frontend file views exist at `src/views/files/`
+  - Objects can have associated files stored in Nextcloud Files
+  - File text extraction available via `TextExtractionService` (`lib/Service/TextExtractionService.php`)
+  - Vectorization of file content via `VectorizationHandler` (`lib/Service/Object/VectorizationHandler.php`)
+- **NOT implemented:**
+  - Structured dossier view with documents grouped by document type
+  - Document type classification configuration per schema
+  - Document type metadata on file links
+  - Drag-and-drop upload with document type selection dialog
+  - Document version history display in dossier view (Nextcloud Files versioning exists but is not exposed in OpenRegister UI)
+  - Document search within dossiers
+  - Bulk download as ZIP archive with folder structure
+  - Confidentiality metadata on document links
+  - Document count badge on dossier tab
+  - Empty state with upload instructions
+- **Partial:**
+  - File upload and linking to objects works at a basic level
+  - Folder structure in Nextcloud Files exists (`/{register}/{schema}/{objectId}/`) but without document type sub-folders
+  - Nextcloud's native file versioning is available but not surfaced in OpenRegister's UI
+
+### Standards & References
+- **ZGW DRC (Documenten Registratie Component)** — API standard for document registration in Dutch government
+- **ZGW ZTC** — Document type definitions (informatieobjecttypen) in the catalog
+- **CMIS (Content Management Interoperability Services)** — Standard for document management
+- **MDTO** — Archival metadata for documents
+- **Nextcloud Files API (WebDAV)** — Underlying storage and versioning
+- **Nextcloud OCS File API** — File sharing and metadata
+- **WCAG 2.1 AA** — Accessibility for file upload and document views
+
+### Specificity Assessment
+- The spec provides clear scenarios for the dossier workflow including upload, viewing, versioning, and search.
+- Missing: API endpoints for dossier operations; how document type configuration is stored (schema property? admin setting?); how document metadata is linked to files (separate table? extended attributes?).
+- Ambiguous: whether "linked documents" means Nextcloud Files references stored on the object or a separate join table; how document versioning interacts with object versioning (audit trail).
+- Open questions:
+  - Should document types be schema-specific (configured per schema) or global?
+  - How does the dossier view integrate with Nextcloud's native Files app — can users browse the same files in both places?
+  - Should the ZIP download include document metadata (CSV manifest) alongside the files?
+  - How large can a dossier get before performance becomes a concern?

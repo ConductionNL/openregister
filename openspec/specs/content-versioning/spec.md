@@ -89,3 +89,41 @@ All published versions MUST be retained in the audit trail for compliance and tr
 - THEN all 8 versions MUST be listed with: version number, date, user, summary of changes
 - AND each version MUST be viewable (read-only snapshot)
 - AND any version MUST be selectable for diff comparison
+
+### Current Implementation Status
+- **Partial:**
+  - `AuditTrailMapper` (`lib/Db/AuditTrailMapper.php`) stores full snapshots and changed fields for every object mutation, providing version history
+  - `RevertHandler` (`lib/Service/Object/RevertHandler.php`) implements object reversion to a previous state using audit trail data, with `revert(objectEntity, until, overwriteVersion)` method
+  - `AuditTrailMapper::revertObject()` reconstructs objects from audit trail entries
+  - Audit trail entries include: action, changed fields (old/new values), user, timestamp — enabling diff comparison
+  - Version history is viewable through the audit trail API/controller
+- **NOT implemented:**
+  - Named draft versions — no concept of "draft" vs "published" state on objects
+  - Draft creation, editing, and listing separate from the main object
+  - Delta-only storage for drafts (current audit trail stores full snapshots + changes)
+  - Draft promotion with conflict detection (concurrent edit merging)
+  - Visual diff comparison UI (side-by-side field comparison with color coding)
+  - Rollback to a specific version (the RevertHandler exists but rolls back to a point in time, not a specific version number)
+  - Referential integrity checks during rollback
+  - Draft access control (draft visible only to creator + write-permission users)
+- **Partial:**
+  - The audit trail effectively provides version history (each entry is a version), but there is no explicit version numbering
+  - RevertHandler provides rollback but to a DateTime, not a named version
+
+### Standards & References
+- **Git-style versioning** — Conceptual model for draft/publish workflow
+- **JSON Patch (RFC 6902)** — Standard for describing changes between JSON documents (applicable to delta storage)
+- **JSON Merge Patch (RFC 7396)** — Simpler alternative for field-level diffs
+- **Nextcloud Files versioning** — Reference implementation for version management in Nextcloud
+- **CMIS (Content Management Interoperability Services)** — Standard for content versioning in document management systems
+
+### Specificity Assessment
+- The spec is thorough with well-defined scenarios covering the full lifecycle (create draft, edit, promote, conflict, rollback).
+- The existing audit trail and RevertHandler provide a solid foundation to build upon.
+- Missing: database schema for draft storage (separate table? draft flag on ObjectEntity?); API endpoints for draft CRUD and promotion; how drafts are stored in MagicMapper mode vs. normal mode.
+- Ambiguous: whether "delta-only storage" means JSON Patch format or a simpler changed-fields approach; how conflict detection works when multiple fields change.
+- Open questions:
+  - Should multiple drafts per object be allowed, or only one active draft at a time?
+  - How do drafts interact with webhooks and events — should draft creation/promotion trigger events?
+  - Should drafts be searchable or excluded from search results?
+  - What happens to drafts when the published version is updated by another user?
