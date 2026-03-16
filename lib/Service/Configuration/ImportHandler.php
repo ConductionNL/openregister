@@ -103,13 +103,6 @@ class ImportHandler
     private readonly RegisterMapper $registerMapper;
 
     /**
-     * Object mapper instance for handling object operations.
-     *
-     * @var ObjectEntityMapper The object mapper instance.
-     */
-    private readonly ObjectEntityMapper $objectEntityMapper;
-
-    /**
      * Magic mapper instance for handling magic table operations.
      *
      * @var MagicMapper|null The magic mapper instance (optional, set via setter).
@@ -241,7 +234,7 @@ class ImportHandler
     public function __construct(
         SchemaMapper $schemaMapper,
         RegisterMapper $registerMapper,
-        ObjectEntityMapper $objectEntityMapper,
+        private readonly UnifiedObjectMapper $objectEntityMapper,
         ConfigurationMapper $configurationMapper,
         MappingMapper $mappingMapper,
         Client $client,
@@ -253,7 +246,6 @@ class ImportHandler
     ) {
         $this->schemaMapper        = $schemaMapper;
         $this->registerMapper      = $registerMapper;
-        $this->objectEntityMapper  = $objectEntityMapper;
         $this->configurationMapper = $configurationMapper;
         $this->mappingMapper       = $mappingMapper;
         $this->client        = $client;
@@ -2385,7 +2377,7 @@ class ImportHandler
         } catch (Exception $e) {
             $this->logger->error(
                 message: "[ImportHandler] Failed to import configuration for app {$appId}: ".$e->getMessage(),
-                context: ['file' => __FILE__, 'line' => __LINE__]
+                context: ['file' => __FILE__, 'line' => __LINE__, 'trace' => $e->getTrace()]
             );
             throw new Exception("Failed to import configuration for app {$appId}: ".$e->getMessage());
         }//end try

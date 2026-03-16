@@ -29,6 +29,7 @@ use OCA\OpenRegister\Db\ConfigurationMapper;
 use OCA\OpenRegister\Db\DeployedWorkflowMapper;
 use OCA\OpenRegister\Db\MappingMapper;
 use OCA\OpenRegister\Db\ObjectEntityMapper;
+use OCA\OpenRegister\Db\UnifiedObjectMapper;
 use OCA\OpenRegister\Service\WorkflowEngineRegistry;
 use Exception;
 use Psr\Log\LoggerInterface;
@@ -60,13 +61,6 @@ class ExportHandler
      * @var RegisterMapper The register mapper instance.
      */
     private readonly RegisterMapper $registerMapper;
-
-    /**
-     * Object mapper instance for handling object operations.
-     *
-     * @var ObjectEntityMapper The object mapper instance.
-     */
-    private readonly ObjectEntityMapper $objectEntityMapper;
 
     /**
      * Configuration mapper instance for handling configuration operations.
@@ -130,14 +124,13 @@ class ExportHandler
     public function __construct(
         SchemaMapper $schemaMapper,
         RegisterMapper $registerMapper,
-        ObjectEntityMapper $objectEntityMapper,
+        private readonly UnifiedObjectMapper $objectEntityMapper,
         ConfigurationMapper $configurationMapper,
         MappingMapper $mappingMapper,
         LoggerInterface $logger
     ) {
         $this->schemaMapper        = $schemaMapper;
         $this->registerMapper      = $registerMapper;
-        $this->objectEntityMapper  = $objectEntityMapper;
         $this->configurationMapper = $configurationMapper;
         $this->mappingMapper       = $mappingMapper;
         $this->logger = $logger;

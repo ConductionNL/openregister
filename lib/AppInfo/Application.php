@@ -32,6 +32,7 @@ use OCA\OpenRegister\Db\MappingMapper;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\MagicMapper\MagicRbacHandler;
 use OCA\OpenRegister\Db\UnifiedObjectMapper;
+use OCA\OpenRegister\Db\ObjectEntityMapper;
 use OCA\OpenRegister\Db\OrganisationMapper;
 use OCA\OpenRegister\Db\ChunkMapper;
 use OCA\OpenRegister\Db\GdprEntityMapper;
@@ -320,23 +321,6 @@ class Application extends App implements IBootstrap
         );
 
         $context->registerService(
-            ObjectEntityMapper::class,
-            function (ContainerInterface $container) {
-                return new ObjectEntityMapper(
-                    db: $container->get('OCP\IDBConnection'),
-                    eventDispatcher: $container->get('OCP\EventDispatcher\IEventDispatcher'),
-                    userSession: $container->get('OCP\IUserSession'),
-                    schemaMapper: $container->get(SchemaMapper::class),
-                    groupManager: $container->get('OCP\IGroupManager'),
-                    userManager: $container->get('OCP\IUserManager'),
-                    appConfig: $container->get('OCP\IAppConfig'),
-                    logger: $container->get('Psr\Log\LoggerInterface'),
-                    organisationMapper: $container->get(OrganisationMapper::class)
-                );
-            }
-        );
-
-        $context->registerService(
             RegisterMapper::class,
             function (ContainerInterface $container) {
                 return new RegisterMapper(
@@ -434,7 +418,7 @@ class Application extends App implements IBootstrap
             function (ContainerInterface $container) {
                 return new FolderManagementHandler(
                     rootFolder: $container->get('OCP\Files\IRootFolder'),
-                    objectMapper: $container->get(UnifiedObjectMapper::class),
+                    objectEntityMapper: $container->get(UnifiedObjectMapper::class),
                     registerMapper: $container->get(RegisterMapper::class),
                     userSession: $container->get('OCP\IUserSession'),
                     groupManager: $container->get('OCP\IGroupManager'),
@@ -490,7 +474,7 @@ class Application extends App implements IBootstrap
             $importHandler = new ConfigurationImportHandler(
                 schemaMapper: $container->get(SchemaMapper::class),
                 registerMapper: $container->get(RegisterMapper::class),
-                objectMapper: $container->get(UnifiedObjectMapper::class),
+                objectEntityMapper: $container->get(UnifiedObjectMapper::class),
                 configurationMapper: $container->get('OCA\OpenRegister\Db\ConfigurationMapper'),
                 mappingMapper: $container->get(MappingMapper::class),
                 client: new Client(),
@@ -532,7 +516,7 @@ class Application extends App implements IBootstrap
                 $exportHandler = new ConfigurationExportHandler(
                     schemaMapper: $container->get(SchemaMapper::class),
                     registerMapper: $container->get(RegisterMapper::class),
-                    objectMapper: $container->get(UnifiedObjectMapper::class),
+                    objectEntityMapper: $container->get(UnifiedObjectMapper::class),
                     configurationMapper: $container->get('OCA\OpenRegister\Db\ConfigurationMapper'),
                     mappingMapper: $container->get(MappingMapper::class),
                     logger: $container->get('Psr\Log\LoggerInterface')

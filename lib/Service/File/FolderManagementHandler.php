@@ -21,6 +21,7 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\ObjectEntityMapper;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Db\UnifiedObjectMapper;
 use OCA\OpenRegister\Service\FileService;
 use OCP\Files\Folder;
 use OCP\Files\IRootFolder;
@@ -87,7 +88,7 @@ class FolderManagementHandler
      */
     public function __construct(
         private readonly IRootFolder $rootFolder,
-        private readonly ObjectEntityMapper $objectEntityMapper,
+        private readonly UnifiedObjectMapper $objectEntityMapper,
         private readonly RegisterMapper $registerMapper,
         private readonly IUserSession $userSession,
         private readonly IGroupManager $groupManager,

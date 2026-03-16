@@ -2816,8 +2816,8 @@ class SaveObject
                 register: $register,
                 schema: $schema,
                 includeDeleted: false,
-                _rbac: $_rbac,
-                _multitenancy: $_multitenancy
+                rbac: $_rbac,
+                multitenancy: $_multitenancy
             );
 
             // Check if object is locked - prevent updates on locked objects.
@@ -3440,29 +3440,29 @@ class SaveObject
             }//end if
         }//end if
 
-        if (array_key_exists('published', $selfData) === false) {
-            $this->logger->debug(
-                message: '[SaveObject] No published field found in selfData, setting to existing value',
-                context: ['file' => __FILE__, 'line' => __LINE__]
-            );
-            $objectEntity->setPublished($objectEntity->getPublished());
-        }//end if
-
-        // Extract and set depublished property if present.
-        if (array_key_exists('depublished', $selfData) === false || empty($selfData['depublished']) === true) {
-            $objectEntity->setDepublished(null);
-        }
-
-        if (array_key_exists('depublished', $selfData) === true && empty($selfData['depublished']) === false) {
-            try {
-                // Convert string to DateTime if it's a valid date string.
-                if (is_string($selfData['depublished']) === true) {
-                    $objectEntity->setDepublished(new DateTime($selfData['depublished']));
-                }
-            } catch (Exception $exception) {
-                // Silently ignore invalid date formats.
-            }
-        }
+//        if (array_key_exists('published', $selfData) === false) {
+//            $this->logger->debug(
+//                message: '[SaveObject] No published field found in selfData, setting to existing value',
+//                context: ['file' => __FILE__, 'line' => __LINE__]
+//            );
+//            $objectEntity->setPublished($objectEntity->getPublished());
+//        }//end if
+//
+//        // Extract and set depublished property if present.
+//        if (array_key_exists('depublished', $selfData) === false || empty($selfData['depublished']) === true) {
+//            $objectEntity->setDepublished(null);
+//        }
+//
+//        if (array_key_exists('depublished', $selfData) === true && empty($selfData['depublished']) === false) {
+//            try {
+//                // Convert string to DateTime if it's a valid date string.
+//                if (is_string($selfData['depublished']) === true) {
+//                    $objectEntity->setDepublished(new DateTime($selfData['depublished']));
+//                }
+//            } catch (Exception $exception) {
+//                // Silently ignore invalid date formats.
+//            }
+//        }
 
         if (array_key_exists('owner', $selfData) === true && empty($selfData['owner']) === false) {
             $objectEntity->setOwner($selfData['owner']);
