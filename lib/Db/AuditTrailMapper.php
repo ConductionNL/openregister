@@ -62,7 +62,7 @@ class AuditTrailMapper extends QBMapper
      * Constructor for the AuditTrailMapper
      *
      * @param IDBConnection      $db                 The database connection
-     * @param ObjectEntityMapper $objectEntityMapper The object entity mapper
+     * @param \Psr\Container\ContainerInterface $container DI container for lazy mapper resolution
      */
     public function __construct(
         IDBConnection $db,
@@ -438,8 +438,8 @@ class AuditTrailMapper extends QBMapper
     public function revertObject($identifier, $until=null, bool $overwriteVersion=false): ObjectEntity
     {
         // Get the current object (lazy-resolved to avoid circular DI).
-        $objectEntityMapper = $this->container->get(ObjectEntityMapper::class);
-        $object = $objectEntityMapper->find($identifier);
+        $objectMapper = $this->container->get(MagicMapper::class);
+        $object = $objectMapper->find($identifier);
 
         // Get audit trail entries until the specified point.
         $auditTrails = $this->findByObjectUntil(
