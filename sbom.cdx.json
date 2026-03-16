@@ -2,10 +2,10 @@
   "$schema": "http://cyclonedx.org/schema/bom-1.5.schema.json",
   "bomFormat": "CycloneDX",
   "specVersion": "1.5",
-  "serialNumber": "urn:uuid:7db07208-5116-4215-8343-0321a6f38716",
+  "serialNumber": "urn:uuid:b2a0d3a9-6e80-4fd1-8dd2-a1b4b6e6e7dd",
   "version": 1,
   "metadata": {
-    "timestamp": "2026-03-16T15:33:22Z",
+    "timestamp": "2026-03-16T15:35:58Z",
     "tools": [
       {
         "name": "composer",
@@ -82,10 +82,10 @@
       }
     ],
     "component": {
-      "bom-ref": "conductionnl/openregister-dev-feature/nextcloud-package-3-schemas-page",
+      "bom-ref": "conductionnl/openregister-dev-feature/nextcloud-vue-package-usage",
       "type": "application",
       "name": "openregister",
-      "version": "dev-feature/nextcloud-package-3-schemas-page",
+      "version": "dev-feature/nextcloud-vue-package-usage",
       "group": "conductionnl",
       "description": "Quickly build data registers based on schema.json",
       "author": "Conduction b.v.",
@@ -96,15 +96,15 @@
           }
         }
       ],
-      "purl": "pkg:composer/conductionnl/openregister@dev-feature/nextcloud-package-3-schemas-page",
+      "purl": "pkg:composer/conductionnl/openregister@dev-feature/nextcloud-vue-package-usage",
       "properties": [
         {
           "name": "cdx:composer:package:distReference",
-          "value": "e5d4682d521057aabf2cada763a60683b4c73fbf"
+          "value": "9be630b5175f379d81b6b98f54b9a5bfb52cb411"
         },
         {
           "name": "cdx:composer:package:sourceReference",
-          "value": "e5d4682d521057aabf2cada763a60683b4c73fbf"
+          "value": "9be630b5175f379d81b6b98f54b9a5bfb52cb411"
         },
         {
           "name": "cdx:composer:package:type",
@@ -55423,7 +55423,7 @@
       ]
     },
     {
-      "ref": "conductionnl/openregister-dev-feature/nextcloud-package-3-schemas-page",
+      "ref": "conductionnl/openregister-dev-feature/nextcloud-vue-package-usage",
       "dependsOn": [
         "adbario/php-dot-notation-3.3.0.0",
         "elasticsearch/elasticsearch-8.15.0.0",

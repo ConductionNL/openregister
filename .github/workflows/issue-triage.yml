@@ -1,0 +1,20 @@
+name: Issue Triage
+
+on:
+  issues:
+    types: [opened, labeled]
+  workflow_dispatch:
+    inputs:
+      backlog-existing:
+        description: "Triage all existing untriaged open issues"
+        type: boolean
+        default: true
+
+jobs:
+  triage:
+    uses: ConductionNL/.github/.github/workflows/issue-triage.yml@feature/openspec-project-sync
+    with:
+      app-name: openregister
+      backlog-existing: ${{ github.event_name == 'workflow_dispatch' && inputs.backlog-existing || false }}
+    secrets:
+      PROJECT_TOKEN: ${{ secrets.PROJECT_TOKEN }}
