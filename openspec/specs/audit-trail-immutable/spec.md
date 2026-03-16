@@ -1,0 +1,98 @@
+# audit-trail-immutable Specification
+
+## Purpose
+Implement an immutable audit trail with cryptographic hash chaining for all register operations. Every create, read (of sensitive data), update, and delete MUST be recorded in a tamper-evident log with minimum 10-year retention. The audit trail MUST be independently verifiable and exportable for compliance auditing.
+
+**Tender demand**: 56% of analyzed government tenders require immutable audit trail capabilities.
+
+## ADDED Requirements
+
+### Requirement: Every mutation MUST produce an immutable audit trail entry
+All create, update, and delete operations on register objects MUST generate an audit trail entry that cannot be modified or deleted.
+
+#### Scenario: Audit entry for object creation
+- GIVEN a user `behandelaar-1` creates an object in schema `meldingen`
+- THEN an audit trail entry MUST be created with:
+  - `id`: auto-incrementing sequence number
+  - `timestamp`: server-side UTC timestamp (not client-provided)
+  - `user`: `behandelaar-1`
+  - `action`: `create`
+  - `objectUuid`: the UUID of the created object
+  - `schemaUuid`: the UUID of the schema
+  - `registerUuid`: the UUID of the register
+  - `data`: full snapshot of the created object
+  - `hash`: SHA-256 hash of (previous_hash + entry_data)
+
+#### Scenario: Audit entry for object update
+- GIVEN object `melding-1` with title `Overlast` is updated to title `Geluidsoverlast`
+- THEN the audit entry MUST include:
+  - `action`: `update`
+  - `changed`: `{"title": {"old": "Overlast", "new": "Geluidsoverlast"}}`
+  - `hash`: chained from the previous audit entry's hash
+
+#### Scenario: Audit entry for object deletion
+- GIVEN object `melding-1` is deleted
+- THEN the audit entry MUST include:
+  - `action`: `delete`
+  - `data`: full snapshot of the object before deletion
+
+### Requirement: The audit trail MUST use cryptographic hash chaining
+Each audit trail entry MUST include a hash that chains to the previous entry, making any tampering detectable.
+
+#### Scenario: Hash chain integrity
+- GIVEN 100 consecutive audit trail entries
+- WHEN an auditor verifies the hash chain
+- THEN each entry's hash MUST equal SHA-256(previous_entry_hash + current_entry_json)
+- AND the first entry's hash MUST use a known genesis hash
+
+#### Scenario: Detect tampered entry
+- GIVEN an audit trail where entry #50 has been modified after creation
+- WHEN the hash chain is verified
+- THEN verification MUST fail at entry #50
+- AND the verification report MUST identify the exact entry where the chain broke
+
+### Requirement: Audit trail entries MUST NOT be deletable or modifiable
+No user, including administrators, MUST be able to modify or delete audit trail entries through the application.
+
+#### Scenario: Reject audit trail deletion via API
+- GIVEN an admin user attempts to DELETE /api/audit-trail/{id}
+- THEN the system MUST return HTTP 405 Method Not Allowed
+- AND the audit entry MUST remain unchanged
+
+#### Scenario: Reject audit trail modification
+- GIVEN an admin attempts to PUT /api/audit-trail/{id} with modified data
+- THEN the system MUST return HTTP 405 Method Not Allowed
+
+### Requirement: The audit trail MUST support minimum 10-year retention
+Audit trail entries MUST be retained for at least 10 years, with configurable retention periods per register.
+
+#### Scenario: Configure retention period
+- GIVEN a register `archief` requiring 20-year audit retention
+- WHEN the admin sets retention to 20 years
+- THEN audit entries for this register MUST be retained for 20 years
+- AND entries MUST NOT be purged before the configured retention period
+
+#### Scenario: Archive old entries for performance
+- GIVEN 5 million audit trail entries spanning 8 years
+- WHEN entries older than 2 years are archived
+- THEN archived entries MUST remain accessible via a separate archive query endpoint
+- AND the hash chain MUST remain verifiable across the archive boundary
+
+### Requirement: The audit trail MUST be exportable for compliance audits
+The audit trail MUST support export in formats suitable for external auditors.
+
+#### Scenario: Export audit trail for date range
+- GIVEN an auditor requests all audit entries for register `zaken` from 2025-01-01 to 2025-12-31
+- WHEN the export is generated
+- THEN the export MUST include all entries in the date range
+- AND the export MUST include the hash chain for independent verification
+- AND the export format MUST be JSON or CSV with hash verification instructions
+
+### Requirement: Sensitive data reads MUST be audited
+Read operations on schemas marked as containing sensitive data MUST also produce audit trail entries.
+
+#### Scenario: Log read of personal data
+- GIVEN schema `inwoners` is marked as sensitive
+- WHEN user `medewerker-1` reads object `inwoner-123`
+- THEN an audit entry MUST be created with action `read`
+- AND the entry MUST NOT include the full object data (only the object UUID)
