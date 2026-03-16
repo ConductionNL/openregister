@@ -879,30 +879,6 @@
 	line-height: 1.4;
 }
 
-/* ID Card Specific Styling */
-.id-card {
-	background-color: var(--color-background-hover);
-	border-left-color: var(--color-primary-element);
-}
-
-.id-card-header {
-	display: flex;
-	justify-content: space-between;
-	align-items: center;
-	width: 100%;
-	margin-bottom: 5px;
-}
-
-.id-card .detail-value {
-	word-break: break-all;
-	margin-top: 4px;
-	font-family: monospace;
-	font-size: 0.9em;
-	background-color: var(--color-background-dark);
-	padding: 4px 6px;
-	border-radius: 3px;
-}
-
 .uuid-value {
 	font-size: 0.9em;
 	color: var(--color-text-maxcontrast);
@@ -1048,64 +1024,12 @@
   flex-shrink: 0;
 }
 
-/* Warning Messages */
-.properties-warning {
-  margin-top: 15px;
-}
-
 /* ========================================
    CHIPS AND TAGS
    ======================================== */
 
-/* Property Name with Chips */
-.name-with-chips {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  flex-wrap: wrap;
-}
-
 .property-name {
   font-weight: 500;
-}
-
-.inline-chips {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 4px;
-  align-items: center;
-}
-
-/* Nextcloud-style Chips */
-.property-chip {
-  display: inline-block;
-  padding: 2px 6px;
-  border-radius: var(--border-radius-pill);
-  font-size: 0.7em;
-  font-weight: 500;
-  line-height: 1.2;
-  white-space: nowrap;
-}
-
-.chip-primary {
-  background-color: var(--color-primary-element-light);
-  color: var(--color-primary-element-text);
-}
-
-.chip-secondary {
-  background-color: var(--color-background-dark);
-  color: var(--color-text-maxcontrast);
-  border: 1px solid var(--color-border);
-}
-
-.chip-warning {
-  background-color: var(--color-warning);
-  color: var(--color-main-background);
-}
-
-.chip-success {
-  background-color: var(--color-success);
-  color: var(--color-main-background);
 }
 
 /* Enum Chips */
@@ -1163,8 +1087,7 @@
    ======================================== */
 
 /* Name Input Containers */
-.name-input-container,
-.name-display-container {
+.name-input-container {
   display: flex;
   align-items: center;
   gap: 8px;
