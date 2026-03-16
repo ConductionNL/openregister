@@ -53,8 +53,7 @@ use DateTime;
  * Dynamic table search handler for MagicMapper
  *
  * This class provides comprehensive search functionality for dynamically created
- * schema-based tables, supporting all the search patterns available in ObjectEntityMapper
- * but optimized for schema-specific table structures.
+ * schema-based tables, optimized for schema-specific table structures.
  *
  * @SuppressWarnings(PHPMD.ExcessiveClassComplexity)
  * @SuppressWarnings(PHPMD.ExcessiveClassLength)     Search handler requires many specialized query building methods
@@ -149,8 +148,8 @@ class MagicSearchHandler
     /**
      * Search objects in a specific register-schema table using clean query structure
      *
-     * This method provides the same search capabilities as ObjectEntityMapper::searchObjects()
-     * but optimized for schema-specific dynamic tables.
+     * This method provides comprehensive search capabilities optimized for
+     * schema-specific dynamic tables.
      *
      * @param array    $query     Search query array with filters and options
      * @param Register $register  Register context for the search
@@ -180,6 +179,12 @@ class MagicSearchHandler
         $offset = $query['_offset'] ?? null;
         $page   = $query['_page'] ?? null;
         $order  = $query['_order'] ?? [];
+        // The _order parameter may arrive as a JSON string from URL query params.
+        if (is_string($order) === true) {
+            $decoded = json_decode($order, true);
+            $order   = is_array($decoded) === true ? $decoded : [];
+        }
+
         $count  = $query['_count'] ?? false;
         $search = $query['_search'] ?? null;
 
@@ -226,14 +231,14 @@ class MagicSearchHandler
                 );
             }
 
-            $queryBuilder->setMaxResults($limit)
-                ->setFirstResult($offset);
-
-            // Apply sorting (skip for count queries).
-            // Pass search term for relevance sorting support.
+            // Apply sorting BEFORE pagination so the query optimizer can use
+            // indexes for ORDER BY … LIMIT instead of sorting the full result set.
             if (empty($order) === false) {
                 $this->applySorting(qb: $queryBuilder, order: $order, schema: $schema, searchTerm: $searchTerm);
             }
+
+            $queryBuilder->setMaxResults($limit)
+                ->setFirstResult($offset);
         }//end if
 
         // Execute query and return results.
@@ -267,17 +272,16 @@ class MagicSearchHandler
         // Extract options from query (prefixed with _).
         $search         = $query['_search'] ?? null;
         $includeDeleted = $query['_includeDeleted'] ?? false;
-        $published      = $query['_published'] ?? false;
         $ids            = $query['_ids'] ?? null;
-        $rbac           = $query['_rbac'] ?? true;
-        $multitenancy   = $query['_multitenancy'] ?? true;
+        $_rbac           = $query['_rbac'] ?? true;
+        $_multitenancy   = $query['_multitenancy'] ?? true;
         $relationsContains = $query['_relations_contains'] ?? null;
         $source            = $query['_source'] ?? null;
 
         // Resolve multitenancy flag based on public schema access and explicit request.
         $multitenancyExplicit = $this->isExplicitlyTrue(value: $query['_multitenancy_explicit'] ?? false);
-        $multitenancy         = $this->resolveMultitenancyFlag(
-            multitenancy: $multitenancy,
+        $_multitenancy         = $this->resolveMultitenancyFlag(
+            _multitenancy: $_multitenancy,
             multitenancyExplicit: $multitenancyExplicit,
             source: $source,
             schema: $schema
@@ -296,15 +300,15 @@ class MagicSearchHandler
         $queryBuilder = $this->db->getQueryBuilder();
         $queryBuilder->from($tableName, 't');
 
-        // Apply basic filters (deleted, published, etc.).
-        $this->applyBasicFilters(qb: $queryBuilder, includeDeleted: $includeDeleted, published: $published);
+        // Apply basic filters (deleted, etc.).
+        $this->applyBasicFilters(qb: $queryBuilder, includeDeleted: $includeDeleted);
 
         // Apply multi-tenancy and RBAC access control filters.
         $this->applyAccessControlFilters(
             qb: $queryBuilder,
             schema: $schema,
-            rbac: $rbac,
-            multitenancy: $multitenancy,
+            _rbac: $_rbac,
+            _multitenancy: $_multitenancy,
             multitenancyExplicit: $multitenancyExplicit
         );
 
@@ -368,21 +372,15 @@ class MagicSearchHandler
         // Extract options from query.
         $search         = $query['_search'] ?? null;
         $includeDeleted = $query['_includeDeleted'] ?? false;
-        $published      = $query['_published'] ?? false;
-        $rbac           = $query['_rbac'] ?? true;
+        $_rbac           = $query['_rbac'] ?? true;
 
         // 1. Deleted filter.
         if ($includeDeleted === false) {
             $conditions[] = '_deleted IS NULL';
         }
 
-        // 2. Published filter.
-        if ($published === true) {
-            $conditions[] = $this->buildPublishedConditionSql(connection: $connection);
-        }
-
-        // 3. RBAC filter (role-based access control).
-        if ($rbac === true) {
+        // 2. RBAC filter (role-based access control).
+        if ($_rbac === true) {
             $rbacCondition = $this->buildRbacConditionSql(schema: $schema);
             if ($rbacCondition !== null) {
                 $conditions[] = $rbacCondition;
@@ -412,21 +410,6 @@ class MagicSearchHandler
 
         return $conditions;
     }//end buildWhereConditionsSql()
-
-    /**
-     * Build the published status SQL condition
-     *
-     * @param object $connection Database connection for value quoting
-     *
-     * @return string SQL condition for published filter
-     */
-    private function buildPublishedConditionSql(object $connection): string
-    {
-        $now       = (new DateTime())->format('Y-m-d H:i:s');
-        $quotedNow = $connection->quote($now);
-
-        return "(_published IS NOT NULL AND _published <= {$quotedNow} AND (_depublished IS NULL OR _depublished > {$quotedNow}))";
-    }//end buildPublishedConditionSql()
 
     /**
      * Build the RBAC SQL condition
@@ -638,7 +621,6 @@ class MagicSearchHandler
             '_aggregations',
             '_debug',
             '_source',
-            '_published',
             '_rbac',
             '_multitenancy',
             '_validation',
@@ -662,35 +644,20 @@ class MagicSearchHandler
     }//end getReservedParams()
 
     /**
-     * Apply basic filters like deleted and published status
+     * Apply basic filters like deleted status
      *
      * @param IQueryBuilder $qb             Query builder to modify
      * @param bool          $includeDeleted Whether to include deleted objects
-     * @param bool          $published      Whether to filter for published objects only
      *
      * @return void
      */
-    private function applyBasicFilters(IQueryBuilder $qb, bool $includeDeleted, bool $published): void
+    private function applyBasicFilters(IQueryBuilder $qb, bool $includeDeleted): void
     {
         // Handle deleted filter.
         if ($includeDeleted === false) {
             $qb->andWhere($qb->expr()->isNull('t._deleted'));
         }
 
-        // Handle published filter.
-        if ($published === true) {
-            $now = (new DateTime())->format('Y-m-d H:i:s');
-            $qb->andWhere(
-                $qb->expr()->andX(
-                    $qb->expr()->isNotNull('t._published'),
-                    $qb->expr()->lte('t._published', $qb->createNamedParameter($now)),
-                    $qb->expr()->orX(
-                        $qb->expr()->isNull('t._depublished'),
-                        $qb->expr()->gt('t._depublished', $qb->createNamedParameter($now))
-                    )
-                )
-            );
-        }
     }//end applyBasicFilters()
 
     /**
@@ -717,7 +684,7 @@ class MagicSearchHandler
      * multitenancy with _multi=true. This allows public data to be visible across orgs
      * while still giving users the option to filter by their own organisation.
      *
-     * @param bool        $multitenancy         Current multitenancy flag
+     * @param bool        $_multitenancy         Current multitenancy flag
      * @param bool        $multitenancyExplicit Whether multitenancy was explicitly requested
      * @param string|null $source               Data source type
      * @param Schema      $schema               Schema to check for public access
@@ -725,12 +692,12 @@ class MagicSearchHandler
      * @return bool Resolved multitenancy flag
      */
     private function resolveMultitenancyFlag(
-        bool $multitenancy,
+        bool $_multitenancy,
         bool $multitenancyExplicit,
         ?string $source,
         Schema $schema
     ): bool {
-        if ($multitenancy === true && $source !== 'database') {
+        if ($_multitenancy === true && $source !== 'database') {
             $schemaAuth = $schema->getAuthorization();
             $readGroups = $schemaAuth['read'] ?? [];
             $hasPublic  = $this->hasPublicReadAccess(readRules: $readGroups);
@@ -741,21 +708,21 @@ class MagicSearchHandler
             }
         }
 
-        return $multitenancy;
+        return $_multitenancy;
     }//end resolveMultitenancyFlag()
 
     /**
      * Apply access control filters (multitenancy and RBAC) to the query
      *
-     * Handles the interaction between RBAC and multitenancy:
+     * Handles the interaction between RBAC and _multitenancy:
      * - When user has NO RBAC access: Apply multitenancy as normal (AND restriction)
      * - When user HAS RBAC access AND _multi=true: Apply multitenancy AFTER RBAC
      * - When user HAS RBAC access AND _multi=false: Skip multitenancy (RBAC handles access)
      *
      * @param IQueryBuilder $qb                   Query builder to modify
      * @param Schema        $schema               Schema for access control rules
-     * @param bool          $rbac                 Whether RBAC filtering is enabled
-     * @param bool          $multitenancy         Whether multitenancy filtering is enabled
+     * @param bool          $_rbac                 Whether RBAC filtering is enabled
+     * @param bool          $_multitenancy         Whether multitenancy filtering is enabled
      * @param bool          $multitenancyExplicit Whether multitenancy was explicitly requested
      *
      * @return void
@@ -763,14 +730,14 @@ class MagicSearchHandler
     private function applyAccessControlFilters(
         IQueryBuilder $qb,
         Schema $schema,
-        bool $rbac,
-        bool $multitenancy,
+        bool $_rbac,
+        bool $_multitenancy,
         bool $multitenancyExplicit
     ): void {
         // Check if user qualifies for any RBAC rule (simple or conditional).
         // When user has RBAC access, multitenancy is bypassed by default (RBAC controls access).
         $userHasRbacAccess = false;
-        if ($rbac === true) {
+        if ($_rbac === true) {
             $userHasRbacAccess = $this->rbacHandler->hasConditionalRulesBypassingMultitenancy(
                 schema: $schema,
                 action: 'read'
@@ -778,7 +745,7 @@ class MagicSearchHandler
         }
 
         // Apply multitenancy filter based on RBAC access and explicit request.
-        if ($multitenancy === true) {
+        if ($_multitenancy === true) {
             $applyMultitenancy = false;
 
             if ($userHasRbacAccess === false) {
@@ -795,14 +762,13 @@ class MagicSearchHandler
             if ($applyMultitenancy === true) {
                 $this->organizationHandler->applyOrganizationFilter(
                     qb: $qb,
-                    allowPublishedAccess: $this->organizationHandler->shouldPublishedBypassMultiTenancy(),
                     adminBypassEnabled: $this->organizationHandler->isAdminOverrideEnabled()
                 );
             }
         }//end if
 
         // Apply RBAC filtering if enabled.
-        if ($rbac === true) {
+        if ($_rbac === true) {
             $this->rbacHandler->applyRbacFilters(
                 qb: $qb,
                 schema: $schema,
@@ -1183,8 +1149,6 @@ class MagicSearchHandler
                         '_schema',
                         '_owner',
                         '_organisation',
-                        '_published',
-                        '_depublished',
                     ],
                     true
                     ) === true
@@ -1334,10 +1298,6 @@ class MagicSearchHandler
                 $objectEntity->setUpdated(new DateTime($metadataData['updated']));
             }
 
-            if (($metadataData['published'] ?? null) !== null) {
-                $objectEntity->setPublished(new DateTime($metadataData['published']));
-            }
-
             if (($metadataData['deleted'] ?? null) !== null) {
                 // Convert deleted timestamp to array format expected by setDeleted.
                 $deletedDateTime = new DateTime($metadataData['deleted']);
@@ -1347,10 +1307,6 @@ class MagicSearchHandler
                         'deletedBy' => $metadataData['deletedBy'] ?? null,
                     ]
                 );
-            }
-
-            if (($metadataData['depublished'] ?? null) !== null) {
-                $objectEntity->setDepublished(new DateTime($metadataData['depublished']));
             }
 
             // Set relevance score if present (from fuzzy search).

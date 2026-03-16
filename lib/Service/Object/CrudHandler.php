@@ -23,7 +23,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Object;
 
 use Exception;
-use OCA\OpenRegister\Db\ObjectEntityMapper;
+use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService;
 use Psr\Log\LoggerInterface;
@@ -52,12 +52,12 @@ class CrudHandler
     /**
      * Constructor
      *
-     * @param ObjectEntityMapper $objectEntityMapper Object entity mapper
-     * @param ObjectService      $objectService      Object service for save/search operations
-     * @param LoggerInterface    $logger             PSR-3 logger
+     * @param MagicMapper $objectMapper  Object entity mapper
+     * @param ObjectService       $objectService Object service for save/search operations
+     * @param LoggerInterface     $logger        PSR-3 logger
      */
     public function __construct(
-        private readonly ObjectEntityMapper $objectEntityMapper,
+        private readonly MagicMapper $objectMapper,
         private readonly ObjectService $objectService,
         private readonly LoggerInterface $logger
     ) {
@@ -67,9 +67,8 @@ class CrudHandler
      * List objects with filters and pagination
      *
      * @param array       $query         Search query parameters
-     * @param bool        $rbac          Apply RBAC filters
+     * @param bool        $_rbac          Apply RBAC filters
      * @param bool        $_multitenancy Apply multitenancy filters
-     * @param bool        $published     Only return published objects
      * @param bool        $deleted       Include deleted objects
      * @param array|null  $_ids          Optional array of object IDs to filter
      * @param string|null $_uses         Optional object ID that results must use
@@ -85,9 +84,8 @@ class CrudHandler
      */
     public function list(
         array $query=[],
-        bool $rbac=true,
+        bool $_rbac=true,
         bool $_multitenancy=true,
-        bool $published=false,
         bool $deleted=false,
         ?array $_ids=null,
         ?string $_uses=null,
@@ -99,9 +97,8 @@ class CrudHandler
                 'file'          => __FILE__,
                 'line'          => __LINE__,
                 'query_params'  => array_keys($query),
-                'rbac'          => $rbac,
+                'rbac'          => $_rbac,
                 '_multitenancy' => $_multitenancy,
-                'published'     => $published,
                 'deleted'       => $deleted,
             ]
         );
@@ -109,9 +106,9 @@ class CrudHandler
         try {
             // TODO: Implement proper search logic (placeholder).
             $result = ['results' => [], 'total' => 0];
-            // $this->objectEntityMapper->searchObjectsPaginated(
+            // $this->objectMapper->searchObjectsPaginated(
             // Query: $query,
-            // _rbac: $rbac,
+            // _rbac: $_rbac,
             // _multitenancy: $multi,
             // Published: $published,
             // Deleted: $deleted,
@@ -148,7 +145,7 @@ class CrudHandler
      * Get a single object by ID
      *
      * @param string $objectId      Object ID or UUID
-     * @param bool   $rbac          Apply RBAC filters
+     * @param bool   $_rbac          Apply RBAC filters
      * @param bool   $_multitenancy Apply multitenancy filters
      *
      * @return null Object entity or null if not found
@@ -157,7 +154,7 @@ class CrudHandler
      *
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag) - Boolean flags control RBAC and multitenancy behavior
      */
-    public function get(string $objectId, bool $rbac=true, bool $_multitenancy=true)
+    public function get(string $objectId, bool $_rbac=true, bool $_multitenancy=true)
     {
         $this->logger->debug(
             message: '[CrudHandler] Getting object',
@@ -165,7 +162,7 @@ class CrudHandler
                 'file'          => __FILE__,
                 'line'          => __LINE__,
                 'object_id'     => $objectId,
-                'rbac'          => $rbac,
+                'rbac'          => $_rbac,
                 '_multitenancy' => $_multitenancy,
             ]
         );
@@ -195,7 +192,7 @@ class CrudHandler
      * Create a new object
      *
      * @param array $data          Object data
-     * @param bool  $rbac          Apply RBAC filters
+     * @param bool  $_rbac          Apply RBAC filters
      * @param bool  $_multitenancy Apply multitenancy filters
      *
      * @return null Created object
@@ -204,7 +201,7 @@ class CrudHandler
      *
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag) - Boolean flags control RBAC and multitenancy behavior
      */
-    public function create(array $data, bool $rbac=true, bool $_multitenancy=true)
+    public function create(array $data, bool $_rbac=true, bool $_multitenancy=true)
     {
         $this->logger->info(
             message: '[CrudHandler] Creating object',
@@ -212,7 +209,7 @@ class CrudHandler
                 'file'          => __FILE__,
                 'line'          => __LINE__,
                 'data_keys'     => array_keys($data),
-                'rbac'          => $rbac,
+                'rbac'          => $_rbac,
                 '_multitenancy' => $_multitenancy,
             ]
         );
@@ -244,7 +241,7 @@ class CrudHandler
      *
      * @param string $objectId      Object ID or UUID
      * @param array  $data          Object data
-     * @param bool   $rbac          Apply RBAC filters
+     * @param bool   $_rbac          Apply RBAC filters
      * @param bool   $_multitenancy Apply multitenancy filters
      *
      * @return null Updated object
@@ -256,7 +253,7 @@ class CrudHandler
     public function update(
         string $objectId,
         array $data,
-        bool $rbac=true,
+        bool $_rbac=true,
         bool $_multitenancy=true
     ) {
         $this->logger->info(
@@ -266,7 +263,7 @@ class CrudHandler
                 'line'          => __LINE__,
                 'object_id'     => $objectId,
                 'data_keys'     => array_keys($data),
-                'rbac'          => $rbac,
+                'rbac'          => $_rbac,
                 '_multitenancy' => $_multitenancy,
             ]
         );
@@ -303,7 +300,7 @@ class CrudHandler
      *
      * @param string $objectId      Object ID or UUID
      * @param array  $data          Partial object data
-     * @param bool   $rbac          Apply RBAC filters
+     * @param bool   $_rbac          Apply RBAC filters
      * @param bool   $_multitenancy Apply multitenancy filters
      *
      * @return ObjectEntity Patched object
@@ -315,7 +312,7 @@ class CrudHandler
     public function patch(
         string $objectId,
         array $data,
-        bool $rbac=true,
+        bool $_rbac=true,
         bool $_multitenancy=true
     ): ObjectEntity {
         $this->logger->info(
@@ -325,14 +322,14 @@ class CrudHandler
                 'line'          => __LINE__,
                 'object_id'     => $objectId,
                 'data_keys'     => array_keys($data),
-                'rbac'          => $rbac,
+                'rbac'          => $_rbac,
                 '_multitenancy' => $_multitenancy,
             ]
         );
 
         try {
             // Get existing object.
-            $object = $this->get(objectId: $objectId, rbac: $rbac, _multitenancy: $_multitenancy);
+            $object = $this->get(objectId: $objectId, _rbac: $_rbac, _multitenancy: $_multitenancy);
 
             if ($object === null) {
                 throw new Exception("Object not found: {$objectId}");
@@ -346,7 +343,7 @@ class CrudHandler
             $updatedObject = $this->objectService->saveObject(
                 object: $mergedData,
                 uuid: $objectId,
-                _rbac: $rbac,
+                _rbac: $_rbac,
                 _multitenancy: $_multitenancy
             );
 
@@ -379,7 +376,7 @@ class CrudHandler
      * Delete an object
      *
      * @param string $objectId      Object ID or UUID
-     * @param bool   $rbac          Apply RBAC filters
+     * @param bool   $_rbac          Apply RBAC filters
      * @param bool   $_multitenancy Apply multitenancy filters
      *
      * @return true True if deleted successfully
@@ -388,7 +385,7 @@ class CrudHandler
      *
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag) - Boolean flags control RBAC and multitenancy behavior
      */
-    public function delete(string $objectId, bool $rbac=true, bool $_multitenancy=true): bool
+    public function delete(string $objectId, bool $_rbac=true, bool $_multitenancy=true): bool
     {
         $this->logger->info(
             message: '[CrudHandler] Deleting object',
@@ -396,16 +393,16 @@ class CrudHandler
                 'file'          => __FILE__,
                 'line'          => __LINE__,
                 'object_id'     => $objectId,
-                'rbac'          => $rbac,
+                'rbac'          => $_rbac,
                 '_multitenancy' => $_multitenancy,
             ]
         );
 
         try {
             // TODO: Implement proper delete logic
-            // $this->objectEntityMapper->deleteObject(
+            // $this->objectMapper->deleteObject(
             // Uuid: $objectId,
-            // _rbac: $rbac,
+            // _rbac: $_rbac,
             // _multitenancy: $multi.
             // );.
             $this->logger->info(

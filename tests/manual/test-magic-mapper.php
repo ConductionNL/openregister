@@ -21,7 +21,7 @@
 require_once __DIR__.'/../../../../lib/base.php';
 
 use OCA\OpenRegister\AppInfo\Application;
-use OCA\OpenRegister\Db\UnifiedObjectMapper;
+use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
@@ -42,10 +42,10 @@ function testMagicMapper(): void
 
         echo "✓ Application container loaded\n";
 
-        // Test 1: Can we get UnifiedObjectMapper from DI?
-        echo "\n1. Testing UnifiedObjectMapper DI...\n";
-        $mapper = $container->get(UnifiedObjectMapper::class);
-        echo "✓ UnifiedObjectMapper instantiated: ".get_class($mapper)."\n";
+        // Test 1: Can we get MagicMapper from DI?
+        echo "\n1. Testing MagicMapper DI...\n";
+        $mapper = $container->get(MagicMapper::class);
+        echo "✓ MagicMapper instantiated: ".get_class($mapper)."\n";
 
         // Test 2: Can we get RegisterMapper and SchemaMapper?
         echo "\n2. Testing RegisterMapper and SchemaMapper...\n";
@@ -93,8 +93,8 @@ function testMagicMapper(): void
             echo "  (Not persisting test configuration)\n";
         }
 
-        // Test 5: Verify UnifiedObjectMapper methods exist.
-        echo "\n5. Testing UnifiedObjectMapper interface...\n";
+        // Test 5: Verify MagicMapper methods exist.
+        echo "\n5. Testing MagicMapper interface...\n";
         $methods = get_class_methods($mapper);
         $requiredMethods = ['find', 'findAll', 'insert', 'update', 'delete', 'lockObject', 'ultraFastBulkSave'];
 
@@ -109,7 +109,7 @@ function testMagicMapper(): void
         echo "\n=== All Tests Passed! ===\n";
         echo "\n";
         echo "Summary:\n";
-        echo "- UnifiedObjectMapper: Available via DI ✓\n";
+        echo "- MagicMapper: Available via DI ✓\n";
         echo "- Database migration: Configuration column exists ✓\n";
         echo "- Register methods: Working correctly ✓\n";
         echo "- AbstractObjectMapper interface: Implemented ✓\n";
@@ -118,7 +118,7 @@ function testMagicMapper(): void
         echo "1. Create a test register and schema\n";
         echo "2. Enable magic mapping for the schema\n";
         echo "3. Create a test object and verify table creation\n";
-        echo "4. Integrate UnifiedObjectMapper into ObjectService\n";
+        echo "4. Integrate MagicMapper into ObjectService\n";
     } catch (\Exception $e) {
         echo "\n✗ ERROR: ".$e->getMessage()."\n";
         echo "Stack trace:\n".$e->getTraceAsString()."\n";

@@ -47,7 +47,7 @@ use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Db\ObjectEntityMapper;
+use OCA\OpenRegister\Db\UnifiedObjectMapper;
 use OCA\OpenRegister\Service\OrganisationService;
 use OCA\OpenRegister\Service\RegisterService;
 use OCA\OpenRegister\Service\ObjectService;
@@ -95,9 +95,9 @@ class EntityOrganisationAssignmentTest extends TestCase
     private $schemaMapper;
 
     /**
-     * @var ObjectEntityMapper|MockObject
+     * @var UnifiedObjectMapper|MockObject
      */
-    private $objectEntityMapper;
+    private $objectMapper;
 
     /**
      * @var IUserSession|MockObject
@@ -172,7 +172,7 @@ class EntityOrganisationAssignmentTest extends TestCase
         $this->organisationMapper = $this->createMock(OrganisationMapper::class);
         $this->registerMapper = $this->createMock(RegisterMapper::class);
         $this->schemaMapper = $this->createMock(SchemaMapper::class);
-        $this->objectEntityMapper = $this->createMock(ObjectEntityMapper::class);
+        $this->objectMapper = $this->createMock(UnifiedObjectMapper::class);
         $this->userSession = $this->createMock(IUserSession::class);
         $this->session = $this->createMock(ISession::class);
         $this->ncConfig = $this->createMock(IConfig::class);
@@ -219,7 +219,7 @@ class EntityOrganisationAssignmentTest extends TestCase
             $this->organisationMapper,
             $this->registerMapper,
             $this->schemaMapper,
-            $this->objectEntityMapper,
+            $this->objectMapper,
             $this->userSession,
             $this->session,
             $this->ncConfig,
@@ -560,7 +560,7 @@ class EntityOrganisationAssignmentTest extends TestCase
         ];
 
         // Mock: Entity filtering by organisation.
-        $this->objectEntityMapper
+        $this->objectMapper
             ->expects($this->once())
             ->method('findAll')
             ->with(
@@ -575,7 +575,7 @@ class EntityOrganisationAssignmentTest extends TestCase
             ->willReturn([]);
 
         // Act: Perform bulk operation with organisation filtering.
-        $results = $this->objectEntityMapper->findAll(
+        $results = $this->objectMapper->findAll(
             null, // limit
             null, // offset
             ['organisation' => array_keys($userOrgs)] // organisation filter

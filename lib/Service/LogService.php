@@ -26,10 +26,9 @@ use RuntimeException;
 use SimpleXMLElement;
 use stdClass;
 use OCA\OpenRegister\Db\AuditTrailMapper;
-use OCA\OpenRegister\Db\ObjectEntityMapper;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
-use OCA\OpenRegister\Db\UnifiedObjectMapper;
+use OCA\OpenRegister\Db\MagicMapper;
 
 /**
  * LogService handles audit trail logs
@@ -62,22 +61,13 @@ class LogService
     private readonly AuditTrailMapper $auditTrailMapper;
 
     /**
-     * Object entity mapper
+     * Unified object mapper for magic tables
      *
-     * Used to validate object existence and retrieve object details.
+     * Used to find objects across all magic tables.
      *
-     * @var ObjectEntityMapper Object entity mapper instance
+     * @var MagicMapper Unified object mapper instance
      */
-    private readonly ObjectEntityMapper $objectEntityMapper;
-
-    /**
-     * Unified object mapper for both magic tables and blob storage
-     *
-     * Used to find objects regardless of storage type.
-     *
-     * @var UnifiedObjectMapper Unified object mapper instance
-     */
-    private readonly UnifiedObjectMapper $unifiedObjectMapper;
+    private readonly MagicMapper $unifiedObjectMapper;
 
     /**
      * Register mapper
@@ -103,23 +93,20 @@ class LogService
      * Initializes the LogService with required mapper dependencies for handling
      * audit trail logs and related entities.
      *
-     * @param AuditTrailMapper    $auditTrailMapper    Mapper for audit trail database operations.
-     * @param ObjectEntityMapper  $objectEntityMapper  Mapper for object entity database operations.
-     * @param UnifiedObjectMapper $unifiedObjectMapper Mapper for unified object database operations.
-     * @param RegisterMapper      $registerMapper      Mapper for register database operations.
-     * @param SchemaMapper        $schemaMapper        Mapper for schema database operations.
+     * @param AuditTrailMapper $auditTrailMapper    Mapper for audit trail database operations.
+     * @param MagicMapper      $unifiedObjectMapper Mapper for unified object database operations.
+     * @param RegisterMapper   $registerMapper      Mapper for register database operations.
+     * @param SchemaMapper     $schemaMapper        Mapper for schema database operations.
      *
      * @return void
      */
     public function __construct(
         AuditTrailMapper $auditTrailMapper,
-        ObjectEntityMapper $objectEntityMapper,
-        UnifiedObjectMapper $unifiedObjectMapper,
+        MagicMapper $unifiedObjectMapper,
         RegisterMapper $registerMapper,
         SchemaMapper $schemaMapper
     ) {
         $this->auditTrailMapper    = $auditTrailMapper;
-        $this->objectEntityMapper  = $objectEntityMapper;
         $this->unifiedObjectMapper = $unifiedObjectMapper;
         $this->registerMapper      = $registerMapper;
         $this->schemaMapper        = $schemaMapper;
@@ -154,7 +141,7 @@ class LogService
     {
         // Step 1: Get the object to ensure it exists.
         // Include deleted objects so audit trail is accessible even after soft-delete.
-        // Use findAcrossAllSources to search both blob storage AND magic tables.
+        // Use findAcrossAllSources to search across all magic tables.
         $result = $this->unifiedObjectMapper->findAcrossAllSources(
             identifier: $id,
             includeDeleted: true,
@@ -221,7 +208,7 @@ class LogService
     {
         // Step 1: Get the object to ensure it exists.
         // Include deleted objects so audit trail count is accessible even after soft-delete.
-        // Use findAcrossAllSources to search both blob storage AND magic tables.
+        // Use findAcrossAllSources to search across all magic tables.
         $result = $this->unifiedObjectMapper->findAcrossAllSources(
             identifier: $id,
             includeDeleted: true,

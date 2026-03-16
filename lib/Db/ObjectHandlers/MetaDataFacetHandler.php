@@ -167,11 +167,16 @@ class MetaDataFacetHandler
     {
         $queryBuilder = $this->db->getQueryBuilder();
 
-        // Build date histogram query based on interval.
-        $dateFormat = $this->getDateFormatForInterval(interval: $interval);
+        // Build interval-specific grouping expression.
+        if ($interval === 'quarter') {
+            $dateKeySql = "CONCAT(YEAR($field), '-Q', QUARTER($field))";
+        } else {
+            $dateFormat = $this->getDateFormatForInterval(interval: $interval);
+            $dateKeySql = "DATE_FORMAT($field, '$dateFormat')";
+        }
 
         $queryBuilder->selectAlias(
-            $queryBuilder->createFunction("DATE_FORMAT($field, '$dateFormat')"),
+            $queryBuilder->createFunction($dateKeySql),
             'date_key'
         )
             ->selectAlias($queryBuilder->createFunction('COUNT(*)'), 'doc_count')
@@ -187,10 +192,19 @@ class MetaDataFacetHandler
         $buckets = [];
 
         while (($row = $result->fetch()) !== false) {
-            $buckets[] = [
+            $bucket = [
                 'key'     => $row['date_key'],
                 'results' => (int) $row['doc_count'],
             ];
+
+            // Add from/to bounds based on interval.
+            $bounds = $this->getDateBoundsForBucket(dateKey: $row['date_key'], interval: $interval);
+            if ($bounds !== null) {
+                $bucket['from'] = $bounds['from'];
+                $bucket['to']   = $bounds['to'];
+            }
+
+            $buckets[] = $bucket;
         }
 
         return [
@@ -199,6 +213,67 @@ class MetaDataFacetHandler
             'buckets'  => $buckets,
         ];
     }//end getDateHistogramFacet()
+
+    /**
+     * Get date bounds (from/to) for a histogram bucket based on interval.
+     *
+     * @param string $dateKey  The bucket key (e.g., '2025', '2025-03', '2025-Q1').
+     * @param string $interval The histogram interval.
+     *
+     * @return array{from: string, to: string}|null The date bounds or null if unparseable.
+     */
+    private function getDateBoundsForBucket(string $dateKey, string $interval): ?array
+    {
+        switch ($interval) {
+            case 'year':
+                $year = (int) $dateKey;
+                return [
+                    'from' => $year.'-01-01',
+                    'to'   => $year.'-12-31',
+                ];
+
+            case 'quarter':
+                if (preg_match('/^(\d{4})-Q(\d)$/', $dateKey, $matches) === 1) {
+                    $year       = (int) $matches[1];
+                    $quarter    = (int) $matches[2];
+                    $startMonth = (($quarter - 1) * 3) + 1;
+                    $endMonth   = $startMonth + 2;
+                    $lastDay    = (int) date('t', mktime(0, 0, 0, $endMonth, 1, $year));
+                    return [
+                        'from' => sprintf('%04d-%02d-01', $year, $startMonth),
+                        'to'   => sprintf('%04d-%02d-%02d', $year, $endMonth, $lastDay),
+                    ];
+                }
+                return null;
+
+            case 'month':
+                $date = \DateTime::createFromFormat('Y-m', $dateKey);
+                if ($date !== false) {
+                    return [
+                        'from' => $date->format('Y-m-01'),
+                        'to'   => $date->format('Y-m-t'),
+                    ];
+                }
+                return null;
+
+            case 'week':
+                if (preg_match('/^(\d{4})-(\d{1,2})$/', $dateKey, $matches) === 1) {
+                    $date = new \DateTime();
+                    $date->setISODate((int) $matches[1], (int) $matches[2], 1);
+                    $from = $date->format('Y-m-d');
+                    $date->setISODate((int) $matches[1], (int) $matches[2], 7);
+                    $to = $date->format('Y-m-d');
+                    return ['from' => $from, 'to' => $to];
+                }
+                return null;
+
+            case 'day':
+                return ['from' => $dateKey, 'to' => $dateKey];
+
+            default:
+                return null;
+        }//end switch
+    }//end getDateBoundsForBucket()
 
     /**
      * Get range facet for a metadata field
@@ -300,30 +375,14 @@ class MetaDataFacetHandler
      */
     private function applyBaseFilters(IQueryBuilder $queryBuilder, array $baseQuery): void
     {
-        // Apply basic filters like deleted, published, etc.
+        // Apply basic filters like deleted, etc.
         $includeDeleted = $baseQuery['_includeDeleted'] ?? false;
-        $published      = $baseQuery['_published'] ?? false;
         $search         = $baseQuery['_search'] ?? null;
         $ids            = $baseQuery['_ids'] ?? null;
 
         // By default, only include objects where 'deleted' is NULL unless $includeDeleted is true.
         if ($includeDeleted === false) {
             $queryBuilder->andWhere($queryBuilder->expr()->isNull('deleted'));
-        }
-
-        // If published filter is set, only include objects that are currently published.
-        if ($published === true) {
-            $now = (new DateTime())->format('Y-m-d H:i:s');
-            $queryBuilder->andWhere(
-                $queryBuilder->expr()->andX(
-                    $queryBuilder->expr()->isNotNull('published'),
-                    $queryBuilder->expr()->lte('published', $queryBuilder->createNamedParameter($now)),
-                    $queryBuilder->expr()->orX(
-                        $queryBuilder->expr()->isNull('depublished'),
-                        $queryBuilder->expr()->gt('depublished', $queryBuilder->createNamedParameter($now))
-                    )
-                )
-            );
         }
 
         // Apply full-text search if provided.
@@ -1102,6 +1161,8 @@ class MetaDataFacetHandler
             case 'week':
                 return '%Y-%u';
             case 'month':
+                return '%Y-%m';
+            case 'quarter':
                 return '%Y-%m';
             case 'year':
                 return '%Y';

@@ -16,7 +16,6 @@ namespace OCA\OpenRegister\Service;
 
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Db\ObjectEntityMapper;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
@@ -28,23 +27,21 @@ use Psr\Log\LoggerInterface;
 /**
  * Service for migrating objects between blob storage and magic tables.
  *
- * Blob storage uses the `openregister_objects` table with JSON payload.
- * Magic tables are per-register/schema tables with dedicated SQL columns.
+ * NOTE: Blob storage (ObjectEntityMapper) has been removed. This service
+ * is retained for the status endpoint but migration is no longer possible.
  */
 class MigrationService
 {
     /**
      * Constructor.
      *
-     * @param ObjectEntityMapper $objectEntityMapper The object entity mapper.
-     * @param MagicMapper        $magicMapper        The magic mapper.
-     * @param RegisterMapper     $registerMapper     The register mapper.
-     * @param SchemaMapper       $schemaMapper       The schema mapper.
-     * @param IDBConnection      $db                 The database connection.
-     * @param LoggerInterface    $logger             The logger.
+     * @param MagicMapper     $magicMapper    The magic mapper.
+     * @param RegisterMapper  $registerMapper The register mapper.
+     * @param SchemaMapper    $schemaMapper   The schema mapper.
+     * @param IDBConnection   $db             The database connection.
+     * @param LoggerInterface $logger         The logger.
      */
     public function __construct(
-        private readonly ObjectEntityMapper $objectEntityMapper,
         private readonly MagicMapper $magicMapper,
         private readonly RegisterMapper $registerMapper,
         private readonly SchemaMapper $schemaMapper,
@@ -334,8 +331,8 @@ class MigrationService
                         identifier: $uuid,
                         register: $register,
                         schema: $schema,
-                        rbac: false,
-                        multitenancy: false
+                        _rbac: false,
+                        _multitenancy: false
                     );
                     $this->magicMapper->deleteObjectEntity(
                         entity: $magicEntity,
@@ -388,8 +385,8 @@ class MigrationService
                 identifier: $uuid,
                 register: $register,
                 schema: $schema,
-                rbac: false,
-                multitenancy: false
+                _rbac: false,
+                _multitenancy: false
             );
             return true;
         } catch (DoesNotExistException $e) {

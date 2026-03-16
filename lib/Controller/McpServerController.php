@@ -88,13 +88,13 @@ class McpServerController extends Controller
     /**
      * McpServerController constructor
      *
-     * @param string             $appName         Application name
-     * @param IRequest           $request         Request object
-     * @param McpProtocolService $protocolService MCP protocol service
-     * @param McpToolsService    $toolsService    MCP tools service
+     * @param string              $appName          Application name
+     * @param IRequest            $request          Request object
+     * @param McpProtocolService  $protocolService  MCP protocol service
+     * @param McpToolsService     $toolsService     MCP tools service
      * @param McpResourcesService $resourcesService MCP resources service
-     * @param LoggerInterface    $logger          Logger
-     * @param string             $userId          Authenticated user ID
+     * @param LoggerInterface     $logger           Logger
+     * @param string              $userId           Authenticated user ID
      */
     public function __construct(
         string $appName,
@@ -120,7 +120,7 @@ class McpServerController extends Controller
     public function handle(): Response
     {
         // Read and parse JSON body.
-        $body = file_get_contents('php://input');
+        $body    = file_get_contents('php://input');
         $request = json_decode(json: $body, associative: true);
 
         if ($request === null) {

@@ -26,7 +26,7 @@ use RuntimeException;
 use stdClass;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
-use OCA\OpenRegister\Db\ObjectEntityMapper;
+use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\WebhookLogMapper;
 use OCP\DB\QueryBuilder\IQueryBuilder;
@@ -60,9 +60,9 @@ class DashboardService
      *
      * Handles database operations for object entities.
      *
-     * @var ObjectEntityMapper Object entity mapper instance
+     * @var MagicMapper Object entity mapper instance
      */
-    private readonly ObjectEntityMapper $objectMapper;
+    private readonly MagicMapper $objectMapper;
 
     /**
      * Audit trail mapper
@@ -114,7 +114,7 @@ class DashboardService
      *
      * Initializes service with required mappers and logger for dashboard operations.
      *
-     * @param ObjectEntityMapper $objectMapper     Object entity mapper for object statistics
+     * @param MagicMapper $objectMapper     Object entity mapper for object statistics
      * @param AuditTrailMapper   $auditTrailMapper Audit trail mapper for log statistics
      * @param WebhookLogMapper   $webhookLogMapper Webhook log mapper for webhook statistics
      * @param RegisterMapper     $registerMapper   Register mapper for register operations
@@ -124,7 +124,7 @@ class DashboardService
      * @return void
      */
     public function __construct(
-        ObjectEntityMapper $objectMapper,
+        MagicMapper $objectMapper,
         AuditTrailMapper $auditTrailMapper,
         WebhookLogMapper $webhookLogMapper,
         RegisterMapper $registerMapper,

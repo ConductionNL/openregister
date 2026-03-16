@@ -4,13 +4,13 @@
  * MagicMapper RBAC Handler
  *
  * This handler provides role-based access control (RBAC) filtering for dynamic
- * schema-based tables. It implements the same RBAC logic as ObjectEntityMapper
- * but optimized for schema-specific table structures.
+ * schema-based tables, providing RBAC logic optimized for schema-specific
+ * table structures.
  *
  * KEY RESPONSIBILITIES:
  * - Apply RBAC permission filters to dynamic table queries
  * - Handle user authentication and authorization checks
- * - Support publication-based public access controls
+ * - Support dynamic variables ($organisation, $userId, $now) in conditions
  * - Integrate with Nextcloud's user and group management
  * - Provide consistent security across all dynamic tables
  *
@@ -18,7 +18,7 @@
  * - Schema-level authorization configuration
  * - User ownership validation
  * - Group-based access control
- * - Publication-based public access
+ * - Dynamic variable resolution ($now, $organisation, $userId)
  * - Admin override capabilities
  * - Unauthenticated user handling
  *
@@ -350,6 +350,7 @@ class MagicRbacHandler
      * Supports special variables:
      * - $organisation: Current user's active organisation UUID
      * - $userId: Current user's ID
+     * - $now: Current datetime in SQL format (Y-m-d H:i:s)
      *
      * @param mixed $value The value to resolve
      *
@@ -369,6 +370,11 @@ class MagicRbacHandler
         // Check for $userId variable.
         if ($value === '$userId' || $value === '$user') {
             return $this->userSession->getUser()?->getUID();
+        }
+
+        // Check for $now variable.
+        if ($value === '$now') {
+            return (new DateTime())->format('Y-m-d H:i:s');
         }
 
         return $value;
@@ -555,8 +561,11 @@ class MagicRbacHandler
             return null;
         }
 
+        // Resolve dynamic variables in the operand (e.g. "$now" → current datetime).
+        $resolvedOperand = $this->resolveDynamicValue(value: $operand);
+
         $method = $comparisonMap[$operator];
-        return $qb->expr()->{$method}("t.{$columnName}", $qb->createNamedParameter($operand));
+        return $qb->expr()->{$method}("t.{$columnName}", $qb->createNamedParameter($resolvedOperand));
     }//end buildComparisonOperatorCondition()
 
     /**

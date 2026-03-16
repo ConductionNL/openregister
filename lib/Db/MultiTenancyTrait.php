@@ -186,32 +186,6 @@ trait MultiTenancyTrait
     }//end getActiveOrganisationUuids()
 
     /**
-     * Check if published objects should bypass multi-tenancy filtering.
-     *
-     * This checks the app configuration to determine if published entities
-     * (objects, schemas, registers) should bypass organization filtering.
-     *
-     * @return bool True if published bypass is enabled in config, false otherwise
-     */
-    protected function shouldPublishedObjectsBypassMultiTenancy(): bool
-    {
-        if (isset($this->appConfig) === false) {
-            return false;
-            // Default to false if appConfig not available.
-        }
-
-        $multitenancyConfig = $this->appConfig->getValueString('openregister', 'multitenancy', '');
-        if (empty($multitenancyConfig) === true) {
-            return false;
-            // Default to false for security.
-        }
-
-        $multitenancyData = json_decode($multitenancyConfig, true);
-        $bypassEnabled    = $multitenancyData['publishedObjectsBypassMultiTenancy'] ?? false;
-        return $bypassEnabled;
-    }//end shouldPublishedObjectsBypassMultiTenancy()
-
-    /**
      * Get the current user ID.
      *
      * @return string|null The current user ID or null if no user is logged in
@@ -276,8 +250,7 @@ trait MultiTenancyTrait
      * @param IQueryBuilder $qb                  The query builder
      * @param string        $columnName          The column name for organisation
      * @param bool          $allowNullOrg        Whether admins can see NULL organisation entities
-     * @param string        $tableAlias          Optional table alias for published/depublished
-     * @param bool          $enablePublished     Whether to enable published entity bypass
+     * @param string        $tableAlias          Optional table alias
      * @param bool          $multiTenancyEnabled Whether multitenancy is enabled (default: true)
      *
      * @return void
@@ -291,7 +264,6 @@ trait MultiTenancyTrait
         string $columnName='organisation',
         bool $allowNullOrg=false,
         string $tableAlias='',
-        bool $enablePublished=false,
         bool $multiTenancyEnabled=true
     ): void {
         if ($this->shouldSkipFiltering(multiTenancyEnabled: $multiTenancyEnabled) === true) {
@@ -305,17 +277,13 @@ trait MultiTenancyTrait
 
         $activeOrgUuids     = $this->getActiveOrganisationUuids();
         $organisationColumn = $this->buildQualifiedColumnName(columnName: $columnName, tableAlias: $tableAlias);
-        $pubBypassEnabled   = $this->isPublishedBypassEnabled(enablePublished: $enablePublished);
 
         if (empty($activeOrgUuids) === true) {
             $this->applyNoActiveOrgFilter(
                 qb: $qb,
                 user: $user,
                 allowNullOrg: $allowNullOrg,
-                organisationColumn: $organisationColumn,
-                tableAlias: $tableAlias,
-                enablePublished: $enablePublished,
-                pubBypassEnabled: $pubBypassEnabled
+                organisationColumn: $organisationColumn
             );
             return;
         }
@@ -325,10 +293,7 @@ trait MultiTenancyTrait
             user: $user,
             activeOrgUuids: $activeOrgUuids,
             allowNullOrg: $allowNullOrg,
-            organisationColumn: $organisationColumn,
-            tableAlias: $tableAlias,
-            enablePublished: $enablePublished,
-            pubBypassEnabled: $pubBypassEnabled
+            organisationColumn: $organisationColumn
         );
     }//end applyOrganisationFilter()
 
@@ -405,28 +370,6 @@ trait MultiTenancyTrait
     }//end buildQualifiedColumnName()
 
     /**
-     * Check if published bypass is enabled in config
-     *
-     * @param bool $enablePublished Whether published bypass is requested
-     *
-     * @return bool True if bypass is enabled
-     */
-    private function isPublishedBypassEnabled(bool $enablePublished): bool
-    {
-        if ($enablePublished === false || isset($this->appConfig) === false) {
-            return false;
-        }
-
-        $multitenancyConfig = $this->appConfig->getValueString('openregister', 'multitenancy', '');
-        if (empty($multitenancyConfig) === true) {
-            return false;
-        }
-
-        $multitenancyData = json_decode($multitenancyConfig, true);
-        return $multitenancyData['publishedObjectsBypassMultiTenancy'] ?? false;
-    }//end isPublishedBypassEnabled()
-
-    /**
      * Check if user is an admin
      *
      * @param mixed $user The user object
@@ -466,14 +409,11 @@ trait MultiTenancyTrait
     /**
      * Apply filter when no active organisation is set
      *
-     * @param IQueryBuilder $qb                 Query builder
-     * @param mixed         $user               User object
-     * @param bool          $allowNullOrg       Allow NULL organisation
-     * @param string        $organisationColumn Organisation column name
-     * @param string        $tableAlias         Table alias
-     * @param bool          $enablePublished    Enable published bypass
-     * @param bool          $pubBypassEnabled   Published bypass enabled
-     *
+     * @param  IQueryBuilder $qb                 Query builder
+     * @param  mixed         $user               User object
+     * @param  bool          $allowNullOrg       Allow NULL organisation
+     * @param  string        $organisationColumn Organisation column name
+     * @param  string        $tableAlias         Table alias
      * @return void
      *
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Flags control multitenancy filtering behavior
@@ -482,10 +422,7 @@ trait MultiTenancyTrait
         IQueryBuilder $qb,
         mixed $user,
         bool $allowNullOrg,
-        string $organisationColumn,
-        string $tableAlias,
-        bool $enablePublished,
-        bool $pubBypassEnabled
+        string $organisationColumn
     ): void {
         $isAdmin = $this->isUserAdmin(user: $user);
 
@@ -493,25 +430,15 @@ trait MultiTenancyTrait
             return;
         }
 
-        $conditions = [];
-
         // Allow null organisation entities when explicitly permitted by the caller.
         // This is used for system-wide resources like Registers and Schemas.
         if ($allowNullOrg === true) {
-            $conditions[] = $qb->expr()->isNull($organisationColumn);
-        }
-
-        if ($pubBypassEnabled === true && $enablePublished === true) {
-            $conditions[] = $this->buildPublishedBypassCondition(qb: $qb, tableAlias: $tableAlias);
-        }
-
-        if (empty($conditions) === true) {
-            $qb->andWhere('1 = 0');
+            $qb->andWhere($qb->expr()->isNull($organisationColumn));
             return;
         }
 
-        $orgConditions = call_user_func_array([$qb->expr(), 'orX'], $conditions);
-        $qb->andWhere($orgConditions);
+        // No active org and no null-org permission: block all results.
+        $qb->andWhere('1 = 0');
     }//end applyNoActiveOrgFilter()
 
     /**
@@ -522,9 +449,6 @@ trait MultiTenancyTrait
      * @param array         $activeOrgUuids     Active organisation UUIDs
      * @param bool          $allowNullOrg       Allow NULL organisation
      * @param string        $organisationColumn Organisation column name
-     * @param string        $tableAlias         Table alias
-     * @param bool          $enablePublished    Enable published bypass
-     * @param bool          $pubBypassEnabled   Published bypass enabled
      *
      * @return void
      *
@@ -535,10 +459,7 @@ trait MultiTenancyTrait
         mixed $user,
         array $activeOrgUuids,
         bool $allowNullOrg,
-        string $organisationColumn,
-        string $tableAlias,
-        bool $enablePublished,
-        bool $pubBypassEnabled
+        string $organisationColumn
     ): void {
         $isAdmin = $this->isUserAdmin(user: $user);
 
@@ -554,10 +475,6 @@ trait MultiTenancyTrait
             activeOrgUuids: $activeOrgUuids,
             organisationColumn: $organisationColumn
         );
-
-        if ($pubBypassEnabled === true && $enablePublished === true) {
-            $orgConditions->add($this->buildPublishedBypassCondition(qb: $qb, tableAlias: $tableAlias));
-        }
 
         // Allow null organisation entities when explicitly permitted by the caller.
         // This is used for system-wide resources like Registers and Schemas.
@@ -620,30 +537,6 @@ trait MultiTenancyTrait
             )
         );
     }//end addOrganisationConditions()
-
-    /**
-     * Build the published bypass condition
-     *
-     * @param IQueryBuilder $qb         Query builder
-     * @param string        $tableAlias Table alias
-     *
-     * @return mixed The condition expression
-     */
-    private function buildPublishedBypassCondition(IQueryBuilder $qb, string $tableAlias): mixed
-    {
-        $now = (new DateTime())->format('Y-m-d H:i:s');
-        $publishedColumn   = $this->buildQualifiedColumnName(columnName: 'published', tableAlias: $tableAlias);
-        $depublishedColumn = $this->buildQualifiedColumnName(columnName: 'depublished', tableAlias: $tableAlias);
-
-        return $qb->expr()->andX(
-            $qb->expr()->isNotNull($publishedColumn),
-            $qb->expr()->lte($publishedColumn, $qb->createNamedParameter($now)),
-            $qb->expr()->orX(
-                $qb->expr()->isNull($depublishedColumn),
-                $qb->expr()->gt($depublishedColumn, $qb->createNamedParameter($now))
-            )
-        );
-    }//end buildPublishedBypassCondition()
 
     /**
      * Set organisation on an entity during creation.

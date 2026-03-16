@@ -141,26 +141,6 @@ class MagicBulkHandler
 
             $preparedObject['_updated'] = $now->format('Y-m-d H:i:s');
 
-            $publishedValue = $selfData['published'] ?? $object['published'] ?? null;
-            if ($publishedValue !== null) {
-                $preparedObject['_published'] = $this->formatDateTimeForDatabase(
-                    value: $publishedValue,
-                    default: null
-                );
-            } else {
-                $preparedObject['_published'] = null;
-            }
-
-            $depublishedValue = $selfData['depublished'] ?? $object['depublished'] ?? null;
-            if ($depublishedValue !== null) {
-                $preparedObject['_depublished'] = $this->formatDateTimeForDatabase(
-                    value: $depublishedValue,
-                    default: null
-                );
-            } else {
-                $preparedObject['_depublished'] = null;
-            }
-
             $preparedObject['_name']        = $selfData['name'] ?? $object['name'] ?? null;
             $preparedObject['_description'] = $selfData['description'] ?? $object['description'] ?? null;
             $preparedObject['_summary']     = $selfData['summary'] ?? $object['summary'] ?? null;
@@ -168,7 +148,7 @@ class MagicBulkHandler
             $preparedObject['_slug']        = $selfData['slug'] ?? $object['slug'] ?? null;
             $preparedObject['_uri']         = $selfData['uri'] ?? $object['uri'] ?? null;
 
-            // Calculate object size (similar to blob storage).
+            // Calculate object size for storage analytics.
             // This is the size of the serialized object data for storage analytics.
             $objectSize = strlen(json_encode($object));
             $preparedObject['_size'] = (string) $objectSize;

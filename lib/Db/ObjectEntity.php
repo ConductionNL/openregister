@@ -46,7 +46,6 @@ use OCP\IUserSession;
  * - id, uuid: Primary identifiers (never change)
  * - created: Set by database DEFAULT CURRENT_TIMESTAMP
  * - updated: Set by database ON UPDATE CURRENT_TIMESTAMP
- * - published: Auto-managed by schema autoPublish logic
  *
  * User/application-managed fields that CAN trigger updates:
  * - name, description, summary, image: Extracted metadata
@@ -110,12 +109,8 @@ use OCP\IUserSession;
  * @method void setCreated(?DateTime $created)
  * @method DateTime|null getUpdated()
  * @method void setUpdated(?DateTime $updated)
- * @method DateTime|null getPublished()
- * @method void setPublished(?DateTime $published)
  * @method DateTime|null getModified()
  * @method void setModified(?DateTime $modified)
- * @method DateTime|null getDepublished()
- * @method void setDepublished(?DateTime $depublished)
  * @method string|null getOrganization()
  * @method float|null getRelevance()
  * @method void setRelevance(?float $relevance)
@@ -304,35 +299,6 @@ class ObjectEntity extends Entity implements JsonSerializable
     protected ?DateTime $created = null;
 
     /**
-     * Published timestamp.
-     *
-     * This field can be automatically populated via schema metadata mapping configuration.
-     * Configure in schema: { "configuration": { "objectPublishedField": "publicatieDatum" } }
-     * Supports various datetime formats which will be parsed to DateTime objects.
-     *
-     * ⚠️  PARTIALLY DATABASE-MANAGED: Auto-publish logic sets this for NEW objects only.
-     * Excluded from bulk change detection to avoid false updates on existing objects.
-     *
-     * @var DateTime|null Published timestamp
-     *
-     * @see SaveObject::hydrateObjectMetadata() for metadata mapping implementation
-     */
-    protected ?DateTime $published = null;
-
-    /**
-     * Depublished timestamp.
-     *
-     * This field can be automatically populated via schema metadata mapping configuration.
-     * Configure in schema: { "configuration": { "objectDepublishedField": "einddatum" } }
-     * Supports various datetime formats which will be parsed to DateTime objects.
-     *
-     * @var DateTime|null Depublished timestamp
-     *
-     * @see SaveObject::hydrateObjectMetadata() for metadata mapping implementation
-     */
-    protected ?DateTime $depublished = null;
-
-    /**
      * Last log entry related to this object (not persisted, runtime only)
      *
      * @var array<string, mixed>|null
@@ -344,7 +310,6 @@ class ObjectEntity extends Entity implements JsonSerializable
      *
      * Indicates where this object was loaded from:
      * - "orm": Magic tables (structured storage)
-     * - "blob": Blob storage (openregister_objects table)
      * - "index": Search index
      *
      * @var string|null
@@ -471,8 +436,6 @@ class ObjectEntity extends Entity implements JsonSerializable
         $this->addType(fieldName: 'image', type: 'string');
         $this->addType(fieldName: 'updated', type: 'datetime');
         $this->addType(fieldName: 'created', type: 'datetime');
-        $this->addType(fieldName: 'published', type: 'datetime');
-        $this->addType(fieldName: 'depublished', type: 'datetime');
         $this->addType(fieldName: 'groups', type: 'json');
         $this->addType(fieldName: 'expires', type: 'datetime');
     }//end __construct()
@@ -625,7 +588,6 @@ class ObjectEntity extends Entity implements JsonSerializable
      *     application: array|null|string, validation: array|null,
      *     geo: array|null, retention: array|null, size: null|string,
      *     updated: null|string, created: null|string,
-     *     published: null|string, depublished: null|string,
      *     deleted: array|null},...}
      */
     public function jsonSerialize(): array
@@ -678,7 +640,6 @@ class ObjectEntity extends Entity implements JsonSerializable
      *     application: array|null|string, validation: array|null,
      *     geo: array|null, retention: array|null, size: null|string,
      *     updated: null|string, created: null|string,
-     *     published: null|string, depublished: null|string,
      *     deleted: array|null}
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)
@@ -714,8 +675,6 @@ class ObjectEntity extends Entity implements JsonSerializable
             'size'          => $this->size,
             'updated'       => $this->getFormattedDate(date: $this->updated),
             'created'       => $this->getFormattedDate(date: $this->created),
-            'published'     => $this->getFormattedDate(date: $this->published),
-            'depublished'   => $this->getFormattedDate(date: $this->depublished),
             'deleted'       => $this->getDeleted(),
             'source'        => $this->source,
         ];
@@ -1011,7 +970,6 @@ class ObjectEntity extends Entity implements JsonSerializable
      *
      * Returns where this object was loaded from:
      * - "orm": Magic tables (structured storage)
-     * - "blob": Blob storage (openregister_objects table)
      * - "index": Search index
      *
      * @return string|null The source identifier, or null if not set
@@ -1024,7 +982,7 @@ class ObjectEntity extends Entity implements JsonSerializable
     /**
      * Set the source of this object data (runtime only)
      *
-     * @param string|null $source The source identifier ("orm", "blob", or "index")
+     * @param string|null $source The source identifier ("orm" or "index")
      *
      * @return void
      */

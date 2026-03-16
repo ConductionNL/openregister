@@ -14,7 +14,7 @@
 
 namespace OCA\OpenRegister\Service\Object\SaveObjects;
 
-use OCA\OpenRegister\Db\ObjectEntityMapper;
+use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\Object\SaveObjects\BulkValidationHandler;
 use Psr\Log\LoggerInterface;
@@ -43,12 +43,12 @@ class BulkRelationHandler
      * Constructor for BulkRelationHandler.
      *
      * @param BulkValidationHandler $bulkValidHandler   Handler for bulk validation operations.
-     * @param ObjectEntityMapper    $objectEntityMapper Mapper for object entities.
+     * @param MagicMapper           $objectEntityMapper Mapper for object entities.
      * @param LoggerInterface       $logger             Logger for logging operations.
      */
     public function __construct(
         private readonly BulkValidationHandler $bulkValidHandler,
-        private readonly ObjectEntityMapper $objectEntityMapper,
+        private readonly MagicMapper $objectEntityMapper,
         private readonly LoggerInterface $logger
     ) {
     }//end __construct()

@@ -24,6 +24,7 @@ namespace OCA\OpenRegister\Service;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Dto\DeepLinkRegistration;
+use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -75,18 +76,11 @@ class DeepLinkRegistryService
     private static ?array $schemaIdMap = null;
 
     /**
-     * The register mapper for slug resolution.
+     * Container for lazy resolution of mappers (avoids circular DI).
      *
-     * @var RegisterMapper
+     * @var ContainerInterface
      */
-    private readonly RegisterMapper $registerMapper;
-
-    /**
-     * The schema mapper for slug resolution.
-     *
-     * @var SchemaMapper
-     */
-    private readonly SchemaMapper $schemaMapper;
+    private readonly ContainerInterface $container;
 
     /**
      * Logger for debugging registry operations.
@@ -98,20 +92,20 @@ class DeepLinkRegistryService
     /**
      * Constructor for DeepLinkRegistryService.
      *
-     * @param RegisterMapper  $registerMapper The register mapper
-     * @param SchemaMapper    $schemaMapper   The schema mapper
-     * @param LoggerInterface $logger         The logger
+     * Uses ContainerInterface instead of direct mapper injection to avoid
+     * circular DI resolution during app bootstrap (RegisterMapper ↔ MagicMapper).
+     *
+     * @param ContainerInterface $container The DI container for lazy mapper resolution
+     * @param LoggerInterface    $logger    The logger
      *
      * @return void
      */
     public function __construct(
-        RegisterMapper $registerMapper,
-        SchemaMapper $schemaMapper,
+        ContainerInterface $container,
         LoggerInterface $logger
     ) {
-        $this->registerMapper = $registerMapper;
-        $this->schemaMapper   = $schemaMapper;
-        $this->logger         = $logger;
+        $this->container = $container;
+        $this->logger    = $logger;
     }//end __construct()
 
     /**
@@ -244,7 +238,8 @@ class DeepLinkRegistryService
         self::$schemaIdMap   = [];
 
         try {
-            $registers = $this->registerMapper->findAll(
+            $registerMapper = $this->container->get(RegisterMapper::class);
+            $registers      = $registerMapper->findAll(
                 _rbac: false,
                 _multitenancy: false
             );
@@ -263,7 +258,8 @@ class DeepLinkRegistryService
         }
 
         try {
-            $schemas = $this->schemaMapper->findAll(
+            $schemaMapper = $this->container->get(SchemaMapper::class);
+            $schemas      = $schemaMapper->findAll(
                 _rbac: false,
                 _multitenancy: false
             );

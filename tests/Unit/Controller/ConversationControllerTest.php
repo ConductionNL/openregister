@@ -297,4 +297,250 @@ class ConversationControllerTest extends TestCase
 
         $this->assertEquals(403, $result->getStatus());
     }
+
+    // ── Index with deleted filter ──
+
+    public function testIndexWithDeletedFilter(): void
+    {
+        $this->organisationService->method('getActiveOrganisation')->willReturn(null);
+        $this->request->method('getParams')->willReturn(['_deleted' => 'true']);
+
+        $conv = new Conversation();
+        $this->conversationMapper->method('findDeletedByUser')->willReturn([$conv]);
+        $this->conversationMapper->method('countDeletedByUser')->willReturn(1);
+
+        $result = $this->controller->index();
+
+        $this->assertEquals(200, $result->getStatus());
+        $data = $result->getData();
+        $this->assertEquals(1, $data['total']);
+    }
+
+    public function testIndexWithPagination(): void
+    {
+        $this->organisationService->method('getActiveOrganisation')->willReturn(null);
+        $this->request->method('getParams')->willReturn(['limit' => '10', 'offset' => '5']);
+        $this->conversationMapper->method('findByUser')->willReturn([]);
+        $this->conversationMapper->method('countByUser')->willReturn(0);
+
+        $result = $this->controller->index();
+
+        $this->assertEquals(200, $result->getStatus());
+        $data = $result->getData();
+        $this->assertEquals(10, $data['limit']);
+        $this->assertEquals(5, $data['offset']);
+    }
+
+    // ── Show error paths ──
+
+    public function testShowReturns500OnException(): void
+    {
+        $this->conversationMapper->method('findByUuid')
+            ->willThrowException(new \Exception('DB error'));
+
+        $result = $this->controller->show('uuid-123');
+
+        $this->assertEquals(500, $result->getStatus());
+        $data = $result->getData();
+        $this->assertEquals('Failed to fetch conversation', $data['error']);
+    }
+
+    // ── Messages error paths ──
+
+    public function testMessagesNotFound(): void
+    {
+        $this->conversationMapper->method('findByUuid')
+            ->willThrowException(new DoesNotExistException('Not found'));
+
+        $result = $this->controller->messages('bad-uuid');
+
+        $this->assertEquals(404, $result->getStatus());
+    }
+
+    public function testMessagesReturns500OnException(): void
+    {
+        $this->conversationMapper->method('findByUuid')
+            ->willThrowException(new \Exception('DB error'));
+
+        $result = $this->controller->messages('uuid-123');
+
+        $this->assertEquals(500, $result->getStatus());
+        $data = $result->getData();
+        $this->assertEquals('Failed to fetch messages', $data['error']);
+    }
+
+    public function testMessagesWithPagination(): void
+    {
+        $conv = new Conversation();
+        $conv->setId(1);
+        $this->conversationMapper->method('findByUuid')->willReturn($conv);
+        $this->conversationMapper->method('canUserAccessConversation')->willReturn(true);
+        $this->organisationService->method('getActiveOrganisation')->willReturn(null);
+        $this->messageMapper->method('findByConversation')->willReturn([]);
+        $this->messageMapper->method('countByConversation')->willReturn(0);
+        $this->request->method('getParams')->willReturn(['_limit' => '25', '_offset' => '10']);
+
+        $result = $this->controller->messages('uuid-123');
+
+        $this->assertEquals(200, $result->getStatus());
+        $data = $result->getData();
+        $this->assertEquals(25, $data['limit']);
+        $this->assertEquals(10, $data['offset']);
+    }
+
+    // ── Create with agentUuid ──
+
+    public function testCreateWithAgentUuid(): void
+    {
+        $agent = new \OCA\OpenRegister\Db\Agent();
+        $agent->setId(42);
+
+        $this->request->method('getParams')->willReturn(['agentUuid' => 'agent-uuid-1']);
+        $this->organisationService->method('getActiveOrganisation')->willReturn(null);
+        $this->agentMapper->method('findByUuid')->willReturn($agent);
+        $this->chatService->method('ensureUniqueTitle')->willReturn('New Conversation');
+
+        $conv = new Conversation();
+        $conv->setUuid('new-uuid');
+        $this->conversationMapper->method('insert')->willReturn($conv);
+
+        $result = $this->controller->create();
+
+        $this->assertEquals(201, $result->getStatus());
+    }
+
+    public function testCreateWithAgentUuidNotFound(): void
+    {
+        $this->request->method('getParams')->willReturn(['agentUuid' => 'bad-uuid']);
+        $this->organisationService->method('getActiveOrganisation')->willReturn(null);
+        $this->agentMapper->method('findByUuid')
+            ->willThrowException(new \Exception('Not found'));
+
+        $conv = new Conversation();
+        $conv->setUuid('new-uuid');
+        $this->conversationMapper->method('insert')->willReturn($conv);
+
+        // Should still create the conversation (agentId = null)
+        $result = $this->controller->create();
+
+        $this->assertEquals(201, $result->getStatus());
+    }
+
+    public function testCreateWithAgentIdAutoTitle(): void
+    {
+        $this->request->method('getParams')->willReturn(['agentId' => 5]);
+        $this->organisationService->method('getActiveOrganisation')->willReturn(null);
+        $this->chatService->method('ensureUniqueTitle')->willReturn('New Conversation (2)');
+
+        $conv = new Conversation();
+        $conv->setUuid('new-uuid');
+        $this->conversationMapper->method('insert')->willReturn($conv);
+
+        $result = $this->controller->create();
+
+        $this->assertEquals(201, $result->getStatus());
+    }
+
+    // ── Update edge cases ──
+
+    public function testUpdateWithMetadata(): void
+    {
+        $conv = new Conversation();
+        $this->conversationMapper->method('findByUuid')->willReturn($conv);
+        $this->conversationMapper->method('canUserModifyConversation')->willReturn(true);
+        $this->conversationMapper->method('update')->willReturn($conv);
+        $this->request->method('getParams')->willReturn([
+            'title' => 'New Title',
+            'metadata' => ['key' => 'value'],
+        ]);
+
+        $result = $this->controller->update('uuid-123');
+
+        $this->assertEquals(200, $result->getStatus());
+    }
+
+    public function testUpdateReturns500OnException(): void
+    {
+        $this->conversationMapper->method('findByUuid')
+            ->willThrowException(new \Exception('DB error'));
+
+        $result = $this->controller->update('uuid-123');
+
+        $this->assertEquals(500, $result->getStatus());
+        $data = $result->getData();
+        $this->assertEquals('Failed to update conversation', $data['error']);
+    }
+
+    // ── Destroy error paths ──
+
+    public function testDestroyNotFound(): void
+    {
+        $this->conversationMapper->method('findByUuid')
+            ->willThrowException(new DoesNotExistException('Not found'));
+
+        $result = $this->controller->destroy('bad-uuid');
+
+        $this->assertEquals(404, $result->getStatus());
+    }
+
+    public function testDestroyReturns500OnException(): void
+    {
+        $this->conversationMapper->method('findByUuid')
+            ->willThrowException(new \Exception('DB error'));
+
+        $result = $this->controller->destroy('uuid-123');
+
+        $this->assertEquals(500, $result->getStatus());
+        $data = $result->getData();
+        $this->assertEquals('Failed to delete conversation', $data['error']);
+    }
+
+    // ── Restore error paths ──
+
+    public function testRestoreAccessDenied(): void
+    {
+        $conv = new Conversation();
+        $this->conversationMapper->method('findByUuid')->willReturn($conv);
+        $this->conversationMapper->method('canUserModifyConversation')->willReturn(false);
+
+        $result = $this->controller->restore('uuid-123');
+
+        $this->assertEquals(403, $result->getStatus());
+    }
+
+    public function testRestoreReturns500OnException(): void
+    {
+        $this->conversationMapper->method('findByUuid')
+            ->willThrowException(new \Exception('DB error'));
+
+        $result = $this->controller->restore('uuid-123');
+
+        $this->assertEquals(500, $result->getStatus());
+        $data = $result->getData();
+        $this->assertEquals('Failed to restore conversation', $data['error']);
+    }
+
+    // ── DestroyPermanent error paths ──
+
+    public function testDestroyPermanentNotFound(): void
+    {
+        $this->conversationMapper->method('findByUuid')
+            ->willThrowException(new DoesNotExistException('Not found'));
+
+        $result = $this->controller->destroyPermanent('bad-uuid');
+
+        $this->assertEquals(404, $result->getStatus());
+    }
+
+    public function testDestroyPermanentReturns500OnException(): void
+    {
+        $this->conversationMapper->method('findByUuid')
+            ->willThrowException(new \Exception('DB error'));
+
+        $result = $this->controller->destroyPermanent('uuid-123');
+
+        $this->assertEquals(500, $result->getStatus());
+        $data = $result->getData();
+        $this->assertEquals('Failed to permanently delete conversation', $data['error']);
+    }
 }

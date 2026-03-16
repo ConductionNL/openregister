@@ -146,6 +146,41 @@
       "publicClient": false,
       "protocol": "openid-connect",
       "fullScopeAllowed": true
+    },
+    {
+      "clientId": "kiss",
+      "name": "KISS Frontend",
+      "description": "Klantinteractie-Servicesysteem",
+      "enabled": true,
+      "clientAuthenticatorType": "client-secret",
+      "secret": "kiss-secret-change-me",
+      "redirectUris": [
+        "http://localhost:9030/*",
+        "http://kiss-bff:8080/*"
+      ],
+      "webOrigins": ["+"],
+      "standardFlowEnabled": true,
+      "implicitFlowEnabled": false,
+      "directAccessGrantsEnabled": true,
+      "serviceAccountsEnabled": false,
+      "publicClient": false,
+      "protocol": "openid-connect",
+      "fullScopeAllowed": true,
+      "protocolMappers": [
+        {
+          "name": "groups",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-group-membership-mapper",
+          "consentRequired": false,
+          "config": {
+            "full.path": "false",
+            "id.token.claim": "true",
+            "access.token.claim": "true",
+            "claim.name": "groups",
+            "userinfo.token.claim": "true"
+          }
+        }
+      ]
     }
   ],
   "users": [

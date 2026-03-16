@@ -27,7 +27,7 @@ use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
-use OCA\OpenRegister\Db\UnifiedObjectMapper;
+use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ViewMapper;
 use OCA\OpenRegister\Service\FileService;
 use OCA\OpenRegister\Service\ObjectService;
@@ -176,7 +176,7 @@ class ObjectServiceRefactoredMethodsTest extends TestCase
 			$this->createMock(SchemaMapper::class),
 			$this->createMock(ViewMapper::class),
 			$this->createMock(ObjectEntityMapper::class),
-			$this->createMock(UnifiedObjectMapper::class),
+			$this->createMock(MagicMapper::class),
 			$this->createMock(FileService::class),
 			$this->createMock(IUserSession::class),
 			$this->createMock(SearchTrailService::class),

@@ -5,8 +5,7 @@
  *
  * Base class defining the interface for object mappers in the OpenRegister application.
  * This abstraction allows the system to switch between different storage strategies
- * (blob storage via ObjectEntityMapper or column-mapped storage via MagicMapper)
- * while maintaining a consistent interface.
+ * (column-mapped storage via MagicMapper) while maintaining a consistent interface.
  *
  * @category Database
  * @package  OCA\OpenRegister\Db
@@ -31,9 +30,9 @@ use OCP\DB\QueryBuilder\IQueryBuilder;
 /**
  * Abstract base class for object mappers
  *
- * Defines the contract that all object mappers must implement, ensuring that both
- * blob storage (ObjectEntityMapper) and column-mapped storage (MagicMapper) provide
- * the same interface for object operations.
+ * Defines the contract that all object mappers must implement, ensuring that
+ * column-mapped storage (MagicMapper) provides a consistent interface for
+ * object operations.
  *
  * This abstraction enables:
  * - Transparent switching between storage strategies
@@ -58,8 +57,8 @@ abstract class AbstractObjectMapper
      * @param Register|null $register       Optional register to filter by.
      * @param Schema|null   $schema         Optional schema to filter by.
      * @param bool          $includeDeleted Whether to include deleted objects.
-     * @param bool          $rbac           Whether to apply RBAC checks (default: true).
-     * @param bool          $multitenancy   Whether to apply multitenancy filtering (default: true).
+     * @param bool          $_rbac           Whether to apply RBAC checks (default: true).
+     * @param bool          $_multitenancy   Whether to apply multitenancy filtering (default: true).
      *
      * @return ObjectEntity The found object.
      *
@@ -73,8 +72,8 @@ abstract class AbstractObjectMapper
         ?Register $register=null,
         ?Schema $schema=null,
         bool $includeDeleted=false,
-        bool $rbac=true,
-        bool $multitenancy=true
+        bool $_rbac=true,
+        bool $_multitenancy=true
     ): ObjectEntity;
 
     /**
@@ -92,7 +91,6 @@ abstract class AbstractObjectMapper
      * @param bool          $includeDeleted   Whether to include deleted objects.
      * @param Register|null $register         Optional register to filter objects.
      * @param Schema|null   $schema           Optional schema to filter objects.
-     * @param bool|null     $published        If true, only return currently published objects.
      *
      * @return ObjectEntity[]
      *
@@ -115,8 +113,7 @@ abstract class AbstractObjectMapper
         ?string $uses=null,
         bool $includeDeleted=false,
         ?Register $register=null,
-        ?Schema $schema=null,
-        ?bool $published=null
+        ?Schema $schema=null
     ): array;
 
     /**
@@ -229,30 +226,6 @@ abstract class AbstractObjectMapper
      */
     abstract public function deleteObjects(array $uuids=[], bool $hardDelete=false): array;
 
-    /**
-     * Perform bulk publish operations on objects by UUID.
-     *
-     * @param array         $uuids    Array of object UUIDs to publish.
-     * @param DateTime|bool $datetime Optional datetime for publishing.
-     *
-     * @return array Array of UUIDs of published objects.
-     *
-     * @SuppressWarnings(PHPMD.BooleanArgumentFlag) DateTime or bool controls publish timing
-     */
-    abstract public function publishObjects(array $uuids=[], DateTime|bool $datetime=true): array;
-
-    /**
-     * Perform bulk depublish operations on objects by UUID.
-     *
-     * @param array         $uuids    Array of object UUIDs to depublish.
-     * @param DateTime|bool $datetime Optional datetime for depublishing.
-     *
-     * @return array Array of UUIDs of depublished objects.
-     *
-     * @SuppressWarnings(PHPMD.BooleanArgumentFlag) DateTime or bool controls depublish timing
-     */
-    abstract public function depublishObjects(array $uuids=[], DateTime|bool $datetime=true): array;
-
     // ==================================================================================
     // STATISTICS OPERATIONS
     // ==================================================================================
@@ -327,8 +300,8 @@ abstract class AbstractObjectMapper
      *
      * @param array       $query         Query parameters.
      * @param string|null $activeOrgUuid Active organisation UUID.
-     * @param bool        $rbac          Whether to apply RBAC checks.
-     * @param bool        $multitenancy  Whether to apply multitenancy filtering.
+     * @param bool        $_rbac          Whether to apply RBAC checks.
+     * @param bool        $_multitenancy  Whether to apply multitenancy filtering.
      * @param array|null  $ids           Array of IDs or UUIDs to filter by.
      * @param string|null $uses          Value that must be present in relations.
      *
@@ -341,8 +314,8 @@ abstract class AbstractObjectMapper
     abstract public function searchObjects(
         array $query=[],
         ?string $activeOrgUuid=null,
-        bool $rbac=true,
-        bool $multitenancy=true,
+        bool $_rbac=true,
+        bool $_multitenancy=true,
         ?array $ids=null,
         ?string $uses=null
     ): array|int;
@@ -352,8 +325,8 @@ abstract class AbstractObjectMapper
      *
      * @param array       $query         Query parameters.
      * @param string|null $activeOrgUuid Active organisation UUID.
-     * @param bool        $rbac          Whether to apply RBAC checks.
-     * @param bool        $multitenancy  Whether to apply multitenancy filtering.
+     * @param bool        $_rbac          Whether to apply RBAC checks.
+     * @param bool        $_multitenancy  Whether to apply multitenancy filtering.
      * @param array|null  $ids           Array of IDs or UUIDs to filter by.
      * @param string|null $uses          Value that must be present in relations.
      *
@@ -364,8 +337,8 @@ abstract class AbstractObjectMapper
     abstract public function countSearchObjects(
         array $query=[],
         ?string $activeOrgUuid=null,
-        bool $rbac=true,
-        bool $multitenancy=true,
+        bool $_rbac=true,
+        bool $_multitenancy=true,
         ?array $ids=null,
         ?string $uses=null
     ): int;

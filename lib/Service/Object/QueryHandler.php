@@ -15,7 +15,7 @@
 namespace OCA\OpenRegister\Service\Object;
 
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Db\ObjectEntityMapper;
+use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Service\IndexService;
 use OCA\OpenRegister\Service\Object\GetObject;
 use OCA\OpenRegister\Service\Object\RenderObject;
@@ -56,8 +56,7 @@ class QueryHandler
     /**
      * Constructor for QueryHandler.
      *
-     * @param ObjectEntityMapper                       $objectEntityMapper  Mapper for objects.
-     * @param \OCA\OpenRegister\Db\UnifiedObjectMapper $unifiedObjectMapper Unified mapper.
+     * @param MagicMapper                      $objectMapper        Unified mapper for objects.
      * @param GetObject                                $getHandler          Get handler.
      * @param RenderObject                             $renderHandler       Render handler.
      * @param SearchQueryHandler                       $searchQueryHandler  Search handler.
@@ -70,8 +69,7 @@ class QueryHandler
      * @SuppressWarnings(PHPMD.ExcessiveParameterList) Nextcloud DI requires constructor injection
      */
     public function __construct(
-        private readonly ObjectEntityMapper $objectEntityMapper,
-        private readonly \OCA\OpenRegister\Db\UnifiedObjectMapper $unifiedObjectMapper,
+        private readonly MagicMapper $objectMapper,
         private readonly GetObject $getHandler,
         private readonly RenderObject $renderHandler,
         private readonly SearchQueryHandler $searchQueryHandler,
@@ -115,11 +113,11 @@ class QueryHandler
         }
 
         // Count uses the unified mapper's countSearchObjects for proper magic mapper routing.
-        return $this->unifiedObjectMapper->countSearchObjects(
+        return $this->objectMapper->countSearchObjects(
             query: $query,
             activeOrgUuid: $activeOrgUuid,
-            rbac: $_rbac,
-            multitenancy: $_multitenancy,
+            _rbac: $_rbac,
+            _multitenancy: $_multitenancy,
             ids: $ids,
             uses: $uses
         );
@@ -176,11 +174,11 @@ class QueryHandler
         }
 
         // Execute database search.
-        $result = $this->unifiedObjectMapper->searchObjects(
+        $result = $this->objectMapper->searchObjects(
             query: $query,
             activeOrgUuid: $activeOrgUuid,
-            rbac: $_rbac,
-            multitenancy: $_multitenancy,
+            _rbac: $_rbac,
+            _multitenancy: $_multitenancy,
             ids: $ids,
             uses: $uses
         );
@@ -242,7 +240,6 @@ class QueryHandler
      * @param array       $query         The search query.
      * @param bool        $_rbac         Whether to apply RBAC checks.
      * @param bool        $_multitenancy Whether to apply multitenancy filtering.
-     * @param bool        $published     Whether to filter by published status.
      * @param bool        $deleted       Whether to include deleted objects.
      * @param array|null  $ids           Optional array of IDs to filter by.
      * @param string|null $uses          Optional uses parameter.
@@ -264,7 +261,6 @@ class QueryHandler
         array $query=[],
         bool $_rbac=true,
         bool $_multitenancy=true,
-        bool $published=false,
         bool $deleted=false,
         ?array $ids=null,
         ?string $uses=null,
@@ -302,14 +298,12 @@ class QueryHandler
                 query: $query,
                 _rbac: $_rbac,
                 _multitenancy: $_multitenancy,
-                published: $published,
                 deleted: $deleted
             );
             $result['@self']['source']    = 'index';
             $result['@self']['query']     = $query;
             $result['@self']['rbac']      = $_rbac;
             $result['@self']['multi']     = $_multitenancy;
-            $result['@self']['published'] = $published;
             $result['@self']['deleted']   = $deleted;
             return $result;
         }
@@ -319,7 +313,6 @@ class QueryHandler
             query: $query,
             _rbac: $_rbac,
             _multitenancy: $_multitenancy,
-            published: $published,
             deleted: $deleted,
             ids: $ids,
             uses: $uses
@@ -329,7 +322,6 @@ class QueryHandler
         $result['@self']['query']     = $query;
         $result['@self']['rbac']      = $_rbac;
         $result['@self']['multi']     = $_multitenancy;
-        $result['@self']['published'] = $published;
         $result['@self']['deleted']   = $deleted;
 
         return $result;
@@ -341,7 +333,6 @@ class QueryHandler
      * @param array       $query         The search query.
      * @param bool        $_rbac         Whether to apply RBAC checks.
      * @param bool        $_multitenancy Whether to apply multitenancy filtering.
-     * @param bool        $published     Whether to filter by published status.
      * @param bool        $deleted       Whether to include deleted objects.
      * @param array|null  $ids           Optional array of IDs to filter by.
      * @param string|null $uses          Optional uses parameter.
@@ -360,18 +351,12 @@ class QueryHandler
         array $query=[],
         bool $_rbac=true,
         bool $_multitenancy=true,
-        bool $published=false,
         bool $deleted=false,
         ?array $ids=null,
         ?string $uses=null
     ): array {
         $startTime = microtime(true);
         $metrics   = [];
-
-        // Set published filter if not already set.
-        if (isset($query['_published']) === false) {
-            $query['_published'] = $published;
-        }
 
         // Extract pagination parameters (limit=0 is valid for count/facets-only requests).
         $limit  = max(0, (int) ($query['_limit'] ?? 20));
@@ -408,12 +393,12 @@ class QueryHandler
 
         // Use optimized combined search+count that loads register/schema once.
         $searchStart       = microtime(true);
-        $searchResult      = $this->unifiedObjectMapper->searchObjectsPaginated(
+        $searchResult      = $this->objectMapper->searchObjectsPaginated(
             searchQuery: $paginatedQuery,
             countQuery: $countQuery,
             activeOrgUuid: $activeOrgUuid,
-            rbac: $_rbac,
-            multitenancy: $_multitenancy,
+            _rbac: $_rbac,
+            _multitenancy: $_multitenancy,
             ids: $ids,
             uses: $uses
         );
@@ -451,7 +436,7 @@ class QueryHandler
 
         // Check if any schema has property-level authorization.
         // If yes, we need to render to filter unauthorized properties.
-        // Schemas may be Entity objects or serialized arrays from UnifiedObjectMapper.
+        // Schemas may be Entity objects or serialized arrays from MagicMapper.
         $hasPropAuth = false;
         foreach ($schemas as $schema) {
             if ($schema instanceof \OCA\OpenRegister\Db\Schema

@@ -30,7 +30,7 @@ use OCA\OpenRegister\Db\EntityRelationMapper;
 use OCA\OpenRegister\Db\FileMapper;
 use OCA\OpenRegister\Db\GdprEntity;
 use OCA\OpenRegister\Db\GdprEntityMapper;
-use OCA\OpenRegister\Db\ObjectEntityMapper;
+use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\RiskLevelService;
@@ -116,7 +116,7 @@ class TextExtractionService
      * @param IRootFolder              $rootFolder           Nextcloud root folder
      * @param IDBConnection            $db                   Database connection
      * @param LoggerInterface          $logger               Logger
-     * @param ObjectEntityMapper       $objectEntityMapper   Mapper for object entities
+     * @param MagicMapper       $objectEntityMapper   Mapper for object entities
      * @param SchemaMapper             $schemaMapper         Mapper for schemas
      * @param RegisterMapper           $registerMapper       Mapper for registers
      * @param EntityRecognitionHandler $entityHandler        Handler for entity recognition
@@ -133,7 +133,7 @@ class TextExtractionService
         private readonly IRootFolder $rootFolder,
         private readonly IDBConnection $db,
         private readonly LoggerInterface $logger,
-        private readonly ObjectEntityMapper $objectEntityMapper,
+        private readonly MagicMapper $objectEntityMapper,
         private readonly SchemaMapper $schemaMapper,
         private readonly RegisterMapper $registerMapper,
         private readonly EntityRecognitionHandler $entityHandler,
@@ -1215,14 +1215,13 @@ class TextExtractionService
     {
         $untrackedCount = $this->fileMapper->countUntrackedFiles();
         $chunkCount     = $this->getTableCountSafe(tableName: 'openregister_chunks');
-        $objectCount    = $this->getTableCountSafe(tableName: 'openregister_objects');
         $entityCount    = $this->getTableCountSafe(tableName: 'openregister_entities');
 
         return [
             'totalFiles'     => $untrackedCount + $chunkCount,
             'untrackedFiles' => $untrackedCount,
             'totalChunks'    => $chunkCount,
-            'totalObjects'   => $objectCount,
+            'totalObjects'   => 0,
             'totalEntities'  => $entityCount,
         ];
     }//end getStats()

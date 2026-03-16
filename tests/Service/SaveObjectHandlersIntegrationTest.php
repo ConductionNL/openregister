@@ -20,7 +20,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Service;
 
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Db\ObjectEntityMapper;
+use OCA\OpenRegister\Db\UnifiedObjectMapper;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
@@ -61,7 +61,7 @@ class SaveObjectHandlersIntegrationTest extends TestCase
     private ObjectService $objectService;
     private RegisterMapper $registerMapper;
     private SchemaMapper $schemaMapper;
-    private ObjectEntityMapper $objectEntityMapper;
+    private UnifiedObjectMapper $objectMapper;
 
     private ?Register $testRegister = null;
     private ?Schema $testSchema = null;
@@ -88,7 +88,7 @@ class SaveObjectHandlersIntegrationTest extends TestCase
         $this->objectService = \OC::$server->get(ObjectService::class);
         $this->registerMapper = \OC::$server->get(RegisterMapper::class);
         $this->schemaMapper = \OC::$server->get(SchemaMapper::class);
-        $this->objectEntityMapper = \OC::$server->get(ObjectEntityMapper::class);
+        $this->objectMapper = \OC::$server->get(UnifiedObjectMapper::class);
 
         $this->createTestFixtures();
     }
@@ -1440,7 +1440,7 @@ class SaveObjectHandlersIntegrationTest extends TestCase
         // Object should still exist but be marked as deleted.
         // Use findAcrossAllSources which searches both blob and magic tables.
         try {
-            $context = $this->objectEntityMapper->findAcrossAllSources(
+            $context = $this->objectMapper->findAcrossAllSources(
                 identifier: $uuid,
                 includeDeleted: true,
                 _rbac: false,

@@ -17,7 +17,7 @@ namespace OCA\OpenRegister\Service\Object;
 use Adbar\Dot;
 use OCA\OpenRegister\Db\MagicMapper\MagicRbacHandler;
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Db\ObjectEntityMapper;
+use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Object\PerformanceHandler;
@@ -52,14 +52,14 @@ class RelationHandler
     /**
      * Constructor for RelationHandler.
      *
-     * @param ObjectEntityMapper $objectEntityMapper Mapper for object entities.
+     * @param MagicMapper $objectEntityMapper Mapper for object entities.
      * @param SchemaMapper       $schemaMapper       Mapper for schemas.
      * @param PerformanceHandler $performanceHandler Handler for performance operations.
      * @param MagicRbacHandler   $rbacHandler        Handler for RBAC operations.
      * @param LoggerInterface    $logger             Logger for logging operations.
      */
     public function __construct(
-        private readonly ObjectEntityMapper $objectEntityMapper,
+        private readonly MagicMapper $objectEntityMapper,
         private readonly SchemaMapper $schemaMapper,
         private readonly PerformanceHandler $performanceHandler,
         private readonly MagicRbacHandler $rbacHandler,
@@ -108,7 +108,7 @@ class RelationHandler
             }
         );
 
-        $filtersWithSub = array_intersect_key(array: $filters, array2: array_flip(array: $filterKeysWithSub));
+        $filtersWithSub = array_intersect_key($filters, array_flip($filterKeysWithSub));
 
         if (empty($filtersWithSub) === true) {
             return [];
@@ -169,7 +169,7 @@ class RelationHandler
             }
 
             if ($ids !== []) {
-                $ids = array_intersect(array1: $ids, array2: $foundIds);
+                $ids = array_intersect($ids, $foundIds);
             }
 
             foreach (array_keys($value) as $k) {
@@ -265,7 +265,7 @@ class RelationHandler
 
                     if (is_array($value) === true) {
                         // **PERFORMANCE LIMIT**: Limit array relationships per object.
-                        $limitedArray = array_slice(array: $value, offset: 0, length: 10);
+                        $limitedArray = array_slice($value, 0, 10);
                         // Max 10 relationships per array.
                         foreach ($limitedArray as $id) {
                             if (empty($id) === false && is_string($id) === true) {
@@ -359,13 +359,13 @@ class RelationHandler
                     'reason'    => 'prevent_timeout',
                 ]
             );
-            $relationshipIds = array_slice(array: $relationshipIds, offset: 0, length: 200);
+            $relationshipIds = array_slice($relationshipIds, 0, 200);
         }
 
         $startTime = microtime(true);
         $batchSize = 50;
         // Load 50 relationships at a time.
-        $batches       = array_chunk(array: $relationshipIds, length: $batchSize);
+        $batches       = array_chunk($relationshipIds, $batchSize);
         $loadedObjects = [];
 
         $this->logger->info(

@@ -535,4 +535,178 @@ class DocumentBuilderTest extends TestCase
         $this->assertArrayNotHasKey('empty', $doc);
         $this->assertArrayHasKey('title', $doc);
     }
+
+    // =========================================================================
+    // Additional coverage: convertValueForSolr edge cases
+    // =========================================================================
+
+    public function testConvertValueForSolrDateNonParseable(): void
+    {
+        // An unparseable date string should be returned as-is.
+        $result = $this->documentBuilder->convertValueForSolr('not-a-date', 'datetime');
+        $this->assertSame('not-a-date', $result);
+    }
+
+    public function testConvertValueForSolrDateNonString(): void
+    {
+        // Non-string, non-DateTime for date type — returned as-is.
+        $result = $this->documentBuilder->convertValueForSolr(12345, 'date');
+        $this->assertSame(12345, $result);
+    }
+
+    public function testConvertValueForSolrArrayWrapsScalar(): void
+    {
+        // Non-array value for 'array' type should be wrapped.
+        $result = $this->documentBuilder->convertValueForSolr('item', 'array');
+        $this->assertSame(['item'], $result);
+    }
+
+    public function testConvertValueForSolrIntegerNonNumericReturnsNull(): void
+    {
+        $this->assertNull($this->documentBuilder->convertValueForSolr('abc', 'int'));
+    }
+
+    public function testConvertValueForSolrFloatNonNumericReturnsNull(): void
+    {
+        $this->assertNull($this->documentBuilder->convertValueForSolr('xyz', 'float'));
+    }
+
+    // =========================================================================
+    // isValueCompatibleWithSolrType — pdate
+    // =========================================================================
+
+    public function testIsValueCompatibleWithSolrTypePdate(): void
+    {
+        $this->assertTrue($this->documentBuilder->isValueCompatibleWithSolrType('2024-01-01', 'pdate'));
+        $this->assertTrue($this->documentBuilder->isValueCompatibleWithSolrType(new \DateTime(), 'pdates'));
+        // Integer is not compatible with date.
+        $this->assertFalse($this->documentBuilder->isValueCompatibleWithSolrType(12345, 'pdate'));
+    }
+
+    public function testIsValueCompatibleWithSolrTypeUnknownAllowsAll(): void
+    {
+        $this->assertTrue($this->documentBuilder->isValueCompatibleWithSolrType('anything', 'custom_type'));
+        $this->assertTrue($this->documentBuilder->isValueCompatibleWithSolrType(99, 'my_type'));
+    }
+
+    // =========================================================================
+    // resolveRegisterToId — non-resolvable slug returns 0
+    // =========================================================================
+
+    public function testResolveRegisterToIdNonResolvableReturnsZero(): void
+    {
+        $logger = $this->createMock(LoggerInterface::class);
+        $schemaMapper = $this->createMock(\OCA\OpenRegister\Db\SchemaMapper::class);
+        $registerMapper = $this->createMock(\OCA\OpenRegister\Db\RegisterMapper::class);
+        $registerMapper->method('find')->willThrowException(new \Exception('not found'));
+
+        $builder = new DocumentBuilder($logger, $schemaMapper, $registerMapper);
+
+        $result = $builder->resolveRegisterToId('unknown-slug');
+        $this->assertSame(0, $result);
+    }
+
+    public function testResolveSchemaToIdNonResolvableReturnsZero(): void
+    {
+        $logger = $this->createMock(LoggerInterface::class);
+        $schemaMapper = $this->createMock(\OCA\OpenRegister\Db\SchemaMapper::class);
+        $schemaMapper->method('find')->willThrowException(new \Exception('not found'));
+
+        $builder = new DocumentBuilder($logger, $schemaMapper, null);
+
+        $result = $builder->resolveSchemaToId('unknown-slug');
+        $this->assertSame(0, $result);
+    }
+
+    public function testResolveRegisterToIdNoMapperReturnsZero(): void
+    {
+        $builder = new DocumentBuilder($this->logger, null, null);
+        $result = $builder->resolveRegisterToId('some-slug');
+        $this->assertSame(0, $result);
+    }
+
+    public function testResolveSchemaToIdNoMapperReturnsZero(): void
+    {
+        $builder = new DocumentBuilder($this->logger, null, null);
+        $result = $builder->resolveSchemaToId('some-slug');
+        $this->assertSame(0, $result);
+    }
+
+    // =========================================================================
+    // flattenFilesForSolr — array without id or uuid
+    // =========================================================================
+
+    public function testFlattenFilesForSolrSkipsArraysWithoutIdOrUuid(): void
+    {
+        $files = [
+            ['name' => 'file.pdf'],   // No id or uuid — skipped.
+            'string-file',
+        ];
+
+        $result = $this->documentBuilder->flattenFilesForSolr($files);
+        $this->assertSame(['string-file'], $result);
+    }
+
+    public function testFlattenFilesForSolrNonStringNonArrayReturnsEmpty(): void
+    {
+        // An integer is not empty but also not a string.
+        $result = $this->documentBuilder->flattenFilesForSolr(0);
+        $this->assertSame([], $result);
+    }
+
+    // =========================================================================
+    // extractArraysFromRelations — re-indexing
+    // =========================================================================
+
+    public function testExtractArraysFromRelationsReindexesSequentially(): void
+    {
+        $relations = [
+            'items.5' => 'val-e',
+            'items.2' => 'val-b',
+            'items.0' => 'val-a',
+        ];
+
+        $result = $this->documentBuilder->extractArraysFromRelations($relations);
+
+        // After ksort + array_values the result should be ['val-a', 'val-b', 'val-e'].
+        $this->assertSame(['val-a', 'val-b', 'val-e'], $result['items']);
+    }
+
+    // =========================================================================
+    // shouldTruncateField — image/document formats
+    // =========================================================================
+
+    public function testShouldTruncateFieldImageAndDocumentFormats(): void
+    {
+        $this->assertTrue($this->documentBuilder->shouldTruncateField('f', ['format' => 'image']));
+        $this->assertTrue($this->documentBuilder->shouldTruncateField('f', ['format' => 'document']));
+        $this->assertTrue($this->documentBuilder->shouldTruncateField('thumbnail', []));
+        $this->assertTrue($this->documentBuilder->shouldTruncateField('body', []));
+        $this->assertTrue($this->documentBuilder->shouldTruncateField('icon', []));
+    }
+
+    // =========================================================================
+    // createDocument with created/updated dates
+    // =========================================================================
+
+    public function testCreateDocumentIncludesCreatedAndUpdatedDates(): void
+    {
+        $object = new ObjectEntity();
+        $reflection = new \ReflectionClass($object);
+        $idProp = $reflection->getProperty('id');
+        $idProp->setAccessible(true);
+        $idProp->setValue($object, 3);
+
+        $object->setUuid('uuid-3');
+        $object->setSchema('1');
+        $object->setRegister('1');
+        $object->setObject([]);
+        $object->setCreated(new \DateTime('2024-01-01 00:00:00'));
+        $object->setUpdated(new \DateTime('2024-06-01 00:00:00'));
+
+        $doc = $this->documentBuilder->createDocument($object);
+
+        $this->assertSame('2024-01-01T00:00:00Z', $doc['created']);
+        $this->assertSame('2024-06-01T00:00:00Z', $doc['updated']);
+    }
 }

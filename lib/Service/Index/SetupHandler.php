@@ -2438,23 +2438,6 @@ class SetupHandler
                 'docValues'   => true,
             // Enable faceting for date ranges.
             ],
-            'self_published'      => [
-                'type'        => 'pdate',
-                'stored'      => true,
-                'indexed'     => true,
-                'multiValued' => false,
-                'docValues'   => true,
-            // Enable faceting for date ranges.
-            ],
-            'self_depublished'    => [
-                'type'        => 'pdate',
-                'stored'      => true,
-                'indexed'     => true,
-                'multiValued' => false,
-                'docValues'   => true,
-            // Enable faceting for date ranges.
-            ],
-
             // **NEW**: UUID relation fields for clean object relationships.
             'self_relations'      => [
                 'type'        => 'string',

@@ -22,7 +22,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\BackgroundJob;
 
 use Exception;
-use OCA\OpenRegister\Db\ObjectEntityMapper;
+use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Webhook\CloudEventFormatter;
 use OCA\OpenRegister\Service\WorkflowEngineRegistry;
@@ -55,7 +55,7 @@ class HookRetryJob extends QueuedJob
      * Constructor for HookRetryJob
      *
      * @param ITimeFactory           $time                Time factory
-     * @param ObjectEntityMapper     $objectEntityMapper  Object mapper
+     * @param MagicMapper     $objectEntityMapper  Object mapper
      * @param SchemaMapper           $schemaMapper        Schema mapper
      * @param WorkflowEngineRegistry $engineRegistry      Engine registry
      * @param CloudEventFormatter    $cloudEventFormatter CloudEvent formatter
@@ -64,7 +64,7 @@ class HookRetryJob extends QueuedJob
      */
     public function __construct(
         ITimeFactory $time,
-        private readonly ObjectEntityMapper $objectEntityMapper,
+        private readonly MagicMapper $objectEntityMapper,
         private readonly SchemaMapper $schemaMapper,
         private readonly WorkflowEngineRegistry $engineRegistry,
         private readonly CloudEventFormatter $cloudEventFormatter,

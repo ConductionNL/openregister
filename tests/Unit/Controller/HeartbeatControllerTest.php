@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace Unit\Controller;
 
 use OCA\OpenRegister\Controller\HeartbeatController;
+use OCP\AppFramework\Controller;
+use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -32,6 +34,21 @@ class HeartbeatControllerTest extends TestCase
         );
     }
 
+    public function testConstructorCreatesInstance(): void
+    {
+        $controller = new HeartbeatController(
+            'openregister',
+            $this->request
+        );
+
+        $this->assertInstanceOf(HeartbeatController::class, $controller);
+    }
+
+    public function testControllerExtendsBaseController(): void
+    {
+        $this->assertInstanceOf(Controller::class, $this->controller);
+    }
+
     public function testHeartbeatReturnsJsonResponse(): void
     {
         $result = $this->controller->heartbeat();
@@ -56,6 +73,7 @@ class HeartbeatControllerTest extends TestCase
         $data = $result->getData();
 
         $this->assertArrayHasKey('timestamp', $data);
+        $this->assertIsInt($data['timestamp']);
         $this->assertGreaterThanOrEqual($before, $data['timestamp']);
         $this->assertLessThanOrEqual($after, $data['timestamp']);
     }
@@ -72,6 +90,52 @@ class HeartbeatControllerTest extends TestCase
     {
         $result = $this->controller->heartbeat();
 
-        $this->assertSame(200, $result->getStatus());
+        $this->assertSame(Http::STATUS_OK, $result->getStatus());
+    }
+
+    public function testHeartbeatResponseContainsExactlyThreeKeys(): void
+    {
+        $result = $this->controller->heartbeat();
+        $data = $result->getData();
+
+        $this->assertCount(3, $data);
+        $this->assertArrayHasKey('status', $data);
+        $this->assertArrayHasKey('timestamp', $data);
+        $this->assertArrayHasKey('message', $data);
+    }
+
+    public function testHeartbeatTimestampIsPositiveInteger(): void
+    {
+        $result = $this->controller->heartbeat();
+        $data = $result->getData();
+
+        $this->assertIsInt($data['timestamp']);
+        $this->assertGreaterThan(0, $data['timestamp']);
+    }
+
+    public function testMultipleHeartbeatCallsReturnConsistentStructure(): void
+    {
+        $result1 = $this->controller->heartbeat();
+        $result2 = $this->controller->heartbeat();
+
+        $data1 = $result1->getData();
+        $data2 = $result2->getData();
+
+        $this->assertSame($data1['status'], $data2['status']);
+        $this->assertSame($data1['message'], $data2['message']);
+        $this->assertGreaterThanOrEqual($data1['timestamp'], $data2['timestamp']);
+    }
+
+    public function testConstructorWithDifferentAppName(): void
+    {
+        $controller = new HeartbeatController(
+            'otherapp',
+            $this->request
+        );
+
+        $result = $controller->heartbeat();
+
+        $this->assertInstanceOf(JSONResponse::class, $result);
+        $this->assertSame(Http::STATUS_OK, $result->getStatus());
     }
 }

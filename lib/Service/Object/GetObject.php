@@ -28,7 +28,7 @@ namespace OCA\OpenRegister\Service\Object;
 
 use Exception;
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Db\ObjectEntityMapper;
+use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -54,12 +54,12 @@ class GetObject
     /**
      * Constructor for GetObject handler.
      *
-     * @param ObjectEntityMapper $objectEntityMapper Object entity data mapper.
-     * @param AuditTrailMapper   $auditTrailMapper   Audit trail mapper for logs.
-     * @param SettingsService    $settingsService    Settings service for accessing trail settings.
+     * @param MagicMapper $objectMapper     Object entity data mapper.
+     * @param AuditTrailMapper    $auditTrailMapper Audit trail mapper for logs.
+     * @param SettingsService     $settingsService  Settings service for accessing trail settings.
      */
     public function __construct(
-        private readonly ObjectEntityMapper $objectEntityMapper,
+        private readonly MagicMapper $objectMapper,
         private readonly AuditTrailMapper $auditTrailMapper,
         private readonly SettingsService $settingsService
     ) {
@@ -94,7 +94,7 @@ class GetObject
         bool $_rbac=true,
         bool $_multitenancy=true
     ): ObjectEntity {
-        $object = $this->objectEntityMapper->find(
+        $object = $this->objectMapper->find(
             identifier: $id,
             register: $register,
             schema: $schema,
@@ -147,7 +147,7 @@ class GetObject
         bool $_rbac=true,
         bool $_multitenancy=true
     ): ObjectEntity {
-        $object = $this->objectEntityMapper->find(
+        $object = $this->objectMapper->find(
             identifier: $id,
             register: $register,
             schema: $schema,
@@ -179,7 +179,6 @@ class GetObject
      * @param Register|null $register      Optional register to filter objects.
      * @param Schema|null   $schema        Optional schema to filter objects.
      * @param array|null    $ids           Array of IDs or UUIDs to filter by.
-     * @param bool|null     $published     Whether to filter by published status.
      * @param bool          $_rbac         Whether to apply RBAC checks (default: true).
      * @param bool          $_multitenancy Whether to apply multitenancy filtering (default: true).
      *
@@ -202,12 +201,11 @@ class GetObject
         ?Register $register=null,
         ?Schema $schema=null,
         ?array $ids=null,
-        ?bool $published=false,
         bool $_rbac=true,
         bool $_multitenancy=true
     ): array {
         // Retrieve objects using the objectEntityMapper with optional register, schema, and ids.
-        $objects = $this->objectEntityMapper->findAll(
+        $objects = $this->objectMapper->findAll(
             limit: $limit,
             offset: $offset,
             filters: $filters,
@@ -216,8 +214,7 @@ class GetObject
             ids: $ids,
             uses: $uses,
             register: $register,
-            schema: $schema,
-            published: $published
+            schema: $schema
         );
 
         // If files are to be included, hydrate each object with its file information.

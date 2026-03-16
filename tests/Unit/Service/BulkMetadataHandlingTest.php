@@ -28,7 +28,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service;
 
-use OCA\OpenRegister\Db\ObjectEntityMapper;
+use OCA\OpenRegister\Db\UnifiedObjectMapper;
 use OCA\OpenRegister\Db\Organisation;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
@@ -64,9 +64,9 @@ class BulkMetadataHandlingTest extends TestCase
     /**
      * Mock object entity mapper
      *
-     * @var MockObject|ObjectEntityMapper
+     * @var MockObject|UnifiedObjectMapper
      */
-    private MockObject $mockObjectEntityMapper;
+    private MockObject $mockObjectMapper;
 
     /**
      * Mock schema mapper
@@ -170,7 +170,7 @@ class BulkMetadataHandlingTest extends TestCase
         parent::setUp();
 
         // Create mocks for all dependencies.
-        $this->mockObjectEntityMapper = $this->createMock(ObjectEntityMapper::class);
+        $this->mockObjectMapper = $this->createMock(UnifiedObjectMapper::class);
         $this->mockSchemaMapper = $this->createMock(SchemaMapper::class);
         $this->mockRegisterMapper = $this->createMock(RegisterMapper::class);
         $this->mockSaveHandler = $this->createMock(SaveObject::class);
@@ -208,7 +208,7 @@ class BulkMetadataHandlingTest extends TestCase
 
         // Create the SaveObjects handler with mocked dependencies.
         $this->saveObjectsHandler = new SaveObjects(
-            $this->mockObjectEntityMapper,
+            $this->mockObjectMapper,
             $this->mockSchemaMapper,
             $this->mockRegisterMapper,
             $this->mockSaveHandler,

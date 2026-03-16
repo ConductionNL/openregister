@@ -35,7 +35,7 @@ use OCA\OpenRegister\Service\Object\CacheHandler;
 use OCA\OpenRegister\Service\OrganisationService;
 use OCA\OpenRegister\Service\PropertyRbacHandler;
 use OCA\OpenRegister\Service\SettingsService;
-use OCA\OpenRegister\Db\UnifiedObjectMapper;
+use OCA\OpenRegister\Db\MagicMapper;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\IURLGenerator;
 use OCP\IUserSession;
@@ -93,7 +93,7 @@ class SaveObjectTest extends TestCase
     /** @var MockObject|LoggerInterface */
     private $logger;
 
-    /** @var MockObject|UnifiedObjectMapper */
+    /** @var MockObject|MagicMapper */
     private $unifiedObjectMapper;
 
     /** @var MockObject|MetadataHydrationHandler */
@@ -122,7 +122,7 @@ class SaveObjectTest extends TestCase
 
         // Create mocks for all dependencies.
         $this->objectEntityMapper = $this->createMock(ObjectEntityMapper::class);
-        $this->unifiedObjectMapper = $this->createMock(UnifiedObjectMapper::class);
+        $this->unifiedObjectMapper = $this->createMock(MagicMapper::class);
         $this->metaHydrationHandler = $this->createMock(MetadataHydrationHandler::class);
         $this->filePropertyHandler = $this->createMock(FilePropertyHandler::class);
         $this->userSession = $this->createMock(IUserSession::class);
@@ -154,7 +154,7 @@ class SaveObjectTest extends TestCase
         $this->mockUser->method('getUID')->willReturn('testuser');
         $this->userSession->method('getUser')->willReturn($this->mockUser);
 
-        // UnifiedObjectMapper update returns its first argument (pass-through).
+        // MagicMapper update returns its first argument (pass-through).
         $this->unifiedObjectMapper->method('update')
             ->willReturnCallback(function ($entity) {
                 return $entity;

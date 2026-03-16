@@ -15,10 +15,9 @@
 namespace OCA\OpenRegister\Service\Object;
 
 use InvalidArgumentException;
-use OCA\OpenRegister\Db\ObjectEntityMapper;
+use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
-use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Exception\CustomValidationException;
 use OCA\OpenRegister\Exception\ValidationException;
 use OCA\OpenRegister\Service\Object\ValidateObject;
@@ -53,7 +52,7 @@ class ValidationHandler
      * Constructor for ValidationHandler.
      *
      * @param ValidateObject     $validateHandler    Handler for object validation.
-     * @param ObjectEntityMapper $objectEntityMapper Mapper for object entities.
+     * @param MagicMapper $objectEntityMapper Mapper for object entities.
      * @param RegisterMapper     $registerMapper     Mapper for registers.
      * @param SchemaMapper       $schemaMapper       Mapper for schemas.
      * @param MagicMapper        $magicMapper        Mapper for magic tables.
@@ -61,7 +60,7 @@ class ValidationHandler
      */
     public function __construct(
         private readonly ValidateObject $validateHandler,
-        private readonly ObjectEntityMapper $objectEntityMapper,
+        private readonly MagicMapper $objectEntityMapper,
         private readonly RegisterMapper $registerMapper,
         private readonly SchemaMapper $schemaMapper,
         private readonly MagicMapper $magicMapper,
@@ -289,13 +288,8 @@ class ValidationHandler
         $schema   = $loaded['schema'];
         $register = $loaded['register'];
 
-        // Detect storage type and load objects.
-        $usesMagic = $this->schemaUsesMagicTables(schema: $schema);
-        if ($usesMagic === true) {
-            $storageType = 'magic_table';
-        } else {
-            $storageType = 'blob_storage';
-        }//end if
+        // All objects are stored in magic tables.
+        $storageType = 'magic_table';
 
         $this->logger->info(
             message: '[ValidationHandler] Loading objects for validation',
@@ -310,7 +304,6 @@ class ValidationHandler
         );
 
         $allObjects = $this->loadObjectsForValidation(
-            usesMagic: $usesMagic,
             register: $register,
             schema: $schema,
             schemaId: $schemaId
@@ -433,60 +426,21 @@ class ValidationHandler
     }//end loadSchemaAndRegister()
 
     /**
-     * Determine whether a schema uses magic tables.
+     * Load objects for validation from magic tables.
      *
-     * @param mixed $schema The schema entity.
-     *
-     * @return bool True if any property has a 'table' array config.
-     */
-    private function schemaUsesMagicTables(mixed $schema): bool
-    {
-        $properties = $schema->getProperties() ?? [];
-        foreach ($properties as $property) {
-            if (isset($property['table']) === true && is_array($property['table']) === true) {
-                return true;
-            }
-        }
-
-        return false;
-    }//end schemaUsesMagicTables()
-
-    /**
-     * Load objects for validation from the appropriate storage backend.
-     *
-     * @param bool  $usesMagic Whether the schema uses magic tables.
-     * @param mixed $register  The register entity.
-     * @param mixed $schema    The schema entity.
-     * @param int   $schemaId  The schema ID (for blob storage fallback).
+     * @param mixed $register The register entity.
+     * @param mixed $schema   The schema entity.
+     * @param int   $schemaId The schema ID (for logging).
      *
      * @return array|null Array of objects, or null on failure.
      */
-    private function loadObjectsForValidation(bool $usesMagic, mixed $register, mixed $schema, int $schemaId): ?array
+    private function loadObjectsForValidation(mixed $register, mixed $schema, int $schemaId): ?array
     {
-        if ($usesMagic === true) {
-            try {
-                return $this->magicMapper->findAllInRegisterSchemaTable($register, $schema);
-            } catch (\Exception $e) {
-                $this->logger->error(
-                    message: '[ValidationHandler] Failed to get objects from magic table',
-                    context: [
-                        'file'      => __FILE__,
-                        'line'      => __LINE__,
-                        'schema_id' => $schemaId,
-                        'error'     => $e->getMessage(),
-                    ]
-                );
-
-                return null;
-            }//end try
-        }
-
-        // For blob storage.
         try {
-            return $this->objectEntityMapper->findBySchema($schemaId);
+            return $this->magicMapper->findAllInRegisterSchemaTable($register, $schema);
         } catch (\Exception $e) {
             $this->logger->error(
-                message: '[ValidationHandler] Failed to get objects from blob storage',
+                message: '[ValidationHandler] Failed to get objects from magic table',
                 context: [
                     'file'      => __FILE__,
                     'line'      => __LINE__,

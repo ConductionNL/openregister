@@ -1012,4 +1012,310 @@ class HookExecutorTest extends TestCase
         $this->service->executeHooks($event, $schema);
     }
 
+    public function testExecuteHooksModifiedResultOnUpdatingEvent(): void
+    {
+        $object = $this->createObjectEntity();
+        $event = $this->createMock(ObjectUpdatingEvent::class);
+        $event->method('getNewObject')->willReturn($object);
+        $event->method('isPropagationStopped')->willReturn(false);
+
+        $schema = $this->createSchema([
+            ['id' => 'hook1', 'event' => 'updating', 'enabled' => true, 'engine' => 'n8n', 'workflowId' => 'wf1', 'mode' => 'sync'],
+        ]);
+
+        $this->cloudEventFormatter->method('formatAsCloudEvent')->willReturn([
+            'type' => 'test',
+            'openregister' => [],
+        ]);
+
+        $workflowEngine = new WorkflowEngine();
+        $adapter = $this->createMock(WorkflowEngineInterface::class);
+        $result = $this->createMock(WorkflowResult::class);
+        $result->method('isApproved')->willReturn(false);
+        $result->method('isModified')->willReturn(true);
+        $result->method('getData')->willReturn(['name' => 'modified-updating']);
+
+        $this->engineRegistry->method('getEnginesByType')->willReturn([$workflowEngine]);
+        $this->engineRegistry->method('resolveAdapter')->willReturn($adapter);
+        $adapter->method('executeWorkflow')->willReturn($result);
+
+        $event->expects($this->once())->method('setModifiedData');
+
+        $this->service->executeHooks($event, $schema);
+    }
+
+    public function testExecuteHooksModifiedResultOnDeletingEvent(): void
+    {
+        $object = $this->createObjectEntity();
+        $event = $this->createMock(ObjectDeletingEvent::class);
+        $event->method('getObject')->willReturn($object);
+        $event->method('isPropagationStopped')->willReturn(false);
+
+        $schema = $this->createSchema([
+            ['id' => 'hook1', 'event' => 'deleting', 'enabled' => true, 'engine' => 'n8n', 'workflowId' => 'wf1', 'mode' => 'sync'],
+        ]);
+
+        $this->cloudEventFormatter->method('formatAsCloudEvent')->willReturn([
+            'type' => 'test',
+            'openregister' => [],
+        ]);
+
+        $workflowEngine = new WorkflowEngine();
+        $adapter = $this->createMock(WorkflowEngineInterface::class);
+        $result = $this->createMock(WorkflowResult::class);
+        $result->method('isApproved')->willReturn(false);
+        $result->method('isModified')->willReturn(true);
+        $result->method('getData')->willReturn(['name' => 'modified-deleting']);
+
+        $this->engineRegistry->method('getEnginesByType')->willReturn([$workflowEngine]);
+        $this->engineRegistry->method('resolveAdapter')->willReturn($adapter);
+        $adapter->method('executeWorkflow')->willReturn($result);
+
+        $event->expects($this->once())->method('setModifiedData');
+
+        $this->service->executeHooks($event, $schema);
+    }
+
+    public function testExecuteHooksModifiedResultWithNullData(): void
+    {
+        $object = $this->createObjectEntity();
+        $event = $this->createMock(ObjectCreatingEvent::class);
+        $event->method('getObject')->willReturn($object);
+        $event->method('isPropagationStopped')->willReturn(false);
+
+        $schema = $this->createSchema([
+            ['id' => 'hook1', 'event' => 'creating', 'enabled' => true, 'engine' => 'n8n', 'workflowId' => 'wf1', 'mode' => 'sync'],
+        ]);
+
+        $this->cloudEventFormatter->method('formatAsCloudEvent')->willReturn([
+            'type' => 'test',
+            'openregister' => [],
+        ]);
+
+        $workflowEngine = new WorkflowEngine();
+        $adapter = $this->createMock(WorkflowEngineInterface::class);
+        $result = $this->createMock(WorkflowResult::class);
+        $result->method('isApproved')->willReturn(false);
+        $result->method('isModified')->willReturn(true);
+        $result->method('getData')->willReturn(null);
+
+        $this->engineRegistry->method('getEnginesByType')->willReturn([$workflowEngine]);
+        $this->engineRegistry->method('resolveAdapter')->willReturn($adapter);
+        $adapter->method('executeWorkflow')->willReturn($result);
+
+        // Should NOT call setModifiedData when data is null
+        $event->expects($this->never())->method('setModifiedData');
+
+        $this->service->executeHooks($event, $schema);
+    }
+
+    public function testExecuteHooksRejectedOnUpdatingEvent(): void
+    {
+        $object = $this->createObjectEntity();
+        $event = $this->createMock(ObjectUpdatingEvent::class);
+        $event->method('getNewObject')->willReturn($object);
+        $event->method('isPropagationStopped')->willReturn(false);
+
+        $schema = $this->createSchema([
+            ['id' => 'hook1', 'event' => 'updating', 'enabled' => true, 'engine' => 'n8n', 'workflowId' => 'wf1', 'mode' => 'sync', 'onFailure' => 'reject'],
+        ]);
+
+        $this->cloudEventFormatter->method('formatAsCloudEvent')->willReturn([
+            'type' => 'test',
+            'openregister' => [],
+        ]);
+
+        $workflowEngine = new WorkflowEngine();
+        $adapter = $this->createMock(WorkflowEngineInterface::class);
+        $result = $this->createMock(WorkflowResult::class);
+        $result->method('isApproved')->willReturn(false);
+        $result->method('isModified')->willReturn(false);
+        $result->method('isRejected')->willReturn(true);
+        $result->method('getErrors')->willReturn([]);
+
+        $this->engineRegistry->method('getEnginesByType')->willReturn([$workflowEngine]);
+        $this->engineRegistry->method('resolveAdapter')->willReturn($adapter);
+        $adapter->method('executeWorkflow')->willReturn($result);
+
+        $event->expects($this->once())->method('stopPropagation');
+        $event->expects($this->once())->method('setErrors');
+
+        $this->service->executeHooks($event, $schema);
+    }
+
+    public function testExecuteHooksRejectedOnDeletingEvent(): void
+    {
+        $object = $this->createObjectEntity();
+        $event = $this->createMock(ObjectDeletingEvent::class);
+        $event->method('getObject')->willReturn($object);
+        $event->method('isPropagationStopped')->willReturn(false);
+
+        $schema = $this->createSchema([
+            ['id' => 'hook1', 'event' => 'deleting', 'enabled' => true, 'engine' => 'n8n', 'workflowId' => 'wf1', 'mode' => 'sync', 'onFailure' => 'reject'],
+        ]);
+
+        $this->cloudEventFormatter->method('formatAsCloudEvent')->willReturn([
+            'type' => 'test',
+            'openregister' => [],
+        ]);
+
+        $workflowEngine = new WorkflowEngine();
+        $adapter = $this->createMock(WorkflowEngineInterface::class);
+        $result = $this->createMock(WorkflowResult::class);
+        $result->method('isApproved')->willReturn(false);
+        $result->method('isModified')->willReturn(false);
+        $result->method('isRejected')->willReturn(true);
+        $result->method('getErrors')->willReturn([]);
+
+        $this->engineRegistry->method('getEnginesByType')->willReturn([$workflowEngine]);
+        $this->engineRegistry->method('resolveAdapter')->willReturn($adapter);
+        $adapter->method('executeWorkflow')->willReturn($result);
+
+        $event->expects($this->once())->method('stopPropagation');
+        $event->expects($this->once())->method('setErrors');
+
+        $this->service->executeHooks($event, $schema);
+    }
+
+    public function testExecuteHooksUnknownFailureMode(): void
+    {
+        $object = $this->createObjectEntity();
+        $event = $this->createMock(ObjectCreatingEvent::class);
+        $event->method('getObject')->willReturn($object);
+        $event->method('isPropagationStopped')->willReturn(false);
+
+        $schema = $this->createSchema([
+            [
+                'id' => 'hook1',
+                'event' => 'creating',
+                'enabled' => true,
+                'engine' => 'missing',
+                'workflowId' => 'wf1',
+                'onEngineDown' => 'invalid_mode',
+            ],
+        ]);
+
+        $this->cloudEventFormatter->method('formatAsCloudEvent')->willReturn([
+            'type' => 'test',
+            'openregister' => [],
+        ]);
+
+        $this->engineRegistry->method('getEnginesByType')->willReturn([]);
+
+        // Unknown mode defaults to reject
+        $event->expects($this->once())->method('stopPropagation');
+
+        $this->service->executeHooks($event, $schema);
+    }
+
+    public function testExecuteHooksGeneralExceptionUsesOnFailure(): void
+    {
+        $object = $this->createObjectEntity();
+        $event = $this->createMock(ObjectCreatingEvent::class);
+        $event->method('getObject')->willReturn($object);
+        $event->method('isPropagationStopped')->willReturn(false);
+
+        $schema = $this->createSchema([
+            [
+                'id' => 'hook1',
+                'event' => 'creating',
+                'enabled' => true,
+                'engine' => 'n8n',
+                'workflowId' => 'wf1',
+                'mode' => 'sync',
+                'onFailure' => 'allow',
+            ],
+        ]);
+
+        $this->cloudEventFormatter->method('formatAsCloudEvent')->willReturn([
+            'type' => 'test',
+            'openregister' => [],
+        ]);
+
+        $workflowEngine = new WorkflowEngine();
+        $adapter = $this->createMock(WorkflowEngineInterface::class);
+
+        $this->engineRegistry->method('getEnginesByType')->willReturn([$workflowEngine]);
+        $this->engineRegistry->method('resolveAdapter')->willReturn($adapter);
+        // General exception (not timeout/connection) uses onFailure
+        $adapter->method('executeWorkflow')
+            ->willThrowException(new \Exception('Some random error'));
+
+        // Allow mode should NOT stop propagation
+        $event->expects($this->never())->method('stopPropagation');
+        $this->logger->expects($this->atLeastOnce())->method('warning');
+
+        $this->service->executeHooks($event, $schema);
+    }
+
+    public function testExecuteHooksFilterConditionNonArray(): void
+    {
+        $object = $this->createObjectEntity('test-uuid', '1', '1', ['status' => 'draft']);
+        $event = $this->createMock(ObjectCreatingEvent::class);
+        $event->method('getObject')->willReturn($object);
+        $event->method('isPropagationStopped')->willReturn(false);
+
+        // filterCondition is a string instead of array — should be treated as no filter
+        $schema = $this->createSchema([
+            [
+                'id' => 'hook1',
+                'event' => 'creating',
+                'enabled' => true,
+                'engine' => 'n8n',
+                'workflowId' => 'wf1',
+                'mode' => 'sync',
+                'filterCondition' => 'invalid-not-array',
+            ],
+        ]);
+
+        $this->cloudEventFormatter->method('formatAsCloudEvent')->willReturn([
+            'type' => 'test',
+            'openregister' => [],
+        ]);
+
+        $workflowEngine = new WorkflowEngine();
+        $adapter = $this->createMock(WorkflowEngineInterface::class);
+        $result = $this->createMock(WorkflowResult::class);
+        $result->method('isApproved')->willReturn(true);
+
+        $this->engineRegistry->method('getEnginesByType')->willReturn([$workflowEngine]);
+        $this->engineRegistry->method('resolveAdapter')->willReturn($adapter);
+        // Should still execute because non-array filter is treated as "no filter"
+        $adapter->expects($this->once())->method('executeWorkflow')->willReturn($result);
+
+        $this->service->executeHooks($event, $schema);
+    }
+
+    public function testExecuteHooksFlagModeWithEmptyErrors(): void
+    {
+        $object = $this->createObjectEntity();
+        $event = $this->createMock(ObjectCreatingEvent::class);
+        $event->method('getObject')->willReturn($object);
+        $event->method('isPropagationStopped')->willReturn(false);
+
+        $schema = $this->createSchema([
+            [
+                'id' => 'hook1',
+                'event' => 'creating',
+                'enabled' => true,
+                'engine' => 'missing',
+                'workflowId' => 'wf1',
+                'onEngineDown' => 'flag',
+            ],
+        ]);
+
+        $this->cloudEventFormatter->method('formatAsCloudEvent')->willReturn([
+            'type' => 'test',
+            'openregister' => [],
+        ]);
+
+        $this->engineRegistry->method('getEnginesByType')->willReturn([]);
+
+        $this->service->executeHooks($event, $schema);
+
+        // Object should have validation metadata
+        $objectData = $object->getObject();
+        $this->assertSame('failed', $objectData['_validationStatus']);
+        $this->assertArrayHasKey('_validationErrors', $objectData);
+    }
 }
