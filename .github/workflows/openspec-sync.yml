@@ -1,0 +1,15 @@
+name: OpenSpec Sync
+
+on:
+  push:
+    branches: [main, development]
+    paths: ['openspec/**']
+  workflow_dispatch:
+
+jobs:
+  sync:
+    uses: ConductionNL/.github/.github/workflows/openspec-sync.yml@feature/openspec-project-sync
+    with:
+      app-name: openregister
+    secrets:
+      PROJECT_TOKEN: ${{ secrets.PROJECT_TOKEN }}
