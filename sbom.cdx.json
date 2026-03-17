@@ -2,14 +2,14 @@
   "$schema": "http://cyclonedx.org/schema/bom-1.5.schema.json",
   "bomFormat": "CycloneDX",
   "specVersion": "1.5",
-  "serialNumber": "urn:uuid:f25e16e5-1fcc-49c6-9a3f-600d8e7da1da",
+  "serialNumber": "urn:uuid:be67a349-7940-4346-ad81-4156a89c15a3",
   "version": 1,
   "metadata": {
-    "timestamp": "2026-03-17T14:49:11Z",
+    "timestamp": "2026-03-17T15:57:40Z",
     "tools": [
       {
         "name": "composer",
-        "version": "2.9.3"
+        "version": "2.9.5"
       },
       {
         "vendor": "cyclonedx",
@@ -82,10 +82,10 @@
       }
     ],
     "component": {
-      "bom-ref": "conductionnl/openregister-dev-feature/REGISTERS-479/Applicaties-page",
+      "bom-ref": "conductionnl/openregister-dev-feature/REGISTERS-480/data-sources-page",
       "type": "application",
       "name": "openregister",
-      "version": "dev-feature/REGISTERS-479/Applicaties-page",
+      "version": "dev-feature/REGISTERS-480/data-sources-page",
       "group": "conductionnl",
       "description": "Quickly build data registers based on schema.json",
       "author": "Conduction b.v.",
@@ -96,15 +96,15 @@
           }
         }
       ],
-      "purl": "pkg:composer/conductionnl/openregister@dev-feature/REGISTERS-479/Applicaties-page",
+      "purl": "pkg:composer/conductionnl/openregister@dev-feature/REGISTERS-480/data-sources-page",
       "properties": [
         {
           "name": "cdx:composer:package:distReference",
-          "value": "b64f5436b4023376bbb8eff5d47e65044e662ab3"
+          "value": "fba7d498e3cfeab7f1df922ec2425c8e024de84c"
         },
         {
           "name": "cdx:composer:package:sourceReference",
-          "value": "b64f5436b4023376bbb8eff5d47e65044e662ab3"
+          "value": "fba7d498e3cfeab7f1df922ec2425c8e024de84c"
         },
         {
           "name": "cdx:composer:package:type",
@@ -55484,7 +55484,7 @@
       "ref": "webonyx/graphql-php-15.31.1.0"
     },
     {
-      "ref": "conductionnl/openregister-dev-feature/REGISTERS-479/Applicaties-page",
+      "ref": "conductionnl/openregister-dev-feature/REGISTERS-480/data-sources-page",
       "dependsOn": [
         "adbario/php-dot-notation-3.3.0.0",
         "elasticsearch/elasticsearch-8.19.0.0",
