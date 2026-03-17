@@ -154,6 +154,9 @@ export default {
 	border-radius: var(--border-radius-large);
 	background: var(--color-main-background);
 	height: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
 }
 
 .orgCard--active {
