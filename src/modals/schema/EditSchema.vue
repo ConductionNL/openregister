@@ -33,7 +33,7 @@ import { schemaStore, navigationStore, registerStore } from '../../store/store.j
 		:delete-label="t('openregister', 'Delete')"
 		:delete-objects-tooltip="t('openregister', 'Delete all objects in this schema')"
 		:publish-objects-tooltip="t('openregister', 'Publish all objects in this schema')"
-		:no-objects-tooltip="t('openregister', 'No objects to delete')"
+
 		:cannot-delete-tooltip="t('openregister', 'Cannot delete: objects are still attached')"
 		@confirm="onConfirm"
 		@close="closeModal"
