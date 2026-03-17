@@ -52,9 +52,12 @@ webpackConfig.resolve.alias = {
 	...(useLocalLib ? { '@conduction/nextcloud-vue': localLib } : {}),
 	// Deduplicate shared packages so the aliased library source uses
 	// the same instances as the app (prevents dual-Pinia / dual-Vue bugs).
-	'vue$': path.resolve(__dirname, 'node_modules/vue'),
-	'pinia$': path.resolve(__dirname, 'node_modules/pinia'),
+	vue$: path.resolve(__dirname, 'node_modules/vue'),
+	pinia$: path.resolve(__dirname, 'node_modules/pinia'),
 	'@nextcloud/vue$': path.resolve(__dirname, 'node_modules/@nextcloud/vue'),
+	// Shim for floating-vue compatibility: adds getScrollParents (0.x API) as alias for getOverflowAncestors (1.x API)
+	'@floating-ui/dom$': path.resolve(__dirname, 'src/shims/floating-ui-dom.js'),
+	'@floating-ui/dom-actual': path.resolve(__dirname, 'node_modules/@floating-ui/dom'),
 }
 // @nextcloud/vue ships .cjs/.mjs; allow .js requests to resolve to .cjs (for dist subpaths)
 webpackConfig.resolve.extensionAlias = {
