@@ -1,4 +1,4 @@
-name: Sync to Beta
+name: Create or update PR to beta
 
 on:
   push:
