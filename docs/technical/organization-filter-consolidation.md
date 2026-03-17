@@ -45,7 +45,7 @@ protected function applyOrganisationFilter(
 
 `ObjectEntityMapper` now uses the `MultiTenancyTrait` and has access to the enhanced filtering method:
 
-'''php
+```php
 class ObjectEntityMapper extends QBMapper
 {
     use MultiTenancyTrait;

@@ -11,7 +11,7 @@ This document outlines the implementation plan for adding entity extraction, lan
 
 ## Documentation Created
 
-1. **[Enhanced Text Extraction & GDPR Entity Tracking](website/docs/features/text-extraction-enhanced.md)**
+1. **[Enhanced Text Extraction & GDPR Entity Tracking](../features/text-extraction-enhanced.md)**
    - Complete feature documentation
    - Processing methods (local, external services, LLM, hybrid)
    - GDPR entity register design
@@ -19,13 +19,13 @@ This document outlines the implementation plan for adding entity extraction, lan
    - Preparing for anonymization
    - API endpoints
 
-2. **[Text Extraction Sources: Files vs Objects](website/docs/features/text-extraction-sources.md)**
+2. **[Text Extraction Sources: Files vs Objects](../features/text-extraction-sources.md)**
    - Visual separation of file and object processing paths
    - Detailed flow diagrams for each source type
    - Comparison and combined use cases
    - Configuration options
 
-3. **[Text Extraction Database Entities](website/docs/technical/text-extraction-entities.md)**
+3. **[Text Extraction Database Entities](./text-extraction.md#database-schema)**
    - Complete database schema
    - Entity relationship diagrams
    - PHP entity classes
@@ -447,12 +447,12 @@ GdprService (new)
 
 ## Performance Targets
 
-- **Object text extraction**: <100ms per object
-- **Chunk creation**: <50ms per 100KB text
-- **Language detection (local)**: <10ms per chunk
-- **Language level (formula)**: <20ms per chunk
-- **Entity extraction (local)**: <100ms per chunk
-- **GDPR report generation**: <5s for 10,000 entities
+- **Object text extraction**: &lt;100ms per object
+- **Chunk creation**: &lt;50ms per 100KB text
+- **Language detection (local)**: &lt;10ms per chunk
+- **Language level (formula)**: &lt;20ms per chunk
+- **Entity extraction (local)**: &lt;100ms per chunk
+- **GDPR report generation**: &lt;5s for 10,000 entities
 
 ## Testing Strategy
 
@@ -503,7 +503,7 @@ GdprService (new)
 
 - **Coverage**: 100% of files and objects chunked
 - **Accuracy**: >90% entity detection accuracy
-- **Performance**: <5min to process 1000 files
+- **Performance**: &lt;5min to process 1000 files
 - **Adoption**: GDPR register used for data subject requests
 - **Compliance**: Pass GDPR audit
 - **User Satisfaction**: Positive feedback on search quality

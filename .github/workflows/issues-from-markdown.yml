@@ -1,0 +1,140 @@
+name: Create Issues from Markdown
+
+on:
+  push:
+    branches:
+      - main
+      - master
+      - development
+    paths:
+      - 'issues/*.md'
+      - '!issues/README.md'
+      - '!issues/.template.md'
+
+jobs:
+  create-issues:
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+      contents: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+
+      - name: Get changed files
+        id: changed-files
+        run: |
+          # Get list of added markdown files in issues folder
+          CHANGED_FILES=$(git diff --name-only --diff-filter=A HEAD~1 HEAD -- 'issues/*.md' | grep -v 'README.md' | grep -v '.template.md' || true)
+          echo "files=$CHANGED_FILES" >> $GITHUB_OUTPUT
+          echo "Changed files: $CHANGED_FILES"
+
+      - name: Create issues from markdown files
+        if: steps.changed-files.outputs.files != ''
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const path = require('path');
+
+            const changedFiles = `${{ steps.changed-files.outputs.files }}`.split('\n').filter(f => f.trim());
+
+            for (const file of changedFiles) {
+              if (!file || !fs.existsSync(file)) continue;
+
+              console.log(`Processing: ${file}`);
+              const content = fs.readFileSync(file, 'utf8');
+
+              // Parse frontmatter
+              const frontmatterMatch = content.match(/^---\n([\s\S]*?)\n---\n([\s\S]*)$/);
+              if (!frontmatterMatch) {
+                console.log(`No frontmatter found in ${file}, skipping`);
+                continue;
+              }
+
+              const frontmatter = frontmatterMatch[1];
+              const body = frontmatterMatch[2].trim();
+
+              // Parse YAML-like frontmatter manually
+              let title = '';
+              let labels = [];
+              let assignees = [];
+              let milestone = '';
+
+              for (const line of frontmatter.split('\n')) {
+                if (line.startsWith('title:')) {
+                  title = line.replace('title:', '').trim().replace(/^["']|["']$/g, '');
+                } else if (line.startsWith('labels:')) {
+                  const labelsMatch = line.match(/\[([^\]]*)\]/);
+                  if (labelsMatch) {
+                    labels = labelsMatch[1].split(',').map(l => l.trim().replace(/^["']|["']$/g, '')).filter(l => l);
+                  }
+                } else if (line.startsWith('assignees:')) {
+                  const assigneesMatch = line.match(/\[([^\]]*)\]/);
+                  if (assigneesMatch) {
+                    assignees = assigneesMatch[1].split(',').map(a => a.trim().replace(/^["']|["']$/g, '')).filter(a => a);
+                  }
+                } else if (line.startsWith('milestone:')) {
+                  milestone = line.replace('milestone:', '').trim().replace(/^["']|["']$/g, '');
+                }
+              }
+
+              if (!title) {
+                console.log(`No title found in ${file}, skipping`);
+                continue;
+              }
+
+              // Check if issue with same title already exists
+              const existingIssues = await github.rest.issues.listForRepo({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                state: 'all',
+                per_page: 100
+              });
+
+              const isDuplicate = existingIssues.data.some(issue => issue.title === title);
+              if (isDuplicate) {
+                console.log(`Issue "${title}" already exists, skipping`);
+                continue;
+              }
+
+              // Create the issue
+              const issueParams = {
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                title: title,
+                body: body + `\n\n---\n*This issue was automatically created from \`${file}\`*`
+              };
+
+              if (labels.length > 0) {
+                issueParams.labels = labels;
+              }
+
+              if (assignees.length > 0) {
+                issueParams.assignees = assignees;
+              }
+
+              const issue = await github.rest.issues.create(issueParams);
+              console.log(`Created issue #${issue.data.number}: ${title}`);
+            }
+
+      - name: Delete processed markdown files
+        if: steps.changed-files.outputs.files != ''
+        run: |
+          FILES="${{ steps.changed-files.outputs.files }}"
+          if [ -n "$FILES" ]; then
+            for file in $FILES; do
+              if [ -f "$file" ] && [ "$file" != "issues/README.md" ] && [ "$file" != "issues/.template.md" ]; then
+                git rm "$file"
+                echo "Deleted: $file"
+              fi
+            done
+
+            git config user.name "github-actions[bot]"
+            git config user.email "github-actions[bot]@users.noreply.github.com"
+            git commit -m "chore: remove processed issue files [skip ci]" || echo "No changes to commit"
+            git push
+          fi

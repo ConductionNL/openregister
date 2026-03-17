@@ -1,0 +1,269 @@
+{
+  "name": "OpenRegister Schema Notifications",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "openregister-schema-events",
+        "responseMode": "onReceived",
+        "options": {}
+      },
+      "id": "webhook-schema",
+      "name": "Webhook - Schema Events",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [
+        240,
+        300
+      ],
+      "webhookId": "openregister-schema-events"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{$json.body.event}}",
+              "value2": "SchemaCreatedEvent"
+            }
+          ]
+        }
+      },
+      "id": "check-created",
+      "name": "If Schema Created",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 1,
+      "position": [
+        460,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Prepare notification for schema creation.\nconst schema = $input.item.json.body.data.schema;\n\nreturn {\n  event_type: 'created',\n  schema_name: schema.name || 'Unnamed Schema',\n  schema_uuid: schema.uuid,\n  schema_version: schema.version,\n  description: schema.description || 'No description provided',\n  properties: Object.keys(schema.properties || {}).length,\n  created_at: schema.created,\n  notification_text: `🆕 New Schema Created: ${schema.name || 'Unnamed'}\\n` +\n                     `Version: ${schema.version}\\n` +\n                     `Properties: ${Object.keys(schema.properties || {}).length}\\n` +\n                     `Description: ${schema.description || 'None'}`\n};"
+      },
+      "id": "format-created",
+      "name": "Format Created Notification",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        680,
+        200
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Prepare notification for schema update.\nconst newSchema = $input.item.json.body.data.newSchema;\nconst oldSchema = $input.item.json.body.data.oldSchema;\n\n// Detect changes.\nconst changes = [];\nif (newSchema.name !== oldSchema.name) {\n  changes.push(`Name: ${oldSchema.name} → ${newSchema.name}`);\n}\nif (newSchema.version !== oldSchema.version) {\n  changes.push(`Version: ${oldSchema.version} → ${newSchema.version}`);\n}\nif (newSchema.description !== oldSchema.description) {\n  changes.push('Description updated');\n}\n\nconst oldProps = Object.keys(oldSchema.properties || {}).length;\nconst newProps = Object.keys(newSchema.properties || {}).length;\nif (oldProps !== newProps) {\n  changes.push(`Properties: ${oldProps} → ${newProps}`);\n}\n\nreturn {\n  event_type: 'updated',\n  schema_name: newSchema.name,\n  schema_uuid: newSchema.uuid,\n  schema_version: newSchema.version,\n  changes: changes,\n  notification_text: `✏️ Schema Updated: ${newSchema.name}\\n` +\n                     `Changes:\\n` +\n                     changes.map(c => `  - ${c}`).join('\\n')\n};"
+      },
+      "id": "format-updated",
+      "name": "Format Updated Notification",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        680,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Prepare notification for schema deletion.\nconst schema = $input.item.json.body.data.schema;\n\nreturn {\n  event_type: 'deleted',\n  schema_name: schema.name || 'Unnamed Schema',\n  schema_uuid: schema.uuid,\n  schema_version: schema.version,\n  notification_text: `🗑️ Schema Deleted: ${schema.name || 'Unnamed'}\\n` +\n                     `UUID: ${schema.uuid}\\n` +\n                     `Version: ${schema.version}`\n};"
+      },
+      "id": "format-deleted",
+      "name": "Format Deleted Notification",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        680,
+        400
+      ]
+    },
+    {
+      "parameters": {
+        "authentication": "oAuth2",
+        "resource": "message",
+        "operation": "post",
+        "channel": "#openregister-notifications",
+        "text": "={{$json.notification_text}}",
+        "otherOptions": {}
+      },
+      "id": "send-slack",
+      "name": "Send Slack Notification",
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2,
+      "position": [
+        900,
+        200
+      ],
+      "credentials": {
+        "slackOAuth2Api": {
+          "id": "4",
+          "name": "Slack account"
+        }
+      },
+      "notes": "Configure with your Slack workspace.\nChange channel as needed."
+    },
+    {
+      "parameters": {
+        "fromEmail": "openregister@your-domain.com",
+        "toEmail": "team@your-domain.com",
+        "subject": "=OpenRegister Schema {{$json.event_type}}: {{$json.schema_name}}",
+        "text": "={{$json.notification_text}}",
+        "options": {}
+      },
+      "id": "send-email",
+      "name": "Send Email Notification",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2,
+      "position": [
+        900,
+        300
+      ],
+      "credentials": {
+        "smtp": {
+          "id": "5",
+          "name": "SMTP account"
+        }
+      },
+      "notes": "Configure with your SMTP settings"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://hooks.microsoft.com/workflows/your-webhook-url",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"@type\": \"MessageCard\",\n  \"@context\": \"http://schema.org/extensions\",\n  \"themeColor\": \"0076D7\",\n  \"summary\": \"OpenRegister Schema {{$json.event_type}}\",\n  \"sections\": [{\n    \"activityTitle\": \"OpenRegister Schema {{$json.event_type}}\",\n    \"facts\": [{\n      \"name\": \"Schema:\",\n      \"value\": \"{{$json.schema_name}}\"\n    }, {\n      \"name\": \"Event:\",\n      \"value\": \"{{$json.event_type}}\"\n    }],\n    \"markdown\": true\n  }]\n}",
+        "options": {}
+      },
+      "id": "send-teams",
+      "name": "Send Teams Notification",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 3,
+      "position": [
+        900,
+        400
+      ],
+      "notes": "Configure with your Microsoft Teams webhook URL"
+    }
+  ],
+  "connections": {
+    "Webhook - Schema Events": {
+      "main": [
+        [
+          {
+            "node": "If Schema Created",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If Schema Created": {
+      "main": [
+        [
+          {
+            "node": "Format Created Notification",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Format Updated Notification",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Format Deleted Notification",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format Created Notification": {
+      "main": [
+        [
+          {
+            "node": "Send Slack Notification",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Send Email Notification",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Send Teams Notification",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format Updated Notification": {
+      "main": [
+        [
+          {
+            "node": "Send Slack Notification",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Send Email Notification",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Send Teams Notification",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format Deleted Notification": {
+      "main": [
+        [
+          {
+            "node": "Send Slack Notification",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Send Email Notification",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Send Teams Notification",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {},
+  "staticData": null,
+  "tags": [
+    {
+      "name": "OpenRegister",
+      "id": "1"
+    },
+    {
+      "name": "Notifications",
+      "id": "2"
+    },
+    {
+      "name": "Schema",
+      "id": "3"
+    }
+  ],
+  "pinData": {},
+  "versionId": "1"
+}
+

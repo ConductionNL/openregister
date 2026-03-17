@@ -117,5 +117,5 @@ After fixes, verify:
 ## Related Documentation
 
 - [Performance Optimization](./performance-optimization.md) - Performance improvements
-- [Vector Search Backends](../technical/vector-search-backends.md) - Vector search implementation
+- [Vector Search Backends](../technical/vectorization.md#vector-search-backends) - Vector search implementation
 

@@ -365,5 +365,5 @@ $defaultOrg = $organisationService->ensureDefaultOrganisation();
 - [Organisation Management](../Features/organisations.md)
 - [Organisation Roles (RBAC)](./organisation-roles.md)
 - [Settings Configuration](../user/settings-configuration.md)
-- [RBAC (Role-Based Access Control)](../developers/rbac.md)
+- [RBAC (Role-Based Access Control)](../development/rbac.md)
 

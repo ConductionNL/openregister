@@ -422,9 +422,21 @@ export default {
 		schemaOptions() {
 			if (!registerStore.registerItem) return { options: [] }
 
+			// Convert register schemas to strings for comparison.
+			// Schema IDs can be either numbers or objects with an id property.
+			const registerSchemaIds = (registerStore.registerItem.schemas || []).map(schema => {
+				// If schema is an object with an id property, extract it; otherwise use the value directly.
+				const schemaId = typeof schema === 'object' && schema !== null ? schema.id : schema
+				return String(schemaId)
+			})
+
 			return {
 				options: schemaStore.schemaList
-					.filter(schema => registerStore.registerItem.schemas.some(registerSchema => registerSchema.id === schema.id))
+					.filter(schema => {
+						// Convert schema ID to string for comparison.
+						const schemaId = String(schema.id)
+						return registerSchemaIds.includes(schemaId)
+					})
 					.map(schema => ({
 						value: schema.id,
 						label: schema.title,
@@ -476,22 +488,14 @@ export default {
 		this.registerLoading = true
 		this.schemaLoading = true
 
-		// Only load lists if they're empty
-		if (!registerStore.registerList.length) {
-			registerStore.refreshRegisterList()
-				.finally(() => (this.registerLoading = false))
-		} else {
-			this.registerLoading = false
-		}
+		// Always load lists to ensure fresh data.
+		registerStore.refreshRegisterList()
+			.finally(() => (this.registerLoading = false))
 
-		if (!schemaStore.schemaList.length) {
-			schemaStore.refreshSchemaList()
-				.finally(() => (this.schemaLoading = false))
-		} else {
-			this.schemaLoading = false
-		}
+		schemaStore.refreshSchemaList()
+			.finally(() => (this.schemaLoading = false))
 
-		// Load objects if register and schema are already selected
+		// Load objects if register and schema are already selected.
 		if (registerStore.registerItem && schemaStore.schemaItem) {
 			objectStore.refreshObjectList()
 		}
@@ -645,9 +649,30 @@ export default {
 			const i = Math.floor(Math.log(bytes) / Math.log(k))
 			return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i]
 		},
-		handleRegisterChange(option) {
+		async handleRegisterChange(option) {
+			if (!option) {
+				registerStore.setRegisterItem(null)
+				schemaStore.setSchemaItem(null)
+				return
+			}
+
 			registerStore.setRegisterItem(option)
 			schemaStore.setSchemaItem(null)
+
+			// Always refresh schema list when register changes to ensure we have all schemas.
+			// This is important because schemas might not be loaded yet or might have changed.
+			const registerSchemas = option.schemas || []
+			if (registerSchemas.length > 0) {
+				this.schemaLoading = true
+				try {
+					// Load all schemas to ensure we have the ones for this register.
+					await schemaStore.refreshSchemaList()
+				} catch (error) {
+					console.error('Error loading schemas:', error)
+				} finally {
+					this.schemaLoading = false
+				}
+			}
 		},
 		async handleSchemaChange(option) {
 			schemaStore.setSchemaItem(option)

@@ -9,11 +9,11 @@ use OCA\OpenRegister\Service\VectorEmbeddingService;
 
 echo "=== DIRECT SEMANTIC SEARCH TEST ===\n\n";
 
-// Get service
+// Get service.
 $container = \OC::$server->getRegisteredAppContainer('openregister');
 $vectorService = $container->get(VectorEmbeddingService::class);
 
-// Test 1: Search without filters
+// Test 1: Search without filters.
 echo "Test 1: Search 'mokum' WITHOUT filters\n";
 echo "----------------------------------------\n";
 try {
@@ -26,7 +26,7 @@ try {
         echo "   Similarity: " . ($result['similarity'] ?? 0) . "\n";
         echo "   Text preview: " . substr($result['chunk_text'] ?? '', 0, 100) . "\n";
         
-        // Check metadata
+        // Check metadata.
         if (isset($result['metadata'])) {
             $meta = $result['metadata'];
             if (is_string($meta)) {
@@ -42,7 +42,7 @@ try {
     echo $e->getTraceAsString() . "\n";
 }
 
-// Test 2: Search with object filter
+// Test 2: Search with object filter.
 echo "\n\nTest 2: Search 'mokum' WITH object filter\n";
 echo "-------------------------------------------\n";
 try {

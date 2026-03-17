@@ -246,6 +246,29 @@
 						{{ formatRetentionPeriod(retentionOptions.deleteLogRetention) }}
 					</div>
 				</div>
+
+				<div class="retention-row">
+					<div class="retention-label">
+						<strong>Webhook Logs</strong>
+						<p class="retention-description">
+							Retention period for webhook delivery logs and retry attempts
+						</p>
+					</div>
+					<div class="retention-input">
+						<div class="retention-input-wrapper">
+							<input
+								v-model.number="retentionOptions.webhookLogRetention"
+								type="number"
+								:disabled="loading || saving"
+								placeholder="2592000000"
+								class="retention-input-field">
+							<span class="retention-unit">ms</span>
+						</div>
+					</div>
+					<div class="retention-display">
+						{{ formatRetentionPeriod(retentionOptions.webhookLogRetention) }}
+					</div>
+				</div>
 			</div>
 		</div>
 	</SettingsSection>

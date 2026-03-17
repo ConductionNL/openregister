@@ -27,7 +27,7 @@ An intelligent classification and metadata extraction system for all content typ
 
 ## Documentation Location
 
-📄 **[Archiving and Metadata Classification](website/docs/features/archiving-and-metadata.md)**
+📄 **[Archiving and Metadata Classification](../features/archiving-and-metadata.md)**
 
 ## Key Concepts
 
@@ -503,8 +503,8 @@ The feature documentation includes:
 ---
 
 **Related Documentation**:
-- [Enhanced Text Extraction](website/docs/features/text-extraction-enhanced.md)
-- [Text Extraction Sources](website/docs/features/text-extraction-sources.md)
-- [Database Entities](website/docs/technical/text-extraction-entities.md)
+- [Enhanced Text Extraction](../features/text-extraction-enhanced.md)
+- [Text Extraction Sources](../features/text-extraction-sources.md)
+- [Database Entities](../technical/text-extraction.md#database-schema)
 - [Implementation Plan](../technical/enhanced-text-extraction-implementation-plan.md)
 

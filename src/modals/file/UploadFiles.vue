@@ -412,10 +412,10 @@ export default {
 
 		getAllTags() {
 			this.tagsLoading = true
-			objectStore.getTags().then(({ response, data }) => {
-
-				const tags = data.map((tag) => tag)
-
+			// @TODO - this functionality always calls and therefore always has to wait.
+			// split this up into a computed value and action, the computed value can dervive tags from `objectStore.getTags` (getter) or `objectStore.tags` (state)
+			// this avoids the waiting time in later calls
+			objectStore.fetchTags().then((tags) => {
 				const newLabelOptions = new Set()
 				const newLabelOptionsEdit = new Set()
 

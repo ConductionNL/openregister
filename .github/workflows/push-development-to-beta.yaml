@@ -1,0 +1,44 @@
+name: Create PR to Beta
+
+permissions:
+  contents: write
+  pull-requests: write
+
+on:
+  push:
+    branches:
+      - development
+
+jobs:
+  create-pr:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - name: Create or update PR to beta
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          # Check if beta branch exists
+          if ! git ls-remote --heads origin beta | grep -q beta; then
+            echo "Beta branch does not exist yet. Creating from development..."
+            git push origin origin/development:refs/heads/beta
+          fi
+
+          # Check if a PR already exists
+          EXISTING_PR=$(gh pr list --base beta --head development --state open --json number --jq '.[0].number' || echo "")
+
+          if [ -n "$EXISTING_PR" ] && [ "$EXISTING_PR" != "null" ]; then
+            echo "PR #$EXISTING_PR already exists, it will auto-update with new commits"
+          else
+            gh pr create \
+              --base beta \
+              --head development \
+              --title "Release: merge development into beta" \
+              --body "Automated PR to sync development changes to beta for beta release.
+
+          Merging this PR will trigger the beta release workflow."
+          fi

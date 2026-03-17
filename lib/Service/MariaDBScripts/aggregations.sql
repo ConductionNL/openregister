@@ -1,1 +1,4 @@
-(SELECT json_extract(object, '$.tooi') as gemeentecode, count(*) as count FROM nextcloud.oc_openregister_objects group by gemeentecode);
+-- DEPRECATED: The oc_openregister_objects blob table has been retired.
+-- Objects are now stored in per-register/schema magic tables (oc_openregister_table_{register}_{schema}).
+-- Example for magic table aggregation:
+-- SELECT _gemeentecode as gemeentecode, count(*) as count FROM oc_openregister_table_1_1 GROUP BY _gemeentecode;

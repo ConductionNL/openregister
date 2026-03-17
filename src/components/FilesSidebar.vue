@@ -56,6 +56,55 @@
 			</div>
 		</div>
 
+		<!-- Filter by Risk Level -->
+		<div class="filter-section">
+			<h4>{{ t('openregister', 'Risk Level') }}</h4>
+			<div class="filter-options">
+				<NcCheckboxRadioSwitch
+					:checked="selectedRiskLevel === null"
+					type="radio"
+					value="all"
+					@update:checked="updateRiskLevel(null)">
+					{{ t('openregister', 'All Levels') }}
+				</NcCheckboxRadioSwitch>
+				<NcCheckboxRadioSwitch
+					:checked="selectedRiskLevel === 'none'"
+					type="radio"
+					value="none"
+					@update:checked="updateRiskLevel('none')">
+					{{ t('openregister', 'None') }}
+				</NcCheckboxRadioSwitch>
+				<NcCheckboxRadioSwitch
+					:checked="selectedRiskLevel === 'low'"
+					type="radio"
+					value="low"
+					@update:checked="updateRiskLevel('low')">
+					{{ t('openregister', 'Low') }}
+				</NcCheckboxRadioSwitch>
+				<NcCheckboxRadioSwitch
+					:checked="selectedRiskLevel === 'medium'"
+					type="radio"
+					value="medium"
+					@update:checked="updateRiskLevel('medium')">
+					{{ t('openregister', 'Medium') }}
+				</NcCheckboxRadioSwitch>
+				<NcCheckboxRadioSwitch
+					:checked="selectedRiskLevel === 'high'"
+					type="radio"
+					value="high"
+					@update:checked="updateRiskLevel('high')">
+					{{ t('openregister', 'High') }}
+				</NcCheckboxRadioSwitch>
+				<NcCheckboxRadioSwitch
+					:checked="selectedRiskLevel === 'very_high'"
+					type="radio"
+					value="very_high"
+					@update:checked="updateRiskLevel('very_high')">
+					{{ t('openregister', 'Very High') }}
+				</NcCheckboxRadioSwitch>
+			</div>
+		</div>
+
 		<!-- Clear Filters Button -->
 		<div v-if="hasActiveFilters" class="clear-filters">
 			<NcButton
@@ -91,12 +140,17 @@ export default {
 			type: String,
 			default: null,
 		},
+		riskLevel: {
+			type: String,
+			default: null,
+		},
 	},
 
 	data() {
 		return {
 			localSearch: this.search,
 			selectedStatus: this.status,
+			selectedRiskLevel: this.riskLevel,
 			searchTimeout: null,
 		}
 	},
@@ -108,7 +162,7 @@ export default {
 		 * @return {boolean} True if filters are active
 		 */
 		hasActiveFilters() {
-			return this.selectedStatus !== null || this.localSearch !== ''
+			return this.selectedStatus !== null || this.localSearch !== '' || this.selectedRiskLevel !== null
 		},
 	},
 
@@ -118,6 +172,9 @@ export default {
 		},
 		status(newVal) {
 			this.selectedStatus = newVal
+		},
+		riskLevel(newVal) {
+			this.selectedRiskLevel = newVal
 		},
 	},
 
@@ -149,6 +206,17 @@ export default {
 		},
 
 		/**
+		 * Update the selected risk level filter
+		 *
+		 * @param {string|null} level - The risk level to filter by
+		 * @return {void}
+		 */
+		updateRiskLevel(level) {
+			this.selectedRiskLevel = level
+			this.$emit('update:riskLevel', level)
+		},
+
+		/**
 		 * Clear all filters
 		 *
 		 * @return {void}
@@ -156,8 +224,10 @@ export default {
 		clearFilters() {
 			this.localSearch = ''
 			this.selectedStatus = null
+			this.selectedRiskLevel = null
 			this.$emit('update:search', '')
 			this.$emit('update:status', null)
+			this.$emit('update:riskLevel', null)
 		},
 	},
 }

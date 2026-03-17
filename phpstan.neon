@@ -1,0 +1,25 @@
+includes:
+    - phpstan-baseline.neon
+
+parameters:
+    level: 5
+    paths:
+        - lib
+    bootstrapFiles:
+        - vendor/autoload.php
+    scanDirectories:
+        - vendor/nextcloud/ocp
+        - vendor/doctrine/dbal
+        - vendor/symfony/http-foundation
+    reportUnmatchedIgnoredErrors: false
+    ignoreErrors:
+        # Nextcloud internal classes not available via OCP stubs
+        - '#Call to an undefined method OC::#'
+        - '#Class OC not found#'
+        - '#Access to static property \$server on an unknown class OC#'
+        - '#unknown class OC\\\\#'
+        - '#unknown class OCA\\\\DAV\\\\#'
+        - '#unknown class OC_App#'
+        - '#not found in catched class OC\\\\#'
+        - '#Caught class OC\\\\#'
+        - '#Class OCA\\\\DAV\\\\#'

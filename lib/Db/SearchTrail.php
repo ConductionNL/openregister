@@ -1,4 +1,5 @@
 <?php
+
 /**
  * OpenRegister Search Trail
  *
@@ -30,6 +31,55 @@ use OCP\AppFramework\Db\Entity;
  * and their results for analytics and optimization purposes.
  *
  * @package OCA\OpenRegister\Db
+ *
+ * @SuppressWarnings(PHPMD.TooManyFields)
+ *
+ * @method string|null getUuid()
+ * @method void setUuid(?string $uuid)
+ * @method string|null getSearchTerm()
+ * @method void setSearchTerm(?string $searchTerm)
+ * @method array|null getQueryParameters()
+ * @method void setQueryParameters(?array $queryParameters)
+ * @method int|null getResultCount()
+ * @method void setResultCount(?int $resultCount)
+ * @method int|null getTotalResults()
+ * @method void setTotalResults(?int $totalResults)
+ * @method int|null getRegister()
+ * @method void setRegister(?int $register)
+ * @method int|null getSchema()
+ * @method void setSchema(?int $schema)
+ * @method string|null getRegisterUuid()
+ * @method void setRegisterUuid(?string $registerUuid)
+ * @method string|null getSchemaUuid()
+ * @method void setSchemaUuid(?string $schemaUuid)
+ * @method string|null getUser()
+ * @method void setUser(?string $user)
+ * @method string|null getUserName()
+ * @method void setUserName(?string $userName)
+ * @method string|null getRegisterName()
+ * @method void setRegisterName(?string $registerName)
+ * @method string|null getSchemaName()
+ * @method void setSchemaName(?string $schemaName)
+ * @method string|null getSession()
+ * @method void setSession(?string $session)
+ * @method string|null getIpAddress()
+ * @method void setIpAddress(?string $ipAddress)
+ * @method string|null getUserAgent()
+ * @method void setUserAgent(?string $userAgent)
+ * @method string|null getRequestUri()
+ * @method void setRequestUri(?string $requestUri)
+ * @method string|null getHttpMethod()
+ * @method void setHttpMethod(?string $httpMethod)
+ * @method int|null getResponseTime()
+ * @method void setResponseTime(?int $responseTime)
+ * @method int|null getPage()
+ * @method void setPage(?int $page)
+ * @method DateTime|null getCreated()
+ * @method void setCreated(?DateTime $created)
+ * @method string|null getOrganisation()
+ * @method void setOrganisation(?string $organisation)
+ *
+ * @psalm-suppress PropertyNotSetInConstructor $id is set by Nextcloud's Entity base class
  */
 class SearchTrail extends Entity implements JsonSerializable
 {
@@ -217,13 +267,6 @@ class SearchTrail extends Entity implements JsonSerializable
     protected ?array $sortParameters = null;
 
     /**
-     * Whether the search was performed on published objects only
-     *
-     * @var boolean|null Whether the search was performed on published objects only
-     */
-    protected ?bool $publishedOnly = null;
-
-    /**
      * Search execution type (sync or async)
      *
      * @var string|null Search execution type (sync or async)
@@ -265,7 +308,6 @@ class SearchTrail extends Entity implements JsonSerializable
      */
     protected ?int $size = null;
 
-
     /**
      * Constructor for the SearchTrail class
      *
@@ -299,16 +341,14 @@ class SearchTrail extends Entity implements JsonSerializable
         $this->addType(fieldName: 'facetableRequested', type: 'boolean');
         $this->addType(fieldName: 'filters', type: 'json');
         $this->addType(fieldName: 'sortParameters', type: 'json');
-        $this->addType(fieldName: 'publishedOnly', type: 'boolean');
+
         $this->addType(fieldName: 'executionType', type: 'string');
         $this->addType(fieldName: 'created', type: 'datetime');
         $this->addType(fieldName: 'organisationId', type: 'string');
         $this->addType(fieldName: 'organisationIdType', type: 'string');
         $this->addType(fieldName: 'expires', type: 'datetime');
         $this->addType(fieldName: 'size', type: 'integer');
-
     }//end __construct()
-
 
     /**
      * Get the query parameters
@@ -318,9 +358,7 @@ class SearchTrail extends Entity implements JsonSerializable
     public function getQueryParameters(): array
     {
         return ($this->queryParameters ?? []);
-
     }//end getQueryParameters()
-
 
     /**
      * Get the filters
@@ -330,9 +368,7 @@ class SearchTrail extends Entity implements JsonSerializable
     public function getFilters(): array
     {
         return ($this->filters ?? []);
-
     }//end getFilters()
-
 
     /**
      * Get the sort parameters
@@ -342,16 +378,16 @@ class SearchTrail extends Entity implements JsonSerializable
     public function getSortParameters(): array
     {
         return ($this->sortParameters ?? []);
-
     }//end getSortParameters()
-
 
     /**
      * Get JSON fields from the entity
      *
      * Returns all fields that are of type 'json'
      *
-     * @return array<string> List of JSON field names
+     * @return string[] List of JSON field names
+     *
+     * @psalm-return list<string>
      */
     public function getJsonFields(): array
     {
@@ -363,9 +399,7 @@ class SearchTrail extends Entity implements JsonSerializable
                 }
             )
         );
-
     }//end getJsonFields()
-
 
     /**
      * Hydrate the entity with data from an array
@@ -374,9 +408,9 @@ class SearchTrail extends Entity implements JsonSerializable
      *
      * @param array $object The data array to hydrate from
      *
-     * @return self Returns $this for method chaining
+     * @return static Returns $this for method chaining
      */
-    public function hydrate(array $object): self
+    public function hydrate(array $object): static
     {
         $jsonFields = $this->getJsonFields();
 
@@ -395,9 +429,7 @@ class SearchTrail extends Entity implements JsonSerializable
         }
 
         return $this;
-
     }//end hydrate()
-
 
     /**
      * Set the register name
@@ -409,9 +441,7 @@ class SearchTrail extends Entity implements JsonSerializable
     public function setRegisterName(?string $registerName): void
     {
         $this->registerName = $registerName;
-
     }//end setRegisterName()
-
 
     /**
      * Set the schema name
@@ -423,26 +453,60 @@ class SearchTrail extends Entity implements JsonSerializable
     public function setSchemaName(?string $schemaName): void
     {
         $this->schemaName = $schemaName;
-
     }//end setSchemaName()
-
 
     /**
      * Convert entity to JSON serializable array
      *
      * Prepares the entity data for JSON serialization
      *
-     * @return array<string, mixed> Array of serializable entity data
+     * @return (array|bool|int|null|string)[] Array of serializable entity data
+     *
+     * @psalm-return array{
+     *     id: int,
+     *     uuid: null|string,
+     *     searchTerm: null|string,
+     *     queryParameters: array|null,
+     *     resultCount: int|null,
+     *     totalResults: int|null,
+     *     register: int|null,
+     *     schema: int|null,
+     *     registerUuid: null|string,
+     *     schemaUuid: null|string,
+     *     user: null|string,
+     *     userName: null|string,
+     *     registerName: null|string,
+     *     schemaName: null|string,
+     *     session: null|string,
+     *     ipAddress: null|string,
+     *     userAgent: null|string,
+     *     requestUri: null|string,
+     *     httpMethod: null|string,
+     *     responseTime: int|null,
+     *     page: int|null,
+     *     limit: int|null,
+     *     offset: int|null,
+     *     facetsRequested: bool|null,
+     *     facetableRequested: bool|null,
+     *     filters: array|null,
+     *     sortParameters: array|null,
+     *     executionType: null|string,
+     *     created: null|string,
+     *     organisationId: null|string,
+     *     organisationIdType: null|string,
+     *     expires: null|string,
+     *     size: int|null
+     * }
      */
     public function jsonSerialize(): array
     {
         $created = null;
-        if (isset($this->created) === true) {
+        if ($this->created !== null) {
             $created = $this->created->format('c');
         }
 
         $expires = null;
-        if (isset($this->expires) === true) {
+        if ($this->expires !== null) {
             $expires = $this->expires->format('c');
         }
 
@@ -474,7 +538,6 @@ class SearchTrail extends Entity implements JsonSerializable
             'facetableRequested' => $this->facetableRequested,
             'filters'            => $this->filters,
             'sortParameters'     => $this->sortParameters,
-            'publishedOnly'      => $this->publishedOnly,
             'executionType'      => $this->executionType,
             'created'            => $created,
             'organisationId'     => $this->organisationId,
@@ -482,9 +545,7 @@ class SearchTrail extends Entity implements JsonSerializable
             'expires'            => $expires,
             'size'               => $this->size,
         ];
-
     }//end jsonSerialize()
-
 
     /**
      * String representation of the search trail
@@ -496,25 +557,22 @@ class SearchTrail extends Entity implements JsonSerializable
      */
     public function __toString(): string
     {
-        // Return the UUID if available, otherwise return a descriptive string
+        // Return the UUID if available, otherwise return a descriptive string.
         if ($this->uuid !== null && $this->uuid !== '') {
             return $this->uuid;
         }
 
-        // Fallback to search term if available
+        // Fallback to search term if available.
         if ($this->searchTerm !== null && $this->searchTerm !== '') {
             return 'Search: '.$this->searchTerm;
         }
 
-        // Fallback to ID if available
+        // Fallback to ID if available.
         if ($this->id !== null) {
             return 'SearchTrail #'.$this->id;
         }
 
-        // Final fallback
+        // Final fallback.
         return 'Search Trail';
-
     }//end __toString()
-
-
 }//end class

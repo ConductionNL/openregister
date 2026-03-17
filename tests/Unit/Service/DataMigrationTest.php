@@ -29,7 +29,7 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCP\Migration\IOutput;
 use OCP\IDBConnection;
-use Doctrine\DBAL\Schema\Schema as DoctrineSchema;
+use OCP\DB\ISchemaWrapper;
 
 class DataMigrationTest extends TestCase
 {
@@ -46,7 +46,7 @@ class DataMigrationTest extends TestCase
         $this->organisationMapper = $this->createMock(OrganisationMapper::class);
         $this->output = $this->createMock(IOutput::class);
         
-        $this->migration = new Version1Date20250801000000();
+        $this->migration = new Version1Date20250801000000($this->connection);
     }
 
     /**
@@ -54,7 +54,7 @@ class DataMigrationTest extends TestCase
      */
     public function testExistingDataMigrationToDefaultOrganisation(): void
     {
-        // Arrange: Mock existing entities without organisation
+        // Arrange: Mock existing entities without organisation.
         $existingRegisters = [
             ['id' => 1, 'title' => 'Legacy Register 1', 'organisation' => null],
             ['id' => 2, 'title' => 'Legacy Register 2', 'organisation' => null]
@@ -62,19 +62,20 @@ class DataMigrationTest extends TestCase
         
         $defaultOrg = new Organisation();
         $defaultOrg->setUuid('default-uuid-123');
-        $defaultOrg->setIsDefault(true);
         
-        // Mock database queries
+        // Mock database queries.
         $queryBuilder = $this->createMock(\Doctrine\DBAL\Query\QueryBuilder::class);
         $this->connection->method('getQueryBuilder')->willReturn($queryBuilder);
         
-        // Act: Run migration
-        $schema = $this->createMock(DoctrineSchema::class);
+        // Act: Run migration.
+        $schema = $this->createMock(ISchemaWrapper::class);
+        $schema->method('hasTable')->willReturn(true);
+        $schema->method('getTable')->willReturn($this->createMock(\Doctrine\DBAL\Schema\Table::class));
         $this->migration->changeSchema($this->output, \Closure::fromCallable(function() use ($schema) {
             return $schema;
         }), []);
         
-        // Assert: Migration schema changes applied
+        // Assert: Migration schema changes applied.
         $this->addToAssertionCount(1);
     }
 
@@ -83,15 +84,15 @@ class DataMigrationTest extends TestCase
      */
     public function testMandatoryOrganisationAndOwnerFields(): void
     {
-        // Arrange: Test entity creation requires organisation and owner
+        // Arrange: Test entity creation requires organisation and owner.
         $register = new Register();
         $register->setTitle('Test Register');
         
-        // Assert: Organisation and owner are required
+        // Assert: Organisation and owner are required.
         $this->assertNull($register->getOrganisation()); // Initially null
         $this->assertNull($register->getOwner()); // Initially null
         
-        // After migration, these should be mandatory
+        // After migration, these should be mandatory.
         $register->setOrganisation('required-org-uuid');
         $register->setOwner('required-owner');
         
@@ -104,14 +105,14 @@ class DataMigrationTest extends TestCase
      */
     public function testInvalidOrganisationReferencePrevention(): void
     {
-        // Arrange: Test foreign key constraints
+        // Arrange: Test foreign key constraints.
         $invalidOrgUuid = 'invalid-org-uuid';
         
-        // Mock: Attempt to create entity with invalid organisation reference
+        // Mock: Attempt to create entity with invalid organisation reference.
         $this->expectException(\Exception::class);
         $this->expectExceptionMessage('organisation reference');
         
-        // Act: This should be prevented by database constraints
+        // Act: This should be prevented by database constraints.
         throw new \Exception('Invalid organisation reference');
     }
 } 

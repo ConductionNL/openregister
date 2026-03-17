@@ -54,64 +54,58 @@ import { objectStore, registerStore, schemaStore, dashboardStore, navigationStor
 					<NcLoadingIcon :size="20" />
 					<span>{{ t('openregister', 'Loading statistics...') }}</span>
 				</div>
-				<div v-else-if="systemTotals" class="statsContainer">
-					<table class="statisticsTable">
-						<tbody>
-							<tr>
-								<td>{{ t('openregister', 'Registers') }}</td>
-								<td>{{ filteredRegisters.length }}</td>
-								<td>-</td>
-							</tr>
-							<tr>
-								<td>{{ t('openregister', 'Schemas') }}</td>
-								<td>{{ totalSchemas }}</td>
-								<td>-</td>
-							</tr>
-							<tr>
-								<td>{{ t('openregister', 'Objects') }}</td>
-								<td>{{ systemTotals.stats?.objects?.total || 0 }}</td>
-								<td>{{ formatBytes(systemTotals.stats?.objects?.size || 0) }}</td>
-							</tr>
-							<tr class="subRow">
-								<td class="indented">
-									{{ t('openregister', 'Invalid') }}
-								</td>
-								<td>{{ systemTotals.stats?.objects?.invalid || 0 }}</td>
-								<td>-</td>
-							</tr>
-							<tr class="subRow">
-								<td class="indented">
-									{{ t('openregister', 'Deleted') }}
-								</td>
-								<td>{{ systemTotals.stats?.objects?.deleted || 0 }}</td>
-								<td>-</td>
-							</tr>
-							<tr class="subRow">
-								<td class="indented">
-									{{ t('openregister', 'Locked') }}
-								</td>
-								<td>{{ systemTotals.stats?.objects?.locked || 0 }}</td>
-								<td>-</td>
-							</tr>
-							<tr class="subRow">
-								<td class="indented">
-									{{ t('openregister', 'Published') }}
-								</td>
-								<td>{{ systemTotals.stats?.objects?.published || 0 }}</td>
-								<td>-</td>
-							</tr>
-							<tr>
-								<td>{{ t('openregister', 'Logs') }}</td>
-								<td>{{ systemTotals.stats?.logs?.total || 0 }}</td>
-								<td>{{ formatBytes(systemTotals.stats?.logs?.size || 0) }}</td>
-							</tr>
-							<tr>
-								<td>{{ t('openregister', 'Files') }}</td>
-								<td>{{ systemTotals.stats?.files?.total || 0 }}</td>
-								<td>{{ formatBytes(systemTotals.stats?.files?.size || 0) }}</td>
-							</tr>
-						</tbody>
-					</table>
+				<div v-else-if="systemTotals" class="statsStack">
+					<CnStatsBlock
+						:title="t('openregister', 'Registers')"
+						:count="filteredRegisters.length"
+						:count-label="t('openregister', 'register{plural}', {
+							plural: filteredRegisters.length !== 1 ? 's' : ''
+						})"
+						:icon="DatabaseOutline"
+						variant="primary"
+						horizontal
+						show-zero-count />
+					<CnStatsBlock
+						:title="t('openregister', 'Schemas')"
+						:count="totalSchemas"
+						:count-label="t('openregister', 'schema{plural}', {
+							plural: totalSchemas !== 1 ? 's' : ''
+						})"
+						:icon="TableIcon"
+						variant="primary"
+						horizontal
+						show-zero-count />
+					<CnStatsBlock
+						:title="t('openregister', 'Objects')"
+						:count="systemTotals.stats?.objects?.total || 0"
+						:count-label="t('openregister', 'object{plural}', {
+							plural: systemTotals.stats?.objects?.total !== 1 ? 's' : ''
+						})"
+						:icon="PackageVariantClosed"
+						variant="primary"
+						horizontal
+						show-zero-count
+						:breakdown="objectsBreakdown(systemTotals)" />
+					<CnStatsBlock
+						:title="t('openregister', 'Logs')"
+						:count="systemTotals.stats?.logs?.total || 0"
+						:count-label="t('openregister', 'log{plural}', {
+							plural: systemTotals.stats?.logs?.total !== 1 ? 's' : ''
+						})"
+						:icon="TextBoxOutline"
+						horizontal
+						show-zero-count
+						:breakdown="sizeBreakdown(systemTotals.stats?.logs?.size)" />
+					<CnStatsBlock
+						:title="t('openregister', 'Files')"
+						:count="systemTotals.stats?.files?.total || 0"
+						:count-label="t('openregister', 'file{plural}', {
+							plural: systemTotals.stats?.files?.total !== 1 ? 's' : ''
+						})"
+						:icon="FileDocumentOutline"
+						horizontal
+						show-zero-count
+						:breakdown="sizeBreakdown(systemTotals.stats?.files?.size)" />
 				</div>
 			</div>
 
@@ -124,54 +118,40 @@ import { objectStore, registerStore, schemaStore, dashboardStore, navigationStor
 					<NcLoadingIcon :size="20" />
 					<span>{{ t('openregister', 'Loading statistics...') }}</span>
 				</div>
-				<div v-else-if="orphanedItems" class="statsContainer">
-					<table class="statisticsTable">
-						<tbody>
-							<tr>
-								<td>{{ t('openregister', 'Objects') }}</td>
-								<td>{{ orphanedItems.stats?.objects?.total || 0 }}</td>
-								<td>{{ formatBytes(orphanedItems.stats?.objects?.size || 0) }}</td>
-							</tr>
-							<tr class="subRow">
-								<td class="indented">
-									{{ t('openregister', 'Invalid') }}
-								</td>
-								<td>{{ orphanedItems.stats?.objects?.invalid || 0 }}</td>
-								<td>-</td>
-							</tr>
-							<tr class="subRow">
-								<td class="indented">
-									{{ t('openregister', 'Deleted') }}
-								</td>
-								<td>{{ orphanedItems.stats?.objects?.deleted || 0 }}</td>
-								<td>-</td>
-							</tr>
-							<tr class="subRow">
-								<td class="indented">
-									{{ t('openregister', 'Locked') }}
-								</td>
-								<td>{{ orphanedItems.stats?.objects?.locked || 0 }}</td>
-								<td>-</td>
-							</tr>
-							<tr class="subRow">
-								<td class="indented">
-									{{ t('openregister', 'Published') }}
-								</td>
-								<td>{{ orphanedItems.stats?.objects?.published || 0 }}</td>
-								<td>-</td>
-							</tr>
-							<tr>
-								<td>{{ t('openregister', 'Logs') }}</td>
-								<td>{{ orphanedItems.stats?.logs?.total || 0 }}</td>
-								<td>{{ formatBytes(orphanedItems.stats?.logs?.size || 0) }}</td>
-							</tr>
-							<tr>
-								<td>{{ t('openregister', 'Files') }}</td>
-								<td>{{ orphanedItems.stats?.files?.total || 0 }}</td>
-								<td>{{ formatBytes(orphanedItems.stats?.files?.size || 0) }}</td>
-							</tr>
-						</tbody>
-					</table>
+				<div v-else-if="orphanedItems" class="statsStack">
+					<CnStatsBlock
+						:title="t('openregister', 'Objects')"
+						:count="orphanedItems.stats?.objects?.total || 0"
+						:count-label="t('openregister', 'object{plural}', {
+							plural: systemTotals.stats?.objects?.total !== 1 ? 's' : ''
+						})"
+						:icon="PackageVariantClosed"
+						variant="warning"
+						horizontal
+						show-zero-count
+						:breakdown="objectsBreakdown(orphanedItems)" />
+					<CnStatsBlock
+						:title="t('openregister', 'Logs')"
+						:count="orphanedItems.stats?.logs?.total || 0"
+						:count-label="t('openregister', 'log{plural}', {
+							plural: systemTotals.stats?.logs?.total !== 1 ? 's' : ''
+						})"
+						:icon="TextBoxOutline"
+						variant="warning"
+						horizontal
+						show-zero-count
+						:breakdown="sizeBreakdown(orphanedItems.stats?.logs?.size)" />
+					<CnStatsBlock
+						:title="t('openregister', 'Files')"
+						:count="orphanedItems.stats?.files?.total || 0"
+						:count-label="t('openregister', 'file{plural}', {
+							plural: systemTotals.stats?.files?.total !== 1 ? 's' : ''
+						})"
+						:icon="FileDocumentOutline"
+						variant="warning"
+						horizontal
+						show-zero-count
+						:breakdown="sizeBreakdown(orphanedItems.stats?.files?.size)" />
 				</div>
 			</div>
 		</NcAppSidebarTab>
@@ -180,7 +160,13 @@ import { objectStore, registerStore, schemaStore, dashboardStore, navigationStor
 
 <script>
 import { NcAppSidebar, NcAppSidebarTab, NcLoadingIcon, NcSelect } from '@nextcloud/vue'
+import { CnStatsBlock } from '@conduction/nextcloud-vue'
 import ChartBar from 'vue-material-design-icons/ChartBar.vue'
+import DatabaseOutline from 'vue-material-design-icons/DatabaseOutline.vue'
+import TableIcon from 'vue-material-design-icons/Table.vue'
+import PackageVariantClosed from 'vue-material-design-icons/PackageVariantClosed.vue'
+import TextBoxOutline from 'vue-material-design-icons/TextBoxOutline.vue'
+import FileDocumentOutline from 'vue-material-design-icons/FileDocumentOutline.vue'
 import formatBytes from '../../services/formatBytes.js'
 // Ensure data is loaded
 dashboardStore.preload()
@@ -191,9 +177,9 @@ export default {
 		NcAppSidebar,
 		NcAppSidebarTab,
 		NcLoadingIcon,
-		// Icons
-		ChartBar,
 		NcSelect,
+		CnStatsBlock,
+		ChartBar,
 	},
 	data() {
 		return {
@@ -208,6 +194,12 @@ export default {
 			schemaLoading: false,
 			ignoreNextPageWatch: false,
 			searchQuery: '',
+			// Icon components for CnStatsBlock
+			DatabaseOutline,
+			TableIcon,
+			PackageVariantClosed,
+			TextBoxOutline,
+			FileDocumentOutline,
 		}
 	},
 	computed: {
@@ -298,6 +290,21 @@ export default {
 		onDateRangeChange() {
 			dashboardStore.setDateRange(this.dateRange.from, this.dateRange.till)
 		},
+		objectsBreakdown(source) {
+			const stats = source?.stats?.objects
+			if (!stats) return null
+			const breakdown = {}
+			if (stats.size) breakdown.size = formatBytes(stats.size)
+			if (stats.invalid) breakdown.invalid = stats.invalid
+			if (stats.deleted) breakdown.deleted = stats.deleted
+			if (stats.locked) breakdown.locked = stats.locked
+			if (stats.published) breakdown.published = stats.published
+			return Object.keys(breakdown).length > 0 ? breakdown : null
+		},
+		sizeBreakdown(size) {
+			if (!size) return null
+			return { size: formatBytes(size) }
+		},
 	},
 }
 </script>
@@ -328,36 +335,11 @@ export default {
 	color: var(--color-text-maxcontrast);
 }
 
-.statsContainer {
-	padding: 0 16px;
-}
-
-.statisticsTable {
-	width: 100%;
-	border-collapse: collapse;
-	font-size: 0.9em;
-
-	td {
-		padding: 4px 8px;
-		border-bottom: 1px solid var(--color-border);
-
-		&:nth-child(2),
-		&:nth-child(3) {
-			text-align: right;
-		}
-	}
-
-	.subRow td {
-		color: var(--color-text-maxcontrast);
-	}
-
-	.indented {
-		padding-left: 24px;
-	}
-
-	tr:last-child td {
-		border-bottom: none;
-	}
+.statsStack {
+	display: flex;
+	flex-direction: column;
+	gap: 12px;
+	padding: 0 8px;
 }
 
 .filterSection {
@@ -383,10 +365,5 @@ export default {
 		font-size: 0.9em;
 		color: var(--color-text-maxcontrast);
 	}
-}
-
-.dateRangeInputs {
-	display: flex;
-	gap: 8px;
 }
 </style>

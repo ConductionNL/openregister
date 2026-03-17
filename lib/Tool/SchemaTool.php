@@ -1,4 +1,5 @@
 <?php
+
 /**
  * OpenRegister Schema Tool
  *
@@ -41,6 +42,7 @@ use Psr\Log\LoggerInterface;
  */
 class SchemaTool extends AbstractTool
 {
+
     /**
      * Schema mapper
      *
@@ -51,152 +53,157 @@ class SchemaTool extends AbstractTool
     /**
      * Constructor
      *
-     * @param IUserSession    $userSession   User session service
-     * @param LoggerInterface $logger        Logger service
-     * @param SchemaMapper    $schemaMapper  Schema mapper
+     * @param IUserSession    $userSession  User session service
+     * @param LoggerInterface $logger       Logger service
+     * @param SchemaMapper    $schemaMapper Schema mapper
      */
     public function __construct(
         IUserSession $userSession,
         LoggerInterface $logger,
         SchemaMapper $schemaMapper
     ) {
-        parent::__construct($userSession, $logger);
+        parent::__construct(userSession: $userSession, logger: $logger);
         $this->schemaMapper = $schemaMapper;
-    }
+    }//end __construct()
 
     /**
      * Get tool name
      *
      * @return string Tool name
+     *
+     * @psalm-return 'schema'
      */
     public function getName(): string
     {
         return 'schema';
-    }
+    }//end getName()
 
     /**
      * Get tool description
      *
-     * @return string Tool description
+     * @return string The tool description
      */
     public function getDescription(): string
     {
-        return 'Manage schemas in OpenRegister. Schemas define the structure and validation rules for objects. '
-             . 'Use this tool to list, view, create, update, or delete schemas.';
-    }
+        $description  = 'Manage schemas: list, view, create, update, or delete schemas. ';
+        $description .= 'Schemas define structure and validation rules.';
+        return $description;
+    }//end getDescription()
 
     /**
      * Get function definitions for LLphant
      *
-     * @return array Array of function definitions
+     * @return array<int, array<string, mixed>> Array of function definitions
+     *
+     * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Comprehensive function definitions for LLM
      */
     public function getFunctions(): array
     {
         return [
             [
-                'name' => 'list_schemas',
+                'name'        => 'list_schemas',
                 'description' => 'Get a list of all accessible schemas',
-                'parameters' => [
-                    'type' => 'object',
+                'parameters'  => [
+                    'type'       => 'object',
                     'properties' => [
-                        'limit' => [
-                            'type' => 'integer',
+                        'limit'    => [
+                            'type'        => 'integer',
                             'description' => 'Maximum number of schemas to return (default: 100)',
                         ],
-                        'offset' => [
-                            'type' => 'integer',
+                        'offset'   => [
+                            'type'        => 'integer',
                             'description' => 'Number of schemas to skip for pagination (default: 0)',
                         ],
                         'register' => [
-                            'type' => 'string',
+                            'type'        => 'string',
                             'description' => 'Filter schemas by register ID (optional)',
                         ],
                     ],
-                    'required' => [],
+                    'required'   => [],
                 ],
             ],
             [
-                'name' => 'get_schema',
+                'name'        => 'get_schema',
                 'description' => 'Get details about a specific schema by ID',
-                'parameters' => [
-                    'type' => 'object',
+                'parameters'  => [
+                    'type'       => 'object',
                     'properties' => [
                         'id' => [
-                            'type' => 'string',
+                            'type'        => 'string',
                             'description' => 'The schema ID to retrieve',
                         ],
                     ],
-                    'required' => ['id'],
+                    'required'   => ['id'],
                 ],
             ],
             [
-                'name' => 'create_schema',
+                'name'        => 'create_schema',
                 'description' => 'Create a new schema with properties definition',
-                'parameters' => [
-                    'type' => 'object',
+                'parameters'  => [
+                    'type'       => 'object',
                     'properties' => [
-                        'title' => [
-                            'type' => 'string',
+                        'title'       => [
+                            'type'        => 'string',
                             'description' => 'The title of the schema',
                         ],
                         'description' => [
-                            'type' => 'string',
+                            'type'        => 'string',
                             'description' => 'A description of what this schema represents',
                         ],
-                        'properties' => [
-                            'type' => 'object',
+                        'properties'  => [
+                            'type'        => 'object',
                             'description' => 'JSON Schema properties definition',
                         ],
-                        'required' => [
-                            'type' => 'array',
+                        'required'    => [
+                            'type'        => 'array',
                             'description' => 'Array of required property names',
                         ],
                     ],
-                    'required' => ['title', 'properties'],
+                    'required'   => ['title', 'properties'],
                 ],
             ],
             [
-                'name' => 'update_schema',
+                'name'        => 'update_schema',
                 'description' => 'Update an existing schema',
-                'parameters' => [
-                    'type' => 'object',
+                'parameters'  => [
+                    'type'       => 'object',
                     'properties' => [
-                        'id' => [
-                            'type' => 'string',
+                        'id'          => [
+                            'type'        => 'string',
                             'description' => 'The schema ID to update',
                         ],
-                        'title' => [
-                            'type' => 'string',
+                        'title'       => [
+                            'type'        => 'string',
                             'description' => 'New title for the schema',
                         ],
                         'description' => [
-                            'type' => 'string',
+                            'type'        => 'string',
                             'description' => 'New description for the schema',
                         ],
-                        'properties' => [
-                            'type' => 'object',
+                        'properties'  => [
+                            'type'        => 'object',
                             'description' => 'Updated JSON Schema properties definition',
                         ],
                     ],
-                    'required' => ['id'],
+                    'required'   => ['id'],
                 ],
             ],
             [
-                'name' => 'delete_schema',
+                'name'        => 'delete_schema',
                 'description' => 'Delete a schema (only if it has no objects)',
-                'parameters' => [
-                    'type' => 'object',
+                'parameters'  => [
+                    'type'       => 'object',
                     'properties' => [
                         'id' => [
-                            'type' => 'string',
+                            'type'        => 'string',
                             'description' => 'The schema ID to delete',
                         ],
                     ],
-                    'required' => ['id'],
+                    'required'   => ['id'],
                 ],
             ],
         ];
-    }
+    }//end getFunctions()
 
     /**
      * Execute a function
@@ -209,186 +216,218 @@ class SchemaTool extends AbstractTool
      *
      * @throws \Exception If function execution fails
      */
-    public function executeFunction(string $functionName, array $parameters, ?string $userId = null): array
+    public function executeFunction(string $functionName, array $parameters, ?string $userId=null): array
     {
-        $this->log($functionName, $parameters);
+            $this->log(functionName: $functionName, parameters: $parameters);
 
-        if (!$this->hasUserContext($userId)) {
-            return $this->formatError('No user context available. Tool cannot execute without user session.');
+        if ($this->hasUserContext(explicitUserId: $userId) === false) {
+            return $this->formatError(message: 'No user context available. Tool cannot execute without user session.');
         }
 
         try {
-            // Convert snake_case to camelCase for PSR compliance
+            // Convert snake_case to camelCase for PSR compliance.
             $methodName = lcfirst(str_replace('_', '', ucwords($functionName, '_')));
-            
-            // Call the method directly (LLPhant-compatible)
+
+            // Call the method directly (LLPhant-compatible).
             return $this->$methodName(...array_values($parameters));
         } catch (\Exception $e) {
-            $this->log($functionName, $parameters, 'error', $e->getMessage());
-            return $this->formatError($e->getMessage());
+            $this->log(functionName: $functionName, parameters: $parameters, level: 'error', message: $e->getMessage());
+            return $this->formatError(message: $e->getMessage());
         }
-    }
+    }//end executeFunction()
 
     /**
      * List schemas
      *
-     * @param array $parameters Function parameters
+     * @param int         $limit    Result limit
+     * @param int         $offset   Result offset
+     * @param string|null $register Register filter
      *
-     * @return array Result with list of schemas
+     * @return (mixed|string|true)[] Result with list of schemas
+     *
+     * @psalm-return array{success: true, message: string, data: mixed}
+     *
+     * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Optional nullable filter parameter
      */
-    public function listSchemas(int $limit = 100, int $offset = 0, ?string $register = null): array
+    public function listSchemas(int $limit=100, int $offset=0, ?string $register=null): array
     {
         $filters = [];
         if ($register !== null) {
             $filters['register'] = $register;
         }
-        $filters = $this->applyViewFilters($filters);
 
-        $schemas = $this->schemaMapper->findAll($limit, $offset, $filters);
+        $filters = $this->applyViewFilters(params: $filters);
 
-        $schemaList = array_map(function ($schema) {
-            return [
-                'id' => $schema->getId(),
-                'uuid' => $schema->getUuid(),
-                'title' => $schema->getTitle(),
-                'description' => $schema->getDescription(),
-                'version' => $schema->getVersion(),
-                'register' => $schema->getRegister(),
-            ];
-        }, $schemas);
+        $schemas = $this->schemaMapper->findAll(limit: $limit, offset: $offset, filters: $filters);
 
-        return $this->formatSuccess($schemaList, sprintf('Found %d schemas', count($schemaList)));
-    }
+        $schemaList = array_map(
+            function ($schema) {
+                return [
+                    'id'          => $schema->getId(),
+                    'uuid'        => $schema->getUuid(),
+                    'title'       => $schema->getTitle(),
+                    'description' => $schema->getDescription(),
+                    'version'     => $schema->getVersion(),
+                ];
+            },
+            $schemas
+        );
+
+        return $this->formatSuccess(data: $schemaList, message: sprintf('Found %d schemas', count($schemaList)));
+    }//end listSchemas()
 
     /**
      * Get a specific schema
      *
-     * @param array $parameters Function parameters
+     * @param string $id Schema ID
      *
-     * @return array Result with schema details
+     * @return (mixed|string|true)[] Result with schema details
      *
      * @throws \Exception If schema not found
+     *
+     * @psalm-return array{success: true, message: string, data: mixed}
      */
     public function getSchema(string $id): array
     {
-        $schema = $this->schemaMapper->find($id);
+        $schema = $this->schemaMapper->find(id: $id);
 
         return $this->formatSuccess(
-            [
-                'id' => $schema->getId(),
-                'uuid' => $schema->getUuid(),
-                'title' => $schema->getTitle(),
-                'description' => $schema->getDescription(),
-                'version' => $schema->getVersion(),
-                'properties' => $schema->getProperties(),
-                'required' => $schema->getRequired(),
-                'register' => $schema->getRegister(),
-                'allOf' => $schema->getAllOf(),
-                'oneOf' => $schema->getOneOf(),
-                'anyOf' => $schema->getAnyOf(),
+            data: [
+                'id'           => $schema->getId(),
+                'uuid'         => $schema->getUuid(),
+                'title'        => $schema->getTitle(),
+                'description'  => $schema->getDescription(),
+                'version'      => $schema->getVersion(),
+                'properties'   => $schema->getProperties(),
+                'required'     => $schema->getRequired(),
+                'allOf'        => $schema->getAllOf(),
+                'oneOf'        => $schema->getOneOf(),
+                'anyOf'        => $schema->getAnyOf(),
                 'organisation' => $schema->getOrganisation(),
-                'created' => $schema->getCreated()?->format('Y-m-d H:i:s'),
-                'updated' => $schema->getUpdated()?->format('Y-m-d H:i:s'),
+                'created'      => $schema->getCreated()?->format('Y-m-d H:i:s'),
+                'updated'      => $schema->getUpdated()?->format('Y-m-d H:i:s'),
             ],
-            'Schema retrieved successfully'
+            message: 'Schema retrieved successfully'
         );
-    }
+    }//end getSchema()
 
     /**
      * Create a new schema
      *
-     * @param array $parameters Function parameters
+     * @param string     $title       Schema title
+     * @param array      $properties  Schema properties
+     * @param string     $description Schema description
+     * @param array|null $required    Required properties
      *
-     * @return array Result with created schema
+     * @return (mixed|string|true)[] Result with created schema
      *
      * @throws \Exception If creation fails
+     *
+     * @psalm-return array{success: true, message: string, data: mixed}
      */
-    public function createSchema(string $title, array $properties, string $description = '', ?array $required = null): array
+    public function createSchema(string $title, array $properties, string $description='', ?array $required=null): array
     {
         $data = [
-            'title' => $title,
+            'title'       => $title,
             'description' => $description,
-            'properties' => $properties,
+            'properties'  => $properties,
         ];
 
         if ($required !== null) {
             $data['required'] = $required;
         }
 
-        $schema = $this->schemaMapper->createFromArray($data);
+        $schema = $this->schemaMapper->createFromArray(object: $data);
 
         return $this->formatSuccess(
-            [
-                'id' => $schema->getId(),
-                'uuid' => $schema->getUuid(),
-                'title' => $schema->getTitle(),
+            data: [
+                'id'          => $schema->getId(),
+                'uuid'        => $schema->getUuid(),
+                'title'       => $schema->getTitle(),
                 'description' => $schema->getDescription(),
-                'version' => $schema->getVersion(),
-                'properties' => $schema->getProperties(),
+                'version'     => $schema->getVersion(),
+                'properties'  => $schema->getProperties(),
             ],
-            'Schema created successfully'
+            message: 'Schema created successfully'
         );
-    }
+    }//end createSchema()
 
     /**
      * Update an existing schema
      *
-     * @param array $parameters Function parameters
+     * @param string      $id          Schema ID
+     * @param string|null $title       Schema title
+     * @param string|null $description Schema description
+     * @param array|null  $properties  Schema properties
+     * @param array|null  $required    Required properties
      *
-     * @return array Result with updated schema
+     * @return (mixed|string|true)[] Result with updated schema
      *
      * @throws \Exception If update fails
+     *
+     * @psalm-return array{success: true, message: string, data: mixed}
+     *
+     * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Optional nullable parameters for partial updates
      */
-    public function updateSchema(string $id, ?string $title = null, ?string $description = null, ?array $properties = null, ?array $required = null): array
-    {
-        $schema = $this->schemaMapper->find($id);
+    public function updateSchema(
+        string $id,
+        ?string $title=null,
+        ?string $description=null,
+        ?array $properties=null,
+        ?array $required=null
+    ): array {
+        $schema = $this->schemaMapper->find(id: $id);
 
         if ($title !== null) {
             $schema->setTitle($title);
         }
+
         if ($description !== null) {
             $schema->setDescription($description);
         }
+
         if ($properties !== null) {
             $schema->setProperties($properties);
         }
+
         if ($required !== null) {
             $schema->setRequired($required);
         }
 
-        $schema = $this->schemaMapper->update($schema);
+        $schema = $this->schemaMapper->update(entity: $schema);
 
         return $this->formatSuccess(
-            [
-                'id' => $schema->getId(),
-                'uuid' => $schema->getUuid(),
-                'title' => $schema->getTitle(),
+            data: [
+                'id'          => $schema->getId(),
+                'uuid'        => $schema->getUuid(),
+                'title'       => $schema->getTitle(),
                 'description' => $schema->getDescription(),
-                'version' => $schema->getVersion(),
-                'properties' => $schema->getProperties(),
+                'version'     => $schema->getVersion(),
+                'properties'  => $schema->getProperties(),
             ],
-            'Schema updated successfully'
+            message: 'Schema updated successfully'
         );
-    }
+    }//end updateSchema()
 
     /**
      * Delete a schema
      *
-     * @param array $parameters Function parameters
+     * @param string $id Schema ID
      *
-     * @return array Result of deletion
+     * @return (mixed|string|true)[] Result of deletion
      *
      * @throws \Exception If deletion fails
+     *
+     * @psalm-return array{success: true, message: string, data: mixed}
      */
     public function deleteSchema(string $id): array
     {
-        $schema = $this->schemaMapper->find($id);
-        $this->schemaMapper->delete($schema);
+        $schema = $this->schemaMapper->find(id: $id);
+        $this->schemaMapper->delete(entity: $schema);
 
         return $this->formatSuccess(
-            ['id' => $id],
-            'Schema deleted successfully'
+            data: ['id' => $id],
+            message: 'Schema deleted successfully'
         );
-    }
-}
-
+    }//end deleteSchema()
+}//end class

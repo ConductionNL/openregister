@@ -107,8 +107,8 @@ curl 'api/objects/voorzieningen/module?_extend[]=@self.schema&_cache=false'
 
 ### Cache Services
 - `ObjectCacheService`: Object-specific caching with SOLR integration
-- `SchemaCacheService`: Schema-specific caching  
-- `SchemaFacetCacheService`: Facet-specific caching
+- `SchemaCacheHandler`: Schema-specific caching (Handler in Schemas/)
+- `FacetCacheHandler`: Facet-specific caching (Handler in Schemas/)
 - `SolrService`: Apache SOLR search engine integration
 
 ### SOLR Integration
@@ -232,7 +232,7 @@ The system automatically provides optimization suggestions:
 
 **Common Bottlenecks:**
 1. **Database Queries**: Add indexes, optimize WHERE clauses
-2. **Relationship Loading**: Reduce `_extend` usage, implement selective loading
+2. **Relationship Loading**: Reduce `_extend` usage, implement selective loading. Note: Each `_extend` parameter adds approximately 300ms overhead due to additional database queries for related objects and inverse relationships.
 3. **JSON Processing**: Truncate large objects, use selective field loading
 4. **Authorization**: Cache RBAC decisions, optimize permission checks
 

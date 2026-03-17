@@ -1812,124 +1812,141 @@ When you save a schema with 'allOf':
 
 **Example - Single Parent:**
 
+Parent schema (id: 42, slug: "person"):
 ```json
-// Parent Schema (id: 42, slug: 'person')
 {
-  'title': 'Person',
-  'properties': {
-    'firstName': { 'type': 'string', 'minLength': 2 },
-    'lastName': { 'type': 'string', 'minLength': 2 },
-    'email': { 'type': 'string' }
+  "title": "Person",
+  "properties": {
+    "firstName": { "type": "string", "minLength": 2 },
+    "lastName": { "type": "string", "minLength": 2 },
+    "email": { "type": "string" }
   },
-  'required': ['firstName', 'lastName']
+  "required": ["firstName", "lastName"]
 }
+```
 
-// Child Schema (stored in database) - VALID
+Child schema (stored in database) — VALID:
+```json
 {
-  'title': 'Employee',
-  'allOf': ['42'],  // References parent schema
-  'properties': {
-    'employeeId': { 'type': 'string' },  // New property - ALLOWED
-    'email': { 'type': 'string', 'format': 'email' }  // Adds format constraint - ALLOWED
+  "title": "Employee",
+  "allOf": ["42"],
+  "properties": {
+    "employeeId": { "type": "string" },
+    "email": { "type": "string", "format": "email" }
   },
-  'required': ['employeeId']  // Additional required field - ALLOWED
+  "required": ["employeeId"]
 }
+```
 
-// INVALID Extension Example (would throw error)
+- `employeeId` — new property, **allowed**
+- `email` adds `format: "email"` constraint — **allowed** (more restrictive)
+- `required: ["employeeId"]` — additional required field, **allowed**
+
+INVALID extension (would throw error):
+```json
 {
-  'title': 'Customer',
-  'allOf': ['42'],
-  'properties': {
-    'firstName': { 'type': 'string', 'minLength': 1 }  // ERROR: Relaxes minLength from 2 to 1
+  "title": "Customer",
+  "allOf": ["42"],
+  "properties": {
+    "firstName": { "type": "string", "minLength": 1 }
   }
 }
 ```
+
+`minLength` decreased from 2 to 1 — **rejected** (relaxes constraint).
 
 **Example - Multiple Parents (Multiple Inheritance):**
 
+Parent schema 1 (id: 10): Contactable
 ```json
-// Parent Schema 1: Contactable
 {
-  'id': 10,
-  'title': 'Contactable',
-  'properties': {
-    'email': { 'type': 'string', 'format': 'email' },
-    'phone': { 'type': 'string', 'pattern': '^[0-9+-]+$' }
+  "title": "Contactable",
+  "properties": {
+    "email": { "type": "string", "format": "email" },
+    "phone": { "type": "string", "pattern": "^[0-9+-]+$" }
   },
-  'required': ['email']
+  "required": ["email"]
 }
-
-// Parent Schema 2: Addressable
-{
-  'id': 11,
-  'title': 'Addressable',
-  'properties': {
-    'street': { 'type': 'string' },
-    'city': { 'type': 'string' },
-    'postalCode': { 'type': 'string' }
-  },
-  'required': ['city']
-}
-
-// Child Schema - Combines both parents
-{
-  'title': 'Customer',
-  'allOf': ['10', '11'],  // Inherits from BOTH parents
-  'properties': {
-    'customerNumber': { 'type': 'string' },
-    'email': { 'type': 'string', 'format': 'email', 'maxLength': 100 }  // Adds maxLength
-  },
-  'required': ['customerNumber']
-}
-
-// Resolved schema will have: email, phone, street, city, postalCode, customerNumber
-// Required fields: email, city, customerNumber
 ```
+
+Parent schema 2 (id: 11): Addressable
+```json
+{
+  "title": "Addressable",
+  "properties": {
+    "street": { "type": "string" },
+    "city": { "type": "string" },
+    "postalCode": { "type": "string" }
+  },
+  "required": ["city"]
+}
+```
+
+Child schema — combines both parents:
+```json
+{
+  "title": "Customer",
+  "allOf": ["10", "11"],
+  "properties": {
+    "customerNumber": { "type": "string" },
+    "email": { "type": "string", "format": "email", "maxLength": 100 }
+  },
+  "required": ["customerNumber"]
+}
+```
+
+Resolved schema will have properties: `email`, `phone`, `street`, `city`, `postalCode`, `customerNumber`.
+Required fields: `email`, `city`, `customerNumber` (union of all).
 
 **Metadata Override Example:**
 
+Parent schema (slug: "person"):
 ```json
-// Parent Schema
 {
-  'title': 'Person',
-  'properties': {
-    'name': { 
-      'type': 'string',
-      'title': 'Name',
-      'description': 'Person full name',
-      'minLength': 2 
-    }
-  }
-}
-
-// Child Schema - VALID (metadata can be changed)
-{
-  'allOf': ['person'],
-  'properties': {
-    'name': {
-      'title': 'Employee Name',  // ALLOWED: Metadata change
-      'description': 'Full name of the employee',  // ALLOWED: Metadata change
-      'minLength': 3  // ALLOWED: More restrictive
+  "title": "Person",
+  "properties": {
+    "name": {
+      "type": "string",
+      "title": "Name",
+      "description": "Person full name",
+      "minLength": 2
     }
   }
 }
 ```
+
+Child schema — VALID (metadata can be changed):
+```json
+{
+  "allOf": ["person"],
+  "properties": {
+    "name": {
+      "title": "Employee Name",
+      "description": "Full name of the employee",
+      "minLength": 3
+    }
+  }
+}
+```
+
+- `title` and `description` — **allowed** (metadata fields can be freely overridden)
+- `minLength` increased from 2 to 3 — **allowed** (more restrictive)
 
 **Constraint Rules:**
 
 | Change Type | Parent Value | Child Value | Allowed? | Reason |
 |-------------|--------------|-------------|----------|---------|
 | Add property | (none) | new property | ✅ Yes | Adding constraints |
-| Add format | 'type': 'string' | 'type': 'string', 'format': 'email' | ✅ Yes | More restrictive |
-| Increase minLength | 'minLength': 2 | 'minLength': 5 | ✅ Yes | More restrictive |
-| Decrease maxLength | 'maxLength': 100 | 'maxLength': 50 | ✅ Yes | More restrictive |
-| Remove enum values | 'enum': [1,2,3] | 'enum': [1,2] | ✅ Yes | More restrictive |
-| Change title | 'title': 'Name' | 'title': 'Full Name' | ✅ Yes | Metadata only |
-| Change type | 'type': 'string' | 'type': 'number' | ❌ No | Breaks compatibility |
-| Decrease minLength | 'minLength': 5 | 'minLength': 2 | ❌ No | Relaxes constraint |
-| Increase maxLength | 'maxLength': 50 | 'maxLength': 100 | ❌ No | Relaxes constraint |
-| Add enum values | 'enum': [1,2] | 'enum': [1,2,3] | ❌ No | Relaxes constraint |
-| Remove format | 'format': 'email' | (no format) | ❌ No | Relaxes constraint |
+| Add format | `"type": "string"` | `"type": "string", "format": "email"` | ✅ Yes | More restrictive |
+| Increase minLength | `"minLength": 2` | `"minLength": 5` | ✅ Yes | More restrictive |
+| Decrease maxLength | `"maxLength": 100` | `"maxLength": 50` | ✅ Yes | More restrictive |
+| Remove enum values | `"enum": [1,2,3]` | `"enum": [1,2]` | ✅ Yes | More restrictive |
+| Change title | `"title": "Name"` | `"title": "Full Name"` | ✅ Yes | Metadata only |
+| Change type | `"type": "string"` | `"type": "number"` | ❌ No | Breaks compatibility |
+| Decrease minLength | `"minLength": 5` | `"minLength": 2` | ❌ No | Relaxes constraint |
+| Increase maxLength | `"maxLength": 50` | `"maxLength": 100` | ❌ No | Relaxes constraint |
+| Add enum values | `"enum": [1,2]` | `"enum": [1,2,3]` | ❌ No | Relaxes constraint |
+| Remove format | `"format": "email"` | (no format) | ❌ No | Relaxes constraint |
 
 #### 2. oneOf - Mutually Exclusive Options
 
@@ -1943,45 +1960,49 @@ Use 'oneOf' when an instance must match EXACTLY ONE of several schemas. This is 
 
 **Example:**
 
+Payment method schema:
 ```json
-// Payment Method Schema
 {
-  'title': 'PaymentMethod',
-  'oneOf': ['credit-card-schema', 'bank-transfer-schema', 'paypal-schema'],
-  'properties': {
-    'paymentType': { 'type': 'string', 'enum': ['credit-card', 'bank-transfer', 'paypal'] }
+  "title": "PaymentMethod",
+  "oneOf": ["credit-card-schema", "bank-transfer-schema", "paypal-schema"],
+  "properties": {
+    "paymentType": { "type": "string", "enum": ["credit-card", "bank-transfer", "paypal"] }
   }
 }
+```
 
-// Credit Card Schema
+Credit card schema (slug: "credit-card-schema"):
+```json
 {
-  'id': 'credit-card-schema',
-  'title': 'CreditCard',
-  'properties': {
-    'cardNumber': { 'type': 'string' },
-    'cvv': { 'type': 'string', 'maxLength': 4 },
-    'expiryDate': { 'type': 'string' }
+  "title": "CreditCard",
+  "properties": {
+    "cardNumber": { "type": "string" },
+    "cvv": { "type": "string", "maxLength": 4 },
+    "expiryDate": { "type": "string" }
   },
-  'required': ['cardNumber', 'cvv', 'expiryDate']
+  "required": ["cardNumber", "cvv", "expiryDate"]
 }
+```
 
-// Bank Transfer Schema  
+Bank transfer schema (slug: "bank-transfer-schema"):
+```json
 {
-  'id': 'bank-transfer-schema',
-  'title': 'BankTransfer',
-  'properties': {
-    'iban': { 'type': 'string' },
-    'bic': { 'type': 'string' }
+  "title": "BankTransfer",
+  "properties": {
+    "iban": { "type": "string" },
+    "bic": { "type": "string" }
   },
-  'required': ['iban']
+  "required": ["iban"]
 }
+```
 
-// Valid instance (matches exactly one schema)
+Valid instance (matches exactly one schema):
+```json
 {
-  'paymentType': 'credit-card',
-  'cardNumber': '1234-5678-9012-3456',
-  'cvv': '123',
-  'expiryDate': '12/25'
+  "paymentType": "credit-card",
+  "cardNumber": "1234-5678-9012-3456",
+  "cvv": "123",
+  "expiryDate": "12/25"
 }
 ```
 
@@ -1997,41 +2018,51 @@ Use 'anyOf' when an instance must match AT LEAST ONE of several schemas. More fl
 
 **Example:**
 
+Document schema:
 ```json
-// Document Schema
 {
-  'title': 'Document',
-  'anyOf': ['textual-schema', 'visual-schema', 'metadata-schema'],
-  'properties': {
-    'id': { 'type': 'string' },
-    'title': { 'type': 'string' }
+  "title": "Document",
+  "anyOf": ["textual-schema", "visual-schema", "metadata-schema"],
+  "properties": {
+    "id": { "type": "string" },
+    "title": { "type": "string" }
   }
 }
+```
 
-// Textual Schema
+Textual schema (slug: "textual-schema"):
+```json
 {
-  'id': 'textual-schema',
-  'properties': {
-    'content': { 'type': 'string' }
+  "title": "Textual",
+  "properties": {
+    "content": { "type": "string" }
   }
 }
+```
 
-// Visual Schema
+Visual schema (slug: "visual-schema"):
+```json
 {
-  'id': 'visual-schema',
-  'properties': {
-    'images': { 'type': 'array' }
+  "title": "Visual",
+  "properties": {
+    "images": { "type": "array" }
   }
 }
+```
 
-// Valid: matches textual schema only
-{ 'id': '1', 'title': 'Doc', 'content': 'text' }
+Valid — matches textual schema only:
+```json
+{ "id": "1", "title": "Doc", "content": "text" }
+```
 
-// Valid: matches visual schema only
-{ 'id': '2', 'title': 'Image Doc', 'images': ['img1.jpg'] }
+Valid — matches visual schema only:
+```json
+{ "id": "2", "title": "Image Doc", "images": ["img1.jpg"] }
+```
 
-// Valid: matches BOTH schemas
-{ 'id': '3', 'title': 'Rich Doc', 'content': 'text', 'images': ['img1.jpg'] }
+Valid — matches BOTH schemas:
+```json
+{ "id": "3", "title": "Rich Doc", "content": "text", "images": ["img1.jpg"] }
 ```
 
 #### Retrieval (Automatic Resolution)
@@ -2039,7 +2070,7 @@ Use 'anyOf' when an instance must match AT LEAST ONE of several schemas. More fl
 When you retrieve a schema with composition:
 
 **For allOf:**
-1. The system automatically detects the 'allOf' or 'extend' property
+1. The system automatically detects the `allOf` property
 2. All referenced schemas are loaded and resolved recursively (supporting multi-level composition)
 3. Properties from all parent schemas are merged with child properties
 4. Child properties can add stricter constraints (validated by LSP)
@@ -2056,15 +2087,15 @@ When you retrieve a schema with composition:
 
 ```json
 {
-  'title': 'Employee',
-  'allOf': ['42'],
-  'properties': {
-    'firstName': { 'type': 'string', 'minLength': 2 },  // From parent
-    'lastName': { 'type': 'string', 'minLength': 2 },   // From parent
-    'email': { 'type': 'string', 'format': 'email' },   // Parent + child constraint
-    'employeeId': { 'type': 'string' }  // New property
+  "title": "Employee",
+  "allOf": ["42"],
+  "properties": {
+    "firstName": { "type": "string", "minLength": 2 },
+    "lastName": { "type": "string", "minLength": 2 },
+    "email": { "type": "string", "format": "email" },
+    "employeeId": { "type": "string" }
   },
-  'required': ['firstName', 'lastName', 'employeeId']  // Merged
+  "required": ["firstName", "lastName", "employeeId"]
 }
 ```
 
@@ -2080,34 +2111,48 @@ When merging parent and child properties:
 
 **Example: Deep Property Merge**
 
+Parent property:
 ```json
-// Parent property
-'address': {
-  'type': 'object',
-  'properties': {
-    'street': { 'type': 'string' },
-    'city': { 'type': 'string' }
-  }
-}
-
-// Child property (adds postal code, overrides city)
-'address': {
-  'properties': {
-    'city': { 'type': 'string', 'minLength': 2 },
-    'postalCode': { 'type': 'string' }
-  }
-}
-
-// Merged result
-'address': {
-  'type': 'object',
-  'properties': {
-    'street': { 'type': 'string' },  // From parent
-    'city': { 'type': 'string', 'minLength': 2 },  // Overridden
-    'postalCode': { 'type': 'string' }  // New
+{
+  "address": {
+    "type": "object",
+    "properties": {
+      "street": { "type": "string" },
+      "city": { "type": "string" }
+    }
   }
 }
 ```
+
+Child property (adds postal code, overrides city):
+```json
+{
+  "address": {
+    "properties": {
+      "city": { "type": "string", "minLength": 2 },
+      "postalCode": { "type": "string" }
+    }
+  }
+}
+```
+
+Merged result:
+```json
+{
+  "address": {
+    "type": "object",
+    "properties": {
+      "street": { "type": "string" },
+      "city": { "type": "string", "minLength": 2 },
+      "postalCode": { "type": "string" }
+    }
+  }
+}
+```
+
+- `street` — inherited from parent
+- `city` — overridden (added `minLength: 2`)
+- `postalCode` — new in child
 
 ### Multi-Level Inheritance
 
@@ -2134,43 +2179,51 @@ The system automatically resolves the entire chain:
 
 **Via API - Using allOf (Recommended):**
 
-```json
-POST /api/schemas
-{
-  'title': 'Employee',
-  'allOf': ['42'],  // Array of parent schema IDs/UUIDs/slugs
-  'properties': {
-    'employeeId': { 'type': 'string' },
-    'department': { 'type': 'string' }
-  },
-  'required': ['employeeId']
-}
+The `allOf` array accepts schema IDs (integer), UUIDs, or slugs.
+
+```bash
+curl -X POST "http://localhost:8080/index.php/apps/openregister/api/schemas" \
+  -H "Content-Type: application/json" \
+  -u admin:admin \
+  -d '{
+    "title": "Employee",
+    "allOf": ["42"],
+    "properties": {
+      "employeeId": { "type": "string" },
+      "department": { "type": "string" }
+    },
+    "required": ["employeeId"]
+  }'
 ```
 
 **Via API - Multiple Inheritance:**
 
-```json
-POST /api/schemas
-{
-  'title': 'Customer',
-  'allOf': ['contactable-schema', 'addressable-schema'],  // Multiple parents
-  'properties': {
-    'customerNumber': { 'type': 'string' }
-  }
-}
+```bash
+curl -X POST "http://localhost:8080/index.php/apps/openregister/api/schemas" \
+  -H "Content-Type: application/json" \
+  -u admin:admin \
+  -d '{
+    "title": "Customer",
+    "allOf": ["contactable-schema", "addressable-schema"],
+    "properties": {
+      "customerNumber": { "type": "string" }
+    }
+  }'
 ```
 
 **Via API - Using oneOf:**
 
-```json
-POST /api/schemas
-{
-  'title': 'PaymentMethod',
-  'oneOf': ['credit-card', 'bank-transfer', 'paypal'],
-  'properties': {
-    'amount': { 'type': 'number' }
-  }
-}
+```bash
+curl -X POST "http://localhost:8080/index.php/apps/openregister/api/schemas" \
+  -H "Content-Type: application/json" \
+  -u admin:admin \
+  -d '{
+    "title": "PaymentMethod",
+    "oneOf": ["credit-card", "bank-transfer", "paypal"],
+    "properties": {
+      "amount": { "type": "number" }
+    }
+  }'
 ```
 
 **Via Frontend:**
@@ -2264,7 +2317,7 @@ OrganisationBase
 
 #### 2. Document Extension Purpose
 
-- Use schema 'description' to explain why extension is used
+- Use the schema `description` field to explain why extension is used
 - Document which properties are overridden and why
 - Maintain clear naming conventions
 
@@ -2384,51 +2437,85 @@ OrganisationBase
 
 #### Get Extended Schema (Resolved)
 
-```bash
-GET /api/schemas/employee-schema
-
-# Returns fully resolved schema with parent properties merged
-```
-
-#### Get Raw Schema (Delta Only)
+Schemas are always returned fully resolved — parent properties are merged in automatically.
 
 ```bash
-# Not directly available - schemas are always resolved on retrieval
-# To see raw delta, query the database directly (for debugging only)
+curl "http://localhost:8080/index.php/apps/openregister/api/schemas/employee-schema" \
+  -u admin:admin
 ```
+
+Response:
+```json
+{
+  "id": 43,
+  "uuid": "def-456",
+  "title": "Employee",
+  "slug": "employee-schema",
+  "allOf": ["42"],
+  "properties": {
+    "firstName": { "type": "string", "minLength": 2 },
+    "lastName": { "type": "string", "minLength": 2 },
+    "email": { "type": "string", "format": "email" },
+    "employeeId": { "type": "string" }
+  },
+  "required": ["firstName", "lastName", "employeeId"],
+  "@self": {
+    "extendedBy": [],
+    "propertyMetadata": {
+      "firstName": { "source": "inherited", "inheritedFrom": "abc-123" },
+      "lastName": { "source": "inherited", "inheritedFrom": "abc-123" },
+      "email": { "source": "native", "inheritedFrom": null },
+      "employeeId": { "source": "native", "inheritedFrom": null }
+    }
+  }
+}
+```
+
+Note: There is no API endpoint to retrieve the raw delta — schemas are always resolved on retrieval. To inspect the stored delta, query the database directly (for debugging only).
 
 #### Update Extended Schema
 
 ```bash
-PUT /api/schemas/employee-schema
-{
-  'properties': {
-    'salary': { 'type': 'number' }
-  }
-}
-
-# System automatically extracts delta before saving
+curl -X PUT "http://localhost:8080/index.php/apps/openregister/api/schemas/employee-schema" \
+  -H "Content-Type: application/json" \
+  -u admin:admin \
+  -d '{
+    "properties": {
+      "salary": { "type": "number" }
+    }
+  }'
 ```
 
-#### Check Which Schemas Extend This Schema
+The system automatically extracts the delta before saving — only properties that differ from the parent are stored.
 
-All schema endpoints automatically include an '@self.extendedBy' property that lists the UUIDs of schemas that extend the current schema:
+#### `@self.extendedBy` — Which Schemas Extend This One
+
+All schema endpoints automatically include an `@self.extendedBy` array listing the UUIDs of schemas that extend the current schema:
 
 ```bash
-GET /api/schemas/person-schema
+curl "http://localhost:8080/index.php/apps/openregister/api/schemas/person-schema" \
+  -u admin:admin
+```
 
-# Returns:
+Response:
+```json
 {
-  'id': 42,
-  'uuid': 'abc-123',
-  'title': 'Person',
-  '@self': {
-    'extendedBy': [
-      'employee-uuid-456',
-      'customer-uuid-789'
-    ]
+  "id": 42,
+  "uuid": "abc-123",
+  "title": "Person",
+  "slug": "person-schema",
+  "properties": {
+    "firstName": { "type": "string", "minLength": 2 },
+    "lastName": { "type": "string", "minLength": 2 },
+    "email": { "type": "string" }
   },
-  'properties': { ... }
+  "required": ["firstName", "lastName"],
+  "@self": {
+    "extendedBy": [
+      "def-456",
+      "ghi-789"
+    ]
+  }
 }
 ```
 
@@ -2438,45 +2525,67 @@ This is useful for:
 - **Schema Management**: Track schema relationships and dependencies
 - **Refactoring**: Plan schema restructuring with full visibility of dependencies
 
-The 'extendedBy' property is automatically populated for:
+The `extendedBy` property is automatically populated for:
 - Individual schema endpoint: `GET /api/schemas/{id}`
-- Collection endpoint: 'GET /api/schemas'
+- Collection endpoint: `GET /api/schemas`
+
+#### `@self.propertyMetadata` — Native vs Inherited Properties
+
+For schemas using `allOf`, the API response includes `@self.propertyMetadata` that indicates whether each property is defined natively in the schema or inherited from a parent.
+
+Each property entry has:
+- `source` — `"native"` (defined in this schema's delta) or `"inherited"` (comes from a parent)
+- `inheritedFrom` — UUID of the parent schema (only for inherited properties, `null` for native)
+
+This is useful for:
+- **UI rendering**: Show inherited properties differently (e.g., greyed out or with a parent badge)
+- **Debugging**: Understand where each property originates in the inheritance chain
+- **Schema editing**: Know which properties can be edited locally vs which require editing the parent
 
 **Example Response for Collection:**
 
 ```json
 {
-  'results': [
+  "results": [
     {
-      'id': 42,
-      'title': 'Person',
-      '@self': {
-        'extendedBy': ['employee-uuid', 'customer-uuid']
+      "id": 42,
+      "title": "Person",
+      "@self": {
+        "extendedBy": ["def-456", "ghi-789"]
       },
-      'properties': { ... }
+      "properties": { "..." : "..." }
     },
     {
-      'id': 43,
-      'title': 'Employee',
-      'extend': '42',
-      '@self': {
-        'extendedBy': []  // No schemas extend Employee
+      "id": 43,
+      "title": "Employee",
+      "allOf": ["42"],
+      "@self": {
+        "extendedBy": [],
+        "propertyMetadata": {
+          "firstName": { "source": "inherited", "inheritedFrom": "abc-123" },
+          "lastName": { "source": "inherited", "inheritedFrom": "abc-123" },
+          "email": { "source": "native", "inheritedFrom": null },
+          "employeeId": { "source": "native", "inheritedFrom": null }
+        }
       },
-      'properties': { ... }
+      "properties": { "..." : "..." }
     }
   ]
 }
 ```
 
+Note: `propertyMetadata` is only included for schemas that have an `allOf` composition. Schemas without composition do not include this field.
+
 ### Advanced Topics
 
 #### Custom Merge Logic
 
-The default merge logic can handle most cases. For special requirements, the SchemaMapper class provides protected methods that can be extended:
+The default merge logic can handle most cases. For special requirements, the `SchemaMapper` class provides methods that handle each step:
 
-- 'mergeSchemaProperties()' - Controls property merging
-- 'deepMergeProperty()' - Controls deep property merging
-- 'extractPropertyDelta()' - Controls delta extraction
+- `mergeSchemaProperties()` — Controls property merging (without LSP validation)
+- `mergeSchemaPropertiesWithValidation()` — Controls property merging (with LSP enforcement)
+- `deepMergeProperty()` — Controls deep property merging for nested objects
+- `extractPropertyDelta()` — Controls delta extraction before save
 
 #### Migration Strategies
 
@@ -2492,15 +2601,17 @@ When refactoring schemas to use extension:
 Test schemas with extension:
 
 ```bash
-# Create test object with extended schema
-POST /api/objects/{register}/{extended-schema}
-{
-  'firstName': 'John',  # From parent
-  'employeeId': 'EMP123'  # From child
-}
+# Create a test object using the extended schema
+curl -X POST "http://localhost:8080/index.php/apps/openregister/api/objects/{register}/{extended-schema}" \
+  -H "Content-Type: application/json" \
+  -u admin:admin \
+  -d '{
+    "firstName": "John",
+    "employeeId": "EMP123"
+  }'
 
-# Verify object validates against resolved schema
-# Verify all properties (parent + child) are available
+# Verify the object validates against the resolved schema
+# Both parent properties (firstName) and child properties (employeeId) should be accepted
 ```
 
 ### Quick Reference
@@ -2509,22 +2620,22 @@ POST /api/objects/{register}/{extended-schema}
 
 | Use Case | Pattern | Merges Properties? | Use When |
 |----------|---------|-------------------|----------|
-| Single inheritance | `allOf: ['parent']` | ✅ Yes | Extending one base schema |
-| Multiple inheritance | `allOf: ['parent1', 'parent2']` | ✅ Yes | Combining multiple base schemas |
-| Type variants | `oneOf: ['typeA', 'typeB']` | ❌ No | Exactly one type must match |
-| Optional features | `anyOf: ['feature1', 'feature2']` | ❌ No | At least one must match |
+| Single inheritance | `"allOf": ["parent"]` | ✅ Yes | Extending one base schema |
+| Multiple inheritance | `"allOf": ["parent1", "parent2"]` | ✅ Yes | Combining multiple base schemas |
+| Type variants | `"oneOf": ["typeA", "typeB"]` | ❌ No | Exactly one type must match |
+| Optional features | `"anyOf": ["feature1", "feature2"]` | ❌ No | At least one must match |
 
 #### What Can Be Changed in Child Schemas (allOf)
 
 | Property Type | Can Override? | Example |
 |---------------|---------------|---------|
-| **Metadata** | ✅ Yes | title, description, order, icon, placeholder, help |
+| **Metadata** | ✅ Yes | title, description, order, icon, placeholder, help, example, deprecated, readOnly, writeOnly, default, x-order, x-display, x-tabName, x-section, ui:order, ui:widget, ui:options |
 | **Add properties** | ✅ Yes | New properties not in parent |
 | **Stricter validation** | ✅ Yes | Higher minLength, lower maxLength, fewer enum values |
-| **Add format** | ✅ Yes | Add 'format': 'email' to string property |
+| **Add format** | ✅ Yes | Add `"format": "email"` to a string property |
 | **Add pattern** | ✅ Yes | Add regex pattern to string |
 | **Add required** | ✅ Yes | Make optional property required |
-| **Change type** | ❌ No | Cannot change 'string' to 'number' |
+| **Change type** | ❌ No | Cannot change `"string"` to `"number"` |
 | **Relax validation** | ❌ No | Cannot lower minLength or raise maxLength |
 | **Add enum values** | ❌ No | Cannot expand allowed values |
 | **Remove required** | ❌ No | Cannot make required property optional |

@@ -5,205 +5,184 @@ import formatBytes from '../../services/formatBytes.js'
 
 <template>
 	<NcAppContent>
-		<div class="registerDetailContent">
-			<!-- Loading and error states -->
-			<div v-if="dashboardStore.loading" class="loadingContainer">
-				<NcLoadingIcon :size="32" />
-				<span>Loading register data...</span>
-			</div>
-			<div v-else-if="dashboardStore.error" class="emptyContainer">
-				<NcEmptyContent
-					:title="dashboardStore.error"
-					icon="icon-error">
-					<template #action>
-						<NcButton @click="$router.push('/registers')">
-							{{ t('openregister', 'Back to Registers') }}
-						</NcButton>
-					</template>
-				</NcEmptyContent>
-			</div>
-			<div v-else-if="!register" class="emptyContainer">
-				<NcEmptyContent
-					:title="t('openregister', 'Register not found')"
-					icon="icon-error">
-					<template #action>
-						<NcButton @click="$router.push('/registers')">
-							{{ t('openregister', 'Back to Registers') }}
-						</NcButton>
-					</template>
-				</NcEmptyContent>
-			</div>
+		<CnDetailPage
+			:title="register?.title || ''"
+			:loading="dashboardStore.loading"
+			loading-label="Loading register data..."
+			:error="!!dashboardStore.error || (!dashboardStore.loading && !register)"
+			:error-message="dashboardStore.error || t('openregister', 'Register not found')"
+			:stats-title="registerStats ? t('openregister', 'Register Statistics') : ''"
+			:stats-columns="registerStats ? [
+				{ key: 'type', label: t('openregister', 'Type') },
+				{ key: 'total', label: t('openregister', 'Total') },
+				{ key: 'size', label: t('openregister', 'Size') },
+			] : []">
+			<!-- Error actions -->
+			<template #error-actions>
+				<NcButton @click="$router.push('/registers')">
+					{{ t('openregister', 'Back to Registers') }}
+				</NcButton>
+			</template>
 
-			<!-- Stats Tab Content -->
-			<div v-else-if="registerStore.getActiveTab === 'stats-tab'">
-				<!-- Register Statistics -->
-				<div v-if="registerStats" class="statsContainer">
-					<h3>{{ t('openregister', 'Register Statistics') }}</h3>
-					<table class="statisticsTable registerStats">
-						<thead>
-							<tr>
-								<th>{{ t('openregister', 'Type') }}</th>
-								<th>{{ t('openregister', 'Total') }}</th>
-								<th>{{ t('openregister', 'Size') }}</th>
-							</tr>
-						</thead>
-						<tbody>
-							<tr>
-								<td>{{ t('openregister', 'Objects') }}</td>
-								<td>{{ registerStats.objects?.total || 0 }}</td>
-								<td>{{ formatBytes(registerStats.objects?.size || 0) }}</td>
-							</tr>
-							<tr class="subRow">
-								<td class="indented">
-									{{ t('openregister', 'Invalid') }}
-								</td>
-								<td>{{ registerStats.objects?.invalid || 0 }}</td>
-								<td>-</td>
-							</tr>
-							<tr class="subRow">
-								<td class="indented">
-									{{ t('openregister', 'Deleted') }}
-								</td>
-								<td>{{ registerStats.objects?.deleted || 0 }}</td>
-								<td>-</td>
-							</tr>
-							<tr class="subRow">
-								<td class="indented">
-									{{ t('openregister', 'Published') }}
-								</td>
-								<td>{{ registerStats.objects?.published || 0 }}</td>
-								<td>-</td>
-							</tr>
-							<tr>
-								<td>{{ t('openregister', 'Files') }}</td>
-								<td>{{ registerStats.files?.total || 0 }}</td>
-								<td>{{ formatBytes(registerStats.files?.size || 0) }}</td>
-							</tr>
-							<tr>
-								<td>{{ t('openregister', 'Logs') }}</td>
-								<td>{{ registerStats.logs?.total || 0 }}</td>
-								<td>{{ formatBytes(registerStats.logs?.size || 0) }}</td>
-							</tr>
-							<tr>
-								<td>{{ t('openregister', 'Schemas') }}</td>
-								<td>{{ registerStats.schemas || 0 }}</td>
-								<td>-</td>
-							</tr>
-						</tbody>
-					</table>
+			<!-- Custom stats rows (uses formatBytes formatting) -->
+			<template v-if="registerStats" #stats-rows>
+				<tr>
+					<td>{{ t('openregister', 'Objects') }}</td>
+					<td>{{ registerStats.objects?.total || 0 }}</td>
+					<td>{{ formatBytes(registerStats.objects?.size || 0) }}</td>
+				</tr>
+				<tr class="cn-detail-page__stats-row--sub">
+					<td class="cn-detail-page__stats-cell--indented">
+						{{ t('openregister', 'Invalid') }}
+					</td>
+					<td>{{ registerStats.objects?.invalid || 0 }}</td>
+					<td>-</td>
+				</tr>
+				<tr class="cn-detail-page__stats-row--sub">
+					<td class="cn-detail-page__stats-cell--indented">
+						{{ t('openregister', 'Deleted') }}
+					</td>
+					<td>{{ registerStats.objects?.deleted || 0 }}</td>
+					<td>-</td>
+				</tr>
+				<tr class="cn-detail-page__stats-row--sub">
+					<td class="cn-detail-page__stats-cell--indented">
+						{{ t('openregister', 'Published') }}
+					</td>
+					<td>{{ registerStats.objects?.published || 0 }}</td>
+					<td>-</td>
+				</tr>
+				<tr>
+					<td>{{ t('openregister', 'Files') }}</td>
+					<td>{{ registerStats.files?.total || 0 }}</td>
+					<td>{{ formatBytes(registerStats.files?.size || 0) }}</td>
+				</tr>
+				<tr>
+					<td>{{ t('openregister', 'Logs') }}</td>
+					<td>{{ registerStats.logs?.total || 0 }}</td>
+					<td>{{ formatBytes(registerStats.logs?.size || 0) }}</td>
+				</tr>
+				<tr>
+					<td>{{ t('openregister', 'Schemas') }}</td>
+					<td>{{ registerStats.schemas || 0 }}</td>
+					<td>-</td>
+				</tr>
+			</template>
+
+			<!-- Charts -->
+			<div class="chartGrid">
+				<!-- Audit Trail Actions Chart -->
+				<div class="chartCard">
+					<h3>Audit Trail Actions</h3>
+					<apexchart
+						type="line"
+						height="350"
+						:options="auditTrailChartOptions"
+						:series="dashboardStore.chartData.auditTrailActions?.series || []" />
 				</div>
 
-				<div class="chartGrid">
-					<!-- Audit Trail Actions Chart -->
-					<div class="chartCard">
-						<h3>Audit Trail Actions</h3>
-						<apexchart
-							type="line"
-							height="350"
-							:options="auditTrailChartOptions"
-							:series="dashboardStore.chartData.auditTrailActions?.series || []" />
-					</div>
+				<!-- Objects by Schema Chart -->
+				<div class="chartCard">
+					<h3>Objects by Schema</h3>
+					<apexchart
+						type="pie"
+						height="350"
+						:options="schemaChartOptions"
+						:series="dashboardStore.chartData.objectsBySchema?.series || []"
+						:labels="dashboardStore.chartData.objectsBySchema?.labels || []" />
+				</div>
 
-					<!-- Objects by Schema Chart -->
-					<div class="chartCard">
-						<h3>Objects by Schema</h3>
+				<!-- Objects by Size Chart -->
+				<div class="chartCard">
+					<h3>Objects by Size Distribution</h3>
+					<apexchart
+						type="bar"
+						height="350"
+						:options="sizeChartOptions"
+						:series="[{ name: 'Objects', data: dashboardStore.chartData.objectsBySize?.series || [] }]" />
+				</div>
+			</div>
+
+			<!-- Schemas -->
+			<div v-if="loadingSchemas" class="loadingContainer">
+				<NcLoadingIcon :size="32" />
+				<span>Loading schemas...</span>
+			</div>
+			<div v-else-if="!loadedSchemas?.length" class="emptyContainer">
+				<NcEmptyContent
+					:name="t('openregister', 'No schemas found')">
+					<template #icon>
+						<FolderOutline :size="48" />
+					</template>
+					<template #action>
+						<NcButton v-if="!managingConfiguration" @click="navigationStore.setModal('editRegister')">
+							{{ t('openregister', 'Add Schema') }}
+						</NcButton>
+					</template>
+				</NcEmptyContent>
+			</div>
+			<div v-else class="cardGrid">
+				<div v-for="schema in loadedSchemas" :key="schema.id" class="card">
+					<div class="cardHeader">
+						<h3>
+							<FileCodeOutline :size="20" />
+							{{ schema.title }}
+							<span v-if="managingConfiguration" v-tooltip.bottom="'Managed by configuration: ' + managingConfiguration.title" class="managedBadge">
+								<Database :size="16" />
+								Managed
+							</span>
+						</h3>
+						<NcActions v-if="!managingConfiguration" :primary="true" menu-name="Schema Actions">
+							<template #icon>
+								<DotsHorizontal :size="20" />
+							</template>
+							<NcActionButton close-after-click @click="editSchema(schema)">
+								<template #icon>
+									<Pencil :size="20" />
+								</template>
+								Edit Schema
+							</NcActionButton>
+						</NcActions>
+					</div>
+					<div class="statGrid">
+						<div class="statItem">
+							<span class="statLabel">{{ t('openregister', 'Total Objects') }}</span>
+							<span class="statValue">{{ schema.stats?.objects?.total || 0 }}</span>
+						</div>
+						<div class="statItem">
+							<span class="statLabel">{{ t('openregister', 'Total Size') }}</span>
+							<span class="statValue">{{ formatBytes(schema.stats?.objects?.size || 0) }}</span>
+						</div>
+					</div>
+					<div class="schemaChart">
 						<apexchart
 							type="pie"
-							height="350"
-							:options="schemaChartOptions"
-							:series="dashboardStore.chartData.objectsBySchema?.series || []"
-							:labels="dashboardStore.chartData.objectsBySchema?.labels || []" />
-					</div>
-
-					<!-- Objects by Size Chart -->
-					<div class="chartCard">
-						<h3>Objects by Size Distribution</h3>
-						<apexchart
-							type="bar"
-							height="350"
-							:options="sizeChartOptions"
-							:series="[{ name: 'Objects', data: dashboardStore.chartData.objectsBySize?.series || [] }]" />
+							height="200"
+							:options="getSchemaChartOptions(schema)"
+							:series="[
+								schema.stats?.objects?.valid || 0,
+								schema.stats?.objects?.invalid || 0,
+								schema.stats?.objects?.deleted || 0,
+								schema.stats?.objects?.locked || 0,
+								schema.stats?.objects?.published || 0
+							]" />
 					</div>
 				</div>
 			</div>
-
-			<!-- Schemas Tab Content -->
-			<div v-else class="cardGrid">
-				<div v-if="loadingSchemas" class="loadingContainer">
-					<NcLoadingIcon :size="32" />
-					<span>Loading schemas...</span>
-				</div>
-				<div v-else-if="!loadedSchemas?.length" class="emptyContainer">
-					<NcEmptyContent
-						:title="t('openregister', 'No schemas found')"
-						icon="icon-folder">
-						<template #action>
-							<NcButton v-if="!managingConfiguration" @click="navigationStore.setModal('editRegister')">
-								{{ t('openregister', 'Add Schema') }}
-							</NcButton>
-						</template>
-					</NcEmptyContent>
-				</div>
-				<div v-else class="cardGrid">
-					<div v-for="schema in loadedSchemas" :key="schema.id" class="card">
-						<div class="cardHeader">
-							<h3>
-								<FileCodeOutline :size="20" />
-								{{ schema.title }}
-								<span v-if="managingConfiguration" v-tooltip.bottom="'Managed by configuration: ' + managingConfiguration.title" class="managedBadge">
-									<Database :size="16" />
-									Managed
-								</span>
-							</h3>
-							<NcActions v-if="!managingConfiguration" :primary="true" menu-name="Schema Actions">
-								<template #icon>
-									<DotsHorizontal :size="20" />
-								</template>
-								<NcActionButton close-after-click @click="editSchema(schema)">
-									<template #icon>
-										<Pencil :size="20" />
-									</template>
-									Edit Schema
-								</NcActionButton>
-							</NcActions>
-						</div>
-						<div class="statGrid">
-							<div class="statItem">
-								<span class="statLabel">{{ t('openregister', 'Total Objects') }}</span>
-								<span class="statValue">{{ schema.stats?.objects?.total || 0 }}</span>
-							</div>
-							<div class="statItem">
-								<span class="statLabel">{{ t('openregister', 'Total Size') }}</span>
-								<span class="statValue">{{ formatBytes(schema.stats?.objects?.size || 0) }}</span>
-							</div>
-						</div>
-						<div class="schemaChart">
-							<apexchart
-								type="pie"
-								height="200"
-								:options="getSchemaChartOptions(schema)"
-								:series="[
-									schema.stats?.objects?.valid || 0,
-									schema.stats?.objects?.invalid || 0,
-									schema.stats?.objects?.deleted || 0,
-									schema.stats?.objects?.locked || 0,
-									schema.stats?.objects?.published || 0
-								]" />
-						</div>
-					</div>
-				</div>
-			</div>
-		</div>
+		</CnDetailPage>
 	</NcAppContent>
 </template>
 
 <script>
 import { NcAppContent, NcEmptyContent, NcLoadingIcon, NcActions, NcActionButton, NcButton } from '@nextcloud/vue'
+import { CnDetailPage } from '@conduction/nextcloud-vue'
 import VueApexCharts from 'vue-apexcharts'
 import FileCodeOutline from 'vue-material-design-icons/FileCodeOutline.vue'
+import FolderOutline from 'vue-material-design-icons/FolderOutline.vue'
 import DotsHorizontal from 'vue-material-design-icons/DotsHorizontal.vue'
 import Pencil from 'vue-material-design-icons/Pencil.vue'
 import Database from 'vue-material-design-icons/Database.vue'
+import { getTheme } from '@/services/getTheme.js'
 
 export default {
 	name: 'RegisterDetail',
@@ -214,8 +193,10 @@ export default {
 		NcActions,
 		NcActionButton,
 		NcButton,
+		CnDetailPage,
 		apexchart: VueApexCharts,
 		FileCodeOutline,
+		FolderOutline,
 		DotsHorizontal,
 		Pencil,
 		Database,
@@ -267,7 +248,7 @@ export default {
 					position: 'top',
 				},
 				theme: {
-					mode: 'light',
+					mode: getTheme(),
 				},
 			}
 		},
@@ -473,12 +454,6 @@ export default {
 </script>
 
 <style lang="scss" scoped>
-.registerDetailContent {
-	margin-inline: auto;
-	max-width: 1200px;
-	padding: 20px;
-}
-
 .loadingContainer {
 	display: flex;
 	align-items: center;
@@ -490,7 +465,7 @@ export default {
 
 .chartGrid {
 	display: grid;
-	grid-template-columns: repeat(2, 1fr);
+	grid-template-columns: repeat( auto-fit, minmax(330px, 1fr) );
 	gap: 20px;
 	padding: 20px;
 }
@@ -583,14 +558,5 @@ export default {
 
 .schemaChart {
 	margin-top: 16px;
-}
-
-.statsContainer {
-	margin-bottom: 30px;
-
-	h3 {
-		margin-bottom: 15px;
-		color: var(--color-main-text);
-	}
 }
 </style>
