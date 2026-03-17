@@ -169,7 +169,7 @@ class SaveObject
      * Constructor for SaveObject handler.
      *
      * @param MagicMapper              $objectEntityMapper   Object entity mapper
-     * @param MagicMapper      $unifiedObjectMapper  Unified object mapper for object operations
+     * @param MagicMapper              $unifiedObjectMapper  Unified object mapper for object operations
      * @param MetadataHydrationHandler $metaHydrationHandler Handler for metadata extraction
      * @param FilePropertyHandler      $filePropertyHandler  Handler for file property operations
      * @param IUserSession             $userSession          User session service

@@ -95,11 +95,11 @@ class ReferentialIntegrityService
     /**
      * Constructor for ReferentialIntegrityService.
      *
-     * @param SchemaMapper       $schemaMapper       Schema data mapper.
-     * @param RegisterMapper     $registerMapper     Register data mapper.
-     * @param MagicMapper $objectEntityMapper Object entity data mapper.
-     * @param AuditTrailMapper    $auditTrailMapper   Audit trail mapper for integrity action logging.
-     * @param LoggerInterface     $logger             Logger for debugging.
+     * @param SchemaMapper     $schemaMapper       Schema data mapper.
+     * @param RegisterMapper   $registerMapper     Register data mapper.
+     * @param MagicMapper      $objectEntityMapper Object entity data mapper.
+     * @param AuditTrailMapper $auditTrailMapper   Audit trail mapper for integrity action logging.
+     * @param LoggerInterface  $logger             Logger for debugging.
      */
     public function __construct(
         private readonly SchemaMapper $schemaMapper,

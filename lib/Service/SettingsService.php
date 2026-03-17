@@ -1170,11 +1170,11 @@ class SettingsService
     /**
      * Process batch jobs in serial mode
      *
-     * @param array                                   $batchJobs     Array of batch job definitions.
+     * @param array                            $batchJobs     Array of batch job definitions.
      * @param \OCA\OpenRegister\Db\MagicMapper $objectMapper  The object entity mapper.
-     * @param ObjectService|null                      $objectService The object service instance.
-     * @param array                                   $results       Results array to update.
-     * @param bool                                    $collectErrors Whether to collect all errors.
+     * @param ObjectService|null               $objectService The object service instance.
+     * @param array                            $results       Results array to update.
+     * @param bool                             $collectErrors Whether to collect all errors.
      *
      * @return void
      *
@@ -1309,12 +1309,12 @@ class SettingsService
     /**
      * Process batch jobs in parallel mode
      *
-     * @param array                                   $batchJobs       Array of batch job definitions.
+     * @param array                            $batchJobs       Array of batch job definitions.
      * @param \OCA\OpenRegister\Db\MagicMapper $objectMapper    The object entity mapper.
-     * @param ObjectService|null                      $objectService   The object service instance.
-     * @param array                                   $results         Results array to update.
-     * @param bool                                    $collectErrors   Whether to collect all errors.
-     * @param int                                     $parallelBatches Number of parallel batches.
+     * @param ObjectService|null               $objectService   The object service instance.
+     * @param array                            $results         Results array to update.
+     * @param bool                             $collectErrors   Whether to collect all errors.
+     * @param int                              $parallelBatches Number of parallel batches.
      *
      * @return void
      */
@@ -1386,7 +1386,7 @@ class SettingsService
     /**
      * Process a single batch directly
      *
-     * @param \OCA\OpenRegister\Db\MagicMapper $objectMapper  The object entity mapper.
+     * @param \OCA\OpenRegister\Db\MagicMapper        $objectMapper  The object entity mapper.
      * @param \OCA\OpenRegister\Service\ObjectService $objectService The object service instance.
      * @param array                                   $job           Batch job definition.
      * @param bool                                    $collectErrors Whether to collect all errors.
@@ -2004,10 +2004,10 @@ class SettingsService
 
         return [
             'warnings' => [
-                'auditTrailsWithoutExpiry'   => (int) ($row['audit_trails_without_expiry'] ?? 0),
-                'searchTrailsWithoutExpiry'  => (int) ($row['search_trails_without_expiry'] ?? 0),
-                'expiredAuditTrails'         => (int) ($row['expired_audit_trails'] ?? 0),
-                'expiredSearchTrails'        => (int) ($row['expired_search_trails'] ?? 0),
+                'auditTrailsWithoutExpiry'  => (int) ($row['audit_trails_without_expiry'] ?? 0),
+                'searchTrailsWithoutExpiry' => (int) ($row['search_trails_without_expiry'] ?? 0),
+                'expiredAuditTrails'        => (int) ($row['expired_audit_trails'] ?? 0),
+                'expiredSearchTrails'       => (int) ($row['expired_search_trails'] ?? 0),
             ],
             'totals'   => [
                 'totalObjects'        => $magicCount,

@@ -55,7 +55,7 @@ class HookRetryJob extends QueuedJob
      * Constructor for HookRetryJob
      *
      * @param ITimeFactory           $time                Time factory
-     * @param MagicMapper     $objectEntityMapper  Object mapper
+     * @param MagicMapper            $objectEntityMapper  Object mapper
      * @param SchemaMapper           $schemaMapper        Schema mapper
      * @param WorkflowEngineRegistry $engineRegistry      Engine registry
      * @param CloudEventFormatter    $cloudEventFormatter CloudEvent formatter

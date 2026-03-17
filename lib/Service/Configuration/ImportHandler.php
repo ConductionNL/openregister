@@ -227,7 +227,7 @@ class ImportHandler
      *
      * @param SchemaMapper        $schemaMapper        The schema mapper.
      * @param RegisterMapper      $registerMapper      The register mapper.
-     * @param MagicMapper  $objectEntityMapper  The object entity mapper.
+     * @param MagicMapper         $objectEntityMapper  The object entity mapper.
      * @param ConfigurationMapper $configurationMapper The configuration mapper.
      * @param MappingMapper       $mappingMapper       The mapping mapper.
      * @param Client              $client              The HTTP client for URL fetching.

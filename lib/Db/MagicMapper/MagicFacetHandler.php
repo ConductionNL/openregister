@@ -169,7 +169,7 @@ class MagicFacetHandler
     /**
      * Whether lazy dependencies have been resolved.
      *
-     * @var bool
+     * @var boolean
      */
     private bool $lazyResolved = false;
 
@@ -235,7 +235,7 @@ class MagicFacetHandler
         }
 
         try {
-            $cacheFactory = $this->container->get(ICacheFactory::class);
+            $cacheFactory         = $this->container->get(ICacheFactory::class);
             $this->cacheFactory   = $cacheFactory;
             $this->distLabelCache = $cacheFactory->createDistributed('openregister_facet_labels');
         } catch (\Exception $e) {

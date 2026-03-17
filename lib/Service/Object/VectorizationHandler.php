@@ -49,7 +49,7 @@ class VectorizationHandler
      * Constructor
      *
      * @param VectorizationService $vectorizationService Vectorization service
-     * @param MagicMapper   $objectEntityMapper   Object entity mapper
+     * @param MagicMapper          $objectEntityMapper   Object entity mapper
      * @param LoggerInterface      $logger               PSR-3 logger
      */
     public function __construct(

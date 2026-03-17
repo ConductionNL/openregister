@@ -57,8 +57,8 @@ class CommentsEntityListener implements IEventListener
     /**
      * Constructor.
      *
-     * @param MagicMapper $objectEntityMapper Mapper for object validation
-     * @param LoggerInterface    $logger             Logger for error reporting
+     * @param MagicMapper     $objectEntityMapper Mapper for object validation
+     * @param LoggerInterface $logger             Logger for error reporting
      *
      * @return void
      */

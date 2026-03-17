@@ -71,9 +71,9 @@ class SchemaService
     /**
      * SchemaService constructor
      *
-     * @param SchemaMapper       $schemaMapper       Schema mapper for schema operations.
-     * @param MagicMapper $objectEntityMapper Object entity mapper for object queries.
-     * @param LoggerInterface    $logger             Logger for debugging and monitoring.
+     * @param SchemaMapper    $schemaMapper       Schema mapper for schema operations.
+     * @param MagicMapper     $objectEntityMapper Object entity mapper for object queries.
+     * @param LoggerInterface $logger             Logger for debugging and monitoring.
      */
     public function __construct(
         SchemaMapper $schemaMapper,

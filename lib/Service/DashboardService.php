@@ -114,12 +114,12 @@ class DashboardService
      *
      * Initializes service with required mappers and logger for dashboard operations.
      *
-     * @param MagicMapper $objectMapper     Object entity mapper for object statistics
-     * @param AuditTrailMapper   $auditTrailMapper Audit trail mapper for log statistics
-     * @param WebhookLogMapper   $webhookLogMapper Webhook log mapper for webhook statistics
-     * @param RegisterMapper     $registerMapper   Register mapper for register operations
-     * @param SchemaMapper       $schemaMapper     Schema mapper for schema operations
-     * @param LoggerInterface    $logger           Logger instance for error tracking
+     * @param MagicMapper      $objectMapper     Object entity mapper for object statistics
+     * @param AuditTrailMapper $auditTrailMapper Audit trail mapper for log statistics
+     * @param WebhookLogMapper $webhookLogMapper Webhook log mapper for webhook statistics
+     * @param RegisterMapper   $registerMapper   Register mapper for register operations
+     * @param SchemaMapper     $schemaMapper     Schema mapper for schema operations
+     * @param LoggerInterface  $logger           Logger instance for error tracking
      *
      * @return void
      */

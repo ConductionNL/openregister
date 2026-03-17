@@ -78,11 +78,11 @@ class ValidateObject
     /**
      * Constructor for ValidateObject
      *
-     * @param IAppConfig         $config       Configuration service.
-     * @param MagicMapper $objectMapper Object mapper.
-     * @param SchemaMapper       $schemaMapper Schema mapper.
-     * @param IURLGenerator      $urlGenerator URL generator.
-     * @param LoggerInterface    $logger       Logger for logging operations.
+     * @param IAppConfig      $config       Configuration service.
+     * @param MagicMapper     $objectMapper Object mapper.
+     * @param SchemaMapper    $schemaMapper Schema mapper.
+     * @param IURLGenerator   $urlGenerator URL generator.
+     * @param LoggerInterface $logger       Logger for logging operations.
      */
     public function __construct(
         private IAppConfig $config,
@@ -403,6 +403,7 @@ class ValidateObject
                 if (is_array($nestedPropertySchema) === true) {
                     $nestedPropertySchema = (object) $nestedPropertySchema;
                 }
+
                 $this->transformPropertyForOpenRegister(propertySchema: $nestedPropertySchema);
             }
         }

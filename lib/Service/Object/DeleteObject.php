@@ -95,7 +95,7 @@ class DeleteObject
     /**
      * Constructor for DeleteObject handler.
      *
-     * @param MagicMapper         $objectEntityMapper Object entity data mapper.
+     * @param MagicMapper                 $objectEntityMapper Object entity data mapper.
      * @param CacheHandler                $cacheHandler       Object cache service for entity and query caching
      * @param IUserSession                $userSession        User session service for tracking who deletes
      * @param AuditTrailMapper            $auditTrailMapper   Audit trail mapper for logs

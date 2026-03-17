@@ -90,7 +90,7 @@ class BulkIndexer
     /**
      * BulkIndexer constructor
      *
-     * @param MagicMapper     $objectMapper    DB mapper for objects
+     * @param MagicMapper            $objectMapper    DB mapper for objects
      * @param SchemaMapper           $schemaMapper    DB mapper for schemas
      * @param DocumentBuilder        $documentBuilder Document builder
      * @param SearchBackendInterface $searchBackend   Search backend (Solr/Elastic)

@@ -55,9 +55,9 @@ class FilePublishingHandler
     /**
      * Constructor for FilePublishingHandler.
      *
-     * @param MagicMapper $objectEntityMapper Object entity mapper for fetching objects.
-     * @param FileMapper         $fileMapper         File mapper for share operations.
-     * @param LoggerInterface    $logger             Logger for logging operations.
+     * @param MagicMapper     $objectEntityMapper Object entity mapper for fetching objects.
+     * @param FileMapper      $fileMapper         File mapper for share operations.
+     * @param LoggerInterface $logger             Logger for logging operations.
      */
     public function __construct(
         private readonly MagicMapper $objectEntityMapper,

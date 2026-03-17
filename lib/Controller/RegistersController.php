@@ -151,7 +151,7 @@ class RegistersController extends Controller
      * @param string               $appName              Application name
      * @param IRequest             $request              HTTP request object
      * @param RegisterService      $registerService      Register service for business logic
-     * @param MagicMapper   $objectEntityMapper   Object entity mapper for database operations
+     * @param MagicMapper          $objectEntityMapper   Object entity mapper for database operations
      * @param UploadService        $uploadService        Upload service for file uploads
      * @param LoggerInterface      $logger               Logger for error tracking
      * @param IUserSession         $userSession          User session service

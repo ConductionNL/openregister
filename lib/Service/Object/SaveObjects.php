@@ -78,7 +78,7 @@ class SaveObjects
     /**
      * Constructor for SaveObjects handler
      *
-     * @param MagicMapper    $objectMapper        Mapper for object entity database operations
+     * @param MagicMapper            $objectMapper        Mapper for object entity database operations
      * @param SchemaMapper           $schemaMapper        Mapper for schema operations
      * @param RegisterMapper         $registerMapper      Mapper for register operations
      * @param SaveObject             $saveHandler         Handler for individual object operations

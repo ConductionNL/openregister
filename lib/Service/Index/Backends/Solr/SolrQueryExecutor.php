@@ -138,11 +138,11 @@ class SolrQueryExecutor
     /**
      * Search with pagination.
      *
-     * @param array $query        Query parameters
+     * @param array $query         Query parameters
      * @param bool  $_rbac         Apply RBAC filters
      * @param bool  $_multitenancy Apply multitenancy filters
-     * @param bool  $published    Filter for published only
-     * @param bool  $deleted      Include deleted items
+     * @param bool  $published     Filter for published only
+     * @param bool  $deleted       Include deleted items
      *
      * @return array Paginated search results with pagination info.
      *

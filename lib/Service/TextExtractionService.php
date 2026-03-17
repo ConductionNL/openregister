@@ -116,7 +116,7 @@ class TextExtractionService
      * @param IRootFolder              $rootFolder           Nextcloud root folder
      * @param IDBConnection            $db                   Database connection
      * @param LoggerInterface          $logger               Logger
-     * @param MagicMapper       $objectEntityMapper   Mapper for object entities
+     * @param MagicMapper              $objectEntityMapper   Mapper for object entities
      * @param SchemaMapper             $schemaMapper         Mapper for schemas
      * @param RegisterMapper           $registerMapper       Mapper for registers
      * @param EntityRecognitionHandler $entityHandler        Handler for entity recognition

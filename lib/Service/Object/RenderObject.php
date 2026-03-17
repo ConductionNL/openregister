@@ -109,7 +109,7 @@ class RenderObject
      * Constructor for RenderObject handler.
      *
      * @param FileMapper             $fileMapper          File mapper for database operations.
-     * @param MagicMapper     $objectEntityMapper  Object entity mapper for database operations.
+     * @param MagicMapper            $objectEntityMapper  Object entity mapper for database operations.
      * @param RegisterMapper         $registerMapper      Register mapper for database operations.
      * @param SchemaMapper           $schemaMapper        Schema mapper for database operations.
      * @param ISystemTagManager      $systemTagManager    System tag manager for file tags.

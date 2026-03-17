@@ -82,7 +82,7 @@ class SchemasController extends Controller
      * @param IRequest            $request             HTTP request object
      * @param IAppConfig          $config              App configuration for settings
      * @param SchemaMapper        $schemaMapper        Schema mapper for database operations
-     * @param MagicMapper  $objectEntityMapper  Object entity mapper for object queries
+     * @param MagicMapper         $objectEntityMapper  Object entity mapper for object queries
      * @param DownloadService     $downloadService     Download service for file downloads
      * @param UploadService       $uploadService       Upload service for file uploads
      * @param AuditTrailMapper    $auditTrailMapper    Audit trail mapper for log statistics
