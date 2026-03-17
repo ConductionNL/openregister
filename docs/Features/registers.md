@@ -110,6 +110,77 @@ Registers can be deleted when no longer needed:
 DELETE /api/registers/{id}
 ```
 
+### Deleting Objects for a Register/Schema Combination
+
+You can delete all objects for a specific register and schema combination using the bulk delete endpoint. This is useful when you want to clear all objects from a particular schema within a register without removing the schema itself or affecting other schemas.
+
+**API Endpoint:**
+
+```
+POST /api/bulk/{register}/{schema}/delete-objects
+```
+
+**Request Body:**
+
+```json
+{
+  "hardDelete": false
+}
+```
+
+- **hardDelete** (optional, default: false): When set to false, objects are soft-deleted (marked as deleted but retained in the database). When set to true, objects are permanently removed from the database.
+
+**Response:**
+
+```json
+{
+  "success": true,
+  "message": "Objects deletion completed successfully",
+  "deleted_count": 150,
+  "deleted_uuids": ["uuid1", "uuid2", "..."],
+  "register_id": 1,
+  "schema_id": 5,
+  "hard_delete": false
+}
+```
+
+**UI Access:**
+
+In the Registers view, each schema row has an action menu (three dots) that includes a 'Delete Objects' option. This option:
+- Is disabled when there are no objects to delete
+- Shows a confirmation dialog with the object count
+- Uses an optimized SQL query for efficient bulk deletion
+- Works for both blob storage (deprecated) and magic table storage
+- Automatically refreshes the register list to show updated counts after deletion
+
+**Use Cases:**
+
+1. **Data Cleanup**: Remove outdated or test data from a specific schema
+2. **Schema Migration**: Clear objects before applying schema changes
+3. **Development/Testing**: Reset data during development without affecting the schema structure
+4. **Performance Optimization**: Remove large amounts of data efficiently using optimized queries
+
+**Performance Considerations:**
+
+The delete objects operation uses optimized SQL queries that:
+- Delete objects in bulk rather than one at a time
+- Work efficiently with both blob storage (deprecated) and magic tables
+- Automatically detect which storage type is used for each schema
+- Invalidate caches automatically after deletion
+- Handle large datasets (thousands of objects) efficiently
+
+**Technical Implementation:**
+
+The deletion process follows these steps:
+1. The system checks if the schema uses magic tables (via register configuration)
+2. If magic tables are used, objects are deleted from the magic table (e.g., oc_openregister_table_2_35)
+3. If magic tables are not used (deprecated), objects are deleted from the blob storage table (oc_openregister_objects)
+4. For soft deletes, the _deleted field is set with metadata (timestamp, user, reason)
+5. For hard deletes, objects are permanently removed from the storage
+6. Collection caches are automatically invalidated to ensure immediate visibility of changes
+
+**Note:** Objects are stored EITHER in blob storage OR in magic tables, never in both. Blob storage is deprecated in favor of magic tables for better query performance.
+
 ## Best Practices
 
 1. **Logical Grouping**: Create registers around logical domains or business functions

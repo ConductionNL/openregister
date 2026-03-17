@@ -499,7 +499,7 @@ Before deploying to production:
 - [ ] Logging level is set to INFO (not DEBUG)
 - [ ] Custom recognizers are loaded (if needed)
 - [ ] Integration tests pass with Dutch text samples
-- [ ] Performance is acceptable (<200ms per 1000 chars)
+- [ ] Performance is acceptable (&lt;200ms per 1000 chars)
 
 ## Alternative: MITIE for Development
 
@@ -520,7 +520,7 @@ See [NER & NLP Concepts](../features/ner-nlp-concepts.md) for MITIE setup.
 ## Related Documentation
 
 - [NER & NLP Concepts](../features/ner-nlp-concepts.md) - Understanding entity recognition
-- [Docker Services Overview](./docker-services.md) - All services in the stack
+- [Docker Setup](./docker-setup.md) - Complete Docker development setup guide
 - [Text Extraction Enhanced](../features/text-extraction-enhanced.md) - Complete extraction pipeline
 - [Entity Relationships](../technical/entity-relationships-addition.md) - GDPR entity data model
 

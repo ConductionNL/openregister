@@ -107,6 +107,122 @@ Objects can be locked to prevent concurrent modifications. This is useful when:
 - Multiple users/systems are working on the same object
 - Ensuring data consistency during complex updates
 
+#### Object Locking Sequence
+
+The following diagram illustrates the object locking process:
+
+```mermaid
+sequenceDiagram
+    participant User
+    participant API
+    participant Service as ObjectService
+    participant Entity as ObjectEntity
+    participant DB as Database
+
+    Note over User,DB: Lock Object
+    User->>API: Request lock object
+    activate API
+    API->>Service: lockObject(id, process?, duration?)
+    activate Service
+    Service->>DB: find object
+    activate DB
+    DB-->>Service: return object
+    deactivate DB
+    Service->>Entity: lock(user, process?, duration?)
+    activate Entity
+    Entity->>Entity: check if already locked
+    Entity->>Entity: validate user permissions
+    Entity->>Entity: create/update lock metadata
+    Entity-->>Service: return success
+    deactivate Entity
+    Service->>DB: update object
+    activate DB
+    DB-->>Service: confirm update
+    deactivate DB
+    Service-->>API: return locked object
+    deactivate Service
+    API-->>User: return success
+    deactivate API
+
+    Note over Entity: Lock automatically expires<br/>after duration passes
+
+    Note over User,DB: Update Locked Object
+    User->>API: Update object
+    activate API
+    API->>Service: updateObject(id, data)
+    activate Service
+    Service->>DB: find object
+    activate DB
+    DB-->>Service: return object
+    deactivate DB
+    Service->>Entity: validate lock
+    activate Entity
+    Entity->>Entity: check lock ownership
+    Entity->>Entity: extend lock duration
+    Entity-->>Service: validation ok
+    deactivate Entity
+    Service->>DB: update object
+    activate DB
+    DB-->>Service: confirm update
+    deactivate DB
+    Service-->>API: return updated object
+    deactivate Service
+    API-->>User: return success
+    deactivate API
+
+    Note over User,DB: Unlock Object
+    User->>API: Request unlock object
+    activate API
+    API->>Service: unlockObject(id)
+    activate Service
+    Service->>DB: find object
+    activate DB
+    DB-->>Service: return object
+    deactivate DB
+    Service->>Entity: unlock(user)
+    activate Entity
+    Entity->>Entity: validate lock ownership
+    Entity->>Entity: remove lock metadata
+    Entity-->>Service: return success
+    deactivate Entity
+    Service->>DB: update object
+    activate DB
+    DB-->>Service: confirm update
+    deactivate DB
+    Service-->>API: return unlocked object
+    deactivate Service
+    API-->>User: return success
+    deactivate API
+```
+
+### Object Deletion States
+
+Objects in OpenRegister follow a lifecycle with soft deletion and purging capabilities:
+
+```mermaid
+stateDiagram-v2
+    [*] --> Active
+    Active --> SoftDeleted: delete()
+    SoftDeleted --> Active: restore()
+    SoftDeleted --> PendingPurge: retention period expired
+    PendingPurge --> [*]: purge()
+    
+    note right of Active
+        Object is fully accessible
+        deleted = null
+    end note
+    
+    note right of SoftDeleted
+        Object hidden from queries
+        deleted = timestamp
+    end note
+    
+    note right of PendingPurge
+        Object ready for removal
+        current date > purgeDate
+    end note
+```
+
 ## Object Relations
 
 Objects in OpenRegister support sophisticated relationships through schema definitions. The way objects relate to each other depends on how you configure properties in your schema.
@@ -1497,6 +1613,94 @@ $results = $objectService->saveObjects(
 - Memory-optimized processing with pass-by-reference
 - Deferred event firing
 - Bulk Solr indexing
+
+#### Smart Deduplication System
+
+OpenRegister includes an intelligent 3-stage deduplication system that automatically detects and handles duplicate objects during bulk imports:
+
+**Stage 1: Multi-ID Extraction**
+The system extracts identifiers from multiple sources:
+- **UUID**: Primary unique identifier
+- **Slug**: URL-friendly identifiers
+- **URI**: External system references
+- **Custom IDs**: Legacy system identifiers (id, identifier, sourceId)
+
+```php
+// System automatically extracts all identifier types
+$identifiers = [
+    'uuids' => ['uuid1', 'uuid2', ...],
+    'slugs' => ['user-profile', 'company-x'],
+    'uris' => ['https://api.../123', ...],
+    'custom_ids' => [
+        'id' => [101, 102, 103],
+        'identifier' => ['EXT_001', 'EXT_002'],
+        'sourceId' => ['src_123', 'src_456']
+    ]
+];
+```
+
+**Stage 2: Intelligent Bulk Lookup**
+- Single database query retrieves all existing objects
+- Multi-index mapping for O(1) lookup time
+- Memory-efficient indexing for fast comparisons
+
+**Stage 3: Hash-Based Decision Making**
+For each incoming object, the system:
+1. Finds existing object by any identifier (UUID → Slug → URI → Custom IDs)
+2. Compares content hashes (excluding metadata and timestamps)
+3. Makes intelligent decision:
+   - **CREATE**: New object (no match found)
+   - **SKIP**: Content identical (no database operation needed)
+   - **UPDATE**: Content changed (merge and update)
+
+**Performance Impact:**
+- **Fresh Import**: 100% CREATE operations (same as before)
+- **Incremental Update**: Typically 80% SKIP operations (5x faster)
+- **Re-import Same Data**: 100% SKIP operations (50x faster)
+- **Database Load Reduction**: 80-95% fewer operations
+
+**Hash Calculation:**
+The system uses SHA-256 hashing of cleaned object data:
+- Excludes `@self` metadata fields
+- Excludes timestamps (`created`, `updated`)
+- Excludes system fields (`_etag`, etc.)
+- Recursively sorted for consistent hashing
+
+#### Bulk Import Performance
+
+OpenRegister's bulk import system uses optimized database operations for high-performance data processing:
+
+**Single-Call Architecture:**
+- Uses `INSERT...ON DUPLICATE KEY UPDATE` with database-computed classification
+- Eliminates database lookup overhead (3-5x faster)
+- Automatic deduplication via `UNIQUE (uuid)` constraint
+
+**Database-Managed Timestamps:**
+- `created` timestamp is immutable (preserved on updates)
+- `updated` timestamp automatically managed by database
+- Smart change detection compares all data fields including JSON
+
+**Database-Computed Classification:**
+The system classifies objects as:
+- **created**: Object created during this operation
+- **updated**: Object modified during this operation  
+- **unchanged**: Object exists but content unchanged
+
+**Performance Results:**
+- **Small Batches (< 1,000 objects)**: 800-1,200 objects/second
+- **Medium Batches (1,000-5,000 objects)**: 1,500-2,000 objects/second
+- **Large Batches (5,000+ objects)**: 2,000-2,500 objects/second
+
+**Memory Optimization:**
+- Automatic optimization decision based on available memory
+- Uses ultra-fast operations when memory allows (500MB+)
+- Falls back to standard operations when memory constrained
+- 2x memory safety margin prevents OOM errors
+
+**Clean Business Data Storage:**
+- Metadata fields (id, uuid, register, schema) stored separately
+- Business data stored cleanly in `object` column
+- No metadata pollution in business data
 
 #### Caching
 

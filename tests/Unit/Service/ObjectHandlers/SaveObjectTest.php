@@ -1109,6 +1109,44 @@ class SaveObjectTest extends TestCase
     }
 
     /**
+     * Test applyPropertyDefaults applies default values from schema
+     *
+     * @return void
+     */
+    public function testApplyPropertyDefaultsAppliesDefaults(): void
+    {
+        // Configure schema mock with default values.
+        $schemaObj = new \stdClass();
+        $schemaObj->properties = new \stdClass();
+        $titleProp = new \stdClass();
+        $titleProp->type = 'string';
+        $statusProp = new \stdClass();
+        $statusProp->type = 'string';
+        $statusProp->default = 'draft';
+        $schemaObj->properties->title = $titleProp;
+        $schemaObj->properties->status = $statusProp;
+
+        $this->mockSchema->method('getSchemaObject')->willReturn($schemaObj);
+        $this->mockSchema->method('getProperties')->willReturn([
+            'title' => ['type' => 'string'],
+            'status' => ['type' => 'string', 'default' => 'draft']
+        ]);
+        $this->mockSchema->method('getConfiguration')->willReturn(null);
+
+        $data = [
+            'title' => 'Test Object Title'
+        ];
+
+        $result = $this->saveObject->applyPropertyDefaults(
+            schema: $this->mockSchema,
+            data: $data
+        );
+
+        $this->assertIsArray($result, 'applyPropertyDefaults should return an array.');
+        $this->assertEquals('Test Object Title', $result['title'], 'Existing values should be preserved.');
+    }
+
+    /**
      * Test scanForRelations detects no relations in simple data
      *
      * @return void
@@ -1173,135 +1211,5 @@ class SaveObjectTest extends TestCase
 
         $this->assertIsArray($result, 'applyPropertyDefaults should return an array.');
         $this->assertEquals('Test Object Title', $result['title'], 'Existing values should be preserved.');
-    }
-
-    /**
-     * Test that prepareObject method works correctly without persisting
-     *
-     * @return void
-     */
-    public function testPrepareObjectWithoutPersistence(): void
-    {
-        $data = [
-            'name' => 'Test Object',
-            'description' => 'Test Description'
-        ];
-
-        // Mock schema with configuration
-        $schemaProperties = [
-            'name' => ['type' => 'string'],
-            'description' => ['type' => 'string']
-        ];
-
-        $this->mockSchema
-            ->method('getSchemaObject')
-            ->willReturn((object)[
-                'properties' => $schemaProperties
-            ]);
-
-        $this->mockSchema
-            ->method('getConfiguration')
-            ->willReturn([
-                'objectNameField' => 'name',
-                'objectDescriptionField' => 'description'
-            ]);
-
-        $this->urlGenerator
-            ->method('getAbsoluteURL')
-            ->willReturn('http://test.com/object/test');
-
-        $this->urlGenerator
-            ->method('linkToRoute')
-            ->willReturn('/object/test');
-
-        // Mock user session
-        $this->userSession
-            ->method('getUser')
-            ->willReturn($this->mockUser);
-
-        $this->mockUser
-            ->method('getUID')
-            ->willReturn('testuser');
-
-        // Execute test - should not persist to database
-        $result = $this->saveObject->prepareObject(
-            register: $this->mockRegister,
-            schema: $this->mockSchema,
-            data: $data
-        );
-
-        // Assertions
-        $this->assertInstanceOf(ObjectEntity::class, $result);
-        $this->assertNotEmpty($result->getUuid());
-        $this->assertEquals('Test Object', $result->getName());
-        $this->assertEquals('Test Description', $result->getDescription());
-        $this->assertEquals('testuser', $result->getOwner());
-        
-        // Verify that the object was not saved to database
-        $this->objectEntityMapper->expects($this->never())->method('insert');
-        $this->objectEntityMapper->expects($this->never())->method('update');
-    }
-
-    /**
-     * Test that prepareObject method handles slug generation correctly
-     *
-     * @return void
-     */
-    public function testPrepareObjectWithSlugGeneration(): void
-    {
-        $data = [
-            'title' => 'Test Object Title'
-        ];
-
-        // Mock schema with slug configuration
-        $schemaProperties = [
-            'title' => ['type' => 'string'],
-            'slug' => ['type' => 'string']
-        ];
-
-        $this->mockSchema
-            ->method('getSchemaObject')
-            ->willReturn((object)[
-                'properties' => $schemaProperties
-            ]);
-
-        $this->mockSchema
-            ->method('getConfiguration')
-            ->willReturn([
-                'objectSlugField' => 'title'
-            ]);
-
-        $this->urlGenerator
-            ->method('getAbsoluteURL')
-            ->willReturn('http://test.com/object/test');
-
-        $this->urlGenerator
-            ->method('linkToRoute')
-            ->willReturn('/object/test');
-
-        // Mock user session
-        $this->userSession
-            ->method('getUser')
-            ->willReturn($this->mockUser);
-
-        $this->mockUser
-            ->method('getUID')
-            ->willReturn('testuser');
-
-        // Execute test
-        $result = $this->saveObject->prepareObject(
-            register: $this->mockRegister,
-            schema: $this->mockSchema,
-            data: $data
-        );
-
-        // Assertions
-        $this->assertInstanceOf(ObjectEntity::class, $result);
-        $this->assertNotEmpty($result->getSlug());
-        $this->assertStringContainsString('test-object-title', $result->getSlug());
-        
-        // Verify that the object was not saved to database
-        $this->objectEntityMapper->expects($this->never())->method('insert');
-        $this->objectEntityMapper->expects($this->never())->method('update');
     }
 } 

@@ -1,4 +1,5 @@
 <?php
+
 /**
  * OpenRegister Schema Property Validator
  *
@@ -17,25 +18,20 @@
  * @link https://www.OpenRegister.app
  */
 
-namespace OCA\OpenRegister\Service;
+namespace OCA\OpenRegister\Service\Schemas;
 
 use Exception;
 use Psr\Log\LoggerInterface;
 
 /**
- * Class SchemaPropertyValidatorService
+ * Class PropertyValidatorHandler
  *
  * Service class for validating schema properties according to JSON Schema specification
+ *
+ * @SuppressWarnings(PHPMD.ExcessiveClassComplexity) Complex JSON Schema property validation logic
  */
-class SchemaPropertyValidatorService
+class PropertyValidatorHandler
 {
-
-    /**
-     * Logger instance for logging operations
-     *
-     * @var LoggerInterface The logger instance
-     */
-    private LoggerInterface $logger;
 
     /**
      * Valid JSON Schema types
@@ -60,11 +56,11 @@ class SchemaPropertyValidatorService
      */
     private array $validStringFormats = [
         '',
-        // Text content formats
+        // Text content formats.
         'text',
         'markdown',
         'html',
-        // Standard JSON Schema formats
+        // Standard JSON Schema formats.
         'date-time',
         'date',
         'time',
@@ -103,19 +99,6 @@ class SchemaPropertyValidatorService
         'semver',
     ];
 
-
-    /**
-     * Constructor
-     *
-     * @param LoggerInterface $logger The logger instance
-     */
-    public function __construct(LoggerInterface $logger)
-    {
-        $this->logger = $logger;
-
-    }//end __construct()
-
-
     /**
      * Validate a property definition against JSON Schema rules
      *
@@ -123,13 +106,19 @@ class SchemaPropertyValidatorService
      * @param string $path     The current path in the schema (for error messages)
      *
      * @throws Exception If the property definition is invalid
-     * @return bool True if the property is valid
+     *
+     * @return true True if the property is valid
+     *
+     * @psalm-suppress PossiblyUnusedReturnValue
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity) Complex JSON Schema property validation with multiple type checks
+     * @SuppressWarnings(PHPMD.NPathComplexity)      Multiple validation paths for different property types
      */
     public function validateProperty(array $property, string $path=''): bool
     {
         // If property has oneOf, treat the contents as separate properties and return the result of those checks.
-        if (isset($property['oneOf']) === true) {
-            return $this->validateProperties($property['oneOf'], $path.'/oneOf');
+        if (($property['oneOf'] ?? null) !== null) {
+            return $this->validateProperties(properties: $property['oneOf'], path: $path.'/oneOf');
         }
 
         // Type is required.
@@ -145,70 +134,91 @@ class SchemaPropertyValidatorService
         }
 
         // Validate string format if present.
-        if ($property['type'] === 'string' && isset($property['format']) === true) {
+        if ($property['type'] === 'string' && (($property['format'] ?? null) !== null)) {
             if (in_array($property['format'], $this->validStringFormats) === false) {
-                throw new Exception(
-                    "Invalid string format '{$property['format']}' at '$path'. Must be one of: ".implode(', ', $this->validStringFormats)
-                );
+                $validFormats = implode(', ', $this->validStringFormats);
+                $message      = "Invalid string format '{$property['format']}' at '$path'. Must be one of: $validFormats";
+                throw new Exception($message);
             }
         }
 
         // Validate array items if type is array.
-        if ($property['type'] === 'array' && isset($property['items']) === true && isset($property['items']['$ref']) === false) {
-            $this->validateProperty($property['items'], $path.'/items');
+        $hasItems = ($property['items'] ?? null) !== null;
+        if ($property['type'] === 'array' && $hasItems === true && isset($property['items']['$ref']) === false) {
+            $this->validateProperty(property: $property['items'], path: $path.'/items');
         }
 
         // Validate nested properties if type is object.
-        if ($property['type'] === 'object' && isset($property['properties']) === true) {
-            $this->validateProperties($property['properties'], $path.'/properties');
+        if ($property['type'] === 'object' && (($property['properties'] ?? null) !== null)) {
+            $this->validateProperties(properties: $property['properties'], path: $path.'/properties');
         }
 
         // Validate minimum/maximum for numeric types.
-        if (in_array($property['type'], ['number', 'integer']) === true) {
-            if (isset($property['minimum']) === true && is_numeric($property['minimum']) === false) {
+        if (in_array($property['type'], ['number', 'integer'], true) === true) {
+            if (($property['minimum'] ?? null) !== null && is_numeric($property['minimum']) === false) {
                 throw new Exception("'minimum' at '$path' must be numeric");
             }
 
-            if (isset($property['maximum']) === true && is_numeric($property['maximum']) === false) {
+            if (($property['maximum'] ?? null) !== null && is_numeric($property['maximum']) === false) {
                 throw new Exception("'maximum' at '$path' must be numeric");
             }
 
-            if (isset($property['minimum'], $property['maximum']) === true && $property['minimum'] > $property['maximum']) {
+            if (($property['minimum'] ?? null) !== null
+                && ($property['maximum'] ?? null) !== null
+                && ($property['minimum'] > $property['maximum']) === true
+            ) {
                 throw new Exception("'minimum' cannot be greater than 'maximum' at '$path'");
             }
         }
 
-        // Validate file properties if type is file
+        // Validate file properties if type is file.
         if ($property['type'] === 'file') {
-            $this->validateFileProperty($property, $path);
+            $this->validateFileProperty(property: $property, path: $path);
         }
 
         // Validate enum values if present.
-        if (isset($property['enum']) === true) {
+        if (($property['enum'] ?? null) !== null) {
             if (is_array($property['enum']) === false || empty($property['enum']) === true) {
                 throw new Exception("'enum' at '$path' must be a non-empty array");
             }
         }
 
-        // Validate visible property if present
-        if (isset($property['visible']) === true && is_bool($property['visible']) === false) {
+        // Validate visible property if present.
+        if (($property['visible'] ?? null) !== null && is_bool($property['visible']) === false) {
             throw new Exception("'visible' at '$path' must be a boolean");
         }
 
-        // Validate hideOnCollection property if present
-        if (isset($property['hideOnCollection']) === true && is_bool($property['hideOnCollection']) === false) {
+        // Validate hideOnCollection property if present.
+        if (($property['hideOnCollection'] ?? null) !== null && is_bool($property['hideOnCollection']) === false) {
             throw new Exception("'hideOnCollection' at '$path' must be a boolean");
         }
 
-        // Validate hideOnForm property if present
-        if (isset($property['hideOnForm']) === true && is_bool($property['hideOnForm']) === false) {
+        // Validate hideOnForm property if present.
+        if (($property['hideOnForm'] ?? null) !== null && is_bool($property['hideOnForm']) === false) {
             throw new Exception("'hideOnForm' at '$path' must be a boolean");
         }
 
+        // Validate onDelete property if present.
+        if (($property['onDelete'] ?? null) !== null) {
+            // OnDelete is only valid on relation properties (those with $ref).
+            $hasRef = isset($property['$ref']) === true
+                || (isset($property['items']['$ref']) === true);
+            if ($hasRef === false) {
+                throw new Exception("'onDelete' at '$path' is only valid on relation properties with '\$ref'");
+            }
+
+            $validActions = ['CASCADE', 'RESTRICT', 'SET_NULL', 'SET_DEFAULT', 'NO_ACTION'];
+            $upperValue   = strtoupper((string) $property['onDelete']);
+            if (in_array($upperValue, $validActions, true) === false) {
+                $validList = implode(', ', $validActions);
+                throw new Exception(
+                    "Invalid onDelete value '{$property['onDelete']}' at '$path'. Must be one of: {$validList}"
+                );
+            }
+        }
+
         return true;
-
     }//end validateProperty()
-
 
     /**
      * Validate an entire properties object
@@ -217,7 +227,8 @@ class SchemaPropertyValidatorService
      * @param string $path       The current path in the schema
      *
      * @throws Exception If any property definition is invalid
-     * @return bool True if all properties are valid
+     *
+     * @return true True if all properties are valid
      */
     public function validateProperties(array $properties, string $path=''): bool
     {
@@ -226,37 +237,11 @@ class SchemaPropertyValidatorService
                 throw new Exception("Property '$propertyName' at '$path' must be an object");
             }
 
-            $this->validateProperty($property, $path.'/'.$propertyName);
+            $this->validateProperty(property: $property, path: $path.'/'.$propertyName);
         }
 
         return true;
-
     }//end validateProperties()
-
-
-    /**
-     * Get the list of valid types
-     *
-     * @return array<string> List of valid JSON Schema types
-     */
-    public function getValidTypes(): array
-    {
-        return $this->validTypes;
-
-    }//end getValidTypes()
-
-
-    /**
-     * Get the list of valid string formats
-     *
-     * @return array<string> List of valid string formats
-     */
-    public function getValidStringFormats(): array
-    {
-        return $this->validStringFormats;
-
-    }//end getValidStringFormats()
-
 
     /**
      * Validate file-specific properties
@@ -268,37 +253,45 @@ class SchemaPropertyValidatorService
      * @param string $path     The current path in the schema (for error messages)
      *
      * @throws Exception If the file property configuration is invalid
-     * @return bool True if the file property is valid
      *
-     * @psalm-param    array<string, mixed> $property
-     * @phpstan-param  array<string, mixed> $property
+     * @return true
+     *
+     * @psalm-param array<string, mixed> $property
+     *
+     * @phpstan-param array<string, mixed> $property
+     *
      * @psalm-return   bool
      * @phpstan-return bool
+     *
+     * @psalm-suppress UnusedReturnValue
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity) Multiple file property validations
+     * @SuppressWarnings(PHPMD.NPathComplexity)      Multiple validation paths for file properties
      */
     private function validateFileProperty(array $property, string $path): bool
     {
-        // Validate allowedTypes if present
-        if (isset($property['allowedTypes'])) {
-            if (!is_array($property['allowedTypes'])) {
+        // Validate allowedTypes if present.
+        if (($property['allowedTypes'] ?? null) !== null) {
+            if (is_array($property['allowedTypes']) === false) {
                 throw new Exception("'allowedTypes' at '$path' must be an array");
             }
 
-            // Validate each MIME type
+            // Validate each MIME type.
             foreach ($property['allowedTypes'] as $index => $mimeType) {
-                if (!is_string($mimeType)) {
+                if (is_string($mimeType) === false) {
                     throw new Exception("'allowedTypes[$index]' at '$path' must be a string");
                 }
 
-                // Basic MIME type validation (type/subtype)
-                if (!preg_match('/^[a-zA-Z0-9][a-zA-Z0-9!#$&\-\^_]*\/[a-zA-Z0-9][a-zA-Z0-9!#$&\-\^_.]*$/', $mimeType)) {
+                // Basic MIME type validation (type/subtype).
+                if (preg_match('/^[a-zA-Z0-9][a-zA-Z0-9!#$&\-\^_]*\/[a-zA-Z0-9][a-zA-Z0-9!#$&\-\^_.]*$/', $mimeType) === 0) {
                     throw new Exception("'allowedTypes[$index]' at '$path' contains invalid MIME type format: '$mimeType'");
                 }
             }
         }
 
-        // Validate maxSize if present
-        if (isset($property['maxSize'])) {
-            if (!is_int($property['maxSize']) && !is_numeric($property['maxSize'])) {
+        // Validate maxSize if present.
+        if (($property['maxSize'] ?? null) !== null) {
+            if (is_int($property['maxSize']) === false && is_numeric($property['maxSize']) === false) {
                 throw new Exception("'maxSize' at '$path' must be a numeric value");
             }
 
@@ -307,24 +300,24 @@ class SchemaPropertyValidatorService
                 throw new Exception("'maxSize' at '$path' must be a positive number");
             }
 
-            // Reasonable upper limit (100MB)
+            // Reasonable upper limit (100MB).
             if ($maxSize > 104857600) {
                 throw new Exception("'maxSize' at '$path' exceeds maximum allowed size (100MB)");
             }
         }
 
-        // Validate allowedTags if present
-        if (isset($property['allowedTags'])) {
-            if (!is_array($property['allowedTags'])) {
+        // Validate allowedTags if present.
+        if (($property['allowedTags'] ?? null) !== null) {
+            if (is_array($property['allowedTags']) === false) {
                 throw new Exception("'allowedTags' at '$path' must be an array");
             }
 
             foreach ($property['allowedTags'] as $index => $tag) {
-                if (!is_string($tag)) {
+                if (is_string($tag) === false) {
                     throw new Exception("'allowedTags[$index]' at '$path' must be a string");
                 }
 
-                // Basic tag validation (no empty strings, reasonable length)
+                // Basic tag validation (no empty strings, reasonable length).
                 if (trim($tag) === '') {
                     throw new Exception("'allowedTags[$index]' at '$path' cannot be empty");
                 }
@@ -335,18 +328,18 @@ class SchemaPropertyValidatorService
             }
         }
 
-        // Validate autoTags if present
-        if (isset($property['autoTags'])) {
-            if (!is_array($property['autoTags'])) {
+        // Validate autoTags if present.
+        if (($property['autoTags'] ?? null) !== null) {
+            if (is_array($property['autoTags']) === false) {
                 throw new Exception("'autoTags' at '$path' must be an array");
             }
 
             foreach ($property['autoTags'] as $index => $tag) {
-                if (!is_string($tag)) {
+                if (is_string($tag) === false) {
                     throw new Exception("'autoTags[$index]' at '$path' must be a string");
                 }
 
-                // Basic tag validation (no empty strings, reasonable length)
+                // Basic tag validation (no empty strings, reasonable length).
                 if (trim($tag) === '') {
                     throw new Exception("'autoTags[$index]' at '$path' cannot be empty");
                 }
@@ -358,8 +351,5 @@ class SchemaPropertyValidatorService
         }
 
         return true;
-
     }//end validateFileProperty()
-
-
 }//end class

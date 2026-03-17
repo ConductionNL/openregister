@@ -1,4 +1,5 @@
 <?php
+
 /**
  * OpenRegister Audit Trail
  *
@@ -29,6 +30,40 @@ use OCP\AppFramework\Db\Entity;
  * Manages audit trail data and operations
  *
  * @package OCA\OpenRegister\Db
+ *
+ * @method string|null getUuid()
+ * @method void setUuid(?string $uuid)
+ * @method int|null getSchema()
+ * @method void setSchema(?int $schema)
+ * @method int|null getRegister()
+ * @method void setRegister(?int $register)
+ * @method int|null getObject()
+ * @method void setObject(?int $object)
+ * @method int|null getSize()
+ * @method void setSize(?int $size)
+ * @method string|null getObjectUuid()
+ * @method void setObjectUuid(?string $objectUuid)
+ * @method string|null getRegisterUuid()
+ * @method void setRegisterUuid(?string $registerUuid)
+ * @method string|null getSchemaUuid()
+ * @method void setSchemaUuid(?string $schemaUuid)
+ * @method string|null getAction()
+ * @method void setAction(?string $action)
+ * @method array|null getChanged()
+ * @method void setChanged(?array $changed)
+ * @method string|null getUser()
+ * @method void setUser(?string $user)
+ * @method string|null getUserName()
+ * @method void setUserName(?string $userName)
+ * @method DateTime|null getCreated()
+ * @method void setCreated(?DateTime $created)
+ * @method string|null getOrganisation()
+ * @method void setOrganisation(?string $organisation)
+ *
+ * @psalm-suppress PossiblyUnusedMethod
+ * @psalm-suppress PropertyNotSetInConstructor $id is set by Nextcloud's Entity base class
+ *
+ * @SuppressWarnings(PHPMD.TooManyFields) Domain entity requires many fields for complete audit trail data
  */
 class AuditTrail extends Entity implements JsonSerializable
 {
@@ -220,7 +255,6 @@ class AuditTrail extends Entity implements JsonSerializable
      */
     protected ?DateTime $expires = null;
 
-
     /**
      * Constructor for the AuditTrail class
      *
@@ -253,9 +287,7 @@ class AuditTrail extends Entity implements JsonSerializable
         $this->addType(fieldName: 'retentionPeriod', type: 'string');
         $this->addType(fieldName: 'size', type: 'integer');
         $this->addType(fieldName: 'expires', type: 'datetime');
-
     }//end __construct()
-
 
     /**
      * Get the changed data
@@ -265,16 +297,16 @@ class AuditTrail extends Entity implements JsonSerializable
     public function getChanged(): array
     {
         return ($this->changed ?? []);
-
     }//end getChanged()
-
 
     /**
      * Get JSON fields from the entity
      *
      * Returns all fields that are of type 'json'
      *
-     * @return array<string> List of JSON field names
+     * @return string[] List of JSON field names
+     *
+     * @psalm-return list<string>
      */
     public function getJsonFields(): array
     {
@@ -286,9 +318,7 @@ class AuditTrail extends Entity implements JsonSerializable
                 }
             )
         );
-
     }//end getJsonFields()
-
 
     /**
      * Hydrate the entity with data from an array
@@ -297,9 +327,9 @@ class AuditTrail extends Entity implements JsonSerializable
      *
      * @param array $object The data array to hydrate from
      *
-     * @return self Returns $this for method chaining
+     * @return static Returns $this for method chaining
      */
-    public function hydrate(array $object): self
+    public function hydrate(array $object): static
     {
         $jsonFields = $this->getJsonFields();
 
@@ -318,26 +348,53 @@ class AuditTrail extends Entity implements JsonSerializable
         }
 
         return $this;
-
     }//end hydrate()
-
 
     /**
      * Convert entity to JSON serializable array
      *
      * Prepares the entity data for JSON serialization
      *
-     * @return array<string, mixed> Array of serializable entity data
+     * @return (array|int|null|string)[] Array of serializable entity data
+     *
+     * @psalm-return array{
+     *     id: int,
+     *     uuid: null|string,
+     *     schema: int|null,
+     *     register: int|null,
+     *     object: int|null,
+     *     objectUuid: null|string,
+     *     registerUuid: null|string,
+     *     schemaUuid: null|string,
+     *     action: null|string,
+     *     changed: array|null,
+     *     user: null|string,
+     *     userName: null|string,
+     *     session: null|string,
+     *     request: null|string,
+     *     ipAddress: null|string,
+     *     version: null|string,
+     *     created: null|string,
+     *     organisationId: null|string,
+     *     organisationIdType: null|string,
+     *     processingActivityId: null|string,
+     *     processingActivityUrl: null|string,
+     *     processingId: null|string,
+     *     confidentiality: null|string,
+     *     retentionPeriod: null|string,
+     *     size: int|null,
+     *     expires: null|string
+     * }
      */
     public function jsonSerialize(): array
     {
         $created = null;
-        if (isset($this->created) === true) {
+        if ($this->created !== null) {
             $created = $this->created->format('c');
         }
 
         $expires = null;
-        if (isset($this->expires) === true) {
+        if ($this->expires !== null) {
             $expires = $this->expires->format('c');
         }
 
@@ -369,9 +426,7 @@ class AuditTrail extends Entity implements JsonSerializable
             'size'                  => $this->size,
             'expires'               => $expires,
         ];
-
     }//end jsonSerialize()
-
 
     /**
      * String representation of the audit trail
@@ -383,25 +438,22 @@ class AuditTrail extends Entity implements JsonSerializable
      */
     public function __toString(): string
     {
-        // Return the UUID if available, otherwise return a descriptive string
+        // Return the UUID if available, otherwise return a descriptive string.
         if ($this->uuid !== null && $this->uuid !== '') {
             return $this->uuid;
         }
 
-        // Fallback to action if available
+        // Fallback to action if available.
         if ($this->action !== null && $this->action !== '') {
             return 'Audit: '.$this->action;
         }
 
-        // Fallback to ID if available
+        // Fallback to ID if available.
         if ($this->id !== null) {
             return 'AuditTrail #'.$this->id;
         }
 
-        // Final fallback
+        // Final fallback.
         return 'Audit Trail';
-
     }//end __toString()
-
-
 }//end class

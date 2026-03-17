@@ -77,8 +77,8 @@ docker exec openregister-ollama ollama pull codellama:latest
    - **Embedding Model**: `nomic-embed-text:latest`
    - **Why not localhost?** OpenRegister runs inside Nextcloud container; use container name instead
 
-**Standalone Setup (docker-compose.ollama.yml):**
-   - **Via Docker Network** (recommended): `http://standalone-ollama:11434` (after connecting networks)
+**Standalone Setup** (using `--profile ollama`):
+   - **Via Docker Network**: `http://openregister-ollama:11434` (from Nextcloud container)
    - **Via Host IP**: `http://YOUR_HOST_IP:11434` (e.g., `http://192.168.1.100:11434`)
    - **Different Host**: `http://your-server-ip:11434`
    - ❌ **NOT**: `http://localhost:11434` (won't work from inside container)
@@ -374,14 +374,14 @@ Running Ollama standalone is ideal for:
 ### Start Standalone Ollama
 
 ```bash
-# From the openregister directory
-docker-compose -f docker-compose.ollama.yml up -d
+# From the openregister directory (using ollama profile)
+docker-compose -f docker-compose.dev.yml --profile ollama up -d
 
 # Check status
-docker-compose -f docker-compose.ollama.yml ps
+docker-compose -f docker-compose.dev.yml --profile ollama ps
 
 # View logs
-docker-compose -f docker-compose.ollama.yml logs -f ollama
+docker-compose -f docker-compose.dev.yml --profile ollama logs -f ollama
 ```
 
 ### Configure OpenRegister for Standalone
@@ -619,7 +619,7 @@ docker-compose restart ollama
 - **Ollama Documentation**: https://ollama.ai/
 - **Model Library**: https://ollama.ai/library
 - **GitHub**: https://github.com/ollama/ollama
-- **OpenRegister AI Docs**: See [AI Features](../features/ai.md)
+- **OpenRegister AI Docs**: See [AI Features](../Features/ai.md)
 
 ## FAQ
 

@@ -1207,8 +1207,8 @@ The following old endpoints have been removed:
 
 ### Related Documentation
 
-- [Vector Search Backends](./vector-search-backends.md) - Complete vector backend guide
-- [Vectorization Architecture](./vectorization-architecture.md) - How vectors are generated
+- [Vector Search Backends](./vectorization.md#vector-search-backends) - Complete vector backend guide
+- [Vectorization Architecture](../Technical/vectorization-architecture.md) - How vectors are generated
 - [Solr Development Troubleshooting](../development/solr-development.md) - Development troubleshooting guide
 
 This comprehensive setup process ensures reliable, performant, and maintainable SOLR integration with proper tenant isolation and pre-configured system fields for optimal runtime performance.

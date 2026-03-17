@@ -78,11 +78,219 @@ Files (documents, images, spreadsheets, etc.) are processed through text extract
 
 ### File Processing Flow
 
+The file processing flow varies based on the extraction mode configured. Each mode provides different timing and processing characteristics:
+
+#### Extraction Modes Overview
+
+```mermaid
+graph TB
+    Upload[File Upload Event] --> Mode{Extraction Mode?}
+    
+    Mode -->|Immediate| ImmediateFlow[Immediate Processing]
+    Mode -->|Background Job| BackgroundFlow[Background Job Processing]
+    Mode -->|Cron Job| CronFlow[Cron Job Processing]
+    Mode -->|Manual Only| ManualFlow[Manual Processing]
+    
+    ImmediateFlow --> Sync[Process Synchronously]
+    BackgroundFlow --> Queue[Queue Background Job]
+    CronFlow --> Skip[Skip - Wait for Cron]
+    ManualFlow --> SkipManual[Skip - Wait for Manual Trigger]
+    
+    Sync --> Extract[Extract Text]
+    Queue --> Job[Background Job Executes]
+    Job --> Extract
+    
+    Extract --> Store[(Store in FileText Entity)]
+    Store --> Chunk[Continue to Chunking]
+    
+    style Upload fill:#4caf50
+    style ImmediateFlow fill:#2196f3
+    style BackgroundFlow fill:#ff9800
+    style CronFlow fill:#9c27b0
+    style ManualFlow fill:#607d8b
+    style Extract fill:#fff9c4
+    style Store fill:#b39ddb
+    style Chunk fill:#4caf50
+```
+
+#### 1. Immediate Mode - Direct Link Processing
+
+```mermaid
+sequenceDiagram
+    participant User as User
+    participant NC as Nextcloud
+    participant Listener as FileChangeListener
+    participant Service as TextExtractionService
+    participant Engine as Extraction Engine
+    participant DB as Database
+    
+    User->>NC: Upload File
+    NC->>Listener: File Created Event
+    Listener->>Listener: Check Extraction Mode = 'immediate'
+    Listener->>Service: extractFile() Synchronously
+    Note over Service: Direct link between upload<br/>and parsing logic
+    Service->>Engine: Extract Text
+    Engine-->>Service: Text Content
+    Service->>Service: Chunk Text
+    Service->>DB: Store FileText Entity
+    DB-->>Service: Stored
+    Service-->>Listener: Extraction Complete
+    Listener-->>NC: Upload Complete
+    NC-->>User: Upload Success
+    
+    Note over User,DB: User waits for extraction<br/>to complete before upload finishes
+```
+
+**Characteristics:**
+- **Direct Link**: File upload and parsing logic are directly connected
+- **Synchronous**: Processing happens during the upload request
+- **User Experience**: User waits for extraction to complete
+- **Use Case**: When immediate text availability is critical
+- **Performance**: May slow down file uploads for large files
+
+#### 2. Background Job Mode - Delayed Extraction
+
+```mermaid
+sequenceDiagram
+    participant User as User
+    participant NC as Nextcloud
+    participant Listener as FileChangeListener
+    participant JobQueue as Job Queue
+    participant Job as FileTextExtractionJob
+    participant Service as TextExtractionService
+    participant Engine as Extraction Engine
+    participant DB as Database
+    
+    User->>NC: Upload File
+    NC->>Listener: File Created Event
+    Listener->>Listener: Check Extraction Mode = 'background'
+    Listener->>JobQueue: Queue FileTextExtractionJob
+    JobQueue-->>Listener: Job Queued
+    Listener-->>NC: Upload Complete
+    NC-->>User: Upload Success (Immediate)
+    
+    Note over JobQueue: Job executes asynchronously<br/>when resources available
+    
+    JobQueue->>Job: Execute Job
+    Job->>Service: extractFile()
+    Service->>Engine: Extract Text
+    Engine-->>Service: Text Content
+    Service->>Service: Chunk Text
+    Service->>DB: Store FileText Entity
+    DB-->>Service: Stored
+    Service-->>Job: Extraction Complete
+    
+    Note over User,DB: User doesn't wait - extraction<br/>happens in background
+```
+
+**Characteristics:**
+- **Delayed Action**: Extraction happens after upload completes
+- **Asynchronous**: Processing on the job stack, non-blocking
+- **User Experience**: Upload completes immediately
+- **Use Case**: Recommended for most scenarios (best performance)
+- **Performance**: No impact on upload speed
+
+#### 3. Cron Job Mode - Periodic Batch Processing
+
+```mermaid
+sequenceDiagram
+    participant User as User
+    participant NC as Nextcloud
+    participant Listener as FileChangeListener
+    participant CronJob as CronFileTextExtractionJob
+    participant Service as TextExtractionService
+    participant Engine as Extraction Engine
+    participant DB as Database
+    
+    User->>NC: Upload File
+    NC->>Listener: File Created Event
+    Listener->>Listener: Check Extraction Mode = 'cron'
+    Listener->>Listener: Skip Processing
+    Listener-->>NC: Upload Complete
+    NC-->>User: Upload Success
+    
+    Note over CronJob: Cron job runs every 15 minutes<br/>(configurable interval)
+    
+    CronJob->>CronJob: Check for Pending Files
+    CronJob->>CronJob: Get Batch of Files
+    loop For Each File in Batch
+        CronJob->>Service: extractFile()
+        Service->>Engine: Extract Text
+        Engine-->>Service: Text Content
+        Service->>Service: Chunk Text
+        Service->>DB: Store FileText Entity
+    end
+    DB-->>CronJob: Batch Complete
+    
+    Note over User,DB: Files processed in batches<br/>at scheduled intervals
+```
+
+**Characteristics:**
+- **Repeating Action**: Periodic batch processing via scheduled jobs
+- **Batch Processing**: Multiple files processed together
+- **User Experience**: Upload completes immediately, extraction happens later
+- **Use Case**: When you want to control processing load and timing
+- **Performance**: Efficient batch processing, predictable load
+
+#### 4. Manual Only Mode - User-Triggered Processing
+
+```mermaid
+sequenceDiagram
+    participant User as User
+    participant NC as Nextcloud
+    participant Listener as FileChangeListener
+    participant UI as Settings UI
+    participant Service as TextExtractionService
+    participant Engine as Extraction Engine
+    participant DB as Database
+    
+    User->>NC: Upload File
+    NC->>Listener: File Created Event
+    Listener->>Listener: Check Extraction Mode = 'manual'
+    Listener->>Listener: Skip Processing
+    Listener-->>NC: Upload Complete
+    NC-->>User: Upload Success
+    
+    Note over User,DB: File remains unprocessed<br/>until manually triggered
+    
+    User->>UI: Click 'Extract Pending Files'
+    UI->>Service: extractPendingFiles()
+    Service->>Service: Get Pending Files
+    loop For Each Pending File
+        Service->>Engine: Extract Text
+        Engine-->>Service: Text Content
+        Service->>Service: Chunk Text
+        Service->>DB: Store FileText Entity
+    end
+    DB-->>Service: Batch Complete
+    Service-->>UI: Extraction Complete
+    UI-->>User: Success Message
+    
+    Note over User,DB: User controls when<br/>extraction happens
+```
+
+**Characteristics:**
+- **Manual Trigger**: Only processes when user explicitly triggers
+- **User Control**: Complete control over when extraction happens
+- **Use Case**: Selective processing, testing, or resource-constrained environments
+- **Performance**: No automatic processing overhead
+
+### Detailed File Processing Flow
+
 ```mermaid
 flowchart TD
     Start([File Upload Event]) --> Check{Check Extraction Scope}
     Check -->|Disabled| Skip[Skip Processing]
-    Check -->|Enabled| Type{Check File Type}
+    Check -->|Enabled| Mode{Check Extraction Mode}
+    
+    Mode -->|Immediate| Immediate[Process Synchronously]
+    Mode -->|Background| Queue[Queue Background Job]
+    Mode -->|Cron| SkipCron[Skip - Cron Will Handle]
+    Mode -->|Manual| SkipManual[Skip - Manual Only]
+    
+    Immediate --> Type{Check File Type}
+    Queue --> Wait[Wait for Job Execution]
+    Wait --> Type
     
     Type -->|Supported| Extract[Extract Text]
     Type -->|Unsupported| Skip
@@ -110,6 +318,10 @@ flowchart TD
     Store --> Chunk[Continue to Chunking]
     
     style Start fill:#4caf50
+    style Immediate fill:#2196f3
+    style Queue fill:#ff9800
+    style SkipCron fill:#9c27b0
+    style SkipManual fill:#607d8b
     style Text fill:#fff9c4
     style Store fill:#b39ddb
     style Chunk fill:#4caf50
@@ -447,7 +659,7 @@ graph LR
 |--------|-------|---------|
 | **Input Format** | Binary (PDF, DOCX, images) | Structured JSON data |
 | **Extraction** | Text extraction engines required | Property value concatenation |
-| **Processing Time** | Slow (2-60 seconds) | Fast (<1 second) |
+| **Processing Time** | Slow (2-60 seconds) | Fast (&lt;1 second) |
 | **Complexity** | High (OCR, parsing) | Low (string operations) |
 | **Chunk Count** | Many (10-1000+) | Few (1-10) |
 | **Update Frequency** | Rare (files are static) | Common (objects change often) |
@@ -521,8 +733,35 @@ User Search (in Dutch):
 ```
 Extract Text From: [All Files / Specific Folders / Object Files]
 Text Extractor: [LLPhant / Dolphin]
+Extraction Mode: [Immediate / Background Job / Cron Job / Manual Only]
 Chunking Strategy: [Recursive / Fixed Size]
 ```
+
+### Extraction Mode Selection Guide
+
+**Immediate Mode:**
+- ✅ Use when: Text must be available immediately after upload
+- ✅ Best for: Small files, critical workflows, real-time search requirements
+- ⚠️ Consider: May slow down uploads for large files
+- 📊 Performance: Synchronous processing during upload
+
+**Background Job Mode (Recommended):**
+- ✅ Use when: You want fast uploads with async processing
+- ✅ Best for: Most production scenarios, large files, high-volume uploads
+- ⚠️ Consider: Text may not be immediately available (typically seconds to minutes delay)
+- 📊 Performance: Non-blocking, optimal for user experience
+
+**Cron Job Mode:**
+- ✅ Use when: You want to control processing load and timing
+- ✅ Best for: Batch processing, predictable resource usage, scheduled maintenance windows
+- ⚠️ Consider: Text extraction happens at scheduled intervals (default: every 15 minutes)
+- 📊 Performance: Efficient batch processing, predictable system load
+
+**Manual Only Mode:**
+- ✅ Use when: You want complete control over when extraction happens
+- ✅ Best for: Testing, selective processing, resource-constrained environments
+- ⚠️ Consider: Requires manual intervention to trigger extraction
+- 📊 Performance: No automatic processing overhead
 
 ### Enabling Object Processing
 
@@ -550,10 +789,11 @@ Chunking Strategy: [Recursive / Fixed Size]
 
 ### For File-Heavy Workloads
 
-- Use background processing
+- Use **Background Job** or **Cron Job** mode for optimal performance
 - Enable Dolphin for images/complex PDFs
 - Use recursive chunking for better quality
 - Enable selective enhancements (not all at once)
+- Configure appropriate batch sizes for cron mode
 
 ### For Object-Heavy Workloads
 
@@ -628,6 +868,7 @@ By processing both files and objects into a common chunk format, OpenRegister cr
 ---
 
 **Next Steps**:
+- **[Text Extraction, Vectorization & Named Entity Recognition](../Features/text-extraction-vectorization-ner.md)** - Unified documentation for text extraction, vectorization, and NER
 - [Enhanced Text Extraction Documentation](./text-extraction-enhanced.md)
 - [GDPR Entity Tracking](./text-extraction-enhanced.md#gdpr-entity-register)
 - [Language Detection](./text-extraction-enhanced.md#language-detection--assessment)

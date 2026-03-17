@@ -80,5 +80,5 @@ These resources provide in-depth explanations, configurations, and troubleshooti
 ## Related Documentation
 
 - [Solr Setup and Configuration](../technical/solr-setup-configuration.md) - OpenRegister's Solr integration
-- [Text Extraction Implementation](../technical/text-extraction-implementation.md) - File text extraction
+- [Text Extraction Implementation](../technical/text-extraction.md) - File text extraction
 

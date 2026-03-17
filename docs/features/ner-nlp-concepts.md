@@ -573,7 +573,7 @@ Planned improvements to NER/NLP:
 ## Related Documentation
 
 - [Text Extraction Enhanced](./text-extraction-enhanced.md) - Complete text extraction pipeline
-- [Text Extraction Database Entities](../technical/text-extraction-entities.md) - Database schema
+- [Text Extraction Database Entities](../technical/text-extraction.md#database-schema) - Database schema
 - [Entity Relationships](../technical/entity-relationships-addition.md) - Entity data model
 - [GDPR Features](../Features/files.md) - GDPR compliance features
 

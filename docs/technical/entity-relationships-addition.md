@@ -483,7 +483,7 @@ Context-aware anonymization:
 
 ### Files Modified
 
-1. **[Text Extraction Database Entities](website/docs/technical/text-extraction-entities.md)**
+1. **[Text Extraction Database Entities](./text-extraction.md#database-schema)**
    - Updated Entity table schema with belongs_to_entity_id field
    - Updated EntityRelation table schema with role and source tracking fields
    - Complete PHP class updates with new methods

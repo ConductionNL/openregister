@@ -5,7 +5,7 @@
 
 echo "=== TOOLS TEST ===\n\n";
 
-// 1. List available tools
+// 1. List available tools.
 echo "Step 1: Getting available tools...\n";
 $ch = curl_init('http://localhost/index.php/apps/openregister/api/agents/tools');
 curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
@@ -28,13 +28,13 @@ if ($httpCode === 200) {
         echo "    {$metadata['description']}\n\n";
     }
     
-    // 2. Configure Agent 4 with ApplicationTool
+    // 2. Configure Agent 4 with ApplicationTool.
     echo "Step 2: Configuring Agent 4 with ApplicationTool...\n";
     if (isset($tools['openregister.application'])) {
         echo "✓ ApplicationTool is available\n";
         echo "  Adding to Agent 4...\n";
         
-        // Update agent via API
+        // Update agent via API.
         $agentData = [
             'tools' => ['openregister.application']
         ];

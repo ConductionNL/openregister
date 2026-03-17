@@ -5,7 +5,7 @@
 
 $url = 'http://localhost/index.php/apps/openregister/api/chat/send';
 
-// Test 1: Ask to list applications
+// Test 1: Ask to list applications.
 echo "=== APPLICATION TOOL CHAT TEST ===\n\n";
 
 echo "Test 1: Asking agent to list applications...\n";
@@ -38,7 +38,7 @@ if ($httpCode === 200) {
         echo $result['message']['content'] . "\n";
         echo "────────────────────────────────────────────\n\n";
         
-        // Check if tool was used (look for function call indicators)
+        // Check if tool was used (look for function call indicators).
         $content = strtolower($result['message']['content']);
         if (strpos($content, 'application') !== false && strpos($content, 'found') !== false) {
             echo "✓ Tool appears to have been called!\n";
@@ -56,7 +56,7 @@ if ($httpCode === 200) {
 
 echo "\n";
 
-// Test 2: Create an application
+// Test 2: Create an application.
 echo "Test 2: Asking agent to create a test application...\n";
 echo "────────────────────────────────────────────\n";
 
@@ -87,7 +87,7 @@ if ($httpCode === 200) {
         echo $result['message']['content'] . "\n";
         echo "────────────────────────────────────────────\n\n";
         
-        // Check if tool was used
+        // Check if tool was used.
         $content = strtolower($result['message']['content']);
         if (strpos($content, 'created') !== false || strpos($content, 'uuid') !== false) {
             echo "✓ Tool appears to have been called!\n";

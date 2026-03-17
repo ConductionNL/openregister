@@ -1,6 +1,5 @@
 <?php
 
-
 /**
  * OpenConnector Consumers Controller
  *
@@ -17,6 +16,8 @@
  * @version GIT: <git-id>
  *
  * @link https://OpenRegister.app
+ *
+ * @psalm-suppress UnusedClass
  */
 
 declare(strict_types=1);
@@ -27,62 +28,129 @@ use OCA\OpenRegister\Db\SearchTrailMapper;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Db\ViewMapper;
-use OCA\OpenRegister\Db\ObjectEntityMapper;
+use OCA\OpenRegister\Db\MappingMapper;
+use OCA\OpenRegister\Db\MagicMapper;
+use OCA\OpenRegister\Db\MagicMapper\MagicRbacHandler;
+
 use OCA\OpenRegister\Db\OrganisationMapper;
-use OCA\OpenRegister\Db\FileTextMapper;
 use OCA\OpenRegister\Db\ChunkMapper;
-use OCA\OpenRegister\Db\ObjectTextMapper;
 use OCA\OpenRegister\Db\GdprEntityMapper;
 use OCA\OpenRegister\Db\EntityRelationMapper;
+use OCA\OpenRegister\Db\FileTextMapper;
+use OCA\OpenRegister\Db\AuditTrailMapper;
+use OCA\OpenRegister\Db\DeployedWorkflowMapper;
+use OCA\OpenRegister\Db\WebhookMapper;
+use OCA\OpenRegister\Db\WebhookLogMapper;
 use OCA\OpenRegister\Service\SearchTrailService;
+use OCA\OpenRegister\Service\DashboardService;
+use OCA\OpenRegister\Service\Schemas\PropertyValidatorHandler;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\OrganisationService;
 use OCA\OpenRegister\Service\MySQLJsonService;
-use OCA\OpenRegister\Service\ObjectHandlers\DeleteObject;
-use OCA\OpenRegister\Service\ObjectHandlers\GetObject;
-use OCA\OpenRegister\Service\ObjectHandlers\RenderObject;
-use OCA\OpenRegister\Service\ObjectHandlers\SaveObject;
-use OCA\OpenRegister\Service\ObjectHandlers\SaveObjects;
-use OCA\OpenRegister\Service\ObjectHandlers\ValidateObject;
-use OCA\OpenRegister\Service\ObjectHandlers\PublishObject;
-use OCA\OpenRegister\Service\ObjectHandlers\DepublishObject;
+use OCA\OpenRegister\Service\ConfigurationService;
+use OCA\OpenRegister\Service\WorkflowEngineRegistry;
+use OCA\OpenRegister\Service\UserService;
+use OCA\OpenRegister\Service\Objects\DataManipulationHandler;
+use OCA\OpenRegister\Service\Objects\DeleteObject;
+use OCA\OpenRegister\Service\Objects\GetObject;
+use OCA\OpenRegister\Service\Objects\PerformanceHandler;
+use OCA\OpenRegister\Service\Objects\PermissionHandler;
+use OCA\OpenRegister\Service\Objects\RenderObject;
+use OCA\OpenRegister\Service\Objects\SaveObject;
+use OCA\OpenRegister\Service\Objects\SaveObject\FilePropertyHandler;
+use OCA\OpenRegister\Service\Objects\SaveObject\MetadataHydrationHandler;
+use OCA\OpenRegister\Service\Objects\SaveObjects;
+use OCA\OpenRegister\Service\Objects\SaveObjects\BulkRelationHandler;
+use OCA\OpenRegister\Service\Objects\SaveObjects\BulkValidationHandler;
+use OCA\OpenRegister\Service\Objects\SearchQueryHandler;
+use OCA\OpenRegister\Service\Object\ValidateObject;
+use OCA\OpenRegister\Service\ObjectService\ValidationHandler;
+use OCA\OpenRegister\Service\ObjectService\FacetHandler;
+use OCA\OpenRegister\Service\ObjectService\MetadataHandler;
+use OCA\OpenRegister\Service\ObjectService\RelationHandler;
+use OCA\OpenRegister\Service\ObjectService\QueryHandler;
+use OCA\OpenRegister\Service\Object\PerformanceOptimizationHandler;
+use OCA\OpenRegister\Service\ObjectService\MergeHandler;
+use OCA\OpenRegister\Service\ObjectService\UtilityHandler;
+use OCA\OpenRegister\Service\Object\PublishObject;
+use OCA\OpenRegister\Service\Object\Handlers\LockHandler;
+use OCA\OpenRegister\Service\Object\Handlers\AuditHandler;
+use OCA\OpenRegister\Service\Object\Handlers\RelationHandler as RelationHandlerNew;
+use OCA\OpenRegister\Service\Object\Handlers\MergeHandler as MergeHandlerNew;
+use OCA\OpenRegister\Service\Object\Handlers\ExportHandler;
+use OCA\OpenRegister\Service\Object\Handlers\VectorizationHandler;
+use OCA\OpenRegister\Service\Object\Handlers\CrudHandler;
 use OCA\OpenRegister\Service\FileService;
-use OCA\OpenRegister\Service\FacetService;
-use OCA\OpenRegister\Service\ObjectCacheService;
+use OCA\OpenRegister\Service\File\FolderManagementHandler;
+use OCA\OpenRegister\Service\Object\CacheHandler;
 use OCA\OpenRegister\Service\ImportService;
+use OCA\OpenRegister\Service\Index\Backends\SolrBackend;
+use OCA\OpenRegister\Service\Index\Backends\Solr\SolrHttpClient;
+use OCA\OpenRegister\Service\Index\Backends\Solr\SolrCollectionManager;
+use OCA\OpenRegister\Service\Index\Backends\Solr\SolrDocumentIndexer;
+use OCA\OpenRegister\Service\Index\Backends\Solr\SolrQueryExecutor;
+use OCA\OpenRegister\Service\Index\Backends\Solr\SolrFacetProcessor;
+use OCA\OpenRegister\Service\Index\Backends\Solr\SolrSchemaManager;
 use OCA\OpenRegister\Service\ExportService;
-use OCA\OpenRegister\Service\SolrService;
-use OCA\OpenRegister\Service\GuzzleSolrService;
-use OCA\OpenRegister\Service\SolrObjectService;
-use OCA\OpenRegister\Service\SolrFileService;
-use OCA\OpenRegister\Service\VectorEmbeddingService;
+use OCA\OpenRegister\Service\IndexService;
+use OCA\OpenRegister\Service\Vectorization\VectorEmbeddings;
 use OCA\OpenRegister\Service\VectorizationService;
-use OCA\OpenRegister\Service\Vectorization\FileVectorizationStrategy;
-use OCA\OpenRegister\Service\Vectorization\ObjectVectorizationStrategy;
+use OCA\OpenRegister\Service\Vectorization\Strategies\FileVectorizationStrategy;
+use OCA\OpenRegister\Service\Vectorization\Strategies\ObjectVectorizationStrategy;
+use OCA\OpenRegister\Service\TextExtraction\EntityRecognitionHandler;
 use OCA\OpenRegister\Service\ChatService;
-use OCA\OpenRegister\Service\FileTextService;
+use OCA\OpenRegister\Service\Chat\ContextRetrievalHandler;
+use OCA\OpenRegister\Service\Chat\ResponseGenerationHandler;
+use OCA\OpenRegister\Service\Chat\ConversationManagementHandler;
+use OCA\OpenRegister\Service\Chat\MessageHistoryHandler;
+use OCA\OpenRegister\Service\Chat\ToolManagementHandler;
+use OCA\OpenRegister\Service\TextExtractionService;
 use OCA\OpenRegister\Service\SettingsService;
-use OCA\OpenRegister\Service\SolrSchemaService;
-use OCA\OpenRegister\Setup\SolrSetup;
-use OCA\OpenRegister\Service\SchemaCacheService;
+use OCA\OpenRegister\Service\Settings\ValidationOperationsHandler;
+use OCA\OpenRegister\Service\Settings\SearchBackendHandler;
+use OCA\OpenRegister\Service\Settings\LlmSettingsHandler;
+use OCA\OpenRegister\Service\Settings\FileSettingsHandler;
+use OCA\OpenRegister\Service\Settings\ObjectRetentionHandler;
+use OCA\OpenRegister\Service\Settings\CacheSettingsHandler;
+use OCA\OpenRegister\Service\Settings\SolrSettingsHandler;
+use OCA\OpenRegister\Service\Settings\ConfigurationSettingsHandler;
+use OCA\OpenRegister\Service\Index\SetupHandler;
+use OCA\OpenRegister\Service\Schemas\SchemaCacheHandler;
 use OCA\OpenRegister\Command\SolrDebugCommand;
 use OCA\OpenRegister\Command\SolrManagementCommand;
-use OCA\OpenRegister\Service\SchemaFacetCacheService;
+use OCA\OpenRegister\Service\Schemas\FacetCacheHandler;
 use OCA\OpenRegister\Search\ObjectsProvider;
+use OCA\OpenRegister\Service\DeepLinkRegistryService;
+use OCA\OpenRegister\Event\DeepLinkRegistrationEvent;
 use OCA\OpenRegister\BackgroundJob\SolrWarmupJob;
 use OCA\OpenRegister\BackgroundJob\SolrNightlyWarmupJob;
+use OCA\OpenRegister\BackgroundJob\NameCacheWarmupJob;
+use OCA\OpenRegister\BackgroundJob\BlobMigrationJob;
+use OCA\OpenRegister\BackgroundJob\CronFileTextExtractionJob;
+use OCA\OpenRegister\Cron\WebhookRetryJob;
 use OCP\AppFramework\App;
 use OCP\AppFramework\Bootstrap\IBootContext;
 use OCP\AppFramework\Bootstrap\IBootstrap;
 use OCP\AppFramework\Bootstrap\IRegistrationContext;
 use OCP\EventDispatcher\IEventDispatcher;
-
 use OCA\OpenRegister\EventListener\SolrEventListener;
+use OCA\OpenRegister\Listener\CommentsEntityListener;
 use OCA\OpenRegister\Listener\FileChangeListener;
+use OCA\OpenRegister\Listener\ObjectChangeListener;
+use OCA\OpenRegister\Listener\ObjectCleanupListener;
 use OCA\OpenRegister\Listener\ToolRegistrationListener;
+use OCA\OpenRegister\Listener\GraphQLSubscriptionListener;
+use OCA\OpenRegister\Listener\WebhookEventListener;
+use OCA\OpenRegister\Listener\HookListener;
+use OCA\OpenRegister\Service\NoteService;
+use OCA\OpenRegister\Service\TaskService;
+use OCP\Comments\CommentsEntityEvent;
 use OCP\Files\Events\Node\NodeCreatedEvent;
 use OCP\Files\Events\Node\NodeWrittenEvent;
 use OCA\OpenRegister\Event\ObjectCreatedEvent;
+use OCA\OpenRegister\Event\ObjectCreatingEvent;
+use OCA\OpenRegister\Event\ObjectDeletingEvent;
+use OCA\OpenRegister\Event\ObjectUpdatingEvent;
 use OCA\OpenRegister\Event\ObjectUpdatedEvent;
 use OCA\OpenRegister\Event\ObjectDeletedEvent;
 use OCA\OpenRegister\Event\ObjectLockedEvent;
@@ -96,6 +164,36 @@ use OCA\OpenRegister\Event\SchemaCreatedEvent;
 use OCA\OpenRegister\Event\SchemaDeletedEvent;
 use OCA\OpenRegister\Event\SchemaUpdatedEvent;
 use OCA\OpenRegister\Event\ToolRegistrationEvent;
+use OCA\OpenRegister\Event\ApplicationCreatedEvent;
+use OCA\OpenRegister\Event\ApplicationUpdatedEvent;
+use OCA\OpenRegister\Event\ApplicationDeletedEvent;
+use OCA\OpenRegister\Event\AgentCreatedEvent;
+use OCA\OpenRegister\Event\AgentUpdatedEvent;
+use OCA\OpenRegister\Event\AgentDeletedEvent;
+use OCA\OpenRegister\Event\SourceCreatedEvent;
+use OCA\OpenRegister\Event\SourceUpdatedEvent;
+use OCA\OpenRegister\Event\SourceDeletedEvent;
+use OCA\OpenRegister\Event\ConfigurationCreatedEvent;
+use OCA\OpenRegister\Event\ConfigurationUpdatedEvent;
+use OCA\OpenRegister\Event\ConfigurationDeletedEvent;
+use OCA\OpenRegister\Event\ViewCreatedEvent;
+use OCA\OpenRegister\Event\ViewUpdatedEvent;
+use OCA\OpenRegister\Event\ViewDeletedEvent;
+use OCA\OpenRegister\Event\ConversationCreatedEvent;
+use OCA\OpenRegister\Event\ConversationUpdatedEvent;
+use OCA\OpenRegister\Event\ConversationDeletedEvent;
+use OCA\OpenRegister\Event\OrganisationUpdatedEvent;
+use OCA\OpenRegister\Event\OrganisationDeletedEvent;
+use Twig\Loader\ArrayLoader;
+use GuzzleHttp\Client;
+use Psr\Container\ContainerInterface;
+use OCA\OpenRegister\Service\Configuration\GitHubHandler;
+use OCA\OpenRegister\Service\Configuration\GitLabHandler;
+use OCA\OpenRegister\Service\Configuration\CacheHandler as ConfigurationCacheHandler;
+use OCA\OpenRegister\Service\Configuration\ExportHandler as ConfigurationExportHandler;
+use OCA\OpenRegister\Service\Configuration\ImportHandler as ConfigurationImportHandler;
+use OCA\OpenRegister\Service\Configuration\PreviewHandler;
+use OCA\OpenRegister\Service\Configuration\UploadHandler as ConfigurationUploadHandler;
 
 /**
  * Class Application
@@ -106,9 +204,11 @@ use OCA\OpenRegister\Event\ToolRegistrationEvent;
  * @package  OCA\OpenRegister\AppInfo
  *
  * @author  Nextcloud Dev Team
- * @license AGPL-3.0-or-later
+ * @license AGPL-3.0-or-later https://www.gnu.org/licenses/agpl-3.0.html
  *
  * @link https://github.com/nextcloud/server/blob/master/apps-extra/openregister
+ *
+ * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
  */
 class Application extends App implements IBootstrap
 {
@@ -119,20 +219,15 @@ class Application extends App implements IBootstrap
      */
     public const APP_ID = 'openregister';
 
-
     /**
      * Constructor for the Application class
-     *
-     * @psalm-suppress PossiblyUnusedMethod
      *
      * @return void
      */
     public function __construct()
     {
-        parent::__construct(self::APP_ID);
-
+        parent::__construct(appName: self::APP_ID);
     }//end __construct()
-
 
     /**
      * Register application components
@@ -145,611 +240,502 @@ class Application extends App implements IBootstrap
     {
         include_once __DIR__.'/../../vendor/autoload.php';
 
-        // @TODO: Usually, services are autowired. Les figure out why we need to do this
-        // Register SearchTrail components
-        $context->registerService(
-                SearchTrailMapper::class,
-                function ($container) {
-                    return new SearchTrailMapper(
-                    $container->get('OCP\IDBConnection'),
-                    $container->get('OCP\IRequest'),
-                    $container->get('OCP\IUserSession')
-                    );
-                }
-                );
+        // Register all services in phases to resolve circular dependencies.
+        $this->registerMappersWithCircularDependencies(context: $context);
+        $this->registerCacheAndFileHandlers(context: $context);
+        $this->registerConfigurationServices(context: $context);
+        $this->registerSettingsServices(context: $context);
+        $this->registerSearchBackend(context: $context);
+        $this->registerVectorizationService(context: $context);
+        $this->registerObjectInteractionServices(context: $context);
+        $this->registerEventListeners(context: $context);
+    }//end register()
 
+    /**
+     * Register mappers with circular dependencies.
+     *
+     * These must be registered in the correct order to resolve dependencies:
+     * 1. OrganisationService (breaks circular dependency with SettingsService)
+     * 2. SchemaMapper (depends on OrganisationMapper)
+     * 3. RegisterMapper (depends on SchemaMapper)
+     * 4. MagicMapper and MagicMapper (depend on the above)
+     *
+     * @param IRegistrationContext $context The registration context
+     *
+     * @return void
+     *
+     * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
+     */
+    private function registerMappersWithCircularDependencies(IRegistrationContext $context): void
+    {
+        // Register OrganisationService without SettingsService to break circular dependency.
         $context->registerService(
-                ObjectTextMapper::class,
-                function ($container) {
-                    return new ObjectTextMapper(
-                    $container->get('OCP\IDBConnection')
-                    );
-                }
+            OrganisationService::class,
+            function (ContainerInterface $container) {
+                return new OrganisationService(
+                    organisationMapper: $container->get(OrganisationMapper::class),
+                    userSession: $container->get('OCP\IUserSession'),
+                    session: $container->get('OCP\ISession'),
+                    config: $container->get('OCP\IConfig'),
+                    appConfig: $container->get('OCP\IAppConfig'),
+                    groupManager: $container->get('OCP\IGroupManager'),
+                    userManager: $container->get('OCP\IUserManager'),
+                    logger: $container->get('Psr\Log\LoggerInterface'),
+                    settingsService: null
                 );
-
-        $context->registerService(
-                ChunkMapper::class,
-                function ($container) {
-                    return new ChunkMapper(
-                    $container->get('OCP\IDBConnection')
-                    );
-                }
-                );
-
-        $context->registerService(
-                GdprEntityMapper::class,
-                function ($container) {
-                    return new GdprEntityMapper(
-                    $container->get('OCP\IDBConnection')
-                    );
-                }
-                );
-
-        $context->registerService(
-                EntityRelationMapper::class,
-                function ($container) {
-                    return new EntityRelationMapper(
-                    $container->get('OCP\IDBConnection')
-                    );
-                }
-                );
-
-        $context->registerService(
-                SearchTrailService::class,
-                function ($container) {
-                    return new SearchTrailService(
-                    $container->get(SearchTrailMapper::class),
-                    $container->get(RegisterMapper::class),
-                    $container->get(SchemaMapper::class)
-                    );
-                }
-                );
-
-        // Register OrganisationMapper (event dispatching removed - handled by cron job)
-        // $context->registerService(OrganisationMapper::class, function ($container) {
-        // return new OrganisationMapper(
-        // $container->get('OCP\IDBConnection')
-        // );
-        // });
-        // Register ObjectEntityMapper with IGroupManager and IUserManager dependencies
-        $context->registerService(
-                ObjectEntityMapper::class,
-                function ($container) {
-                    return new ObjectEntityMapper(
-                    $container->get('OCP\IDBConnection'),
-                    $container->get(MySQLJsonService::class),
-                    $container->get('OCP\EventDispatcher\IEventDispatcher'),
-                    $container->get('OCP\IUserSession'),
-                    $container->get(SchemaMapper::class),
-                    $container->get('OCP\IGroupManager'),
-                    $container->get('OCP\IUserManager'),
-                    $container->get('OCP\IAppConfig'),
-                    $container->get('Psr\Log\LoggerInterface'),
-                    $container->get(OrganisationService::class),
-                    null // AuthorizationExceptionService
-                    );
-                }
+            }
         );
 
-        // Register SolrService for advanced search capabilities (disabled due to performance issues)
-        // Issue: Even with lazy loading, DI registration causes performance problems
-        /*
+        // Register UserService for UserController (after OrganisationService which it depends on).
         $context->registerService(
-                SolrService::class,
-                function ($container) {
-                    return new SolrService(
-                    $container->get(SettingsService::class),
-                    $container->get('Psr\Log\LoggerInterface'),
-                    $container->get(ObjectEntityMapper::class),
-                    $container->get('OCP\IConfig')
-                    );
-                }
+            \OCA\OpenRegister\Service\UserService::class,
+            function (ContainerInterface $container) {
+                return new UserService(
+                    userManager: $container->get('OCP\IUserManager'),
+                    userSession: $container->get('OCP\IUserSession'),
+                    config: $container->get('OCP\IConfig'),
+                    groupManager: $container->get('OCP\IGroupManager'),
+                    accountManager: $container->get('OCP\Accounts\IAccountManager'),
+                    logger: $container->get('Psr\Log\LoggerInterface'),
+                    organisationService: $container->get(OrganisationService::class),
+                    eventDispatcher: $container->get('OCP\EventDispatcher\IEventDispatcher')
                 );
-        */
+            }
+        );
 
-        // Register ObjectCacheService for performance optimization with lightweight SOLR
         $context->registerService(
-                ObjectCacheService::class,
-                function ($container) {
-                    // Break circular dependency by lazy-loading GuzzleSolrService
-                    $solrService = null;
-                    try {
-                        $solrService = $container->get(GuzzleSolrService::class);
-                    } catch (\Exception $e) {
-                        // If GuzzleSolrService is not available, continue without it
-                        $solrService = null;
-                    }
-
-                    return new ObjectCacheService(
-                    $container->get(ObjectEntityMapper::class),
-                    $container->get(OrganisationMapper::class),
-                    $container->get('Psr\Log\LoggerInterface'),
-                    $solrService, // Lightweight SOLR service enabled!
-                    $container->get('OCP\ICacheFactory'),
-                    $container->get('OCP\IUserSession')
-                    );
-                }
+            SchemaMapper::class,
+            function (ContainerInterface $container) {
+                return new SchemaMapper(
+                    db: $container->get('OCP\IDBConnection'),
+                    eventDispatcher: $container->get('OCP\EventDispatcher\IEventDispatcher'),
+                    validator: $container->get(PropertyValidatorHandler::class),
+                    organisationMapper: $container->get(OrganisationMapper::class),
+                    userSession: $container->get('OCP\IUserSession'),
+                    groupManager: $container->get('OCP\IGroupManager'),
+                    appConfig: $container->get('OCP\IAppConfig')
                 );
+            }
+        );
 
-        // Register FacetService for centralized faceting operations
         $context->registerService(
-                FacetService::class,
-                function ($container) {
-                    return new FacetService(
-                    $container->get(ObjectEntityMapper::class),
-                    $container->get(SchemaMapper::class),
-                    $container->get(RegisterMapper::class),
-                    $container->get('OCP\ICacheFactory'),
-                    $container->get('OCP\IUserSession'),
-                    $container->get('Psr\Log\LoggerInterface')
-                    );
-                }
+            RegisterMapper::class,
+            function (ContainerInterface $container) {
+                return new RegisterMapper(
+                    db: $container->get('OCP\IDBConnection'),
+                    schemaMapper: $container->get(SchemaMapper::class),
+                    eventDispatcher: $container->get('OCP\EventDispatcher\IEventDispatcher'),
+                    container: $container,
+                    organisationMapper: $container->get(OrganisationMapper::class),
+                    userSession: $container->get('OCP\IUserSession'),
+                    groupManager: $container->get('OCP\IGroupManager'),
+                    appConfig: $container->get('OCP\IAppConfig')
                 );
+            }
+        );
 
-
-        // Register SaveObject with consolidated cache services
         $context->registerService(
-                SaveObject::class,
-                function ($container) {
-                    return new SaveObject(
-                    $container->get(ObjectEntityMapper::class),
-                    $container->get(FileService::class),
-                    $container->get('OCP\IUserSession'),
-                    $container->get('OCA\OpenRegister\Db\AuditTrailMapper'),
-                    $container->get(SchemaMapper::class),
-                    $container->get(RegisterMapper::class),
-                    $container->get('OCP\IURLGenerator'),
-                    $container->get(OrganisationService::class),
-                    $container->get(ObjectCacheService::class),
-                    $container->get(SchemaCacheService::class),
-                    $container->get(SchemaFacetCacheService::class),
-                    $container->get(SettingsService::class),
-                    $container->get('Psr\Log\LoggerInterface'),
-                    new \Twig\Loader\ArrayLoader([])
-                    );
-                }
+            WebhookMapper::class,
+            function (ContainerInterface $container) {
+                return new WebhookMapper(
+                    db: $container->get('OCP\IDBConnection'),
+                    organisationMapper: $container->get(OrganisationMapper::class),
+                    userSession: $container->get('OCP\IUserSession'),
+                    groupManager: $container->get('OCP\IGroupManager'),
+                    appConfig: $container->get('OCP\IAppConfig')
                 );
+            }
+        );
 
-        // Register DeleteObject with consolidated cache services
         $context->registerService(
-                DeleteObject::class,
-                function ($container) {
-                    return new DeleteObject(
-                    $container->get(ObjectEntityMapper::class),
-                    $container->get(FileService::class),
-                    $container->get(ObjectCacheService::class),
-                    $container->get(SchemaCacheService::class),
-                    $container->get(SchemaFacetCacheService::class),
-                    $container->get('OCA\OpenRegister\Db\AuditTrailMapper'),
-                    $container->get(SettingsService::class),
-                    $container->get('Psr\Log\LoggerInterface')
-                    );
-                }
-                );
-
-        // Register GetObject with SettingsService dependency
-        $context->registerService(
-                GetObject::class,
-                function ($container) {
-                    return new GetObject(
-                    $container->get(ObjectEntityMapper::class),
-                    $container->get(FileService::class),
-                    $container->get('OCA\OpenRegister\Db\AuditTrailMapper'),
-                    $container->get(SettingsService::class)
-                    );
-                }
-                );
-
-        // Register RenderObject with LoggerInterface dependency
-        $context->registerService(
-                RenderObject::class,
-                function ($container) {
-                    return new RenderObject(
-                    $container->get('OCP\IURLGenerator'),
-                    $container->get('OCA\OpenRegister\Db\FileMapper'),
-                    $container->get('OCA\OpenRegister\Service\FileService'),
-                    $container->get(ObjectEntityMapper::class),
-                    $container->get('OCA\OpenRegister\Db\RegisterMapper'),
-                    $container->get('OCA\OpenRegister\Db\SchemaMapper'),
-                    $container->get('OCP\SystemTag\ISystemTagManager'),
-                    $container->get('OCP\SystemTag\ISystemTagObjectMapper'),
-                    $container->get(ObjectCacheService::class),
-                    $container->get('Psr\Log\LoggerInterface')
-                    );
-                }
-                );
-
-        // Register OrganisationService with IConfig and IGroupManager dependencies
-        $context->registerService(
-                OrganisationService::class,
-                function ($container) {
-                    return new OrganisationService(
-                    $container->get(OrganisationMapper::class),
-                    $container->get('OCP\IUserSession'),
-                    $container->get('OCP\ISession'),
-                    $container->get('OCP\IConfig'),
-                    $container->get('OCP\IGroupManager'),
-                    $container->get('OCP\IUserManager'),
-                    $container->get('Psr\Log\LoggerInterface'),
+            MagicMapper::class,
+            function (ContainerInterface $container) {
+                return new MagicMapper(
+                    db: $container->get('OCP\IDBConnection'),
+                    schemaMapper: $container->get(SchemaMapper::class),
+                    registerMapper: $container->get(RegisterMapper::class),
+                    config: $container->get('OCP\IConfig'),
+                    eventDispatcher: $container->get('OCP\EventDispatcher\IEventDispatcher'),
+                    userSession: $container->get('OCP\IUserSession'),
+                    groupManager: $container->get('OCP\IGroupManager'),
+                    userManager: $container->get('OCP\IUserManager'),
                     appConfig: $container->get('OCP\IAppConfig'),
-                    );
-                }
+                    logger: $container->get('Psr\Log\LoggerInterface'),
+                    settingsService: $container->get(SettingsService::class),
+                    container: $container
                 );
+            }
+        );
 
-        // Register SaveObjects handler with dependencies
+    }//end registerMappersWithCircularDependencies()
+
+    /**
+     * Register cache and file handling services.
+     *
+     * @param IRegistrationContext $context The registration context
+     *
+     * @return void
+     */
+    private function registerCacheAndFileHandlers(IRegistrationContext $context): void
+    {
+        // CacheHandler uses lazy loading of IndexService to break circular dependency.
         $context->registerService(
-                SaveObjects::class,
-                function ($container) {
-                    return new SaveObjects(
-                    $container->get(ObjectEntityMapper::class),
-                    $container->get(SchemaMapper::class),
-                    $container->get(RegisterMapper::class),
-                    $container->get(SaveObject::class),
-                    $container->get(ValidateObject::class),
-                    $container->get('OCP\IUserSession'),
-                    $container->get(OrganisationService::class),
-                    $container->get('Psr\Log\LoggerInterface')
-                    );
-                }
+            CacheHandler::class,
+            function (ContainerInterface $container) {
+                return new CacheHandler(
+                    organisationMapper: $container->get(OrganisationMapper::class),
+                    logger: $container->get('Psr\Log\LoggerInterface'),
+                    cacheFactory: $container->get('OCP\ICacheFactory'),
+                    userSession: $container->get('OCP\IUserSession'),
+                    container: $container,
+                    registerMapper: $container->get(RegisterMapper::class),
+                    schemaMapper: $container->get(SchemaMapper::class),
+                    db: $container->get('OCP\IDBConnection')
                 );
+            }
+        );
 
-        // Register ObjectService with IGroupManager, IUserManager and LoggerInterface dependencies
+        // FolderManagementHandler without FileService to break circular dependency.
         $context->registerService(
-                ObjectService::class,
-                function ($container) {
-                    return new ObjectService(
-                    $container->get(DeleteObject::class),
-                    $container->get(GetObject::class),
-                    $container->get(RenderObject::class),
-                    $container->get(SaveObject::class),
-                    $container->get(SaveObjects::class),
-                    $container->get(ValidateObject::class),
-                    $container->get(PublishObject::class),
-                    $container->get(DepublishObject::class),
-                    $container->get(RegisterMapper::class),
-                    $container->get(SchemaMapper::class),
-                    $container->get(ViewMapper::class),
-                    $container->get(ObjectEntityMapper::class),
-                    $container->get(FileService::class),
-                    $container->get('OCP\IUserSession'),
-                    $container->get(SearchTrailService::class),
-                    $container->get('OCP\IGroupManager'),
-                    $container->get('OCP\IUserManager'),
-                    $container->get(OrganisationService::class),
-                    $container->get('Psr\Log\LoggerInterface'),
-                    $container->get(FacetService::class),
-                    $container->get(ObjectCacheService::class),
-                    $container->get(SchemaCacheService::class),
-                    $container->get(SchemaFacetCacheService::class),
-                    $container->get(SettingsService::class),
-                    $container
-                    );
-                }
+            FolderManagementHandler::class,
+            function (ContainerInterface $container) {
+                return new FolderManagementHandler(
+                    rootFolder: $container->get('OCP\Files\IRootFolder'),
+                    objectEntityMapper: $container->get(MagicMapper::class),
+                    registerMapper: $container->get(RegisterMapper::class),
+                    userSession: $container->get('OCP\IUserSession'),
+                    groupManager: $container->get('OCP\IGroupManager'),
+                    logger: $container->get('Psr\Log\LoggerInterface'),
+                    fileService: null
                 );
+            }
+        );
+    }//end registerCacheAndFileHandlers()
 
-        // Register ImportService with IUserManager, IGroupManager, and IJobList dependencies
+    /**
+     * Register configuration-related services.
+     *
+     * @param IRegistrationContext $context The registration context
+     *
+     * @return void
+     */
+    private function registerConfigurationServices(IRegistrationContext $context): void
+    {
         $context->registerService(
-                ImportService::class,
-                function ($container) {
-                    return new ImportService(
-                    $container->get(ObjectEntityMapper::class),
-                    $container->get(SchemaMapper::class),
-                    $container->get(ObjectService::class),
-                    $container->get('Psr\Log\LoggerInterface'),
-                    $container->get('OCP\IUserManager'),
-                    $container->get('OCP\IGroupManager'),
-                    $container->get('OCP\BackgroundJob\IJobList')
-                    );
-                }
+            ConfigurationUploadHandler::class,
+            function (ContainerInterface $container) {
+                return new ConfigurationUploadHandler(
+                    client: new Client(),
+                    logger: $container->get('Psr\Log\LoggerInterface')
                 );
+            }
+        );
 
-        // Register ExportService with IUserManager and IGroupManager dependencies
+        // Register GitHubHandler explicitly to fix IConfig auto-wiring issue.
         $context->registerService(
-                ExportService::class,
-                function ($container) {
-                    return new ExportService(
-                    $container->get(ObjectEntityMapper::class),
-                    $container->get(RegisterMapper::class),
-                    $container->get('OCP\IUserManager'),
-                    $container->get('OCP\IGroupManager'),
-                    $container->get(ObjectService::class)
-                    );
-                }
+            GitHubHandler::class,
+            function (ContainerInterface $container) {
+                return new GitHubHandler(
+                    clientService: $container->get('OCP\Http\Client\IClientService'),
+                    appConfig: $container->get('OCP\IAppConfig'),
+                    config: $container->get('OCP\IConfig'),
+                    cacheFactory: $container->get('OCP\ICacheFactory'),
+                    logger: $container->get('Psr\Log\LoggerInterface')
                 );
+            }
+        );
 
+        // Register ImportHandler (with both alias and real name to prevent auto-wiring conflicts).
+        $importHandlerFactory = function (
+            ContainerInterface $container
+        ): \OCA\OpenRegister\Service\Configuration\ImportHandler {
+            $dataDir     = $container->get('OCP\IConfig')->getSystemValue('datadirectory', '');
+            $appDataPath = $dataDir.'/appdata_openregister';
 
-        // Register SolrEventListener for automatic Solr indexing
+            $logger = $container->get('Psr\Log\LoggerInterface');
+
+            $importHandler = new ConfigurationImportHandler(
+                schemaMapper: $container->get(SchemaMapper::class),
+                registerMapper: $container->get(RegisterMapper::class),
+                objectEntityMapper: $container->get(MagicMapper::class),
+                configurationMapper: $container->get('OCA\OpenRegister\Db\ConfigurationMapper'),
+                mappingMapper: $container->get(MappingMapper::class),
+                client: new Client(),
+                appConfig: $container->get('OCP\IAppConfig'),
+                logger: $logger,
+                appDataPath: $appDataPath,
+                uploadHandler: $container->get(ConfigurationUploadHandler::class),
+                objectService: $container->get(ObjectService::class)
+            );
+
+            // Inject MagicMapper for pre-creating magic mapper tables before seed data import.
+            $importHandler->setMagicMapper($container->get(MagicMapper::class));
+
+            // Inject MagicMapper for routing seed data to correct magic table.
+            $importHandler->setObjectMapper($container->get(MagicMapper::class));
+
+            // Inject workflow dependencies for deploying workflows during import.
+            $importHandler->setWorkflowEngineRegistry($container->get(WorkflowEngineRegistry::class));
+            $importHandler->setDeployedWorkflowMapper($container->get(DeployedWorkflowMapper::class));
+
+            return $importHandler;
+        };
+
+        // Register under alias.
+        $context->registerService(ConfigurationImportHandler::class, $importHandlerFactory);
+
+        // Register under real class name (pointing to same factory).
         $context->registerService(
-                SolrEventListener::class,
-                function ($container) {
-                    return new SolrEventListener(
-                    $container->get(ObjectCacheService::class),
-                    $container->get('Psr\Log\LoggerInterface')
-                    );
-                }
-                );
+            'OCA\OpenRegister\Service\Configuration\ImportHandler',
+            $importHandlerFactory
+        );
 
-        // Register SchemaCacheService for improved schema performance
+        // Register ExportHandler with workflow dependencies.
         $context->registerService(
-                SchemaCacheService::class,
-                function ($container) {
-                    return new SchemaCacheService(
-                    $container->get('OCP\IDBConnection'),
-                    $container->get(SchemaMapper::class),
-                    $container->get('Psr\Log\LoggerInterface')
-                    );
-                }
+            ConfigurationExportHandler::class,
+            function (ContainerInterface $container): ConfigurationExportHandler {
+                $exportHandler = new ConfigurationExportHandler(
+                    schemaMapper: $container->get(SchemaMapper::class),
+                    registerMapper: $container->get(RegisterMapper::class),
+                    objectEntityMapper: $container->get(MagicMapper::class),
+                    configurationMapper: $container->get('OCA\OpenRegister\Db\ConfigurationMapper'),
+                    mappingMapper: $container->get(MappingMapper::class),
+                    logger: $container->get('Psr\Log\LoggerInterface')
                 );
 
-        // Register SchemaFacetCacheService for predictable facet caching
+                $exportHandler->setWorkflowEngineRegistry($container->get(WorkflowEngineRegistry::class));
+                $exportHandler->setDeployedWorkflowMapper($container->get(DeployedWorkflowMapper::class));
+
+                return $exportHandler;
+            }
+        );
+
         $context->registerService(
-                SchemaFacetCacheService::class,
-                function ($container) {
-                    return new SchemaFacetCacheService(
-                    $container->get('OCP\IDBConnection'),
-                    $container->get(SchemaMapper::class),
-                    $container->get('Psr\Log\LoggerInterface')
-                    );
-                }
-                );
+            ConfigurationService::class,
+            function (ContainerInterface $container) {
+                $dataDir     = $container->get('OCP\IConfig')->getSystemValue('datadirectory', '');
+                $appDataPath = $dataDir.'/appdata_openregister';
 
-        // Register ObjectsProvider for Nextcloud search integration
-        $context->registerService(
-                ObjectsProvider::class,
-                function ($container) {
-                    return new ObjectsProvider(
-                    $container->get('OCP\IL10N'),
-                    $container->get('OCP\IURLGenerator'),
-                    $container->get(ObjectService::class),
-                    $container->get('Psr\Log\LoggerInterface')
-                    );
-                }
+                return new ConfigurationService(
+                    schemaMapper: $container->get(SchemaMapper::class),
+                    registerMapper: $container->get(RegisterMapper::class),
+                    configurationMapper: $container->get('OCA\OpenRegister\Db\ConfigurationMapper'),
+                    appManager: $container->get('OCP\App\IAppManager'),
+                    container: $container,
+                    appConfig: $container->get('OCP\IAppConfig'),
+                    logger: $container->get('Psr\Log\LoggerInterface'),
+                    client: new Client(),
+                    objectService: $container->get(ObjectService::class),
+                    githubHandler: $container->get(GitHubHandler::class),
+                    gitlabHandler: $container->get(GitLabHandler::class),
+                    cacheHandler: $container->get(ConfigurationCacheHandler::class),
+                    previewHandler: $container->get(PreviewHandler::class),
+                    exportHandler: $container->get(ConfigurationExportHandler::class),
+                    // NOTE: ImportHandler is lazy-loaded in ConfigurationService to prevent circular dependency.
+                    uploadHandler: $container->get(ConfigurationUploadHandler::class),
+                    appDataPath: $appDataPath
                 );
+            }
+        );
 
-        // Register ObjectsProvider as a search provider for Nextcloud search
         $context->registerSearchProvider(ObjectsProvider::class);
+    }//end registerConfigurationServices()
 
-        // Register SolrDebugCommand for SOLR debugging
+    /**
+     * Register settings-related services including handlers.
+     *
+     * @param IRegistrationContext $context The registration context
+     *
+     * @return void
+     */
+    private function registerSettingsServices(IRegistrationContext $context): void
+    {
         $context->registerService(
-                SolrDebugCommand::class,
-                function ($container) {
-                    return new SolrDebugCommand(
-                    $container->get(SettingsService::class),
-                    $container->get('Psr\Log\LoggerInterface'),
-                    $container->get('OCP\IConfig')
-                    );
-                }
+            ValidationOperationsHandler::class,
+            function (ContainerInterface $container) {
+                return new ValidationOperationsHandler(
+                    validateHandler: null,
+                    schemaMapper: $container->get(SchemaMapper::class),
+                    logger: $container->get('Psr\Log\LoggerInterface'),
+                    container: $container
                 );
-
-        // Register lightweight GuzzleSolrService directly (no factory needed!)
-        $context->registerService(
-                GuzzleSolrService::class,
-                function ($container) {
-                    return new GuzzleSolrService(
-                    $container->get(SettingsService::class),
-                    $container->get('Psr\Log\LoggerInterface'),
-                    $container->get('OCP\Http\Client\IClientService'),
-                    $container->get('OCP\IConfig'),
-                    $container->get(SchemaMapper::class), // Add SchemaMapper for schema-aware mapping
-                    $container->get(RegisterMapper::class), // Add RegisterMapper for register access
-                    $container->get(OrganisationService::class), // Add OrganisationService for multi-tenancy
-                    $container->get(OrganisationMapper::class) // Add OrganisationMapper for organisation label resolution
-                    // Note: RenderObject removed to avoid circular dependency with ObjectCacheService
-                    // ObjectCacheService will be resolved lazily from container to avoid circular dependency
-                    // SolrSchemaService will be resolved lazily to avoid circular dependency
-                    );
-                }
-                );
-
-        // Register SolrObjectService for object-specific SOLR operations
-        $context->registerService(
-                SolrObjectService::class,
-                function ($container) {
-                    return new SolrObjectService(
-                    $container->get(GuzzleSolrService::class),
-                    $container->get(SettingsService::class),
-                    $container->get(SchemaMapper::class),
-                    $container->get(RegisterMapper::class),
-                    $container->get('Psr\Log\LoggerInterface')
-                    );
-                }
-                );
-
-        // Register SolrFileService for file-specific SOLR operations
-        $context->registerService(
-                SolrFileService::class,
-                function ($container) {
-                    return new SolrFileService(
-                    $container->get(GuzzleSolrService::class),
-                    $container->get(SettingsService::class),
-                    $container,
-                    $container->get('Psr\Log\LoggerInterface')
-                    );
-                }
-                );
-
-        // Register VectorEmbeddingService for vector embeddings and semantic search
-        $context->registerService(
-                VectorEmbeddingService::class,
-                function ($container) {
-                    return new VectorEmbeddingService(
-                    $container->get('OCP\IDBConnection'),
-                    $container->get(SettingsService::class),
-                    $container->get(GuzzleSolrService::class),
-                    $container->get('Psr\Log\LoggerInterface')
-                    );
-                }
-                );
-
-        // Register Vectorization Strategies
-        $context->registerService(
-                FileVectorizationStrategy::class,
-                function ($container) {
-                    return new FileVectorizationStrategy(
-                    $container->get(FileTextMapper::class),
-                    $container->get('Psr\Log\LoggerInterface')
-                    );
-                }
-                );
+            }
+        );
 
         $context->registerService(
-                ObjectVectorizationStrategy::class,
-                function ($container) {
-                    return new ObjectVectorizationStrategy(
-                    $container->get(ObjectService::class),
-                    $container->get(SettingsService::class),
-                    $container->get('Psr\Log\LoggerInterface')
-                    );
-                }
+            SettingsService::class,
+            function (ContainerInterface $container) {
+                return new SettingsService(
+                    config: $container->get('OCP\IConfig'),
+                    auditTrailMapper: $container->get(AuditTrailMapper::class),
+                    cacheFactory: $container->get('OCP\ICacheFactory'),
+                    groupManager: $container->get('OCP\IGroupManager'),
+                    logger: $container->get('Psr\Log\LoggerInterface'),
+                    organisationMapper: $container->get(OrganisationMapper::class),
+                    schemaCacheService: $container->get(SchemaCacheHandler::class),
+                    facetCacheSvc: $container->get(FacetCacheHandler::class),
+                    searchTrailMapper: $container->get(SearchTrailMapper::class),
+                    userManager: $container->get('OCP\IUserManager'),
+                    db: $container->get('OCP\IDBConnection'),
+                    setupHandler: null,
+                    objectCacheService: null,
+                    container: $container,
+                    appName: 'openregister',
+                    validOpsHandler: $container->get(ValidationOperationsHandler::class),
+                    searchBackendHandler: $container->get(SearchBackendHandler::class),
+                    llmSettingsHandler: $container->get(LlmSettingsHandler::class),
+                    fileSettingsHandler: $container->get(FileSettingsHandler::class),
+                    objRetentionHandler: $container->get(ObjectRetentionHandler::class),
+                    cacheSettingsHandler: $container->get(CacheSettingsHandler::class),
+                    solrSettingsHandler: $container->get(SolrSettingsHandler::class),
+                    cfgSettingsHandler: $container->get(ConfigurationSettingsHandler::class)
                 );
+            }
+        );
+    }//end registerSettingsServices()
 
-        // Register unified VectorizationService with strategies
+    /**
+     * Register search backend interface with dynamic backend selection.
+     *
+     * @param IRegistrationContext $context The registration context
+     *
+     * @return void
+     */
+    private function registerSearchBackend(IRegistrationContext $context): void
+    {
         $context->registerService(
-                VectorizationService::class,
-                function ($container) {
-                    $service = new VectorizationService(
-                    $container->get(VectorEmbeddingService::class),
-                    $container->get('Psr\Log\LoggerInterface')
-                    );
+            \OCA\OpenRegister\Service\Index\SearchBackendInterface::class,
+            function (ContainerInterface $container): \OCA\OpenRegister\Service\Index\SearchBackendInterface {
+                $settingsService = $container->get(SettingsService::class);
+                $backendConfig   = $settingsService->getSearchBackendConfig();
+                $activeBackend   = $backendConfig['active'] ?? 'solr';
 
-                    // Register strategies
-                    $service->registerStrategy('file', $container->get(FileVectorizationStrategy::class));
-                    $service->registerStrategy('object', $container->get(ObjectVectorizationStrategy::class));
+                switch ($activeBackend) {
+                    case 'elasticsearch':
+                        return $container->get(\OCA\OpenRegister\Service\Index\Backends\ElasticsearchBackend::class);
 
-                    return $service;
+                    case 'solr':
+                    default:
+                        return $container->get(SolrBackend::class);
                 }
-                );
+            }
+        );
+    }//end registerSearchBackend()
 
-        // Register ChatService for AI chat conversations with RAG
+    /**
+     * Register vectorization service with strategies.
+     *
+     * @param IRegistrationContext $context The registration context
+     *
+     * @return void
+     */
+    private function registerVectorizationService(IRegistrationContext $context): void
+    {
         $context->registerService(
-                ChatService::class,
-                function ($container) {
-                    return new ChatService(
-                    $container->get('OCP\IDBConnection'),
-                    $container->get(\OCA\OpenRegister\Db\ConversationMapper::class),
-                    $container->get(\OCA\OpenRegister\Db\MessageMapper::class),
-                    $container->get(\OCA\OpenRegister\Db\AgentMapper::class),
-                    $container->get(VectorEmbeddingService::class),
-                    $container->get(GuzzleSolrService::class),
-                    $container->get(SettingsService::class),
-                    $container->get('Psr\Log\LoggerInterface'),
-                    $container->get(\OCA\OpenRegister\Tool\RegisterTool::class),
-                    $container->get(\OCA\OpenRegister\Tool\SchemaTool::class),
-                    $container->get(\OCA\OpenRegister\Tool\ObjectsTool::class),
-                    $container->get(\OCA\OpenRegister\Service\ToolRegistry::class)
-                    );
-                }
+            VectorizationService::class,
+            function (ContainerInterface $container) {
+                $service = new VectorizationService(
+                    vectorService: $container->get(VectorEmbeddings::class),
+                    logger: $container->get('Psr\Log\LoggerInterface')
                 );
 
-        // Register FileTextService for file text extraction and storage
+                $fileStrategy   = $container->get(FileVectorizationStrategy::class);
+                $objectStrategy = $container->get(ObjectVectorizationStrategy::class);
+                $service->registerStrategy('file', $fileStrategy);
+                $service->registerStrategy('object', $objectStrategy);
+
+                return $service;
+            }
+        );
+    }//end registerVectorizationService()
+
+    /**
+     * Register task and note services for object interactions.
+     *
+     * TaskService wraps CalDAV VTODO operations, NoteService wraps Nextcloud Comments.
+     *
+     * @param IRegistrationContext $context The registration context
+     *
+     * @return void
+     */
+    private function registerObjectInteractionServices(IRegistrationContext $context): void
+    {
         $context->registerService(
-                FileTextService::class,
-                function ($container) {
-                    return new FileTextService(
-                    $container->get(FileTextMapper::class),
-                    $container->get('OCA\OpenRegister\Db\FileMapper'),
-                    $container->get(SolrFileService::class),
-                    $container->get('OCP\Files\IRootFolder'),
-                    $container->get('Psr\Log\LoggerInterface')
-                    );
-                }
+            TaskService::class,
+            function (ContainerInterface $container) {
+                return new TaskService(
+                    calDavBackend: $container->get('OCA\DAV\CalDAV\CalDavBackend'),
+                    userSession: $container->get('OCP\IUserSession'),
+                    logger: $container->get('Psr\Log\LoggerInterface')
                 );
+            }
+        );
 
-        // Register FileChangeListener for automatic file text extraction (async via background jobs)
         $context->registerService(
-                FileChangeListener::class,
-                function ($container) {
-                    return new FileChangeListener(
-                    $container->get(FileTextService::class),
-                    $container->get('OCP\BackgroundJob\IJobList'),
-                    $container->get('Psr\Log\LoggerInterface')
-                    );
-                }
+            NoteService::class,
+            function (ContainerInterface $container) {
+                return new NoteService(
+                    commentsManager: $container->get('OCP\Comments\ICommentsManager'),
+                    userSession: $container->get('OCP\IUserSession'),
+                    userManager: $container->get('OCP\IUserManager'),
+                    logger: $container->get('Psr\Log\LoggerInterface')
                 );
+            }
+        );
+    }//end registerObjectInteractionServices()
 
-        // Register SolrSchemaService for SOLR schema operations
-        $context->registerService(
-                SolrSchemaService::class,
-                function ($container) {
-                    return new SolrSchemaService(
-                    $container->get(SchemaMapper::class),
-                    $container->get(GuzzleSolrService::class),
-                    $container->get(SettingsService::class),
-                    $container->get('Psr\Log\LoggerInterface'),
-                    $container->get('OCP\IConfig')
-                    );
-                }
-                );
-
-        // Register SolrManagementCommand for production SOLR operations
-        $context->registerService(
-                SolrManagementCommand::class,
-                function ($container) {
-                    return new SolrManagementCommand(
-                    $container->get(SettingsService::class),
-                    $container->get('Psr\Log\LoggerInterface'),
-                    $container->get(GuzzleSolrService::class),
-                    $container->get(SolrSchemaService::class),
-                    $container->get('OCP\IConfig')
-                    );
-                }
-                );
-
-        // Register ToolRegistry for agent function tools
-        $context->registerService(
-                \OCA\OpenRegister\Service\ToolRegistry::class,
-                function ($container) {
-                    return new \OCA\OpenRegister\Service\ToolRegistry(
-                    $container->get('OCP\EventDispatcher\IEventDispatcher'),
-                    $container->get('Psr\Log\LoggerInterface')
-                    );
-                }
-                );
-
-        // Register GitHubService for GitHub API operations
-        $context->registerService(
-                \OCA\OpenRegister\Service\GitHubService::class,
-                function ($container) {
-                    return new \OCA\OpenRegister\Service\GitHubService(
-                    $container->get('OCP\Http\Client\IClientService')->newClient(),
-                    $container->get('OCP\IConfig'),
-                    $container->get('OCP\ICacheFactory'),
-                    $container->get('Psr\Log\LoggerInterface')
-                    );
-                }
-                );
-
-        // Register GitLabService for GitLab API operations
-        $context->registerService(
-                \OCA\OpenRegister\Service\GitLabService::class,
-                function ($container) {
-                    return new \OCA\OpenRegister\Service\GitLabService(
-                    $container->get('OCP\Http\Client\IClientService')->newClient(),
-                    $container->get('OCP\IConfig'),
-                    $container->get('Psr\Log\LoggerInterface')
-                    );
-                }
-                );
-
-        // Register Solr event listeners for automatic indexing
+    /**
+     * Register all event listeners for the application.
+     *
+     * @param IRegistrationContext $context The registration context
+     *
+     * @return void
+     */
+    private function registerEventListeners(IRegistrationContext $context): void
+    {
+        // Solr event listeners for automatic indexing.
         $context->registerEventListener(ObjectCreatedEvent::class, SolrEventListener::class);
         $context->registerEventListener(ObjectUpdatedEvent::class, SolrEventListener::class);
         $context->registerEventListener(ObjectDeletedEvent::class, SolrEventListener::class);
 
-        // Register Solr event listeners for schema lifecycle management
+        // Solr event listeners for schema lifecycle management.
         $context->registerEventListener(SchemaCreatedEvent::class, SolrEventListener::class);
         $context->registerEventListener(SchemaUpdatedEvent::class, SolrEventListener::class);
         $context->registerEventListener(SchemaDeletedEvent::class, SolrEventListener::class);
 
-        // Register FileChangeListener for automatic file text extraction
+        // FileChangeListener for automatic file text extraction.
         $context->registerEventListener(NodeCreatedEvent::class, FileChangeListener::class);
         $context->registerEventListener(NodeWrittenEvent::class, FileChangeListener::class);
 
-        // Register ToolRegistrationListener for agent function tools
+        // ObjectChangeListener for automatic object text extraction.
+        $context->registerEventListener(ObjectCreatedEvent::class, ObjectChangeListener::class);
+        $context->registerEventListener(ObjectUpdatedEvent::class, ObjectChangeListener::class);
+
+        // ToolRegistrationListener for agent function tools.
         $context->registerEventListener(ToolRegistrationEvent::class, ToolRegistrationListener::class);
 
-    }//end register()
+        // HookListener for schema hook execution on lifecycle events.
+        $context->registerEventListener(ObjectCreatingEvent::class, HookListener::class);
+        $context->registerEventListener(ObjectUpdatingEvent::class, HookListener::class);
+        $context->registerEventListener(ObjectDeletingEvent::class, HookListener::class);
+        $context->registerEventListener(ObjectCreatedEvent::class, HookListener::class);
+        $context->registerEventListener(ObjectUpdatedEvent::class, HookListener::class);
+        $context->registerEventListener(ObjectDeletedEvent::class, HookListener::class);
 
+        // WebhookEventListener for webhook delivery.
+        $context->registerEventListener(ObjectCreatedEvent::class, WebhookEventListener::class);
+
+        // GraphQL subscription event listeners.
+        $context->registerEventListener(ObjectCreatedEvent::class, GraphQLSubscriptionListener::class);
+        $context->registerEventListener(ObjectUpdatedEvent::class, GraphQLSubscriptionListener::class);
+        $context->registerEventListener(ObjectDeletedEvent::class, GraphQLSubscriptionListener::class);
+
+        // CommentsEntityListener registers "openregister" objectType for Nextcloud Comments.
+        $context->registerEventListener(CommentsEntityEvent::class, CommentsEntityListener::class);
+
+        // ObjectCleanupListener cleans up notes and tasks when an object is deleted.
+        $context->registerEventListener(ObjectDeletedEvent::class, ObjectCleanupListener::class);
+    }//end registerEventListeners()
 
     /**
      * Boot application components
@@ -760,69 +746,9 @@ class Application extends App implements IBootstrap
      */
     public function boot(IBootContext $context): void
     {
-        // Register event listeners for testing and functionality
-        $container = $context->getAppContainer();
-        $eventDispatcher = $container->get(IEventDispatcher::class);
-        $logger = $container->get('Psr\Log\LoggerInterface');
-
-        // Log boot process
-        $logger->info('OpenRegister boot: Registering event listeners', [
-            'app' => 'openregister',
-            'timestamp' => date('Y-m-d H:i:s')
-        ]);
-
-        try {
-            $logger->info('OpenRegister boot: Event listeners registered successfully');
-
-            // Register recurring SOLR nightly warmup job
-            $jobList = $container->get('OCP\BackgroundJob\IJobList');
-
-            // Check if the nightly warmup job is already registered
-            if (!$jobList->has(SolrNightlyWarmupJob::class, null)) {
-                $jobList->add(SolrNightlyWarmupJob::class);
-                $logger->info('🌙 SOLR Nightly Warmup Job registered successfully', [
-                    'job_class' => SolrNightlyWarmupJob::class,
-                    'interval' => '24 hours (daily at 00:00)'
-                ]);
-            } else {
-                $logger->debug('SOLR Nightly Warmup Job already registered');
-            }
-
-
-            $logger->info('OpenRegister boot: Set multitenancy settings');
-            /** @var SettingsService $settingsService */
-            $settingsService = $container->get(SettingsService::class);
-
-            $multiTenancySettings = $settingsService->getMultitenancySettings();
-
-            if ($multiTenancySettings['multitenancy']['enabled'] === true && $multiTenancySettings['multitenancy']['defaultUserTenant'] === '' && count($multiTenancySettings['availableTenants']) >= 1) {
-                $orgs = array_filter($multiTenancySettings['availableTenants'], function ($tenant) { return $tenant['name'] === 'Default organisation';});
-
-                $defaultOrg = array_shift($orgs);
-                $multiTenancySettings['multitenancy']['defaultUserTenant'] = ['label' => $defaultOrg['name'], 'id' => $defaultOrg['uuid']];
-                $multiTenancySettings['multitenancy']['defaultObjectTenant'] = ['label' => $defaultOrg['name'], 'id' => $defaultOrg['uuid']];
-
-                $settingsService->updateMultitenancySettingsOnly($multiTenancySettings['multitenancy']);
-
-            } elseif ($multiTenancySettings['multitenancy']['enabled'] === true && $multiTenancySettings['multitenancy']['defaultUserTenant'] === '') {
-                /** @var OrganisationService $organisationService */
-                $organisationService = $container->get(OrganisationService::class);
-
-                $defaultOrg = $organisationService->ensureDefaultOrganisation();
-                $multiTenancySettings['multitenancy']['defaultUserTenant'] =  ['label' => $defaultOrg->getName(), 'id' => $defaultOrg->getUuid()];
-                $multiTenancySettings['multitenancy']['defaultObjectTenant'] =  ['label' => $defaultOrg->getName(), 'id' => $defaultOrg->getUuid()];
-
-                $settingsService->updateMultitenancySettingsOnly($multiTenancySettings['multitenancy']);
-            }
-
-        } catch (\Exception $e) {
-            $logger->error('OpenRegister boot: Failed to register event listeners and background jobs', [
-                'exception' => $e->getMessage(),
-                'trace' => $e->getTraceAsString()
-            ]);
-        }
-
+        // Deep link registration is deferred to avoid circular DI resolution.
+        // DeepLinkRegistryService depends on RegisterMapper/SchemaMapper which
+        // trigger circular resolution chains when resolved during boot.
+        // Consuming apps register their patterns lazily on first use instead.
     }//end boot()
-
-
 }//end class
