@@ -282,139 +282,6 @@
 			</div>
 		</SettingsCard>
 
-		<!-- Object Text Extraction Settings -->
-		<SettingsCard
-			title="Object Text Extraction"
-			icon="📦"
-			:collapsible="true"
-			:default-collapsed="true">
-			<div class="settings-group compact">
-				<div class="setting-item">
-					<label for="object-extraction-mode">Extraction Mode</label>
-					<NcSelect v-model="objectSettings.extractionMode"
-						input-id="object-extraction-mode"
-						input-label="Object Extraction Mode"
-						:options="extractionModes"
-						@input="saveObjectSettings">
-						<template #option="{ label, description }">
-							<div class="option-item">
-								<span class="option-label">{{ label }}</span>
-								<span class="option-description">{{ description }}</span>
-							</div>
-						</template>
-					</NcSelect>
-					<p class="setting-description">
-						Control when text extraction happens for OpenRegister objects. Objects contain structured data that is converted to searchable text chunks.
-					</p>
-				</div>
-			</div>
-		</SettingsCard>
-
-		<!-- Entity Recognition Settings -->
-		<SettingsCard
-			title="Entity Recognition"
-			icon="🔍"
-			:collapsible="true"
-			:default-collapsed="true">
-			<div class="settings-group compact">
-				<!-- Enable/Disable Toggle -->
-				<div class="setting-item">
-					<NcCheckboxRadioSwitch
-						v-model="fileSettings.entityRecognitionEnabled"
-						type="switch"
-						@update:checked="saveSettings">
-						Enable Entity Recognition
-					</NcCheckboxRadioSwitch>
-					<p class="setting-description">
-						Detect personal data (names, emails, phone numbers, IBAN, BSN) in extracted text for GDPR compliance.
-					</p>
-				</div>
-
-				<!-- Method Selector -->
-				<div v-if="fileSettings.entityRecognitionEnabled" class="setting-item">
-					<label for="entity-recognition-method">Detection Method</label>
-					<NcSelect v-model="fileSettings.entityRecognitionMethod"
-						input-id="entity-recognition-method"
-						input-label="Entity Recognition Method"
-						:options="entityRecognitionMethods"
-						@input="saveSettings">
-						<template #option="{ label, description, icon }">
-							<div class="option-item">
-								<span class="option-icon">{{ icon }}</span>
-								<span class="option-label">{{ label }}</span>
-								<span class="option-description">{{ description }}</span>
-							</div>
-						</template>
-					</NcSelect>
-					<p class="setting-description">
-						Choose how entities are detected. Regex is fast and local; external services provide better accuracy for names and context.
-					</p>
-				</div>
-
-				<!-- Presidio API Configuration -->
-				<div v-if="fileSettings.entityRecognitionEnabled && showPresidioConfig" class="setting-item api-config">
-					<div class="api-fields">
-						<div class="field-group">
-							<label for="presidio-endpoint">Presidio API Endpoint</label>
-							<NcTextField id="presidio-endpoint"
-								v-model="fileSettings.presidioApiEndpoint"
-								placeholder="http://openregister-presidio-analyzer:3000"
-								@update:value="saveSettings">
-								<template #trailing-button-icon>
-									<InformationIcon :size="20" />
-								</template>
-							</NcTextField>
-							<p class="field-hint">
-								URL to your Presidio Analyzer instance
-							</p>
-						</div>
-
-						<NcButton type="secondary"
-							@click="testPresidioConnection">
-							<template #icon>
-								<CheckIcon v-if="presidioConnectionTested === 'success'" :size="20" />
-								<AlertCircleIcon v-else-if="presidioConnectionTested === 'error'" :size="20" />
-								<NcLoadingIcon v-else-if="testingPresidio" :size="20" />
-								<RefreshIcon v-else :size="20" />
-							</template>
-							Test Connection
-						</NcButton>
-					</div>
-				</div>
-
-				<!-- OpenAnonymiser API Configuration -->
-				<div v-if="fileSettings.entityRecognitionEnabled && showOpenAnonymiserConfig" class="setting-item api-config">
-					<div class="api-fields">
-						<div class="field-group">
-							<label for="openanonymiser-endpoint">OpenAnonymiser API Endpoint</label>
-							<NcTextField id="openanonymiser-endpoint"
-								v-model="fileSettings.openAnonymiserApiEndpoint"
-								placeholder="http://openregister-openanonymiser:8080"
-								@update:value="saveSettings">
-								<template #trailing-button-icon>
-									<InformationIcon :size="20" />
-								</template>
-							</NcTextField>
-							<p class="field-hint">
-								URL to your OpenAnonymiser instance (Dutch-focused PII detection)
-							</p>
-						</div>
-
-						<NcButton type="secondary"
-							@click="testOpenAnonymiserConnection">
-							<template #icon>
-								<CheckIcon v-if="openAnonymiserConnectionTested === 'success'" :size="20" />
-								<AlertCircleIcon v-else-if="openAnonymiserConnectionTested === 'error'" :size="20" />
-								<NcLoadingIcon v-else-if="testingOpenAnonymiser" :size="20" />
-								<RefreshIcon v-else :size="20" />
-							</template>
-							Test Connection
-						</NcButton>
-					</div>
-				</div>
-			</div>
-		</SettingsCard>
-
 		<!-- Supported File Types -->
 		<SettingsCard
 			title="Supported File Types"
@@ -609,13 +476,6 @@ export default {
 				batchSize: 10,
 				dolphinApiEndpoint: '',
 				dolphinApiKey: '',
-				entityRecognitionEnabled: false,
-				entityRecognitionMethod: { id: 'regex', label: 'Regex' },
-				presidioApiEndpoint: '',
-				openAnonymiserApiEndpoint: '',
-			},
-			objectSettings: {
-				extractionMode: { id: 'background', label: 'Background Job' },
 			},
 			fileTypes: [
 				// Text formats (LLPhant supported)
@@ -683,24 +543,19 @@ export default {
 			],
 			extractionModes: [
 				{
-					id: 'immediate',
-					label: 'Immediate',
-					description: 'Process during upload - direct link between file upload and parsing logic',
-				},
-				{
 					id: 'background',
 					label: 'Background Job',
-					description: 'Delayed extraction action on the job stack - process files asynchronously after upload',
+					description: 'Process files asynchronously (recommended)',
 				},
 				{
-					id: 'cron',
-					label: 'Cron Job',
-					description: 'Repeating action handling files - periodic batch processing via scheduled jobs',
+					id: 'immediate',
+					label: 'Immediate',
+					description: 'Process during upload (may be slower)',
 				},
 				{
 					id: 'manual',
 					label: 'Manual Only',
-					description: 'Only extract when manually triggered via Actions menu',
+					description: 'Only extract when manually triggered',
 				},
 			],
 			extractionStats: {
@@ -719,36 +574,6 @@ export default {
 			saveMessage: '',
 			saveMessageType: 'success',
 			dolphinConnectionTested: null, // null, 'success', 'error'
-			presidioConnectionTested: null,
-			openAnonymiserConnectionTested: null,
-			testingPresidio: false,
-			testingOpenAnonymiser: false,
-			entityRecognitionMethods: [
-				{
-					id: 'regex',
-					label: 'Regex',
-					icon: '🔤',
-					description: 'Local pattern matching - Fast, privacy-friendly, detects emails, phones, IBANs',
-				},
-				{
-					id: 'presidio',
-					label: 'Presidio',
-					icon: '🛡️',
-					description: 'Microsoft Presidio - Accurate NER for names, organizations, locations (English)',
-				},
-				{
-					id: 'openanonymiser',
-					label: 'OpenAnonymiser',
-					icon: '🇳🇱',
-					description: 'Dutch-focused PII detection - Best for Dutch names, BSN, addresses',
-				},
-				{
-					id: 'hybrid',
-					label: 'Hybrid',
-					icon: '⚡',
-					description: 'Combines regex with external services for maximum coverage',
-				},
-			],
 		}
 	},
 
@@ -760,22 +585,6 @@ export default {
 		 */
 		isProcessing() {
 			return this.discoveringFiles || this.extractingFiles || this.retryingFiles
-		},
-
-		/**
-		 * Show Presidio config when presidio or hybrid is selected
-		 */
-		showPresidioConfig() {
-			const methodId = this.fileSettings.entityRecognitionMethod?.id || 'regex'
-			return methodId === 'presidio' || methodId === 'hybrid'
-		},
-
-		/**
-		 * Show OpenAnonymiser config when openanonymiser is selected
-		 */
-		showOpenAnonymiserConfig() {
-			const methodId = this.fileSettings.entityRecognitionMethod?.id || 'regex'
-			return methodId === 'openanonymiser'
 		},
 	},
 
@@ -828,18 +637,6 @@ export default {
 					this.fileSettings.dolphinApiEndpoint = settings.dolphinApiEndpoint || ''
 					this.fileSettings.dolphinApiKey = settings.dolphinApiKey || ''
 
-					// Load entity recognition settings
-					this.fileSettings.entityRecognitionEnabled = settings.entityRecognitionEnabled || false
-					if (settings.entityRecognitionMethod) {
-						const methodId = typeof settings.entityRecognitionMethod === 'string'
-							? settings.entityRecognitionMethod
-							: settings.entityRecognitionMethod.id
-						this.fileSettings.entityRecognitionMethod = this.entityRecognitionMethods.find(m => m.id === methodId)
-							|| this.entityRecognitionMethods[0]
-					}
-					this.fileSettings.presidioApiEndpoint = settings.presidioApiEndpoint || ''
-					this.fileSettings.openAnonymiserApiEndpoint = settings.openAnonymiserApiEndpoint || ''
-
 					// Load file types
 					if (settings.enabledFileTypes) {
 						this.fileTypes.forEach(ft => {
@@ -847,29 +644,8 @@ export default {
 						})
 					}
 				}
-
-				// Load object settings
-				await this.loadObjectSettings()
 			} catch (error) {
 				console.error('Failed to load file settings:', error)
-			}
-		},
-
-		/**
-		 * Load object text extraction settings
-		 */
-		async loadObjectSettings() {
-			try {
-				const settings = await this.settingsStore.getObjectSettings()
-				if (settings && settings.objectExtractionMode) {
-					const modeId = typeof settings.objectExtractionMode === 'string'
-						? settings.objectExtractionMode
-						: settings.objectExtractionMode.id
-					this.objectSettings.extractionMode = this.extractionModes.find(m => m.id === modeId)
-						|| this.extractionModes[1] // default to 'background'
-				}
-			} catch (error) {
-				console.error('Failed to load object settings:', error)
 			}
 		},
 
@@ -890,10 +666,6 @@ export default {
 					batchSize: this.fileSettings.batchSize,
 					dolphinApiEndpoint: this.fileSettings.dolphinApiEndpoint || '',
 					dolphinApiKey: this.fileSettings.dolphinApiKey || '',
-					entityRecognitionEnabled: this.fileSettings.entityRecognitionEnabled,
-					entityRecognitionMethod: this.fileSettings.entityRecognitionMethod?.id || 'regex',
-					presidioApiEndpoint: this.fileSettings.presidioApiEndpoint || '',
-					openAnonymiserApiEndpoint: this.fileSettings.openAnonymiserApiEndpoint || '',
 					enabledFileTypes: this.fileTypes
 						.filter(ft => ft.enabled)
 						.map(ft => ft.extension),
@@ -903,22 +675,6 @@ export default {
 			} catch (error) {
 				console.error('Failed to save file settings:', error)
 				this.showSaveMessage('Failed to save settings', 'error')
-			}
-		},
-
-		/**
-		 * Save object text extraction settings
-		 */
-		async saveObjectSettings() {
-			try {
-				await this.settingsStore.saveObjectSettings({
-					objectExtractionMode: this.objectSettings.extractionMode?.id || 'background',
-				})
-
-				// Settings saved silently - no success message
-			} catch (error) {
-				console.error('Failed to save object settings:', error)
-				this.showSaveMessage('Failed to save object settings', 'error')
 			}
 		},
 
@@ -952,74 +708,6 @@ export default {
 				console.error('Failed to test Dolphin connection:', error)
 				this.showSaveMessage('Connection test failed', 'error')
 				this.dolphinConnectionTested = 'error'
-			}
-		},
-
-		/**
-		 * Test Presidio API connection
-		 */
-		async testPresidioConnection() {
-			try {
-				this.presidioConnectionTested = null
-				this.testingPresidio = true
-
-				if (!this.fileSettings.presidioApiEndpoint) {
-					this.showSaveMessage('Please provide the Presidio API endpoint', 'error')
-					this.presidioConnectionTested = 'error'
-					return
-				}
-
-				const response = await this.settingsStore.testPresidioConnection({
-					apiEndpoint: this.fileSettings.presidioApiEndpoint,
-				})
-
-				if (response.success) {
-					this.showSaveMessage('Presidio connection successful!', 'success')
-					this.presidioConnectionTested = 'success'
-				} else {
-					this.showSaveMessage(`Connection failed: ${response.error}`, 'error')
-					this.presidioConnectionTested = 'error'
-				}
-			} catch (error) {
-				console.error('Failed to test Presidio connection:', error)
-				this.showSaveMessage('Connection test failed', 'error')
-				this.presidioConnectionTested = 'error'
-			} finally {
-				this.testingPresidio = false
-			}
-		},
-
-		/**
-		 * Test OpenAnonymiser API connection
-		 */
-		async testOpenAnonymiserConnection() {
-			try {
-				this.openAnonymiserConnectionTested = null
-				this.testingOpenAnonymiser = true
-
-				if (!this.fileSettings.openAnonymiserApiEndpoint) {
-					this.showSaveMessage('Please provide the OpenAnonymiser API endpoint', 'error')
-					this.openAnonymiserConnectionTested = 'error'
-					return
-				}
-
-				const response = await this.settingsStore.testOpenAnonymiserConnection({
-					apiEndpoint: this.fileSettings.openAnonymiserApiEndpoint,
-				})
-
-				if (response.success) {
-					this.showSaveMessage('OpenAnonymiser connection successful!', 'success')
-					this.openAnonymiserConnectionTested = 'success'
-				} else {
-					this.showSaveMessage(`Connection failed: ${response.error}`, 'error')
-					this.openAnonymiserConnectionTested = 'error'
-				}
-			} catch (error) {
-				console.error('Failed to test OpenAnonymiser connection:', error)
-				this.showSaveMessage('Connection test failed', 'error')
-				this.openAnonymiserConnectionTested = 'error'
-			} finally {
-				this.testingOpenAnonymiser = false
 			}
 		},
 

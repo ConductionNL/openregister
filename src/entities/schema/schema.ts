@@ -23,6 +23,7 @@ export class Schema implements TSchema {
 		allowedTags?: string[]
 		unique?: boolean
 		facetCacheTtl?: number
+		autoPublish?: boolean
 	}
 
 	public hardValidation: boolean
@@ -52,6 +53,7 @@ export class Schema implements TSchema {
 			allowedTags: [],
 			unique: false,
 			facetCacheTtl: 0,
+			autoPublish: false,
 		}
 		this.hardValidation = schema.hardValidation || false
 		this.maxDepth = schema.maxDepth || 0

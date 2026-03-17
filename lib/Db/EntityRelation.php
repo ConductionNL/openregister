@@ -1,21 +1,13 @@
 <?php
 
+declare(strict_types=1);
+
 /**
  * EntityRelation links detected entities to specific chunks with context.
  *
  * @category Db
  * @package  OCA\OpenRegister\Db
- *
- * @author    Conduction Development Team <dev@conduction.nl>
- * @copyright 2024 Conduction B.V.
- * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
- *
- * @version GIT: <git-id>
- *
- * @link https://www.OpenRegister.app
  */
-
-declare(strict_types=1);
 
 namespace OCA\OpenRegister\Db;
 
@@ -54,108 +46,22 @@ use OCP\AppFramework\Db\Entity;
  * @method void setAnonymizedValue(?string $anonymizedValue)
  * @method DateTime getCreatedAt()
  * @method void setCreatedAt(DateTime $createdAt)
- *
- * @psalm-suppress PropertyNotSetInConstructor $id is set by Nextcloud's Entity base class
  */
 class EntityRelation extends Entity implements JsonSerializable
 {
-
-    /**
-     * Entity ID.
-     *
-     * @var integer|null
-     */
     protected ?int $entityId = null;
-
-    /**
-     * Chunk ID.
-     *
-     * @var integer|null
-     */
     protected ?int $chunkId = null;
-
-    /**
-     * Role.
-     *
-     * @var string|null
-     */
     protected ?string $role = null;
-
-    /**
-     * File ID.
-     *
-     * @var integer|null
-     */
     protected ?int $fileId = null;
-
-    /**
-     * Object ID.
-     *
-     * @var integer|null
-     */
     protected ?int $objectId = null;
-
-    /**
-     * Email ID.
-     *
-     * @var integer|null
-     */
     protected ?int $emailId = null;
-
-    /**
-     * Position start.
-     *
-     * @var integer
-     */
     protected int $positionStart = 0;
-
-    /**
-     * Position end.
-     *
-     * @var integer
-     */
     protected int $positionEnd = 0;
-
-    /**
-     * Confidence.
-     *
-     * @var float
-     */
     protected float $confidence = 0.0;
-
-    /**
-     * Detection method.
-     *
-     * @var string|null
-     */
     protected ?string $detectionMethod = null;
-
-    /**
-     * Context.
-     *
-     * @var string|null
-     */
     protected ?string $context = null;
-
-    /**
-     * Anonymized flag.
-     *
-     * @var boolean
-     */
     protected bool $anonymized = false;
-
-    /**
-     * Anonymized value.
-     *
-     * @var string|null
-     */
     protected ?string $anonymizedValue = null;
-
-    /**
-     * Created at timestamp.
-     *
-     * @var DateTime|null
-     */
     protected ?DateTime $createdAt = null;
 
     /**
@@ -163,52 +69,49 @@ class EntityRelation extends Entity implements JsonSerializable
      */
     public function __construct()
     {
-        $this->addType(fieldName: 'entityId', type: 'integer');
-        $this->addType(fieldName: 'chunkId', type: 'integer');
-        $this->addType(fieldName: 'role', type: 'string');
-        $this->addType(fieldName: 'fileId', type: 'integer');
-        $this->addType(fieldName: 'objectId', type: 'integer');
-        $this->addType(fieldName: 'emailId', type: 'integer');
-        $this->addType(fieldName: 'positionStart', type: 'integer');
-        $this->addType(fieldName: 'positionEnd', type: 'integer');
-        $this->addType(fieldName: 'confidence', type: 'float');
-        $this->addType(fieldName: 'detectionMethod', type: 'string');
-        $this->addType(fieldName: 'context', type: 'string');
-        $this->addType(fieldName: 'anonymized', type: 'boolean');
-        $this->addType(fieldName: 'anonymizedValue', type: 'string');
-        $this->addType(fieldName: 'createdAt', type: 'datetime');
-    }//end __construct()
+        $this->addType('entityId', 'integer');
+        $this->addType('chunkId', 'integer');
+        $this->addType('role', 'string');
+        $this->addType('fileId', 'integer');
+        $this->addType('objectId', 'integer');
+        $this->addType('emailId', 'integer');
+        $this->addType('positionStart', 'integer');
+        $this->addType('positionEnd', 'integer');
+        $this->addType('confidence', 'float');
+        $this->addType('detectionMethod', 'string');
+        $this->addType('context', 'string');
+        $this->addType('anonymized', 'boolean');
+        $this->addType('anonymizedValue', 'string');
+        $this->addType('createdAt', 'datetime');
+    }
 
     /**
      * JSON serialization.
      *
-     * @return (null|scalar)[]
-     *
-     * @psalm-return array{id: int, entityId: int|null, chunkId: int|null,
-     *     role: null|string, fileId: int|null, objectId: int|null,
-     *     emailId: int|null, positionStart: int, positionEnd: int,
-     *     confidence: float, detectionMethod: null|string,
-     *     context: null|string, anonymized: bool,
-     *     anonymizedValue: null|string, createdAt: null|string}
+     * @return array<string,mixed>
      */
     public function jsonSerialize(): array
     {
         return [
-            'id'              => $this->id,
-            'entityId'        => $this->entityId,
-            'chunkId'         => $this->chunkId,
-            'role'            => $this->role,
-            'fileId'          => $this->fileId,
-            'objectId'        => $this->objectId,
-            'emailId'         => $this->emailId,
-            'positionStart'   => $this->positionStart,
-            'positionEnd'     => $this->positionEnd,
-            'confidence'      => $this->confidence,
+            'id' => $this->id,
+            'entityId' => $this->entityId,
+            'chunkId' => $this->chunkId,
+            'role' => $this->role,
+            'fileId' => $this->fileId,
+            'objectId' => $this->objectId,
+            'emailId' => $this->emailId,
+            'positionStart' => $this->positionStart,
+            'positionEnd' => $this->positionEnd,
+            'confidence' => $this->confidence,
             'detectionMethod' => $this->detectionMethod,
-            'context'         => $this->context,
-            'anonymized'      => $this->anonymized,
+            'context' => $this->context,
+            'anonymized' => $this->anonymized,
             'anonymizedValue' => $this->anonymizedValue,
-            'createdAt'       => $this->createdAt?->format(DateTime::ATOM),
+            'createdAt' => $this->createdAt?->format(DateTime::ATOM),
         ];
-    }//end jsonSerialize()
-}//end class
+    }
+}
+
+
+
+

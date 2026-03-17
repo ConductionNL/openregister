@@ -1,5 +1,4 @@
 <?php
-
 /**
  * OpenRegister Tool Interface
  *
@@ -92,17 +91,6 @@ interface ToolInterface
      *
      * @throws \Exception If function execution fails
      */
-    public function executeFunction(string $functionName, array $parameters, ?string $userId=null): array;
+    public function executeFunction(string $functionName, array $parameters, ?string $userId = null): array;
+}
 
-    /**
-     * Set the agent context
-     *
-     * Called when tool is used by an agent to provide agent context
-     * for view filtering and permissions.
-     *
-     * @param \OCA\OpenRegister\Db\Agent|null $agent The agent using this tool
-     *
-     * @return void
-     */
-    public function setAgent(?\OCA\OpenRegister\Db\Agent $agent): void;
-}//end interface

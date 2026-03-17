@@ -105,7 +105,7 @@ We created **TWO complementary test approaches**:
 **File:** `tests/Unit/Service/ObjectHandlers/IntegratedFileUploadTest.php`
 
 **Characteristics:**
-- ⚡ **Fast** (&lt;1 second)
+- ⚡ **Fast** (<1 second)
 - 🔧 **No dependencies** (all mocked)
 - 🎯 **Tests internal logic** only
 - ❌ **Does NOT create real schemas**
@@ -275,7 +275,7 @@ We have **two complementary test approaches** for the integrated file upload fea
 **File:** `tests/Unit/Service/ObjectHandlers/IntegratedFileUploadTest.php`
 
 **Characteristics:**
-- ⚡ **Fast** (&lt;1 second)
+- ⚡ **Fast** (<1 second)
 - 🔧 **No dependencies** (all mocked)
 - 🎯 **Tests internal logic** only
 - ❌ **Does NOT create real schemas**

@@ -1,5 +1,4 @@
 <?php
-
 /**
  * OpenRegister View
  *
@@ -30,31 +29,6 @@ use OCP\AppFramework\Db\Entity;
  * Manages view-related data and operations for saved search configurations
  *
  * @package OCA\OpenRegister\Db
- *
- * @method string|null getUuid()
- * @method void setUuid(?string $uuid)
- * @method string|null getName()
- * @method void setName(?string $name)
- * @method string|null getDescription()
- * @method void setDescription(?string $description)
- * @method string|null getOwner()
- * @method void setOwner(?string $owner)
- * @method string|null getOrganisation()
- * @method void setOrganisation(?string $organisation)
- * @method bool getIsPublic()
- * @method void setIsPublic(bool $isPublic)
- * @method bool getIsDefault()
- * @method void setIsDefault(bool $isDefault)
- * @method array|null getQuery()
- * @method void setQuery(?array $query)
- * @method array|null getFavoritedBy()
- * @method void setFavoritedBy(?array $favoritedBy)
- * @method DateTime|null getCreated()
- * @method void setCreated(?DateTime $created)
- * @method DateTime|null getUpdated()
- * @method void setUpdated(?DateTime $updated)
- *
- * @psalm-suppress PropertyNotSetInConstructor $id is set by Nextcloud's Entity base class
  */
 class View extends Entity implements JsonSerializable
 {
@@ -99,19 +73,19 @@ class View extends Entity implements JsonSerializable
      *
      * @var Configuration|null
      */
-    private ?Configuration $managedByConfig = null;
+    private ?Configuration $managedByConfiguration = null;
 
     /**
      * Whether the view is public
      *
-     * @var boolean Whether the view is public
+     * @var bool Whether the view is public
      */
     protected bool $isPublic = false;
 
     /**
      * Whether the view is the user's default
      *
-     * @var boolean Whether the view is the default
+     * @var bool Whether the view is the default
      */
     protected bool $isDefault = false;
 
@@ -143,6 +117,7 @@ class View extends Entity implements JsonSerializable
      */
     protected ?DateTime $updated = null;
 
+
     /**
      * Constructor for View entity
      *
@@ -150,15 +125,16 @@ class View extends Entity implements JsonSerializable
      */
     public function __construct()
     {
-        // Add types for automatic JSON (de)serialization.
-        $this->addType(fieldName: 'organisation', type: 'string');
-        $this->addType(fieldName: 'isPublic', type: 'boolean');
-        $this->addType(fieldName: 'isDefault', type: 'boolean');
-        $this->addType(fieldName: 'query', type: 'json');
-        $this->addType(fieldName: 'favoredBy', type: 'json');
-        $this->addType(fieldName: 'created', type: 'datetime');
-        $this->addType(fieldName: 'updated', type: 'datetime');
+        // Add types for automatic JSON (de)serialization
+        $this->addType('organisation', 'string');
+        $this->addType('isPublic', 'boolean');
+        $this->addType('isDefault', 'boolean');
+        $this->addType('query', 'json');
+        $this->addType('favoredBy', 'json');
+        $this->addType('created', 'datetime');
+        $this->addType('updated', 'datetime');
     }//end __construct()
+
 
     /**
      * Get the favoredBy array
@@ -170,6 +146,7 @@ class View extends Entity implements JsonSerializable
         return $this->favoredBy ?? [];
     }//end getFavoredBy()
 
+
     /**
      * Set the favoredBy array
      *
@@ -180,8 +157,9 @@ class View extends Entity implements JsonSerializable
     public function setFavoredBy(array $favoredBy): void
     {
         $this->favoredBy = $favoredBy;
-        $this->markFieldUpdated(attribute: 'favoredBy');
+        $this->markFieldUpdated('favoredBy');
     }//end setFavoredBy()
+
 
     /**
      * Get the organisation UUID
@@ -191,119 +169,71 @@ class View extends Entity implements JsonSerializable
     public function getOrganisation(): ?string
     {
         return $this->organisation;
+
     }//end getOrganisation()
+
+
+    /**
+     * Set the organisation UUID
+     *
+     * @param string|null $organisation The organisation UUID
+     *
+     * @return void
+     */
+    public function setOrganisation(?string $organisation): void
+    {
+        $this->organisation = $organisation;
+        $this->markFieldUpdated('organisation');
+
+    }//end setOrganisation()
+
 
     /**
      * Get the array version of this entity
      *
      * Converts the entity to an array representation
      *
-     * @return (array|bool|int|null|string)[]
-     *
-     * @psalm-return array{id: int, uuid: null|string, name: null|string,
-     *     description: null|string, owner: null|string,
-     *     organisation: null|string, isPublic: bool, isDefault: bool,
-     *     query: array|null, favoredBy: array,
-     *     quota: array{storage: null, bandwidth: null, requests: null,
-     *     users: null, groups: null},
-     *     usage: array{storage: 0, bandwidth: 0, requests: 0,
-     *     users: int<0, max>, groups: 0}, created: null|string,
-     *     updated: null|string,
-     *     managedByConfiguration: array{id: int, uuid: null|string,
-     *     title: null|string}|null}
+     * @return array Array representation of the entity
      */
     public function jsonSerialize(): array
     {
         $favoredBy = $this->favoredBy ?? [];
 
         return [
-            'id'                     => $this->id,
-            'uuid'                   => $this->uuid,
-            'name'                   => $this->name,
-            'description'            => $this->description,
-            'owner'                  => $this->owner,
-            'organisation'           => $this->organisation,
-            'isPublic'               => $this->isPublic,
-            'isDefault'              => $this->isDefault,
-            'query'                  => $this->query,
-            'favoredBy'              => $favoredBy,
-            'quota'                  => [
-                'storage'   => null,
-        // To be set via admin configuration.
-                'bandwidth' => null,
-        // To be set via admin configuration.
-                'requests'  => null,
-        // To be set via admin configuration.
-                'users'     => null,
-        // To be set via admin configuration.
-                'groups'    => null,
-        // To be set via admin configuration.
+            'id'           => $this->id,
+            'uuid'         => $this->uuid,
+            'name'         => $this->name,
+            'description'  => $this->description,
+            'owner'        => $this->owner,
+            'organisation' => $this->organisation,
+            'isPublic'     => $this->isPublic,
+            'isDefault'   => $this->isDefault,
+            'query'       => $this->query,
+            'favoredBy'   => $favoredBy,
+            'quota'       => [
+                'storage'   => null, // To be set via admin configuration
+                'bandwidth' => null, // To be set via admin configuration
+                'requests'  => null, // To be set via admin configuration
+                'users'     => null, // To be set via admin configuration
+                'groups'    => null, // To be set via admin configuration
             ],
-            'usage'                  => [
-                'storage'   => 0,
-            // To be calculated from actual usage.
-                'bandwidth' => 0,
-            // To be calculated from actual usage.
-                'requests'  => 0,
-            // To be calculated from actual usage (query executions).
-                'users'     => count($favoredBy),
-            // Number of users who favorited this view.
-                'groups'    => 0,
-            // Views don't have groups.
+            'usage'       => [
+                'storage'   => 0, // To be calculated from actual usage
+                'bandwidth' => 0, // To be calculated from actual usage
+                'requests'  => 0, // To be calculated from actual usage (query executions)
+                'users'     => count($favoredBy), // Number of users who favorited this view
+                'groups'    => 0, // Views don't have groups
             ],
-            'created'                => $this->getCreatedFormatted(),
-            'updated'                => $this->getUpdatedFormatted(),
-            'managedByConfiguration' => $this->getManagedByConfigurationFormatted(),
+            'created'     => isset($this->created) === true ? $this->created->format('c') : null,
+            'updated'     => isset($this->updated) === true ? $this->updated->format('c') : null,
+            'managedByConfiguration' => $this->managedByConfiguration !== null ? [
+                'id' => $this->managedByConfiguration->getId(),
+                'uuid' => $this->managedByConfiguration->getUuid(),
+                'title' => $this->managedByConfiguration->getTitle(),
+            ] : null,
         ];
     }//end jsonSerialize()
 
-    /**
-     * Get created timestamp formatted.
-     *
-     * @return string|null
-     */
-    private function getCreatedFormatted(): ?string
-    {
-        if ($this->created !== null) {
-            return $this->created->format('c');
-        }
-
-        return null;
-    }//end getCreatedFormatted()
-
-    /**
-     * Get updated timestamp formatted.
-     *
-     * @return string|null
-     */
-    private function getUpdatedFormatted(): ?string
-    {
-        if ($this->updated !== null) {
-            return $this->updated->format('c');
-        }
-
-        return null;
-    }//end getUpdatedFormatted()
-
-    /**
-     * Get managed by configuration formatted.
-     *
-     * @return (int|null|string)[]|null
-     *
-     * @psalm-return array{id: int, uuid: null|string, title: null|string}|null
-     */
-    private function getManagedByConfigurationFormatted(): array|null
-    {
-        if ($this->managedByConfig !== null) {
-            return [
-                'id'    => $this->managedByConfig->getId(),
-                'uuid'  => $this->managedByConfig->getUuid(),
-                'title' => $this->managedByConfig->getTitle(),
-            ];
-        }
-
-        return null;
-    }//end getManagedByConfigurationFormatted()
 
     /**
      * Hydrate the entity from an array
@@ -312,54 +242,34 @@ class View extends Entity implements JsonSerializable
      *
      * @param array $object Array containing entity data
      *
-     * @return static Returns the hydrated entity
-     *
-     * @SuppressWarnings(PHPMD.NPathComplexity) Hydration requires handling many optional fields
+     * @return self Returns the hydrated entity
      */
-    public function hydrate(array $object): static
+    public function hydrate(array $object): self
     {
-        $this->setUuid(uuid: null);
-        if (($object['uuid'] ?? null) !== null) {
-            $this->setUuid(uuid: $object['uuid']);
-        }
-
-        $this->setName(name: null);
-        if (($object['name'] ?? null) !== null) {
-            $this->setName(name: $object['name']);
-        }
-
-        $this->setDescription(description: null);
-        if (($object['description'] ?? null) !== null) {
-            $this->setDescription(description: $object['description']);
-        }
-
-        $this->setOwner(owner: null);
-        if (($object['owner'] ?? null) !== null) {
-            $this->setOwner(owner: $object['owner']);
-        }
-
-        $this->setIsPublic(isPublic: false);
-        if (($object['isPublic'] ?? null) !== null) {
-            $this->setIsPublic(isPublic: $object['isPublic']);
-        }
-
-        $this->setIsDefault(isDefault: false);
-        if (($object['isDefault'] ?? null) !== null) {
-            $this->setIsDefault(isDefault: $object['isDefault']);
-        }
-
-        $this->setQuery(query: []);
-        if (($object['query'] ?? null) !== null) {
-            $this->setQuery(query: $object['query']);
-        }
-
-        $this->setFavoredBy(favoredBy: []);
-        if (($object['favoredBy'] ?? null) !== null) {
-            $this->setFavoredBy(favoredBy: $object['favoredBy']);
-        }
+        $this->setUuid(isset($object['uuid']) === true ? $object['uuid'] : null);
+        $this->setName(isset($object['name']) === true ? $object['name'] : null);
+        $this->setDescription(isset($object['description']) === true ? $object['description'] : null);
+        $this->setOwner(isset($object['owner']) === true ? $object['owner'] : null);
+        $this->setIsPublic(isset($object['isPublic']) === true ? $object['isPublic'] : false);
+        $this->setIsDefault(isset($object['isDefault']) === true ? $object['isDefault'] : false);
+        $this->setQuery(isset($object['query']) === true ? $object['query'] : []);
+        $this->setFavoredBy(isset($object['favoredBy']) === true ? $object['favoredBy'] : []);
 
         return $this;
     }//end hydrate()
+
+
+    /**
+     * Get the configuration that manages this view (transient property)
+     *
+     * @return Configuration|null The managing configuration or null
+     */
+    public function getManagedByConfigurationEntity(): ?Configuration
+    {
+        return $this->managedByConfiguration;
+
+    }//end getManagedByConfigurationEntity()
+
 
     /**
      * Set the configuration that manages this view (transient property)
@@ -370,8 +280,40 @@ class View extends Entity implements JsonSerializable
      */
     public function setManagedByConfigurationEntity(?Configuration $configuration): void
     {
-        $this->managedByConfig = $configuration;
+        $this->managedByConfiguration = $configuration;
+
     }//end setManagedByConfigurationEntity()
+
+
+    /**
+     * Check if this view is managed by a configuration
+     *
+     * Returns true if this view's ID appears in any of the provided configurations' views arrays.
+     *
+     * @param array<Configuration> $configurations Array of Configuration entities to check against
+     *
+     * @return bool True if managed by a configuration, false otherwise
+     *
+     * @phpstan-param array<Configuration> $configurations
+     * @psalm-param   array<Configuration> $configurations
+     */
+    public function isManagedByConfiguration(array $configurations): bool
+    {
+        if (empty($configurations) === true || $this->id === null) {
+            return false;
+        }
+
+        foreach ($configurations as $configuration) {
+            $views = $configuration->getViews();
+            if (in_array($this->id, $views, true) === true) {
+                return true;
+            }
+        }
+
+        return false;
+
+    }//end isManagedByConfiguration()
+
 
     /**
      * Get the configuration that manages this view
@@ -400,5 +342,9 @@ class View extends Entity implements JsonSerializable
         }
 
         return null;
+
     }//end getManagedByConfiguration()
+
+
 }//end class
+

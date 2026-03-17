@@ -1,10 +1,9 @@
 <?php
-
 /**
- * OpenRegister ObjectUpdatingEvent
+ * OpenRegister ObjectUpdatedEvent
  *
- * This file contains the event class dispatched when an object is being updated
- * in the OpenRegister application. Supports hook-based rejection via StoppableEventInterface.
+ * This file contains the event class dispatched when an object is updated
+ * in the OpenRegister application.
  *
  * @category Event
  * @package  OCA\OpenRegister\Event
@@ -22,14 +21,11 @@ namespace OCA\OpenRegister\Event;
 
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCP\EventDispatcher\Event;
-use Psr\EventDispatcher\StoppableEventInterface;
 
 /**
- * Event dispatched when an object is being updated.
- *
- * Implements StoppableEventInterface so hooks can reject updates.
+ * Event dispatched when an object is updated
  */
-class ObjectUpdatingEvent extends Event implements StoppableEventInterface
+class ObjectUpdatingEvent extends Event
 {
 
     /**
@@ -42,45 +38,27 @@ class ObjectUpdatingEvent extends Event implements StoppableEventInterface
     /**
      * The previous object entity state
      *
-     * @var ObjectEntity|null The object entity before update (null if not available)
+     * @var ObjectEntity The object entity before update
      */
-    private ?ObjectEntity $oldObject;
+    private ObjectEntity $oldObject;
+
 
     /**
-     * Whether event propagation has been stopped
+     * Constructor for ObjectUpdatedEvent
      *
-     * @var boolean
-     */
-    private bool $propagationStopped = false;
-
-    /**
-     * Errors from hooks that stopped propagation
-     *
-     * @var array<string, mixed>
-     */
-    private array $errors = [];
-
-    /**
-     * Modified data from hooks
-     *
-     * @var array<string, mixed>
-     */
-    private array $modifiedData = [];
-
-    /**
-     * Constructor for ObjectUpdatingEvent
-     *
-     * @param ObjectEntity      $newObject The object entity after update
-     * @param ObjectEntity|null $oldObject The object entity before update (null if not available)
+     * @param ObjectEntity $newObject The object entity after update
+     * @param ObjectEntity $oldObject The object entity before update
      *
      * @return void
      */
-    public function __construct(ObjectEntity $newObject, ?ObjectEntity $oldObject=null)
+    public function __construct(ObjectEntity $newObject, ObjectEntity $oldObject)
     {
         parent::__construct();
         $this->newObject = $newObject;
         $this->oldObject = $oldObject;
+
     }//end __construct()
+
 
     /**
      * Get the updated object entity
@@ -90,79 +68,20 @@ class ObjectUpdatingEvent extends Event implements StoppableEventInterface
     public function getNewObject(): ObjectEntity
     {
         return $this->newObject;
+
     }//end getNewObject()
+
 
     /**
      * Get the original object entity
      *
-     * @return ObjectEntity|null The object entity before update (null if not available)
+     * @return ObjectEntity The object entity before update
      */
-    public function getOldObject(): ?ObjectEntity
+    public function getOldObject(): ObjectEntity
     {
         return $this->oldObject;
+
     }//end getOldObject()
 
-    /**
-     * Check if propagation has been stopped by a hook
-     *
-     * @return bool True if propagation is stopped
-     */
-    public function isPropagationStopped(): bool
-    {
-        return $this->propagationStopped;
-    }//end isPropagationStopped()
 
-    /**
-     * Stop event propagation (used by hooks to reject update)
-     *
-     * @return void
-     */
-    public function stopPropagation(): void
-    {
-        $this->propagationStopped = true;
-    }//end stopPropagation()
-
-    /**
-     * Set errors from hooks
-     *
-     * @param array<string, mixed> $errors The error details
-     *
-     * @return void
-     */
-    public function setErrors(array $errors): void
-    {
-        $this->errors = $errors;
-    }//end setErrors()
-
-    /**
-     * Get errors from hooks
-     *
-     * @return array<string, mixed> The error details
-     */
-    public function getErrors(): array
-    {
-        return $this->errors;
-    }//end getErrors()
-
-    /**
-     * Set modified data from hooks
-     *
-     * @param array<string, mixed> $data The modified data
-     *
-     * @return void
-     */
-    public function setModifiedData(array $data): void
-    {
-        $this->modifiedData = $data;
-    }//end setModifiedData()
-
-    /**
-     * Get modified data from hooks
-     *
-     * @return array<string, mixed> The modified data
-     */
-    public function getModifiedData(): array
-    {
-        return $this->modifiedData;
-    }//end getModifiedData()
 }//end class

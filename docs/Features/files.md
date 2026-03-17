@@ -40,8 +40,6 @@ OpenRegister supports **integrated file uploads** directly within object POST/PU
 
 **Use Case:** Uploading files from web forms or file inputs
 
-**Authentication Note:** ⚠️ Multipart file uploads require **session-based authentication** or **API tokens**. HTTP Basic Authentication is not supported for multipart uploads due to Nextcloud security policies. For API testing with Basic Auth, use base64-encoded files instead (see method 2 below).
-
 **Example:**
 ```http
 POST /index.php/apps/openregister/api/registers/documents/schemas/document/objects
@@ -52,7 +50,7 @@ attachment=@report.pdf
 thumbnail=@cover.jpg
 ```
 
-**JavaScript Example (with session cookies):**
+**JavaScript Example:**
 ```javascript
 const formData = new FormData();
 formData.append('title', 'Annual Report 2024');
@@ -62,7 +60,9 @@ formData.append('thumbnail', thumbnailInput.files[0]);
 fetch('/index.php/apps/openregister/api/registers/documents/schemas/document/objects', {
   method: 'POST',
   body: formData,
-  credentials: 'include' // Important: includes session cookies
+  headers: {
+    'Authorization': 'Bearer YOUR_TOKEN'
+  }
 })
 .then(response => response.json())
 .then(data => console.log('Created:', data));
@@ -76,17 +76,9 @@ fetch('/index.php/apps/openregister/api/registers/documents/schemas/document/obj
 - ✅ Low memory footprint: Can stream directly from disk to disk
 - ✅ Fastest method: Direct transfer without intermediate conversions
 
-**Authentication Methods for Multipart Uploads:**
-- ✅ **Session cookies** (recommended for web applications)
-- ✅ **Nextcloud App Passwords** (for external applications)
-- ✅ **OAuth2 tokens** (for third-party integrations)
-- ❌ **HTTP Basic Auth** (not supported due to Nextcloud security policies)
+#### 2. Base64-Encoded Files
 
-#### 2. Base64-Encoded Files (Recommended for API Testing)
-
-**Use Case:** Embedding files in JSON payloads, API integrations, testing with HTTP Basic Auth
-
-**Authentication:** Works with all authentication methods including HTTP Basic Auth.
+**Use Case:** Embedding files in JSON payloads, API integrations
 
 **Data URI Format:**
 ```json

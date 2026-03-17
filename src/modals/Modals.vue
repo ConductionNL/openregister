@@ -4,7 +4,8 @@ import { navigationStore } from '../store/store.js'
 
 <template>
 	<!-- Placeholder Div -->
-	<Fragment>
+	<div>
+		<EditRegister />
 		<ImportRegister />
 		<ExportRegister />
 		<PublishRegister />
@@ -14,11 +15,12 @@ import { navigationStore } from '../store/store.js'
 		<ImportConfiguration />
 		<ExportConfiguration />
 		<PublishConfiguration />
+		<EditSchema v-if="navigationStore.modal === 'editSchema'" />
 		<ExploreSchema v-if="navigationStore.dialog === 'exploreSchema'" />
 		<DeleteSchema />
-		<EditSchema v-if="navigationStore.modal === 'editSchema'" />
 		<ValidateSchema v-if="navigationStore.dialog === 'validateSchema'" />
 		<DeleteSchemaObjects v-if="navigationStore.dialog === 'deleteSchemaObjects'" />
+		<PublishSchemaObjects v-if="navigationStore.dialog === 'publishSchemaObjects'" />
 		<UploadSchema />
 		<EditSchemaProperty v-if="navigationStore.modal === 'editSchemaProperty'" />
 		<DeleteSchemaProperty />
@@ -34,6 +36,8 @@ import { navigationStore } from '../store/store.js'
 		<UploadObject v-if="navigationStore.modal === 'uploadObject'" />
 		<ViewObjectAuditTrail v-if="navigationStore.modal === 'viewObjectAuditTrail'" />
 		<MassDeleteObject v-if="navigationStore.dialog === 'massDeleteObject'" />
+		<MassPublishObjects v-if="navigationStore.dialog === 'massPublishObjects'" />
+		<MassDepublishObjects v-if="navigationStore.dialog === 'massDepublishObjects'" />
 		<MassValidateObjects v-if="navigationStore.dialog === 'massValidateObjects'" />
 		<RestoreMultiple v-if="navigationStore.dialog === 'restoreMultiple'" />
 		<PurgeMultiple v-if="navigationStore.dialog === 'permanentlyDeleteMultiple'" />
@@ -48,14 +52,11 @@ import { navigationStore } from '../store/store.js'
 		<EditApplication v-if="navigationStore.modal === 'editApplication'" />
 		<EditAgent v-if="navigationStore.modal === 'editAgent'" />
 		<DeleteAgent />
-		<EditWebhook v-if="navigationStore.modal === 'editWebhook'" />
-		<ViewWebhookLog v-if="navigationStore.modal === 'viewWebhookLog'" />
-		<EditEndpoint v-if="navigationStore.modal === 'editEndpoint'" />
-		<DeleteEndpoint v-if="navigationStore.dialog === 'deleteEndpoint'" />
-	</Fragment>
+	</div>
 </template>
 
 <script>
+import EditRegister from './register/EditRegister.vue'
 import ImportRegister from './register/ImportRegister.vue'
 import ExportRegister from './register/ExportRegister.vue'
 import PublishRegister from './register/PublishRegister.vue'
@@ -70,6 +71,7 @@ import ExploreSchema from './schema/ExploreSchema.vue'
 import DeleteSchema from './schema/DeleteSchema.vue'
 import ValidateSchema from './schema/ValidateSchema.vue'
 import DeleteSchemaObjects from './schema/DeleteSchemaObjects.vue'
+import PublishSchemaObjects from './schema/PublishSchemaObjects.vue'
 import UploadSchema from './schema/UploadSchema.vue'
 import EditSchemaProperty from './schema/EditSchemaProperty.vue'
 import DeleteSchemaProperty from './schema/DeleteSchemaProperty.vue'
@@ -86,6 +88,8 @@ import ViewObject from './object/ViewObject.vue'
 import DownloadObject from './object/DownloadObject.vue'
 import UploadFiles from './file/UploadFiles.vue'
 import MassDeleteObject from './object/MassDeleteObject.vue'
+import MassPublishObjects from './object/MassPublishObjects.vue'
+import MassDepublishObjects from './object/MassDepublishObjects.vue'
 import MassValidateObjects from './object/MassValidateObjects.vue'
 import RestoreMultiple from './deleted/RestoreMultiple.vue'
 import PurgeMultiple from './deleted/PurgeMultiple.vue'
@@ -98,13 +102,10 @@ import ManageOrganisationRoles from './organisation/ManageOrganisationRoles.vue'
 import EditApplication from './application/EditApplication.vue'
 import EditAgent from './agent/EditAgent.vue'
 import DeleteAgent from './agent/DeleteAgent.vue'
-import EditWebhook from './webhook/EditWebhook.vue'
-import ViewWebhookLog from './webhook/ViewWebhookLog.vue'
-import EditEndpoint from './endpoint/EditEndpoint.vue'
-import DeleteEndpoint from './endpoint/DeleteEndpoint.vue'
 export default {
 	name: 'Modals',
 	components: {
+		EditRegister,
 		ImportRegister,
 		ExportRegister,
 		PublishRegister,
@@ -119,6 +120,7 @@ export default {
 		DeleteSchema,
 		ValidateSchema,
 		DeleteSchemaObjects,
+		PublishSchemaObjects,
 		UploadSchema,
 		EditSchemaProperty,
 		DeleteSchemaProperty,
@@ -135,6 +137,8 @@ export default {
 		DownloadObject,
 		UploadFiles,
 		MassDeleteObject,
+		MassPublishObjects,
+		MassDepublishObjects,
 		MassValidateObjects,
 		RestoreMultiple,
 		PurgeMultiple,
@@ -147,10 +151,6 @@ export default {
 		EditApplication,
 		EditAgent,
 		DeleteAgent,
-		EditWebhook,
-		ViewWebhookLog,
-		EditEndpoint,
-		DeleteEndpoint,
 	},
 }
 </script>

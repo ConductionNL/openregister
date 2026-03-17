@@ -1,32 +1,28 @@
 <?php
 
+declare(strict_types=1);
+
 /**
- * OpenRegister SOLR Management Command
- *
- * SolrManagementCommand - Production SOLR Management CLI.
+ * SolrManagementCommand - Production SOLR Management CLI
  *
  * This command provides comprehensive SOLR management operations including
  * setup, schema validation, optimization, warming, and maintenance tasks.
  *
  * @category Command
  * @package  OCA\OpenRegister\Command
- *
- * @author    Conduction Development Team <dev@conduction.nl>
- * @copyright 2024 Conduction B.V.
- * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
- *
- * @version GIT: <git-id>
- *
- * @link https://www.OpenRegister.app
+ * @author   OpenRegister Team
+ * @copyright 2024 OpenRegister
+ * @license  AGPL-3.0-or-later
+ * @version  1.0.0
+ * @link     https://github.com/OpenRegister/OpenRegister
  */
-
-declare(strict_types=1);
 
 namespace OCA\OpenRegister\Command;
 
-use OCA\OpenRegister\Service\IndexService;
+use OCA\OpenRegister\Service\GuzzleSolrService;
+use OCA\OpenRegister\Service\SolrSchemaService;
 use OCA\OpenRegister\Service\SettingsService;
-use OCA\OpenRegister\Service\Index\SetupHandler;
+use OCA\OpenRegister\Setup\SolrSetup;
 use OCP\IConfig;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\Console\Command\Command;
@@ -47,27 +43,31 @@ use Symfony\Component\Console\Input\InputArgument;
  * @category  Command
  * @package   OCA\OpenRegister\Command
  * @author    OpenRegister Team
- * @license   AGPL-3.0-or-later https://www.gnu.org/licenses/agpl-3.0.html
+ * @license   AGPL-3.0-or-later
  * @link      https://github.com/OpenRegister/OpenRegister
- * @version   GIT: <git_id>
+ * @version   1.0.0
  * @copyright 2024 OpenRegister
- *
- * @SuppressWarnings(PHPMD.ExcessiveClassComplexity)
  */
 class SolrManagementCommand extends Command
 {
     /**
      * Constructor
      *
-     * @param LoggerInterface $logger      Logger for debugging and monitoring
-     * @param IndexService    $solrService SOLR service for operations
+     * @param SettingsService   $settingsService Settings service for configuration
+     * @param LoggerInterface   $logger          Logger for debugging and monitoring
+     * @param GuzzleSolrService $solrService     SOLR service for operations
+     * @param SolrSchemaService $schemaService   Schema mirroring service
+     * @param IConfig           $config          Nextcloud configuration
      */
     public function __construct(
+        private readonly SettingsService $settingsService,
         private readonly LoggerInterface $logger,
-        private readonly IndexService $solrService
+        private readonly GuzzleSolrService $solrService,
+        private readonly SolrSchemaService $schemaService,
+        private readonly IConfig $config
     ) {
         parent::__construct();
-    }//end __construct()
+    }
 
     /**
      * Configure the command
@@ -76,30 +76,30 @@ class SolrManagementCommand extends Command
      */
     protected function configure(): void
     {
-        $this->setName(name: 'openregister:solr:manage')
+        $this->setName('openregister:solr:manage')
             ->setDescription('🔧 SOLR Management - Setup, optimize, and maintain SOLR infrastructure')
             ->addArgument(
-                name: 'action',
-                mode: InputArgument::REQUIRED,
-                description: 'Action: setup, optimize, warm, health, schema-check, clear, stats, configure-vectors'
+                'action',
+                InputArgument::REQUIRED,
+                'Action to perform: setup, optimize, warm, health, schema-check, clear, stats, configure-vectors'
             )
             ->addOption(
-                name: 'tenant-collection',
-                shortcut: 't',
-                mode: InputOption::VALUE_OPTIONAL,
-                description: 'Target specific tenant collection (default: current tenant)'
+                'tenant-collection',
+                't',
+                InputOption::VALUE_OPTIONAL,
+                'Target specific tenant collection (default: current tenant)'
             )
             ->addOption(
-                name: 'force',
-                shortcut: 'f',
-                mode: InputOption::VALUE_NONE,
-                description: 'Force operation (use with caution)'
+                'force',
+                'f',
+                InputOption::VALUE_NONE,
+                'Force operation (use with caution)'
             )
             ->addOption(
-                name: 'commit',
-                shortcut: 'c',
-                mode: InputOption::VALUE_NONE,
-                description: 'Commit changes immediately'
+                'commit',
+                'c',
+                InputOption::VALUE_NONE,
+                'Commit changes immediately'
             )
             ->setHelp(
                 '🔧 <info>SOLR Management Command</info>
@@ -139,7 +139,7 @@ class SolrManagementCommand extends Command
   • <info>health</info> for monitoring and diagnostics
 '
             );
-    }//end configure()
+    }
 
     /**
      * Execute the command
@@ -148,46 +148,41 @@ class SolrManagementCommand extends Command
      * @param OutputInterface $output Output interface
      *
      * @return int Exit code
-     *
-     * @psalm-return 0|1
      */
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $action = $input->getArgument('action');
-        $force  = $input->getOption('force');
+        $force = $input->getOption('force');
         $commit = $input->getOption('commit');
 
         $output->writeln('');
         $output->writeln('🔧 <info>SOLR Management - OpenRegister Production Tool</info>');
         $output->writeln('================================================');
 
-        // Check if SOLR is available.
-        if ($this->solrService->isAvailable() === false) {
+        // Check if SOLR is available
+        if (!$this->solrService->isAvailable()) {
             $output->writeln('<error>❌ SOLR is not available or not configured</error>');
             $output->writeln('<comment>   Configure SOLR in admin settings first</comment>');
             return self::FAILURE;
         }
 
         return match ($action) {
-            'setup' => $this->handleSetup(output: $output),
-            'optimize' => $this->handleOptimize(output: $output, commit: $commit),
-            'warm' => $this->handleWarm(output: $output),
-            'health' => $this->handleHealth(output: $output),
-            'schema-check' => $this->handleSchemaCheck(output: $output),
-            'clear' => $this->handleClear(output: $output, force: $force),
-            'stats' => $this->handleStats(output: $output),
-            default => $this->handleInvalidAction(output: $output, action: $action),
+            'setup' => $this->handleSetup($output),
+            'optimize' => $this->handleOptimize($output, $commit),
+            'warm' => $this->handleWarm($output),
+            'health' => $this->handleHealth($output),
+            'schema-check' => $this->handleSchemaCheck($output),
+            'clear' => $this->handleClear($output, $force),
+            'stats' => $this->handleStats($output),
+            default => $this->handleInvalidAction($output, $action),
         };
-    }//end execute()
+    }
 
     /**
      * Handle SOLR setup
      *
      * @param OutputInterface $output Output interface
-     *
      * @return int Exit code
-     *
-     * @psalm-return 0|1
      */
     private function handleSetup(OutputInterface $output): int
     {
@@ -195,82 +190,74 @@ class SolrManagementCommand extends Command
         $output->writeln('');
 
         try {
-            // Test connection first.
+            // Test connection first
             $connectionResult = $this->solrService->testConnection();
-            if ($connectionResult['success'] === false) {
-                $output->writeln('<error>❌ SOLR connection failed: '.$connectionResult['message'].'</error>');
+            if (!$connectionResult['success']) {
+                $output->writeln('<error>❌ SOLR connection failed: ' . $connectionResult['message'] . '</error>');
                 return self::FAILURE;
             }
 
             $output->writeln('✅ SOLR connection successful');
-            $version = $connectionResult['details']['solr_version'] ?? 'unknown';
-            $output->writeln('   Version: <comment>'.$version.'</comment>');
-            $output->writeln('   Mode: <comment>'.($connectionResult['details']['mode'] ?? 'unknown').'</comment>');
+            $output->writeln('   Version: <comment>' . ($connectionResult['details']['solr_version'] ?? 'unknown') . '</comment>');
+            $output->writeln('   Mode: <comment>' . ($connectionResult['details']['mode'] ?? 'unknown') . '</comment>');
             $output->writeln('');
 
-            // Run comprehensive SOLR setup with corrected schema configuration.
+            // Run comprehensive SOLR setup with corrected schema configuration
             $output->writeln('📋 Running comprehensive SOLR setup with corrected schema configuration...');
             $output->writeln('   • Using self_ prefixes for metadata fields');
             $output->writeln('   • Clean field names (no suffixes) with explicit types');
             $output->writeln('   • Single-valued tenant_id field');
             $output->writeln('');
-
-            // Use the injected solrService instead of creating a new one.
-            // Initialize SolrSetup with proper configuration.
-            $solrSetup = new SetupHandler(solrService: $this->solrService, logger: $this->logger);
-
-            // Run complete setup including schema field configuration.
-            $setupResult = $solrSetup->setupSolr();
-            if ($setupResult === true) {
+            
+            // Get SOLR configuration
+            $solrConfig = $this->settingsService->getSolrSettings();
+            
+            // Initialize SolrSetup with proper configuration
+            $solrSetup = new SolrSetup($solrConfig, $this->logger);
+            
+            // Run complete setup including schema field configuration
+            if ($solrSetup->setupSolr()) {
                 $output->writeln('✅ Base SOLR infrastructure and schema configured');
                 $output->writeln('   • ConfigSet: <comment>openregister</comment>');
                 $output->writeln('   • Base collection: <comment>openregister</comment>');
                 $output->writeln('   • Schema fields: <comment>22 ObjectEntity metadata fields</comment>');
                 $output->writeln('');
-
-                // Ensure tenant collection.
+                
+                // Ensure tenant collection
                 $output->writeln('🏠 Verifying tenant-specific collection...');
-                try {
-                    $this->solrService->ensureTenantCollection();
+                if ($this->solrService->ensureTenantCollection()) {
                     $output->writeln('✅ Tenant collection ready with proper schema');
-                } catch (\Exception $e) {
-                    $output->writeln('<error>❌ Failed to create tenant collection: '.$e->getMessage().'</error>');
+                    
+                    $docCount = $this->solrService->getDocumentCount();
+                    $output->writeln('   Document count: <comment>' . $docCount . '</comment>');
+                } else {
+                    $output->writeln('<error>❌ Failed to create tenant collection</error>');
                     return self::FAILURE;
                 }
-
-                $docCount = $this->solrService->getDocumentCount();
-                $output->writeln('   Document count: <comment>'.$docCount.'</comment>');
-            }//end if
-
-            if ($setupResult !== true) {
+            } else {
                 $output->writeln('<error>❌ SOLR setup failed - check logs for details</error>');
                 return self::FAILURE;
-            }//end if
+            }
 
             $output->writeln('');
             $output->writeln('🎉 <info>SOLR setup completed successfully!</info>');
             $output->writeln('<comment>   Your SOLR infrastructure is ready for production use.</comment>');
 
             return self::SUCCESS;
+
         } catch (\Exception $e) {
-            $output->writeln('<error>❌ Setup failed: '.$e->getMessage().'</error>');
-            $this->logger->error(
-                message: '[SolrManagementCommand] SOLR setup failed',
-                context: ['file' => __FILE__, 'line' => __LINE__, 'error' => $e->getMessage()]
-            );
+            $output->writeln('<error>❌ Setup failed: ' . $e->getMessage() . '</error>');
+            $this->logger->error('SOLR setup failed', ['error' => $e->getMessage()]);
             return self::FAILURE;
-        }//end try
-    }//end handleSetup()
+        }
+    }
 
     /**
      * Handle index optimization
      *
      * @param OutputInterface $output Output interface
-     * @param bool            $commit Whether to commit
-     *
+     * @param bool           $commit  Whether to commit
      * @return int Exit code
-     *
-     * @psalm-return 0|1
      */
     private function handleOptimize(OutputInterface $output, bool $commit): int
     {
@@ -280,43 +267,38 @@ class SolrManagementCommand extends Command
 
         try {
             $startTime = microtime(true);
-
-            if ($this->solrService->optimize() === true) {
+            
+            if ($this->solrService->optimize()) {
                 $executionTime = round((microtime(true) - $startTime) * 1000, 2);
                 $output->writeln('✅ Index optimization completed');
-                $output->writeln('   Execution time: <comment>'.$executionTime.'ms</comment>');
-
-                if ($commit === true) {
+                $output->writeln('   Execution time: <comment>' . $executionTime . 'ms</comment>');
+                
+                if ($commit) {
                     $output->writeln('💾 Committing changes...');
-                    if ($this->solrService->commit() === true) {
+                    if ($this->solrService->commit()) {
                         $output->writeln('✅ Changes committed successfully');
-                    }
-
-                    if ($this->solrService->commit() === false) {
+                    } else {
                         $output->writeln('<error>⚠️  Commit failed, but optimization succeeded</error>');
                     }
                 }
-
+                
                 return self::SUCCESS;
-            }//end if
+            } else {
+                $output->writeln('<error>❌ Index optimization failed</error>');
+                return self::FAILURE;
+            }
 
-            // If optimize failed, return failure.
-            $output->writeln('<error>❌ Index optimization failed</error>');
-            return self::FAILURE;
         } catch (\Exception $e) {
-            $output->writeln('<error>❌ Optimization failed: '.$e->getMessage().'</error>');
+            $output->writeln('<error>❌ Optimization failed: ' . $e->getMessage() . '</error>');
             return self::FAILURE;
-        }//end try
-    }//end handleOptimize()
+        }
+    }
 
     /**
      * Handle cache warming
      *
      * @param OutputInterface $output Output interface
-     *
      * @return int Exit code
-     *
-     * @psalm-return 0|1
      */
     private function handleWarm(OutputInterface $output): int
     {
@@ -324,30 +306,22 @@ class SolrManagementCommand extends Command
         $output->writeln('');
 
         try {
-            // Common warming queries.
+            // Common warming queries
             $warmQueries = [
                 ['q' => '*:*', 'rows' => 10, 'description' => 'All documents sample'],
                 ['q' => 'published:[* TO *]', 'rows' => 10, 'description' => 'Published objects'],
-                [
-                    'q'           => '*:*',
-                    'rows'        => 0,
-                    'facet'       => 'true',
-                    'facet.field' => ['register_id', 'schema_id'],
-                    'description' => 'Facet warming',
-                ],
+                ['q' => '*:*', 'rows' => 0, 'facet' => 'true', 'facet.field' => ['register_id', 'schema_id'], 'description' => 'Facet warming'],
             ];
 
             $successCount = 0;
             foreach ($warmQueries as $query) {
-                $output->write('   🔥 '.$query['description'].'... ');
-
-                $result = $this->solrService->searchObjects(query: $query);
-                if ($result['success'] === true) {
+                $output->write('   🔥 ' . $query['description'] . '... ');
+                
+                $result = $this->solrService->searchObjects($query);
+                if ($result['success']) {
                     $output->writeln('<info>✅</info>');
                     $successCount++;
-                }
-
-                if ($result['success'] === false) {
+                } else {
                     $output->writeln('<error>❌</error>');
                 }
             }
@@ -357,25 +331,22 @@ class SolrManagementCommand extends Command
                 $output->writeln('🔥 <info>Cache warming completed successfully!</info>');
                 $output->writeln('<comment>   SOLR caches are now pre-loaded for optimal performance.</comment>');
                 return self::SUCCESS;
+            } else {
+                $output->writeln('<error>⚠️  Some warming queries failed (' . $successCount . '/' . count($warmQueries) . ' successful)</error>');
+                return self::FAILURE;
             }
 
-            $total = count($warmQueries);
-            $output->writeln("<error>Some warming queries failed ({$successCount}/{$total} successful)</error>");
-            return self::FAILURE;
         } catch (\Exception $e) {
-            $output->writeln('<error>❌ Cache warming failed: '.$e->getMessage().'</error>');
+            $output->writeln('<error>❌ Cache warming failed: ' . $e->getMessage() . '</error>');
             return self::FAILURE;
-        }//end try
-    }//end handleWarm()
+        }
+    }
 
     /**
      * Handle health check
      *
      * @param OutputInterface $output Output interface
-     *
      * @return int Exit code
-     *
-     * @psalm-return 0|1
      */
     private function handleHealth(OutputInterface $output): int
     {
@@ -385,165 +356,137 @@ class SolrManagementCommand extends Command
         $issues = 0;
 
         try {
-            // Connection test.
+            // Connection test
             $output->writeln('🔗 <info>Testing connection...</info>');
             $connectionResult = $this->solrService->testConnection();
-            if ($connectionResult['success'] === true) {
-                $output->writeln('   ✅ Connection successful ('.$connectionResult['details']['response_time_ms'].'ms)');
-                $output->writeln('   📊 SOLR version: <comment>'.$connectionResult['details']['solr_version'].'</comment>');
-                $output->writeln('   🏗️  Mode: <comment>'.$connectionResult['details']['mode'].'</comment>');
-            }
-
-            if ($connectionResult['success'] === false) {
-                $output->writeln('   <error>❌ Connection failed: '.$connectionResult['message'].'</error>');
+            if ($connectionResult['success']) {
+                $output->writeln('   ✅ Connection successful (' . $connectionResult['details']['response_time_ms'] . 'ms)');
+                $output->writeln('   📊 SOLR version: <comment>' . $connectionResult['details']['solr_version'] . '</comment>');
+                $output->writeln('   🏗️  Mode: <comment>' . $connectionResult['details']['mode'] . '</comment>');
+            } else {
+                $output->writeln('   <error>❌ Connection failed: ' . $connectionResult['message'] . '</error>');
                 $issues++;
             }
 
-            // Collection test.
+            // Collection test
             $output->writeln('');
             $output->writeln('🏠 <info>Testing tenant collection...</info>');
-            try {
-                $this->solrService->ensureTenantCollection();
+            if ($this->solrService->ensureTenantCollection()) {
                 $output->writeln('   ✅ Tenant collection accessible');
-
+                
                 $docCount = $this->solrService->getDocumentCount();
-                $output->writeln('   📊 Document count: <comment>'.$docCount.'</comment>');
-            } catch (\Exception $e) {
-                $output->writeln('   <error>❌ Tenant collection not accessible: '.$e->getMessage().'</error>');
+                $output->writeln('   📊 Document count: <comment>' . $docCount . '</comment>');
+            } else {
+                $output->writeln('   <error>❌ Tenant collection not accessible</error>');
                 $issues++;
             }
 
-            // Basic search test.
+            // Basic search test
             $output->writeln('');
             $output->writeln('🔍 <info>Testing search functionality...</info>');
-            $searchResult = $this->solrService->searchObjects(query: ['q' => '*:*', 'rows' => 1]);
-            if ($searchResult['success'] === true) {
-                $output->writeln('   ✅ Search working ('.$searchResult['execution_time_ms'].'ms)');
-                $output->writeln('   📊 Total documents: <comment>'.$searchResult['total'].'</comment>');
-            }
-
-            if ($searchResult['success'] === false) {
-                $output->writeln('   <error>❌ Search failed: '.($searchResult['error'] ?? 'Unknown error').'</error>');
+            $searchResult = $this->solrService->searchObjects(['q' => '*:*', 'rows' => 1]);
+            if ($searchResult['success']) {
+                $output->writeln('   ✅ Search working (' . $searchResult['execution_time_ms'] . 'ms)');
+                $output->writeln('   📊 Total documents: <comment>' . $searchResult['total'] . '</comment>');
+            } else {
+                $output->writeln('   <error>❌ Search failed: ' . ($searchResult['error'] ?? 'Unknown error') . '</error>');
                 $issues++;
             }
 
-            // Service statistics.
+            // Service statistics
             $output->writeln('');
             $output->writeln('📊 <info>Service Statistics</info>');
             $stats = $this->solrService->getStats();
-            $output->writeln('   🔍 Searches: <comment>'.$stats['searches'].'</comment>');
-            $output->writeln('   📝 Indexes: <comment>'.$stats['indexes'].'</comment>');
-            $output->writeln('   🗑️  Deletes: <comment>'.$stats['deletes'].'</comment>');
-            $output->writeln('   ⚠️  Errors: <comment>'.$stats['errors'].'</comment>');
+            $output->writeln('   🔍 Searches: <comment>' . $stats['searches'] . '</comment>');
+            $output->writeln('   📝 Indexes: <comment>' . $stats['indexes'] . '</comment>');
+            $output->writeln('   🗑️  Deletes: <comment>' . $stats['deletes'] . '</comment>');
+            $output->writeln('   ⚠️  Errors: <comment>' . $stats['errors'] . '</comment>');
 
             $output->writeln('');
             if ($issues === 0) {
                 $output->writeln('🎉 <info>All health checks passed! SOLR is healthy.</info>');
                 return self::SUCCESS;
+            } else {
+                $output->writeln('<error>⚠️  Health check found ' . $issues . ' issues</error>');
+                return self::FAILURE;
             }
 
-            $output->writeln('<error>⚠️  Health check found '.$issues.' issues</error>');
-            return self::FAILURE;
         } catch (\Exception $e) {
-            $output->writeln('<error>❌ Health check failed: '.$e->getMessage().'</error>');
+            $output->writeln('<error>❌ Health check failed: ' . $e->getMessage() . '</error>');
             return self::FAILURE;
-        }//end try
-    }//end handleHealth()
+        }
+    }
 
     /**
      * Handle schema validation
      *
      * @param OutputInterface $output Output interface
-     *
      * @return int Exit code
-     *
-     * @psalm-return 0|1
      */
     private function handleSchemaCheck(OutputInterface $output): int
     {
         $output->writeln('📋 <info>Validating SOLR schema compatibility with ObjectEntity...</info>');
         $output->writeln('');
 
-        // Expected fields based on ObjectEntity.
+        // Expected fields based on ObjectEntity
         $expectedFields = [
-            'id',
-            'uuid',
-            'slug',
-            'name',
-            'description',
-            'summary',
-            'image',
-            'uri',
-            'version',
-            'register_id',
-            'schema_id',
-            'organisation_id',
-            'created',
-            'updated',
-            'published',
-            'depublished',
-            'tenant_id',
-            '_text_',
-        // Full-text search field.
+            'id', 'uuid', 'slug', 'name', 'description', 'summary', 'image',
+            'uri', 'version', 'register_id', 'schema_id', 'organisation_id',
+            'created', 'updated', 'published', 'depublished', 'tenant_id',
+            '_text_'  // Full-text search field
         ];
 
         try {
-            // Get schema information (this is a simplified check).
+            // Get schema information (this is a simplified check)
             $output->writeln('🔍 Checking field compatibility...');
-
-            // Test a document structure.
-            $testResult = $this->solrService->searchObjects(query: ['q' => '*:*', 'rows' => 1]);
-            if ($testResult['success'] === true && empty($testResult['data']) === false) {
-                $sampleDoc       = $testResult['data'][0];
+            
+            // Test a document structure
+            $testResult = $this->solrService->searchObjects(['q' => '*:*', 'rows' => 1]);
+            if ($testResult['success'] && !empty($testResult['data'])) {
+                $sampleDoc = $testResult['data'][0];
                 $availableFields = array_keys($sampleDoc);
-
-                $output->writeln('📊 Available fields in SOLR: <comment>'.count($availableFields).'</comment>');
-                $output->writeln('📋 Expected fields: <comment>'.count($expectedFields).'</comment>');
-
+                
+                $output->writeln('📊 Available fields in SOLR: <comment>' . count($availableFields) . '</comment>');
+                $output->writeln('📋 Expected fields: <comment>' . count($expectedFields) . '</comment>');
+                
                 $missingFields = array_diff($expectedFields, $availableFields);
-                $extraFields   = array_diff($availableFields, $expectedFields);
-
-                if (empty($missingFields) === true) {
+                $extraFields = array_diff($availableFields, $expectedFields);
+                
+                if (empty($missingFields)) {
                     $output->writeln('✅ All expected fields are available');
+                } else {
+                    $output->writeln('<error>⚠️  Missing fields: ' . implode(', ', $missingFields) . '</error>');
                 }
-
-                if (empty($missingFields) === false) {
-                    $output->writeln('<error>⚠️  Missing fields: '.implode(', ', $missingFields).'</error>');
+                
+                if (!empty($extraFields)) {
+                    $output->writeln('ℹ️  Additional fields: <comment>' . implode(', ', array_slice($extraFields, 0, 10)) . '</comment>');
                 }
-
-                if (empty($extraFields) === false) {
-                    $extra = implode(', ', array_slice($extraFields, 0, 10));
-                    $output->writeln('Additional fields: <comment>'.$extra.'</comment>');
-                }
-            }//end if
-
-            if ($testResult['success'] === false || empty($testResult['data']) === true) {
+                
+            } else {
                 $output->writeln('<comment>⚠️  No documents available for schema analysis</comment>');
                 $output->writeln('<comment>   Create some objects first to validate the schema</comment>');
-            }//end if
+            }
 
             $output->writeln('');
             $output->writeln('✅ <info>Schema compatibility check completed</info>');
             return self::SUCCESS;
+
         } catch (\Exception $e) {
-            $output->writeln('<error>❌ Schema check failed: '.$e->getMessage().'</error>');
+            $output->writeln('<error>❌ Schema check failed: ' . $e->getMessage() . '</error>');
             return self::FAILURE;
-        }//end try
-    }//end handleSchemaCheck()
+        }
+    }
 
     /**
      * Handle index clearing
      *
      * @param OutputInterface $output Output interface
-     * @param bool            $force  Force operation
-     *
+     * @param bool           $force   Force operation
      * @return int Exit code
-     *
-     * @psalm-return 0|1
      */
     private function handleClear(OutputInterface $output, bool $force): int
     {
-        if ($force === false) {
+        if (!$force) {
             $output->writeln('<error>❌ Clear operation requires --force flag for safety</error>');
             $output->writeln('<comment>   This will DELETE ALL indexed documents for current tenant!</comment>');
             $output->writeln('<comment>   Use: php occ openregister:solr:manage clear --force</comment>');
@@ -555,31 +498,26 @@ class SolrManagementCommand extends Command
         $output->writeln('');
 
         try {
-            $result = $this->solrService->clearIndex();
-            if (($result['success'] ?? null) !== null && ($result['success'] === true) === true) {
+            if ($this->solrService->clearIndex()) {
                 $output->writeln('✅ Index cleared successfully');
                 $output->writeln('<comment>   All documents have been removed from the index</comment>');
                 return self::SUCCESS;
+            } else {
+                $output->writeln('<error>❌ Failed to clear index</error>');
+                return self::FAILURE;
             }
 
-            $output->writeln('<error>❌ Failed to clear index</error>');
-            return self::FAILURE;
         } catch (\Exception $e) {
-            $output->writeln('<error>❌ Clear operation failed: '.$e->getMessage().'</error>');
+            $output->writeln('<error>❌ Clear operation failed: ' . $e->getMessage() . '</error>');
             return self::FAILURE;
         }
-    }//end handleClear()
+    }
 
     /**
      * Handle statistics display
      *
      * @param OutputInterface $output Output interface
-     *
      * @return int Exit code
-     *
-     * @psalm-return 0|1
-     *
-     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
      */
     private function handleStats(OutputInterface $output): int
     {
@@ -588,76 +526,48 @@ class SolrManagementCommand extends Command
 
         try {
             $dashboardStats = $this->solrService->getDashboardStats();
-
-            if ($dashboardStats['available'] === true) {
-                $output->writeln('🏠 <info>Index Information</info>');
-                $output->writeln('   Status: <comment>Available</comment>');
-
-                // Display backend stats if available.
-                if (isset($dashboardStats['backend']) === true && is_array($dashboardStats['backend']) === true) {
-                    $backendStats = $dashboardStats['backend'];
-                    $output->writeln('');
-                    $output->writeln('⚡ <info>Backend Statistics</info>');
-                    $output->writeln('   Searches: <comment>'.($backendStats['searches'] ?? 0).'</comment>');
-                    $output->writeln('   Indexes: <comment>'.($backendStats['indexes'] ?? 0).'</comment>');
-                    $output->writeln('   Deletes: <comment>'.($backendStats['deletes'] ?? 0).'</comment>');
-                    $output->writeln('   Errors: <comment>'.($backendStats['errors'] ?? 0).'</comment>');
-                    if (isset($backendStats['search_time']) === true) {
-                        $searchTime = round((float) $backendStats['search_time'] * 1000, 2);
-                        $output->writeln('   Total search time: <comment>'.$searchTime.'ms</comment>');
-                    }
-
-                    if (isset($backendStats['index_time']) === true) {
-                        $indexTime = round((float) $backendStats['index_time'] * 1000, 2);
-                        $output->writeln('   Total index time: <comment>'.$indexTime.'ms</comment>');
-                    }
-                }
-
-                // Display file stats if available.
-                if (isset($dashboardStats['files']) === true && is_array($dashboardStats['files']) === true) {
-                    $output->writeln('');
-                    $output->writeln('📁 <info>File Statistics</info>');
-                    foreach ($dashboardStats['files'] as $key => $value) {
-                        $output->writeln('   '.ucfirst((string) $key).': <comment>'.$value.'</comment>');
-                    }
-                }
-
-                // Display chunk stats if available.
-                if (isset($dashboardStats['chunks']) === true && is_array($dashboardStats['chunks']) === true) {
-                    $output->writeln('');
-                    $output->writeln('📦 <info>Chunk Statistics</info>');
-                    foreach ($dashboardStats['chunks'] as $key => $value) {
-                        $output->writeln('   '.ucfirst((string) $key).': <comment>'.$value.'</comment>');
-                    }
-                }
-            }//end if
-
-            if ($dashboardStats['available'] === false) {
-                $errMsg = $dashboardStats['error'] ?? 'Unknown error';
-                $output->writeln('<error>SOLR statistics unavailable: '.$errMsg.'</error>');
+            
+            if ($dashboardStats['available']) {
+                $output->writeln('🏠 <info>Collection Information</info>');
+                $output->writeln('   Collection: <comment>' . $dashboardStats['collection'] . '</comment>');
+                $output->writeln('   Tenant ID: <comment>' . $dashboardStats['tenant_id'] . '</comment>');
+                $output->writeln('   Documents: <comment>' . $dashboardStats['document_count'] . '</comment>');
+                $output->writeln('   Shards: <comment>' . $dashboardStats['shards'] . '</comment>');
+                $output->writeln('   Health: <comment>' . $dashboardStats['health'] . '</comment>');
+                
+                $output->writeln('');
+                $output->writeln('⚡ <info>Performance Statistics</info>');
+                $serviceStats = $dashboardStats['service_stats'];
+                $output->writeln('   Searches: <comment>' . $serviceStats['searches'] . '</comment>');
+                $output->writeln('   Indexes: <comment>' . $serviceStats['indexes'] . '</comment>');
+                $output->writeln('   Deletes: <comment>' . $serviceStats['deletes'] . '</comment>');
+                $output->writeln('   Errors: <comment>' . $serviceStats['errors'] . '</comment>');
+                $output->writeln('   Total search time: <comment>' . round($serviceStats['search_time'] * 1000, 2) . 'ms</comment>');
+                $output->writeln('   Total index time: <comment>' . round($serviceStats['index_time'] * 1000, 2) . 'ms</comment>');
+                
+            } else {
+                $output->writeln('<error>❌ SOLR statistics unavailable: ' . ($dashboardStats['error'] ?? 'Unknown error') . '</error>');
                 return self::FAILURE;
-            }//end if
+            }
 
             return self::SUCCESS;
+
         } catch (\Exception $e) {
-            $output->writeln('<error>❌ Failed to retrieve statistics: '.$e->getMessage().'</error>');
+            $output->writeln('<error>❌ Failed to retrieve statistics: ' . $e->getMessage() . '</error>');
             return self::FAILURE;
-        }//end try
-    }//end handleStats()
+        }
+    }
 
     /**
      * Handle invalid action
      *
      * @param OutputInterface $output Output interface
-     * @param string          $action Invalid action
-     *
+     * @param string         $action Invalid action
      * @return int Exit code
-     *
-     * @psalm-return 1
      */
     private function handleInvalidAction(OutputInterface $output, string $action): int
     {
-        $output->writeln('<error>❌ Invalid action: '.$action.'</error>');
+        $output->writeln('<error>❌ Invalid action: ' . $action . '</error>');
         $output->writeln('');
         $output->writeln('<comment>Available actions:</comment>');
         $output->writeln('  • <info>setup</info>         - Initialize SOLR infrastructure');
@@ -671,5 +581,5 @@ class SolrManagementCommand extends Command
         $output->writeln('Use <info>--help</info> for detailed information');
 
         return self::FAILURE;
-    }//end handleInvalidAction()
-}//end class
+    }
+}

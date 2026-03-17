@@ -1,10 +1,9 @@
 <?php
-
 /**
- * OpenRegister ObjectCreatingEvent
+ * OpenRegister ObjectCreatedEvent
  *
- * This file contains the event class dispatched when an object is being created
- * in the OpenRegister application. Supports hook-based rejection via StoppableEventInterface.
+ * This file contains the event class dispatched when an object is created
+ * in the OpenRegister application.
  *
  * @category Event
  * @package  OCA\OpenRegister\Event
@@ -22,48 +21,25 @@ namespace OCA\OpenRegister\Event;
 
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCP\EventDispatcher\Event;
-use Psr\EventDispatcher\StoppableEventInterface;
 
 /**
- * Event dispatched when an object is being created.
- *
- * Implements StoppableEventInterface so hooks can reject creation.
+ * Event dispatched when an object is created
  */
-class ObjectCreatingEvent extends Event implements StoppableEventInterface
+class ObjectCreatingEvent extends Event
 {
 
     /**
      * The newly created object entity
      *
-     * @var ObjectEntity The object entity that is being created
+     * @var ObjectEntity The object entity that was created
      */
     private ObjectEntity $object;
 
-    /**
-     * Whether event propagation has been stopped
-     *
-     * @var boolean
-     */
-    private bool $propagationStopped = false;
 
     /**
-     * Errors from hooks that stopped propagation
+     * Constructor for ObjectCreatedEvent
      *
-     * @var array<string, mixed>
-     */
-    private array $errors = [];
-
-    /**
-     * Modified data from hooks
-     *
-     * @var array<string, mixed>
-     */
-    private array $modifiedData = [];
-
-    /**
-     * Constructor for ObjectCreatingEvent
-     *
-     * @param ObjectEntity $object The object entity that is being created
+     * @param ObjectEntity $object The object entity that was created
      *
      * @return void
      */
@@ -71,79 +47,20 @@ class ObjectCreatingEvent extends Event implements StoppableEventInterface
     {
         parent::__construct();
         $this->object = $object;
+
     }//end __construct()
 
+
     /**
-     * Get the object entity being created
+     * Get the created object entity
      *
-     * @return ObjectEntity The object entity that is being created
+     * @return ObjectEntity The object entity that was created
      */
     public function getObject(): ObjectEntity
     {
         return $this->object;
+
     }//end getObject()
 
-    /**
-     * Check if propagation has been stopped by a hook
-     *
-     * @return bool True if propagation is stopped
-     */
-    public function isPropagationStopped(): bool
-    {
-        return $this->propagationStopped;
-    }//end isPropagationStopped()
 
-    /**
-     * Stop event propagation (used by hooks to reject creation)
-     *
-     * @return void
-     */
-    public function stopPropagation(): void
-    {
-        $this->propagationStopped = true;
-    }//end stopPropagation()
-
-    /**
-     * Set errors from hooks
-     *
-     * @param array<string, mixed> $errors The error details
-     *
-     * @return void
-     */
-    public function setErrors(array $errors): void
-    {
-        $this->errors = $errors;
-    }//end setErrors()
-
-    /**
-     * Get errors from hooks
-     *
-     * @return array<string, mixed> The error details
-     */
-    public function getErrors(): array
-    {
-        return $this->errors;
-    }//end getErrors()
-
-    /**
-     * Set modified data from hooks
-     *
-     * @param array<string, mixed> $data The modified data
-     *
-     * @return void
-     */
-    public function setModifiedData(array $data): void
-    {
-        $this->modifiedData = $data;
-    }//end setModifiedData()
-
-    /**
-     * Get modified data from hooks
-     *
-     * @return array<string, mixed> The modified data
-     */
-    public function getModifiedData(): array
-    {
-        return $this->modifiedData;
-    }//end getModifiedData()
 }//end class

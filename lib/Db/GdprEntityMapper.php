@@ -1,40 +1,22 @@
 <?php
 
+declare(strict_types=1);
+
 /**
  * Mapper for GDPR entities.
  *
  * @category Db
  * @package  OCA\OpenRegister\Db
- *
- * @author    Conduction Development Team <dev@conduction.nl>
- * @copyright 2024 Conduction B.V.
- * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
- * @version   GIT: <git-id>
- * @link      https://www.OpenRegister.nl
  */
-
-declare(strict_types=1);
 
 namespace OCA\OpenRegister\Db;
 
-use OCP\AppFramework\Db\Entity;
 use OCP\AppFramework\Db\QBMapper;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\IDBConnection;
 
 /**
  * Class GdprEntityMapper
- *
- * @method GdprEntity insert(Entity $entity)
- * @method GdprEntity update(Entity $entity)
- * @method GdprEntity insertOrUpdate(Entity $entity)
- * @method GdprEntity delete(Entity $entity)
- * @method GdprEntity find(int|string $id)
- * @method GdprEntity findEntity(IQueryBuilder $query)
- * @method GdprEntity[] findAll(int|null $limit=null, int|null $offset=null)
- * @method list<GdprEntity> findEntities(IQueryBuilder $query)
- *
- * @template-extends QBMapper<GdprEntity>
  */
 class GdprEntityMapper extends QBMapper
 {
@@ -45,38 +27,37 @@ class GdprEntityMapper extends QBMapper
      */
     public function __construct(IDBConnection $db)
     {
-        parent::__construct(db: $db, tableName: 'openregister_entities', entityClass: GdprEntity::class);
-    }//end __construct()
+        parent::__construct($db, 'openregister_entities', GdprEntity::class);
+    }
 
     /**
-     * Public wrapper for findEntities (parent protected method).
+     * Find entities by type and value prefix.
      *
-     * @param IQueryBuilder $query The query builder.
+     * @param string      $type   Entity type.
+     * @param string|null $search Optional search string.
      *
-     * @return list<GdprEntity> Array of entities.
+     * @return GdprEntity[]
      */
-    public function findEntitiesPublic(IQueryBuilder $query): array
-    {
-        return parent::findEntities(query: $query);
-    }//end findEntitiesPublic()
-
-    /**
-     * Find entity by ID.
-     *
-     * @param int $id Entity ID.
-     *
-     * @return GdprEntity The entity.
-     *
-     * @throws \OCP\AppFramework\Db\DoesNotExistException If entity not found.
-     * @throws \OCP\AppFramework\Db\MultipleObjectsReturnedException If multiple entities found.
-     */
-    public function find(int $id): GdprEntity
+    public function findByType(string $type, ?string $search = null): array
     {
         $qb = $this->db->getQueryBuilder();
         $qb->select('*')
             ->from($this->getTableName())
-            ->where($qb->expr()->eq('id', $qb->createNamedParameter($id, IQueryBuilder::PARAM_INT)));
+            ->where(
+                $qb->expr()->eq('type', $qb->createNamedParameter($type, IQueryBuilder::PARAM_STR))
+            )
+            ->orderBy('detected_at', 'DESC');
 
-        return $this->findEntity(query: $qb);
-    }//end find()
-}//end class
+        if ($search !== null && $search !== '') {
+            $qb->andWhere(
+                $qb->expr()->like('value', $qb->createNamedParameter('%' . $qb->escapeLikeParameter($search) . '%'))
+            );
+        }
+
+        return $this->findEntities($qb);
+    }
+}
+
+
+
+

@@ -1,5 +1,4 @@
 <?php
-
 /**
  * OpenRegister Dashboard Service
  *
@@ -20,148 +19,87 @@
 
 namespace OCA\OpenRegister\Service;
 
-use DateTime;
-use Exception;
-use RuntimeException;
-use stdClass;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
-use OCA\OpenRegister\Db\MagicMapper;
+use OCA\OpenRegister\Db\ObjectEntityMapper;
 use OCA\OpenRegister\Db\AuditTrailMapper;
-use OCA\OpenRegister\Db\WebhookLogMapper;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\IDBConnection;
 use Psr\Log\LoggerInterface;
 
 /**
- * DashboardService handles dashboard related operations
+ * Class DashboardService
  *
- * Service for handling dashboard related operations including statistics,
- * register/schema aggregation, and data size calculations.
+ * Service for handling dashboard related operations.
  *
- * @category Service
- * @package  OCA\OpenRegister\Service
- *
- * @author    Conduction Development Team <info@conduction.nl>
- * @copyright 2024 Conduction B.V.
- * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
- *
- * @version GIT: <git_id>
- *
- * @link https://www.OpenRegister.app
- *
- * @SuppressWarnings(PHPMD.ExcessiveClassComplexity)
+ * @package OCA\OpenRegister\Service
  */
 class DashboardService
 {
 
-    /**
-     * Object entity mapper
-     *
-     * Handles database operations for object entities.
-     *
-     * @var MagicMapper Object entity mapper instance
-     */
-    private readonly MagicMapper $objectMapper;
-
-    /**
-     * Audit trail mapper
-     *
-     * Handles database operations for audit trail entries.
-     *
-     * @var AuditTrailMapper Audit trail mapper instance
-     */
-    private readonly AuditTrailMapper $auditTrailMapper;
-
-    /**
-     * Webhook log mapper
-     *
-     * Handles database operations for webhook log entries.
-     *
-     * @var WebhookLogMapper Webhook log mapper instance
-     */
-    private readonly WebhookLogMapper $webhookLogMapper;
-
-    /**
-     * Register mapper
-     *
-     * Handles database operations for register entities.
-     *
-     * @var RegisterMapper Register mapper instance
-     */
-    private readonly RegisterMapper $registerMapper;
-
-    /**
-     * Logger
-     *
-     * Used for logging dashboard operations and errors.
-     *
-     * @var LoggerInterface Logger instance
-     */
-    private readonly LoggerInterface $logger;
-
-    /**
-     * Schema mapper
-     *
-     * Handles database operations for schema entities.
-     *
-     * @var SchemaMapper Schema mapper instance
-     */
-    private readonly SchemaMapper $schemaMapper;
 
     /**
      * Constructor for DashboardService
      *
-     * Initializes service with required mappers and logger for dashboard operations.
-     *
-     * @param MagicMapper $objectMapper     Object entity mapper for object statistics
-     * @param AuditTrailMapper   $auditTrailMapper Audit trail mapper for log statistics
-     * @param WebhookLogMapper   $webhookLogMapper Webhook log mapper for webhook statistics
-     * @param RegisterMapper     $registerMapper   Register mapper for register operations
-     * @param SchemaMapper       $schemaMapper     Schema mapper for schema operations
-     * @param LoggerInterface    $logger           Logger instance for error tracking
+     * @param RegisterMapper     $registerMapper   The register mapper instance
+     * @param SchemaMapper       $schemaMapper     The schema mapper instance
+     * @param ObjectEntityMapper $objectMapper     The object entity mapper instance
+     * @param AuditTrailMapper   $auditTrailMapper The audit trail mapper instance
+     * @param IDBConnection      $db               The database connection instance
+     * @param LoggerInterface    $logger           The logger instance
      *
      * @return void
      */
     public function __construct(
-        MagicMapper $objectMapper,
-        AuditTrailMapper $auditTrailMapper,
-        WebhookLogMapper $webhookLogMapper,
-        RegisterMapper $registerMapper,
-        SchemaMapper $schemaMapper,
-        LoggerInterface $logger
+        private readonly RegisterMapper $registerMapper,
+        private readonly SchemaMapper $schemaMapper,
+        private readonly ObjectEntityMapper $objectMapper,
+        private readonly AuditTrailMapper $auditTrailMapper,
+        private readonly IDBConnection $db,
+        private readonly LoggerInterface $logger
     ) {
-        // Store dependencies for use in service methods.
-        $this->objectMapper     = $objectMapper;
-        $this->auditTrailMapper = $auditTrailMapper;
-        $this->webhookLogMapper = $webhookLogMapper;
-        $this->registerMapper   = $registerMapper;
-        $this->schemaMapper     = $schemaMapper;
-        $this->logger           = $logger;
+
     }//end __construct()
+
 
     /**
      * Get statistics for a register/schema combination
      *
-     * @param int|null $registerId The register ID (optional)
+     * @param int      $registerId The register ID
      * @param int|null $schemaId   The schema ID (optional)
      *
-     * @return array Statistics with objects, logs, webhookLogs, and files totals and sizes.
+     * @return array Array containing statistics about objects and logs:
+     *               - objects: Array containing object statistics
+     *                 - total: Total number of objects
+     *                 - size: Total size of all objects in bytes
+     *                 - invalid: Number of objects with validation errors
+     *                 - deleted: Number of deleted objects
+     *                 - locked: Number of locked objects
+     *                 - published: Number of published objects
+     *               - logs: Array containing log statistics
+     *                 - total: Total number of log entries
+     *                 - size: Total size of all log entries in bytes
+     *               - files: Array containing file statistics
+     *                 - total: Total number of files
+     *                 - size: Total size of all files in bytes
+     *
+     * @phpstan-return array{
+     *     objects: array{total: int, size: int, invalid: int, deleted: int, locked: int, published: int},
+     *     logs: array{total: int, size: int},
+     *     files: array{total: int, size: int}
+     * }
      */
     private function getStats(?int $registerId=null, ?int $schemaId=null): array
     {
         try {
             // Get object statistics.
-            $objectStats = $this->objectMapper->getStatistics(registerId: $registerId, schemaId: $schemaId);
+            $objectStats = $this->objectMapper->getStatistics($registerId, $schemaId);
 
             // Get audit trail statistics.
-            $logStats = $this->auditTrailMapper->getStatistics(registerId: $registerId, schemaId: $schemaId);
-
-            // Get webhook log statistics (0 = all webhooks).
-            $webhookLogStats = $this->webhookLogMapper->getStatistics(webhookId: 0);
+            $logStats = $this->auditTrailMapper->getStatistics($registerId, $schemaId);
 
             return [
-                'objects'     => [
+                'objects' => [
                     'total'     => $objectStats['total'],
                     'size'      => $objectStats['size'],
                     'invalid'   => $objectStats['invalid'],
@@ -169,26 +107,19 @@ class DashboardService
                     'locked'    => $objectStats['locked'],
                     'published' => $objectStats['published'],
                 ],
-                'logs'        => [
+                'logs'    => [
                     'total' => $logStats['total'],
                     'size'  => $logStats['size'],
                 ],
-                'webhookLogs' => [
-                    'total' => $webhookLogStats['total'] ?? 0,
-                    'size'  => 0,
-                ],
-                'files'       => [
+                'files'   => [
                     'total' => 0,
                     'size'  => 0,
                 ],
             ];
-        } catch (Exception $e) {
-            $this->logger->error(
-                message: '[DashboardService] Failed to get statistics: '.$e->getMessage(),
-                context: ['file' => __FILE__, 'line' => __LINE__]
-            );
+        } catch (\Exception $e) {
+            $this->logger->error('Failed to get statistics: '.$e->getMessage());
             return [
-                'objects'     => [
+                'objects' => [
                     'total'     => 0,
                     'size'      => 0,
                     'invalid'   => 0,
@@ -196,26 +127,24 @@ class DashboardService
                     'locked'    => 0,
                     'published' => 0,
                 ],
-                'logs'        => [
+                'logs'    => [
                     'total' => 0,
                     'size'  => 0,
                 ],
-                'webhookLogs' => [
-                    'total' => 0,
-                    'size'  => 0,
-                ],
-                'files'       => [
+                'files'   => [
                     'total' => 0,
                     'size'  => 0,
                 ],
             ];
         }//end try
+
     }//end getStats()
+
 
     /**
      * Get statistics for orphaned items
      *
-     * @return array Statistics for orphaned objects, logs, and files.
+     * @return array The statistics for orphaned items
      */
     private function getOrphanedStats(): array
     {
@@ -236,14 +165,10 @@ class DashboardService
             }
 
             // Get orphaned object statistics by excluding all valid combinations.
-            $objectStats = $this->objectMapper->getStatistics(registerId: null, schemaId: null, exclude: $validCombinations);
+            $objectStats = $this->objectMapper->getStatistics(null, null, $validCombinations);
 
             // Get orphaned audit trail statistics using the same exclusions.
-            $auditStats = $this->auditTrailMapper->getStatistics(
-                registerId: null,
-                schemaId: null,
-                exclude: $validCombinations
-            );
+            $auditStats = $this->auditTrailMapper->getStatistics(null, null, $validCombinations);
 
             return [
                 'objects' => [
@@ -263,11 +188,8 @@ class DashboardService
                     'size'  => 0,
                 ],
             ];
-        } catch (Exception $e) {
-            $this->logger->error(
-                message: '[DashboardService] Failed to get orphaned statistics: '.$e->getMessage(),
-                context: ['file' => __FILE__, 'line' => __LINE__]
-            );
+        } catch (\Exception $e) {
+            $this->logger->error('Failed to get orphaned statistics: '.$e->getMessage());
             return [
                 'objects' => [
                     'total'     => 0,
@@ -287,7 +209,9 @@ class DashboardService
                 ],
             ];
         }//end try
+
     }//end getOrphanedStats()
+
 
     /**
      * Get all registers with their schemas and statistics
@@ -295,9 +219,8 @@ class DashboardService
      * @param int|null $registerId The register ID to filter by
      * @param int|null $schemaId   The schema ID to filter by
      *
+     * @return array Array of registers with their schemas and statistics
      * @throws \Exception If there is an error getting the registers with schemas
-     *
-     * @return array Registers with their schemas and statistics for dashboard display.
      */
     public function getRegistersWithSchemas(
         ?int $registerId=null,
@@ -317,7 +240,7 @@ class DashboardService
             $result = [];
 
             // Add system totals as the first "register".
-            $totalStats = $this->getStats(registerId: $registerId, schemaId: $schemaId);
+            $totalStats = $this->getStats($registerId, $schemaId);
             $result[]   = [
                 'id'          => 'totals',
                 'title'       => 'System Totals',
@@ -331,7 +254,7 @@ class DashboardService
                 $schemas = $this->registerMapper->getSchemasByRegisterId($register->getId());
 
                 // Get register-level statistics.
-                $registerStats = $this->getStats(registerId: $register->getId());
+                $registerStats = $this->getStats($register->getId());
 
                 // Convert register to array and add statistics.
                 $registerArray          = $register->jsonSerialize();
@@ -345,7 +268,7 @@ class DashboardService
                     }
 
                     // Get schema-level statistics.
-                    $schemaStats = $this->getStats(registerId: $register->getId(), schemaId: $schema->getId());
+                    $schemaStats = $this->getStats($register->getId(), $schema->getId());
 
                     // Convert schema to array and add statistics.
                     $schemaArray          = $schema->jsonSerialize();
@@ -362,20 +285,19 @@ class DashboardService
             $result[]      = [
                 'id'          => 'orphaned',
                 'title'       => 'Orphaned Items',
-                'description' => 'Items referencing non-existent registers/schemas or invalid combinations',
+                'description' => 'Items that reference non-existent registers, schemas, or invalid register-schema combinations',
                 'stats'       => $orphanedStats,
                 'schemas'     => [],
             ];
 
             return $result;
-        } catch (Exception $e) {
-            $this->logger->error(
-                message: '[DashboardService] Failed to get registers with schemas: '.$e->getMessage(),
-                context: ['file' => __FILE__, 'line' => __LINE__]
-            );
-            throw new Exception('Failed to get registers with schemas: '.$e->getMessage());
+        } catch (\Exception $e) {
+            $this->logger->error('Failed to get registers with schemas: '.$e->getMessage());
+            throw new \Exception('Failed to get registers with schemas: '.$e->getMessage());
         }//end try
+
     }//end getRegistersWithSchemas()
+
 
     /**
      * Recalculate sizes for objects in specified registers and/or schemas
@@ -383,9 +305,7 @@ class DashboardService
      * @param int|null $registerId The register ID to filter by (optional)
      * @param int|null $schemaId   The schema ID to filter by (optional)
      *
-     * @return int[] Array containing counts of processed and failed objects
-     *
-     * @psalm-return array{processed: 0|1|2, failed: 0|1|2}
+     * @return array Array containing counts of processed and failed objects
      */
     public function recalculateSizes(?int $registerId=null, ?int $schemaId=null): array
     {
@@ -413,24 +333,20 @@ class DashboardService
                 try {
                     $this->objectMapper->update($object);
                     $result['processed']++;
-                } catch (Exception $e) {
-                    $this->logger->error(
-                        message: '[DashboardService] Failed to update object '.$object->getId().': '.$e->getMessage(),
-                        context: ['file' => __FILE__, 'line' => __LINE__]
-                    );
+                } catch (\Exception $e) {
+                    $this->logger->error('Failed to update object '.$object->getId().': '.$e->getMessage());
                     $result['failed']++;
                 }
             }
 
             return $result;
-        } catch (Exception $e) {
-            $this->logger->error(
-                message: '[DashboardService] Failed to recalculate sizes: '.$e->getMessage(),
-                context: ['file' => __FILE__, 'line' => __LINE__]
-            );
-            throw new Exception('Failed to recalculate sizes: '.$e->getMessage());
+        } catch (\Exception $e) {
+            $this->logger->error('Failed to recalculate sizes: '.$e->getMessage());
+            throw new \Exception('Failed to recalculate sizes: '.$e->getMessage());
         }//end try
+
     }//end recalculateSizes()
+
 
     /**
      * Recalculate sizes for audit trail logs in specified registers and/or schemas
@@ -438,9 +354,7 @@ class DashboardService
      * @param int|null $registerId The register ID to filter by (optional)
      * @param int|null $schemaId   The schema ID to filter by (optional)
      *
-     * @return int[] Array containing counts of processed and failed logs
-     *
-     * @psalm-return array{processed: 0|1|2, failed: 0|1|2}
+     * @return array Array containing counts of processed and failed logs
      */
     public function recalculateLogSizes(?int $registerId=null, ?int $schemaId=null): array
     {
@@ -468,24 +382,20 @@ class DashboardService
                 try {
                     $this->auditTrailMapper->update($log);
                     $result['processed']++;
-                } catch (Exception $e) {
-                    $this->logger->error(
-                        message: '[DashboardService] Failed to update log '.$log->getId().': '.$e->getMessage(),
-                        context: ['file' => __FILE__, 'line' => __LINE__]
-                    );
+                } catch (\Exception $e) {
+                    $this->logger->error('Failed to update log '.$log->getId().': '.$e->getMessage());
                     $result['failed']++;
                 }
             }
 
             return $result;
-        } catch (Exception $e) {
-            $this->logger->error(
-                message: '[DashboardService] Failed to recalculate log sizes: '.$e->getMessage(),
-                context: ['file' => __FILE__, 'line' => __LINE__]
-            );
-            throw new Exception('Failed to recalculate log sizes: '.$e->getMessage());
+        } catch (\Exception $e) {
+            $this->logger->error('Failed to recalculate log sizes: '.$e->getMessage());
+            throw new \Exception('Failed to recalculate log sizes: '.$e->getMessage());
         }//end try
+
     }//end recalculateLogSizes()
+
 
     /**
      * Recalculate sizes for both objects and logs in specified registers and/or schemas
@@ -493,13 +403,13 @@ class DashboardService
      * @param int|null $registerId The register ID to filter by (optional)
      * @param int|null $schemaId   The schema ID to filter by (optional)
      *
-     * @return array Results with objects, logs, and total processed and failed counts.
+     * @return array Array containing counts of processed and failed items for both objects and logs
      */
     public function recalculateAllSizes(?int $registerId=null, ?int $schemaId=null): array
     {
         try {
-            $objectResults = $this->recalculateSizes(registerId: $registerId, schemaId: $schemaId);
-            $logResults    = $this->recalculateLogSizes(registerId: $registerId, schemaId: $schemaId);
+            $objectResults = $this->recalculateSizes($registerId, $schemaId);
+            $logResults    = $this->recalculateLogSizes($registerId, $schemaId);
 
             return [
                 'objects' => $objectResults,
@@ -509,14 +419,13 @@ class DashboardService
                     'failed'    => $objectResults['failed'] + $logResults['failed'],
                 ],
             ];
-        } catch (Exception $e) {
-            $this->logger->error(
-                message: '[DashboardService] Failed to recalculate all sizes: '.$e->getMessage(),
-                context: ['file' => __FILE__, 'line' => __LINE__]
-            );
-            throw new Exception('Failed to recalculate all sizes: '.$e->getMessage());
+        } catch (\Exception $e) {
+            $this->logger->error('Failed to recalculate all sizes: '.$e->getMessage());
+            throw new \Exception('Failed to recalculate all sizes: '.$e->getMessage());
         }
+
     }//end recalculateAllSizes()
+
 
     /**
      * Calculate sizes for all entities (objects and logs) in the system
@@ -525,189 +434,93 @@ class DashboardService
      * @param int|null $registerId The register ID to filter by (optional)
      * @param int|null $schemaId   The schema ID to filter by (optional)
      *
-     * @return ((array|float|mixed|null)[]|string)[]
-     *
-     * @psalm-return array{status: 'success', timestamp: string,
-     *     scope: array{register: array{id: int, title: null|string}|null,
-     *     schema: array{id: int, title: null|string}|null},
-     *     results: array{objects: array, logs: array,
-     *     total: array{processed: mixed, failed: mixed}},
-     *     summary: array{total_processed: mixed, total_failed: mixed,
-     *     success_rate: float}}
+     * @return array Array containing detailed statistics about the calculation process
      */
     public function calculate(?int $registerId=null, ?int $schemaId=null): array
     {
         try {
-            // Fetch and validate register and schema.
-            $register = $this->fetchRegister(registerId: $registerId);
-            $schema   = $this->fetchSchema(schemaId: $schemaId, register: $register);
+            // Get the register info if registerId is provided.
+            $register = null;
+            if ($registerId !== null) {
+                try {
+                    $register = $this->registerMapper->find($registerId);
+                } catch (\Exception $e) {
+                    throw new \Exception('Register not found: '.$e->getMessage());
+                }
+            }
+
+            // Get the schema info if schemaId is provided.
+            $schema = null;
+            if ($schemaId !== null) {
+                try {
+                    $schema = $this->schemaMapper->find($schemaId);
+                    // Verify schema belongs to register if both are provided.
+                    if ($register !== null && !in_array($schema->getId(), $register->getSchemas())) {
+                        throw new \Exception('Schema does not belong to the specified register');
+                    }
+                } catch (\Exception $e) {
+                    throw new \Exception('Schema not found or invalid: '.$e->getMessage());
+                }
+            }
 
             // Perform the calculations.
-            $results = $this->recalculateAllSizes(registerId: $registerId, schemaId: $schemaId);
+            $results = $this->recalculateAllSizes($registerId, $schemaId);
 
             // Build the response.
             $response = [
                 'status'    => 'success',
-                'timestamp' => (new DateTime('now'))->format(format: 'c'),
-                'scope'     => $this->buildResponseScope(register: $register, schema: $schema),
+                'timestamp' => (new \DateTime())->format('c'),
+                'scope'     => [
+                    'register' => $register ? [
+                        'id'    => $register->getId(),
+                        'title' => $register->getTitle(),
+                    ] : null,
+                    'schema'   => $schema ? [
+                        'id'    => $schema->getId(),
+                        'title' => $schema->getTitle(),
+                    ] : null,
+                ],
                 'results'   => $results,
                 'summary'   => [
                     'total_processed' => $results['total']['processed'],
                     'total_failed'    => $results['total']['failed'],
-                    'success_rate'    => $this->calculateSuccessRate(results: $results),
+                    'success_rate'    => $results['total']['processed'] + $results['total']['failed'] > 0 ? round(($results['total']['processed'] / ($results['total']['processed'] + $results['total']['failed'])) * 100, 2) : 0,
                 ],
             ];
 
             return $response;
-        } catch (Exception $e) {
-            $this->logger->error(
-                message: '[DashboardService] Size calculation failed: '.$e->getMessage(),
-                context: ['file' => __FILE__, 'line' => __LINE__]
-            );
-            throw new Exception('Size calculation failed: '.$e->getMessage());
+        } catch (\Exception $e) {
+            $this->logger->error('Size calculation failed: '.$e->getMessage());
+            throw new \Exception('Size calculation failed: '.$e->getMessage());
         }//end try
+
     }//end calculate()
 
-    /**
-     * Fetch register by ID with validation
-     *
-     * @param int|null $registerId Register ID to fetch.
-     *
-     * @return \OCA\OpenRegister\Db\Register|null Register entity or null if not provided.
-     *
-     * @throws \Exception If register is not found.
-     */
-    private function fetchRegister(?int $registerId): ?\OCA\OpenRegister\Db\Register
-    {
-        if ($registerId === null) {
-            return null;
-        }
-
-        try {
-            return $this->registerMapper->find($registerId);
-        } catch (Exception $e) {
-            throw new Exception('Register not found: '.$e->getMessage());
-        }
-    }//end fetchRegister()
-
-    /**
-     * Fetch schema by ID with validation
-     *
-     * @param int|null                           $schemaId Schema ID to fetch.
-     * @param \OCA\OpenRegister\Db\Register|null $register Register to validate against.
-     *
-     * @return \OCA\OpenRegister\Db\Schema|null Schema entity or null if not provided.
-     *
-     * @throws \Exception If schema is not found or doesn't belong to register.
-     */
-    private function fetchSchema(?int $schemaId, ?\OCA\OpenRegister\Db\Register $register): ?\OCA\OpenRegister\Db\Schema
-    {
-        if ($schemaId === null) {
-            return null;
-        }
-
-        try {
-            $schema = $this->schemaMapper->find($schemaId);
-
-            // Verify schema belongs to register if both are provided.
-            if ($register !== null && in_array($schema->getId(), $register->getSchemas()) === false) {
-                throw new Exception('Schema does not belong to the specified register');
-            }
-
-            return $schema;
-        } catch (Exception $e) {
-            throw new Exception('Schema not found or invalid: '.$e->getMessage());
-        }
-    }//end fetchSchema()
-
-    /**
-     * Build response scope object from register and schema
-     *
-     * @param \OCA\OpenRegister\Db\Register|null $register Register entity.
-     * @param \OCA\OpenRegister\Db\Schema|null   $schema   Schema entity.
-     *
-     * @return array<string, array{id: int, title: string}|null> Scope object with register and schema info.
-     */
-    private function buildResponseScope(
-        ?\OCA\OpenRegister\Db\Register $register,
-        ?\OCA\OpenRegister\Db\Schema $schema
-    ): array {
-        $registerScope = null;
-        if ($register !== null) {
-            $registerScope = [
-                'id'    => $register->getId(),
-                'title' => $register->getTitle(),
-            ];
-        }
-
-        $schemaScope = null;
-        if ($schema !== null) {
-            $schemaScope = [
-                'id'    => $schema->getId(),
-                'title' => $schema->getTitle(),
-            ];
-        }
-
-        return [
-            'register' => $registerScope,
-            'schema'   => $schemaScope,
-        ];
-    }//end buildResponseScope()
-
-    /**
-     * Calculate success rate from results
-     *
-     * @param array<string, mixed> $results Results array with total processed and failed counts.
-     *
-     * @return float Success rate percentage.
-     */
-    private function calculateSuccessRate(array $results): float
-    {
-        if ($results['total']['processed'] > 0) {
-            $processed = $results['total']['processed'];
-            $failed    = $results['total']['failed'];
-            return round(($processed - $failed) / $processed * 100, 2);
-        }
-
-        return 0.0;
-    }//end calculateSuccessRate()
 
     /**
      * Get chart data for audit trail actions over time
      *
-     * @param DateTime|null $from       Start date for the chart data
-     * @param DateTime|null $till       End date for the chart data
-     * @param int|null      $registerId Optional register ID to filter by
-     * @param int|null      $schemaId   Optional schema ID to filter by
+     * @param \DateTime|null $from       Start date for the chart data
+     * @param \DateTime|null $till       End date for the chart data
+     * @param int|null       $registerId Optional register ID to filter by
+     * @param int|null       $schemaId   Optional schema ID to filter by
      *
-     * @return ((int[]|string)[]|(int|string))[][]
-     *
-     * @psalm-return array{labels: list<array-key>, series: list<array{data: list<int>, name: string}>}
+     * @return array Array containing chart data for audit trail actions
      */
-    public function getAuditTrailActionChartData(
-        ?\DateTime $from=null,
-        ?\DateTime $till=null,
-        ?int $registerId=null,
-        ?int $schemaId=null
-    ): array {
+    public function getAuditTrailActionChartData(?\DateTime $from=null, ?\DateTime $till=null, ?int $registerId=null, ?int $schemaId=null): array
+    {
         try {
-            return $this->auditTrailMapper->getActionChartData(
-                from: $from,
-                till: $till,
-                registerId: $registerId,
-                schemaId: $schemaId
-            );
-        } catch (Exception $e) {
-            $this->logger->error(
-                message: '[DashboardService] Failed to get audit trail action chart data: '.$e->getMessage(),
-                context: ['file' => __FILE__, 'line' => __LINE__]
-            );
+            return $this->auditTrailMapper->getActionChartData($from, $till, $registerId, $schemaId);
+        } catch (\Exception $e) {
+            $this->logger->error('Failed to get audit trail action chart data: '.$e->getMessage());
             return [
                 'labels' => [],
                 'series' => [],
             ];
         }
+
     }//end getAuditTrailActionChartData()
+
 
     /**
      * Get chart data for objects by register
@@ -715,25 +528,22 @@ class DashboardService
      * @param int|null $registerId Optional register ID to filter by
      * @param int|null $schemaId   Optional schema ID to filter by
      *
-     * @return (int|mixed|string)[][] Array containing chart data for objects by register
-     *
-     * @psalm-return array{labels: array<'Unknown'|mixed>, series: array<int>}
+     * @return array Array containing chart data for objects by register
      */
     public function getObjectsByRegisterChartData(?int $registerId=null, ?int $schemaId=null): array
     {
         try {
-            return $this->objectMapper->getRegisterChartData(registerId: $registerId, schemaId: $schemaId);
-        } catch (Exception $e) {
-            $this->logger->error(
-                message: '[DashboardService] Failed to get objects by register chart data: '.$e->getMessage(),
-                context: ['file' => __FILE__, 'line' => __LINE__]
-            );
+            return $this->objectMapper->getRegisterChartData($registerId, $schemaId);
+        } catch (\Exception $e) {
+            $this->logger->error('Failed to get objects by register chart data: '.$e->getMessage());
             return [
                 'labels' => [],
                 'series' => [],
             ];
         }
+
     }//end getObjectsByRegisterChartData()
+
 
     /**
      * Get chart data for objects by schema
@@ -741,25 +551,22 @@ class DashboardService
      * @param int|null $registerId Optional register ID to filter by
      * @param int|null $schemaId   Optional schema ID to filter by
      *
-     * @return (int|mixed|string)[][] Array containing chart data for objects by schema
-     *
-     * @psalm-return array{labels: array<'Unknown'|mixed>, series: array<int>}
+     * @return array Array containing chart data for objects by schema
      */
     public function getObjectsBySchemaChartData(?int $registerId=null, ?int $schemaId=null): array
     {
         try {
-            return $this->objectMapper->getSchemaChartData(registerId: $registerId, schemaId: $schemaId);
-        } catch (Exception $e) {
-            $this->logger->error(
-                message: '[DashboardService] Failed to get objects by schema chart data: '.$e->getMessage(),
-                context: ['file' => __FILE__, 'line' => __LINE__]
-            );
+            return $this->objectMapper->getSchemaChartData($registerId, $schemaId);
+        } catch (\Exception $e) {
+            $this->logger->error('Failed to get objects by schema chart data: '.$e->getMessage());
             return [
                 'labels' => [],
                 'series' => [],
             ];
         }
+
     }//end getObjectsBySchemaChartData()
+
 
     /**
      * Get chart data for objects by size distribution
@@ -767,25 +574,22 @@ class DashboardService
      * @param int|null $registerId Optional register ID to filter by
      * @param int|null $schemaId   Optional schema ID to filter by
      *
-     * @return (int|string)[][] Array containing chart data for objects by size
-     *
-     * @psalm-return array{labels: list<'0-1 KB'|'1-10 KB'|'10-100 KB'|'100 KB-1 MB'|'> 1 MB'>, series: list<int>}
+     * @return array Array containing chart data for objects by size
      */
     public function getObjectsBySizeChartData(?int $registerId=null, ?int $schemaId=null): array
     {
         try {
-            return $this->objectMapper->getSizeDistributionChartData(registerId: $registerId, schemaId: $schemaId);
-        } catch (Exception $e) {
-            $this->logger->error(
-                message: '[DashboardService] Failed to get objects by size chart data: '.$e->getMessage(),
-                context: ['file' => __FILE__, 'line' => __LINE__]
-            );
+            return $this->objectMapper->getSizeDistributionChartData($registerId, $schemaId);
+        } catch (\Exception $e) {
+            $this->logger->error('Failed to get objects by size chart data: '.$e->getMessage());
             return [
                 'labels' => [],
                 'series' => [],
             ];
         }
+
     }//end getObjectsBySizeChartData()
+
 
     /**
      * Get audit trail statistics including total counts and recent activity
@@ -794,23 +598,19 @@ class DashboardService
      * @param int|null $schemaId   Optional schema ID to filter by
      * @param int|null $hours      Optional number of hours to look back for recent activity (default: 24)
      *
-     * @return int[]
-     *
-     * @psalm-return array{total: int, creates: int, updates: int, deletes: int, reads: int}
+     * @return array Array containing audit trail statistics:
+     *               - total: Total number of audit trails
+     *               - creates: Number of create actions in timeframe
+     *               - updates: Number of update actions in timeframe
+     *               - deletes: Number of delete actions in timeframe
+     *               - reads: Number of read actions in timeframe
      */
     public function getAuditTrailStatistics(?int $registerId=null, ?int $schemaId=null, ?int $hours=24): array
     {
         try {
-            return $this->auditTrailMapper->getDetailedStatistics(
-                registerId: $registerId,
-                schemaId: $schemaId,
-                hours: $hours
-            );
-        } catch (Exception $e) {
-            $this->logger->error(
-                message: '[DashboardService] Failed to get audit trail statistics: '.$e->getMessage(),
-                context: ['file' => __FILE__, 'line' => __LINE__]
-            );
+            return $this->auditTrailMapper->getDetailedStatistics($registerId, $schemaId, $hours);
+        } catch (\Exception $e) {
+            $this->logger->error('Failed to get audit trail statistics: '.$e->getMessage());
             return [
                 'total'   => 0,
                 'creates' => 0,
@@ -819,7 +619,9 @@ class DashboardService
                 'reads'   => 0,
             ];
         }
+
     }//end getAuditTrailStatistics()
+
 
     /**
      * Get action distribution data for audit trails with percentages
@@ -828,28 +630,22 @@ class DashboardService
      * @param int|null $schemaId   Optional schema ID to filter by
      * @param int|null $hours      Optional number of hours to look back (default: 24)
      *
-     * @return (int|mixed)[][][]
-     *
-     * @psalm-return array{actions: list<array{count: int, name: mixed}>}
+     * @return array Array containing action distribution data:
+     *               - actions: Array of action data with name, count, and percentage
      */
     public function getAuditTrailActionDistribution(?int $registerId=null, ?int $schemaId=null, ?int $hours=24): array
     {
         try {
-            return $this->auditTrailMapper->getActionDistribution(
-                registerId: $registerId,
-                schemaId: $schemaId,
-                hours: $hours
-            );
-        } catch (Exception $e) {
-            $this->logger->error(
-                message: '[DashboardService] Failed to get audit trail action distribution: '.$e->getMessage(),
-                context: ['file' => __FILE__, 'line' => __LINE__]
-            );
+            return $this->auditTrailMapper->getActionDistribution($registerId, $schemaId, $hours);
+        } catch (\Exception $e) {
+            $this->logger->error('Failed to get audit trail action distribution: '.$e->getMessage());
             return [
                 'actions' => [],
             ];
         }
+
     }//end getAuditTrailActionDistribution()
+
 
     /**
      * Get most active objects based on audit trail activity
@@ -859,27 +655,21 @@ class DashboardService
      * @param int|null $limit      Optional limit for number of results (default: 10)
      * @param int|null $hours      Optional number of hours to look back (default: 24)
      *
-     * @return (int|mixed|string)[][][]
-     *
-     * @psalm-return array{objects: list<array{count: int, id: mixed, name: string}>}
+     * @return array Array containing most active objects:
+     *               - objects: Array of object data with name, id, and count
      */
     public function getMostActiveObjects(?int $registerId=null, ?int $schemaId=null, ?int $limit=10, ?int $hours=24): array
     {
         try {
-            return $this->auditTrailMapper->getMostActiveObjects(
-                registerId: $registerId,
-                schemaId: $schemaId,
-                limit: $limit,
-                hours: $hours
-            );
-        } catch (Exception $e) {
-            $this->logger->error(
-                message: '[DashboardService] Failed to get most active objects: '.$e->getMessage(),
-                context: ['file' => __FILE__, 'line' => __LINE__]
-            );
+            return $this->auditTrailMapper->getMostActiveObjects($registerId, $schemaId, $limit, $hours);
+        } catch (\Exception $e) {
+            $this->logger->error('Failed to get most active objects: '.$e->getMessage());
             return [
                 'objects' => [],
             ];
         }
+
     }//end getMostActiveObjects()
+
+
 }//end class

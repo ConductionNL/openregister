@@ -1,5 +1,4 @@
 <?php
-
 /**
  * OpenRegister Message Entity
  *
@@ -50,11 +49,10 @@ use Symfony\Component\Uid\Uuid;
  * @method void setCreated(?DateTime $created)
  *
  * @package OCA\OpenRegister\Db
- *
- * @psalm-suppress PropertyNotSetInConstructor $id is set by Nextcloud's Entity base class
  */
 class Message extends Entity implements JsonSerializable
 {
+
     /**
      * Message role: User message
      */
@@ -75,7 +73,7 @@ class Message extends Entity implements JsonSerializable
     /**
      * Conversation ID
      *
-     * @var integer|null Conversation ID this message belongs to
+     * @var int|null Conversation ID this message belongs to
      */
     protected ?int $conversationId = null;
 
@@ -118,6 +116,7 @@ class Message extends Entity implements JsonSerializable
      */
     protected ?DateTime $created = null;
 
+
     /**
      * Message constructor
      *
@@ -125,39 +124,91 @@ class Message extends Entity implements JsonSerializable
      */
     public function __construct()
     {
-        $this->addType(fieldName: 'uuid', type: 'string');
-        $this->addType(fieldName: 'conversationId', type: 'integer');
-        $this->addType(fieldName: 'role', type: 'string');
-        $this->addType(fieldName: 'content', type: 'string');
-        $this->addType(fieldName: 'sources', type: 'json');
-        $this->addType(fieldName: 'created', type: 'datetime');
+        $this->addType('uuid', 'string');
+        $this->addType('conversationId', 'integer');
+        $this->addType('role', 'string');
+        $this->addType('content', 'string');
+        $this->addType('sources', 'json');
+        $this->addType('created', 'datetime');
+
     }//end __construct()
+
+
+    /**
+     * Validate UUID format
+     *
+     * @param string $uuid The UUID to validate
+     *
+     * @return bool True if UUID format is valid
+     */
+    public static function isValidUuid(string $uuid): bool
+    {
+        try {
+            Uuid::fromString($uuid);
+            return true;
+        } catch (\InvalidArgumentException $e) {
+            return false;
+        }
+
+    }//end isValidUuid()
+
+
+    /**
+     * Check if message is from user
+     *
+     * @return bool True if user message
+     */
+    public function isUser(): bool
+    {
+        return $this->role === self::ROLE_USER;
+
+    }//end isUser()
+
+
+    /**
+     * Check if message is from assistant
+     *
+     * @return bool True if assistant message
+     */
+    public function isAssistant(): bool
+    {
+        return $this->role === self::ROLE_ASSISTANT;
+
+    }//end isAssistant()
+
+
+    /**
+     * Check if message has RAG sources
+     *
+     * @return bool True if sources exist
+     */
+    public function hasSources(): bool
+    {
+        return !empty($this->sources);
+
+    }//end hasSources()
+
 
     /**
      * Serialize the message to JSON
      *
-     * @return (array|int|null|string)[] Serialized message
-     *
-     * @psalm-return array{
-     *     id: int,
-     *     uuid: null|string,
-     *     conversationId: int|null,
-     *     role: null|string,
-     *     content: null|string,
-     *     sources: array|null,
-     *     created: null|string
-     * }
+     * @return array Serialized message
      */
     public function jsonSerialize(): array
     {
         return [
-            'id'             => $this->id,
-            'uuid'           => $this->uuid,
+            'id' => $this->id,
+            'uuid' => $this->uuid,
             'conversationId' => $this->conversationId,
-            'role'           => $this->role,
-            'content'        => $this->content,
-            'sources'        => $this->sources,
-            'created'        => $this->created?->format('c'),
+            'role' => $this->role,
+            'content' => $this->content,
+            'sources' => $this->sources,
+            'created' => $this->created?->format('c'),
         ];
+
     }//end jsonSerialize()
+
+
 }//end class
+
+

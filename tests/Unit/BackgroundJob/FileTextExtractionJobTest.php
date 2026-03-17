@@ -16,13 +16,12 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\BackgroundJob;
 
 use OCA\OpenRegister\BackgroundJob\FileTextExtractionJob;
-use OCA\OpenRegister\Service\TextExtractionService;
+use OCA\OpenRegister\Service\FileTextService;
+use OCA\OpenRegister\Db\FileText;
 use OCP\AppFramework\Utility\ITimeFactory;
-use OCP\IAppConfig;
 use Psr\Log\LoggerInterface;
 use PHPUnit\Framework\TestCase;
 use PHPUnit\Framework\MockObject\MockObject;
-use ReflectionClass;
 
 /**
  * Test class for FileTextExtractionJob
@@ -32,9 +31,9 @@ use ReflectionClass;
 class FileTextExtractionJobTest extends TestCase
 {
     /**
-     * @var TextExtractionService|MockObject
+     * @var FileTextService|MockObject
      */
-    private $textExtractor;
+    private $fileTextService;
 
     /**
      * @var LoggerInterface|MockObject
@@ -45,11 +44,6 @@ class FileTextExtractionJobTest extends TestCase
      * @var ITimeFactory|MockObject
      */
     private $timeFactory;
-
-    /**
-     * @var IAppConfig|MockObject
-     */
-    private $config;
 
     /**
      * @var FileTextExtractionJob
@@ -65,50 +59,15 @@ class FileTextExtractionJobTest extends TestCase
     {
         parent::setUp();
 
-        $this->textExtractor = $this->createMock(TextExtractionService::class);
+        $this->fileTextService = $this->createMock(FileTextService::class);
         $this->logger = $this->createMock(LoggerInterface::class);
         $this->timeFactory = $this->createMock(ITimeFactory::class);
-        $this->config = $this->createMock(IAppConfig::class);
 
         $this->job = new FileTextExtractionJob(
             $this->timeFactory,
-            $this->config,
-            $this->logger,
-            $this->textExtractor
+            $this->fileTextService,
+            $this->logger
         );
-    }
-
-    /**
-     * Helper to invoke the protected run() method via reflection.
-     *
-     * @param mixed $argument The argument to pass to run()
-     *
-     * @return void
-     */
-    private function invokeRun(mixed $argument): void
-    {
-        $reflection = new ReflectionClass($this->job);
-        $method = $reflection->getMethod('run');
-        $method->setAccessible(true);
-        $method->invoke($this->job, $argument);
-    }
-
-    /**
-     * Helper to configure the config mock to enable file extraction.
-     *
-     * @return void
-     */
-    private function enableFileExtraction(): void
-    {
-        $this->config
-            ->method('hasKey')
-            ->with('openregister', 'fileManagement')
-            ->willReturn(true);
-
-        $this->config
-            ->method('getValueString')
-            ->with('openregister', 'fileManagement')
-            ->willReturn(json_encode(['extractionScope' => 'all']));
     }
 
     /**
@@ -121,88 +80,110 @@ class FileTextExtractionJobTest extends TestCase
         $fileId = 123;
         $argument = ['file_id' => $fileId];
 
-        $this->enableFileExtraction();
+        // Mock FileText result
+        $fileText = $this->createMock(FileText::class);
+        $fileText->method('getTextLength')->willReturn(5000);
 
-        // Mock successful extraction.
-        $this->textExtractor
+        // Mock that extraction is needed
+        $this->fileTextService
             ->expects($this->once())
-            ->method('extractFile')
-            ->with(fileId: $fileId, forceReExtract: false);
-
-        // Expect success logging.
-        $this->logger
-            ->expects($this->atLeastOnce())
-            ->method('info');
-
-        // Run the job via reflection.
-        $this->invokeRun($argument);
-    }
-
-    /**
-     * Test extraction disabled in config
-     *
-     * @return void
-     */
-    public function testExtractionDisabledInConfig(): void
-    {
-        $argument = ['file_id' => 456];
-
-        // Config says extraction is disabled.
-        $this->config
-            ->method('hasKey')
-            ->with('openregister', 'fileManagement')
+            ->method('needsExtraction')
+            ->with($fileId)
             ->willReturn(true);
 
-        $this->config
-            ->method('getValueString')
-            ->with('openregister', 'fileManagement')
-            ->willReturn(json_encode(['extractionScope' => 'none']));
+        // Mock successful extraction
+        $this->fileTextService
+            ->expects($this->once())
+            ->method('extractAndStoreFileText')
+            ->with($fileId)
+            ->willReturn([
+                'success' => true,
+                'fileText' => $fileText,
+            ]);
 
-        // Should NOT call extractFile.
-        $this->textExtractor
-            ->expects($this->never())
-            ->method('extractFile');
-
-        // Expect info logging that extraction is disabled.
+        // Expect success logging
         $this->logger
             ->expects($this->atLeastOnce())
-            ->method('info');
+            ->method('info')
+            ->withConsecutive(
+                [$this->stringContains('Starting text extraction')],
+                [$this->stringContains('completed successfully')]
+            );
 
-        // Run the job via reflection.
-        $this->invokeRun($argument);
+        // Run the job
+        $this->job->start($argument);
     }
 
     /**
-     * Test extraction when config key does not exist
+     * Test extraction when not needed (already processed)
      *
      * @return void
      */
-    public function testExtractionWhenConfigKeyMissing(): void
+    public function testExtractionNotNeeded(): void
     {
-        $argument = ['file_id' => 456];
+        $fileId = 456;
+        $argument = ['file_id' => $fileId];
 
-        // Config key does not exist.
-        $this->config
-            ->method('hasKey')
-            ->with('openregister', 'fileManagement')
+        // Mock that extraction is NOT needed
+        $this->fileTextService
+            ->expects($this->once())
+            ->method('needsExtraction')
+            ->with($fileId)
             ->willReturn(false);
 
-        $this->config
-            ->method('getValueString')
-            ->willReturn('');
-
-        // Should NOT call extractFile.
-        $this->textExtractor
+        // Should NOT call extractAndStoreFileText
+        $this->fileTextService
             ->expects($this->never())
-            ->method('extractFile');
+            ->method('extractAndStoreFileText');
 
-        // Expect info logging.
+        // Expect info logging that extraction not needed
         $this->logger
             ->expects($this->atLeastOnce())
-            ->method('info');
+            ->method('info')
+            ->withConsecutive(
+                [$this->stringContains('Starting text extraction')],
+                [$this->stringContains('no longer needed')]
+            );
 
-        // Run the job via reflection.
-        $this->invokeRun($argument);
+        // Run the job
+        $this->job->start($argument);
+    }
+
+    /**
+     * Test failed text extraction
+     *
+     * @return void
+     */
+    public function testFailedTextExtraction(): void
+    {
+        $fileId = 789;
+        $argument = ['file_id' => $fileId];
+
+        // Mock that extraction is needed
+        $this->fileTextService
+            ->expects($this->once())
+            ->method('needsExtraction')
+            ->with($fileId)
+            ->willReturn(true);
+
+        // Mock failed extraction
+        $this->fileTextService
+            ->expects($this->once())
+            ->method('extractAndStoreFileText')
+            ->with($fileId)
+            ->willReturn([
+                'success' => false,
+                'error' => 'Unsupported file format',
+            ]);
+
+        // Expect warning logging
+        $this->logger
+            ->expects($this->atLeastOnce())
+            ->method('warning')
+            ->with($this->stringContains('Text extraction failed'));
+
+        // Run the job
+        $this->job->start($argument);
     }
 
     /**
@@ -216,22 +197,34 @@ class FileTextExtractionJobTest extends TestCase
         $argument = ['file_id' => $fileId];
         $exceptionMessage = 'Database connection failed';
 
-        $this->enableFileExtraction();
-
-        // Mock exception during extraction.
-        $this->textExtractor
+        // Mock that extraction is needed
+        $this->fileTextService
             ->expects($this->once())
-            ->method('extractFile')
-            ->with(fileId: $fileId, forceReExtract: false)
+            ->method('needsExtraction')
+            ->with($fileId)
+            ->willReturn(true);
+
+        // Mock exception during extraction
+        $this->fileTextService
+            ->expects($this->once())
+            ->method('extractAndStoreFileText')
+            ->with($fileId)
             ->willThrowException(new \Exception($exceptionMessage));
 
-        // Expect error logging.
+        // Expect error logging
         $this->logger
-            ->expects($this->atLeastOnce())
-            ->method('error');
+            ->expects($this->once())
+            ->method('error')
+            ->with(
+                $this->stringContains('Exception during text extraction'),
+                $this->callback(function ($context) use ($fileId, $exceptionMessage) {
+                    return $context['file_id'] === $fileId &&
+                           $context['error'] === $exceptionMessage;
+                })
+            );
 
-        // Run the job (should not throw exception).
-        $this->invokeRun($argument);
+        // Run the job (should not throw exception)
+        $this->job->start($argument);
     }
 
     /**
@@ -243,19 +236,23 @@ class FileTextExtractionJobTest extends TestCase
     {
         $argument = []; // Missing file_id
 
-        $this->enableFileExtraction();
-
-        // Should NOT call extractFile.
-        $this->textExtractor
+        // Should NOT call any service methods
+        $this->fileTextService
             ->expects($this->never())
-            ->method('extractFile');
+            ->method('needsExtraction');
 
-        // Expect error logging.
+        $this->fileTextService
+            ->expects($this->never())
+            ->method('extractAndStoreFileText');
+
+        // Expect error logging
         $this->logger
-            ->expects($this->atLeastOnce())
-            ->method('error');
+            ->expects($this->once())
+            ->method('error')
+            ->with($this->stringContains('Missing file_id'));
 
-        // Run the job.
-        $this->invokeRun($argument);
+        // Run the job
+        $this->job->start($argument);
     }
 }
+

@@ -1,5 +1,4 @@
 <?php
-
 /**
  * OpenRegister Source
  *
@@ -28,27 +27,6 @@ use OCP\AppFramework\Db\Entity;
  * Source entity class
  *
  * Represents a source in the OpenRegister application
- *
- * @method string|null getUuid()
- * @method void setUuid(?string $uuid)
- * @method string|null getTitle()
- * @method void setTitle(?string $title)
- * @method string|null getVersion()
- * @method void setVersion(?string $version)
- * @method string|null getDescription()
- * @method void setDescription(?string $description)
- * @method string|null getDatabaseUrl()
- * @method void setDatabaseUrl(?string $databaseUrl)
- * @method string|null getType()
- * @method void setType(?string $type)
- * @method string|null getOrganisation()
- * @method void setOrganisation(?string $organisation)
- * @method DateTime|null getUpdated()
- * @method void setUpdated(?DateTime $updated)
- * @method DateTime|null getCreated()
- * @method void setCreated(?DateTime $created)
- *
- * @psalm-suppress PropertyNotSetInConstructor $id is set by Nextcloud's Entity base class
  */
 class Source extends Entity implements JsonSerializable
 {
@@ -107,7 +85,7 @@ class Source extends Entity implements JsonSerializable
      *
      * @var Configuration|null
      */
-    private ?Configuration $managedByConfig = null;
+    private ?Configuration $managedByConfiguration = null;
 
     /**
      * Last update timestamp
@@ -122,6 +100,7 @@ class Source extends Entity implements JsonSerializable
      * @var DateTime|null Creation timestamp
      */
     protected ?DateTime $created = null;
+
 
     /**
      * Constructor for the Source class
@@ -139,16 +118,16 @@ class Source extends Entity implements JsonSerializable
         $this->addType(fieldName: 'organisation', type: 'string');
         $this->addType(fieldName: 'updated', type: 'datetime');
         $this->addType(fieldName: 'created', type: 'datetime');
+
     }//end __construct()
+
 
     /**
      * Get JSON fields from the entity
      *
      * Returns all fields that are of type 'json'
      *
-     * @return string[] List of JSON field names
-     *
-     * @psalm-return list<string>
+     * @return array<string> List of JSON field names
      */
     public function getJsonFields(): array
     {
@@ -160,7 +139,9 @@ class Source extends Entity implements JsonSerializable
                 }
             )
         );
+
     }//end getJsonFields()
+
 
     /**
      * Hydrate the entity with data from an array
@@ -169,9 +150,9 @@ class Source extends Entity implements JsonSerializable
      *
      * @param array $object The data array to hydrate from
      *
-     * @return static Returns $this for method chaining
+     * @return self Returns $this for method chaining
      */
-    public function hydrate(array $object): static
+    public function hydrate(array $object): self
     {
         $jsonFields = $this->getJsonFields();
 
@@ -194,7 +175,9 @@ class Source extends Entity implements JsonSerializable
         }
 
         return $this;
+
     }//end hydrate()
+
 
     /**
      * Get the organisation UUID
@@ -204,7 +187,9 @@ class Source extends Entity implements JsonSerializable
     public function getOrganisation(): ?string
     {
         return $this->organisation;
+
     }//end getOrganisation()
+
 
     /**
      * Set the organisation UUID
@@ -216,50 +201,50 @@ class Source extends Entity implements JsonSerializable
     public function setOrganisation(?string $organisation): void
     {
         $this->organisation = $organisation;
-        $this->markFieldUpdated(attribute: 'organisation');
+        $this->markFieldUpdated('organisation');
+
     }//end setOrganisation()
+
 
     /**
      * Convert entity to JSON serializable array
      *
      * Prepares the entity data for JSON serialization
      *
-     * @return ((int|null|string)[]|int|null|string)[]
-     *
-     * @psalm-return array{id: int, uuid: null|string, title: null|string,
-     *     version: null|string, description: null|string,
-     *     databaseUrl: null|string, type: null|string,
-     *     organisation: null|string, updated: null|string,
-     *     created: null|string,
-     *     managedByConfiguration: array{id: int, uuid: null|string,
-     *     title: null|string}|null}
+     * @return array<string, mixed> Array of serializable entity data
      */
     public function jsonSerialize(): array
     {
         $updated = null;
-        if ($this->updated !== null) {
+        if (isset($this->updated) === true) {
             $updated = $this->updated->format('c');
         }
 
         $created = null;
-        if ($this->created !== null) {
+        if (isset($this->created) === true) {
             $created = $this->created->format('c');
         }
 
         return [
-            'id'                     => $this->id,
-            'uuid'                   => $this->uuid,
-            'title'                  => $this->title,
-            'version'                => $this->version,
-            'description'            => $this->description,
-            'databaseUrl'            => $this->databaseUrl,
-            'type'                   => $this->type,
-            'organisation'           => $this->organisation,
-            'updated'                => $updated,
-            'created'                => $created,
-            'managedByConfiguration' => $this->getManagedByConfigurationData(),
+            'id'           => $this->id,
+            'uuid'         => $this->uuid,
+            'title'        => $this->title,
+            'version'      => $this->version,
+            'description'  => $this->description,
+            'databaseUrl'  => $this->databaseUrl,
+            'type'         => $this->type,
+            'organisation' => $this->organisation,
+            'updated'      => $updated,
+            'created'      => $created,
+            'managedByConfiguration' => $this->managedByConfiguration !== null ? [
+                'id' => $this->managedByConfiguration->getId(),
+                'uuid' => $this->managedByConfiguration->getUuid(),
+                'title' => $this->managedByConfiguration->getTitle(),
+            ] : null,
         ];
+
     }//end jsonSerialize()
+
 
     /**
      * String representation of the source
@@ -271,24 +256,26 @@ class Source extends Entity implements JsonSerializable
      */
     public function __toString(): string
     {
-        // Return the title if available, otherwise return a descriptive string.
+        // Return the title if available, otherwise return a descriptive string
         if ($this->title !== null && $this->title !== '') {
             return $this->title;
         }
 
-        // Fallback to UUID if available.
+        // Fallback to UUID if available
         if ($this->uuid !== null && $this->uuid !== '') {
             return $this->uuid;
         }
 
-        // Fallback to ID if available.
+        // Fallback to ID if available
         if ($this->id !== null) {
             return 'Source #'.$this->id;
         }
 
-        // Final fallback.
+        // Final fallback
         return 'Source';
+
     }//end __toString()
+
 
     /**
      * Get the configuration that manages this source (transient property)
@@ -297,8 +284,10 @@ class Source extends Entity implements JsonSerializable
      */
     public function getManagedByConfigurationEntity(): ?Configuration
     {
-        return $this->managedByConfig;
+        return $this->managedByConfiguration;
+
     }//end getManagedByConfigurationEntity()
+
 
     /**
      * Set the configuration that manages this source (transient property)
@@ -309,14 +298,15 @@ class Source extends Entity implements JsonSerializable
      */
     public function setManagedByConfigurationEntity(?Configuration $configuration): void
     {
-        $this->managedByConfig = $configuration;
+        $this->managedByConfiguration = $configuration;
+
     }//end setManagedByConfigurationEntity()
+
 
     /**
      * Check if this source is managed by a configuration
      *
-     * Returns true if this source's ID appears in any of the provided
-     * configurations' sources arrays.
+     * Returns true if this source's ID appears in any of the provided configurations' sources arrays.
      *
      * @param array<Configuration> $configurations Array of Configuration entities to check against
      *
@@ -333,13 +323,15 @@ class Source extends Entity implements JsonSerializable
 
         foreach ($configurations as $configuration) {
             $sources = $configuration->getSources();
-            if (in_array($this->id, $sources ?? [], true) === true) {
+            if (in_array($this->id, $sources, true) === true) {
                 return true;
             }
         }
 
         return false;
+
     }//end isManagedByConfiguration()
+
 
     /**
      * Get the configuration that manages this source
@@ -362,31 +354,14 @@ class Source extends Entity implements JsonSerializable
 
         foreach ($configurations as $configuration) {
             $sources = $configuration->getSources();
-            if (in_array($this->id, $sources ?? [], true) === true) {
+            if (in_array($this->id, $sources, true) === true) {
                 return $configuration;
             }
         }
 
         return null;
+
     }//end getManagedByConfiguration()
 
-    /**
-     * Get managed by configuration data as array or null
-     *
-     * @return (int|null|string)[]|null Configuration data or null
-     *
-     * @psalm-return array{id: int, uuid: null|string, title: null|string}|null
-     */
-    private function getManagedByConfigurationData(): array|null
-    {
-        if ($this->managedByConfig === null) {
-            return null;
-        }
 
-        return [
-            'id'    => $this->managedByConfig->getId(),
-            'uuid'  => $this->managedByConfig->getUuid(),
-            'title' => $this->managedByConfig->getTitle(),
-        ];
-    }//end getManagedByConfigurationData()
 }//end class

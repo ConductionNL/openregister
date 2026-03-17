@@ -1,5 +1,4 @@
 <?php
-
 /**
  * OpenRegister Database Migration
  *
@@ -38,30 +37,26 @@ use OCP\Migration\SimpleMigrationStep;
  */
 class Version1Date20251107140000 extends SimpleMigrationStep
 {
+
     /**
      * Change the database schema
      *
-     * @param IOutput $output        The output interface
-     * @param Closure $schemaClosure The schema closure
-     * @param array   $options       The options
+     * @param IOutput         $output The output interface
+     * @param Closure         $schemaClosure The schema closure
+     * @param array           $options The options
      *
      * @return null|ISchemaWrapper The schema wrapper
-     *
-     * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      */
     public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper
     {
-        /*
-         * @var ISchemaWrapper $schema
-         */
-
+        /** @var ISchemaWrapper $schema */
         $schema = $schemaClosure();
 
-        // Check if the configurations table exists.
+        // Check if the configurations table exists
         if ($schema->hasTable('openregister_configurations') === true) {
             $table = $schema->getTable('openregister_configurations');
 
-            // Add views column if it doesn't exist.
+            // Add views column if it doesn't exist
             if ($table->hasColumn('views') === false) {
                 $table->addColumn(
                     'views',
@@ -73,7 +68,7 @@ class Version1Date20251107140000 extends SimpleMigrationStep
                 );
             }
 
-            // Add agents column if it doesn't exist.
+            // Add agents column if it doesn't exist
             if ($table->hasColumn('agents') === false) {
                 $table->addColumn(
                     'agents',
@@ -85,7 +80,7 @@ class Version1Date20251107140000 extends SimpleMigrationStep
                 );
             }
 
-            // Add sources column if it doesn't exist.
+            // Add sources column if it doesn't exist
             if ($table->hasColumn('sources') === false) {
                 $table->addColumn(
                     'sources',
@@ -97,7 +92,7 @@ class Version1Date20251107140000 extends SimpleMigrationStep
                 );
             }
 
-            // Add applications column if it doesn't exist.
+            // Add applications column if it doesn't exist
             if ($table->hasColumn('applications') === false) {
                 $table->addColumn(
                     'applications',
@@ -110,8 +105,12 @@ class Version1Date20251107140000 extends SimpleMigrationStep
             }
 
             return $schema;
-        }//end if
+        }
 
         return null;
+
     }//end changeSchema()
+
+
 }//end class
+

@@ -1,7 +1,6 @@
 <?php
-
 /**
- * OpenRegister RevertHandler
+ * OpenRegister RevertService
  *
  * Service class for handling object reversion in the OpenRegister application.
  *
@@ -17,14 +16,12 @@
  * @link https://www.OpenRegister.app
  */
 
-namespace OCA\OpenRegister\Service\Object;
+namespace OCA\OpenRegister\Service;
 
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Db\MagicMapper;
-use OCA\OpenRegister\Db\Register;
+use OCA\OpenRegister\Db\ObjectEntityMapper;
 use OCA\OpenRegister\Db\RegisterMapper;
-use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Event\ObjectRevertedEvent;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
@@ -34,39 +31,34 @@ use OCP\EventDispatcher\IEventDispatcher;
 use Psr\Container\ContainerInterface;
 
 /**
- * Class RevertHandler
+ * Class RevertService
  * Service for handling object reversion
  */
-class RevertHandler
+class RevertService
 {
 
-    /**
-     * Audit trail mapper
-     *
-     * @var AuditTrailMapper
-     */
-    private AuditTrailMapper $auditTrailMapper;
 
     /**
-     * Container
+     * Constructor for RevertService
      *
-     * @var ContainerInterface
+     * @param AuditTrailMapper   $auditTrailMapper   The audit trail mapper
+     * @param ObjectEntityMapper $objectEntityMapper The object entity mapper
+     * @param RegisterMapper     $registerMapper     The register mapper
+     * @param SchemaMapper       $schemaMapper       The schema mapper
+     * @param ContainerInterface $container          The DI container
+     * @param IEventDispatcher   $eventDispatcher    The event dispatcher
      */
-    private ContainerInterface $container;
+    public function __construct(
+        private readonly AuditTrailMapper $auditTrailMapper,
+        private readonly ObjectEntityMapper $objectEntityMapper,
+        private readonly RegisterMapper $registerMapper,
+        private readonly SchemaMapper $schemaMapper,
+        private readonly ContainerInterface $container,
+        private readonly IEventDispatcher $eventDispatcher
+    ) {
 
-    /**
-     * Event dispatcher
-     *
-     * @var IEventDispatcher
-     */
-    private IEventDispatcher $eventDispatcher;
+    }//end __construct()
 
-    /**
-     * Object entity mapper
-     *
-     * @var MagicMapper
-     */
-    private MagicMapper $objectEntityMapper;
 
     /**
      * Revert an object to a previous state
@@ -83,8 +75,6 @@ class RevertHandler
      * @throws NotAuthorizedException If user not authorized
      * @throws LockedException If object is locked
      * @throws \Exception If reversion fails
-     *
-     * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Boolean needed to control version overwrite behavior
      */
     public function revert(
         string $register,
@@ -93,16 +83,8 @@ class RevertHandler
         mixed $until,
         bool $overwriteVersion=false
     ): ObjectEntity {
-        // Get the object with context (searches across all magic tables).
-        $context        = $this->objectEntityMapper->findAcrossAllSources(
-            identifier: $id,
-            includeDeleted: false,
-            _rbac: false,
-            _multitenancy: false
-        );
-        $object         = $context['object'];
-        $registerEntity = $context['register'];
-        $schemaEntity   = $context['schema'];
+        // Get the object.
+        $object = $this->objectEntityMapper->find($id);
 
         // Verify that the object belongs to the specified register and schema.
         if ($object->getRegister() !== $register || $object->getSchema() !== $schema) {
@@ -114,28 +96,27 @@ class RevertHandler
             $userId = $this->container->get('userId');
             if ($object->getLockedBy() !== $userId) {
                 throw new LockedException(
-                    message: sprintf('Object is locked by %s', $object->getLockedBy())
+                    sprintf('Object is locked by %s', $object->getLockedBy())
                 );
             }
         }
 
         // Get the reverted object using AuditTrailMapper.
         $revertedObject = $this->auditTrailMapper->revertObject(
-            identifier: $id,
-            until: $until,
-            overwriteVersion: $overwriteVersion
+            $id,
+            $until,
+            $overwriteVersion
         );
 
-        // Save the reverted object (with register/schema context for magic mapper routing).
-        $savedObject = $this->objectEntityMapper->update(
-            entity: $revertedObject,
-            register: $registerEntity,
-            schema: $schemaEntity
-        );
+        // Save the reverted object.
+        $savedObject = $this->objectEntityMapper->update($revertedObject);
 
         // Dispatch revert event.
-        $this->eventDispatcher->dispatchTyped(new ObjectRevertedEvent(object: $savedObject, until: $until));
+        $this->eventDispatcher->dispatchTyped(new ObjectRevertedEvent($savedObject, $until));
 
         return $savedObject;
+
     }//end revert()
+
+
 }//end class

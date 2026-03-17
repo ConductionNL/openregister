@@ -120,8 +120,8 @@ export default {
 						search: '',
 					})
 
-					if (objectStore.getCollection(objectStore.currentType).length) {
-						this.objects.push(...objectStore.getCollection(objectStore.currentType))
+					if (objectStore.objectList?.results?.length) {
+						this.objects.push(...objectStore.objectList.results)
 						this.registerName = reg.title
 					}
 				}

@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 /**
  * File Text Extraction Background Job
  *
@@ -7,20 +9,17 @@
  * This job is queued automatically when files are created or modified to avoid
  * blocking user requests with potentially slow text extraction operations.
  *
- * @category  BackgroundJob
- * @package   OCA\OpenRegister\BackgroundJob
- * @author    Conduction Development Team <info@conduction.nl>
- * @copyright 2024 Conduction B.V.
- * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
- * @version   GIT: <git-id>
- * @link      https://OpenRegister.app
+ * @category BackgroundJob
+ * @package  OCA\OpenRegister\BackgroundJob
+ * @author   OpenRegister Team
+ * @copyright 2024 OpenRegister
+ * @license  AGPL-3.0-or-later
+ * @link     https://github.com/OpenRegister/OpenRegister
  */
-
-declare(strict_types=1);
 
 namespace OCA\OpenRegister\BackgroundJob;
 
-use OCA\OpenRegister\Service\TextExtractionService;
+use OCA\OpenRegister\Service\FileTextService;
 use OCP\BackgroundJob\QueuedJob;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\IAppConfig;
@@ -43,148 +42,96 @@ use Psr\Log\LoggerInterface;
  */
 class FileTextExtractionJob extends QueuedJob
 {
-
-    /**
-     * Configuration service
-     *
-     * Used to check if file text extraction is enabled in settings.
-     *
-     * @var IAppConfig Application configuration service
-     */
-    private readonly IAppConfig $config;
-
-    /**
-     * Logger service
-     *
-     * Used for logging extraction progress, errors, and debug information.
-     *
-     * @var LoggerInterface Logger instance
-     */
-    private readonly LoggerInterface $logger;
-
-    /**
-     * Text extraction service
-     *
-     * Handles actual text extraction from various file formats.
-     *
-     * @var TextExtractionService Text extraction service instance
-     */
-    private readonly TextExtractionService $textExtractor;
-
     /**
      * Constructor
      *
-     * Initializes the background job with required services via dependency injection.
-     *
-     * @param ITimeFactory          $time          Time factory for parent class
-     * @param IAppConfig            $config        Configuration service
-     * @param LoggerInterface       $logger        Logger service
-     * @param TextExtractionService $textExtractor Text extraction service
+     * @param ITimeFactory    $timeFactory     Time factory for job scheduling
+     * @param FileTextService $fileTextService File text extraction service
+     * @param LoggerInterface $logger          Logger instance
      */
     public function __construct(
-        ITimeFactory $time,
-        IAppConfig $config,
-        LoggerInterface $logger,
-        TextExtractionService $textExtractor
+        ITimeFactory $timeFactory,
+        private readonly FileTextService $fileTextService,
+        private readonly LoggerInterface $logger,
+        private readonly IAppConfig $config,
     ) {
-        parent::__construct(time: $time);
-        $this->config        = $config;
-        $this->logger        = $logger;
-        $this->textExtractor = $textExtractor;
-    }//end __construct()
+        parent::__construct($timeFactory);
+    }
 
     /**
      * Run the background job
      *
      * Extracts text from the specified file and stores it in the database.
-     * Checks if extraction is enabled before proceeding. Validates job arguments
-     * and handles errors gracefully.
+     * The job expects an argument array with 'file_id' key.
      *
-     * @param array<string, mixed> $argument Job arguments containing:
-     *                                       - file_id: The ID of the file to extract text from (required)
+     * @param array $argument Job arguments containing file_id
      *
      * @return void
      */
     protected function run($argument): void
     {
-        // Step 1: Check if file text extraction is enabled in configuration.
-        // Skip extraction if disabled to avoid unnecessary processing.
-        $fileManagementKey   = 'fileManagement';
-        $fileManagementValue = $this->config->getValueString(app: 'openregister', key: $fileManagementKey);
-        $fileManagement      = json_decode($fileManagementValue, true);
-        if ($this->config->hasKey(app: 'openregister', key: $fileManagementKey) === false
-            || $fileManagement['extractionScope'] === 'none'
-        ) {
-            $this->logger->info(
-                message: '[FileTextExtractionJob] File extraction is disabled. Not extracting text from files.',
-                context: ['file' => __FILE__, 'line' => __LINE__]
-            );
+        if ($this->config->hasKey(app: 'openregister', key: 'fileManagement') === false || json_decode($this->config->getValueString(app: 'openregister', key: 'fileManagement'), true)['extractionScope'] === 'none') {
+            $this->logger->info('[FileTextExtractionJob] File extraction is disabled. Not extracting text from files.');
             return;
         }
 
-        // Step 2: Validate that required file_id argument is present.
+
+        // Validate argument
         if (isset($argument['file_id']) === false) {
-            $this->logger->error(
-                message: '[FileTextExtractionJob] Missing file_id in job arguments',
-                context: [
-                    'file'     => __FILE__,
-                    'line'     => __LINE__,
-                    'argument' => $argument,
-                ]
-            );
+            $this->logger->error('[FileTextExtractionJob] Missing file_id in job arguments', [
+                'argument' => $argument,
+            ]);
             return;
         }
 
-        // Step 3: Extract and cast file ID to integer.
         $fileId = (int) $argument['file_id'];
 
-        // Log start of extraction process for monitoring.
-        $this->logger->info(
-            message: '[FileTextExtractionJob] Starting text extraction',
-            context: [
-                'file'    => __FILE__,
-                'line'    => __LINE__,
-                'file_id' => $fileId,
-                'job_id'  => $this->getId(),
-            ]
-        );
+        $this->logger->info('[FileTextExtractionJob] Starting text extraction', [
+            'file_id' => $fileId,
+            'job_id' => $this->getId(),
+        ]);
 
-        // Record start time for performance metrics.
         $startTime = microtime(true);
 
         try {
-            // Extract text using TextExtractionService.
-            $this->textExtractor->extractFile(fileId: $fileId, forceReExtract: false);
+            // Check if extraction is still needed
+            // (file might have been processed by another job or deleted)
+            if ($this->fileTextService->needsExtraction($fileId) === false) {
+                $this->logger->info('[FileTextExtractionJob] Extraction no longer needed', [
+                    'file_id' => $fileId,
+                    'reason' => 'Already processed or not required',
+                ]);
+                return;
+            }
 
-            // Calculate processing time in milliseconds.
+            // Extract and store text
+            $result = $this->fileTextService->extractAndStoreFileText($fileId);
+
             $processingTime = round((microtime(true) - $startTime) * 1000, 2);
 
-            // Log successful completion with performance metrics.
-            $this->logger->info(
-                message: '[FileTextExtractionJob] Text extraction completed successfully',
-                context: [
-                    'file'               => __FILE__,
-                    'line'               => __LINE__,
-                    'file_id'            => $fileId,
+            if ($result['success'] === true) {
+                $this->logger->info('[FileTextExtractionJob] Text extraction completed successfully', [
+                    'file_id' => $fileId,
+                    'text_length' => $result['fileText']?->getTextLength() ?? 0,
                     'processing_time_ms' => $processingTime,
-                ]
-            );
+                ]);
+            } else {
+                $this->logger->warning('[FileTextExtractionJob] Text extraction failed', [
+                    'file_id' => $fileId,
+                    'error' => $result['error'] ?? 'Unknown error',
+                    'processing_time_ms' => $processingTime,
+                ]);
+            }
         } catch (\Exception $e) {
-            // Calculate processing time even on failure for metrics.
             $processingTime = round((microtime(true) - $startTime) * 1000, 2);
 
-            // Log error with full exception details for debugging.
-            $this->logger->error(
-                message: '[FileTextExtractionJob] Exception during text extraction',
-                context: [
-                    'file'               => __FILE__,
-                    'line'               => __LINE__,
-                    'file_id'            => $fileId,
-                    'error'              => $e->getMessage(),
-                    'trace'              => $e->getTraceAsString(),
-                    'processing_time_ms' => $processingTime,
-                ]
-            );
-        }//end try
-    }//end run()
-}//end class
+            $this->logger->error('[FileTextExtractionJob] Exception during text extraction', [
+                'file_id' => $fileId,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+                'processing_time_ms' => $processingTime,
+            ]);
+        }
+    }
+}
+

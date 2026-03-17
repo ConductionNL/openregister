@@ -1,7 +1,9 @@
 <?php
 
+declare(strict_types=1);
+
 /**
- * OpenRegister Migration - Add UUID Column to File Texts Table
+ * Add UUID column to file_texts table
  *
  * This migration adds a UUID column to oc_openregister_file_texts for
  * external referencing and API integrations.
@@ -9,16 +11,14 @@
  * @category Migration
  * @package  OCA\OpenRegister\Migration
  *
- * @author    Conduction Development Team <dev@conduction.nl>
+ * @author   Conduction Development Team <dev@conduction.nl>
  * @copyright 2024 Conduction B.V.
- * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ * @license  EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
- * @version GIT: <git_id>
+ * @version  GIT: <git_id>
  *
- * @link https://www.OpenRegister.nl
+ * @link     https://www.OpenRegister.nl
  */
-
-declare(strict_types=1);
 
 namespace OCA\OpenRegister\Migration;
 
@@ -39,84 +39,71 @@ use OCP\Migration\SimpleMigrationStep;
  */
 class Version1Date20251107160000 extends SimpleMigrationStep
 {
+
     /**
      * Add UUID column to file_texts table
      *
-     * @param IOutput $output        Migration output interface
+     * @param IOutput $output Migration output interface
      * @param Closure $schemaClosure Schema closure
-     * @param array   $options       Migration options
+     * @param array   $options Migration options
      *
      * @return ISchemaWrapper|null Updated schema
-     *
-     * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      */
     public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper
     {
-        /*
-         * @var ISchemaWrapper $schema
-         */
-
-        $schema  = $schemaClosure();
+        /** @var ISchemaWrapper $schema */
+        $schema = $schemaClosure();
         $updated = false;
 
-        $output->info(message: '📄 Adding UUID column to file_texts table...');
+        $output->info('📄 Adding UUID column to file_texts table...');
 
-        if ($schema->hasTable('openregister_file_texts') === true) {
+        if ($schema->hasTable('openregister_file_texts')) {
             $table = $schema->getTable('openregister_file_texts');
-
-            // Add UUID column if it doesn't exist.
-            if ($table->hasColumn('uuid') === false) {
-                $table->addColumn(
-                    'uuid',
-                    Types::STRING,
-                    [
-                        'notnull' => false,
-                        'length'  => 36,
-                        'comment' => 'Unique identifier for external referencing',
-                    ]
-                );
-
-                // Add index for UUID lookups.
-                if ($table->hasIndex('file_texts_uuid_idx') === false) {
+            
+            // Add UUID column if it doesn't exist
+            if (!$table->hasColumn('uuid')) {
+                $table->addColumn('uuid', Types::STRING, [
+                    'notnull' => false,
+                    'length' => 36,
+                    'comment' => 'Unique identifier for external referencing',
+                ]);
+                
+                // Add index for UUID lookups
+                if (!$table->hasIndex('file_texts_uuid_idx')) {
                     $table->addIndex(['uuid'], 'file_texts_uuid_idx');
                 }
-
-                $output->info(message: '✅ Added UUID column to file_texts table');
+                
+                $output->info('✅ Added UUID column to file_texts table');
                 $updated = true;
+            } else {
+                $output->info('ℹ️  UUID column already exists in file_texts table');
             }
-
-            if ($table->hasColumn('uuid') === true) {
-                $output->info(message: 'ℹ️  UUID column already exists in file_texts table');
-            }//end if
-        }//end if
-
-        if ($updated === false) {
-            return null;
         }
 
-        return $schema;
-    }//end changeSchema()
+        return $updated ? $schema : null;
+    }
 
     /**
      * Post-migration actions
      *
      * Generate UUIDs for existing records that don't have one
      *
-     * @param IOutput $output        Migration output interface
+     * @param IOutput $output Migration output interface
      * @param Closure $schemaClosure Schema closure
-     * @param array   $options       Migration options
+     * @param array   $options Migration options
      *
      * @return void
-     *
-     * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      */
     public function postSchemaChange(IOutput $output, Closure $schemaClosure, array $options): void
     {
-        $output->info(message: 'Generating UUIDs for existing file_texts records...');
+        $output->info('Generating UUIDs for existing file_texts records...');
+        
+        // Note: UUID generation for existing records will be handled by the
+        // FileTextMapper when records are accessed/updated, to avoid
+        // potential timeout issues with large datasets.
+        
+        $output->info('✅ Migration complete - UUIDs will be generated on-demand');
+    }
+}
 
-        // Note: UUID generation for existing records will be handled by the.
-        // FileTextMapper when records are accessed/updated, to avoid.
-        // Potential timeout issues with large datasets.
-        $output->info(message: '✅ Migration complete - UUIDs will be generated on-demand');
-    }//end postSchemaChange()
-}//end class
+

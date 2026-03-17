@@ -1,5 +1,4 @@
 <?php
-
 /**
  * OpenRegister Objects Tool
  *
@@ -20,8 +19,6 @@
 
 namespace OCA\OpenRegister\Tool;
 
-use RuntimeException;
-use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService;
 use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
@@ -44,7 +41,6 @@ use Psr\Log\LoggerInterface;
  */
 class ObjectsTool extends AbstractTool
 {
-
     /**
      * Object service
      *
@@ -55,153 +51,148 @@ class ObjectsTool extends AbstractTool
     /**
      * Constructor
      *
-     * @param IUserSession    $userSession   User session service
-     * @param LoggerInterface $logger        Logger service
-     * @param ObjectService   $objectService Object service
+     * @param IUserSession    $userSession    User session service
+     * @param LoggerInterface $logger         Logger service
+     * @param ObjectService   $objectService  Object service
      */
     public function __construct(
         IUserSession $userSession,
         LoggerInterface $logger,
         ObjectService $objectService
     ) {
-        parent::__construct(userSession: $userSession, logger: $logger);
+        parent::__construct($userSession, $logger);
         $this->objectService = $objectService;
-    }//end __construct()
+    }
 
     /**
      * Get tool name
      *
      * @return string Tool name
-     *
-     * @psalm-return 'objects'
      */
     public function getName(): string
     {
         return 'objects';
-    }//end getName()
+    }
 
     /**
      * Get tool description
      *
-     * @return string The tool description.
+     * @return string Tool description
      */
     public function getDescription(): string
     {
-        $description  = 'Manage objects: search, view, create, update, or delete objects. ';
-        $description .= 'Objects are data records conforming to schemas.';
-        return $description;
-    }//end getDescription()
+        return 'Manage objects in OpenRegister. Objects are data records that conform to schemas. '
+             . 'Use this tool to search, view, create, update, or delete objects.';
+    }
 
     /**
      * Get function definitions for LLphant
      *
-     * @return array<int, array<string, mixed>> Array of function definitions
-     *
-     * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Comprehensive function definitions for LLM
+     * @return array Array of function definitions
      */
     public function getFunctions(): array
     {
         return [
             [
-                'name'        => 'search_objects',
+                'name' => 'search_objects',
                 'description' => 'Search for objects with optional filters',
-                'parameters'  => [
-                    'type'       => 'object',
+                'parameters' => [
+                    'type' => 'object',
                     'properties' => [
-                        'query'    => [
-                            'type'        => 'string',
+                        'query' => [
+                            'type' => 'string',
                             'description' => 'Search query text (optional)',
                         ],
                         'register' => [
-                            'type'        => 'string',
+                            'type' => 'string',
                             'description' => 'Filter by register ID (optional)',
                         ],
-                        'schema'   => [
-                            'type'        => 'string',
+                        'schema' => [
+                            'type' => 'string',
                             'description' => 'Filter by schema ID (optional)',
                         ],
-                        'limit'    => [
-                            'type'        => 'integer',
+                        'limit' => [
+                            'type' => 'integer',
                             'description' => 'Maximum number of results (default: 20)',
                         ],
-                        'offset'   => [
-                            'type'        => 'integer',
+                        'offset' => [
+                            'type' => 'integer',
                             'description' => 'Number of results to skip (default: 0)',
                         ],
                     ],
-                    'required'   => [],
+                    'required' => [],
                 ],
             ],
             [
-                'name'        => 'get_object',
+                'name' => 'get_object',
                 'description' => 'Get details about a specific object by ID or UUID',
-                'parameters'  => [
-                    'type'       => 'object',
+                'parameters' => [
+                    'type' => 'object',
                     'properties' => [
                         'id' => [
-                            'type'        => 'string',
+                            'type' => 'string',
                             'description' => 'The object ID or UUID to retrieve',
                         ],
                     ],
-                    'required'   => ['id'],
+                    'required' => ['id'],
                 ],
             ],
             [
-                'name'        => 'create_object',
+                'name' => 'create_object',
                 'description' => 'Create a new object with data',
-                'parameters'  => [
-                    'type'       => 'object',
+                'parameters' => [
+                    'type' => 'object',
                     'properties' => [
                         'register' => [
-                            'type'        => 'string',
+                            'type' => 'string',
                             'description' => 'The register ID where the object should be created',
                         ],
-                        'schema'   => [
-                            'type'        => 'string',
+                        'schema' => [
+                            'type' => 'string',
                             'description' => 'The schema ID that defines the object structure',
                         ],
-                        'data'     => [
-                            'type'        => 'object',
+                        'data' => [
+                            'type' => 'object',
                             'description' => 'The object data conforming to the schema',
                         ],
                     ],
-                    'required'   => ['register', 'schema', 'data'],
+                    'required' => ['register', 'schema', 'data'],
                 ],
             ],
             [
-                'name'        => 'update_object',
+                'name' => 'update_object',
                 'description' => 'Update an existing object',
-                'parameters'  => [
-                    'type'       => 'object',
+                'parameters' => [
+                    'type' => 'object',
                     'properties' => [
-                        'id'   => [
-                            'type'        => 'string',
+                        'id' => [
+                            'type' => 'string',
                             'description' => 'The object ID to update',
                         ],
                         'data' => [
-                            'type'        => 'object',
+                            'type' => 'object',
                             'description' => 'The updated object data (partial updates supported)',
                         ],
                     ],
-                    'required'   => ['id', 'data'],
+                    'required' => ['id', 'data'],
                 ],
             ],
             [
-                'name'        => 'delete_object',
+                'name' => 'delete_object',
                 'description' => 'Delete an object by ID',
-                'parameters'  => [
-                    'type'       => 'object',
+                'parameters' => [
+                    'type' => 'object',
                     'properties' => [
                         'id' => [
-                            'type'        => 'string',
+                            'type' => 'string',
                             'description' => 'The object ID to delete',
                         ],
                     ],
-                    'required'   => ['id'],
+                    'required' => ['id'],
                 ],
             ],
         ];
-    }//end getFunctions()
+    }
 
     /**
      * Execute a function
@@ -214,141 +205,114 @@ class ObjectsTool extends AbstractTool
      *
      * @throws \Exception If function execution fails
      */
-    public function executeFunction(string $functionName, array $parameters, ?string $userId=null): array
+    public function executeFunction(string $functionName, array $parameters, ?string $userId = null): array
     {
-        $this->log(functionName: $functionName, parameters: $parameters);
+        $this->log($functionName, $parameters);
 
-        if ($this->hasUserContext(explicitUserId: $userId) === false) {
-            return $this->formatError(message: 'No user context available. Tool cannot execute without user session.');
+        if (!$this->hasUserContext($userId)) {
+            return $this->formatError('No user context available. Tool cannot execute without user session.');
         }
 
         try {
-            // Convert snake_case to camelCase for PSR compliance.
+            // Convert snake_case to camelCase for PSR compliance
             $methodName = lcfirst(str_replace('_', '', ucwords($functionName, '_')));
-
-            // Call the method directly (LLPhant-compatible).
+            
+            // Call the method directly (LLPhant-compatible)
             return $this->$methodName(...array_values($parameters));
         } catch (\Exception $e) {
-            $this->log(functionName: $functionName, parameters: $parameters, level: 'error', message: $e->getMessage());
-            return $this->formatError(message: $e->getMessage());
+            $this->log($functionName, $parameters, 'error', $e->getMessage());
+            return $this->formatError($e->getMessage());
         }
-    }//end executeFunction()
+    }
 
     /**
      * Search for objects
      *
-     * @param int         $limit    Result limit
-     * @param int         $offset   Result offset
-     * @param string|null $register Register filter
-     * @param string|null $schema   Schema filter
-     * @param string|null $query    Search query
+     * @param array $parameters Function parameters
      *
-     * @return (mixed|string|true)[] Result with list of objects
-     *
-     * @psalm-return array{success: true, message: string, data: mixed}
-     *
-     * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Optional nullable filter parameters
+     * @return array Result with list of objects
      */
-    public function searchObjects(
-        int $limit=20,
-        int $offset=0,
-        ?string $register=null,
-        ?string $schema=null,
-        ?string $query=null
-    ): array {
+    public function searchObjects(int $limit = 20, int $offset = 0, ?string $register = null, ?string $schema = null, ?string $query = null): array
+    {
         $filters = [];
         if ($register !== null) {
             $filters['register'] = $register;
         }
-
         if ($schema !== null) {
             $filters['schema'] = $schema;
         }
-
-        if ($query !== null && $query !== '') {
+        if ($query !== null && !empty($query)) {
             $filters['_search'] = $query;
         }
 
-        $filters = $this->applyViewFilters(params: $filters);
+        $filters = $this->applyViewFilters($filters);
 
         $result = $this->objectService->findAll(
-            config: [
-                'limit'   => $limit,
-                'offset'  => $offset,
-                'filters' => $filters,
-            ]
+            null, // registerId
+            null, // schemaId
+            $limit,
+            $offset,
+            $filters
         );
 
-        $objectList = array_map(
-            function (ObjectEntity $object): array {
-                return [
-                    'id'       => $object->getId(),
-                    'uuid'     => $object->getUuid(),
-                    'register' => $object->getRegister(),
-                    'schema'   => $object->getSchema(),
-                    'data'     => $object->getObject(),
-                    'created'  => $object->getCreated()?->format('Y-m-d H:i:s'),
-                    'updated'  => $object->getUpdated()?->format('Y-m-d H:i:s'),
-                ];
-            },
-            $result['results'] ?? []
-        );
+        $objectList = array_map(function ($object) {
+            return [
+                'id' => $object->getId(),
+                'uuid' => $object->getUuid(),
+                'register' => $object->getRegister(),
+                'schema' => $object->getSchema(),
+                'data' => $object->getObject(),
+                'created' => $object->getCreated()?->format('Y-m-d H:i:s'),
+                'updated' => $object->getUpdated()?->format('Y-m-d H:i:s'),
+            ];
+        }, $result['results'] ?? []);
 
         return $this->formatSuccess(
-            data: [
+            [
                 'objects' => $objectList,
-                'total'   => $result['total'] ?? count($objectList),
+                'total' => $result['total'] ?? count($objectList),
             ],
-            message: sprintf('Found %d objects', count($objectList))
+            sprintf('Found %d objects', count($objectList))
         );
-    }//end searchObjects()
+    }
 
     /**
      * Get a specific object
      *
-     * @param string $id Object ID
+     * @param array $parameters Function parameters
      *
-     * @return (mixed|string|true)[] Result with object details
+     * @return array Result with object details
      *
      * @throws \Exception If object not found
-     *
-     * @psalm-return array{success: true, message: string, data: mixed}
      */
     public function getObject(string $id): array
     {
-        $object = $this->objectService->find(id: $id);
-        if ($object === null) {
-            throw new RuntimeException("Object with id {$id} not found.");
-        }
+        $object = $this->objectService->findObject($id);
 
         return $this->formatSuccess(
-            data: [
-                'id'           => $object->getId(),
-                'uuid'         => $object->getUuid(),
-                'register'     => $object->getRegister(),
-                'schema'       => $object->getSchema(),
-                'data'         => $object->getObject(),
+            [
+                'id' => $object->getId(),
+                'uuid' => $object->getUuid(),
+                'register' => $object->getRegister(),
+                'schema' => $object->getSchema(),
+                'data' => $object->getObject(),
                 'organisation' => $object->getOrganisation(),
-                'owner'        => $object->getOwner(),
-                'created'      => $object->getCreated()?->format('Y-m-d H:i:s'),
-                'updated'      => $object->getUpdated()?->format('Y-m-d H:i:s'),
+                'owner' => $object->getOwner(),
+                'created' => $object->getCreated()?->format('Y-m-d H:i:s'),
+                'updated' => $object->getUpdated()?->format('Y-m-d H:i:s'),
             ],
-            message: 'Object retrieved successfully'
+            'Object retrieved successfully'
         );
-    }//end getObject()
+    }
 
     /**
      * Create a new object
      *
-     * @param string $register Register identifier
-     * @param string $schema   Schema identifier
-     * @param array  $data     Object data
+     * @param array $parameters Function parameters
      *
-     * @return (mixed|string|true)[] Result with created object
+     * @return array Result with created object
      *
      * @throws \Exception If creation fails
-     *
-     * @psalm-return array{success: true, message: string, data: mixed}
      */
     public function createObject(string $register, string $schema, array $data): array
     {
@@ -357,96 +321,87 @@ class ObjectsTool extends AbstractTool
             [
                 '@self' => [
                     'register' => $register,
-                    'schema'   => $schema,
+                    'schema' => $schema,
                 ],
             ]
         );
 
         $object = $this->objectService->saveObject(
-            object: $objectData,
-            register: (int) $register,
-            schema: (int) $schema
+            registerId: (int) $register,
+            schemaId: (int) $schema,
+            objectArray: $objectData
         );
 
         return $this->formatSuccess(
-            data: [
-                'id'       => $object->getId(),
-                'uuid'     => $object->getUuid(),
+            [
+                'id' => $object->getId(),
+                'uuid' => $object->getUuid(),
                 'register' => $object->getRegister(),
-                'schema'   => $object->getSchema(),
-                'data'     => $object->getObject(),
+                'schema' => $object->getSchema(),
+                'data' => $object->getObject(),
             ],
-            message: 'Object created successfully'
+            'Object created successfully'
         );
-    }//end createObject()
+    }
 
     /**
      * Update an existing object
      *
-     * @param string $id   Object ID
-     * @param array  $data Object data
+     * @param array $parameters Function parameters
      *
-     * @return (mixed|string|true)[] Result with updated object
+     * @return array Result with updated object
      *
      * @throws \Exception If update fails
-     *
-     * @psalm-return array{success: true, message: string, data: mixed}
      */
     public function updateObject(string $id, array $data): array
     {
-        // Get existing object.
-        $existingObject = $this->objectService->find($id);
+        // Get existing object
+        $existingObject = $this->objectService->findObject($id);
 
-        // Merge new data with existing data.
+        // Merge new data with existing data
         $mergedData = array_merge(
             $existingObject->getObject(),
             $data
         );
 
-        // Update object.
+        // Update object
         $object = $this->objectService->saveObject(
-            object: $mergedData,
-            register: $existingObject->getRegister(),
-            schema: $existingObject->getSchema(),
-            uuid: $existingObject->getUuid()
+            registerId: $existingObject->getRegister(),
+            schemaId: $existingObject->getSchema(),
+            objectArray: $mergedData,
+            id: $existingObject->getId()
         );
 
         return $this->formatSuccess(
-            data: [
-                'id'       => $object->getId(),
-                'uuid'     => $object->getUuid(),
+            [
+                'id' => $object->getId(),
+                'uuid' => $object->getUuid(),
                 'register' => $object->getRegister(),
-                'schema'   => $object->getSchema(),
-                'data'     => $object->getObject(),
+                'schema' => $object->getSchema(),
+                'data' => $object->getObject(),
             ],
-            message: 'Object updated successfully'
+            'Object updated successfully'
         );
-    }//end updateObject()
+    }
 
     /**
      * Delete an object
      *
-     * @param string $id Object ID
+     * @param array $parameters Function parameters
      *
-     * @return (mixed|string|true)[] Result of deletion
+     * @return array Result of deletion
      *
      * @throws \Exception If deletion fails
-     *
-     * @psalm-return array{success: true, message: string, data: mixed}
      */
     public function deleteObject(string $id): array
     {
-        $object = $this->objectService->find(id: $id);
-        if ($object === null) {
-            throw new RuntimeException("Object with id {$id} not found.");
-        }
-
-        $uuid = $object->getUuid() ?? (string) $object->getId();
-        $this->objectService->deleteObject(uuid: $uuid);
+        $object = $this->objectService->findObject($id);
+        $this->objectService->deleteObject($object->getId());
 
         return $this->formatSuccess(
-            data: ['id' => $id],
-            message: 'Object deleted successfully'
+            ['id' => $id],
+            'Object deleted successfully'
         );
-    }//end deleteObject()
-}//end class
+    }
+}
+

@@ -1,0 +1,109 @@
+@startuml Object Locking Process
+title Object Locking Sequence Diagram
+skinparam monochrome true
+
+actor User
+participant "API" as API
+participant "ObjectService" as Service
+participant "ObjectEntity" as Entity
+database "Database" as DB
+
+== Lock Object ==
+User -> API: Request lock object
+activate API
+
+API -> Service: lockObject(id, process?, duration?)
+activate Service
+
+Service -> DB: find object
+activate DB
+DB --> Service: return object
+deactivate DB
+
+Service -> Entity: lock(user, process?, duration?)
+activate Entity
+
+Entity -> Entity: check if already locked
+Entity -> Entity: validate user permissions
+Entity -> Entity: create/update lock metadata
+Entity --> Service: return success
+deactivate Entity
+
+Service -> DB: update object
+activate DB
+DB --> Service: confirm update
+deactivate DB
+
+Service --> API: return locked object
+deactivate Service
+
+API --> User: return success
+deactivate API
+
+== Auto Expiration ==
+note over Entity
+  Lock automatically expires
+  after duration passes
+end note
+
+== Update Locked Object ==
+User -> API: Update object
+activate API
+
+API -> Service: updateObject(id, data)
+activate Service
+
+Service -> DB: find object
+activate DB
+DB --> Service: return object
+deactivate DB
+
+Service -> Entity: validate lock
+activate Entity
+Entity -> Entity: check lock ownership
+Entity -> Entity: extend lock duration
+Entity --> Service: validation ok
+deactivate Entity
+
+Service -> DB: update object
+activate DB
+DB --> Service: confirm update
+deactivate DB
+
+Service --> API: return updated object
+deactivate Service
+
+API --> User: return success
+deactivate API
+
+== Unlock Object ==
+User -> API: Request unlock object
+activate API
+
+API -> Service: unlockObject(id)
+activate Service
+
+Service -> DB: find object
+activate DB
+DB --> Service: return object
+deactivate DB
+
+Service -> Entity: unlock(user)
+activate Entity
+Entity -> Entity: validate lock ownership
+Entity -> Entity: remove lock metadata
+Entity --> Service: return success
+deactivate Entity
+
+Service -> DB: update object
+activate DB
+DB --> Service: confirm update
+deactivate DB
+
+Service --> API: return unlocked object
+deactivate Service
+
+API --> User: return success
+deactivate API
+
+@enduml 

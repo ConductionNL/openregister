@@ -201,59 +201,6 @@ import { configurationStore, navigationStore, registerStore, schemaStore } from 
 						</NcNoteCard>
 					</div>
 				</BTab>
-
-				<!-- File Upload Tab -->
-				<BTab>
-					<template #title>
-						<FileUpload :size="16" />
-						<span>Import from File</span>
-					</template>
-					<div class="tabContent">
-						<p class="tabDescription">
-							Upload a configuration JSON file from your computer.
-						</p>
-
-						<div class="fileUploadZone"
-							:class="{ 'dragover': isDragging }"
-							@click="!selectedUploadFile && $refs.fileInput.click()"
-							@drop.prevent="handleFileDrop"
-							@dragover.prevent="isDragging = true"
-							@dragleave.prevent="isDragging = false">
-							<input
-								id="configFileInput"
-								ref="fileInput"
-								type="file"
-								accept=".json,application/json"
-								style="display: none;"
-								@change="handleFileSelect">
-
-							<FileUpload :size="48" class="uploadIcon" />
-
-							<p v-if="!selectedUploadFile" class="uploadText">
-								<strong>Drop your configuration file here</strong><br>
-								or click anywhere to browse
-							</p>
-
-							<div v-else class="selectedFileInfo">
-								<Check :size="32" class="checkIcon" />
-								<p><strong>{{ selectedUploadFile.name }}</strong></p>
-								<p class="fileSize">
-									{{ formatFileSize(selectedUploadFile.size) }}
-								</p>
-								<NcButton @click.stop="clearFileSelection">
-									<template #icon>
-										<Cancel :size="20" />
-									</template>
-									Clear
-								</NcButton>
-							</div>
-						</div>
-
-						<NcNoteCard v-if="fileError" type="error">
-							<p>{{ fileError }}</p>
-						</NcNoteCard>
-					</div>
-				</BTab>
 			</BTabs>
 		</div>
 
@@ -323,8 +270,6 @@ import Github from 'vue-material-design-icons/Github.vue'
 import Gitlab from 'vue-material-design-icons/Gitlab.vue'
 import SourceBranch from 'vue-material-design-icons/SourceBranch.vue'
 import LinkVariant from 'vue-material-design-icons/LinkVariant.vue'
-import FileUpload from 'vue-material-design-icons/FileUpload.vue'
-import Check from 'vue-material-design-icons/Check.vue'
 
 import ConfigurationCard from '../../components/cards/ConfigurationCard.vue'
 
@@ -354,8 +299,6 @@ export default {
 		Gitlab,
 		SourceBranch,
 		LinkVariant,
-		FileUpload,
-		Check,
 	},
 	data() {
 		return {
@@ -391,11 +334,6 @@ export default {
 			importUrl: '',
 			urlError: null,
 
-			// File upload tab
-			selectedUploadFile: null,
-			isDragging: false,
-			fileError: null,
-
 			// Sync settings (shared)
 			syncEnabled: true,
 			syncInterval: 24,
@@ -421,10 +359,6 @@ export default {
 			// Tab 2: URL
 			if (this.activeTab === 2) {
 				return this.importUrl !== ''
-			}
-			// Tab 3: File Upload
-			if (this.activeTab === 3) {
-				return this.selectedUploadFile !== null
 			}
 			return false
 		},
@@ -506,9 +440,6 @@ export default {
 			this.selectedFile = null
 			this.importUrl = ''
 			this.urlError = null
-			this.selectedUploadFile = null
-			this.isDragging = false
-			this.fileError = null
 			this.syncEnabled = true
 			this.syncInterval = 24
 		},
@@ -695,10 +626,6 @@ export default {
 					})
 
 					this.successMessage = 'Configuration imported from URL!'
-				} else if (this.activeTab === 3) {
-					// Tab 3: File Upload
-					await this.importFromFile()
-					this.successMessage = 'Configuration imported from file!'
 				}
 
 				this.success = true
@@ -714,70 +641,6 @@ export default {
 			} finally {
 				this.loading = false
 			}
-		},
-		handleFileSelect(event) {
-			const file = event.target.files[0]
-			if (file) {
-				this.validateAndSetFile(file)
-			}
-		},
-		handleFileDrop(event) {
-			this.isDragging = false
-			const file = event.dataTransfer.files[0]
-			if (file) {
-				this.validateAndSetFile(file)
-			}
-		},
-		validateAndSetFile(file) {
-			this.fileError = null
-
-			// Validate file type
-			if (!file.name.endsWith('.json')) {
-				this.fileError = 'Please upload a JSON file'
-				return
-			}
-
-			// Validate file size (max 10MB)
-			if (file.size > 10 * 1024 * 1024) {
-				this.fileError = 'File is too large (max 10MB)'
-				return
-			}
-
-			this.selectedUploadFile = file
-		},
-		clearFileSelection() {
-			this.selectedUploadFile = null
-			this.fileError = null
-			if (this.$refs.fileInput) {
-				this.$refs.fileInput.value = ''
-			}
-		},
-		formatFileSize(bytes) {
-			if (bytes < 1024) return bytes + ' B'
-			if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB'
-			return (bytes / (1024 * 1024)).toFixed(1) + ' MB'
-		},
-		async importFromFile() {
-			const formData = new FormData()
-			formData.append('file', this.selectedUploadFile)
-			formData.append('force', 'true')
-			formData.append('appId', 'uploaded-config')
-
-			const response = await axios.post(
-				generateUrl('/apps/openregister/api/configurations/import'),
-				formData,
-				{
-					headers: {
-						'Content-Type': 'multipart/form-data',
-					},
-				},
-			)
-
-			if (response.data.error) {
-				throw new Error(response.data.error)
-			}
-
-			return response.data
 		},
 		async handleCheckVersion(configuration) {
 			// Handle check version for already imported configurations
@@ -965,53 +828,5 @@ export default {
 
 .token-warning-item span {
 	font-style: italic;
-}
-
-/* File upload zone */
-.fileUploadZone {
-	border: 2px dashed var(--color-border);
-	border-radius: var(--border-radius-large);
-	padding: 40px;
-	text-align: center;
-	transition: all 0.3s;
-	cursor: pointer;
-	background-color: var(--color-background-hover);
-}
-
-.fileUploadZone:hover {
-	border-color: var(--color-primary);
-	background-color: var(--color-primary-light);
-}
-
-.fileUploadZone.dragover {
-	border-color: var(--color-primary);
-	background-color: var(--color-primary-light);
-	transform: scale(1.02);
-}
-
-.uploadIcon {
-	color: var(--color-text-maxcontrast);
-	margin-bottom: 16px;
-}
-
-.uploadText {
-	color: var(--color-text-lighter);
-	margin: 16px 0;
-}
-
-.selectedFileInfo {
-	display: flex;
-	flex-direction: column;
-	align-items: center;
-	gap: 12px;
-}
-
-.checkIcon {
-	color: var(--color-success);
-}
-
-.fileSize {
-	color: var(--color-text-maxcontrast);
-	font-size: 0.9em;
 }
 </style>

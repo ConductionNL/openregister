@@ -1,0 +1,224 @@
+@startuml Client Management System
+
+' Styling
+skinparam monochrome true
+skinparam linetype ortho
+skinparam packageStyle rectangle
+skinparam shadowing false
+skinparam defaultFontName Arial
+skinparam defaultFontSize 12
+
+' Client Entity
+entity "Client" as client {
+  * id : UUID
+  * @type : String
+  --
+  * identifier : Identifier[]
+  * name : MultilingualText[]
+  givenName : String
+  familyName : String
+  additionalName : String
+  honorificPrefix : String
+  honorificSuffix : String
+  gender : String
+  birthDate : Date
+  * address : Address[]
+  contactPoint : ContactPoint[]
+  legalEntity : LegalEntity
+  url : URI
+  sameAs : URI[]
+  classification : Classification
+  dateCreated : DateTime
+  dateModified : DateTime
+  createdBy : UUID
+  modifiedBy : UUID
+}
+
+' Task Entity
+entity "Task" as task {
+  * id : UUID
+  * @type : String
+  --
+  * name : String
+  description : String
+  startTime : DateTime
+  endTime : DateTime
+  completedTime : DateTime
+  * actionStatus : String
+  priority : String
+  percentComplete : Integer
+  category : String[]
+  agent : Person
+  participant : Person[]
+  recurrenceRule : String
+  * clientId : UUID
+  relatedTo : Reference[]
+  subtasks : Task[]
+  dateCreated : DateTime
+  dateModified : DateTime
+  createdBy : UUID
+  modifiedBy : UUID
+}
+
+' Message Entity
+entity "Message" as message {
+  * id : UUID
+  --
+  * subject : String
+  * body : String
+  * from : Person
+  * to : Person[]
+  cc : Person[]
+  sentAt : DateTime
+  receivedAt : DateTime
+  readAt : DateTime
+  attachments : File[]
+  thread : String
+  inReplyTo : String
+  references : String[]
+  * channel : String
+  * direction : String
+  status : String
+  language : String
+  priority : String
+  * clientId : UUID
+  createdAt : DateTime
+  updatedAt : DateTime
+}
+
+' Note Entity
+entity "Note" as note {
+  * id : UUID
+  --
+  title : String
+  * content : String
+  * about : UUID
+  format : String
+  language : String
+  * createdBy : Person
+  * createdAt : DateTime
+  updatedAt : DateTime
+  version : String
+  parent : String
+  tags : String[]
+  visibility : String
+  pinned : Boolean
+  shared : Object
+  permissions : String[]
+}
+
+' Product Entity
+entity "Product" as product {
+  * id : UUID
+  --
+  * name : String
+  description : String
+  type : String
+  category : String
+  classificationScheme : String
+  classificationCode : String
+  classificationName : String
+  productId : String
+  keywords : String[]
+  department : String
+  requirements : String[]
+  processingTime : String
+  price : Decimal
+  currency : String
+  availability : String
+  validFrom : Date
+  validThrough : Date
+  createdAt : DateTime
+  updatedAt : DateTime
+  createdBy : UUID
+  status : String
+}
+
+' Service Entity
+entity "Service" as service {
+  * id : UUID
+  --
+  * name : String
+  description : String
+  serviceType : String
+  category : String
+  classificationCode : String
+  provider : Organization
+  eligibility : String[]
+  requirements : String[]
+  processingTime : String
+  availability : String
+  channel : String[]
+  contactPoint : ContactPoint
+  jurisdiction : String
+  legalResource : String[]
+  cost : Cost
+  language : String[]
+  status : String
+  validFrom : Date
+  validThrough : Date
+  createdAt : DateTime
+  updatedAt : DateTime
+}
+
+' Order Entity
+entity "Order" as order {
+  * id : UUID
+  --
+  * orderNumber : String
+  * orderDate : DateTime
+  * orderStatus : String
+  * customer : UUID
+  seller : Organization
+  orderItem : OrderItem[]
+  paymentMethod : String
+  paymentDueDate : DateTime
+  billingAddress : Address
+  deliveryAddress : Address
+  deliveryMethod : String
+  deliveryDate : DateTime
+  totalAmount : Decimal
+  currency : String
+  taxAmount : Decimal
+  discountAmount : Decimal
+  note : String
+  reference : String
+  createdAt : DateTime
+  updatedAt : DateTime
+  createdBy : UUID
+}
+
+' OrderItem Entity
+entity "OrderItem" as orderItem {
+  * id : UUID
+  --
+  * orderId : UUID
+  * productId : UUID
+  * quantity : Decimal
+  * unitPrice : Decimal
+  description : String
+  lineAmount : Decimal
+  taxRate : Decimal
+  taxAmount : Decimal
+  discountAmount : Decimal
+  deliveryDate : DateTime
+  note : String
+}
+
+' Relationships
+client ||--o{ task : "has tasks"
+client ||--o{ message : "has messages"
+client ||--o{ note : "has notes"
+client ||--o{ order : "places orders"
+task }o--o{ task : "related to"
+product ||--o{ orderItem : "ordered in"
+service ||--o{ orderItem : "ordered in"
+order ||--o{ orderItem : "contains"
+note }o--|| client : "about"
+note }o--|| task : "about"
+note }o--|| message : "about"
+note }o--|| product : "about"
+note }o--|| service : "about"
+note }o--|| order : "about"
+
+@enduml 

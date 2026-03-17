@@ -1,5 +1,4 @@
 <?php
-
 /**
  * Class SearchController
  *
@@ -22,147 +21,92 @@ namespace OCA\OpenRegister\Controller;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
-use OCA\OpenRegister\Service\IndexService;
+use OCP\ISearch;
+use OCP\Search\Result;
+use OCA\OpenRegister\Service\SolrService;
 
 /**
- * SearchController handles search operations
+ * Class SearchController
  *
  * Controller for handling search operations in the application.
- * Provides functionality to search across objects using SOLR search service.
- * Supports query processing, pagination, and result formatting.
- *
- * @category Controller
- * @package  OCA\OpenRegister\Controller
- *
- * @author    Conduction Development Team <dev@conductio.nl>
- * @copyright 2024 Conduction B.V.
- * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
- *
- * @version GIT: <git-id>
- *
- * @link https://OpenRegister.app
- *
- * @psalm-suppress UnusedClass
+ * Provides functionality to search across the application using the Nextcloud search service.
  */
 class SearchController extends Controller
 {
 
-    /**
-     * The SOLR search service
-     *
-     * Handles SOLR-based search operations for objects.
-     *
-     * @var IndexService Index search service instance
-     */
-    private readonly IndexService $indexService;
+    // phpcs:ignore Squiz.Commenting.VariableComment.Missing
+    private readonly ISearch $searchService;
+    
+    // phpcs:ignore Squiz.Commenting.VariableComment.Missing
+    private readonly SolrService $solrService;
+
 
     /**
      * Constructor for the SearchController
      *
-     * Initializes controller with SOLR search service for object search operations.
-     * Calls parent constructor to set up base controller functionality.
-     *
-     * @param string       $appName      The name of the app
-     * @param IRequest     $request      The HTTP request object
-     * @param IndexService $indexService The index search service instance
+     * @param string      $appName       The name of the app
+     * @param IRequest    $request       The request object
+     * @param ISearch     $searchService The search service
+     * @param SolrService $solrService   The Solr search service
      *
      * @return void
      */
     public function __construct(
         string $appName,
         IRequest $request,
-        IndexService $indexService
+        ISearch $searchService,
+        SolrService $solrService
     ) {
-        // Call parent constructor to initialize base controller.
-        parent::__construct(appName: $appName, request: $request);
+        parent::__construct($appName, $request);
+        $this->searchService = $searchService;
+        $this->solrService = $solrService;
 
-        // Store index service for search operations.
-        $this->indexService = $indexService;
     }//end __construct()
 
+
     /**
-     * Handles search requests and forwards them to the SOLR search service
-     *
-     * Processes search query, performs SOLR search, and formats results for JSON response.
-     * Supports pagination via offset and limit parameters.
-     * Returns formatted search results with facets and total count.
-     *
-     * @return JSONResponse Search results with facets and total count.
+     * Handles search requests and forwards them to the Nextcloud search service
      *
      * @NoAdminRequired
      *
      * @NoCSRFRequired
      *
-     * @psalm-return JSONResponse<200, array{results: array<never, array{id: mixed|null, name: 'Unknown'|mixed,
-     *                                type: 'object', url: mixed|null, source: 'openregister'}>, total: 0|mixed,
-     *                                facets: array<never, never>|mixed}, array<never, never>>
+     * @return JSONResponse A JSON response containing the search results
      */
     public function search(): JSONResponse
     {
-        // Step 1: Get the search query from request parameters (default to empty string).
+        // Get the search query from the request parameters.
         $query = $this->request->getParam('query', '');
 
-        // Step 2: Process the search query to handle multiple search words.
-        // This handles comma-separated values, arrays, and case-insensitive matching.
-        $processedQuery = $this->processSearchQuery(query: $query);
+        // Process the search query to handle multiple search words
+        $processedQuery = $this->processSearchQuery($query);
 
-        // Step 3: Build search parameters for SOLR query.
-        // Note: This is a simplified search endpoint. For full Nextcloud search integration,
-        // Use the ObjectsProvider which implements IFilteringProvider.
-        $searchParams = [
-            'q'     => $processedQuery,
-            'start' => (int) ($this->request->getParam('offset', 0)),
-            'rows'  => (int) ($this->request->getParam('limit', 25)),
-        ];
+        // Perform the search using the search service.
+        $results = $this->searchService->search($processedQuery);
 
-        // Step 4: Perform search using SOLR service.
-        // Returns: ['objects' => [], 'facets' => [], 'total' => int, 'execution_time_ms' => float].
-        $results = $this->indexService->searchObjects($searchParams);
-
-        // Step 5: Format search results for JSON response.
-        // Extract relevant fields from each object and standardize format.
+        // Format the search results for the JSON response.
         $formattedResults = array_map(
-            // phpcs:ignore Squiz.Commenting.BlockComment.NoEmptyLineBefore -- Empty line conflicts with "first argument must be on line after opening parenthesis" rule
-            /*
-             * Format search result item.
-             *
-             * @return (mixed|null|string)[]
-             *
-             * @psalm-return array{
-             *     id: mixed|null,
-             *     name: 'Unknown'|mixed,
-             *     type: 'object',
-             *     url: mixed|null,
-             *     source: 'openregister'
-             * }
-             */
-
-            function (array $object): array {
+            function (Result $result) {
                 return [
-                    'id'     => $object['uuid'] ?? $object['id'] ?? null,
-                    'name'   => $object['name'] ?? $object['@self']['name'] ?? 'Unknown',
-                    'type'   => 'object',
-                    'url'    => $object['url'] ?? null,
-                    'source' => 'openregister',
+                    'id'     => $result->getId(),
+                    'name'   => $result->getName(),
+                    'type'   => $result->getType(),
+                    'url'    => $result->getUrl(),
+                    'source' => $result->getSource(),
                 ];
             },
-            $results['objects'] ?? []
+            $results
         );
 
-        // Step 6: Return formatted search results with metadata.
-        return new JSONResponse(
-            data: [
-                'results' => $formattedResults,
-                'total'   => $results['total'] ?? 0,
-                'facets'  => $results['facets'] ?? [],
-            ]
-        );
+        return new JSONResponse($formattedResults);
+
     }//end search()
+
 
     /**
      * Process search query to support multiple search words and case-insensitive partial matches
      *
-     * Processes raw search query to handle various input formats and search requirements:
+     * This method handles multiple search words by:
      * 1. Supporting comma-separated values in the query parameter
      * 2. Supporting array parameters (_search[])
      * 3. Making searches case-insensitive
@@ -170,24 +114,20 @@ class SearchController extends Controller
      *
      * @param string $query The raw search query from the request
      *
-     * @return string The processed search query ready for the SOLR search service
-     *
-     * @suppressWarnings(PHPMD.CyclomaticComplexity)
+     * @return string The processed search query ready for the search service
      */
     private function processSearchQuery(string $query): string
     {
-        // Handle array parameters (_search[]).
+        // Handle array parameters (_search[])
         $searchArray = $this->request->getParam('_search', []);
         if (is_array($searchArray) === true && empty($searchArray) === false) {
-            // Combine array values with the main query.
+            // Combine array values with the main query
             $searchTerms = array_merge(
                 [$query],
                 $searchArray
             );
-        }
-
-        if (is_array($searchArray) === false || empty($searchArray) === true) {
-            // Handle comma-separated values in the main query.
+        } else {
+            // Handle comma-separated values in the main query
             $searchTerms = array_filter(
                 array_map('trim', explode(',', $query)),
                 function ($term) {
@@ -196,18 +136,18 @@ class SearchController extends Controller
             );
         }
 
-        // If no search terms found, return the original query.
+        // If no search terms found, return the original query
         if (empty($searchTerms) === true) {
             return $query;
         }
 
-        // Process each search term to make them case-insensitive and support partial matches.
+        // Process each search term to make them case-insensitive and support partial matches
         $processedTerms = [];
         foreach ($searchTerms as $term) {
-            // Convert to lowercase for case-insensitive matching.
+            // Convert to lowercase for case-insensitive matching
             $lowerTerm = strtolower(trim($term));
 
-            // Add wildcards for partial matching if not already present.
+            // Add wildcards for partial matching if not already present
             if (str_starts_with($lowerTerm, '*') === false && str_starts_with($lowerTerm, '%') === false) {
                 $lowerTerm = '*'.$lowerTerm;
             }
@@ -219,7 +159,10 @@ class SearchController extends Controller
             $processedTerms[] = $lowerTerm;
         }
 
-        // Join multiple terms with OR logic (any term can match).
+        // Join multiple terms with OR logic (any term can match)
         return implode(' OR ', $processedTerms);
+
     }//end processSearchQuery()
+
+
 }//end class

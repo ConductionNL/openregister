@@ -1,5 +1,4 @@
 <?php
-
 /**
  * OpenRegister Message Mapper
  *
@@ -27,99 +26,91 @@ use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\IDBConnection;
 
 /**
- * MessageMapper handles database operations for Message entities
+ * Class MessageMapper
  *
- * Mapper for Message entities to handle database operations on chat messages.
- * Extends QBMapper to provide standard CRUD operations for conversation messages.
- *
- * @category Database
- * @package  OCA\OpenRegister\Db
- *
- * @author    Conduction Development Team <dev@conduction.nl>
- * @copyright 2024 Conduction B.V.
- * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
- *
- * @version GIT: <git_id>
- *
- * @link https://www.OpenRegister.nl
+ * @package OCA\OpenRegister\Db
  *
  * @template-extends QBMapper<Message>
- * @method           Message insert(Entity $entity)
- * @method           Message update(Entity $entity)
- * @method           Message insertOrUpdate(Entity $entity)
- * @method           Message delete(Entity $entity)
- * @method           Message find(int|string $id)
- * @method           Message findEntity(IQueryBuilder $query)
- * @method           Message[] findAll(int|null $limit=null, int|null $offset=null)
- * @method           list<Message> findEntities(IQueryBuilder $query)
+ *
+ * @psalm-suppress MissingTemplateParam
  */
 class MessageMapper extends QBMapper
 {
+
     /**
-     * Constructor
+     * MessageMapper constructor.
      *
-     * Initializes mapper with database connection.
-     * Calls parent constructor to set up base mapper functionality.
-     *
-     * @param IDBConnection $db Database connection
-     *
-     * @return void
+     * @param IDBConnection $db Database connection instance
      */
     public function __construct(IDBConnection $db)
     {
-        // Call parent constructor to initialize base mapper with table name and entity class.
-        parent::__construct(db: $db, tableName: 'openregister_messages', entityClass: Message::class);
+        parent::__construct($db, 'openregister_messages', Message::class);
+
     }//end __construct()
+
 
     /**
      * Find a message by its ID
      *
-     * Retrieves message entity by ID. Throws exception if message not found.
+     * @param int $id Message ID
      *
-     * @param int $id Message ID to find
+     * @return Message The message entity
      *
-     * @return Message The found message entity
-     *
-     * @throws DoesNotExistException If message not found
-     * @throws MultipleObjectsReturnedException If multiple messages found (should not happen)
+     * @throws DoesNotExistException
+     * @throws MultipleObjectsReturnedException
      */
     public function find(int $id): Message
     {
-        // Step 1: Get query builder instance.
         $qb = $this->db->getQueryBuilder();
 
-        // Step 2: Build SELECT query with ID filter.
         $qb->select('*')
             ->from($this->tableName)
             ->where($qb->expr()->eq('id', $qb->createNamedParameter($id, IQueryBuilder::PARAM_INT)));
 
-        // Step 3: Execute query and return single entity.
-        return $this->findEntity(query: $qb);
+        return $this->findEntity($qb);
+
     }//end find()
+
+
+    /**
+     * Find a message by its UUID
+     *
+     * @param string $uuid Message UUID
+     *
+     * @return Message The message entity
+     *
+     * @throws DoesNotExistException
+     * @throws MultipleObjectsReturnedException
+     */
+    public function findByUuid(string $uuid): Message
+    {
+        $qb = $this->db->getQueryBuilder();
+
+        $qb->select('*')
+            ->from($this->tableName)
+            ->where($qb->expr()->eq('uuid', $qb->createNamedParameter($uuid, IQueryBuilder::PARAM_STR)));
+
+        return $this->findEntity($qb);
+
+    }//end findByUuid()
+
 
     /**
      * Find all messages in a conversation
      *
-     * Retrieves all messages for a specific conversation with pagination support.
-     * Results are ordered by creation date ascending (oldest first) for chronological display.
+     * @param int $conversationId Conversation ID
+     * @param int $limit          Maximum number of results
+     * @param int $offset         Offset for pagination
      *
-     * @param int $conversationId Conversation ID to filter messages by
-     * @param int $limit          Maximum number of results to return (default: 100)
-     * @param int $offset         Offset for pagination (default: 0)
-     *
-     * @return Message[]
-     *
-     * @psalm-return list<\OCA\OpenRegister\Db\Message>
+     * @return array Array of Message entities
      */
     public function findByConversation(
         int $conversationId,
-        int $limit=100,
-        int $offset=0
+        int $limit = 100,
+        int $offset = 0
     ): array {
-        // Step 1: Get query builder instance.
         $qb = $this->db->getQueryBuilder();
 
-        // Step 2: Build SELECT query with conversation ID filter.
         $qb->select('*')
             ->from($this->tableName)
             ->where($qb->expr()->eq('conversation_id', $qb->createNamedParameter($conversationId, IQueryBuilder::PARAM_INT)))
@@ -127,69 +118,116 @@ class MessageMapper extends QBMapper
             ->setMaxResults($limit)
             ->setFirstResult($offset);
 
-        // Step 3: Execute query and return entities.
-        return $this->findEntities(query: $qb);
+        return $this->findEntities($qb);
+
     }//end findByConversation()
+
 
     /**
      * Find recent messages in a conversation
      *
-     * Gets the most recent N messages from a conversation and returns them
-     * in chronological order (oldest first) for display purposes.
+     * Gets the most recent N messages from a conversation.
      *
-     * @param int $conversationId Conversation ID to filter messages by
-     * @param int $limit          Number of recent messages to get (default: 10)
+     * @param int $conversationId Conversation ID
+     * @param int $limit          Number of recent messages to get
      *
-     * @return Message[]
-     *
-     * @psalm-return list<\OCA\OpenRegister\Db\Message>
+     * @return array Array of Message entities (oldest first)
      */
-    public function findRecentByConversation(int $conversationId, int $limit=10): array
+    public function findRecentByConversation(int $conversationId, int $limit = 10): array
     {
-        // Step 1: Get query builder instance.
         $qb = $this->db->getQueryBuilder();
 
-        // Step 2: Build SELECT query with conversation ID filter.
-        // Order by created DESC to get newest messages first.
         $qb->select('*')
             ->from($this->tableName)
             ->where($qb->expr()->eq('conversation_id', $qb->createNamedParameter($conversationId, IQueryBuilder::PARAM_INT)))
             ->orderBy('created', 'DESC')
             ->setMaxResults($limit);
 
-        // Step 3: Execute query to get newest messages first.
-        $messages = $this->findEntities(query: $qb);
-
-        // Step 4: Reverse array to get oldest-first order for display.
-        // This ensures messages appear in chronological order in UI.
+        $messages = $this->findEntities($qb);
+        
+        // Reverse to get oldest-first order
         return array_reverse($messages);
+
     }//end findRecentByConversation()
+
 
     /**
      * Count messages in a conversation
      *
-     * Counts total number of messages in a specific conversation.
-     * Useful for pagination and statistics.
+     * @param int $conversationId Conversation ID
      *
-     * @param int $conversationId Conversation ID to count messages for
-     *
-     * @return int Total message count (0 or positive integer)
+     * @return int Total message count
      */
     public function countByConversation(int $conversationId): int
     {
         $qb = $this->db->getQueryBuilder();
 
-        $conversationIdParam = $qb->createNamedParameter($conversationId, IQueryBuilder::PARAM_INT);
         $qb->select($qb->func()->count('*', 'count'))
             ->from($this->tableName)
-            ->where($qb->expr()->eq('conversation_id', $conversationIdParam));
+            ->where($qb->expr()->eq('conversation_id', $qb->createNamedParameter($conversationId, IQueryBuilder::PARAM_INT)));
 
-        $result = $qb->executeQuery();
-        $count  = (int) $result->fetchOne();
+        $result = $qb->execute();
+        $count = (int) $result->fetchOne();
         $result->closeCursor();
 
         return $count;
+
     }//end countByConversation()
+
+
+    /**
+     * Count messages by role in a conversation
+     *
+     * @param int    $conversationId Conversation ID
+     * @param string $role           Message role (user or assistant)
+     *
+     * @return int Message count for role
+     */
+    public function countByRole(int $conversationId, string $role): int
+    {
+        $qb = $this->db->getQueryBuilder();
+
+        $qb->select($qb->func()->count('*', 'count'))
+            ->from($this->tableName)
+            ->where($qb->expr()->eq('conversation_id', $qb->createNamedParameter($conversationId, IQueryBuilder::PARAM_INT)))
+            ->andWhere($qb->expr()->eq('role', $qb->createNamedParameter($role, IQueryBuilder::PARAM_STR)));
+
+        $result = $qb->execute();
+        $count = (int) $result->fetchOne();
+        $result->closeCursor();
+
+        return $count;
+
+    }//end countByRole()
+
+
+    /**
+     * Get the first message in a conversation
+     *
+     * Useful for generating conversation titles from the first user message.
+     *
+     * @param int $conversationId Conversation ID
+     *
+     * @return Message|null The first message or null if conversation is empty
+     */
+    public function findFirstMessage(int $conversationId): ?Message
+    {
+        $qb = $this->db->getQueryBuilder();
+
+        $qb->select('*')
+            ->from($this->tableName)
+            ->where($qb->expr()->eq('conversation_id', $qb->createNamedParameter($conversationId, IQueryBuilder::PARAM_INT)))
+            ->orderBy('created', 'ASC')
+            ->setMaxResults(1);
+
+        try {
+            return $this->findEntity($qb);
+        } catch (DoesNotExistException $e) {
+            return null;
+        }
+
+    }//end findFirstMessage()
+
 
     /**
      * Delete all messages in a conversation
@@ -199,17 +237,19 @@ class MessageMapper extends QBMapper
      * @param int $conversationId Conversation ID
      *
      * @return int Number of messages deleted
-     *
-     * @psalm-suppress PossiblyUnusedReturnValue
      */
-    public function deleteByConversation(int $conversationId): int|\OCP\DB\IResult
+    public function deleteByConversation(int $conversationId): int
     {
         $qb = $this->db->getQueryBuilder();
 
-        $conversationIdParam = $qb->createNamedParameter($conversationId, IQueryBuilder::PARAM_INT);
         $qb->delete($this->tableName)
-            ->where($qb->expr()->eq('conversation_id', $conversationIdParam));
+            ->where($qb->expr()->eq('conversation_id', $qb->createNamedParameter($conversationId, IQueryBuilder::PARAM_INT)));
 
-        return $qb->executeStatement();
+        return $qb->execute();
+
     }//end deleteByConversation()
+
+
 }//end class
+
+

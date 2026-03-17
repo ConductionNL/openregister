@@ -1,0 +1,35 @@
+@startuml
+skinparam backgroundColor transparent
+skinparam handwritten false
+
+' Define components
+package "Open Register" {
+    [API Layer] as API
+    [Schema Registry] as Registry
+    [Validation Engine] as Validator
+    [Storage Adapter] as Adapter
+}
+
+' External components
+actor Client
+database "Storage Backends" as Storage {
+    database "Nextcloud DB"
+    database "MySQL/MariaDB"
+    database "PostgreSQL"
+    database "MongoDB"
+}
+
+' Connections
+Client --> API : Wants to store a JSON object
+API --> Adapter : passes incoming JSON objects
+Adapter --> Validator : Validates incoming JSON objects
+Validator <-- Registry : Obtains schema definitions
+Adapter --> Storage  : Saves results after validation
+
+note right of Adapter
+  Validates incoming JSON objects
+  and stores them in configured
+  storage backends
+end note
+
+@enduml

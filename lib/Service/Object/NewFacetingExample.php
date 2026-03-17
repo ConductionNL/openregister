@@ -7,7 +7,7 @@
  * that has replaced the legacy getFacets approach.
  *
  * @category Example
- * @package  OCA\OpenRegister\Service\Objects
+ * @package  OCA\OpenRegister\Service\ObjectHandlers
  *
  * @author    Conduction Development Team <dev@conductio.nl>
  * @copyright 2024 Conduction B.V.
@@ -18,7 +18,7 @@
  * @link https://OpenRegister.app
  */
 
-namespace OCA\OpenRegister\Service\Object;
+namespace OCA\OpenRegister\Service\ObjectHandlers;
 
 use OCA\OpenRegister\Service\ObjectService;
 
@@ -30,6 +30,8 @@ use OCA\OpenRegister\Service\ObjectService;
  */
 class NewFacetingExample
 {
+
+
     /**
      * Constructor for NewFacetingExample
      *
@@ -38,7 +40,9 @@ class NewFacetingExample
     public function __construct(
         private readonly ObjectService $objectService
     ) {
+
     }//end __construct()
+
 
     /**
      * Example 1: Basic Terms Faceting
@@ -46,8 +50,6 @@ class NewFacetingExample
      * Shows how to create basic categorical facets.
      *
      * @return array Basic facet results
-     *
-     * @psalm-return array<string, mixed>
      */
     public function basicTermsFaceting(): array
     {
@@ -65,7 +67,9 @@ class NewFacetingExample
         ];
 
         return $this->objectService->getFacetsForObjects($query);
+
     }//end basicTermsFaceting()
+
 
     /**
      * Example 2: Date Histogram Faceting
@@ -73,8 +77,6 @@ class NewFacetingExample
      * Shows how to create time-based facets with different intervals.
      *
      * @return array Date histogram facet results
-     *
-     * @psalm-return array<string, mixed>
      */
     public function dateHistogramFaceting(): array
     {
@@ -99,7 +101,9 @@ class NewFacetingExample
         ];
 
         return $this->objectService->getFacetsForObjects($query);
+
     }//end dateHistogramFaceting()
+
 
     /**
      * Example 3: Range Faceting
@@ -107,8 +111,6 @@ class NewFacetingExample
      * Shows how to create numeric range facets.
      *
      * @return array Range facet results
-     *
-     * @psalm-return array<string, mixed>
      */
     public function rangeFaceting(): array
     {
@@ -136,7 +138,9 @@ class NewFacetingExample
         ];
 
         return $this->objectService->getFacetsForObjects($query);
+
     }//end rangeFaceting()
+
 
     /**
      * Example 4: Complete E-commerce Faceting
@@ -144,26 +148,25 @@ class NewFacetingExample
      * Real-world example combining all facet types for an e-commerce site.
      *
      * @return array Complete e-commerce facet results
-     *
-     * @psalm-return array<string, mixed>
      */
     public function ecommerceFaceting(): array
     {
         $query = [
-            // Base filters.
-            '@self'    => [
+            // Base filters
+            '@self'      => [
                 'register' => 1,
-        // Products register.
+        // Products register
                 'schema'   => 2,
-        // Product schema.
+        // Product schema
             ],
-            'category' => 'electronics',
-            'in_stock' => true,
-            '_search'  => 'smartphone',
+            'category'   => 'electronics',
+            'in_stock'   => true,
+            '_published' => true,
+            '_search'    => 'smartphone',
 
-            // Comprehensive faceting.
-            '_facets'  => [
-                // Metadata facets.
+            // Comprehensive faceting
+            '_facets'    => [
+                // Metadata facets
                 '@self'        => [
                     'register' => ['type' => 'terms'],
                     'schema'   => ['type' => 'terms'],
@@ -173,7 +176,7 @@ class NewFacetingExample
                     ],
                 ],
 
-                // Product attribute facets.
+                // Product attribute facets
                 'category'     => ['type' => 'terms'],
                 'brand'        => ['type' => 'terms'],
                 'color'        => ['type' => 'terms'],
@@ -181,7 +184,7 @@ class NewFacetingExample
                 'condition'    => ['type' => 'terms'],
                 'availability' => ['type' => 'terms'],
 
-                // Price range facets.
+                // Price range facets
                 'price'        => [
                     'type'   => 'range',
                     'ranges' => [
@@ -193,7 +196,7 @@ class NewFacetingExample
                     ],
                 ],
 
-                // Rating range facets.
+                // Rating range facets
                 'rating'       => [
                     'type'   => 'range',
                     'ranges' => [
@@ -207,7 +210,9 @@ class NewFacetingExample
         ];
 
         return $this->objectService->getFacetsForObjects($query);
+
     }//end ecommerceFaceting()
+
 
     /**
      * Example 5: Paginated Search with Facets
@@ -215,8 +220,6 @@ class NewFacetingExample
      * Shows how to use searchObjectsPaginated with the new faceting system.
      *
      * @return array Complete paginated results with facets
-     *
-     * @psalm-return array<string, mixed>
      */
     public function paginatedSearchWithFacets(): array
     {
@@ -244,22 +247,24 @@ class NewFacetingExample
             ],
         ];
 
-        // This returns: results, total, page, pages, limit, offset, facets, next, prev.
+        // This returns: results, total, page, pages, limit, offset, facets, next, prev
         return $this->objectService->searchObjectsPaginated($query);
+
     }//end paginatedSearchWithFacets()
+
 
     /**
      * Example 6: Migration from Legacy getFacets
      *
      * Shows how to migrate from the old getFacets approach to the new system.
      *
-     * @return array Migration notes and new facets configuration.
+     * @return array Comparison of old vs new approach
      */
     public function migrationExample(): array
     {
-        // OLD WAY (deprecated - don't use):.
+        // OLD WAY (deprecated - don't use):
         // $oldFacets = $objectService->getFacets(['status' => 'active'], 'search term');
-        // NEW WAY (current approach):.
+        // NEW WAY (current approach):
         $newQuery = [
             '@self'   => [
                 'register' => $this->objectService->getRegister(),
@@ -292,7 +297,9 @@ class NewFacetingExample
             ],
             'new_facets'      => $newFacets,
         ];
+
     }//end migrationExample()
+
 
     /**
      * Example 7: Advanced Filtering with Facets
@@ -300,35 +307,34 @@ class NewFacetingExample
      * Shows complex filtering scenarios with the new faceting system.
      *
      * @return array Advanced faceting results
-     *
-     * @psalm-return array<string, mixed>
      */
     public function advancedFilteringWithFacets(): array
     {
         $query = [
-            // Complex metadata filters.
+            // Complex metadata filters
             '@self'        => [
                 'register'     => [1, 2, 3],
-        // Multiple registers.
+        // Multiple registers
                 'organisation' => 'IS NOT NULL',
-        // Has organisation.
+        // Has organisation
                 'owner'        => 'user123',
-        // Specific owner.
+        // Specific owner
             ],
 
-            // Complex object field filters.
+            // Complex object field filters
             'status'       => ['active', 'pending'],
-            // Multiple statuses.
+            // Multiple statuses
             'priority'     => 'high',
-            // Single priority.
+            // Single priority
             'address.city' => 'Amsterdam',
-            // Nested field.
+            // Nested field
             'tags'         => ['vip', 'customer'],
-            // Array search.
-            // Search and options.
+            // Array search
+            // Search and options
             '_search'      => 'important project',
+            '_published'   => true,
 
-            // Comprehensive faceting.
+            // Comprehensive faceting
             '_facets'      => [
                 '@self'        => [
                     'register'     => ['type' => 'terms'],
@@ -356,7 +362,9 @@ class NewFacetingExample
         ];
 
         return $this->objectService->getFacetsForObjects($query);
+
     }//end advancedFilteringWithFacets()
+
 
     /**
      * Example 8: Performance Optimized Faceting
@@ -364,39 +372,42 @@ class NewFacetingExample
      * Shows how to optimize faceting for performance.
      *
      * @return array Performance optimized facet results
-     *
-     * @psalm-return array<string, mixed>
      */
     public function performanceOptimizedFaceting(): array
     {
         $query = [
-            // Use specific filters to reduce dataset.
-            '@self'   => [
+            // Use specific filters to reduce dataset
+            '@self'      => [
                 'register' => 1,
-        // Single register for better performance.
+        // Single register for better performance
                 'schema'   => 2,
-        // Single schema for better performance.
+        // Single schema for better performance
             ],
-            'status'  => 'active',
-            // Pre-filter to reduce dataset.
-            // Focused faceting - only what's needed.
-            '_facets' => [
-                // Only essential metadata facets.
+            'status'     => 'active',
+            // Pre-filter to reduce dataset
+            '_published' => true,
+            // Only published objects
+            // Focused faceting - only what's needed
+            '_facets'    => [
+                // Only essential metadata facets
                 '@self'    => [
                     'schema' => ['type' => 'terms'],
-            // Only schema facet needed.
+            // Only schema facet needed
                 ],
 
-                // Only essential object field facets.
+                // Only essential object field facets
                 'category' => ['type' => 'terms'],
-                // Main category filter.
+                // Main category filter
                 'priority' => ['type' => 'terms'],
-                // Priority filter.
-                // Note: Avoid too many facets as they impact performance.
-                // Note: Date histograms and ranges are more expensive than terms.
+                // Priority filter
+                // Note: Avoid too many facets as they impact performance
+                // Note: Date histograms and ranges are more expensive than terms
             ],
         ];
 
         return $this->objectService->getFacetsForObjects($query);
+
     }//end performanceOptimizedFaceting()
+
+
 }//end class

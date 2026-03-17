@@ -1,5 +1,4 @@
 <?php
-
 /**
  * OpenRegister Configuration Mapper
  *
@@ -20,16 +19,12 @@
 namespace OCA\OpenRegister\Db;
 
 use DateTime;
-use OCA\OpenRegister\Event\ConfigurationCreatedEvent;
-use OCA\OpenRegister\Event\ConfigurationDeletedEvent;
-use OCA\OpenRegister\Event\ConfigurationUpdatedEvent;
 use OCA\OpenRegister\Service\OrganisationService;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Db\Entity;
 use OCP\AppFramework\Db\MultipleObjectsReturnedException;
 use OCP\AppFramework\Db\QBMapper;
 use OCP\DB\QueryBuilder\IQueryBuilder;
-use OCP\EventDispatcher\IEventDispatcher;
 use OCP\IDBConnection;
 use OCP\IGroupManager;
 use OCP\ISession;
@@ -43,19 +38,8 @@ use OCP\IUserSession;
  * @package OCA\OpenRegister\Db
  *
  * @template-extends QBMapper<Configuration>
- * @method           Configuration insert(Entity $entity)
- * @method           Configuration update(Entity $entity)
- * @method           Configuration insertOrUpdate(Entity $entity)
- * @method           Configuration delete(Entity $entity)
- * @method           Configuration find(int|string $id)
- * @method           Configuration findEntity(IQueryBuilder $query)
- * @method           Configuration[] findAll(int|null $limit=null, int|null $offset=null)
- * @method           list<Configuration> findEntities(IQueryBuilder $query)
  *
- * @extends QBMapper<Configuration>
- *
- * @SuppressWarnings(PHPMD.TooManyPublicMethods)
- * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
+ * @psalm-suppress MissingTemplateParam
  */
 class ConfigurationMapper extends QBMapper
 {
@@ -66,14 +50,7 @@ class ConfigurationMapper extends QBMapper
      *
      * @var OrganisationService
      */
-    // REMOVED: Services should not be in mappers.
-
-    /**
-     * Organisation mapper for multi-tenancy
-     *
-     * @var OrganisationMapper
-     */
-    protected OrganisationMapper $organisationMapper;
+    private OrganisationService $organisationService;
 
     /**
      * User session for current user
@@ -97,41 +74,6 @@ class ConfigurationMapper extends QBMapper
     private ISession $session;
 
     /**
-     * Event dispatcher for dispatching configuration events
-     *
-     * @var IEventDispatcher
-     */
-    private IEventDispatcher $eventDispatcher;
-
-    /**
-     * Constructor
-     *
-     * @param IDBConnection      $db                 Database connection
-     * @param OrganisationMapper $organisationMapper Organisation mapper
-     * @param IUserSession       $userSession        User session
-     * @param IGroupManager      $groupManager       Group manager
-     * @param ISession           $session            Session
-     * @param IEventDispatcher   $eventDispatcher    Event dispatcher
-     */
-    public function __construct(
-        IDBConnection $db,
-        // REMOVED: Services should not be in mappers.
-        OrganisationMapper $organisationMapper,
-        IUserSession $userSession,
-        IGroupManager $groupManager,
-        ISession $session,
-        IEventDispatcher $eventDispatcher
-    ) {
-        parent::__construct(db: $db, tableName: 'openregister_configurations', entityClass: Configuration::class);
-        // REMOVED: Services should not be in mappers.
-        $this->organisationMapper = $organisationMapper;
-        $this->userSession        = $userSession;
-        $this->groupManager       = $groupManager;
-        $this->session            = $session;
-        $this->eventDispatcher    = $eventDispatcher;
-    }//end __construct()
-
-    /**
      * Session key prefix for storing configurations
      *
      * @var string
@@ -139,37 +81,91 @@ class ConfigurationMapper extends QBMapper
     private const SESSION_KEY_PREFIX = 'openregister_configurations_';
 
     /**
+     * ConfigurationMapper constructor.
+     *
+     * @param IDBConnection       $db                  Database connection instance
+     * @param OrganisationService $organisationService Organisation service for multi-tenancy
+     * @param IUserSession        $userSession         User session
+     * @param IGroupManager       $groupManager        Group manager for RBAC
+     * @param ISession            $session             Session for caching
+     */
+    public function __construct(
+        IDBConnection $db,
+        OrganisationService $organisationService,
+        IUserSession $userSession,
+        IGroupManager $groupManager,
+        ISession $session
+    ) {
+        parent::__construct($db, 'openregister_configurations', Configuration::class);
+        $this->organisationService = $organisationService;
+        $this->userSession         = $userSession;
+        $this->groupManager        = $groupManager;
+        $this->session             = $session;
+
+    }//end __construct()
+
+
+    /**
      * Find a configuration by its ID
      *
-     * @param int  $id            Configuration ID
-     * @param bool $_multitenancy Whether to apply multi-tenancy rules (default: true)
+     * @param int $id Configuration ID
      *
      * @return Configuration The configuration entity
      *
      * @throws DoesNotExistException
      * @throws MultipleObjectsReturnedException
      * @throws \Exception If user doesn't have read permission
-     *
-     * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Multitenancy toggle is intentional
      */
-    public function find(int $id, bool $_multitenancy=true): Configuration
+    public function find(int $id): Configuration
     {
-        // Verify RBAC permission to read.
-        // TEMPORARILY DISABLED FOR TESTING - TODO: Re-enable after fixing CLI/import context.
-        // Disabled: $this->verifyRbacPermission(action: 'read', entityType: 'configuration').
+        // Verify RBAC permission to read
+        $this->verifyRbacPermission('read', 'configuration');
+
         $qb = $this->db->getQueryBuilder();
 
         $qb->select('*')
             ->from($this->tableName)
             ->where($qb->expr()->eq('id', $qb->createNamedParameter($id, IQueryBuilder::PARAM_INT)));
 
-        // Apply organisation filter unless explicitly disabled.
-        if ($_multitenancy === true) {
-            $this->applyOrganisationFilter(qb: $qb);
-        }
+        // Apply organisation filter (all users including admins must have active org)
+        $this->applyOrganisationFilter($qb);
 
-        return $this->findEntity(query: $qb);
+        return $this->findEntity($qb);
+
     }//end find()
+
+
+    /**
+     * Find configurations by type
+     *
+     * @param string $type   Configuration type
+     * @param int    $limit  Maximum number of results
+     * @param int    $offset Offset for pagination
+     *
+     * @return Configuration[] Array of configuration entities
+     * @throws \Exception If user doesn't have read permission
+     */
+    public function findByType(string $type, int $limit=50, int $offset=0): array
+    {
+        // Verify RBAC permission to read
+        $this->verifyRbacPermission('read', 'configuration');
+
+        $qb = $this->db->getQueryBuilder();
+
+        $qb->select('*')
+            ->from($this->tableName)
+            ->where($qb->expr()->eq('type', $qb->createNamedParameter($type, IQueryBuilder::PARAM_STR)))
+            ->setMaxResults($limit)
+            ->setFirstResult($offset)
+            ->orderBy('created', 'DESC');
+
+        // Apply organisation filter
+        $this->applyOrganisationFilter($qb);
+
+        return $this->findEntities($qb);
+
+    }//end findByType()
+
 
     /**
      * Find configurations by app
@@ -178,17 +174,14 @@ class ConfigurationMapper extends QBMapper
      * @param int    $limit  Maximum number of results
      * @param int    $offset Offset for pagination
      *
-     * @return Configuration[]
-     *
+     * @return Configuration[] Array of configuration entities
      * @throws \Exception If user doesn't have read permission
-     *
-     * @psalm-return list<\OCA\OpenRegister\Db\Configuration>
      */
     public function findByApp(string $app, int $limit=50, int $offset=0): array
     {
-        // Verify RBAC permission to read.
-        // TEMPORARILY DISABLED FOR TESTING - TODO: Re-enable after fixing CLI/import context.
-        // Disabled: $this->verifyRbacPermission(action: 'read', entityType: 'configuration').
+        // Verify RBAC permission to read
+        $this->verifyRbacPermission('read', 'configuration');
+
         $qb = $this->db->getQueryBuilder();
 
         $qb->select('*')
@@ -198,11 +191,13 @@ class ConfigurationMapper extends QBMapper
             ->setFirstResult($offset)
             ->orderBy('created', 'DESC');
 
-        // Apply organisation filter.
-        $this->applyOrganisationFilter(qb: $qb);
+        // Apply organisation filter
+        $this->applyOrganisationFilter($qb);
 
-        return $this->findEntities(query: $qb);
+        return $this->findEntities($qb);
+
     }//end findByApp()
+
 
     /**
      * Find configuration by source URL
@@ -219,9 +214,9 @@ class ConfigurationMapper extends QBMapper
      */
     public function findBySourceUrl(string $sourceUrl): ?Configuration
     {
-        // Verify RBAC permission to read.
-        // TEMPORARILY DISABLED FOR TESTING - TODO: Re-enable after fixing CLI/import context.
-        // Disabled: $this->verifyRbacPermission(action: 'read', entityType: 'configuration').
+        // Verify RBAC permission to read
+        $this->verifyRbacPermission('read', 'configuration');
+
         $qb = $this->db->getQueryBuilder();
 
         $qb->select('*')
@@ -230,16 +225,18 @@ class ConfigurationMapper extends QBMapper
             ->orderBy('created', 'DESC')
             ->setMaxResults(1);
 
-        // Apply organisation filter.
-        $this->applyOrganisationFilter(qb: $qb);
+        // Apply organisation filter
+        $this->applyOrganisationFilter($qb);
 
         try {
-            return $this->findEntity(query: $qb);
+            return $this->findEntity($qb);
         } catch (DoesNotExistException $e) {
-            // No configuration found with this source URL.
+            // No configuration found with this source URL
             return null;
         }
+
     }//end findBySourceUrl()
+
 
     /**
      * Find configurations that have sync enabled
@@ -249,64 +246,94 @@ class ConfigurationMapper extends QBMapper
      * @param int $limit  Maximum number of results
      * @param int $offset Offset for pagination
      *
-     * @return Configuration[]
-     *
+     * @return Configuration[] Array of configuration entities
      * @throws \Exception If user doesn't have read permission
      *
      * @since 0.2.10
-     *
-     * @psalm-return list<\OCA\OpenRegister\Db\Configuration>
      */
-    public function findBySyncEnabled(int $limit=50, int $offset=0): array
+    public function findBySyncEnabled(int $limit = 50, int $offset = 0): array
     {
-        // Verify RBAC permission to read.
-        // TEMPORARILY DISABLED FOR TESTING - TODO: Re-enable after fixing CLI/import context.
-        // Disabled: $this->verifyRbacPermission(action: 'read', entityType: 'configuration').
+        // Verify RBAC permission to read
+        $this->verifyRbacPermission('read', 'configuration');
+
         $qb = $this->db->getQueryBuilder();
 
         $qb->select('*')
             ->from($this->tableName)
             ->where($qb->expr()->eq('sync_enabled', $qb->createNamedParameter(true, IQueryBuilder::PARAM_BOOL)))
-            ->orderBy('last_sync_date', 'ASC')
-        // Oldest first for priority sync.
+            ->orderBy('last_sync_date', 'ASC') // Oldest first for priority sync
             ->setMaxResults($limit)
             ->setFirstResult($offset);
 
-        // Apply organisation filter.
-        $this->applyOrganisationFilter(qb: $qb);
+        // Apply organisation filter
+        $this->applyOrganisationFilter($qb);
 
-        return $this->findEntities(query: $qb);
+        return $this->findEntities($qb);
+
     }//end findBySyncEnabled()
+
+
+    /**
+     * Find configurations by local/external status
+     *
+     * @param bool $isLocal  True for local configurations, false for external
+     * @param int  $limit    Maximum number of results
+     * @param int  $offset   Offset for pagination
+     *
+     * @return Configuration[] Array of configuration entities
+     * @throws \Exception If user doesn't have read permission
+     *
+     * @since 0.2.10
+     */
+    public function findByIsLocal(bool $isLocal, int $limit = 50, int $offset = 0): array
+    {
+        // Verify RBAC permission to read
+        $this->verifyRbacPermission('read', 'configuration');
+
+        $qb = $this->db->getQueryBuilder();
+
+        $qb->select('*')
+            ->from($this->tableName)
+            ->where($qb->expr()->eq('is_local', $qb->createNamedParameter($isLocal, IQueryBuilder::PARAM_BOOL)))
+            ->orderBy('created', 'DESC')
+            ->setMaxResults($limit)
+            ->setFirstResult($offset);
+
+        // Apply organisation filter
+        $this->applyOrganisationFilter($qb);
+
+        return $this->findEntities($qb);
+
+    }//end findByIsLocal()
+
 
     /**
      * Update synchronization status for a configuration
      *
-     * @param int      $id       Configuration ID
-     * @param string   $status   Sync status: 'success', 'failed', 'pending'
-     * @param DateTime $syncDate Synchronization timestamp
-     * @param string   $_message Optional message about the sync result
+     * @param int       $id          Configuration ID
+     * @param string    $status      Sync status: 'success', 'failed', 'pending'
+     * @param \DateTime $syncDate    Synchronization timestamp
+     * @param string    $message     Optional message about the sync result
      *
      * @return Configuration The updated configuration
      * @throws \Exception If configuration not found or user doesn't have permission
      *
      * @since 0.2.10
-     *
-     * @psalm-suppress PossiblyUnusedReturnValue
-     *
-     * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      */
-    public function updateSyncStatus(int $id, string $status, \DateTime $syncDate, string $_message=''): Configuration
+    public function updateSyncStatus(int $id, string $status, \DateTime $syncDate, string $message = ''): Configuration
     {
-        // Verify RBAC permission to update.
-        // TEMPORARILY DISABLED FOR TESTING - TODO: Re-enable after fixing CLI/import context.
-        // Disabled: $this->verifyRbacPermission(action: 'update', entityType: 'configuration').
-        $configuration = $this->find(id: $id);
+        // Verify RBAC permission to update
+        $this->verifyRbacPermission('update', 'configuration');
+
+        $configuration = $this->find($id);
         $configuration->setSyncStatus($status);
         $configuration->setLastSyncDate($syncDate);
-        $configuration->setUpdated(new DateTime());
+        $configuration->setUpdated(new \DateTime());
 
-        return $this->update(entity: $configuration);
+        return $this->update($configuration);
+
     }//end updateSyncStatus()
+
 
     /**
      * Insert a new configuration
@@ -316,47 +343,46 @@ class ConfigurationMapper extends QBMapper
      * @return Configuration The inserted configuration with updated ID
      * @throws \Exception If user doesn't have create permission
      */
-    public function insert(Entity $entity): Configuration
+    public function insert(Entity $entity): Entity
     {
-        // Verify RBAC permission to create.
-        // TEMPORARILY DISABLED FOR TESTING - TODO: Re-enable after fixing CLI/import context.
-        // Disabled: $this->verifyRbacPermission(action: 'create', entityType: 'configuration').
+        // Verify RBAC permission to create
+        $this->verifyRbacPermission('create', 'configuration');
+
         if ($entity instanceof Configuration) {
-            // Generate UUID if not set.
-            if (empty($entity->getUuid()) === true) {
+            // Generate UUID if not set
+            if (empty($entity->getUuid())) {
                 $entity->setUuid(\Symfony\Component\Uid\Uuid::v4()->toRfc4122());
             }
-
-            // Set default type if not provided (required by database).
-            if (empty($entity->getType()) === true) {
+            
+            // Set default type if not provided (required by database)
+            if (empty($entity->getType())) {
                 $entity->setType('default');
             }
 
-            // Auto-set owner to current user if not already set.
-            if (empty($entity->getOwner()) === true) {
+            // Auto-set owner to current user if not already set
+            if (empty($entity->getOwner())) {
                 $currentUserId = $this->getCurrentUserId();
                 if ($currentUserId !== null) {
                     $entity->setOwner($currentUserId);
                 }
             }
-
+            
             $entity->setCreated(new DateTime());
             $entity->setUpdated(new DateTime());
-        }//end if
+        }
 
-        // Auto-set organisation from active session.
-        $this->setOrganisationOnCreate(entity: $entity);
+        // Auto-set organisation from active session
+        $this->setOrganisationOnCreate($entity);
 
-        $result = parent::insert(entity: $entity);
+        $result = parent::insert($entity);
 
-        // Invalidate configuration cache.
+        // Invalidate configuration cache
         $this->invalidateConfigurationCache();
 
-        // Dispatch creation event.
-        $this->eventDispatcher->dispatchTyped(new ConfigurationCreatedEvent(configuration: $result));
-
         return $result;
+
     }//end insert()
+
 
     /**
      * Update an existing configuration
@@ -366,35 +392,27 @@ class ConfigurationMapper extends QBMapper
      * @return Configuration The updated configuration
      * @throws \Exception If user doesn't have update permission or access to this organisation
      */
-    public function update(Entity $entity): Configuration
+    public function update(Entity $entity): Entity
     {
-        // Verify RBAC permission to update.
-        // TEMPORARILY DISABLED FOR TESTING - TODO: Re-enable after fixing CLI/import context.
-        // Disabled: $this->verifyRbacPermission(action: 'update', entityType: 'configuration').
-        // Verify user has access to this organisation.
-        $this->verifyOrganisationAccess(entity: $entity);
+        // Verify RBAC permission to update
+        $this->verifyRbacPermission('update', 'configuration');
 
-        // Get old state before update (disable multitenancy filtering).
-        // When updating, we need to find the configuration regardless of organisation.
-        $oldEntity = $this->find(id: $entity->getId(), _multitenancy: false);
+        // Verify user has access to this organisation
+        $this->verifyOrganisationAccess($entity);
 
-        $entity->setUpdated(new DateTime());
+        if ($entity instanceof Configuration) {
+            $entity->setUpdated(new DateTime());
+        }
 
-        $result = parent::update(entity: $entity);
+        $result = parent::update($entity);
 
-        // Invalidate configuration cache.
+        // Invalidate configuration cache
         $this->invalidateConfigurationCache();
 
-        // Dispatch update event.
-        $this->eventDispatcher->dispatchTyped(
-            new ConfigurationUpdatedEvent(
-                newConfiguration: $result,
-                oldConfiguration: $oldEntity
-            )
-        );
-
         return $result;
+
     }//end update()
+
 
     /**
      * Delete a configuration
@@ -403,27 +421,24 @@ class ConfigurationMapper extends QBMapper
      *
      * @return Configuration The deleted configuration
      * @throws \Exception If user doesn't have delete permission or access to this organisation
-     *
-     * @psalm-suppress PossiblyUnusedReturnValue
      */
     public function delete(Entity $entity): Entity
     {
-        // Verify RBAC permission to delete.
-        // TEMPORARILY DISABLED FOR TESTING - TODO: Re-enable after fixing CLI/import context.
-        // $this->verifyRbacPermission(action: 'delete', entityType: 'configuration');
-        // Verify user has access to this organisation.
-        $this->verifyOrganisationAccess(entity: $entity);
+        // Verify RBAC permission to delete
+        $this->verifyRbacPermission('delete', 'configuration');
 
-        $result = parent::delete(entity: $entity);
+        // Verify user has access to this organisation
+        $this->verifyOrganisationAccess($entity);
 
-        // Invalidate configuration cache.
+        $result = parent::delete($entity);
+
+        // Invalidate configuration cache
         $this->invalidateConfigurationCache();
 
-        // Dispatch deletion event.
-        $this->eventDispatcher->dispatchTyped(new ConfigurationDeletedEvent(configuration: $result));
-
         return $result;
+
     }//end delete()
+
 
     /**
      * Create a configuration from an array
@@ -439,8 +454,10 @@ class ConfigurationMapper extends QBMapper
         $config->hydrate(object: $data);
 
         // Prepare the object before insertion.
-        return $this->insert(entity: $config);
+        return $this->insert($config);
+
     }//end createFromArray()
+
 
     /**
      * Update a configuration from an array
@@ -453,21 +470,69 @@ class ConfigurationMapper extends QBMapper
      */
     public function updateFromArray(int $id, array $data): Configuration
     {
-        // Disable multitenancy filtering for update operations.
-        // When updating by ID, we want to find the configuration regardless of organisation.
-        $object = $this->find(id: $id, _multitenancy: false);
+        $object = $this->find($id);
 
         // Set or update the version.
         if (isset($data['version']) === false) {
-            $version    = explode('.', $object->getVersion() ?? '1.0.0');
+            $version    = explode('.', $object->getVersion());
             $version[2] = ((int) $version[2] + 1);
             $object->setVersion(implode('.', $version));
         }
 
         $object->hydrate(object: $data);
 
-        return $this->update(entity: $object);
+        return $this->update($object);
+
     }//end updateFromArray()
+
+
+    /**
+     * Count configurations by type
+     *
+     * @param string $type Configuration type
+     *
+     * @return int Number of configurations
+     */
+    public function countByType(string $type): int
+    {
+        $qb = $this->db->getQueryBuilder();
+
+        $qb->select($qb->createFunction('COUNT(*)'))
+            ->from($this->tableName)
+            ->where($qb->expr()->eq('type', $qb->createNamedParameter($type, IQueryBuilder::PARAM_STR)));
+
+        $result = $qb->executeQuery();
+        $count  = $result->fetchOne();
+        $result->closeCursor();
+
+        return (int) $count;
+
+    }//end countByType()
+
+
+    /**
+     * Count configurations by app
+     *
+     * @param string $app App ID
+     *
+     * @return int Number of configurations
+     */
+    public function countByApp(string $app): int
+    {
+        $qb = $this->db->getQueryBuilder();
+
+        $qb->select($qb->createFunction('COUNT(*)'))
+            ->from($this->tableName)
+            ->where($qb->expr()->eq('app', $qb->createNamedParameter($app, IQueryBuilder::PARAM_STR)));
+
+        $result = $qb->executeQuery();
+        $count  = $result->fetchOne();
+        $result->closeCursor();
+
+        return (int) $count;
+
+    }//end countByApp()
+
 
     /**
      * Find all configurations
@@ -477,67 +542,56 @@ class ConfigurationMapper extends QBMapper
      * @param array|null $filters          The filters to apply
      * @param array|null $searchConditions Array of search conditions
      * @param array|null $searchParams     Array of search parameters
-     * @param bool       $_multitenancy    Whether to apply multitenancy filtering
      *
-     * @return Configuration[]
-     *
+     * @return Configuration[] Array of found configurations
      * @throws \Exception If user doesn't have read permission
-     *
-     * @psalm-return list<OCA\OpenRegister\Db\Configuration>
-     *
-     * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Multitenancy toggle is intentional
      */
     public function findAll(
         ?int $limit=null,
         ?int $offset=null,
         ?array $filters=[],
         ?array $searchConditions=[],
-        ?array $searchParams=[],
-        bool $_multitenancy=true
+        ?array $searchParams=[]
     ): array {
-        // Verify RBAC permission to read.
-        // TEMPORARILY DISABLED FOR TESTING - TODO: Re-enable after fixing CLI/import context.
-        // Disabled: $this->verifyRbacPermission(action: 'read', entityType: 'configuration').
+        // Verify RBAC permission to read
+        $this->verifyRbacPermission('read', 'configuration');
+
         $qb = $this->db->getQueryBuilder();
 
         // Build the base query.
         $qb->select('*')
             ->from($this->tableName)
             ->setMaxResults($limit)
-            ->setFirstResult($offset ?? 0)
+            ->setFirstResult($offset)
             ->orderBy('created', 'DESC');
 
         // Apply filters.
-        foreach ($filters ?? [] as $filter => $value) {
+        foreach ($filters as $filter => $value) {
             if ($value === 'IS NOT NULL') {
                 $qb->andWhere($qb->expr()->isNotNull($filter));
-                continue;
-            }
-
-            if ($value === 'IS NULL') {
+            } else if ($value === 'IS NULL') {
                 $qb->andWhere($qb->expr()->isNull($filter));
-                continue;
+            } else {
+                $qb->andWhere($qb->expr()->eq($filter, $qb->createNamedParameter($value)));
             }
-
-            $qb->andWhere($qb->expr()->eq($filter, $qb->createNamedParameter($value)));
         }
 
         // Apply search conditions.
         if (empty($searchConditions) === false) {
             $qb->andWhere('('.implode(' OR ', $searchConditions).')');
-            foreach ($searchParams ?? [] as $param => $value) {
+            foreach ($searchParams as $param => $value) {
                 $qb->setParameter($param, $value);
             }
         }
 
-        // Apply organisation filter unless explicitly disabled.
-        if ($_multitenancy === true) {
-            $this->applyOrganisationFilter(qb: $qb);
-        }
+        // Apply organisation filter (all users including admins must have active org)
+        $this->applyOrganisationFilter($qb);
 
         // Execute the query and return the results.
-        return $this->findEntities(query: $qb);
+        return $this->findEntities($qb);
+
     }//end findAll()
+
 
     /**
      * Invalidate the configuration cache for the active organisation
@@ -549,11 +603,18 @@ class ConfigurationMapper extends QBMapper
      */
     private function invalidateConfigurationCache(): void
     {
-        // Organisation service was removed from mapper (services should not be in mappers).
-        // Cache invalidation is handled at service layer instead.
-        return;
-        // Legacy code - no longer used..
-        // $sessionKey = self::SESSION_KEY_PREFIX.$orgUuid;
-        // $this->session->remove($sessionKey);.
+        $activeOrg = $this->organisationService->getActiveOrganisation();
+        if ($activeOrg === null) {
+            return;
+        }
+
+        $orgUuid = $activeOrg->getUuid();
+        $sessionKey = self::SESSION_KEY_PREFIX.$orgUuid;
+
+        // Remove from session
+        $this->session->remove($sessionKey);
+
     }//end invalidateConfigurationCache()
+
+
 }//end class

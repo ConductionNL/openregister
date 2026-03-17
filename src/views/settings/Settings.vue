@@ -14,20 +14,7 @@
 			:is-up-to-date="true"
 			:show-update-button="true"
 			title="Version Information"
-			description="Information about the current OpenRegister installation">
-			<template #actions>
-				<NcButton
-					type="secondary"
-					:disabled="settingsStore.clearingAppStoreCache"
-					@click="settingsStore.clearAppStoreCache('all')">
-					<template #icon>
-						<NcLoadingIcon v-if="settingsStore.clearingAppStoreCache" :size="20" />
-						<Refresh v-else :size="20" />
-					</template>
-					{{ settingsStore.clearingAppStoreCache ? 'Clearing...' : 'Clear App Store Cache' }}
-				</NcButton>
-			</template>
-		</VersionInfoCard>
+			description="Information about the current OpenRegister installation" />
 
 		<!-- System Statistics Section -->
 		<StatisticsOverview />
@@ -50,9 +37,6 @@
 		<!-- SOLR Configuration Section -->
 		<SolrConfiguration />
 
-		<!-- n8n Workflow Configuration Section -->
-		<N8nConfiguration />
-
 		<!-- LLM Configuration Section -->
 		<LlmConfiguration />
 
@@ -72,8 +56,7 @@
 import { mapStores } from 'pinia'
 import { useSettingsStore } from '../../store/settings.js'
 
-import { NcSettingsSection, NcButton, NcLoadingIcon } from '@nextcloud/vue'
-import Refresh from 'vue-material-design-icons/Refresh.vue'
+import { NcSettingsSection } from '@nextcloud/vue'
 import VersionInfoCard from '../../components/shared/VersionInfoCard.vue'
 import SolrConfiguration from './sections/SolrConfiguration.vue'
 import StatisticsOverview from './sections/StatisticsOverview.vue'
@@ -82,7 +65,6 @@ import RbacConfiguration from './sections/RbacConfiguration.vue'
 import OrganisationConfiguration from './sections/OrganisationConfiguration.vue'
 import MultitenancyConfiguration from './sections/MultitenancyConfiguration.vue'
 import RetentionConfiguration from './sections/RetentionConfiguration.vue'
-import N8nConfiguration from './sections/N8nConfiguration.vue'
 import LlmConfiguration from './sections/LlmConfiguration.vue'
 import FileConfiguration from './sections/FileConfiguration.vue'
 import ApiTokenConfiguration from './sections/ApiTokenConfiguration.vue'
@@ -97,9 +79,6 @@ export default {
 
 	components: {
 		NcSettingsSection,
-		NcButton,
-		NcLoadingIcon,
-		Refresh,
 		VersionInfoCard,
 		SolrConfiguration,
 		StatisticsOverview,
@@ -108,7 +87,6 @@ export default {
 		OrganisationConfiguration,
 		MultitenancyConfiguration,
 		RetentionConfiguration,
-		N8nConfiguration,
 		LlmConfiguration,
 		FileConfiguration,
 		ApiTokenConfiguration,

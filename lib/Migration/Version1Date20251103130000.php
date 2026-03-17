@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 /**
  * Add authorization column to organisations and applications
  *
@@ -9,15 +11,10 @@
  *
  * @category Migration
  * @package  OCA\OpenRegister\Migration
- *
- * @author    Conduction Development Team <dev@conduction.nl>
- * @copyright 2024 Conduction B.V.
- * @license   AGPL-3.0-or-later https://www.gnu.org/licenses/agpl-3.0.html
- * @version   GIT: <git-id>
- * @link      https://www.openregister.nl
+ * @author   Conduction Development Team <dev@conduction.nl>
+ * @license  AGPL-3.0-or-later
+ * @link     https://www.openregister.nl
  */
-
-declare(strict_types=1);
 
 namespace OCA\OpenRegister\Migration;
 
@@ -35,26 +32,27 @@ use OCP\Migration\SimpleMigrationStep;
  */
 class Version1Date20251103130000 extends SimpleMigrationStep
 {
+
+
     /**
      * Add authorization column to organisations and applications tables
      *
-     * @param IOutput $output        The migration output handler
+     * @param IOutput $output The migration output handler
      * @param Closure $schemaClosure The closure to get the schema
-     * @param array   $options       Migration options
+     * @param array   $options Migration options
      *
      * @return null|ISchemaWrapper The updated schema or null
-     *
-     * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      */
     public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper
     {
-        $schema  = $schemaClosure();
+        /** @var ISchemaWrapper $schema */
+        $schema = $schemaClosure();
         $updated = false;
 
-        // Add authorization to organisations table.
+        // Add authorization to organisations table
         if ($schema->hasTable('openregister_organisations') === true) {
             $organisationsTable = $schema->getTable('openregister_organisations');
-
+            
             if ($organisationsTable->hasColumn('authorization') === false) {
                 $organisationsTable->addColumn(
                     'authorization',
@@ -64,15 +62,15 @@ class Version1Date20251103130000 extends SimpleMigrationStep
                         'default' => null,
                     ]
                 );
-                $output->info(message: 'Added authorization column to openregister_organisations');
+                $output->info('Added authorization column to openregister_organisations');
                 $updated = true;
             }
         }//end if
 
-        // Add authorization to applications table.
+        // Add authorization to applications table
         if ($schema->hasTable('openregister_applications') === true) {
             $applicationsTable = $schema->getTable('openregister_applications');
-
+            
             if ($applicationsTable->hasColumn('authorization') === false) {
                 $applicationsTable->addColumn(
                     'authorization',
@@ -82,15 +80,20 @@ class Version1Date20251103130000 extends SimpleMigrationStep
                         'default' => null,
                     ]
                 );
-                $output->info(message: 'Added authorization column to openregister_applications');
+                $output->info('Added authorization column to openregister_applications');
                 $updated = true;
             }
         }//end if
 
-        if ($updated === true) {
-            return $schema;
-        }
+        return $updated === true ? $schema : null;
 
-        return null;
     }//end changeSchema()
+
+
 }//end class
+
+
+
+
+
+

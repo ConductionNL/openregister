@@ -1,5 +1,4 @@
 <?php
-
 /**
  * OpenRegister Application Entity
  *
@@ -34,47 +33,6 @@ use Symfony\Component\Uid\Uuid;
  * Applications can have configurations, registers, and schemas associated with them.
  *
  * @package OCA\OpenRegister\Db
- *
- * @method string|null getUuid()
- * @method void setUuid(?string $uuid)
- * @method string|null getName()
- * @method void setName(?string $name)
- * @method string|null getDescription()
- * @method void setDescription(?string $description)
- * @method string|null getVersion()
- * @method void setVersion(?string $version)
- * @method string|null getOrganisation()
- * @method void setOrganisation(?string $organisation)
- * @method array|null getConfigurations()
- * @method self setConfigurations(?array $configurations)
- * @method array|null getRegisters()
- * @method self setRegisters(?array $registers)
- * @method array|null getSchemas()
- * @method self setSchemas(?array $schemas)
- * @method string|null getOwner()
- * @method void setOwner(?string $owner)
- * @method bool|null getActive()
- * @method self setActive(?bool $active)
- * @method int|null getStorageQuota()
- * @method void setStorageQuota(?int $storageQuota)
- * @method int|null getBandwidthQuota()
- * @method void setBandwidthQuota(?int $bandwidthQuota)
- * @method int|null getRequestQuota()
- * @method void setRequestQuota(?int $requestQuota)
- * @method array|null getGroups()
- * @method self setGroups(?array $groups)
- * @method array|null getAuthorization()
- * @method self setAuthorization(array|string|null $authorization)
- * @method DateTime|null getCreated()
- * @method void setCreated(?DateTime $created)
- * @method DateTime|null getUpdated()
- * @method void setUpdated(?DateTime $updated)
- *
- * @psalm-suppress PossiblyUnusedMethod
- * @psalm-suppress PropertyNotSetInConstructor $id is set by Nextcloud's Entity base class
- *
- * @SuppressWarnings(PHPMD.TooManyFields)
- * @SuppressWarnings(PHPMD.ExcessiveClassComplexity)
  */
 class Application extends Entity implements JsonSerializable
 {
@@ -119,7 +77,7 @@ class Application extends Entity implements JsonSerializable
      *
      * @var Configuration|null
      */
-    private ?Configuration $managedByConfig = null;
+    private ?Configuration $managedByConfiguration = null;
 
     /**
      * Array of configuration IDs associated with this application
@@ -152,7 +110,7 @@ class Application extends Entity implements JsonSerializable
     /**
      * Whether this application is active
      *
-     * @var boolean|null Whether this application is active
+     * @var bool|null Whether this application is active
      */
     protected ?bool $active = true;
 
@@ -160,7 +118,7 @@ class Application extends Entity implements JsonSerializable
      * Storage quota allocated to this application in bytes
      * NULL = unlimited storage
      *
-     * @var integer|null Storage quota in bytes
+     * @var int|null Storage quota in bytes
      */
     protected ?int $storageQuota = null;
 
@@ -168,7 +126,7 @@ class Application extends Entity implements JsonSerializable
      * Bandwidth/traffic quota allocated to this application in bytes per month
      * NULL = unlimited bandwidth
      *
-     * @var integer|null Bandwidth quota in bytes per month
+     * @var int|null Bandwidth quota in bytes per month
      */
     protected ?int $bandwidthQuota = null;
 
@@ -176,7 +134,7 @@ class Application extends Entity implements JsonSerializable
      * API request quota allocated to this application per day
      * NULL = unlimited API requests
      *
-     * @var integer|null API request quota per day
+     * @var int|null API request quota per day
      */
     protected ?int $requestQuota = null;
 
@@ -190,7 +148,7 @@ class Application extends Entity implements JsonSerializable
 
     /**
      * Authorization rules for this application
-     *
+     * 
      * Simple CRUD structure defining permissions:
      * {
      *   "create": [],
@@ -217,6 +175,7 @@ class Application extends Entity implements JsonSerializable
      */
     protected ?DateTime $updated = null;
 
+
     /**
      * Application constructor
      *
@@ -224,24 +183,26 @@ class Application extends Entity implements JsonSerializable
      */
     public function __construct()
     {
-        $this->addType(fieldName: 'uuid', type: 'string');
-        $this->addType(fieldName: 'name', type: 'string');
-        $this->addType(fieldName: 'description', type: 'string');
-        $this->addType(fieldName: 'version', type: 'string');
-        $this->addType(fieldName: 'organisation', type: 'string');
-        $this->addType(fieldName: 'configurations', type: 'json');
-        $this->addType(fieldName: 'registers', type: 'json');
-        $this->addType(fieldName: 'schemas', type: 'json');
-        $this->addType(fieldName: 'owner', type: 'string');
-        $this->addType(fieldName: 'active', type: 'boolean');
-        $this->addType(fieldName: 'storage_quota', type: 'integer');
-        $this->addType(fieldName: 'bandwidth_quota', type: 'integer');
-        $this->addType(fieldName: 'request_quota', type: 'integer');
-        $this->addType(fieldName: 'groups', type: 'json');
-        $this->addType(fieldName: 'authorization', type: 'json');
-        $this->addType(fieldName: 'created', type: 'datetime');
-        $this->addType(fieldName: 'updated', type: 'datetime');
+        $this->addType('uuid', 'string');
+        $this->addType('name', 'string');
+        $this->addType('description', 'string');
+        $this->addType('version', 'string');
+        $this->addType('organisation', 'string');
+        $this->addType('configurations', 'json');
+        $this->addType('registers', 'json');
+        $this->addType('schemas', 'json');
+        $this->addType('owner', 'string');
+        $this->addType('active', 'boolean');
+        $this->addType('storage_quota', 'integer');
+        $this->addType('bandwidth_quota', 'integer');
+        $this->addType('request_quota', 'integer');
+        $this->addType('groups', 'json');
+        $this->addType('authorization', 'json');
+        $this->addType('created', 'datetime');
+        $this->addType('updated', 'datetime');
+
     }//end __construct()
+
 
     /**
      * Validate UUID format
@@ -249,8 +210,6 @@ class Application extends Entity implements JsonSerializable
      * @param string $uuid The UUID to validate
      *
      * @return bool True if UUID format is valid
-     *
-     * @SuppressWarnings(PHPMD.StaticAccess) Uuid::fromString is standard Symfony UID pattern
      */
     public static function isValidUuid(string $uuid): bool
     {
@@ -260,7 +219,9 @@ class Application extends Entity implements JsonSerializable
         } catch (\InvalidArgumentException $e) {
             return false;
         }
+
     }//end isValidUuid()
+
 
     /**
      * Get the organisation UUID
@@ -270,7 +231,9 @@ class Application extends Entity implements JsonSerializable
     public function getOrganisation(): ?string
     {
         return $this->organisation;
+
     }//end getOrganisation()
+
 
     /**
      * Set the organisation UUID
@@ -282,8 +245,10 @@ class Application extends Entity implements JsonSerializable
     public function setOrganisation(?string $organisation): void
     {
         $this->organisation = $organisation;
-        $this->markFieldUpdated(attribute: 'organisation');
+        $this->markFieldUpdated('organisation');
+
     }//end setOrganisation()
+
 
     /**
      * Get configurations associated with this application
@@ -293,21 +258,25 @@ class Application extends Entity implements JsonSerializable
     public function getConfigurations(): array
     {
         return $this->configurations ?? [];
+
     }//end getConfigurations()
+
 
     /**
      * Set configurations for this application
      *
      * @param array|null $configurations Array of configuration IDs
      *
-     * @return static Returns this application for method chaining
+     * @return self Returns this application for method chaining
      */
-    public function setConfigurations(?array $configurations): static
+    public function setConfigurations(?array $configurations): self
     {
         $this->configurations = $configurations ?? [];
-        $this->markFieldUpdated(attribute: 'configurations');
+        $this->markFieldUpdated('configurations');
         return $this;
+
     }//end setConfigurations()
+
 
     /**
      * Get registers managed by this application
@@ -317,21 +286,25 @@ class Application extends Entity implements JsonSerializable
     public function getRegisters(): array
     {
         return $this->registers ?? [];
+
     }//end getRegisters()
+
 
     /**
      * Set registers for this application
      *
      * @param array|null $registers Array of register IDs
      *
-     * @return static Returns this application for method chaining
+     * @return self Returns this application for method chaining
      */
-    public function setRegisters(?array $registers): static
+    public function setRegisters(?array $registers): self
     {
         $this->registers = $registers ?? [];
-        $this->markFieldUpdated(attribute: 'registers');
+        $this->markFieldUpdated('registers');
         return $this;
+
     }//end setRegisters()
+
 
     /**
      * Get schemas used by this application
@@ -341,51 +314,58 @@ class Application extends Entity implements JsonSerializable
     public function getSchemas(): array
     {
         return $this->schemas ?? [];
+
     }//end getSchemas()
+
 
     /**
      * Set schemas for this application
      *
      * @param array|null $schemas Array of schema IDs
      *
-     * @return static Returns this application for method chaining
+     * @return self Returns this application for method chaining
      */
-    public function setSchemas(?array $schemas): static
+    public function setSchemas(?array $schemas): self
     {
         $this->schemas = $schemas ?? [];
-        $this->markFieldUpdated(attribute: 'schemas');
+        $this->markFieldUpdated('schemas');
         return $this;
+
     }//end setSchemas()
 
+
     /**
-     * Check whether this application is active
+     * Get whether this application is active
      *
      * @return bool Whether this application is active
      */
-    public function isActive(): bool
+    public function getActive(): bool
     {
         return $this->active ?? true;
-    }//end isActive()
+
+    }//end getActive()
+
 
     /**
      * Set whether this application is active
      *
      * @param bool|null|string $active Whether this should be active
      *
-     * @return static Returns this application for method chaining
+     * @return self Returns this application for method chaining
      */
-    public function setActive(mixed $active): static
+    public function setActive(mixed $active): self
     {
-        // Handle various input types defensively (including empty strings from API).
-        $this->active = true;
-        // Default to true for applications.
-        if ($active !== '' && $active !== null) {
-            $this->active = (bool) $active;
+        // Handle various input types defensively (including empty strings from API)
+        if ($active === '' || $active === null) {
+            $this->active = true; // Default to true for applications
+        } else {
+            $this->active = (bool)$active;
         }
-
-        $this->markFieldUpdated(attribute: 'active');
+        $this->markFieldUpdated('active');
         return $this;
+
     }//end setActive()
+
 
     /**
      * Get groups that have access to this application
@@ -395,30 +375,32 @@ class Application extends Entity implements JsonSerializable
     public function getGroups(): array
     {
         return $this->groups ?? [];
+
     }//end getGroups()
+
 
     /**
      * Set groups that have access to this application
      *
      * @param array|null $groups Array of group definitions
      *
-     * @return static Returns this application for method chaining
+     * @return self Returns this application for method chaining
      */
-    public function setGroups(?array $groups): static
+    public function setGroups(?array $groups): self
     {
         $this->groups = $groups ?? [];
-        $this->markFieldUpdated(attribute: 'groups');
+        $this->markFieldUpdated('groups');
         return $this;
+
     }//end setGroups()
+
 
     /**
      * Get JSON fields from the entity
      *
      * Returns all fields that are of type 'json'
      *
-     * @return string[] List of JSON field names
-     *
-     * @psalm-return list<string>
+     * @return array<string> List of JSON field names
      */
     public function getJsonFields(): array
     {
@@ -430,7 +412,9 @@ class Application extends Entity implements JsonSerializable
                 }
             )
         );
+
     }//end getJsonFields()
+
 
     /**
      * Hydrate the entity with data from an array
@@ -439,9 +423,9 @@ class Application extends Entity implements JsonSerializable
      *
      * @param array $object The data array to hydrate from
      *
-     * @return static Returns $this for method chaining
+     * @return self Returns $this for method chaining
      */
-    public function hydrate(array $object): static
+    public function hydrate(array $object): self
     {
         $jsonFields = $this->getJsonFields();
 
@@ -460,18 +444,16 @@ class Application extends Entity implements JsonSerializable
         }
 
         return $this;
+
     }//end hydrate()
+
 
     /**
      * Get default authorization structure for applications
      *
      * Provides sensible defaults with empty arrays for all CRUD permissions
      *
-     * @return array[] Default authorization structure
-     *
-     * @psalm-return array{create: array<never, never>,
-     *     read: array<never, never>, update: array<never, never>,
-     *     delete: array<never, never>}
+     * @return array Default authorization structure
      */
     private function getDefaultAuthorization(): array
     {
@@ -481,7 +463,9 @@ class Application extends Entity implements JsonSerializable
             'update' => [],
             'delete' => [],
         ];
+
     }//end getDefaultAuthorization()
+
 
     /**
      * Get authorization rules for this application
@@ -491,81 +475,74 @@ class Application extends Entity implements JsonSerializable
     public function getAuthorization(): array
     {
         return $this->authorization ?? $this->getDefaultAuthorization();
+
     }//end getAuthorization()
+
 
     /**
      * Set authorization rules for this application
      *
-     * @param array|string|null $authorization Authorization rules structure or JSON string
+     * @param array|null $authorization Authorization rules structure
      *
-     * @return static Returns this application for method chaining
+     * @return self Returns this application for method chaining
      */
-    public function setAuthorization(array|string|null $authorization): static
+    public function setAuthorization(?array $authorization): self
     {
-        // Handle JSON string from database (type safety).
-        if (is_string($authorization) === true) {
-            try {
-                $decoded = json_decode($authorization, true);
-                if (json_last_error() === JSON_ERROR_NONE && is_array($decoded) === true) {
-                    $authorization = $decoded;
-                } else {
-                    // Invalid JSON, use default.
-                    $authorization = null;
-                }
-            } catch (\Exception $e) {
-                // If decoding fails, use default.
-                $authorization = null;
-            }
-        }
-
         $this->authorization = $authorization ?? $this->getDefaultAuthorization();
-        $this->markFieldUpdated(attribute: 'authorization');
+        $this->markFieldUpdated('authorization');
         return $this;
+
     }//end setAuthorization()
+
 
     /**
      * JSON serialization for API responses
      *
-     * @return (array|bool|int|null|string)[]
-     *
-     * @psalm-return array{id: int, uuid: null|string, name: null|string,
-     *     description: null|string, version: null|string,
-     *     organisation: null|string, configurations: array|null,
-     *     registers: array|null, schemas: array|null, owner: null|string,
-     *     active: bool|null, groups: array|null,
-     *     quota: array{storage: int|null, bandwidth: int|null,
-     *     requests: int|null, users: null, groups: null},
-     *     usage: array{storage: 0, bandwidth: 0, requests: 0, users: 0,
-     *     groups: int<0, max>}, authorization: array,
-     *     created: null|string, updated: null|string,
-     *     managedByConfiguration: array{id: int, uuid: null|string,
-     *     title: null|string}|null}
+     * @return array Serialized application data
      */
     public function jsonSerialize(): array
     {
         $groups = $this->getGroups();
 
         return [
-            'id'                     => $this->id,
-            'uuid'                   => $this->uuid,
-            'name'                   => $this->name,
-            'description'            => $this->description,
-            'version'                => $this->version,
-            'organisation'           => $this->organisation,
-            'configurations'         => $this->getConfigurations(),
-            'registers'              => $this->getRegisters(),
-            'schemas'                => $this->getSchemas(),
-            'owner'                  => $this->owner,
-            'active'                 => $this->isActive(),
-            'groups'                 => $groups,
-            'quota'                  => $this->getQuotaData(),
-            'usage'                  => $this->getUsageData(groups: $groups),
-            'authorization'          => $this->authorization ?? $this->getDefaultAuthorization(),
-            'created'                => $this->getCreatedFormatted(),
-            'updated'                => $this->getUpdatedFormatted(),
-            'managedByConfiguration' => $this->getManagedByConfigurationData(),
+            'id'             => $this->id,
+            'uuid'           => $this->uuid,
+            'name'           => $this->name,
+            'description'    => $this->description,
+            'version'        => $this->version,
+            'organisation'   => $this->organisation,
+            'configurations' => $this->getConfigurations(),
+            'registers'      => $this->getRegisters(),
+            'schemas'        => $this->getSchemas(),
+            'owner'          => $this->owner,
+            'active'         => $this->getActive(),
+            'groups'         => $groups,
+            'quota'          => [
+                'storage'   => $this->storageQuota,
+                'bandwidth' => $this->bandwidthQuota,
+                'requests'  => $this->requestQuota,
+                'users'     => null, // To be set via admin configuration
+                'groups'    => null, // To be set via admin configuration
+            ],
+            'usage'          => [
+                'storage'   => 0, // To be calculated from actual usage
+                'bandwidth' => 0, // To be calculated from actual usage
+                'requests'  => 0, // To be calculated from actual usage
+                'users'     => 0, // Applications don't have direct users
+                'groups'    => count($groups),
+            ],
+            'authorization'  => $this->authorization ?? $this->getDefaultAuthorization(),
+            'created'        => $this->created ? $this->created->format('c') : null,
+            'updated'        => $this->updated ? $this->updated->format('c') : null,
+            'managedByConfiguration' => $this->managedByConfiguration !== null ? [
+                'id' => $this->managedByConfiguration->getId(),
+                'uuid' => $this->managedByConfiguration->getUuid(),
+                'title' => $this->managedByConfiguration->getTitle(),
+            ] : null,
         ];
+
     }//end jsonSerialize()
+
 
     /**
      * String representation of the application
@@ -577,13 +554,15 @@ class Application extends Entity implements JsonSerializable
      */
     public function __toString(): string
     {
-        // Generate new UUID if none exists or is empty.
+        // Generate new UUID if none exists or is empty
         if ($this->uuid === null || $this->uuid === '') {
             $this->uuid = Uuid::v4()->toRfc4122();
         }
 
         return $this->uuid;
+
     }//end __toString()
+
 
     /**
      * Get the configuration that manages this application (transient property)
@@ -592,8 +571,10 @@ class Application extends Entity implements JsonSerializable
      */
     public function getManagedByConfigurationEntity(): ?Configuration
     {
-        return $this->managedByConfig;
+        return $this->managedByConfiguration;
+
     }//end getManagedByConfigurationEntity()
+
 
     /**
      * Set the configuration that manages this application (transient property)
@@ -604,8 +585,10 @@ class Application extends Entity implements JsonSerializable
      */
     public function setManagedByConfigurationEntity(?Configuration $configuration): void
     {
-        $this->managedByConfig = $configuration;
+        $this->managedByConfiguration = $configuration;
+
     }//end setManagedByConfigurationEntity()
+
 
     /**
      * Check if this application is managed by a configuration
@@ -627,13 +610,15 @@ class Application extends Entity implements JsonSerializable
 
         foreach ($configurations as $configuration) {
             $applications = $configuration->getApplications();
-            if (in_array($this->id, $applications ?? [], true) === true) {
+            if (in_array($this->id, $applications, true) === true) {
                 return true;
             }
         }
 
         return false;
+
     }//end isManagedByConfiguration()
+
 
     /**
      * Get the configuration that manages this application
@@ -656,103 +641,15 @@ class Application extends Entity implements JsonSerializable
 
         foreach ($configurations as $configuration) {
             $applications = $configuration->getApplications();
-            if (in_array($this->id, $applications ?? [], true) === true) {
+            if (in_array($this->id, $applications, true) === true) {
                 return $configuration;
             }
         }
 
         return null;
+
     }//end getManagedByConfiguration()
 
-    /**
-     * Get quota data for JSON serialization.
-     *
-     * Returns the quota allocation structure for storage, bandwidth, and requests.
-     *
-     * @return array{storage: int|null, bandwidth: int|null, requests: int|null, users: null, groups: null}
-     */
-    private function getQuotaData(): array
-    {
-        return [
-            'storage'   => $this->storageQuota,
-            'bandwidth' => $this->bandwidthQuota,
-            'requests'  => $this->requestQuota,
-            'users'     => null,
-            // To be set via admin configuration.
-            'groups'    => null,
-            // To be set via admin configuration.
-        ];
-    }//end getQuotaData()
 
-    /**
-     * Get usage data for JSON serialization.
-     *
-     * Returns the current usage statistics structure.
-     *
-     * @param array $groups The groups array to calculate group count from.
-     *
-     * @return array{storage: 0, bandwidth: 0, requests: 0, users: 0, groups: int<0, max>}
-     */
-    private function getUsageData(array $groups): array
-    {
-        return [
-            'storage'   => 0,
-            // To be calculated from actual usage.
-            'bandwidth' => 0,
-            // To be calculated from actual usage.
-            'requests'  => 0,
-            // To be calculated from actual usage.
-            'users'     => 0,
-            // Applications don't have direct users.
-            'groups'    => count($groups ?? []),
-        ];
-    }//end getUsageData()
-
-    /**
-     * Get formatted created date for JSON serialization
-     *
-     * @return string|null Formatted date or null
-     */
-    private function getCreatedFormatted(): ?string
-    {
-        if ($this->created !== null) {
-            return $this->created->format('c');
-        }
-
-        return null;
-    }//end getCreatedFormatted()
-
-    /**
-     * Get formatted updated date for JSON serialization
-     *
-     * @return string|null Formatted date or null
-     */
-    private function getUpdatedFormatted(): ?string
-    {
-        if ($this->updated !== null) {
-            return $this->updated->format('c');
-        }
-
-        return null;
-    }//end getUpdatedFormatted()
-
-    /**
-     * Get managed by configuration data for JSON serialization
-     *
-     * @return (int|null|string)[]|null Configuration data or null
-     *
-     * @psalm-return array{id: int, uuid: null|string, title: null|string}|null
-     */
-    private function getManagedByConfigurationData(): array|null
-    {
-        if ($this->managedByConfig !== null) {
-            return [
-                'id'    => $this->managedByConfig->getId(),
-                'uuid'  => $this->managedByConfig->getUuid(),
-                'title' => $this->managedByConfig->getTitle(),
-            ];
-        }
-
-        return null;
-    }//end getManagedByConfigurationData()
 }//end class
+

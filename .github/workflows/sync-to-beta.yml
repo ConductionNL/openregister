@@ -1,0 +1,9 @@
+name: Sync to Beta
+
+on:
+  push:
+    branches: [development]
+
+jobs:
+  sync:
+    uses: ConductionNL/.github/.github/workflows/sync-to-beta.yml@main

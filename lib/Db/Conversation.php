@@ -1,5 +1,4 @@
 <?php
-
 /**
  * OpenRegister Conversation Entity
  *
@@ -43,8 +42,6 @@ use Symfony\Component\Uid\Uuid;
  * @method void setTitle(?string $title)
  * @method string|null getUserId()
  * @method void setUserId(?string $userId)
- * @method string|null getOwner()
- * @method void setOwner(?string $owner)
  * @method string|null getOrganisation()
  * @method void setOrganisation(?string $organisation)
  * @method int|null getAgentId()
@@ -53,16 +50,12 @@ use Symfony\Component\Uid\Uuid;
  * @method void setMetadata(?array $metadata)
  * @method DateTime|null getDeletedAt()
  * @method void setDeletedAt(?DateTime $deletedAt)
- * @method DateTime|null getDeleted_at()
- * @method void setDeleted_at(?DateTime $deleted_at)
  * @method DateTime|null getCreated()
  * @method void setCreated(?DateTime $created)
  * @method DateTime|null getUpdated()
  * @method void setUpdated(?DateTime $updated)
  *
  * @package OCA\OpenRegister\Db
- *
- * @psalm-suppress PropertyNotSetInConstructor $id is set by Nextcloud's Entity base class
  */
 class Conversation extends Entity implements JsonSerializable
 {
@@ -89,13 +82,6 @@ class Conversation extends Entity implements JsonSerializable
     protected ?string $userId = null;
 
     /**
-     * Owner of the conversation (same as userId for compatibility)
-     *
-     * @var string|null The owner ID
-     */
-    protected ?string $owner = null;
-
-    /**
      * Organisation UUID
      *
      * @var string|null Organisation UUID
@@ -105,7 +91,7 @@ class Conversation extends Entity implements JsonSerializable
     /**
      * Agent ID used in this conversation
      *
-     * @var integer|null Agent ID
+     * @var int|null Agent ID
      */
     protected ?int $agentId = null;
 
@@ -123,7 +109,7 @@ class Conversation extends Entity implements JsonSerializable
     protected ?array $metadata = null;
 
     /**
-     * Soft delete timestamp (camelCase)
+     * Soft delete timestamp
      *
      * @var DateTime|null Deleted at timestamp
      */
@@ -143,6 +129,7 @@ class Conversation extends Entity implements JsonSerializable
      */
     protected ?DateTime $updated = null;
 
+
     /**
      * Conversation constructor
      *
@@ -150,70 +137,136 @@ class Conversation extends Entity implements JsonSerializable
      */
     public function __construct()
     {
-        $this->addType(fieldName: 'uuid', type: 'string');
-        $this->addType(fieldName: 'title', type: 'string');
-        $this->addType(fieldName: 'userId', type: 'string');
-        $this->addType(fieldName: 'organisation', type: 'string');
-        $this->addType(fieldName: 'agentId', type: 'integer');
-        $this->addType(fieldName: 'metadata', type: 'json');
-        $this->addType(fieldName: 'deletedAt', type: 'datetime');
-        $this->addType(fieldName: 'created', type: 'datetime');
-        $this->addType(fieldName: 'updated', type: 'datetime');
+        $this->addType('uuid', 'string');
+        $this->addType('title', 'string');
+        $this->addType('userId', 'string');
+        $this->addType('organisation', 'string');
+        $this->addType('agentId', 'integer');
+        $this->addType('metadata', 'json');
+        $this->addType('deletedAt', 'datetime');
+        $this->addType('created', 'datetime');
+        $this->addType('updated', 'datetime');
+
     }//end __construct()
+
+
+    /**
+     * Validate UUID format
+     *
+     * @param string $uuid The UUID to validate
+     *
+     * @return bool True if UUID format is valid
+     */
+    public static function isValidUuid(string $uuid): bool
+    {
+        try {
+            Uuid::fromString($uuid);
+            return true;
+        } catch (\InvalidArgumentException $e) {
+            return false;
+        }
+
+    }//end isValidUuid()
+
+
+    /**
+     * Get a specific metadata value
+     *
+     * @param string $key The metadata key
+     * @param mixed  $default Default value if key doesn't exist
+     *
+     * @return mixed The metadata value
+     */
+    public function getMetadataValue(string $key, mixed $default = null): mixed
+    {
+        if ($this->metadata === null) {
+            return $default;
+        }
+        return $this->metadata[$key] ?? $default;
+
+    }//end getMetadataValue()
+
+
+    /**
+     * Set a specific metadata value
+     *
+     * @param string $key The metadata key
+     * @param mixed  $value The value to set
+     *
+     * @return self
+     */
+    public function setMetadataValue(string $key, mixed $value): self
+    {
+        if ($this->metadata === null) {
+            $this->metadata = [];
+        }
+        $this->metadata[$key] = $value;
+        return $this;
+
+    }//end setMetadataValue()
+
+
+    /**
+     * Check if conversation is soft deleted
+     *
+     * @return bool True if deleted
+     */
+    public function isDeleted(): bool
+    {
+        return $this->deletedAt !== null;
+
+    }//end isDeleted()
+
 
     /**
      * Soft delete the conversation
      *
-     * @return static Returns self for method chaining
+     * @return self
      */
-    public function softDelete(): static
+    public function softDelete(): self
     {
-        $this->setDeletedAt(deletedAt: new DateTime());
+        $this->setter('deletedAt', [new DateTime()]);
         return $this;
+
     }//end softDelete()
+
 
     /**
      * Restore soft deleted conversation
      *
-     * @return static Returns self for method chaining
+     * @return self
      */
-    public function restore(): static
+    public function restore(): self
     {
-        $this->setDeletedAt(deletedAt: null);
+        $this->setter('deletedAt', [null]);
         return $this;
+
     }//end restore()
+
 
     /**
      * Serialize the conversation to JSON
      *
-     * @return (array|int|null|string)[] Serialized conversation
-     *
-     * @psalm-return array{
-     *     id: int,
-     *     uuid: null|string,
-     *     title: null|string,
-     *     userId: null|string,
-     *     organisation: null|string,
-     *     agentId: int|null,
-     *     metadata: array|null,
-     *     deletedAt: null|string,
-     *     created: null|string,
-     *     updated: null|string
-     * }
+     * @return array Serialized conversation
      */
     public function jsonSerialize(): array
     {
         return [
-            'id'           => $this->id,
-            'uuid'         => $this->uuid,
-            'title'        => $this->title,
-            'userId'       => $this->userId,
+            'id' => $this->id,
+            'uuid' => $this->uuid,
+            'title' => $this->title,
+            'userId' => $this->userId,
             'organisation' => $this->organisation,
-            'agentId'      => $this->agentId,
-            'metadata'     => $this->metadata,
-            'deletedAt'    => $this->deletedAt?->format('c'),
-            'created'      => $this->created?->format('c'),
-            'updated'      => $this->updated?->format('c'),
+            'agentId' => $this->agentId,
+            'metadata' => $this->metadata,
+            'deletedAt' => $this->deletedAt?->format('c'),
+            'created' => $this->created?->format('c'),
+            'updated' => $this->updated?->format('c'),
         ];
+
     }//end jsonSerialize()
+
+
 }//end class
+
+
