@@ -92,3 +92,40 @@ Each integrity action MUST produce an audit trail entry (see deletion-audit-trai
 - THEN 4 audit trail entries MUST be created:
   - 1 for the person deletion (user-initiated)
   - 3 for the order deletions (referential_integrity.cascade_delete)
+
+### Current Implementation Status
+
+**Substantially implemented.** Core referential integrity logic exists:
+
+- `lib/Service/Object/ReferentialIntegrityService.php` -- Main service class with:
+  - All 5 `onDelete` actions supported: `CASCADE`, `RESTRICT`, `SET_NULL`, `SET_DEFAULT`, `NO_ACTION` (defined in `VALID_ON_DELETE_ACTIONS` constant)
+  - `MAX_DEPTH = 10` for circular reference detection (prevents infinite recursion)
+  - Graph-walking logic for recursive cascade operations
+- `lib/Exception/ReferentialIntegrityException.php` -- Custom exception for integrity violations (used for RESTRICT blocks, returns HTTP 409)
+- `lib/Service/Object/DeleteObject.php` -- Integrates with referential integrity on delete operations
+- `lib/Service/Object/ValidateObject.php` -- Validates referential constraints
+- `lib/Service/Object/SaveObject/RelationCascadeHandler.php` -- Handles cascade operations during save, includes `resolveSchemaReference()` for finding target schemas
+- `lib/Service/Object/CascadingHandler.php` -- Additional cascading logic for relation resolution
+- Schema property `onDelete` configuration supported in `lib/Db/Schema.php`
+- `validateReference` on save is implemented in `SaveObject.php` (see reference-existence-validation spec)
+
+**What is NOT yet implemented:**
+- Full transactional atomicity (database transactions wrapping all cascade operations) -- partially implemented
+- Audit trail integration specifically for referential integrity actions (cascade deletions logged as system-triggered)
+- Bulk delete operations with referential integrity processing per object
+- UI indication of referential integrity constraints (e.g., warning before deleting referenced objects)
+
+### Standards & References
+- SQL standard referential integrity actions (CASCADE, SET NULL, SET DEFAULT, RESTRICT, NO ACTION)
+- HTTP 409 Conflict (RFC 9110) for RESTRICT violations
+- Database transaction isolation levels (ACID principles)
+
+### Specificity Assessment
+- **Specific enough to implement?** Yes -- the scenarios clearly define each action and its expected behavior.
+- **Missing/ambiguous:**
+  - No specification for performance impact of deep cascade chains (MAX_DEPTH=10 is an implementation detail, not specified)
+  - No specification for how referential integrity interacts with soft-delete (if objects have `deleted` flag vs hard delete)
+  - No specification for cross-register referential integrity (what if referenced object is in a different register?)
+- **Open questions:**
+  - Should cascade operations trigger hooks/webhooks for each cascaded object?
+  - How should RESTRICT interact with bulk delete (fail entire batch or skip restricted items)?

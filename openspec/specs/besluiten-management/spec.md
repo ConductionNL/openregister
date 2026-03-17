@@ -87,3 +87,37 @@ Decisions with `publicatieIndicatie: true` MUST be flagged for publication in ex
 - THEN the decision MUST be available via the public API
 - AND the publication date and besluit content MUST be accessible without authentication
 - AND personal data in the decision MUST be redacted in the public view
+
+### Current Implementation Status
+- **NOT implemented:** No dedicated besluiten (decisions) management exists in the codebase.
+  - No `besluit` schema, entity, or dedicated controller
+  - No `besluittype` catalog schema or configuration
+  - No bezwaartermijn calculation logic
+  - No decision withdrawal (intrekking) workflow
+  - No publication workflow for decisions
+  - No personal data redaction for public decision views
+- **Partial foundations:**
+  - Register and Schema entities (`lib/Db/Register.php`, `lib/Db/Schema.php`) mention `publication` in passing but not specific to decisions
+  - Objects can reference each other via schema `$ref` properties, enabling case-to-decision linking
+  - The existing object model could store decisions as regular register objects with a besluit schema
+  - File linking is partially available via `FileService` (`lib/Service/FileService.php`) for attaching decision documents
+  - Computed date fields (if implemented) could calculate bezwaartermijn from verzenddatum + reactietermijn
+
+### Standards & References
+- **ZGW BRC (Besluiten Registratie Component)** — API standard for decision registration in Dutch government
+- **ZGW ZTC (Zaaktypecatalogus)** — Besluittype definitions within the catalog
+- **Awb (Algemene wet bestuursrecht)** — Legal framework for formal government decisions and appeal periods
+- **RGBZ (Referentiemodel Gemeentelijke Basisgegevens Zaken)** — Reference model including besluiten
+- **MDTO** — Archival metadata for decisions
+- **Wet open overheid (Woo)** — Publication requirements for government decisions
+- **VNG ZGW API specificaties** — https://vng-realisatie.github.io/gemma-zaken/
+
+### Specificity Assessment
+- The spec is well-defined with clear ZGW-aligned data model scenarios.
+- Missing: REST API endpoint definitions for besluiten CRUD; how besluittypen are stored (separate schema or admin config); how the bidirectional zaak-besluit link is maintained.
+- Ambiguous: whether decisions should be a separate entity type or implemented as regular OpenRegister objects with a dedicated schema; how personal data redaction works technically (field-level masking? separate public view?).
+- Open questions:
+  - Should the besluiten API be ZGW BRC-compatible (same URL structure and response format)?
+  - How does bezwaartermijn tracking integrate with notifications — should the system send reminders before deadlines?
+  - Is the besluittype catalog shared across registers or per-register?
+  - How does the withdrawal workflow interact with the audit trail and document dossier?

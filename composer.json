@@ -81,7 +81,7 @@
 		]
 	},
 	"require": {
-		"php": "^8.3",
+		"php": "^8.1",
 		"adbario/php-dot-notation": "^3.3.0",
 		"bamarni/composer-bin-plugin": "^1.8",
 		"elasticsearch/elasticsearch": "^v8.14.0",
@@ -96,7 +96,8 @@
 		"symfony/yaml": "^6.4",
 		"theodo-group/llphant": "^0.9.3",
 		"twig/twig": "^3.18",
-		"web-token/jwt-framework": "^3"
+		"web-token/jwt-framework": "^3",
+		"webonyx/graphql-php": "^15.0"
 	},
 	"require-dev": {
 		"cyclonedx/cyclonedx-php-composer": "^6.2",
@@ -123,7 +124,7 @@
 		"optimize-autoloader": true,
 		"sort-packages": true,
 		"platform": {
-			"php": "8.3"
+			"php": "8.1"
 		}
 	}
 }

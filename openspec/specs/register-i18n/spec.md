@@ -88,3 +88,39 @@ Each register MUST define which languages are available and which is the default
 - WHEN the admin configures languages: `nl` (default, required), `en` (optional)
 - THEN only these languages MUST be available for translation in this register
 - AND adding a third language (e.g., `de`) MUST be possible via configuration
+
+### Current Implementation Status
+
+**Not implemented.** No i18n/multi-language content management exists in OpenRegister:
+
+- No `translatable` flag on schema properties
+- No per-field translation storage mechanism
+- No `Accept-Language` header negotiation in API responses
+- No language switcher in the object edit UI
+- No language-specific search indexing
+- No per-register language configuration
+
+The codebase does use Nextcloud's `IL10N` for UI string translations (app labels, button text), but this is separate from data-level i18n for register object content.
+
+### Standards & References
+- EU Single Digital Gateway (SDG) Regulation (EU) 2018/1724 -- requires cross-border service information in at least one EU language beyond the national language
+- W3C Internationalization best practices (https://www.w3.org/International/)
+- HTTP `Accept-Language` header (RFC 9110, Section 12.5.4)
+- HTTP `Content-Language` header (RFC 9110, Section 8.5)
+- BCP 47 / RFC 5646 language tags (e.g., `nl`, `en`, `de`)
+- JSON-LD `@language` context for multilingual linked data
+- Common Ground API design rules (NL GOV) -- recommend language negotiation via Accept-Language
+
+### Specificity Assessment
+- **Specific enough to implement?** Partially -- the API and storage behavior is well-defined, but the data model is underspecified.
+- **Missing/ambiguous:**
+  - No specification for how translations are stored in the database (separate columns? JSON sub-object? separate table?)
+  - No specification for how translations interact with `$ref` properties (are references language-independent?)
+  - No specification for how translations interact with faceting (facet by Dutch values, English values, or both?)
+  - No specification for how translations are handled in CSV/JSON export/import
+  - No specification for translation workflow (e.g., mark fields as "needs translation")
+  - No specification for how translations interact with RBAC (can a user have write access to NL but not EN?)
+- **Open questions:**
+  - Should translations be stored as a JSON sub-object per property (e.g., `{"nl": "...", "en": "..."}`) or as separate object versions?
+  - How should the MagicMapper (magic tables) handle translatable columns?
+  - What is the priority: SDG compliance (NL+EN minimum) or full multi-language support?

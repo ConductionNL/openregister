@@ -1,0 +1,1197 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "BAG Mock Register",
+    "description": "Mock BAG (Basisregistratie Adressen en Gebouwen) register with realistic Dutch address and building data from PDOK",
+    "version": "1.0.0"
+  },
+  "x-openregister": {
+    "type": "mock",
+    "app": "openregister",
+    "openregister": "^v0.2.10",
+    "description": "BAG mock register for development and testing — addresses and buildings aligned with BRP and KVK mock data"
+  },
+  "paths": {},
+  "components": {
+    "registers": {
+      "bag": {
+        "slug": "bag",
+        "title": "BAG (Basisregistratie Adressen en Gebouwen)",
+        "description": "Mock BAG register containing nummeraanduidingen (addresses), verblijfsobjecten (dwelling units), and panden (buildings) for Dutch municipalities. Data is cross-referenced with the BRP and KVK mock registers.",
+        "schemas": [
+          "nummeraanduiding",
+          "verblijfsobject",
+          "pand"
+        ],
+        "folder": "Open Registers/BAG"
+      }
+    },
+    "schemas": {
+      "nummeraanduiding": {
+        "slug": "nummeraanduiding",
+        "title": "Nummeraanduiding",
+        "version": "0.1.0",
+        "published": "2025-01-01T00:00:00+00:00",
+        "summary": "A BAG address designation (house number + postal code combination)",
+        "description": "A nummeraanduiding is the official BAG object that assigns a house number (with optional letter and addition) and postal code to an addressable object. It links a human-readable address to a verblijfsobject, standplaats, or ligplaats via the BAG identification system.",
+        "required": [
+          "identificatie",
+          "huisnummer",
+          "postcode",
+          "openbareRuimteNaam",
+          "woonplaatsNaam",
+          "status",
+          "typeAdresseerbaarObject"
+        ],
+        "properties": {
+          "identificatie": {
+            "type": "string",
+            "description": "BAG identification number (16 digits: GGGGTTNNNNNNNNNN, TT=20 for nummeraanduiding)",
+            "pattern": "^[0-9]{16}$",
+            "minLength": 16,
+            "maxLength": 16,
+            "facetable": true
+          },
+          "huisnummer": {
+            "type": "integer",
+            "description": "House number (1-99999)",
+            "minimum": 1,
+            "maximum": 99999,
+            "facetable": true
+          },
+          "huisletter": {
+            "type": "string",
+            "description": "Optional letter suffix (a-z, A-Z)",
+            "maxLength": 1,
+            "facetable": false
+          },
+          "huisnummertoevoeging": {
+            "type": "string",
+            "description": "Optional house number addition (e.g. 'bis', 'I', 'M')",
+            "maxLength": 4,
+            "facetable": false
+          },
+          "postcode": {
+            "type": "string",
+            "description": "Dutch postal code (4 digits + 2 letters)",
+            "pattern": "^[0-9]{4}[A-Z]{2}$",
+            "minLength": 6,
+            "maxLength": 6,
+            "facetable": true
+          },
+          "status": {
+            "type": "string",
+            "description": "Current BAG status of the nummeraanduiding",
+            "enum": [
+              "Naamgeving uitgegeven",
+              "Naamgeving ingetrokken"
+            ],
+            "facetable": true
+          },
+          "typeAdresseerbaarObject": {
+            "type": "string",
+            "description": "Type of addressable object this nummeraanduiding is assigned to",
+            "enum": [
+              "Verblijfsobject",
+              "Standplaats",
+              "Ligplaats"
+            ],
+            "facetable": true
+          },
+          "openbareRuimteNaam": {
+            "type": "string",
+            "description": "Street name (naam openbare ruimte)",
+            "maxLength": 80,
+            "facetable": true
+          },
+          "woonplaatsNaam": {
+            "type": "string",
+            "description": "City or village name",
+            "maxLength": 80,
+            "facetable": true
+          }
+        },
+        "hardValidation": false,
+        "searchable": true,
+        "authorization": {
+          "read": [
+            "public"
+          ]
+        }
+      },
+      "verblijfsobject": {
+        "slug": "verblijfsobject",
+        "title": "Verblijfsobject",
+        "version": "0.1.0",
+        "published": "2025-01-01T00:00:00+00:00",
+        "summary": "A BAG dwelling unit or usable space within a building",
+        "description": "A verblijfsobject is the smallest usable unit within one or more panden (buildings) that is suitable for residential, office, retail, or other use. It has one or more gebruiksdoelen (usage purposes) and a floor area in square meters.",
+        "required": [
+          "identificatie",
+          "gebruiksdoel",
+          "oppervlakte",
+          "status",
+          "pandIdentificatie",
+          "nummeraanduidingIdentificatie"
+        ],
+        "properties": {
+          "identificatie": {
+            "type": "string",
+            "description": "BAG identification number (16 digits: GGGGTTNNNNNNNNNN, TT=01 for verblijfsobject)",
+            "pattern": "^[0-9]{16}$",
+            "minLength": 16,
+            "maxLength": 16,
+            "facetable": true
+          },
+          "gebruiksdoel": {
+            "type": "array",
+            "description": "One or more usage purposes for this dwelling unit",
+            "items": {
+              "type": "string",
+              "enum": [
+                "woonfunctie",
+                "bijeenkomstfunctie",
+                "celfunctie",
+                "gezondheidszorgfunctie",
+                "industriefunctie",
+                "kantoorfunctie",
+                "logiesfunctie",
+                "onderwijsfunctie",
+                "sportfunctie",
+                "winkelfunctie",
+                "overige gebruiksfunctie"
+              ]
+            },
+            "facetable": true
+          },
+          "oppervlakte": {
+            "type": "integer",
+            "description": "Floor area in square meters",
+            "minimum": 1,
+            "facetable": true
+          },
+          "status": {
+            "type": "string",
+            "description": "Current BAG status of the verblijfsobject",
+            "enum": [
+              "Verblijfsobject in gebruik",
+              "Verblijfsobject in gebruik (niet ingemeten)",
+              "Verblijfsobject gevormd",
+              "Verblijfsobject ingetrokken",
+              "Verblijfsobject buiten gebruik"
+            ],
+            "facetable": true
+          },
+          "pandIdentificatie": {
+            "type": "string",
+            "description": "Reference to the pand (building) this verblijfsobject is in (16 digits, TT=10)",
+            "pattern": "^[0-9]{16}$",
+            "facetable": true
+          },
+          "nummeraanduidingIdentificatie": {
+            "type": "string",
+            "description": "Reference to the nummeraanduiding (address) of this verblijfsobject (16 digits, TT=20)",
+            "pattern": "^[0-9]{16}$",
+            "facetable": true
+          }
+        },
+        "hardValidation": false,
+        "searchable": true,
+        "authorization": {
+          "read": [
+            "public"
+          ]
+        }
+      },
+      "pand": {
+        "slug": "pand",
+        "title": "Pand",
+        "version": "0.1.0",
+        "published": "2025-01-01T00:00:00+00:00",
+        "summary": "A BAG building (pand)",
+        "description": "A pand is the smallest building unit that is architecturally self-contained, accessible from the outside, and functionally independent. Each pand has a construction year and a status indicating its lifecycle state.",
+        "required": [
+          "identificatie",
+          "oorspronkelijkBouwjaar",
+          "status"
+        ],
+        "properties": {
+          "identificatie": {
+            "type": "string",
+            "description": "BAG identification number (16 digits: GGGGTTNNNNNNNNNN, TT=10 for pand)",
+            "pattern": "^[0-9]{16}$",
+            "minLength": 16,
+            "maxLength": 16,
+            "facetable": true
+          },
+          "oorspronkelijkBouwjaar": {
+            "type": "string",
+            "description": "Original construction year (4 digits)",
+            "pattern": "^[0-9]{4}$",
+            "minLength": 4,
+            "maxLength": 4,
+            "facetable": true
+          },
+          "status": {
+            "type": "string",
+            "description": "Current BAG status of the pand",
+            "enum": [
+              "Pand in gebruik",
+              "Pand in gebruik (niet ingemeten)",
+              "Pand gesloopt",
+              "Bouwvergunning verleend",
+              "Niet gerealiseerd pand",
+              "Pand buiten gebruik",
+              "Bouw gestart",
+              "Sloopvergunning verleend"
+            ],
+            "facetable": true
+          }
+        },
+        "hardValidation": false,
+        "searchable": true,
+        "authorization": {
+          "read": [
+            "public"
+          ]
+        }
+      }
+    },
+    "objects": [
+      {
+        "@self": {
+          "register": "bag",
+          "schema": "nummeraanduiding",
+          "slug": "0599200000219678"
+        },
+        "identificatie": "0599200000219678",
+        "huisnummer": 31,
+        "postcode": "3077AW",
+        "status": "Naamgeving uitgegeven",
+        "typeAdresseerbaarObject": "Verblijfsobject",
+        "openbareRuimteNaam": "Boterdiep",
+        "woonplaatsNaam": "Rotterdam"
+      },
+      {
+        "@self": {
+          "register": "bag",
+          "schema": "nummeraanduiding",
+          "slug": "0363200000100100"
+        },
+        "identificatie": "0363200000100100",
+        "huisnummer": 100,
+        "postcode": "1015AA",
+        "status": "Naamgeving uitgegeven",
+        "typeAdresseerbaarObject": "Verblijfsobject",
+        "openbareRuimteNaam": "Keizersgracht",
+        "woonplaatsNaam": "Amsterdam"
+      },
+      {
+        "@self": {
+          "register": "bag",
+          "schema": "nummeraanduiding",
+          "slug": "0518200000610965"
+        },
+        "identificatie": "0518200000610965",
+        "huisnummer": 1,
+        "postcode": "2513AH",
+        "status": "Naamgeving uitgegeven",
+        "typeAdresseerbaarObject": "Verblijfsobject",
+        "openbareRuimteNaam": "Buitenhof",
+        "woonplaatsNaam": "Den Haag"
+      },
+      {
+        "@self": {
+          "register": "bag",
+          "schema": "nummeraanduiding",
+          "slug": "0344200000050050"
+        },
+        "identificatie": "0344200000050050",
+        "huisnummer": 50,
+        "postcode": "3511AR",
+        "status": "Naamgeving uitgegeven",
+        "typeAdresseerbaarObject": "Verblijfsobject",
+        "openbareRuimteNaam": "Oude Gracht",
+        "woonplaatsNaam": "Utrecht"
+      },
+      {
+        "@self": {
+          "register": "bag",
+          "schema": "nummeraanduiding",
+          "slug": "0014200000001001"
+        },
+        "identificatie": "0014200000001001",
+        "huisnummer": 1,
+        "postcode": "9711LV",
+        "status": "Naamgeving uitgegeven",
+        "typeAdresseerbaarObject": "Verblijfsobject",
+        "openbareRuimteNaam": "Grote Markt",
+        "woonplaatsNaam": "Groningen"
+      },
+      {
+        "@self": {
+          "register": "bag",
+          "schema": "nummeraanduiding",
+          "slug": "0034200000001001"
+        },
+        "identificatie": "0034200000001001",
+        "huisnummer": 1,
+        "postcode": "1315HR",
+        "status": "Naamgeving uitgegeven",
+        "typeAdresseerbaarObject": "Verblijfsobject",
+        "openbareRuimteNaam": "Stadshuisplein",
+        "woonplaatsNaam": "Almere"
+      },
+      {
+        "@self": {
+          "register": "bag",
+          "schema": "nummeraanduiding",
+          "slug": "0153200000015015"
+        },
+        "identificatie": "0153200000015015",
+        "huisnummer": 15,
+        "postcode": "7511GD",
+        "status": "Naamgeving uitgegeven",
+        "typeAdresseerbaarObject": "Verblijfsobject",
+        "openbareRuimteNaam": "Marktplein",
+        "woonplaatsNaam": "Enschede"
+      },
+      {
+        "@self": {
+          "register": "bag",
+          "schema": "nummeraanduiding",
+          "slug": "0935200000046046"
+        },
+        "identificatie": "0935200000046046",
+        "huisnummer": 46,
+        "postcode": "6211LE",
+        "status": "Naamgeving uitgegeven",
+        "typeAdresseerbaarObject": "Verblijfsobject",
+        "openbareRuimteNaam": "Vrijthof",
+        "woonplaatsNaam": "Maastricht"
+      },
+      {
+        "@self": {
+          "register": "bag",
+          "schema": "nummeraanduiding",
+          "slug": "0363200000017017"
+        },
+        "identificatie": "0363200000017017",
+        "huisnummer": 17,
+        "huisnummertoevoeging": "M",
+        "postcode": "1034WL",
+        "status": "Naamgeving uitgegeven",
+        "typeAdresseerbaarObject": "Verblijfsobject",
+        "openbareRuimteNaam": "Abebe Bikilalaan",
+        "woonplaatsNaam": "Amsterdam"
+      },
+      {
+        "@self": {
+          "register": "bag",
+          "schema": "nummeraanduiding",
+          "slug": "0363200000200200"
+        },
+        "identificatie": "0363200000200200",
+        "huisnummer": 200,
+        "postcode": "1016GS",
+        "status": "Naamgeving uitgegeven",
+        "typeAdresseerbaarObject": "Verblijfsobject",
+        "openbareRuimteNaam": "Prinsengracht",
+        "woonplaatsNaam": "Amsterdam"
+      },
+      {
+        "@self": {
+          "register": "bag",
+          "schema": "nummeraanduiding",
+          "slug": "0363200000500500"
+        },
+        "identificatie": "0363200000500500",
+        "huisnummer": 500,
+        "postcode": "1017CB",
+        "status": "Naamgeving uitgegeven",
+        "typeAdresseerbaarObject": "Verblijfsobject",
+        "openbareRuimteNaam": "Herengracht",
+        "woonplaatsNaam": "Amsterdam"
+      },
+      {
+        "@self": {
+          "register": "bag",
+          "schema": "nummeraanduiding",
+          "slug": "0599200000300300"
+        },
+        "identificatie": "0599200000300300",
+        "huisnummer": 45,
+        "postcode": "3011HB",
+        "status": "Naamgeving uitgegeven",
+        "typeAdresseerbaarObject": "Verblijfsobject",
+        "openbareRuimteNaam": "Coolsingel",
+        "woonplaatsNaam": "Rotterdam"
+      },
+      {
+        "@self": {
+          "register": "bag",
+          "schema": "nummeraanduiding",
+          "slug": "0599200000300301"
+        },
+        "identificatie": "0599200000300301",
+        "huisnummer": 120,
+        "postcode": "3012GN",
+        "status": "Naamgeving uitgegeven",
+        "typeAdresseerbaarObject": "Verblijfsobject",
+        "openbareRuimteNaam": "Witte de Withstraat",
+        "woonplaatsNaam": "Rotterdam"
+      },
+      {
+        "@self": {
+          "register": "bag",
+          "schema": "nummeraanduiding",
+          "slug": "0363200000600600"
+        },
+        "identificatie": "0363200000600600",
+        "huisnummer": 1,
+        "postcode": "1012JS",
+        "status": "Naamgeving uitgegeven",
+        "typeAdresseerbaarObject": "Verblijfsobject",
+        "openbareRuimteNaam": "Dam",
+        "woonplaatsNaam": "Amsterdam"
+      },
+      {
+        "@self": {
+          "register": "bag",
+          "schema": "nummeraanduiding",
+          "slug": "0363200000600601"
+        },
+        "identificatie": "0363200000600601",
+        "huisnummer": 40,
+        "postcode": "1071DJ",
+        "status": "Naamgeving uitgegeven",
+        "typeAdresseerbaarObject": "Verblijfsobject",
+        "openbareRuimteNaam": "Museumplein",
+        "woonplaatsNaam": "Amsterdam"
+      },
+      {
+        "@self": {
+          "register": "bag",
+          "schema": "nummeraanduiding",
+          "slug": "0363200000600602"
+        },
+        "identificatie": "0363200000600602",
+        "huisnummer": 263,
+        "postcode": "1016DT",
+        "status": "Naamgeving uitgegeven",
+        "typeAdresseerbaarObject": "Verblijfsobject",
+        "openbareRuimteNaam": "Prinsengracht",
+        "woonplaatsNaam": "Amsterdam"
+      },
+      {
+        "@self": {
+          "register": "bag",
+          "schema": "nummeraanduiding",
+          "slug": "0518200000700700"
+        },
+        "identificatie": "0518200000700700",
+        "huisnummer": 72,
+        "postcode": "2595AC",
+        "status": "Naamgeving uitgegeven",
+        "typeAdresseerbaarObject": "Verblijfsobject",
+        "openbareRuimteNaam": "Bezuidenhoutseweg",
+        "woonplaatsNaam": "Den Haag"
+      },
+      {
+        "@self": {
+          "register": "bag",
+          "schema": "nummeraanduiding",
+          "slug": "0518200000700701"
+        },
+        "identificatie": "0518200000700701",
+        "huisnummer": 11,
+        "postcode": "2511CK",
+        "status": "Naamgeving uitgegeven",
+        "typeAdresseerbaarObject": "Verblijfsobject",
+        "openbareRuimteNaam": "Lange Voorhout",
+        "woonplaatsNaam": "Den Haag"
+      },
+      {
+        "@self": {
+          "register": "bag",
+          "schema": "nummeraanduiding",
+          "slug": "0344200000060060"
+        },
+        "identificatie": "0344200000060060",
+        "huisnummer": 3,
+        "postcode": "3512JC",
+        "status": "Naamgeving uitgegeven",
+        "typeAdresseerbaarObject": "Verblijfsobject",
+        "openbareRuimteNaam": "Domplein",
+        "woonplaatsNaam": "Utrecht"
+      },
+      {
+        "@self": {
+          "register": "bag",
+          "schema": "nummeraanduiding",
+          "slug": "0344200000060061"
+        },
+        "identificatie": "0344200000060061",
+        "huisnummer": 215,
+        "postcode": "3511CE",
+        "status": "Naamgeving uitgegeven",
+        "typeAdresseerbaarObject": "Verblijfsobject",
+        "openbareRuimteNaam": "Oudegracht",
+        "woonplaatsNaam": "Utrecht"
+      },
+      {
+        "@self": {
+          "register": "bag",
+          "schema": "nummeraanduiding",
+          "slug": "0014200000002002"
+        },
+        "identificatie": "0014200000002002",
+        "huisnummer": 25,
+        "postcode": "9712CP",
+        "status": "Naamgeving uitgegeven",
+        "typeAdresseerbaarObject": "Verblijfsobject",
+        "openbareRuimteNaam": "Oosterstraat",
+        "woonplaatsNaam": "Groningen"
+      },
+      {
+        "@self": {
+          "register": "bag",
+          "schema": "nummeraanduiding",
+          "slug": "0014200000002003"
+        },
+        "identificatie": "0014200000002003",
+        "huisnummer": 73,
+        "postcode": "9718JB",
+        "status": "Naamgeving uitgegeven",
+        "typeAdresseerbaarObject": "Verblijfsobject",
+        "openbareRuimteNaam": "Herestraat",
+        "woonplaatsNaam": "Groningen"
+      },
+      {
+        "@self": {
+          "register": "bag",
+          "schema": "nummeraanduiding",
+          "slug": "0034200000002002"
+        },
+        "identificatie": "0034200000002002",
+        "huisnummer": 88,
+        "postcode": "1334BK",
+        "status": "Naamgeving uitgegeven",
+        "typeAdresseerbaarObject": "Verblijfsobject",
+        "openbareRuimteNaam": "Markerkant",
+        "woonplaatsNaam": "Almere"
+      },
+      {
+        "@self": {
+          "register": "bag",
+          "schema": "nummeraanduiding",
+          "slug": "0153200000016016"
+        },
+        "identificatie": "0153200000016016",
+        "huisnummer": 3,
+        "postcode": "7511JB",
+        "status": "Naamgeving uitgegeven",
+        "typeAdresseerbaarObject": "Verblijfsobject",
+        "openbareRuimteNaam": "Oude Markt",
+        "woonplaatsNaam": "Enschede"
+      },
+      {
+        "@self": {
+          "register": "bag",
+          "schema": "nummeraanduiding",
+          "slug": "0935200000047047"
+        },
+        "identificatie": "0935200000047047",
+        "huisnummer": 10,
+        "postcode": "6211SJ",
+        "status": "Naamgeving uitgegeven",
+        "typeAdresseerbaarObject": "Verblijfsobject",
+        "openbareRuimteNaam": "Markt",
+        "woonplaatsNaam": "Maastricht"
+      },
+      {
+        "@self": {
+          "register": "bag",
+          "schema": "nummeraanduiding",
+          "slug": "0599200000300302"
+        },
+        "identificatie": "0599200000300302",
+        "huisnummer": 20,
+        "postcode": "3011AD",
+        "status": "Naamgeving uitgegeven",
+        "typeAdresseerbaarObject": "Verblijfsobject",
+        "openbareRuimteNaam": "Meent",
+        "woonplaatsNaam": "Rotterdam"
+      },
+      {
+        "@self": {
+          "register": "bag",
+          "schema": "nummeraanduiding",
+          "slug": "0363200000600603"
+        },
+        "identificatie": "0363200000600603",
+        "huisnummer": 1,
+        "postcode": "1018WB",
+        "status": "Naamgeving uitgegeven",
+        "typeAdresseerbaarObject": "Verblijfsobject",
+        "openbareRuimteNaam": "Plantage Middenlaan",
+        "woonplaatsNaam": "Amsterdam"
+      },
+      {
+        "@self": {
+          "register": "bag",
+          "schema": "nummeraanduiding",
+          "slug": "0518200000700702"
+        },
+        "identificatie": "0518200000700702",
+        "huisnummer": 43,
+        "postcode": "2514JE",
+        "status": "Naamgeving uitgegeven",
+        "typeAdresseerbaarObject": "Verblijfsobject",
+        "openbareRuimteNaam": "Noordeinde",
+        "woonplaatsNaam": "Den Haag"
+      },
+      {
+        "@self": {
+          "register": "bag",
+          "schema": "nummeraanduiding",
+          "slug": "0344200000060062"
+        },
+        "identificatie": "0344200000060062",
+        "huisnummer": 1,
+        "postcode": "3512AK",
+        "status": "Naamgeving uitgegeven",
+        "typeAdresseerbaarObject": "Verblijfsobject",
+        "openbareRuimteNaam": "Janskerkhof",
+        "woonplaatsNaam": "Utrecht"
+      },
+      {
+        "@self": {
+          "register": "bag",
+          "schema": "nummeraanduiding",
+          "slug": "0363200000600604"
+        },
+        "identificatie": "0363200000600604",
+        "huisnummer": 75,
+        "postcode": "1072AK",
+        "status": "Naamgeving uitgegeven",
+        "typeAdresseerbaarObject": "Verblijfsobject",
+        "openbareRuimteNaam": "Ferdinand Bolstraat",
+        "woonplaatsNaam": "Amsterdam"
+      },
+      {
+        "@self": {
+          "register": "bag",
+          "schema": "nummeraanduiding",
+          "slug": "0935200000047048"
+        },
+        "identificatie": "0935200000047048",
+        "huisnummer": 6,
+        "huisletter": "a",
+        "postcode": "6221CX",
+        "status": "Naamgeving uitgegeven",
+        "typeAdresseerbaarObject": "Verblijfsobject",
+        "openbareRuimteNaam": "Wycker Brugstraat",
+        "woonplaatsNaam": "Maastricht"
+      },
+      {
+        "@self": {
+          "register": "bag",
+          "schema": "nummeraanduiding",
+          "slug": "0599200000300303"
+        },
+        "identificatie": "0599200000300303",
+        "huisnummer": 550,
+        "huisletter": "a",
+        "postcode": "3072AD",
+        "status": "Naamgeving uitgegeven",
+        "typeAdresseerbaarObject": "Verblijfsobject",
+        "openbareRuimteNaam": "Beijerlandselaan",
+        "woonplaatsNaam": "Rotterdam"
+      },
+      {
+        "@self": {
+          "register": "bag",
+          "schema": "verblijfsobject",
+          "slug": "0599010000208579"
+        },
+        "identificatie": "0599010000208579",
+        "gebruiksdoel": ["woonfunctie"],
+        "oppervlakte": 85,
+        "status": "Verblijfsobject in gebruik",
+        "pandIdentificatie": "0599100000300001",
+        "nummeraanduidingIdentificatie": "0599200000219678"
+      },
+      {
+        "@self": {
+          "register": "bag",
+          "schema": "verblijfsobject",
+          "slug": "0363010000100100"
+        },
+        "identificatie": "0363010000100100",
+        "gebruiksdoel": ["woonfunctie"],
+        "oppervlakte": 120,
+        "status": "Verblijfsobject in gebruik",
+        "pandIdentificatie": "0363100000100001",
+        "nummeraanduidingIdentificatie": "0363200000100100"
+      },
+      {
+        "@self": {
+          "register": "bag",
+          "schema": "verblijfsobject",
+          "slug": "0518010000610966"
+        },
+        "identificatie": "0518010000610966",
+        "gebruiksdoel": ["woonfunctie"],
+        "oppervlakte": 95,
+        "status": "Verblijfsobject in gebruik",
+        "pandIdentificatie": "0518100000600001",
+        "nummeraanduidingIdentificatie": "0518200000610965"
+      },
+      {
+        "@self": {
+          "register": "bag",
+          "schema": "verblijfsobject",
+          "slug": "0344010000050050"
+        },
+        "identificatie": "0344010000050050",
+        "gebruiksdoel": ["woonfunctie"],
+        "oppervlakte": 78,
+        "status": "Verblijfsobject in gebruik",
+        "pandIdentificatie": "0344100000050001",
+        "nummeraanduidingIdentificatie": "0344200000050050"
+      },
+      {
+        "@self": {
+          "register": "bag",
+          "schema": "verblijfsobject",
+          "slug": "0014010000001001"
+        },
+        "identificatie": "0014010000001001",
+        "gebruiksdoel": ["woonfunctie"],
+        "oppervlakte": 110,
+        "status": "Verblijfsobject in gebruik",
+        "pandIdentificatie": "0014100000001001",
+        "nummeraanduidingIdentificatie": "0014200000001001"
+      },
+      {
+        "@self": {
+          "register": "bag",
+          "schema": "verblijfsobject",
+          "slug": "0034010000001001"
+        },
+        "identificatie": "0034010000001001",
+        "gebruiksdoel": ["woonfunctie"],
+        "oppervlakte": 92,
+        "status": "Verblijfsobject in gebruik",
+        "pandIdentificatie": "0034100000001001",
+        "nummeraanduidingIdentificatie": "0034200000001001"
+      },
+      {
+        "@self": {
+          "register": "bag",
+          "schema": "verblijfsobject",
+          "slug": "0153010000015015"
+        },
+        "identificatie": "0153010000015015",
+        "gebruiksdoel": ["woonfunctie"],
+        "oppervlakte": 68,
+        "status": "Verblijfsobject in gebruik",
+        "pandIdentificatie": "0153100000015001",
+        "nummeraanduidingIdentificatie": "0153200000015015"
+      },
+      {
+        "@self": {
+          "register": "bag",
+          "schema": "verblijfsobject",
+          "slug": "0935010000046046"
+        },
+        "identificatie": "0935010000046046",
+        "gebruiksdoel": ["woonfunctie"],
+        "oppervlakte": 105,
+        "status": "Verblijfsobject in gebruik",
+        "pandIdentificatie": "0935100000046001",
+        "nummeraanduidingIdentificatie": "0935200000046046"
+      },
+      {
+        "@self": {
+          "register": "bag",
+          "schema": "verblijfsobject",
+          "slug": "0363010000017017"
+        },
+        "identificatie": "0363010000017017",
+        "gebruiksdoel": ["kantoorfunctie"],
+        "oppervlakte": 250,
+        "status": "Verblijfsobject in gebruik",
+        "pandIdentificatie": "0363100000017001",
+        "nummeraanduidingIdentificatie": "0363200000017017"
+      },
+      {
+        "@self": {
+          "register": "bag",
+          "schema": "verblijfsobject",
+          "slug": "0363010000200200"
+        },
+        "identificatie": "0363010000200200",
+        "gebruiksdoel": ["kantoorfunctie", "winkelfunctie"],
+        "oppervlakte": 180,
+        "status": "Verblijfsobject in gebruik",
+        "pandIdentificatie": "0363100000200001",
+        "nummeraanduidingIdentificatie": "0363200000200200"
+      },
+      {
+        "@self": {
+          "register": "bag",
+          "schema": "verblijfsobject",
+          "slug": "0363010000500500"
+        },
+        "identificatie": "0363010000500500",
+        "gebruiksdoel": ["kantoorfunctie"],
+        "oppervlakte": 320,
+        "status": "Verblijfsobject in gebruik",
+        "pandIdentificatie": "0363100000500001",
+        "nummeraanduidingIdentificatie": "0363200000500500"
+      },
+      {
+        "@self": {
+          "register": "bag",
+          "schema": "verblijfsobject",
+          "slug": "0599010000300300"
+        },
+        "identificatie": "0599010000300300",
+        "gebruiksdoel": ["kantoorfunctie", "bijeenkomstfunctie"],
+        "oppervlakte": 4500,
+        "status": "Verblijfsobject in gebruik",
+        "pandIdentificatie": "0599100000300002",
+        "nummeraanduidingIdentificatie": "0599200000300300"
+      },
+      {
+        "@self": {
+          "register": "bag",
+          "schema": "verblijfsobject",
+          "slug": "0599010000300301"
+        },
+        "identificatie": "0599010000300301",
+        "gebruiksdoel": ["winkelfunctie", "logiesfunctie"],
+        "oppervlakte": 65,
+        "status": "Verblijfsobject in gebruik",
+        "pandIdentificatie": "0599100000300003",
+        "nummeraanduidingIdentificatie": "0599200000300301"
+      },
+      {
+        "@self": {
+          "register": "bag",
+          "schema": "verblijfsobject",
+          "slug": "0363010000600600"
+        },
+        "identificatie": "0363010000600600",
+        "gebruiksdoel": ["winkelfunctie", "kantoorfunctie"],
+        "oppervlakte": 2200,
+        "status": "Verblijfsobject in gebruik",
+        "pandIdentificatie": "0363100000600001",
+        "nummeraanduidingIdentificatie": "0363200000600600"
+      },
+      {
+        "@self": {
+          "register": "bag",
+          "schema": "verblijfsobject",
+          "slug": "0363010000600601"
+        },
+        "identificatie": "0363010000600601",
+        "gebruiksdoel": ["bijeenkomstfunctie"],
+        "oppervlakte": 8000,
+        "status": "Verblijfsobject in gebruik",
+        "pandIdentificatie": "0363100000600002",
+        "nummeraanduidingIdentificatie": "0363200000600601"
+      },
+      {
+        "@self": {
+          "register": "bag",
+          "schema": "verblijfsobject",
+          "slug": "0363010000600602"
+        },
+        "identificatie": "0363010000600602",
+        "gebruiksdoel": ["bijeenkomstfunctie", "woonfunctie"],
+        "oppervlakte": 450,
+        "status": "Verblijfsobject in gebruik",
+        "pandIdentificatie": "0363100000600003",
+        "nummeraanduidingIdentificatie": "0363200000600602"
+      },
+      {
+        "@self": {
+          "register": "bag",
+          "schema": "verblijfsobject",
+          "slug": "0518010000700700"
+        },
+        "identificatie": "0518010000700700",
+        "gebruiksdoel": ["kantoorfunctie"],
+        "oppervlakte": 5500,
+        "status": "Verblijfsobject in gebruik",
+        "pandIdentificatie": "0518100000700001",
+        "nummeraanduidingIdentificatie": "0518200000700700"
+      },
+      {
+        "@self": {
+          "register": "bag",
+          "schema": "verblijfsobject",
+          "slug": "0344010000060060"
+        },
+        "identificatie": "0344010000060060",
+        "gebruiksdoel": ["bijeenkomstfunctie"],
+        "oppervlakte": 3200,
+        "status": "Verblijfsobject in gebruik",
+        "pandIdentificatie": "0344100000060001",
+        "nummeraanduidingIdentificatie": "0344200000060060"
+      },
+      {
+        "@self": {
+          "register": "bag",
+          "schema": "verblijfsobject",
+          "slug": "0014010000002002"
+        },
+        "identificatie": "0014010000002002",
+        "gebruiksdoel": ["winkelfunctie"],
+        "oppervlakte": 140,
+        "status": "Verblijfsobject in gebruik",
+        "pandIdentificatie": "0014100000002001",
+        "nummeraanduidingIdentificatie": "0014200000002002"
+      },
+      {
+        "@self": {
+          "register": "bag",
+          "schema": "verblijfsobject",
+          "slug": "0363010000600603"
+        },
+        "identificatie": "0363010000600603",
+        "gebruiksdoel": ["gezondheidszorgfunctie"],
+        "oppervlakte": 1800,
+        "status": "Verblijfsobject in gebruik",
+        "pandIdentificatie": "0363100000600004",
+        "nummeraanduidingIdentificatie": "0363200000600603"
+      },
+      {
+        "@self": {
+          "register": "bag",
+          "schema": "verblijfsobject",
+          "slug": "0935010000047047"
+        },
+        "identificatie": "0935010000047047",
+        "gebruiksdoel": ["winkelfunctie", "logiesfunctie"],
+        "oppervlakte": 200,
+        "status": "Verblijfsobject in gebruik",
+        "pandIdentificatie": "0935100000047001",
+        "nummeraanduidingIdentificatie": "0935200000047047"
+      },
+      {
+        "@self": {
+          "register": "bag",
+          "schema": "pand",
+          "slug": "0599100000300001"
+        },
+        "identificatie": "0599100000300001",
+        "oorspronkelijkBouwjaar": "1925",
+        "status": "Pand in gebruik"
+      },
+      {
+        "@self": {
+          "register": "bag",
+          "schema": "pand",
+          "slug": "0363100000100001"
+        },
+        "identificatie": "0363100000100001",
+        "oorspronkelijkBouwjaar": "1680",
+        "status": "Pand in gebruik"
+      },
+      {
+        "@self": {
+          "register": "bag",
+          "schema": "pand",
+          "slug": "0518100000600001"
+        },
+        "identificatie": "0518100000600001",
+        "oorspronkelijkBouwjaar": "1750",
+        "status": "Pand in gebruik"
+      },
+      {
+        "@self": {
+          "register": "bag",
+          "schema": "pand",
+          "slug": "0344100000050001"
+        },
+        "identificatie": "0344100000050001",
+        "oorspronkelijkBouwjaar": "1620",
+        "status": "Pand in gebruik"
+      },
+      {
+        "@self": {
+          "register": "bag",
+          "schema": "pand",
+          "slug": "0014100000001001"
+        },
+        "identificatie": "0014100000001001",
+        "oorspronkelijkBouwjaar": "1880",
+        "status": "Pand in gebruik"
+      },
+      {
+        "@self": {
+          "register": "bag",
+          "schema": "pand",
+          "slug": "0034100000001001"
+        },
+        "identificatie": "0034100000001001",
+        "oorspronkelijkBouwjaar": "1998",
+        "status": "Pand in gebruik"
+      },
+      {
+        "@self": {
+          "register": "bag",
+          "schema": "pand",
+          "slug": "0153100000015001"
+        },
+        "identificatie": "0153100000015001",
+        "oorspronkelijkBouwjaar": "1910",
+        "status": "Pand in gebruik"
+      },
+      {
+        "@self": {
+          "register": "bag",
+          "schema": "pand",
+          "slug": "0935100000046001"
+        },
+        "identificatie": "0935100000046001",
+        "oorspronkelijkBouwjaar": "1760",
+        "status": "Pand in gebruik"
+      },
+      {
+        "@self": {
+          "register": "bag",
+          "schema": "pand",
+          "slug": "0363100000017001"
+        },
+        "identificatie": "0363100000017001",
+        "oorspronkelijkBouwjaar": "2005",
+        "status": "Pand in gebruik"
+      },
+      {
+        "@self": {
+          "register": "bag",
+          "schema": "pand",
+          "slug": "0363100000200001"
+        },
+        "identificatie": "0363100000200001",
+        "oorspronkelijkBouwjaar": "1720",
+        "status": "Pand in gebruik"
+      },
+      {
+        "@self": {
+          "register": "bag",
+          "schema": "pand",
+          "slug": "0363100000500001"
+        },
+        "identificatie": "0363100000500001",
+        "oorspronkelijkBouwjaar": "1665",
+        "status": "Pand in gebruik"
+      },
+      {
+        "@self": {
+          "register": "bag",
+          "schema": "pand",
+          "slug": "0599100000300002"
+        },
+        "identificatie": "0599100000300002",
+        "oorspronkelijkBouwjaar": "1940",
+        "status": "Pand in gebruik"
+      },
+      {
+        "@self": {
+          "register": "bag",
+          "schema": "pand",
+          "slug": "0599100000300003"
+        },
+        "identificatie": "0599100000300003",
+        "oorspronkelijkBouwjaar": "1895",
+        "status": "Pand in gebruik"
+      },
+      {
+        "@self": {
+          "register": "bag",
+          "schema": "pand",
+          "slug": "0363100000600001"
+        },
+        "identificatie": "0363100000600001",
+        "oorspronkelijkBouwjaar": "1650",
+        "status": "Pand in gebruik"
+      },
+      {
+        "@self": {
+          "register": "bag",
+          "schema": "pand",
+          "slug": "0363100000600002"
+        },
+        "identificatie": "0363100000600002",
+        "oorspronkelijkBouwjaar": "1885",
+        "status": "Pand in gebruik"
+      },
+      {
+        "@self": {
+          "register": "bag",
+          "schema": "pand",
+          "slug": "0363100000600003"
+        },
+        "identificatie": "0363100000600003",
+        "oorspronkelijkBouwjaar": "1740",
+        "status": "Pand in gebruik"
+      },
+      {
+        "@self": {
+          "register": "bag",
+          "schema": "pand",
+          "slug": "0518100000700001"
+        },
+        "identificatie": "0518100000700001",
+        "oorspronkelijkBouwjaar": "1978",
+        "status": "Pand in gebruik"
+      },
+      {
+        "@self": {
+          "register": "bag",
+          "schema": "pand",
+          "slug": "0344100000060001"
+        },
+        "identificatie": "0344100000060001",
+        "oorspronkelijkBouwjaar": "1600",
+        "status": "Pand in gebruik"
+      },
+      {
+        "@self": {
+          "register": "bag",
+          "schema": "pand",
+          "slug": "0014100000002001"
+        },
+        "identificatie": "0014100000002001",
+        "oorspronkelijkBouwjaar": "1960",
+        "status": "Pand in gebruik"
+      },
+      {
+        "@self": {
+          "register": "bag",
+          "schema": "pand",
+          "slug": "0363100000600004"
+        },
+        "identificatie": "0363100000600004",
+        "oorspronkelijkBouwjaar": "2020",
+        "status": "Pand in gebruik"
+      },
+      {
+        "@self": {
+          "register": "bag",
+          "schema": "pand",
+          "slug": "0935100000047001"
+        },
+        "identificatie": "0935100000047001",
+        "oorspronkelijkBouwjaar": "1830",
+        "status": "Pand in gebruik"
+      }
+    ]
+  }
+}

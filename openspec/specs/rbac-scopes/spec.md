@@ -170,3 +170,54 @@ Example: restricting a confidential property to specific groups:
 ### Query-Time Filtering
 
 OpenRegister's `MagicRbacHandler` automatically filters query results at the database level based on the authenticated user's group memberships. This ensures that API list endpoints only return objects the consumer is authorized to see — equivalent to ZGW's filtered listing behavior based on autorisaties.
+
+### Current Implementation Status
+- **Fully implemented — OAS generation with RBAC scopes**: `OasService` (`lib/Service/OasService.php`) extracts RBAC groups from schema property authorization blocks (line ~210) and generates OAuth2 scopes in `components.securitySchemes.oauth2.flows.authorizationCode.scopes`. The `extractGroupFromRule()` method (line ~373) handles rule parsing.
+- **Fully implemented — per-operation security requirements**: `OasService::createOas()` applies `security` requirements at the operation level (GET uses read groups, POST/PUT/DELETE use update groups) based on schema authorization rules.
+- **Fully implemented — base template**: `BaseOas.json` (`lib/Service/Resources/BaseOas.json`) provides the foundation with `basicAuth` and `oauth2` security schemes.
+- **Fully implemented — RBAC infrastructure**: `PermissionHandler` (`lib/Service/Object/PermissionHandler.php`) handles schema-level authorization. `PropertyRbacHandler` (`lib/Service/PropertyRbacHandler.php`) handles property-level authorization. `MagicRbacHandler` (`lib/Db/MagicMapper/MagicRbacHandler.php`) filters query results at the database level.
+- **Fully implemented — consumer entity**: `Consumer` (`lib/Db/Consumer.php`) maps API consumers to Nextcloud users with JWT, API key, and other authentication methods.
+- **Fully implemented — authorization service**: `AuthorizationService` (`lib/Service/AuthorizationService.php`) orchestrates authentication and authorization.
+- **Fully implemented — condition matching**: `ConditionMatcher` (`lib/Service/ConditionMatcher.php`) evaluates conditional authorization rules with organisation matching.
+
+### Standards & References
+- OAuth 2.0 Authorization Code Flow (RFC 6749) for scope-based access control
+- OpenAPI Specification 3.1.0 for security scheme definitions
+- ZGW Autorisaties API (VNG) for Dutch government authorization patterns
+- ZGW Autorisaties Componentencatalogus for scope naming conventions
+- Nextcloud Group-based access control for underlying authorization model
+
+### Specificity Assessment
+- **Highly specific and fully implemented**: The spec provides detailed scenarios for group extraction, OAuth2 scope mapping, per-operation security, fallback behavior, and ZGW mapping.
+- **Well-documented ZGW mapping**: The spec includes a comprehensive mapping guide from ZGW autorisatie concepts to OpenRegister equivalents.
+- **No ambiguity**: Requirements are testable with clear expected outputs for each scenario.
+- **No open questions**: The implementation matches the specification closely.
+
+### Requirement: GraphQL operations MUST enforce schema-level RBAC identically to REST
+The PermissionHandler MUST be called for all GraphQL queries and mutations with the same action mapping as REST endpoints.
+
+#### Scenario: GraphQL read maps to REST read authorization
+- **WHEN** a GraphQL query requests data from schema `vertrouwelijk`
+- **THEN** `PermissionHandler::checkPermission()` MUST be called with action `read`
+- **AND** the same `authorization.read` groups MUST be evaluated as for `GET /api/objects/{register}/{schema}`
+
+#### Scenario: GraphQL mutations map to corresponding CRUD actions
+- **WHEN** a `createMelding` mutation is executed
+- **THEN** `PermissionHandler::checkPermission()` MUST be called with action `create`
+- **AND** `updateMelding` MUST check `update` and `deleteMelding` MUST check `delete`
+
+#### Scenario: Conditional authorization with organisation matching in GraphQL
+- **WHEN** schema `dossiers` has authorization `{ "read": [{ "group": "behandelaars", "match": { "_organisation": "$organisation" } }] }`
+- **AND** user queries dossiers from a different organisation
+- **THEN** those dossiers MUST be silently filtered out by `PermissionHandler::evaluateMatchConditions()`
+- **AND** no GraphQL error MUST be raised (consistent with REST behavior)
+
+#### Scenario: Admin bypass in GraphQL
+- **WHEN** a user in the `admin` group queries any schema via GraphQL
+- **THEN** all RBAC checks MUST be bypassed matching PermissionHandler's admin override
+
+#### Scenario: Cross-schema authorization in nested GraphQL queries
+- **WHEN** user can read `orders` but not `klanten`
+- **AND** they query `order { title klant { naam } }`
+- **THEN** `klant` MUST return `null` with a partial error at `["order", "klant"]` with `extensions.code: "FORBIDDEN"`
+- **AND** the `title` field MUST still return data (partial success)

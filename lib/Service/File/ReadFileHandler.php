@@ -63,8 +63,7 @@ class ReadFileHandler
      * @param FolderManagementHandler $folderMgmtHandler    Folder management handler.
      * @param FileValidationHandler   $fileValidHandler     File validation handler.
      * @param FileOwnershipHandler    $fileOwnershipHandler File ownership handler.
-     * @param MagicMapper      $objectEntityMapper   Object entity mapper.
-     * @param MagicMapper     $objectMapper  Object mapper for magic table operations.
+     * @param MagicMapper             $objectMapper         Object mapper for magic table operations.
      * @param LoggerInterface         $logger               Logger for logging operations.
      */
     public function __construct(
@@ -72,7 +71,6 @@ class ReadFileHandler
         private readonly FolderManagementHandler $folderMgmtHandler,
         private readonly FileValidationHandler $fileValidHandler,
         private readonly FileOwnershipHandler $fileOwnershipHandler,
-        private readonly MagicMapper $objectEntityMapper,
         private readonly MagicMapper $objectMapper,
         private readonly LoggerInterface $logger
     ) {
@@ -127,7 +125,7 @@ class ReadFileHandler
 
         // If string ID provided for object, try to find the object entity.
         if (is_string($object) === true && empty($object) === false) {
-            $object = $this->objectEntityMapper->find($object);
+            $object = $this->objectMapper->find($object);
         }
 
         // Use the new ID-based folder approach.
@@ -256,7 +254,7 @@ class ReadFileHandler
         // If string ID provided, try to find the object entity.
         // Use findAcrossAllSources to search across all magic tables.
         if (is_string($object) === true) {
-            $result = $this->unifiedObjectMapper->findAcrossAllSources(
+            $result = $this->objectMapper->findAcrossAllSources(
                 identifier: $object,
                 _multitenancy: false,
                 _rbac: false

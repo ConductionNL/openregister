@@ -96,3 +96,41 @@ Read operations on schemas marked as containing sensitive data MUST also produce
 - WHEN user `medewerker-1` reads object `inwoner-123`
 - THEN an audit entry MUST be created with action `read`
 - AND the entry MUST NOT include the full object data (only the object UUID)
+
+### Current Implementation Status
+- **Implemented:**
+  - `AuditTrail` entity (`lib/Db/AuditTrail.php`) with fields: uuid, schema, register, object, objectUuid, registerUuid, schemaUuid, action, changed, user, userName, created, organisation, session, request, ipAddress, size
+  - `AuditTrailMapper` (`lib/Db/AuditTrailMapper.php`) with `createAuditTrail()` method recording create/update/delete actions with user context, session, IP address, and changed fields
+  - `AuditHandler` (`lib/Service/Object/AuditHandler.php`) orchestrating audit trail creation during object operations
+  - Referential integrity actions logged with specific action types: `referential_integrity.cascade_delete`, `referential_integrity.set_null`, `referential_integrity.set_default`, `referential_integrity.restrict_blocked` (in `ReferentialIntegrityService`)
+  - `RevertHandler` (`lib/Service/Object/RevertHandler.php`) uses audit trail for object reversion
+  - AuditTrail controller for listing/viewing entries
+- **NOT implemented:**
+  - Cryptographic hash chaining (no `hash` field exists on AuditTrail entity; no SHA-256 chain, no genesis hash)
+  - Immutability enforcement (no explicit blocking of DELETE/PUT on audit trail API endpoints)
+  - 10-year retention configuration (no retention period settings per register)
+  - Archive mechanism for old entries (no partitioning or separate archive table)
+  - Export functionality for compliance audits (no date-range export with hash verification)
+  - Sensitive data read auditing (no `read` action logging; only mutations are recorded)
+  - Hash chain verification endpoint
+- **Partial:**
+  - The existing AuditTrail records most of the required metadata (user, timestamp, action, changed fields) but lacks hash chaining and immutability guarantees
+
+### Standards & References
+- **GDPR Article 30** — Processing records requirement
+- **NEN 2082** — Records management (audit trail requirements)
+- **Archiefwet 1995** — Dutch archival law (long-term retention)
+- **BIO (Baseline Informatiebeveiliging Overheid)** — Government information security baseline (logging requirements)
+- **RFC 6962** — Certificate Transparency (hash chain model reference)
+- **W3C PROV-O** — Provenance ontology (for audit trail semantics)
+- **Common Criteria (ISO 15408)** — Security audit logging requirements
+
+### Specificity Assessment
+- The spec is well-defined for the hash chaining mechanism and CRUD audit scenarios.
+- Missing: database migration details for adding the `hash` column; performance impact analysis of hash computation on every write; API endpoint definitions for verification and export.
+- Ambiguous: whether "immutability" means application-level enforcement only or requires database-level constraints (e.g., triggers preventing UPDATE/DELETE on the audit trail table).
+- Open questions:
+  - What is the genesis hash value? Should it be configurable or hardcoded?
+  - How should hash chain breaks be reported (admin notification, API endpoint, dashboard widget)?
+  - For sensitive data read auditing, what defines "sensitive" — a schema-level flag, or per-property marking?
+  - Should the archive mechanism use database partitioning, separate tables, or external storage?

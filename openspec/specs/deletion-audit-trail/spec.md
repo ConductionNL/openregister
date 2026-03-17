@@ -92,3 +92,34 @@ The NO_ACTION onDelete behavior means no referential integrity action is taken, 
 - GIVEN schema `order` with property `assignee` referencing schema `person` with `onDelete: NO_ACTION`
 - WHEN person `person-1` is deleted
 - THEN NO AuditTrail entry MUST be created for referential integrity on `order-1`
+
+### Current Implementation Status
+- **Fully implemented:**
+  - `ReferentialIntegrityService` (`lib/Service/Object/ReferentialIntegrityService.php`) creates AuditTrail entries for all referential integrity actions:
+    - `referential_integrity.cascade_delete` — logged when objects are deleted via CASCADE (line ~1131)
+    - `referential_integrity.set_null` — logged when properties are nullified via SET_NULL (line ~166)
+    - `referential_integrity.set_default` — logged when properties are reset to default via SET_DEFAULT (line ~185)
+    - `referential_integrity.restrict_blocked` — logged when deletion is blocked by RESTRICT constraint (line ~243)
+  - Chain cascade deletions tracked with trigger object context
+  - User context propagated through cascade chains
+  - `AuditTrailMapper::createAuditTrail()` (`lib/Db/AuditTrailMapper.php`) handles the actual audit trail entry creation with user, session, IP address, and request context
+  - `AuditHandler` (`lib/Service/Object/AuditHandler.php`) orchestrates audit trail creation
+  - `DeleteObject` (`lib/Service/Object/DeleteObject.php`) triggers referential integrity checks and audit trail creation
+  - `RelationCascadeHandler` (`lib/Service/Object/SaveObject/RelationCascadeHandler.php`) handles cascade operations during save
+- **NOT fully verified:**
+  - Whether NO_ACTION correctly skips audit trail creation (implied by absence of audit code in NO_ACTION path)
+  - Whether audit trail writes are truly within the same transaction scope as the integrity actions (the spec requires atomicity but with graceful failure)
+
+### Standards & References
+- **SQL Standard** — Referential integrity actions (CASCADE, SET NULL, SET DEFAULT, RESTRICT, NO ACTION)
+- **GDPR (AVG)** — Audit trail requirements for data processing
+- **NEN 2082** — Records management audit requirements
+- **BIO** — Government information security baseline (logging requirements)
+
+### Specificity Assessment
+- This spec is highly specific and largely implemented. Action types, changed field structures, and user context propagation are all well-defined and match the implementation.
+- The spec could be considered documentation of existing functionality with minor gaps.
+- Minor ambiguity: the transaction scope requirement ("MUST NOT block the deletion, log a warning instead") — current implementation may or may not handle AuditTrail write failures gracefully.
+- Open questions:
+  - Should the `triggerObject` in chain cascades reference the original root trigger or the immediate parent?
+  - Are audit trail entries for referential integrity actions included in the standard audit trail API queries or filtered separately?

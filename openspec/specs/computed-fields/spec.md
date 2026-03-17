@@ -86,3 +86,41 @@ Expression evaluation errors MUST NOT prevent object operations.
 - THEN the computed value MUST be null (not an error)
 - AND a warning MUST be logged: `Computed field evaluation error: division by zero`
 - AND the object MUST still be saved/returned successfully
+
+### Current Implementation Status
+- **Partial foundations:**
+  - Twig environment is already integrated into OpenRegister for mapping templates:
+    - `MappingExtension` (`lib/Twig/MappingExtension.php`) registers custom Twig filters (`b64enc`, `b64dec`, `json_decode`, `zgw_enum`, `zgw_enum_reverse`, `zgw_extract_uuid`) and functions (`executeMapping`, `generateUuid`)
+    - `MappingRuntime` (`lib/Twig/MappingRuntime.php`) provides the runtime implementations
+    - `MappingRuntimeLoader` (`lib/Twig/MappingRuntimeLoader.php`) loads the runtime for Twig
+    - `AuthenticationExtension` (`lib/Twig/AuthenticationExtension.php`) adds `oauthToken` function
+  - Twig is used in mapping/transformation contexts (OpenConnector integration) but NOT for computed schema properties
+  - Schema properties support JSON Schema definitions but have no `computed` attribute
+  - `SaveObject` (`lib/Service/Object/SaveObject.php`) and `MetadataHydrationHandler` (`lib/Service/Object/SaveObject/MetadataHydrationHandler.php`) handle field processing during save operations
+  - `RenderObject` (`lib/Service/Object/RenderObject.php`) handles output rendering (potential hook point for read-time evaluation)
+  - `ValidationHandler` (`lib/Service/Object/ValidationHandler.php`) validates properties against schema
+- **NOT implemented:**
+  - `computed` attribute on schema property definitions
+  - Server-side Twig expression evaluation for computed fields
+  - `evaluateOn` configuration (save vs. read)
+  - Cross-reference lookups via `_ref` in expressions
+  - Read-only UI rendering for computed fields
+  - Custom function registration API for computed expressions
+  - Error handling (division by zero, null references) for computed field evaluation
+
+### Standards & References
+- **JSON Schema** — Property definitions extended with `computed` attribute
+- **Twig 3.x** — Template engine for expression evaluation
+- **OpenAPI 3.0** — `readOnly` property attribute for computed fields in API spec
+- **JSON Schema `readOnly`** — Standard way to mark fields as not user-writable
+
+### Specificity Assessment
+- The spec is well-defined with clear scenarios for each use case.
+- The Twig foundation is already in place, making implementation feasible by extending the existing Twig environment.
+- Missing: how `computed` is defined in the JSON Schema property definition (custom keyword? `x-computed`?); how computed fields interact with validation (skipped during input validation?); how computed fields affect search and filtering (indexed? searchable?).
+- Ambiguous: the `_ref` syntax for cross-reference lookups — how are nested references resolved? Is there a depth limit? What about circular references?
+- Open questions:
+  - Should computed fields be stored in the database when `evaluateOn: save` or computed on-the-fly always?
+  - How do computed fields interact with import/export — are they included in exports? Ignored during imports?
+  - What is the performance impact of evaluating computed fields on read for large result sets?
+  - Should there be a sandbox/security model for Twig expressions to prevent abuse?

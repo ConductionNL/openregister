@@ -104,3 +104,61 @@ The system MUST support delta syncs using last-modified timestamps or change tok
 - WHEN a new sync starts
 - THEN the gather stage MUST request only records modified after 2026-03-14T02:00:00Z
 - AND unchanged records MUST NOT be fetched or imported
+
+### Using Mock Register Data
+
+The **BAG** mock register provides local test data for developing and testing the sync pipeline without requiring external API access.
+
+**Loading the register:**
+```bash
+# Load BAG register (32 addresses + 21 objects + 21 buildings, register slug: "bag")
+docker exec -u www-data nextcloud php occ openregister:load-register /var/www/html/custom_apps/openregister/lib/Settings/bag_register.json
+```
+
+**Test data for this spec's use cases:**
+- **BAG sync source**: Use loaded BAG `nummeraanduiding` records as the "expected" result for a sync run, verifying the gather-fetch-import pipeline
+- **Incremental sync**: Modify a loaded BAG record and re-run sync to test change detection and upsert behavior
+- **Schema validation**: BAG records include proper 16-digit identifications, postcodes, and municipality codes -- test schema validation during import
+
+### Current Implementation Status
+- **Partial foundations:**
+  - `Source` entity (`lib/Db/Source.php`) exists with fields: uuid, title, version, description, databaseUrl, type, organisation — represents an external data source
+  - `SourceMapper` (`lib/Db/SourceMapper.php`) for CRUD on source definitions
+  - Frontend source management views exist at `src/views/source/`
+  - `ImportService` (`lib/Service/ImportService.php`) handles CSV and Excel import but not API-based sync
+  - `ConfigurationService` (`lib/Service/ConfigurationService.php`) and `Configuration/ImportHandler` handle configuration imports from external sources (GitHub/GitLab)
+- **NOT implemented:**
+  - Three-stage sync pipeline (gather, fetch, import)
+  - REST API sync source with authentication, mapping rules, and schedule
+  - CSV file sync source with automatic column mapping
+  - Field mapping and value transformation configuration
+  - Create/update/delete sync operations (delta sync)
+  - Incremental sync with last-modified tracking
+  - Sync execution monitoring and reporting (start time, duration, record counts, errors)
+  - Resume after failure (checkpoint/resumability)
+  - Scheduled sync via background jobs
+  - Sync execution history and logs
+- **Partial:**
+  - The Source entity captures basic source metadata (URL, type) but not sync-specific configuration (mapping rules, schedule, auth credentials)
+  - Import capabilities exist for one-shot file imports but not for ongoing synchronization
+  - Configuration import from GitHub/GitLab follows a similar pattern but is specific to app configuration, not data sync
+
+### Standards & References
+- **DCAT (Data Catalog Vocabulary)** — W3C standard for describing data catalogs and datasets
+- **OAI-PMH (Open Archives Initiative Protocol for Metadata Harvesting)** — Harvesting protocol for metadata
+- **BAG API (Kadaster)** — Reference implementation for Dutch base registration sync
+- **BRK, BRP, HR APIs** — Dutch government base registration APIs
+- **Haal Centraal** — VNG initiative for modern government API access
+- **CRON / Nextcloud BackgroundJob** — Scheduling mechanism for sync jobs
+- **RFC 7232** — Conditional requests (If-Modified-Since) for incremental sync
+
+### Specificity Assessment
+- The spec is well-structured with the three-stage pattern clearly defined.
+- Missing: database schema for sync configuration (schedule, mapping rules, auth credentials, last sync timestamp); API endpoints for sync source CRUD and manual trigger; background job implementation details; how sync conflicts are resolved (source wins? merge?).
+- Ambiguous: how field mapping and value transformation rules are defined — is it a UI configuration, JSON config, or Twig template? How does this relate to the existing Twig mapping infrastructure?
+- Open questions:
+  - Should the sync pipeline reuse the existing Twig mapping infrastructure for field transformation?
+  - How should authentication credentials for external APIs be stored securely?
+  - What is the maximum dataset size that should be supported in a single sync run?
+  - Should sync support bidirectional sync (push changes back to source) or only pull?
+  - How does sync interact with webhooks — should synced objects trigger webhook events?

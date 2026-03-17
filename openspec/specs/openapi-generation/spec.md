@@ -100,3 +100,31 @@ The OpenAPI spec MUST be available in JSON and YAML formats.
 #### Scenario: Download as YAML
 - GIVEN GET /api/openapi/{register}?format=yaml
 - THEN the response MUST be a valid YAML OpenAPI document
+
+### Current Implementation Status
+- **Fully implemented — OAS generation from schemas**: `OasService` (`lib/Service/OasService.php`) generates OpenAPI specs from register/schema definitions via `createOas()`. It maps schema properties to OpenAPI types and generates paths for CRUD operations.
+- **Fully implemented — controller and endpoints**: `OasController` (`lib/Controller/OasController.php`) and `RegistersController` (`lib/Controller/RegistersController.php`) expose OAS endpoints. Routes exist for both single-register (`/api/registers/{id}/oas`) and all-registers OAS generation.
+- **Fully implemented — base template**: `BaseOas.json` (`lib/Service/Resources/BaseOas.json`) provides the foundation including `info`, `servers`, `securitySchemes` (Basic Auth and OAuth2), and common schema components.
+- **Fully implemented — authentication documentation**: The base template includes `securitySchemes` for Basic Auth and OAuth2. RBAC groups are mapped to OAuth2 scopes dynamically.
+- **Partially implemented — schema property mapping**: Properties are mapped to OpenAPI types, but the quality of the output (valid references, correct composition handling) is covered by the separate `oas-validation` spec.
+- **Not implemented — Swagger UI**: No interactive Swagger UI endpoint exists at `/api/docs/{register}`. The OAS is generated as JSON but not served with an interactive explorer.
+- **Not implemented — YAML format**: Only JSON output is supported; YAML export is not implemented.
+- **Not implemented — spec versioning**: No version tracking tied to schema changes exists. The spec does not auto-increment versions on schema modifications.
+- **Not implemented — example payloads**: The generated OAS does not include example request/response bodies for endpoints.
+
+### Standards & References
+- OpenAPI Specification 3.0 / 3.1.0 (https://spec.openapis.org/oas/v3.1.0)
+- Swagger UI (https://swagger.io/tools/swagger-ui/) for interactive API exploration
+- OAuth 2.0 (RFC 6749) for security scheme definitions
+- JSON Schema for property type mapping
+
+### Specificity Assessment
+- **Moderately specific**: The spec covers endpoint documentation, property mapping, authentication, versioning, and interactive exploration.
+- **Overlap with oas-validation spec**: The `oas-validation` spec focuses on output correctness, while this spec focuses on generation features (Swagger UI, YAML, versioning, examples). These are complementary.
+- **Missing details**:
+  - How versioning is tracked (database field? Git-based? Hash-based?)
+  - How example payloads are generated (from existing objects? Synthetic data?)
+  - Swagger UI deployment specifics (embedded or external?)
+- **Open questions**:
+  - Should this use OpenAPI 3.0 (as stated) or 3.1.0 (as the `oas-validation` spec requires)?
+  - How does the Swagger UI integrate with Nextcloud's authentication system for try-it-out functionality?

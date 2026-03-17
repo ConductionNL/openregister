@@ -96,3 +96,40 @@ Users MUST be able to apply dashboard-level filters that affect all widgets.
 - GIVEN a dashboard showing data from register `zaken` (multiple schemas)
 - WHEN the user filters to schema `vergunningen`
 - THEN all widgets MUST show only vergunningen data
+
+### Current Implementation Status
+- **Partial:**
+  - `DashboardController` (`lib/Controller/DashboardController.php`) exists with page rendering and data retrieval endpoints
+  - `DashboardService` (`lib/Service/DashboardService.php`) provides `getStats()` method for register/schema aggregation and data size calculations
+  - Frontend dashboard views exist at `src/views/dashboard/` with a dedicated Vue component
+  - Dashboard page route is registered (`openregister.dashboard.page`)
+  - SOLR dashboard statistics available via `SolrSettingsController` (`lib/Controller/Settings/SolrSettingsController.php`)
+- **NOT implemented:**
+  - Drag-and-drop widget placement or grid layout
+  - Configurable chart widgets (bar, line, pie, data table)
+  - Custom dashboard creation per user
+  - Dashboard sharing between users/groups
+  - Auto-refresh functionality on widgets
+  - Dashboard-level filters (date range, schema filter)
+  - RBAC-filtered widget data
+  - Widget data source configuration (query builder for schemas)
+- **Partial:**
+  - The current dashboard shows system-level statistics (object counts, data sizes) but not user-configurable visual analytics
+  - No chart rendering library is integrated in the frontend
+
+### Standards & References
+- **Nextcloud Dashboard API** — Nextcloud's built-in dashboard widget registration system (IWidget interface)
+- **WCAG 2.1 AA** — Accessibility requirements for data visualizations
+- **Chart.js or Apache ECharts** — Common chart libraries for Vue-based dashboards
+- **vue-grid-layout** — Vue component for drag-and-drop grid layouts
+- **W3C WAI-ARIA** — Accessibility for interactive widgets
+
+### Specificity Assessment
+- The spec clearly defines widget types and interaction patterns but lacks technical implementation details.
+- Missing: which charting library to use; database schema for storing dashboard configurations and widget definitions; API endpoints for dashboard CRUD and widget data queries; how aggregation queries are built from schema definitions.
+- Ambiguous: whether dashboards should use Nextcloud's native Dashboard API (IWidget) or be a standalone feature within OpenRegister; how complex aggregation queries (group by, time series) are executed across different storage modes (normal vs. MagicMapper).
+- Open questions:
+  - Should this integrate with Nextcloud's built-in dashboard or be a standalone OpenRegister feature?
+  - What are the performance implications of real-time aggregation queries on large datasets?
+  - Should dashboard definitions be exportable/importable between environments?
+  - How do aggregation queries work across MagicMapper (JSON column) vs. normal (JSONB) storage?
