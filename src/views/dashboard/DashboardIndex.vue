@@ -1,5 +1,5 @@
 <script setup>
-import { dashboardStore, registerStore, searchTrailStore } from '../../store/store.js'
+import { dashboardStore, searchTrailStore } from '../../store/store.js'
 </script>
 
 <template>
@@ -85,14 +85,22 @@ import { dashboardStore, registerStore, searchTrailStore } from '../../store/sto
 						<thead>
 							<tr>
 								<th>{{ t('openregister', 'Search Term') }}</th>
-								<th class="count-header">{{ t('openregister', 'Count') }}</th>
-								<th class="count-header">{{ t('openregister', 'Effectiveness') }}</th>
+								<th class="count-header">
+									{{ t('openregister', 'Count') }}
+								</th>
+								<th class="count-header">
+									{{ t('openregister', 'Effectiveness') }}
+								</th>
 							</tr>
 						</thead>
 						<tbody>
 							<tr v-for="term in searchTrailStore.popularTerms" :key="term.term">
-								<td class="term-cell">{{ term.term }}</td>
-								<td class="count-cell">{{ term.count }}</td>
+								<td class="term-cell">
+									{{ term.term }}
+								</td>
+								<td class="count-cell">
+									{{ term.count }}
+								</td>
 								<td class="count-cell">
 									<span :class="['effectiveness-badge', term.effectiveness]">
 										{{ term.effectiveness }}
@@ -114,13 +122,17 @@ import { dashboardStore, registerStore, searchTrailStore } from '../../store/sto
 						<thead>
 							<tr>
 								<th>{{ t('openregister', 'Register') }}</th>
-								<th class="count-header">{{ t('openregister', 'Objects') }}</th>
+								<th class="count-header">
+									{{ t('openregister', 'Objects') }}
+								</th>
 							</tr>
 						</thead>
 						<tbody>
 							<tr v-for="(item, index) in registerData" :key="index">
 								<td>{{ item.label }}</td>
-								<td class="count-cell">{{ item.count.toLocaleString() }}</td>
+								<td class="count-cell">
+									{{ item.count.toLocaleString() }}
+								</td>
 							</tr>
 						</tbody>
 					</table>
@@ -137,13 +149,17 @@ import { dashboardStore, registerStore, searchTrailStore } from '../../store/sto
 						<thead>
 							<tr>
 								<th>{{ t('openregister', 'Schema') }}</th>
-								<th class="count-header">{{ t('openregister', 'Objects') }}</th>
+								<th class="count-header">
+									{{ t('openregister', 'Objects') }}
+								</th>
 							</tr>
 						</thead>
 						<tbody>
 							<tr v-for="(item, index) in schemaData" :key="index">
 								<td>{{ item.label }}</td>
-								<td class="count-cell">{{ item.count.toLocaleString() }}</td>
+								<td class="count-cell">
+									{{ item.count.toLocaleString() }}
+								</td>
 							</tr>
 						</tbody>
 					</table>
@@ -151,7 +167,10 @@ import { dashboardStore, registerStore, searchTrailStore } from '../../store/sto
 			</template>
 
 			<!-- Objects Distribution chart widget -->
-			<template #widget-objects-chart>
+			<!-- TODO: CnChartWidget does not exist yet in @conduction/nextcloud-vue.
+			     Was this widget intentionally added? If so, please create CnChartWidget
+			     in the nextcloud-vue library before re-enabling this block. -->
+			<!-- <template #widget-objects-chart>
 				<CnChartWidget
 					v-if="registerData.length > 0"
 					type="pie"
@@ -163,7 +182,7 @@ import { dashboardStore, registerStore, searchTrailStore } from '../../store/sto
 				<div v-else class="widget-empty">
 					{{ t('openregister', 'No data available for chart') }}
 				</div>
-			</template>
+			</template> -->
 		</CnDashboardPage>
 	</NcAppContent>
 </template>
@@ -171,7 +190,9 @@ import { dashboardStore, registerStore, searchTrailStore } from '../../store/sto
 <script>
 import { NcAppContent, NcButton, NcLoadingIcon } from '@nextcloud/vue'
 import { CnDashboardPage } from '@conduction/nextcloud-vue'
-import { CnChartWidget } from '@conduction/nextcloud-vue'
+// TODO: CnChartWidget does not exist yet in @conduction/nextcloud-vue. Was this intentionally added?
+// If so, please create CnChartWidget in the nextcloud-vue library before re-enabling this import.
+// import { CnChartWidget } from '@conduction/nextcloud-vue'
 import Refresh from 'vue-material-design-icons/Refresh.vue'
 import Magnify from 'vue-material-design-icons/Magnify.vue'
 import CheckCircle from 'vue-material-design-icons/CheckCircle.vue'
@@ -196,7 +217,7 @@ export default {
 		NcButton,
 		NcLoadingIcon,
 		CnDashboardPage,
-		CnChartWidget,
+		// CnChartWidget, // TODO: commented out — CnChartWidget does not exist yet in @conduction/nextcloud-vue
 		Refresh,
 		Magnify,
 		CheckCircle,

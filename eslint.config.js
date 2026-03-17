@@ -20,7 +20,10 @@ module.exports = defineConfig([{
 	settings: {
 		'import/resolver': {
 			alias: {
-				map: [['@', './src']],
+				map: [
+					['@', './src'],
+					['@floating-ui/dom-actual', './node_modules/@floating-ui/dom'],
+				],
 				extensions: ['.js', '.ts', '.vue', '.json'],
 			},
 		},
