@@ -19,7 +19,8 @@
  *
  * @link https://OpenRegister.app
  *
- * @SuppressWarnings(PHPMD.CouplingBetweenObjects) Referential integrity requires coordination with schema, object, and mapper services
+ * @SuppressWarnings(PHPMD.CouplingBetweenObjects) Referential integrity requires coordination
+ *     with schema, object, and mapper services
  */
 
 declare(strict_types=1);

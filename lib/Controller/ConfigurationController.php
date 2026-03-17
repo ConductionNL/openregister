@@ -1242,7 +1242,8 @@ class ConfigurationController extends Controller
 
             $configuration = $this->configurationMapper->insert($configuration);
 
-            $msg = '[ConfigurationController] Created configuration'." entity with ID {$configuration->getId()} for app {$appId}";
+            $configId = $configuration->getId();
+            $msg      = "[ConfigurationController] Created configuration entity with ID {$configId} for app {$appId}";
             $this->logger->info(
                 message: $msg,
                 context: ['file' => __FILE__, 'line' => __LINE__]
@@ -1267,7 +1268,8 @@ class ConfigurationController extends Controller
             // But we need to save the sync status.
             $this->configurationMapper->update($configuration);
 
-            $msg = '[ConfigurationController] Successfully imported'." configuration {$configuration->getTitle()} from {$sourceType}";
+            $configTitle = $configuration->getTitle();
+            $msg         = "[ConfigurationController] Successfully imported configuration {$configTitle} from {$sourceType}";
             $this->logger->info(
                 message: $msg,
                 context: ['file' => __FILE__, 'line' => __LINE__]

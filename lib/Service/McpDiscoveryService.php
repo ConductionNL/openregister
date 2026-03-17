@@ -138,6 +138,7 @@ class McpDiscoveryService
             [
                 'id'          => 'objects',
                 'name'        => 'Objects',
+                // phpcs:ignore Generic.Files.LineLength.TooLong -- description string cannot be shortened
                 'description' => 'Data records stored in register/schema pairs. Full CRUD, filtering, pagination, lock/unlock, publish.',
             ],
             [
@@ -873,6 +874,7 @@ class McpDiscoveryService
                 [
                     'method'      => 'POST',
                     'path'        => '/api/views',
+                    // phpcs:ignore Generic.Files.LineLength.TooLong -- description string cannot be shortened
                     'description' => 'Create a view. Body: { "name": "...", "filters": {...}, "register": id, "schema": id }.',
                 ],
                 [

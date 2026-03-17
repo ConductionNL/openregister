@@ -303,7 +303,9 @@ class RegistersController extends Controller
                             schemas: $expandedSchemas
                         );
 
-                        $msg = '[RegistersController] Schema counts for register '.$register['id'].': '.json_encode($schemaCounts);
+                        $registerId = $register['id'];
+                        $countsJson = json_encode($schemaCounts);
+                        $msg        = "[RegistersController] Schema counts for register {$registerId}: {$countsJson}";
                         $this->logger->debug(
                             message: $msg,
                             context: ['file' => __FILE__, 'line' => __LINE__]
@@ -326,7 +328,8 @@ class RegistersController extends Controller
                                 $schema['stats'] = [
                                     'objects' => $schemaCounts[$schemaId],
                                 ];
-                                $msg = '[RegistersController] Set stats for schema '."{$schemaId}: ".json_encode($schema['stats']);
+                                $statsJson       = json_encode($schema['stats']);
+                                $msg = "[RegistersController] Set stats for schema {$schemaId}: {$statsJson}";
                                 $this->logger->debug(
                                     message: $msg,
                                     context: ['file' => __FILE__, 'line' => __LINE__]

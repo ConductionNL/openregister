@@ -75,8 +75,6 @@ class ImportHandler
      * which could trigger another dependency check. This flag prevents infinite recursion.
      *
      * @var boolean
-     *
-     * @SuppressWarnings(PHPMD.UnusedPrivateField)
      */
     private static bool $depCheckActive = false;
 
@@ -203,8 +201,6 @@ class ImportHandler
      * OpenConnector configuration service for optional integration.
      *
      * @var mixed The OpenConnector configuration service or null.
-     *
-     * @SuppressWarnings(PHPMD.UnusedPrivateField)
      */
     private mixed $connectorConfigSvc = null;
 

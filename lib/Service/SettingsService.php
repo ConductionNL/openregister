@@ -1248,8 +1248,10 @@ class SettingsService
                         'batch_mode'  => 'serial_optimized',
                     ];
 
+                    $objUuid = $object->getUuid();
+                    $errMsg  = $e->getMessage();
                     $this->logger->error(
-                        message: '[SettingsService] Mass validation failed for object '.$object->getUuid().': '.$e->getMessage(),
+                        message: "[SettingsService] Mass validation failed for object {$objUuid}: {$errMsg}",
                         context: ['file' => __FILE__, 'line' => __LINE__]
                     );
 

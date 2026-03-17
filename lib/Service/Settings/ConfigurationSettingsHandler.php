@@ -317,7 +317,11 @@ class ConfigurationSettingsHandler
             $data['blobMigration'] = [
                 'processed' => (int) $this->appConfig->getValueString($this->appName, 'blob_migration_processed', '0'),
                 'remaining' => (int) $this->appConfig->getValueString($this->appName, 'blob_migration_remaining', '0'),
-                'complete'  => $this->appConfig->getValueString($this->appName, 'blob_migration_complete', 'false') === 'true',
+                'complete'  => $this->appConfig->getValueString(
+                    $this->appName,
+                        'blob_migration_complete',
+                        'false'
+                ) === 'true',
                 'lastRun'   => $this->appConfig->getValueString($this->appName, 'blob_migration_last_run', ''),
             ];
 

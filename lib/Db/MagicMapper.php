@@ -298,7 +298,11 @@ class MagicMapper extends AbstractObjectMapper
         self::$constructCount++;
         file_put_contents('/tmp/or-debug.log', "MagicMapper::__construct #".self::$constructCount."\n", FILE_APPEND);
         if (self::$constructCount > 2) {
-            file_put_contents('/tmp/or-debug.log', "CIRCULAR! Stack:\n".(new \Exception())->getTraceAsString()."\n", FILE_APPEND);
+            file_put_contents(
+                '/tmp/or-debug.log',
+                "CIRCULAR! Stack:\n".(new \Exception())->getTraceAsString()."\n",
+                FILE_APPEND
+            );
             return;
         }
 
@@ -878,8 +882,10 @@ class MagicMapper extends AbstractObjectMapper
                 schemaSlug: $schema->getSlug()
             );
             if ($isMagicEnabled === true) {
+                // phpcs:ignore Generic.Files.LineLength.TooLong -- log message string cannot be shortened
+                $infoMsg = '[MagicMapper] Register+schema table does not exist but magic mapping enabled, creating table for facets';
                 $this->logger->info(
-                    message: '[MagicMapper] Register+schema table does not exist but magic mapping enabled, creating table for facets',
+                    message: $infoMsg,
                     context: [
                         'file'       => __FILE__,
                         'line'       => __LINE__,
@@ -1107,8 +1113,10 @@ class MagicMapper extends AbstractObjectMapper
                     schemaSlug: $schema->getSlug()
                 );
                 if ($isMagicEnabled === true) {
+                    // phpcs:ignore Generic.Files.LineLength.TooLong -- log message string cannot be shortened
+                    $infoMsg = '[MagicMapper] Register+schema table does not exist but magic mapping enabled, creating table for cross-search';
                     $this->logger->info(
-                        message: '[MagicMapper] Register+schema table does not exist but magic mapping enabled, creating table for cross-search',
+                        message: $infoMsg,
                         context: [
                             'file'       => __FILE__,
                             'line'       => __LINE__,
@@ -1607,6 +1615,7 @@ class MagicMapper extends AbstractObjectMapper
             $isPostgres = stripos($platform::class, 'PostgreSQL') !== false;
 
             if ($isPostgres === true) {
+                // phpcs:ignore Generic.Files.LineLength.TooLong -- SQL query cannot be shortened
                 $sql = "SELECT 1 FROM information_schema.tables WHERE table_name = ? AND table_schema = current_schema() LIMIT 1";
             } else {
                 // MySQL/MariaDB/SQLite.
@@ -1868,7 +1877,9 @@ class MagicMapper extends AbstractObjectMapper
             // Calculate regular properties (excluding metadata).
             $regularPropCount = count($requiredColumns) - $metadataCount;
 
-            $unchangedCount = count($currentColumns) - count($columnStats['columnsAdded']) - count($columnStats['columnsDropped']);
+            $addedCount     = count($columnStats['columnsAdded']);
+            $droppedCount   = count($columnStats['columnsDropped']);
+            $unchangedCount = count($currentColumns) - $addedCount - $droppedCount;
 
             $result = [
                 'success'               => true,
@@ -3158,8 +3169,10 @@ class MagicMapper extends AbstractObjectMapper
                         && (($propertyConfig['items']['type'] ?? '') === 'file');
 
                     if ($isFileProperty === true && is_string($value) === true && strpos($value, 'data:') === 0) {
+                        // phpcs:ignore Generic.Files.LineLength.TooLong -- log message string cannot be shortened
+                        $warnMsg = '[MagicMapper] File property contains unprocessed base64 data URL - setting to null to prevent DB error';
                         $this->logger->warning(
-                            message: '[MagicMapper] File property contains unprocessed base64 data URL - setting to null to prevent DB error',
+                            message: $warnMsg,
                             context: [
                                 'file'         => __FILE__,
                                 'line'         => __LINE__,
@@ -3175,8 +3188,10 @@ class MagicMapper extends AbstractObjectMapper
                         $cleanedArray = [];
                         foreach ($value as $item) {
                             if (is_string($item) === true && strpos($item, 'data:') === 0) {
+                                // phpcs:ignore Generic.Files.LineLength.TooLong -- log message string cannot be shortened
+                                $warnMsg = '[MagicMapper] Array file item contains unprocessed base64 data URL - skipping item';
                                 $this->logger->warning(
-                                    message: '[MagicMapper] Array file item contains unprocessed base64 data URL - skipping item',
+                                    message: $warnMsg,
                                     context: [
                                         'file'         => __FILE__,
                                         'line'         => __LINE__,
@@ -6253,7 +6268,8 @@ class MagicMapper extends AbstractObjectMapper
                     // PostgreSQL: Handle both array and object formats.
                     // - For arrays: use @> containment operator (can't use ? as it conflicts with PDO placeholders).
                     // - For objects: use jsonb_each_text to search values.
-                    $arrSql       = "(jsonb_typeof(_relations)='array' AND _relations @> to_jsonb(?::text))";
+                    $arrSql = "(jsonb_typeof(_relations)='array' AND _relations @> to_jsonb(?::text))";
+                    // phpcs:ignore Generic.Files.LineLength.TooLong -- SQL query cannot be shortened
                     $objSql       = "(jsonb_typeof(_relations)='object' AND EXISTS(SELECT 1 FROM jsonb_each_text(_relations) kv WHERE kv.value=?))";
                     $conditions[] = "({$arrSql} OR {$objSql})";
                     $params[]     = $uuid;
@@ -8104,11 +8120,12 @@ class MagicMapper extends AbstractObjectMapper
      *
      * @return array{results: ObjectEntity[], total: int, registers: array, schemas: array}
      *
-     * @SuppressWarnings(PHPMD.BooleanArgumentFlag)   Flags control security filtering behavior
+     * @SuppressWarnings(PHPMD.BooleanArgumentFlag)
+     *   Flags control security filtering behavior
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)
      * @SuppressWarnings(PHPMD.NPathComplexity)
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
-     * @psalm-suppress                                UnusedParam Parameters reserved for future per-schema security filtering.
+     * @psalm-suppress                                UnusedParam Reserved for future per-schema security filtering.
      */
     private function searchObjectsPaginatedMultiSchema(
         array $searchQuery,
