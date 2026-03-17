@@ -4,326 +4,172 @@ import { organisationStore, navigationStore } from '../../store/store.js'
 
 <template>
 	<NcAppContent>
-		<div class="viewContainer">
-			<!-- Header -->
-			<div class="viewHeader">
-				<h1 class="viewHeaderTitleIndented">
-					Organisaties
-				</h1>
-				<p>Beheer uw organisaties en wissel tussen hen</p>
-			</div>
-
-			<!-- Active Organisation Status -->
-			<div v-if="organisationStore.userStats.active" class="activeOrgBanner">
-				<div class="activeOrgInfo">
-					<span class="activeOrgLabel">Actieve Organisatie:</span>
-					<span class="activeOrgName">{{ organisationStore.userStats.active.name }}</span>
-					<span v-if="organisationStore.userStats.active.isDefault" class="defaultBadge">
-						Standaard
-					</span>
+		<CnIndexPage
+			ref="indexPage"
+			title="Organisaties"
+			description="Beheer uw organisaties en wissel tussen hen"
+			:show-title="true"
+			:objects="organisationStore.userStats.list"
+			:columns="tableColumns"
+			:pagination="paginationData"
+			:view-mode="organisationStore.viewMode"
+			:selectable="true"
+			:selected-ids="selectedOrganisations"
+			:show-edit-action="false"
+			:show-copy-action="false"
+			:show-delete-action="false"
+			:show-mass-import="false"
+			:show-mass-export="false"
+			:show-mass-copy="false"
+			:show-mass-delete="false"
+			show-view-toggle
+			add-label="Organisatie Aanmaken"
+			row-key="uuid"
+			empty-text="Geen organisaties gevonden"
+			:row-class="getRowClass"
+			:refreshing="isRefreshing"
+			@add="createOrganisation"
+			@refresh="handleRefresh"
+			@page-changed="onPageChanged"
+			@page-size-changed="onPageSizeChanged"
+			@view-mode-change="organisationStore.setViewMode($event)"
+			@select="selectedOrganisations = $event">
+			<!-- Active Organisation Banner (below title, above actions bar) -->
+			<template #below-header>
+				<div v-if="organisationStore.userStats.active" class="activeOrgBanner">
+					<div class="activeOrgInfo">
+						<span class="activeOrgLabel">Actieve Organisatie:</span>
+						<span class="activeOrgName">{{ organisationStore.userStats.active.name }}</span>
+						<span v-if="organisationStore.userStats.active.isDefault" class="defaultBadge">
+							Standaard
+						</span>
+					</div>
+					<NcButton v-if="organisationStore.userStats.total > 1"
+						type="secondary"
+						@click="showOrganisationSwitcher = true">
+						<template #icon>
+							<SwapHorizontal :size="20" />
+						</template>
+						Wissel Organisatie
+					</NcButton>
 				</div>
-				<NcButton v-if="organisationStore.userStats.total > 1"
+			</template>
+
+			<!-- Inline button next to actions menu -->
+			<template #header-actions>
+				<NcButton
 					type="secondary"
-					@click="showOrganisationSwitcher = true">
+					@click="navigationStore.setModal('joinOrganisation')">
 					<template #icon>
-						<SwapHorizontal :size="20" />
+						<AccountPlus :size="20" />
 					</template>
-					Wissel Organisatie
+					Add User to Organisation
 				</NcButton>
-			</div>
+			</template>
 
-			<!-- Actions Bar -->
-			<div class="viewActionsBar">
-				<div class="viewInfo">
-					<span class="viewTotalCount">
-						Toont {{ paginatedOrganisations.length }} van {{ organisationStore.userStats.total }} organisaties
-					</span>
-					<span v-if="selectedOrganisations.length > 0" class="viewIndicator">
-						({{ selectedOrganisations.length }} geselecteerd)
-					</span>
+			<!-- Custom card template -->
+			<template #card="{ object }">
+				<OrganisationCard
+					:item="object"
+					:is-active="isActiveOrganisation(object)"
+					:can-edit="canEditOrganisation(object)"
+					:can-delete="canDeleteOrganisation(object)"
+					@view="viewOrganisation"
+					@set-active="setActiveOrganisation"
+					@edit="editOrganisation"
+					@go-to="goToOrganisation"
+					@add-user="openJoinModal" />
+			</template>
+
+			<!-- Custom column: name with badges -->
+			<template #column-name="{ row }">
+				<div class="titleContent">
+					<strong>{{ row.name }}</strong>
+					<div class="badges">
+						<span v-if="row.isDefault" class="defaultBadge">Standaard</span>
+						<span v-if="isActiveOrganisation(row)" class="activeBadge">Actief</span>
+					</div>
+					<span v-if="row.description" class="textDescription textEllipsis">{{ row.description }}</span>
 				</div>
-				<div class="viewActions">
-					<div class="viewModeSwitchContainer">
-						<NcCheckboxRadioSwitch
-							v-model="organisationStore.viewMode"
-							v-tooltip="'See organisations as cards'"
-							:button-variant="true"
-							value="cards"
-							name="view_mode_radio"
-							type="radio"
-							button-variant-grouped="horizontal">
-							Kaarten
-						</NcCheckboxRadioSwitch>
-						<NcCheckboxRadioSwitch
-							v-model="organisationStore.viewMode"
-							v-tooltip="'See organisations as a table'"
-							:button-variant="true"
-							value="table"
-							name="view_mode_radio"
-							type="radio"
-							button-variant-grouped="horizontal">
-							Tabel
-						</NcCheckboxRadioSwitch>
-					</div>
+			</template>
 
-					<NcActions
-						:force-name="true"
-						:inline="3"
-						menu-name="Actions">
-						<NcActionButton
-							:primary="true"
-							close-after-click
-							@click="createOrganisation">
-							<template #icon>
-								<Plus :size="20" />
-							</template>
-							Organisatie Aanmaken
-						</NcActionButton>
-						<NcActionButton
-							close-after-click
-							@click="navigationStore.setModal('joinOrganisation')">
-							<template #icon>
-								<AccountPlus :size="20" />
-							</template>
-							Add User to Organisation
-						</NcActionButton>
-						<NcActionButton
-							close-after-click
-							@click="organisationStore.refreshOrganisationList()">
-							<template #icon>
-								<Refresh :size="20" />
-							</template>
-							Vernieuwen
-						</NcActionButton>
-					</NcActions>
-				</div>
-			</div>
+			<!-- Custom column: members -->
+			<template #column-members="{ row }">
+				{{ row.users?.length || 0 }}
+			</template>
 
-			<!-- Empty State -->
-			<NcEmptyContent v-if="!organisationStore.userStats.total"
-				:name="'Geen organisaties gevonden'"
-				:description="'U bent nog geen lid van organisaties.'">
-				<template #icon>
-					<OfficeBuilding :size="64" />
-				</template>
-			</NcEmptyContent>
+			<!-- Custom column: status -->
+			<template #column-status="{ row }">
+				<span v-if="isActiveOrganisation(row)" class="statusActive">Actief</span>
+				<span v-else class="statusInactive">Inactief</span>
+			</template>
 
-			<!-- Content -->
-			<div v-else>
-				<template v-if="organisationStore.viewMode === 'cards'">
-					<div class="cardGrid">
-						<div v-for="organisation in paginatedOrganisations"
-							:key="organisation.uuid"
-							class="card"
-							:class="{ 'active-org-card': isActiveOrganisation(organisation) }">
-							<div class="cardHeader">
-								<h2>
-									<OfficeBuilding :size="20" />
-									{{ organisation.name }}
-									<span v-if="organisation.isDefault" class="defaultBadge">Standaard</span>
-									<span v-if="isActiveOrganisation(organisation)" class="activeBadge">Actief</span>
-								</h2>
-								<NcActions :primary="true" menu-name="Actions">
-									<template #icon>
-										<DotsHorizontal :size="20" />
-									</template>
-									<NcActionButton close-after-click
-										@click="viewOrganisation(organisation)">
-										<template #icon>
-											<Eye :size="20" />
-										</template>
-										Bekijken
-									</NcActionButton>
-									<NcActionButton v-if="!isActiveOrganisation(organisation)"
-										close-after-click
-										@click="setActiveOrganisation(organisation.uuid)">
-										<template #icon>
-											<Check :size="20" />
-										</template>
-										Instellen als Actief
-									</NcActionButton>
-									<NcActionButton v-if="canEditOrganisation(organisation)"
-										close-after-click
-										@click="editOrganisation(organisation)">
-										<template #icon>
-											<Pencil :size="20" />
-										</template>
-										Bewerken
-									</NcActionButton>
-									<NcActionButton v-if="organisation.website"
-										close-after-click
-										@click="goToOrganisation(organisation)">
-										<template #icon>
-											<OpenInNew :size="20" />
-										</template>
-										Ga naar organisatie
-									</NcActionButton>
-									<NcActionButton
-										close-after-click
-										@click="openJoinModal(organisation)">
-										<template #icon>
-											<AccountMultiplePlus :size="20" />
-										</template>
-										Add User
-									</NcActionButton>
-									<NcActionButton v-if="canDeleteOrganisation(organisation)"
-										close-after-click
-										@click="organisationStore.setOrganisationItem(organisation); navigationStore.setModal('deleteOrganisation')">
-										<template #icon>
-											<TrashCanOutline :size="20" />
-										</template>
-										Verwijderen
-									</NcActionButton>
-								</NcActions>
-							</div>
+			<!-- Custom column: created -->
+			<template #column-created="{ row }">
+				{{ row.created ? formatDate(row.created) : '-' }}
+			</template>
 
-							<div class="organisationInfo">
-								<p v-if="organisation.description" class="description">
-									{{ organisation.description }}
-								</p>
-								<div class="organisationStats">
-									<div class="stat">
-										<span class="statLabel">Leden:</span>
-										<span class="statValue">{{ organisation.users?.length || 0 }}</span>
-									</div>
-									<div class="stat">
-										<span class="statLabel">Eigenaar:</span>
-										<span class="statValue">{{ organisation.owner || 'System' }}</span>
-									</div>
-									<div v-if="organisation.created" class="stat">
-										<span class="statLabel">Aangemaakt:</span>
-										<span class="statValue">{{ formatDate(organisation.created) }}</span>
-									</div>
-								</div>
-							</div>
-						</div>
-					</div>
-				</template>
-				<template v-else>
-					<div class="viewTableContainer">
-						<table class="viewTable">
-							<thead>
-								<tr>
-									<th class="tableColumnCheckbox">
-										<NcCheckboxRadioSwitch
-											:checked="allSelected"
-											:indeterminate="someSelected"
-											@update:checked="toggleSelectAll" />
-									</th>
-									<th>Naam</th>
-									<th>Leden</th>
-									<th>Eigenaar</th>
-									<th>Status</th>
-									<th>Aangemaakt</th>
-									<th>Bijgewerkt</th>
-									<th class="tableColumnActions">
-										Acties
-									</th>
-								</tr>
-							</thead>
-							<tbody>
-								<tr v-for="organisation in paginatedOrganisations"
-									:key="organisation.uuid"
-									class="viewTableRow"
-									:class="{
-										viewTableRowSelected: selectedOrganisations.includes(organisation.uuid),
-										'active-org-row': isActiveOrganisation(organisation)
-									}">
-									<td class="tableColumnCheckbox">
-										<NcCheckboxRadioSwitch
-											:checked="selectedOrganisations.includes(organisation.uuid)"
-											@update:checked="(checked) => toggleOrganisationSelection(organisation.uuid, checked)" />
-									</td>
-									<td class="tableColumnTitle">
-										<div class="titleContent">
-											<strong>{{ organisation.name }}</strong>
-											<div class="badges">
-												<span v-if="organisation.isDefault" class="defaultBadge">Standaard</span>
-												<span v-if="isActiveOrganisation(organisation)" class="activeBadge">Actief</span>
-											</div>
-											<span v-if="organisation.description" class="textDescription textEllipsis">{{ organisation.description }}</span>
-										</div>
-									</td>
-									<td>{{ organisation.users?.length || 0 }}</td>
-									<td>{{ organisation.owner || 'System' }}</td>
-									<td>
-										<span v-if="isActiveOrganisation(organisation)" class="statusActive">Actief</span>
-										<span v-else class="statusInactive">Inactief</span>
-									</td>
-									<td>{{ organisation.created ? formatDate(organisation.created) : '-' }}</td>
-									<td>{{ organisation.updated ? formatDate(organisation.updated) : '-' }}</td>
-									<td class="tableColumnActions">
-										<NcActions :primary="false">
-											<template #icon>
-												<DotsHorizontal :size="20" />
-											</template>
-											<NcActionButton close-after-click
-												@click="viewOrganisation(organisation)">
-												<template #icon>
-													<Eye :size="20" />
-												</template>
-												Bekijken
-											</NcActionButton>
-											<NcActionButton v-if="!isActiveOrganisation(organisation)"
-												close-after-click
-												@click="setActiveOrganisation(organisation.uuid)">
-												<template #icon>
-													<Check :size="20" />
-												</template>
-												Instellen als Actief
-											</NcActionButton>
-											<NcActionButton v-if="canEditOrganisation(organisation)"
-												close-after-click
-												@click="editOrganisation(organisation)">
-												<template #icon>
-													<Pencil :size="20" />
-												</template>
-												Bewerken
-											</NcActionButton>
-											<NcActionButton v-if="organisation.website"
-												close-after-click
-												@click="goToOrganisation(organisation)">
-												<template #icon>
-													<OpenInNew :size="20" />
-												</template>
-												Ga naar organisatie
-											</NcActionButton>
-											<NcActionButton
-												close-after-click
-												@click="openJoinModal(organisation)">
-												<template #icon>
-													<AccountMultiplePlus :size="20" />
-												</template>
-												Add User
-											</NcActionButton>
-											<NcActionButton v-if="canDeleteOrganisation(organisation)"
-												close-after-click
-												@click="organisationStore.setOrganisationItem(organisation); navigationStore.setModal('deleteOrganisation')">
-												<template #icon>
-													<TrashCanOutline :size="20" />
-												</template>
-												Verwijderen
-											</NcActionButton>
-										</NcActions>
-									</td>
-								</tr>
-							</tbody>
-						</table>
-					</div>
-				</template>
-			</div>
+			<!-- Custom column: updated -->
+			<template #column-updated="{ row }">
+				{{ row.updated ? formatDate(row.updated) : '-' }}
+			</template>
 
-			<!-- Pagination -->
-			<PaginationComponent
-				v-if="organisationStore.userStats.total > 0"
-				:current-page="organisationStore.pagination.page || 1"
-				:total-pages="Math.ceil(organisationStore.userStats.total / (organisationStore.pagination.limit || 20))"
-				:total-items="organisationStore.userStats.total"
-				:current-page-size="organisationStore.pagination.limit || 20"
-				:min-items-to-show="10"
-				@page-changed="onPageChanged"
-				@page-size-changed="onPageSizeChanged" />
-		</div>
+			<!-- Custom row actions -->
+			<template #row-actions="{ row }">
+				<NcActions :primary="false">
+					<template #icon>
+						<DotsHorizontal :size="20" />
+					</template>
+					<NcActionButton close-after-click
+						@click="viewOrganisation(row)">
+						<template #icon>
+							<Eye :size="20" />
+						</template>
+						Bekijken
+					</NcActionButton>
+					<NcActionButton v-if="!isActiveOrganisation(row)"
+						close-after-click
+						@click="setActiveOrganisation(row.uuid)">
+						<template #icon>
+							<Check :size="20" />
+						</template>
+						Instellen als Actief
+					</NcActionButton>
+					<NcActionButton v-if="canEditOrganisation(row)"
+						close-after-click
+						@click="editOrganisation(row)">
+						<template #icon>
+							<Pencil :size="20" />
+						</template>
+						Bewerken
+					</NcActionButton>
+					<NcActionButton v-if="row.website"
+						close-after-click
+						@click="goToOrganisation(row)">
+						<template #icon>
+							<OpenInNew :size="20" />
+						</template>
+						Ga naar organisatie
+					</NcActionButton>
+					<NcActionButton
+						close-after-click
+						@click="openJoinModal(row)">
+						<template #icon>
+							<AccountMultiplePlus :size="20" />
+						</template>
+						Add User
+					</NcActionButton>
+					<NcActionButton v-if="canDeleteOrganisation(row)"
+						close-after-click
+						@click="organisationStore.setOrganisationItem(row); navigationStore.setModal('deleteOrganisation')">
+						<template #icon>
+							<TrashCanOutline :size="20" />
+						</template>
+						Verwijderen
+					</NcActionButton>
+				</NcActions>
+			</template>
+		</CnIndexPage>
 
 		<!-- Organisation Switcher Modal -->
 		<NcModal v-if="showOrganisationSwitcher"
@@ -347,77 +193,74 @@ import { organisationStore, navigationStore } from '../../store/store.js'
 				</div>
 			</div>
 		</NcModal>
-
-		<!-- Organisation Management Modal -->
 	</NcAppContent>
 </template>
 
 <script>
-import { NcAppContent, NcEmptyContent, NcActions, NcActionButton, NcCheckboxRadioSwitch, NcButton, NcModal } from '@nextcloud/vue'
-import OfficeBuilding from 'vue-material-design-icons/OfficeBuilding.vue'
+import { NcAppContent, NcActions, NcActionButton, NcButton, NcModal } from '@nextcloud/vue'
+import { CnIndexPage } from '@conduction/nextcloud-vue'
 import DotsHorizontal from 'vue-material-design-icons/DotsHorizontal.vue'
 import Pencil from 'vue-material-design-icons/Pencil.vue'
 import TrashCanOutline from 'vue-material-design-icons/TrashCanOutline.vue'
-import Refresh from 'vue-material-design-icons/Refresh.vue'
 import AccountPlus from 'vue-material-design-icons/AccountPlus.vue'
 import AccountMultiplePlus from 'vue-material-design-icons/AccountMultiplePlus.vue'
 import SwapHorizontal from 'vue-material-design-icons/SwapHorizontal.vue'
-import Plus from 'vue-material-design-icons/Plus.vue'
 import Eye from 'vue-material-design-icons/Eye.vue'
 import OpenInNew from 'vue-material-design-icons/OpenInNew.vue'
-
-import PaginationComponent from '../../components/PaginationComponent.vue'
-import { reloadAppData } from '../../services/AppInitializationService.js'
 import Check from 'vue-material-design-icons/Check.vue'
+
+import OrganisationCard from '../../components/cards/OrganisationCard.vue'
+import { reloadAppData } from '../../services/AppInitializationService.js'
 
 export default {
 	name: 'OrganisationsIndex',
 	components: {
-		NcCheckboxRadioSwitch,
 		NcAppContent,
-		NcEmptyContent,
+		CnIndexPage,
 		NcActions,
 		NcActionButton,
 		NcButton,
 		NcModal,
-		OfficeBuilding,
+		OrganisationCard,
 		DotsHorizontal,
 		Pencil,
 		TrashCanOutline,
-		Refresh,
 		AccountPlus,
 		AccountMultiplePlus,
 		SwapHorizontal,
-		Plus,
 		Eye,
 		OpenInNew,
 		Check,
-		PaginationComponent,
 	},
 	data() {
 		return {
 			selectedOrganisations: [],
 			showOrganisationSwitcher: false,
+			isRefreshing: false,
 		}
 	},
 	computed: {
-		allSelected() {
-			return organisationStore.userStats.list.length > 0 && organisationStore.userStats.list.every(org => this.selectedOrganisations.includes(org.uuid))
+		tableColumns() {
+			return [
+				{ key: 'name', label: 'Naam', sortable: true },
+				{ key: 'members', label: 'Leden' },
+				{ key: 'owner', label: 'Eigenaar' },
+				{ key: 'status', label: 'Status' },
+				{ key: 'created', label: 'Aangemaakt', sortable: true },
+				{ key: 'updated', label: 'Bijgewerkt', sortable: true },
+			]
 		},
-		someSelected() {
-			return this.selectedOrganisations.length > 0 && !this.allSelected
-		},
-		paginatedOrganisations() {
-			const start = ((organisationStore.pagination.page || 1) - 1) * (organisationStore.pagination.limit || 20)
-			const end = start + (organisationStore.pagination.limit || 20)
-			return organisationStore.userStats.list.slice(start, end)
+		paginationData() {
+			const page = organisationStore.pagination.page || 1
+			const limit = organisationStore.pagination.limit || 20
+			const total = organisationStore.userStats.total || 0
+			const pages = Math.ceil(total / limit)
+			return { page, pages, total, limit }
 		},
 	},
 	async mounted() {
 		try {
-			// Load Nextcloud groups into store first (needed for edit modal)
 			await organisationStore.loadNextcloudGroups()
-			// Then load organisations
 			await organisationStore.refreshOrganisationList()
 			await organisationStore.getActiveOrganisation()
 		} catch (error) {
@@ -425,40 +268,31 @@ export default {
 		}
 	},
 	methods: {
+		getRowClass(row) {
+			return this.isActiveOrganisation(row) ? 'active-org-row' : ''
+		},
 		isActiveOrganisation(organisation) {
 			return organisationStore.userStats.active
 				   && organisationStore.userStats.active.uuid === organisation.uuid
 		},
 		getCurrentUser() {
-			// Get current user from global OC object (Nextcloud's way)
 			return window.OC?.getCurrentUser?.()?.uid || 'unknown'
 		},
 		canEditOrganisation(organisation) {
-			// Only the owner can edit the organisation (or system for default org)
 			return organisation.owner === 'system'
 				   || organisation.owner === this.getCurrentUser()
 		},
-		canLeaveOrganisation(organisation) {
-			// Can't leave if it's your only organisation or if you're the owner
-			return organisationStore.userStats.total > 1
-				   && !organisation.isDefault
-				   && organisation.owner !== this.getCurrentUser()
-		},
 		canDeleteOrganisation(organisation) {
-			// Only owners can delete, and can't delete default organisation
 			return !organisation.isDefault
 				   && organisation.owner === this.getCurrentUser()
 		},
 		async setActiveOrganisation(uuid) {
 			try {
 				await organisationStore.setActiveOrganisationById(uuid)
-				this.showSuccessMessage('Active organisation changed successfully')
-
-				// Reload all hot-loaded data for the new organisation context
 				console.info('[OrganisationsIndex] Reloading application data after organisation switch...')
 				await reloadAppData()
 			} catch (error) {
-				this.showErrorMessage('Failed to change active organisation: ' + error.message)
+				console.error('Failed to change active organisation:', error.message)
 			}
 		},
 		async switchToOrganisation(organisation) {
@@ -466,33 +300,15 @@ export default {
 				await this.setActiveOrganisation(organisation.uuid)
 				this.showOrganisationSwitcher = false
 			} catch (error) {
-				this.showErrorMessage('Failed to switch organisation: ' + error.message)
+				console.error('Failed to switch organisation:', error.message)
 			}
 		},
-		async leaveOrganisation(organisation) {
-			if (!confirm(`Are you sure you want to leave '${organisation.name}'?`)) {
-				return
-			}
-
+		async handleRefresh() {
+			this.isRefreshing = true
 			try {
-				await organisationStore.leaveOrganisation(organisation.uuid)
-				this.showSuccessMessage('Left organisation successfully')
-			} catch (error) {
-				this.showErrorMessage('Failed to leave organisation: ' + error.message)
-			}
-		},
-		toggleSelectAll(checked) {
-			if (checked) {
-				this.selectedOrganisations = organisationStore.userStats.list.map(org => org.uuid)
-			} else {
-				this.selectedOrganisations = []
-			}
-		},
-		toggleOrganisationSelection(orgUuid, checked) {
-			if (checked) {
-				this.selectedOrganisations.push(orgUuid)
-			} else {
-				this.selectedOrganisations = this.selectedOrganisations.filter(uuid => uuid !== orgUuid)
+				await organisationStore.refreshOrganisationList()
+			} finally {
+				this.isRefreshing = false
 			}
 		},
 		onPageChanged(page) {
@@ -511,7 +327,6 @@ export default {
 				minute: '2-digit',
 			})
 		},
-		// Organisation Modal Methods
 		createOrganisation() {
 			organisationStore.setOrganisationItem(null)
 			navigationStore.setModal('editOrganisation')
@@ -521,20 +336,11 @@ export default {
 			navigationStore.setModal('editOrganisation')
 		},
 		openJoinModal(organisation) {
-			// Set the transfer data with the organisation UUID
 			navigationStore.setTransferData({
 				organisationUuid: organisation.uuid,
 			})
-			// Open the join organisation modal
 			navigationStore.setModal('joinOrganisation')
 		},
-		openManageRolesModal(organisation) {
-			// Set the organisation item in store
-			organisationStore.setOrganisationItem(organisation)
-			// Open the manage organisation roles modal
-			navigationStore.setModal('manageOrganisationRoles')
-		},
-		// Organisation Action Methods
 		viewOrganisation(organisation) {
 			const publicationUrl = `https://www.softwarecatalogus.nl/publicatie/${organisation.id}`
 			window.open(publicationUrl, '_blank')
@@ -542,20 +348,11 @@ export default {
 		goToOrganisation(organisation) {
 			if (organisation.website) {
 				let websiteUrl = organisation.website
-				// Add https:// if no protocol is specified
 				if (!websiteUrl.startsWith('http://') && !websiteUrl.startsWith('https://')) {
 					websiteUrl = 'https://' + websiteUrl
 				}
 				window.open(websiteUrl, '_blank')
 			}
-		},
-		showSuccessMessage(message) {
-			// Implementation would depend on your notification system
-			// TODO: Integrate with Nextcloud notification system
-		},
-		showErrorMessage(message) {
-			// Implementation would depend on your notification system
-			// TODO: Integrate with Nextcloud notification system
 		},
 	},
 }
@@ -567,11 +364,11 @@ export default {
 	background: var(--color-primary-light);
 	border: 1px solid var(--color-primary-element-light);
 	border-radius: 8px;
-	padding: 16px;
-	margin-bottom: 20px;
+	padding: 12px 16px;
 	display: flex;
 	align-items: center;
 	justify-content: space-between;
+	gap: 12px;
 }
 
 .activeOrgInfo {
@@ -609,46 +406,14 @@ export default {
 	color: white;
 }
 
-/* Cards styling */
-.active-org-card {
-	border: 2px solid var(--color-success) !important;
-	background: var(--color-success-light) !important;
-}
-
-.organisationInfo {
-	padding: 16px 0;
-}
-
-.description {
-	color: var(--color-text-lighter);
-	margin-bottom: 12px;
-	font-style: italic;
-}
-
-.organisationStats {
-	display: flex;
-	flex-direction: column;
-	gap: 4px;
-}
-
-.stat {
-	display: flex;
-	justify-content: space-between;
-}
-
-.statLabel {
-	color: var(--color-text-lighter);
-	font-size: 12px;
-}
-
-.statValue {
-	font-weight: 600;
-	font-size: 12px;
-}
-
 /* Table styling */
 .active-org-row {
 	background: var(--color-success-light) !important;
+}
+
+.titleContent {
+	display: flex;
+	flex-direction: column;
 }
 
 .badges {
