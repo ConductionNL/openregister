@@ -2,10 +2,10 @@
   "$schema": "http://cyclonedx.org/schema/bom-1.5.schema.json",
   "bomFormat": "CycloneDX",
   "specVersion": "1.5",
-  "serialNumber": "urn:uuid:328f2a34-b694-4d5c-89e8-93c4a736b5f2",
+  "serialNumber": "urn:uuid:7cff1bb6-7e8e-490f-97a1-d465a88fa9ff",
   "version": 1,
   "metadata": {
-    "timestamp": "2026-03-17T10:30:06Z",
+    "timestamp": "2026-03-17T10:57:50Z",
     "tools": [
       {
         "name": "composer",
@@ -82,10 +82,10 @@
       }
     ],
     "component": {
-      "bom-ref": "conductionnl/openregister-dev-feature/php-linting",
+      "bom-ref": "conductionnl/openregister-dev-development",
       "type": "application",
       "name": "openregister",
-      "version": "dev-feature/php-linting",
+      "version": "dev-development",
       "group": "conductionnl",
       "description": "Quickly build data registers based on schema.json",
       "author": "Conduction b.v.",
@@ -96,15 +96,15 @@
           }
         }
       ],
-      "purl": "pkg:composer/conductionnl/openregister@dev-feature/php-linting",
+      "purl": "pkg:composer/conductionnl/openregister@dev-development",
       "properties": [
         {
           "name": "cdx:composer:package:distReference",
-          "value": "965df9123fe3d9ba6a112d538ab9a56d6c2df85b"
+          "value": "ab047fd3296f64412ec06197acde7435c791c084"
         },
         {
           "name": "cdx:composer:package:sourceReference",
-          "value": "965df9123fe3d9ba6a112d538ab9a56d6c2df85b"
+          "value": "ab047fd3296f64412ec06197acde7435c791c084"
         },
         {
           "name": "cdx:composer:package:type",
@@ -55484,7 +55484,7 @@
       "ref": "webonyx/graphql-php-15.31.1.0"
     },
     {
-      "ref": "conductionnl/openregister-dev-feature/php-linting",
+      "ref": "conductionnl/openregister-dev-development",
       "dependsOn": [
         "adbario/php-dot-notation-3.3.0.0",
         "elasticsearch/elasticsearch-8.19.0.0",
