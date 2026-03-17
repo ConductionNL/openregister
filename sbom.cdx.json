@@ -2,10 +2,10 @@
   "$schema": "http://cyclonedx.org/schema/bom-1.5.schema.json",
   "bomFormat": "CycloneDX",
   "specVersion": "1.5",
-  "serialNumber": "urn:uuid:210867e6-cc1e-4668-83fd-b752b86d46c5",
+  "serialNumber": "urn:uuid:b657e937-e1b1-410c-8fa2-eaa9924bc137",
   "version": 1,
   "metadata": {
-    "timestamp": "2026-03-17T10:15:14Z",
+    "timestamp": "2026-03-17T10:26:37Z",
     "tools": [
       {
         "name": "composer",
@@ -82,10 +82,10 @@
       }
     ],
     "component": {
-      "bom-ref": "conductionnl/openregister-dev-feature/small-fixes-for-vue-package",
+      "bom-ref": "conductionnl/openregister-dev-feature/nextcloud-vue-package-usage",
       "type": "application",
       "name": "openregister",
-      "version": "dev-feature/small-fixes-for-vue-package",
+      "version": "dev-feature/nextcloud-vue-package-usage",
       "group": "conductionnl",
       "description": "Quickly build data registers based on schema.json",
       "author": "Conduction b.v.",
@@ -96,15 +96,15 @@
           }
         }
       ],
-      "purl": "pkg:composer/conductionnl/openregister@dev-feature/small-fixes-for-vue-package",
+      "purl": "pkg:composer/conductionnl/openregister@dev-feature/nextcloud-vue-package-usage",
       "properties": [
         {
           "name": "cdx:composer:package:distReference",
-          "value": "f0ea15ed322983669e1eeb4fe6932b4757ed4d8b"
+          "value": "46d69895162908a5b0094114781e797f66f3115b"
         },
         {
           "name": "cdx:composer:package:sourceReference",
-          "value": "f0ea15ed322983669e1eeb4fe6932b4757ed4d8b"
+          "value": "46d69895162908a5b0094114781e797f66f3115b"
         },
         {
           "name": "cdx:composer:package:type",
@@ -55484,7 +55484,7 @@
       "ref": "webonyx/graphql-php-15.31.1.0"
     },
     {
-      "ref": "conductionnl/openregister-dev-feature/small-fixes-for-vue-package",
+      "ref": "conductionnl/openregister-dev-feature/nextcloud-vue-package-usage",
       "dependsOn": [
         "adbario/php-dot-notation-3.3.0.0",
         "elasticsearch/elasticsearch-8.19.0.0",
