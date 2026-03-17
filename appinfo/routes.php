@@ -208,6 +208,10 @@ return [
         ['name' => 'Settings\ValidationSettings#predictMassValidationMemory', 'url' => '/api/settings/mass-validate/memory-prediction', 'verb' => 'POST'],
         // Heartbeat - Keep-alive endpoint for long-running operations.
         ['name' => 'heartbeat#heartbeat', 'url' => '/api/heartbeat', 'verb' => 'GET'],
+        // Prometheus metrics endpoint.
+        ['name' => 'metrics#index', 'url' => '/api/metrics', 'verb' => 'GET'],
+        // Health check endpoint.
+        ['name' => 'health#index', 'url' => '/api/health', 'verb' => 'GET'],
         // Names - Ultra-fast object name lookup endpoints (specific routes first).
         ['name' => 'names#stats', 'url' => '/api/names/stats', 'verb' => 'GET'],
         ['name' => 'names#warmup', 'url' => '/api/names/warmup', 'verb' => 'POST'],
@@ -505,5 +509,12 @@ return [
 
 		// MCP Standard Protocol — JSON-RPC 2.0 Streamable HTTP endpoint.
 		['name' => 'mcpServer#handle', 'url' => '/api/mcp', 'verb' => 'POST'],
+
+		// GraphQL API.
+		['name' => 'graphQL#execute', 'url' => '/api/graphql', 'verb' => 'POST'],
+		['name' => 'graphQL#explorer', 'url' => '/api/graphql/explorer', 'verb' => 'GET'],
+
+		// GraphQL Subscriptions (SSE).
+		['name' => 'graphQLSubscription#subscribe', 'url' => '/api/graphql/subscribe', 'verb' => 'GET'],
     ],
 ];

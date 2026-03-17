@@ -97,3 +97,44 @@ The complete processing register MUST be exportable for supervisory authority (A
   - Retention periods, processor information
   - Technical and organizational security measures
 - AND the export format MUST be PDF or structured data (JSON/XML)
+
+### Current Implementation Status
+- **Partial foundations:**
+  - `GdprEntity` (`lib/Db/GdprEntity.php`) exists with fields: uuid, type, value, category, belongsToEntityId, metadata, owner, organisation, detectedAt, updatedAt — represents detected personal data entities
+  - `GdprEntityMapper` (`lib/Db/GdprEntityMapper.php`) provides CRUD operations for GDPR entities
+  - `GdprEntitiesController` (`lib/Controller/GdprEntitiesController.php`) exposes API endpoints for managing GDPR entities
+  - `SearchTrail` entity (`lib/Db/SearchTrail.php`) and `SearchTrailMapper` (`lib/Db/SearchTrailMapper.php`) track search/access patterns
+  - `SearchTrailController` (`lib/Controller/SearchTrailController.php`) for querying search trails
+  - `EntityRecognitionHandler` (`lib/Service/TextExtraction/EntityRecognitionHandler.php`) detects personal data entities in text
+- **NOT implemented:**
+  - Processing activities register (verwerkingsactiviteiten) — no entity for defining processing activities with purpose, legal basis, data categories, retention periods
+  - Purpose-bound access control (doelbinding) — no mechanism to require/validate processing purpose before data access
+  - Data subject access request (inzageverzoek) workflow — no cross-schema search by BSN or personal identifier
+  - Right to erasure (recht op vergetelheid) workflow — no erasure request processing with retention conflict detection
+  - Art 30 register export — no structured export of all processing activities
+  - Processing log entries with verwerkingsactiviteit reference — audit trail does not link to processing purposes
+  - Link between processing activities and schemas
+- **Partial:**
+  - GdprEntity tracks detected personal data but does not implement the full processing register as specified
+  - SearchTrail provides some access logging but not with purpose/legal basis context
+
+### Standards & References
+- **GDPR (AVG) Article 30** — Register of processing activities
+- **GDPR Article 15** — Right of access (inzageverzoek)
+- **GDPR Article 17** — Right to erasure
+- **GDPR Article 5(1)(b)** — Purpose limitation (doelbinding)
+- **Uitvoeringswet AVG (UAVG)** — Dutch GDPR implementation act
+- **Autoriteit Persoonsgegevens guidelines** — Dutch Data Protection Authority
+- **VNG Model Verwerkingsregister** — Template for municipal processing registers
+- **Verwerkingenlogging API (VNG)** — Standard API for processing activity logging in Dutch government
+- **BIO** — Information security baseline (personal data protection requirements)
+
+### Specificity Assessment
+- The spec provides good scenario-based coverage of the main GDPR workflows.
+- Missing: entity/schema definitions for processing activities; API endpoint specifications; how processing activities are linked to schemas (admin UI vs. API); BSN search implementation across schemas.
+- Ambiguous: relationship between the existing GdprEntity and the proposed processing register — are they separate concepts or should GdprEntity be extended?
+- Open questions:
+  - Should the verwerkingsactiviteiten be stored as OpenRegister objects (in a dedicated schema) or as a separate entity table?
+  - How does purpose-bound access control interact with the existing RBAC system?
+  - What is the format for the Art 30 export — VNG template, custom, or configurable?
+  - How should the BSN cross-schema search be implemented efficiently across potentially large datasets?

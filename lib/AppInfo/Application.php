@@ -139,6 +139,7 @@ use OCA\OpenRegister\Listener\FileChangeListener;
 use OCA\OpenRegister\Listener\ObjectChangeListener;
 use OCA\OpenRegister\Listener\ObjectCleanupListener;
 use OCA\OpenRegister\Listener\ToolRegistrationListener;
+use OCA\OpenRegister\Listener\GraphQLSubscriptionListener;
 use OCA\OpenRegister\Listener\WebhookEventListener;
 use OCA\OpenRegister\Listener\HookListener;
 use OCA\OpenRegister\Service\NoteService;
@@ -723,6 +724,11 @@ class Application extends App implements IBootstrap
 
         // WebhookEventListener for webhook delivery.
         $context->registerEventListener(ObjectCreatedEvent::class, WebhookEventListener::class);
+
+        // GraphQL subscription event listeners.
+        $context->registerEventListener(ObjectCreatedEvent::class, GraphQLSubscriptionListener::class);
+        $context->registerEventListener(ObjectUpdatedEvent::class, GraphQLSubscriptionListener::class);
+        $context->registerEventListener(ObjectDeletedEvent::class, GraphQLSubscriptionListener::class);
 
         // CommentsEntityListener registers "openregister" objectType for Nextcloud Comments.
         $context->registerEventListener(CommentsEntityEvent::class, CommentsEntityListener::class);

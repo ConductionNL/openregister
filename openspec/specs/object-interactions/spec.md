@@ -302,3 +302,27 @@ The system MUST clean up tasks and notes when an OpenRegister object is deleted.
 - **Performance**: Task listing MUST complete within 2 seconds for objects with up to 50 tasks. CalDAV REPORT queries are post-filtered (not SQL-indexed), so the service SHOULD limit queries to the relevant user's calendars.
 - **Security**: Task/note operations MUST respect RBAC — only users with access to the OpenRegister object can create/view/delete tasks and notes on it.
 - **Compatibility**: The X-OPENREGISTER-* properties MUST NOT break standard CalDAV clients (they ignore unknown X- properties). Tasks created through OpenRegister MUST be visible in Nextcloud's Tasks app.
+
+### Current Implementation Status
+- **Fully implemented — TaskService**: `TaskService` (`lib/Service/TaskService.php`) provides CRUD operations for CalDAV VTODO items linked to OpenRegister objects via `X-OPENREGISTER-REGISTER`, `X-OPENREGISTER-SCHEMA`, and `X-OPENREGISTER-OBJECT` properties. Uses `CalDavBackend` for calendar operations and `Sabre\VObject\Reader` for VTODO parsing.
+- **Fully implemented — TasksController**: `TasksController` (`lib/Controller/TasksController.php`) exposes REST endpoints at `.../objects/{register}/{schema}/{id}/tasks` for list, create, update, and delete operations.
+- **Fully implemented — NoteService**: `NoteService` (`lib/Service/NoteService.php`) wraps `ICommentsManager` for CRUD operations on comments linked to OpenRegister objects. Uses `objectType: "openregister"` and `objectId: {uuid}`.
+- **Fully implemented — NotesController**: `NotesController` (`lib/Controller/NotesController.php`) exposes REST endpoints at `.../objects/{register}/{schema}/{id}/notes` for list, create, and delete operations.
+- **Fully implemented — CommentsEntityListener**: `CommentsEntityListener` (`lib/Listener/CommentsEntityListener.php`) registers `"openregister"` as a comments entity type and validates object UUIDs via `ObjectEntityMapper::find()`.
+- **Fully implemented — ObjectCleanupListener**: `ObjectCleanupListener` (`lib/Listener/ObjectCleanupListener.php`) listens for `ObjectDeletedEvent` and deletes linked notes (via `ICommentsManager::deleteCommentsAtObject()`) and tasks (via `TaskService::getTasksForObject()` + `deleteTask()` per task).
+- **Fully implemented — calendar selection**: `TaskService::findUserCalendar()` finds the first VTODO-supporting calendar by checking `supported-calendar-component-set`.
+- **Registered in Application**: `Application.php` (`lib/AppInfo/Application.php`) registers the `CommentsEntityListener` for `CommentsEntityEvent` and `ObjectCleanupListener`.
+- **Known limitation**: Note deletion does not enforce author/admin authorization (any authenticated user can delete any note). Task assignee is not included in the response.
+
+### Standards & References
+- RFC 5545 (iCalendar) for VTODO format
+- RFC 9253 (iCalendar LINK property) for object linking in VTODOs
+- Nextcloud Comments API (`ICommentsManager`)
+- Nextcloud CalDAV backend (`CalDavBackend`)
+- Sabre VObject library for iCalendar parsing
+
+### Specificity Assessment
+- **Highly specific and fully implemented**: The spec is detailed, well-structured, and all requirements are implemented with matching code.
+- **Architecture diagram included**: Clear visual representation of the system architecture.
+- **Known limitations documented**: Authorization gaps and performance notes are explicitly called out.
+- **No open questions**: The spec covers all MVP scenarios comprehensively.

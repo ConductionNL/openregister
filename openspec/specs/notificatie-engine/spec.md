@@ -105,3 +105,34 @@ Users MUST be able to opt out of specific notification channels or rules.
 - WHEN user `jan` in that group disables email for this rule
 - THEN `jan` MUST NOT receive email notifications for this rule
 - AND `jan` MUST still receive in-app notifications if that channel is also configured
+
+### Current Implementation Status
+- **Partially implemented — in-app notifications**: `NotificationService` (`lib/Service/NotificationService.php`) exists and integrates with Nextcloud's `INotificationManager`. `Notifier` (`lib/Notification/Notifier.php`) implements `INotifier` for formatting notifications with translations.
+- **Partially implemented — webhook notifications**: `WebhookService` (`lib/Service/WebhookService.php`) handles outbound webhook delivery. `WebhookEventListener` (`lib/Listener/WebhookEventListener.php`) listens for object CRUD events and triggers webhooks. Webhook entities are stored via `WebhookMapper` (`lib/Db/WebhookMapper.php`) and delivery is logged in `WebhookLog` (`lib/Db/WebhookLog.php`) / `WebhookLogMapper` (`lib/Db/WebhookLogMapper.php`).
+- **Partially implemented — webhook retry**: `WebhookRetryJob` (`lib/Cron/WebhookRetryJob.php`) and `WebhookDeliveryJob` (`lib/BackgroundJob/WebhookDeliveryJob.php`) handle async delivery and retry logic.
+- **Partially implemented — CloudEvent formatting**: `CloudEventFormatter` (`lib/Service/Webhook/CloudEventFormatter.php`) formats webhook payloads following the CloudEvents specification.
+- **Not implemented — email notification channel**: No email sending service exists for notification rules. The codebase notes that mail is being phased out in favor of n8n workflows.
+- **Not implemented — configurable notification rules per schema**: No admin UI or entity for defining notification rules with event/condition/channel/recipient configuration exists. Webhooks are configured globally, not per-schema with conditions.
+- **Not implemented — template-based message formatting**: No template engine for notification messages with `{{object.property}}` substitution exists.
+- **Not implemented — notification batching and throttling**: No digest/batching mechanism exists for high-frequency events.
+- **Not implemented — user notification preferences**: No per-user opt-out or channel preference management exists.
+
+### Standards & References
+- CloudEvents specification (https://cloudevents.io/) — already partially adopted for webhook payloads
+- Nextcloud Notifications API (`INotificationManager`, `INotifier`)
+- HMAC-SHA256 for webhook signature verification
+- VNG Notificaties API (https://vng-realisatie.github.io/gemma-zaken/standaard/notificaties/) for Dutch government notification patterns
+- RFC 6570 for URI templates in webhook configuration
+
+### Specificity Assessment
+- **Moderately specific**: The spec covers notification rules, channels, templates, batching, retry, and user preferences with clear scenarios.
+- **Missing details**:
+  - Data model for notification rules (what entity, what fields, how stored?)
+  - How conditions are evaluated (expression language? JSON path? Simple field comparison?)
+  - Integration with the existing webhook system vs. a new unified notification system
+  - n8n workflow integration for email delivery (since direct SMTP is being phased out)
+  - How recipient resolution works for dynamic recipients like `object.assignedTo`
+- **Open questions**:
+  - Should the notification engine build on top of the existing webhook system or replace it?
+  - Should email delivery be delegated to n8n workflows rather than implemented natively?
+  - What is the relationship between this spec and the existing `WebhookService`?

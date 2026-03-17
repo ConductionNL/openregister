@@ -92,3 +92,42 @@ Clients MUST be able to subscribe to specific schemas, registers, or individual 
 - GIVEN the client connects to /api/sse/{register}/{schema}/{objectId}
 - THEN it MUST only receive events for that specific object
 - AND this MUST be used for detail view real-time updates
+
+### Current Implementation Status
+
+**Partially implemented via GraphQL Subscriptions (not SSE):**
+- `lib/Controller/GraphQLSubscriptionController.php` -- SSE-based subscription controller using APCu-buffered events
+- `lib/Service/GraphQL/SubscriptionService.php` -- Manages event buffer in APCu with key prefix, supports buffering object change events
+- `lib/Listener/GraphQLSubscriptionListener.php` -- Listens to object events and pushes them to the subscription buffer
+
+**What IS implemented:**
+- SSE streaming endpoint exists (via GraphQL subscription controller)
+- Event buffering in APCu for reconnection support
+- Listener that captures object CRUD events and pushes to buffer
+
+**What is NOT implemented:**
+- Dedicated `/api/sse/{register}/{schema}` and `/api/sse/{register}/{schema}/{objectId}` endpoints (current endpoint is GraphQL-specific)
+- Authorization-aware event filtering (users receiving only events for objects they can access)
+- Topic-based subscriptions per register/schema/object
+- Frontend auto-refresh of list and detail views on SSE events
+- Monotonically increasing event IDs for reconnection
+- Event buffer retention time configuration (5-minute minimum)
+
+### Standards & References
+- W3C Server-Sent Events specification (https://html.spec.whatwg.org/multipage/server-sent-events.html)
+- `EventSource` Web API (https://developer.mozilla.org/en-US/docs/Web/API/EventSource)
+- `Last-Event-ID` reconnection header (part of SSE spec)
+- GraphQL Subscriptions over SSE (current partial implementation pattern)
+
+### Specificity Assessment
+- **Specific enough to implement?** Mostly yes -- scenarios are well-defined with clear event types, payload structures, and subscription patterns.
+- **Missing/ambiguous:**
+  - No specification for maximum concurrent SSE connections per server or rate limiting
+  - No guidance on how SSE interacts with Nextcloud's PHP request model (long-polling in PHP is resource-heavy; APCu buffer is a workaround)
+  - No specification for authentication mechanism on SSE endpoint (cookies, bearer tokens?)
+  - No specification for event payload size limits
+  - Scalability concerns: APCu is per-process -- multi-worker setups may miss events
+- **Open questions:**
+  - Should the existing GraphQL subscription infrastructure be extended or replaced with a dedicated SSE system?
+  - How should SSE work in ExApp sidecar deployment (Python proxy)?
+  - Should WebSocket be considered as an alternative to SSE for bidirectional communication?

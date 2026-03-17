@@ -96,3 +96,52 @@ The system MUST support multi-step approval workflows where objects require sign
 - WHEN `afdelingshoofd` rejects
 - THEN the object MUST move to status `afgewezen`
 - AND the original submitter MUST receive a notification with the rejection reason
+
+### Current Implementation Status
+
+**Substantially implemented** via the schema hooks + workflow engine abstraction infrastructure:
+
+**Implemented (core event-workflow pipeline):**
+- `lib/Service/HookExecutor.php` -- Executes workflows on object lifecycle events (creating, created, updating, updated, deleting, deleted)
+- `lib/Listener/HookListener.php` -- PSR-14 listener dispatching events to HookExecutor
+- `lib/WorkflowEngine/WorkflowEngineInterface.php` -- Engine-agnostic interface for triggering workflows
+- `lib/WorkflowEngine/N8nAdapter.php` -- n8n adapter for workflow execution via webhook triggers
+- `lib/WorkflowEngine/WindmillAdapter.php` -- Windmill adapter
+- `lib/WorkflowEngine/WorkflowResult.php` -- Structured result (approved/rejected/modified/error)
+- `lib/Db/Schema.php` -- Schema `hooks` property for configuring event-workflow connections
+- `lib/Controller/WorkflowEngineController.php` -- API for managing workflow engine registrations
+- `lib/BackgroundJob/HookRetryJob.php` -- Retry failed hook executions
+- `lib/Settings/n8n_workflows.openregister.json` -- Pre-configured n8n workflow templates
+
+**Implemented (workflow can modify objects):**
+- HookExecutor processes `modified` results, merging enriched data back into objects before save
+- Workflows can call OpenRegister API to create/update/delete objects (n8n HTTP nodes)
+
+**Not implemented:**
+- Workflow configuration UI in schema settings (no "Workflows" tab with "Add trigger" button)
+- Visual workflow execution history/monitoring dashboard in the OpenRegister UI
+- Conditional triggers based on property changes (e.g., `changed.status == "in_behandeling"`)
+- Scheduled/cron-based workflow triggers (e.g., daily deadline checks)
+- Multi-step approval chain workflows (can be built in n8n but no OpenRegister-specific support)
+- Approval/rejection UI with notification integration
+- "Test trigger" button in the configuration UI
+
+### Standards & References
+- BPMN 2.0 (Business Process Model and Notation) -- conceptual model for workflow automation
+- CloudEvents 1.0 -- event payload format used for workflow triggers
+- n8n workflow automation platform (https://n8n.io/)
+- Dutch government process automation requirements (VNG ZGW process standards)
+- Nextcloud notification system (`OCP\Notification`)
+
+### Specificity Assessment
+- **Specific enough to implement?** Partially -- the backend event-workflow pipeline is well-defined and implemented, but the UI and approval chain requirements need more detail.
+- **Missing/ambiguous:**
+  - No specification for the workflow configuration UI component structure
+  - No specification for how "condition" filters are expressed (same as RBAC conditions? Custom DSL?)
+  - No specification for how scheduled workflows interact with Nextcloud's cron system
+  - No specification for approval chain state machine (what states/transitions are valid?)
+  - No specification for notification templates for approval requests/rejections
+- **Open questions:**
+  - Should approval chains be first-class OpenRegister entities or purely n8n workflow configurations?
+  - How should workflow execution history be stored (OpenRegister database? n8n execution log? Both?)
+  - Should the workflow configuration UI be in OpenRegister or delegated to the engine's native UI?

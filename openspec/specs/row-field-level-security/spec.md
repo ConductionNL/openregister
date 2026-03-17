@@ -39,37 +39,54 @@ Schema definitions MUST accept row-level security rules that filter objects base
 Row-level security MUST be enforced on REST API, GraphQL, search results, exports, and the UI.
 
 #### Scenario: RLS in search results
-- GIVEN RLS restricts meldingen by department
-- WHEN user `jan` (sociale-zaken) searches for meldingen
-- THEN only meldingen where `afdeling: "sociale-zaken"` MUST appear in results
-- AND facet counts MUST reflect only the accessible objects
+- **WHEN** user `jan` (sociale-zaken) searches for meldingen
+- **THEN** only meldingen where `afdeling: "sociale-zaken"` MUST appear in results
+- **AND** facet counts MUST reflect only the accessible objects
 
 #### Scenario: RLS in data export
-- GIVEN user `jan` exports meldingen to CSV
-- THEN the export MUST only contain objects passing the RLS rules
-- AND the export MUST NOT include objects from other departments
+- **WHEN** user `jan` exports meldingen to CSV
+- **THEN** the export MUST only contain objects passing the RLS rules
+- **AND** the export MUST NOT include objects from other departments
+
+#### Scenario: RLS in GraphQL queries
+- **WHEN** user `jan` (sociale-zaken) queries `meldingen { title afdeling }` via GraphQL
+- **THEN** only meldingen where `afdeling: "sociale-zaken"` MUST be returned
+- **AND** the RLS filter MUST be applied at the MagicRbacHandler query level before GraphQL resolvers execute
+- **AND** facets requested in the GraphQL connection MUST reflect only RLS-accessible objects
+
+#### Scenario: RLS in GraphQL mutations
+- **WHEN** user `pieter` (ruimtelijke-ordening) attempts `updateMelding(id: "melding-1")` on a melding with `afdeling: "sociale-zaken"`
+- **THEN** the mutation MUST be rejected with `extensions.code: "FORBIDDEN"`
+- **AND** the RLS denial MUST be logged to the audit trail
+
+#### Scenario: RLS in GraphQL nested resolution
+- **WHEN** user `jan` queries `dossier { meldingen { title } }` and some nested meldingen fail RLS
+- **THEN** only RLS-passing meldingen MUST appear in the nested array
+- **AND** no error MUST be raised for filtered-out items (silently excluded, matching list behavior)
 
 ### Requirement: Schemas MUST support field-level security
 Individual properties MUST be configurable with visibility rules based on user roles.
 
 #### Scenario: Hide sensitive field from basic users
-- GIVEN schema `inwoners` with property `bsn` configured with FLS: visible only to group `bsn-geautoriseerd`
-- AND user `medewerker-1` is NOT in `bsn-geautoriseerd`
-- WHEN `medewerker-1` reads an inwoner object
-- THEN the `bsn` field MUST be omitted from the response
-- AND all other fields MUST be returned normally
+- **WHEN** schema `inwoners` has property `bsn` visible only to group `bsn-geautoriseerd`
+- **AND** user `medewerker-1` is NOT in `bsn-geautoriseerd`
+- **THEN** the `bsn` field MUST be omitted from REST responses
+- **AND** in GraphQL, `bsn` MUST resolve to `null` with a partial error at path `["inwoner", "bsn"]` with `extensions.code: "FIELD_FORBIDDEN"`
 
 #### Scenario: Show sensitive field to authorized users
-- GIVEN the same configuration
-- AND user `specialist` IS in `bsn-geautoriseerd`
-- WHEN `specialist` reads the same inwoner object
-- THEN the `bsn` field MUST be included in the response
+- **WHEN** user `specialist` IS in `bsn-geautoriseerd`
+- **THEN** the `bsn` field MUST be included in both REST and GraphQL responses
 
 #### Scenario: Field-level security in list views
-- GIVEN FLS hides `bsn` from `medewerker-1`
-- WHEN `medewerker-1` views the inwoners list
-- THEN the `bsn` column MUST NOT appear in the table
-- AND the column MUST appear for authorized users
+- **WHEN** user `medewerker-1` cannot read `bsn`
+- **THEN** the `bsn` column MUST NOT appear in REST list responses
+- **AND** in GraphQL list queries, `bsn` MUST resolve to `null` on each edge node with partial errors
+
+#### Scenario: Field-level write protection in GraphQL mutations
+- **WHEN** user `medewerker-1` is NOT in group `redacteuren`
+- **AND** they attempt `updateInwoner(id: "...", input: { interneAantekening: "text" })`
+- **THEN** the mutation MUST be rejected with `extensions.code: "FIELD_FORBIDDEN"`
+- **AND** `PropertyRbacHandler::getUnauthorizedProperties()` MUST be called to determine the blocked fields
 
 ### Requirement: RLS rules MUST support the $CURRENT_USER context variable
 Rules MUST be able to reference the current user's properties (ID, groups, custom attributes).
@@ -96,3 +113,52 @@ All access decisions (grant/deny) based on RLS/FLS MUST be loggable for complian
 - GIVEN RLS denies user `pieter` access to `melding-1`
 - WHEN logging is enabled for access decisions
 - THEN a log entry MUST record: user, object, rule that denied access, timestamp
+
+### Current Implementation Status
+
+**Partially implemented.** Schema-level RBAC and some row/field-level security foundations exist:
+
+**Implemented (RBAC foundation):**
+- `lib/Db/MagicMapper/MagicRbacHandler.php` -- RBAC handler for magic table queries, applies authorization rules as SQL WHERE clauses
+- `lib/Db/Schema.php` -- Schema entity supports `authorization` JSON property with per-action rules (read, create, update, delete)
+- `lib/Db/ObjectEntity.php` -- Objects support per-object `authorization` override (line ~216: `protected ?array $authorization = []`)
+- `lib/Service/Object/SaveObject.php` -- RBAC checks during save operations
+- RBAC rules support `$CURRENT_USER`-like context via dynamic variable resolution (e.g., `$now` in `MagicRbacHandler`)
+- Condition matching with operators (`$lte`, `$gte`, `$in`, etc.) for field-value comparisons
+- Group-based access control (user groups matched against schema authorization rules)
+
+**Partially implemented (row-level):**
+- Object-level `authorization` field allows per-object access rules (a form of RLS)
+- `MagicRbacHandler` can filter queries based on field values matching user context (basic RLS)
+- `MagicOrganizationHandler` provides organisation-based row filtering (multi-tenancy)
+
+**Not implemented:**
+- Configurable RLS rules on schema definition (e.g., `user.group CONTAINS object.afdeling`)
+- `$CURRENT_USER` context variable with full user properties (ID, groups, custom attributes)
+- Field-level security (FLS) -- hiding specific fields from unauthorized users
+- FLS in list view column visibility
+- RLS in search results with filtered facet counts
+- RLS in data exports
+- Audit logging of access decisions (grant/deny)
+- Combined RBAC + RLS + FLS evaluation chain
+
+### Standards & References
+- PostgreSQL Row-Level Security (RLS) model -- conceptual reference for row-level filtering
+- ABAC (Attribute-Based Access Control) -- NIST SP 800-162
+- Dutch BIO (Baseline Informatiebeveiliging Overheid) -- baseline information security for government
+- WCAG 2.1 AA -- accessible display of security-restricted content
+- RBAC (Role-Based Access Control) -- NIST RBAC model
+
+### Specificity Assessment
+- **Specific enough to implement?** Partially -- the scenarios are clear, but the rule definition language is underspecified.
+- **Missing/ambiguous:**
+  - No formal grammar for RLS rule expressions (e.g., `user.group CONTAINS object.afdeling` -- is this a custom DSL?)
+  - No specification for how `$CURRENT_USER` properties are populated (Nextcloud user vs. OpenRegister profile?)
+  - No specification for rule evaluation performance (indexed queries vs. post-fetch filtering)
+  - No specification for FLS interaction with API responses (omit field vs. return null vs. return redacted marker)
+  - No specification for how RLS/FLS rules are configured in the admin UI
+  - No specification for rule conflict resolution (if multiple rules apply, which takes precedence?)
+- **Open questions:**
+  - Should RLS rules be evaluated in SQL (MagicMapper) or in PHP (post-fetch filtering)?
+  - How should FLS interact with GraphQL field selection?
+  - Should `clearanceLevel` be a Nextcloud user attribute or an OpenRegister user profile property?

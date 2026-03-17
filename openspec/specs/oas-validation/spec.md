@@ -90,3 +90,24 @@ Every tag referenced in path operations MUST be defined in the top-level `tags` 
 - WHEN OAS is generated
 - THEN the top-level `tags` array MUST contain an entry with `"name": "Module"`
 - AND all operations tagged "Module" MUST reference this existing tag
+
+### Current Implementation Status
+- **Fully implemented — OAS generation**: `OasService` (`lib/Service/OasService.php`) implements `createOas()` (line ~122) which generates OpenAPI specifications from register/schema definitions. The service reads from a `BaseOas.json` template (`lib/Service/Resources/BaseOas.json`).
+- **Fully implemented — OAS controller**: `OasController` (`lib/Controller/OasController.php`) exposes endpoints for single-register and all-registers OAS generation. `RegistersController` (`lib/Controller/RegistersController.php`) also provides OAS access via `/api/registers/{id}/oas`.
+- **Fully implemented — RBAC scope extraction**: `OasService::createOas()` (line ~210) extracts RBAC groups from all schemas and generates OAuth2 scopes. `extractGroupFromRule()` (line ~373) handles individual rule parsing.
+- **Implemented but validation status unknown**: The spec requires output to pass `redocly lint` with zero errors. The OAS generation code exists, but whether the current output passes Redocly validation is an ongoing concern (the spec was created to address known validation issues).
+- **Partially implemented — schema name sanitization**: Schema component names need to match `^[a-zA-Z0-9._-]+$` pattern; the implementation may not fully sanitize all names (e.g., titles with spaces).
+- **Partially implemented — empty composition array cleanup**: The spec requires removing empty `allOf`/`anyOf`/`oneOf` arrays and filtering invalid items; this may not be fully implemented.
+- **Base template exists**: `BaseOas.json` (`lib/Service/Resources/BaseOas.json`) provides the foundation OAS structure.
+
+### Standards & References
+- OpenAPI Specification 3.1.0 (https://spec.openapis.org/oas/v3.1.0)
+- Redocly CLI for OAS validation (https://redocly.com/docs/cli/)
+- JSON Schema Draft 2020-12 (referenced by OAS 3.1.0)
+- OAuth 2.0 Authorization Code Flow (RFC 6749) for security scheme definitions
+
+### Specificity Assessment
+- **Highly specific and implementable as-is**: The spec provides clear, testable scenarios for every validation aspect: `$ref` resolution, property types, query parameters, server URLs, operation IDs, and tags.
+- **Well-scoped**: Focuses exclusively on OAS output correctness, not on new features.
+- **Testable**: Each scenario can be validated by running `redocly lint` on the generated output.
+- **No ambiguity**: Requirements are precise with concrete examples of valid/invalid output.

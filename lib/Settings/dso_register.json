@@ -1,0 +1,1254 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "DSO Mock Register",
+    "description": "Mock DSO (Digitaal Stelsel Omgevingswet) register with environmental permit data aligned to the CIM-OW/IMOW data model. Contains activities, locations, environmental documents, and permit applications for development and testing.",
+    "version": "1.0.0"
+  },
+  "x-openregister": {
+    "type": "mock",
+    "app": "openregister",
+    "openregister": "^v0.2.10",
+    "description": "DSO mock register for development and testing"
+  },
+  "paths": {},
+  "components": {
+    "registers": {
+      "dso": {
+        "slug": "dso",
+        "title": "DSO (Digitaal Stelsel Omgevingswet)",
+        "description": "Mock DSO register with environmental permit data for the Dutch Environment and Planning Act (Omgevingswet). Contains activities, locations, environmental documents, and permit applications.",
+        "schemas": [
+          "activiteit",
+          "locatie",
+          "omgevingsdocument",
+          "vergunningaanvraag"
+        ],
+        "folder": "Open Registers/DSO"
+      }
+    },
+    "schemas": {
+      "activiteit": {
+        "slug": "activiteit",
+        "title": "Activiteit",
+        "version": "1.0.0",
+        "published": "2025-01-01T00:00:00+00:00",
+        "summary": "An activity within the DSO environment and planning system",
+        "description": "Activities represent regulated actions under the Omgevingswet, such as construction, demolition, tree felling, or environmental operations. Each activity has a classification (regelkwalificatie) indicating whether it requires a permit, notification, or is permit-free. Activities can form a hierarchy via bovenliggendeActiviteit.",
+        "type": "object",
+        "required": [
+          "identificatie",
+          "naam",
+          "regelkwalificatie"
+        ],
+        "properties": {
+          "identificatie": {
+            "type": "string",
+            "description": "Unique identifier for the activity"
+          },
+          "naam": {
+            "type": "string",
+            "description": "Name of the activity (e.g. 'Dakkapel plaatsen')"
+          },
+          "activiteitgroep": {
+            "type": "string",
+            "description": "Category group the activity belongs to"
+          },
+          "regelkwalificatie": {
+            "type": "string",
+            "description": "Regulatory classification of the activity",
+            "enum": [
+              "vergunningplicht",
+              "meldingsplicht",
+              "informatieplicht",
+              "vergunningvrij"
+            ]
+          },
+          "bovenliggendeActiviteit": {
+            "type": "string",
+            "description": "Reference to the parent activity in the hierarchy"
+          },
+          "omschrijving": {
+            "type": "string",
+            "description": "Detailed description of the activity"
+          }
+        },
+        "hardValidation": false,
+        "searchable": true
+      },
+      "locatie": {
+        "slug": "locatie",
+        "title": "Locatie",
+        "version": "1.0.0",
+        "published": "2025-01-01T00:00:00+00:00",
+        "summary": "A location within the DSO system",
+        "description": "Locations represent geographic areas or addresses relevant to environmental permits and regulations. They can reference specific BAG addresses or represent broader municipal areas.",
+        "type": "object",
+        "required": [
+          "identificatie",
+          "naam",
+          "type"
+        ],
+        "properties": {
+          "identificatie": {
+            "type": "string",
+            "description": "Unique identifier for the location"
+          },
+          "naam": {
+            "type": "string",
+            "description": "Name of the location"
+          },
+          "type": {
+            "type": "string",
+            "description": "Type of location",
+            "enum": [
+              "adres",
+              "gebied",
+              "gemeente",
+              "waterschap",
+              "provincie"
+            ]
+          },
+          "gemeenteCode": {
+            "type": "string",
+            "description": "Municipality code (CBS gemeentecode)"
+          },
+          "gemeenteNaam": {
+            "type": "string",
+            "description": "Municipality name"
+          },
+          "adres": {
+            "type": "object",
+            "description": "Optional address reference",
+            "properties": {
+              "straat": {
+                "type": "string",
+                "description": "Street name"
+              },
+              "huisnummer": {
+                "type": "integer",
+                "description": "House number"
+              },
+              "huisletter": {
+                "type": "string",
+                "description": "House letter"
+              },
+              "postcode": {
+                "type": "string",
+                "description": "Dutch postal code"
+              },
+              "woonplaats": {
+                "type": "string",
+                "description": "City name"
+              }
+            }
+          }
+        },
+        "hardValidation": false,
+        "searchable": true
+      },
+      "omgevingsdocument": {
+        "slug": "omgevingsdocument",
+        "title": "Omgevingsdocument",
+        "version": "1.0.0",
+        "published": "2025-01-01T00:00:00+00:00",
+        "summary": "An environmental planning document",
+        "description": "Environmental documents are regulatory instruments under the Omgevingswet, including municipal environment plans (omgevingsplan), provincial regulations (omgevingsverordening), and water authority regulations (waterschapsverordening).",
+        "type": "object",
+        "required": [
+          "identificatie",
+          "type",
+          "titel"
+        ],
+        "properties": {
+          "identificatie": {
+            "type": "string",
+            "description": "Unique document identifier"
+          },
+          "type": {
+            "type": "string",
+            "description": "Type of environmental document",
+            "enum": [
+              "omgevingsplan",
+              "omgevingsverordening",
+              "waterschapsverordening",
+              "AMvB",
+              "ministeriele_regeling"
+            ]
+          },
+          "status": {
+            "type": "string",
+            "description": "Publication status of the document",
+            "enum": [
+              "vastgesteld",
+              "ontwerp",
+              "ingetrokken"
+            ]
+          },
+          "bevoegdGezag": {
+            "type": "string",
+            "description": "Competent authority (organization name or OIN)"
+          },
+          "titel": {
+            "type": "string",
+            "description": "Title of the document"
+          },
+          "publicatiedatum": {
+            "type": "string",
+            "format": "date",
+            "description": "Date of publication"
+          }
+        },
+        "hardValidation": false,
+        "searchable": true
+      },
+      "vergunningaanvraag": {
+        "slug": "vergunningaanvraag",
+        "title": "Vergunningaanvraag",
+        "version": "1.0.0",
+        "published": "2025-01-01T00:00:00+00:00",
+        "summary": "An environmental permit application",
+        "description": "Permit applications represent requests submitted through the DSO Omgevingsloket. They reference one or more activities and a location, and track the application lifecycle from submission through decision.",
+        "type": "object",
+        "required": [
+          "identificatie",
+          "activiteiten",
+          "locatie",
+          "status",
+          "indieningsdatum"
+        ],
+        "properties": {
+          "identificatie": {
+            "type": "string",
+            "description": "Unique application identifier"
+          },
+          "activiteiten": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "References to the activities in this application"
+          },
+          "locatie": {
+            "type": "object",
+            "description": "Application location",
+            "properties": {
+              "identificatie": {
+                "type": "string",
+                "description": "Reference to a locatie record"
+              },
+              "adres": {
+                "type": "string",
+                "description": "Human-readable address"
+              }
+            }
+          },
+          "initiatiefnemer": {
+            "type": "object",
+            "description": "Applicant details",
+            "properties": {
+              "naam": {
+                "type": "string",
+                "description": "Applicant name"
+              },
+              "type": {
+                "type": "string",
+                "description": "Type of applicant",
+                "enum": [
+                  "particulier",
+                  "bedrijf"
+                ]
+              }
+            }
+          },
+          "bevoegdGezag": {
+            "type": "string",
+            "description": "Competent authority handling the application"
+          },
+          "status": {
+            "type": "string",
+            "description": "Current status of the application",
+            "enum": [
+              "ingediend",
+              "in_behandeling",
+              "verleend",
+              "geweigerd",
+              "ingetrokken"
+            ]
+          },
+          "indieningsdatum": {
+            "type": "string",
+            "format": "date",
+            "description": "Date the application was submitted"
+          },
+          "besluitdatum": {
+            "type": "string",
+            "format": "date",
+            "description": "Date the decision was made"
+          },
+          "bijlagen": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "naam": {
+                  "type": "string",
+                  "description": "Attachment file name"
+                },
+                "type": {
+                  "type": "string",
+                  "description": "Attachment type"
+                }
+              }
+            },
+            "description": "Attachments to the application"
+          },
+          "toelichting": {
+            "type": "string",
+            "description": "Additional explanation or decision motivation"
+          }
+        },
+        "hardValidation": false,
+        "searchable": true
+      }
+    },
+    "objects": [
+      {
+        "@self": {
+          "register": "dso",
+          "schema": "activiteit",
+          "slug": "bouwen"
+        },
+        "identificatie": "nl.imow-gm0363.activiteit.bouwen",
+        "naam": "Bouwen",
+        "activiteitgroep": "bouwactiviteiten",
+        "regelkwalificatie": "vergunningplicht",
+        "bovenliggendeActiviteit": null,
+        "omschrijving": "Het plaatsen, geheel of gedeeltelijk oprichten, vernieuwen, veranderen of vergroten van een bouwwerk."
+      },
+      {
+        "@self": {
+          "register": "dso",
+          "schema": "activiteit",
+          "slug": "dakkapel-plaatsen"
+        },
+        "identificatie": "nl.imow-gm0363.activiteit.dakkapelPlaatsen",
+        "naam": "Dakkapel plaatsen",
+        "activiteitgroep": "bouwactiviteiten",
+        "regelkwalificatie": "vergunningplicht",
+        "bovenliggendeActiviteit": "nl.imow-gm0363.activiteit.bouwen",
+        "omschrijving": "Het plaatsen van een dakkapel op een bestaand dak. Afhankelijk van de locatie (voor- of achterkant) en afmetingen kan een vergunning nodig zijn."
+      },
+      {
+        "@self": {
+          "register": "dso",
+          "schema": "activiteit",
+          "slug": "aanbouw-plaatsen"
+        },
+        "identificatie": "nl.imow-gm0363.activiteit.aanbouwPlaatsen",
+        "naam": "Aanbouw plaatsen",
+        "activiteitgroep": "bouwactiviteiten",
+        "regelkwalificatie": "vergunningplicht",
+        "bovenliggendeActiviteit": "nl.imow-gm0363.activiteit.bouwen",
+        "omschrijving": "Het realiseren van een aanbouw aan een bestaand gebouw, zoals een uitbouw of serre."
+      },
+      {
+        "@self": {
+          "register": "dso",
+          "schema": "activiteit",
+          "slug": "zonnepanelen-plaatsen"
+        },
+        "identificatie": "nl.imow-gm0363.activiteit.zonnepanelenPlaatsen",
+        "naam": "Zonnepanelen plaatsen",
+        "activiteitgroep": "bouwactiviteiten",
+        "regelkwalificatie": "vergunningvrij",
+        "bovenliggendeActiviteit": "nl.imow-gm0363.activiteit.bouwen",
+        "omschrijving": "Het plaatsen van zonnepanelen of zonnecollectoren op een dak. In de meeste gevallen vergunningvrij mits binnen het dakvlak."
+      },
+      {
+        "@self": {
+          "register": "dso",
+          "schema": "activiteit",
+          "slug": "schutting-plaatsen-laag"
+        },
+        "identificatie": "nl.imow-gm0363.activiteit.schuttingPlaatsenLaag",
+        "naam": "Schutting plaatsen (< 2m)",
+        "activiteitgroep": "bouwactiviteiten",
+        "regelkwalificatie": "vergunningvrij",
+        "bovenliggendeActiviteit": "nl.imow-gm0363.activiteit.bouwen",
+        "omschrijving": "Het plaatsen van een schutting of erfafscheiding lager dan 2 meter. In de meeste gevallen vergunningvrij."
+      },
+      {
+        "@self": {
+          "register": "dso",
+          "schema": "activiteit",
+          "slug": "schutting-plaatsen-hoog"
+        },
+        "identificatie": "nl.imow-gm0363.activiteit.schuttingPlaatsenHoog",
+        "naam": "Schutting plaatsen (> 2m)",
+        "activiteitgroep": "bouwactiviteiten",
+        "regelkwalificatie": "vergunningplicht",
+        "bovenliggendeActiviteit": "nl.imow-gm0363.activiteit.bouwen",
+        "omschrijving": "Het plaatsen van een schutting of erfafscheiding hoger dan 2 meter. Vergunningplichtig vanwege impact op omgeving."
+      },
+      {
+        "@self": {
+          "register": "dso",
+          "schema": "activiteit",
+          "slug": "kozijnen-vervangen"
+        },
+        "identificatie": "nl.imow-gm0363.activiteit.kozijnenVervangen",
+        "naam": "Kozijnen vervangen",
+        "activiteitgroep": "bouwactiviteiten",
+        "regelkwalificatie": "vergunningvrij",
+        "bovenliggendeActiviteit": "nl.imow-gm0363.activiteit.bouwen",
+        "omschrijving": "Het vervangen van bestaande kozijnen door nieuwe kozijnen van vergelijkbare uitstraling. Doorgaans vergunningvrij."
+      },
+      {
+        "@self": {
+          "register": "dso",
+          "schema": "activiteit",
+          "slug": "gevel-wijzigen"
+        },
+        "identificatie": "nl.imow-gm0363.activiteit.gevelWijzigen",
+        "naam": "Gevel wijzigen",
+        "activiteitgroep": "bouwactiviteiten",
+        "regelkwalificatie": "vergunningplicht",
+        "bovenliggendeActiviteit": "nl.imow-gm0363.activiteit.bouwen",
+        "omschrijving": "Het wijzigen van de gevel van een gebouw, zoals het veranderen van materiaal, kleur of indeling. Vergunningplichtig bij wijziging van het aanzicht."
+      },
+      {
+        "@self": {
+          "register": "dso",
+          "schema": "activiteit",
+          "slug": "slopen"
+        },
+        "identificatie": "nl.imow-gm0363.activiteit.slopen",
+        "naam": "Slopen",
+        "activiteitgroep": "sloopactiviteiten",
+        "regelkwalificatie": "meldingsplicht",
+        "bovenliggendeActiviteit": null,
+        "omschrijving": "Het geheel of gedeeltelijk afbreken van een bouwwerk."
+      },
+      {
+        "@self": {
+          "register": "dso",
+          "schema": "activiteit",
+          "slug": "sloopmelding-asbest"
+        },
+        "identificatie": "nl.imow-gm0363.activiteit.sloopmeldingAsbest",
+        "naam": "Sloopmelding asbest",
+        "activiteitgroep": "sloopactiviteiten",
+        "regelkwalificatie": "meldingsplicht",
+        "bovenliggendeActiviteit": "nl.imow-gm0363.activiteit.slopen",
+        "omschrijving": "Het slopen van een bouwwerk of onderdeel daarvan dat asbest bevat. Meldingsplicht geldt altijd bij verwijdering van asbesthoudend materiaal."
+      },
+      {
+        "@self": {
+          "register": "dso",
+          "schema": "activiteit",
+          "slug": "sloopmelding-overig"
+        },
+        "identificatie": "nl.imow-gm0363.activiteit.sloopmeldingOverig",
+        "naam": "Sloopmelding overig",
+        "activiteitgroep": "sloopactiviteiten",
+        "regelkwalificatie": "meldingsplicht",
+        "bovenliggendeActiviteit": "nl.imow-gm0363.activiteit.slopen",
+        "omschrijving": "Het slopen van een bouwwerk (meer dan 10 m3 sloopafval). Meldingsplicht bij grotere sloopwerkzaamheden."
+      },
+      {
+        "@self": {
+          "register": "dso",
+          "schema": "activiteit",
+          "slug": "kappen"
+        },
+        "identificatie": "nl.imow-gm0363.activiteit.kappen",
+        "naam": "Kappen",
+        "activiteitgroep": "kapactiviteiten",
+        "regelkwalificatie": "vergunningplicht",
+        "bovenliggendeActiviteit": null,
+        "omschrijving": "Het vellen of rooien van houtopstand (bomen en heesters)."
+      },
+      {
+        "@self": {
+          "register": "dso",
+          "schema": "activiteit",
+          "slug": "boom-kappen"
+        },
+        "identificatie": "nl.imow-gm0363.activiteit.boomKappen",
+        "naam": "Boom kappen",
+        "activiteitgroep": "kapactiviteiten",
+        "regelkwalificatie": "vergunningplicht",
+        "bovenliggendeActiviteit": "nl.imow-gm0363.activiteit.kappen",
+        "omschrijving": "Het vellen van een boom met een stamdiameter groter dan de in de verordening vastgestelde maat. Vergunningplichtig ter bescherming van het groen."
+      },
+      {
+        "@self": {
+          "register": "dso",
+          "schema": "activiteit",
+          "slug": "milieu"
+        },
+        "identificatie": "nl.imow-gm0363.activiteit.milieu",
+        "naam": "Milieu",
+        "activiteitgroep": "milieuactiviteiten",
+        "regelkwalificatie": "meldingsplicht",
+        "bovenliggendeActiviteit": null,
+        "omschrijving": "Activiteiten met mogelijke gevolgen voor het milieu, zoals bedrijfsactiviteiten, lozingen en opslag van stoffen."
+      },
+      {
+        "@self": {
+          "register": "dso",
+          "schema": "activiteit",
+          "slug": "bedrijfsactiviteit-starten"
+        },
+        "identificatie": "nl.imow-gm0363.activiteit.bedrijfsactiviteitStarten",
+        "naam": "Bedrijfsactiviteit starten",
+        "activiteitgroep": "milieuactiviteiten",
+        "regelkwalificatie": "meldingsplicht",
+        "bovenliggendeActiviteit": "nl.imow-gm0363.activiteit.milieu",
+        "omschrijving": "Het starten van een milieubelastende activiteit als bedrijf. Meldingsplicht voor de meeste bedrijfsmatige activiteiten."
+      },
+      {
+        "@self": {
+          "register": "dso",
+          "schema": "activiteit",
+          "slug": "lozing-op-riolering"
+        },
+        "identificatie": "nl.imow-gm0363.activiteit.lozingOpRiolering",
+        "naam": "Lozing op riolering",
+        "activiteitgroep": "milieuactiviteiten",
+        "regelkwalificatie": "meldingsplicht",
+        "bovenliggendeActiviteit": "nl.imow-gm0363.activiteit.milieu",
+        "omschrijving": "Het lozen van afvalwater op het gemeentelijk riool. Meldingsplicht bij andere dan huishoudelijke lozingen."
+      },
+      {
+        "@self": {
+          "register": "dso",
+          "schema": "activiteit",
+          "slug": "opslag-gevaarlijke-stoffen"
+        },
+        "identificatie": "nl.imow-gm0363.activiteit.opslagGevaarlijkeStoffen",
+        "naam": "Opslag gevaarlijke stoffen",
+        "activiteitgroep": "milieuactiviteiten",
+        "regelkwalificatie": "vergunningplicht",
+        "bovenliggendeActiviteit": "nl.imow-gm0363.activiteit.milieu",
+        "omschrijving": "Het opslaan van gevaarlijke stoffen boven de in het Besluit activiteiten leefomgeving vastgestelde drempelwaarden. Vergunningplichtig."
+      },
+      {
+        "@self": {
+          "register": "dso",
+          "schema": "activiteit",
+          "slug": "gebruik-wijzigen"
+        },
+        "identificatie": "nl.imow-gm0363.activiteit.gebruikWijzigen",
+        "naam": "Gebruik wijzigen",
+        "activiteitgroep": "gebruiksactiviteiten",
+        "regelkwalificatie": "vergunningplicht",
+        "bovenliggendeActiviteit": null,
+        "omschrijving": "Het wijzigen van het gebruik van gronden of bouwwerken in strijd met het omgevingsplan."
+      },
+      {
+        "@self": {
+          "register": "dso",
+          "schema": "activiteit",
+          "slug": "bestemmingswijziging"
+        },
+        "identificatie": "nl.imow-gm0363.activiteit.bestemmingswijziging",
+        "naam": "Bestemmingswijziging",
+        "activiteitgroep": "gebruiksactiviteiten",
+        "regelkwalificatie": "vergunningplicht",
+        "bovenliggendeActiviteit": "nl.imow-gm0363.activiteit.gebruikWijzigen",
+        "omschrijving": "Het wijzigen van de functie/bestemming van een gebouw of perceel, bijvoorbeeld van kantoor naar woning."
+      },
+      {
+        "@self": {
+          "register": "dso",
+          "schema": "activiteit",
+          "slug": "kamerverhuur"
+        },
+        "identificatie": "nl.imow-gm0363.activiteit.kamerverhuur",
+        "naam": "Kamerverhuur",
+        "activiteitgroep": "gebruiksactiviteiten",
+        "regelkwalificatie": "vergunningplicht",
+        "bovenliggendeActiviteit": "nl.imow-gm0363.activiteit.gebruikWijzigen",
+        "omschrijving": "Het omzetten van een woning naar kamerverhuur (onzelfstandige woonruimte). Vergunningplichtig in de meeste gemeenten."
+      },
+      {
+        "@self": {
+          "register": "dso",
+          "schema": "activiteit",
+          "slug": "uitrit"
+        },
+        "identificatie": "nl.imow-gm0363.activiteit.uitrit",
+        "naam": "Uitrit",
+        "activiteitgroep": "uitritactiviteiten",
+        "regelkwalificatie": "vergunningplicht",
+        "bovenliggendeActiviteit": null,
+        "omschrijving": "Het aanleggen of veranderen van een uitweg (uitrit) van een perceel naar de openbare weg."
+      },
+      {
+        "@self": {
+          "register": "dso",
+          "schema": "activiteit",
+          "slug": "uitrit-aanleggen"
+        },
+        "identificatie": "nl.imow-gm0363.activiteit.uitritAanleggen",
+        "naam": "Uitrit aanleggen",
+        "activiteitgroep": "uitritactiviteiten",
+        "regelkwalificatie": "vergunningplicht",
+        "bovenliggendeActiviteit": "nl.imow-gm0363.activiteit.uitrit",
+        "omschrijving": "Het aanleggen van een nieuwe uitrit naar de openbare weg. Vergunningplichtig vanwege verkeersveiligheid en openbare ruimte."
+      },
+      {
+        "@self": {
+          "register": "dso",
+          "schema": "activiteit",
+          "slug": "evenementen"
+        },
+        "identificatie": "nl.imow-gm0363.activiteit.evenementen",
+        "naam": "Evenementen",
+        "activiteitgroep": "evenementenactiviteiten",
+        "regelkwalificatie": "informatieplicht",
+        "bovenliggendeActiviteit": null,
+        "omschrijving": "Het organiseren van evenementen in de openbare ruimte of op privaat terrein met publiek."
+      },
+      {
+        "@self": {
+          "register": "dso",
+          "schema": "activiteit",
+          "slug": "evenement-organiseren"
+        },
+        "identificatie": "nl.imow-gm0363.activiteit.evenementOrganiseren",
+        "naam": "Evenement organiseren",
+        "activiteitgroep": "evenementenactiviteiten",
+        "regelkwalificatie": "informatieplicht",
+        "bovenliggendeActiviteit": "nl.imow-gm0363.activiteit.evenementen",
+        "omschrijving": "Het organiseren van een evenement zoals een markt, festival of sportwedstrijd. Informatieplicht voor kleine evenementen."
+      },
+      {
+        "@self": {
+          "register": "dso",
+          "schema": "activiteit",
+          "slug": "evenement-met-vuurwerk"
+        },
+        "identificatie": "nl.imow-gm0363.activiteit.evenementMetVuurwerk",
+        "naam": "Evenement met vuurwerk",
+        "activiteitgroep": "evenementenactiviteiten",
+        "regelkwalificatie": "vergunningplicht",
+        "bovenliggendeActiviteit": "nl.imow-gm0363.activiteit.evenementen",
+        "omschrijving": "Het organiseren van een evenement waarbij professioneel vuurwerk wordt afgestoken. Vergunningplichtig vanwege veiligheidsrisico's."
+      },
+
+      {
+        "@self": {
+          "register": "dso",
+          "schema": "locatie",
+          "slug": "amsterdam-centrum"
+        },
+        "identificatie": "nl.imow-gm0363.locatie.amsterdamCentrum",
+        "naam": "Amsterdam Centrum",
+        "type": "gebied",
+        "gemeenteCode": "0363",
+        "gemeenteNaam": "Amsterdam",
+        "adres": {
+          "straat": "Keizersgracht",
+          "huisnummer": 123,
+          "postcode": "1015CJ",
+          "woonplaats": "Amsterdam"
+        }
+      },
+      {
+        "@self": {
+          "register": "dso",
+          "schema": "locatie",
+          "slug": "amsterdam-zuid"
+        },
+        "identificatie": "nl.imow-gm0363.locatie.amsterdamZuid",
+        "naam": "Amsterdam Zuid",
+        "type": "gebied",
+        "gemeenteCode": "0363",
+        "gemeenteNaam": "Amsterdam",
+        "adres": {
+          "straat": "Herengracht",
+          "huisnummer": 456,
+          "postcode": "1017BZ",
+          "woonplaats": "Amsterdam"
+        }
+      },
+      {
+        "@self": {
+          "register": "dso",
+          "schema": "locatie",
+          "slug": "rotterdam-centrum"
+        },
+        "identificatie": "nl.imow-gm0599.locatie.rotterdamCentrum",
+        "naam": "Rotterdam Centrum",
+        "type": "gebied",
+        "gemeenteCode": "0599",
+        "gemeenteNaam": "Rotterdam",
+        "adres": {
+          "straat": "Coolsingel",
+          "huisnummer": 40,
+          "postcode": "3011AD",
+          "woonplaats": "Rotterdam"
+        }
+      },
+      {
+        "@self": {
+          "register": "dso",
+          "schema": "locatie",
+          "slug": "den-haag-centrum"
+        },
+        "identificatie": "nl.imow-gm0518.locatie.denHaagCentrum",
+        "naam": "Den Haag Centrum",
+        "type": "gebied",
+        "gemeenteCode": "0518",
+        "gemeenteNaam": "Den Haag",
+        "adres": {
+          "straat": "Buitenhof",
+          "huisnummer": 20,
+          "postcode": "2513AH",
+          "woonplaats": "Den Haag"
+        }
+      },
+      {
+        "@self": {
+          "register": "dso",
+          "schema": "locatie",
+          "slug": "utrecht-binnenstad"
+        },
+        "identificatie": "nl.imow-gm0344.locatie.utrechtBinnenstad",
+        "naam": "Utrecht Binnenstad",
+        "type": "gebied",
+        "gemeenteCode": "0344",
+        "gemeenteNaam": "Utrecht",
+        "adres": {
+          "straat": "Oude Gracht",
+          "huisnummer": 88,
+          "postcode": "3511AR",
+          "woonplaats": "Utrecht"
+        }
+      },
+      {
+        "@self": {
+          "register": "dso",
+          "schema": "locatie",
+          "slug": "groningen-centrum"
+        },
+        "identificatie": "nl.imow-gm0014.locatie.groningenCentrum",
+        "naam": "Groningen Centrum",
+        "type": "gebied",
+        "gemeenteCode": "0014",
+        "gemeenteNaam": "Groningen",
+        "adres": {
+          "straat": "Grote Markt",
+          "huisnummer": 1,
+          "postcode": "9711LV",
+          "woonplaats": "Groningen"
+        }
+      },
+      {
+        "@self": {
+          "register": "dso",
+          "schema": "locatie",
+          "slug": "almere-centrum"
+        },
+        "identificatie": "nl.imow-gm0034.locatie.almereCentrum",
+        "naam": "Almere Centrum",
+        "type": "gebied",
+        "gemeenteCode": "0034",
+        "gemeenteNaam": "Almere",
+        "adres": {
+          "straat": "Stadshuisplein",
+          "huisnummer": 1,
+          "postcode": "1315HR",
+          "woonplaats": "Almere"
+        }
+      },
+      {
+        "@self": {
+          "register": "dso",
+          "schema": "locatie",
+          "slug": "enschede-centrum"
+        },
+        "identificatie": "nl.imow-gm0153.locatie.enschedeCentrum",
+        "naam": "Enschede Centrum",
+        "type": "gebied",
+        "gemeenteCode": "0153",
+        "gemeenteNaam": "Enschede",
+        "adres": {
+          "straat": "Marktplein",
+          "huisnummer": 5,
+          "postcode": "7511GA",
+          "woonplaats": "Enschede"
+        }
+      },
+      {
+        "@self": {
+          "register": "dso",
+          "schema": "locatie",
+          "slug": "maastricht-centrum"
+        },
+        "identificatie": "nl.imow-gm0935.locatie.maastrichtCentrum",
+        "naam": "Maastricht Centrum",
+        "type": "gebied",
+        "gemeenteCode": "0935",
+        "gemeenteNaam": "Maastricht",
+        "adres": {
+          "straat": "Vrijthof",
+          "huisnummer": 10,
+          "postcode": "6211LE",
+          "woonplaats": "Maastricht"
+        }
+      },
+      {
+        "@self": {
+          "register": "dso",
+          "schema": "locatie",
+          "slug": "heel-gemeente-voorbeeldstad"
+        },
+        "identificatie": "nl.imow-gm9999.locatie.heelGemeente",
+        "naam": "Heel gemeente Voorbeeldstad",
+        "type": "gemeente",
+        "gemeenteCode": "9999",
+        "gemeenteNaam": "Voorbeeldstad"
+      },
+      {
+        "@self": {
+          "register": "dso",
+          "schema": "locatie",
+          "slug": "prinsengracht-amsterdam"
+        },
+        "identificatie": "nl.imow-gm0363.locatie.prinsengracht",
+        "naam": "Prinsengracht, Amsterdam",
+        "type": "adres",
+        "gemeenteCode": "0363",
+        "gemeenteNaam": "Amsterdam",
+        "adres": {
+          "straat": "Prinsengracht",
+          "huisnummer": 300,
+          "postcode": "1016HJ",
+          "woonplaats": "Amsterdam"
+        }
+      },
+      {
+        "@self": {
+          "register": "dso",
+          "schema": "locatie",
+          "slug": "boterdiep-groningen"
+        },
+        "identificatie": "nl.imow-gm0014.locatie.boterdiep",
+        "naam": "Boterdiep, Groningen",
+        "type": "adres",
+        "gemeenteCode": "0014",
+        "gemeenteNaam": "Groningen",
+        "adres": {
+          "straat": "Boterdiep",
+          "huisnummer": 45,
+          "postcode": "9712LG",
+          "woonplaats": "Groningen"
+        }
+      },
+
+      {
+        "@self": {
+          "register": "dso",
+          "schema": "omgevingsdocument",
+          "slug": "omgevingsplan-amsterdam"
+        },
+        "identificatie": "nl.imow-gm0363.omgevingsdocument.omgevingsplanAmsterdam",
+        "type": "omgevingsplan",
+        "status": "vastgesteld",
+        "bevoegdGezag": "Gemeente Amsterdam",
+        "titel": "Omgevingsplan Amsterdam",
+        "publicatiedatum": "2024-01-01"
+      },
+      {
+        "@self": {
+          "register": "dso",
+          "schema": "omgevingsdocument",
+          "slug": "omgevingsplan-rotterdam"
+        },
+        "identificatie": "nl.imow-gm0599.omgevingsdocument.omgevingsplanRotterdam",
+        "type": "omgevingsplan",
+        "status": "vastgesteld",
+        "bevoegdGezag": "Gemeente Rotterdam",
+        "titel": "Omgevingsplan Rotterdam",
+        "publicatiedatum": "2024-01-01"
+      },
+      {
+        "@self": {
+          "register": "dso",
+          "schema": "omgevingsdocument",
+          "slug": "omgevingsplan-voorbeeldstad"
+        },
+        "identificatie": "nl.imow-gm9999.omgevingsdocument.omgevingsplanVoorbeeldstad",
+        "type": "omgevingsplan",
+        "status": "vastgesteld",
+        "bevoegdGezag": "Gemeente Voorbeeldstad",
+        "titel": "Omgevingsplan Voorbeeldstad",
+        "publicatiedatum": "2024-03-15"
+      },
+      {
+        "@self": {
+          "register": "dso",
+          "schema": "omgevingsdocument",
+          "slug": "omgevingsverordening-noord-holland"
+        },
+        "identificatie": "nl.imow-pv27.omgevingsdocument.omgevingsverordeningNH",
+        "type": "omgevingsverordening",
+        "status": "vastgesteld",
+        "bevoegdGezag": "Provincie Noord-Holland",
+        "titel": "Omgevingsverordening Noord-Holland",
+        "publicatiedatum": "2024-02-01"
+      },
+      {
+        "@self": {
+          "register": "dso",
+          "schema": "omgevingsdocument",
+          "slug": "waterschapsverordening-agv"
+        },
+        "identificatie": "nl.imow-ws0155.omgevingsdocument.waterschapsverordeningAGV",
+        "type": "waterschapsverordening",
+        "status": "vastgesteld",
+        "bevoegdGezag": "Waterschap Amstel, Gooi en Vecht",
+        "titel": "Waterschapsverordening Amstel, Gooi en Vecht",
+        "publicatiedatum": "2024-01-15"
+      },
+      {
+        "@self": {
+          "register": "dso",
+          "schema": "omgevingsdocument",
+          "slug": "omgevingsplan-den-haag"
+        },
+        "identificatie": "nl.imow-gm0518.omgevingsdocument.omgevingsplanDenHaag",
+        "type": "omgevingsplan",
+        "status": "vastgesteld",
+        "bevoegdGezag": "Gemeente Den Haag",
+        "titel": "Omgevingsplan Den Haag",
+        "publicatiedatum": "2024-01-01"
+      },
+
+      {
+        "@self": {
+          "register": "dso",
+          "schema": "vergunningaanvraag",
+          "slug": "dakkapel-keizersgracht"
+        },
+        "identificatie": "nl.dso.aanvraag.2025-AMS-001",
+        "activiteiten": [
+          "nl.imow-gm0363.activiteit.dakkapelPlaatsen"
+        ],
+        "locatie": {
+          "identificatie": "nl.imow-gm0363.locatie.amsterdamCentrum",
+          "adres": "Keizersgracht 123, 1015CJ Amsterdam"
+        },
+        "initiatiefnemer": {
+          "naam": "J. de Vries",
+          "type": "particulier"
+        },
+        "bevoegdGezag": "Gemeente Amsterdam",
+        "status": "verleend",
+        "indieningsdatum": "2025-01-10",
+        "besluitdatum": "2025-03-05",
+        "bijlagen": [
+          {
+            "naam": "bouwtekening-dakkapel.pdf",
+            "type": "bouwtekening"
+          },
+          {
+            "naam": "foto-huidige-situatie.jpg",
+            "type": "foto"
+          }
+        ],
+        "toelichting": "Vergunning verleend. De dakkapel past binnen de criteria van het omgevingsplan voor het beschermd stadsgezicht."
+      },
+      {
+        "@self": {
+          "register": "dso",
+          "schema": "vergunningaanvraag",
+          "slug": "aanbouw-boterdiep"
+        },
+        "identificatie": "nl.dso.aanvraag.2025-GRN-001",
+        "activiteiten": [
+          "nl.imow-gm0363.activiteit.aanbouwPlaatsen"
+        ],
+        "locatie": {
+          "identificatie": "nl.imow-gm0014.locatie.boterdiep",
+          "adres": "Boterdiep 45, 9712LG Groningen"
+        },
+        "initiatiefnemer": {
+          "naam": "Familie Bakker",
+          "type": "particulier"
+        },
+        "bevoegdGezag": "Gemeente Groningen",
+        "status": "in_behandeling",
+        "indieningsdatum": "2025-02-20",
+        "bijlagen": [
+          {
+            "naam": "constructieberekening.pdf",
+            "type": "constructieberekening"
+          },
+          {
+            "naam": "situatietekening.pdf",
+            "type": "situatietekening"
+          }
+        ],
+        "toelichting": "Aanvraag voor aanbouw van 15 m2 aan de achterzijde van de woning. In behandeling bij de welstandscommissie."
+      },
+      {
+        "@self": {
+          "register": "dso",
+          "schema": "vergunningaanvraag",
+          "slug": "zonnepanelen-oude-gracht"
+        },
+        "identificatie": "nl.dso.aanvraag.2025-UTR-001",
+        "activiteiten": [
+          "nl.imow-gm0363.activiteit.zonnepanelenPlaatsen"
+        ],
+        "locatie": {
+          "identificatie": "nl.imow-gm0344.locatie.utrechtBinnenstad",
+          "adres": "Oude Gracht 88, 3511AR Utrecht"
+        },
+        "initiatiefnemer": {
+          "naam": "P. Jansen",
+          "type": "particulier"
+        },
+        "bevoegdGezag": "Gemeente Utrecht",
+        "status": "verleend",
+        "indieningsdatum": "2025-01-05",
+        "besluitdatum": "2025-01-05",
+        "bijlagen": [],
+        "toelichting": "Vergunningvrij. Zonnepanelen binnen het dakvlak geplaatst conform de regels van het omgevingsplan. Automatisch goedgekeurd."
+      },
+      {
+        "@self": {
+          "register": "dso",
+          "schema": "vergunningaanvraag",
+          "slug": "boom-kappen-grote-markt"
+        },
+        "identificatie": "nl.dso.aanvraag.2025-GRN-002",
+        "activiteiten": [
+          "nl.imow-gm0363.activiteit.boomKappen"
+        ],
+        "locatie": {
+          "identificatie": "nl.imow-gm0014.locatie.groningenCentrum",
+          "adres": "Grote Markt 1, 9711LV Groningen"
+        },
+        "initiatiefnemer": {
+          "naam": "Horecabedrijf Het Gouden Vat B.V.",
+          "type": "bedrijf"
+        },
+        "bevoegdGezag": "Gemeente Groningen",
+        "status": "geweigerd",
+        "indieningsdatum": "2025-01-15",
+        "besluitdatum": "2025-02-28",
+        "bijlagen": [
+          {
+            "naam": "boomtechnisch-rapport.pdf",
+            "type": "rapport"
+          }
+        ],
+        "toelichting": "Vergunning geweigerd. De betreffende eik is aangemerkt als monumentale boom en valt onder de beschermde bomenlijst van de gemeente Groningen."
+      },
+      {
+        "@self": {
+          "register": "dso",
+          "schema": "vergunningaanvraag",
+          "slug": "sloopmelding-asbest-marktplein"
+        },
+        "identificatie": "nl.dso.aanvraag.2025-ENS-001",
+        "activiteiten": [
+          "nl.imow-gm0363.activiteit.sloopmeldingAsbest"
+        ],
+        "locatie": {
+          "identificatie": "nl.imow-gm0153.locatie.enschedeCentrum",
+          "adres": "Marktplein 5, 7511GA Enschede"
+        },
+        "initiatiefnemer": {
+          "naam": "Sloopwerken Twente B.V.",
+          "type": "bedrijf"
+        },
+        "bevoegdGezag": "Gemeente Enschede",
+        "status": "ingediend",
+        "indieningsdatum": "2025-03-01",
+        "bijlagen": [
+          {
+            "naam": "asbestinventarisatierapport.pdf",
+            "type": "rapport"
+          },
+          {
+            "naam": "werkplan-asbestverwijdering.pdf",
+            "type": "werkplan"
+          }
+        ],
+        "toelichting": "Sloopmelding voor verwijdering van asbesthoudende dakplaten. Asbestinventarisatie uitgevoerd door gecertificeerd bureau."
+      },
+      {
+        "@self": {
+          "register": "dso",
+          "schema": "vergunningaanvraag",
+          "slug": "gevel-wijzigen-buitenhof"
+        },
+        "identificatie": "nl.dso.aanvraag.2025-DH-001",
+        "activiteiten": [
+          "nl.imow-gm0363.activiteit.gevelWijzigen"
+        ],
+        "locatie": {
+          "identificatie": "nl.imow-gm0518.locatie.denHaagCentrum",
+          "adres": "Buitenhof 20, 2513AH Den Haag"
+        },
+        "initiatiefnemer": {
+          "naam": "Vastgoed Den Haag B.V.",
+          "type": "bedrijf"
+        },
+        "bevoegdGezag": "Gemeente Den Haag",
+        "status": "verleend",
+        "indieningsdatum": "2024-11-15",
+        "besluitdatum": "2025-01-20",
+        "bijlagen": [
+          {
+            "naam": "gevelontwerp-nieuw.pdf",
+            "type": "bouwtekening"
+          },
+          {
+            "naam": "kleur-materiaalstaat.pdf",
+            "type": "specificatie"
+          }
+        ],
+        "toelichting": "Vergunning verleend onder voorwaarde dat de gevelkleuren binnen de gemeentelijke kleurenpalet vallen. Positief welstandsadvies ontvangen."
+      },
+      {
+        "@self": {
+          "register": "dso",
+          "schema": "vergunningaanvraag",
+          "slug": "kamerverhuur-prinsengracht"
+        },
+        "identificatie": "nl.dso.aanvraag.2025-AMS-002",
+        "activiteiten": [
+          "nl.imow-gm0363.activiteit.kamerverhuur"
+        ],
+        "locatie": {
+          "identificatie": "nl.imow-gm0363.locatie.prinsengracht",
+          "adres": "Prinsengracht 300, 1016HJ Amsterdam"
+        },
+        "initiatiefnemer": {
+          "naam": "R. van den Berg",
+          "type": "particulier"
+        },
+        "bevoegdGezag": "Gemeente Amsterdam",
+        "status": "in_behandeling",
+        "indieningsdatum": "2025-02-01",
+        "bijlagen": [
+          {
+            "naam": "plattegrond-kamerindeling.pdf",
+            "type": "bouwtekening"
+          },
+          {
+            "naam": "geluidsisolatierapport.pdf",
+            "type": "rapport"
+          }
+        ],
+        "toelichting": "Aanvraag voor omzetting van zelfstandige woonruimte naar 4 onzelfstandige kamers. In behandeling, wachtend op advies van de woningcorporatie."
+      },
+      {
+        "@self": {
+          "register": "dso",
+          "schema": "vergunningaanvraag",
+          "slug": "evenement-vrijthof"
+        },
+        "identificatie": "nl.dso.aanvraag.2025-MST-001",
+        "activiteiten": [
+          "nl.imow-gm0363.activiteit.evenementOrganiseren"
+        ],
+        "locatie": {
+          "identificatie": "nl.imow-gm0935.locatie.maastrichtCentrum",
+          "adres": "Vrijthof 10, 6211LE Maastricht"
+        },
+        "initiatiefnemer": {
+          "naam": "Stichting Vrijthof Evenementen",
+          "type": "bedrijf"
+        },
+        "bevoegdGezag": "Gemeente Maastricht",
+        "status": "verleend",
+        "indieningsdatum": "2025-01-20",
+        "besluitdatum": "2025-02-15",
+        "bijlagen": [
+          {
+            "naam": "evenementenplan.pdf",
+            "type": "plan"
+          },
+          {
+            "naam": "veiligheidsplan.pdf",
+            "type": "veiligheidsplan"
+          },
+          {
+            "naam": "geluidsrapport.pdf",
+            "type": "rapport"
+          }
+        ],
+        "toelichting": "Vergunning verleend voor het jaarlijkse muziekfestival op het Vrijthof. Maximaal 5000 bezoekers, geluidsnorm van 85 dB(A) op gevel."
+      },
+      {
+        "@self": {
+          "register": "dso",
+          "schema": "vergunningaanvraag",
+          "slug": "bedrijfsactiviteit-stadshuisplein"
+        },
+        "identificatie": "nl.dso.aanvraag.2025-ALM-001",
+        "activiteiten": [
+          "nl.imow-gm0363.activiteit.bedrijfsactiviteitStarten"
+        ],
+        "locatie": {
+          "identificatie": "nl.imow-gm0034.locatie.almereCentrum",
+          "adres": "Stadshuisplein 1, 1315HR Almere"
+        },
+        "initiatiefnemer": {
+          "naam": "GreenTech Solutions B.V.",
+          "type": "bedrijf"
+        },
+        "bevoegdGezag": "Gemeente Almere",
+        "status": "verleend",
+        "indieningsdatum": "2025-02-10",
+        "besluitdatum": "2025-02-10",
+        "bijlagen": [
+          {
+            "naam": "bedrijfsomschrijving.pdf",
+            "type": "omschrijving"
+          }
+        ],
+        "toelichting": "Melding geaccepteerd. De bedrijfsactiviteit valt onder de reguliere meldingsplicht van het Besluit activiteiten leefomgeving."
+      },
+      {
+        "@self": {
+          "register": "dso",
+          "schema": "vergunningaanvraag",
+          "slug": "uitrit-herengracht"
+        },
+        "identificatie": "nl.dso.aanvraag.2025-AMS-003",
+        "activiteiten": [
+          "nl.imow-gm0363.activiteit.uitritAanleggen"
+        ],
+        "locatie": {
+          "identificatie": "nl.imow-gm0363.locatie.amsterdamZuid",
+          "adres": "Herengracht 456, 1017BZ Amsterdam"
+        },
+        "initiatiefnemer": {
+          "naam": "M. Visser",
+          "type": "particulier"
+        },
+        "bevoegdGezag": "Gemeente Amsterdam",
+        "status": "geweigerd",
+        "indieningsdatum": "2025-01-25",
+        "besluitdatum": "2025-03-10",
+        "bijlagen": [
+          {
+            "naam": "situatietekening-uitrit.pdf",
+            "type": "situatietekening"
+          }
+        ],
+        "toelichting": "Vergunning geweigerd. De aanleg van een uitrit op deze locatie is niet mogelijk vanwege de aanwezigheid van een historische kademuur en het beschermd stadsgezicht van de grachtengordel."
+      }
+    ]
+  }
+}

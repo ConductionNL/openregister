@@ -286,3 +286,40 @@ OpenRegister SHOULD auto-detect available engines from installed Nextcloud ExApp
 - n8n-nextcloud ExApp (existing)
 - Windmill ExApp (existing)
 - OpenRegister event system (existing)
+
+### Current Implementation Status
+
+**Fully implemented.** All core requirements are in place:
+
+- `lib/WorkflowEngine/WorkflowEngineInterface.php` -- PHP interface with methods: `deployWorkflow()`, `deleteWorkflow()`, `activateWorkflow()`, `deactivateWorkflow()`, `executeWorkflow()`, `getWebhookUrl()`, `listWorkflows()`, `healthCheck()`
+- `lib/WorkflowEngine/N8nAdapter.php` -- n8n adapter implementing `WorkflowEngineInterface`, routes through ExApp proxy
+- `lib/WorkflowEngine/WindmillAdapter.php` -- Windmill adapter implementing `WorkflowEngineInterface`
+- `lib/WorkflowEngine/WorkflowResult.php` -- Structured result class with statuses: `STATUS_APPROVED`, `STATUS_REJECTED`, `STATUS_MODIFIED`, `STATUS_ERROR`; implements `JsonSerializable`
+- `lib/Db/WorkflowEngine.php` -- Entity for engine configuration storage (name, engineType, baseUrl, authType, authConfig, enabled, defaultTimeout)
+- `lib/Db/WorkflowEngineMapper.php` -- Database mapper for WorkflowEngine entities
+- `lib/Service/WorkflowEngineRegistry.php` -- Registry service for managing and resolving engine adapters
+- `lib/Controller/WorkflowEngineController.php` -- REST API controller for CRUD on engine configurations
+- `lib/Service/HookExecutor.php` -- Integrates with WorkflowEngineRegistry to resolve adapters per hook
+- `lib/AppInfo/Application.php` -- Registers workflow engine services in DI container
+
+**What is NOT yet implemented:**
+- Engine auto-discovery from installed ExApps (`GET /api/engines/available`)
+- Credential encryption at rest via `ICrypto` (needs verification)
+- Health check on engine registration
+
+### Standards & References
+- Adapter pattern (Gang of Four design patterns)
+- n8n REST API (https://docs.n8n.io/api/)
+- Windmill REST API (https://app.windmill.dev/openapi.html)
+- Nextcloud ExApp API proxy (`IAppApiService`)
+- Dependency Injection (Nextcloud DI container)
+
+### Specificity Assessment
+- **Specific enough to implement?** Yes -- the interface, entity schema, and adapter scenarios are all well-defined and implemented.
+- **Missing/ambiguous:**
+  - No specification for credential rotation or expiry handling
+  - No specification for engine version compatibility checks
+  - No specification for connection pooling or rate limiting to engines
+- **Open questions:**
+  - Should additional engine types beyond n8n and Windmill be pluggable via a registration mechanism?
+  - How should engine failover work when multiple instances of the same type are registered?

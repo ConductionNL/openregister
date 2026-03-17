@@ -96,3 +96,32 @@ Products MUST be accessible via a public API without authentication for integrat
 - WHEN an unauthenticated client requests GET /api/products
 - THEN only published products MUST be returned
 - AND each product MUST include: name, summary, content blocks, pricing, and UPL URI
+
+### Current Implementation Status
+- **Not implemented**: No product/service catalog functionality exists in the OpenRegister codebase. There are no UPL, SDG, product, or catalog-related services, controllers, or entities.
+- **Foundation available**: OpenRegister's schema system can store product data as register objects with custom properties. The existing CRUD API, RBAC, and multi-tenancy infrastructure could serve as the foundation.
+- **Configuration export/import exists**: `ConfigurationService` (`lib/Service/ConfigurationService.php`) and its handlers (`lib/Service/Configuration/ExportHandler.php`, `ImportHandler.php`) handle register/schema configuration export/import, which could be used to distribute a standard PDC schema template.
+- **Public API support exists**: The existing `ObjectsController` supports public read access for published objects, which would support the public catalog API requirement.
+
+### Standards & References
+- Uniforme Productnamenlijst (UPL) — maintained by VNG/Logius: https://standaarden.overheid.nl/upl
+- Single Digital Gateway (SDG) Regulation (EU) 2018/1724 — EU cross-border service discovery
+- OWMS (Overheid Web Metadata Standaard) for government metadata
+- SDG doelgroep classification (burger, bedrijf, burger_bedrijf)
+- Dutch government PDC standards (Producten- en Dienstencatalogus)
+- Accept-Language header (RFC 7231) for content negotiation
+- Common Ground principles for API design
+
+### Specificity Assessment
+- **Moderately specific**: The spec covers UPL compliance, SDG classification, content blocks, publication lifecycle, pricing, multilingual content, and public API access.
+- **Missing details**:
+  - Data model: Should products be a dedicated schema or a generic register schema with conventions?
+  - UPL reference list: How is the UPL list imported and kept up to date?
+  - Content block structure: Are blocks free-form or a fixed set?
+  - Multilingual content storage: Separate properties per language or a nested translation structure?
+  - SDG integration: How is the SDG feed generated and published?
+  - Admin UI: What does the product editing interface look like?
+- **Open questions**:
+  - Should this be a separate Nextcloud app (like OpenCatalogi) or part of OpenRegister core?
+  - How does this relate to OpenCatalogi's existing catalog functionality?
+  - Is the UPL reference list stored as a register schema or as a static lookup?

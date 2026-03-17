@@ -19,7 +19,7 @@ jobs:
       enable-phpmetrics: true
       enable-frontend: true
       enable-eslint: true
-      enable-phpunit: true
-      enable-newman: true
+      enable-phpunit: false  # PHPUnit runs in database-tests.yml with PG + MariaDB matrix
+      enable-newman: false   # Newman runs in database-tests.yml with PG + MariaDB matrix
       enable-coverage-guard: true
       enable-sbom: true

@@ -313,6 +313,14 @@ class ConfigurationSettingsHandler
                 ];
             }//end if
 
+            // Blob Migration Status.
+            $data['blobMigration'] = [
+                'processed' => (int) $this->appConfig->getValueString($this->appName, 'blob_migration_processed', '0'),
+                'remaining' => (int) $this->appConfig->getValueString($this->appName, 'blob_migration_remaining', '0'),
+                'complete'  => $this->appConfig->getValueString($this->appName, 'blob_migration_complete', 'false') === 'true',
+                'lastRun'   => $this->appConfig->getValueString($this->appName, 'blob_migration_last_run', ''),
+            ];
+
             // SOLR Search Configuration.
             $solrConfig = $this->appConfig->getValueString($this->appName, 'solr', '');
 

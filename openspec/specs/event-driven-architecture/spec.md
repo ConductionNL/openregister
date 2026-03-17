@@ -102,3 +102,51 @@ Published events MUST be stored and queryable for replay and debugging purposes.
 - WHEN the admin queries events with filter `type == "nl.openregister.object.created" AND time > "2026-03-15T00:00:00Z"`
 - THEN matching events MUST be returned in chronological order
 - AND event retention MUST be configurable (default: 30 days)
+
+### Current Implementation Status
+- **Partial:**
+  - `CloudEventFormatter` (`lib/Service/Webhook/CloudEventFormatter.php`) formats webhook payloads as CloudEvents v1.0 format
+  - `WebhookService` (`lib/Service/WebhookService.php`) with CloudEventFormatter integration for event delivery
+  - `WebhookEventListener` (`lib/Listener/WebhookEventListener.php`) dispatches events to webhook service with payload
+  - `Webhook` entity (`lib/Db/Webhook.php`) and `WebhookMapper` (`lib/Db/WebhookMapper.php`) for webhook subscription storage
+  - `WebhookLog` entity (`lib/Db/WebhookLog.php`) and `WebhookLogMapper` (`lib/Db/WebhookLogMapper.php`) for delivery logging
+  - `WebhookDeliveryJob` (`lib/BackgroundJob/WebhookDeliveryJob.php`) for async webhook delivery
+  - `HookRetryJob` (`lib/BackgroundJob/HookRetryJob.php`) for retry with CloudEvent formatting
+  - `HookExecutor` (`lib/Service/HookExecutor.php`) executes webhook deliveries with CloudEvent payloads
+  - Internal event dispatching via Nextcloud's `IEventDispatcher` in multiple mappers (`ViewMapper`, `AgentMapper`)
+  - `GraphQLSubscriptionListener` (`lib/Listener/GraphQLSubscriptionListener.php`) for real-time subscriptions
+  - `WorkflowEngine` entity (`lib/Db/WorkflowEngine.php`) with `N8nAdapter` (`lib/WorkflowEngine/N8nAdapter.php`) and `WindmillAdapter` (`lib/WorkflowEngine/WindmillAdapter.php`)
+  - `WorkflowEngineInterface` (`lib/WorkflowEngine/WorkflowEngineInterface.php`) for workflow engine abstraction
+  - Frontend webhook management views at `src/views/webhooks/`
+- **NOT implemented:**
+  - Formal CloudEvents event type naming convention (`nl.openregister.object.created` etc.) — may differ from current implementation
+  - Event subscription filtering by type, schema, or register (beyond basic webhook configuration)
+  - Dead-letter queue with admin inspection and manual retry UI
+  - Correlation identifiers for cascade events
+  - Event history storage and query API (events are delivered but may not be retained for replay)
+  - Configurable event retention period
+  - Exponential backoff retry strategy (HookRetryJob exists but backoff strategy needs verification)
+- **Partial:**
+  - CloudEvents format is implemented for webhooks but may not cover all CRUD events
+  - Webhook delivery with retry exists but dead-letter queue and correlation IDs are missing
+  - Workflow engine integration exists (N8n, Windmill) but event subscription filtering may be limited
+
+### Standards & References
+- **CloudEvents v1.0 (CNCF)** — https://cloudevents.io/ — Event format specification
+- **CloudEvents HTTP Protocol Binding** — HTTP delivery with `ce-*` headers
+- **CloudEvents Subscriptions API** — Standard for managing event subscriptions
+- **Nextcloud IEventDispatcher** — Internal PHP event system
+- **Webhook (W3C WebSub)** — HTTP callback delivery pattern
+- **AMQP / RabbitMQ** — Message queue integration (future transport option)
+- **Notificatierouteringscomponent (NRC)** — VNG standard for notification routing in Dutch government
+
+### Specificity Assessment
+- The spec is comprehensive and well-structured with clear scenarios for each transport mechanism.
+- Significant portion is already implemented (CloudEvents formatting, webhooks, retry, workflow engines).
+- Missing: detailed configuration for event type filtering on subscriptions; dead-letter queue entity/table design; correlation ID implementation details; event storage schema for history queries.
+- Ambiguous: whether internal PHP events and HTTP webhooks should use the same event type namespace; how workflow engine integration differs from webhook delivery.
+- Open questions:
+  - Should event history be stored in the database or an external system (e.g., Elasticsearch)?
+  - What is the relationship between webhook events and the audit trail — are they the same or separate?
+  - Should the system support event replay (re-delivering historical events to a new subscriber)?
+  - How should correlation IDs be generated — request-scoped UUID or user-action-scoped?

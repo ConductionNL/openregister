@@ -93,3 +93,37 @@ Data exports MUST only include objects and fields the requesting user is authori
 - WHEN `medewerker-1` exports from register `zaken`
 - THEN the export MUST include `meldingen` objects only
 - AND `vertrouwelijk` objects MUST NOT appear in the export
+
+### Current Implementation Status
+- **Partially implemented — CSV export**: `ExportHandler` (`lib/Service/Object/ExportHandler.php`) supports exporting objects to CSV format (line ~126). CSV files use proper encoding.
+- **Partially implemented — Excel (XLSX) export**: `ExportHandler` also supports Excel export via `ExportService::exportToExcel()` using the PhpSpreadsheet `Xlsx` writer (line ~150). The `ExportService` (`lib/Service/ExportService.php`) handles the spreadsheet generation.
+- **Partially implemented — CSV/Excel import**: `ExportHandler` also handles importing objects from CSV and Excel files (line ~195+), supporting both `.xlsx`/`.xls` and `.csv` formats.
+- **Not implemented — PDF export**: No PDF generation service or library exists in the codebase. No report formatting with titles, summary statistics, or paginated tables.
+- **Not implemented — aggregation API endpoints**: No `/aggregate` endpoints exist with `groupBy`, `metric`, `sum`, or time-series aggregation. The `MetricsService` provides some aggregate counts but not a general-purpose aggregation API.
+- **Not implemented — OData endpoint**: No OData v4 compatible endpoint exists. No `$filter`, `$select`, `$orderby` OData query parameter support.
+- **Not implemented — scheduled report generation**: No cron job or background task for scheduled report generation and delivery exists.
+- **Partially implemented — RBAC on exports**: Exports go through the standard object retrieval pipeline which respects RBAC via `PermissionHandler` and `MagicRbacHandler`, so exported data should only include authorized objects/fields.
+- **Related — configuration export**: `Configuration/ExportHandler` (`lib/Service/Configuration/ExportHandler.php`) handles register/schema configuration export (JSON format), which is different from data export.
+
+### Standards & References
+- OData v4 specification (https://www.odata.org/documentation/) for BI tool integration
+- ISO 32000 (PDF specification) for report generation
+- ECMA-376 (Office Open XML) for XLSX format
+- RFC 4180 for CSV format
+- PhpSpreadsheet library (https://phpspreadsheet.readthedocs.io/) — already used for XLSX export
+- BIO (Baseline Informatiebeveiliging Overheid) for data export security requirements
+- Common Ground principles for API-based data access
+
+### Specificity Assessment
+- **Moderately specific**: The spec covers export formats, aggregation API, OData integration, scheduled reports, and RBAC enforcement with clear scenarios.
+- **Missing details**:
+  - PDF generation library choice (TCPDF, Dompdf, wkhtmltopdf?)
+  - OData library or custom implementation?
+  - Aggregation query execution (SQL-level or application-level?)
+  - Scheduled report storage and retention management
+  - Export size limits and streaming for large datasets
+- **Open questions**:
+  - Should OData support be a priority given the REST API already supports rich filtering?
+  - How should scheduled reports be configured — admin UI, API, or both?
+  - Should PDF reports use a template system for custom branding?
+  - How large can exports get before they need async processing?

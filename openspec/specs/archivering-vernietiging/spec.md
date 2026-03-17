@@ -92,3 +92,34 @@ The system MUST support generating a NEN 2082 compliance report showing which re
 - WHEN an admin requests a NEN 2082 compliance report
 - THEN the report MUST list each NEN 2082 requirement and its implementation status
 - AND the report MUST identify gaps with remediation guidance
+
+### Current Implementation Status
+- **NOT implemented:** No archiving or destruction lifecycle management exists in the codebase.
+  - No `archiefnominatie`, `archiefactiedatum`, `archiefstatus`, or `classificatie` fields on objects or schemas
+  - No selection list (selectielijst) entity or configuration
+  - No destruction list generation or approval workflow
+  - No e-Depot export (SIP generation, MDTO XML)
+  - No NEN 2082 compliance reporting
+- **Partial foundations:**
+  - `ObjectEntity` (`lib/Db/ObjectEntity.php`) supports arbitrary JSON data via the `object` property, so archival metadata could be stored as schema properties
+  - `AuditTrailMapper` (`lib/Db/AuditTrailMapper.php`) already logs create/update/delete actions, which could record `archival.destroyed` events
+  - `ExportService` (`lib/Db/ExportService.php`) exists for CSV/Excel export, but not for MDTO XML or SIP packages
+  - Retention period tracking does not exist at any level (register, schema, or object)
+
+### Standards & References
+- **MDTO** (Metagegevens Duurzaam Toegankelijke Overheidsinformatie) — Dutch standard for archival metadata
+- **NEN 2082** — Dutch records management standard (functionality requirements for record-keeping)
+- **Selectielijst gemeenten en intergemeentelijke organen** — VNG selection list for retention periods
+- **e-Depot / Nationaal Archief** — SIP (Submission Information Package) format per OAIS reference model
+- **Archiefwet 1995** and **Archiefbesluit 1995** — Dutch archival law
+- **OAIS (ISO 14721)** — Open Archival Information System reference model
+- **TMLO** (Toepassingsprofiel Metadatering Lokale Overheden) — predecessor to MDTO
+
+### Specificity Assessment
+- The spec provides good scenario coverage for the happy path but lacks detail on several implementation aspects.
+- Missing: schema/entity definitions for destruction lists, selection list entries, and e-Depot configuration; API endpoint definitions; background job scheduling for automated destruction checks.
+- Ambiguous: how archival metadata integrates with existing schema property definitions (separate entity vs. JSON Schema properties vs. dedicated fields on ObjectEntity).
+- Open questions:
+  - Which e-Depot systems should be supported initially (Nationaal Archief, regional archives)?
+  - Should the destruction approval workflow use Nextcloud's built-in approval features or a custom implementation?
+  - How does this interact with the existing audit trail — should archival actions create standard AuditTrail entries or a separate archival log?
