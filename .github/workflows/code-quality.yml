@@ -1,0 +1,14 @@
+name: Code Quality
+
+on:
+  push:
+    branches: [main, development, feature/**, bugfix/**, hotfix/**]
+  pull_request:
+    branches: [main, beta, development]
+
+jobs:
+  quality:
+    uses: ConductionNL/.github/.github/workflows/quality.yml@main
+    with:
+      app-name: openregister
+      enable-phpunit: true

@@ -3,9 +3,10 @@ name: Create Issues from Markdown
 on:
   push:
     branches:
-      - main
-      - master
-      - development
+      # - main
+      # - master
+      # - development
+      - never
     paths:
       - 'issues/*.md'
       - '!issues/README.md'
