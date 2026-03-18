@@ -87,7 +87,7 @@ class GraphQLController extends Controller
                 [
                     'errors' => [
                         [
-                            'message'    => $this->l10n->t('Request body must be JSON with a "query" field'),
+                            'message'    => 'Request body must be JSON with a "query" field',
                             'extensions' => ['code' => 'BAD_REQUEST'],
                         ],
                     ],
