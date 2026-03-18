@@ -142,7 +142,40 @@ class SubscriptionService
             return [];
         }
 
-        // Filter events after the last received ID.
+        $filtered = $this->filterEventStream(
+            buffer: $buffer,
+            lastEventId: $lastEventId,
+            schemaId: $schemaId,
+            registerId: $registerId
+        );
+
+        $events = [];
+        foreach ($filtered as $event) {
+            if ($this->verifyEventRBAC(event: $event) === true) {
+                $events[] = $event;
+            }
+        }
+
+        return $events;
+
+    }//end getEventsSince()
+
+    /**
+     * Filter event buffer by last event ID and schema/register filters.
+     *
+     * @param array       $buffer      The full event buffer
+     * @param string|null $lastEventId The last event ID the client received
+     * @param int|null    $schemaId    Optional schema ID filter
+     * @param int|null    $registerId  Optional register ID filter
+     *
+     * @return array The filtered events
+     */
+    private function filterEventStream(
+        array $buffer,
+        ?string $lastEventId,
+        ?int $schemaId,
+        ?int $registerId
+    ): array {
         $foundLastId = ($lastEventId === null);
         $events      = [];
 
@@ -155,7 +188,6 @@ class SubscriptionService
                 continue;
             }
 
-            // Filter by schema/register if specified.
             if ($schemaId !== null && ($event['object']['schema'] ?? null) !== $schemaId) {
                 continue;
             }
@@ -164,25 +196,35 @@ class SubscriptionService
                 continue;
             }
 
-            // RBAC check: verify user can read this schema.
-            $eventSchemaId = ($event['object']['schema'] ?? null);
-            if ($eventSchemaId !== null) {
-                try {
-                    $schema = $this->schemaMapper->find($eventSchemaId);
-                    if ($this->permissionHandler->hasPermission($schema, 'read') === false) {
-                        continue;
-                    }
-                } catch (\Exception $e) {
-                    continue;
-                }
-            }
-
             $events[] = $event;
         }//end foreach
 
         return $events;
 
-    }//end getEventsSince()
+    }//end filterEventStream()
+
+    /**
+     * Verify RBAC permissions for a single event.
+     *
+     * @param array $event The event to check
+     *
+     * @return bool True if the current user can see this event
+     */
+    private function verifyEventRBAC(array $event): bool
+    {
+        $eventSchemaId = ($event['object']['schema'] ?? null);
+        if ($eventSchemaId === null) {
+            return true;
+        }
+
+        try {
+            $schema = $this->schemaMapper->find($eventSchemaId);
+            return $this->permissionHandler->hasPermission($schema, 'read');
+        } catch (\Exception $e) {
+            return false;
+        }
+
+    }//end verifyEventRBAC()
 
     /**
      * Format an event as an SSE message.

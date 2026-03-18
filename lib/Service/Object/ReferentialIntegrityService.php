@@ -95,11 +95,11 @@ class ReferentialIntegrityService
     /**
      * Constructor for ReferentialIntegrityService.
      *
-     * @param SchemaMapper       $schemaMapper       Schema data mapper.
-     * @param RegisterMapper     $registerMapper     Register data mapper.
-     * @param MagicMapper $objectEntityMapper Object entity data mapper.
-     * @param AuditTrailMapper    $auditTrailMapper   Audit trail mapper for integrity action logging.
-     * @param LoggerInterface     $logger             Logger for debugging.
+     * @param SchemaMapper     $schemaMapper       Schema data mapper.
+     * @param RegisterMapper   $registerMapper     Register data mapper.
+     * @param MagicMapper      $objectEntityMapper Object entity data mapper.
+     * @param AuditTrailMapper $auditTrailMapper   Audit trail mapper for integrity action logging.
+     * @param LoggerInterface  $logger             Logger for debugging.
      */
     public function __construct(
         private readonly SchemaMapper $schemaMapper,
@@ -312,8 +312,24 @@ class ReferentialIntegrityService
             return;
         }
 
-        // Build schema-to-register map by scanning magic table names.
-        // Tables follow convention: openregister_table_{registerId}_{schemaId}.
+        $this->buildSchemaRegisterMap();
+
+        foreach ($allSchemas as $schema) {
+            $this->schemaCache[(string) $schema->getId()] = $schema;
+            $this->indexRelationsForSchema(schema: $schema, allSchemas: $allSchemas);
+        }
+
+    }//end ensureRelationIndex()
+
+    /**
+     * Build a map from schema ID to register by scanning magic table names.
+     *
+     * Tables follow convention: openregister_table_{registerId}_{schemaId}.
+     *
+     * @return void
+     */
+    private function buildSchemaRegisterMap(): void
+    {
         try {
             $allRegisters  = $this->registerMapper->findAll(
                 _rbac: false,
@@ -331,12 +347,10 @@ class ReferentialIntegrityService
             $stmt->execute();
             $tables = [];
             while (($row = $stmt->fetch()) !== false) {
-                // Strip oc_ prefix to match naming convention.
                 $tables[] = substr($row['table_name'], 3);
             }
 
             foreach ($tables as $tableName) {
-                // Parse: openregister_table_{registerId}_{schemaId}.
                 if (preg_match('/^openregister_table_(\d+)_(\d+)$/', $tableName, $matches) === 1) {
                     $regId    = $matches[1];
                     $schemaId = $matches[2];
@@ -354,47 +368,55 @@ class ReferentialIntegrityService
             );
         }//end try
 
-        foreach ($allSchemas as $schema) {
-            $schemaId = (string) $schema->getId();
-            $this->schemaCache[$schemaId] = $schema;
+    }//end buildSchemaRegisterMap()
 
-            $properties = $schema->getProperties();
-            if ($properties === null) {
+    /**
+     * Index referential integrity relations for a single schema.
+     *
+     * @param \OCA\OpenRegister\Db\Schema $schema     The schema to index
+     * @param array                       $allSchemas All schemas for ref resolution
+     *
+     * @return void
+     */
+    private function indexRelationsForSchema(\OCA\OpenRegister\Db\Schema $schema, array $allSchemas): void
+    {
+        $schemaId   = (string) $schema->getId();
+        $properties = $schema->getProperties();
+        if ($properties === null) {
+            return;
+        }
+
+        foreach ($properties as $propertyName => $property) {
+            $onDelete = $this->extractOnDelete(property: $property);
+            if ($onDelete === null || $onDelete === 'NO_ACTION') {
                 continue;
             }
 
-            foreach ($properties as $propertyName => $property) {
-                $onDelete = $this->extractOnDelete(property: $property);
-                if ($onDelete === null || $onDelete === 'NO_ACTION') {
-                    continue;
-                }
+            $targetRef = $this->extractTargetRef(property: $property);
+            if ($targetRef === null) {
+                continue;
+            }
 
-                $targetRef = $this->extractTargetRef(property: $property);
-                if ($targetRef === null) {
-                    continue;
-                }
+            $targetSchemaId = $this->resolveSchemaRef(ref: $targetRef, allSchemas: $allSchemas);
+            if ($targetSchemaId === null) {
+                continue;
+            }
 
-                // Resolve target $ref to a schema ID.
-                $targetSchemaId = $this->resolveSchemaRef(ref: $targetRef, allSchemas: $allSchemas);
-                if ($targetSchemaId === null) {
-                    continue;
-                }
+            $isArray = isset($property['type']) && $property['type'] === 'array';
 
-                $isArray = isset($property['type']) && $property['type'] === 'array';
+            if (isset($this->relationIndex[$targetSchemaId]) === false) {
+                $this->relationIndex[$targetSchemaId] = [];
+            }
 
-                if (isset($this->relationIndex[$targetSchemaId]) === false) {
-                    $this->relationIndex[$targetSchemaId] = [];
-                }
-
-                $this->relationIndex[$targetSchemaId][] = [
-                    'sourceSchemaId' => $schemaId,
-                    'property'       => $propertyName,
-                    'onDelete'       => $onDelete,
-                    'isArray'        => $isArray,
-                ];
-            }//end foreach
+            $this->relationIndex[$targetSchemaId][] = [
+                'sourceSchemaId' => $schemaId,
+                'property'       => $propertyName,
+                'onDelete'       => $onDelete,
+                'isArray'        => $isArray,
+            ];
         }//end foreach
-    }//end ensureRelationIndex()
+
+    }//end indexRelationsForSchema()
 
     /**
      * Extract the onDelete action from a property definition.
