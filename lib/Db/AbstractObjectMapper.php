@@ -313,7 +313,7 @@ abstract class AbstractObjectMapper
      */
     abstract public function searchObjects(
         array $query=[],
-        ?string $activeOrgUuid=null,
+        ?string $_activeOrgUuid=null,
         bool $_rbac=true,
         bool $_multitenancy=true,
         ?array $ids=null,

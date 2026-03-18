@@ -7059,7 +7059,7 @@ class MagicMapper extends AbstractObjectMapper
      */
     public function searchObjects(
         array $query=[],
-        ?string $activeOrgUuid=null,
+        ?string $_activeOrgUuid=null,
         bool $_rbac=true,
         bool $_multitenancy=true,
         ?array $ids=null,
@@ -7248,7 +7248,7 @@ class MagicMapper extends AbstractObjectMapper
     public function searchObjectsPaginated(
         array $searchQuery=[],
         array $countQuery=[],
-        ?string $activeOrgUuid=null,
+        ?string $_activeOrgUuid=null,
         bool $_rbac=true,
         bool $_multitenancy=true,
         ?array $ids=null,

@@ -413,7 +413,7 @@ class DeletedController extends Controller
             $objects = $this->objectEntityMapper->findAll(
                 limit: null,
                 offset: null,
-                _filters: [],
+                filters: [],
                 searchConditions: [],
                 searchParams: [],
                 sort: [],
@@ -544,7 +544,7 @@ class DeletedController extends Controller
             $objects = $this->objectEntityMapper->findAll(
                 limit: null,
                 offset: null,
-                _filters: [],
+                filters: [],
                 searchConditions: [],
                 searchParams: [],
                 sort: [],
