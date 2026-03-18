@@ -7292,7 +7292,7 @@ class MagicMapper extends AbstractObjectMapper
                 countQuery: $countQuery,
                 registerIds: $allRegisterIds,
                 schemaIds: $schemaIds,
-                activeOrgUuid: $activeOrgUuid,
+                activeOrgUuid: $_activeOrgUuid,
                 _rbac: $_rbac,
                 _multitenancy: $_multitenancy,
                 ids: $ids,
@@ -7398,7 +7398,7 @@ class MagicMapper extends AbstractObjectMapper
             return $this->searchObjectsGloballyBySearch(
                 searchQuery: $searchQuery,
                 countQuery: $countQuery,
-                activeOrgUuid: $activeOrgUuid,
+                activeOrgUuid: $_activeOrgUuid,
                 _rbac: $_rbac,
                 _multitenancy: $_multitenancy
             );
