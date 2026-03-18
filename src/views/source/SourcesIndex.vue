@@ -9,15 +9,17 @@ import { sourceStore, navigationStore } from '../../store/store.js'
 			title="Sources"
 			description="Manage your data sources and their configurations"
 			:show-title="true"
+			:schema="sourceSchema"
 			:objects="sourceStore.sourceList"
 			:columns="tableColumns"
 			:pagination="paginationData"
 			:view-mode="viewMode"
 			:selectable="true"
 			:selected-ids="selectedSources"
-			:show-edit-action="false"
+			:include-fields="['title', 'description', 'databaseUrl', 'type']"
+			:field-overrides="fieldOverrides"
 			:show-copy-action="false"
-			:show-delete-action="false"
+			:actions="customActions"
 			:show-mass-import="false"
 			:show-mass-export="false"
 			:show-mass-copy="false"
@@ -26,7 +28,9 @@ import { sourceStore, navigationStore } from '../../store/store.js'
 			add-label="Add Source"
 			empty-text="No sources found"
 			:refreshing="isRefreshing"
-			@add="createSource"
+			@create="onSaveSource"
+			@edit="onSaveSource"
+			@delete="onDeleteSource"
 			@refresh="handleRefresh"
 			@page-changed="onPageChanged"
 			@page-size-changed="onPageSizeChanged"
@@ -34,7 +38,11 @@ import { sourceStore, navigationStore } from '../../store/store.js'
 			@select="selectedSources = $event">
 			<!-- Custom card template -->
 			<template #card="{ object }">
-				<SourceCard :item="object" />
+				<SourceCard
+					:item="object"
+					@edit="openEditDialog"
+					@view="openViewModal"
+					@delete="openDeleteDialog" />
 			</template>
 
 			<!-- Custom column: title with description -->
@@ -60,47 +68,14 @@ import { sourceStore, navigationStore } from '../../store/store.js'
 			<template #column-updated="{ row }">
 				{{ row.updated ? new Date(row.updated).toLocaleDateString() : '-' }}
 			</template>
-
-			<!-- Custom row actions -->
-			<template #row-actions="{ row }">
-				<NcActions :primary="false">
-					<template #icon>
-						<DotsHorizontal :size="20" />
-					</template>
-					<NcActionButton close-after-click
-						@click="sourceStore.setSourceItem(row); navigationStore.setModal('viewSource')">
-						<template #icon>
-							<Eye :size="20" />
-						</template>
-						View
-					</NcActionButton>
-					<NcActionButton close-after-click
-						@click="sourceStore.setSourceItem(row); navigationStore.setModal('editSource')">
-						<template #icon>
-							<Pencil :size="20" />
-						</template>
-						Edit
-					</NcActionButton>
-					<NcActionButton close-after-click
-						@click="sourceStore.setSourceItem(row); navigationStore.setDialog('deleteSource')">
-						<template #icon>
-							<TrashCanOutline :size="20" />
-						</template>
-						Delete
-					</NcActionButton>
-				</NcActions>
-			</template>
 		</CnIndexPage>
 	</NcAppContent>
 </template>
 
 <script>
-import { NcAppContent, NcActions, NcActionButton } from '@nextcloud/vue'
+import { NcAppContent } from '@nextcloud/vue'
 import { CnIndexPage } from '@conduction/nextcloud-vue'
-import DotsHorizontal from 'vue-material-design-icons/DotsHorizontal.vue'
 import Eye from 'vue-material-design-icons/Eye.vue'
-import Pencil from 'vue-material-design-icons/Pencil.vue'
-import TrashCanOutline from 'vue-material-design-icons/TrashCanOutline.vue'
 
 import SourceCard from '../../components/cards/SourceCard.vue'
 
@@ -109,13 +84,7 @@ export default {
 	components: {
 		NcAppContent,
 		CnIndexPage,
-		NcActions,
-		NcActionButton,
 		SourceCard,
-		DotsHorizontal,
-		Eye,
-		Pencil,
-		TrashCanOutline,
 	},
 	data() {
 		return {
@@ -129,6 +98,53 @@ export default {
 		}
 	},
 	computed: {
+		sourceSchema() {
+			return {
+				title: 'Source',
+				properties: {
+					title: {
+						type: 'string',
+						title: t('openregister', 'Title'),
+						order: 1,
+					},
+					description: {
+						type: 'string',
+						title: t('openregister', 'Description'),
+						format: 'textarea',
+						order: 2,
+					},
+					databaseUrl: {
+						type: 'string',
+						title: t('openregister', 'Database URL'),
+						order: 3,
+					},
+					type: {
+						type: 'string',
+						title: t('openregister', 'Type'),
+						enum: ['internal', 'mongodb'],
+						default: 'internal',
+						order: 4,
+					},
+				},
+				required: ['title'],
+			}
+		},
+		customActions() {
+			return [
+				{
+					label: 'View',
+					icon: Eye,
+					handler: (row) => this.openViewModal(row),
+				},
+			]
+		},
+		fieldOverrides() {
+			return {
+				type: {
+					enumLabels: { internal: 'Internal', mongodb: 'MongoDB' },
+				},
+			}
+		},
 		tableColumns() {
 			return [
 				{ key: 'title', label: t('openregister', 'Title'), sortable: true },
@@ -150,9 +166,37 @@ export default {
 		sourceStore.refreshSourceList(null, true)
 	},
 	methods: {
-		createSource() {
-			sourceStore.setSourceItem(null)
-			navigationStore.setModal('editSource')
+		openViewModal(row) {
+			sourceStore.setSourceItem(row)
+			navigationStore.setModal('viewSource')
+		},
+		openEditDialog(row) {
+			this.$refs.indexPage.openFormDialog(row)
+		},
+		openDeleteDialog(row) {
+			this.$refs.indexPage.openDeleteDialog(row)
+		},
+		async onDeleteSource(id) {
+			const source = sourceStore.sourceList.find(s => s.id === id)
+			if (!source) return
+			try {
+				await sourceStore.deleteSource(source)
+				this.$refs.indexPage.setSingleDeleteResult({ success: true })
+			} catch (error) {
+				this.$refs.indexPage.setSingleDeleteResult({ error: error.message || 'An error occurred while deleting the source' })
+			}
+		},
+		async onSaveSource(formData) {
+			try {
+				await sourceStore.saveSource({
+					...formData,
+					type: formData.type || 'internal',
+				})
+				this.$refs.indexPage.setFormResult({ success: true })
+				sourceStore.refreshSourceList()
+			} catch (error) {
+				this.$refs.indexPage.setFormResult({ error: error.message || 'An error occurred while saving the source' })
+			}
 		},
 		async handleRefresh() {
 			this.isRefreshing = true

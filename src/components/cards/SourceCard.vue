@@ -1,7 +1,3 @@
-<script setup>
-import { sourceStore, navigationStore } from '../../store/store.js'
-</script>
-
 <template>
 	<div class="sourceCard">
 		<div class="cardHeader">
@@ -14,21 +10,21 @@ import { sourceStore, navigationStore } from '../../store/store.js'
 					<DotsHorizontal :size="20" />
 				</template>
 				<NcActionButton close-after-click
-					@click="sourceStore.setSourceItem(item); navigationStore.setModal('viewSource')">
+					@click="$emit('view', item)">
 					<template #icon>
 						<Eye :size="20" />
 					</template>
 					View
 				</NcActionButton>
 				<NcActionButton close-after-click
-					@click="sourceStore.setSourceItem(item); navigationStore.setModal('editSource')">
+					@click="$emit('edit', item)">
 					<template #icon>
 						<Pencil :size="20" />
 					</template>
 					Edit
 				</NcActionButton>
 				<NcActionButton close-after-click
-					@click="sourceStore.setSourceItem(item); navigationStore.setDialog('deleteSource')">
+					@click="$emit('delete', item)">
 					<template #icon>
 						<TrashCanOutline :size="20" />
 					</template>
@@ -92,7 +88,6 @@ export default {
 	height: 100%;
 	display: flex;
 	flex-direction: column;
-	justify-content: space-between;
 }
 
 .cardHeader {
@@ -111,7 +106,10 @@ export default {
 }
 
 .sourceInfo {
-	padding: 12px 0 0;
+    flex-grow: 1;
+	display: flex;
+	flex-direction: column;
+	justify-content: space-between;
 }
 
 .description {
