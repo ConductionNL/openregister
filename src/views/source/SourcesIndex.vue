@@ -38,11 +38,43 @@ import { sourceStore, navigationStore } from '../../store/store.js'
 			@select="selectedSources = $event">
 			<!-- Custom card template -->
 			<template #card="{ object }">
-				<SourceCard
-					:item="object"
-					@edit="openEditDialog"
-					@view="openViewModal"
-					@delete="openDeleteDialog" />
+				<CnCard
+					:title="object.title"
+					:description="object.description"
+					:title-tooltip="object.description"
+					:stats="mapSourceStats(object)">
+					<template #icon>
+						<DatabaseArrowRightOutline :size="20" />
+					</template>
+					<template #actions>
+						<NcActions :primary="true" menu-name="Actions">
+							<template #icon>
+								<DotsHorizontal :size="20" />
+							</template>
+							<NcActionButton close-after-click
+								@click="$emit('view', object)">
+								<template #icon>
+									<Eye :size="20" />
+								</template>
+								View
+							</NcActionButton>
+							<NcActionButton close-after-click
+								@click="$emit('edit', object)">
+								<template #icon>
+									<Pencil :size="20" />
+								</template>
+								Edit
+							</NcActionButton>
+							<NcActionButton close-after-click
+								@click="$emit('delete', object)">
+								<template #icon>
+									<TrashCanOutline :size="20" />
+								</template>
+								Delete
+							</NcActionButton>
+						</NcActions>
+					</template>
+				</CnCard>
 			</template>
 
 			<!-- Custom column: title with description -->
@@ -73,18 +105,20 @@ import { sourceStore, navigationStore } from '../../store/store.js'
 </template>
 
 <script>
-import { NcAppContent } from '@nextcloud/vue'
-import { CnIndexPage } from '@conduction/nextcloud-vue'
+import { NcAppContent, NcActions, NcActionButton } from '@nextcloud/vue'
+import { CnIndexPage, CnCard } from '@conduction/nextcloud-vue'
 import Eye from 'vue-material-design-icons/Eye.vue'
-
-import SourceCard from '../../components/cards/SourceCard.vue'
+import DatabaseArrowRightOutline from 'vue-material-design-icons/DatabaseArrowRightOutline.vue'
+import DotsHorizontal from 'vue-material-design-icons/DotsHorizontal.vue'
+import Pencil from 'vue-material-design-icons/Pencil.vue'
+import TrashCanOutline from 'vue-material-design-icons/TrashCanOutline.vue'
 
 export default {
 	name: 'SourcesIndex',
 	components: {
 		NcAppContent,
 		CnIndexPage,
-		SourceCard,
+		CnCard,
 	},
 	data() {
 		return {
@@ -212,6 +246,14 @@ export default {
 		onPageSizeChanged(pageSize) {
 			this.pagination.page = 1
 			this.pagination.limit = pageSize
+		},
+		mapSourceStats(object) {
+			return [
+				{ label: t('openregister', 'Type'), value: object.type || 'Unknown' },
+				object.databaseUrl
+					? { label: t('openregister', 'Database URL'), value: object.databaseUrl }
+					: null,
+			].filter(Boolean)
 		},
 	},
 }
