@@ -52,6 +52,8 @@ use OCA\OpenRegister\Db\MagicMapper\MagicRbacHandler;
 use OCA\OpenRegister\Db\MagicMapper\MagicBulkHandler;
 use OCA\OpenRegister\Db\MagicMapper\MagicOrganizationHandler;
 use OCA\OpenRegister\Db\MagicMapper\MagicFacetHandler;
+use OCA\OpenRegister\Db\MagicMapper\MagicStatisticsHandler;
+use OCA\OpenRegister\Db\MagicMapper\MagicTableHandler;
 use OCA\OpenRegister\Event\ObjectCreatedEvent;
 use OCA\OpenRegister\Event\ObjectCreatingEvent;
 use OCA\OpenRegister\Event\ObjectDeletedEvent;
@@ -153,7 +155,10 @@ class MagicMapper extends AbstractObjectMapper
      *
      * NOTE: Does NOT include 'oc_' prefix as Nextcloud's QueryBuilder adds that automatically.
      */
-    private const TABLE_PREFIX = 'openregister_table_';
+    /**
+     * @internal Used by MagicTableHandler
+     */
+    public const TABLE_PREFIX = 'openregister_table_';
 
     /**
      * Metadata column prefix to avoid conflicts with schema properties
@@ -162,13 +167,17 @@ class MagicMapper extends AbstractObjectMapper
 
     /**
      * Cache timeout for table existence checks (5 minutes)
+     *
+     * @internal Used by MagicTableHandler
      */
-    private const TABLE_CACHE_TIMEOUT = 300;
+    public const TABLE_CACHE_TIMEOUT = 300;
 
     /**
      * Maximum table name length (MySQL limit)
+     *
+     * @internal Used by MagicTableHandler
      */
-    private const MAX_TABLE_NAME_LENGTH = 64;
+    public const MAX_TABLE_NAME_LENGTH = 64;
 
     /**
      * Cache for table existence to avoid repeated database queries
@@ -248,6 +257,20 @@ class MagicMapper extends AbstractObjectMapper
      * @var MagicFacetHandler|null
      */
     private ?MagicFacetHandler $facetHandler = null;
+
+    /**
+     * Table management handler for table lifecycle operations
+     *
+     * @var MagicTableHandler|null
+     */
+    private ?MagicTableHandler $tableHandler = null;
+
+    /**
+     * Statistics handler for aggregations and chart data
+     *
+     * @var MagicStatisticsHandler|null
+     */
+    private ?MagicStatisticsHandler $statisticsHandler = null;
 
     /**
      * Cached result of pg_trgm extension availability check
@@ -353,7 +376,106 @@ class MagicMapper extends AbstractObjectMapper
             searchHandler: $this->searchHandler,
             container: $this->container
         );
+
+        $this->tableHandler = new MagicTableHandler(
+            db: $this->db,
+            appConfig: $this->appConfig,
+            logger: $this->logger,
+            magicMapper: $this
+        );
+
+        $this->statisticsHandler = new MagicStatisticsHandler(
+            db: $this->db,
+            logger: $this->logger,
+            registerMapper: $this->registerMapper,
+            schemaMapper: $this->schemaMapper
+        );
+
+        // Use setter injection for the count callback to avoid circular dependency.
+        $this->statisticsHandler->setCountCallback(
+            function (array $query, Register $register, Schema $schema): int {
+                return $this->countObjectsInRegisterSchemaTable(
+                    query: $query,
+                    register: $register,
+                    schema: $schema
+                );
+            }
+        );
     }//end initializeHandlers()
+
+    /**
+     * Get a value from the table exists cache.
+     *
+     * @param string $key Cache key.
+     *
+     * @return int|null Cached timestamp or null if not cached.
+     *
+     * @internal Used by MagicTableHandler.
+     */
+    public static function getTableExistsCache(string $key): ?int
+    {
+        return self::$tableExistsCache[$key] ?? null;
+    }//end getTableExistsCache()
+
+    /**
+     * Set a value in the table exists cache.
+     *
+     * @param string $key   Cache key.
+     * @param int    $value Timestamp value.
+     *
+     * @return void
+     *
+     * @internal Used by MagicTableHandler.
+     */
+    public static function setTableExistsCache(string $key, int $value): void
+    {
+        self::$tableExistsCache[$key] = $value;
+    }//end setTableExistsCache()
+
+    /**
+     * Unset a value from the table exists cache.
+     *
+     * @param string $key Cache key to remove.
+     *
+     * @return void
+     *
+     * @internal Used by MagicTableHandler.
+     */
+    public static function unsetTableExistsCache(string $key): void
+    {
+        unset(self::$tableExistsCache[$key]);
+    }//end unsetTableExistsCache()
+
+    /**
+     * Set a value in the register+schema table name cache.
+     *
+     * @param string $key   Cache key.
+     * @param string $value Table name to cache.
+     *
+     * @return void
+     *
+     * @internal Used by MagicTableHandler.
+     */
+    public static function setRegSchemaTableCache(string $key, string $value): void
+    {
+        self::$regSchemaTableCache[$key] = $value;
+    }//end setRegSchemaTableCache()
+
+    /**
+     * Clear all static caches used by MagicMapper.
+     *
+     * @return void
+     *
+     * @internal Used by MagicTableHandler.
+     */
+    public static function clearAllStaticCaches(): void
+    {
+        self::$tableExistsCache    = [];
+        self::$regSchemaTableCache = [];
+        self::$tableStructureCache = [];
+        self::$calcVersionCache    = [];
+    }//end clearAllStaticCaches()
+
 
     /**
      * Check if PostgreSQL pg_trgm extension is available
@@ -412,75 +534,7 @@ class MagicMapper extends AbstractObjectMapper
      */
     public function ensureTableForRegisterSchema(Register $register, Schema $schema, bool $force=false): bool
     {
-        $tableName  = $this->getTableNameForRegisterSchema(register: $register, schema: $schema);
-        $registerId = $register->getId();
-        $schemaId   = $schema->getId();
-        $cacheKey   = $this->getCacheKey(registerId: $registerId, schemaId: $schemaId);
-
-        $this->logger->info(
-            message: '[MagicMapper] Creating/updating table for register+schema',
-            context: [
-                'file'         => __FILE__,
-                'line'         => __LINE__,
-                'registerId'   => $registerId,
-                'schemaId'     => $schemaId,
-                'registerSlug' => $register->getSlug(),
-                'schemaSlug'   => $schema->getSlug(),
-                'tableName'    => $tableName,
-                'force'        => $force,
-            ]
-        );
-
-        try {
-            // Check if table exists using cached method.
-            $tableExists = $this->tableExistsForRegisterSchema(register: $register, schema: $schema);
-
-            if (($tableExists === true) && ($force === false)) {
-                // Table exists and not forcing update - check if schema changed.
-                if ($this->hasRegisterSchemaChanged(register: $register, schema: $schema) === false) {
-                    $this->logger->debug(
-                        message: '[MagicMapper] Table exists and schema unchanged, skipping',
-                        context: [
-                            'file'      => __FILE__,
-                            'line'      => __LINE__,
-                            'tableName' => $tableName,
-                            'cacheKey'  => $cacheKey,
-                        ]
-                    );
-                    return true;
-                }
-
-                // Schema changed, update table.
-                $result = $this->updateTableForRegisterSchema(register: $register, schema: $schema);
-                return $result['success'] ?? true;
-            }
-
-            // Create new table or recreate if forced.
-            if (($tableExists === true) && ($force === true)) {
-                $this->dropTable(tableName: $tableName);
-                $this->invalidateTableCache(cacheKey: $cacheKey);
-            }
-
-            return $this->createTableForRegisterSchema(register: $register, schema: $schema);
-        } catch (Exception $e) {
-            $this->logger->error(
-                message: '[MagicMapper] Failed to ensure table for register+schema',
-                context: [
-                    'file'       => __FILE__,
-                    'line'       => __LINE__,
-                    'registerId' => $registerId,
-                    'schemaId'   => $schemaId,
-                    'tableName'  => $tableName,
-                    'error'      => $e->getMessage(),
-                ]
-            );
-
-            $regTitle = $register->getTitle();
-            $schTitle = $schema->getTitle();
-            $msg      = "Failed to create/update table for register '{$regTitle}' ";
-            $msg     .= "+ schema '{$schTitle}': ".$e->getMessage();
-            throw new Exception($msg, 0, $e);
-        }//end try
+        return $this->tableHandler->ensureTableForRegisterSchema(register: $register, schema: $schema, force: $force);
     }//end ensureTableForRegisterSchema()
 
     /**
@@ -493,24 +547,7 @@ class MagicMapper extends AbstractObjectMapper
      */
     public function getTableNameForRegisterSchema(Register $register, Schema $schema): string
     {
-        $registerId = $register->getId();
-        $schemaId   = $schema->getId();
-
-        // Use numeric IDs for consistent, shorter table names.
-        $tableName = self::TABLE_PREFIX.$registerId.'_'.$schemaId;
-
-        // Ensure table name doesn't exceed maximum length (should be fine with numeric IDs).
-        if (strlen($tableName) > self::MAX_TABLE_NAME_LENGTH) {
-            // This should rarely happen with numeric IDs, but handle it safely.
-            $hash      = substr(md5($registerId.'_'.$schemaId), 0, 8);
-            $tableName = self::TABLE_PREFIX.$hash;
-        }
-
-        // Cache the table name for this register+schema combination.
-        $cacheKey = $this->getCacheKey(registerId: $registerId, schemaId: $schemaId);
-        self::$regSchemaTableCache[$cacheKey] = $tableName;
-
-        return $tableName;
+        return $this->tableHandler->getTableNameForRegisterSchema(register: $register, schema: $schema);
     }//end getTableNameForRegisterSchema()
 
     /**
@@ -527,68 +564,7 @@ class MagicMapper extends AbstractObjectMapper
      */
     public function existsTableForRegisterSchema(Register $register, Schema $schema): bool
     {
-        $registerId = $register->getId();
-        $schemaId   = $schema->getId();
-        $cacheKey   = $this->getCacheKey(registerId: $registerId, schemaId: $schemaId);
-
-        // Check cache first (with timeout).
-        if ((self::$tableExistsCache[$cacheKey] ?? null) !== null) {
-            $cachedTime = self::$tableExistsCache[$cacheKey];
-            if ((time() - $cachedTime) < self::TABLE_CACHE_TIMEOUT) {
-                $this->logger->debug(
-                    message: '[MagicMapper] Table existence check: cache hit',
-                    context: [
-                        'file'       => __FILE__,
-                        'line'       => __LINE__,
-                        'registerId' => $registerId,
-                        'schemaId'   => $schemaId,
-                        'cacheKey'   => $cacheKey,
-                        'exists'     => true,
-                    ]
-                );
-                return true;
-            }
-
-            // Cache expired, remove it.
-            unset(self::$tableExistsCache[$cacheKey]);
-        }
-
-        // Check database for table existence.
-        $tableName = $this->getTableNameForRegisterSchema(register: $register, schema: $schema);
-        $exists    = $this->checkTableExistsInDatabase(tableName: $tableName);
-
-        if ($exists === true) {
-            // Cache positive result.
-            self::$tableExistsCache[$cacheKey] = time();
-
-            $this->logger->debug(
-                message: '[MagicMapper] Table existence check: database hit - exists',
-                context: [
-                    'file'       => __FILE__,
-                    'line'       => __LINE__,
-                    'registerId' => $registerId,
-                    'schemaId'   => $schemaId,
-                    'tableName'  => $tableName,
-                    'cacheKey'   => $cacheKey,
-                ]
-            );
-        }
-
-        if ($exists === false) {
-            $this->logger->debug(
-                message: '[MagicMapper] Table existence check: database hit - not exists',
-                context: [
-                    'file'       => __FILE__,
-                    'line'       => __LINE__,
-                    'registerId' => $registerId,
-                    'schemaId'   => $schemaId,
-                    'tableName'  => $tableName,
-                    'cacheKey'   => $cacheKey,
-                ]
-            );
-        }//end if
-
-        return $exists;
+        return $this->tableHandler->existsTableForRegisterSchema(register: $register, schema: $schema);
     }//end existsTableForRegisterSchema()
 
     /**
@@ -1574,7 +1550,7 @@ class MagicMapper extends AbstractObjectMapper
      *
      * @return string Cache key for the combination
      */
-    private function getCacheKey(int $registerId, int $schemaId): string
+    public function getCacheKey(int $registerId, int $schemaId): string
     {
         return $registerId.'_'.$schemaId;
     }//end getCacheKey()
@@ -1588,7 +1564,7 @@ class MagicMapper extends AbstractObjectMapper
      *
      * @return bool True if table exists in database
      */
-    private function checkTableExistsInDatabase(string $tableName): bool
+    public function checkTableExistsInDatabase(string $tableName): bool
     {
         try {
             // Check if table exists in information_schema.
@@ -1638,7 +1614,7 @@ class MagicMapper extends AbstractObjectMapper
      *
      * @return void
      */
-    private function invalidateTableCache(string $cacheKey): void
+    public function invalidateTableCache(string $cacheKey): void
     {
         unset(self::$tableExistsCache[$cacheKey]);
         unset(self::$regSchemaTableCache[$cacheKey]);
@@ -1661,7 +1637,7 @@ class MagicMapper extends AbstractObjectMapper
      *
      * @return true True if table created successfully
      */
-    private function createTableForRegisterSchema(Register $register, Schema $schema): bool
+    public function createTableForRegisterSchema(Register $register, Schema $schema): bool
     {
         $tableName  = $this->getTableNameForRegisterSchema(register: $register, schema: $schema);
         $registerId = $register->getId();
@@ -1719,7 +1695,7 @@ class MagicMapper extends AbstractObjectMapper
      *
      * @return array Statistics about what was changed
      */
-    private function updateTableForRegisterSchema(Register $register, Schema $schema): array
+    public function updateTableForRegisterSchema(Register $register, Schema $schema): array
     {
         return $this->syncTableForRegisterSchema(register: $register, schema: $schema);
     }//end updateTableForRegisterSchema()
@@ -1744,168 +1720,7 @@ class MagicMapper extends AbstractObjectMapper
      */
     public function syncTableForRegisterSchema(Register $register, Schema $schema): array
     {
-        $tableName  = $this->getTableNameForRegisterSchema(register: $register, schema: $schema);
-        $registerId = $register->getId();
-        $schemaId   = $schema->getId();
-        $cacheKey   = $this->getCacheKey(registerId: $registerId, schemaId: $schemaId);
-
-        $this->logger->info(
-            message: '[MagicMapper] Syncing register+schema table',
-            context: [
-                'file'       => __FILE__,
-                'line'       => __LINE__,
-                'registerId' => $registerId,
-                'schemaId'   => $schemaId,
-                'tableName'  => $tableName,
-            ]
-        );
-
-        try {
-            // Check if table exists - if not, create it instead of trying to update.
-            $tableExists = $this->tableExistsForRegisterSchema(register: $register, schema: $schema);
-
-            if ($tableExists === false) {
-                $this->logger->info(
-                    message: '[MagicMapper] Table does not exist, creating it',
-                    context: [
-                        'file'       => __FILE__,
-                        'line'       => __LINE__,
-                        'registerId' => $registerId,
-                        'schemaId'   => $schemaId,
-                        'tableName'  => $tableName,
-                    ]
-                );
-
-                // Create the table.
-                $this->createTableForRegisterSchema(register: $register, schema: $schema);
-
-                // Get the columns that were created.
-                $requiredColumns  = $this->buildTableColumnsFromSchema(schema: $schema);
-                $metadataColumns  = [
-                    'id',
-                    'uuid',
-                    'register',
-                    'schema',
-                    'object',
-                    'deleted',
-                    'locked',
-                    'updated',
-                    'created',
-                    'version',
-                ];
-                $metadataCount    = count(array_intersect(array_keys($requiredColumns), $metadataColumns));
-                $regularPropCount = count($requiredColumns) - $metadataCount;
-
-                // Return statistics for newly created table.
-                return [
-                    'success'               => true,
-                    'created'               => true,
-                    'metadataProperties'    => $metadataCount,
-                    'regularProperties'     => $regularPropCount,
-                    'totalProperties'       => count($requiredColumns),
-                    'columnsAdded'          => count($requiredColumns),
-                    'columnsDeRequired'     => 0,
-                    'columnsDropped'        => 0,
-                    'columnsUnchanged'      => 0,
-                    'columnsAddedList'      => array_keys($requiredColumns),
-                    'columnsDeRequiredList' => [],
-                    'columnsDroppedList'    => [],
-                ];
-            }//end if
-
-            // Table exists, update its structure.
-            $this->logger->info(
-                message: '[MagicMapper] Table exists, updating structure',
-                context: [
-                    'file'       => __FILE__,
-                    'line'       => __LINE__,
-                    'registerId' => $registerId,
-                    'schemaId'   => $schemaId,
-                    'tableName'  => $tableName,
-                ]
-            );
-
-            // Get current table structure.
-            $currentColumns = $this->getExistingTableColumns(tableName: $tableName);
-
-            // Get required columns from schema.
-            $requiredColumns = $this->buildTableColumnsFromSchema(schema: $schema);
-
-            // Count metadata properties (non-schema columns).
-            $metadataColumns = [
-                'id',
-                'uuid',
-                'register',
-                'schema',
-                'object',
-                'deleted',
-                'locked',
-                'updated',
-                'created',
-                'version',
-            ];
-            $metadataCount   = count(array_intersect(array_keys($requiredColumns), $metadataColumns));
-
-            // Compare and update table structure - this returns statistics.
-            $columnStats = $this->updateTableStructure(
-                tableName: $tableName,
-                currentColumns: $currentColumns,
-                requiredColumns: $requiredColumns
-            );
-
-            // Update indexes.
-            $this->updateTableIndexes(tableName: $tableName, register: $register, schema: $schema);
-
-            // Store updated schema version and refresh cache.
-            $this->storeRegisterSchemaVersion(register: $register, schema: $schema);
-            self::$tableExistsCache[$cacheKey] = time();
-            // Refresh cache timestamp.
-            // Calculate regular properties (excluding metadata).
-            $regularPropCount = count($requiredColumns) - $metadataCount;
-
-            $unchangedCount = count($currentColumns) - count($columnStats['columnsAdded']) - count($columnStats['columnsDropped']);
-
-            $result = [
-                'success'               => true,
-                'metadataProperties'    => $metadataCount,
-                'regularProperties'     => $regularPropCount,
-                'totalProperties'       => count($requiredColumns),
-                'columnsAdded'          => count($columnStats['columnsAdded']),
-                'columnsDeRequired'     => count($columnStats['columnsDeRequired']),
-                'columnsReRequired'     => count($columnStats['columnsReRequired']),
-                'columnsDropped'        => count($columnStats['columnsDropped']),
-                'columnsUnchanged'      => $unchangedCount,
-                'columnsAddedList'      => $columnStats['columnsAdded'],
-                'columnsDeRequiredList' => $columnStats['columnsDeRequired'],
-                'columnsReRequiredList' => $columnStats['columnsReRequired'],
-                'columnsDroppedList'    => $columnStats['columnsDropped'],
-            ];
-
-            $this->logger->info(
-                message: '[MagicMapper] Successfully updated register+schema table',
-                context: [
-                    'file'      => __FILE__,
-                    'line'      => __LINE__,
-                    'tableName' => $tableName,
-                    'cacheKey'  => $cacheKey,
-                    'stats'     => $result,
-                ]
-            );
-
-            return $result;
-        } catch (Exception $e) {
-            $this->logger->error(
-                message: '[MagicMapper] Failed to update register+schema table',
-                context: [
-                    'file'      => __FILE__,
-                    'line'      => __LINE__,
-                    'tableName' => $tableName,
-                    'error'     => $e->getMessage(),
-                ]
-            );
-
-            throw $e;
-        }//end try
+        return $this->tableHandler->syncTableForRegisterSchema(register: $register, schema: $schema);
     }//end syncTableForRegisterSchema()
 
     /**
@@ -1918,7 +1733,7 @@ class MagicMapper extends AbstractObjectMapper
      *
      * @return (bool|int|mixed|null|string)[][] Column definitions.
      */
-    private function buildTableColumnsFromSchema(Schema $schema): array
+    public function buildTableColumnsFromSchema(Schema $schema): array
     {
         $columns = [];
 
@@ -3204,248 +3019,24 @@ class MagicMapper extends AbstractObjectMapper
     }//end prepareObjectDataForTable()
 
     /**
-     * Convert database row back to ObjectEntity
-     *
-     * @param array    $row       Database row data
-     * @param Register $_register Register context for validation
-     * @param Schema   $_schema   Schema for context
-     *
-     * @return ObjectEntity|null ObjectEntity or null if conversion fails
-     *
-     * @SuppressWarnings(PHPMD.UnusedFormalParameter)
-     */
-
-    /**
      * Convert database row to ObjectEntity.
      *
      * This method is public to allow bulk handlers to convert rows for event dispatching.
+     * Delegates to MagicStatisticsHandler.
      *
      * @param array    $row       Database row
      * @param Register $_register Register context
      * @param Schema   $_schema   Schema context
      *
      * @return ObjectEntity|null Converted entity or null on failure
-     *
-     * @SuppressWarnings(PHPMD.CyclomaticComplexity)  Row to entity conversion requires many field mappings
-     * @SuppressWarnings(PHPMD.NPathComplexity)       Row to entity conversion requires many field mappings
-     * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Complete field mapping requires comprehensive handling
      */
     public function convertRowToObjectEntity(array $row, Register $_register, Schema $_schema): ?ObjectEntity
     {
-        try {
-            $objectEntity = new ObjectEntity();
-
-            // Set register and schema from parameters (these are the context we're in).
-            $objectEntity->setRegister((string) $_register->getId());
-            $objectEntity->setSchema((string) $_schema->getId());
-
-            // Build column-to-property mapping and property types from schema.
-            // This allows us to restore original property names (e.g., 'e-mailadres').
-            // from their sanitized column names (e.g., 'e_mailadres').
-            // Also builds property type map for type conversion.
-            $columnToPropertyMap = [];
-            $propertyTypes       = [];
-            $propertyFormats     = [];
-            $properties          = $_schema->getProperties() ?? [];
-            foreach ($properties as $propertyName => $propertyDef) {
-                $columnName = $this->sanitizeColumnName(name: $propertyName);
-                $columnToPropertyMap[$columnName] = $propertyName;
-                $propertyTypes[$propertyName]     = $propertyDef['type'] ?? 'string';
-                if (isset($propertyDef['format']) === true) {
-                    $propertyFormats[$propertyName] = $propertyDef['format'];
-                }
-            }
-
-            // Extract metadata fields (remove prefix).
-            $metadata   = [];
-            $objectData = [];
-
-            foreach ($row as $columnName => $value) {
-                if (str_starts_with($columnName, self::METADATA_PREFIX) === true) {
-                    // This is a metadata field.
-                    $metadataField = substr($columnName, strlen(self::METADATA_PREFIX));
-
-                    // Handle datetime fields.
-                    if (in_array(
-                            $metadataField,
-                            [
-                                'created',
-                                'updated',
-                                'expires',
-                            ],
-                            true
-                        ) === true
-                        && ($value !== null) === true
-                    ) {
-                        $value = new DateTime($value);
-                    }
-
-                    // Handle JSON fields.
-                    if (in_array(
-                            $metadataField,
-                            [
-                                'files',
-                                'relations',
-                                'locked',
-                                'authorization',
-                                'validation',
-                                'deleted',
-                                'geo',
-                                'retention',
-                                'groups',
-                            ],
-                            true
-                        ) === true
-                        && ($value !== null) === true
-                    ) {
-                        $value = json_decode($value, true);
-                    }
-
-                    $metadata[$metadataField] = $value;
-                    continue;
-                }//end if
-
-                // This is a schema property.
-                // Skip NULL values for properties not in this schema's definition.
-                // In UNION queries, NULL placeholders exist for other schemas' columns.
-                if ($value === null && isset($columnToPropertyMap[$columnName]) === false) {
-                    continue;
-                }
-
-                // Map column name back to original property name using schema mapping.
-                // Falls back to camelCase conversion if not found in mapping.
-                $mappedName   = $columnToPropertyMap[$columnName] ?? null;
-                $propertyName = $mappedName ?? $this->columnNameToPropertyName(columnName: $columnName);
-
-                // Apply type conversion based on schema type.
-                // This ensures values match the expected schema type (e.g., numeric strings stay as strings).
-                $schemaType = $propertyTypes[$propertyName] ?? 'string';
-                if ($schemaType === 'string' && (is_int($value) === true || is_float($value) === true)) {
-                    // Schema expects string but database returned numeric - cast to string.
-                    $value = (string) $value;
-                }
-
-                // Format date/datetime values based on schema format.
-                $propertyFormat = $propertyFormats[$propertyName] ?? null;
-                if ($value !== null && is_string($value) === true && $propertyFormat !== null) {
-                    if ($propertyFormat === 'date') {
-                        // Schema expects date-only (Y-m-d), strip time component.
-                        try {
-                            $value = (new DateTime($value))->format('Y-m-d');
-                        } catch (\Exception $e) {
-                            // Keep original value if parsing fails.
-                        }
-                    } else if ($propertyFormat === 'date-time') {
-                        // Schema expects full ISO 8601 datetime.
-                        try {
-                            $value = (new DateTime($value))->format('c');
-                        } catch (\Exception $e) {
-                            // Keep original value if parsing fails.
-                        }
-                    }
-                }
-
-                // Decode JSON values if they're JSON strings.
-                $objectData[$propertyName] = $value;
-                if (is_string($value) === true && $this->isJsonString(string: $value) === true) {
-                    $decodedValue = json_decode($value, true);
-                    if ($decodedValue !== null) {
-                        $objectData[$propertyName] = $decodedValue;
-                    }
-                }
-            }//end foreach
-
-            // Set metadata fields on ObjectEntity.
-            foreach ($metadata as $field => $value) {
-                if ($value === null) {
-                    // Log when critical metadata field is null (owner can be null for public objects).
-                    if ($field === 'uuid' || $field === 'id') {
-                        $this->logger->warning(
-                            message: '[MagicMapper] Critical metadata field is null',
-                            context: ['file' => __FILE__, 'line' => __LINE__, 'field' => $field]
-                        );
-                    }
-
-                    continue;
-                }
-
-                $method = 'set'.ucfirst($field);
-                // Use is_callable() instead of method_exists() to support magic methods.
-                // Entity base class uses __call() for property setters.
-                if (is_callable([$objectEntity, $method]) === false) {
-                    $this->logger->warning(
-                        message: '[MagicMapper] Method is not callable for metadata field',
-                        context: ['file' => __FILE__, 'line' => __LINE__, 'field' => $field, 'method' => $method]
-                    );
-                    continue;
-                }
-
-                $objectEntity->$method($value);
-                // Debug critical fields.
-                if (in_array($field, ['id', 'uuid', 'owner'], true) === true) {
-                    $this->logger->debug(
-                        message: '[MagicMapper] Set critical metadata field',
-                        context: ['file' => __FILE__, 'line' => __LINE__, 'field' => $field, 'value' => $value]
-                    );
-                }
-            }//end foreach
-
-            // Verify entity state after setting metadata.
-            $this->logger->debug(
-                message: '[MagicMapper] Entity state after metadata',
-                context: [
-                    'file'        => __FILE__,
-                    'line'        => __LINE__,
-                    'entityId'    => $objectEntity->getId(),
-                    'entityUuid'  => $objectEntity->getUuid(),
-                    'entityOwner' => $objectEntity->getOwner(),
-                ]
-            );
-            // End foreach.
-            // Set object data.
-            $objectEntity->setObject($objectData);
-
-            // CRITICAL FIX: Explicitly set ID and UUID to ensure they are never null.
-            // These are essential for audit trails, rendering, and API responses.
-            if (isset($metadata['id']) === true && $metadata['id'] !== null) {
-                $idValue = $metadata['id'];
-                if (is_numeric($idValue) === true) {
-                    $objectEntity->setId((int) $idValue);
-                }
-            }
-
-            if (isset($metadata['uuid']) === true && $metadata['uuid'] !== null) {
-                $objectEntity->setUuid($metadata['uuid']);
-            }
-
-            // Debug logging.
-            $this->logger->debug(
-                message: '[MagicMapper] Successfully converted row to ObjectEntity',
-                context: [
-                    'file'           => __FILE__,
-                    'line'           => __LINE__,
-                    'uuid'           => $metadata['uuid'] ?? 'unknown',
-                    'register'       => $metadata['register'] ?? 'missing',
-                    'schema'         => $metadata['schema'] ?? 'missing',
-                    'objectDataKeys' => array_keys($objectData),
-                    'metadataCount'  => count($metadata),
-                ]
-            );
-
-            return $objectEntity;
-        } catch (Exception $e) {
-            $this->logger->error(
-                message: '[MagicMapper] Failed to convert row to ObjectEntity',
-                context: [
-                    'file'  => __FILE__,
-                    'line'  => __LINE__,
-                    'error' => $e->getMessage(),
-                    'uuid'  => $row[self::METADATA_PREFIX.'uuid'] ?? 'unknown',
-                ]
-            );
-
-            return null;
-        }//end try
+        return $this->statisticsHandler->convertRowToObjectEntity(
+            row: $row,
+            _register: $_register,
+            _schema: $_schema
+        );
     }//end convertRowToObjectEntity()
 
     /**
@@ -3458,7 +3049,7 @@ class MagicMapper extends AbstractObjectMapper
      */
     public function tableExistsForRegisterSchema(Register $register, Schema $schema): bool
     {
-        return $this->existsTableForRegisterSchema(register: $register, schema: $schema);
+        return $this->tableHandler->tableExistsForRegisterSchema(register: $register, schema: $schema);
     }//end tableExistsForRegisterSchema()
 
     /**
@@ -3513,16 +3104,6 @@ class MagicMapper extends AbstractObjectMapper
      * - first_name -> firstName
      * - is_active -> isActive
      *
-     * @param string $columnName The snake_case column name
-     *
-     * @return string The camelCase property name
-     */
-    private function columnNameToPropertyName(string $columnName): string
-    {
-        // Convert snake_case to camelCase.
-        return lcfirst(str_replace('_', '', ucwords($columnName, '_')));
-    }//end columnNameToPropertyName()
-
     /**
      * Check if register+schema combination has changed since last table update
      *
@@ -3531,7 +3112,7 @@ class MagicMapper extends AbstractObjectMapper
      *
      * @return bool True if register+schema has changed
      */
-    private function hasRegisterSchemaChanged(Register $register, Schema $schema): bool
+    public function hasRegisterSchemaChanged(Register $register, Schema $schema): bool
     {
         $registerId = $register->getId();
         $schemaId   = $schema->getId();
@@ -3551,7 +3132,7 @@ class MagicMapper extends AbstractObjectMapper
      *
      * @return void
      */
-    private function storeRegisterSchemaVersion(Register $register, Schema $schema): void
+    public function storeRegisterSchemaVersion(Register $register, Schema $schema): void
     {
         $registerId = $register->getId();
         $schemaId   = $schema->getId();
@@ -3749,7 +3330,7 @@ class MagicMapper extends AbstractObjectMapper
      *
      * @return (bool|mixed)[][] Array of existing column definitions
      */
-    private function getExistingTableColumns(string $tableName): array
+    public function getExistingTableColumns(string $tableName): array
     {
         try {
             // Use direct SQL query to get table columns (Nextcloud 32 compatible).
@@ -3804,7 +3385,7 @@ class MagicMapper extends AbstractObjectMapper
      *
      * @return array Column operation statistics with keys columnsAdded, columnsDeRequired, columnsReRequired, columnsDropped
      */
-    private function updateTableStructure(string $tableName, array $currentColumns, array $requiredColumns): array
+    public function updateTableStructure(string $tableName, array $currentColumns, array $requiredColumns): array
     {
         $platform      = $this->db->getDatabasePlatform();
         $isPostgres    = ($platform instanceof \Doctrine\DBAL\Platforms\PostgreSQLPlatform);
@@ -4309,7 +3890,7 @@ class MagicMapper extends AbstractObjectMapper
      *
      * @return void
      */
-    private function updateTableIndexes(string $tableName, Register $register, Schema $schema): void
+    public function updateTableIndexes(string $tableName, Register $register, Schema $schema): void
     {
         // For now, recreate all indexes (more complex differential updates can be added later).
         $this->createTableIndexes(tableName: $tableName, _register: $register, _schema: $schema);
@@ -4326,7 +3907,7 @@ class MagicMapper extends AbstractObjectMapper
      *
      * @psalm-suppress UndefinedInterfaceMethod quoteIdentifier exists via DBAL Connection
      */
-    private function dropTable(string $tableName): void
+    public function dropTable(string $tableName): void
     {
         try {
             // Use direct SQL to drop table (Nextcloud 32 compatible).
@@ -4377,16 +3958,6 @@ class MagicMapper extends AbstractObjectMapper
      *
      * @return bool True if string is valid JSON
      *
-     * @psalm-suppress UnusedFunctionCall - intentional, we only check json_last_error()
-     */
-    private function isJsonString(string $string): bool
-    {
-        // Decode JSON to check for errors via json_last_error().
-        // Note: We only care about json_last_error(), not the decoded value.
-        json_decode($string);
-        return json_last_error() === JSON_ERROR_NONE;
-    }//end isJsonString()
-
     /**
      * Clear all caches for MagicMapper
      *
@@ -4397,34 +3968,7 @@ class MagicMapper extends AbstractObjectMapper
      */
     public function clearCache(?int $registerId=null, ?int $schemaId=null): void
     {
-        if ($registerId === null || $schemaId === null) {
-            // Clear all caches.
-            self::$tableExistsCache    = [];
-            self::$regSchemaTableCache = [];
-            self::$tableStructureCache = [];
-            self::$calcVersionCache    = [];
-
-            $this->logger->debug(
-                message: '[MagicMapper] Cleared all MagicMapper caches',
-                context: ['file' => __FILE__, 'line' => __LINE__]
-            );
-            return;
-        }
-
-        // Clear cache for specific register+schema combination.
-        $cacheKey = $this->getCacheKey(registerId: $registerId, schemaId: $schemaId);
-        $this->invalidateTableCache(cacheKey: $cacheKey);
-
-        $this->logger->debug(
-            message: '[MagicMapper] Cleared MagicMapper cache for register+schema',
-            context: [
-                'file'       => __FILE__,
-                'line'       => __LINE__,
-                'registerId' => $registerId,
-                'schemaId'   => $schemaId,
-                'cacheKey'   => $cacheKey,
-            ]
-        );
+        $this->tableHandler->clearCache(registerId: $registerId, schemaId: $schemaId);
     }//end clearCache()
 
     /**
@@ -4437,68 +3981,7 @@ class MagicMapper extends AbstractObjectMapper
      */
     public function getExistingRegisterSchemaTables(): array
     {
-        try {
-            // Use direct SQL to list tables (Nextcloud 32 compatible).
-            // NOTE: We use raw SQL here because pg_tables is a system table that should not be prefixed.
-            $prefix = 'oc_';
-            // Nextcloud default prefix.
-            $searchPattern = $prefix.self::TABLE_PREFIX.'%';
-
-            $sql  = "SELECT tablename FROM pg_tables WHERE schemaname = 'public' AND tablename LIKE ?";
-            $stmt = $this->db->prepare($sql);
-            $stmt->execute([$searchPattern]);
-            $rows = $stmt->fetchAll();
-
-            $registerSchemaTables = [];
-            $fullPrefix           = $prefix.self::TABLE_PREFIX;
-
-            foreach ($rows as $row) {
-                $tableName = $row['tablename'];
-                if (str_starts_with($tableName, $fullPrefix) === true) {
-                    // Extract register and schema IDs from table name.
-                    $suffix = substr($tableName, strlen($fullPrefix));
-
-                    // Expected format: {registerId}_{schemaId}.
-                    if (preg_match('/^(\d+)_(\d+)$/', $suffix, $matches) === 1) {
-                        $registerId = (int) $matches[1];
-                        $schemaId   = (int) $matches[2];
-
-                        $registerSchemaTables[] = [
-                            'registerId' => $registerId,
-                            'schemaId'   => $schemaId,
-                            'tableName'  => $tableName,
-                        ];
-
-                        // Pre-populate cache while we're at it.
-                        $cacheKey = $this->getCacheKey(registerId: $registerId, schemaId: $schemaId);
-                        self::$tableExistsCache[$cacheKey]    = time();
-                        self::$regSchemaTableCache[$cacheKey] = $tableName;
-                    }
-                }//end if
-            }//end foreach
-
-            $this->logger->info(
-                message: '[MagicMapper] Found existing register+schema tables',
-                context: [
-                    'file'       => __FILE__,
-                    'line'       => __LINE__,
-                    'tableCount' => count($registerSchemaTables),
-                ]
-            );
-
-            return $registerSchemaTables;
-        } catch (Exception $e) {
-            $this->logger->error(
-                message: '[MagicMapper] Failed to get existing register+schema tables',
-                context: [
-                    'file'  => __FILE__,
-                    'line'  => __LINE__,
-                    'error' => $e->getMessage(),
-                ]
-            );
-
-            return [];
-        }//end try
+        return $this->tableHandler->getExistingRegisterSchemaTables();
     }//end getExistingRegisterSchemaTables()
 
     /**
@@ -4513,21 +3996,7 @@ class MagicMapper extends AbstractObjectMapper
      */
     public function isMagicMappingEnabled(Register $_register, Schema $schema): bool
     {
-        // Check schema configuration for magic mapping flag.
-        $configuration = $schema->getConfiguration();
-
-        // Enable magic mapping if explicitly enabled in schema config.
-        $hasMagicMapping = is_array($configuration) === true
-            && ($configuration['magicMapping'] ?? null) !== null
-            && $configuration['magicMapping'] === true;
-        if ($hasMagicMapping === true) {
-            return true;
-        }
-
-        // Check global configuration.
-        $globalEnabled = $this->appConfig->getValueString('openregister', 'magic_mapping_enabled', 'false');
-
-        return $globalEnabled === 'true';
+        return $this->tableHandler->isMagicMappingEnabled(_register: $_register, schema: $schema);
     }//end isMagicMappingEnabled()
 
     /**
@@ -4540,22 +4009,7 @@ class MagicMapper extends AbstractObjectMapper
      */
     public function isMagicMappingEnabledForSchema(Schema $schema): bool
     {
-        // For backward compatibility, just check schema config without register context.
-        $configuration = $schema->getConfiguration();
-
-        $hasMagicMapping = is_array($configuration) === true
-            && ($configuration['magicMapping'] ?? null) !== null
-            && $configuration['magicMapping'] === true;
-        if ($hasMagicMapping === true) {
-            return true;
-        }
-
-        $globalEnabled = $this->appConfig->getValueString(
-            'openregister',
-            'magic_mapping_enabled',
-            'false'
-        );
-        return $globalEnabled === 'true';
+        return $this->tableHandler->isMagicMappingEnabledForSchema(schema: $schema);
     }//end isMagicMappingEnabledForSchema()
 
     // ==================================================================================.
@@ -6510,20 +5964,7 @@ class MagicMapper extends AbstractObjectMapper
      */
     public function getAllRegisterSchemaPairs(): array
     {
-        $tables = $this->getAllMagicMapperTables();
-        $pairs  = [];
-
-        foreach ($tables as $tableName) {
-            // Table names are like "openregister_table_{registerId}_{schemaId}" (prefix already stripped).
-            if (preg_match('/^openregister_table_(\d+)_(\d+)$/', $tableName, $matches) === 1) {
-                $pairs[] = [
-                    'registerId' => (int) $matches[1],
-                    'schemaId'   => (int) $matches[2],
-                ];
-            }
-        }
-
-        return $pairs;
+        return $this->statisticsHandler->getAllRegisterSchemaPairs();
     }//end getAllRegisterSchemaPairs()
 
     /**
@@ -7350,76 +6791,11 @@ class MagicMapper extends AbstractObjectMapper
         int|array|null $schemaId=null,
         array $exclude=[]
     ): array {
-        $total   = 0;
-        $deleted = 0;
-        $locked  = 0;
-
-        $allPairs = $this->getAllRegisterSchemaPairs();
-
-        foreach ($allPairs as $pair) {
-            $pairRegisterId = (int) $pair['registerId'];
-            $pairSchemaId   = (int) $pair['schemaId'];
-
-            // Apply register filter.
-            if ($registerId !== null) {
-                if (is_array($registerId) === true) {
-                    if (in_array($pairRegisterId, $registerId, true) === false) {
-                        continue;
-                    }
-                } elseif ($pairRegisterId !== $registerId) {
-                    continue;
-                }
-            }
-
-            // Apply schema filter.
-            if ($schemaId !== null) {
-                if (is_array($schemaId) === true) {
-                    if (in_array($pairSchemaId, $schemaId, true) === false) {
-                        continue;
-                    }
-                } elseif ($pairSchemaId !== $schemaId) {
-                    continue;
-                }
-            }
-
-            // Apply exclusion filter.
-            $excluded = false;
-            foreach ($exclude as $ex) {
-                if (isset($ex['register'], $ex['schema'])
-                    && (int) $ex['register'] === $pairRegisterId
-                    && (int) $ex['schema'] === $pairSchemaId
-                ) {
-                    $excluded = true;
-                    break;
-                }
-            }
-
-            if ($excluded === true) {
-                continue;
-            }
-
-            try {
-                $register = $this->registerMapper->find($pairRegisterId, _multitenancy: false, _rbac: false);
-                $schema   = $this->schemaMapper->find($pairSchemaId, _multitenancy: false, _rbac: false);
-
-                $count = $this->countObjectsInRegisterSchemaTable(
-                    query: [],
-                    register: $register,
-                    schema: $schema
-                );
-                $total += $count;
-            } catch (\Exception $e) {
-                // Skip tables that can't be queried.
-            }
-        }
-
-        return [
-            'total'   => $total,
-            'size'    => 0,
-            'invalid' => 0,
-            'deleted' => $deleted,
-            'locked'  => $locked,
-        ];
+        return $this->statisticsHandler->getStatistics(
+            registerId: $registerId,
+            schemaId: $schemaId,
+            exclude: $exclude
+        );
     }//end getStatistics()
 
     /**
@@ -7434,48 +6810,7 @@ class MagicMapper extends AbstractObjectMapper
      */
     public function getStatisticsGroupedBySchema(array $schemaIds): array
     {
-        $emptyStats = [
-            'total' => 0,
-            'size'  => 0,
-        ];
-
-        if (empty($schemaIds) === true) {
-            return [];
-        }
-
-        // Initialize all schemas with empty stats.
-        $statsMap = [];
-        foreach ($schemaIds as $schemaId) {
-            $statsMap[$schemaId] = $emptyStats;
-        }
-
-        // Iterate all register-schema pairs and accumulate counts per schema.
-        $allPairs = $this->getAllRegisterSchemaPairs();
-
-        foreach ($allPairs as $pair) {
-            $pairSchemaId = (int) $pair['schemaId'];
-
-            if (in_array($pairSchemaId, $schemaIds, true) === false) {
-                continue;
-            }
-
-            try {
-                $register = $this->registerMapper->find((int) $pair['registerId'], _multitenancy: false, _rbac: false);
-                $schema   = $this->schemaMapper->find($pairSchemaId, _multitenancy: false, _rbac: false);
-
-                $count = $this->countObjectsInRegisterSchemaTable(
-                    query: [],
-                    register: $register,
-                    schema: $schema
-                );
-
-                $statsMap[$pairSchemaId]['total'] += $count;
-            } catch (\Exception $e) {
-                // Skip tables that can't be queried.
-            }
-        }
-
-        return $statsMap;
+        return $this->statisticsHandler->getStatisticsGroupedBySchema(schemaIds: $schemaIds);
     }//end getStatisticsGroupedBySchema()
 
     /**
@@ -7490,51 +6825,10 @@ class MagicMapper extends AbstractObjectMapper
      */
     public function getRegisterChartData(?int $registerId=null, ?int $schemaId=null): array
     {
-        $labels = [];
-        $series = [];
-
-        $allPairs = $this->getAllRegisterSchemaPairs();
-        $registerCounts = [];
-
-        foreach ($allPairs as $pair) {
-            $pairRegisterId = (int) $pair['registerId'];
-            $pairSchemaId   = (int) $pair['schemaId'];
-
-            if ($registerId !== null && $pairRegisterId !== $registerId) {
-                continue;
-            }
-
-            if ($schemaId !== null && $pairSchemaId !== $schemaId) {
-                continue;
-            }
-
-            try {
-                $register = $this->registerMapper->find($pairRegisterId, _multitenancy: false, _rbac: false);
-                $schema   = $this->schemaMapper->find($pairSchemaId, _multitenancy: false, _rbac: false);
-
-                $count = $this->countObjectsInRegisterSchemaTable(
-                    query: [],
-                    register: $register,
-                    schema: $schema
-                );
-
-                $regName = $register->getTitle() ?? 'Register '.$pairRegisterId;
-                if (isset($registerCounts[$regName]) === false) {
-                    $registerCounts[$regName] = 0;
-                }
-
-                $registerCounts[$regName] += $count;
-            } catch (\Exception $e) {
-                // Skip.
-            }
-        }
-
-        foreach ($registerCounts as $name => $count) {
-            $labels[] = $name;
-            $series[] = $count;
-        }
-
-        return ['labels' => $labels, 'series' => $series];
+        return $this->statisticsHandler->getRegisterChartData(
+            registerId: $registerId,
+            schemaId: $schemaId
+        );
     }//end getRegisterChartData()
 
     /**
@@ -7549,51 +6843,10 @@ class MagicMapper extends AbstractObjectMapper
      */
     public function getSchemaChartData(?int $registerId=null, ?int $schemaId=null): array
     {
-        $labels = [];
-        $series = [];
-
-        $allPairs = $this->getAllRegisterSchemaPairs();
-        $schemaCounts = [];
-
-        foreach ($allPairs as $pair) {
-            $pairRegisterId = (int) $pair['registerId'];
-            $pairSchemaId   = (int) $pair['schemaId'];
-
-            if ($registerId !== null && $pairRegisterId !== $registerId) {
-                continue;
-            }
-
-            if ($schemaId !== null && $pairSchemaId !== $schemaId) {
-                continue;
-            }
-
-            try {
-                $register = $this->registerMapper->find($pairRegisterId, _multitenancy: false, _rbac: false);
-                $schema   = $this->schemaMapper->find($pairSchemaId, _multitenancy: false, _rbac: false);
-
-                $count = $this->countObjectsInRegisterSchemaTable(
-                    query: [],
-                    register: $register,
-                    schema: $schema
-                );
-
-                $schName = $schema->getTitle() ?? 'Schema '.$pairSchemaId;
-                if (isset($schemaCounts[$schName]) === false) {
-                    $schemaCounts[$schName] = 0;
-                }
-
-                $schemaCounts[$schName] += $count;
-            } catch (\Exception $e) {
-                // Skip.
-            }
-        }
-
-        foreach ($schemaCounts as $name => $count) {
-            $labels[] = $name;
-            $series[] = $count;
-        }
-
-        return ['labels' => $labels, 'series' => $series];
+        return $this->statisticsHandler->getSchemaChartData(
+            registerId: $registerId,
+            schemaId: $schemaId
+        );
     }//end getSchemaChartData()
 
     /**
