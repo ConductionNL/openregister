@@ -54,18 +54,18 @@
  * @since     2.0.0 Initial SaveObjects implementation with performance optimizations
  */
 
-namespace OCA\OpenRegister\Service\ObjectHandlers;
+namespace OCA\OpenRegister\Service\Object;
 
 use DateTime;
 use Exception;
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Db\ObjectEntityMapper;
+use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
-use OCA\OpenRegister\Service\ObjectHandlers\SaveObject;
-use OCA\OpenRegister\Service\ObjectHandlers\ValidateObject;
+use OCA\OpenRegister\Service\Object\SaveObject;
+use OCA\OpenRegister\Service\Object\ValidateObject;
 use OCA\OpenRegister\Service\OrganisationService;
 use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
@@ -99,7 +99,7 @@ class SaveObjects
     /**
      * Constructor for SaveObjects handler
      *
-     * @param ObjectEntityMapper  $objectEntityMapper  Mapper for object entity database operations
+     * @param MagicMapper         $objectEntityMapper  Mapper for object entity database operations
      * @param SchemaMapper        $schemaMapper        Mapper for schema operations
      * @param RegisterMapper      $registerMapper      Mapper for register operations
      * @param SaveObject          $saveHandler         Handler for individual object operations
@@ -109,7 +109,7 @@ class SaveObjects
      * @param LoggerInterface     $logger              Logger for error and debug logging
      */
     public function __construct(
-        private readonly ObjectEntityMapper $objectEntityMapper,
+        private readonly MagicMapper $objectEntityMapper,
         private readonly SchemaMapper $schemaMapper,
         private readonly RegisterMapper $registerMapper,
         private readonly SaveObject $saveHandler,
