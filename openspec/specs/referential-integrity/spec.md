@@ -1,3 +1,7 @@
+---
+status: partial
+---
+
 # referential-integrity Specification
 
 ## Purpose
@@ -129,3 +133,19 @@ Each integrity action MUST produce an audit trail entry (see deletion-audit-trai
 - **Open questions:**
   - Should cascade operations trigger hooks/webhooks for each cascaded object?
   - How should RESTRICT interact with bulk delete (fail entire batch or skip restricted items)?
+
+## Nextcloud Integration Analysis
+
+**Status**: PARTIALLY IMPLEMENTED
+
+**What Exists**: The core referential integrity service (`ReferentialIntegrityService.php`) is in place with all five `onDelete` behaviors (CASCADE, SET_NULL, SET_DEFAULT, RESTRICT, NO_ACTION) defined and functional. `EntityRelation` and `RelationHandler` track relationships between objects. `DeleteObject.php` integrates with the integrity service on delete operations. `RelationCascadeHandler.php` resolves schema references and handles cascade during save. Circular reference detection is implemented via `MAX_DEPTH = 10`. RESTRICT violations correctly return HTTP 409 via `ReferentialIntegrityException`.
+
+**Gap Analysis**: CASCADE/SET_NULL/RESTRICT behaviors are not yet configurable per individual relation type through the schema property UI -- the `onDelete` attribute exists on schema properties but lacks full transactional atomicity wrapping all cascade operations in a single database transaction. Bulk delete operations do not yet process referential integrity rules per object. Audit trail entries for cascade-triggered deletions are not tagged with the triggering integrity action type.
+
+**Nextcloud Core Integration Points**:
+- **IDBConnection transaction management**: Wrap all cascade operations in `$this->db->beginTransaction()` / `commit()` / `rollBack()` to guarantee atomicity. Nextcloud's database abstraction layer (Doctrine DBAL) supports nested transactions via savepoints, which is ideal for recursive cascades.
+- **IEventDispatcher**: Fire `BeforeObjectDeletedEvent` and `ObjectDeletedEvent` for each cascade-deleted object, allowing other apps (OpenCatalogi, OpenConnector) to react to cascade deletions. Use `GenericEvent` with context metadata indicating the deletion was triggered by referential integrity.
+- **ILogger / LoggerInterface**: Log cascade chains and circular reference warnings via Nextcloud's PSR-3 logger, enabling admins to trace integrity operations in the Nextcloud log viewer.
+- **Activity app integration**: Register cascade deletions as activity events so the Activity stream shows "Object X was deleted (cascade from Object Y deletion)".
+
+**Recommendation**: Complete the transactional wrapper first -- this is the highest-risk gap since partial cascades can leave data in an inconsistent state. Use `IDBConnection::beginTransaction()` at the top-level delete call in `DeleteObject.php` and commit only after all cascaded operations succeed. Next, integrate with `IEventDispatcher` so cascade deletions are visible to the broader Nextcloud ecosystem. Bulk delete support can build on the single-delete transaction pattern by iterating within a shared transaction. Audit trail tagging is a metadata addition to the existing deletion audit entries.

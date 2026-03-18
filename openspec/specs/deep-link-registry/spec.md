@@ -145,3 +145,24 @@ The deep link registry MUST be fully backward compatible. OpenRegister's existin
 - The spec is implementation-ready and serves as accurate documentation of the existing feature.
 - No significant gaps or ambiguities identified.
 - Minor note: the spec could document edge cases like what happens when a consuming app is disabled after registration (registrations simply stop being added on subsequent requests since it is in-memory).
+
+## Nextcloud Integration Analysis
+
+**Status**: Fully implemented. `DeepLinkRegistryService`, `DeepLinkRegistration` DTO, `DeepLinkRegistrationEvent`, and `ObjectsProvider` integration are all in place and functional.
+
+**Nextcloud Core Interfaces Used**:
+- `IEventDispatcher` (`OCP\EventDispatcher\IEventDispatcher`): Used to dispatch `DeepLinkRegistrationEvent` during `Application::boot()`. Consuming apps listen for this event and call `register()` to claim (register, schema) pairs with their URL templates.
+- `ISearchProvider` (`OCP\Search\IProvider`): `ObjectsProvider` uses `DeepLinkRegistryService::resolveUrl()` and `resolveIcon()` to generate search result URLs and icons. When a deep link is registered, search results link to the consuming app's detail view instead of OpenRegister's generic view.
+- `RegisterMapper` / `SchemaMapper`: Used for lazy ID-to-slug mapping at resolution time. Registrations use slugs (portable across environments), but `ObjectsProvider` passes integer IDs which are reverse-mapped to slugs for key lookup.
+
+**Recommended Enhancements**:
+- Expose registered deep links via `ICapability` (`OCP\Capabilities\ICapability`). This would allow frontend applications to discover which schemas have registered deep links and generate correct URLs client-side without additional API calls. The capabilities response could include a map of `{registerSlug}::{schemaSlug}` to URL template patterns.
+- Consider registering deep links via `DeepLinkRegistrationEvent` not just for search results but also for notification links, activity stream links, and MCP resource URIs. This would make deep link resolution a central routing concept across all Nextcloud integration points.
+- Use `IURLGenerator` as an optional alternative to the current `strtr()` string replacement in `DeepLinkRegistration::resolveUrl()`. While the current approach works well for hash-based Vue Router URLs, `IURLGenerator::linkToRouteAbsolute()` would be more robust for server-side route generation.
+
+**Dependencies on Existing OpenRegister Features**:
+- `DeepLinkRegistryService` (`lib/Service/DeepLinkRegistryService.php`) — in-memory registry, core of the feature.
+- `DeepLinkRegistrationEvent` (`lib/Event/DeepLinkRegistrationEvent.php`) — boot-time event for consuming app registration.
+- `ObjectsProvider` (`lib/Search/ObjectsProvider.php`) — unified search integration point.
+- `Application.php` — dispatches the registration event during `boot()` phase.
+- `RegisterMapper` / `SchemaMapper` — ID-to-slug mapping for key resolution.

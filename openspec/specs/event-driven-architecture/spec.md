@@ -150,3 +150,13 @@ Published events MUST be stored and queryable for replay and debugging purposes.
   - What is the relationship between webhook events and the audit trail — are they the same or separate?
   - Should the system support event replay (re-delivering historical events to a new subscriber)?
   - How should correlation IDs be generated — request-scoped UUID or user-action-scoped?
+
+## Nextcloud Integration Analysis
+
+**Status**: Implemented
+
+**Existing Implementation**: The event-driven architecture is built around 55+ custom events covering Object, Register, Schema, and Configuration lifecycle operations. Eight or more listeners handle these events for webhooks, subscriptions, and workflow engine integration. CloudEventFormatter formats payloads as CloudEvents v1.0. WebhookService with WebhookEventListener dispatches events to configured webhook endpoints. WebhookDeliveryJob and HookRetryJob handle async delivery with retry logic. WorkflowEngine entity with N8nAdapter and WindmillAdapter provide workflow engine integration. Frontend webhook management views exist at src/views/webhooks/.
+
+**Nextcloud Core Integration**: The architecture is built on Nextcloud's IEventDispatcher (OCP\EventDispatcher\IEventDispatcher) and IEventListener interfaces. All custom events extend OCP\EventDispatcher\Event, making them fully compatible with Nextcloud's event system. This means any other Nextcloud app can listen for OpenRegister events by registering listeners in their Application class via IBootstrap::registerEventListener(). The typed event approach ensures type safety and IDE discoverability. Webhook delivery uses Nextcloud's BackgroundJob system for async processing.
+
+**Recommendation**: The event system is comprehensive and well-integrated with Nextcloud's core event infrastructure. The typed event pattern is the correct approach for Nextcloud app interoperability. Areas for improvement include: implementing CloudEvents event type naming consistently across all dispatched events (nl.openregister.object.created pattern), adding correlation IDs to cascade operations by threading a request-scoped UUID through the event context, implementing a dead-letter queue entity for failed webhook deliveries with admin inspection UI, and adding event history storage for replay capability. The existing HookRetryJob should be verified for exponential backoff strategy compliance.

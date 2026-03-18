@@ -128,3 +128,13 @@ The OpenAPI spec MUST be available in JSON and YAML formats.
 - **Open questions**:
   - Should this use OpenAPI 3.0 (as stated) or 3.1.0 (as the `oas-validation` spec requires)?
   - How does the Swagger UI integrate with Nextcloud's authentication system for try-it-out functionality?
+
+## Nextcloud Integration Analysis
+
+**Status**: Implemented
+
+**Existing Implementation**: OasService generates OpenAPI specs from register/schema definitions via createOas(), mapping schema properties to OpenAPI types and generating paths for CRUD operations. OasController and RegistersController expose OAS endpoints for single-register and all-registers generation. BaseOas.json provides the foundation template including info, servers, securitySchemes (Basic Auth and OAuth2), and common schema components. RBAC groups are dynamically mapped to OAuth2 scopes in the generated output. The authentication documentation is auto-generated from the security configuration.
+
+**Nextcloud Core Integration**: The auto-generation pipeline is tightly integrated with Nextcloud's infrastructure. Register and schema metadata stored in Nextcloud's database (via OCP\AppFramework\Db\Entity mappers) drives the generation. The OAS output includes Nextcloud-native authentication schemes: Basic Auth maps directly to Nextcloud username/password authentication, and OAuth2 scopes are derived from Nextcloud group memberships configured in schema authorization rules. The generated spec is compatible with Nextcloud's own OpenAPI tooling initiative, where apps expose their API contracts as machine-readable specifications.
+
+**Recommendation**: The core generation pipeline is production-ready and well-aligned with Nextcloud's API documentation direction. The main enhancement opportunities are: adding a Swagger UI endpoint (could be a simple static HTML page bundled in the app that loads the generated JSON), implementing YAML format output alongside JSON, and adding example payloads generated from existing object data or schema defaults. For Nextcloud-specific integration, consider making the generated OAS available through Nextcloud's capabilities endpoint so external tools can auto-discover the API surface. Version tracking could leverage schema entity timestamps to detect changes and auto-increment the spec version.

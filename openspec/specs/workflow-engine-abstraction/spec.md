@@ -1,5 +1,9 @@
 # Workflow Engine Abstraction
 
+---
+status: implemented
+---
+
 ## Purpose
 Provides an engine-agnostic interface for OpenRegister to interact with workflow engines (n8n, Windmill, and future engines). This is the foundation layer that other specs (Schema Hooks, Workflow-in-Import) build upon.
 
@@ -323,3 +327,10 @@ OpenRegister SHOULD auto-detect available engines from installed Nextcloud ExApp
 - **Open questions:**
   - Should additional engine types beyond n8n and Windmill be pluggable via a registration mechanism?
   - How should engine failover work when multiple instances of the same type are registered?
+
+## Nextcloud Integration Analysis
+
+- **Status**: Already implemented in OpenRegister
+- **Existing Implementation**: `WorkflowEngineInterface` defines the engine-agnostic PHP interface. `N8nAdapter` and `WindmillAdapter` implement it. `WorkflowResult` provides structured responses (approved/rejected/modified/error). `WorkflowEngine` entity stores engine configuration. `WorkflowEngineRegistry` manages adapter resolution. `WorkflowEngineController` exposes REST API.
+- **Nextcloud Core Integration**: All services registered via DI container in `IBootstrap::register()` (`Application.php`). The `WorkflowEngine` entity extends NC's `Entity` base class, `WorkflowEngineMapper` extends `QBMapper`. Credential storage should use NC's `ICrypto` for encryption at rest. The n8n adapter routes through NC's `IAppApiService` ExApp proxy. Engine auto-discovery should leverage `IAppManager` to detect installed ExApps.
+- **Recommendation**: Mark as implemented. Consider verifying `ICrypto` credential encryption and implementing engine auto-discovery via `IAppManager` for installed ExApps.

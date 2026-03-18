@@ -1,3 +1,7 @@
+---
+status: draft
+---
+
 # Open Raadsinformatie (ORI) Register Specification
 
 ## Purpose
@@ -534,3 +538,28 @@ curl "http://localhost:8080/index.php/apps/openregister/api/objects/{ori_registe
 4. What is the minimum viable subset of schemas for an initial release? (e.g., Vergadering + Agendapunt + Document first, then Motie/Amendement/Stemming later)
 5. Should the ORI API follow the exact Open State Foundation API URL structure (`/api/v1/meetings`, `/api/v1/events`) or use the standard OpenRegister URL pattern (`/api/objects/{register}/{schema}`)?
 6. How does the privacy filter for Persoon interact with the existing RBAC scopes spec — are they the same mechanism or separate?
+
+## Nextcloud Integration Analysis
+
+**Status**: Not yet implemented. No ORI-specific schemas, register templates, or council information entities exist. The core OpenRegister infrastructure (schemas, objects, public API, OAS generation, file service) provides a complete foundation.
+
+**Nextcloud Core Interfaces**:
+- `Source` entity (OpenRegister/OpenConnector): Use Source entities to configure iBabs and NotuBiz API connections for ORI data harvesting. `ImportService` handles the actual data ingestion, mapping external field names to ORI schema properties via `MappingService`.
+- `routes.php` / public API: The existing `/api/objects/{register}/{schema}` endpoints support public access when the register is configured for it. Add `Cache-Control` headers via middleware or controller-level response modification for CDN compatibility (REQ-ORI-133).
+- `ISearchProvider`: Register an ORI-specific search provider for Nextcloud's unified search, enabling full-text search across vergaderingen, agendapunten, and documenten. Leverage the existing `ObjectsProvider` with deep links pointing to a council information frontend.
+- `FileService`: Link council document PDFs (raadsvoorstellen, notulen, moties) to ORI document objects in Nextcloud Files. Use `TextExtractionService` for full-text indexing of PDF content to support search (REQ-ORI-120).
+
+**Implementation Approach**:
+- Define all 10 ORI entity schemas (Vergadering, Agendapunt, Document, Motie, Amendement, Stemming, Persoon, Fractie, Commissie, Organisatie) as JSON Schema definitions. Package them in an ORI register template JSON file loadable via `openregister:load-register` CLI command or repair step.
+- Implement idempotent upsert for connector-imported data by checking `_sourceSystem` + `_sourceId` before create. If a matching object exists, update it instead of creating a duplicate. This logic belongs in `ObjectService` or a dedicated `UpsertHandler`.
+- Privacy filtering for Persoon schema: Configure sensitive properties (BSN, email, phone) with a visibility flag in the schema definition. The public API response serializer strips these fields for unauthenticated requests while including them for authorized users.
+- Seed demo data for fictional municipality "Voorbeeldstad" via a JSON fixture file containing realistic council composition (6+ fracties, 30+ raadsleden, vergaderingen with agendapunten, moties, and stemmingen).
+- Use `OasService` for automatic OpenAPI 3.1.0 spec generation from the ORI register schemas, providing self-documenting API endpoints.
+
+**Dependencies on Existing OpenRegister Features**:
+- `ObjectService` — CRUD, filtering, pagination, and sorting for all ORI entity types.
+- `SchemaService` / `RegisterService` — schema definitions with `$ref` for inter-entity relationships.
+- `OasService` — automatic OpenAPI spec generation for the ORI register.
+- `FileService` — document attachment and management for council documents.
+- `MappingService` — property mapping for iBabs/NotuBiz data transformation.
+- `ImportHandler` — register template provisioning and demo data seeding.

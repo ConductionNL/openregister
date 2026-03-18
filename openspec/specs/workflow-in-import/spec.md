@@ -1,5 +1,9 @@
 # Workflow-in-Import Specification
 
+---
+status: implemented
+---
+
 ## Purpose
 
 Extends the OpenRegister JSON import pipeline to deploy workflow definitions to engines, wire them as schema hooks, and track them for versioning -- all from a single import file.
@@ -258,3 +262,10 @@ When exporting schemas, deployed workflows attached to those schemas SHALL be in
 - **Open questions:**
   - Should workflow definitions be validated against engine-specific schemas before deployment?
   - How should workflow versions relate to schema configuration versions?
+
+## Nextcloud Integration Analysis
+
+- **Status**: Already implemented in OpenRegister
+- **Existing Implementation**: `ImportHandler` processes the `workflows` array after schemas and before objects. Deploys via `WorkflowEngineInterface::deployWorkflow()`, wires schema hooks from `attachTo`, supports SHA-256 hash-based idempotent re-import. `ExportHandler` includes deployed workflows. `DeployedWorkflow` entity and mapper track deployments with versioning.
+- **Nextcloud Core Integration**: Uses Nextcloud's background job system (`QueuedJob`) for large imports. Import/export uses NC's file handling infrastructure. The `DeployedWorkflow` entity uses NC's `Entity` base class and `QBMapper` for database access. Engine adapters route through NC's `IAppApiService` for ExApp communication.
+- **Recommendation**: Mark as implemented. The import pipeline is well-integrated with NC's job system and database layer. No additional NC-native integration needed.

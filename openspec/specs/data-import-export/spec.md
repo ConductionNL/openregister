@@ -149,3 +149,13 @@ Users MUST only import into and export from schemas they have appropriate permis
   - How should import handle objects with references ($ref) — resolve by external ID or UUID?
   - Should export support selecting specific columns/properties or always export all?
   - What is the maximum file size for import?
+
+## Nextcloud Integration Analysis
+
+**Status**: Implemented
+
+**Existing Implementation**: ImportService and ExportService provide CSV and Excel import/export at the service layer. Configuration import/export is handled by dedicated handlers (ImportHandler, ExportHandler). Object-level export is available via Object/ExportHandler. Bulk operations use SaveObjects with ChunkProcessingHandler for processing large datasets in manageable chunks, and BulkRelationHandler manages relations during bulk import. Integration tests exist via Newman/Postman collections for the magic mapper import flow.
+
+**Nextcloud Core Integration**: The import pipeline leverages Nextcloud's QueuedJob (OCP\BackgroundJob\QueuedJob) for asynchronous import processing, allowing large CSV/Excel imports to run without blocking the HTTP request. Completion notifications are delivered through INotifier (OCP\Notification\INotifier), informing users when their import job finishes or encounters errors. The chunked processing approach is well-suited to Nextcloud's PHP execution model where long-running requests risk timeouts. File handling could additionally integrate with Nextcloud Files (WebDAV) for import template storage and export file delivery.
+
+**Recommendation**: The core import/export services are solid and production-ready for backend operations. The main gaps are in the user-facing workflow: interactive column mapping UI, progress tracking, duplicate detection with conflict resolution, and downloadable error reports. For the Nextcloud integration specifically, the QueuedJob usage is appropriate but could be enhanced by using IJobList::add() with typed arguments to pass import configuration. Export operations should consider streaming responses for large datasets rather than building the full file in memory. RBAC enforcement on import/export should reuse the existing PermissionHandler and MagicRbacHandler to ensure exported data respects the same access rules as API responses.

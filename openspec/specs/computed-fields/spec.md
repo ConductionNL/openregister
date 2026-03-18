@@ -1,3 +1,7 @@
+---
+status: partial
+---
+
 # computed-fields Specification
 
 ## Purpose
@@ -124,3 +128,19 @@ Expression evaluation errors MUST NOT prevent object operations.
   - How do computed fields interact with import/export — are they included in exports? Ignored during imports?
   - What is the performance impact of evaluating computed fields on read for large result sets?
   - Should there be a sandbox/security model for Twig expressions to prevent abuse?
+
+## Nextcloud Integration Analysis
+
+**Status**: PARTIALLY IMPLEMENTED
+
+**What Exists**: The Twig template engine is fully integrated into OpenRegister for mapping and data transformation. Custom Twig extensions are registered (`MappingExtension.php` with filters like `b64enc`, `json_decode`, `zgw_enum` and functions like `executeMapping`, `generateUuid`). `MappingRuntime.php` and `MappingRuntimeLoader.php` provide the runtime infrastructure. `AuthenticationExtension.php` adds OAuth token functions. The `SaveObject` pipeline and `MetadataHydrationHandler` process field values during save, and `RenderObject` handles output rendering -- both are natural hook points for computed field evaluation.
+
+**Gap Analysis**: Twig is used exclusively in mapping/transformation contexts (OpenConnector integration), not as a first-class schema property type. No `computed` attribute exists on schema property definitions. There is no `evaluateOn` configuration (save vs. read), no cross-reference lookups via `_ref` syntax, no read-only UI rendering for computed fields, and no custom function registration API specifically for computed expressions. Error handling for expression evaluation (division by zero, null references) is not implemented.
+
+**Nextcloud Core Integration Points**:
+- **IJobList (Background Jobs)**: Register a `TimedJob` for batch recalculation of `evaluateOn: save` computed fields when source data changes. This avoids blocking API responses when many dependent fields need updating. Use `\OCP\BackgroundJob\IJobList::add()` to schedule recalculation jobs.
+- **ICache / APCu via ICacheFactory**: Memoize frequently evaluated `evaluateOn: read` computed expressions using `\OCP\ICacheFactory::createDistributed('openregister_computed')`. Cache keys based on object ID + expression hash, with TTL matching data volatility.
+- **Twig Sandbox Extension**: Use Twig's built-in `SandboxExtension` with a `SecurityPolicy` to restrict allowed tags, filters, and functions in user-defined expressions. This prevents abuse (file access, code execution) while allowing safe computation.
+- **IEventDispatcher**: Listen to `ObjectUpdatedEvent` to trigger recalculation of dependent computed fields when source properties change, enabling reactive updates across related objects.
+
+**Recommendation**: Start by adding the `computed` attribute to schema property definitions in `Schema.php` and implementing `evaluateOn: save` evaluation in `MetadataHydrationHandler`. This builds directly on the existing Twig infrastructure with minimal new code. Use the existing `MappingExtension` as the function registry for computed expressions -- extend it rather than creating a parallel system. For `evaluateOn: read`, add evaluation in `RenderObject.php` with APCu memoization via `ICacheFactory`. Cross-reference lookups (`_ref`) should resolve via `ObjectService::getObject()` with a depth limit to prevent circular evaluation. Background jobs for batch recalculation are a phase-2 concern.

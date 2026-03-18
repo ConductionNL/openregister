@@ -1,3 +1,7 @@
+---
+status: draft
+---
+
 # product-service-catalog Specification
 
 ## Purpose
@@ -125,3 +129,27 @@ Products MUST be accessible via a public API without authentication for integrat
   - Should this be a separate Nextcloud app (like OpenCatalogi) or part of OpenRegister core?
   - How does this relate to OpenCatalogi's existing catalog functionality?
   - Is the UPL reference list stored as a register schema or as a static lookup?
+
+## Nextcloud Integration Analysis
+
+**Status**: Not yet implemented. No product/service catalog functionality exists. OpenRegister's schema system, public API, and configuration import/export provide the foundation.
+
+**Nextcloud Core Interfaces**:
+- `ISearchProvider` (`OCP\Search\IProvider`): Register a `ProductSearchProvider` for Nextcloud's unified search so that products are discoverable through the global search bar. Results link to product detail pages via the deep link registry.
+- `routes.php`: Expose a public read-only API endpoint (e.g., `/api/pdc/products`) that serves published products without authentication, supporting Accept-Language content negotiation for multilingual responses per RFC 7231.
+- `IAppConfig`: Store PDC configuration (UPL reference list URL, SDG doelgroep options, default content block definitions) in Nextcloud app configuration. The UPL list can be cached in `IAppConfig` and refreshed periodically via a `TimedJob`.
+- `ICapability`: Expose PDC availability and supported languages via Nextcloud capabilities, enabling municipal website integrations to discover the catalog endpoint programmatically.
+
+**Implementation Approach**:
+- Model products as OpenRegister objects in a dedicated `pdc` register with a `product` schema. Schema properties include: `uplNaam`, `uplUri`, `publicNaam`, `samenvatting`, `doelgroep`, `contentBlocks` (JSON array), `pricing` (structured object), `translations` (nested object keyed by language code), and `publicationStatus`.
+- Import the UPL reference list as a separate schema in the PDC register (or as a lookup table). A `UplValidationHandler` checks `uplUri` values against the imported list on product save, warning but not blocking on unrecognized URIs.
+- Implement content negotiation in the public API controller using Nextcloud's `IRequest::getHeader('Accept-Language')`. The controller selects the appropriate translation from the product's `translations` property, falling back to Dutch.
+- Publication lifecycle is handled via a `publicationStatus` property (`concept`, `gepubliceerd`, `gedepubliceerd`) with date-based visibility. The public API filters on `publicationStatus = gepubliceerd` and `publicationDate <= now`.
+- SDG feed generation can be implemented as a scheduled export (`QueuedJob`) that generates an SDG-compliant JSON feed of products classified by doelgroep.
+
+**Dependencies on Existing OpenRegister Features**:
+- `ObjectService` — CRUD for product objects with filtering and pagination.
+- `SchemaService` — schema definitions with property validation for UPL URIs and structured content.
+- `ConfigurationService` / `ImportHandler` — distribute pre-built PDC schema templates.
+- Public API infrastructure — existing unauthenticated read endpoints for published objects.
+- `DeepLinkRegistryService` — register product detail page URLs for unified search integration.

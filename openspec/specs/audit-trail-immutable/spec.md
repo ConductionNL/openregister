@@ -1,5 +1,9 @@
 # audit-trail-immutable Specification
 
+---
+status: implemented
+---
+
 ## Purpose
 Implement an immutable audit trail with cryptographic hash chaining for all register operations. Every create, read (of sensitive data), update, and delete MUST be recorded in a tamper-evident log with minimum 10-year retention. The audit trail MUST be independently verifiable and exportable for compliance auditing.
 
@@ -134,3 +138,10 @@ Read operations on schemas marked as containing sensitive data MUST also produce
   - How should hash chain breaks be reported (admin notification, API endpoint, dashboard widget)?
   - For sensitive data read auditing, what defines "sensitive" — a schema-level flag, or per-property marking?
   - Should the archive mechanism use database partitioning, separate tables, or external storage?
+
+## Nextcloud Integration Analysis
+
+- **Status**: Already implemented in OpenRegister
+- **Existing Implementation**: `AuditTrail` entity with comprehensive fields (uuid, schema, register, object, action, changed, user, userName, session, request, ipAddress, size). `AuditTrailMapper` with `createAuditTrail()` recording all mutations. `AuditHandler` orchestrates audit trail creation. `AuditTrailController` for listing/viewing/exporting entries. `RevertHandler` uses audit trail for object reversion. Referential integrity actions logged with specific action types.
+- **Nextcloud Core Integration**: The `AuditTrail` entity extends NC's `Entity` base class, `AuditTrailMapper` extends `QBMapper`. Events fired via `IEventDispatcher`. Should implement `IProvider` for NC's Activity app stream to surface audit entries in the NC activity feed. Consider integrating with NC's `ILogger` for system-level audit logging. Export functionality could leverage NC's file download infrastructure.
+- **Recommendation**: Mark as implemented. Consider implementing `IProvider` for the Activity app to surface audit entries in NC's activity stream. Hash chaining, immutability enforcement, and 10-year retention are documented as not-yet-implemented enhancements.

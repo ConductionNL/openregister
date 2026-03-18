@@ -1,5 +1,9 @@
 # Faceting Configuration Specification
 
+---
+status: implemented
+---
+
 ## Purpose
 Extends the OpenRegister faceting system to support per-property configuration (title, description, order, aggregation control) while maintaining backward compatibility with the existing boolean `facetable` flag. Enables non-aggregated facets that scope queries to a specific schema, eliminating the need for data duplication caused by property renaming.
 
@@ -210,3 +214,10 @@ GraphQL list queries MUST expose facets and facetable field discovery through th
 - **WHEN** a date property has `"facetable": { "type": "date_histogram", "options": { "interval": "month" } }`
 - **AND** the facet is requested through GraphQL
 - **THEN** the facet buckets MUST be grouped by month intervals matching the REST API behavior
+
+## Nextcloud Integration Analysis
+
+- **Status**: Already implemented in OpenRegister
+- **Existing Implementation**: `FacetHandler` supports both boolean and config object facetable configurations with `normalizeFacetableConfig()`. Non-aggregated facet isolation via `calculateFacetsWithFallback()` with schema-scoped queries. Custom title/description/order via `transformNonAggregatedFieldFacet()` and `transformAggregatedFieldFacet()`. Facet type support (`terms`, `date_range`, `date_histogram`) with auto-detection. Multiple SQL-level handlers (`MagicFacetHandler`, `MariaDbFacetHandler`).
+- **Nextcloud Core Integration**: Facet results exposed through the search API which integrates with NC's unified search via `IFilteringProvider`. Uses APCu caching (`FacetCacheHandler`) leveraging NC's `ICache` infrastructure for performance. Solr faceting via `SolrFacetProcessor` for indexed backends. The faceting configuration is stored as JSON metadata on schema properties within NC's database layer.
+- **Recommendation**: Mark as implemented. The faceting system is well-integrated with NC's caching layer. Verify the schema editor UI (`EditSchemaProperty.vue`) fully supports `type` and `options` config fields.
