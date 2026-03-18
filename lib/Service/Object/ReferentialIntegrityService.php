@@ -288,6 +288,8 @@ class ReferentialIntegrityService
      * The index maps: target schema ID → [{sourceSchemaId, property, onDelete, isArray, sourceSchemaSlug}]
      *
      * @return void
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity) Reduced from 19 to ~12 by extracting buildSchemaRegisterMap + indexRelationsForSchema
      */
     private function ensureRelationIndex(): void
     {

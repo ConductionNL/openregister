@@ -49,6 +49,7 @@ use Psr\Log\LoggerInterface;
  * counting and visualization data.
  *
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
+ * @SuppressWarnings(PHPMD.ExcessiveClassComplexity) Statistics methods extracted from MagicMapper retain inherent query complexity
  */
 class MagicStatisticsHandler
 {
@@ -759,7 +760,8 @@ class MagicStatisticsHandler
     {
         // Decode JSON to check for errors via json_last_error().
         // Note: We only care about json_last_error(), not the decoded value.
-        json_decode($string);
+        $decoded = json_decode($string);
+        unset($decoded);
         return json_last_error() === JSON_ERROR_NONE;
     }//end isJsonString()
 }//end class

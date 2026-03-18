@@ -127,6 +127,8 @@ class SubscriptionService
      * @param int|null    $registerId  Optional register ID filter
      *
      * @return array<array<string, mixed>> The events the user is allowed to see
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity) At threshold after extracting filterEventStream + verifyEventRBAC
      */
     public function getEventsSince(
         ?string $lastEventId=null,
