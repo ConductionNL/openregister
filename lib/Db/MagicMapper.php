@@ -1786,7 +1786,6 @@ class MagicMapper extends AbstractObjectMapper
                     'object',
                     'deleted',
                     'locked',
-                    'published',
                     'updated',
                     'created',
                     'version',
@@ -1838,7 +1837,6 @@ class MagicMapper extends AbstractObjectMapper
                 'object',
                 'deleted',
                 'locked',
-                'published',
                 'updated',
                 'created',
                 'version',
@@ -2152,18 +2150,6 @@ class MagicMapper extends AbstractObjectMapper
             ],
             self::METADATA_PREFIX.'updated'        => [
                 'name'     => self::METADATA_PREFIX.'updated',
-                'type'     => 'datetime',
-                'nullable' => true,
-                'index'    => true,
-            ],
-            self::METADATA_PREFIX.'published'      => [
-                'name'     => self::METADATA_PREFIX.'published',
-                'type'     => 'datetime',
-                'nullable' => true,
-                'index'    => true,
-            ],
-            self::METADATA_PREFIX.'depublished'    => [
-                'name'     => self::METADATA_PREFIX.'depublished',
                 'type'     => 'datetime',
                 'nullable' => true,
                 'index'    => true,
@@ -2805,7 +2791,7 @@ class MagicMapper extends AbstractObjectMapper
             );
 
             // Create indexes on frequently filtered metadata fields.
-            $idxMetaFields = ['created', 'updated', 'published', 'name'];
+            $idxMetaFields = ['created', 'updated', 'name'];
             foreach ($idxMetaFields as $field) {
                 $col = self::METADATA_PREFIX.$field;
                 $idx = "{$tableName}_{$field}_idx";
@@ -3060,8 +3046,6 @@ class MagicMapper extends AbstractObjectMapper
             'groups',
             'created',
             'updated',
-            'published',
-            'depublished',
             'expires',
         ];
 
@@ -3069,7 +3053,7 @@ class MagicMapper extends AbstractObjectMapper
             $value = $metadata[$field] ?? null;
 
             // Handle datetime fields.
-            if (in_array($field, ['created', 'updated', 'published', 'depublished', 'expires']) === true) {
+            if (in_array($field, ['created', 'updated', 'expires']) === true) {
                 if ($value === null && in_array($field, ['created', 'updated']) === true) {
                     $value = $now;
                 }
@@ -3284,8 +3268,6 @@ class MagicMapper extends AbstractObjectMapper
                             [
                                 'created',
                                 'updated',
-                                'published',
-                                'depublished',
                                 'expires',
                             ],
                             true

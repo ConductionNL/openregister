@@ -72,7 +72,6 @@ class MetadataHydrationHandler
      * from the object data based on schema configuration.
      *
      * NOTE: Image field handling is kept in SaveObject due to complex file operations.
-     * NOTE: Published/Depublished field handling is kept in SaveObject due to DateTime complexity.
      *
      * Metadata can be configured in schema using:
      * - Direct field paths: "title", "description"

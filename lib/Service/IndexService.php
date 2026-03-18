@@ -148,7 +148,6 @@ class IndexService
      * @param array $query        Search query
      * @param bool  $_rbac         Apply RBAC filters
      * @param bool  $_multitenancy Apply multitenancy filters
-     * @param bool  $published    Filter published objects
      * @param bool  $deleted      Include deleted objects
      *
      * @return (array|int|mixed)[] Search results
@@ -161,14 +160,12 @@ class IndexService
         array $query=[],
         bool $_rbac=true,
         bool $_multitenancy=true,
-        bool $published=false,
         bool $deleted=false
     ): array {
         return $this->objectHandler->searchObjects(
             query: $query,
             _rbac: $_rbac,
             _multitenancy: $_multitenancy,
-            published: $published,
             deleted: $deleted
         );
     }//end searchObjects()
@@ -694,7 +691,6 @@ class IndexService
             query: $query,
             _rbac: true,
             _multitenancy: true,
-            published: false,
             deleted: false
         );
     }//end searchObjectsPaginated()

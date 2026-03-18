@@ -1175,41 +1175,4 @@ class SaveObjectTest extends TestCase
         $this->assertIsArray($relations, 'scanForRelations should return an array.');
     }
 
-    /**
-     * Test applyPropertyDefaults applies default values from schema
-     *
-     * @return void
-     */
-    public function testApplyPropertyDefaultsAppliesDefaults(): void
-    {
-        // Configure schema mock with default values.
-        $schemaObj = new \stdClass();
-        $schemaObj->properties = new \stdClass();
-        $titleProp = new \stdClass();
-        $titleProp->type = 'string';
-        $statusProp = new \stdClass();
-        $statusProp->type = 'string';
-        $statusProp->default = 'draft';
-        $schemaObj->properties->title = $titleProp;
-        $schemaObj->properties->status = $statusProp;
-
-        $this->mockSchema->method('getSchemaObject')->willReturn($schemaObj);
-        $this->mockSchema->method('getProperties')->willReturn([
-            'title' => ['type' => 'string'],
-            'status' => ['type' => 'string', 'default' => 'draft']
-        ]);
-        $this->mockSchema->method('getConfiguration')->willReturn(null);
-
-        $data = [
-            'title' => 'Test Object Title'
-        ];
-
-        $result = $this->saveObject->applyPropertyDefaults(
-            schema: $this->mockSchema,
-            data: $data
-        );
-
-        $this->assertIsArray($result, 'applyPropertyDefaults should return an array.');
-        $this->assertEquals('Test Object Title', $result['title'], 'Existing values should be preserved.');
-    }
 } 

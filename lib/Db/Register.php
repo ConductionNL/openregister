@@ -65,6 +65,8 @@ use OCP\AppFramework\Db\Entity;
  * @method void setGroups(?array $groups)
  * @method DateTime|null getDeleted()
  * @method void setDeleted(?DateTime $deleted)
+ * @method array|null getLanguages()
+ * @method void setLanguages(?array $languages)
  * @method array|null getConfiguration()
  * @method void setConfiguration(array|string|null $configuration)
  *
@@ -230,6 +232,18 @@ class Register extends Entity implements JsonSerializable
     protected ?DateTime $depublished = null;
 
     /**
+     * Available languages for this register.
+     *
+     * JSON array of BCP 47 language codes (e.g., ["nl", "en"]).
+     * The first language in the array is the default (required) language.
+     * Used for translatable schema properties to determine which languages
+     * are available for translation and which is the fallback.
+     *
+     * @var array|null Available language codes
+     */
+    protected ?array $languages = null;
+
+    /**
      * Configuration settings for this register.
      *
      * Stores register-specific configuration including schema-level settings like magic mapping.
@@ -275,6 +289,7 @@ class Register extends Entity implements JsonSerializable
         $this->addType(fieldName: 'deleted', type: 'datetime');
         $this->addType(fieldName: 'published', type: 'datetime');
         $this->addType(fieldName: 'depublished', type: 'datetime');
+        $this->addType(fieldName: 'languages', type: 'json');
         $this->addType(fieldName: 'configuration', type: 'json');
     }//end __construct()
 
@@ -402,6 +417,7 @@ class Register extends Entity implements JsonSerializable
      *     organisation: null|string,
      *     authorization: array|null,
      *     groups: array<string, list<string>>,
+     *     languages: array<string>|null,
      *     configuration: array|null,
      *     quota: array{
      *         storage: null,
@@ -477,6 +493,7 @@ class Register extends Entity implements JsonSerializable
             'organisation'  => $this->organisation,
             'authorization' => $this->authorization,
             'groups'        => $groups,
+            'languages'     => $this->languages,
             'configuration' => $this->configuration,
             'published'     => $published,
             'depublished'   => $depublished,
@@ -644,6 +661,46 @@ class Register extends Entity implements JsonSerializable
         $this->depublished = $depublished;
         $this->markFieldUpdated(attribute: 'depublished');
     }//end setDepublished()
+
+    // ==================================================================================
+    // LANGUAGE CONFIGURATION HELPERS
+    // ==================================================================================
+
+    /**
+     * Get the default language for this register.
+     *
+     * The default language is the first element in the languages array.
+     * Falls back to 'nl' if no languages are configured.
+     *
+     * @return string The default language code (BCP 47)
+     */
+    public function getDefaultLanguage(): string
+    {
+        $languages = $this->languages;
+        if (is_array($languages) === true && empty($languages) === false) {
+            return $languages[0];
+        }
+
+        return 'nl';
+    }//end getDefaultLanguage()
+
+    /**
+     * Check if a language is available for this register.
+     *
+     * @param string $language The language code to check
+     *
+     * @return bool True if the language is available
+     */
+    public function hasLanguage(string $language): bool
+    {
+        $languages = $this->languages;
+        if (is_array($languages) === false || empty($languages) === true) {
+            // No languages configured means only default 'nl' is available.
+            return $language === 'nl';
+        }
+
+        return in_array($language, $languages, true);
+    }//end hasLanguage()
 
     // ==================================================================================
     // MAGIC MAPPING CONFIGURATION HELPERS

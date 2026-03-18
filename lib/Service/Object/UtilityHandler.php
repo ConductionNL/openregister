@@ -220,7 +220,6 @@ class UtilityHandler
             'facets',
             'facetable',
             'sample_size',
-            'published',
             'count',
             'performance',
             'aggregations',

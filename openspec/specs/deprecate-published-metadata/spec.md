@@ -16,22 +16,22 @@ Replace the dedicated `published`/`depublished` object metadata system with RBAC
 - [x] `MagicRbacHandler::resolveDynamicValue()` MUST support `$now` variable, resolving to `(new DateTime())->format('Y-m-d H:i:s')` (SQL datetime format) — **DONE**
 - [x] `MagicRbacHandler` MUST resolve `$now` inside operator values (e.g., `{"$lte": "$now"}`) before building SQL expressions — **DONE**
 - [x] `ObjectEntity` MUST NOT have `published` or `depublished` properties, getters, setters, or JSON serialization — **DONE**
-- [ ] `PublishHandler` class MUST be deleted (if it still exists)
+- [x] `PublishHandler` class MUST be deleted (if it still exists) — **DONE** (class not found in codebase)
 - [x] Object publish/depublish API routes MUST be removed from `routes.php` — **DONE**
-- [ ] `BulkController` publish/depublish methods MUST be removed (if they still exist)
-- [ ] `SaveObject::hydrateObjectMetadata()` MUST NOT process `objectPublishedField` or `objectDepublishedField` schema configuration
-- [ ] `SaveObject` MUST NOT process `autoPublish` schema configuration
-- [ ] `MagicSearchHandler` (`MariaDbSearchHandler`) MUST NOT list `published`/`depublished` as searchable metadata or date fields
-- [ ] `MagicOrganizationHandler` MUST NOT apply published-based visibility checks for unauthenticated users
-- [ ] `MagicMapper::getBaseMetadataColumns()` MUST NOT include `_published` or `_depublished` column definitions
-- [ ] `MagicMapper` metadata column lists (table creation, table update, insert data, row extraction) MUST NOT include `published`/`depublished`
-- [ ] Magic table index definitions MUST NOT include `_published` index
+- [x] `BulkController` publish/depublish methods MUST be removed (if they still exist) — **DONE** (no publish/depublish methods existed; docblock updated)
+- [x] `SaveObject::hydrateObjectMetadata()` MUST NOT process `objectPublishedField` or `objectDepublishedField` schema configuration — **DONE**
+- [x] `SaveObject` MUST NOT process `autoPublish` schema configuration — **DONE** (removed from SaveObject, SaveObjects, Schema.php boolFields)
+- [x] `MagicSearchHandler` (`MariaDbSearchHandler`) MUST NOT list `published`/`depublished` as searchable metadata or date fields — **DONE**
+- [x] `MagicOrganizationHandler` MUST NOT apply published-based visibility checks for unauthenticated users — **DONE** (no published references found in MagicOrganizationHandler)
+- [x] `MagicMapper::getBaseMetadataColumns()` MUST NOT include `_published` or `_depublished` column definitions — **DONE**
+- [x] `MagicMapper` metadata column lists (table creation, table update, insert data, row extraction) MUST NOT include `published`/`depublished` — **DONE**
+- [x] Magic table index definitions MUST NOT include `_published` index — **DONE**
 - [x] A database migration MUST drop `_published` and `_depublished` columns from all existing magic tables — **DONE** (`Version1Date20260313130000`)
-- [ ] `MetaDataFacetHandler` MUST NOT define `published`/`depublished` facet metadata
-- [ ] `MagicFacetHandler` MUST NOT include `published` in date field handling
-- [ ] `SearchQueryHandler` MUST NOT pass `published` parameter or list it as `@self` metadata
-- [ ] `IndexService`/`ObjectHandler` (Solr) MUST NOT accept or apply `$published` filter parameter
-- [ ] `SearchBackendInterface::searchObjects()` MUST NOT have `$published` parameter
+- [x] `MetaDataFacetHandler` MUST NOT define `published`/`depublished` facet metadata — **DONE**
+- [x] `MagicFacetHandler` MUST NOT include `published` in date field handling — **DONE**
+- [x] `SearchQueryHandler` MUST NOT pass `published` parameter or list it as `@self` metadata — **DONE**
+- [x] `IndexService`/`ObjectHandler` (Solr) MUST NOT accept or apply `$published` filter parameter — **DONE**
+- [x] `SearchBackendInterface::searchObjects()` MUST NOT have `$published` parameter — **DONE**
 - [ ] OpenCatalogi `MassPublishObjects.vue` and `MassDepublishObjects.vue` modals MUST be deleted
 - [ ] OpenCatalogi store actions `publishObject()` and `depublishObject()` MUST be removed
 - [ ] OpenCatalogi `ObjectCreatedEventListener` and `ObjectUpdatedEventListener` MUST NOT read `@self.published`/`@self.depublished`

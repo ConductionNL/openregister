@@ -162,32 +162,9 @@ class PreparationHandler
             $tempEntity = new ObjectEntity();
             $tempEntity->setObject($object);
 
-            // CRITICAL FIX: Hydrate @self data into the entity before calling hydrateObjectMetadata.
+            // Hydrate @self data into the entity before calling hydrateObjectMetadata.
             if (($object['@self'] ?? null) !== null && is_array($object['@self']) === true) {
-                $selfDataForHydration = $object['@self'];
-
-                // Convert published/depublished strings to DateTime objects.
-                if (($selfDataForHydration['published'] ?? null) !== null
-                    && is_string($selfDataForHydration['published']) === true
-                ) {
-                    try {
-                        $selfDataForHydration['published'] = new DateTime($selfDataForHydration['published']);
-                    } catch (Exception $e) {
-                        // Keep as string if conversion fails.
-                    }
-                }
-
-                if (($selfDataForHydration['depublished'] ?? null) !== null
-                    && is_string($selfDataForHydration['depublished']) === true
-                ) {
-                    try {
-                        $selfDataForHydration['depublished'] = new DateTime($selfDataForHydration['depublished']);
-                    } catch (Exception $e) {
-                        // Keep as string if conversion fails.
-                    }
-                }
-
-                $tempEntity->hydrate($selfDataForHydration);
+                $tempEntity->hydrate($object['@self']);
             }//end if
 
             $this->saveHandler->hydrateObjectMetadata(entity: $tempEntity, schema: $schema);

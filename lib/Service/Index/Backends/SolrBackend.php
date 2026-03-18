@@ -256,7 +256,6 @@ class SolrBackend implements SearchBackendInterface
      * @param array $query         Query parameters
      * @param bool  $_rbac         Apply RBAC
      * @param bool  $_multitenancy Apply multitenancy
-     * @param bool  $published     Filter published
      * @param bool  $deleted       Include deleted
      *
      * @return array Search results with pagination info.
@@ -267,14 +266,12 @@ class SolrBackend implements SearchBackendInterface
         array $query=[],
         bool $_rbac=true,
         bool $_multitenancy=true,
-        bool $published=false,
         bool $deleted=false
     ): array {
         return $this->queryExecutor->searchPaginated(
             query: $query,
             _rbac: $_rbac,
             _multitenancy: $_multitenancy,
-            published: $published,
             deleted: $deleted
         );
     }//end searchObjectsPaginated()

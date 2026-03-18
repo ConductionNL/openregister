@@ -217,8 +217,6 @@ class TransformationHandler
                     'summary',
                     'image',
                     'slug',
-                    'published',
-                    'depublished',
                     'register',
                     'schema',
                     'organisation',

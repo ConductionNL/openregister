@@ -167,7 +167,6 @@ class DashboardService
                     'invalid'   => $objectStats['invalid'],
                     'deleted'   => $objectStats['deleted'],
                     'locked'    => $objectStats['locked'],
-                    'published' => $objectStats['published'],
                 ],
                 'logs'        => [
                     'total' => $logStats['total'],
@@ -194,7 +193,6 @@ class DashboardService
                     'invalid'   => 0,
                     'deleted'   => 0,
                     'locked'    => 0,
-                    'published' => 0,
                 ],
                 'logs'        => [
                     'total' => 0,
@@ -252,7 +250,6 @@ class DashboardService
                     'invalid'   => $objectStats['invalid'],
                     'deleted'   => $objectStats['deleted'],
                     'locked'    => $objectStats['locked'],
-                    'published' => $objectStats['published'],
                 ],
                 'logs'    => [
                     'total' => $auditStats['total'],
@@ -275,7 +272,6 @@ class DashboardService
                     'invalid'   => 0,
                     'deleted'   => 0,
                     'locked'    => 0,
-                    'published' => 0,
                 ],
                 'logs'    => [
                     'total' => 0,

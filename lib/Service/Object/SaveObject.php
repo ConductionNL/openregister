@@ -39,7 +39,9 @@ use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Object\CacheHandler;
+use OCA\OpenRegister\Service\Object\SaveObject\ComputedFieldHandler;
 use OCA\OpenRegister\Service\Object\SaveObject\FilePropertyHandler;
+use OCA\OpenRegister\Service\Object\TranslationHandler;
 use OCA\OpenRegister\Service\Object\SaveObject\MetadataHydrationHandler;
 use OCA\OpenRegister\Service\OrganisationService;
 use OCA\OpenRegister\Service\PropertyRbacHandler;
@@ -169,7 +171,7 @@ class SaveObject
      * Constructor for SaveObject handler.
      *
      * @param MagicMapper              $objectEntityMapper   Object entity mapper
-     * @param MagicMapper      $unifiedObjectMapper  Unified object mapper for object operations
+     * @param MagicMapper              $unifiedObjectMapper  Unified object mapper for object operations
      * @param MetadataHydrationHandler $metaHydrationHandler Handler for metadata extraction
      * @param FilePropertyHandler      $filePropertyHandler  Handler for file property operations
      * @param IUserSession             $userSession          User session service
@@ -181,6 +183,8 @@ class SaveObject
      * @param CacheHandler             $cacheHandler         Object cache service for entity and query caching
      * @param SettingsService          $settingsService      Settings service for accessing trail settings
      * @param PropertyRbacHandler      $propertyRbacHandler  Property-level RBAC handler
+     * @param ComputedFieldHandler     $computedFieldHandler Handler for computed field evaluation
+     * @param TranslationHandler       $translationHandler   Handler for translation operations
      * @param LoggerInterface          $logger               Logger interface for logging operations
      * @param ArrayLoader              $arrayLoader          Twig array loader for template rendering
      *
@@ -200,6 +204,8 @@ class SaveObject
         private readonly CacheHandler $cacheHandler,
         private readonly SettingsService $settingsService,
         private readonly PropertyRbacHandler $propertyRbacHandler,
+        private readonly ComputedFieldHandler $computedFieldHandler,
+        private readonly TranslationHandler $translationHandler,
         private readonly LoggerInterface $logger,
         ArrayLoader $arrayLoader,
     ) {
@@ -886,7 +892,7 @@ class SaveObject
      * based on the object data. It supports:
      * - Simple field mapping using dot notation paths (e.g., 'contact.email', 'title')
      * - Twig-like concatenation for combining multiple fields (e.g., '{{ voornaam }} {{ tussenvoegsel }} {{ achternaam }}')
-     * - All metadata fields: name, description, summary, image, slug, published, depublished
+     * - All metadata fields: name, description, summary, image, slug
      *
      * Schema configuration example:
      * ```json
@@ -895,9 +901,7 @@ class SaveObject
      *   "objectDescriptionField": "beschrijving",
      *   "objectSummaryField": "beschrijvingKort",
      *   "objectImageField": "afbeelding",
-     *   "objectSlugField": "naam",
-     *   "objectPublishedField": "publicatieDatum",
-     *   "objectDepublishedField": "einddatum"
+     *   "objectSlugField": "naam"
      * }
      * ```
      *
@@ -2509,6 +2513,13 @@ class SaveObject
             register: $register
         );
 
+        // Normalize translatable properties (wrap simple values under default language).
+        $data = $this->translationHandler->normalizeTranslationsForSave(
+            objectData: $data,
+            schema: $schema,
+            register: $register
+        );
+
         // Check property-level authorization for incoming data.
         // This throws a ValidationException if user tries to modify unauthorized properties.
         // Skip when _rbac is false (internal/system calls should bypass all authorization).
@@ -3296,16 +3307,6 @@ class SaveObject
             $objectEntity->setSlug($slug);
         }
 
-        // Extract and set published property if present.
-        $this->logger->debug(
-            message: '[SaveObject] Processing published field in SaveObject',
-            context: [
-                'file'         => __FILE__,
-                'line'         => __LINE__,
-                'selfDataKeys' => array_keys($selfData),
-            ]
-        );
-
         if (array_key_exists('owner', $selfData) === true && empty($selfData['owner']) === false) {
             $objectEntity->setOwner($selfData['owner']);
         }
@@ -3531,6 +3532,16 @@ class SaveObject
 
         // Apply default values (including slug generation).
         $data = $this->setDefaultValues(objectEntity: $objectEntity, schema: $schema, data: $data);
+
+        // Evaluate computed fields with evaluateOn: 'save'.
+        // This computes values from Twig expressions and stores them in the object data.
+        if ($this->computedFieldHandler->hasComputedProperties($schema) === true) {
+            $data = $this->computedFieldHandler->evaluateComputedFields(
+                data: $data,
+                schema: $schema,
+                evaluateOn: 'save'
+            );
+        }
 
         return $data;
     }//end prepareObjectData()

@@ -1314,6 +1314,11 @@ class Schema extends Entity implements JsonSerializable
                 }
             }
 
+            // Mark computed properties as readOnly in JSON Schema / OpenAPI output.
+            if (isset($property['computed']) === true && is_array($property['computed']) === true) {
+                $prop->readOnly = true;
+            }
+
             $schema->properties->{$propertyName} = $prop;
         }//end foreach
 
@@ -1473,7 +1478,7 @@ class Schema extends Entity implements JsonSerializable
     {
         $validatedConfig = [];
         $stringFields    = ['objectNameField', 'objectDescriptionField', 'objectSummaryField', 'objectImageField'];
-        $boolFields      = ['allowFiles', 'autoPublish'];
+        $boolFields      = ['allowFiles'];
         $passThrough     = ['unique', 'facetCacheTtl'];
 
         foreach ($configuration as $key => $value) {

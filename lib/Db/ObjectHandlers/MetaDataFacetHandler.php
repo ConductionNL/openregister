@@ -122,7 +122,6 @@ class MetaDataFacetHandler
         // @self.organisation -> organisation column (stores org UUID)
         // @self.created -> created column
         // @self.updated -> updated column
-        // @self.published -> published column
         // @self.owner -> owner column
         // Add more mappings as needed for other @self metadata fields.
         $fieldMappings = [
@@ -131,7 +130,6 @@ class MetaDataFacetHandler
             'organisation' => 'organisation',
             'created'      => 'created',
             'updated'      => 'updated',
-            'published'    => 'published',
             'owner'        => 'owner',
         ];
 
@@ -1312,20 +1310,6 @@ class MetaDataFacetHandler
             'updated'      => [
                 'type'        => 'date',
                 'description' => 'Date and time when the object was last updated',
-                'facet_types' => ['date_histogram', 'range'],
-                'intervals'   => ['day', 'week', 'month', 'year'],
-                'has_labels'  => false,
-            ],
-            'published'    => [
-                'type'        => 'date',
-                'description' => 'Date and time when the object was published',
-                'facet_types' => ['date_histogram', 'range'],
-                'intervals'   => ['day', 'week', 'month', 'year'],
-                'has_labels'  => false,
-            ],
-            'depublished'  => [
-                'type'        => 'date',
-                'description' => 'Date and time when the object was depublished',
                 'facet_types' => ['date_histogram', 'range'],
                 'intervals'   => ['day', 'week', 'month', 'year'],
                 'has_labels'  => false,

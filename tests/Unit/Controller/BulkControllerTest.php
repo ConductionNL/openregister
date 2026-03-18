@@ -83,7 +83,11 @@ class BulkControllerTest extends TestCase
     public function testDeleteSuccess(): void
     {
         $this->setupResolveSuccess();
-        $this->objectService->method('deleteObjects')->willReturn(['uuid1', 'uuid2']);
+        $this->objectService->method('deleteObjects')->willReturn([
+            'deleted_uuids' => ['uuid1', 'uuid2'],
+            'skipped_uuids' => ['uuid3'],
+            'cascade_count' => 0,
+        ]);
 
         $this->request->method('getParams')->willReturn([
             'uuids' => ['uuid1', 'uuid2', 'uuid3'],
@@ -98,13 +102,20 @@ class BulkControllerTest extends TestCase
         $this->assertEquals(['uuid1', 'uuid2'], $data['deleted_uuids']);
         $this->assertEquals(3, $data['requested_count']);
         $this->assertEquals(1, $data['skipped_count']);
+        $this->assertEquals(['uuid3'], $data['skipped_uuids']);
+        $this->assertEquals(0, $data['cascade_count']);
+        $this->assertEquals(2, $data['total_affected']);
         $this->assertEquals('Bulk delete operation completed successfully', $data['message']);
     }
 
     public function testDeleteAllSuccessful(): void
     {
         $this->setupResolveSuccess();
-        $this->objectService->method('deleteObjects')->willReturn(['uuid1', 'uuid2']);
+        $this->objectService->method('deleteObjects')->willReturn([
+            'deleted_uuids' => ['uuid1', 'uuid2'],
+            'skipped_uuids' => [],
+            'cascade_count' => 0,
+        ]);
 
         $this->request->method('getParams')->willReturn([
             'uuids' => ['uuid1', 'uuid2'],
@@ -168,423 +179,8 @@ class BulkControllerTest extends TestCase
         $this->assertStringContainsString('Schema not found', $data['error']);
     }
 
-    // ========================================================================
-    // publish() tests
-    // ========================================================================
 
-    public function testPublishMissingUuids(): void
-    {
-        $this->request->method('getParams')->willReturn([]);
-
-        $result = $this->controller->publish('1', '2');
-
-        $this->assertEquals(Http::STATUS_BAD_REQUEST, $result->getStatus());
-    }
-
-    public function testPublishEmptyUuidsArray(): void
-    {
-        $this->request->method('getParams')->willReturn(['uuids' => []]);
-
-        $result = $this->controller->publish('1', '2');
-
-        $this->assertEquals(Http::STATUS_BAD_REQUEST, $result->getStatus());
-    }
-
-    public function testPublishUuidsNotArray(): void
-    {
-        $this->request->method('getParams')->willReturn(['uuids' => 'string-value']);
-
-        $result = $this->controller->publish('1', '2');
-
-        $this->assertEquals(Http::STATUS_BAD_REQUEST, $result->getStatus());
-    }
-
-    public function testPublishSuccess(): void
-    {
-        $this->objectService->method('setRegister')->willReturnSelf();
-        $this->objectService->method('setSchema')->willReturnSelf();
-        $this->objectService->method('publishObjects')->willReturn(['uuid1']);
-
-        $this->request->method('getParams')->willReturn([
-            'uuids' => ['uuid1'],
-        ]);
-
-        $result = $this->controller->publish('1', '2');
-
-        $this->assertEquals(Http::STATUS_OK, $result->getStatus());
-        $data = $result->getData();
-        $this->assertTrue($data['success']);
-        $this->assertEquals(1, $data['published_count']);
-        $this->assertEquals(['uuid1'], $data['published_uuids']);
-        $this->assertEquals(1, $data['requested_count']);
-        $this->assertEquals(0, $data['skipped_count']);
-        $this->assertEquals('Bulk publish operation completed successfully', $data['message']);
-    }
-
-    public function testPublishWithSkippedUuids(): void
-    {
-        $this->objectService->method('setRegister')->willReturnSelf();
-        $this->objectService->method('setSchema')->willReturnSelf();
-        $this->objectService->method('publishObjects')->willReturn(['uuid1']);
-
-        $this->request->method('getParams')->willReturn([
-            'uuids' => ['uuid1', 'uuid2', 'uuid3'],
-        ]);
-
-        $result = $this->controller->publish('1', '2');
-
-        $this->assertEquals(Http::STATUS_OK, $result->getStatus());
-        $data = $result->getData();
-        $this->assertEquals(1, $data['published_count']);
-        $this->assertEquals(3, $data['requested_count']);
-        $this->assertEquals(2, $data['skipped_count']);
-    }
-
-    public function testPublishWithValidDatetime(): void
-    {
-        $this->objectService->method('setRegister')->willReturnSelf();
-        $this->objectService->method('setSchema')->willReturnSelf();
-        $this->objectService->method('publishObjects')->willReturn(['uuid1']);
-
-        $this->request->method('getParams')->willReturn([
-            'uuids' => ['uuid1'],
-            'datetime' => '2024-01-01T12:00:00Z',
-        ]);
-
-        $result = $this->controller->publish('1', '2');
-
-        $this->assertEquals(Http::STATUS_OK, $result->getStatus());
-        $data = $result->getData();
-        $this->assertTrue($data['success']);
-        // datetime_used should be formatted as Y-m-d H:i:s
-        $this->assertEquals('2024-01-01 12:00:00', $data['datetime_used']);
-    }
-
-    public function testPublishWithDatetimeTrue(): void
-    {
-        $this->objectService->method('setRegister')->willReturnSelf();
-        $this->objectService->method('setSchema')->willReturnSelf();
-        $this->objectService->method('publishObjects')->willReturn(['uuid1']);
-
-        $this->request->method('getParams')->willReturn([
-            'uuids' => ['uuid1'],
-            'datetime' => true,
-        ]);
-
-        $result = $this->controller->publish('1', '2');
-
-        $this->assertEquals(Http::STATUS_OK, $result->getStatus());
-        $data = $result->getData();
-        $this->assertTrue($data['datetime_used']);
-    }
-
-    public function testPublishWithDatetimeFalse(): void
-    {
-        $this->objectService->method('setRegister')->willReturnSelf();
-        $this->objectService->method('setSchema')->willReturnSelf();
-        $this->objectService->method('publishObjects')->willReturn(['uuid1']);
-
-        $this->request->method('getParams')->willReturn([
-            'uuids' => ['uuid1'],
-            'datetime' => false,
-        ]);
-
-        $result = $this->controller->publish('1', '2');
-
-        $this->assertEquals(Http::STATUS_OK, $result->getStatus());
-        $data = $result->getData();
-        $this->assertFalse($data['datetime_used']);
-    }
-
-    public function testPublishWithDatetimeNull(): void
-    {
-        $this->objectService->method('setRegister')->willReturnSelf();
-        $this->objectService->method('setSchema')->willReturnSelf();
-        $this->objectService->method('publishObjects')->willReturn(['uuid1']);
-
-        $this->request->method('getParams')->willReturn([
-            'uuids' => ['uuid1'],
-            'datetime' => null,
-        ]);
-
-        $result = $this->controller->publish('1', '2');
-
-        $this->assertEquals(Http::STATUS_OK, $result->getStatus());
-    }
-
-    public function testPublishInvalidDatetime(): void
-    {
-        $this->request->method('getParams')->willReturn([
-            'uuids' => ['uuid1'],
-            'datetime' => 'not-a-date',
-        ]);
-
-        $result = $this->controller->publish('1', '2');
-
-        $this->assertEquals(Http::STATUS_BAD_REQUEST, $result->getStatus());
-        $data = $result->getData();
-        $this->assertStringContainsString('Invalid datetime format', $data['error']);
-    }
-
-    public function testPublishException(): void
-    {
-        $this->objectService->method('setRegister')->willReturnSelf();
-        $this->objectService->method('setSchema')->willReturnSelf();
-        $this->objectService->method('publishObjects')
-            ->willThrowException(new \Exception('Publish error'));
-
-        $this->request->method('getParams')->willReturn([
-            'uuids' => ['uuid1'],
-        ]);
-
-        $result = $this->controller->publish('1', '2');
-
-        $this->assertEquals(Http::STATUS_INTERNAL_SERVER_ERROR, $result->getStatus());
-        $data = $result->getData();
-        $this->assertStringContainsString('Bulk publish operation failed', $data['error']);
-        $this->assertStringContainsString('Publish error', $data['error']);
-    }
-
-    public function testPublishDefaultDatetimeWhenNotProvided(): void
-    {
-        $this->objectService->method('setRegister')->willReturnSelf();
-        $this->objectService->method('setSchema')->willReturnSelf();
-        $this->objectService->method('publishObjects')->willReturn(['uuid1']);
-
-        // No datetime key in params at all - defaults to true
-        $this->request->method('getParams')->willReturn([
-            'uuids' => ['uuid1'],
-        ]);
-
-        $result = $this->controller->publish('1', '2');
-
-        $this->assertEquals(Http::STATUS_OK, $result->getStatus());
-        $data = $result->getData();
-        $this->assertTrue($data['datetime_used']);
-    }
-
-    // ========================================================================
-    // depublish() tests
-    // ========================================================================
-
-    public function testDepublishSuccess(): void
-    {
-        $this->setupResolveSuccess();
-        $this->objectService->method('depublishObjects')->willReturn(['uuid1']);
-
-        $this->request->method('getParams')->willReturn([
-            'uuids' => ['uuid1'],
-        ]);
-
-        $result = $this->controller->depublish('1', '2');
-
-        $this->assertEquals(Http::STATUS_OK, $result->getStatus());
-        $data = $result->getData();
-        $this->assertTrue($data['success']);
-        $this->assertEquals(1, $data['depublished_count']);
-        $this->assertEquals(['uuid1'], $data['depublished_uuids']);
-        $this->assertEquals(1, $data['requested_count']);
-        $this->assertEquals(0, $data['skipped_count']);
-        $this->assertEquals('Bulk depublish operation completed successfully', $data['message']);
-    }
-
-    public function testDepublishWithSkippedUuids(): void
-    {
-        $this->setupResolveSuccess();
-        $this->objectService->method('depublishObjects')->willReturn(['uuid1']);
-
-        $this->request->method('getParams')->willReturn([
-            'uuids' => ['uuid1', 'uuid2', 'uuid3'],
-        ]);
-
-        $result = $this->controller->depublish('1', '2');
-
-        $this->assertEquals(Http::STATUS_OK, $result->getStatus());
-        $data = $result->getData();
-        $this->assertEquals(1, $data['depublished_count']);
-        $this->assertEquals(3, $data['requested_count']);
-        $this->assertEquals(2, $data['skipped_count']);
-    }
-
-    public function testDepublishMissingUuids(): void
-    {
-        $this->setupResolveSuccess();
-        $this->request->method('getParams')->willReturn([]);
-
-        $result = $this->controller->depublish('1', '2');
-
-        $this->assertEquals(Http::STATUS_BAD_REQUEST, $result->getStatus());
-    }
-
-    public function testDepublishEmptyUuidsArray(): void
-    {
-        $this->setupResolveSuccess();
-        $this->request->method('getParams')->willReturn(['uuids' => []]);
-
-        $result = $this->controller->depublish('1', '2');
-
-        $this->assertEquals(Http::STATUS_BAD_REQUEST, $result->getStatus());
-    }
-
-    public function testDepublishUuidsNotArray(): void
-    {
-        $this->setupResolveSuccess();
-        $this->request->method('getParams')->willReturn(['uuids' => 'not-array']);
-
-        $result = $this->controller->depublish('1', '2');
-
-        $this->assertEquals(Http::STATUS_BAD_REQUEST, $result->getStatus());
-    }
-
-    public function testDepublishWithValidDatetime(): void
-    {
-        $this->setupResolveSuccess();
-        $this->objectService->method('depublishObjects')->willReturn(['uuid1']);
-
-        $this->request->method('getParams')->willReturn([
-            'uuids' => ['uuid1'],
-            'datetime' => '2024-06-15T10:30:00Z',
-        ]);
-
-        $result = $this->controller->depublish('1', '2');
-
-        $this->assertEquals(Http::STATUS_OK, $result->getStatus());
-        $data = $result->getData();
-        $this->assertTrue($data['success']);
-        $this->assertEquals('2024-06-15 10:30:00', $data['datetime_used']);
-    }
-
-    public function testDepublishWithDatetimeTrue(): void
-    {
-        $this->setupResolveSuccess();
-        $this->objectService->method('depublishObjects')->willReturn(['uuid1']);
-
-        $this->request->method('getParams')->willReturn([
-            'uuids' => ['uuid1'],
-            'datetime' => true,
-        ]);
-
-        $result = $this->controller->depublish('1', '2');
-
-        $this->assertEquals(Http::STATUS_OK, $result->getStatus());
-        $data = $result->getData();
-        $this->assertTrue($data['datetime_used']);
-    }
-
-    public function testDepublishWithDatetimeFalse(): void
-    {
-        $this->setupResolveSuccess();
-        $this->objectService->method('depublishObjects')->willReturn(['uuid1']);
-
-        $this->request->method('getParams')->willReturn([
-            'uuids' => ['uuid1'],
-            'datetime' => false,
-        ]);
-
-        $result = $this->controller->depublish('1', '2');
-
-        $this->assertEquals(Http::STATUS_OK, $result->getStatus());
-        $data = $result->getData();
-        $this->assertFalse($data['datetime_used']);
-    }
-
-    public function testDepublishWithDatetimeNull(): void
-    {
-        $this->setupResolveSuccess();
-        $this->objectService->method('depublishObjects')->willReturn(['uuid1']);
-
-        $this->request->method('getParams')->willReturn([
-            'uuids' => ['uuid1'],
-            'datetime' => null,
-        ]);
-
-        $result = $this->controller->depublish('1', '2');
-
-        $this->assertEquals(Http::STATUS_OK, $result->getStatus());
-    }
-
-    public function testDepublishInvalidDatetime(): void
-    {
-        $this->setupResolveSuccess();
-
-        $this->request->method('getParams')->willReturn([
-            'uuids' => ['uuid1'],
-            'datetime' => 'invalid-date-string',
-        ]);
-
-        $result = $this->controller->depublish('1', '2');
-
-        $this->assertEquals(Http::STATUS_BAD_REQUEST, $result->getStatus());
-        $data = $result->getData();
-        $this->assertStringContainsString('Invalid datetime format', $data['error']);
-    }
-
-    public function testDepublishDefaultDatetimeWhenNotProvided(): void
-    {
-        $this->setupResolveSuccess();
-        $this->objectService->method('depublishObjects')->willReturn(['uuid1']);
-
-        $this->request->method('getParams')->willReturn([
-            'uuids' => ['uuid1'],
-        ]);
-
-        $result = $this->controller->depublish('1', '2');
-
-        $this->assertEquals(Http::STATUS_OK, $result->getStatus());
-        $data = $result->getData();
-        $this->assertTrue($data['datetime_used']);
-    }
-
-    public function testDepublishRegisterNotFound(): void
-    {
-        $this->objectService->method('setRegister')
-            ->willThrowException(new DoesNotExistException('not found'));
-
-        $this->request->method('getParams')->willReturn([
-            'uuids' => ['uuid1'],
-        ]);
-
-        $result = $this->controller->depublish('nonexistent', '2');
-
-        $this->assertEquals(Http::STATUS_NOT_FOUND, $result->getStatus());
-        $data = $result->getData();
-        $this->assertStringContainsString('Register not found', $data['error']);
-    }
-
-    public function testDepublishSchemaNotFound(): void
-    {
-        $this->objectService->method('setRegister')->willReturnSelf();
-        $this->objectService->method('setSchema')
-            ->willThrowException(new DoesNotExistException('not found'));
-
-        $this->request->method('getParams')->willReturn([
-            'uuids' => ['uuid1'],
-        ]);
-
-        $result = $this->controller->depublish('1', 'nonexistent');
-
-        $this->assertEquals(Http::STATUS_NOT_FOUND, $result->getStatus());
-        $data = $result->getData();
-        $this->assertStringContainsString('Schema not found', $data['error']);
-    }
-
-    public function testDepublishException(): void
-    {
-        $this->setupResolveSuccess();
-        $this->objectService->method('depublishObjects')
-            ->willThrowException(new \Exception('Depublish error'));
-
-        $this->request->method('getParams')->willReturn([
-            'uuids' => ['uuid1'],
-        ]);
-
-        $result = $this->controller->depublish('1', '2');
-
-        $this->assertEquals(Http::STATUS_INTERNAL_SERVER_ERROR, $result->getStatus());
-        $data = $result->getData();
-        $this->assertStringContainsString('Bulk depublish operation failed', $data['error']);
-        $this->assertStringContainsString('Depublish error', $data['error']);
-    }
+    // publish/depublish tests removed — endpoints deprecated per deprecate-published-metadata spec
 
     // ========================================================================
     // save() tests
@@ -784,78 +380,7 @@ class BulkControllerTest extends TestCase
         $this->assertEquals(0, $data['saved_count']);
     }
 
-    // ========================================================================
-    // publishSchema() tests
-    // ========================================================================
-
-    public function testPublishSchemaInvalidId(): void
-    {
-        $result = $this->controller->publishSchema('1', 'not-numeric');
-
-        $this->assertEquals(Http::STATUS_BAD_REQUEST, $result->getStatus());
-        $data = $result->getData();
-        $this->assertStringContainsString('Invalid schema ID', $data['error']);
-    }
-
-    public function testPublishSchemaSuccess(): void
-    {
-        $this->objectService->method('setRegister')->willReturnSelf();
-        $this->objectService->method('setSchema')->willReturnSelf();
-        $this->objectService->method('publishObjectsBySchema')->willReturn([
-            'published_count' => 5,
-            'published_uuids' => ['u1', 'u2', 'u3', 'u4', 'u5'],
-            'schema_id' => 1,
-        ]);
-
-        $this->request->method('getParams')->willReturn([]);
-
-        $result = $this->controller->publishSchema('1', '1');
-
-        $this->assertEquals(Http::STATUS_OK, $result->getStatus());
-        $data = $result->getData();
-        $this->assertTrue($data['success']);
-        $this->assertEquals(5, $data['published_count']);
-        $this->assertEquals(['u1', 'u2', 'u3', 'u4', 'u5'], $data['published_uuids']);
-        $this->assertEquals(1, $data['schema_id']);
-        $this->assertFalse($data['publish_all']);
-        $this->assertEquals('Schema objects publishing completed successfully', $data['message']);
-    }
-
-    public function testPublishSchemaWithPublishAllTrue(): void
-    {
-        $this->objectService->method('setRegister')->willReturnSelf();
-        $this->objectService->method('setSchema')->willReturnSelf();
-        $this->objectService->method('publishObjectsBySchema')->willReturn([
-            'published_count' => 10,
-            'published_uuids' => ['u1'],
-            'schema_id' => 2,
-        ]);
-
-        $this->request->method('getParams')->willReturn(['publishAll' => true]);
-
-        $result = $this->controller->publishSchema('1', '2');
-
-        $this->assertEquals(Http::STATUS_OK, $result->getStatus());
-        $data = $result->getData();
-        $this->assertTrue($data['publish_all']);
-    }
-
-    public function testPublishSchemaException(): void
-    {
-        $this->objectService->method('setRegister')->willReturnSelf();
-        $this->objectService->method('setSchema')->willReturnSelf();
-        $this->objectService->method('publishObjectsBySchema')
-            ->willThrowException(new \Exception('Schema publish error'));
-
-        $this->request->method('getParams')->willReturn([]);
-
-        $result = $this->controller->publishSchema('1', '1');
-
-        $this->assertEquals(Http::STATUS_INTERNAL_SERVER_ERROR, $result->getStatus());
-        $data = $result->getData();
-        $this->assertStringContainsString('Schema objects publishing failed', $data['error']);
-        $this->assertStringContainsString('Schema publish error', $data['error']);
-    }
+    // publishSchema() tests removed — deprecated per deprecate-published-metadata spec
 
     // ========================================================================
     // deleteSchema() tests
@@ -1118,25 +643,6 @@ class BulkControllerTest extends TestCase
         $this->request->method('getParams')->willReturn([]);
 
         $result = $this->controller->delete('1', '2');
-
-        $this->assertInstanceOf(JSONResponse::class, $result);
-    }
-
-    public function testPublishReturnsJsonResponse(): void
-    {
-        $this->request->method('getParams')->willReturn([]);
-
-        $result = $this->controller->publish('1', '2');
-
-        $this->assertInstanceOf(JSONResponse::class, $result);
-    }
-
-    public function testDepublishReturnsJsonResponse(): void
-    {
-        $this->setupResolveSuccess();
-        $this->request->method('getParams')->willReturn([]);
-
-        $result = $this->controller->depublish('1', '2');
 
         $this->assertInstanceOf(JSONResponse::class, $result);
     }

@@ -870,7 +870,7 @@ class ObjectsController extends Controller
      *
      * Supported parameters:
      * - Standard filters: Any object field (e.g., name, status, etc.)
-     * - Metadata filters: register, schema, uuid, created, updated, published, etc.
+     * - Metadata filters: register, schema, uuid, created, updated, etc.
      * - Pagination: _limit, _offset, _page
      * - Search: _search
      * - Rendering: _extend, _fields, _filter/_unset
@@ -1253,7 +1253,7 @@ class ObjectsController extends Controller
      *
      * Supported parameters:
      * - Standard filters: Any object field (e.g., name, status, etc.)
-     * - Metadata filters: register, schema, uuid, created, updated, published, etc.
+     * - Metadata filters: register, schema, uuid, created, updated, etc.
      * - Pagination: _limit, _offset, _page
      * - Search: _search
      * - Rendering: _extend, _fields, _filter/_unset

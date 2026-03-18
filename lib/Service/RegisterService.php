@@ -412,7 +412,6 @@ class RegisterService
                             COUNT(CASE WHEN _deleted IS NOT NULL THEN 1 END) as deleted,
                             0 as invalid,
                             0 as locked,
-                            0 as published,
                             0 as size
                         FROM {$quotedTableName}
                     ";
@@ -465,7 +464,7 @@ class RegisterService
      *
      * @param array|null $row Optional database result row to extract counts from.
      *
-     * @return array{total: int, deleted: int, invalid: int, locked: int, published: int, size: int}
+     * @return array{total: int, deleted: int, invalid: int, locked: int, size: int}
      */
     private function getZeroCountStats(?array $row=null): array
     {
@@ -475,7 +474,6 @@ class RegisterService
                 'deleted'   => (int) $row['deleted'],
                 'invalid'   => (int) $row['invalid'],
                 'locked'    => (int) $row['locked'],
-                'published' => (int) $row['published'],
                 'size'      => (int) $row['size'],
             ];
         }
@@ -485,7 +483,6 @@ class RegisterService
             'deleted'   => 0,
             'invalid'   => 0,
             'locked'    => 0,
-            'published' => 0,
             'size'      => 0,
         ];
     }//end getZeroCountStats()

@@ -153,7 +153,6 @@ class SearchQueryHandler
             $params['_route'],
             $params['rbac'],
             $params['multi'],
-            $params['published'],
             $params['deleted']
         );
 
@@ -170,8 +169,6 @@ class SearchQueryHandler
             'application',
             'created',
             'updated',
-            'published',
-            'depublished',
             'deleted',
         ];
         $query['@self'] = [];

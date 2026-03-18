@@ -237,7 +237,7 @@ abstract class AbstractObjectMapper
      * @param int|array|null $schemaId   Filter by schema ID(s).
      * @param array          $exclude    Combinations to exclude.
      *
-     * @return array Statistics including total, size, invalid, deleted, locked, published counts.
+     * @return array Statistics including total, size, invalid, deleted, locked counts.
      */
     abstract public function getStatistics(
         int|array|null $registerId=null,

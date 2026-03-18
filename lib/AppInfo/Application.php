@@ -194,6 +194,8 @@ use OCA\OpenRegister\Service\Configuration\ExportHandler as ConfigurationExportH
 use OCA\OpenRegister\Service\Configuration\ImportHandler as ConfigurationImportHandler;
 use OCA\OpenRegister\Service\Configuration\PreviewHandler;
 use OCA\OpenRegister\Service\Configuration\UploadHandler as ConfigurationUploadHandler;
+use OCA\OpenRegister\Service\LanguageService;
+use OCA\OpenRegister\Middleware\LanguageMiddleware;
 
 /**
  * Class Application
@@ -239,6 +241,17 @@ class Application extends App implements IBootstrap
     public function register(IRegistrationContext $context): void
     {
         include_once __DIR__.'/../../vendor/autoload.php';
+
+        // Register request-scoped LanguageService as a singleton (shared per request).
+        $context->registerService(
+            LanguageService::class,
+            function () {
+                return new LanguageService();
+            }
+        );
+
+        // Register the LanguageMiddleware for Accept-Language header parsing.
+        $context->registerMiddleware(LanguageMiddleware::class);
 
         // Register all services in phases to resolve circular dependencies.
         $this->registerMappersWithCircularDependencies(context: $context);

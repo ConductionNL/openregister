@@ -39,6 +39,8 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Service\Object\CacheHandler;
+use OCA\OpenRegister\Service\Object\SaveObject\ComputedFieldHandler;
+use OCA\OpenRegister\Service\Object\TranslationHandler;
 use OCA\OpenRegister\Service\PropertyRbacHandler;
 use OCP\SystemTag\ISystemTagManager;
 use OCP\SystemTag\ISystemTagObjectMapper;
@@ -108,17 +110,19 @@ class RenderObject
     /**
      * Constructor for RenderObject handler.
      *
-     * @param FileMapper             $fileMapper          File mapper for database operations.
-     * @param MagicMapper     $objectEntityMapper  Object entity mapper for database operations.
-     * @param RegisterMapper         $registerMapper      Register mapper for database operations.
-     * @param SchemaMapper           $schemaMapper        Schema mapper for database operations.
-     * @param ISystemTagManager      $systemTagManager    System tag manager for file tags.
-     * @param ISystemTagObjectMapper $systemTagMapper     System tag object mapper for file tags.
-     * @param CacheHandler           $cacheHandler        Cache service for performance optimization.
-     * @param CacheHandler           $objectCacheService  Object cache service for optimized loading.
-     * @param PropertyRbacHandler    $propertyRbacHandler Property-level RBAC handler.
-     * @param LoggerInterface        $logger              Logger for performance monitoring.
-     * @param FileService            $fileService         File service for file operations.
+     * @param FileMapper             $fileMapper           File mapper for database operations.
+     * @param MagicMapper            $objectEntityMapper   Object entity mapper for database operations.
+     * @param RegisterMapper         $registerMapper       Register mapper for database operations.
+     * @param SchemaMapper           $schemaMapper         Schema mapper for database operations.
+     * @param ISystemTagManager      $systemTagManager     System tag manager for file tags.
+     * @param ISystemTagObjectMapper $systemTagMapper      System tag object mapper for file tags.
+     * @param CacheHandler           $cacheHandler         Cache service for performance optimization.
+     * @param CacheHandler           $objectCacheService   Object cache service for optimized loading.
+     * @param PropertyRbacHandler    $propertyRbacHandler  Property-level RBAC handler.
+     * @param LoggerInterface        $logger               Logger for performance monitoring.
+     * @param FileService            $fileService          File service for file operations.
+     * @param ComputedFieldHandler   $computedFieldHandler Handler for computed field evaluation.
+     * @param TranslationHandler     $translationHandler   Handler for translatable property resolution.
      *
      * @SuppressWarnings(PHPMD.ExcessiveParameterList) All parameters are DI-injected dependencies
      */
@@ -133,7 +137,9 @@ class RenderObject
         private readonly CacheHandler $objectCacheService,
         private readonly PropertyRbacHandler $propertyRbacHandler,
         private readonly LoggerInterface $logger,
-        private readonly FileService $fileService
+        private readonly FileService $fileService,
+        private readonly ComputedFieldHandler $computedFieldHandler,
+        private readonly TranslationHandler $translationHandler,
     ) {
     }//end __construct()
 
@@ -1025,9 +1031,21 @@ class RenderObject
             );
         }
 
+        // Evaluate computed fields with evaluateOn: 'read'.
+        // These values are calculated at read time and NOT stored in the database.
+        $readSchema = $this->getSchema(id: $entity->getSchema());
+        if ($readSchema !== null && $this->computedFieldHandler->hasComputedProperties($readSchema) === true) {
+            $objectData = $this->computedFieldHandler->evaluateComputedFields(
+                data: $objectData,
+                schema: $readSchema,
+                evaluateOn: 'read'
+            );
+            $entity->setObject($objectData);
+        }
+
         // Apply property-level RBAC filtering.
         // This filters out properties that the current user is not authorized to read.
-        $schema = $this->getSchema(id: $entity->getSchema());
+        $schema = $readSchema ?? $this->getSchema(id: $entity->getSchema());
         if ($schema !== null && $schema->hasPropertyAuthorization() === true) {
             // Ensure @self metadata is available for property-level RBAC checks.
             // Property authorization can reference @self.organisation or _organisation,
@@ -1053,6 +1071,17 @@ class RenderObject
                 unset($objectData['@self']);
             }
         }//end if
+
+        // Resolve translatable properties to the requested language.
+        $renderSchema   = $this->getSchema(id: $entity->getSchema());
+        $renderRegister = $this->getRegister(id: $entity->getRegister());
+        if ($renderSchema !== null) {
+            $objectData = $this->translationHandler->resolveTranslationsForRender(
+                objectData: $objectData,
+                schema: $renderSchema,
+                register: $renderRegister
+            );
+        }
 
         $entity->setObject($objectData);
 

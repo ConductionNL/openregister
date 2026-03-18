@@ -786,50 +786,11 @@ class SaveObjects
             if (isset($object['@self']) && is_array($object['@self'])) {
                 $selfDataForHydration = $object['@self'];
                 
-                // Convert published/depublished strings to DateTime objects
-                if (isset($selfDataForHydration['published']) && is_string($selfDataForHydration['published'])) {
-                    try {
-                        $selfDataForHydration['published'] = new \DateTime($selfDataForHydration['published']);
-                    } catch (\Exception $e) {
-                        // Keep as string if conversion fails
-                    }
-                }
-                if (isset($selfDataForHydration['depublished']) && is_string($selfDataForHydration['depublished'])) {
-                    try {
-                        $selfDataForHydration['depublished'] = new \DateTime($selfDataForHydration['depublished']);
-                    } catch (\Exception $e) {
-                        // Keep as string if conversion fails
-                    }
-                }
-                
                 $tempEntity->hydrate($selfDataForHydration);
             }
-            
+
             $this->saveHandler->hydrateObjectMetadata($tempEntity, $schema);
-            
-            // AUTO-PUBLISH LOGIC: Only set published for NEW objects if not already set from CSV
-            $config = $schema->getConfiguration();
-            $isNewObject = empty($selfData['id']) || !isset($selfData['id']);
-            if (isset($config['autoPublish']) && $config['autoPublish'] === true && $isNewObject) {
-                // Check if published date was already set from @self data (CSV)
-                $publishedFromCsv = isset($selfData['published']) && !empty($selfData['published']);
-                if (!$publishedFromCsv && $tempEntity->getPublished() === null) {
-                    $this->logger->debug('Auto-publishing NEW object in bulk creation', [
-                        'schema' => $schema->getTitle(),
-                        'autoPublish' => true,
-                        'isNewObject' => true,
-                        'publishedFromCsv' => false
-                    ]);
-                    $tempEntity->setPublished(new DateTime());
-                } else if ($publishedFromCsv) {
-                    $this->logger->debug('Skipping auto-publish - published date provided from CSV (mixed schema)', [
-                        'schema' => $schema->getTitle(),
-                        'publishedFromCsv' => true,
-                        'csvPublishedDate' => $selfData['published']
-                    ]);
-                }
-            }
-            
+
             // Extract hydrated metadata back to object's @self data AND top level (for bulk SQL)
             $selfData = $object['@self'] ?? [];
             if ($tempEntity->getName() !== null) {
@@ -851,16 +812,6 @@ class SaveObjects
             if ($tempEntity->getSlug() !== null) {
                 $selfData['slug'] = $tempEntity->getSlug();
                 $object['slug'] = $tempEntity->getSlug(); // TOP LEVEL for bulk SQL
-            }
-            if ($tempEntity->getPublished() !== null) {
-                $publishedFormatted = $tempEntity->getPublished()->format('c');
-                $selfData['published'] = $publishedFormatted;
-                $object['published'] = $publishedFormatted; // TOP LEVEL for bulk SQL
-            }
-            if ($tempEntity->getDepublished() !== null) {
-                $depublishedFormatted = $tempEntity->getDepublished()->format('c');
-                $selfData['depublished'] = $depublishedFormatted;
-                $object['depublished'] = $depublishedFormatted; // TOP LEVEL for bulk SQL
             }
             
             // RELATIONS EXTRACTION: Scan the object data for relations (UUIDs and URLs)
@@ -992,55 +943,11 @@ class SaveObjects
                 if (isset($object['@self']) && is_array($object['@self'])) {
                     $selfDataForHydration = $object['@self'];
                     
-                    // Convert published/depublished strings to DateTime objects
-                    if (isset($selfDataForHydration['published']) && is_string($selfDataForHydration['published'])) {
-                        try {
-                            $selfDataForHydration['published'] = new \DateTime($selfDataForHydration['published']);
-                        } catch (\Exception $e) {
-                            // Keep as string if conversion fails
-                            $this->logger->warning('Failed to convert published date to DateTime', [
-                                'value' => $selfDataForHydration['published'],
-                                'error' => $e->getMessage()
-                            ]);
-                        }
-                    }
-                    if (isset($selfDataForHydration['depublished']) && is_string($selfDataForHydration['depublished'])) {
-                        try {
-                            $selfDataForHydration['depublished'] = new \DateTime($selfDataForHydration['depublished']);
-                        } catch (\Exception $e) {
-                            // Keep as string if conversion fails
-                        }
-                    }
-                    
                     $tempEntity->hydrate($selfDataForHydration);
                 }
-                
+
                 $this->saveHandler->hydrateObjectMetadata($tempEntity, $schemaObj);
-                
-                // AUTO-PUBLISH LOGIC: Only set published for NEW objects if not already set from CSV
-                // Note: For updates to existing objects, published status should be preserved unless explicitly changed
-                $config = $schemaObj->getConfiguration();
-                $isNewObject = empty($selfData['uuid']) || !isset($selfData['uuid']);
-                if (isset($config['autoPublish']) && $config['autoPublish'] === true && $isNewObject) {
-                    // Check if published date was already set from @self data (CSV)
-                    $publishedFromCsv = isset($selfData['published']) && !empty($selfData['published']);
-                    if (!$publishedFromCsv && $tempEntity->getPublished() === null) {
-                        $this->logger->debug('Auto-publishing NEW object in bulk creation (single schema)', [
-                            'schema' => $schemaObj->getTitle(),
-                            'autoPublish' => true,
-                            'isNewObject' => true,
-                            'publishedFromCsv' => false
-                        ]);
-                        $tempEntity->setPublished(new DateTime());
-                    } else if ($publishedFromCsv) {
-                        $this->logger->debug('Skipping auto-publish - published date provided from CSV', [
-                            'schema' => $schemaObj->getTitle(),
-                            'publishedFromCsv' => true,
-                            'csvPublishedDate' => $selfData['published']
-                        ]);
-                    }
-                }
-                
+
                 // Extract hydrated metadata back to @self data AND top level (for bulk SQL)
                 if ($tempEntity->getName() !== null) {
                     $selfData['name'] = $tempEntity->getName();
@@ -1062,16 +969,6 @@ class SaveObjects
                     $selfData['slug'] = $tempEntity->getSlug();
                     $object['slug'] = $tempEntity->getSlug(); // TOP LEVEL for bulk SQL
                 }
-                if ($tempEntity->getPublished() !== null) {
-                    $publishedFormatted = $tempEntity->getPublished()->format('c');
-                    $selfData['published'] = $publishedFormatted;
-                    $object['published'] = $publishedFormatted; // TOP LEVEL for bulk SQL
-                }
-                if ($tempEntity->getDepublished() !== null) {
-                    $depublishedFormatted = $tempEntity->getDepublished()->format('c');
-                    $selfData['depublished'] = $depublishedFormatted;
-                    $object['depublished'] = $depublishedFormatted; // TOP LEVEL for bulk SQL
-                }
                 
                 // DEBUG: Log actual data structure to understand what we're receiving
                 $this->logger->info("[SaveObjects] DEBUG - Single schema object structure", [
@@ -1091,8 +988,8 @@ class SaveObjects
                 } else {
                     // LEGACY STRUCTURE: Remove metadata fields to isolate business data
                     $businessData = $object;
-                    $metadataFields = ['@self', 'name', 'description', 'summary', 'image', 'slug', 
-                                     'published', 'depublished', 'register', 'schema', 'organisation', 
+                    $metadataFields = ['@self', 'name', 'description', 'summary', 'image', 'slug',
+                                     'register', 'schema', 'organisation',
                                      'uuid', 'owner', 'created', 'updated', 'id'];
                     
                     foreach ($metadataFields as $field) {
@@ -1193,56 +1090,6 @@ class SaveObjects
         $transformedObjects = $transformationResult['valid'];
 
         
-        // CRITICAL FIX: The metadata hydration should already be done in prepareSingleSchemaObjectsOptimized
-        // This redundant hydration might be causing issues - let's skip it for now
-        /*
-        foreach ($transformedObjects as &$objData) {
-            // Ensure metadata fields from object hydration are preserved
-            if (isset($objData['schema']) && isset($schemaCache[$objData['schema']])) {
-                $schema = $schemaCache[$objData['schema']];
-                $tempEntity = new ObjectEntity();
-                $tempEntity->setObject($objData['object'] ?? []);
-                
-                // Use SaveObject's enhanced metadata hydration
-                $this->saveHandler->hydrateObjectMetadata($tempEntity, $schema);
-                
-                // AUTO-PUBLISH LOGIC: Set published date to now if autoPublish is enabled and no published date exists
-                $config = $schema->getConfiguration();
-                if (isset($config['autoPublish']) && $config['autoPublish'] === true) {
-                    if ($tempEntity->getPublished() === null) {
-                        $this->logger->debug('Auto-publishing object in bulk save (mixed schema)', [
-                            'schema' => $schema->getTitle(),
-                            'autoPublish' => true
-                        ]);
-                        $tempEntity->setPublished(new DateTime());
-                    }
-                }
-                
-                // Ensure metadata fields are in objData for hydration after bulk save
-                if ($tempEntity->getName() !== null) {
-                    $objData['name'] = $tempEntity->getName();
-                }
-                if ($tempEntity->getDescription() !== null) {
-                    $objData['description'] = $tempEntity->getDescription();
-                }
-                if ($tempEntity->getSummary() !== null) {
-                    $objData['summary'] = $tempEntity->getSummary();
-                }
-                if ($tempEntity->getImage() !== null) {
-                    $objData['image'] = $tempEntity->getImage();
-                }
-                if ($tempEntity->getSlug() !== null) {
-                    $objData['slug'] = $tempEntity->getSlug();
-                }
-                if ($tempEntity->getPublished() !== null) {
-                    $objData['published'] = $tempEntity->getPublished()->format('c');
-                }
-                if ($tempEntity->getDepublished() !== null) {
-                    $objData['depublished'] = $tempEntity->getDepublished()->format('c');
-                }
-            }
-        }
-        */
         
         // PERFORMANCE OPTIMIZATION: Batch error processing
         if (!empty($transformationResult['invalid'])) {
@@ -1911,8 +1758,8 @@ class SaveObjects
             } else {
                 // LEGACY STRUCTURE: Remove metadata fields to isolate business data
                 $businessData = $object;
-                $metadataFields = ['@self', 'name', 'description', 'summary', 'image', 'slug', 
-                                 'published', 'depublished', 'register', 'schema', 'organisation', 
+                $metadataFields = ['@self', 'name', 'description', 'summary', 'image', 'slug',
+                                 'register', 'schema', 'organisation',
                                  'uuid', 'owner', 'created', 'updated', 'id'];
                 
             foreach ($metadataFields as $field) {
@@ -2274,10 +2121,6 @@ class SaveObjects
                         if (isset($incomingData['organisation'])) {
                             $existingObject->setOrganisation($incomingData['organisation']);
                         }
-                        if (isset($incomingData['published'])) {
-                            $existingObject->setPublished(new \DateTime($incomingData['published']));
-                        }
-                        
                         // CRITICAL FIX: Update register and schema to support object migration between registers/schemas
                         if (isset($incomingData['register']) && $incomingData['register'] !== $existingObject->getRegister()) {
                             $existingObject->setRegister($incomingData['register']);

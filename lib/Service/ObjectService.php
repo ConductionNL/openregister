@@ -2592,12 +2592,15 @@ class ObjectService
      * @param bool  $_rbac         Whether to apply RBAC filtering
      * @param bool  $_multitenancy Whether to apply multi-organization filtering
      *
-     * @return array Array of IDs of deleted objects
+     * @return array Associative array with 'deleted_uuids', 'skipped_uuids', and 'cascade_count' keys.
+     *               'deleted_uuids' contains UUIDs of successfully deleted objects.
+     *               'skipped_uuids' contains UUIDs skipped due to RESTRICT or errors.
+     *               'cascade_count' contains total count of objects affected by cascade operations.
      *
      * @phpstan-param  array<int, string> $uuids
      * @psalm-param    array<int, string> $uuids
-     * @phpstan-return array<int, int>
-     * @psalm-return   array<int, int>
+     * @phpstan-return array{deleted_uuids: array<int, string>, skipped_uuids: array<int, string>, cascade_count: int}
+     * @psalm-return   array{deleted_uuids: array<int, string>, skipped_uuids: array<int, string>, cascade_count: int}
      */
     public function deleteObjects(array $uuids=[], bool $_rbac=true, bool $_multitenancy=true): array
     {
@@ -2615,11 +2618,49 @@ class ObjectService
             );
         }
 
-        // Use the unified mapper's bulk delete operation.
-        $deletedObjectIds = $this->objectMapper->deleteObjects(
-            uuids: $filteredUuids,
-            hardDelete: false
-        );
+        // Process each object individually through the delete handler so that
+        // referential integrity rules (CASCADE, SET_NULL, SET_DEFAULT, RESTRICT)
+        // are enforced per object. Skips objects that fail (e.g., RESTRICT blocks).
+        $deletedObjectIds   = [];
+        $skippedUuids       = [];
+        $totalCascadeCount  = 0;
+        foreach ($filteredUuids as $uuid) {
+            try {
+                $result = $this->deleteHandler->deleteObject(
+                    register: $this->currentRegister,
+                    schema: $this->currentSchema,
+                    uuid: $uuid,
+                    originalObjectId: null,
+                    _rbac: $_rbac,
+                    _multitenancy: $_multitenancy
+                );
+                if ($result === true) {
+                    $deletedObjectIds[] = $uuid;
+                    $totalCascadeCount += $this->deleteHandler->getLastCascadeCount();
+                }
+            } catch (\OCA\OpenRegister\Exception\ReferentialIntegrityException $e) {
+                // RESTRICT blocks should not abort the entire bulk operation.
+                // Log and skip this object, continue with the rest.
+                $this->logger->info(
+                    message: '[ObjectService] Bulk delete skipped object due to RESTRICT constraint',
+                    context: [
+                        'uuid'     => $uuid,
+                        'blockers' => count($e->getAnalysis()->blockers),
+                    ]
+                );
+                $skippedUuids[] = $uuid;
+            } catch (\Exception $e) {
+                // Other failures (transaction rollback, etc.) are logged and skipped.
+                $this->logger->warning(
+                    message: '[ObjectService] Bulk delete failed for object',
+                    context: [
+                        'uuid'  => $uuid,
+                        'error' => $e->getMessage(),
+                    ]
+                );
+                $skippedUuids[] = $uuid;
+            }//end try
+        }//end foreach
 
         // Invalidate collection caches after bulk delete operations.
         if (empty($deletedObjectIds) === false) {
@@ -2641,7 +2682,11 @@ class ObjectService
             }
         }
 
-        return $deletedObjectIds;
+        return [
+            'deleted_uuids' => $deletedObjectIds,
+            'skipped_uuids' => $skippedUuids,
+            'cascade_count' => $totalCascadeCount,
+        ];
     }//end deleteObjects()
 
 

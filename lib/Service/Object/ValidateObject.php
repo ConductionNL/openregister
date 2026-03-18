@@ -78,11 +78,11 @@ class ValidateObject
     /**
      * Constructor for ValidateObject
      *
-     * @param IAppConfig         $config       Configuration service.
-     * @param MagicMapper $objectMapper Object mapper.
-     * @param SchemaMapper       $schemaMapper Schema mapper.
-     * @param IURLGenerator      $urlGenerator URL generator.
-     * @param LoggerInterface    $logger       Logger for logging operations.
+     * @param IAppConfig      $config       Configuration service.
+     * @param MagicMapper     $objectMapper Object mapper.
+     * @param SchemaMapper    $schemaMapper Schema mapper.
+     * @param IURLGenerator   $urlGenerator URL generator.
+     * @param LoggerInterface $logger       Logger for logging operations.
      */
     public function __construct(
         private IAppConfig $config,
@@ -403,6 +403,7 @@ class ValidateObject
                 if (is_array($nestedPropertySchema) === true) {
                     $nestedPropertySchema = (object) $nestedPropertySchema;
                 }
+
                 $this->transformPropertyForOpenRegister(propertySchema: $nestedPropertySchema);
             }
         }
@@ -848,6 +849,7 @@ class ValidateObject
             'uniqueConstraints',
             'indexes',
             'options',
+            'computed',
         ];
 
         foreach ($metadataProperties as $property) {
@@ -913,6 +915,7 @@ class ValidateObject
             'uniqueConstraints',
             'indexes',
             'options',
+            'computed',
         ];
 
         foreach ($metadataProperties as $property) {
@@ -1301,6 +1304,24 @@ class ValidateObject
 
         // @todo This should be done earlier.
         unset($object['extend'], $object['filters']);
+
+        // Remove computed properties from input data and required fields.
+        // Computed fields are system-generated and should not be validated against user input.
+        if (($schemaObject->properties ?? null) !== null) {
+            foreach ($schemaObject->properties as $propName => $propSchema) {
+                if (($propSchema->computed ?? null) !== null) {
+                    unset($object[$propName]);
+                    // Also remove from required array — computed fields can't be required from user input.
+                    if (is_array($schemaObject->required) === true) {
+                        $reqKey = array_search($propName, $schemaObject->required, true);
+                        if ($reqKey !== false) {
+                            unset($schemaObject->required[$reqKey]);
+                            $schemaObject->required = array_values($schemaObject->required);
+                        }
+                    }
+                }
+            }
+        }
 
         // Remove only truly empty values that have no validation significance.
         // Keep empty strings for required fields so they can fail validation with proper error messages.

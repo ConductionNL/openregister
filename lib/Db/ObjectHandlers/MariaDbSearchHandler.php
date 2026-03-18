@@ -59,8 +59,6 @@ class MariaDbSearchHandler
         'schemaVersion',
         'created',
         'updated',
-        'published',
-        'depublished',
     ];
 
     /**
@@ -68,7 +66,7 @@ class MariaDbSearchHandler
      *
      * @var string[]
      */
-    private const DATE_FIELDS = ['created', 'updated', 'published', 'depublished'];
+    private const DATE_FIELDS = ['created', 'updated'];
 
     /**
      * Text fields that support case-insensitive comparison

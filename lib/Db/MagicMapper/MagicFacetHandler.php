@@ -948,7 +948,7 @@ class MagicFacetHandler
                 continue;
             }
 
-            if (in_array($field, ['created', 'updated', 'published'], true) === true) {
+            if (in_array($field, ['created', 'updated'], true) === true) {
                 $config['@self'][$field] = ['type' => 'date_histogram', 'interval' => 'month'];
                 continue;
             }

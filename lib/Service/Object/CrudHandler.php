@@ -110,7 +110,6 @@ class CrudHandler
             // Query: $query,
             // _rbac: $_rbac,
             // _multitenancy: $multi,
-            // Published: $published,
             // Deleted: $deleted,
             // Ids: $ids,
             // Uses: $uses,

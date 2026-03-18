@@ -554,8 +554,6 @@ class ExportService
             $metadataFields = [
                 'created',
                 'updated',
-                'published',
-                'depublished',
                 'deleted',
                 'locked',
                 'owner',
