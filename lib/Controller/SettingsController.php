@@ -394,7 +394,7 @@ class SettingsController extends Controller
             return new JSONResponse(
                 data: [
                     'success' => false,
-                    'message' => 'SOLR setup error: '.$e->getMessage(),
+                    'message' => $this->l10n->t('SOLR setup error: %s', [$e->getMessage()]),
                 ],
                 statusCode: 422
             );
@@ -464,7 +464,7 @@ class SettingsController extends Controller
             return new JSONResponse(
                 data: [
                     'success'    => false,
-                    'message'    => $result['message'] ?? 'Failed to reindex collection',
+                    'message'    => $result['message'] ?? $this->l10n->t('Failed to reindex collection'),
                     'collection' => $name,
                 ],
                 statusCode: 422
@@ -473,7 +473,7 @@ class SettingsController extends Controller
             return new JSONResponse(
                 data: [
                     'success'    => false,
-                    'message'    => 'Reindex failed: '.$e->getMessage(),
+                    'message'    => $this->l10n->t('Reindex failed: %s', [$e->getMessage()]),
                     'collection' => $name,
                 ],
                 statusCode: 422
@@ -519,7 +519,7 @@ class SettingsController extends Controller
 
             if (empty($backend) === true) {
                 return new JSONResponse(
-                    data: ['error' => 'Backend parameter is required'],
+                    data: ['error' => $this->l10n->t('Backend parameter is required')],
                     statusCode: 400
                 );
             }
@@ -713,7 +713,7 @@ class SettingsController extends Controller
             return new JSONResponse(
                 data: [
                     'success' => false,
-                    'error'   => 'Failed to get database information: '.$e->getMessage(),
+                    'error'   => $this->l10n->t('Failed to get database information: %s', [$e->getMessage()]),
                 ],
                 statusCode: 500
             );
@@ -993,7 +993,7 @@ class SettingsController extends Controller
                 return new JSONResponse(
                     data: [
                         'success' => false,
-                        'error'   => 'Query parameter is required',
+                        'error'   => $this->l10n->t('Query parameter is required'),
                     ],
                     statusCode: 400
                 );
@@ -1053,7 +1053,7 @@ class SettingsController extends Controller
                 return new JSONResponse(
                     data: [
                         'success' => false,
-                        'error'   => 'Query parameter is required',
+                        'error'   => $this->l10n->t('Query parameter is required'),
                     ],
                     statusCode: 400
                 );

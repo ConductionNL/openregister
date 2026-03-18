@@ -1,5 +1,6 @@
 <!-- eslint-disable -->
 <script setup>
+import { translate as t } from '@nextcloud/l10n'
 import { navigationStore, objectStore } from '../../store/store.js'
 </script>
 

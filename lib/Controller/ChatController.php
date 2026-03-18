@@ -31,6 +31,7 @@ use OCA\OpenRegister\Db\FeedbackMapper;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\TemplateResponse;
 use OCP\AppFramework\Http\JSONResponse;
+use OCP\IL10N;
 use OCP\IRequest;
 use Psr\Log\LoggerInterface;
 use Exception;
@@ -133,6 +134,15 @@ class ChatController extends Controller
     private readonly LoggerInterface $logger;
 
     /**
+     * Localization service
+     *
+     * Used for translating user-facing messages.
+     *
+     * @var IL10N Localization instance
+     */
+    private readonly IL10N $l10n;
+
+    /**
      * User ID
      *
      * Current user ID for chat context and permissions.
@@ -157,6 +167,7 @@ class ChatController extends Controller
      * @param OrganisationService $organisationService Organisation service for permissions
      * @param IDBConnection       $db                  Database connection for direct queries
      * @param LoggerInterface     $logger              Logger for error tracking
+     * @param IL10N               $l10n                Localization service for translations
      * @param string              $userId              Current user ID for chat context
      *
      * @return void
@@ -174,6 +185,7 @@ class ChatController extends Controller
         OrganisationService $organisationService,
         IDBConnection $db,
         LoggerInterface $logger,
+        IL10N $l10n,
         string $userId
     ) {
         // Call parent constructor to initialize base controller.
@@ -189,6 +201,7 @@ class ChatController extends Controller
         // Store remaining dependencies.
         $this->db     = $db;
         $this->logger = $logger;
+        $this->l10n   = $l10n;
         $this->userId = $userId;
     }//end __construct()
 
@@ -406,8 +419,8 @@ class ChatController extends Controller
             if (empty($params['message']) === true) {
                 return new JSONResponse(
                     data: [
-                        'error'   => 'Missing message',
-                        'message' => 'message content is required',
+                        'error'   => $this->l10n->t('Missing message'),
+                        'message' => $this->l10n->t('message content is required'),
                     ],
                     statusCode: 400
                 );
@@ -468,11 +481,11 @@ class ChatController extends Controller
 
             // Determine appropriate error message based on status code.
             $errorType = match ($statusCode) {
-                400     => 'Missing conversation or agentUuid',
-                403     => 'Access denied',
-                404     => 'Conversation not found',
-                503     => 'AI service not configured',
-                default => 'Failed to process message',
+                400     => $this->l10n->t('Missing conversation or agentUuid'),
+                403     => $this->l10n->t('Access denied'),
+                404     => $this->l10n->t('Conversation not found'),
+                503     => $this->l10n->t('AI service not configured'),
+                default => $this->l10n->t('Failed to process message'),
             };
 
             /*
@@ -514,8 +527,8 @@ class ChatController extends Controller
             if (empty($conversationId) === true) {
                 return new JSONResponse(
                     data: [
-                        'error'   => 'Missing conversationId',
-                        'message' => 'conversationId is required',
+                        'error'   => $this->l10n->t('Missing conversationId'),
+                        'message' => $this->l10n->t('conversationId is required'),
                     ],
                     statusCode: 400
                 );
@@ -528,8 +541,8 @@ class ChatController extends Controller
             if ($conversation->getUserId() !== $this->userId) {
                 return new JSONResponse(
                     data: [
-                        'error'   => 'Access denied',
-                        'message' => 'You do not have access to this conversation',
+                        'error'   => $this->l10n->t('Access denied'),
+                        'message' => $this->l10n->t('You do not have access to this conversation'),
                     ],
                     statusCode: 403
                 );
@@ -573,7 +586,7 @@ class ChatController extends Controller
 
             return new JSONResponse(
                 data: [
-                    'error'   => 'Failed to fetch conversation history',
+                    'error'   => $this->l10n->t('Failed to fetch conversation history'),
                     'message' => $e->getMessage(),
                 ],
                 statusCode: 500
@@ -603,8 +616,8 @@ class ChatController extends Controller
             if (empty($conversationId) === true) {
                 return new JSONResponse(
                     data: [
-                        'error'   => 'Missing conversationId',
-                        'message' => 'conversationId is required',
+                        'error'   => $this->l10n->t('Missing conversationId'),
+                        'message' => $this->l10n->t('conversationId is required'),
                     ],
                     statusCode: 400
                 );
@@ -617,8 +630,8 @@ class ChatController extends Controller
             if ($conversation->getUserId() !== $this->userId) {
                 return new JSONResponse(
                     data: [
-                        'error'   => 'Access denied',
-                        'message' => 'You do not have access to this conversation',
+                        'error'   => $this->l10n->t('Access denied'),
+                        'message' => $this->l10n->t('You do not have access to this conversation'),
                     ],
                     statusCode: 403
                 );
@@ -639,7 +652,7 @@ class ChatController extends Controller
 
             return new JSONResponse(
                 data: [
-                    'message'        => 'Conversation cleared successfully',
+                    'message'        => $this->l10n->t('Conversation cleared successfully'),
                     'conversationId' => $conversationId,
                 ],
                 statusCode: 200
@@ -657,7 +670,7 @@ class ChatController extends Controller
 
             return new JSONResponse(
                 data: [
-                    'error'   => 'Failed to clear conversation',
+                    'error'   => $this->l10n->t('Failed to clear conversation'),
                     'message' => $e->getMessage(),
                 ],
                 statusCode: 500
@@ -692,8 +705,8 @@ class ChatController extends Controller
             if (in_array($type, ['positive', 'negative'], true) === false) {
                 return new JSONResponse(
                     data: [
-                        'error'   => 'Invalid feedback type',
-                        'message' => 'type must be "positive" or "negative"',
+                        'error'   => $this->l10n->t('Invalid feedback type'),
+                        'message' => $this->l10n->t('type must be "positive" or "negative"'),
                     ],
                     statusCode: 400
                 );
@@ -706,8 +719,8 @@ class ChatController extends Controller
             if ($conversation->getUserId() !== $this->userId) {
                 return new JSONResponse(
                     data: [
-                        'error'   => 'Access denied',
-                        'message' => 'You do not have access to this conversation',
+                        'error'   => $this->l10n->t('Access denied'),
+                        'message' => $this->l10n->t('You do not have access to this conversation'),
                     ],
                     statusCode: 403
                 );
@@ -719,8 +732,8 @@ class ChatController extends Controller
             if ($message->getConversationId() !== $conversation->getId()) {
                 return new JSONResponse(
                     data: [
-                        'error'   => 'Message not found',
-                        'message' => 'Message does not belong to this conversation',
+                        'error'   => $this->l10n->t('Message not found'),
+                        'message' => $this->l10n->t('Message does not belong to this conversation'),
                     ],
                     statusCode: 404
                 );
@@ -793,7 +806,7 @@ class ChatController extends Controller
 
             return new JSONResponse(
                 data: [
-                    'error'   => 'Failed to save feedback',
+                    'error'   => $this->l10n->t('Failed to save feedback'),
                     'message' => $e->getMessage(),
                 ],
                 statusCode: 500
@@ -856,7 +869,7 @@ class ChatController extends Controller
 
             return new JSONResponse(
                 data: [
-                    'error'   => 'Failed to get chat statistics',
+                    'error'   => $this->l10n->t('Failed to get chat statistics'),
                     'message' => $e->getMessage(),
                 ],
                 statusCode: 500
