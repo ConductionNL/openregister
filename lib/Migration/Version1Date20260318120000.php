@@ -48,7 +48,7 @@ class Version1Date20260318120000 extends SimpleMigrationStep
      */
     public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper
     {
-        /** @var ISchemaWrapper $schema */
+        // Get the schema wrapper from the closure.
         $schema = $schemaClosure();
 
         $tableName = 'openregister_registers';
@@ -65,11 +65,15 @@ class Version1Date20260318120000 extends SimpleMigrationStep
             return null;
         }
 
-        $table->addColumn('languages', Types::TEXT, [
-            'notnull' => false,
-            'default' => null,
-            'comment' => 'JSON array of available BCP 47 language codes, e.g. ["nl","en"]',
-        ]);
+        $table->addColumn(
+                'languages',
+                Types::TEXT,
+                [
+                    'notnull' => false,
+                    'default' => null,
+                    'comment' => 'JSON array of available BCP 47 language codes, e.g. ["nl","en"]',
+                ]
+                );
 
         $output->info("Added 'languages' column to {$tableName}");
 

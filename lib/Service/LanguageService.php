@@ -33,6 +33,7 @@ namespace OCA\OpenRegister\Service;
  */
 class LanguageService
 {
+
     /**
      * The preferred language code resolved from the request.
      *
@@ -50,14 +51,14 @@ class LanguageService
     /**
      * Whether the _translations=all query parameter is present.
      *
-     * @var bool
+     * @var boolean
      */
-    private bool $returnAllTranslations = false;
+    private bool $returnAll = false;
 
     /**
      * Whether a fallback was used (requested language not available).
      *
-     * @var bool
+     * @var boolean
      */
     private bool $fallbackUsed = false;
 
@@ -114,7 +115,7 @@ class LanguageService
      */
     public function setReturnAllTranslations(bool $returnAll): void
     {
-        $this->returnAllTranslations = $returnAll;
+        $this->returnAll = $returnAll;
     }//end setReturnAllTranslations()
 
     /**
@@ -124,7 +125,7 @@ class LanguageService
      */
     public function shouldReturnAllTranslations(): bool
     {
-        return $this->returnAllTranslations;
+        return $this->returnAll;
     }//end shouldReturnAllTranslations()
 
     /**
@@ -222,8 +223,9 @@ class LanguageService
             }
 
             // Extract quality factor (default 1.0).
-            $quality = 1.0;
-            for ($i = 1; $i < count($segments); $i++) {
+            $quality      = 1.0;
+            $segmentCount = count($segments);
+            for ($i = 1; $i < $segmentCount; $i++) {
                 $segment = trim($segments[$i]);
                 if (strpos($segment, 'q=') === 0) {
                     $qValue  = substr($segment, 2);
@@ -246,7 +248,11 @@ class LanguageService
                     return 0;
                 }
 
-                return ($a['quality'] > $b['quality']) ? -1 : 1;
+                if ($a['quality'] > $b['quality']) {
+                    return -1;
+                }
+
+                return 1;
             }
         );
 

@@ -96,14 +96,14 @@ class TranslationHandler
     public function resolveTranslationsForRender(
         array $objectData,
         Schema $schema,
-        ?Register $register = null
+        ?Register $register=null
     ): array {
         // If returning all translations, no resolution needed.
         if ($this->languageService->shouldReturnAllTranslations() === true) {
             return $objectData;
         }
 
-        $translatableProps = $this->getTranslatableProperties($schema);
+        $translatableProps = $this->getTranslatableProperties(schema: $schema);
 
         if (empty($translatableProps) === true) {
             return $objectData;
@@ -127,14 +127,14 @@ class TranslationHandler
             $value = $objectData[$propName];
 
             // Only resolve if the value is a language-keyed object (associative array).
-            if (is_array($value) === false || $this->isLanguageKeyedObject($value) === false) {
+            if (is_array($value) === false || $this->isLanguageKeyedObject(value: $value) === false) {
                 continue;
             }
 
             // Try the resolved language first, then fall back to default.
             if (isset($value[$resolvedLanguage]) === true) {
                 $objectData[$propName] = $value[$resolvedLanguage];
-            } elseif (isset($value[$defaultLanguage]) === true) {
+            } else if (isset($value[$defaultLanguage]) === true) {
                 $objectData[$propName] = $value[$defaultLanguage];
                 $this->languageService->setFallbackUsed(true);
             } else {
@@ -167,9 +167,9 @@ class TranslationHandler
     public function normalizeTranslationsForSave(
         array $objectData,
         Schema $schema,
-        ?Register $register = null
+        ?Register $register=null
     ): array {
-        $translatableProps = $this->getTranslatableProperties($schema);
+        $translatableProps = $this->getTranslatableProperties(schema: $schema);
 
         if (empty($translatableProps) === true) {
             return $objectData;
@@ -188,7 +188,7 @@ class TranslationHandler
             $value = $objectData[$propName];
 
             // If it's already a language-keyed object, validate and keep.
-            if (is_array($value) === true && $this->isLanguageKeyedObject($value) === true) {
+            if (is_array($value) === true && $this->isLanguageKeyedObject(value: $value) === true) {
                 // Ensure default language has a value.
                 if (isset($value[$defaultLanguage]) === false || $value[$defaultLanguage] === null) {
                     $this->logger->warning(
