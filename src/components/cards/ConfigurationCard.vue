@@ -742,12 +742,7 @@ export default {
 		 * Handle delete action
 		 */
 		handleDelete() {
-			if (this.isDiscovered && this.existingConfiguration) {
-				configurationStore.setConfigurationItem(this.existingConfiguration)
-				navigationStore.setDialog('deleteConfiguration')
-			} else {
-				this.$emit('delete', this.existingConfiguration || this.displayConfiguration)
-			}
+			this.$emit('delete', this.existingConfiguration || this.displayConfiguration)
 		},
 		/**
 		 * Handle check version action

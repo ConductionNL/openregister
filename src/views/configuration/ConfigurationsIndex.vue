@@ -19,7 +19,6 @@ import { configurationStore, navigationStore } from '../../store/store.js'
 			:show-form-dialog="false"
 			:show-copy-action="false"
 			:show-edit-action="false"
-			:show-delete-action="false"
 			:actions="customActions"
 			:show-mass-import="false"
 			:show-mass-export="false"
@@ -35,6 +34,7 @@ import { configurationStore, navigationStore } from '../../store/store.js'
 			@page-changed="onPageChanged"
 			@page-size-changed="onPageSizeChanged"
 			@view-mode-change="viewMode = $event"
+			@delete="onDeleteConfiguration"
 			@select="selectedConfigurations = $event">
 			<!-- Action bar: import button -->
 			<template #action-items>
@@ -55,7 +55,7 @@ import { configurationStore, navigationStore } from '../../store/store.js'
 					@view="handleView(object)"
 					@edit="handleEdit(object)"
 					@export="handleExport(object)"
-					@delete="handleDelete(object)"
+					@delete="$refs.indexPage.openDeleteDialog(object)"
 					@check-version="checkVersion(object)"
 					@preview-update="previewUpdate(object)" />
 			</template>
@@ -153,7 +153,6 @@ import CloudUpload from 'vue-material-design-icons/CloudUpload.vue'
 import Eye from 'vue-material-design-icons/Eye.vue'
 import EyeOutline from 'vue-material-design-icons/EyeOutline.vue'
 import Pencil from 'vue-material-design-icons/Pencil.vue'
-import TrashCanOutline from 'vue-material-design-icons/TrashCanOutline.vue'
 import Download from 'vue-material-design-icons/Download.vue'
 import Sync from 'vue-material-design-icons/Sync.vue'
 import CheckCircle from 'vue-material-design-icons/CheckCircle.vue'
@@ -263,12 +262,6 @@ export default {
 					icon: Download,
 					handler: (row) => this.handleExport(row),
 				},
-				{
-					label: 'Delete',
-					icon: TrashCanOutline,
-					destructive: true,
-					handler: (row) => this.handleDelete(row),
-				},
 			]
 		},
 		tableColumns() {
@@ -372,9 +365,17 @@ export default {
 			configurationStore.setConfigurationItem(configuration)
 			navigationStore.setModal('exportConfiguration')
 		},
-		handleDelete(configuration) {
-			configurationStore.setConfigurationItem(configuration)
-			navigationStore.setDialog('deleteConfiguration')
+		async onDeleteConfiguration(id) {
+			const configuration = configurationStore.configurationList.find(c => c.id === id)
+			if (!configuration) return
+			try {
+				await configurationStore.deleteConfiguration(configuration)
+				this.$refs.indexPage.setSingleDeleteResult({ success: true })
+			} catch (error) {
+				this.$refs.indexPage.setSingleDeleteResult({
+					error: error.message || 'An error occurred while deleting the configuration',
+				})
+			}
 		},
 		previewUpdate(configuration) {
 			configurationStore.setConfigurationItem(configuration)
