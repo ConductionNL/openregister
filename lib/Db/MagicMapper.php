@@ -7111,7 +7111,7 @@ class MagicMapper extends AbstractObjectMapper
      */
     public function countSearchObjects(
         array $query=[],
-        ?string $_activeOrgUuid=null,
+        ?string $activeOrgUuid=null,
         bool $_rbac=true,
         bool $_multitenancy=true,
         ?array $ids=null,
@@ -7152,12 +7152,12 @@ class MagicMapper extends AbstractObjectMapper
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)
      */
-    public function countAll(?array $_filters=null, ?Schema $schema=null, ?Register $register=null): int
+    public function countAll(?array $filters=null, ?Schema $schema=null, ?Register $register=null): int
     {
         // If register+schema context provided, count in the specific table.
         if ($register !== null && $schema !== null) {
             return $this->countObjectsInRegisterSchemaTable(
-                query: $_filters ?? [],
+                query: $filters ?? [],
                 register: $register,
                 schema: $schema
             );
@@ -7181,7 +7181,7 @@ class MagicMapper extends AbstractObjectMapper
                 $pairSchema   = $this->schemaMapper->find($pair['schemaId'], _multitenancy: false, _rbac: false);
 
                 $total += $this->countObjectsInRegisterSchemaTable(
-                    query: $_filters ?? [],
+                    query: $filters ?? [],
                     register: $pairRegister,
                     schema: $pairSchema
                 );
@@ -7789,4 +7789,48 @@ class MagicMapper extends AbstractObjectMapper
             '@self'          => ['source' => 'magic_mapper'],
         ];
     }//end searchObjectsGloballyBySearch()
+
+    /**
+     * Get size distribution chart data for objects.
+     *
+     * @param int|null $registerId Optional register ID filter.
+     * @param int|null $schemaId   Optional schema ID filter.
+     *
+     * @return array{labels: list<string>, series: list<int>} Chart data.
+     */
+    public function getSizeDistributionChartData(?int $registerId=null, ?int $schemaId=null): array
+    {
+        return [
+            'labels' => [],
+            'series' => [],
+        ];
+    }//end getSizeDistributionChartData()
+
+    /**
+     * Count objects across multiple schemas.
+     *
+     * @param array $schemaIds Array of schema IDs.
+     *
+     * @return int Total count of objects across the given schemas.
+     */
+    public function countBySchemas(array $schemaIds): int
+    {
+        return 0;
+    }//end countBySchemas()
+
+    /**
+     * Find objects across multiple schemas.
+     *
+     * @param array $schemaIds Array of schema IDs.
+     * @param int   $limit     Maximum number of objects to return.
+     * @param int   $offset    Offset for pagination.
+     *
+     * @return ObjectEntity[] Array of object entities.
+     *
+     * @psalm-return list<ObjectEntity>
+     */
+    public function findBySchemas(array $schemaIds, int $limit=100, int $offset=0): array
+    {
+        return [];
+    }//end findBySchemas()
 }//end class

@@ -339,10 +339,13 @@ class AuthorizationService
      * @return Response The updated response.
      *
      * @throws SecurityException If CSRF-unsafe headers are detected.
+     *
+     * @psalm-suppress UndefinedClass SecurityException is a private Nextcloud internal class
      */
     public function corsAfterController(IRequest $request, Response $response): Response
     {
-        if (isset($request->server['HTTP_ORIGIN']) === true) {
+        $origin = $request->getHeader('Origin');
+        if (empty($origin) === false) {
             foreach ($response->getHeaders() as $header => $value) {
                 if (strtolower(string: $header) === 'access-control-allow-credentials'
                     && strtolower(string: trim(string: $value)) === 'true'
@@ -352,7 +355,6 @@ class AuthorizationService
                 }
             }
 
-            $origin = $request->server['HTTP_ORIGIN'];
             $response->addHeader('Access-Control-Allow-Origin', $origin);
         }
 

@@ -433,14 +433,14 @@ class DeleteObject
      * Log a RESTRICT block and throw the exception.
      *
      * @param string           $uuid     The object UUID
-     * @param int              $schemaId The schema ID
+     * @param string|null      $schemaId The schema ID
      * @param DeletionAnalysis $analysis The analysis result
      *
      * @return void
      *
      * @throws ReferentialIntegrityException Always thrown
      */
-    private function logAndThrowRestrict(string $uuid, int $schemaId, DeletionAnalysis $analysis): void
+    private function logAndThrowRestrict(string $uuid, ?string $schemaId, DeletionAnalysis $analysis): void
     {
         [$userId] = $this->resolveUserContext();
 

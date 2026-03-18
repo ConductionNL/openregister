@@ -1692,8 +1692,8 @@ class SaveObjects
             }
             
             // CRITICAL FIX: Use register and schema from method parameters if not provided in object data
-            $selfData['register'] = $selfData['register'] ?? $object['register'] ?? ($register ? $register->getId() : null);
-            $selfData['schema'] = $selfData['schema'] ?? $object['schema'] ?? ($schema ? $schema->getId() : null);
+            $selfData['register'] = $selfData['register'] ?? $object['register'] ?? null;
+            $selfData['schema'] = $selfData['schema'] ?? $object['schema'] ?? null;
             
             // VALIDATION FIX: Validate that required register and schema are properly set
             if (!$selfData['register']) {

@@ -87,7 +87,7 @@ class GraphQLController extends Controller
                 [
                     'errors' => [
                         [
-                            'message'    => 'Request body must be JSON with a "query" field',
+                            'message'    => $this->l10n->t('Request body must be JSON with a "query" field'),
                             'extensions' => ['code' => 'BAD_REQUEST'],
                         ],
                     ],
@@ -139,6 +139,7 @@ class GraphQLController extends Controller
         $html = $this->getGraphiQLHtml();
 
         // Create a response that renders raw HTML.
+        /** @psalm-suppress MissingTemplateParam */
         $response = new class ($html) extends Response {
 
             /**

@@ -939,7 +939,7 @@ class ObjectService
         unset($config['limit']);
 
         return $this->objectMapper->countAll(
-            _filters: $config['filters'] ?? []
+            filters: $config['filters'] ?? []
         );
     }//end count()
 
@@ -1649,7 +1649,7 @@ class ObjectService
         // Use the optimized countSearchObjects method from MagicMapper with organization context.
         return $this->objectMapper->countSearchObjects(
             query: $query,
-            _activeOrgUuid: $activeOrgUuid,
+            activeOrgUuid: $activeOrgUuid,
             _rbac: $_rbac,
             _multitenancy: $_multitenancy,
             ids: $ids,

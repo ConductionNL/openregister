@@ -23,6 +23,8 @@ use Symfony\Component\Uid\Uuid;
  * Maps Consumer entities to the database.
  *
  * @package OCA\OpenRegister\Db
+ *
+ * @template-extends QBMapper<Consumer>
  */
 class ConsumerMapper extends QBMapper
 {

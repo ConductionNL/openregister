@@ -324,11 +324,11 @@ class AuthenticationService
      *
      * @param array $configuration The auth configuration with algorithm and secret.
      *
-     * @return JWK The resulting JWK key.
+     * @return JWK|null The resulting JWK key.
      *
      * @throws BadRequestException If the algorithm is not supported.
      */
-    private function getJWK(array $configuration): JWK
+    private function getJWK(array $configuration): ?JWK
     {
         if (in_array(needle: $configuration['algorithm'], haystack: ['HS256', 'HS384', 'HS512']) === true) {
             return $this->getHSJWK(configuration: $configuration);

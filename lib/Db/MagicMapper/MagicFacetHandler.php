@@ -1392,7 +1392,7 @@ class MagicFacetHandler
                     $quarter    = (int) $matches[2];
                     $startMonth = (($quarter - 1) * 3) + 1;
                     $endMonth   = $startMonth + 2;
-                    $lastDay    = cal_days_in_month(CAL_GREGORIAN, $endMonth, $year);
+                    $lastDay    = cal_days_in_month(0, $endMonth, $year);
 
                     return [
                         'from' => sprintf('%04d-%02d-01', $year, $startMonth),

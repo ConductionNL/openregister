@@ -27,7 +27,7 @@ class AuthenticationExtension extends AbstractExtension
     /**
      * Get the Twig functions provided by this extension.
      *
-     * @return array Array of TwigFunction instances
+     * @return TwigFunction[] Array of TwigFunction instances
      */
     public function getFunctions(): array
     {
