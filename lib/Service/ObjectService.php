@@ -956,7 +956,7 @@ class ObjectService
     public function findByRelations(string $search, bool $partialMatch=true): array
     {
         // Use the findByRelation method from MagicMapper to find objects by their relations.
-        return $this->objectMapper->findByRelation(search: $search, partialMatch: $partialMatch);
+        return $this->objectMapper->findByRelation(uuid: $search, _search: $search, _partialMatch: $partialMatch);
     }//end findByRelations()
 
     /**

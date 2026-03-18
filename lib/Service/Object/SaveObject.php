@@ -2775,8 +2775,8 @@ class SaveObject
                 register: $register,
                 schema: $schema,
                 includeDeleted: false,
-                rbac: $_rbac,
-                multitenancy: $_multitenancy
+                _rbac: $_rbac,
+                _multitenancy: $_multitenancy
             );
 
             // Check if object is locked - prevent updates on locked objects.

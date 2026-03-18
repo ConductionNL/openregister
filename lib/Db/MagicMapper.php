@@ -140,6 +140,8 @@ use OCA\OpenRegister\Exception\HookStoppedException;
  * @SuppressWarnings(PHPMD.ExcessiveClassComplexity)
  * @SuppressWarnings(PHPMD.TooManyMethods)
  * @SuppressWarnings(PHPMD.TooManyPublicMethods)
+ * @SuppressWarnings(PHPMD.ExcessivePublicCount)
+ * @SuppressWarnings(PHPMD.ExcessiveParameterList)
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
  * @SuppressWarnings(PHPMD.CyclomaticComplexity)
  * @SuppressWarnings(PHPMD.NPathComplexity)
@@ -5988,7 +5990,7 @@ class MagicMapper extends AbstractObjectMapper
      *
      * @psalm-return list<ObjectEntity>
      */
-    public function findByRelation(string $uuid): array
+    public function findByRelation(string $uuid, ?string $_search=null, bool $_partialMatch=false): array
     {
         if (empty($uuid) === true) {
             return [];
@@ -7856,7 +7858,7 @@ class MagicMapper extends AbstractObjectMapper
      */
     public function countSearchObjects(
         array $query=[],
-        ?string $activeOrgUuid=null,
+        ?string $_activeOrgUuid=null,
         bool $_rbac=true,
         bool $_multitenancy=true,
         ?array $ids=null,
@@ -7897,12 +7899,12 @@ class MagicMapper extends AbstractObjectMapper
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)
      */
-    public function countAll(?array $filters=null, ?Schema $schema=null, ?Register $register=null): int
+    public function countAll(?array $_filters=null, ?Schema $schema=null, ?Register $register=null): int
     {
         // If register+schema context provided, count in the specific table.
         if ($register !== null && $schema !== null) {
             return $this->countObjectsInRegisterSchemaTable(
-                query: $filters ?? [],
+                query: $_filters ?? [],
                 register: $register,
                 schema: $schema
             );
@@ -7926,7 +7928,7 @@ class MagicMapper extends AbstractObjectMapper
                 $pairSchema   = $this->schemaMapper->find($pair['schemaId'], _multitenancy: false, _rbac: false);
 
                 $total += $this->countObjectsInRegisterSchemaTable(
-                    query: $filters ?? [],
+                    query: $_filters ?? [],
                     register: $pairRegister,
                     schema: $pairSchema
                 );

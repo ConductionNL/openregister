@@ -268,8 +268,9 @@ class MergeHandler
                 $targetUuid = $targetObject->getUuid();
 
                 $referencingObjects = $this->objectEntityMapper->findByRelation(
-                    search: $sourceUuid,
-                    partialMatch: true
+                    uuid: $sourceUuid,
+                    _search: $sourceUuid,
+                    _partialMatch: true
                 );
 
                 foreach ($referencingObjects as $referencingObject) {

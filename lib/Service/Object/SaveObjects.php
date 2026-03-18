@@ -238,10 +238,12 @@ class SaveObjects
         array $objects,
         Register|string|int|null $register=null,
         Schema|string|int|null $schema=null,
-        bool $rbac=true,
-        bool $multi=true,
+        bool $_rbac=true,
+        bool $_multitenancy=true,
         bool $validation=false,
-        bool $events=false
+        bool $events=false,
+        bool $deduplicateIds=false,
+        bool $enrich=false
     ): array {
         
         // FLEXIBLE VALIDATION: Support both single-schema and mixed-schema bulk operations
@@ -342,7 +344,7 @@ class SaveObjects
             $chunkStart = microtime(true);
 
             // Process the current chunk and get the result
-            $chunkResult = $this->processObjectsChunk($objectsChunk, $globalSchemaCache, $rbac, $multi, $validation, $events);
+            $chunkResult = $this->processObjectsChunk($objectsChunk, $globalSchemaCache, $_rbac, $_multitenancy, $validation, $events);
 
             // Merge chunk results for saved, updated, invalid, errors, and unchanged
             $result['saved']   = array_merge($result['saved'], $chunkResult['saved']);
@@ -1348,10 +1350,10 @@ class SaveObjects
                     data: $object,
                     uuid: $uuid,
                     folderId: null,
-                    rbac: $rbac,
-                    multi: $multi,
+                    _rbac: $rbac,
+                    _multitenancy: $multi,
                     persist: true,
-                    validation: $validation
+                    _validation: $validation
                 );
                 
                 if ($uuid === null) {
