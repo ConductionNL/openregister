@@ -7111,7 +7111,7 @@ class MagicMapper extends AbstractObjectMapper
      */
     public function countSearchObjects(
         array $query=[],
-        ?string $activeOrgUuid=null,
+        ?string $_activeOrgUuid=null,
         bool $_rbac=true,
         bool $_multitenancy=true,
         ?array $ids=null,
@@ -7152,12 +7152,12 @@ class MagicMapper extends AbstractObjectMapper
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)
      */
-    public function countAll(?array $filters=null, ?Schema $schema=null, ?Register $register=null): int
+    public function countAll(?array $_filters=null, ?Schema $schema=null, ?Register $register=null): int
     {
         // If register+schema context provided, count in the specific table.
         if ($register !== null && $schema !== null) {
             return $this->countObjectsInRegisterSchemaTable(
-                query: $filters ?? [],
+                query: $_filters ?? [],
                 register: $register,
                 schema: $schema
             );
@@ -7181,7 +7181,7 @@ class MagicMapper extends AbstractObjectMapper
                 $pairSchema   = $this->schemaMapper->find($pair['schemaId'], _multitenancy: false, _rbac: false);
 
                 $total += $this->countObjectsInRegisterSchemaTable(
-                    query: $filters ?? [],
+                    query: $_filters ?? [],
                     register: $pairRegister,
                     schema: $pairSchema
                 );

@@ -220,10 +220,10 @@ class SaveObjects
      * @param array                    $objects    Array of objects in serialized format
      * @param Register|string|int|null $register   Optional register context
      * @param Schema|string|int|null   $schema     Optional schema context
-     * @param bool                     $rbac       Whether to apply RBAC filtering
-     * @param bool                     $multi      Whether to apply multi-organization filtering
-     * @param bool                     $validation Whether to validate objects against schema definitions
-     * @param bool                     $events     Whether to dispatch object lifecycle events
+     * @param bool                     $_rbac          Whether to apply RBAC filtering
+     * @param bool                     $_multitenancy  Whether to apply multi-organization filtering
+     * @param bool                     $_validation    Whether to validate objects against schema definitions
+     * @param bool                     $_events        Whether to dispatch object lifecycle events
      *
      * @throws \InvalidArgumentException If required fields are missing from any object
      * @throws \OCP\DB\Exception If a database error occurs during bulk operations
@@ -240,8 +240,8 @@ class SaveObjects
         Schema|string|int|null $schema=null,
         bool $_rbac=true,
         bool $_multitenancy=true,
-        bool $validation=false,
-        bool $events=false,
+        bool $_validation=false,
+        bool $_events=false,
         bool $deduplicateIds=false,
         bool $enrich=false
     ): array {
@@ -344,7 +344,7 @@ class SaveObjects
             $chunkStart = microtime(true);
 
             // Process the current chunk and get the result
-            $chunkResult = $this->processObjectsChunk($objectsChunk, $globalSchemaCache, $_rbac, $_multitenancy, $validation, $events);
+            $chunkResult = $this->processObjectsChunk($objectsChunk, $globalSchemaCache, $_rbac, $_multitenancy, $_validation, $_events);
 
             // Merge chunk results for saved, updated, invalid, errors, and unchanged
             $result['saved']   = array_merge($result['saved'], $chunkResult['saved']);
@@ -1067,7 +1067,7 @@ class SaveObjects
      *
      * @return array Processing result for this chunk with bulk operation statistics
      */
-    private function processObjectsChunk(array $objects, array $schemaCache, bool $rbac, bool $multi, bool $validation, bool $events): array
+    private function processObjectsChunk(array $objects, array $schemaCache, bool $_rbac, bool $_multitenancy, bool $_validation, bool $_events): array
     {
         $startTime = microtime(true);
         $operationStartTimestamp = date('Y-m-d H:i:s', (int)$startTime);
@@ -1303,7 +1303,7 @@ class SaveObjects
      *
      * @return array Processing result using individual saves
      */
-    private function fallbackToIndividualProcessing(array $objects, array $schemaCache, bool $rbac, bool $multi, bool $validation, bool $events): array
+    private function fallbackToIndividualProcessing(array $objects, array $schemaCache, bool $_rbac, bool $_multitenancy, bool $_validation, bool $_events): array
     {
         $result = [
             'saved'      => [],
@@ -1350,10 +1350,10 @@ class SaveObjects
                     data: $object,
                     uuid: $uuid,
                     folderId: null,
-                    _rbac: $rbac,
-                    _multitenancy: $multi,
+                    _rbac: $_rbac,
+                    _multitenancy: $_multitenancy,
                     persist: true,
-                    _validation: $validation
+                    _validation: $_validation
                 );
                 
                 if ($uuid === null) {

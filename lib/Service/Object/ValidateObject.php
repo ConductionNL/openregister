@@ -1826,7 +1826,7 @@ class ValidateObject
             $filters[$uniqueFields] = $object[$uniqueFields];
         }
 
-        $count = $this->objectMapper->countAll(filters: $filters, schema: $schema);
+        $count = $this->objectMapper->countAll(_filters: $filters, schema: $schema);
 
         if ($count !== 0) {
             // IMPROVED ERROR MESSAGE: Show which field(s) caused the uniqueness violation.

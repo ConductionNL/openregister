@@ -336,7 +336,7 @@ abstract class AbstractObjectMapper
      */
     abstract public function countSearchObjects(
         array $query=[],
-        ?string $activeOrgUuid=null,
+        ?string $_activeOrgUuid=null,
         bool $_rbac=true,
         bool $_multitenancy=true,
         ?array $ids=null,
@@ -353,7 +353,7 @@ abstract class AbstractObjectMapper
      * @return int Count of objects.
      */
     abstract public function countAll(
-        ?array $filters=null,
+        ?array $_filters=null,
         ?Schema $schema=null,
         ?Register $register=null
     ): int;

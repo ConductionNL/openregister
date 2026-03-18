@@ -115,7 +115,7 @@ class QueryHandler
         // Count uses the unified mapper's countSearchObjects for proper magic mapper routing.
         return $this->objectMapper->countSearchObjects(
             query: $query,
-            activeOrgUuid: $activeOrgUuid,
+            _activeOrgUuid: $activeOrgUuid,
             _rbac: $_rbac,
             _multitenancy: $_multitenancy,
             ids: $ids,
@@ -176,7 +176,7 @@ class QueryHandler
         // Execute database search.
         $result = $this->objectMapper->searchObjects(
             query: $query,
-            activeOrgUuid: $activeOrgUuid,
+            _activeOrgUuid: $activeOrgUuid,
             _rbac: $_rbac,
             _multitenancy: $_multitenancy,
             ids: $ids,
@@ -396,7 +396,7 @@ class QueryHandler
         $searchResult      = $this->objectMapper->searchObjectsPaginated(
             searchQuery: $paginatedQuery,
             countQuery: $countQuery,
-            activeOrgUuid: $activeOrgUuid,
+            _activeOrgUuid: $activeOrgUuid,
             _rbac: $_rbac,
             _multitenancy: $_multitenancy,
             ids: $ids,
