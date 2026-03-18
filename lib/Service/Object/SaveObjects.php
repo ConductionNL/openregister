@@ -1614,11 +1614,14 @@ class SaveObjects
     {
         $savedObjects = [];
 
+        // Build a lookup set of saved IDs for filtering — only reconstruct objects that were actually saved.
+        $savedIdSet = array_flip($savedObjectIds);
+
         // CRITICAL FIX: Don't use createFromArray() - it tries to insert objects that already exist!
         // Instead, create ObjectEntity and hydrate without inserting
         foreach ($insertObjects as $objData) {
             $obj = new ObjectEntity();
-            
+
             // CRITICAL FIX: Objects missing UUIDs after save indicate serious database issues - LOG ERROR!
             if (empty($objData['uuid'])) {
                 $this->logger->error('Object reconstruction failed: Missing UUID after bulk save operation', [
@@ -1626,19 +1629,38 @@ class SaveObjects
                     'error' => 'UUID missing in saved object data',
                     'context' => 'reconstructSavedObjects'
                 ]);
-                
+
                 // Continue to try to reconstruct other objects, but this indicates a serious issue
                 // The object was supposedly saved but has no UUID - should not happen
                 continue;
             }
-            
+
+            // Only include objects that are in the saved IDs set.
+            if (isset($savedIdSet[$objData['uuid']]) === false) {
+                continue;
+            }
+
             $obj->hydrate($objData);
-            
+
             $savedObjects[] = $obj;
         }
 
-        // Add all update objects  
+        // Add update objects, preferring existing object data for fields not present in the update.
         foreach ($updateObjects as $obj) {
+            $uuid = $obj->getUuid();
+            if (isset($savedIdSet[$uuid]) === false) {
+                continue;
+            }
+
+            // Merge with existing object data to preserve fields not included in the update payload.
+            if ($uuid !== null && isset($existingObjects[$uuid]) === true) {
+                $existingObj    = $existingObjects[$uuid];
+                $existingData   = $existingObj->getObject() ?? [];
+                $updatedData    = $obj->getObject() ?? [];
+                $mergedData     = array_merge($existingData, $updatedData);
+                $obj->setObject($mergedData);
+            }
+
             $savedObjects[] = $obj;
         }
 

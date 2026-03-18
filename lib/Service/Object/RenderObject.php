@@ -1725,7 +1725,15 @@ class RenderObject
         int $registerId,
         array $inversedByFields
     ): array {
-        $magicMapper = \OC::$server->get(\OCA\OpenRegister\Db\MagicMapper::class);
+        // Validate inputs before accessing \OC service container.
+        if (empty($entityUuids) === true || empty($inversedByFields) === true) {
+            return [];
+        }
+
+        $schemaIdInt = (int) $targetSchemaId;
+        if ($schemaIdInt <= 0 || $registerId <= 0) {
+            return [];
+        }
 
         // Pass additional field names for multi-field inversedBy so the SQL also searches
         // columns that may store references in {"value": "uuid"} format not in _relations.
@@ -1735,9 +1743,11 @@ class RenderObject
             $additionalFields = [];
         }
 
+        $magicMapper = \OC::$server->get(\OCA\OpenRegister\Db\MagicMapper::class);
+
         return $magicMapper->findByRelationBatchInSchema(
             uuids: $entityUuids,
-            schemaId: (int) $targetSchemaId,
+            schemaId: $schemaIdInt,
             registerId: $registerId,
             fieldName: $inversedByFields[0],
             additionalFieldNames: $additionalFields

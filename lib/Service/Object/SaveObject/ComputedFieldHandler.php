@@ -288,6 +288,24 @@ class ComputedFieldHandler
      */
     private function resolveReferences(array $data, Schema $schema, int $depth): array
     {
+        // Guard against infinite recursion in nested reference resolution.
+        $maxDepth = 10;
+        if ($depth > $maxDepth) {
+            $this->logger->warning(
+                message: '[ComputedFieldHandler] Max reference resolution depth exceeded',
+                context: [
+                    'app'      => 'openregister',
+                    'file'     => __FILE__,
+                    'line'     => __LINE__,
+                    'depth'    => $depth,
+                    'maxDepth' => $maxDepth,
+                    'schemaId' => $schema->getId(),
+                ]
+            );
+
+            return [];
+        }
+
         $refs       = [];
         $properties = $schema->getProperties() ?? [];
 

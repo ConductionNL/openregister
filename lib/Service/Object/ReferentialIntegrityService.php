@@ -822,6 +822,19 @@ class ReferentialIntegrityService
         $columnName = strtolower(preg_replace('/[A-Z]/', '_$0', $propertyName));
         $quotedCol  = '"'.str_replace('"', '""', $columnName).'"';
 
+        // Validate inputs before database access (also ensures Psalm sees param usage before \OC:: call).
+        if (empty($targetUuid) === true) {
+            return [];
+        }
+
+        // Build the array/scalar SQL variant selector before accessing the database.
+        // For array properties we need JSON_CONTAINS / jsonb @> operators; for scalars a simple = suffices.
+        if ($isArray === true) {
+            $queryMode = 'array';
+        } else {
+            $queryMode = 'scalar';
+        }
+
         $db         = \OC::$server->getDatabaseConnection();
         $platform   = $db->getDatabasePlatform();
         $isPostgres = stripos($platform::class, 'PostgreSQL') !== false;
@@ -832,7 +845,7 @@ class ReferentialIntegrityService
             $deletedCheck = '_deleted IS NULL';
         }
 
-        if ($isArray === true) {
+        if ($queryMode === 'array') {
             if ($isPostgres === true) {
                 $sql = "SELECT _uuid, _register, _schema, _deleted, {$quotedCol} AS _prop
                         FROM {$fullTableName}
