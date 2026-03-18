@@ -7092,7 +7092,14 @@ class MagicMapper extends AbstractObjectMapper
      */
     public function lockObject(string $uuid, ?int $lockDuration=null): array
     {
-        return $this->lockObjectEntity(uuid: $uuid, lockDuration: $lockDuration);
+        $result   = $this->findAcrossAllSources(identifier: $uuid, _multitenancy: false, _rbac: false);
+        $entity   = $result['object'];
+        $register = $result['register'];
+        $schema   = $result['schema'];
+
+        $locked = $this->lockObjectEntity(entity: $entity, register: $register, schema: $schema, lockDuration: $lockDuration);
+
+        return ['locked' => $locked->getLocked(), 'uuid' => $uuid];
     }//end lockObject()
 
     /**
@@ -7104,7 +7111,14 @@ class MagicMapper extends AbstractObjectMapper
      */
     public function unlockObject(string $uuid): bool
     {
-        return $this->unlockObjectEntity(uuid: $uuid);
+        $result   = $this->findAcrossAllSources(identifier: $uuid, _multitenancy: false, _rbac: false);
+        $entity   = $result['object'];
+        $register = $result['register'];
+        $schema   = $result['schema'];
+
+        $this->unlockObjectEntity(entity: $entity, register: $register, schema: $schema);
+
+        return true;
     }//end unlockObject()
 
     /**
@@ -7286,7 +7300,33 @@ class MagicMapper extends AbstractObjectMapper
      */
     public function deleteObjects(array $uuids=[], bool $hardDelete=false): array
     {
-        return $this->deleteObjectsByUuids(uuids: $uuids);
+        $results = [];
+        // Group UUIDs by register+schema for batch deletion.
+        $grouped = [];
+        foreach ($uuids as $uuid) {
+            try {
+                $result     = $this->findAcrossAllSources(identifier: $uuid, _multitenancy: false, _rbac: false);
+                $register   = $result['register'];
+                $schema     = $result['schema'];
+                $key        = $register->getId().'-'.$schema->getId();
+                $grouped[$key] ??= ['register' => $register, 'schema' => $schema, 'uuids' => []];
+                $grouped[$key]['uuids'][] = $uuid;
+            } catch (\Exception $e) {
+                // Skip UUIDs that can't be found.
+            }
+        }
+
+        foreach ($grouped as $group) {
+            $count     = $this->deleteObjectsByUuids(
+                register: $group['register'],
+                schema: $group['schema'],
+                uuids: $group['uuids'],
+                hardDelete: $hardDelete
+            );
+            $results[] = ['count' => $count, 'uuids' => $group['uuids']];
+        }
+
+        return $results;
     }//end deleteObjects()
 
     /**
@@ -7379,6 +7419,62 @@ class MagicMapper extends AbstractObjectMapper
             'locked'  => $locked,
         ];
     }//end getStatistics()
+
+    /**
+     * Get object statistics grouped by schema for multiple schemas.
+     *
+     * Returns per-schema statistics using one count query per register-schema pair,
+     * grouped by schema ID. Replaces N individual getStatistics() calls.
+     *
+     * @param int[] $schemaIds Array of schema IDs to get statistics for.
+     *
+     * @return array<int, array{total: int, size: int}> Map of schemaId => statistics array.
+     */
+    public function getStatisticsGroupedBySchema(array $schemaIds): array
+    {
+        $emptyStats = [
+            'total' => 0,
+            'size'  => 0,
+        ];
+
+        if (empty($schemaIds) === true) {
+            return [];
+        }
+
+        // Initialize all schemas with empty stats.
+        $statsMap = [];
+        foreach ($schemaIds as $schemaId) {
+            $statsMap[$schemaId] = $emptyStats;
+        }
+
+        // Iterate all register-schema pairs and accumulate counts per schema.
+        $allPairs = $this->getAllRegisterSchemaPairs();
+
+        foreach ($allPairs as $pair) {
+            $pairSchemaId = (int) $pair['schemaId'];
+
+            if (in_array($pairSchemaId, $schemaIds, true) === false) {
+                continue;
+            }
+
+            try {
+                $register = $this->registerMapper->find((int) $pair['registerId'], _multitenancy: false, _rbac: false);
+                $schema   = $this->schemaMapper->find($pairSchemaId, _multitenancy: false, _rbac: false);
+
+                $count = $this->countObjectsInRegisterSchemaTable(
+                    query: [],
+                    register: $register,
+                    schema: $schema
+                );
+
+                $statsMap[$pairSchemaId]['total'] += $count;
+            } catch (\Exception $e) {
+                // Skip tables that can't be queried.
+            }
+        }
+
+        return $statsMap;
+    }//end getStatisticsGroupedBySchema()
 
     /**
      * Get register chart data.
