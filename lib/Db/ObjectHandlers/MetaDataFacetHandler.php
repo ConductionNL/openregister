@@ -256,7 +256,7 @@ class MetaDataFacetHandler
 
             case 'week':
                 if (preg_match('/^(\d{4})-(\d{1,2})$/', $dateKey, $matches) === 1) {
-                    $date = new \DateTime();
+                    $date = new DateTime();
                     $date->setISODate((int) $matches[1], (int) $matches[2], 1);
                     $from = $date->format('Y-m-d');
                     $date->setISODate((int) $matches[1], (int) $matches[2], 7);

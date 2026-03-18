@@ -74,6 +74,7 @@ use Psr\Container\ContainerInterface;
 use Symfony\Component\Uid\Uuid;
 use Doctrine\DBAL\Schema\Schema as DoctrineSchema;
 use Doctrine\DBAL\Platforms\PostgreSQLPlatform;
+use OCA\OpenRegister\Exception\HookStoppedException;
 
 /**
  * Dynamic Schema-Based Table Management Service
@@ -293,7 +294,7 @@ class MagicMapper extends AbstractObjectMapper
         self::$constructCount++;
         file_put_contents('/tmp/or-debug.log', "MagicMapper::__construct #".self::$constructCount."\n", FILE_APPEND);
         if (self::$constructCount > 2) {
-            file_put_contents('/tmp/or-debug.log', "CIRCULAR! Stack:\n".(new \Exception())->getTraceAsString()."\n", FILE_APPEND);
+            file_put_contents('/tmp/or-debug.log', "CIRCULAR! Stack:\n".(new Exception())->getTraceAsString()."\n", FILE_APPEND);
             return;
         }
         // Initialize specialized handlers for modular functionality.
@@ -5333,7 +5334,7 @@ class MagicMapper extends AbstractObjectMapper
 
             // Check if a hook stopped propagation (reject mode).
             if ($creatingEvent->isPropagationStopped() === true) {
-                throw new \OCA\OpenRegister\Exception\HookStoppedException(
+                throw new HookStoppedException(
                     message: $creatingEvent->getErrors()[0]['message'] ?? 'Object creation rejected by hook',
                     errors: $creatingEvent->getErrors()
                 );
@@ -5461,7 +5462,7 @@ class MagicMapper extends AbstractObjectMapper
 
         // Check if a hook stopped propagation (reject mode).
         if ($updatingEvent->isPropagationStopped() === true) {
-            throw new \OCA\OpenRegister\Exception\HookStoppedException(
+            throw new HookStoppedException(
                 message: $updatingEvent->getErrors()[0]['message'] ?? 'Object update rejected by hook',
                 errors: $updatingEvent->getErrors()
             );
@@ -5557,7 +5558,7 @@ class MagicMapper extends AbstractObjectMapper
 
             // Check if a hook stopped propagation (reject mode).
             if ($deletingEvent->isPropagationStopped() === true) {
-                throw new \OCA\OpenRegister\Exception\HookStoppedException(
+                throw new HookStoppedException(
                     message: $deletingEvent->getErrors()[0]['message'] ?? 'Object deletion rejected by hook',
                     errors: $deletingEvent->getErrors()
                 );

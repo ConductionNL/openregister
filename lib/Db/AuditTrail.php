@@ -221,6 +221,8 @@ class AuditTrail extends Entity implements JsonSerializable
      * The URL where the processing activity is registered
      *
      * @var string|null The URL where the processing activity is registered
+     *
+     * @SuppressWarnings(PHPMD.LongVariable) Entity property maps to DB column and API output
      */
     protected ?string $processingActivityUrl = null;
 

@@ -26,6 +26,7 @@ use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\ObjectService;
 use OCP\AppFramework\Db\DoesNotExistException;
+use InvalidArgumentException;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -156,7 +157,7 @@ class McpResourcesService
      *
      * @return array{contents: array} MCP resources/read response
      *
-     * @throws \InvalidArgumentException If URI is invalid or unsupported
+     * @throws InvalidArgumentException If URI is invalid or unsupported
      */
     public function readResource(string $uri): array
     {
@@ -170,7 +171,7 @@ class McpResourcesService
                 schemaId: $parsed['schemaId'],
                 objectId: $parsed['objectId'] ?? null
             ),
-            default         => throw new \InvalidArgumentException(
+            default         => throw new InvalidArgumentException(
                 message: 'Unsupported resource type: '.$parsed['type']
             ),
         };
@@ -201,12 +202,12 @@ class McpResourcesService
      *
      * @return array Parsed URI components
      *
-     * @throws \InvalidArgumentException If URI format is invalid
+     * @throws InvalidArgumentException If URI format is invalid
      */
     private function parseUri(string $uri): array
     {
         if (str_starts_with(haystack: $uri, needle: 'openregister://') === false) {
-            throw new \InvalidArgumentException(
+            throw new InvalidArgumentException(
                 message: 'Invalid URI scheme, expected openregister://'
             );
         }
@@ -230,7 +231,7 @@ class McpResourcesService
 
         if ($type === 'objects') {
             if (isset($segments[1], $segments[2]) === false) {
-                throw new \InvalidArgumentException(
+                throw new InvalidArgumentException(
                     message: 'Objects URI requires register and schema IDs: openregister://objects/{registerId}/{schemaId}'
                 );
             }
@@ -243,7 +244,7 @@ class McpResourcesService
             ];
         }
 
-        throw new \InvalidArgumentException(
+        throw new InvalidArgumentException(
             message: 'Unknown resource type: '.$type
         );
     }//end parseUri()
@@ -285,7 +286,7 @@ class McpResourcesService
 
         $schemas = $this->schemaMapper->findAll();
         return array_map(
-            callback: static fn($s) => $s->jsonSerialize(),
+            callback: static fn($schema) => $schema->jsonSerialize(),
             array: $schemas
         );
     }//end readSchemas()
@@ -311,7 +312,7 @@ class McpResourcesService
 
         $result = $this->objectService->findAll();
         return array_map(
-            callback: static fn($o) => $o->jsonSerialize(),
+            callback: static fn($obj) => $obj->jsonSerialize(),
             array: $result
         );
     }//end readObjects()

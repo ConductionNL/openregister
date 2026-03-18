@@ -344,13 +344,13 @@ class GraphQLService
         if ($user !== null) {
             $key .= 'user_'.preg_replace('/[^a-zA-Z0-9_]/', '_', $user->getUID());
         } else {
-            $ip = $this->request->getRemoteAddress();
-            if (empty($ip) === true) {
+            $clientIp = $this->request->getRemoteAddress();
+            if (empty($clientIp) === true) {
                 // No identifiable client (CLI/test context) — skip rate limiting.
                 return;
             }
 
-            $key .= 'ip_'.preg_replace('/[^a-zA-Z0-9_.]/', '_', $ip);
+            $key .= 'ip_'.preg_replace('/[^a-zA-Z0-9_.]/', '_', $clientIp);
         }
 
         if (function_exists('apcu_enabled') === false || apcu_enabled() === false) {

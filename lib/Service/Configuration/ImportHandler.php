@@ -120,7 +120,7 @@ class ImportHandler
      *
      * @var MagicMapper|null The object mapper instance (optional, set via setObjectMapper).
      */
-    private ?MagicMapper $objectMapperForRouting = null;
+    private ?MagicMapper $routingMapper = null;
 
     /**
      * Configuration mapper instance for handling configuration operations.
@@ -344,7 +344,7 @@ class ImportHandler
      */
     public function setObjectMapper(MagicMapper $objectMapper): void
     {
-        $this->objectMapperForRouting = $objectMapper;
+        $this->routingMapper = $objectMapper;
     }//end setObjectMapper()
 
     /**
@@ -2042,9 +2042,9 @@ class ImportHandler
             $hooks = array_values(
                 array_filter(
                     $hooks,
-                    static function (array $h) use ($hookEntry): bool {
-                        return !(($h['workflowId'] ?? '') === $hookEntry['workflowId']
-                            && ($h['event'] ?? '') === $hookEntry['event']);
+                    static function (array $hook) use ($hookEntry): bool {
+                        return !(($hook['workflowId'] ?? '') === $hookEntry['workflowId']
+                            && ($hook['event'] ?? '') === $hookEntry['event']);
                     }
                 )
             );
@@ -2975,8 +2975,8 @@ class ImportHandler
                     try {
                         // Try to find existing object using MagicMapper.
                         // Disable RBAC/multitenancy to find objects from any app/tenant.
-                        if ($this->objectMapperForRouting !== null && $objectRegister !== null) {
-                            $existingObject = $this->objectMapperForRouting->find(
+                        if ($this->routingMapper !== null && $objectRegister !== null) {
+                            $existingObject = $this->routingMapper->find(
                                 identifier: $lookupIdentifier,
                                 register: $objectRegister,
                                 schema: $objectSchema,
@@ -3050,8 +3050,8 @@ class ImportHandler
                     $objectEntity->setUpdated($now);
 
                     // Insert into database using MagicMapper if available.
-                    if ($this->objectMapperForRouting !== null) {
-                        $createdObject = $this->objectMapperForRouting->insert($objectEntity);
+                    if ($this->routingMapper !== null) {
+                        $createdObject = $this->routingMapper->insert($objectEntity);
                     } else {
                         // Fallback: MagicMapper not available, use objectEntityMapper.
                         $createdObject = $this->objectEntityMapper->insert($objectEntity);

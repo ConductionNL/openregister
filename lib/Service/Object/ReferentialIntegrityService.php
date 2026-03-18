@@ -337,9 +337,9 @@ class ReferentialIntegrityService
 
             foreach ($tables as $tableName) {
                 // Parse: openregister_table_{registerId}_{schemaId}.
-                if (preg_match('/^openregister_table_(\d+)_(\d+)$/', $tableName, $m) === 1) {
-                    $regId    = $m[1];
-                    $schemaId = $m[2];
+                if (preg_match('/^openregister_table_(\d+)_(\d+)$/', $tableName, $matches) === 1) {
+                    $regId    = $matches[1];
+                    $schemaId = $matches[2];
                     if (isset($registerCache[$regId]) === true
                         && isset($this->schemaRegisterMap[$schemaId]) === false
                     ) {

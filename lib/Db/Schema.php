@@ -1115,12 +1115,12 @@ class Schema extends Entity implements JsonSerializable
             if (in_array($key, ['published', 'depublished', 'created', 'updated', 'deleted'], true) === true) {
                 if (is_string($value) === true && $value !== '') {
                     try {
-                        $value = new \DateTime($value);
-                    } catch (\Exception $e) {
+                        $value = new DateTime($value);
+                    } catch (Exception $e) {
                         // If parsing fails, set to null.
                         $value = null;
                     }
-                } else if ($value !== null && ($value instanceof \DateTime) === false) {
+                } else if ($value !== null && ($value instanceof DateTime) === false) {
                     $value = null;
                 }
             }

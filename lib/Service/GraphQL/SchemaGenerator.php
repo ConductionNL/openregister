@@ -81,13 +81,6 @@ class SchemaGenerator
     private ?ObjectType $pageInfoType = null;
 
     /**
-     * Shared File output type.
-     *
-     * @var ObjectType|null
-     */
-    private ?ObjectType $fileType = null;
-
-    /**
      * Shared SortInput type.
      *
      * @var InputObjectType|null
@@ -178,7 +171,6 @@ class SchemaGenerator
         $this->schemasById     = [];
         $this->registersById   = [];
         $this->pageInfoType    = null;
-        $this->fileType        = null;
         $this->auditTrailType  = null;
         $this->sortInputType   = null;
         $this->selfFilterType  = null;
@@ -766,28 +758,6 @@ class SchemaGenerator
      *
      * @return ObjectType The File type
      */
-    private function getFileType(): ObjectType
-    {
-        if ($this->fileType !== null) {
-            return $this->fileType;
-        }
-
-        $this->fileType = new ObjectType(
-                [
-                    'name'   => 'File',
-                    'fields' => [
-                        'filename' => Type::string(),
-                        'mimeType' => Type::string(),
-                        'size'     => Type::int(),
-                        'url'      => Type::string(),
-                    ],
-                ]
-                );
-
-        return $this->fileType;
-
-    }//end getFileType()
-
     /**
      * Get the shared AuditTrail type.
      *
@@ -1223,7 +1193,7 @@ class SchemaGenerator
         $parts = preg_split(pattern: '/[-_]/', subject: $slug);
         $first = array_shift($parts);
         $rest  = array_map(
-            callback: fn ($p) => ucfirst(string: $p),
+            callback: fn ($part) => ucfirst(string: $part),
             array: $parts
         );
 

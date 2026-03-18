@@ -244,6 +244,7 @@ class AuthenticationService
         $tokenLocation = $configuration['tokenLocation'];
         unset($configuration['tokenUrl']);
 
+        $callConfig = [];
         $callConfig['json'] = $configuration;
 
         $client   = new Client();

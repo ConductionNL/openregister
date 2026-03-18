@@ -2711,7 +2711,7 @@ class ObjectService
     public function deleteObjectsBySchema(int $registerId, int $schemaId, bool $hardDelete=false): array
     {
         // TODO: Reimplement using MagicMapper for schema-wide delete on magic tables.
-        throw new \RuntimeException(
+        throw new RuntimeException(
             'deleteObjectsBySchema needs reimplementation using MagicMapper (blob objects table retired)'
         );
     }//end deleteObjectsBySchema()
@@ -2735,7 +2735,7 @@ class ObjectService
     public function deleteObjectsByRegister(int $registerId): array
     {
         // TODO: Reimplement using MagicMapper for register-wide delete on magic tables.
-        throw new \RuntimeException(
+        throw new RuntimeException(
             'deleteObjectsByRegister needs reimplementation using MagicMapper (blob objects table retired)'
         );
     }//end deleteObjectsByRegister()

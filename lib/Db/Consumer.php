@@ -75,6 +75,8 @@ class Consumer extends Entity implements JsonSerializable
      * Authorization config (public key, algorithm, API keys, etc.).
      *
      * @var array|null
+     *
+     * @SuppressWarnings(PHPMD.LongVariable) Entity property maps to DB column and API output
      */
     protected ?array $authorizationConfiguration = [];
 
