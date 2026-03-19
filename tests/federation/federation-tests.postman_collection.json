@@ -229,7 +229,7 @@
 					"request": {
 						"method": "POST",
 						"header": [{ "key": "Content-Type", "value": "application/json" }],
-						"body": { "mode": "raw", "raw": "{\n    \"catalogusId\": \"federation-remote-seed\",\n    \"title\": \"Federation Remote (Seeded)\",\n    \"summary\": \"Seeded listing pointing to Instance 2 — workaround for directory RBAC issue\",\n    \"directory\": \"{{nc2Internal}}/index.php/apps/opencatalogi/api/directory\",\n    \"search\": \"{{nc2Internal}}/index.php/apps/opencatalogi/api/search\",\n    \"publications\": \"{{nc2Internal}}/index.php/apps/opencatalogi/api/federation/publications\",\n    \"integrationLevel\": \"search\",\n    \"default\": false,\n    \"status\": \"online\",\n    \"statusCode\": 200\n}" },
+						"body": { "mode": "raw", "raw": "{\n    \"catalogusId\": \"federation-remote-seed\",\n    \"title\": \"Federation Remote (Seeded)\",\n    \"summary\": \"Seeded listing pointing to Instance 2 — workaround for directory RBAC issue\",\n    \"directory\": \"{{nc2Internal}}/index.php/apps/opencatalogi/api/directory\",\n    \"search\": \"{{nc2Internal}}/index.php/apps/opencatalogi/api/search\",\n    \"publications\": \"{{nc2Internal}}/index.php/apps/opencatalogi/api/federation/publications\",\n    \"integrationLevel\": \"search\",\n    \"default\": false,\n    \"status\": \"stable\",\n    \"statusCode\": 200\n}" },
 						"url": { "raw": "{{nc1Url}}/index.php/apps/opencatalogi/api/listings", "host": ["{{nc1Url}}"], "path": ["index.php", "apps", "opencatalogi", "api", "listings"] }
 					}
 				},
@@ -243,9 +243,9 @@
 						"    pm.expect(json.results.length).to.be.above(0);",
 						"    console.log('✅ Instance 1 now has ' + json.results.length + ' listing(s)');",
 						"    ",
-						"    // Store listing ID from response for later use",
+						"    // Store listing ID from response — list items use @self.id, not top-level id",
 						"    var listing = json.results[0];",
-						"    var id = listing.uuid || listing.id;",
+						"    var id = (listing['@self'] && listing['@self'].id) || listing.uuid || listing.id;",
 						"    pm.collectionVariables.set('nc1ListingId', id);",
 						"    var data = listing.object || listing;",
 						"    console.log('   ID: ' + id);",
@@ -456,7 +456,7 @@
 					"request": {
 						"method": "POST",
 						"header": [{ "key": "Content-Type", "value": "application/json" }],
-						"body": { "mode": "raw", "raw": "{\n    \"catalogusId\": \"federation-home-seed\",\n    \"title\": \"Federation Home (Seeded)\",\n    \"summary\": \"Reverse listing pointing to Instance 1\",\n    \"directory\": \"http://nc-fed-1/index.php/apps/opencatalogi/api/directory\",\n    \"search\": \"http://nc-fed-1/index.php/apps/opencatalogi/api/search\",\n    \"publications\": \"http://nc-fed-1/index.php/apps/opencatalogi/api/federation/publications\",\n    \"integrationLevel\": \"search\",\n    \"default\": false,\n    \"status\": \"online\",\n    \"statusCode\": 200\n}" },
+						"body": { "mode": "raw", "raw": "{\n    \"catalogusId\": \"federation-home-seed\",\n    \"title\": \"Federation Home (Seeded)\",\n    \"summary\": \"Reverse listing pointing to Instance 1\",\n    \"directory\": \"http://nc-fed-1/index.php/apps/opencatalogi/api/directory\",\n    \"search\": \"http://nc-fed-1/index.php/apps/opencatalogi/api/search\",\n    \"publications\": \"http://nc-fed-1/index.php/apps/opencatalogi/api/federation/publications\",\n    \"integrationLevel\": \"search\",\n    \"default\": false,\n    \"status\": \"stable\",\n    \"statusCode\": 200\n}" },
 						"url": { "raw": "{{nc2Url}}/index.php/apps/opencatalogi/api/listings", "host": ["{{nc2Url}}"], "path": ["index.php", "apps", "opencatalogi", "api", "listings"] }
 					}
 				},
@@ -635,17 +635,16 @@
 					"request": { "method": "GET", "url": { "raw": "{{nc1Url}}/index.php/apps/opencatalogi/api/catalogi", "host": ["{{nc1Url}}"], "path": ["index.php", "apps", "opencatalogi", "api", "catalogi"] } }
 				},
 				{
-					"name": "8.3 Get single catalog",
+					"name": "8.3 Get single catalog (via OpenRegister)",
 					"event": [{ "listen": "test", "script": { "exec": [
 						"pm.test('Catalog retrieved', function () {",
 						"    pm.response.to.have.status(200);",
 						"    var json = pm.response.json();",
-						"    var data = json.object || json;",
-						"    pm.expect(data.title).to.eql('Federation Home Catalog');",
-						"    console.log('✅ Catalog: ' + data.title);",
+						"    pm.expect(json.title).to.eql('Federation Home Catalog');",
+						"    console.log('✅ Catalog: ' + json.title);",
 						"});"
 					], "type": "text/javascript" }}],
-					"request": { "method": "GET", "url": { "raw": "{{nc1Url}}/index.php/apps/opencatalogi/api/catalogi/{{nc1CatalogId}}", "host": ["{{nc1Url}}"], "path": ["index.php", "apps", "opencatalogi", "api", "catalogi", "{{nc1CatalogId}}"] } }
+					"request": { "method": "GET", "url": { "raw": "{{nc1Url}}/index.php/apps/openregister/api/objects/{{nc1CatalogRegisterId}}/{{nc1CatalogSchemaId}}/{{nc1CatalogId}}", "host": ["{{nc1Url}}"], "path": ["index.php", "apps", "openregister", "api", "objects", "{{nc1CatalogRegisterId}}", "{{nc1CatalogSchemaId}}", "{{nc1CatalogId}}"] } }
 				}
 			]
 		},
