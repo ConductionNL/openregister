@@ -465,10 +465,11 @@ class ExportService
                         coordinate: $col.$row,
                         value: $this->resolveUuidsToNames(value: $value, uuidToNameMap: $uuidToNameMap)
                     );
-                } else {
-                    $value = $this->getObjectValue(object: $object, header: $header);
-                    $sheet->setCellValue(coordinate: $col.$row, value: $value);
+                    continue;
                 }
+
+                $value = $this->getObjectValue(object: $object, header: $header);
+                $sheet->setCellValue(coordinate: $col.$row, value: $value);
             }
 
             $row++;
