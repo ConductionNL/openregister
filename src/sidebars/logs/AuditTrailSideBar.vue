@@ -125,101 +125,14 @@ import { objectStore, navigationStore, registerStore, schemaStore } from '../../
 				<ChartLine :size="20" />
 			</template>
 
-			<!-- Statistics Section -->
-			<div class="section">
-				<div class="sectionTitle">
-					{{ t('openregister', 'Audit Trail Statistics') }}
-				</div>
-				<div class="statsStack">
-					<CnStatsBlock
-						:title="t('openregister', 'Total Audit Trails')"
-						:count="totalAuditTrails"
-						:count-label="t('openregister', 'entries')"
-						variant="primary"
-						horizontal
-						show-zero-count>
-						<template #icon>
-							<TextBoxOutline :size="24" />
-						</template>
-					</CnStatsBlock>
-					<CnKpiGrid :columns="2">
-						<CnStatsBlock
-							:title="t('openregister', 'Create')"
-							:count="createCount"
-							:count-label="t('openregister', 'operations')"
-							variant="success"
-							show-zero-count>
-							<template #icon>
-								<Plus :size="24" />
-							</template>
-						</CnStatsBlock>
-						<CnStatsBlock
-							:title="t('openregister', 'Update')"
-							:count="updateCount"
-							:count-label="t('openregister', 'operations')"
-							variant="warning"
-							show-zero-count>
-							<template #icon>
-								<Pencil :size="24" />
-							</template>
-						</CnStatsBlock>
-						<CnStatsBlock
-							:title="t('openregister', 'Delete')"
-							:count="deleteCount"
-							:count-label="t('openregister', 'operations')"
-							variant="error"
-							show-zero-count>
-							<template #icon>
-								<Delete :size="24" />
-							</template>
-						</CnStatsBlock>
-						<CnStatsBlock
-							:title="t('openregister', 'Read')"
-							:count="readCount"
-							:count-label="t('openregister', 'operations')"
-							show-zero-count>
-							<template #icon>
-								<Eye :size="24" />
-							</template>
-						</CnStatsBlock>
-					</CnKpiGrid>
-				</div>
-			</div>
-
-			<!-- Action Distribution -->
-			<div class="actionDistribution">
-				<h4>{{ t('openregister', 'Action Distribution') }}</h4>
-				<NcListItem v-for="(action, index) in actionDistribution"
-					:key="index"
-					:name="action.action"
-					:bold="false">
-					<template #icon>
-						<Pencil v-if="action.action === 'update'" :size="32" />
-						<Plus v-else-if="action.action === 'create'" :size="32" />
-						<Delete v-else-if="action.action === 'delete'" :size="32" />
-						<Eye v-else :size="32" />
-					</template>
-					<template #subname>
-						{{ t('openregister', '{count} entries', { count: action.count }) }}
-					</template>
-				</NcListItem>
-			</div>
-
-			<!-- Top Objects -->
-			<div class="topObjects">
-				<h4>{{ t('openregister', 'Most Active Objects') }}</h4>
-				<NcListItem v-for="(object, index) in topObjects"
-					:key="index"
-					:name="object.name"
-					:bold="false">
-					<template #icon>
-						<CogOutline :size="32" />
-					</template>
-					<template #subname>
-						{{ t('openregister', '{count} entries', { count: object.count }) }}
-					</template>
-				</NcListItem>
-			</div>
+			<CnStatsPanel :sections="auditStatsSections">
+				<template #item-icon-actionDistribution="{ item }">
+					<Pencil v-if="item.key === 'update'" :size="32" />
+					<Plus v-else-if="item.key === 'create'" :size="32" />
+					<Delete v-else-if="item.key === 'delete'" :size="32" />
+					<Eye v-else :size="32" />
+				</template>
+			</CnStatsPanel>
 		</NcAppSidebarTab>
 	</NcAppSidebar>
 </template>
@@ -231,12 +144,11 @@ import {
 	NcSelect,
 	NcNoteCard,
 	NcButton,
-	NcListItem,
 	NcDateTimePickerNative,
 	NcTextField,
 	NcCheckboxRadioSwitch,
 } from '@nextcloud/vue'
-import { CnStatsBlock, CnKpiGrid } from '@conduction/nextcloud-vue'
+import { CnStatsPanel } from '@conduction/nextcloud-vue'
 import FilterOutline from 'vue-material-design-icons/FilterOutline.vue'
 import ChartLine from 'vue-material-design-icons/ChartLine.vue'
 import CogOutline from 'vue-material-design-icons/CogOutline.vue'
@@ -255,20 +167,16 @@ export default {
 		NcSelect,
 		NcNoteCard,
 		NcButton,
-		NcListItem,
 		NcDateTimePickerNative,
 		NcTextField,
 		NcCheckboxRadioSwitch,
-		CnStatsBlock,
-		CnKpiGrid,
+		CnStatsPanel,
 		FilterOutline,
 		ChartLine,
-		CogOutline,
 		Plus,
 		Pencil,
 		Delete,
 		Eye,
-		TextBoxOutline,
 		FilterOffOutline,
 	},
 	data() {
@@ -375,6 +283,79 @@ export default {
 				label: user,
 				value: user,
 			}))
+		},
+		auditStatsSections() {
+			return [
+				{
+					type: 'stats',
+					id: 'total',
+					title: t('openregister', 'Audit Trail Statistics'),
+					layout: 'stack',
+					items: [{
+						title: t('openregister', 'Total Audit Trails'),
+						count: this.totalAuditTrails,
+						countLabel: t('openregister', 'entries'),
+						variant: 'primary',
+						icon: TextBoxOutline,
+					}],
+				},
+				{
+					type: 'stats',
+					id: 'operations',
+					layout: 'grid',
+					columns: 2,
+					items: [
+						{
+							title: t('openregister', 'Create'),
+							count: this.createCount,
+							countLabel: t('openregister', 'operations'),
+							variant: 'success',
+							icon: Plus,
+						},
+						{
+							title: t('openregister', 'Update'),
+							count: this.updateCount,
+							countLabel: t('openregister', 'operations'),
+							variant: 'warning',
+							icon: Pencil,
+						},
+						{
+							title: t('openregister', 'Delete'),
+							count: this.deleteCount,
+							countLabel: t('openregister', 'operations'),
+							variant: 'error',
+							icon: Delete,
+						},
+						{
+							title: t('openregister', 'Read'),
+							count: this.readCount,
+							countLabel: t('openregister', 'operations'),
+							icon: Eye,
+						},
+					],
+				},
+				{
+					type: 'list',
+					id: 'actionDistribution',
+					title: t('openregister', 'Action Distribution'),
+					items: this.actionDistribution.map(a => ({
+						key: a.action,
+						name: a.action,
+						subname: t('openregister', '{count} entries', { count: a.count }),
+					})),
+				},
+				{
+					type: 'list',
+					id: 'topObjects',
+					title: t('openregister', 'Most Active Objects'),
+					items: this.topObjects.map(obj => ({
+						key: obj.name,
+						name: obj.name,
+						subname: t('openregister', '{count} entries', { count: obj.count }),
+						icon: CogOutline,
+					})),
+				},
+			]
 		},
 	},
 	watch: {
