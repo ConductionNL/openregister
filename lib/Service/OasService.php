@@ -35,6 +35,8 @@ use Psr\Log\LoggerInterface;
  *
  * @SuppressWarnings(PHPMD.ExcessiveClassLength)     OAS generation requires many endpoint and schema methods
  * @SuppressWarnings(PHPMD.ExcessiveClassComplexity) Complex OpenAPI schema generation logic
+ * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+ * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
  */
 class OasService
 {
@@ -648,13 +650,15 @@ class OasService
         }//end if
 
         // AllOf must have at least 1 item, remove if empty or invalid.
-        if (($cleanDef['allOf'] ?? null) !== null) {
+        if (isset($cleanDef['allOf']) === true) {
             if (is_array($cleanDef['allOf']) === false || empty($cleanDef['allOf']) === true) {
                 unset($cleanDef['allOf']);
-            } else if (is_array($cleanDef['allOf']) === true && empty($cleanDef['allOf']) === false) {
+            }
+
+            if (isset($cleanDef['allOf']) === true && is_array($cleanDef['allOf']) === true) {
                 // Validate each allOf element.
                 $validAllOfItems = [];
-                foreach ($cleanDef['allOf'] ?? [] as $item) {
+                foreach ($cleanDef['allOf'] as $item) {
                     // Each allOf item must be an object/array.
                     if (is_array($item) === true && empty($item) === false) {
                         $validAllOfItems[] = $item;
@@ -714,8 +718,9 @@ class OasService
         if (isset($cleanDef['items']) === true) {
             if (is_array($cleanDef['items']) === true && array_is_list($cleanDef['items']) === true) {
                 // Sequential array (list) — not valid. Use first element or default.
-                if (empty($cleanDef['items']) === false) {
-                    $cleanDef['items'] = $cleanDef['items'][0];
+                $firstItem = $cleanDef['items'][0] ?? null;
+                if (empty($firstItem) === false) {
+                    $cleanDef['items'] = $firstItem;
                 } else {
                     $cleanDef['items'] = ['type' => 'string'];
                 }
@@ -1723,12 +1728,14 @@ class OasService
     private function validateSchemaReferences(array &$schema, string $context): void
     {
         // Check allOf constructs.
-        if (($schema['allOf'] ?? null) !== null) {
+        if (isset($schema['allOf']) === true) {
             if (is_array($schema['allOf']) === false || empty($schema['allOf']) === true) {
                 unset($schema['allOf']);
-            } else if (is_array($schema['allOf']) === true && empty($schema['allOf']) === false) {
+            }
+
+            if (isset($schema['allOf']) === true && is_array($schema['allOf']) === true) {
                 $validAllOfItems = [];
-                foreach ($schema['allOf'] ?? [] as $index => $item) {
+                foreach ($schema['allOf'] as $index => $item) {
                     // Suppress unused variable warning for $index - only processing items.
                     unset($index);
                     if (is_array($item) === false || empty($item) === true) {
@@ -1764,7 +1771,9 @@ class OasService
         if (($schema['$ref'] ?? null) !== null) {
             if (empty($schema['$ref']) === true || is_string($schema['$ref']) === false) {
                 unset($schema['$ref']);
-            } else {
+            }
+
+            if (isset($schema['$ref']) === true && is_string($schema['$ref']) === true) {
                 // Check if reference points to existing schema.
                 $refPath = str_replace('#/components/schemas/', '', $schema['$ref']);
                 if (strpos($schema['$ref'], '#/components/schemas/') === 0

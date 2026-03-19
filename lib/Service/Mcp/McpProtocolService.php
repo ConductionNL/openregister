@@ -34,6 +34,8 @@ use Psr\Log\LoggerInterface;
  * management via Nextcloud's distributed cache (APCu).
  *
  * @psalm-suppress UnusedClass - Injected via DI container
+ *
+ * @SuppressWarnings(PHPMD.UnusedFormalParameter)
  */
 class McpProtocolService
 {

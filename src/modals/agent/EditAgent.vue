@@ -1,4 +1,5 @@
 <script setup>
+import { translate as t, translatePlural as n } from '@nextcloud/l10n'
 import { agentStore, navigationStore } from '../../store/store.js'
 </script>
 
@@ -655,7 +656,7 @@ export default {
 		updateUser(selectedUser) {
 			this.agentItem.user = selectedUser ? selectedUser.id : ''
 		},
-		handleCardClick(toolId, event) {
+		handleCardClick(toolId, _event) {
 			// Card click handler - toggle the tool
 			const currentState = this.isToolChecked(toolId)
 			this.toggleTool(toolId, !currentState)

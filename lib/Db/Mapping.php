@@ -40,6 +40,35 @@ use OCP\AppFramework\Db\Entity;
  * @version   GIT: <git_id>
  * @link      https://OpenRegister.app
  *
+ * @method string|null getUuid()
+ * @method void setUuid(?string $uuid)
+ * @method string|null getReference()
+ * @method void setReference(?string $reference)
+ * @method string|null getVersion()
+ * @method void setVersion(?string $version)
+ * @method string|null getName()
+ * @method void setName(?string $name)
+ * @method string|null getDescription()
+ * @method void setDescription(?string $description)
+ * @method array|null getMapping()
+ * @method void setMapping(?array $mapping)
+ * @method array|null getUnset()
+ * @method void setUnset(?array $unset)
+ * @method array|null getCast()
+ * @method void setCast(?array $cast)
+ * @method bool|null getPassThrough()
+ * @method void setPassThrough(?bool $passThrough)
+ * @method array|null getConfigurations()
+ * @method void setConfigurations(?array $configurations)
+ * @method string|null getSlug()
+ * @method void setSlug(?string $slug)
+ * @method string|null getOrganisation()
+ * @method void setOrganisation(?string $organisation)
+ * @method DateTime|null getCreated()
+ * @method void setCreated(?DateTime $created)
+ * @method DateTime|null getUpdated()
+ * @method void setUpdated(?DateTime $updated)
+ *
  * @psalm-suppress UnusedClass
  * @psalm-suppress PropertyNotSetInConstructor $id is set by Nextcloud's Entity base class
  *

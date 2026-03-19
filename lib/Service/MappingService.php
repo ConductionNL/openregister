@@ -165,8 +165,6 @@ class MappingService
      * @return array The result (output) of the mapping process
      *
      * @throws Exception When mapping fails
-     *
-     * @SuppressWarnings(PHPMD.ElseExpression)
      */
     public function executeMapping(Mapping $mapping, array $input, bool $list=false): array
     {
@@ -199,10 +197,9 @@ class MappingService
 
         // Determine pass through.
         // Let's get the dot array based on https://github.com/adbario/php-dot-notation.
+        $dotArray = new Dot();
         if ($mapping->getPassThrough() === true) {
             $dotArray = new Dot($input);
-        } else {
-            $dotArray = new Dot();
         }
 
         $dotInput = new Dot($input);
@@ -275,12 +272,12 @@ class MappingService
             $rootValue = $output['#'];
             if ($rootValue === null) {
                 $output = [];
-            } else {
-                if (is_array($rootValue) === true) {
-                    $output = $rootValue;
-                } else {
-                    $output = [$rootValue];
-                }
+            } else if (is_array($rootValue) === true) {
+                $output = $rootValue;
+            }
+
+            if ($rootValue !== null && is_array($rootValue) === false) {
+                $output = [$rootValue];
             }
         }
 
@@ -304,8 +301,6 @@ class MappingService
      * @param string $cast     The type of cast we want to do.
      *
      * @return void
-     *
-     * @SuppressWarnings(PHPMD.ElseExpression)
      */
     private function handleCast(Dot $dotArray, string $key, string $cast): void
     {

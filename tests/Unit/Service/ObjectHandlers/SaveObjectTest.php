@@ -1109,35 +1109,6 @@ class SaveObjectTest extends TestCase
     }
 
     /**
-     * Test scanForRelations detects no relations in simple data
-     *
-     * @return void
-     */
-    public function testScanForRelationsWithSimpleData(): void
-    {
-        // Configure schema mock.
-        $this->mockSchema->method('getSchemaObject')->willReturn((object)['properties' => new \stdClass()]);
-        $this->mockSchema->method('getProperties')->willReturn([
-            'name' => ['type' => 'string'],
-            'description' => ['type' => 'string']
-        ]);
-        $this->mockSchema->method('getConfiguration')->willReturn(null);
-
-        $data = [
-            'name' => 'Test Object',
-            'description' => 'Test Description'
-        ];
-
-        $relations = $this->saveObject->scanForRelations(
-            data: $data,
-            prefix: '',
-            schema: $this->mockSchema
-        );
-
-        $this->assertIsArray($relations, 'scanForRelations should return an array.');
-    }
-
-    /**
      * Test applyPropertyDefaults applies default values from schema
      *
      * @return void
@@ -1174,4 +1145,34 @@ class SaveObjectTest extends TestCase
         $this->assertIsArray($result, 'applyPropertyDefaults should return an array.');
         $this->assertEquals('Test Object Title', $result['title'], 'Existing values should be preserved.');
     }
+
+    /**
+     * Test scanForRelations detects no relations in simple data
+     *
+     * @return void
+     */
+    public function testScanForRelationsWithSimpleData(): void
+    {
+        // Configure schema mock.
+        $this->mockSchema->method('getSchemaObject')->willReturn((object)['properties' => new \stdClass()]);
+        $this->mockSchema->method('getProperties')->willReturn([
+            'name' => ['type' => 'string'],
+            'description' => ['type' => 'string']
+        ]);
+        $this->mockSchema->method('getConfiguration')->willReturn(null);
+
+        $data = [
+            'name' => 'Test Object',
+            'description' => 'Test Description'
+        ];
+
+        $relations = $this->saveObject->scanForRelations(
+            data: $data,
+            prefix: '',
+            schema: $this->mockSchema
+        );
+
+        $this->assertIsArray($relations, 'scanForRelations should return an array.');
+    }
+
 } 

@@ -28,6 +28,8 @@ use Psr\Log\LoggerInterface;
 
 /**
  * Evaluates MongoDB-style comparison operators for RBAC condition matching
+ *
+ * @SuppressWarnings(PHPMD.CyclomaticComplexity)
  */
 class OperatorEvaluator
 {

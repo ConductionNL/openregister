@@ -42,6 +42,8 @@ use Psr\Log\LoggerInterface;
  * @license EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
  * @link https://www.OpenRegister.app
+ *
+ * @SuppressWarnings(PHPMD.UnusedFormalParameter)
  */
 class PreviewHandler
 {

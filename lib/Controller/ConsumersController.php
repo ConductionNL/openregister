@@ -23,6 +23,7 @@ use OCA\OpenRegister\Db\ConsumerMapper;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http\JSONResponse;
+use OCP\IL10N;
 use OCP\IRequest;
 
 /**
@@ -38,11 +39,13 @@ class ConsumersController extends Controller
      * @param string         $appName        The application name
      * @param IRequest       $request        The request object
      * @param ConsumerMapper $consumerMapper The consumer database mapper
+     * @param IL10N          $l10n           The localization service
      */
     public function __construct(
         string $appName,
         IRequest $request,
         private readonly ConsumerMapper $consumerMapper,
+        private readonly IL10N $l10n
     ) {
         parent::__construct(appName: $appName, request: $request);
 
@@ -83,7 +86,7 @@ class ConsumersController extends Controller
             $consumer = $this->consumerMapper->find($id);
             return new JSONResponse($consumer);
         } catch (DoesNotExistException $exception) {
-            return new JSONResponse(['error' => 'Consumer not found'], 404);
+            return new JSONResponse(['error' => $this->l10n->t('Consumer not found')], 404);
         }
 
     }//end show()
@@ -133,7 +136,7 @@ class ConsumersController extends Controller
 
             return new JSONResponse($consumer);
         } catch (DoesNotExistException $exception) {
-            return new JSONResponse(['error' => 'Consumer not found'], 404);
+            return new JSONResponse(['error' => $this->l10n->t('Consumer not found')], 404);
         }
 
     }//end update()
@@ -155,7 +158,7 @@ class ConsumersController extends Controller
 
             return new JSONResponse([]);
         } catch (DoesNotExistException $exception) {
-            return new JSONResponse(['error' => 'Consumer not found'], 404);
+            return new JSONResponse(['error' => $this->l10n->t('Consumer not found')], 404);
         }
 
     }//end destroy()

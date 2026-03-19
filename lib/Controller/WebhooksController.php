@@ -49,6 +49,7 @@ use Psr\Log\LoggerInterface;
  * @suppressWarnings(PHPMD.ExcessiveClassLength)
  * @suppressWarnings(PHPMD.ExcessiveClassComplexity)
  * @suppressWarnings(PHPMD.TooManyPublicMethods)
+ * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
  */
 class WebhooksController extends Controller
 {

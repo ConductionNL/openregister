@@ -1,3 +1,7 @@
+---
+status: draft
+---
+
 # no-code-app-builder Specification
 
 ## Purpose
@@ -110,3 +114,27 @@ Applications MUST optionally be accessible via a custom URL path or subdomain.
   - Should this be a separate Nextcloud app rather than part of OpenRegister?
   - How does this relate to the existing Procest/Pipelinq apps that already build custom UIs on top of OpenRegister?
   - What is the minimum viable component set for an initial release?
+
+## Nextcloud Integration Analysis
+
+**Status**: Not yet implemented. No visual app builder, drag-and-drop page editor, or component library exists. The Views system and Dashboard service provide tangential foundations for data display.
+
+**Nextcloud Core Interfaces**:
+- `IDeclarativeSettingsForm` patterns: Use Nextcloud's declarative settings/form patterns as inspiration for schema-driven form generation. Each form component reads its field definitions from the OpenRegister schema's JSON Schema properties, auto-generating input fields with appropriate types, validation, and labels.
+- `INavigationManager` (`OCP\INavigationManager`): Register each user-created application as a navigation entry in Nextcloud's app menu. Applications with `public: true` are accessible without authentication; internal applications require Nextcloud login and group membership checks.
+- `routes.php` / dynamic routing: Register a catch-all route (`/app/{slug}/{path+}`) that resolves user-created applications by slug. The controller loads the application definition and renders the appropriate page with its configured components.
+- `IGroupManager` (`OCP\IGroupManager`): Enforce access control on applications by checking the requesting user's group membership against the application's configured access groups.
+
+**Implementation Approach**:
+- Create an `Application` entity (distinct from OpenRegister's existing `Application.php`) that stores: name, slug, pages (JSON array), data sources (register/schema references), navigation configuration, and access control settings. Store application definitions as OpenRegister objects in a system register, making them self-hosting.
+- Build a `PageEditor.vue` component using a grid layout system (CSS Grid). The editor provides a component palette (data table, form, detail view, chart, text block) that can be dragged onto the canvas. Each placed component stores its configuration (data source, columns, fields, chart type) as a JSON definition.
+- Implement a component rendering engine in Vue that dynamically instantiates the correct component based on the stored definition. Use Vue's `<component :is="...">` pattern for dynamic component loading. Components read data from OpenRegister's REST API using the configured register/schema.
+- Data binding between components uses URL parameters and a page-level state object. Table row clicks set `{selectedObjectId}` in the URL, which the detail view component reads to load the object. Form submissions call `ObjectService` via the REST API and redirect on success.
+- Deep link registry integration: Register each application's pages in the `DeepLinkRegistryService` so that unified search results link to the correct application page.
+
+**Dependencies on Existing OpenRegister Features**:
+- `ObjectService` — CRUD API for data reading and writing from components.
+- `SchemaService` — schema property definitions drive form field generation and table column configuration.
+- `ViewsController` / `ViewHandler` — saved view configurations as foundation for read-only display components.
+- `DashboardService` — aggregate metrics for chart component data.
+- `DeepLinkRegistryService` — register application page URLs for search integration.

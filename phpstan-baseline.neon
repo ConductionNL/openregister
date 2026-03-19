@@ -16,6 +16,11 @@ parameters:
 			path: lib/AppInfo/Application.php
 
 		-
+			message: "#^Access to constant class on an unknown class Doctrine\\\\DBAL\\\\Platforms\\\\AbstractPlatform\\.$#"
+			count: 1
+			path: lib/BackgroundJob/BlobMigrationJob.php
+
+		-
 			message: "#^Variable \\$fileId on left side of \\?\\? always exists and is not nullable\\.$#"
 			count: 1
 			path: lib/BackgroundJob/CronFileTextExtractionJob.php
@@ -193,11 +198,6 @@ parameters:
 		-
 			message: "#^Method OCA\\\\OpenRegister\\\\Controller\\\\BulkController\\:\\:save\\(\\) should return OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<200\\|400\\|404\\|500, array\\{error\\?\\: string, success\\?\\: true, message\\?\\: 'Bulk save operation…', saved_count\\?\\: mixed, saved_objects\\?\\: array\\<string, mixed\\>, requested_count\\?\\: int\\<0, max\\>\\}, array\\> but returns OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<500, array\\{error\\: string\\}, array\\{\\}\\>\\.$#"
 			count: 1
-			path: lib/Controller/BulkController.php
-
-		-
-			message: "#^Variable \\$datetime on left side of \\?\\? always exists and is not nullable\\.$#"
-			count: 2
 			path: lib/Controller/BulkController.php
 
 		-
@@ -547,11 +547,6 @@ parameters:
 
 		-
 			message: "#^Method OCA\\\\OpenRegister\\\\Controller\\\\DeletedController\\:\\:index\\(\\) should return OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<200\\|500, array\\{error\\?\\: string, results\\?\\: array\\<int, OCA\\\\OpenRegister\\\\Db\\\\ObjectEntity\\>, total\\?\\: int, page\\?\\: int, pages\\?\\: 1\\|float, limit\\?\\: int\\|null, offset\\?\\: int\\|null\\}, array\\> but returns OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<500, array\\{error\\: string\\}, array\\{\\}\\>\\.$#"
-			count: 1
-			path: lib/Controller/DeletedController.php
-
-		-
-			message: "#^Parameter \\#2 \\$type of method OCP\\\\DB\\\\QueryBuilder\\\\IQueryBuilder\\:\\:createNamedParameter\\(\\) expects 'boolean'\\|'date'\\|'date_immutable'\\|'datetime'\\|'datetime_immutable'\\|'datetimetz'\\|'datetimetz_immutable'\\|'json'\\|'time'\\|Doctrine\\\\DBAL\\\\ArrayParameterType\\:\\:INTEGER\\|Doctrine\\\\DBAL\\\\ArrayParameterType\\:\\:STRING\\|Doctrine\\\\DBAL\\\\ParameterType\\:\\:INTEGER\\|Doctrine\\\\DBAL\\\\ParameterType\\:\\:LARGE_OBJECT\\|Doctrine\\\\DBAL\\\\ParameterType\\:\\:NULL\\|Doctrine\\\\DBAL\\\\ParameterType\\:\\:STRING, 0 given\\.$#"
 			count: 1
 			path: lib/Controller/DeletedController.php
 
@@ -1031,6 +1026,11 @@ parameters:
 			path: lib/Controller/ObjectsController.php
 
 		-
+			message: "#^Method OCA\\\\OpenRegister\\\\Controller\\\\ObjectsController\\:\\:create\\(\\) should return OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<201\\|403\\|404, array\\{@self\\?\\: mixed, message\\?\\: mixed, error\\?\\: mixed\\}, array\\>\\|OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<400, string, array\\> but returns OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<422, array\\{error\\: string, errors\\: array\\<string, mixed\\>\\}, array\\{\\}\\>\\.$#"
+			count: 1
+			path: lib/Controller/ObjectsController.php
+
+		-
 			message: "#^Method OCA\\\\OpenRegister\\\\Controller\\\\ObjectsController\\:\\:export\\(\\) should return OCP\\\\AppFramework\\\\Http\\\\DataDownloadResponse\\<200, 'application/vnd…'\\|'text/csv', array\\> but returns OCP\\\\AppFramework\\\\Http\\\\DataDownloadResponse\\<200, 'application/vnd…', array\\{\\}\\>\\.$#"
 			count: 1
 			path: lib/Controller/ObjectsController.php
@@ -1056,7 +1056,7 @@ parameters:
 			path: lib/Controller/ObjectsController.php
 
 		-
-			message: "#^Method OCA\\\\OpenRegister\\\\Controller\\\\ObjectsController\\:\\:index\\(\\) should return OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<200\\|404, array\\<string, mixed\\>, array\\> but returns OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<200, array\\{results\\: mixed, total\\: mixed, pages\\: int, page\\: int, limit\\: int, @self\\: array\\{source\\: string, register\\: string, schema\\: string, query\\: non\\-empty\\-array\\<string, mixed\\>, rbac\\: bool, multi\\: bool, published\\: bool, deleted\\: bool, \\.\\.\\.\\}, facets\\?\\: mixed\\}, array\\{\\}\\>\\.$#"
+			message: "#^Method OCA\\\\OpenRegister\\\\Controller\\\\ObjectsController\\:\\:index\\(\\) should return OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<200\\|404, array\\<string, mixed\\>, array\\> but returns OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<200, array\\{results\\: mixed, total\\: mixed, pages\\: int, page\\: int, limit\\: int, @self\\: array\\{source\\: string, register\\: string, schema\\: string, query\\: non\\-empty\\-array\\<string, mixed\\>, rbac\\: bool, multi\\: bool, deleted\\: bool, activeOrganisation\\: mixed, \\.\\.\\.\\}, facets\\?\\: mixed\\}, array\\{\\}\\>\\.$#"
 			count: 1
 			path: lib/Controller/ObjectsController.php
 
@@ -1108,16 +1108,6 @@ parameters:
 		-
 			message: "#^Method OCA\\\\OpenRegister\\\\Controller\\\\ObjectsController\\:\\:vectorizeBatch\\(\\) should return OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<200\\|500, array\\{success\\: bool, error\\?\\: string, data\\?\\: mixed\\}, array\\> but returns OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<500, array\\{success\\: bool, error\\: string\\}, array\\{\\}\\>\\.$#"
 			count: 1
-			path: lib/Controller/ObjectsController.php
-
-		-
-			message: "#^Offset '@self' on array\\{@self\\: array\\{id\\: string\\|null, slug\\: string\\|null, name\\: string\\|null, description\\: int\\|string, summary\\: string\\|null, image\\: string\\|null, uri\\: string\\|null, version\\: string\\|null, \\.\\.\\.\\}\\} on left side of \\?\\? always exists and is not nullable\\.$#"
-			count: 2
-			path: lib/Controller/ObjectsController.php
-
-		-
-			message: "#^Offset 'deleted' on array\\{deleted\\: int\\} on left side of \\?\\? always exists and is not nullable\\.$#"
-			count: 2
 			path: lib/Controller/ObjectsController.php
 
 		-
@@ -1312,6 +1302,11 @@ parameters:
 
 		-
 			message: "#^Method OCA\\\\OpenRegister\\\\Controller\\\\RegistersController\\:\\:create\\(\\) should return OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<int, array\\{error\\: string\\}, array\\>\\|OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<201, OCA\\\\OpenRegister\\\\Db\\\\Register, array\\> but returns OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<201, OCA\\\\OpenRegister\\\\Db\\\\Register, array\\{\\}\\>\\.$#"
+			count: 1
+			path: lib/Controller/RegistersController.php
+
+		-
+			message: "#^Method OCA\\\\OpenRegister\\\\Controller\\\\RegistersController\\:\\:create\\(\\) should return OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<int, array\\{error\\: string\\}, array\\>\\|OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<201, OCA\\\\OpenRegister\\\\Db\\\\Register, array\\> but returns OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<500, array\\{error\\: string\\}, array\\{\\}\\>\\.$#"
 			count: 1
 			path: lib/Controller/RegistersController.php
 
@@ -2126,6 +2121,11 @@ parameters:
 			path: lib/Controller/Settings/VectorSettingsController.php
 
 		-
+			message: "#^Call to method getName\\(\\) on an unknown class Doctrine\\\\DBAL\\\\Platforms\\\\AbstractPlatform\\.$#"
+			count: 1
+			path: lib/Controller/SettingsController.php
+
+		-
 			message: "#^Method OCA\\\\OpenRegister\\\\Controller\\\\SettingsController\\:\\:debugTypeFiltering\\(\\) should return OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<200\\|500, array\\{error\\?\\: string, trace\\?\\: string, all_organizations\\?\\: array\\{count\\: int\\<0, max\\>, organizations\\: array\\<array\\{id\\: int, name\\: string\\|null, type\\: mixed, object_data\\: array\\|null\\}\\>\\}, type_samenwerking\\?\\: array\\{count\\: int\\<0, max\\>, organizations\\: array\\<array\\{id\\: int, name\\: string\\|null, type\\: mixed\\}\\>\\}, type_community\\?\\: array\\{count\\: int\\<0, max\\>, organizations\\: array\\<array\\{id\\: int, name\\: string\\|null, type\\: mixed\\}\\>\\}, type_both\\?\\: array\\{count\\: int\\<0, max\\>, organizations\\: array\\<array\\{id\\: int, name\\: string\\|null, type\\: mixed\\}\\>\\}, direct_database_query\\?\\: array\\{count\\: int\\<0, max\\>, organizations\\: array\\<array\\{id\\: mixed, name\\: mixed, type\\: mixed, object_json\\: mixed\\}\\>\\}\\}, array\\> but returns OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<200, array\\{all_organizations\\: array\\{count\\: int, organizations\\: array\\<array\\{id\\: int, name\\: string\\|null, type\\: mixed, object_data\\: array\\|null\\}\\>\\}, type_samenwerking\\: array\\{count\\: int, organizations\\: array\\<array\\{id\\: int, name\\: string\\|null, type\\: mixed\\}\\>\\}, type_community\\: array\\{count\\: int, organizations\\: array\\<array\\{id\\: int, name\\: string\\|null, type\\: mixed\\}\\>\\}, type_both\\: array\\{count\\: int, organizations\\: array\\<array\\{id\\: int, name\\: string\\|null, type\\: mixed\\}\\>\\}, direct_database_query\\: array\\{count\\: int, organizations\\: array\\<array\\{id\\: mixed, name\\: mixed, type\\: mixed, object_json\\: mixed\\}\\>\\}\\}, array\\{\\}\\>\\.$#"
 			count: 1
 			path: lib/Controller/SettingsController.php
@@ -2621,11 +2621,6 @@ parameters:
 			path: lib/Db/AuditTrailMapper.php
 
 		-
-			message: "#^Call to an undefined method OCA\\\\OpenRegister\\\\Db\\\\AuditTrail\\:\\:setExpires\\(\\)\\.$#"
-			count: 1
-			path: lib/Db/AuditTrailMapper.php
-
-		-
 			message: "#^Call to an undefined method OCA\\\\OpenRegister\\\\Db\\\\AuditTrail\\:\\:setIpAddress\\(\\)\\.$#"
 			count: 1
 			path: lib/Db/AuditTrailMapper.php
@@ -2816,6 +2811,11 @@ parameters:
 			path: lib/Db/FeedbackMapper.php
 
 		-
+			message: "#^Access to constant class on an unknown class Doctrine\\\\DBAL\\\\Platforms\\\\AbstractPlatform\\.$#"
+			count: 8
+			path: lib/Db/MagicMapper.php
+
+		-
 			message: "#^Call to an undefined method OCP\\\\IDBConnection\\:\\:quoteIdentifier\\(\\)\\.$#"
 			count: 1
 			path: lib/Db/MagicMapper.php
@@ -2826,12 +2826,32 @@ parameters:
 			path: lib/Db/MagicMapper.php
 
 		-
+			message: "#^Call to function is_string\\(\\) with array\\|null will always evaluate to false\\.$#"
+			count: 1
+			path: lib/Db/MagicMapper.php
+
+		-
+			message: "#^Class Doctrine\\\\DBAL\\\\Platforms\\\\PostgreSQLPlatform not found\\.$#"
+			count: 4
+			path: lib/Db/MagicMapper.php
+
+		-
 			message: "#^Method OCA\\\\OpenRegister\\\\Db\\\\MagicMapper\\:\\:buildUnionSelectPart\\(\\) never returns null so it can be removed from the return type\\.$#"
 			count: 1
 			path: lib/Db/MagicMapper.php
 
 		-
 			message: "#^Method OCA\\\\OpenRegister\\\\Db\\\\MagicMapper\\:\\:getMetadataColumns\\(\\) should return array\\{_id\\: array\\{name\\: '_id', type\\: 'bigint', nullable\\: false, autoincrement\\: true, primary\\: true\\}, _uuid\\: array\\{name\\: '_uuid', type\\: 'string', length\\: 36, nullable\\: false, unique\\: true, index\\: true\\}, _slug\\: array\\{name\\: '_slug', type\\: 'string', length\\: 255, nullable\\: true, index\\: true\\}, _uri\\: array\\{name\\: '_uri', type\\: 'text', nullable\\: true\\}, _version\\: array\\{name\\: '_version', type\\: 'string', length\\: 50, nullable\\: true\\}, _register\\: array\\{name\\: '_register', type\\: 'string', length\\: 255, nullable\\: false, index\\: true\\}, _schema\\: array\\{name\\: '_schema', type\\: 'string', length\\: 255, nullable\\: false, index\\: true\\}, _owner\\: array\\{name\\: '_owner', type\\: 'string', length\\: 64, nullable\\: true, index\\: true\\}, \\.\\.\\.\\} but returns array\\{_id\\: array\\{name\\: '_id', type\\: 'bigint', nullable\\: false, autoincrement\\: true, primary\\: true\\}, _uuid\\: array\\{name\\: '_uuid', type\\: 'string', length\\: 40, nullable\\: false, unique\\: true, index\\: true\\}, _slug\\: array\\{name\\: '_slug', type\\: 'string', length\\: 255, nullable\\: true, index\\: true\\}, _uri\\: array\\{name\\: '_uri', type\\: 'text', nullable\\: true\\}, _version\\: array\\{name\\: '_version', type\\: 'string', length\\: 50, nullable\\: true\\}, _register\\: array\\{name\\: '_register', type\\: 'string', length\\: 255, nullable\\: false, index\\: true\\}, _schema\\: array\\{name\\: '_schema', type\\: 'string', length\\: 255, nullable\\: false, index\\: true\\}, _owner\\: array\\{name\\: '_owner', type\\: 'string', length\\: 64, nullable\\: true, index\\: true\\}, \\.\\.\\.\\}\\.$#"
+			count: 1
+			path: lib/Db/MagicMapper.php
+
+		-
+			message: "#^Method OCA\\\\OpenRegister\\\\Db\\\\RegisterMapper\\:\\:find\\(\\) invoked with 5 parameters, 1 required\\.$#"
+			count: 1
+			path: lib/Db/MagicMapper.php
+
+		-
+			message: "#^Method OCA\\\\OpenRegister\\\\Db\\\\SchemaMapper\\:\\:find\\(\\) invoked with 5 parameters, 1 required\\.$#"
 			count: 1
 			path: lib/Db/MagicMapper.php
 
@@ -2866,21 +2886,6 @@ parameters:
 			path: lib/Db/MagicMapper.php
 
 		-
-			message: "#^Parameter \\#2 \\$type of method OCP\\\\DB\\\\QueryBuilder\\\\IQueryBuilder\\:\\:createNamedParameter\\(\\) expects 'boolean'\\|'date'\\|'date_immutable'\\|'datetime'\\|'datetime_immutable'\\|'datetimetz'\\|'datetimetz_immutable'\\|'json'\\|'time'\\|Doctrine\\\\DBAL\\\\ArrayParameterType\\:\\:INTEGER\\|Doctrine\\\\DBAL\\\\ArrayParameterType\\:\\:STRING\\|Doctrine\\\\DBAL\\\\ParameterType\\:\\:INTEGER\\|Doctrine\\\\DBAL\\\\ParameterType\\:\\:LARGE_OBJECT\\|Doctrine\\\\DBAL\\\\ParameterType\\:\\:NULL\\|Doctrine\\\\DBAL\\\\ParameterType\\:\\:STRING, 1 given\\.$#"
-			count: 4
-			path: lib/Db/MagicMapper.php
-
-		-
-			message: "#^Parameter \\#2 \\$type of method OCP\\\\DB\\\\QueryBuilder\\\\IQueryBuilder\\:\\:createNamedParameter\\(\\) expects 'boolean'\\|'date'\\|'date_immutable'\\|'datetime'\\|'datetime_immutable'\\|'datetimetz'\\|'datetimetz_immutable'\\|'json'\\|'time'\\|Doctrine\\\\DBAL\\\\ArrayParameterType\\:\\:INTEGER\\|Doctrine\\\\DBAL\\\\ArrayParameterType\\:\\:STRING\\|Doctrine\\\\DBAL\\\\ParameterType\\:\\:INTEGER\\|Doctrine\\\\DBAL\\\\ParameterType\\:\\:LARGE_OBJECT\\|Doctrine\\\\DBAL\\\\ParameterType\\:\\:NULL\\|Doctrine\\\\DBAL\\\\ParameterType\\:\\:STRING, 2 given\\.$#"
-			count: 1
-			path: lib/Db/MagicMapper.php
-
-		-
-			message: "#^Property OCA\\\\OpenRegister\\\\Db\\\\MagicMapper\\:\\:\\$objectEntityMapper is never read, only written\\.$#"
-			count: 1
-			path: lib/Db/MagicMapper.php
-
-		-
 			message: "#^Property OCA\\\\OpenRegister\\\\Db\\\\MagicMapper\\:\\:\\$settingsService is never read, only written\\.$#"
 			count: 1
 			path: lib/Db/MagicMapper.php
@@ -2897,7 +2902,7 @@ parameters:
 
 		-
 			message: "#^Strict comparison using \\=\\=\\= between false and true will always evaluate to false\\.$#"
-			count: 3
+			count: 4
 			path: lib/Db/MagicMapper.php
 
 		-
@@ -2907,23 +2912,28 @@ parameters:
 
 		-
 			message: "#^Unknown parameter \\$_multitenancy in call to method OCA\\\\OpenRegister\\\\Db\\\\RegisterMapper\\:\\:find\\(\\)\\.$#"
-			count: 1
+			count: 13
 			path: lib/Db/MagicMapper.php
 
 		-
 			message: "#^Unknown parameter \\$_multitenancy in call to method OCA\\\\OpenRegister\\\\Db\\\\SchemaMapper\\:\\:find\\(\\)\\.$#"
-			count: 1
+			count: 15
 			path: lib/Db/MagicMapper.php
 
 		-
 			message: "#^Unknown parameter \\$_rbac in call to method OCA\\\\OpenRegister\\\\Db\\\\RegisterMapper\\:\\:find\\(\\)\\.$#"
-			count: 1
+			count: 11
 			path: lib/Db/MagicMapper.php
 
 		-
 			message: "#^Unknown parameter \\$_rbac in call to method OCA\\\\OpenRegister\\\\Db\\\\SchemaMapper\\:\\:find\\(\\)\\.$#"
-			count: 1
+			count: 13
 			path: lib/Db/MagicMapper.php
+
+		-
+			message: "#^Class Doctrine\\\\DBAL\\\\Platforms\\\\PostgreSQLPlatform not found\\.$#"
+			count: 2
+			path: lib/Db/MagicMapper/MagicBulkHandler.php
 
 		-
 			message: "#^Property OCA\\\\OpenRegister\\\\Db\\\\MagicMapper\\\\MagicBulkHandler\\:\\:\\$eventDispatcher is never read, only written\\.$#"
@@ -2934,6 +2944,11 @@ parameters:
 			message: "#^Property OCA\\\\OpenRegister\\\\Db\\\\MagicMapper\\\\MagicBulkHandler\\:\\:\\$tableColumnsCache is never read, only written\\.$#"
 			count: 1
 			path: lib/Db/MagicMapper/MagicBulkHandler.php
+
+		-
+			message: "#^Class Doctrine\\\\DBAL\\\\Platforms\\\\PostgreSQLPlatform not found\\.$#"
+			count: 2
+			path: lib/Db/MagicMapper/MagicFacetHandler.php
 
 		-
 			message: "#^Property OCA\\\\OpenRegister\\\\Db\\\\MagicMapper\\\\MagicFacetHandler\\:\\:\\$uuidLabelCache is never read, only written\\.$#"
@@ -2966,6 +2981,31 @@ parameters:
 			path: lib/Db/MagicMapper/MagicSearchHandler.php
 
 		-
+			message: "#^Access to constant class on an unknown class Doctrine\\\\DBAL\\\\Platforms\\\\AbstractPlatform\\.$#"
+			count: 1
+			path: lib/Db/MagicMapper/MagicStatisticsHandler.php
+
+		-
+			message: "#^Unknown parameter \\$_multitenancy in call to method OCA\\\\OpenRegister\\\\Db\\\\RegisterMapper\\:\\:find\\(\\)\\.$#"
+			count: 4
+			path: lib/Db/MagicMapper/MagicStatisticsHandler.php
+
+		-
+			message: "#^Unknown parameter \\$_multitenancy in call to method OCA\\\\OpenRegister\\\\Db\\\\SchemaMapper\\:\\:find\\(\\)\\.$#"
+			count: 4
+			path: lib/Db/MagicMapper/MagicStatisticsHandler.php
+
+		-
+			message: "#^Unknown parameter \\$_rbac in call to method OCA\\\\OpenRegister\\\\Db\\\\RegisterMapper\\:\\:find\\(\\)\\.$#"
+			count: 4
+			path: lib/Db/MagicMapper/MagicStatisticsHandler.php
+
+		-
+			message: "#^Unknown parameter \\$_rbac in call to method OCA\\\\OpenRegister\\\\Db\\\\SchemaMapper\\:\\:find\\(\\)\\.$#"
+			count: 4
+			path: lib/Db/MagicMapper/MagicStatisticsHandler.php
+
+		-
 			message: "#^Property OCP\\\\AppFramework\\\\Db\\\\Entity\\:\\:\\$id \\(int\\) in isset\\(\\) is not nullable\\.$#"
 			count: 1
 			path: lib/Db/Mapping.php
@@ -2984,11 +3024,6 @@ parameters:
 			message: "#^Variable \\$generatedSlug on left side of \\?\\? always exists and is not nullable\\.$#"
 			count: 1
 			path: lib/Db/Mapping.php
-
-		-
-			message: "#^Call to an undefined method OCA\\\\OpenRegister\\\\Db\\\\Mapping\\:\\:getVersion\\(\\)\\.$#"
-			count: 1
-			path: lib/Db/MappingMapper.php
 
 		-
 			message: "#^Call to an undefined method OCP\\\\AppFramework\\\\Db\\\\Entity\\:\\:getOrganisation\\(\\)\\.$#"
@@ -3019,126 +3054,6 @@ parameters:
 			message: "#^Variable \\$object on left side of \\?\\? always exists and is not nullable\\.$#"
 			count: 1
 			path: lib/Db/ObjectEntity.php
-
-		-
-			message: "#^Call to an undefined method OCP\\\\AppFramework\\\\Db\\\\Entity\\:\\:getObject\\(\\)\\.$#"
-			count: 2
-			path: lib/Db/ObjectEntity/CrudHandler.php
-
-		-
-			message: "#^Call to an undefined method OCP\\\\AppFramework\\\\Db\\\\Entity\\:\\:setObject\\(\\)\\.$#"
-			count: 2
-			path: lib/Db/ObjectEntity/CrudHandler.php
-
-		-
-			message: "#^Parameter \\#1 \\$entity of method OCA\\\\OpenRegister\\\\Db\\\\ObjectEntityMapper\\:\\:deleteEntity\\(\\) expects OCA\\\\OpenRegister\\\\Db\\\\ObjectEntity, OCP\\\\AppFramework\\\\Db\\\\Entity given\\.$#"
-			count: 1
-			path: lib/Db/ObjectEntity/CrudHandler.php
-
-		-
-			message: "#^Parameter \\#1 \\$entity of method OCA\\\\OpenRegister\\\\Db\\\\ObjectEntityMapper\\:\\:insertEntity\\(\\) expects OCA\\\\OpenRegister\\\\Db\\\\ObjectEntity, OCP\\\\AppFramework\\\\Db\\\\Entity given\\.$#"
-			count: 1
-			path: lib/Db/ObjectEntity/CrudHandler.php
-
-		-
-			message: "#^Parameter \\#1 \\$entity of method OCA\\\\OpenRegister\\\\Db\\\\ObjectEntityMapper\\:\\:updateEntity\\(\\) expects OCA\\\\OpenRegister\\\\Db\\\\ObjectEntity, OCP\\\\AppFramework\\\\Db\\\\Entity given\\.$#"
-			count: 1
-			path: lib/Db/ObjectEntity/CrudHandler.php
-
-		-
-			message: "#^Parameter \\$newObject of class OCA\\\\OpenRegister\\\\Event\\\\ObjectUpdatingEvent constructor expects OCA\\\\OpenRegister\\\\Db\\\\ObjectEntity, OCP\\\\AppFramework\\\\Db\\\\Entity given\\.$#"
-			count: 1
-			path: lib/Db/ObjectEntity/CrudHandler.php
-
-		-
-			message: "#^Parameter \\$object of class OCA\\\\OpenRegister\\\\Event\\\\ObjectCreatingEvent constructor expects OCA\\\\OpenRegister\\\\Db\\\\ObjectEntity, OCP\\\\AppFramework\\\\Db\\\\Entity given\\.$#"
-			count: 1
-			path: lib/Db/ObjectEntity/CrudHandler.php
-
-		-
-			message: "#^Parameter \\$object of class OCA\\\\OpenRegister\\\\Event\\\\ObjectDeletedEvent constructor expects OCA\\\\OpenRegister\\\\Db\\\\ObjectEntity, OCP\\\\AppFramework\\\\Db\\\\Entity given\\.$#"
-			count: 1
-			path: lib/Db/ObjectEntity/CrudHandler.php
-
-		-
-			message: "#^Parameter \\$object of class OCA\\\\OpenRegister\\\\Event\\\\ObjectDeletingEvent constructor expects OCA\\\\OpenRegister\\\\Db\\\\ObjectEntity, OCP\\\\AppFramework\\\\Db\\\\Entity given\\.$#"
-			count: 1
-			path: lib/Db/ObjectEntity/CrudHandler.php
-
-		-
-			message: "#^Property OCA\\\\OpenRegister\\\\Db\\\\ObjectEntity\\\\CrudHandler\\:\\:\\$db is never read, only written\\.$#"
-			count: 1
-			path: lib/Db/ObjectEntity/CrudHandler.php
-
-		-
-			message: "#^Method OCA\\\\OpenRegister\\\\Db\\\\ObjectEntity\\\\FacetsHandler\\:\\:generateFieldConfigFromProperty\\(\\) never returns null so it can be removed from the return type\\.$#"
-			count: 1
-			path: lib/Db/ObjectEntity/FacetsHandler.php
-
-		-
-			message: "#^Property OCA\\\\OpenRegister\\\\Db\\\\ObjectEntity\\\\FacetsHandler\\:\\:\\$logger is never read, only written\\.$#"
-			count: 1
-			path: lib/Db/ObjectEntity/FacetsHandler.php
-
-		-
-			message: "#^Strict comparison using \\=\\=\\= between mixed and null will always evaluate to false\\.$#"
-			count: 2
-			path: lib/Db/ObjectEntity/QueryOptimizationHandler.php
-
-		-
-			message: "#^Call to an undefined method OCP\\\\AppFramework\\\\Db\\\\Entity\\:\\:getObject\\(\\)\\.$#"
-			count: 1
-			path: lib/Db/ObjectEntityMapper.php
-
-		-
-			message: "#^Call to an undefined method OCP\\\\AppFramework\\\\Db\\\\Entity\\:\\:getOrganisation\\(\\)\\.$#"
-			count: 1
-			path: lib/Db/ObjectEntityMapper.php
-
-		-
-			message: "#^Call to an undefined method OCP\\\\AppFramework\\\\Db\\\\Entity\\:\\:getUuid\\(\\)\\.$#"
-			count: 1
-			path: lib/Db/ObjectEntityMapper.php
-
-		-
-			message: "#^Call to an undefined method OCP\\\\AppFramework\\\\Db\\\\Entity\\:\\:setOrganisation\\(\\)\\.$#"
-			count: 2
-			path: lib/Db/ObjectEntityMapper.php
-
-		-
-			message: "#^Parameter \\#1 \\$newObject of class OCA\\\\OpenRegister\\\\Event\\\\ObjectUpdatingEvent constructor expects OCA\\\\OpenRegister\\\\Db\\\\ObjectEntity, OCP\\\\AppFramework\\\\Db\\\\Entity given\\.$#"
-			count: 1
-			path: lib/Db/ObjectEntityMapper.php
-
-		-
-			message: "#^Parameter \\#1 \\$object of class OCA\\\\OpenRegister\\\\Event\\\\ObjectCreatingEvent constructor expects OCA\\\\OpenRegister\\\\Db\\\\ObjectEntity, OCP\\\\AppFramework\\\\Db\\\\Entity given\\.$#"
-			count: 1
-			path: lib/Db/ObjectEntityMapper.php
-
-		-
-			message: "#^Parameter \\#2 \\$oldObject of class OCA\\\\OpenRegister\\\\Event\\\\ObjectUpdatingEvent constructor expects OCA\\\\OpenRegister\\\\Db\\\\ObjectEntity\\|null, OCP\\\\AppFramework\\\\Db\\\\Entity given\\.$#"
-			count: 1
-			path: lib/Db/ObjectEntityMapper.php
-
-		-
-			message: "#^Parameter \\$entity of method OCP\\\\AppFramework\\\\Db\\\\QBMapper\\<OCA\\\\OpenRegister\\\\Db\\\\ObjectEntity\\>\\:\\:insert\\(\\) expects OCA\\\\OpenRegister\\\\Db\\\\ObjectEntity, OCP\\\\AppFramework\\\\Db\\\\Entity given\\.$#"
-			count: 1
-			path: lib/Db/ObjectEntityMapper.php
-
-		-
-			message: "#^Parameter \\$entity of method OCP\\\\AppFramework\\\\Db\\\\QBMapper\\<OCA\\\\OpenRegister\\\\Db\\\\ObjectEntity\\>\\:\\:update\\(\\) expects OCA\\\\OpenRegister\\\\Db\\\\ObjectEntity, OCP\\\\AppFramework\\\\Db\\\\Entity given\\.$#"
-			count: 1
-			path: lib/Db/ObjectEntityMapper.php
-
-		-
-			message: "#^Property OCA\\\\OpenRegister\\\\Db\\\\ObjectEntityMapper\\:\\:\\$schemaMapper is never read, only written\\.$#"
-			count: 1
-			path: lib/Db/ObjectEntityMapper.php
-
-		-
-			message: "#^Property OCA\\\\OpenRegister\\\\Db\\\\ObjectEntityMapper\\:\\:\\$userManager is never read, only written\\.$#"
-			count: 1
-			path: lib/Db/ObjectEntityMapper.php
 
 		-
 			message: "#^Constant OCA\\\\OpenRegister\\\\Db\\\\ObjectHandlers\\\\HyperFacetHandler\\:\\:FRAGMENT_CACHE_TTL is unused\\.$#"
@@ -3191,24 +3106,14 @@ parameters:
 			path: lib/Db/ObjectHandlers/MariaDbFacetHandler.php
 
 		-
-			message: "#^Comparison operation \"\\>\" between 1 and 10000 is always false\\.$#"
-			count: 1
-			path: lib/Db/ObjectHandlers/OptimizedBulkOperations.php
-
-		-
-			message: "#^Constant OCA\\\\OpenRegister\\\\Db\\\\ObjectHandlers\\\\OptimizedBulkOperations\\:\\:MAX_PARAMETERS is unused\\.$#"
-			count: 1
-			path: lib/Db/ObjectHandlers/OptimizedBulkOperations.php
-
-		-
-			message: "#^Constant OCA\\\\OpenRegister\\\\Db\\\\ObjectHandlers\\\\OptimizedBulkOperations\\:\\:MAX_QUERY_SIZE is unused\\.$#"
-			count: 1
-			path: lib/Db/ObjectHandlers/OptimizedBulkOperations.php
-
-		-
 			message: "#^Call to an undefined static method OCP\\\\AppFramework\\\\Db\\\\Entity\\:\\:setActive\\(\\)\\.$#"
 			count: 1
 			path: lib/Db/Organisation.php
+
+		-
+			message: "#^Class Doctrine\\\\DBAL\\\\Platforms\\\\PostgreSQLPlatform not found\\.$#"
+			count: 1
+			path: lib/Db/OrganisationMapper.php
 
 		-
 			message: "#^Method OCA\\\\OpenRegister\\\\Db\\\\OrganisationMapper\\:\\:findAll\\(\\) has invalid return type OCA\\\\OpenRegister\\\\Db\\\\OCA\\\\OpenRegister\\\\Db\\\\Organisation\\.$#"
@@ -3286,11 +3191,6 @@ parameters:
 			path: lib/Db/RegisterMapper.php
 
 		-
-			message: "#^Offset 'total' on array\\{total\\: int, size\\: int, invalid\\: int, deleted\\: int, locked\\: int, published\\: int\\} on left side of \\?\\? always exists and is not nullable\\.$#"
-			count: 1
-			path: lib/Db/RegisterMapper.php
-
-		-
 			message: "#^Parameter \\$entity of method OCP\\\\AppFramework\\\\Db\\\\QBMapper\\<OCA\\\\OpenRegister\\\\Db\\\\Register\\>\\:\\:insert\\(\\) expects OCA\\\\OpenRegister\\\\Db\\\\Register, OCP\\\\AppFramework\\\\Db\\\\Entity given\\.$#"
 			count: 1
 			path: lib/Db/RegisterMapper.php
@@ -3327,11 +3227,6 @@ parameters:
 
 		-
 			message: "#^Dead catch \\- Exception is never thrown in the try block\\.$#"
-			count: 1
-			path: lib/Db/Schema.php
-
-		-
-			message: "#^Else branch is unreachable because ternary operator condition is always true\\.$#"
 			count: 1
 			path: lib/Db/Schema.php
 
@@ -3456,11 +3351,6 @@ parameters:
 			path: lib/Db/SearchTrailMapper.php
 
 		-
-			message: "#^Call to an undefined method OCA\\\\OpenRegister\\\\Db\\\\SearchTrail\\:\\:setPublishedOnly\\(\\)\\.$#"
-			count: 1
-			path: lib/Db/SearchTrailMapper.php
-
-		-
 			message: "#^Call to an undefined method OCA\\\\OpenRegister\\\\Db\\\\SearchTrail\\:\\:setSize\\(\\)\\.$#"
 			count: 1
 			path: lib/Db/SearchTrailMapper.php
@@ -3471,7 +3361,17 @@ parameters:
 			path: lib/Db/SearchTrailMapper.php
 
 		-
-			message: "#^Class Doctrine\\\\DBAL\\\\Platforms\\\\SQLitePlatform referenced with incorrect case\\: Doctrine\\\\DBAL\\\\Platforms\\\\SqlitePlatform\\.$#"
+			message: "#^Class Doctrine\\\\DBAL\\\\Platforms\\\\AbstractMySQLPlatform not found\\.$#"
+			count: 1
+			path: lib/Db/SearchTrailMapper.php
+
+		-
+			message: "#^Class Doctrine\\\\DBAL\\\\Platforms\\\\PostgreSQLPlatform not found\\.$#"
+			count: 1
+			path: lib/Db/SearchTrailMapper.php
+
+		-
+			message: "#^Class Doctrine\\\\DBAL\\\\Platforms\\\\SqlitePlatform not found\\.$#"
 			count: 1
 			path: lib/Db/SearchTrailMapper.php
 
@@ -3519,7 +3419,6 @@ parameters:
 			message: "#^Parameter \\$entity of method OCP\\\\AppFramework\\\\Db\\\\QBMapper\\<OCA\\\\OpenRegister\\\\Db\\\\Source\\>\\:\\:update\\(\\) expects OCA\\\\OpenRegister\\\\Db\\\\Source, OCP\\\\AppFramework\\\\Db\\\\Entity given\\.$#"
 			count: 1
 			path: lib/Db/SourceMapper.php
-
 
 		-
 			message: "#^Call to an undefined method OCP\\\\AppFramework\\\\Db\\\\Entity\\:\\:getOrganisation\\(\\)\\.$#"
@@ -3575,6 +3474,11 @@ parameters:
 			message: "#^Parameter \\$entity of method OCP\\\\AppFramework\\\\Db\\\\QBMapper\\<OCA\\\\OpenRegister\\\\Db\\\\View\\>\\:\\:update\\(\\) expects OCA\\\\OpenRegister\\\\Db\\\\View, OCP\\\\AppFramework\\\\Db\\\\Entity given\\.$#"
 			count: 1
 			path: lib/Db/ViewMapper.php
+
+		-
+			message: "#^Class Doctrine\\\\DBAL\\\\Platforms\\\\PostgreSQLPlatform not found\\.$#"
+			count: 1
+			path: lib/Db/WebhookLogMapper.php
 
 		-
 			message: "#^Method OCA\\\\OpenRegister\\\\Db\\\\WebhookLogMapper\\:\\:findAll\\(\\) has invalid return type OCA\\\\OpenRegister\\\\Db\\\\OCA\\\\OpenRegister\\\\Db\\\\WebhookLog\\.$#"
@@ -3672,9 +3576,194 @@ parameters:
 			path: lib/Listener/ObjectChangeListener.php
 
 		-
+			message: "#^Call to method addColumn\\(\\) on an unknown class Doctrine\\\\DBAL\\\\Schema\\\\Table\\.$#"
+			count: 37
+			path: lib/Migration/Version1Date20240924200009.php
+
+		-
+			message: "#^Call to method addIndex\\(\\) on an unknown class Doctrine\\\\DBAL\\\\Schema\\\\Table\\.$#"
+			count: 11
+			path: lib/Migration/Version1Date20240924200009.php
+
+		-
+			message: "#^Call to method setPrimaryKey\\(\\) on an unknown class Doctrine\\\\DBAL\\\\Schema\\\\Table\\.$#"
+			count: 4
+			path: lib/Migration/Version1Date20240924200009.php
+
+		-
+			message: "#^Call to method addColumn\\(\\) on an unknown class Doctrine\\\\DBAL\\\\Schema\\\\Table\\.$#"
+			count: 6
+			path: lib/Migration/Version1Date20241019205009.php
+
+		-
+			message: "#^Call to method addIndex\\(\\) on an unknown class Doctrine\\\\DBAL\\\\Schema\\\\Table\\.$#"
+			count: 3
+			path: lib/Migration/Version1Date20241019205009.php
+
+		-
+			message: "#^Call to method hasColumn\\(\\) on an unknown class Doctrine\\\\DBAL\\\\Schema\\\\Table\\.$#"
+			count: 6
+			path: lib/Migration/Version1Date20241019205009.php
+
+		-
+			message: "#^Call to method addColumn\\(\\) on an unknown class Doctrine\\\\DBAL\\\\Schema\\\\Table\\.$#"
+			count: 15
+			path: lib/Migration/Version1Date20241020231700.php
+
+		-
+			message: "#^Call to method addIndex\\(\\) on an unknown class Doctrine\\\\DBAL\\\\Schema\\\\Table\\.$#"
+			count: 2
+			path: lib/Migration/Version1Date20241020231700.php
+
+		-
+			message: "#^Call to method hasColumn\\(\\) on an unknown class Doctrine\\\\DBAL\\\\Schema\\\\Table\\.$#"
+			count: 1
+			path: lib/Migration/Version1Date20241020231700.php
+
+		-
+			message: "#^Call to method setPrimaryKey\\(\\) on an unknown class Doctrine\\\\DBAL\\\\Schema\\\\Table\\.$#"
+			count: 1
+			path: lib/Migration/Version1Date20241020231700.php
+
+		-
+			message: "#^Call to method addColumn\\(\\) on an unknown class Doctrine\\\\DBAL\\\\Schema\\\\Table\\.$#"
+			count: 1
+			path: lib/Migration/Version1Date20241022135300.php
+
+		-
+			message: "#^Call to method dropColumn\\(\\) on an unknown class Doctrine\\\\DBAL\\\\Schema\\\\Table\\.$#"
+			count: 1
+			path: lib/Migration/Version1Date20241022135300.php
+
+		-
+			message: "#^Call to method hasColumn\\(\\) on an unknown class Doctrine\\\\DBAL\\\\Schema\\\\Table\\.$#"
+			count: 2
+			path: lib/Migration/Version1Date20241022135300.php
+
+		-
+			message: "#^Call to method addColumn\\(\\) on an unknown class Doctrine\\\\DBAL\\\\Schema\\\\Table\\.$#"
+			count: 12
+			path: lib/Migration/Version1Date20241030131427.php
+
+		-
+			message: "#^Call to method addIndex\\(\\) on an unknown class Doctrine\\\\DBAL\\\\Schema\\\\Table\\.$#"
+			count: 4
+			path: lib/Migration/Version1Date20241030131427.php
+
+		-
+			message: "#^Call to method getColumn\\(\\) on an unknown class Doctrine\\\\DBAL\\\\Schema\\\\Table\\.$#"
+			count: 2
+			path: lib/Migration/Version1Date20241030131427.php
+
+		-
+			message: "#^Call to method hasColumn\\(\\) on an unknown class Doctrine\\\\DBAL\\\\Schema\\\\Table\\.$#"
+			count: 5
+			path: lib/Migration/Version1Date20241030131427.php
+
+		-
+			message: "#^Call to method setPrimaryKey\\(\\) on an unknown class Doctrine\\\\DBAL\\\\Schema\\\\Table\\.$#"
+			count: 1
+			path: lib/Migration/Version1Date20241030131427.php
+
+		-
+			message: "#^Call to method addColumn\\(\\) on an unknown class Doctrine\\\\DBAL\\\\Schema\\\\Table\\.$#"
+			count: 3
+			path: lib/Migration/Version1Date20241128221000.php
+
+		-
+			message: "#^Call to method hasColumn\\(\\) on an unknown class Doctrine\\\\DBAL\\\\Schema\\\\Table\\.$#"
+			count: 3
+			path: lib/Migration/Version1Date20241128221000.php
+
+		-
+			message: "#^Access to constant BIGINT on an unknown class Doctrine\\\\DBAL\\\\Types\\\\Types\\.$#"
+			count: 1
+			path: lib/Migration/Version1Date20241216094112.php
+
+		-
+			message: "#^Access to constant DATETIME_IMMUTABLE on an unknown class Doctrine\\\\DBAL\\\\Types\\\\Types\\.$#"
+			count: 1
+			path: lib/Migration/Version1Date20241216094112.php
+
+		-
+			message: "#^Access to constant DATETIME_MUTABLE on an unknown class Doctrine\\\\DBAL\\\\Types\\\\Types\\.$#"
+			count: 1
+			path: lib/Migration/Version1Date20241216094112.php
+
+		-
+			message: "#^Access to constant INTEGER on an unknown class Doctrine\\\\DBAL\\\\Types\\\\Types\\.$#"
+			count: 1
+			path: lib/Migration/Version1Date20241216094112.php
+
+		-
+			message: "#^Access to constant STRING on an unknown class Doctrine\\\\DBAL\\\\Types\\\\Types\\.$#"
+			count: 9
+			path: lib/Migration/Version1Date20241216094112.php
+
+		-
+			message: "#^Call to method addColumn\\(\\) on an unknown class Doctrine\\\\DBAL\\\\Schema\\\\Table\\.$#"
+			count: 13
+			path: lib/Migration/Version1Date20241216094112.php
+
+		-
+			message: "#^Call to method setPrimaryKey\\(\\) on an unknown class Doctrine\\\\DBAL\\\\Schema\\\\Table\\.$#"
+			count: 1
+			path: lib/Migration/Version1Date20241216094112.php
+
+		-
+			message: "#^Call to method addColumn\\(\\) on an unknown class Doctrine\\\\DBAL\\\\Schema\\\\Table\\.$#"
+			count: 1
+			path: lib/Migration/Version1Date20241227153853.php
+
+		-
+			message: "#^Call to method hasColumn\\(\\) on an unknown class Doctrine\\\\DBAL\\\\Schema\\\\Table\\.$#"
+			count: 1
+			path: lib/Migration/Version1Date20241227153853.php
+
+		-
+			message: "#^Call to method addColumn\\(\\) on an unknown class Doctrine\\\\DBAL\\\\Schema\\\\Table\\.$#"
+			count: 1
+			path: lib/Migration/Version1Date20250102000000.php
+
+		-
+			message: "#^Call to method hasColumn\\(\\) on an unknown class Doctrine\\\\DBAL\\\\Schema\\\\Table\\.$#"
+			count: 1
+			path: lib/Migration/Version1Date20250102000000.php
+
+		-
+			message: "#^Call to method addColumn\\(\\) on an unknown class Doctrine\\\\DBAL\\\\Schema\\\\Table\\.$#"
+			count: 1
+			path: lib/Migration/Version1Date20250102000001.php
+
+		-
+			message: "#^Call to method hasColumn\\(\\) on an unknown class Doctrine\\\\DBAL\\\\Schema\\\\Table\\.$#"
+			count: 1
+			path: lib/Migration/Version1Date20250102000001.php
+
+		-
 			message: "#^Property OCA\\\\OpenRegister\\\\Migration\\\\Version1Date20250102000001\\:\\:\\$connection is never read, only written\\.$#"
 			count: 1
 			path: lib/Migration/Version1Date20250102000001.php
+
+		-
+			message: "#^Call to method addColumn\\(\\) on an unknown class Doctrine\\\\DBAL\\\\Schema\\\\Table\\.$#"
+			count: 5
+			path: lib/Migration/Version1Date20250115230511.php
+
+		-
+			message: "#^Call to method hasColumn\\(\\) on an unknown class Doctrine\\\\DBAL\\\\Schema\\\\Table\\.$#"
+			count: 5
+			path: lib/Migration/Version1Date20250115230511.php
+
+		-
+			message: "#^Call to method addColumn\\(\\) on an unknown class Doctrine\\\\DBAL\\\\Schema\\\\Table\\.$#"
+			count: 1
+			path: lib/Migration/Version1Date20250123120000.php
+
+		-
+			message: "#^Call to method hasColumn\\(\\) on an unknown class Doctrine\\\\DBAL\\\\Schema\\\\Table\\.$#"
+			count: 1
+			path: lib/Migration/Version1Date20250123120000.php
 
 		-
 			message: "#^Property OCA\\\\OpenRegister\\\\Migration\\\\Version1Date20250123120000\\:\\:\\$connection is never read, only written\\.$#"
@@ -3682,9 +3771,74 @@ parameters:
 			path: lib/Migration/Version1Date20250123120000.php
 
 		-
+			message: "#^Call to method addColumn\\(\\) on an unknown class Doctrine\\\\DBAL\\\\Schema\\\\Table\\.$#"
+			count: 28
+			path: lib/Migration/Version1Date20250321061615.php
+
+		-
+			message: "#^Call to method hasColumn\\(\\) on an unknown class Doctrine\\\\DBAL\\\\Schema\\\\Table\\.$#"
+			count: 28
+			path: lib/Migration/Version1Date20250321061615.php
+
+		-
+			message: "#^Call to method getColumn\\(\\) on an unknown class Doctrine\\\\DBAL\\\\Schema\\\\Table\\.$#"
+			count: 2
+			path: lib/Migration/Version1Date20250626031231.php
+
+		-
+			message: "#^Call to method hasColumn\\(\\) on an unknown class Doctrine\\\\DBAL\\\\Schema\\\\Table\\.$#"
+			count: 2
+			path: lib/Migration/Version1Date20250626031231.php
+
+		-
+			message: "#^Call to method addColumn\\(\\) on an unknown class Doctrine\\\\DBAL\\\\Schema\\\\Table\\.$#"
+			count: 31
+			path: lib/Migration/Version1Date20250712080102.php
+
+		-
+			message: "#^Call to method addIndex\\(\\) on an unknown class Doctrine\\\\DBAL\\\\Schema\\\\Table\\.$#"
+			count: 12
+			path: lib/Migration/Version1Date20250712080102.php
+
+		-
+			message: "#^Call to method setPrimaryKey\\(\\) on an unknown class Doctrine\\\\DBAL\\\\Schema\\\\Table\\.$#"
+			count: 1
+			path: lib/Migration/Version1Date20250712080102.php
+
+		-
+			message: "#^Call to method addColumn\\(\\) on an unknown class Doctrine\\\\DBAL\\\\Schema\\\\Table\\.$#"
+			count: 1
+			path: lib/Migration/Version1Date20250723110323.php
+
+		-
+			message: "#^Call to method hasColumn\\(\\) on an unknown class Doctrine\\\\DBAL\\\\Schema\\\\Table\\.$#"
+			count: 1
+			path: lib/Migration/Version1Date20250723110323.php
+
+		-
 			message: "#^Property OCA\\\\OpenRegister\\\\Migration\\\\Version1Date20250723110323\\:\\:\\$connection is never read, only written\\.$#"
 			count: 1
 			path: lib/Migration/Version1Date20250723110323.php
+
+		-
+			message: "#^Call to method addColumn\\(\\) on an unknown class Doctrine\\\\DBAL\\\\Schema\\\\Table\\.$#"
+			count: 3
+			path: lib/Migration/Version1Date20250801000000.php
+
+		-
+			message: "#^Call to method addUniqueIndex\\(\\) on an unknown class Doctrine\\\\DBAL\\\\Schema\\\\Table\\.$#"
+			count: 2
+			path: lib/Migration/Version1Date20250801000000.php
+
+		-
+			message: "#^Call to method hasColumn\\(\\) on an unknown class Doctrine\\\\DBAL\\\\Schema\\\\Table\\.$#"
+			count: 5
+			path: lib/Migration/Version1Date20250801000000.php
+
+		-
+			message: "#^Call to method hasIndex\\(\\) on an unknown class Doctrine\\\\DBAL\\\\Schema\\\\Table\\.$#"
+			count: 2
+			path: lib/Migration/Version1Date20250801000000.php
 
 		-
 			message: "#^Property OCA\\\\OpenRegister\\\\Migration\\\\Version1Date20250801000000\\:\\:\\$connection is never read, only written\\.$#"
@@ -3692,9 +3846,179 @@ parameters:
 			path: lib/Migration/Version1Date20250801000000.php
 
 		-
+			message: "#^Call to method addColumn\\(\\) on an unknown class Doctrine\\\\DBAL\\\\Schema\\\\Table\\.$#"
+			count: 1
+			path: lib/Migration/Version1Date20250829120000.php
+
+		-
+			message: "#^Call to method addUniqueIndex\\(\\) on an unknown class Doctrine\\\\DBAL\\\\Schema\\\\Table\\.$#"
+			count: 2
+			path: lib/Migration/Version1Date20250829120000.php
+
+		-
+			message: "#^Call to method hasColumn\\(\\) on an unknown class Doctrine\\\\DBAL\\\\Schema\\\\Table\\.$#"
+			count: 5
+			path: lib/Migration/Version1Date20250829120000.php
+
+		-
+			message: "#^Call to method hasIndex\\(\\) on an unknown class Doctrine\\\\DBAL\\\\Schema\\\\Table\\.$#"
+			count: 2
+			path: lib/Migration/Version1Date20250829120000.php
+
+		-
+			message: "#^Access to constant STRING on an unknown class Doctrine\\\\DBAL\\\\Types\\\\Types\\.$#"
+			count: 6
+			path: lib/Migration/Version1Date20251106000000.php
+
+		-
+			message: "#^Call to method addColumn\\(\\) on an unknown class Doctrine\\\\DBAL\\\\Schema\\\\Table\\.$#"
+			count: 1
+			path: lib/Migration/Version1Date20251106000000.php
+
+		-
+			message: "#^Call to method getColumn\\(\\) on an unknown class Doctrine\\\\DBAL\\\\Schema\\\\Table\\.$#"
+			count: 5
+			path: lib/Migration/Version1Date20251106000000.php
+
+		-
+			message: "#^Call to method hasColumn\\(\\) on an unknown class Doctrine\\\\DBAL\\\\Schema\\\\Table\\.$#"
+			count: 6
+			path: lib/Migration/Version1Date20251106000000.php
+
+		-
+			message: "#^Call to static method getType\\(\\) on an unknown class Doctrine\\\\DBAL\\\\Types\\\\Type\\.$#"
+			count: 5
+			path: lib/Migration/Version1Date20251106000000.php
+
+		-
+			message: "#^Call to static method getType\\(\\) on an unknown class Doctrine\\\\DBAL\\\\Types\\\\Type\\.$#"
+			count: 4
+			path: lib/Migration/Version1Date20251106120000.php
+
+		-
+			message: "#^Call to method addColumn\\(\\) on an unknown class Doctrine\\\\DBAL\\\\Schema\\\\Table\\.$#"
+			count: 62
+			path: lib/Migration/Version1Date20251116000000.php
+
+		-
+			message: "#^Call to method addIndex\\(\\) on an unknown class Doctrine\\\\DBAL\\\\Schema\\\\Table\\.$#"
+			count: 24
+			path: lib/Migration/Version1Date20251116000000.php
+
+		-
+			message: "#^Call to method addUniqueIndex\\(\\) on an unknown class Doctrine\\\\DBAL\\\\Schema\\\\Table\\.$#"
+			count: 3
+			path: lib/Migration/Version1Date20251116000000.php
+
+		-
+			message: "#^Call to method setPrimaryKey\\(\\) on an unknown class Doctrine\\\\DBAL\\\\Schema\\\\Table\\.$#"
+			count: 4
+			path: lib/Migration/Version1Date20251116000000.php
+
+		-
+			message: "#^Call to method addColumn\\(\\) on an unknown class Doctrine\\\\DBAL\\\\Schema\\\\Table\\.$#"
+			count: 1
+			path: lib/Migration/Version1Date20251117000000.php
+
+		-
+			message: "#^Call to method addIndex\\(\\) on an unknown class Doctrine\\\\DBAL\\\\Schema\\\\Table\\.$#"
+			count: 1
+			path: lib/Migration/Version1Date20251117000000.php
+
+		-
+			message: "#^Call to method hasColumn\\(\\) on an unknown class Doctrine\\\\DBAL\\\\Schema\\\\Table\\.$#"
+			count: 1
+			path: lib/Migration/Version1Date20251117000000.php
+
+		-
+			message: "#^Call to method addColumn\\(\\) on an unknown class Doctrine\\\\DBAL\\\\Schema\\\\Table\\.$#"
+			count: 15
+			path: lib/Migration/Version1Date20260106000000.php
+
+		-
+			message: "#^Call to method addIndex\\(\\) on an unknown class Doctrine\\\\DBAL\\\\Schema\\\\Table\\.$#"
+			count: 4
+			path: lib/Migration/Version1Date20260106000000.php
+
+		-
+			message: "#^Call to method setPrimaryKey\\(\\) on an unknown class Doctrine\\\\DBAL\\\\Schema\\\\Table\\.$#"
+			count: 1
+			path: lib/Migration/Version1Date20260106000000.php
+
+		-
+			message: "#^Call to method addColumn\\(\\) on an unknown class Doctrine\\\\DBAL\\\\Schema\\\\Table\\.$#"
+			count: 1
+			path: lib/Migration/Version1Date20260118000000.php
+
+		-
+			message: "#^Call to method hasColumn\\(\\) on an unknown class Doctrine\\\\DBAL\\\\Schema\\\\Table\\.$#"
+			count: 1
+			path: lib/Migration/Version1Date20260118000000.php
+
+		-
+			message: "#^Call to method addColumn\\(\\) on an unknown class Doctrine\\\\DBAL\\\\Schema\\\\Table\\.$#"
+			count: 13
+			path: lib/Migration/Version1Date20260306000000.php
+
+		-
+			message: "#^Call to method addIndex\\(\\) on an unknown class Doctrine\\\\DBAL\\\\Schema\\\\Table\\.$#"
+			count: 2
+			path: lib/Migration/Version1Date20260306000000.php
+
+		-
+			message: "#^Call to method setPrimaryKey\\(\\) on an unknown class Doctrine\\\\DBAL\\\\Schema\\\\Table\\.$#"
+			count: 1
+			path: lib/Migration/Version1Date20260306000000.php
+
+		-
+			message: "#^Call to method addColumn\\(\\) on an unknown class Doctrine\\\\DBAL\\\\Schema\\\\Table\\.$#"
+			count: 12
+			path: lib/Migration/Version1Date20260306100000.php
+
+		-
+			message: "#^Call to method addIndex\\(\\) on an unknown class Doctrine\\\\DBAL\\\\Schema\\\\Table\\.$#"
+			count: 3
+			path: lib/Migration/Version1Date20260306100000.php
+
+		-
+			message: "#^Call to method addUniqueIndex\\(\\) on an unknown class Doctrine\\\\DBAL\\\\Schema\\\\Table\\.$#"
+			count: 1
+			path: lib/Migration/Version1Date20260306100000.php
+
+		-
+			message: "#^Call to method setPrimaryKey\\(\\) on an unknown class Doctrine\\\\DBAL\\\\Schema\\\\Table\\.$#"
+			count: 1
+			path: lib/Migration/Version1Date20260306100000.php
+
+		-
+			message: "#^Call to method addColumn\\(\\) on an unknown class Doctrine\\\\DBAL\\\\Schema\\\\Table\\.$#"
+			count: 1
+			path: lib/Migration/Version1Date20260306120000.php
+
+		-
+			message: "#^Call to method hasColumn\\(\\) on an unknown class Doctrine\\\\DBAL\\\\Schema\\\\Table\\.$#"
+			count: 1
+			path: lib/Migration/Version1Date20260306120000.php
+
+		-
 			message: "#^Unknown parameter \\$filters in call to method OCA\\\\OpenRegister\\\\Db\\\\ApplicationMapper\\:\\:findAll\\(\\)\\.$#"
 			count: 1
 			path: lib/Service/ApplicationService.php
+
+		-
+			message: "#^Instantiated class OC\\\\AppFramework\\\\Middleware\\\\Security\\\\Exceptions\\\\SecurityException not found\\.$#"
+			count: 1
+			path: lib/Service/AuthorizationService.php
+
+		-
+			message: "#^PHPDoc tag @throws with type OC\\\\AppFramework\\\\Middleware\\\\Security\\\\Exceptions\\\\SecurityException is not subtype of Throwable$#"
+			count: 1
+			path: lib/Service/AuthorizationService.php
+
+		-
+			message: "#^Throwing object of an unknown class OC\\\\AppFramework\\\\Middleware\\\\Security\\\\Exceptions\\\\SecurityException\\.$#"
+			count: 1
+			path: lib/Service/AuthorizationService.php
 
 		-
 			message: "#^Access to an undefined property LLPhant\\\\OpenAIConfig\\:\\:\\$temperature\\.$#"
@@ -3908,12 +4232,12 @@ parameters:
 
 		-
 			message: "#^Unknown parameter \\$_multitenancy in call to method OCA\\\\OpenRegister\\\\Db\\\\RegisterMapper\\:\\:find\\(\\)\\.$#"
-			count: 3
+			count: 5
 			path: lib/Service/Configuration/ImportHandler.php
 
 		-
 			message: "#^Unknown parameter \\$_multitenancy in call to method OCA\\\\OpenRegister\\\\Db\\\\SchemaMapper\\:\\:find\\(\\)\\.$#"
-			count: 1
+			count: 4
 			path: lib/Service/Configuration/ImportHandler.php
 
 		-
@@ -4032,11 +4356,6 @@ parameters:
 			path: lib/Service/ConfigurationService.php
 
 		-
-			message: "#^Property OCA\\\\OpenRegister\\\\Service\\\\ConfigurationService\\:\\:\\$objectEntityMapper is never read, only written\\.$#"
-			count: 1
-			path: lib/Service/ConfigurationService.php
-
-		-
 			message: "#^Property OCA\\\\OpenRegister\\\\Service\\\\ConfigurationService\\:\\:\\$objectService is never read, only written\\.$#"
 			count: 1
 			path: lib/Service/ConfigurationService.php
@@ -4073,26 +4392,6 @@ parameters:
 
 		-
 			message: "#^Static property OCA\\\\OpenRegister\\\\Service\\\\DeepLinkRegistryService\\:\\:\\$schemaSlugMap is never read, only written\\.$#"
-			count: 1
-			path: lib/Service/DeepLinkRegistryService.php
-
-		-
-			message: "#^Unknown parameter \\$_multitenancy in call to method OCA\\\\OpenRegister\\\\Db\\\\RegisterMapper\\:\\:findAll\\(\\)\\.$#"
-			count: 1
-			path: lib/Service/DeepLinkRegistryService.php
-
-		-
-			message: "#^Unknown parameter \\$_multitenancy in call to method OCA\\\\OpenRegister\\\\Db\\\\SchemaMapper\\:\\:findAll\\(\\)\\.$#"
-			count: 1
-			path: lib/Service/DeepLinkRegistryService.php
-
-		-
-			message: "#^Unknown parameter \\$_rbac in call to method OCA\\\\OpenRegister\\\\Db\\\\RegisterMapper\\:\\:findAll\\(\\)\\.$#"
-			count: 1
-			path: lib/Service/DeepLinkRegistryService.php
-
-		-
-			message: "#^Unknown parameter \\$_rbac in call to method OCA\\\\OpenRegister\\\\Db\\\\SchemaMapper\\:\\:findAll\\(\\)\\.$#"
 			count: 1
 			path: lib/Service/DeepLinkRegistryService.php
 
@@ -4200,11 +4499,6 @@ parameters:
 			message: "#^Property OCA\\\\OpenRegister\\\\Service\\\\EndpointService\\:\\:\\$userSession is never written, only read\\.$#"
 			count: 1
 			path: lib/Service/EndpointService.php
-
-		-
-			message: "#^Constructor of class OCA\\\\OpenRegister\\\\Service\\\\ExportService has an unused parameter \\$_objectEntityMapper\\.$#"
-			count: 1
-			path: lib/Service/ExportService.php
 
 		-
 			message: "#^Constructor of class OCA\\\\OpenRegister\\\\Service\\\\ExportService has an unused parameter \\$_userManager\\.$#"
@@ -4397,11 +4691,6 @@ parameters:
 			path: lib/Service/FileService.php
 
 		-
-			message: "#^Property OCA\\\\OpenRegister\\\\Service\\\\FileService\\:\\:\\$objectEntityMapper is never read, only written\\.$#"
-			count: 1
-			path: lib/Service/FileService.php
-
-		-
 			message: "#^Property OCA\\\\OpenRegister\\\\Service\\\\FileService\\:\\:\\$shareManager is never read, only written\\.$#"
 			count: 1
 			path: lib/Service/FileService.php
@@ -4425,6 +4714,11 @@ parameters:
 			message: "#^Property OCA\\\\OpenRegister\\\\Service\\\\FileService\\:\\:\\$userSession is never read, only written\\.$#"
 			count: 1
 			path: lib/Service/FileService.php
+
+		-
+			message: "#^Method OCA\\\\OpenRegister\\\\Db\\\\AuditTrailMapper\\:\\:findAll\\(\\) invoked with 4 parameters, 0\\-2 required\\.$#"
+			count: 1
+			path: lib/Service/GraphQL/GraphQLResolver.php
 
 		-
 			message: "#^Parameter \\$errors of method OCA\\\\OpenRegister\\\\Event\\\\ObjectCreatingEvent\\:\\:setErrors\\(\\) expects array\\<string, mixed\\>, array\\<int, array\\<string, string\\>\\> given\\.$#"
@@ -4474,11 +4768,6 @@ parameters:
 		-
 			message: "#^Offset 'invalid' on array\\<string, mixed\\> on left side of \\?\\? always exists and is not nullable\\.$#"
 			count: 2
-			path: lib/Service/ImportService.php
-
-		-
-			message: "#^Property OCA\\\\OpenRegister\\\\Service\\\\ImportService\\:\\:\\$objectEntityMapper is never read, only written\\.$#"
-			count: 1
 			path: lib/Service/ImportService.php
 
 		-
@@ -4627,17 +4916,7 @@ parameters:
 			path: lib/Service/Index/WarmupHandler.php
 
 		-
-			message: "#^Property OCA\\\\OpenRegister\\\\Service\\\\Index\\\\WarmupHandler\\:\\:\\$objectMapper is never read, only written\\.$#"
-			count: 1
-			path: lib/Service/Index/WarmupHandler.php
-
-		-
 			message: "#^Method OCA\\\\OpenRegister\\\\Service\\\\LogService\\:\\:deleteLogs\\(\\) should return array\\{deleted\\: int\\<0, max\\>, failed\\: int\\<0, max\\>, total\\: int\\<0, max\\>\\} but returns array\\{success\\: true, deleted\\: int\\<0, max\\>, failed\\: int\\<0, max\\>\\}\\.$#"
-			count: 1
-			path: lib/Service/LogService.php
-
-		-
-			message: "#^Property OCA\\\\OpenRegister\\\\Service\\\\LogService\\:\\:\\$objectEntityMapper is never read, only written\\.$#"
 			count: 1
 			path: lib/Service/LogService.php
 
@@ -4677,16 +4956,6 @@ parameters:
 			path: lib/Service/LogService.php
 
 		-
-			message: "#^Call to an undefined method OCA\\\\OpenRegister\\\\Db\\\\Mapping\\:\\:getName\\(\\)\\.$#"
-			count: 1
-			path: lib/Service/MappingService.php
-
-		-
-			message: "#^Call to an undefined method OCA\\\\OpenRegister\\\\Db\\\\Mapping\\:\\:getPassThrough\\(\\)\\.$#"
-			count: 1
-			path: lib/Service/MappingService.php
-
-		-
 			message: "#^Method OCA\\\\OpenRegister\\\\Service\\\\MappingService\\:\\:getMappings\\(\\) should return array\\<OCA\\\\OpenRegister\\\\Db\\\\Mapping\\> but returns array\\<int, OCA\\\\OpenRegister\\\\Db\\\\OCA\\\\OpenRegister\\\\Db\\\\Mapping\\>\\.$#"
 			count: 1
 			path: lib/Service/MappingService.php
@@ -4715,21 +4984,6 @@ parameters:
 			message: "#^Unreachable statement \\- code above always terminates\\.$#"
 			count: 1
 			path: lib/Service/MetricsService.php
-
-		-
-			message: "#^Call to an undefined method OCA\\\\OpenRegister\\\\Db\\\\Register\\:\\:getName\\(\\)\\.$#"
-			count: 1
-			path: lib/Service/MigrationService.php
-
-		-
-			message: "#^Call to an undefined method OCA\\\\OpenRegister\\\\Db\\\\Schema\\:\\:getName\\(\\)\\.$#"
-			count: 1
-			path: lib/Service/MigrationService.php
-
-		-
-			message: "#^Parameter \\#1 \\$id of method OCP\\\\AppFramework\\\\Db\\\\Entity\\:\\:setId\\(\\) expects int, null given\\.$#"
-			count: 1
-			path: lib/Service/MigrationService.php
 
 		-
 			message: "#^Property OCA\\\\OpenRegister\\\\Service\\\\MigrationService\\:\\:\\$db is never read, only written\\.$#"
@@ -4802,16 +5056,6 @@ parameters:
 			path: lib/Service/OasService.php
 
 		-
-			message: "#^Offset 'allOf' on array\\<'\\$ref'\\|'additionalProperties'\\|'allOf'\\|'anyOf'\\|'const'\\|'default'\\|'description'\\|'enum'\\|'example'\\|'examples'\\|'exclusiveMaximum'\\|'exclusiveMinimum'\\|'format'\\|'items'\\|'maximum'\\|'maxItems'\\|'maxLength'\\|'maxProperties'\\|'minimum'\\|'minItems'\\|'minLength'\\|'minProperties'\\|'multipleOf'\\|'not'\\|'nullable'\\|'oneOf'\\|'pattern'\\|'properties'\\|'readOnly'\\|'required'\\|'title'\\|'type'\\|'uniqueItems'\\|'writeOnly', mixed\\> on left side of \\?\\? always exists and is not nullable\\.$#"
-			count: 1
-			path: lib/Service/OasService.php
-
-		-
-			message: "#^Offset 'allOf' on array\\<string, mixed\\> on left side of \\?\\? always exists and is not nullable\\.$#"
-			count: 1
-			path: lib/Service/OasService.php
-
-		-
 			message: "#^Strict comparison using \\=\\=\\= between 0\\|1\\|false and true will always evaluate to false\\.$#"
 			count: 1
 			path: lib/Service/OasService.php
@@ -4852,24 +5096,9 @@ parameters:
 			path: lib/Service/Object/AuditHandler.php
 
 		-
-			message: "#^Property OCA\\\\OpenRegister\\\\Service\\\\Object\\\\AuditHandler\\:\\:\\$objectEntityMapper is never read, only written\\.$#"
-			count: 1
-			path: lib/Service/Object/AuditHandler.php
-
-		-
 			message: "#^Unknown parameter \\$filters in call to method OCA\\\\OpenRegister\\\\Db\\\\AuditTrailMapper\\:\\:findAll\\(\\)\\.$#"
 			count: 1
 			path: lib/Service/Object/AuditHandler.php
-
-		-
-			message: "#^Comparison operation \"\\>\" between \\(array\\|float\\|int\\) and 0 results in an error\\.$#"
-			count: 1
-			path: lib/Service/Object/BulkOperationsHandler.php
-
-		-
-			message: "#^Variable \\$totalAffected on left side of \\?\\? always exists and is not nullable\\.$#"
-			count: 1
-			path: lib/Service/Object/BulkOperationsHandler.php
 
 		-
 			message: "#^Method OCA\\\\OpenRegister\\\\Service\\\\Object\\\\CacheHandler\\:\\:extractDynamicFieldsFromObject\\(\\) is unused\\.$#"
@@ -4913,11 +5142,6 @@ parameters:
 
 		-
 			message: "#^Offset 'total' on array\\{results\\: array\\{\\}, total\\: 0\\} on left side of \\?\\? always exists and is not nullable\\.$#"
-			count: 1
-			path: lib/Service/Object/CrudHandler.php
-
-		-
-			message: "#^Property OCA\\\\OpenRegister\\\\Service\\\\Object\\\\CrudHandler\\:\\:\\$objectEntityMapper is never read, only written\\.$#"
 			count: 1
 			path: lib/Service/Object/CrudHandler.php
 
@@ -5012,61 +5236,6 @@ parameters:
 			path: lib/Service/Object/PerformanceHandler.php
 
 		-
-			message: "#^Call to an undefined method OCA\\\\OpenRegister\\\\Db\\\\ObjectEntity\\:\\:getDepublicationDate\\(\\)\\.$#"
-			count: 2
-			path: lib/Service/Object/PublishHandler.php
-
-		-
-			message: "#^Call to an undefined method OCA\\\\OpenRegister\\\\Db\\\\ObjectEntity\\:\\:getPublicationDate\\(\\)\\.$#"
-			count: 2
-			path: lib/Service/Object/PublishHandler.php
-
-		-
-			message: "#^Call to method getSchema\\(\\) on an unknown class OCA\\\\OpenRegister\\\\Db\\\\OCA\\\\OpenRegister\\\\Db\\\\ObjectEntity\\.$#"
-			count: 1
-			path: lib/Service/Object/QueryHandler.php
-
-		-
-			message: "#^Empty array passed to foreach\\.$#"
-			count: 1
-			path: lib/Service/Object/QueryHandler.php
-
-		-
-			message: "#^Instanceof between \\*NEVER\\* and OCA\\\\OpenRegister\\\\Db\\\\Schema will always evaluate to false\\.$#"
-			count: 1
-			path: lib/Service/Object/QueryHandler.php
-
-		-
-			message: "#^Offset 'ignoredFilters' on array\\{results\\: array\\<OCA\\\\OpenRegister\\\\Db\\\\ObjectEntity\\>, total\\: int, register\\: array\\|null, schema\\: array\\|null\\} on left side of \\?\\? does not exist\\.$#"
-			count: 1
-			path: lib/Service/Object/QueryHandler.php
-
-		-
-			message: "#^Offset 'metrics' on array\\{results\\: array\\<OCA\\\\OpenRegister\\\\Db\\\\ObjectEntity\\>, total\\: int, register\\: array\\|null, schema\\: array\\|null\\} in isset\\(\\) does not exist\\.$#"
-			count: 1
-			path: lib/Service/Object/QueryHandler.php
-
-		-
-			message: "#^Offset 'properties' on \\*NEVER\\* in isset\\(\\) always exists and is not nullable\\.$#"
-			count: 1
-			path: lib/Service/Object/QueryHandler.php
-
-		-
-			message: "#^Offset 'registers' on array\\{results\\: array\\<OCA\\\\OpenRegister\\\\Db\\\\ObjectEntity\\>, total\\: int, register\\: array\\|null, schema\\: array\\|null\\} on left side of \\?\\? does not exist\\.$#"
-			count: 1
-			path: lib/Service/Object/QueryHandler.php
-
-		-
-			message: "#^Offset 'schemas' on array\\{results\\: array\\<OCA\\\\OpenRegister\\\\Db\\\\ObjectEntity\\>, total\\: int, register\\: array\\|null, schema\\: array\\|null\\} on left side of \\?\\? does not exist\\.$#"
-			count: 1
-			path: lib/Service/Object/QueryHandler.php
-
-		-
-			message: "#^Offset 'source' on array\\{results\\: array\\<OCA\\\\OpenRegister\\\\Db\\\\ObjectEntity\\>, total\\: int, register\\: array\\|null, schema\\: array\\|null\\} on left side of \\?\\? does not exist\\.$#"
-			count: 1
-			path: lib/Service/Object/QueryHandler.php
-
-		-
 			message: "#^Property OCA\\\\OpenRegister\\\\Service\\\\Object\\\\QueryHandler\\:\\:\\$getHandler is never read, only written\\.$#"
 			count: 1
 			path: lib/Service/Object/QueryHandler.php
@@ -5077,49 +5246,29 @@ parameters:
 			path: lib/Service/Object/QueryHandler.php
 
 		-
-			message: "#^Property OCA\\\\OpenRegister\\\\Service\\\\Object\\\\QueryHandler\\:\\:\\$objectEntityMapper is never read, only written\\.$#"
-			count: 1
-			path: lib/Service/Object/QueryHandler.php
-
-		-
 			message: "#^Property OCA\\\\OpenRegister\\\\Service\\\\Object\\\\QueryHandler\\:\\:\\$request is never read, only written\\.$#"
 			count: 1
 			path: lib/Service/Object/QueryHandler.php
 
 		-
-			message: "#^Result of && is always false\\.$#"
-			count: 3
-			path: lib/Service/Object/QueryHandler.php
-
-		-
-			message: "#^Result of && is always true\\.$#"
+			message: "#^Unknown parameter \\$_multitenancy in call to method OCA\\\\OpenRegister\\\\Db\\\\RegisterMapper\\:\\:findAll\\(\\)\\.$#"
 			count: 1
-			path: lib/Service/Object/QueryHandler.php
+			path: lib/Service/Object/ReferentialIntegrityService.php
 
 		-
-			message: "#^Strict comparison using \\=\\=\\= between false and true will always evaluate to false\\.$#"
-			count: 2
-			path: lib/Service/Object/QueryHandler.php
-
-		-
-			message: "#^Strict comparison using \\=\\=\\= between true and false will always evaluate to false\\.$#"
-			count: 3
-			path: lib/Service/Object/QueryHandler.php
-
-		-
-			message: "#^Variable \\$ignoredFilters in empty\\(\\) always exists and is always falsy\\.$#"
+			message: "#^Unknown parameter \\$_multitenancy in call to method OCA\\\\OpenRegister\\\\Db\\\\SchemaMapper\\:\\:findAll\\(\\)\\.$#"
 			count: 1
-			path: lib/Service/Object/QueryHandler.php
+			path: lib/Service/Object/ReferentialIntegrityService.php
 
 		-
-			message: "#^Variable \\$registers in empty\\(\\) always exists and is always falsy\\.$#"
+			message: "#^Unknown parameter \\$_rbac in call to method OCA\\\\OpenRegister\\\\Db\\\\RegisterMapper\\:\\:findAll\\(\\)\\.$#"
 			count: 1
-			path: lib/Service/Object/QueryHandler.php
+			path: lib/Service/Object/ReferentialIntegrityService.php
 
 		-
-			message: "#^Variable \\$schemas in empty\\(\\) always exists and is always falsy\\.$#"
+			message: "#^Unknown parameter \\$_rbac in call to method OCA\\\\OpenRegister\\\\Db\\\\SchemaMapper\\:\\:findAll\\(\\)\\.$#"
 			count: 1
-			path: lib/Service/Object/QueryHandler.php
+			path: lib/Service/Object/ReferentialIntegrityService.php
 
 		-
 			message: "#^Anonymous function has an unused use \\$key\\.$#"
@@ -5128,11 +5277,6 @@ parameters:
 
 		-
 			message: "#^Method OCA\\\\OpenRegister\\\\Service\\\\Object\\\\RelationHandler\\:\\:getUsedBy\\(\\) should return array\\{results\\: array, total\\: 0, limit\\: mixed, offset\\: mixed, message\\?\\: 'Reverse…'\\} but returns array\\{results\\: array\\<int\\<0, max\\>, mixed\\>, total\\: int\\<0, max\\>, limit\\: mixed, offset\\: mixed\\}\\.$#"
-			count: 1
-			path: lib/Service/Object/RelationHandler.php
-
-		-
-			message: "#^Missing parameter \\$array \\(array\\) in call to function array_intersect\\.$#"
 			count: 1
 			path: lib/Service/Object/RelationHandler.php
 
@@ -5162,27 +5306,7 @@ parameters:
 			path: lib/Service/Object/RelationHandler.php
 
 		-
-			message: "#^Unknown parameter \\$array1 in call to function array_intersect\\.$#"
-			count: 1
-			path: lib/Service/Object/RelationHandler.php
-
-		-
-			message: "#^Unknown parameter \\$array2 in call to function array_intersect\\.$#"
-			count: 1
-			path: lib/Service/Object/RelationHandler.php
-
-		-
-			message: "#^Unknown parameter \\$array2 in call to function array_intersect_key\\.$#"
-			count: 1
-			path: lib/Service/Object/RelationHandler.php
-
-		-
 			message: "#^Property OCA\\\\OpenRegister\\\\Service\\\\Object\\\\RelationshipOptimizationHandler\\:\\:\\$logger is never read, only written\\.$#"
-			count: 1
-			path: lib/Service/Object/RelationshipOptimizationHandler.php
-
-		-
-			message: "#^Property OCA\\\\OpenRegister\\\\Service\\\\Object\\\\RelationshipOptimizationHandler\\:\\:\\$objectEntityMapper is never read, only written\\.$#"
 			count: 1
 			path: lib/Service/Object/RelationshipOptimizationHandler.php
 
@@ -5367,31 +5491,6 @@ parameters:
 			path: lib/Service/Object/SaveObject/RelationCascadeHandler.php
 
 		-
-			message: "#^Call to method DateTime\\:\\:format\\(\\) on a separate line has no effect\\.$#"
-			count: 1
-			path: lib/Service/Object/SaveObjects.php
-
-		-
-			message: "#^Property OCA\\\\OpenRegister\\\\Service\\\\Object\\\\SaveObjects\\:\\:\\$bulkRelationHandler is never read, only written\\.$#"
-			count: 1
-			path: lib/Service/Object/SaveObjects.php
-
-		-
-			message: "#^Property OCA\\\\OpenRegister\\\\Service\\\\Object\\\\SaveObjects\\:\\:\\$objectEntityMapper is never read, only written\\.$#"
-			count: 1
-			path: lib/Service/Object/SaveObjects.php
-
-		-
-			message: "#^Property OCA\\\\OpenRegister\\\\Service\\\\Object\\\\SaveObjects\\:\\:\\$transformHandler is never read, only written\\.$#"
-			count: 1
-			path: lib/Service/Object/SaveObjects.php
-
-		-
-			message: "#^Strict comparison using \\=\\=\\= between 0\\|1\\|false and true will always evaluate to false\\.$#"
-			count: 2
-			path: lib/Service/Object/SaveObjects.php
-
-		-
 			message: "#^Offset 'inverseProperties' on array on left side of \\?\\? always exists and is not nullable\\.$#"
 			count: 1
 			path: lib/Service/Object/SaveObjects/BulkRelationHandler.php
@@ -5424,11 +5523,6 @@ parameters:
 		-
 			message: "#^Else branch is unreachable because previous condition is always true\\.$#"
 			count: 2
-			path: lib/Service/Object/SaveObjects/ChunkProcessingHandler.php
-
-		-
-			message: "#^Property OCA\\\\OpenRegister\\\\Service\\\\Object\\\\SaveObjects\\\\ChunkProcessingHandler\\:\\:\\$objectEntityMapper is never read, only written\\.$#"
-			count: 1
 			path: lib/Service/Object/SaveObjects/ChunkProcessingHandler.php
 
 		-
@@ -5467,6 +5561,11 @@ parameters:
 			path: lib/Service/Object/SearchQueryHandler.php
 
 		-
+			message: "#^Strict comparison using \\=\\=\\= between mixed and null will always evaluate to false\\.$#"
+			count: 1
+			path: lib/Service/Object/TranslationHandler.php
+
+		-
 			message: "#^Access to an undefined property object\\:\\:\\$description\\.$#"
 			count: 2
 			path: lib/Service/Object/ValidateObject.php
@@ -5487,7 +5586,17 @@ parameters:
 			path: lib/Service/Object/ValidateObject.php
 
 		-
+			message: "#^Access to an undefined property object\\{properties\\?\\: object, required\\?\\: array\\<string\\>\\}\\:\\:\\$required\\.$#"
+			count: 1
+			path: lib/Service/Object/ValidateObject.php
+
+		-
 			message: "#^Expression on left side of \\?\\? is not nullable\\.$#"
+			count: 1
+			path: lib/Service/Object/ValidateObject.php
+
+		-
+			message: "#^Result of && is always true\\.$#"
 			count: 1
 			path: lib/Service/Object/ValidateObject.php
 
@@ -5593,11 +5702,6 @@ parameters:
 
 		-
 			message: "#^Property OCA\\\\OpenRegister\\\\Service\\\\ObjectService\\:\\:\\$revertHandler is never read, only written\\.$#"
-			count: 1
-			path: lib/Service/ObjectService.php
-
-		-
-			message: "#^Property OCA\\\\OpenRegister\\\\Service\\\\ObjectService\\:\\:\\$saveObjectsHandler is never read, only written\\.$#"
 			count: 1
 			path: lib/Service/ObjectService.php
 
@@ -5832,7 +5936,7 @@ parameters:
 			path: lib/Service/Settings/SolrSettingsHandler.php
 
 		-
-			message: "#^Property OCA\\\\OpenRegister\\\\Service\\\\Settings\\\\ValidationOperationsHandler\\:\\:\\$container is never read, only written\\.$#"
+			message: "#^Method OCA\\\\OpenRegister\\\\Service\\\\Settings\\\\ValidationOperationsHandler\\:\\:getValidateHandler\\(\\) is unused\\.$#"
 			count: 1
 			path: lib/Service/Settings/ValidationOperationsHandler.php
 
@@ -5847,14 +5951,14 @@ parameters:
 			path: lib/Service/Settings/ValidationOperationsHandler.php
 
 		-
-			message: "#^Property OCA\\\\OpenRegister\\\\Service\\\\Settings\\\\ValidationOperationsHandler\\:\\:\\$validateHandler is never read, only written\\.$#"
+			message: "#^Unreachable statement \\- code above always terminates\\.$#"
 			count: 1
 			path: lib/Service/Settings/ValidationOperationsHandler.php
 
 		-
-			message: "#^Unreachable statement \\- code above always terminates\\.$#"
+			message: "#^Access to constant class on an unknown class Doctrine\\\\DBAL\\\\Platforms\\\\AbstractPlatform\\.$#"
 			count: 1
-			path: lib/Service/Settings/ValidationOperationsHandler.php
+			path: lib/Service/SettingsService.php
 
 		-
 			message: "#^Constant OCA\\\\OpenRegister\\\\Service\\\\SettingsService\\:\\:MIN_OPENREGISTER_VERSION is unused\\.$#"
@@ -5965,11 +6069,6 @@ parameters:
 			message: "#^Property OCA\\\\OpenRegister\\\\Service\\\\TaskService\\:\\:\\$calDavBackend has unknown class OCA\\\\DAV\\\\CalDAV\\\\CalDavBackend as its type\\.$#"
 			count: 2
 			path: lib/Service/TaskService.php
-
-		-
-			message: "#^Strict comparison using \\=\\=\\= between int\\<0, max\\>\\|false and true will always evaluate to false\\.$#"
-			count: 1
-			path: lib/Service/TextExtraction/EntityRecognitionHandler.php
 
 		-
 			message: "#^Offset 'confidence' on array\\{language\\: null, level\\: null, confidence\\: null, method\\: null\\} on left side of \\?\\? always exists and is always null\\.$#"
@@ -6090,16 +6189,6 @@ parameters:
 			message: "#^Comparison operation \"\\>\" between \\(array\\|float\\|int\\) and 0 results in an error\\.$#"
 			count: 1
 			path: lib/Service/Vectorization/Handlers/VectorSearchHandler.php
-
-		-
-			message: "#^Parameter \\#2 \\$type of method OCP\\\\DB\\\\QueryBuilder\\\\IQueryBuilder\\:\\:createNamedParameter\\(\\) expects 'boolean'\\|'date'\\|'date_immutable'\\|'datetime'\\|'datetime_immutable'\\|'datetimetz'\\|'datetimetz_immutable'\\|'json'\\|'time'\\|Doctrine\\\\DBAL\\\\ArrayParameterType\\:\\:INTEGER\\|Doctrine\\\\DBAL\\\\ArrayParameterType\\:\\:STRING\\|Doctrine\\\\DBAL\\\\ParameterType\\:\\:INTEGER\\|Doctrine\\\\DBAL\\\\ParameterType\\:\\:LARGE_OBJECT\\|Doctrine\\\\DBAL\\\\ParameterType\\:\\:NULL\\|Doctrine\\\\DBAL\\\\ParameterType\\:\\:STRING, 1 given\\.$#"
-			count: 3
-			path: lib/Service/Vectorization/Handlers/VectorStorageHandler.php
-
-		-
-			message: "#^Parameter \\#2 \\$type of method OCP\\\\DB\\\\QueryBuilder\\\\IQueryBuilder\\:\\:createNamedParameter\\(\\) expects 'boolean'\\|'date'\\|'date_immutable'\\|'datetime'\\|'datetime_immutable'\\|'datetimetz'\\|'datetimetz_immutable'\\|'json'\\|'time'\\|Doctrine\\\\DBAL\\\\ArrayParameterType\\:\\:INTEGER\\|Doctrine\\\\DBAL\\\\ArrayParameterType\\:\\:STRING\\|Doctrine\\\\DBAL\\\\ParameterType\\:\\:INTEGER\\|Doctrine\\\\DBAL\\\\ParameterType\\:\\:LARGE_OBJECT\\|Doctrine\\\\DBAL\\\\ParameterType\\:\\:NULL\\|Doctrine\\\\DBAL\\\\ParameterType\\:\\:STRING, 3 given\\.$#"
-			count: 1
-			path: lib/Service/Vectorization/Handlers/VectorStorageHandler.php
 
 		-
 			message: "#^Call to function array_key_exists\\(\\) with 'error' and array\\{embedding\\: array\\<float\\>, model\\: string, dimensions\\: int\\} will always evaluate to false\\.$#"

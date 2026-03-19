@@ -82,7 +82,7 @@ class TransformationHandler
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)  Complex transformation with multiple field validations
      * @SuppressWarnings(PHPMD.NPathComplexity)       Many code paths for different object structures and metadata
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Method handles complete transformation workflow
-     * @SuppressWarnings(PHPMD.ElseExpression)        Else branches handle different object structures and fallbacks
+     * Else branches handle different object structures and fallbacks
      */
     public function transformObjectsToDatabaseFormatInPlace(array &$objects, array $schemaCache): array
     {
@@ -93,10 +93,11 @@ class TransformationHandler
             // CRITICAL FIX: Objects from prepareSingleSchemaObjectsOptimized are already flat $selfData arrays.
             // They don't have an '@self' key because they ARE the self data.
             // Only extract @self if it exists (mixed schema or other paths).
+            // Object is already a flat $selfData array from prepareSingleSchemaObjectsOptimized,
+            // or extract @self if it exists (mixed schema or other paths).
             if (($object['@self'] ?? null) !== null) {
                 $selfData = $object['@self'];
             } else {
-                // Object is already a flat $selfData array from prepareSingleSchemaObjectsOptimized.
                 $selfData = $object;
             }
 
@@ -105,12 +106,10 @@ class TransformationHandler
 
             // Accept any non-empty string as ID, prioritize CSV 'id' column over @self.id.
             $providedId = $object['id'] ?? $selfData['id'] ?? null;
+            // Default: generate new UUID; override if a non-empty ID is provided.
+            $selfData['uuid'] = Uuid::v4()->toRfc4122();
             if (($providedId !== null) === true && empty(trim($providedId)) === false) {
-                // Accept any non-empty string as identifier.
                 $selfData['uuid'] = $providedId;
-            } else {
-                // No ID provided or empty - generate new UUID.
-                $selfData['uuid'] = Uuid::v4()->toRfc4122();
             }
 
             // CRITICAL FIX: Use register and schema from object data if available.
@@ -169,7 +168,7 @@ class TransformationHandler
             // Set owner to current user if not provided (with null check).
             if (($selfData['owner'] ?? null) === null || empty($selfData['owner']) === true) {
                 $currentUser = $this->userSession->getUser();
-                if (($currentUser !== null) === true) {
+                if ($currentUser !== null) {
                     $selfData['owner'] = $currentUser->getUID();
                 } else {
                     $selfData['owner'] = null;
@@ -200,14 +199,18 @@ class TransformationHandler
             );
 
             // TEMPORARY FIX: Extract business data properly based on actual structure.
-            if (($object['object'] ?? null) !== null && is_array($object['object']) === true) {
+            $hasObjectProperty = ($object['object'] ?? null) !== null && is_array($object['object']) === true;
+
+            if ($hasObjectProperty === true) {
                 // NEW STRUCTURE: object property contains business data.
                 $businessData = $object['object'];
                 $this->logger->info(
                     message: '[TransformationHandler] Using object property for business data (mixed)',
                     context: ['file' => __FILE__, 'line' => __LINE__]
                 );
-            } else {
+            }
+
+            if ($hasObjectProperty !== true) {
                 // LEGACY STRUCTURE: Remove metadata fields to isolate business data.
                 $businessData   = $object;
                 $metadataFields = [
@@ -217,8 +220,6 @@ class TransformationHandler
                     'summary',
                     'image',
                     'slug',
-                    'published',
-                    'depublished',
                     'register',
                     'schema',
                     'organisation',
@@ -248,28 +249,9 @@ class TransformationHandler
 
             // RELATIONS EXTRACTION: Scan the business data for relations (UUIDs and URLs).
             // ONLY scan if relations weren't already set during preparation phase.
-            if (($selfData['relations'] ?? null) === null || empty($selfData['relations']) === true) {
-                if (($schemaCache[$selfData['schema']] ?? null) !== null) {
-                    $schema    = $schemaCache[$selfData['schema']];
-                    $relations = $this->relCascadeHandler->scanForRelations(
-                        data: $businessData,
-                        prefix: '',
-                        schema: $schema
-                    );
-                    $selfData['relations'] = $relations;
+            $relationsAlreadySet = ($selfData['relations'] ?? null) !== null && empty($selfData['relations']) === false;
 
-                    $this->logger->info(
-                        message: '[TransformationHandler] Relations scanned in transformation',
-                        context: [
-                            'file'          => __FILE__,
-                            'line'          => __LINE__,
-                            'uuid'          => $selfData['uuid'] ?? 'unknown',
-                            'relationCount' => count($relations),
-                            'relations'     => array_slice($relations, 0, 3, true),
-                        ]
-                    );
-                }
-            } else {
+            if ($relationsAlreadySet === true) {
                 $this->logger->info(
                     message: '[TransformationHandler] Relations already set from preparation',
                     context: [
@@ -277,6 +259,25 @@ class TransformationHandler
                         'line'          => __LINE__,
                         'uuid'          => $selfData['uuid'] ?? 'unknown',
                         'relationCount' => count($selfData['relations']),
+                    ]
+                );
+            } else if (($schemaCache[$selfData['schema']] ?? null) !== null) {
+                $schema    = $schemaCache[$selfData['schema']];
+                $relations = $this->relCascadeHandler->scanForRelations(
+                    data: $businessData,
+                    prefix: '',
+                    schema: $schema
+                );
+                $selfData['relations'] = $relations;
+
+                $this->logger->info(
+                    message: '[TransformationHandler] Relations scanned in transformation',
+                    context: [
+                        'file'          => __FILE__,
+                        'line'          => __LINE__,
+                        'uuid'          => $selfData['uuid'] ?? 'unknown',
+                        'relationCount' => count($relations),
+                        'relations'     => array_slice($relations, 0, 3, true),
                     ]
                 );
             }//end if

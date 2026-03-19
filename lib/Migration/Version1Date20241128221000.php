@@ -35,8 +35,9 @@ use OCP\Migration\SimpleMigrationStep;
  * Migration step for database schema updates
  *
  * FIXME Auto-generated migration step: Please modify to your needs!
+ *
+ * @SuppressWarnings(PHPMD.UnusedFormalParameter)
  */
-
 class Version1Date20241128221000 extends SimpleMigrationStep
 {
     /**

@@ -82,30 +82,32 @@ class Version1Date20260118000000 extends SimpleMigrationStep
 
         $schema = $schemaClosure();
 
-        if ($schema->hasTable('openregister_organisations') === true) {
-            $table = $schema->getTable('openregister_organisations');
-
-            // Check if active column already exists.
-            if ($table->hasColumn('active') === false) {
-                $output->info(message: '📋 Adding active column to openregister_organisations table...');
-
-                $table->addColumn(
-                    'active',
-                    Types::BOOLEAN,
-                    [
-                        'notnull' => true,
-                        'default' => true,
-                        'comment' => 'Whether the organisation is active',
-                    ]
-                );
-
-                $output->info(message: '   ✓ Column active added successfully');
-            } else {
-                $output->info(message: '   ℹ️  Column active already exists, skipping');
-            }//end if
-        } else {
+        if ($schema->hasTable('openregister_organisations') !== true) {
             $output->info(message: '   ⚠️  Table openregister_organisations does not exist, skipping');
-        }//end if
+            return $schema;
+        }
+
+        $table = $schema->getTable('openregister_organisations');
+
+        // Check if active column already exists.
+        if ($table->hasColumn('active') === true) {
+            $output->info(message: '   ℹ️  Column active already exists, skipping');
+            return $schema;
+        }
+
+        $output->info(message: '📋 Adding active column to openregister_organisations table...');
+
+        $table->addColumn(
+            'active',
+            Types::BOOLEAN,
+            [
+                'notnull' => true,
+                'default' => true,
+                'comment' => 'Whether the organisation is active',
+            ]
+        );
+
+        $output->info(message: '   ✓ Column active added successfully');
 
         return $schema;
     }//end changeSchema()

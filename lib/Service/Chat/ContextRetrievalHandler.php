@@ -201,6 +201,9 @@ class ContextRetrievalHandler
             // Initialize results before conditional assignment.
             $results = [];
 
+            // Keyword search (default).
+            $results = $this->searchKeywordOnly(query: $query, _limit: $fetchLimit);
+
             if ($searchMode === 'semantic') {
                 $results = $this->vectorService->semanticSearch(
                     query: $query,
@@ -218,9 +221,6 @@ class ContextRetrievalHandler
                 );
                 // Extract results array from hybrid search response.
                 $results = $hybridResponse['results'] ?? [];
-            } else {
-                // Keyword search.
-                $results = $this->searchKeywordOnly(query: $query, _limit: $fetchLimit);
             }//end if
 
             // Ensure results is an array.

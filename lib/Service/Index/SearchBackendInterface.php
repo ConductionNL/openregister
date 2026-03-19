@@ -126,7 +126,6 @@ interface SearchBackendInterface
      * @param array $query         Query parameters (filters, pagination, facets, etc.).
      * @param bool  $_rbac         Whether to apply RBAC filtering.
      * @param bool  $_multitenancy Whether to apply multitenancy filtering.
-     * @param bool  $published     Whether to filter for published objects only.
      * @param bool  $deleted       Whether to include deleted objects.
      *
      * @return array Search results with objects, pagination, and facets.

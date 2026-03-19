@@ -21,8 +21,6 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
-use OCA\OpenRegister\Db\RegisterMapper;
-use OCA\OpenRegister\Db\SchemaMapper;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\TextPlainResponse;
 use OCP\IDBConnection;
@@ -40,20 +38,16 @@ class MetricsController extends Controller
     /**
      * Constructor.
      *
-     * @param string          $appName        The application name
-     * @param IRequest        $request        The HTTP request
-     * @param IDBConnection   $db             Database connection
-     * @param RegisterMapper  $registerMapper Register mapper
-     * @param SchemaMapper    $schemaMapper   Schema mapper
-     * @param IAppManager     $appManager     App manager
-     * @param LoggerInterface $logger         Logger
+     * @param string          $appName    The application name
+     * @param IRequest        $request    The HTTP request
+     * @param IDBConnection   $db         Database connection
+     * @param IAppManager     $appManager App manager
+     * @param LoggerInterface $logger     Logger
      */
     public function __construct(
         string $appName,
         IRequest $request,
         private IDBConnection $db,
-        private RegisterMapper $registerMapper,
-        private SchemaMapper $schemaMapper,
         private IAppManager $appManager,
         private LoggerInterface $logger,
     ) {
@@ -91,7 +85,7 @@ class MetricsController extends Controller
 
         $lines[] = '# HELP openregister_info Application information';
         $lines[] = '# TYPE openregister_info gauge';
-        $lines[] = 'openregister_info{version="' . $version . '",php_version="' . $phpVersion . '"} 1';
+        $lines[] = 'openregister_info{version="'.$version.'",php_version="'.$phpVersion.'"} 1';
         $lines[] = '';
 
         // App up gauge.
@@ -101,40 +95,40 @@ class MetricsController extends Controller
         $lines[] = '';
 
         // Registers total.
-        $registersTotal = $this->countTable('openregister_registers');
+        $registersTotal = $this->countTable(table: 'openregister_registers');
         $lines[]        = '# HELP openregister_registers_total Total number of registers';
         $lines[]        = '# TYPE openregister_registers_total gauge';
-        $lines[]        = 'openregister_registers_total ' . $registersTotal;
+        $lines[]        = 'openregister_registers_total '.$registersTotal;
         $lines[]        = '';
 
         // Schemas total.
-        $schemasTotal = $this->countTable('openregister_schemas');
+        $schemasTotal = $this->countTable(table: 'openregister_schemas');
         $lines[]      = '# HELP openregister_schemas_total Total number of schemas';
         $lines[]      = '# TYPE openregister_schemas_total gauge';
-        $lines[]      = 'openregister_schemas_total ' . $schemasTotal;
+        $lines[]      = 'openregister_schemas_total '.$schemasTotal;
         $lines[]      = '';
 
         // Objects total (by register and schema).
-        $lines[] = '# HELP openregister_objects_total Total objects by register and schema';
-        $lines[] = '# TYPE openregister_objects_total gauge';
+        $lines[]      = '# HELP openregister_objects_total Total objects by register and schema';
+        $lines[]      = '# TYPE openregister_objects_total gauge';
         $objectCounts = $this->getObjectCountsByRegisterAndSchema();
         foreach ($objectCounts as $row) {
-            $register = $this->sanitizeLabel($row['register_name'] ?? 'unknown');
-            $schema   = $this->sanitizeLabel($row['schema_name'] ?? 'unknown');
+            $register = $this->sanitizeLabel(value: $row['register_name']);
+            $schema   = $this->sanitizeLabel(value: $row['schema_name']);
             $count    = (int) $row['object_count'];
-            $lines[]  = 'openregister_objects_total{register="' . $register . '",schema="' . $schema . '"} ' . $count;
+            $lines[]  = 'openregister_objects_total{register="'.$register.'",schema="'.$schema.'"} '.$count;
         }
 
         $lines[] = '';
 
         // Search requests total (from metrics table if it exists).
-        $searchCount = $this->countMetricsByType('search_');
+        $searchCount = $this->countMetricsByType(typePrefix: 'search_');
         $lines[]     = '# HELP openregister_search_requests_total Total search requests';
         $lines[]     = '# TYPE openregister_search_requests_total counter';
-        $lines[]     = 'openregister_search_requests_total ' . $searchCount;
+        $lines[]     = 'openregister_search_requests_total '.$searchCount;
         $lines[]     = '';
 
-        return implode("\n", $lines) . "\n";
+        return implode("\n", $lines)."\n";
     }//end collectMetrics()
 
     /**
@@ -156,7 +150,7 @@ class MetricsController extends Controller
 
             return (int) ($row['cnt'] ?? 0);
         } catch (\Exception $e) {
-            $this->logger->warning('[MetricsController] Failed to count table ' . $table, ['error' => $e->getMessage()]);
+            $this->logger->warning('[MetricsController] Failed to count table '.$table, ['error' => $e->getMessage()]);
             return 0;
         }
     }//end countTable()
@@ -201,7 +195,7 @@ class MetricsController extends Controller
             $qb = $this->db->getQueryBuilder();
             $qb->select($qb->func()->count('*', 'cnt'))
                 ->from('openregister_metrics')
-                ->where($qb->expr()->like('metric_type', $qb->createNamedParameter($typePrefix . '%')));
+                ->where($qb->expr()->like('metric_type', $qb->createNamedParameter($typePrefix.'%')));
 
             $result = $qb->executeQuery();
             $row    = $result->fetch();

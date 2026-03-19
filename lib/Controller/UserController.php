@@ -50,6 +50,9 @@ use Psr\Log\LoggerInterface;
  * @link https://OpenRegister.app
  *
  * @psalm-suppress UnusedClass
+ *
+ * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+ * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
  */
 class UserController extends Controller
 {

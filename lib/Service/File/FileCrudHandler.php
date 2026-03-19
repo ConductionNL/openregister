@@ -46,6 +46,8 @@ use Psr\Log\LoggerInterface;
  * @link     https://github.com/ConductionNL/openregister
  * @version  1.0.0
  * @todo     Extract full implementations from FileService in Phase 2
+ *
+ * @SuppressWarnings(PHPMD.UnusedFormalParameter)
  */
 class FileCrudHandler
 {

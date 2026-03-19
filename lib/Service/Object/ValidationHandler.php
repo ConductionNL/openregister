@@ -45,18 +45,20 @@ use Exception;
  *
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)   Validation requires multiple exception and entity dependencies
  * @SuppressWarnings(PHPMD.ExcessiveClassComplexity) Validation orchestration requires multiple validation strategy methods
+ * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
+ * @SuppressWarnings(PHPMD.UnusedFormalParameter)
  */
 class ValidationHandler
 {
     /**
      * Constructor for ValidationHandler.
      *
-     * @param ValidateObject     $validateHandler    Handler for object validation.
-     * @param MagicMapper $objectEntityMapper Mapper for object entities.
-     * @param RegisterMapper     $registerMapper     Mapper for registers.
-     * @param SchemaMapper       $schemaMapper       Mapper for schemas.
-     * @param MagicMapper        $magicMapper        Mapper for magic tables.
-     * @param LoggerInterface    $logger             Logger for logging operations.
+     * @param ValidateObject  $validateHandler    Handler for object validation.
+     * @param MagicMapper     $objectEntityMapper Mapper for object entities.
+     * @param RegisterMapper  $registerMapper     Mapper for registers.
+     * @param SchemaMapper    $schemaMapper       Mapper for schemas.
+     * @param MagicMapper     $magicMapper        Mapper for magic tables.
+     * @param LoggerInterface $logger             Logger for logging operations.
      */
     public function __construct(
         private readonly ValidateObject $validateHandler,
@@ -336,7 +338,7 @@ class ValidationHandler
             $estimatedChunks = ceil($objectsToProcess / $chunkSize);
         } else {
             $estimatedChunks = 0;
-        }//end if
+        }
 
         $this->logger->info(
             message: '[ValidationHandler] Starting chunked validation',
@@ -708,10 +710,8 @@ class ValidationHandler
         $objectsData = [];
         foreach ($objectsChunk as $object) {
             if (is_array($object) === true) {
-                // Already an array from magic table.
                 $objectsData[] = $object;
             } else {
-                // ObjectEntity - get the object data.
                 $objectsData[] = $object->getObject();
             }
         }
@@ -745,7 +745,6 @@ class ValidationHandler
      *     id: int, name: null|string, uuid: null|string}>, schema_id: int}
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Comprehensive validation with detailed error extraction
-     * @SuppressWarnings(PHPMD.ElseExpression)       Different error extraction paths for validation and generic exceptions
      */
     public function validateSchemaObjects(int $schemaId, callable $saveCallback): array
     {
@@ -794,7 +793,9 @@ class ValidationHandler
                             'keyword' => $error['keyword'] ?? 'validation',
                         ];
                     }
-                } else {
+                }
+
+                if ($e instanceof \OCA\OpenRegister\Exception\ValidationException === false) {
                     // Generic error.
                     $errors[] = [
                         'path'    => 'general',

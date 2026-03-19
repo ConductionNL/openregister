@@ -108,7 +108,7 @@ class Version1Date20260313120000 extends SimpleMigrationStep
                 ->from('openregister_objects');
             $result = $qb->executeQuery();
             $row    = $result->fetch();
-            $result->free();
+            $result->closeCursor();
             $rowCount = (int) ($row['cnt'] ?? 0);
         } catch (\Exception $e) {
             $this->logger->warning(

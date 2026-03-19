@@ -89,7 +89,9 @@ use OCA\OpenRegister\Service\Schemas\PropertyValidatorHandler;
  * @SuppressWarnings(PHPMD.ExcessiveClassComplexity)
  * @SuppressWarnings(PHPMD.TooManyFields)
  *
- * @psalm-suppress PropertyNotSetInConstructor $id is set by Nextcloud's Entity base class
+ * @psalm-suppress                                PropertyNotSetInConstructor $id is set by Nextcloud's Entity base class
+ * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
+ * @SuppressWarnings(PHPMD.NPathComplexity)
  */
 class Schema extends Entity implements JsonSerializable
 {
@@ -460,11 +462,10 @@ class Schema extends Entity implements JsonSerializable
         if (is_string($required) === true) {
             try {
                 $decoded = json_decode($required, true);
+                // Invalid JSON, set to empty array.
+                $this->required = [];
                 if (json_last_error() === JSON_ERROR_NONE && is_array($decoded) === true) {
                     $this->required = $decoded;
-                } else {
-                    // Invalid JSON, set to empty array.
-                    $this->required = [];
                 }
             } catch (Exception $e) {
                 // If decoding fails, set to empty array.
@@ -918,12 +919,11 @@ class Schema extends Entity implements JsonSerializable
             }
 
             // Get the actual value to compare against.
+            // Regular field: match against object data.
+            $actualValue = $objectData[$field] ?? null;
             if ($field === '_organisation') {
                 // Special field: match against @self.organisation.
                 $actualValue = $objectOrganisation;
-            } else {
-                // Regular field: match against object data.
-                $actualValue = $objectData[$field] ?? null;
             }
 
             // If the actual value is an array with an 'id' key (resolved relation), use the id.
@@ -1115,12 +1115,12 @@ class Schema extends Entity implements JsonSerializable
             if (in_array($key, ['published', 'depublished', 'created', 'updated', 'deleted'], true) === true) {
                 if (is_string($value) === true && $value !== '') {
                     try {
-                        $value = new \DateTime($value);
-                    } catch (\Exception $e) {
+                        $value = new DateTime($value);
+                    } catch (Exception $e) {
                         // If parsing fails, set to null.
                         $value = null;
                     }
-                } else if ($value !== null && ($value instanceof \DateTime) === false) {
+                } else if ($value !== null && ($value instanceof DateTime) === false) {
                     $value = null;
                 }
             }
@@ -1314,6 +1314,11 @@ class Schema extends Entity implements JsonSerializable
                 }
             }
 
+            // Mark computed properties as readOnly in JSON Schema / OpenAPI output.
+            if (isset($property['computed']) === true && is_array($property['computed']) === true) {
+                $prop->readOnly = true;
+            }
+
             $schema->properties->{$propertyName} = $prop;
         }//end foreach
 
@@ -1473,7 +1478,7 @@ class Schema extends Entity implements JsonSerializable
     {
         $validatedConfig = [];
         $stringFields    = ['objectNameField', 'objectDescriptionField', 'objectSummaryField', 'objectImageField'];
-        $boolFields      = ['allowFiles', 'autoPublish'];
+        $boolFields      = ['allowFiles'];
         $passThrough     = ['unique', 'facetCacheTtl'];
 
         foreach ($configuration as $key => $value) {
@@ -1758,10 +1763,6 @@ class Schema extends Entity implements JsonSerializable
      * @psalm-param array<string, mixed> $property
      *
      * @return string The facet type
-     *
-     * @phpstan-return string|null
-     *
-     * @psalm-return 'date_histogram'|'range'|'terms'
      */
     private function determineFacetType(array $property): string
     {

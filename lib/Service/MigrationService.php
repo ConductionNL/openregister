@@ -27,24 +27,24 @@ use Psr\Log\LoggerInterface;
  *
  * NOTE: Blob storage (ObjectEntityMapper) has been removed. This service
  * is retained for the status endpoint but migration is no longer possible.
+ *
+ * @SuppressWarnings(PHPMD.BooleanArgumentFlag)
  */
 class MigrationService
 {
     /**
      * Constructor.
      *
-     * @param MagicMapper     $magicMapper    The magic mapper.
-     * @param RegisterMapper  $registerMapper The register mapper.
-     * @param SchemaMapper    $schemaMapper   The schema mapper.
-     * @param IDBConnection   $db             The database connection.
-     * @param LoggerInterface $logger         The logger.
+     * @param MagicMapper    $magicMapper    The magic mapper.
+     * @param RegisterMapper $registerMapper The register mapper.
+     * @param SchemaMapper   $schemaMapper   The schema mapper.
+     * @param IDBConnection  $db             The database connection.
      */
     public function __construct(
         private readonly MagicMapper $magicMapper,
         private readonly RegisterMapper $registerMapper,
         private readonly SchemaMapper $schemaMapper,
         private readonly IDBConnection $db,
-        private readonly LoggerInterface $logger,
     ) {
     }//end __construct()
 

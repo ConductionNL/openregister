@@ -1,4 +1,5 @@
 <script setup>
+import { translate as t } from '@nextcloud/l10n'
 import { objectStore, navigationStore, registerStore, schemaStore } from '../../store/store.js'
 </script>
 
@@ -572,7 +573,7 @@ export default {
 		closeModal() {
 			navigationStore.setModal(false)
 		},
-		updateMappingFromUI(sourceProperty) {
+		updateMappingFromUI(_sourceProperty) {
 			// Convert UI mappings to our simple mapping format
 			this.convertUIToMapping()
 		},

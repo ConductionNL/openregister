@@ -23,6 +23,9 @@ use Symfony\Component\Uid\Uuid;
  * Maps Consumer entities to the database.
  *
  * @package OCA\OpenRegister\Db
+ *
+ * @template-extends                     QBMapper<Consumer>
+ * @SuppressWarnings(PHPMD.StaticAccess)
  */
 class ConsumerMapper extends QBMapper
 {
@@ -86,11 +89,15 @@ class ConsumerMapper extends QBMapper
         foreach ($filters as $filter => $value) {
             if ($value === 'IS NOT NULL') {
                 $qb->andWhere($qb->expr()->isNotNull($filter));
-            } else if ($value === 'IS NULL') {
-                $qb->andWhere($qb->expr()->isNull($filter));
-            } else {
-                $qb->andWhere($qb->expr()->eq($filter, $qb->createNamedParameter($value)));
+                continue;
             }
+
+            if ($value === 'IS NULL') {
+                $qb->andWhere($qb->expr()->isNull($filter));
+                continue;
+            }
+
+            $qb->andWhere($qb->expr()->eq($filter, $qb->createNamedParameter($value)));
         }
 
         if (empty($searchConditions) === false) {

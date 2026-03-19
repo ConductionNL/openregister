@@ -24,6 +24,7 @@ use OCP\AppFramework\Http\JSONResponse;
 use OCP\AppFramework\Http\TemplateResponse;
 use OCP\DB\Exception;
 use OCP\IAppConfig;
+use OCP\IL10N;
 use OCP\IRequest;
 
 /**
@@ -42,6 +43,7 @@ class SourcesController extends Controller
      * @param IRequest     $request      The request object
      * @param IAppConfig   $config       The app configuration object
      * @param SourceMapper $sourceMapper The source mapper
+     * @param IL10N        $l10n         The localization service
      *
      * @return void
      */
@@ -49,7 +51,8 @@ class SourcesController extends Controller
         string $appName,
         IRequest $request,
         private readonly IAppConfig $config,
-        private readonly SourceMapper $sourceMapper
+        private readonly SourceMapper $sourceMapper,
+        private readonly IL10N $l10n
     ) {
         parent::__construct(appName: $appName, request: $request);
     }//end __construct()
@@ -117,7 +120,7 @@ class SourcesController extends Controller
             return new JSONResponse(data: $this->sourceMapper->find(id: (int) $id));
         } catch (DoesNotExistException $exception) {
             // Return a 404 error if the source doesn't exist.
-            return new JSONResponse(data: ['error' => 'Not Found'], statusCode: 404);
+            return new JSONResponse(data: ['error' => $this->l10n->t('Not Found')], statusCode: 404);
         }
     }//end show()
 

@@ -327,7 +327,6 @@ class SolrManagementCommand extends Command
             // Common warming queries.
             $warmQueries = [
                 ['q' => '*:*', 'rows' => 10, 'description' => 'All documents sample'],
-                ['q' => 'published:[* TO *]', 'rows' => 10, 'description' => 'Published objects'],
                 [
                     'q'           => '*:*',
                     'rows'        => 0,
@@ -480,8 +479,6 @@ class SolrManagementCommand extends Command
             'organisation_id',
             'created',
             'updated',
-            'published',
-            'depublished',
             'tenant_id',
             '_text_',
         // Full-text search field.

@@ -43,6 +43,10 @@ use Psr\Log\LoggerInterface;
  *
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
  * @SuppressWarnings(PHPMD.ExcessiveClassComplexity)
+ * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+ * @SuppressWarnings(PHPMD.NPathComplexity)
+ * @SuppressWarnings(PHPMD.StaticAccess)
+ * @SuppressWarnings(PHPMD.UnusedFormalParameter)
  */
 class GraphQLResolver
 {
@@ -72,28 +76,24 @@ class GraphQLResolver
      * Constructor.
      *
      * @param GetObject           $getObject         Object finder
-     * @param QueryHandler        $queryHandler      Query handler
      * @param ObjectService       $objectService     Object service
      * @param PermissionHandler   $permissionHandler Permission handler
      * @param PropertyRbacHandler $propertyRbac      Property RBAC handler
      * @param RelationHandler     $relationHandler   Relation handler
      * @param AuditTrailMapper    $auditTrailMapper  Audit trail mapper
      * @param RegisterMapper      $registerMapper    Register mapper
-     * @param SchemaMapper        $schemaMapper      Schema mapper
      * @param LoggerInterface     $logger            Logger
      *
      * @SuppressWarnings(PHPMD.ExcessiveParameterList)
      */
     public function __construct(
         private readonly GetObject $getObject,
-        private readonly QueryHandler $queryHandler,
         private readonly ObjectService $objectService,
         private readonly PermissionHandler $permissionHandler,
         private readonly PropertyRbacHandler $propertyRbac,
         private readonly RelationHandler $relationHandler,
         private readonly AuditTrailMapper $auditTrailMapper,
         private readonly RegisterMapper $registerMapper,
-        private readonly SchemaMapper $schemaMapper,
         private readonly LoggerInterface $logger,
     ) {
     }//end __construct()
@@ -187,12 +187,6 @@ class GraphQLResolver
             schema: $schema->getId()
         );
 
-        // Handle cursor-based pagination.
-        $cursorData = null;
-        if (isset($args['after']) === true) {
-            $cursorData = $this->decodeCursor(cursor: $args['after']);
-        }
-
         // Multitenancy is handled by the query context (ObjectService checks active org).
         // RBAC is handled by checkSchemaPermission above.
         $result = $this->objectService->searchObjectsPaginated(
@@ -234,14 +228,13 @@ class GraphQLResolver
         $hasNextPage     = (($offset + $limit) < $totalCount);
         $hasPreviousPage = ($offset > 0);
 
-        $edgesEmpty = empty($edges);
+        $startCursor = null;
+        $endCursor   = null;
+        $edgesEmpty  = empty($edges);
         if ($edgesEmpty === false) {
             $startCursor = $edges[0]['cursor'];
             $lastEdge    = end($edges);
             $endCursor   = $lastEdge['cursor'];
-        } else {
-            $startCursor = null;
-            $endCursor   = null;
         }
 
         return [
@@ -439,7 +432,7 @@ class GraphQLResolver
         $this->relationBuffer[$uuid] = true;
 
         return new Deferred(
-                function () use ($uuid, $path) {
+                function () use ($uuid) {
                     // Flush the buffer if not yet loaded.
                     if (isset($this->relationCache[$uuid]) === false) {
                         $this->flushRelationBuffer();
@@ -485,7 +478,7 @@ class GraphQLResolver
     public function resolveUsedBy(string $objectUuid): array
     {
         $result = $this->relationHandler->getUsedBy($objectUuid);
-        return ($result['results'] ?? []);
+        return $result['results'];
 
     }//end resolveUsedBy()
 
@@ -507,11 +500,7 @@ class GraphQLResolver
             $loaded = $this->relationHandler->bulkLoadRelationshipsBatched($uuids);
 
             foreach ($loaded as $key => $object) {
-                if ($object instanceof ObjectEntity) {
-                    $this->relationCache[$key] = $this->objectToArray(object: $object);
-                } else if (is_array(value: $object) === true) {
-                    $this->relationCache[$key] = $object;
-                }
+                $this->relationCache[$key] = $this->objectToArray(object: $object);
             }
         } catch (\Exception $e) {
             $this->logger->warning('GraphQL relation batch load failed: '.$e->getMessage());
@@ -570,61 +559,6 @@ class GraphQLResolver
      *
      * @return array<string, mixed> The query array
      */
-    private function buildQueryFromArgs(array $args, Register $register, Schema $schema): array
-    {
-        $query = [];
-
-        // Register and schema context.
-        $query['register'] = $register->getId();
-        $query['schema']   = $schema->getId();
-
-        // Pagination.
-        $query['_limit']  = ($args['first'] ?? 20);
-        $query['_offset'] = ($args['offset'] ?? 0);
-
-        // Search.
-        if (isset($args['search']) === true) {
-            $query['_search'] = $args['search'];
-        }
-
-        if (isset($args['fuzzy']) === true && $args['fuzzy'] === true) {
-            $query['_fuzzy'] = true;
-        }
-
-        // Sort.
-        if (isset($args['sort']) === true) {
-            $query['_order'] = [
-                [
-                    'field'     => $args['sort']['field'],
-                    'direction' => strtoupper(string: ($args['sort']['order'] ?? 'ASC')),
-                ],
-            ];
-        }
-
-        // Facets.
-        if (isset($args['facets']) === true && empty($args['facets']) === false) {
-            $query['_facets'] = implode(separator: ',', array: $args['facets']);
-        }
-
-        // Filter (property values).
-        if (isset($args['filter']) === true && is_array(value: $args['filter']) === true) {
-            foreach ($args['filter'] as $field => $value) {
-                $query[$field] = $value;
-            }
-        }
-
-        // Self filter (metadata columns).
-        if (isset($args['selfFilter']) === true && is_array(value: $args['selfFilter']) === true) {
-            foreach ($args['selfFilter'] as $field => $value) {
-                if ($value !== null) {
-                    $query['@self'][$field] = $value;
-                }
-            }
-        }
-
-        return $query;
-
-    }//end buildQueryFromArgs()
 
     /**
      * Convert GraphQL args to HTTP request params format for ObjectService.buildSearchQuery().
@@ -704,14 +638,14 @@ class GraphQLResolver
         $data['_schema']   = $object->getSchema();
 
         $created = $object->getCreated();
-        if ($created instanceof \DateTimeInterface) {
+        if ($created instanceof \DateTimeInterface === true) {
             $data['_created'] = $created->format(\DateTimeInterface::ATOM);
         } else {
             $data['_created'] = $created;
         }
 
         $updated = $object->getUpdated();
-        if ($updated instanceof \DateTimeInterface) {
+        if ($updated instanceof \DateTimeInterface === true) {
             $data['_updated'] = $updated->format(\DateTimeInterface::ATOM);
         } else {
             $data['_updated'] = $updated;
@@ -767,29 +701,6 @@ class GraphQLResolver
         );
 
     }//end encodeCursor()
-
-    /**
-     * Decode a pagination cursor.
-     *
-     * @param string $cursor The encoded cursor
-     *
-     * @return array{uuid: string, offset: int}|null The decoded cursor data
-     */
-    private function decodeCursor(string $cursor): ?array
-    {
-        $decoded = base64_decode(string: $cursor, strict: true);
-        if ($decoded === false) {
-            return null;
-        }
-
-        $data = json_decode(json: $decoded, associative: true);
-        if (is_array(value: $data) === false) {
-            return null;
-        }
-
-        return $data;
-
-    }//end decodeCursor()
 
     /**
      * Get collected partial errors.

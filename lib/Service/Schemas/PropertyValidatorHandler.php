@@ -29,6 +29,7 @@ use Psr\Log\LoggerInterface;
  * Service class for validating schema properties according to JSON Schema specification
  *
  * @SuppressWarnings(PHPMD.ExcessiveClassComplexity) Complex JSON Schema property validation logic
+ * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
  */
 class PropertyValidatorHandler
 {

@@ -409,11 +409,11 @@ trait MultiTenancyTrait
     /**
      * Apply filter when no active organisation is set
      *
-     * @param  IQueryBuilder $qb                 Query builder
-     * @param  mixed         $user               User object
-     * @param  bool          $allowNullOrg       Allow NULL organisation
-     * @param  string        $organisationColumn Organisation column name
-     * @param  string        $tableAlias         Table alias
+     * @param IQueryBuilder $qb                 Query builder
+     * @param mixed         $user               User object
+     * @param bool          $allowNullOrg       Allow NULL organisation
+     * @param string        $organisationColumn Organisation column name
+     *
      * @return void
      *
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Flags control multitenancy filtering behavior

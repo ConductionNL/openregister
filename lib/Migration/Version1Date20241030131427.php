@@ -35,8 +35,9 @@ use OCP\Migration\SimpleMigrationStep;
  * Migration step for adding hard_validation and archive columns to schemas table
  *
  * FIXME Auto-generated migration step: Please modify to your needs!
+ *
+ * @SuppressWarnings(PHPMD.UnusedFormalParameter)
  */
-
 class Version1Date20241030131427 extends SimpleMigrationStep
 {
     /**

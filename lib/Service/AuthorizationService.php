@@ -33,6 +33,9 @@ use OCP\IUserSession;
  * @package OCA\OpenRegister\Service
  *
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
+ * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+ * @SuppressWarnings(PHPMD.NPathComplexity)
+ * @SuppressWarnings(PHPMD.UnusedFormalParameter)
  */
 class AuthorizationService
 {
@@ -54,13 +57,11 @@ class AuthorizationService
      * @param IUserManager   $userManager    Nextcloud user manager
      * @param IUserSession   $userSession    Nextcloud user session
      * @param ConsumerMapper $consumerMapper Consumer database mapper
-     * @param IGroupManager  $groupManager   Nextcloud group manager
      */
     public function __construct(
         private readonly IUserManager $userManager,
         private readonly IUserSession $userSession,
         private readonly ConsumerMapper $consumerMapper,
-        private readonly IGroupManager $groupManager,
     ) {
 
     }//end __construct()
@@ -94,9 +95,9 @@ class AuthorizationService
      *
      * @param string $data The base64url-encoded string
      *
-     * @return string|false The decoded data or false on failure
+     * @return string The decoded data
      */
-    private function base64urlDecode(string $data): string|false
+    private function base64urlDecode(string $data): string
     {
         return base64_decode(strtr($data, '-_', '+/'));
 
@@ -144,20 +145,19 @@ class AuthorizationService
     {
         $now = new DateTime();
 
-        if (isset($payload['iat']) === true) {
-            $iat = new DateTime('@'.$payload['iat']);
-        } else {
+        if (isset($payload['iat']) === false) {
             throw new AuthenticationException(
                 message: 'The token has no time of creation',
                 details: ['iat' => null]
             );
         }
 
+        $iat = new DateTime('@'.$payload['iat']);
+
+        $exp = clone $iat;
+        $exp->modify('+1 Hour');
         if (isset($payload['exp']) === true) {
             $exp = new DateTime('@'.$payload['exp']);
-        } else {
-            $exp = clone $iat;
-            $exp->modify('+1 Hour');
         }
 
         if ($exp->diff($now)->format('%R') === '+') {
@@ -186,7 +186,7 @@ class AuthorizationService
     {
         $token = substr(string: $authorization, offset: strlen(string: 'Bearer '));
 
-        if ($token === '' || $token === false) {
+        if ($token === '') {
             throw new AuthenticationException(message: 'No token has been provided', details: []);
         }
 
@@ -200,15 +200,8 @@ class AuthorizationService
 
         [$headerB64, $payloadB64, $signatureB64] = $parts;
 
-        $headerJson = $this->base64urlDecode($headerB64);
-        if ($headerJson === false) {
-            throw new AuthenticationException(
-                message: 'The token could not be validated',
-                details: ['reason' => 'Invalid header encoding']
-            );
-        }
-
-        $header = json_decode($headerJson, true);
+        $headerJson = $this->base64urlDecode(data: $headerB64);
+        $header     = json_decode($headerJson, true);
         if (is_array($header) === false || isset($header['alg']) === false) {
             throw new AuthenticationException(
                 message: 'The token could not be validated',
@@ -216,15 +209,8 @@ class AuthorizationService
             );
         }
 
-        $payloadJson = $this->base64urlDecode($payloadB64);
-        if ($payloadJson === false) {
-            throw new AuthenticationException(
-                message: 'The token could not be validated',
-                details: ['reason' => 'Invalid payload encoding']
-            );
-        }
-
-        $payload = json_decode($payloadJson, true);
+        $payloadJson = $this->base64urlDecode(data: $payloadB64);
+        $payload     = json_decode($payloadJson, true);
         if (is_array($payload) === false) {
             throw new AuthenticationException(
                 message: 'The token could not be validated',
@@ -245,26 +231,27 @@ class AuthorizationService
         $publicKey = $authConf['publicKey'] ?? '';
         $algorithm = $authConf['algorithm'] ?? $header['alg'];
 
-        $signature = $this->base64urlDecode($signatureB64);
-        if ($signature === false) {
-            throw new AuthenticationException(
-                message: 'The token could not be validated',
-                details: ['reason' => 'Invalid signature encoding']
-            );
-        }
+        $signature = $this->base64urlDecode(data: $signatureB64);
 
         // Verify HMAC signature.
-        if (isset(self::HMAC_MAP[$algorithm]) === true) {
-            if ($this->verifyHmac($headerB64, $payloadB64, $signature, $publicKey, $algorithm) === false) {
-                throw new AuthenticationException(
-                    message: 'The token could not be validated',
-                    details: ['reason' => 'The token does not match the public key']
-                );
-            }
-        } else {
+        if (isset(self::HMAC_MAP[$algorithm]) === false) {
             throw new AuthenticationException(
                 message: 'The token algorithm is not supported',
                 details: ['algorithm' => $algorithm]
+            );
+        }
+
+        $hmacValid = $this->verifyHmac(
+            headerB64: $headerB64,
+            payloadB64: $payloadB64,
+            signature: $signature,
+            secret: $publicKey,
+            algorithm: $algorithm
+        );
+        if ($hmacValid === false) {
+            throw new AuthenticationException(
+                message: 'The token could not be validated',
+                details: ['reason' => 'The token does not match the public key']
             );
         }
 
@@ -339,10 +326,13 @@ class AuthorizationService
      * @return Response The updated response.
      *
      * @throws SecurityException If CSRF-unsafe headers are detected.
+     *
+     * @psalm-suppress UndefinedClass SecurityException is a private Nextcloud internal class
      */
     public function corsAfterController(IRequest $request, Response $response): Response
     {
-        if (isset($request->server['HTTP_ORIGIN']) === true) {
+        $origin = $request->getHeader('Origin');
+        if (empty($origin) === false) {
             foreach ($response->getHeaders() as $header => $value) {
                 if (strtolower(string: $header) === 'access-control-allow-credentials'
                     && strtolower(string: trim(string: $value)) === 'true'
@@ -352,7 +342,6 @@ class AuthorizationService
                 }
             }
 
-            $origin = $request->server['HTTP_ORIGIN'];
             $response->addHeader('Access-Control-Allow-Origin', $origin);
         }
 

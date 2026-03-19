@@ -45,6 +45,8 @@ use Psr\Log\LoggerInterface;
  * @version  1.0.0
  *
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
+ * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
+ * @SuppressWarnings(PHPMD.UnusedFormalParameter)
  */
 class CreateFileHandler
 {
@@ -63,7 +65,7 @@ class CreateFileHandler
      * @param FolderManagementHandler $folderMgmtHandler    Folder management handler.
      * @param FileValidationHandler   $fileValidHandler     File validation handler.
      * @param FileOwnershipHandler    $fileOwnershipHandler File ownership handler.
-     * @param MagicMapper      $objectEntityMapper   Object entity mapper.
+     * @param MagicMapper             $objectEntityMapper   Object entity mapper.
      * @param LoggerInterface         $logger               Logger for logging operations.
      */
     public function __construct(

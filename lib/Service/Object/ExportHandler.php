@@ -64,12 +64,12 @@ class ExportHandler
     /**
      * Constructor
      *
-     * @param MagicMapper $objectEntityMapper Object entity mapper
-     * @param SchemaMapper       $schemaMapper       Schema mapper
-     * @param ExportService      $exportService      Export service
-     * @param ImportService      $importService      Import service
-     * @param FileService        $fileService        File service
-     * @param LoggerInterface    $logger             PSR-3 logger
+     * @param MagicMapper     $objectEntityMapper Object entity mapper
+     * @param SchemaMapper    $schemaMapper       Schema mapper
+     * @param ExportService   $exportService      Export service
+     * @param ImportService   $importService      Import service
+     * @param FileService     $fileService        File service
+     * @param LoggerInterface $logger             PSR-3 logger
      */
     public function __construct(
         private readonly MagicMapper $objectEntityMapper,
@@ -190,15 +190,15 @@ class ExportHandler
     /**
      * Import objects from uploaded file
      *
-     * @param Register    $register     Register entity
-     * @param array       $uploadedFile Uploaded file data
-     * @param Schema|null $schema       Schema entity (optional for Excel, required for CSV unless auto-detected)
-     * @param bool        $validation   Enable validation
-     * @param bool        $events       Enable events
+     * @param Register    $register      Register entity
+     * @param array       $uploadedFile  Uploaded file data
+     * @param Schema|null $schema        Schema entity (optional for Excel, required for CSV unless auto-detected)
+     * @param bool        $validation    Enable validation
+     * @param bool        $events        Enable events
      * @param bool        $_rbac         Apply RBAC checks
      * @param bool        $_multitenancy Apply multitenancy filtering
-     * @param bool        $publish      Publish imported objects (Excel only)
-     * @param IUser|null  $currentUser  Current user
+     * @param bool        $publish       Publish imported objects (Excel only)
+     * @param IUser|null  $currentUser   Current user
      *
      * @return array Import result with created, updated, errors, and performance stats.
      *

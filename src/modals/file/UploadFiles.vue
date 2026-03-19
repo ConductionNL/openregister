@@ -1,5 +1,6 @@
 <!-- eslint-disable -->
 <script setup>
+import { translate as t } from '@nextcloud/l10n'
 import { navigationStore, objectStore } from '../../store/store.js'
 </script>
 
@@ -335,7 +336,7 @@ export default {
 	},
 	watch: {
 		filesComputed: {
-			handler(newFiles, oldFiles) {
+			handler(newFiles, _oldFiles) {
 				if (newFiles?.length) {
 					this.addAttachments()
 				}

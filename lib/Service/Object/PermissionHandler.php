@@ -47,6 +47,8 @@ use Psr\Container\ContainerInterface;
  * @package  OCA\OpenRegister\Service\Objects
  *
  * @SuppressWarnings(PHPMD.ExcessiveClassComplexity) Permission evaluation requires per-action and per-role branching
+ * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
+ * @SuppressWarnings(PHPMD.NPathComplexity)
  */
 class PermissionHandler
 {
@@ -57,7 +59,7 @@ class PermissionHandler
      * @param IUserManager       $userManager        User manager for getting user objects.
      * @param IGroupManager      $groupManager       Group manager for checking user groups.
      * @param SchemaMapper       $schemaMapper       Mapper for schema operations.
-     * @param MagicMapper $objectEntityMapper Mapper for object entity operations.
+     * @param MagicMapper        $objectEntityMapper Mapper for object entity operations.
      * @param LoggerInterface    $logger             Logger for permission auditing.
      * @param ContainerInterface $container          Container for lazy loading services.
      */
@@ -88,7 +90,7 @@ class PermissionHandler
      * @param string            $action      The CRUD action (create, read, update, delete).
      * @param string|null       $userId      Optional user ID (defaults to current user).
      * @param string|null       $objectOwner Optional object owner for ownership check.
-     * @param bool              $_rbac        Whether to apply RBAC checks (default: true).
+     * @param bool              $_rbac       Whether to apply RBAC checks (default: true).
      * @param ObjectEntity|null $object      Optional object entity for conditional authorization matching.
      *
      * @return bool True if user has permission, false otherwise
@@ -222,7 +224,7 @@ class PermissionHandler
      * @param string            $action      Action to check permission for.
      * @param string|null       $userId      User ID to check permissions for.
      * @param string|null       $objectOwner Object owner ID.
-     * @param bool              $_rbac        Whether to enforce RBAC checks.
+     * @param bool              $_rbac       Whether to enforce RBAC checks.
      * @param ObjectEntity|null $object      Optional object entity for conditional authorization matching.
      *
      * @return void
@@ -266,7 +268,7 @@ class PermissionHandler
      * Removes objects from the array that the current user doesn't have permission to access
      * or that belong to a different organization in multi-tenant mode.
      *
-     * @param array<array<string, mixed>> $objects      Array of objects to filter.
+     * @param array<array<string, mixed>> $objects       Array of objects to filter.
      * @param bool                        $_rbac         Whether to apply RBAC filtering.
      * @param bool                        $_multitenancy Whether to apply multitenancy filtering.
      *
@@ -340,7 +342,7 @@ class PermissionHandler
      * Takes an array of UUIDs, loads the corresponding objects, and filters them
      * based on current user permissions and organization context.
      *
-     * @param array<string> $uuids        Array of object UUIDs to filter.
+     * @param array<string> $uuids         Array of object UUIDs to filter.
      * @param bool          $_rbac         Whether to apply RBAC filtering.
      * @param bool          $_multitenancy Whether to apply multitenancy filtering.
      *
@@ -576,12 +578,10 @@ class PermissionHandler
             }
 
             // Get the actual value to compare against.
+            // Regular field: match against object data; special _organisation field: match against @self.organisation.
+            $actualValue = $objectData[$field] ?? null;
             if ($field === '_organisation') {
-                // Special field: match against @self.organisation.
                 $actualValue = $objectOrganisation;
-            } else {
-                // Regular field: match against object data.
-                $actualValue = $objectData[$field] ?? null;
             }
 
             // If the actual value is an array with an 'id' key (resolved relation), use the id.

@@ -45,9 +45,9 @@ class MergeHandler
     /**
      * Constructor for MergeHandler.
      *
-     * @param MagicMapper $objectEntityMapper Mapper for object entities.
-     * @param FileService        $fileService        Service for file operations.
-     * @param IUserSession       $userSession        User session for tracking deletions.
+     * @param MagicMapper  $objectEntityMapper Mapper for object entities.
+     * @param FileService  $fileService        Service for file operations.
+     * @param IUserSession $userSession        User session for tracking deletions.
      */
     public function __construct(
         private readonly MagicMapper $objectEntityMapper,
@@ -268,8 +268,9 @@ class MergeHandler
                 $targetUuid = $targetObject->getUuid();
 
                 $referencingObjects = $this->objectEntityMapper->findByRelation(
-                    search: $sourceUuid,
-                    partialMatch: true
+                    uuid: $sourceUuid,
+                    _search: $sourceUuid,
+                    _partialMatch: true
                 );
 
                 foreach ($referencingObjects as $referencingObject) {

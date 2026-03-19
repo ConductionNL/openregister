@@ -734,17 +734,17 @@ class FilePropertyHandler
         array $fileConfig,
         ?int $index=null
     ) {
-        // Initialize fileData before conditional assignment.
-        $fileData = [];
-
         // Check if it's a URL.
-        if (filter_var($fileInput, FILTER_VALIDATE_URL) !== false
-            && (strpos($fileInput, 'http://') === 0 || strpos($fileInput, 'https://') === 0)
-        ) {
+        $isUrl = filter_var($fileInput, FILTER_VALIDATE_URL) !== false
+            && (strpos($fileInput, 'http://') === 0 || strpos($fileInput, 'https://') === 0);
+
+        if ($isUrl === true) {
             // Fetch file content from URL.
             $fileContent = $this->fetchFileFromUrl(url: $fileInput);
             $fileData    = $this->parseFileDataFromUrl(url: $fileInput, content: $fileContent);
-        } else {
+        }
+
+        if ($isUrl === false) {
             // Parse as base64 or data URI.
             $fileData = $this->parseFileData(fileContent: $fileInput);
         }
@@ -859,11 +859,8 @@ class FilePropertyHandler
 
         // No ID or existing file not accessible, create a new file.
         // This requires downloadUrl or accessUrl to fetch content.
-        if (($fileObject['downloadUrl'] ?? null) !== null) {
-            $fileUrl = $fileObject['downloadUrl'];
-        } else if (($fileObject['accessUrl'] ?? null) !== null) {
-            $fileUrl = $fileObject['accessUrl'];
-        } else {
+        $fileUrl = $fileObject['downloadUrl'] ?? $fileObject['accessUrl'] ?? null;
+        if ($fileUrl === null) {
             throw new Exception("File object for property '$propertyName' has no downloadable URL");
         }
 
@@ -988,17 +985,19 @@ class FilePropertyHandler
         // Handle data URI format (data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAA...).
         if (strpos($fileContent, 'data:') === 0) {
             // Extract MIME type and content from data URI.
-            if (preg_match('/^data:([^;]+);base64,(.+)$/', $fileContent, $matches) === 1) {
-                $mimeType = $matches[1];
-                $content  = base64_decode($matches[2], true);
-                // Strict mode.
-                if ($content === false) {
-                    throw new Exception('Invalid base64 content in data URI');
-                }
-            } else {
+            if (preg_match('/^data:([^;]+);base64,(.+)$/', $fileContent, $matches) !== 1) {
                 throw new Exception('Invalid data URI format');
             }
-        } else {
+
+            $mimeType = $matches[1];
+            $content  = base64_decode($matches[2], true);
+            // Strict mode.
+            if ($content === false) {
+                throw new Exception('Invalid base64 content in data URI');
+            }
+        }
+
+        if (strpos($fileContent, 'data:') !== 0) {
             // Handle plain base64 content.
             $content = base64_decode($fileContent, true);
             // Strict mode.

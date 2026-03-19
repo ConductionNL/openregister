@@ -116,7 +116,6 @@ class ValidationOperationsHandler
      *     Validation loop with error handling requires multiple branches
      * @SuppressWarnings(PHPMD.NPathComplexity)
      *     Try-catch and conditional result handling creates multiple paths
-     * @SuppressWarnings(PHPMD.ElseExpression)
      *     Circular dependency workaround and validation result handling require else branch
      */
     public function validateAllObjects(): array
@@ -162,7 +161,9 @@ class ValidationOperationsHandler
 
                 if ($validationResult->isValid() === true) {
                     $validationResults['valid_objects']++;
-                } else {
+                }
+
+                if ($validationResult->isValid() !== true) {
                     $validationResults['invalid_objects']++;
                     $validationResults['validation_errors'][] = [
                         'object_id'   => $object->getUuid(),

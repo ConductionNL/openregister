@@ -60,6 +60,9 @@ use Psr\Log\LoggerInterface;
  * @SuppressWarnings(PHPMD.NPathComplexity)
  * @SuppressWarnings(PHPMD.ExcessiveClassLength)
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)   Facet computation requires schema, register, and query dependencies
+ * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
+ * @SuppressWarnings(PHPMD.BooleanArgumentFlag)
+ * @SuppressWarnings(PHPMD.UnusedFormalParameter)
  */
 class MagicFacetHandler
 {
@@ -169,7 +172,7 @@ class MagicFacetHandler
     /**
      * Whether lazy dependencies have been resolved.
      *
-     * @var bool
+     * @var boolean
      */
     private bool $lazyResolved = false;
 
@@ -235,7 +238,7 @@ class MagicFacetHandler
         }
 
         try {
-            $cacheFactory = $this->container->get(ICacheFactory::class);
+            $cacheFactory         = $this->container->get(ICacheFactory::class);
             $this->cacheFactory   = $cacheFactory;
             $this->distLabelCache = $cacheFactory->createDistributed('openregister_facet_labels');
         } catch (\Exception $e) {
@@ -455,6 +458,7 @@ class MagicFacetHandler
                     }
                 }
 
+                $facets[$field] = ['type' => 'terms', 'buckets' => []];
                 if (empty($tablesWithColumn) === false) {
                     // Use first matching table's schema for label resolution.
                     $firstMatchingConfig = reset($tablesWithColumn);
@@ -466,8 +470,6 @@ class MagicFacetHandler
                         baseQuery: $baseQuery,
                         schema: $schemaForLabels
                     );
-                } else {
-                    $facets[$field] = ['type' => 'terms', 'buckets' => []];
                 }
             }//end if
 
@@ -562,11 +564,10 @@ class MagicFacetHandler
         // Cast field to text for consistent types in UNION ALL queries.
         // Different magic tables may have the same field name but different types
         // (e.g., 'type' as text in one table, jsonb in another).
-        $platform = $this->db->getDatabasePlatform();
+        $platform  = $this->db->getDatabasePlatform();
+        $castField = "CAST({$field} AS CHAR)";
         if ($platform instanceof \Doctrine\DBAL\Platforms\PostgreSQLPlatform === true) {
             $castField = "{$field}::text";
-        } else {
-            $castField = "CAST({$field} AS CHAR)";
         }
 
         foreach ($tableConfigs as $tc) {
@@ -655,6 +656,7 @@ class MagicFacetHandler
             foreach ($normalizedBuckets as $bucket) {
                 $key = $bucket['key'];
                 // For metadata facets, use getFieldLabel to resolve IDs to names.
+                $label = $labelMap[$key] ?? (string) $key;
                 if ($isMetadata === true) {
                     $label = $this->getFieldLabel(
                         field: $field,
@@ -663,8 +665,6 @@ class MagicFacetHandler
                         register: $firstConfig['register'],
                         schema: $firstConfig['schema']
                     );
-                } else {
-                    $label = $labelMap[$key] ?? (string) $key;
                 }
 
                 $buckets[] = [
@@ -948,7 +948,7 @@ class MagicFacetHandler
                 continue;
             }
 
-            if (in_array($field, ['created', 'updated', 'published'], true) === true) {
+            if (in_array($field, ['created', 'updated'], true) === true) {
                 $config['@self'][$field] = ['type' => 'date_histogram', 'interval' => 'month'];
                 continue;
             }
@@ -1130,6 +1130,24 @@ class MagicFacetHandler
 
         // Use shared query builder from MagicSearchHandler (single source of truth for filters).
         // Simple GROUP BY - array values will be post-processed in PHP.
+        // Fallback: Build query manually (legacy behavior).
+        $queryBuilder = $this->db->getQueryBuilder();
+        $queryBuilder->selectAlias($field, 'facet_value')
+            ->addSelect($queryBuilder->createFunction('COUNT(*) as doc_count'))
+            ->from($tableName)
+            ->where($queryBuilder->expr()->isNotNull($field))
+            ->groupBy($field)
+            ->orderBy('doc_count', 'DESC')
+            ->setMaxResults(self::MAX_FACET_BUCKETS);
+
+        // Apply base filters.
+        $this->applyBaseFilters(
+            queryBuilder: $queryBuilder,
+            baseQuery: $baseQuery,
+            tableName: $tableName,
+            schema: $schema
+        );
+
         if ($this->searchHandler !== null) {
             $queryBuilder = $this->searchHandler->buildFilteredQuery(
                 query: $baseQuery,
@@ -1144,24 +1162,6 @@ class MagicFacetHandler
                 ->groupBy("t.{$field}")
                 ->orderBy('doc_count', 'DESC')
                 ->setMaxResults(self::MAX_FACET_BUCKETS);
-        } else {
-            // Fallback: Build query manually (legacy behavior).
-            $queryBuilder = $this->db->getQueryBuilder();
-            $queryBuilder->selectAlias($field, 'facet_value')
-                ->addSelect($queryBuilder->createFunction('COUNT(*) as doc_count'))
-                ->from($tableName)
-                ->where($queryBuilder->expr()->isNotNull($field))
-                ->groupBy($field)
-                ->orderBy('doc_count', 'DESC')
-                ->setMaxResults(self::MAX_FACET_BUCKETS);
-
-            // Apply base filters.
-            $this->applyBaseFilters(
-                queryBuilder: $queryBuilder,
-                baseQuery: $baseQuery,
-                tableName: $tableName,
-                schema: $schema
-            );
         }//end if
 
         $result = $queryBuilder->executeQuery();
@@ -1207,16 +1207,15 @@ class MagicFacetHandler
             $key = $bucket['key'];
 
             // Use batch-resolved label if available, otherwise fall back to individual lookup.
+            $label = $this->getFieldLabel(
+                field: $field,
+                value: $key,
+                isMetadata: $isMetadata,
+                register: $register,
+                schema: $schema
+            );
             if (isset($labelMap[$key]) === true) {
                 $label = $labelMap[$key];
-            } else {
-                $label = $this->getFieldLabel(
-                    field: $field,
-                    value: $key,
-                    isMetadata: $isMetadata,
-                    register: $register,
-                    schema: $schema
-                );
             }
 
             $buckets[] = [
@@ -1303,6 +1302,28 @@ class MagicFacetHandler
         // Build date histogram query based on interval using PostgreSQL-compatible syntax.
         $dateFormat = $this->getDateFormatForInterval(interval: $interval);
 
+        // Fallback: Build query manually (legacy behavior).
+        $queryBuilder = $this->db->getQueryBuilder();
+
+        // Use TO_CHAR for PostgreSQL (Nextcloud default) instead of DATE_FORMAT (MySQL).
+        $queryBuilder->selectAlias(
+            $queryBuilder->createFunction("TO_CHAR($field, '$dateFormat')"),
+            'date_key'
+        )
+            ->selectAlias($queryBuilder->createFunction('COUNT(*)'), 'doc_count')
+            ->from($tableName)
+            ->where($queryBuilder->expr()->isNotNull($field))
+            ->groupBy('date_key')
+            ->orderBy('date_key', 'ASC');
+
+        // Apply base filters (including object field filters for facet filtering).
+        $this->applyBaseFilters(
+            queryBuilder: $queryBuilder,
+            baseQuery: $baseQuery,
+            tableName: $tableName,
+            schema: $schema
+        );
+
         // Use shared query builder from MagicSearchHandler (single source of truth for filters).
         if ($this->searchHandler !== null && $schema !== null) {
             $queryBuilder = $this->searchHandler->buildFilteredQuery(
@@ -1321,28 +1342,6 @@ class MagicFacetHandler
                 ->andWhere($queryBuilder->expr()->isNotNull("t.{$field}"))
                 ->groupBy('date_key')
                 ->orderBy('date_key', 'ASC');
-        } else {
-            // Fallback: Build query manually (legacy behavior).
-            $queryBuilder = $this->db->getQueryBuilder();
-
-            // Use TO_CHAR for PostgreSQL (Nextcloud default) instead of DATE_FORMAT (MySQL).
-            $queryBuilder->selectAlias(
-                $queryBuilder->createFunction("TO_CHAR($field, '$dateFormat')"),
-                'date_key'
-            )
-                ->selectAlias($queryBuilder->createFunction('COUNT(*)'), 'doc_count')
-                ->from($tableName)
-                ->where($queryBuilder->expr()->isNotNull($field))
-                ->groupBy('date_key')
-                ->orderBy('date_key', 'ASC');
-
-            // Apply base filters (including object field filters for facet filtering).
-            $this->applyBaseFilters(
-                queryBuilder: $queryBuilder,
-                baseQuery: $baseQuery,
-                tableName: $tableName,
-                schema: $schema
-            );
         }//end if
 
         $result  = $queryBuilder->executeQuery();
@@ -1392,7 +1391,7 @@ class MagicFacetHandler
                     $quarter    = (int) $matches[2];
                     $startMonth = (($quarter - 1) * 3) + 1;
                     $endMonth   = $startMonth + 2;
-                    $lastDay    = cal_days_in_month(CAL_GREGORIAN, $endMonth, $year);
+                    $lastDay    = cal_days_in_month(0, $endMonth, $year);
 
                     return [
                         'from' => sprintf('%04d-%02d-01', $year, $startMonth),
@@ -1762,21 +1761,18 @@ class MagicFacetHandler
         foreach ($searchableColumns as $column) {
             if ($this->columnExists(tableName: $tableName, columnName: $column) === true) {
                 // Use ILIKE only (matching actual behavior, not the % operator).
+                // MariaDB/MySQL: Use LIKE for case-insensitive substring match.
+                $searchCondition = $queryBuilder->expr()->like(
+                    $queryBuilder->createFunction("LOWER($column)"),
+                    $queryBuilder->createNamedParameter(strtolower($searchPattern))
+                );
                 if ($platform instanceof \Doctrine\DBAL\Platforms\PostgreSQLPlatform === true) {
-                    $orConditions->add(
-                        $queryBuilder->createFunction(
-                            "LOWER($column) ILIKE LOWER(".$queryBuilder->createNamedParameter($searchPattern).')'
-                        )
-                    );
-                } else {
-                    // MariaDB/MySQL: Use LIKE for case-insensitive substring match.
-                    $orConditions->add(
-                        $queryBuilder->expr()->like(
-                            $queryBuilder->createFunction("LOWER($column)"),
-                            $queryBuilder->createNamedParameter(strtolower($searchPattern))
-                        )
+                    $searchCondition = $queryBuilder->createFunction(
+                        "LOWER($column) ILIKE LOWER(".$queryBuilder->createNamedParameter($searchPattern).')'
                     );
                 }
+
+                $orConditions->add($searchCondition);
             }
         }
 
@@ -1855,11 +1851,12 @@ class MagicFacetHandler
             $uncachedUuids = [];
 
             foreach ($uuids as $uuid) {
-                if (isset($cachedLabels[$uuid]) === true) {
-                    $result[$uuid] = $cachedLabels[$uuid];
-                } else {
+                if (isset($cachedLabels[$uuid]) === false) {
                     $uncachedUuids[] = $uuid;
+                    continue;
                 }
+
+                $result[$uuid] = $cachedLabels[$uuid];
             }
 
             // If all UUIDs found in cache, return immediately.
@@ -1893,11 +1890,12 @@ class MagicFacetHandler
                     $result        = [];
                     $uncachedUuids = [];
                     foreach ($uuids as $uuid) {
-                        if (isset($distributedLabels[$uuid]) === true) {
-                            $result[$uuid] = $distributedLabels[$uuid];
-                        } else {
+                        if (isset($distributedLabels[$uuid]) === false) {
                             $uncachedUuids[] = $uuid;
+                            continue;
                         }
+
+                        $result[$uuid] = $distributedLabels[$uuid];
                     }
 
                     if (empty($uncachedUuids) === true) {
@@ -1960,8 +1958,9 @@ class MagicFacetHandler
                     );
                     $this->warmedFields[$fieldCacheKey] = true;
                 } catch (\Exception $e) {
+                    $eMsg = $e->getMessage();
                     $this->logger->warning(
-                        message: '[MagicFacetHandler] Failed to persist facet labels to distributed cache: '.$e->getMessage(),
+                        message: "[MagicFacetHandler] Failed to persist facet labels to distributed cache: {$eMsg}",
                         context: ['file' => __FILE__, 'line' => __LINE__]
                     );
                 }

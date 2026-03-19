@@ -39,6 +39,7 @@ use Psr\Log\LoggerInterface;
  * @package  OCA\OpenRegister\Controller\Settings
  *
  * @SuppressWarnings(PHPMD.ExcessiveClassComplexity) Service health check methods contribute inherent complexity
+ * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
  */
 class FileSettingsController extends Controller
 {

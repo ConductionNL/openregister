@@ -48,6 +48,7 @@ use OCA\OpenRegister\Service\Schemas\FacetCacheHandler;
  *
  * @SuppressWarnings(PHPMD.ExcessiveClassComplexity) Complex cache management across multiple cache types
  * @SuppressWarnings(PHPMD.LongVariable)             Cache service properties use descriptive names for clarity
+ * @SuppressWarnings(PHPMD.UnusedFormalParameter)
  */
 class CacheSettingsHandler
 {
@@ -271,7 +272,7 @@ class CacheSettingsHandler
       *
       * @return float Hit rate percentage
       *
-      * @SuppressWarnings(PHPMD.ElseExpression) Else clause improves readability of simple ratio calculation
+      * Else clause improves readability of simple ratio calculation
       */
     private function calculateHitRate(array $stats): float
     {
@@ -280,9 +281,9 @@ class CacheSettingsHandler
 
         if ($requests > 0) {
             return ($hits / $requests) * 100;
-        } else {
-            return 0.0;
         }
+
+        return 0.0;
     }//end calculateHitRate()
 
      /**
@@ -629,8 +630,8 @@ class CacheSettingsHandler
       *
       * @return array Result with service, cleared count, success, and before/after stats.
       *
-      * @SuppressWarnings                       (PHPMD.UnusedFormalParameter)
-      * @SuppressWarnings(PHPMD.ElseExpression) Conditional handling of optional array keys requires if-else structure
+      * @SuppressWarnings (PHPMD.UnusedFormalParameter)
+      * Conditional handling of optional array keys requires if-else structure
       */
     private function clearSchemaCache(?string $_userId=null): array
     {
@@ -640,17 +641,8 @@ class CacheSettingsHandler
             $afterStats = $this->schemaCacheService->getCacheStatistics();
 
             // Stats arrays may contain 'entries' key even if not in type definition.
-            if (array_key_exists('entries', $beforeStats) === true) {
-                $beforeEntries = $beforeStats['entries'];
-            } else {
-                $beforeEntries = 0;
-            }
-
-            if (array_key_exists('entries', $afterStats) === true) {
-                $afterEntries = $afterStats['entries'];
-            } else {
-                $afterEntries = 0;
-            }
+            $beforeEntries = $beforeStats['entries'] ?? 0;
+            $afterEntries  = $afterStats['entries'] ?? 0;
 
             return [
                 'service' => 'schema',

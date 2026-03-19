@@ -42,6 +42,7 @@ use Psr\Log\LoggerInterface;
  * @psalm-suppress UnusedClass
  *
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
+ * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
  */
 class HookRetryJob extends QueuedJob
 {
@@ -55,7 +56,7 @@ class HookRetryJob extends QueuedJob
      * Constructor for HookRetryJob
      *
      * @param ITimeFactory           $time                Time factory
-     * @param MagicMapper     $objectEntityMapper  Object mapper
+     * @param MagicMapper            $objectEntityMapper  Object mapper
      * @param SchemaMapper           $schemaMapper        Schema mapper
      * @param WorkflowEngineRegistry $engineRegistry      Engine registry
      * @param CloudEventFormatter    $cloudEventFormatter CloudEvent formatter
@@ -182,26 +183,27 @@ class HookRetryJob extends QueuedJob
                 context: ['hookId' => $hookId, 'objectId' => $objectId, 'attempt' => $attempt]
             );
 
-            if ($attempt < self::MAX_RETRIES) {
-                $this->jobList->add(
-                    job: self::class,
-                    argument: [
-                        'objectId' => $objectId,
-                        'schemaId' => $schemaId,
-                        'hook'     => $hook,
-                        'attempt'  => ($attempt + 1),
-                    ]
-                );
-                $this->logger->info(
-                    message: "[HookRetryJob] Re-queued hook '$hookId' for attempt ".($attempt + 1),
-                    context: ['hookId' => $hookId, 'objectId' => $objectId]
-                );
-            } else {
+            if ($attempt >= self::MAX_RETRIES) {
                 $this->logger->error(
                     message: "[HookRetryJob] Max retries reached for hook '$hookId' on object $objectId",
                     context: ['hookId' => $hookId, 'objectId' => $objectId, 'maxRetries' => self::MAX_RETRIES]
                 );
+                return;
             }
+
+            $this->jobList->add(
+                job: self::class,
+                argument: [
+                    'objectId' => $objectId,
+                    'schemaId' => $schemaId,
+                    'hook'     => $hook,
+                    'attempt'  => ($attempt + 1),
+                ]
+            );
+            $this->logger->info(
+                message: "[HookRetryJob] Re-queued hook '$hookId' for attempt ".($attempt + 1),
+                context: ['hookId' => $hookId, 'objectId' => $objectId]
+            );
         }//end try
     }//end run()
 }//end class

@@ -22,6 +22,7 @@ namespace OCA\OpenRegister\Controller;
 use OCA\OpenRegister\Service\WorkflowEngineRegistry;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\JSONResponse;
+use OCP\IL10N;
 use OCP\IRequest;
 use Psr\Log\LoggerInterface;
 
@@ -29,6 +30,8 @@ use Psr\Log\LoggerInterface;
  * Controller for workflow engine CRUD and health checks.
  *
  * @psalm-suppress UnusedClass
+ *
+ * @SuppressWarnings(PHPMD.BooleanArgumentFlag)
  */
 class WorkflowEngineController extends Controller
 {
@@ -39,12 +42,14 @@ class WorkflowEngineController extends Controller
      * @param IRequest               $request  Request
      * @param WorkflowEngineRegistry $registry Engine registry
      * @param LoggerInterface        $logger   Logger
+     * @param IL10N                  $l10n     Localization service
      */
     public function __construct(
         string $appName,
         IRequest $request,
         private readonly WorkflowEngineRegistry $registry,
-        private readonly LoggerInterface $logger
+        private readonly LoggerInterface $logger,
+        private readonly IL10N $l10n
     ) {
         parent::__construct(appName: $appName, request: $request);
     }//end __construct()
@@ -81,7 +86,7 @@ class WorkflowEngineController extends Controller
 
             return new JSONResponse($engine->jsonSerialize());
         } catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
-            return new JSONResponse(['error' => 'Engine not found'], 404);
+            return new JSONResponse(['error' => $this->l10n->t('Engine not found')], 404);
         }
     }//end show()
 
@@ -160,7 +165,7 @@ class WorkflowEngineController extends Controller
 
             return new JSONResponse($engine->jsonSerialize());
         } catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
-            return new JSONResponse(['error' => 'Engine not found'], 404);
+            return new JSONResponse(['error' => $this->l10n->t('Engine not found')], 404);
         } catch (\Exception $e) {
             return new JSONResponse(['error' => $e->getMessage()], 500);
         }
@@ -180,7 +185,7 @@ class WorkflowEngineController extends Controller
 
             return new JSONResponse($engine->jsonSerialize());
         } catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
-            return new JSONResponse(['error' => 'Engine not found'], 404);
+            return new JSONResponse(['error' => $this->l10n->t('Engine not found')], 404);
         }
     }//end destroy()
 
@@ -198,7 +203,7 @@ class WorkflowEngineController extends Controller
 
             return new JSONResponse($result);
         } catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
-            return new JSONResponse(['error' => 'Engine not found'], 404);
+            return new JSONResponse(['error' => $this->l10n->t('Engine not found')], 404);
         } catch (\Exception $e) {
             return new JSONResponse(['error' => $e->getMessage()], 500);
         }

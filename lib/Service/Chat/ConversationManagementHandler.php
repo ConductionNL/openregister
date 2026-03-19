@@ -173,42 +173,43 @@ class ConversationManagementHandler
                 $config->url   = rtrim($ollamaConfig['url'], '/').'/api/';
                 $config->model = $ollamaConfig['chatModel'] ?? 'llama2';
                 $config->modelOptions['temperature'] = 0.7;
-            } else {
-                // OpenAI and Fireworks use OpenAIConfig.
-                $config = new OpenAIConfig();
-
-                if ($chatProvider === 'openai') {
-                    $openaiConfig = $llmConfig['openaiConfig'] ?? [];
-                    if (empty($openaiConfig['apiKey']) === true) {
-                        return $this->generateFallbackTitle(message: $firstMessage);
-                    }
-
-                    $config->apiKey = $openaiConfig['apiKey'];
-                    $config->model  = 'gpt-4o-mini';
-                    // Use fast model for titles.
-                } else if ($chatProvider === 'fireworks') {
-                    $fireworksConfig = $llmConfig['fireworksConfig'] ?? [];
-                    if (empty($fireworksConfig['apiKey']) === true) {
-                        return $this->generateFallbackTitle(message: $firstMessage);
-                    }
-
-                    $config->apiKey = $fireworksConfig['apiKey'];
-                    $config->model  = 'accounts/fireworks/models/llama-v3p1-8b-instruct';
-                    $baseUrl        = rtrim($fireworksConfig['baseUrl'] ?? 'https://api.fireworks.ai/inference/v1', '/');
-                    if (str_ends_with($baseUrl, '/v1') === false) {
-                        $baseUrl .= '/v1';
-                    }
-
-                    $config->url = $baseUrl;
-                }//end if
-
-                if ($chatProvider !== 'openai' && $chatProvider !== 'fireworks') {
+            } else if ($chatProvider === 'openai') {
+                $openaiConfig = $llmConfig['openaiConfig'] ?? [];
+                if (empty($openaiConfig['apiKey']) === true) {
                     return $this->generateFallbackTitle(message: $firstMessage);
-                }//end if
+                }
+
+                // OpenAI uses OpenAIConfig.
+                $config         = new OpenAIConfig();
+                $config->apiKey = $openaiConfig['apiKey'];
+                $config->model  = 'gpt-4o-mini';
+
+                // @psalm-suppress UndefinedPropertyAssignment LLPhant dynamic properties.
+                $config->temperature = 0.7;
+            } else if ($chatProvider === 'fireworks') {
+                $fireworksConfig = $llmConfig['fireworksConfig'] ?? [];
+                if (empty($fireworksConfig['apiKey']) === true) {
+                    return $this->generateFallbackTitle(message: $firstMessage);
+                }
+
+                // Fireworks uses OpenAIConfig.
+                $config         = new OpenAIConfig();
+                $config->apiKey = $fireworksConfig['apiKey'];
+                $config->model  = 'accounts/fireworks/models/llama-v3p1-8b-instruct';
+                $baseUrl        = rtrim($fireworksConfig['baseUrl'] ?? 'https://api.fireworks.ai/inference/v1', '/');
+                if (str_ends_with($baseUrl, '/v1') === false) {
+                    $baseUrl .= '/v1';
+                }
+
+                $config->url = $baseUrl;
 
                 // @psalm-suppress UndefinedPropertyAssignment LLPhant dynamic properties.
                 $config->temperature = 0.7;
             }//end if
+
+            if ($chatProvider !== 'ollama' && $chatProvider !== 'openai' && $chatProvider !== 'fireworks') {
+                return $this->generateFallbackTitle(message: $firstMessage);
+            }
 
             // Generate title.
             $prompt  = 'Generate a short, descriptive title (max 60 characters) for a conversation ';
@@ -220,6 +221,10 @@ class ConversationManagementHandler
             $title = '';
 
             // Generate title based on provider.
+            // OpenAI chat (default).
+            $chat  = new OpenAIChat($config);
+            $title = $chat->generateText($prompt);
+
             if ($chatProvider === 'fireworks') {
                 // Use ResponseGenerationHandler's Fireworks method.
                 $reflectionClass = new ReflectionClass($this->responseHandler);
@@ -239,10 +244,6 @@ class ConversationManagementHandler
             } else if ($chatProvider === 'ollama') {
                 // Use native Ollama chat.
                 $chat  = new OllamaChat($config);
-                $title = $chat->generateText($prompt);
-            } else {
-                // OpenAI chat.
-                $chat  = new OpenAIChat($config);
                 $title = $chat->generateText($prompt);
             }//end if
 
@@ -491,6 +492,9 @@ class ConversationManagementHandler
 
         // Configure LLM based on provider.
         // Ollama uses its own native config.
+        // OpenAI and Fireworks use OpenAIConfig (default).
+        $config = new OpenAIConfig();
+
         if ($chatProvider === 'ollama') {
             $ollamaConfig = $llmConfig['ollamaConfig'] ?? [];
             if (empty($ollamaConfig['url']) === true) {
@@ -501,33 +505,28 @@ class ConversationManagementHandler
             $config        = new OllamaConfig();
             $config->url   = rtrim($ollamaConfig['url'], '/').'/api/';
             $config->model = $ollamaConfig['chatModel'] ?? 'llama2';
-        } else {
-            // OpenAI and Fireworks use OpenAIConfig.
-            $config = new OpenAIConfig();
+        } else if ($chatProvider === 'openai') {
+            $openaiConfig = $llmConfig['openaiConfig'] ?? [];
+            if (empty($openaiConfig['apiKey']) === true) {
+                throw new Exception('OpenAI API key not configured', 503);
+            }
 
-            if ($chatProvider === 'openai') {
-                $openaiConfig = $llmConfig['openaiConfig'] ?? [];
-                if (empty($openaiConfig['apiKey']) === true) {
-                    throw new Exception('OpenAI API key not configured', 503);
-                }
+            $config->apiKey = $openaiConfig['apiKey'];
+            $config->model  = 'gpt-4o-mini';
+        } else if ($chatProvider === 'fireworks') {
+            $fireworksConfig = $llmConfig['fireworksConfig'] ?? [];
+            if (empty($fireworksConfig['apiKey']) === true) {
+                throw new Exception('Fireworks AI API key not configured', 503);
+            }
 
-                $config->apiKey = $openaiConfig['apiKey'];
-                $config->model  = 'gpt-4o-mini';
-            } else if ($chatProvider === 'fireworks') {
-                $fireworksConfig = $llmConfig['fireworksConfig'] ?? [];
-                if (empty($fireworksConfig['apiKey']) === true) {
-                    throw new Exception('Fireworks AI API key not configured', 503);
-                }
+            $config->apiKey = $fireworksConfig['apiKey'];
+            $config->model  = 'accounts/fireworks/models/llama-v3p1-8b-instruct';
+            $baseUrl        = rtrim($fireworksConfig['baseUrl'] ?? 'https://api.fireworks.ai/inference/v1', '/');
+            if (str_ends_with($baseUrl, '/v1') === false) {
+                $baseUrl .= '/v1';
+            }
 
-                $config->apiKey = $fireworksConfig['apiKey'];
-                $config->model  = 'accounts/fireworks/models/llama-v3p1-8b-instruct';
-                $baseUrl        = rtrim($fireworksConfig['baseUrl'] ?? 'https://api.fireworks.ai/inference/v1', '/');
-                if (str_ends_with($baseUrl, '/v1') === false) {
-                    $baseUrl .= '/v1';
-                }
-
-                $config->url = $baseUrl;
-            }//end if
+            $config->url = $baseUrl;
         }//end if
 
         // Generate summary.

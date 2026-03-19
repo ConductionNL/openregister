@@ -50,21 +50,22 @@ use Psr\Log\LoggerInterface;
  * @SuppressWarnings(PHPMD.CyclomaticComplexity)     Complex business logic requires multiple conditional paths
  * @SuppressWarnings(PHPMD.NPathComplexity)          Query operations have inherently complex execution paths
  * @SuppressWarnings(PHPMD.ExcessiveMethodLength)    Query methods handle complex operations that benefit from cohesion
+ * @SuppressWarnings(PHPMD.UnusedFormalParameter)
  */
 class QueryHandler
 {
     /**
      * Constructor for QueryHandler.
      *
-     * @param MagicMapper                      $objectMapper        Unified mapper for objects.
-     * @param GetObject                                $getHandler          Get handler.
-     * @param RenderObject                             $renderHandler       Render handler.
-     * @param SearchQueryHandler                       $searchQueryHandler  Search handler.
-     * @param FacetHandler                             $facetHandler        Facet handler.
-     * @param PerformanceOptimizationHandler           $performanceHandler  Performance handler.
-     * @param IAppContainer                            $container           App container.
-     * @param LoggerInterface                          $logger              Logger.
-     * @param IRequest                                 $request             Request object.
+     * @param MagicMapper                    $objectMapper       Unified mapper for objects.
+     * @param GetObject                      $getHandler         Get handler.
+     * @param RenderObject                   $renderHandler      Render handler.
+     * @param SearchQueryHandler             $searchQueryHandler Search handler.
+     * @param FacetHandler                   $facetHandler       Facet handler.
+     * @param PerformanceOptimizationHandler $performanceHandler Performance handler.
+     * @param IAppContainer                  $container          App container.
+     * @param LoggerInterface                $logger             Logger.
+     * @param IRequest                       $request            Request object.
      *
      * @SuppressWarnings(PHPMD.ExcessiveParameterList) Nextcloud DI requires constructor injection
      */
@@ -115,7 +116,7 @@ class QueryHandler
         // Count uses the unified mapper's countSearchObjects for proper magic mapper routing.
         return $this->objectMapper->countSearchObjects(
             query: $query,
-            activeOrgUuid: $activeOrgUuid,
+            _activeOrgUuid: $activeOrgUuid,
             _rbac: $_rbac,
             _multitenancy: $_multitenancy,
             ids: $ids,
@@ -176,7 +177,7 @@ class QueryHandler
         // Execute database search.
         $result = $this->objectMapper->searchObjects(
             query: $query,
-            activeOrgUuid: $activeOrgUuid,
+            _activeOrgUuid: $activeOrgUuid,
             _rbac: $_rbac,
             _multitenancy: $_multitenancy,
             ids: $ids,
@@ -271,26 +272,19 @@ class QueryHandler
             $query = $this->searchQueryHandler->applyViewsToQuery(query: $query, viewIds: $views);
         }
 
-        $requestedSource = $query['_source'] ?? null;
+        // Strip deprecated _source parameter (silently ignore for backward compatibility).
+        unset($query['_source']);
 
-        // Simple switch: Use SOLR if explicitly requested OR if SOLR is enabled in config.
-        // BUT force database when ids or uses parameters are provided (relation-based searches).
-        $hasIds          = isset($query['_ids']) === true;
-        $hasUses         = isset($query['_uses']) === true;
-        $hasIdsParam     = $ids !== null;
-        $hasUsesParam    = $uses !== null;
-        $isSolrRequested = ($requestedSource === 'index' || $requestedSource === 'solr');
-        $isSolrEnabled   = $this->searchQueryHandler->isSolrAvailable();
-        $isNotDatabase   = $requestedSource !== 'database';
+        // Use SOLR if enabled in config, unless relation-based search params are provided.
+        $hasIds        = isset($query['_ids']) === true;
+        $hasUses       = isset($query['_uses']) === true;
+        $hasIdsParam   = $ids !== null;
+        $hasUsesParam  = $uses !== null;
+        $isSolrEnabled = $this->searchQueryHandler->isSolrAvailable();
 
-        if ((            $isSolrRequested === true
+        if ($isSolrEnabled === true
             && $hasIdsParam === false && $hasUsesParam === false
-            && $hasIds === false && $hasUses === false)
-            || (            $requestedSource === null
-            && $isSolrEnabled === true
-            && $isNotDatabase === true
-            && $hasIdsParam === false && $hasUsesParam === false
-            && $hasIds === false && $hasUses === false)
+            && $hasIds === false && $hasUses === false
         ) {
             // Forward to Index service - let it handle availability checks and error handling.
             $indexService = $this->container->get(IndexService::class);
@@ -300,11 +294,11 @@ class QueryHandler
                 _multitenancy: $_multitenancy,
                 deleted: $deleted
             );
-            $result['@self']['source']    = 'index';
-            $result['@self']['query']     = $query;
-            $result['@self']['rbac']      = $_rbac;
-            $result['@self']['multi']     = $_multitenancy;
-            $result['@self']['deleted']   = $deleted;
+            $result['@self']['source']  = 'index';
+            $result['@self']['query']   = $query;
+            $result['@self']['rbac']    = $_rbac;
+            $result['@self']['multi']   = $_multitenancy;
+            $result['@self']['deleted'] = $deleted;
             return $result;
         }
 
@@ -318,11 +312,11 @@ class QueryHandler
             uses: $uses
         );
         // Use source from result if available (e.g., magic_mapper for multi-schema), otherwise default to database.
-        $result['@self']['source']    = $result['@self']['source'] ?? 'database';
-        $result['@self']['query']     = $query;
-        $result['@self']['rbac']      = $_rbac;
-        $result['@self']['multi']     = $_multitenancy;
-        $result['@self']['deleted']   = $deleted;
+        $result['@self']['source']  = $result['@self']['source'] ?? 'database';
+        $result['@self']['query']   = $query;
+        $result['@self']['rbac']    = $_rbac;
+        $result['@self']['multi']   = $_multitenancy;
+        $result['@self']['deleted'] = $deleted;
 
         return $result;
     }//end searchObjectsPaginated()
@@ -396,7 +390,7 @@ class QueryHandler
         $searchResult      = $this->objectMapper->searchObjectsPaginated(
             searchQuery: $paginatedQuery,
             countQuery: $countQuery,
-            activeOrgUuid: $activeOrgUuid,
+            _activeOrgUuid: $activeOrgUuid,
             _rbac: $_rbac,
             _multitenancy: $_multitenancy,
             ids: $ids,

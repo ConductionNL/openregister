@@ -320,6 +320,10 @@ class CacheSettingsController extends Controller
                     $content = $file->getContent();
                     $json    = json_decode($content, true);
 
+                    if (is_array($json) !== true || isset($json['timestamp']) !== true) {
+                        $errors[] = $fileName.' (invalid format)';
+                    }
+
                     if (is_array($json) === true && isset($json['timestamp']) === true) {
                         // Set timestamp to 0 to force cache expiration.
                         // The Fetcher checks: timestamp > (now - TTL)
@@ -327,13 +331,11 @@ class CacheSettingsController extends Controller
                         $json['timestamp'] = 0;
                         $file->putContent(json_encode($json));
                         $invalidatedFiles[] = $fileName;
-                    } else {
-                        $errors[] = $fileName.' (invalid format)';
                     }
                 } catch (NotFoundException | GenericFileException $e) {
                     // File doesn't exist, nothing to invalidate.
                     $errors[] = $fileName.' (not found)';
-                }
+                }//end try
             }//end foreach
 
             return new JSONResponse(

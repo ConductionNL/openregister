@@ -1,4 +1,5 @@
 <script setup>
+import { translate as t, translatePlural as n } from '@nextcloud/l10n'
 import { dashboardStore, schemaStore, navigationStore } from '../../store/store.js'
 import formatBytes from '../../services/formatBytes.js'
 </script>

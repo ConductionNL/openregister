@@ -64,8 +64,11 @@ use Psr\Log\LoggerInterface;
  * @SuppressWarnings(PHPMD.ExcessiveClassComplexity) Complex JSON Schema validation logic
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)   Validation requires multiple format and schema dependencies
  * @SuppressWarnings(PHPMD.TooManyMethods)           Validation requires per-type and per-format validator methods
+ * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+ * @SuppressWarnings(PHPMD.NPathComplexity)
+ * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
+ * @SuppressWarnings(PHPMD.UnusedFormalParameter)
  */
-
 class ValidateObject
 {
     /**
@@ -78,11 +81,11 @@ class ValidateObject
     /**
      * Constructor for ValidateObject
      *
-     * @param IAppConfig         $config       Configuration service.
-     * @param MagicMapper $objectMapper Object mapper.
-     * @param SchemaMapper       $schemaMapper Schema mapper.
-     * @param IURLGenerator      $urlGenerator URL generator.
-     * @param LoggerInterface    $logger       Logger for logging operations.
+     * @param IAppConfig      $config       Configuration service.
+     * @param MagicMapper     $objectMapper Object mapper.
+     * @param SchemaMapper    $schemaMapper Schema mapper.
+     * @param IURLGenerator   $urlGenerator URL generator.
+     * @param LoggerInterface $logger       Logger for logging operations.
      */
     public function __construct(
         private IAppConfig $config,
@@ -403,6 +406,7 @@ class ValidateObject
                 if (is_array($nestedPropertySchema) === true) {
                     $nestedPropertySchema = (object) $nestedPropertySchema;
                 }
+
                 $this->transformPropertyForOpenRegister(propertySchema: $nestedPropertySchema);
             }
         }
@@ -848,6 +852,7 @@ class ValidateObject
             'uniqueConstraints',
             'indexes',
             'options',
+            'computed',
         ];
 
         foreach ($metadataProperties as $property) {
@@ -913,6 +918,7 @@ class ValidateObject
             'uniqueConstraints',
             'indexes',
             'options',
+            'computed',
         ];
 
         foreach ($metadataProperties as $property) {
@@ -1142,23 +1148,24 @@ class ValidateObject
                 ],
             ];
             $itemsSchema->description = 'UUID reference or object with id field';
-        } else {
-            // Transform to a simple object structure for nested objects.
-            // Remove $ref to prevent circular references.
-            unset($itemsSchema->{'$ref'});
-
-            // Create a simple object structure.
-            $itemsSchema->type        = 'object';
-            $itemsSchema->description = 'Nested object';
-
-            // Add basic properties that most objects should have.
-            $itemsSchema->properties = (object) [
-                'id' => (object) [
-                    'type'        => 'string',
-                    'description' => 'Object identifier',
-                ],
-            ];
+            return $itemsSchema;
         }//end if
+
+        // Transform to a simple object structure for nested objects.
+        // Remove $ref to prevent circular references.
+        unset($itemsSchema->{'$ref'});
+
+        // Create a simple object structure.
+        $itemsSchema->type        = 'object';
+        $itemsSchema->description = 'Nested object';
+
+        // Add basic properties that most objects should have.
+        $itemsSchema->properties = (object) [
+            'id' => (object) [
+                'type'        => 'string',
+                'description' => 'Object identifier',
+            ],
+        ];
 
         return $itemsSchema;
     }//end transformArrayItemsForValidation()
@@ -1302,6 +1309,25 @@ class ValidateObject
         // @todo This should be done earlier.
         unset($object['extend'], $object['filters']);
 
+        // Remove computed properties from input data and required fields.
+        // Computed fields are system-generated and should not be validated against user input.
+        // @var object{properties?: object, required?: array<string>} $schemaObject.
+        if (($schemaObject->properties ?? null) !== null) {
+            foreach ($schemaObject->properties as $propName => $propSchema) {
+                if (($propSchema->computed ?? null) !== null) {
+                    unset($object[$propName]);
+                    // Also remove from required array — computed fields can't be required from user input.
+                    if (is_array($schemaObject->required) === true) {
+                        $reqKey = array_search($propName, $schemaObject->required, true);
+                        if ($reqKey !== false) {
+                            unset($schemaObject->required[$reqKey]);
+                            $schemaObject->required = array_values($schemaObject->required);
+                        }
+                    }
+                }
+            }
+        }
+
         // Remove only truly empty values that have no validation significance.
         // Keep empty strings for required fields so they can fail validation with proper error messages.
         $requiredFields = $schemaObject->required ?? [];
@@ -1365,12 +1391,8 @@ class ValidateObject
         if (property_exists($schemaObject, 'properties') === true) {
             $properties = $schemaObject->properties;
 
-            /*
-             * @psalm-suppress TypeDoesNotContainType
-             */
-
-            // Handle both array and object (stdClass) types for properties.
-            if (isset($properties) === true && (is_array($properties) === true || is_object($properties) === true)) {
+            // Handle properties object.
+            if (isset($properties) === true && is_object($properties) === true) {
                 foreach ($properties as $propertyName => $propertySchema) {
                     // Skip required fields - they should not allow null unless explicitly defined.
                     if (in_array($propertyName, $requiredFields) === true) {

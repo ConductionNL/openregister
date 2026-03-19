@@ -24,6 +24,9 @@ use GraphQL\Utils\Utils;
  * UUID scalar type validating UUID v4 format.
  *
  * @psalm-suppress UnusedClass
+ *
+ * @SuppressWarnings(PHPMD.StaticAccess)
+ * @SuppressWarnings(PHPMD.UnusedFormalParameter)
  */
 class UuidType extends ScalarType
 {

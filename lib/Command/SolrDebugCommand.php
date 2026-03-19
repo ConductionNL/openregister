@@ -331,7 +331,6 @@ class SolrDebugCommand extends Command
      * @param OutputInterface $output       Output interface
      * @param array           $solrSettings SOLR configuration
      *
-     * @SuppressWarnings(PHPMD.ElseExpression)       Else clauses needed for API availability checks
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)
      * @SuppressWarnings(PHPMD.NPathComplexity)
      *
@@ -353,7 +352,9 @@ class SolrDebugCommand extends Command
         $coresResponse = file_get_contents($coresUrl);
         if ($coresResponse === false || $coresResponse === '') {
             $output->writeln('  <comment>❓ Cores API not available (might be SolrCloud)</comment>');
-        } else {
+        }
+
+        if ($coresResponse !== false && $coresResponse !== '') {
             $coresData = json_decode($coresResponse, true);
             if ($coresData !== null && ($coresData['status'] ?? null) !== null) {
                 $coreCount = count($coresData['status']);
@@ -379,7 +380,9 @@ class SolrDebugCommand extends Command
         $collectionsResponse = file_get_contents($collectionsUrl);
         if ($collectionsResponse === false || $collectionsResponse === '') {
             $output->writeln('  <comment>❓ Collections API not available (might be standalone)</comment>');
-        } else {
+        }
+
+        if ($collectionsResponse !== false && $collectionsResponse !== '') {
             $collectionsData = json_decode($collectionsResponse, true);
             if ($collectionsData !== null && ($collectionsData['cluster']['collections'] ?? null) !== null) {
                 $collectionCount = count($collectionsData['cluster']['collections']);
@@ -404,7 +407,9 @@ class SolrDebugCommand extends Command
         $configSetsResponse = file_get_contents($configSetsUrl);
         if ($configSetsResponse === false || $configSetsResponse === '') {
             $output->writeln('  <comment>❓ ConfigSets API not available</comment>');
-        } else {
+        }
+
+        if ($configSetsResponse !== false && $configSetsResponse !== '') {
             $configSetsData = json_decode($configSetsResponse, true);
             if ($configSetsData !== null && ($configSetsData['configSets'] ?? null) !== null) {
                 $configSetCount = count($configSetsData['configSets']);

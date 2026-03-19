@@ -33,8 +33,9 @@ use OCP\Migration\SimpleMigrationStep;
 
 /**
  * Migration step for creating audit trails table
+ *
+ * @SuppressWarnings(PHPMD.UnusedFormalParameter)
  */
-
 class Version1Date20241020231700 extends SimpleMigrationStep
 {
     /**

@@ -53,6 +53,8 @@ use Psr\Log\LoggerInterface;
  * This class provides property-level RBAC filtering, ensuring that specific
  * fields within objects can have different access rules than the object itself.
  * Condition matching and operator evaluation are delegated to ConditionMatcher.
+ *
+ * @SuppressWarnings(PHPMD.BooleanArgumentFlag)
  */
 class PropertyRbacHandler
 {

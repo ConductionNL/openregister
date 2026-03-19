@@ -33,8 +33,9 @@ use OCP\Migration\SimpleMigrationStep;
 
 /**
  * Migration step for adding uuid and version columns to sources and schemas tables
+ *
+ * @SuppressWarnings(PHPMD.UnusedFormalParameter)
  */
-
 class Version1Date20241019205009 extends SimpleMigrationStep
 {
     /**

@@ -1,4 +1,5 @@
 <script setup>
+import { translate as t } from '@nextcloud/l10n'
 import { configurationStore, navigationStore } from '../../store/store.js'
 import { generateUrl } from '@nextcloud/router'
 import axios from '@nextcloud/axios'

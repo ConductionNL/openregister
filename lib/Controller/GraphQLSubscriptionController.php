@@ -31,6 +31,9 @@ use OCP\IRequest;
  * - Reconnection via Last-Event-ID header
  *
  * @psalm-suppress UnusedClass - Registered via routes.php
+ *
+ * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+ * @SuppressWarnings(PHPMD.NPathComplexity)
  */
 class GraphQLSubscriptionController extends Controller
 {
@@ -79,10 +82,9 @@ class GraphQLSubscriptionController extends Controller
             $registerId = (int) $registerId;
         }
 
+        $lastEventId = null;
         if (empty($lastId) === false) {
             $lastEventId = $lastId;
-        } else {
-            $lastEventId = null;
         }
 
         // Set SSE headers.
@@ -112,13 +114,12 @@ class GraphQLSubscriptionController extends Controller
         flush();
 
         // Poll for new events (max 30 seconds to avoid PHP timeout).
-        $startTime    = time();
-        $maxDuration  = 30;
-        $pollInterval = 1;
+        $startTime     = time();
+        $maxDuration   = 30;
+        $pollInterval  = 1;
+        $currentLastId = $lastEventId;
         if (empty($events) === false) {
             $currentLastId = end($events)['id'];
-        } else {
-            $currentLastId = $lastEventId;
         }
 
         while ((time() - $startTime) < $maxDuration) {

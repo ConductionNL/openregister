@@ -46,13 +46,14 @@ use Symfony\Component\Uid\Uuid;
  * Reason: Relationship resolution requires complex multi-path logic for performance optimization
  *
  * @SuppressWarnings(PHPMD.ExcessiveClassComplexity) Complex relationship resolution logic
+ * @SuppressWarnings(PHPMD.UnusedFormalParameter)
  */
 class RelationHandler
 {
     /**
      * Constructor for RelationHandler.
      *
-     * @param MagicMapper $objectEntityMapper Mapper for object entities.
+     * @param MagicMapper        $objectEntityMapper Mapper for object entities.
      * @param SchemaMapper       $schemaMapper       Mapper for schemas.
      * @param PerformanceHandler $performanceHandler Handler for performance operations.
      * @param MagicRbacHandler   $rbacHandler        Handler for RBAC operations.
