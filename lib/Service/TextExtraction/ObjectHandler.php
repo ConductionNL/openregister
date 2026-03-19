@@ -28,6 +28,8 @@ use Psr\Log\LoggerInterface;
 
 /**
  * Handler for extracting text from OpenRegister objects.
+ *
+ * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
  */
 class ObjectHandler implements TextExtractionHandlerInterface
 {

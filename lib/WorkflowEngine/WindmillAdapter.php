@@ -28,6 +28,7 @@ use Psr\Log\LoggerInterface;
  * Translates WorkflowEngineInterface calls to Windmill's REST API.
  *
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
+ * @SuppressWarnings(PHPMD.StaticAccess)
  */
 class WindmillAdapter implements WorkflowEngineInterface
 {

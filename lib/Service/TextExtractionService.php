@@ -63,6 +63,7 @@ use PhpOffice\PhpSpreadsheet\IOFactory as SpreadsheetIOFactory;
  * @SuppressWarnings(PHPMD.ExcessiveClassLength)     Text extraction requires comprehensive document parsing methods
  * @SuppressWarnings(PHPMD.ExcessiveClassComplexity) Complex multi-format document extraction logic
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)   Requires multiple document parsing libraries
+ * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
  */
 class TextExtractionService
 {

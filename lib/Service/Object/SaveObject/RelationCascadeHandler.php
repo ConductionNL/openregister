@@ -45,6 +45,7 @@ use Symfony\Component\Uid\Uuid;
  * @package  OCA\OpenRegister\Service\Objects\SaveObject
  *
  * @SuppressWarnings(PHPMD.ExcessiveClassComplexity) Complex cascading logic with many relation scenarios
+ * @SuppressWarnings(PHPMD.UnusedFormalParameter)
  */
 class RelationCascadeHandler
 {

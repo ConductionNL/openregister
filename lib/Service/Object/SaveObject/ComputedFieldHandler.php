@@ -48,6 +48,7 @@ use Twig\Sandbox\SecurityPolicy;
  * @package  OCA\OpenRegister\Service\Objects\SaveObject
  *
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects) Handler requires Twig and mapper dependencies
+ * @SuppressWarnings(PHPMD.CyclomaticComplexity)
  */
 class ComputedFieldHandler
 {

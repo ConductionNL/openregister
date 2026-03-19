@@ -50,6 +50,7 @@ use Psr\Log\LoggerInterface;
  * @SuppressWarnings(PHPMD.CyclomaticComplexity)     Complex business logic requires multiple conditional paths
  * @SuppressWarnings(PHPMD.NPathComplexity)          Query operations have inherently complex execution paths
  * @SuppressWarnings(PHPMD.ExcessiveMethodLength)    Query methods handle complex operations that benefit from cohesion
+ * @SuppressWarnings(PHPMD.UnusedFormalParameter)
  */
 class QueryHandler
 {

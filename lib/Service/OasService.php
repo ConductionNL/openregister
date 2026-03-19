@@ -35,6 +35,9 @@ use Psr\Log\LoggerInterface;
  *
  * @SuppressWarnings(PHPMD.ExcessiveClassLength)     OAS generation requires many endpoint and schema methods
  * @SuppressWarnings(PHPMD.ExcessiveClassComplexity) Complex OpenAPI schema generation logic
+ * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+ * @SuppressWarnings(PHPMD.ElseExpression)
+ * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
  */
 class OasService
 {

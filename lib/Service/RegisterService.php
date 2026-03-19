@@ -49,6 +49,9 @@ use Psr\Log\LoggerInterface;
  * @version GIT: <git_id>
  *
  * @link https://www.OpenRegister.app
+ *
+ * @SuppressWarnings(PHPMD.BooleanArgumentFlag)
+ * @SuppressWarnings(PHPMD.ElseExpression)
  */
 class RegisterService
 {

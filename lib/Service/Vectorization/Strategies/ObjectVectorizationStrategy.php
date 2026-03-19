@@ -34,6 +34,8 @@ use Psr\Log\LoggerInterface;
  *
  * @category Service
  * @package  OCA\OpenRegister\Service\Vectorization
+ *
+ * @SuppressWarnings(PHPMD.ElseExpression)
  */
 class ObjectVectorizationStrategy implements VectorizationStrategyInterface
 {

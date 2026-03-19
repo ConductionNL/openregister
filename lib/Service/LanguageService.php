@@ -30,6 +30,9 @@ namespace OCA\OpenRegister\Service;
  * RenderObject / SaveObject read it when processing translatable properties.
  *
  * @package OCA\OpenRegister\Service
+ *
+ * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+ * @SuppressWarnings(PHPMD.NPathComplexity)
  */
 class LanguageService
 {

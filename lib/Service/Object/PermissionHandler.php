@@ -47,6 +47,9 @@ use Psr\Container\ContainerInterface;
  * @package  OCA\OpenRegister\Service\Objects
  *
  * @SuppressWarnings(PHPMD.ExcessiveClassComplexity) Permission evaluation requires per-action and per-role branching
+ * @SuppressWarnings(PHPMD.ElseExpression)
+ * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
+ * @SuppressWarnings(PHPMD.NPathComplexity)
  */
 class PermissionHandler
 {

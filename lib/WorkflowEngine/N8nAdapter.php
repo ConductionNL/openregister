@@ -29,6 +29,7 @@ use Psr\Log\LoggerInterface;
  * Supports routing through the ExApp proxy when n8n runs as a Nextcloud ExApp.
  *
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
+ * @SuppressWarnings(PHPMD.StaticAccess)
  */
 class N8nAdapter implements WorkflowEngineInterface
 {

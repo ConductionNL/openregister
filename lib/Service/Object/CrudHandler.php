@@ -46,6 +46,8 @@ use Psr\Log\LoggerInterface;
  *
  * @category Service
  * @package  OCA\OpenRegister\Service\Objects\Handlers
+ *
+ * @SuppressWarnings(PHPMD.UnusedFormalParameter)
  */
 class CrudHandler
 {

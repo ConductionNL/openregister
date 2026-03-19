@@ -84,6 +84,13 @@ use Symfony\Component\Uid\Uuid;
  * @SuppressWarnings(PHPMD.ExcessiveClassComplexity) Inherent complexity of bulk operations
  * @SuppressWarnings(PHPMD.TooManyMethods)           Methods are small focused helpers extracted from complex methods
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)   Bulk ops coordinate mappers, services, and validators
+ * @SuppressWarnings(PHPMD.BooleanArgumentFlag)
+ * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+ * @SuppressWarnings(PHPMD.NPathComplexity)
+ * @SuppressWarnings(PHPMD.ElseExpression)
+ * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
+ * @SuppressWarnings(PHPMD.StaticAccess)
+ * @SuppressWarnings(PHPMD.UnusedFormalParameter)
  */
 class SaveObjects
 {

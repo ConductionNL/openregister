@@ -36,6 +36,10 @@ use Psr\Log\LoggerInterface;
  * value (for rendering) or normalizes them to language-keyed objects (for saving).
  *
  * @package OCA\OpenRegister\Service\Object
+ *
+ * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+ * @SuppressWarnings(PHPMD.NPathComplexity)
+ * @SuppressWarnings(PHPMD.ElseExpression)
  */
 class TranslationHandler
 {

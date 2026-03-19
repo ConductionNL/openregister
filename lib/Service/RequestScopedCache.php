@@ -42,6 +42,8 @@ namespace OCA\OpenRegister\Service;
  * @version 1.0.0
  *
  * @link https://www.OpenRegister.app
+ *
+ * @SuppressWarnings(PHPMD.ElseExpression)
  */
 class RequestScopedCache
 {

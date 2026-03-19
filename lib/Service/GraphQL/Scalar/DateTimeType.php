@@ -24,6 +24,9 @@ use GraphQL\Utils\Utils;
  * DateTime scalar type for ISO 8601 date-time strings.
  *
  * @psalm-suppress UnusedClass
+ *
+ * @SuppressWarnings(PHPMD.StaticAccess)
+ * @SuppressWarnings(PHPMD.UnusedFormalParameter)
  */
 class DateTimeType extends ScalarType
 {

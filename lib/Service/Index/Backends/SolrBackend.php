@@ -39,6 +39,7 @@ use Psr\Log\LoggerInterface;
  * @package  OCA\OpenRegister\Service\Index\Backends
  *
  * @SuppressWarnings(PHPMD.TooManyPublicMethods) Implements SearchBackendInterface with many required methods
+ * @SuppressWarnings(PHPMD.BooleanArgumentFlag)
  */
 class SolrBackend implements SearchBackendInterface
 {

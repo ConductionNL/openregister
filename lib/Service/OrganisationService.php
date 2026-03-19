@@ -47,6 +47,8 @@ use Symfony\Component\Uid\Uuid;
  * @SuppressWarnings(PHPMD.ExcessiveClassLength)     Organisation management requires comprehensive multi-tenancy methods
  * @SuppressWarnings(PHPMD.ExcessiveClassComplexity) Complex multi-tenancy and permission logic
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)   Requires multiple Nextcloud services for user and group management
+ * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
+ * @SuppressWarnings(PHPMD.NPathComplexity)
  */
 class OrganisationService
 {

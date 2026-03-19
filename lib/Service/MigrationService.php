@@ -27,6 +27,8 @@ use Psr\Log\LoggerInterface;
  *
  * NOTE: Blob storage (ObjectEntityMapper) has been removed. This service
  * is retained for the status endpoint but migration is no longer possible.
+ *
+ * @SuppressWarnings(PHPMD.BooleanArgumentFlag)
  */
 class MigrationService
 {

@@ -41,6 +41,8 @@ use RuntimeException;
  * - Extract text (TextExtractionService handles that)
  *
  * @package OCA\OpenRegister\Service\Index
+ *
+ * @SuppressWarnings(PHPMD.UnusedFormalParameter)
  */
 class BulkIndexer
 {

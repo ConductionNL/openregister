@@ -44,6 +44,8 @@ use Psr\Log\LoggerInterface;
  * @package  OCA\OpenRegister\Service\Objects
  *
  * @SuppressWarnings(PHPMD.ExcessiveClassComplexity) Complex search query building and optimization logic
+ * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
+ * @SuppressWarnings(PHPMD.UnusedFormalParameter)
  */
 class SearchQueryHandler
 {

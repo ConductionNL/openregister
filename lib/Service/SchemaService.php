@@ -43,6 +43,7 @@ use Psr\Log\LoggerInterface;
  * @SuppressWarnings(PHPMD.ExcessiveClassLength)     Schema analysis requires comprehensive exploration methods
  * @SuppressWarnings(PHPMD.TooManyMethods)           Many methods required for schema analysis and property discovery
  * @SuppressWarnings(PHPMD.ExcessiveClassComplexity) Complex schema analysis and property inference logic
+ * @SuppressWarnings(PHPMD.UnusedFormalParameter)
  */
 class SchemaService
 {

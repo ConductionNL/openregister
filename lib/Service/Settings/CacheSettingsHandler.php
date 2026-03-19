@@ -48,6 +48,7 @@ use OCA\OpenRegister\Service\Schemas\FacetCacheHandler;
  *
  * @SuppressWarnings(PHPMD.ExcessiveClassComplexity) Complex cache management across multiple cache types
  * @SuppressWarnings(PHPMD.LongVariable)             Cache service properties use descriptive names for clarity
+ * @SuppressWarnings(PHPMD.UnusedFormalParameter)
  */
 class CacheSettingsHandler
 {

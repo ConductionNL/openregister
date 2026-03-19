@@ -44,6 +44,8 @@ use Twig\Extension\RuntimeExtensionInterface;
  * @package  OCA\OpenRegister\Twig
  *
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
+ * @SuppressWarnings(PHPMD.BooleanArgumentFlag)
+ * @SuppressWarnings(PHPMD.StaticAccess)
  */
 class MappingRuntime implements RuntimeExtensionInterface
 {

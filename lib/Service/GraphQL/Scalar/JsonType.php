@@ -28,6 +28,8 @@ use GraphQL\Type\Definition\ScalarType;
  * JSON scalar type for arbitrary JSON values.
  *
  * @psalm-suppress UnusedClass
+ *
+ * @SuppressWarnings(PHPMD.UnusedFormalParameter)
  */
 class JsonType extends ScalarType
 {

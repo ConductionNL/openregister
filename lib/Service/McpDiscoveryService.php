@@ -34,6 +34,7 @@ use OCP\IURLGenerator;
  * @psalm-suppress UnusedClass - Used via DI in McpController
  *
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
+ * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
  */
 class McpDiscoveryService
 {

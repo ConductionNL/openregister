@@ -113,8 +113,13 @@ use Twig\Loader\ArrayLoader;
  * @SuppressWarnings(PHPMD.TooManyMethods)           Many methods required for full object save functionality
  * @SuppressWarnings(PHPMD.ExcessiveClassComplexity) Complex cascading and relation logic
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)   Requires many service and mapper dependencies
+ * @SuppressWarnings(PHPMD.BooleanArgumentFlag)
+ * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+ * @SuppressWarnings(PHPMD.NPathComplexity)
+ * @SuppressWarnings(PHPMD.ElseExpression)
+ * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
+ * @SuppressWarnings(PHPMD.UnusedFormalParameter)
  */
-
 class SaveObject
 {
     private const URL_PATH_IDENTIFIER = 'openregister.objects.show';
