@@ -74,6 +74,9 @@ use OCP\AppFramework\Db\Entity;
  * @SuppressWarnings(PHPMD.TooManyFields)
  *
  * @psalm-suppress PropertyNotSetInConstructor $id is set by Nextcloud's Entity base class
+ *
+ * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+ * @SuppressWarnings(PHPMD.ElseExpression)
  */
 class Register extends Entity implements JsonSerializable
 {

@@ -33,6 +33,9 @@ use Psr\Log\LoggerInterface;
  * Controller for managing table operations including magic table synchronization.
  *
  * @psalm-suppress UnusedClass
+ *
+ * @SuppressWarnings(PHPMD.ElseExpression)
+ * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
  */
 class TablesController extends Controller
 {

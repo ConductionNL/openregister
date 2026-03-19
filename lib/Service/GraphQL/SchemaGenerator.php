@@ -480,7 +480,7 @@ class SchemaGenerator
 
             $fieldType   = $this->typeMapper->mapPropertyToGraphQLType(property: $property);
             $description = ($property['description'] ?? '');
-            if ($description === null || $description === '') {
+            if ($description === '') {
                 $description = null;
             }
 

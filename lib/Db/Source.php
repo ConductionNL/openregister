@@ -47,6 +47,8 @@ use OCP\AppFramework\Db\Entity;
  * @method void setUpdated(?DateTime $updated)
  * @method DateTime|null getCreated()
  * @method void setCreated(?DateTime $created)
+ * @method array|null getConfiguration()
+ * @method void setConfiguration(?array $configuration)
  *
  * @psalm-suppress PropertyNotSetInConstructor $id is set by Nextcloud's Entity base class
  */

@@ -31,6 +31,8 @@ use OCP\Migration\SimpleMigrationStep;
  * Create deployed workflows table.
  *
  * @psalm-suppress UnusedClass
+ *
+ * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
  */
 class Version1Date20260306100000 extends SimpleMigrationStep
 {

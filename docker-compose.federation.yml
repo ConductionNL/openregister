@@ -35,8 +35,7 @@ services:
       - POSTGRES_PASSWORD=federation-test
       - POSTGRES_DB=nc1
     volumes:
-      - ./docker/postgres/init-extensions.sql:/docker-entrypoint-initdb.d/01-init-extensions.sql:ro
-      - ./tests/federation/init-second-db.sql:/docker-entrypoint-initdb.d/02-init-second-db.sql:ro
+      - ./tests/federation/init-databases.sql:/docker-entrypoint-initdb.d/01-init-databases.sql:ro
     networks:
       - federation-test-network
     healthcheck:

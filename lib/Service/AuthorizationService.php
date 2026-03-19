@@ -33,6 +33,10 @@ use OCP\IUserSession;
  * @package OCA\OpenRegister\Service
  *
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
+ * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+ * @SuppressWarnings(PHPMD.NPathComplexity)
+ * @SuppressWarnings(PHPMD.ElseExpression)
+ * @SuppressWarnings(PHPMD.UnusedFormalParameter)
  */
 class AuthorizationService
 {
@@ -54,13 +58,11 @@ class AuthorizationService
      * @param IUserManager   $userManager    Nextcloud user manager
      * @param IUserSession   $userSession    Nextcloud user session
      * @param ConsumerMapper $consumerMapper Consumer database mapper
-     * @param IGroupManager  $groupManager   Nextcloud group manager
      */
     public function __construct(
         private readonly IUserManager $userManager,
         private readonly IUserSession $userSession,
         private readonly ConsumerMapper $consumerMapper,
-        private readonly IGroupManager $groupManager,
     ) {
 
     }//end __construct()
@@ -94,9 +96,9 @@ class AuthorizationService
      *
      * @param string $data The base64url-encoded string
      *
-     * @return string|false The decoded data or false on failure
+     * @return string The decoded data
      */
-    private function base64urlDecode(string $data): string|false
+    private function base64urlDecode(string $data): string
     {
         return base64_decode(strtr($data, '-_', '+/'));
 
@@ -186,7 +188,7 @@ class AuthorizationService
     {
         $token = substr(string: $authorization, offset: strlen(string: 'Bearer '));
 
-        if ($token === '' || $token === false) {
+        if ($token === '') {
             throw new AuthenticationException(message: 'No token has been provided', details: []);
         }
 
@@ -201,14 +203,7 @@ class AuthorizationService
         [$headerB64, $payloadB64, $signatureB64] = $parts;
 
         $headerJson = $this->base64urlDecode(data: $headerB64);
-        if ($headerJson === false) {
-            throw new AuthenticationException(
-                message: 'The token could not be validated',
-                details: ['reason' => 'Invalid header encoding']
-            );
-        }
-
-        $header = json_decode($headerJson, true);
+        $header     = json_decode($headerJson, true);
         if (is_array($header) === false || isset($header['alg']) === false) {
             throw new AuthenticationException(
                 message: 'The token could not be validated',
@@ -217,14 +212,7 @@ class AuthorizationService
         }
 
         $payloadJson = $this->base64urlDecode(data: $payloadB64);
-        if ($payloadJson === false) {
-            throw new AuthenticationException(
-                message: 'The token could not be validated',
-                details: ['reason' => 'Invalid payload encoding']
-            );
-        }
-
-        $payload = json_decode($payloadJson, true);
+        $payload     = json_decode($payloadJson, true);
         if (is_array($payload) === false) {
             throw new AuthenticationException(
                 message: 'The token could not be validated',
@@ -246,12 +234,6 @@ class AuthorizationService
         $algorithm = $authConf['algorithm'] ?? $header['alg'];
 
         $signature = $this->base64urlDecode(data: $signatureB64);
-        if ($signature === false) {
-            throw new AuthenticationException(
-                message: 'The token could not be validated',
-                details: ['reason' => 'Invalid signature encoding']
-            );
-        }
 
         // Verify HMAC signature.
         if (isset(self::HMAC_MAP[$algorithm]) === true) {

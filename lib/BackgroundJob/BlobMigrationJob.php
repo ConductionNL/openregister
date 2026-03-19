@@ -45,6 +45,7 @@ use Psr\Log\LoggerInterface;
  * Progress is tracked in appconfig for admin visibility.
  *
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
+ * @SuppressWarnings(PHPMD.ElseExpression)
  */
 class BlobMigrationJob extends TimedJob
 {

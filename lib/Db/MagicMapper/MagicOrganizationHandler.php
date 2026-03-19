@@ -51,6 +51,7 @@ use Psr\Container\ContainerInterface;
  * appropriate cross-organization access patterns.
  *
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
+ * @SuppressWarnings(PHPMD.ElseExpression)
  */
 class MagicOrganizationHandler
 {

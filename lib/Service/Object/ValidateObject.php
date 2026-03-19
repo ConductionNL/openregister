@@ -1307,6 +1307,7 @@ class ValidateObject
 
         // Remove computed properties from input data and required fields.
         // Computed fields are system-generated and should not be validated against user input.
+        /** @var object{properties?: object, required?: array<string>} $schemaObject */
         if (($schemaObject->properties ?? null) !== null) {
             foreach ($schemaObject->properties as $propName => $propSchema) {
                 if (($propSchema->computed ?? null) !== null) {
@@ -1386,12 +1387,8 @@ class ValidateObject
         if (property_exists($schemaObject, 'properties') === true) {
             $properties = $schemaObject->properties;
 
-            /*
-             * @psalm-suppress TypeDoesNotContainType
-             */
-
-            // Handle both array and object (stdClass) types for properties.
-            if (isset($properties) === true && (is_array($properties) === true || is_object($properties) === true)) {
+            // Handle properties object.
+            if (isset($properties) === true && is_object($properties) === true) {
                 foreach ($properties as $propertyName => $propertySchema) {
                     // Skip required fields - they should not allow null unless explicitly defined.
                     if (in_array($propertyName, $requiredFields) === true) {

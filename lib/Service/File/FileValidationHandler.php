@@ -261,6 +261,9 @@ class FileValidationHandler
      */
     public function checkOwnership(Node $file): void
     {
+        $fileName = $file->getName();
+        $fileId   = $file->getId();
+
         try {
             // Try to read the file to trigger any potential access issues.
             if ($file instanceof File) {
@@ -269,10 +272,6 @@ class FileValidationHandler
                 // For folders, try to list contents.
                 $file->getDirectoryListing();
             }
-
-            // If we get here, the file is accessible.
-            $fileName = $file->getName();
-            $fileId   = $file->getId();
             $this->logger->debug(
                 message: "[FileValidationHandler] checkOwnership: File {$fileName} (ID: {$fileId}) is accessible",
                 context: ['file' => __FILE__, 'line' => __LINE__]

@@ -52,12 +52,10 @@ class CrudHandler
     /**
      * Constructor
      *
-     * @param MagicMapper     $objectMapper  Object entity mapper
      * @param ObjectService   $objectService Object service for save/search operations
      * @param LoggerInterface $logger        PSR-3 logger
      */
     public function __construct(
-        private readonly MagicMapper $objectMapper,
         private readonly ObjectService $objectService,
         private readonly LoggerInterface $logger
     ) {

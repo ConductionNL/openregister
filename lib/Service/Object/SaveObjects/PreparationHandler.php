@@ -59,7 +59,6 @@ class PreparationHandler
      * @param SchemaMapper          $schemaMapper     Mapper for schema operations.
      * @param BulkValidationHandler $bulkValidHandler Handler for schema analysis.
      * @param IUserSession          $userSession      User session for owner assignment.
-     * @param LoggerInterface       $logger           Logger for logging operations.
      */
     public function __construct(
         private readonly SaveObject $saveHandler,
@@ -67,7 +66,6 @@ class PreparationHandler
         private readonly BulkValidationHandler $bulkValidHandler,
         // REMOVED: private readonly.
         private readonly IUserSession $userSession,
-        private readonly LoggerInterface $logger
     ) {
     }//end __construct()
 

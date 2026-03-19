@@ -116,7 +116,6 @@ class SaveObjects
      * @param SchemaMapper        $schemaMapper        Mapper for schema operations
      * @param RegisterMapper      $registerMapper      Mapper for register operations
      * @param SaveObject          $saveHandler         Handler for individual object operations
-     * @param ValidateObject      $validateHandler     Handler for object validation
      * @param IUserSession        $userSession         User session for getting current user
      * @param OrganisationService $organisationService Service for organisation operations
      * @param LoggerInterface     $logger              Logger for error and debug logging
@@ -126,7 +125,6 @@ class SaveObjects
         private readonly SchemaMapper $schemaMapper,
         private readonly RegisterMapper $registerMapper,
         private readonly SaveObject $saveHandler,
-        private readonly ValidateObject $validateHandler,
         private readonly IUserSession $userSession,
         private readonly OrganisationService $organisationService,
         private readonly LoggerInterface $logger
@@ -1664,23 +1662,6 @@ class SaveObjects
 
         return $businessData;
     }//end extractBusinessData()
-
-    /**
-     * Recursively sort array keys for consistent hashing
-     *
-     * @param array $array Array to sort recursively
-     *
-     * @return void
-     */
-    private function ksortRecursive(array &$array): void
-    {
-        ksort($array);
-        foreach ($array as &$value) {
-            if (is_array($value) === true) {
-                $this->ksortRecursive(array: $value);
-            }
-        }
-    }//end ksortRecursive()
 
     /**
      * Reconstruct saved objects without additional database fetch

@@ -55,14 +55,10 @@ class SubscriptionService
      *
      * @param SchemaMapper      $schemaMapper      Schema mapper
      * @param PermissionHandler $permissionHandler Permission handler
-     * @param IUserSession      $userSession       User session
-     * @param LoggerInterface   $logger            Logger
      */
     public function __construct(
         private readonly SchemaMapper $schemaMapper,
         private readonly PermissionHandler $permissionHandler,
-        private readonly IUserSession $userSession,
-        private readonly LoggerInterface $logger,
     ) {
     }//end __construct()
 

@@ -211,6 +211,8 @@ use OCA\OpenRegister\Middleware\LanguageMiddleware;
  * @link https://github.com/nextcloud/server/blob/master/apps-extra/openregister
  *
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
+ * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
+ * @SuppressWarnings(PHPMD.UnusedFormalParameter)
  */
 class Application extends App implements IBootstrap
 {

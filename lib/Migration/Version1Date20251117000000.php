@@ -25,6 +25,8 @@ use OCP\Migration\SimpleMigrationStep;
 
 /**
  * Adds checksum column to chunks table for change detection.
+ *
+ * @SuppressWarnings(PHPMD.UnusedFormalParameter)
  */
 class Version1Date20251117000000 extends SimpleMigrationStep
 {

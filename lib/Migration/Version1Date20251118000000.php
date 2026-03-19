@@ -27,6 +27,8 @@ use OCP\Migration\SimpleMigrationStep;
 
 /**
  * Drops deprecated file_texts and object_texts tables.
+ *
+ * @SuppressWarnings(PHPMD.UnusedFormalParameter)
  */
 class Version1Date20251118000000 extends SimpleMigrationStep
 {

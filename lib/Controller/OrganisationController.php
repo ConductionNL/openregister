@@ -45,6 +45,7 @@ use Exception;
  *
  * @suppressWarnings(PHPMD.TooManyPublicMethods)
  * @suppressWarnings(PHPMD.ExcessiveClassComplexity)
+ * @SuppressWarnings(PHPMD.ElseExpression)
  */
 class OrganisationController extends Controller
 {

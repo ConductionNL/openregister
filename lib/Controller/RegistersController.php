@@ -75,6 +75,8 @@ use Symfony\Component\Uid\Uuid;
  * @suppressWarnings(PHPMD.ExcessiveClassComplexity)
  * @suppressWarnings(PHPMD.TooManyPublicMethods)
  * @suppressWarnings(PHPMD.CouplingBetweenObjects)
+ * @SuppressWarnings(PHPMD.ElseExpression)
+ * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
  */
 class RegistersController extends Controller
 {

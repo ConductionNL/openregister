@@ -648,13 +648,13 @@ class OasService
         }//end if
 
         // AllOf must have at least 1 item, remove if empty or invalid.
-        if (($cleanDef['allOf'] ?? null) !== null) {
+        if (isset($cleanDef['allOf']) === true) {
             if (is_array($cleanDef['allOf']) === false || empty($cleanDef['allOf']) === true) {
                 unset($cleanDef['allOf']);
-            } else if (is_array($cleanDef['allOf']) === true && empty($cleanDef['allOf']) === false) {
+            } else {
                 // Validate each allOf element.
                 $validAllOfItems = [];
-                foreach ($cleanDef['allOf'] ?? [] as $item) {
+                foreach ($cleanDef['allOf'] as $item) {
                     // Each allOf item must be an object/array.
                     if (is_array($item) === true && empty($item) === false) {
                         $validAllOfItems[] = $item;
@@ -1723,12 +1723,12 @@ class OasService
     private function validateSchemaReferences(array &$schema, string $context): void
     {
         // Check allOf constructs.
-        if (($schema['allOf'] ?? null) !== null) {
+        if (isset($schema['allOf']) === true) {
             if (is_array($schema['allOf']) === false || empty($schema['allOf']) === true) {
                 unset($schema['allOf']);
-            } else if (is_array($schema['allOf']) === true && empty($schema['allOf']) === false) {
+            } else {
                 $validAllOfItems = [];
-                foreach ($schema['allOf'] ?? [] as $index => $item) {
+                foreach ($schema['allOf'] as $index => $item) {
                     // Suppress unused variable warning for $index - only processing items.
                     unset($index);
                     if (is_array($item) === false || empty($item) === true) {

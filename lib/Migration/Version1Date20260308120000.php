@@ -29,6 +29,8 @@ use OCP\Migration\SimpleMigrationStep;
  * payload transformation before delivery.
  *
  * @package OCA\OpenRegister\Migration
+ *
+ * @SuppressWarnings(PHPMD.UnusedFormalParameter)
  */
 class Version1Date20260308120000 extends SimpleMigrationStep
 {

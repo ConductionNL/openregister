@@ -21,8 +21,6 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
-use OCA\OpenRegister\Db\RegisterMapper;
-use OCA\OpenRegister\Db\SchemaMapper;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\TextPlainResponse;
 use OCP\IDBConnection;
@@ -40,20 +38,16 @@ class MetricsController extends Controller
     /**
      * Constructor.
      *
-     * @param string          $appName        The application name
-     * @param IRequest        $request        The HTTP request
-     * @param IDBConnection   $db             Database connection
-     * @param RegisterMapper  $registerMapper Register mapper
-     * @param SchemaMapper    $schemaMapper   Schema mapper
-     * @param IAppManager     $appManager     App manager
-     * @param LoggerInterface $logger         Logger
+     * @param string          $appName    The application name
+     * @param IRequest        $request    The HTTP request
+     * @param IDBConnection   $db         Database connection
+     * @param IAppManager     $appManager App manager
+     * @param LoggerInterface $logger     Logger
      */
     public function __construct(
         string $appName,
         IRequest $request,
         private IDBConnection $db,
-        private RegisterMapper $registerMapper,
-        private SchemaMapper $schemaMapper,
         private IAppManager $appManager,
         private LoggerInterface $logger,
     ) {
@@ -119,8 +113,8 @@ class MetricsController extends Controller
         $lines[]      = '# TYPE openregister_objects_total gauge';
         $objectCounts = $this->getObjectCountsByRegisterAndSchema();
         foreach ($objectCounts as $row) {
-            $register = $this->sanitizeLabel(value: $row['register_name'] ?? 'unknown');
-            $schema   = $this->sanitizeLabel(value: $row['schema_name'] ?? 'unknown');
+            $register = $this->sanitizeLabel(value: $row['register_name']);
+            $schema   = $this->sanitizeLabel(value: $row['schema_name']);
             $count    = (int) $row['object_count'];
             $lines[]  = 'openregister_objects_total{register="'.$register.'",schema="'.$schema.'"} '.$count;
         }

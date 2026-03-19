@@ -72,28 +72,24 @@ class GraphQLResolver
      * Constructor.
      *
      * @param GetObject           $getObject         Object finder
-     * @param QueryHandler        $queryHandler      Query handler
      * @param ObjectService       $objectService     Object service
      * @param PermissionHandler   $permissionHandler Permission handler
      * @param PropertyRbacHandler $propertyRbac      Property RBAC handler
      * @param RelationHandler     $relationHandler   Relation handler
      * @param AuditTrailMapper    $auditTrailMapper  Audit trail mapper
      * @param RegisterMapper      $registerMapper    Register mapper
-     * @param SchemaMapper        $schemaMapper      Schema mapper
      * @param LoggerInterface     $logger            Logger
      *
      * @SuppressWarnings(PHPMD.ExcessiveParameterList)
      */
     public function __construct(
         private readonly GetObject $getObject,
-        private readonly QueryHandler $queryHandler,
         private readonly ObjectService $objectService,
         private readonly PermissionHandler $permissionHandler,
         private readonly PropertyRbacHandler $propertyRbac,
         private readonly RelationHandler $relationHandler,
         private readonly AuditTrailMapper $auditTrailMapper,
         private readonly RegisterMapper $registerMapper,
-        private readonly SchemaMapper $schemaMapper,
         private readonly LoggerInterface $logger,
     ) {
     }//end __construct()
@@ -433,7 +429,7 @@ class GraphQLResolver
         $this->relationBuffer[$uuid] = true;
 
         return new Deferred(
-                function () use ($uuid, $path) {
+                function () use ($uuid) {
                     // Flush the buffer if not yet loaded.
                     if (isset($this->relationCache[$uuid]) === false) {
                         $this->flushRelationBuffer();
@@ -479,7 +475,7 @@ class GraphQLResolver
     public function resolveUsedBy(string $objectUuid): array
     {
         $result = $this->relationHandler->getUsedBy($objectUuid);
-        return ($result['results'] ?? []);
+        return $result['results'];
 
     }//end resolveUsedBy()
 
@@ -501,11 +497,7 @@ class GraphQLResolver
             $loaded = $this->relationHandler->bulkLoadRelationshipsBatched($uuids);
 
             foreach ($loaded as $key => $object) {
-                if ($object instanceof ObjectEntity) {
-                    $this->relationCache[$key] = $this->objectToArray(object: $object);
-                } else if (is_array(value: $object) === true) {
-                    $this->relationCache[$key] = $object;
-                }
+                $this->relationCache[$key] = $this->objectToArray(object: $object);
             }
         } catch (\Exception $e) {
             $this->logger->warning('GraphQL relation batch load failed: '.$e->getMessage());

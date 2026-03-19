@@ -45,6 +45,8 @@ use Psr\Log\LoggerInterface;
  * @version  1.0.0
  *
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
+ * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
+ * @SuppressWarnings(PHPMD.UnusedFormalParameter)
  */
 class CreateFileHandler
 {

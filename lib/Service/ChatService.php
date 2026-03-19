@@ -54,6 +54,8 @@ use Psr\Log\LoggerInterface;
  * @author    Conduction Development Team <dev@conduction.nl>
  * @copyright 2024 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ *
+ * @SuppressWarnings(PHPMD.UnusedFormalParameter)
  */
 class ChatService
 {

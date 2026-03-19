@@ -60,6 +60,7 @@ use Symfony\Component\Uid\Uuid;
  * @SuppressWarnings(PHPMD.TooManyPublicMethods)
  * @SuppressWarnings(PHPMD.ExcessiveClassComplexity)
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
+ * @SuppressWarnings(PHPMD.ExcessiveClassLength)
  */
 class OrganisationMapper extends QBMapper
 {

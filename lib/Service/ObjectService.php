@@ -2505,8 +2505,8 @@ class ObjectService
         );
 
         // Invalidate collection caches after successful bulk operations.
-        $createdCount  = $bulkResult['statistics']['objectsCreated'] ?? 0;
-        $updatedCount  = $bulkResult['statistics']['objectsUpdated'] ?? 0;
+        $createdCount  = (int) ($bulkResult['statistics']['objectsCreated'] ?? 0);
+        $updatedCount  = (int) ($bulkResult['statistics']['objectsUpdated'] ?? 0);
         $totalAffected = $createdCount + $updatedCount;
 
         if ($totalAffected > 0) {
@@ -2610,7 +2610,7 @@ class ObjectService
     public function deleteObjects(array $uuids=[], bool $_rbac=true, bool $_multitenancy=true): array
     {
         if (empty($uuids) === true) {
-            return [];
+            return ['deleted_uuids' => [], 'skipped_uuids' => [], 'cascade_count' => 0];
         }
 
         // Apply RBAC and multi-organization filtering if enabled.

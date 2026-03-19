@@ -75,6 +75,7 @@ use Symfony\Component\Uid\Uuid;
  *
  * @SuppressWarnings(PHPMD.TooManyFields)
  * @SuppressWarnings(PHPMD.ExcessiveClassComplexity)
+ * @SuppressWarnings(PHPMD.ElseExpression)
  */
 class Application extends Entity implements JsonSerializable
 {

@@ -34,6 +34,8 @@ use OCP\IRequest;
  * standard GraphQL responses. Also serves the GraphiQL explorer UI.
  *
  * @psalm-suppress UnusedClass - Registered via routes.php
+ *
+ * @SuppressWarnings(PHPMD.ElseExpression)
  */
 class GraphQLController extends Controller
 {

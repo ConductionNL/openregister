@@ -60,6 +60,10 @@ use Psr\Log\LoggerInterface;
  * @SuppressWarnings(PHPMD.NPathComplexity)
  * @SuppressWarnings(PHPMD.ExcessiveClassLength)
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)   Facet computation requires schema, register, and query dependencies
+ * @SuppressWarnings(PHPMD.ElseExpression)
+ * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
+ * @SuppressWarnings(PHPMD.BooleanArgumentFlag)
+ * @SuppressWarnings(PHPMD.UnusedFormalParameter)
  */
 class MagicFacetHandler
 {

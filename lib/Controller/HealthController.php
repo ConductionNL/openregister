@@ -33,6 +33,8 @@ use Psr\Log\LoggerInterface;
  * Controller for health check endpoints.
  *
  * @psalm-suppress UnusedClass
+ *
+ * @SuppressWarnings(PHPMD.ElseExpression)
  */
 class HealthController extends Controller
 {

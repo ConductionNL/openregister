@@ -55,6 +55,7 @@ use OCP\IUserManager;
  * @suppressWarnings(PHPMD.TooManyPublicMethods)
  * @suppressWarnings(PHPMD.ExcessiveClassComplexity)
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)   Nextcloud controller DI requires many dependencies
+ * @SuppressWarnings(PHPMD.ExcessiveClassLength)
  */
 class FilesController extends Controller
 {

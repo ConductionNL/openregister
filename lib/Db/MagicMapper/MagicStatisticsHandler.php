@@ -51,6 +51,7 @@ use Psr\Log\LoggerInterface;
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
  * @SuppressWarnings(PHPMD.ExcessiveClassComplexity)
  * Statistics methods from MagicMapper retain inherent query complexity.
+ * @SuppressWarnings(PHPMD.ElseExpression)
  */
 class MagicStatisticsHandler
 {

@@ -33,17 +33,17 @@ class HookStoppedException extends Exception
     /**
      * Validation errors from the hook
      *
-     * @var array<int, array{field?: string, message: string, code?: string}>
+     * @var array<string, mixed>
      */
     private readonly array $errors;
 
     /**
      * Constructor for HookStoppedException
      *
-     * @param string                                                            $message  Error message
-     * @param array<int, array{field?: string, message: string, code?: string}> $errors   Hook validation errors
-     * @param int                                                               $code     Error code
-     * @param Throwable|null                                                    $previous Previous exception
+     * @param string             $message  Error message
+     * @param array<string, mixed> $errors   Hook validation errors
+     * @param int                $code     Error code
+     * @param Throwable|null     $previous Previous exception
      *
      * @return void
      */
@@ -60,7 +60,7 @@ class HookStoppedException extends Exception
     /**
      * Get the hook validation errors
      *
-     * @return array<int, array{field?: string, message: string, code?: string}>
+     * @return array<string, mixed>
      */
     public function getErrors(): array
     {

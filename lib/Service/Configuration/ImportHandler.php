@@ -64,6 +64,9 @@ use Symfony\Component\Yaml\Yaml;
  * @SuppressWarnings(PHPMD.UnusedPrivateField)
  * Reason: Configuration import requires comprehensive dependencies and complex validation logic.
  *         Reserved fields for future features.
+ * @SuppressWarnings(PHPMD.ElseExpression)
+ * @SuppressWarnings(PHPMD.StaticAccess)
+ * @SuppressWarnings(PHPMD.UnusedFormalParameter)
  */
 class ImportHandler
 {
@@ -189,13 +192,6 @@ class ImportHandler
      * @var MappingMapper The mapping mapper instance.
      */
     private readonly MappingMapper $mappingMapper;
-
-    /**
-     * Map of mappings indexed by slug during import.
-     *
-     * @var array<string, Mapping> Mappings indexed by slug.
-     */
-    private array $mappingsMap = [];
 
     /**
      * OpenConnector configuration service for optional integration.
@@ -1293,7 +1289,6 @@ class ImportHandler
         // Reset the maps for this import.
         $this->registersMap = [];
         $this->schemasMap   = [];
-        $this->mappingsMap  = [];
 
         $result = [
             'registers'        => [],
@@ -1582,8 +1577,7 @@ class ImportHandler
                     );
 
                     if ($mapping !== null) {
-                        $this->mappingsMap[$mappingSlug] = $mapping;
-                        $result['mappings'][]            = $mapping;
+                        $result['mappings'][] = $mapping;
                     }
 
                     $mappingId = null;

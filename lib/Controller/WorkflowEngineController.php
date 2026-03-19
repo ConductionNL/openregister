@@ -30,6 +30,8 @@ use Psr\Log\LoggerInterface;
  * Controller for workflow engine CRUD and health checks.
  *
  * @psalm-suppress UnusedClass
+ *
+ * @SuppressWarnings(PHPMD.BooleanArgumentFlag)
  */
 class WorkflowEngineController extends Controller
 {

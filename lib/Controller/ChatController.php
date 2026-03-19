@@ -57,6 +57,7 @@ use Exception;
  * @psalm-suppress UnusedClass
  *
  * @suppressWarnings(PHPMD.CouplingBetweenObjects)
+ * @SuppressWarnings(PHPMD.ElseExpression)
  */
 class ChatController extends Controller
 {

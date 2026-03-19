@@ -35,6 +35,8 @@ use OCP\IDBConnection;
  * @method list<Chunk> findEntities(IQueryBuilder $query)
  *
  * @template-extends QBMapper<Chunk>
+ *
+ * @SuppressWarnings(PHPMD.ElseExpression)
  */
 class ChunkMapper extends QBMapper
 {

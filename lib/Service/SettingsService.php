@@ -1851,32 +1851,6 @@ class SettingsService
      * from the database in one roundtrip for better performance.
      *
      * @return array<string, array<string, int>> Database statistics with warnings and totals
-     *
-     * @psalm-return array{
-     *     warnings: array{
-     *         objectsWithoutOwner: int,
-     *         objectsWithoutOrganisation: int,
-     *         auditTrailsWithoutExpiry: int,
-     *         searchTrailsWithoutExpiry: int,
-     *         expiredAuditTrails: int,
-     *         expiredSearchTrails: int,
-     *         expiredObjects: int
-     *     },
-     *     totals: array{
-     *         totalObjects: int,
-     *         totalBlobObjects: int,
-     *         totalMagicObjects: int,
-     *         totalAuditTrails: int,
-     *         totalSearchTrails: int,
-     *         totalConfigurations: int,
-     *         totalOrganisations: int,
-     *         totalRegisters: int,
-     *         totalSchemas: int,
-     *         totalSources: int,
-     *         totalWebhookLogs: int,
-     *         deletedObjects: int
-     *     }
-     * }
      */
     private function getDatabaseStats(): array
     {

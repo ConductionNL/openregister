@@ -69,6 +69,7 @@ use Psr\Log\LoggerInterface;
  * @suppressWarnings(PHPMD.ExcessiveClassComplexity)
  * @suppressWarnings(PHPMD.TooManyPublicMethods)
  * @suppressWarnings(PHPMD.CouplingBetweenObjects)
+ * @SuppressWarnings(PHPMD.ElseExpression)
  */
 class SchemasController extends Controller
 {

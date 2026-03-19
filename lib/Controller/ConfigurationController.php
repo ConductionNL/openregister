@@ -51,6 +51,7 @@ use Psr\Log\LoggerInterface;
  * @suppressWarnings(PHPMD.TooManyMethods)
  * @suppressWarnings(PHPMD.TooManyPublicMethods)
  * @suppressWarnings(PHPMD.CouplingBetweenObjects)
+ * @SuppressWarnings(PHPMD.ElseExpression)
  */
 class ConfigurationController extends Controller
 {

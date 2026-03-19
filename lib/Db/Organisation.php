@@ -66,6 +66,7 @@ use Symfony\Component\Uid\Uuid;
  * @method static setParent(?string $parent)
  *
  * @SuppressWarnings(PHPMD.TooManyFields)
+ * @SuppressWarnings(PHPMD.ElseExpression)
  *
  * @psalm-suppress PropertyNotSetInConstructor $id is set by Nextcloud's Entity base class
  */

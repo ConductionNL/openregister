@@ -46,6 +46,10 @@ use OCP\IRequest;
  * @psalm-suppress UnusedClass
  *
  * @suppressWarnings(PHPMD.TooManyPublicMethods)
+ * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+ * @SuppressWarnings(PHPMD.NPathComplexity)
+ * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
+ * @SuppressWarnings(PHPMD.ElseExpression)
  */
 class FileExtractionController extends Controller
 {

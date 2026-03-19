@@ -221,7 +221,7 @@ class ComputedFieldHandler
             // Create a template from the expression.
             $twig         = $this->getTwig();
             $templateName = 'computed_'.$propertyName.'_'.md5($expression);
-            // @var ArrayLoader $loader.
+            /** @var \Twig\Loader\ArrayLoader $loader */
             $loader = $twig->getLoader();
             $loader->setTemplate($templateName, $expression);
 
@@ -333,11 +333,7 @@ class ComputedFieldHandler
                     _multitenancy: false
                 );
 
-                if ($referencedObject !== null) {
-                    $refs[$propertyName] = $referencedObject->getObject() ?? [];
-                } else {
-                    $refs[$propertyName] = [];
-                }
+                $refs[$propertyName] = $referencedObject->getObject() ?? [];
             } catch (\Exception $e) {
                 $this->logger->debug(
                     message: '[ComputedFieldHandler] Failed to resolve reference',

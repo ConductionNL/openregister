@@ -121,6 +121,8 @@ use OCP\IUserSession;
  * @SuppressWarnings(PHPMD.TooManyFields)
  *
  * @psalm-suppress PropertyNotSetInConstructor $id is set by Nextcloud's Entity base class
+ *
+ * @SuppressWarnings(PHPMD.NPathComplexity)
  */
 class ObjectEntity extends Entity implements JsonSerializable
 {

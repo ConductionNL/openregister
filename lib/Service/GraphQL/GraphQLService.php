@@ -48,11 +48,6 @@ class GraphQLService
 {
 
     /**
-     * APCu cache key for the GraphQL schema.
-     */
-    private const SCHEMA_CACHE_KEY = 'openregister_graphql_schema_hash';
-
-    /**
      * Constructor.
      *
      * @param SchemaGenerator         $schemaGenerator    Schema generator
@@ -63,7 +58,6 @@ class GraphQLService
      * @param PermissionHandler       $permissionHandler  Permission handler
      * @param PropertyRbacHandler     $propertyRbac       Property RBAC handler
      * @param AuditTrailMapper        $auditTrailMapper   Audit trail mapper
-     * @param SecurityService         $securityService    Security service
      * @param RegisterMapper          $registerMapper     Register mapper
      * @param SchemaMapper            $schemaMapper       Schema mapper
      * @param IAppConfig              $appConfig          App configuration
@@ -82,7 +76,6 @@ class GraphQLService
         private readonly PermissionHandler $permissionHandler,
         private readonly PropertyRbacHandler $propertyRbac,
         private readonly AuditTrailMapper $auditTrailMapper,
-        private readonly SecurityService $securityService,
         private readonly RegisterMapper $registerMapper,
         private readonly SchemaMapper $schemaMapper,
         private readonly IAppConfig $appConfig,
@@ -140,19 +133,7 @@ class GraphQLService
                 'maxDepth'  => $complexity['maxDepth'],
             ];
 
-            // Format errors.
-            if (isset($output['errors']) === true) {
-                $output['errors'] = array_map(
-                    function ($error) {
-                        if ($error instanceof Error) {
-                            return $this->errorFormatter->format($error);
-                        }
-
-                        return $error;
-                    },
-                    $output['errors']
-                );
-            }
+            // Errors are already formatted by the GraphQL executor.
 
             return $output;
         } catch (Error $e) {
@@ -246,10 +227,6 @@ class GraphQLService
         $hasIntrospection = false;
         foreach ($document->definitions as $definition) {
             if ($definition instanceof \GraphQL\Language\AST\OperationDefinitionNode === false) {
-                continue;
-            }
-
-            if ($definition->selectionSet === null) {
                 continue;
             }
 

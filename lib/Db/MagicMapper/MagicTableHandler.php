@@ -46,6 +46,8 @@ use Psr\Log\LoggerInterface;
  * existence checking, and cache management.
  *
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
+ * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
+ * @SuppressWarnings(PHPMD.StaticAccess)
  */
 class MagicTableHandler
 {

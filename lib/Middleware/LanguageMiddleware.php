@@ -36,6 +36,8 @@ use OCP\IRequest;
  * the Content-Language response header to outgoing responses.
  *
  * @package OCA\OpenRegister\Middleware
+ *
+ * @SuppressWarnings(PHPMD.StaticAccess)
  */
 class LanguageMiddleware extends Middleware
 {
@@ -57,7 +59,7 @@ class LanguageMiddleware extends Middleware
      * Parses the Accept-Language header and stores the result in LanguageService.
      * Also checks for the _translations=all query parameter.
      *
-     * @param string $controller The controller class name
+     * @param mixed  $controller The controller instance
      * @param string $methodName The method name being called
      *
      * @return void
@@ -92,7 +94,7 @@ class LanguageMiddleware extends Middleware
      * Adds the Content-Language header to the response indicating
      * which language was served.
      *
-     * @param string   $controller The controller class name
+     * @param mixed    $controller The controller instance
      * @param string   $methodName The method name that was called
      * @param Response $response   The response object
      *

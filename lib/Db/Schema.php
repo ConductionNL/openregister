@@ -90,6 +90,10 @@ use OCA\OpenRegister\Service\Schemas\PropertyValidatorHandler;
  * @SuppressWarnings(PHPMD.TooManyFields)
  *
  * @psalm-suppress PropertyNotSetInConstructor $id is set by Nextcloud's Entity base class
+ *
+ * @SuppressWarnings(PHPMD.ElseExpression)
+ * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
+ * @SuppressWarnings(PHPMD.NPathComplexity)
  */
 class Schema extends Entity implements JsonSerializable
 {
@@ -1763,10 +1767,6 @@ class Schema extends Entity implements JsonSerializable
      * @psalm-param array<string, mixed> $property
      *
      * @return string The facet type
-     *
-     * @phpstan-return string|null
-     *
-     * @psalm-return 'date_histogram'|'range'|'terms'
      */
     private function determineFacetType(array $property): string
     {

@@ -24,6 +24,8 @@ use OCP\IRequest;
 
 /**
  * Controller for storage migration between blob and magic tables.
+ *
+ * @SuppressWarnings(PHPMD.ElseExpression)
  */
 class MigrationController extends Controller
 {

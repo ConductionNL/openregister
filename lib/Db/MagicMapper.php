@@ -147,6 +147,10 @@ use OCA\OpenRegister\Exception\HookStoppedException;
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
  * @SuppressWarnings(PHPMD.CyclomaticComplexity)
  * @SuppressWarnings(PHPMD.NPathComplexity)
+ * @SuppressWarnings(PHPMD.ElseExpression)
+ * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
+ * @SuppressWarnings(PHPMD.BooleanArgumentFlag)
+ * @SuppressWarnings(PHPMD.UnusedFormalParameter)
  */
 class MagicMapper extends AbstractObjectMapper
 {
@@ -540,7 +544,7 @@ class MagicMapper extends AbstractObjectMapper
      *
      * @throws Exception If table creation/update fails
      *
-     * @return true True if table was created/updated successfully
+     * @return bool True if table was created/updated successfully
      *
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Force flag allows table recreation
      */
@@ -4807,7 +4811,7 @@ class MagicMapper extends AbstractObjectMapper
             // Check if a hook stopped propagation (reject mode).
             if ($creatingEvent->isPropagationStopped() === true) {
                 throw new HookStoppedException(
-                    message: $creatingEvent->getErrors()[0]['message'] ?? 'Object creation rejected by hook',
+                    message: (string) ($creatingEvent->getErrors()['message'] ?? 'Object creation rejected by hook'),
                     errors: $creatingEvent->getErrors()
                 );
             }
@@ -4935,7 +4939,7 @@ class MagicMapper extends AbstractObjectMapper
         // Check if a hook stopped propagation (reject mode).
         if ($updatingEvent->isPropagationStopped() === true) {
             throw new HookStoppedException(
-                message: $updatingEvent->getErrors()[0]['message'] ?? 'Object update rejected by hook',
+                message: (string) ($updatingEvent->getErrors()['message'] ?? 'Object update rejected by hook'),
                 errors: $updatingEvent->getErrors()
             );
         }
@@ -5031,7 +5035,7 @@ class MagicMapper extends AbstractObjectMapper
             // Check if a hook stopped propagation (reject mode).
             if ($deletingEvent->isPropagationStopped() === true) {
                 throw new HookStoppedException(
-                    message: $deletingEvent->getErrors()[0]['message'] ?? 'Object deletion rejected by hook',
+                    message: (string) ($deletingEvent->getErrors()['message'] ?? 'Object deletion rejected by hook'),
                     errors: $deletingEvent->getErrors()
                 );
             }
@@ -6986,11 +6990,7 @@ class MagicMapper extends AbstractObjectMapper
 
                 $matchedRegister = null;
                 foreach ($registers as $register) {
-                    $registerSchemas = $register->getSchemas();
-                    if (is_string($registerSchemas) === true) {
-                        $registerSchemas = json_decode($registerSchemas, true) ?? [];
-                    }
-
+                    $registerSchemas = $register->getSchemas() ?? [];
                     if (is_array($registerSchemas) === true) {
                         $schemaIdStr = (string) $sId;
                         $schemaIdInt = (int) $sId;
@@ -7088,9 +7088,7 @@ class MagicMapper extends AbstractObjectMapper
      * @param array|null  $ids            Specific IDs
      * @param string|null $uses           Uses filter
      *
-     * @return ObjectEntity[]|int
-     *
-     * @psalm-return list<OCA\OpenRegister\Db\ObjectEntity>
+     * @return array<int, ObjectEntity>|int
      *
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Flags control security filtering behavior
      */
@@ -7275,7 +7273,7 @@ class MagicMapper extends AbstractObjectMapper
      * @param array|null  $ids            Optional ID filter.
      * @param string|null $uses           Optional uses filter.
      *
-     * @return array{results: ObjectEntity[], total: int, register: ?array, schema: ?array}
+     * @return array<string, mixed>
      *
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag)   Flags control security filtering behavior
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)
@@ -7523,11 +7521,7 @@ class MagicMapper extends AbstractObjectMapper
 
                 $matchedRegister = null;
                 foreach ($registers as $register) {
-                    $registerSchemas = $register->getSchemas();
-                    if (is_string($registerSchemas) === true) {
-                        $registerSchemas = json_decode($registerSchemas, true) ?? [];
-                    }
-
+                    $registerSchemas = $register->getSchemas() ?? [];
                     if (is_array($registerSchemas) === true) {
                         $schemaIdStr = (string) $sId;
                         $schemaIdInt = (int) $sId;

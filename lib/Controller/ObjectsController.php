@@ -72,6 +72,8 @@ use OCP\AppFramework\Http\DataDownloadResponse;
  * @suppressWarnings(PHPMD.CouplingBetweenObjects)
  * @suppressWarnings(PHPMD.ElseExpression)           File upload extraction requires conditional branching
  * @suppressWarnings(PHPMD.ExcessiveMethodLength)    Complex file upload handling with multiple formats
+ * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+ * @SuppressWarnings(PHPMD.NPathComplexity)
  */
 class ObjectsController extends Controller
 {

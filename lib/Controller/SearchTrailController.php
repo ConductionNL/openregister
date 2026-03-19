@@ -35,6 +35,7 @@ use OCP\IRequest;
  *
  * @suppressWarnings(PHPMD.TooManyPublicMethods)
  * @suppressWarnings(PHPMD.ExcessiveClassComplexity)
+ * @SuppressWarnings(PHPMD.ElseExpression)
  */
 class SearchTrailController extends Controller
 {

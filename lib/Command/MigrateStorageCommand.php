@@ -32,6 +32,11 @@ use Symfony\Component\Console\Output\OutputInterface;
  *   php occ openregister:migrate-storage to-magic 1 5
  *   php occ openregister:migrate-storage to-blob 1 5 --dry-run
  *   php occ openregister:migrate-storage to-magic 1 5 --status
+ *
+ * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+ * @SuppressWarnings(PHPMD.NPathComplexity)
+ * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
+ * @SuppressWarnings(PHPMD.ElseExpression)
  */
 class MigrateStorageCommand extends Command
 {

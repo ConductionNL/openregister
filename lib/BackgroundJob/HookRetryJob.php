@@ -42,6 +42,8 @@ use Psr\Log\LoggerInterface;
  * @psalm-suppress UnusedClass
  *
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
+ * @SuppressWarnings(PHPMD.ElseExpression)
+ * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
  */
 class HookRetryJob extends QueuedJob
 {

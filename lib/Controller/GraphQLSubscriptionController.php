@@ -31,6 +31,10 @@ use OCP\IRequest;
  * - Reconnection via Last-Event-ID header
  *
  * @psalm-suppress UnusedClass - Registered via routes.php
+ *
+ * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+ * @SuppressWarnings(PHPMD.NPathComplexity)
+ * @SuppressWarnings(PHPMD.ElseExpression)
  */
 class GraphQLSubscriptionController extends Controller
 {

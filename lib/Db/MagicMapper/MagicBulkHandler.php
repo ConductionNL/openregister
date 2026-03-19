@@ -58,6 +58,8 @@ use Symfony\Component\Uid\Uuid;
  *
  * @SuppressWarnings(PHPMD.ExcessiveClassComplexity)
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
+ * @SuppressWarnings(PHPMD.ElseExpression)
+ * @SuppressWarnings(PHPMD.NPathComplexity)
  */
 class MagicBulkHandler
 {

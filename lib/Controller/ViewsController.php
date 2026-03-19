@@ -38,6 +38,8 @@ use OCP\AppFramework\Db\DoesNotExistException;
  * @psalm-suppress UnusedClass
  *
  * @suppressWarnings(PHPMD.ExcessiveClassComplexity)
+ * @SuppressWarnings(PHPMD.ElseExpression)
+ * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
  */
 class ViewsController extends Controller
 {

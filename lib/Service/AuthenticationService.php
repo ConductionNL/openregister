@@ -39,6 +39,7 @@ use Twig\Loader\ArrayLoader;
  * @package OCA\OpenRegister\Service
  *
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
+ * @SuppressWarnings(PHPMD.StaticAccess)
  */
 class AuthenticationService
 {
@@ -264,9 +265,9 @@ class AuthenticationService
      *
      * @param array $configuration The auth configuration with secret key.
      *
-     * @return JWK|null The JWK key.
+     * @return JWK The JWK key.
      */
-    private function getRSJWK(array $configuration): ?JWK
+    private function getRSJWK(array $configuration): JWK
     {
         $stamp    = microtime().getmypid();
         $filename = "/var/tmp/privatekey-$stamp";
@@ -324,11 +325,11 @@ class AuthenticationService
      *
      * @param array $configuration The auth configuration with algorithm and secret.
      *
-     * @return JWK|null The resulting JWK key.
+     * @return JWK The resulting JWK key.
      *
      * @throws BadRequestException If the algorithm is not supported.
      */
-    private function getJWK(array $configuration): ?JWK
+    private function getJWK(array $configuration): JWK
     {
         if (in_array(needle: $configuration['algorithm'], haystack: ['HS256', 'HS384', 'HS512']) === true) {
             return $this->getHSJWK(configuration: $configuration);

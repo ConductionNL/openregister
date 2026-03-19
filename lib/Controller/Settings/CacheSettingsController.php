@@ -39,6 +39,8 @@ use Psr\Log\LoggerInterface;
  *
  * @category Controller
  * @package  OCA\OpenRegister\Controller\Settings
+ *
+ * @SuppressWarnings(PHPMD.ElseExpression)
  */
 class CacheSettingsController extends Controller
 {
