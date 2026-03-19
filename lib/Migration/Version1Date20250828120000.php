@@ -24,6 +24,8 @@ namespace OCA\OpenRegister\Migration;
 
 use Closure;
 use OCP\DB\ISchemaWrapper;
+use OCP\IConfig;
+use OCP\IDBConnection;
 use OCP\Migration\IOutput;
 use OCP\Migration\SimpleMigrationStep;
 
@@ -38,6 +40,16 @@ use OCP\Migration\SimpleMigrationStep;
  */
 class Version1Date20250828120000 extends SimpleMigrationStep
 {
+	/**
+	 * @param IDBConnection $connection The database connection
+	 * @param IConfig $config The configuration interface
+	 */
+    public function __construct(
+        private readonly IDBConnection $connection,
+        private readonly IConfig $config,
+    ) {
+    }
+
     /**
      * Apply database schema changes for faceting performance.
      *
@@ -53,7 +65,7 @@ class Version1Date20250828120000 extends SimpleMigrationStep
      */
     public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper
     {
-        /*
+        /**
          * @var ISchemaWrapper $schema
          */
 
@@ -86,8 +98,8 @@ class Version1Date20250828120000 extends SimpleMigrationStep
 
         // 2. Critical composite indexes for common filter combinations.
         // Note: Using raw SQL for composite indexes to handle MySQL key length limits.
-        $connection  = \OC::$server->getDatabaseConnection();
-        $tablePrefix = \OC::$server->getConfig()->getSystemValue('dbtableprefix', 'oc_');
+        $connection  = $this->connection;
+        $tablePrefix = $this->config->getSystemValue('dbtableprefix', 'oc_');
         $tableName   = $tablePrefix.'openregister_objects';
 
         $compositeIndexes = [
