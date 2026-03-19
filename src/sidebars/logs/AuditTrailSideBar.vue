@@ -273,6 +273,9 @@ export default {
 				schema,
 			}
 		},
+		globalAuditTrailResults() {
+			return objectStore.globalAuditTrails.results
+		},
 		userOptions() {
 			if (!objectStore.globalAuditTrails.results || !objectStore.globalAuditTrails.results.length) {
 				return []
@@ -367,7 +370,7 @@ export default {
 			},
 			deep: true,
 		},
-		'objectStore.globalAuditTrails.results'() {
+		globalAuditTrailResults() {
 			this.updateFilteredCount()
 			this.loadStatistics()
 			this.loadActionDistribution()
@@ -392,20 +395,13 @@ export default {
 			schemaStore.refreshSchemaList()
 		}
 
-		// Load initial audit trail data and ensure it's refreshed
+		// Load initial audit trail data, then derive stats from it
 		this.loadAuditTrailData()
-
-		this.loadStatistics()
-		this.loadActionDistribution()
-		this.loadTopObjects()
 
 		// Listen for filtered count updates
 		this.$root.$on('audit-trail-filtered-count', (count) => {
 			this.filteredCount = count
 		})
-
-		// Watch store changes and update count
-		this.updateFilteredCount()
 
 		// Initialize from query params after lists potentially load
 		this.applyQueryParamsFromRoute()
@@ -422,6 +418,9 @@ export default {
 			try {
 				await objectStore.refreshGlobalAuditTrails()
 				this.updateFilteredCount()
+				this.loadStatistics()
+				this.loadActionDistribution()
+				this.loadTopObjects()
 			} catch (error) {
 				// Handle error silently
 			}
