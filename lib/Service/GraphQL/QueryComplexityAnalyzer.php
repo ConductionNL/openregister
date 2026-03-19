@@ -39,6 +39,7 @@ class QueryComplexityAnalyzer
     private const DEFAULT_MAX_COST  = 10000;
     private const FIELD_COST        = 1;
     private const RESOLVER_COST     = 10;
+
     /**
      * Per-schema cost overrides.
      *

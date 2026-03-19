@@ -620,15 +620,16 @@ class ReferentialIntegrityService
                                 'action'     => 'RESTRICT',
                                 'chain'      => array_merge($currentChain, ['(SET_NULL on required → RESTRICT)']),
                             ];
-                        } else {
-                            $nullifyTargets[] = [
-                                'objectUuid' => $refObj->getUuid(),
-                                'schema'     => $dep['sourceSchemaId'],
-                                'property'   => $dep['property'],
-                                'isArray'    => $dep['isArray'],
-                                'sourceUuid' => $uuid,
-                            ];
+                            break;
                         }
+
+                        $nullifyTargets[] = [
+                            'objectUuid' => $refObj->getUuid(),
+                            'schema'     => $dep['sourceSchemaId'],
+                            'property'   => $dep['property'],
+                            'isArray'    => $dep['isArray'],
+                            'sourceUuid' => $uuid,
+                        ];
                         break;
 
                     case 'SET_DEFAULT':
@@ -636,40 +637,42 @@ class ReferentialIntegrityService
                             schemaId: $dep['sourceSchemaId'],
                             propertyName: $dep['property']
                         );
-                        if ($defaultValue === null) {
-                            // Falls back to SET_NULL → RESTRICT chain.
-                            if ($this->isRequiredProperty(
-                                    schemaId: $dep['sourceSchemaId'],
-                                    propertyName: $dep['property']
-                                ) === true
-                            ) {
-                                $blockers[] = [
-                                    'objectUuid' => $refObj->getUuid(),
-                                    'schema'     => $dep['sourceSchemaId'],
-                                    'property'   => $dep['property'],
-                                    'action'     => 'RESTRICT',
-                                    'chain'      => array_merge(
-                                        $currentChain,
-                                        ['(SET_DEFAULT no default + required → RESTRICT)']
-                                    ),
-                                ];
-                            } else {
-                                $nullifyTargets[] = [
-                                    'objectUuid' => $refObj->getUuid(),
-                                    'schema'     => $dep['sourceSchemaId'],
-                                    'property'   => $dep['property'],
-                                    'isArray'    => $dep['isArray'],
-                                    'sourceUuid' => $uuid,
-                                ];
-                            }
-                        } else {
+                        if ($defaultValue !== null) {
                             $defaultTargets[] = [
                                 'objectUuid'   => $refObj->getUuid(),
                                 'schema'       => $dep['sourceSchemaId'],
                                 'property'     => $dep['property'],
                                 'defaultValue' => $defaultValue,
                             ];
-                        }//end if
+                            break;
+                        }
+
+                        // Falls back to SET_NULL → RESTRICT chain.
+                        if ($this->isRequiredProperty(
+                                schemaId: $dep['sourceSchemaId'],
+                                propertyName: $dep['property']
+                            ) === true
+                        ) {
+                            $blockers[] = [
+                                'objectUuid' => $refObj->getUuid(),
+                                'schema'     => $dep['sourceSchemaId'],
+                                'property'   => $dep['property'],
+                                'action'     => 'RESTRICT',
+                                'chain'      => array_merge(
+                                    $currentChain,
+                                    ['(SET_DEFAULT no default + required → RESTRICT)']
+                                ),
+                            ];
+                            break;
+                        }
+
+                        $nullifyTargets[] = [
+                            'objectUuid' => $refObj->getUuid(),
+                            'schema'     => $dep['sourceSchemaId'],
+                            'property'   => $dep['property'],
+                            'isArray'    => $dep['isArray'],
+                            'sourceUuid' => $uuid,
+                        ];
                         break;
 
                     default:
@@ -767,10 +770,12 @@ class ReferentialIntegrityService
                 if (is_array($propertyValue) === true && in_array($targetUuid, $propertyValue, true) === true) {
                     $matches[] = $candidate;
                 }
-            } else {
-                if ($propertyValue === $targetUuid) {
-                    $matches[] = $candidate;
-                }
+
+                continue;
+            }
+
+            if ($propertyValue === $targetUuid) {
+                $matches[] = $candidate;
             }
         }//end foreach
 
@@ -836,40 +841,24 @@ class ReferentialIntegrityService
 
         // Build the array/scalar SQL variant selector before accessing the database.
         // For array properties we need JSON_CONTAINS / jsonb @> operators; for scalars a simple = suffices.
-        if ($isArray === true) {
-            $queryMode = 'array';
-        } else {
-            $queryMode = 'scalar';
-        }
+        $queryMode = $isArray === true ? 'array' : 'scalar';
 
         $db         = \OC::$server->getDatabaseConnection();
         $platform   = $db->getDatabasePlatform();
         $isPostgres = stripos($platform::class, 'PostgreSQL') !== false;
 
-        if ($isPostgres === true) {
-            $deletedCheck = "(_deleted IS NULL OR _deleted = 'null'::jsonb)";
-        } else {
-            $deletedCheck = '_deleted IS NULL';
+        $deletedCheck = $isPostgres === true ? "(_deleted IS NULL OR _deleted = 'null'::jsonb)" : '_deleted IS NULL';
+
+        $selectClause   = "SELECT _uuid, _register, _schema, _deleted, {$quotedCol} AS _prop FROM {$fullTableName}";
+        $whereCondition = "{$deletedCheck} AND {$quotedCol} = ?";
+
+        if ($queryMode === 'array' && $isPostgres === true) {
+            $whereCondition = "{$deletedCheck} AND {$quotedCol}::jsonb @> to_jsonb(?::text)";
+        } else if ($queryMode === 'array') {
+            $whereCondition = "{$deletedCheck} AND JSON_CONTAINS({$quotedCol}, JSON_QUOTE(?))";
         }
 
-        if ($queryMode === 'array') {
-            if ($isPostgres === true) {
-                $sql = "SELECT _uuid, _register, _schema, _deleted, {$quotedCol} AS _prop
-                        FROM {$fullTableName}
-                        WHERE {$deletedCheck} AND {$quotedCol}::jsonb @> to_jsonb(?::text)
-                        LIMIT 100";
-            } else {
-                $sql = "SELECT _uuid, _register, _schema, _deleted, {$quotedCol} AS _prop
-                        FROM {$fullTableName}
-                        WHERE {$deletedCheck} AND JSON_CONTAINS({$quotedCol}, JSON_QUOTE(?))
-                        LIMIT 100";
-            }
-        } else {
-            $sql = "SELECT _uuid, _register, _schema, _deleted, {$quotedCol} AS _prop
-                    FROM {$fullTableName}
-                    WHERE {$deletedCheck} AND {$quotedCol} = ?
-                    LIMIT 100";
-        }
+        $sql = "{$selectClause} WHERE {$whereCondition} LIMIT 100";
 
         $stmt = $db->prepare($sql);
         $stmt->execute([$targetUuid]);
@@ -884,17 +873,8 @@ class ReferentialIntegrityService
 
             $deleted = $row['_deleted'] ?? null;
             if ($deleted !== null && $deleted !== 'null') {
-                if (is_string($deleted) === true) {
-                    $decoded = json_decode($deleted, true);
-                } else {
-                    $decoded = $deleted;
-                }
-
-                if (is_array($decoded) === true) {
-                    $entity->setDeleted($decoded);
-                } else {
-                    $entity->setDeleted([]);
-                }
+                $decoded = is_string($deleted) === true ? json_decode($deleted, true) : $deleted;
+                $entity->setDeleted(is_array($decoded) === true ? $decoded : []);
             }
 
             // Set object with at least the property that matched.
@@ -1040,7 +1020,7 @@ class ReferentialIntegrityService
                         }
                     )
                 );
-            } else {
+            } elseif ($isArray !== true) {
                 $objectData[$target['property']] = null;
             }
 

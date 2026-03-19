@@ -35,10 +35,10 @@ class MigrationService
     /**
      * Constructor.
      *
-     * @param MagicMapper     $magicMapper    The magic mapper.
-     * @param RegisterMapper  $registerMapper The register mapper.
-     * @param SchemaMapper    $schemaMapper   The schema mapper.
-     * @param IDBConnection   $db             The database connection.
+     * @param MagicMapper    $magicMapper    The magic mapper.
+     * @param RegisterMapper $registerMapper The register mapper.
+     * @param SchemaMapper   $schemaMapper   The schema mapper.
+     * @param IDBConnection  $db             The database connection.
      */
     public function __construct(
         private readonly MagicMapper $magicMapper,

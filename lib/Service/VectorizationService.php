@@ -43,7 +43,6 @@ use Psr\Log\LoggerInterface;
  *
  * @category Service
  * @package  OCA\OpenRegister\Service
- *
  */
 class VectorizationService
 {

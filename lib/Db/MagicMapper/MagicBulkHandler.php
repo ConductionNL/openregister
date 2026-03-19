@@ -640,7 +640,7 @@ class MagicBulkHandler
                 if (isset($existingUuids[$objUuid]) === true) {
                     // UUID existed before - check if it was actually updated.
                     // Compare _updated timestamp with operation start time.
-                    $updatedTime = $obj['_updated'] ?? null;
+                    $updatedTime          = $obj['_updated'] ?? null;
                     $obj['object_status'] = 'unchanged';
                     $unchangedCount++;
                     if ($updatedTime !== null && $updatedTime >= $operationStartTime) {

@@ -272,6 +272,7 @@ class FileValidationHandler
                 // For folders, try to list contents.
                 $file->getDirectoryListing();
             }
+
             $this->logger->debug(
                 message: "[FileValidationHandler] checkOwnership: File {$fileName} (ID: {$fileId}) is accessible",
                 context: ['file' => __FILE__, 'line' => __LINE__]

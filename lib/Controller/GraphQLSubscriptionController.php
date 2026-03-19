@@ -114,9 +114,9 @@ class GraphQLSubscriptionController extends Controller
         flush();
 
         // Poll for new events (max 30 seconds to avoid PHP timeout).
-        $startTime    = time();
-        $maxDuration  = 30;
-        $pollInterval = 1;
+        $startTime     = time();
+        $maxDuration   = 30;
+        $pollInterval  = 1;
         $currentLastId = $lastEventId;
         if (empty($events) === false) {
             $currentLastId = end($events)['id'];

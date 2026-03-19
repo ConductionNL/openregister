@@ -34,7 +34,6 @@ use OCP\IRequest;
  * standard GraphQL responses. Also serves the GraphiQL explorer UI.
  *
  * @psalm-suppress UnusedClass - Registered via routes.php
- *
  */
 class GraphQLController extends Controller
 {
@@ -108,7 +107,7 @@ class GraphQLController extends Controller
         $headers = [];
         if (isset($result['data']) === false && isset($result['errors']) === true) {
             $firstCode = ($result['errors'][0]['extensions']['code'] ?? null);
-            $status = 400;
+            $status    = 400;
             if ($firstCode === 'RATE_LIMITED') {
                 $status     = 429;
                 $retryAfter = ($result['errors'][0]['extensions']['retryAfter'] ?? 60);

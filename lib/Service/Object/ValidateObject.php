@@ -1310,7 +1310,9 @@ class ValidateObject
 
         // Remove computed properties from input data and required fields.
         // Computed fields are system-generated and should not be validated against user input.
-        /** @var object{properties?: object, required?: array<string>} $schemaObject */
+        /*
+         * @var object{properties?: object, required?: array<string>} $schemaObject
+         */
         if (($schemaObject->properties ?? null) !== null) {
             foreach ($schemaObject->properties as $propName => $propSchema) {
                 if (($propSchema->computed ?? null) !== null) {

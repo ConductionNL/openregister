@@ -247,7 +247,7 @@ class Version1Date20260106000000 extends SimpleMigrationStep
             $table->addIndex(['organisation'], 'openreg_mappings_org_idx');
 
             $output->info(message: '   ✓ Table openregister_mappings created successfully');
-        }
+        }//end if
 
         if ($schema->hasTable('openregister_mappings') === true) {
             $output->info(message: '   ℹ️  Table openregister_mappings already exists, skipping');

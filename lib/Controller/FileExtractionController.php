@@ -115,7 +115,7 @@ class FileExtractionController extends Controller
             }
 
             // For riskLevel/entityCount sorting, fetch all then sort in PHP.
-            $phpSort = in_array($sort, ['riskLevel', 'entityCount'], true);
+            $phpSort  = in_array($sort, ['riskLevel', 'entityCount'], true);
             $dbLimit  = $limit;
             $dbOffset = $offset;
             $dbSort   = $sort;

@@ -169,7 +169,7 @@ class MigrateStorageCommand extends Command
         $output->writeln('<info>Storage Status:</info>');
         $output->writeln('  Blob storage:  <comment>'.$status['blobStorage']['count'].' objects</comment>');
         $magicExists = $status['magicTable']['exists'];
-        $magicInfo = 'does not exist';
+        $magicInfo   = 'does not exist';
         if ($magicExists === true) {
             $magicInfo = $status['magicTable']['count'].' objects';
         }

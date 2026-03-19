@@ -1399,7 +1399,6 @@ class SettingsService
      *     failed: int<0, max>, errors: list<array{batch_mode: 'parallel_optimized',
      *     error: string, object_id: null|string, object_name: null|string,
      *     register: null|string, schema: null|string}>, duration: float}
-     *
      */
     private function processBatchDirectly(
         \OCA\OpenRegister\Db\MagicMapper $objectMapper,

@@ -2166,7 +2166,7 @@ class RenderObject
             }
 
             // Skip properties without inversedBy configuration.
-            $hasItemsInverse    = ($propertyConfig['type'] ?? null) === 'array'
+            $hasItemsInverse  = ($propertyConfig['type'] ?? null) === 'array'
                 && ($propertyConfig['items']['inversedBy'] ?? null) !== null;
             $hasDirectInverse = ($propertyConfig['inversedBy'] ?? null) !== null;
             if ($hasItemsInverse === false && $hasDirectInverse === false) {
@@ -2202,9 +2202,7 @@ class RenderObject
             }
 
             if ($isArray === false) {
-                $objectData[$targetProperty] = (empty($renderedObjects) === false)
-                    ? end($renderedObjects)
-                    : null;
+                $objectData[$targetProperty] = (empty($renderedObjects) === false) ? end($renderedObjects) : null;
             }
         }//end foreach
 

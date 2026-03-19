@@ -24,7 +24,7 @@ use Symfony\Component\Uid\Uuid;
  *
  * @package OCA\OpenRegister\Db
  *
- * @template-extends QBMapper<Consumer>
+ * @template-extends                     QBMapper<Consumer>
  * @SuppressWarnings(PHPMD.StaticAccess)
  */
 class ConsumerMapper extends QBMapper

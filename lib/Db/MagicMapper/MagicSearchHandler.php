@@ -184,7 +184,7 @@ class MagicSearchHandler
         // The _order parameter may arrive as a JSON string from URL query params.
         if (is_string($order) === true) {
             $decoded = json_decode($order, true);
-            $order = [];
+            $order   = [];
             if (is_array($decoded) === true) {
                 $order = $decoded;
             }
@@ -208,7 +208,7 @@ class MagicSearchHandler
 
         // Check if fuzzy search is enabled for relevance scoring.
         $fuzzyEnabled = false;
-        $searchTerm = null;
+        $searchTerm   = null;
         if ($search !== null && trim($search) !== '') {
             $searchTerm = trim($search);
         }

@@ -1150,7 +1150,7 @@ class MagicMapper extends AbstractObjectMapper
                 if ($field === '_relevance') {
                     // Only use _search_score if we have a search term.
                     if ($hasSearch === true) {
-                        $dir = strtoupper($direction) === 'DESC' ? 'DESC' : 'ASC';
+                        $dir            = strtoupper($direction) === 'DESC' ? 'DESC' : 'ASC';
                         $orderClauses[] = "_search_score {$dir}";
                     }
 
@@ -1172,7 +1172,7 @@ class MagicMapper extends AbstractObjectMapper
                     );
                 }
 
-                $dir = strtoupper($direction) === 'DESC' ? 'DESC' : 'ASC';
+                $dir            = strtoupper($direction) === 'DESC' ? 'DESC' : 'ASC';
                 $orderClauses[] = "{$columnName} {$dir}";
             }//end foreach
 
@@ -1264,7 +1264,7 @@ class MagicMapper extends AbstractObjectMapper
         // (e.g., one schema has 'type' as text, another as jsonb).
         foreach (array_keys($allPropertyColumns) as $columnName) {
             $quotedCol = $this->quoteIdentifier(name: $columnName, isPostgres: $isPostgres);
-            $colExpr = "NULL::text AS {$quotedCol}";
+            $colExpr   = "NULL::text AS {$quotedCol}";
             if ($this->columnExistsInTable(tableName: $tableName, columnName: $columnName) === true) {
                 $colExpr = "{$quotedCol}::text AS {$quotedCol}";
             }
@@ -5164,7 +5164,7 @@ class MagicMapper extends AbstractObjectMapper
                 ]
             );
             return $deletedCount;
-        }
+        }//end if
 
         // Soft delete - set _deleted field for all rows.
         // Prepare the deletion metadata as JSONB.
@@ -5539,7 +5539,7 @@ class MagicMapper extends AbstractObjectMapper
                 // We need to find rows where the UUID appears in either format.
                 // MySQL: Use JSON_SEARCH to find the UUID as a value anywhere.
                 // This works for both arrays and objects.
-                $sql  = "SELECT * FROM {$fullTableName}
+                $sql       = "SELECT * FROM {$fullTableName}
                         WHERE _deleted IS NULL
                         AND JSON_SEARCH(_relations, 'one', ?) IS NOT NULL
                         {$orgFilter}
@@ -5567,7 +5567,7 @@ class MagicMapper extends AbstractObjectMapper
                             LIMIT 100";
                     // Need to pass UUID twice for both checks.
                     $sqlParams = array_merge([$uuid, $uuid], $orgParams);
-                }
+                }//end if
 
                 $stmt = $this->db->prepare($sql);
                 $stmt->execute($sqlParams);
@@ -5699,7 +5699,7 @@ class MagicMapper extends AbstractObjectMapper
                     $conditions[] = 'JSON_SEARCH(_relations, \'one\', ?) IS NOT NULL';
                     $params[]     = $uuid;
                 }
-            }
+            }//end foreach
 
             // Also search additional column names directly for object-format references.
             // Some fields store references as {"value": "uuid"} which may not be in _relations.

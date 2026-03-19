@@ -43,7 +43,6 @@ use OCP\Migration\SimpleMigrationStep;
  * @link      https://www.OpenRegister.app
  *
  * @psalm-suppress UnusedClass
- *
  */
 class Version1Date20260118000000 extends SimpleMigrationStep
 {

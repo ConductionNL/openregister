@@ -630,7 +630,7 @@ class CacheSettingsHandler
       *
       * @return array Result with service, cleared count, success, and before/after stats.
       *
-      * @SuppressWarnings                       (PHPMD.UnusedFormalParameter)
+      * @SuppressWarnings (PHPMD.UnusedFormalParameter)
       * Conditional handling of optional array keys requires if-else structure
       */
     private function clearSchemaCache(?string $_userId=null): array

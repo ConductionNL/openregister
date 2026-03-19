@@ -27,7 +27,6 @@ use OCA\OpenRegister\Db\Schema as RegisterSchema;
  * for anyOf.
  *
  * @psalm-suppress UnusedClass
- *
  */
 class CompositionHandler
 {

@@ -350,7 +350,7 @@ class MappingMapper extends QBMapper
 
         // Set version if not provided (auto-increment patch version).
         if (isset($data['version']) === false || empty($data['version']) === true) {
-            $currentVersion = $mapping->getVersion();
+            $currentVersion  = $mapping->getVersion();
             $data['version'] = '0.0.1';
             if (empty($currentVersion) === false) {
                 $version = explode('.', $currentVersion);

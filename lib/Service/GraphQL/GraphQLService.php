@@ -47,7 +47,6 @@ use Psr\Log\LoggerInterface;
  */
 class GraphQLService
 {
-
     /**
      * Constructor.
      *
@@ -135,7 +134,6 @@ class GraphQLService
             ];
 
             // Errors are already formatted by the GraphQL executor.
-
             return $output;
         } catch (Error $e) {
             return [

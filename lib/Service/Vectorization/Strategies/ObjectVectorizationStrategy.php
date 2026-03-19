@@ -34,7 +34,6 @@ use Psr\Log\LoggerInterface;
  *
  * @category Service
  * @package  OCA\OpenRegister\Service\Vectorization
- *
  */
 class ObjectVectorizationStrategy implements VectorizationStrategyInterface
 {

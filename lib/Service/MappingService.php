@@ -165,7 +165,6 @@ class MappingService
      * @return array The result (output) of the mapping process
      *
      * @throws Exception When mapping fails
-     *
      */
     public function executeMapping(Mapping $mapping, array $input, bool $list=false): array
     {
@@ -290,7 +289,6 @@ class MappingService
      * @param string $cast     The type of cast we want to do.
      *
      * @return void
-     *
      */
     private function handleCast(Dot $dotArray, string $key, string $cast): void
     {

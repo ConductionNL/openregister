@@ -342,7 +342,6 @@ class ObjectService
      *
      * @psalm-return   void
      * @phpstan-return void
-     *
      */
     public function ensureObjectFolderExists(ObjectEntity $entity): void
     {
@@ -380,7 +379,6 @@ class ObjectService
      * @param Register|string|int $register The register object or its ID/UUID
      *
      * @return static Returns self for method chaining
-     *
      */
     public function setRegister(Register | string | int $register): static
     {
@@ -436,7 +434,6 @@ class ObjectService
      * @param Schema|string|int $schema The schema object or its ID/UUID
      *
      * @return static Returns self for method chaining
-     *
      */
     public function setSchema(Schema | string | int $schema): static
     {
@@ -1470,7 +1467,6 @@ class ObjectService
          * to ensure consistency between save and retrieval operations.
          *
          * @return string|null The active organization UUID or null if none found
-         *
          */
     private function getActiveOrganisationForContext(): ?string
     {

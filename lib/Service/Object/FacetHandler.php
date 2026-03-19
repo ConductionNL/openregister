@@ -518,14 +518,12 @@ class FacetHandler
             // Check if this is a non-aggregated facet (added by calculateFacetsWithFallback).
             $isNonAggregated = $facetData['_nonAggregated'] ?? false;
 
-            $order = ($isNonAggregated === true)
-                ? $this->transformNonAggregatedFacet(
+            $order = ($isNonAggregated === true) ? $this->transformNonAggregatedFacet(
                     field: $field,
                     facetData: $facetData,
                     transformed: $transformed,
                     currentOrder: $order
-                )
-                : $this->transformAggregatedFacet(
+                ) : $this->transformAggregatedFacet(
                     field: $field,
                     facetData: $facetData,
                     aggregatedConfigs: $aggregatedConfigs,

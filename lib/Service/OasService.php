@@ -718,7 +718,7 @@ class OasService
         if (isset($cleanDef['items']) === true) {
             if (is_array($cleanDef['items']) === true && array_is_list($cleanDef['items']) === true) {
                 // Sequential array (list) — not valid. Use first element or default.
-                $firstItem = $cleanDef['items'][0] ?? null;
+                $firstItem         = $cleanDef['items'][0] ?? null;
                 $cleanDef['items'] = (empty($firstItem) === false) ? $firstItem : ['type' => 'string'];
             }
 
@@ -758,14 +758,10 @@ class OasService
     private function addCrudPaths(object $register, object $schema, array $rbac=[], string $operationIdPrefix=''): void
     {
         $registerSlugValue = $register->getSlug();
-        $registerSlug      = ($registerSlugValue !== null && $registerSlugValue !== '')
-            ? $registerSlugValue
-            : $this->slugify(string: $register->getTitle());
+        $registerSlug      = ($registerSlugValue !== null && $registerSlugValue !== '') ? $registerSlugValue : $this->slugify(string: $register->getTitle());
 
         $schemaSlugValue = $schema->getSlug();
-        $schemaSlug      = ($schemaSlugValue !== null && $schemaSlugValue !== '')
-            ? $schemaSlugValue
-            : $this->slugify(string: $schema->getTitle());
+        $schemaSlug      = ($schemaSlugValue !== null && $schemaSlugValue !== '') ? $schemaSlugValue : $this->slugify(string: $schema->getTitle());
 
         $basePath = '/objects/'.$registerSlug.'/'.$schemaSlug;
 
@@ -826,14 +822,10 @@ class OasService
     private function addExtendedPaths(object $register, object $schema): void
     {
         $registerSlugValue = $register->getSlug();
-        $registerSlug      = ($registerSlugValue !== null && $registerSlugValue !== '')
-            ? $registerSlugValue
-            : $this->slugify(string: $register->getTitle());
+        $registerSlug      = ($registerSlugValue !== null && $registerSlugValue !== '') ? $registerSlugValue : $this->slugify(string: $register->getTitle());
 
         $schemaSlugValue = $schema->getSlug();
-        $schemaSlug      = ($schemaSlugValue !== null && $schemaSlugValue !== '')
-            ? $schemaSlugValue
-            : $this->slugify(string: $schema->getTitle());
+        $schemaSlug      = ($schemaSlugValue !== null && $schemaSlugValue !== '') ? $schemaSlugValue : $this->slugify(string: $schema->getTitle());
 
         $basePath = '/objects/'.$registerSlug.'/'.$schemaSlug;
 

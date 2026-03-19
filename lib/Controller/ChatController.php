@@ -790,7 +790,7 @@ class ChatController extends Controller
                         'hasComment' => empty($comment) === false,
                     ]
                 );
-            }
+            }//end if
 
             return new JSONResponse(data: $feedback->jsonSerialize(), statusCode: 200);
         } catch (Exception $e) {

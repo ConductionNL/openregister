@@ -564,7 +564,7 @@ class MagicFacetHandler
         // Cast field to text for consistent types in UNION ALL queries.
         // Different magic tables may have the same field name but different types
         // (e.g., 'type' as text in one table, jsonb in another).
-        $platform = $this->db->getDatabasePlatform();
+        $platform  = $this->db->getDatabasePlatform();
         $castField = "CAST({$field} AS CHAR)";
         if ($platform instanceof \Doctrine\DBAL\Platforms\PostgreSQLPlatform === true) {
             $castField = "{$field}::text";

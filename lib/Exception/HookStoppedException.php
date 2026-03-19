@@ -40,10 +40,10 @@ class HookStoppedException extends Exception
     /**
      * Constructor for HookStoppedException
      *
-     * @param string             $message  Error message
+     * @param string               $message  Error message
      * @param array<string, mixed> $errors   Hook validation errors
-     * @param int                $code     Error code
-     * @param Throwable|null     $previous Previous exception
+     * @param int                  $code     Error code
+     * @param Throwable|null       $previous Previous exception
      *
      * @return void
      */

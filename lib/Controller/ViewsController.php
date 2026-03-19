@@ -315,7 +315,7 @@ class ViewsController extends Controller
                     'facetFilters'  => $config['facetFilters'] ?? [],
                     'enabledFacets' => $config['enabledFacets'] ?? [],
                 ];
-            } elseif ($hasQuery === true) {
+            } else if ($hasQuery === true) {
                 // Direct query parameter.
                 $query = $data['query'];
             }
@@ -429,7 +429,7 @@ class ViewsController extends Controller
                     'facetFilters'  => $config['facetFilters'] ?? [],
                     'enabledFacets' => $config['enabledFacets'] ?? [],
                 ];
-            } elseif ($hasQuery === true) {
+            } else if ($hasQuery === true) {
                 // Direct query parameter.
                 $query = $data['query'];
             }

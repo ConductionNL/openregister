@@ -89,7 +89,7 @@ use OCA\OpenRegister\Service\Schemas\PropertyValidatorHandler;
  * @SuppressWarnings(PHPMD.ExcessiveClassComplexity)
  * @SuppressWarnings(PHPMD.TooManyFields)
  *
- * @psalm-suppress PropertyNotSetInConstructor $id is set by Nextcloud's Entity base class
+ * @psalm-suppress                                PropertyNotSetInConstructor $id is set by Nextcloud's Entity base class
  * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
  * @SuppressWarnings(PHPMD.NPathComplexity)
  */

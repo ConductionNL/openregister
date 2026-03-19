@@ -2573,7 +2573,7 @@ class ImportHandler
                     message: "[ImportHandler] Updated existing configuration for app {$appId} with version {$version}",
                     context: ['file' => __FILE__, 'line' => __LINE__]
                 );
-            }
+            }//end if
 
             if ($existingConfig === null) {
                 // Create new configuration.

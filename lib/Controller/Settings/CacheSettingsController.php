@@ -335,7 +335,7 @@ class CacheSettingsController extends Controller
                 } catch (NotFoundException | GenericFileException $e) {
                     // File doesn't exist, nothing to invalidate.
                     $errors[] = $fileName.' (not found)';
-                }
+                }//end try
             }//end foreach
 
             return new JSONResponse(

@@ -109,7 +109,6 @@ class MappingRuntime implements RuntimeExtensionInterface
      * @param bool                     $list    Whether the mapping runs on multiple instances
      *
      * @return array The mapped output
-     *
      */
     public function executeMapping(Mapping|array|string|int $mapping, array $input, bool $list=false): array
     {
