@@ -13,8 +13,8 @@
     <!-- BooleanArgumentFlag: Disabled - Boolean flags for $_rbac and $_multitenancy are established API pattern -->
     <!-- <rule ref="rulesets/cleancode.xml/BooleanArgumentFlag"/> -->
     
-    <!-- ElseExpression: Disabled - Else clauses improve readability in complex conditional logic -->
-    <!-- <rule ref="rulesets/cleancode.xml/ElseExpression"/> -->
+    <!-- ElseExpression: Enabled - Use early returns, guard clauses, and ternary operators instead of else -->
+    <rule ref="rulesets/cleancode.xml/ElseExpression"/>
     
     <!-- StaticAccess: Allowed for framework utilities (Symfony YAML, OC_App, etc.) -->
     <!-- <rule ref="rulesets/cleancode.xml/StaticAccess"/> -->

@@ -125,8 +125,11 @@ class RequestScopedCache
     {
         if ($namespace !== null) {
             unset($this->cache[$namespace]);
-        } else {
-            $this->cache = [];
+            return;
         }
+
+        $this->cache = [];
     }//end clear()
+
+
 }//end class

@@ -790,19 +790,19 @@ class WebhookService
         }
 
         // Format request as CloudEvent if formatter is available.
+        // Fallback to basic request data.
+        $cloudEvent = [
+            'type'   => $eventType,
+            'method' => $request->getMethod(),
+            'path'   => $request->getPathInfo(),
+            'body'   => $request->getParams(),
+        ];
+
         if ($this->cloudEventFormatter !== null) {
             $cloudEvent = $this->cloudEventFormatter->formatRequestAsCloudEvent(
                 request: $request,
                 eventType: $eventType
             );
-        } else {
-            // Fallback to basic request data.
-            $cloudEvent = [
-                'type'   => $eventType,
-                'method' => $request->getMethod(),
-                'path'   => $request->getPathInfo(),
-                'body'   => $request->getParams(),
-            ];
         }
 
         // Get original request data.
