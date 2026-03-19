@@ -1,5 +1,5 @@
 <script setup>
-import { auditTrailStore, navigationStore } from '../../store/store.js'
+import { objectStore, navigationStore } from '../../store/store.js'
 </script>
 
 <template>
@@ -8,23 +8,23 @@ import { auditTrailStore, navigationStore } from '../../store/store.js'
 		size="large"
 		:can-close="true"
 		@close="closeDialog">
-		<div v-if="auditTrailStore.auditTrailItem" class="audit-trail-changes">
+		<div v-if="objectStore.auditTrailItem" class="audit-trail-changes">
 			<!-- Header Information -->
 			<div class="changes-header">
-				<h3>{{ t('openregister', 'Changes for Audit Trail #{id}', { id: auditTrailStore.auditTrailItem.id }) }}</h3>
+				<h3>{{ t('openregister', 'Changes for Audit Trail #{id}', { id: objectStore.auditTrailItem.id }) }}</h3>
 				<div class="audit-info">
-					<span class="action-badge" :class="`action-${auditTrailStore.auditTrailItem.action}`">
-						<Plus v-if="auditTrailStore.auditTrailItem.action === 'create'" :size="16" />
-						<Pencil v-else-if="auditTrailStore.auditTrailItem.action === 'update'" :size="16" />
-						<Delete v-else-if="auditTrailStore.auditTrailItem.action === 'delete'" :size="16" />
-						<Eye v-else-if="auditTrailStore.auditTrailItem.action === 'read'" :size="16" />
-						{{ auditTrailStore.auditTrailItem.action?.toUpperCase() }}
+					<span class="action-badge" :class="`action-${objectStore.auditTrailItem.action}`">
+						<Plus v-if="objectStore.auditTrailItem.action === 'create'" :size="16" />
+						<Pencil v-else-if="objectStore.auditTrailItem.action === 'update'" :size="16" />
+						<Delete v-else-if="objectStore.auditTrailItem.action === 'delete'" :size="16" />
+						<Eye v-else-if="objectStore.auditTrailItem.action === 'read'" :size="16" />
+						{{ objectStore.auditTrailItem.action?.toUpperCase() }}
 					</span>
 					<span class="timestamp">
-						{{ formatDate(auditTrailStore.auditTrailItem.created) }}
+						{{ formatDate(objectStore.auditTrailItem.created) }}
 					</span>
 					<span class="user">
-						{{ auditTrailStore.auditTrailItem.userName || auditTrailStore.auditTrailItem.user || 'Unknown User' }}
+						{{ objectStore.auditTrailItem.userName || objectStore.auditTrailItem.user || 'Unknown User' }}
 					</span>
 				</div>
 			</div>
@@ -67,7 +67,7 @@ import { auditTrailStore, navigationStore } from '../../store/store.js'
 				<!-- Raw changes view for non-standard formats -->
 				<div v-else class="raw-changes-container">
 					<h4>{{ t('openregister', 'Raw Changes Data') }}</h4>
-					<pre>{{ formatChanges(auditTrailStore.auditTrailItem.changed) }}</pre>
+					<pre>{{ formatChanges(objectStore.auditTrailItem.changed) }}</pre>
 				</div>
 			</div>
 
@@ -142,7 +142,7 @@ export default {
 		 * @return {boolean} True if has changes
 		 */
 		hasChanges() {
-			const changed = auditTrailStore.auditTrailItem?.changed
+			const changed = objectStore.auditTrailItem?.changed
 			if (!changed) return false
 
 			if (Array.isArray(changed)) {
@@ -161,7 +161,7 @@ export default {
 		 * @return {object} Processed changes
 		 */
 		changes() {
-			const changed = auditTrailStore.auditTrailItem?.changed
+			const changed = objectStore.auditTrailItem?.changed
 			if (!changed) return {}
 
 			// Try to process as table-style changes
@@ -310,7 +310,7 @@ export default {
 		 */
 		async copyChanges() {
 			try {
-				const changes = this.formatChanges(auditTrailStore.auditTrailItem.changed)
+				const changes = this.formatChanges(objectStore.auditTrailItem.changed)
 				await navigator.clipboard.writeText(changes)
 				OC.Notification.showSuccess(this.t('openregister', 'Changes copied to clipboard'))
 			} catch (error) {

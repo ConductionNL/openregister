@@ -1,5 +1,5 @@
 <script setup>
-import { auditTrailStore, navigationStore } from '../../store/store.js'
+import { objectStore, navigationStore } from '../../store/store.js'
 </script>
 
 <template>
@@ -11,16 +11,16 @@ import { auditTrailStore, navigationStore } from '../../store/store.js'
 			{{ t('openregister', 'Do you want to permanently delete this audit trail entry? This action cannot be undone.') }}
 		</p>
 
-		<div v-if="success === null && auditTrailStore.auditTrailItem" class="audit-trail-info">
-			<p><strong>{{ t('openregister', 'ID:') }}</strong> {{ auditTrailStore.auditTrailItem.id }}</p>
+		<div v-if="success === null && objectStore.auditTrailItem" class="audit-trail-info">
+			<p><strong>{{ t('openregister', 'ID:') }}</strong> {{ objectStore.auditTrailItem.id }}</p>
 			<p>
 				<strong>{{ t('openregister', 'Action:') }}</strong>
-				<span class="action-badge" :class="`action-${auditTrailStore.auditTrailItem.action}`">
-					{{ auditTrailStore.auditTrailItem.action?.toUpperCase() }}
+				<span class="action-badge" :class="`action-${objectStore.auditTrailItem.action}`">
+					{{ objectStore.auditTrailItem.action?.toUpperCase() }}
 				</span>
 			</p>
-			<p><strong>{{ t('openregister', 'Object:') }}</strong> {{ auditTrailStore.auditTrailItem.object }}</p>
-			<p><strong>{{ t('openregister', 'Created:') }}</strong> {{ formatDate(auditTrailStore.auditTrailItem.created) }}</p>
+			<p><strong>{{ t('openregister', 'Object:') }}</strong> {{ objectStore.auditTrailItem.object }}</p>
+			<p><strong>{{ t('openregister', 'Created:') }}</strong> {{ formatDate(objectStore.auditTrailItem.created) }}</p>
 		</div>
 
 		<NcNoteCard v-if="success" type="success">
@@ -103,7 +103,7 @@ export default {
 			this.loading = true
 
 			try {
-				const response = await fetch(`/index.php/apps/openregister/api/audit-trails/${auditTrailStore.auditTrailItem.id}`, {
+				const response = await fetch(`/index.php/apps/openregister/api/audit-trails/${objectStore.auditTrailItem.id}`, {
 					method: 'DELETE',
 				})
 
@@ -113,7 +113,7 @@ export default {
 					this.success = true
 					this.error = false
 					// Refresh the audit trail list
-					await auditTrailStore.refreshAuditTrailList()
+					await objectStore.refreshGlobalAuditTrails()
 					// Auto-close after 2 seconds
 					this.closeModalTimeout = setTimeout(this.closeDialog, 2000)
 				} else {

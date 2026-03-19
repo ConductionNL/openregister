@@ -1,5 +1,5 @@
 <script setup>
-import { auditTrailStore, navigationStore } from '../../store/store.js'
+import { objectStore, navigationStore } from '../../store/store.js'
 </script>
 
 <template>
@@ -92,16 +92,16 @@ export default {
 	},
 	computed: {
 		hasActiveFilters() {
-			return auditTrailStore.filters && Object.keys(auditTrailStore.filters).some(key =>
-				auditTrailStore.filters[key] !== null
-				&& auditTrailStore.filters[key] !== undefined
-				&& auditTrailStore.filters[key] !== '',
+			return objectStore.auditTrailFilters && Object.keys(objectStore.auditTrailFilters).some(key =>
+				objectStore.auditTrailFilters[key] !== null
+				&& objectStore.auditTrailFilters[key] !== undefined
+				&& objectStore.auditTrailFilters[key] !== '',
 			)
 		},
 		displayFilters() {
-			if (!auditTrailStore.filters) return {}
+			if (!objectStore.auditTrailFilters) return {}
 			return Object.fromEntries(
-				Object.entries(auditTrailStore.filters).filter(([key, value]) =>
+				Object.entries(objectStore.auditTrailFilters).filter(([key, value]) =>
 					value !== null && value !== undefined && value !== '',
 				),
 			)
@@ -111,7 +111,7 @@ export default {
 		'navigationStore.dialog'(newVal) {
 			if (newVal === 'clearAuditTrails') {
 				// Update filtered count when dialog opens
-				this.filteredCount = auditTrailStore.auditTrailCount
+				this.filteredCount = objectStore.globalAuditTrails.total
 			}
 		},
 	},
@@ -141,8 +141,8 @@ export default {
 				const params = new URLSearchParams()
 
 				// Add current filters to determine which logs to delete
-				if (auditTrailStore.filters) {
-					Object.entries(auditTrailStore.filters).forEach(([key, value]) => {
+				if (objectStore.auditTrailFilters) {
+					Object.entries(objectStore.auditTrailFilters).forEach(([key, value]) => {
 						if (value !== null && value !== undefined && value !== '') {
 							params.append(key, value)
 						}
@@ -165,7 +165,7 @@ export default {
 					this.successMessage = result.message || this.t('openregister', '{count} audit trails cleared successfully', { count: this.filteredCount })
 
 					// Refresh the audit trail list
-					await auditTrailStore.refreshAuditTrailList()
+					await objectStore.refreshGlobalAuditTrails()
 
 					// Auto-close after 3 seconds
 					this.closeModalTimeout = setTimeout(this.closeDialog, 3000)

@@ -9,7 +9,6 @@ import { useSchemaStore } from './modules/schema.js'
 import { useObjectStore } from './modules/object.js'
 import { useConfigurationStore } from './modules/configuration.js'
 import { useDashboardStore } from './modules/dashboard.js'
-import { useAuditTrailStore } from './modules/auditTrail.js'
 import { useSearchTrailStore } from './modules/searchTrail.js'
 import { useDeletedStore } from './modules/deleted.js'
 import { useOrganisationStore } from './modules/organisation.js'
@@ -27,7 +26,6 @@ const schemaStore = useSchemaStore(pinia)
 const objectStore = useObjectStore(pinia)
 const configurationStore = useConfigurationStore(pinia)
 const dashboardStore = useDashboardStore(pinia)
-const auditTrailStore = useAuditTrailStore(pinia)
 const searchTrailStore = useSearchTrailStore(pinia)
 const deletedStore = useDeletedStore(pinia)
 const organisationStore = useOrganisationStore(pinia)
@@ -47,7 +45,6 @@ export {
 	objectStore,
 	configurationStore,
 	dashboardStore,
-	auditTrailStore,
 	searchTrailStore,
 	deletedStore,
 	organisationStore,

@@ -1,5 +1,5 @@
 <script setup>
-import { auditTrailStore, navigationStore } from '../../store/store.js'
+import { objectStore, navigationStore } from '../../store/store.js'
 </script>
 
 <template>
@@ -18,10 +18,9 @@ import { auditTrailStore, navigationStore } from '../../store/store.js'
 			:show-mass-export="false"
 			:show-mass-copy="false"
 			view-mode="table"
-			:objects="auditTrailStore.auditTrailList"
+			:objects="objectStore.globalAuditTrails.results"
 			:columns="tableColumns"
 			:pagination="paginationData"
-			:loading="auditTrailStore.auditTrailLoading"
 			:selectable="true"
 			:selected-ids="selectedAuditTrails"
 			:actions="customActions"
@@ -149,7 +148,7 @@ export default {
 			]
 		},
 		paginationData() {
-			const p = auditTrailStore.auditTrailPagination
+			const p = objectStore.globalAuditTrails
 			return {
 				page: p.page || 1,
 				pages: p.pages || 1,
@@ -194,14 +193,14 @@ export default {
 		formatBytes,
 		async loadAuditTrails() {
 			try {
-				await auditTrailStore.refreshAuditTrailList()
+				await objectStore.refreshGlobalAuditTrails()
 			} catch (error) {
 				console.error('Error loading audit trails:', error)
 				OC.Notification.showError(this.t('openregister', 'Error loading audit trails'))
 			}
 		},
 		handleFiltersChanged(filters) {
-			auditTrailStore.setAuditTrailFilters(filters)
+			objectStore.setAuditTrailFilters(filters)
 			this.loadAuditTrails()
 		},
 		handleExport(options) {
@@ -216,11 +215,11 @@ export default {
 			}
 		},
 		viewDetails(auditTrail) {
-			auditTrailStore.setAuditTrailItem(auditTrail)
+			objectStore.setAuditTrailItem(auditTrail)
 			navigationStore.setDialog('auditTrailDetails')
 		},
 		viewChanges(auditTrail) {
-			auditTrailStore.setAuditTrailItem(auditTrail)
+			objectStore.setAuditTrailItem(auditTrail)
 			navigationStore.setDialog('auditTrailChanges')
 		},
 		async copyData(auditTrail) {
@@ -251,14 +250,14 @@ export default {
 			return false
 		},
 		onDelete(id) {
-			const auditTrail = auditTrailStore.auditTrailList.find(a => a.id === id)
+			const auditTrail = objectStore.globalAuditTrails.results.find(a => a.id === id)
 			if (!auditTrail) return
-			auditTrailStore.setAuditTrailItem(auditTrail)
+			objectStore.setAuditTrailItem(auditTrail)
 			navigationStore.setDialog('deleteAuditTrail')
 		},
 		async onMassDelete(ids) {
 			try {
-				await auditTrailStore.deleteMultipleAuditTrails(ids)
+				await objectStore.deleteMultipleGlobalAuditTrails(ids)
 				this.$refs.indexPage.setMassDeleteResult({ success: true })
 				this.selectedAuditTrails = []
 				await this.loadAuditTrails()
@@ -277,8 +276,8 @@ export default {
 				params.append('includeChanges', options.includeChanges || false)
 				params.append('includeMetadata', options.includeMetadata || false)
 
-				if (auditTrailStore.filters) {
-					Object.entries(auditTrailStore.filters).forEach(([key, value]) => {
+				if (objectStore.filters) {
+					Object.entries(objectStore.filters).forEach(([key, value]) => {
 						if (value !== null && value !== undefined && value !== '') {
 							params.append(key, value)
 						}
@@ -309,9 +308,9 @@ export default {
 		},
 		async onPageChanged(page) {
 			try {
-				await auditTrailStore.fetchAuditTrails({
-					page,
-					limit: auditTrailStore.auditTrailPagination.limit,
+				await objectStore.fetchGlobalAuditTrails({
+					_page: page,
+					_limit: objectStore.globalAuditTrails.limit,
 				})
 				this.selectedAuditTrails = []
 			} catch (error) {
@@ -320,9 +319,9 @@ export default {
 		},
 		async onPageSizeChanged(pageSize) {
 			try {
-				await auditTrailStore.fetchAuditTrails({
-					page: 1,
-					limit: pageSize,
+				await objectStore.fetchGlobalAuditTrails({
+					_page: 1,
+					_limit: pageSize,
 				})
 				this.selectedAuditTrails = []
 			} catch (error) {

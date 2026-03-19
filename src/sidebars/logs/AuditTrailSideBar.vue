@@ -1,5 +1,5 @@
 <script setup>
-import { auditTrailStore, navigationStore, registerStore, schemaStore } from '../../store/store.js'
+import { objectStore, navigationStore, registerStore, schemaStore } from '../../store/store.js'
 
 </script>
 
@@ -366,11 +366,11 @@ export default {
 			}
 		},
 		userOptions() {
-			if (!auditTrailStore.auditTrailList || !auditTrailStore.auditTrailList.length) {
+			if (!objectStore.globalAuditTrails.results || !objectStore.globalAuditTrails.results.length) {
 				return []
 			}
 			// Get unique users from audit trail list
-			const users = [...new Set(auditTrailStore.auditTrailList.map(trail => trail.userName || trail.user).filter(Boolean))]
+			const users = [...new Set(objectStore.globalAuditTrails.results.map(trail => trail.userName || trail.user).filter(Boolean))]
 			return users.map(user => ({
 				label: user,
 				value: user,
@@ -386,7 +386,7 @@ export default {
 			},
 			deep: true,
 		},
-		'auditTrailStore.auditTrailList'() {
+		'objectStore.globalAuditTrails.results'() {
 			this.updateFilteredCount()
 			this.loadStatistics()
 			this.loadActionDistribution()
@@ -439,7 +439,7 @@ export default {
 		 */
 		async loadAuditTrailData() {
 			try {
-				await auditTrailStore.refreshAuditTrailList()
+				await objectStore.refreshGlobalAuditTrails()
 				this.updateFilteredCount()
 			} catch (error) {
 				// Handle error silently
@@ -492,8 +492,8 @@ export default {
 		 * @return {void}
 		 */
 		updateFilteredCount() {
-			this.filteredCount = auditTrailStore.auditTrailList.length
-			this.totalAuditTrails = auditTrailStore.auditTrailPagination.total || auditTrailStore.auditTrailList.length
+			this.filteredCount = objectStore.globalAuditTrails.results.length
+			this.totalAuditTrails = objectStore.globalAuditTrails.total || objectStore.globalAuditTrails.results.length
 		},
 		/**
 		 * Load statistics
@@ -501,7 +501,7 @@ export default {
 		 */
 		async loadStatistics() {
 			try {
-				const stats = await auditTrailStore.getStatistics()
+				const stats = await objectStore.fetchAuditTrailStatistics()
 				this.totalAuditTrails = stats.total || 0
 				this.createCount = stats.create || 0
 				this.updateCount = stats.update || 0
@@ -513,34 +513,43 @@ export default {
 		},
 		/**
 		 * Load action distribution for stats
-		 * @return {Promise<void>}
 		 */
-		async loadActionDistribution() {
-			try {
-				const actionData = await auditTrailStore.getActionDistribution()
-				this.actionDistribution = actionData.map(action => ({
-					action: action.action || action.name,
-					count: action.count || 0,
-					percentage: action.percentage || 0,
-				}))
-			} catch (error) {
-				// Handle error silently
-			}
+		loadActionDistribution() {
+			const results = objectStore.globalAuditTrails.results || []
+			const total = results.length
+			const actions = ['create', 'update', 'delete', 'read']
+
+			this.actionDistribution = actions
+				.map(action => {
+					const count = results.filter(item => item.action === action).length
+					return {
+						action,
+						count,
+						percentage: total > 0 ? Math.round((count / total) * 100) : 0,
+					}
+				})
+				.filter(item => item.count > 0)
 		},
 		/**
 		 * Load top objects for stats
-		 * @return {Promise<void>}
 		 */
-		async loadTopObjects() {
-			try {
-				const objectData = await auditTrailStore.getTopObjects()
-				this.topObjects = objectData.map(object => ({
-					name: object.objectId || object.name || `Object ${object.id}`,
-					count: object.count || 0,
+		loadTopObjects() {
+			const results = objectStore.globalAuditTrails.results || []
+			const objectCounts = {}
+
+			results.forEach(item => {
+				if (item.object) {
+					objectCounts[item.object] = (objectCounts[item.object] || 0) + 1
+				}
+			})
+
+			this.topObjects = Object.entries(objectCounts)
+				.map(([objectId, count]) => ({
+					name: `Object ${objectId}`,
+					count,
 				}))
-			} catch (error) {
-				// Handle error silently
-			}
+				.sort((a, b) => b.count - a.count)
+				.slice(0, 10)
 		},
 		/**
 		 * Handle register change
@@ -706,8 +715,8 @@ export default {
 			if (this.objectFilter) filters.object = this.objectFilter
 			if (this.showOnlyWithChanges) filters.onlyWithChanges = true
 
-			auditTrailStore.setAuditTrailFilters(filters)
-			auditTrailStore.refreshAuditTrailList()
+			objectStore.setAuditTrailFilters(filters)
+			objectStore.refreshGlobalAuditTrails()
 			this.$root.$emit('audit-trail-filters-changed', filters)
 		},
 		/**
@@ -728,8 +737,8 @@ export default {
 			schemaStore.setSchemaItem(null)
 
 			// Clear store filters
-			auditTrailStore.setAuditTrailFilters({})
-			auditTrailStore.refreshAuditTrailList()
+			objectStore.clearAuditTrailFilters()
+			objectStore.refreshGlobalAuditTrails()
 
 			// Reflect in URL
 			this.updateRouteQueryFromState()

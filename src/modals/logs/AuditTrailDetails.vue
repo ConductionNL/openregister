@@ -1,5 +1,5 @@
 <script setup>
-import { auditTrailStore, navigationStore } from '../../store/store.js'
+import { objectStore, navigationStore } from '../../store/store.js'
 </script>
 
 <template>
@@ -8,48 +8,48 @@ import { auditTrailStore, navigationStore } from '../../store/store.js'
 		size="large"
 		:can-close="true"
 		@close="closeDialog">
-		<div v-if="auditTrailStore.auditTrailItem" class="audit-trail-details">
+		<div v-if="objectStore.auditTrailItem" class="audit-trail-details">
 			<!-- Header Information -->
 			<div class="details-section">
 				<h3>{{ t('openregister', 'Basic Information') }}</h3>
 				<div class="details-grid">
 					<div class="detail-item">
 						<label>{{ t('openregister', 'ID') }}</label>
-						<span>{{ auditTrailStore.auditTrailItem.id }}</span>
+						<span>{{ objectStore.auditTrailItem.id }}</span>
 					</div>
 					<div class="detail-item">
 						<label>{{ t('openregister', 'Action') }}</label>
-						<span class="action-badge" :class="`action-${auditTrailStore.auditTrailItem.action}`">
-							<Plus v-if="auditTrailStore.auditTrailItem.action === 'create'" :size="16" />
-							<Pencil v-else-if="auditTrailStore.auditTrailItem.action === 'update'" :size="16" />
-							<Delete v-else-if="auditTrailStore.auditTrailItem.action === 'delete'" :size="16" />
-							<Eye v-else-if="auditTrailStore.auditTrailItem.action === 'read'" :size="16" />
-							{{ auditTrailStore.auditTrailItem.action?.toUpperCase() }}
+						<span class="action-badge" :class="`action-${objectStore.auditTrailItem.action}`">
+							<Plus v-if="objectStore.auditTrailItem.action === 'create'" :size="16" />
+							<Pencil v-else-if="objectStore.auditTrailItem.action === 'update'" :size="16" />
+							<Delete v-else-if="objectStore.auditTrailItem.action === 'delete'" :size="16" />
+							<Eye v-else-if="objectStore.auditTrailItem.action === 'read'" :size="16" />
+							{{ objectStore.auditTrailItem.action?.toUpperCase() }}
 						</span>
 					</div>
 					<div class="detail-item">
 						<label>{{ t('openregister', 'Created') }}</label>
-						<span>{{ formatDate(auditTrailStore.auditTrailItem.created) }}</span>
+						<span>{{ formatDate(objectStore.auditTrailItem.created) }}</span>
 					</div>
 					<div class="detail-item">
 						<label>{{ t('openregister', 'Object ID') }}</label>
-						<span>{{ auditTrailStore.auditTrailItem.object || '-' }}</span>
+						<span>{{ objectStore.auditTrailItem.object || '-' }}</span>
 					</div>
 					<div class="detail-item">
 						<label>{{ t('openregister', 'Register ID') }}</label>
-						<span>{{ auditTrailStore.auditTrailItem.register || '-' }}</span>
+						<span>{{ objectStore.auditTrailItem.register || '-' }}</span>
 					</div>
 					<div class="detail-item">
 						<label>{{ t('openregister', 'Schema ID') }}</label>
-						<span>{{ auditTrailStore.auditTrailItem.schema || '-' }}</span>
+						<span>{{ objectStore.auditTrailItem.schema || '-' }}</span>
 					</div>
 					<div class="detail-item">
 						<label>{{ t('openregister', 'User') }}</label>
-						<span>{{ auditTrailStore.auditTrailItem.userName || auditTrailStore.auditTrailItem.user || '-' }}</span>
+						<span>{{ objectStore.auditTrailItem.userName || objectStore.auditTrailItem.user || '-' }}</span>
 					</div>
 					<div class="detail-item">
 						<label>{{ t('openregister', 'Size') }}</label>
-						<span>{{ auditTrailStore.auditTrailItem.size || '-' }}</span>
+						<span>{{ objectStore.auditTrailItem.size || '-' }}</span>
 					</div>
 				</div>
 			</div>
@@ -58,15 +58,15 @@ import { auditTrailStore, navigationStore } from '../../store/store.js'
 			<div v-if="hasChanges" class="details-section">
 				<h3>{{ t('openregister', 'Changes') }}</h3>
 				<div class="changes-container">
-					<pre>{{ formatChanges(auditTrailStore.auditTrailItem.changed) }}</pre>
+					<pre>{{ formatChanges(objectStore.auditTrailItem.changed) }}</pre>
 				</div>
 			</div>
 
 			<!-- Request Data -->
-			<div v-if="auditTrailStore.auditTrailItem.request" class="details-section">
+			<div v-if="objectStore.auditTrailItem.request" class="details-section">
 				<h3>{{ t('openregister', 'Request Data') }}</h3>
 				<div class="request-container">
-					<pre>{{ formatJson(auditTrailStore.auditTrailItem.request) }}</pre>
+					<pre>{{ formatJson(objectStore.auditTrailItem.request) }}</pre>
 				</div>
 			</div>
 
@@ -139,7 +139,7 @@ export default {
 		 * @return {boolean} True if has changes
 		 */
 		hasChanges() {
-			const changed = auditTrailStore.auditTrailItem?.changed
+			const changed = objectStore.auditTrailItem?.changed
 			if (!changed) return false
 
 			if (Array.isArray(changed)) {
@@ -158,14 +158,14 @@ export default {
 		 * @return {Array} Array of key-value pairs
 		 */
 		additionalFields() {
-			if (!auditTrailStore.auditTrailItem) return []
+			if (!objectStore.auditTrailItem) return []
 
 			const mainFields = [
 				'id', 'action', 'created', 'object', 'register',
 				'schema', 'user', 'userName', 'size', 'changed', 'request',
 			]
 
-			return Object.entries(auditTrailStore.auditTrailItem)
+			return Object.entries(objectStore.auditTrailItem)
 				.filter(([key]) => !mainFields.includes(key))
 				.filter(([, value]) => value !== null && value !== undefined && value !== '')
 		},
@@ -280,7 +280,7 @@ export default {
 		 */
 		async copyFullData() {
 			try {
-				const data = JSON.stringify(auditTrailStore.auditTrailItem, null, 2)
+				const data = JSON.stringify(objectStore.auditTrailItem, null, 2)
 				await navigator.clipboard.writeText(data)
 				OC.Notification.showSuccess(this.t('openregister', 'Full data copied to clipboard'))
 			} catch (error) {
@@ -295,7 +295,7 @@ export default {
 		 */
 		async copyChanges() {
 			try {
-				const changes = this.formatChanges(auditTrailStore.auditTrailItem.changed)
+				const changes = this.formatChanges(objectStore.auditTrailItem.changed)
 				await navigator.clipboard.writeText(changes)
 				OC.Notification.showSuccess(this.t('openregister', 'Changes copied to clipboard'))
 			} catch (error) {
