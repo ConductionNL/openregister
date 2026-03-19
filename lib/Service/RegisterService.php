@@ -50,7 +50,6 @@ use Psr\Log\LoggerInterface;
  *
  * @link https://www.OpenRegister.app
  *
- * @SuppressWarnings(PHPMD.BooleanArgumentFlag)
  */
 class RegisterService
 {
@@ -163,6 +162,8 @@ class RegisterService
      * @throws \OCP\AppFramework\Db\DoesNotExistException If register not found
      * @throws \OCP\AppFramework\Db\MultipleObjectsReturnedException If multiple registers found (should not happen)
      * @throws \OCP\DB\Exception If database error occurs
+     *
+     * @SuppressWarnings(PHPMD.BooleanArgumentFlag) $_multitenancy is a simple security toggle
      */
     public function find(int | string $id, array $_extend=[], bool $_multitenancy=true): Register
     {

@@ -30,8 +30,6 @@ use Psr\Log\LoggerInterface;
  * Controller for workflow engine CRUD and health checks.
  *
  * @psalm-suppress UnusedClass
- *
- * @SuppressWarnings(PHPMD.BooleanArgumentFlag)
  */
 class WorkflowEngineController extends Controller
 {
@@ -102,6 +100,8 @@ class WorkflowEngineController extends Controller
      * @param int         $defaultTimeout Default timeout
      *
      * @return JSONResponse
+     *
+     * @SuppressWarnings(PHPMD.BooleanArgumentFlag) $enabled is a simple toggle
      */
     public function create(
         string $name,

@@ -59,7 +59,6 @@ use DateTime;
  * @SuppressWarnings(PHPMD.ExcessiveClassLength)     Search handler requires many specialized query building methods
  * @SuppressWarnings(PHPMD.TooManyMethods)           Search requires per-operator and per-type conversion methods
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)   Search handler bridges schema, register, and query builder layers
- * @SuppressWarnings(PHPMD.BooleanArgumentFlag)
  * @SuppressWarnings(PHPMD.CyclomaticComplexity)
  */
 class MagicSearchHandler
@@ -1033,6 +1032,8 @@ class MagicSearchHandler
      * @param bool          $fuzzyEnabled Whether fuzzy matching is enabled (default: false)
      *
      * @return void
+     *
+     * @SuppressWarnings(PHPMD.BooleanArgumentFlag) $fuzzyEnabled is a simple search-mode toggle
      */
     private function applyFullTextSearch(
         IQueryBuilder $qb,

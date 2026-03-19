@@ -28,7 +28,6 @@ use Psr\Log\LoggerInterface;
  * NOTE: Blob storage (ObjectEntityMapper) has been removed. This service
  * is retained for the status endpoint but migration is no longer possible.
  *
- * @SuppressWarnings(PHPMD.BooleanArgumentFlag)
  */
 class MigrationService
 {
@@ -125,6 +124,7 @@ class MigrationService
      * @return array Migration report indicating blob storage is no longer available.
      *
      * @SuppressWarnings(PHPMD.UnusedFormalParameter)
+     * @SuppressWarnings(PHPMD.BooleanArgumentFlag) $dryRun is a simple preview-mode toggle
      */
     public function migrateToMagicTable(
         Register $register,
@@ -158,6 +158,7 @@ class MigrationService
      * @return array Migration report indicating blob storage is no longer available.
      *
      * @SuppressWarnings(PHPMD.UnusedFormalParameter)
+     * @SuppressWarnings(PHPMD.BooleanArgumentFlag) $dryRun is a simple preview-mode toggle
      */
     public function migrateToBlobStorage(
         Register $register,

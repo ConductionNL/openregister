@@ -54,7 +54,6 @@ use Psr\Log\LoggerInterface;
  * fields within objects can have different access rules than the object itself.
  * Condition matching and operator evaluation are delegated to ConditionMatcher.
  *
- * @SuppressWarnings(PHPMD.BooleanArgumentFlag)
  */
 class PropertyRbacHandler
 {
@@ -102,6 +101,8 @@ class PropertyRbacHandler
      * @param bool   $isCreate Whether this is a create operation
      *
      * @return bool True if user can update the property
+     *
+     * @SuppressWarnings(PHPMD.BooleanArgumentFlag) $isCreate is a simple operation-type toggle
      */
     public function canUpdateProperty(
         Schema $schema,
@@ -174,6 +175,8 @@ class PropertyRbacHandler
      * @param bool   $isCreate     Whether this is a create operation
      *
      * @return array Array of property names user cannot update
+     *
+     * @SuppressWarnings(PHPMD.BooleanArgumentFlag) $isCreate is a simple operation-type toggle
      */
     public function getUnauthorizedProperties(
         Schema $schema,
@@ -239,6 +242,8 @@ class PropertyRbacHandler
      * @param bool   $isCreate Whether this is a create operation
      *
      * @return bool True if user has access
+     *
+     * @SuppressWarnings(PHPMD.BooleanArgumentFlag) $isCreate is a simple operation-type toggle
      */
     private function checkPropertyAccess(
         Schema $schema,

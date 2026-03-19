@@ -61,7 +61,6 @@ use Psr\Log\LoggerInterface;
  * @SuppressWarnings(PHPMD.ExcessiveClassLength)
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)   Facet computation requires schema, register, and query dependencies
  * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
- * @SuppressWarnings(PHPMD.BooleanArgumentFlag)
  * @SuppressWarnings(PHPMD.UnusedFormalParameter)
  */
 class MagicFacetHandler
@@ -543,6 +542,8 @@ class MagicFacetHandler
      * @param bool        $isMetadata   Whether this is a metadata field.
      *
      * @return array Facet result with merged buckets.
+     *
+     * @SuppressWarnings(PHPMD.BooleanArgumentFlag) $isMetadata is a simple field-type toggle
      */
     private function getTermsFacetUnion(
         array $tableConfigs,

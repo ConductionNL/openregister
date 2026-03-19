@@ -52,7 +52,6 @@ use Twig\TemplateWrapper;
  * @SuppressWarnings(PHPMD.NPathComplexity)
  * @SuppressWarnings(PHPMD.ExcessiveClassComplexity)
  * @SuppressWarnings(PHPMD.ExcessiveMethodLength)    Mapping execution requires comprehensive handling
- * @SuppressWarnings(PHPMD.BooleanArgumentFlag)      $list parameter clearly indicates list processing mode
  */
 class MappingService
 {
@@ -165,6 +164,8 @@ class MappingService
      * @return array The result (output) of the mapping process
      *
      * @throws Exception When mapping fails
+     *
+     * @SuppressWarnings(PHPMD.BooleanArgumentFlag) $list is a simple processing-mode toggle
      */
     public function executeMapping(Mapping $mapping, array $input, bool $list=false): array
     {

@@ -31,7 +31,6 @@ use Psr\Log\LoggerInterface;
  * to specialized Elasticsearch service classes.
  *
  * @SuppressWarnings(PHPMD.TooManyPublicMethods) Implements SearchBackendInterface with many required methods
- * @SuppressWarnings(PHPMD.BooleanArgumentFlag)
  */
 class ElasticsearchBackend implements SearchBackendInterface
 {

@@ -84,7 +84,6 @@ use Symfony\Component\Uid\Uuid;
  * @SuppressWarnings(PHPMD.ExcessiveClassComplexity) Inherent complexity of bulk operations
  * @SuppressWarnings(PHPMD.TooManyMethods)           Methods are small focused helpers extracted from complex methods
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)   Bulk ops coordinate mappers, services, and validators
- * @SuppressWarnings(PHPMD.BooleanArgumentFlag)
  * @SuppressWarnings(PHPMD.CyclomaticComplexity)
  * @SuppressWarnings(PHPMD.NPathComplexity)
  * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
@@ -249,6 +248,7 @@ class SaveObjects
      * @phpstan-return array<string, mixed>
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Orchestrator at threshold after extracting initializeSaveResult
+     * @SuppressWarnings(PHPMD.BooleanArgumentFlag)  RBAC/multitenancy/feature flags for bulk operations
      */
     public function saveObjects(
         array $objects,
