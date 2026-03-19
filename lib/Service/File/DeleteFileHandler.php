@@ -78,10 +78,13 @@ class DeleteFileHandler
      */
     public function deleteFile(Node|string|int $file, ?ObjectEntity $object=null): bool
     {
-        // Initialize fileName before conditional assignment.
-        $fileName = '';
+        // Determine file name for error logging.
+        if ($file instanceof Node === true) {
+            $fileName = $file->getName();
+        } else {
+            $fileName = (string) $file;
+        }
 
-        $fileName = ($file instanceof Node) ? $file->getName() : (string) $file;
         if ($file instanceof Node === false) {
             $file = $this->readFileHandler->getFile(object: $object, file: $file);
         }

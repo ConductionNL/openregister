@@ -163,7 +163,12 @@ class DeleteObject
         // Handle ObjectEntity passed from deleteObject() - skip redundant lookup.
         // Handle array input - find object with context (searches across all magic tables).
         // @psalm-suppress UndefinedInterfaceMethod.
-        $identifier     = ($object instanceof ObjectEntity) ? $object->getUuid() : $object['id'];
+        if ($object instanceof ObjectEntity === true) {
+            $identifier = $object->getUuid();
+        } else {
+            $identifier = $object['id'];
+        }
+
         $includeDeleted = ($object instanceof ObjectEntity);
         $context        = $this->objectEntityMapper->findAcrossAllSources(
             identifier: $identifier,
@@ -171,7 +176,12 @@ class DeleteObject
             _rbac: false,
             _multitenancy: false
         );
-        $objectEntity   = ($object instanceof ObjectEntity) ? $object : $context['object'];
+        if ($object instanceof ObjectEntity === true) {
+            $objectEntity = $object;
+        } else {
+            $objectEntity = $context['object'];
+        }
+
         $registerEntity = $context['register'];
         $schemaEntity   = $context['schema'];
 

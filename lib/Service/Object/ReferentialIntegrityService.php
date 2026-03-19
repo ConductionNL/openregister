@@ -841,13 +841,21 @@ class ReferentialIntegrityService
 
         // Build the array/scalar SQL variant selector before accessing the database.
         // For array properties we need JSON_CONTAINS / jsonb @> operators; for scalars a simple = suffices.
-        $queryMode = $isArray === true ? 'array' : 'scalar';
+        if ($isArray === true) {
+            $queryMode = 'array';
+        } else {
+            $queryMode = 'scalar';
+        }
 
         $db         = \OC::$server->getDatabaseConnection();
         $platform   = $db->getDatabasePlatform();
         $isPostgres = stripos($platform::class, 'PostgreSQL') !== false;
 
-        $deletedCheck = $isPostgres === true ? "(_deleted IS NULL OR _deleted = 'null'::jsonb)" : '_deleted IS NULL';
+        if ($isPostgres === true) {
+            $deletedCheck = "(_deleted IS NULL OR _deleted = 'null'::jsonb)";
+        } else {
+            $deletedCheck = '_deleted IS NULL';
+        }
 
         $selectClause   = "SELECT _uuid, _register, _schema, _deleted, {$quotedCol} AS _prop FROM {$fullTableName}";
         $whereCondition = "{$deletedCheck} AND {$quotedCol} = ?";
@@ -873,8 +881,17 @@ class ReferentialIntegrityService
 
             $deleted = $row['_deleted'] ?? null;
             if ($deleted !== null && $deleted !== 'null') {
-                $decoded = is_string($deleted) === true ? json_decode($deleted, true) : $deleted;
-                $entity->setDeleted(is_array($decoded) === true ? $decoded : []);
+                if (is_string($deleted) === true) {
+                    $decoded = json_decode($deleted, true);
+                } else {
+                    $decoded = $deleted;
+                }
+
+                if (is_array($decoded) === true) {
+                    $entity->setDeleted($decoded);
+                } else {
+                    $entity->setDeleted([]);
+                }
             }
 
             // Set object with at least the property that matched.

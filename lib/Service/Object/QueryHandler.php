@@ -272,26 +272,19 @@ class QueryHandler
             $query = $this->searchQueryHandler->applyViewsToQuery(query: $query, viewIds: $views);
         }
 
-        $requestedSource = $query['_source'] ?? null;
+        // Strip deprecated _source parameter (silently ignore for backward compatibility).
+        unset($query['_source']);
 
-        // Simple switch: Use SOLR if explicitly requested OR if SOLR is enabled in config.
-        // BUT force database when ids or uses parameters are provided (relation-based searches).
-        $hasIds          = isset($query['_ids']) === true;
-        $hasUses         = isset($query['_uses']) === true;
-        $hasIdsParam     = $ids !== null;
-        $hasUsesParam    = $uses !== null;
-        $isSolrRequested = ($requestedSource === 'index' || $requestedSource === 'solr');
-        $isSolrEnabled   = $this->searchQueryHandler->isSolrAvailable();
-        $isNotDatabase   = $requestedSource !== 'database';
+        // Use SOLR if enabled in config, unless relation-based search params are provided.
+        $hasIds        = isset($query['_ids']) === true;
+        $hasUses       = isset($query['_uses']) === true;
+        $hasIdsParam   = $ids !== null;
+        $hasUsesParam  = $uses !== null;
+        $isSolrEnabled = $this->searchQueryHandler->isSolrAvailable();
 
-        if ((            $isSolrRequested === true
+        if ($isSolrEnabled === true
             && $hasIdsParam === false && $hasUsesParam === false
-            && $hasIds === false && $hasUses === false)
-            || (            $requestedSource === null
-            && $isSolrEnabled === true
-            && $isNotDatabase === true
-            && $hasIdsParam === false && $hasUsesParam === false
-            && $hasIds === false && $hasUses === false)
+            && $hasIds === false && $hasUses === false
         ) {
             // Forward to Index service - let it handle availability checks and error handling.
             $indexService = $this->container->get(IndexService::class);

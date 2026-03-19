@@ -337,7 +337,7 @@ class OrganisationService
                         uuid: $defaultOrg->getUuid()
                     );
                 }//end try
-            }
+            }//end if
 
             if ($defaultOrgUuid === null) {
                 // No UUID in settings, create a new default organisation.

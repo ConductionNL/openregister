@@ -224,8 +224,17 @@ class SchemaMapper extends QBMapper
         bool $_multitenancy=true
     ): Schema {
         // Check request-scoped cache to avoid redundant DB queries for the same schema.
-        $rbacFlag = $_rbac === true ? '1' : '0';
-        $mtFlag   = $_multitenancy === true ? '1' : '0';
+        if ($_rbac === true) {
+            $rbacFlag = '1';
+        } else {
+            $rbacFlag = '0';
+        }
+
+        if ($_multitenancy === true) {
+            $mtFlag = '1';
+        } else {
+            $mtFlag = '0';
+        }
 
         $cacheKey = strtolower((string) $id).':'.$rbacFlag.':'.$mtFlag;
         if (isset($this->findCache[$cacheKey]) === true) {
@@ -296,8 +305,17 @@ class SchemaMapper extends QBMapper
         $schema = $this->resolveSchemaExtension(schema: $schema);
 
         // Cache by all possible identifiers to handle lookups by id, uuid, or slug.
-        $rbacChar = $_rbac === true ? '1' : '0';
-        $mtChar   = $_multitenancy === true ? '1' : '0';
+        if ($_rbac === true) {
+            $rbacChar = '1';
+        } else {
+            $rbacChar = '0';
+        }
+
+        if ($_multitenancy === true) {
+            $mtChar = '1';
+        } else {
+            $mtChar = '0';
+        }
 
         $rbacSuffix = ':'.$rbacChar.':'.$mtChar;
         $this->findCache[$cacheKey] = $schema;

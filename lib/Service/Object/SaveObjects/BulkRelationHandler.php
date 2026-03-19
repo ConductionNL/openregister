@@ -229,9 +229,11 @@ class BulkRelationHandler
                     continue;
                 }
 
-                $relatedObjectIds = is_array($objectData[$propertyName]) === true
-                    ? $objectData[$propertyName]
-                    : [$objectData[$propertyName]];
+                if (is_array($objectData[$propertyName]) === true) {
+                    $relatedObjectIds = $objectData[$propertyName];
+                } else {
+                    $relatedObjectIds = [$objectData[$propertyName]];
+                }
 
                 foreach ($relatedObjectIds as $relatedId) {
                     if (empty($relatedId) === false && empty($inverseConfig['writeBack']) === false) {
@@ -279,9 +281,11 @@ class BulkRelationHandler
                     continue;
                 }
 
-                $relatedObjectIds = is_array($objectData[$propertyName]) === true
-                    ? $objectData[$propertyName]
-                    : [$objectData[$propertyName]];
+                if (is_array($objectData[$propertyName]) === true) {
+                    $relatedObjectIds = $objectData[$propertyName];
+                } else {
+                    $relatedObjectIds = [$objectData[$propertyName]];
+                }
 
                 foreach ($relatedObjectIds as $relatedId) {
                     if (empty($relatedId) === false && (($relatedObjectsMap[$relatedId] ?? null) !== null)) {
@@ -418,7 +422,11 @@ class BulkRelationHandler
         }
 
         foreach ($data as $key => $value) {
-            $currentPath = $prefix !== '' ? "$prefix.$key" : $key;
+            if ($prefix !== '') {
+                $currentPath = "$prefix.$key";
+            } else {
+                $currentPath = $key;
+            }
 
             // Check if this property is defined in the schema.
             $propertyConfig = $schemaProperties[$key] ?? null;

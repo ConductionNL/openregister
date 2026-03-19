@@ -334,7 +334,11 @@ class ValidationHandler
         $objectsToProcess = count($allObjects);
         $chunkSize        = $this->calculateChunkSize(objectsToProcess: $objectsToProcess);
 
-        $estimatedChunks = $objectsToProcess > 0 ? ceil($objectsToProcess / $chunkSize) : 0;
+        if ($objectsToProcess > 0) {
+            $estimatedChunks = ceil($objectsToProcess / $chunkSize);
+        } else {
+            $estimatedChunks = 0;
+        }
 
         $this->logger->info(
             message: '[ValidationHandler] Starting chunked validation',
@@ -705,7 +709,11 @@ class ValidationHandler
     {
         $objectsData = [];
         foreach ($objectsChunk as $object) {
-            $objectsData[] = is_array($object) === true ? $object : $object->getObject();
+            if (is_array($object) === true) {
+                $objectsData[] = $object;
+            } else {
+                $objectsData[] = $object->getObject();
+            }
         }
 
         return $objectsData;

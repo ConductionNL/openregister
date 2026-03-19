@@ -736,7 +736,11 @@ class SaveObject
         $relations = $savedEntity->getRelations();
         $savedUuid = $savedEntity->getUuid();
 
-        $relationsCount = ($relations !== null) ? count($relations) : 0;
+        if ($relations !== null) {
+            $relationsCount = count($relations);
+        } else {
+            $relationsCount = 0;
+        }
 
         $this->logger->debug(
             message: '[SaveObject] updateInverseRelations called',
@@ -1648,15 +1652,23 @@ class SaveObject
                 if (($isRelatedObject === true || $isCascade === true) && empty($oldUuids) === false) {
                     // Resolve the sub-object's schema and register for magic-mapped lookups.
                     $subSchemaRef = $definition['items']['$ref'] ?? $definition['$ref'] ?? null;
-                    $subSchemaId  = $subSchemaRef !== null
-                        ? $this->resolveSchemaReference(reference: $subSchemaRef)
-                        : null;
-                    $subSchema    = $subSchemaId !== null
-                        ? $this->getCachedSchema(schemaId: $subSchemaId)
-                        : null;
-                    $subRegister  = $objectEntity->getRegister() !== null
-                        ? $this->getCachedRegister(registerId: $objectEntity->getRegister())
-                        : null;
+                    if ($subSchemaRef !== null) {
+                        $subSchemaId = $this->resolveSchemaReference(reference: $subSchemaRef);
+                    } else {
+                        $subSchemaId = null;
+                    }
+
+                    if ($subSchemaId !== null) {
+                        $subSchema = $this->getCachedSchema(schemaId: $subSchemaId);
+                    } else {
+                        $subSchema = null;
+                    }
+
+                    if ($objectEntity->getRegister() !== null) {
+                        $subRegister = $this->getCachedRegister(registerId: $objectEntity->getRegister());
+                    } else {
+                        $subRegister = null;
+                    }
 
                     $this->deleteOrphanedRelatedObjects(
                         orphanedUuids: $oldUuids,
@@ -1726,15 +1738,23 @@ class SaveObject
                         if (empty($orphanedUuids) === false) {
                             // Resolve the sub-object's schema and register for magic-mapped lookups.
                             $subSchemaRef = $definition['items']['$ref'] ?? $definition['$ref'] ?? null;
-                            $subSchemaId  = $subSchemaRef !== null
-                                ? $this->resolveSchemaReference(reference: $subSchemaRef)
-                                : null;
-                            $subSchema    = $subSchemaId !== null
-                                ? $this->getCachedSchema(schemaId: $subSchemaId)
-                                : null;
-                            $subRegister  = $objectEntity->getRegister() !== null
-                                ? $this->getCachedRegister(registerId: $objectEntity->getRegister())
-                                : null;
+                            if ($subSchemaRef !== null) {
+                                $subSchemaId = $this->resolveSchemaReference(reference: $subSchemaRef);
+                            } else {
+                                $subSchemaId = null;
+                            }
+
+                            if ($subSchemaId !== null) {
+                                $subSchema = $this->getCachedSchema(schemaId: $subSchemaId);
+                            } else {
+                                $subSchema = null;
+                            }
+
+                            if ($objectEntity->getRegister() !== null) {
+                                $subRegister = $this->getCachedRegister(registerId: $objectEntity->getRegister());
+                            } else {
+                                $subRegister = null;
+                            }
 
                             $this->deleteOrphanedRelatedObjects(
                                 orphanedUuids: array_values($orphanedUuids),
@@ -2060,8 +2080,12 @@ class SaveObject
                 );
 
                 // Soft delete: set deletion metadata and update (consistent with DeleteObject).
-                $user   = $this->userSession->getUser();
-                $userId = $user !== null ? $user->getUID() : 'system';
+                $user = $this->userSession->getUser();
+                if ($user !== null) {
+                    $userId = $user->getUID();
+                } else {
+                    $userId = 'system';
+                }
 
                 $deletionData = [
                     'deletedBy' => $userId,
@@ -3368,7 +3392,11 @@ class SaveObject
             $targetRegister = $property['register'] ?? $register;
 
             // Normalize to array for uniform validation.
-            $uuidsToValidate = ($isArray === true && is_array($value) === true) ? $value : [$value];
+            if ($isArray === true && is_array($value) === true) {
+                $uuidsToValidate = $value;
+            } else {
+                $uuidsToValidate = [$value];
+            }
 
             foreach ($uuidsToValidate as $uuid) {
                 if (empty($uuid) === true) {

@@ -206,7 +206,11 @@ class ChunkProcessingHandler
         $result['statistics']['unchanged'] = count($unchangedObjects);
         $result['unchanged'] = array_map(
             function ($obj) {
-                return is_array($obj) === true ? $obj : $obj->jsonSerialize();
+                if (is_array($obj) === true) {
+                    return $obj;
+                }
+
+                return $obj->jsonSerialize();
             },
             $unchangedObjects
         );

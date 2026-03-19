@@ -328,7 +328,7 @@ class WebhookService
                 } catch (\Exception $bodyException) {
                     // Ignore body reading errors.
                 }
-            }
+            }//end if
 
             // Add request details to error message.
             $errorDetails['request_url']    = $webhook->getUrl();
@@ -649,7 +649,12 @@ class WebhookService
         ];
 
         // For GET requests, use query parameters; for others, send JSON body.
-        $payloadKey = strtoupper($webhook->getMethod()) === 'GET' ? 'query' : 'json';
+        if (strtoupper($webhook->getMethod()) === 'GET') {
+            $payloadKey = 'query';
+        } else {
+            $payloadKey = 'json';
+        }
+
         $options[$payloadKey] = $payload;
 
         $response = $this->client->request(
@@ -789,19 +794,18 @@ class WebhookService
         }
 
         // Format request as CloudEvent if formatter is available.
+        // Default to basic request data, override with CloudEvent format if formatter available.
+        $cloudEvent = [
+            'type'   => $eventType,
+            'method' => $request->getMethod(),
+            'path'   => $request->getPathInfo(),
+            'body'   => $request->getParams(),
+        ];
         if ($this->cloudEventFormatter !== null) {
             $cloudEvent = $this->cloudEventFormatter->formatRequestAsCloudEvent(
                 request: $request,
                 eventType: $eventType
             );
-        } else {
-            // Fallback to basic request data.
-            $cloudEvent = [
-                'type'   => $eventType,
-                'method' => $request->getMethod(),
-                'path'   => $request->getPathInfo(),
-                'body'   => $request->getParams(),
-            ];
         }
 
         // Get original request data.

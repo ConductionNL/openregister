@@ -718,8 +718,12 @@ class OasService
         if (isset($cleanDef['items']) === true) {
             if (is_array($cleanDef['items']) === true && array_is_list($cleanDef['items']) === true) {
                 // Sequential array (list) — not valid. Use first element or default.
-                $firstItem         = $cleanDef['items'][0] ?? null;
-                $cleanDef['items'] = (empty($firstItem) === false) ? $firstItem : ['type' => 'string'];
+                $firstItem = $cleanDef['items'][0] ?? null;
+                if (empty($firstItem) === false) {
+                    $cleanDef['items'] = $firstItem;
+                } else {
+                    $cleanDef['items'] = ['type' => 'string'];
+                }
             }
 
             if (is_array($cleanDef['items']) === false || empty($cleanDef['items']) === true) {
@@ -758,10 +762,18 @@ class OasService
     private function addCrudPaths(object $register, object $schema, array $rbac=[], string $operationIdPrefix=''): void
     {
         $registerSlugValue = $register->getSlug();
-        $registerSlug      = ($registerSlugValue !== null && $registerSlugValue !== '') ? $registerSlugValue : $this->slugify(string: $register->getTitle());
+        if ($registerSlugValue !== null && $registerSlugValue !== '') {
+            $registerSlug = $registerSlugValue;
+        } else {
+            $registerSlug = $this->slugify(string: $register->getTitle());
+        }
 
         $schemaSlugValue = $schema->getSlug();
-        $schemaSlug      = ($schemaSlugValue !== null && $schemaSlugValue !== '') ? $schemaSlugValue : $this->slugify(string: $schema->getTitle());
+        if ($schemaSlugValue !== null && $schemaSlugValue !== '') {
+            $schemaSlug = $schemaSlugValue;
+        } else {
+            $schemaSlug = $this->slugify(string: $schema->getTitle());
+        }
 
         $basePath = '/objects/'.$registerSlug.'/'.$schemaSlug;
 
@@ -822,10 +834,18 @@ class OasService
     private function addExtendedPaths(object $register, object $schema): void
     {
         $registerSlugValue = $register->getSlug();
-        $registerSlug      = ($registerSlugValue !== null && $registerSlugValue !== '') ? $registerSlugValue : $this->slugify(string: $register->getTitle());
+        if ($registerSlugValue !== null && $registerSlugValue !== '') {
+            $registerSlug = $registerSlugValue;
+        } else {
+            $registerSlug = $this->slugify(string: $register->getTitle());
+        }
 
         $schemaSlugValue = $schema->getSlug();
-        $schemaSlug      = ($schemaSlugValue !== null && $schemaSlugValue !== '') ? $schemaSlugValue : $this->slugify(string: $schema->getTitle());
+        if ($schemaSlugValue !== null && $schemaSlugValue !== '') {
+            $schemaSlug = $schemaSlugValue;
+        } else {
+            $schemaSlug = $this->slugify(string: $schema->getTitle());
+        }
 
         $basePath = '/objects/'.$registerSlug.'/'.$schemaSlug;
 

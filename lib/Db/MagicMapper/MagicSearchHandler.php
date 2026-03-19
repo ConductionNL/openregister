@@ -276,14 +276,12 @@ class MagicSearchHandler
         $_rbac          = $query['_rbac'] ?? true;
         $_multitenancy  = $query['_multitenancy'] ?? true;
         $relationsContains = $query['_relations_contains'] ?? null;
-        $source            = $query['_source'] ?? null;
 
         // Resolve multitenancy flag based on public schema access and explicit request.
         $multitenancyExplicit = $this->isExplicitlyTrue(value: $query['_multitenancy_explicit'] ?? false);
         $_multitenancy        = $this->resolveMultitenancyFlag(
             _multitenancy: $_multitenancy,
             multitenancyExplicit: $multitenancyExplicit,
-            source: $source,
             schema: $schema
         );
 
@@ -619,7 +617,6 @@ class MagicSearchHandler
             '_facetable',
             '_aggregations',
             '_debug',
-            '_source',
             '_rbac',
             '_multitenancy',
             '_validation',
@@ -683,20 +680,18 @@ class MagicSearchHandler
      * multitenancy with _multi=true. This allows public data to be visible across orgs
      * while still giving users the option to filter by their own organisation.
      *
-     * @param bool        $_multitenancy        Current multitenancy flag
-     * @param bool        $multitenancyExplicit Whether multitenancy was explicitly requested
-     * @param string|null $source               Data source type
-     * @param Schema      $schema               Schema to check for public access
+     * @param bool   $_multitenancy        Current multitenancy flag
+     * @param bool   $multitenancyExplicit Whether multitenancy was explicitly requested
+     * @param Schema $schema               Schema to check for public access
      *
      * @return bool Resolved multitenancy flag
      */
     private function resolveMultitenancyFlag(
         bool $_multitenancy,
         bool $multitenancyExplicit,
-        ?string $source,
         Schema $schema
     ): bool {
-        if ($_multitenancy === true && $source !== 'database') {
+        if ($_multitenancy === true) {
             $schemaAuth = $schema->getAuthorization();
             $readGroups = $schemaAuth['read'] ?? [];
             $hasPublic  = $this->hasPublicReadAccess(readRules: $readGroups);

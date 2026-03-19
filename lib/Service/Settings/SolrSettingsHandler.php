@@ -333,15 +333,35 @@ class SolrSettingsHandler
         $totalTime    = ($serviceStats['search_time'] ?? 0) + ($serviceStats['index_time'] ?? 0);
 
         // Calculate operations per second.
-        $opsPerSec       = $totalTime > 0 ? round($totalOps / ($totalTime / 1000), 2) : 0;
-        $errorRate       = $totalOps > 0 ? round(($serviceStats['errors'] ?? 0) / $totalOps * 100, 2) : 0;
-        $coreStatus      = $rawStats['available'] === true ? 'active' : 'inactive';
-        $avgSearchTimeMs = ($serviceStats['searches'] ?? 0) > 0
-            ? round(($serviceStats['search_time'] ?? 0) / ($serviceStats['searches'] ?? 1), 2)
-            : 0;
-        $avgIndexTimeMs  = ($serviceStats['indexes'] ?? 0) > 0
-            ? round(($serviceStats['index_time'] ?? 0) / ($serviceStats['indexes'] ?? 1), 2)
-            : 0;
+        if ($totalTime > 0) {
+            $opsPerSec = round($totalOps / ($totalTime / 1000), 2);
+        } else {
+            $opsPerSec = 0;
+        }
+
+        if ($totalOps > 0) {
+            $errorRate = round(($serviceStats['errors'] ?? 0) / $totalOps * 100, 2);
+        } else {
+            $errorRate = 0;
+        }
+
+        if ($rawStats['available'] === true) {
+            $coreStatus = 'active';
+        } else {
+            $coreStatus = 'inactive';
+        }
+
+        if (($serviceStats['searches'] ?? 0) > 0) {
+            $avgSearchTimeMs = round(($serviceStats['search_time'] ?? 0) / ($serviceStats['searches'] ?? 1), 2);
+        } else {
+            $avgSearchTimeMs = 0;
+        }
+
+        if (($serviceStats['indexes'] ?? 0) > 0) {
+            $avgIndexTimeMs = round(($serviceStats['index_time'] ?? 0) / ($serviceStats['indexes'] ?? 1), 2);
+        } else {
+            $avgIndexTimeMs = 0;
+        }
 
         return [
             'overview'     => [

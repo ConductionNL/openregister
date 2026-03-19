@@ -957,7 +957,7 @@ class TextExtractionService
             } else if ($this->isSpreadsheet(mimeType: $mimeType) === true) {
                 // Extract text from XLSX/XLS using PhpSpreadsheet.
                 $extractedText = $this->extractSpreadsheet(file: $file);
-            }
+            }//end if
 
             if (isset($extractedText) === false) {
                 // Unsupported file type.
@@ -1902,7 +1902,11 @@ class TextExtractionService
         $currentOffset = 0;
 
         foreach ($splits as $split) {
-            $testChunk = $currentChunk === '' ? $split : $currentChunk.$separator.$split;
+            if ($currentChunk === '') {
+                $testChunk = $split;
+            } else {
+                $testChunk = $currentChunk.$separator.$split;
+            }
 
             if (strlen($testChunk) <= $chunkSize) {
                 // Can add to current chunk.
@@ -1934,7 +1938,7 @@ class TextExtractionService
                 }
 
                 continue;
-            }
+            }//end if
 
             // Current chunk is empty and single split is too large — need to split it further.
             if (strlen($split) > $chunkSize) {
@@ -1957,7 +1961,7 @@ class TextExtractionService
                 $currentOffset += strlen($split);
                 $currentChunk   = '';
                 continue;
-            }
+            }//end if
 
             $currentChunk = $split;
         }//end foreach

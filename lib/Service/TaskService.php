@@ -349,7 +349,11 @@ class TaskService
                 } else if (is_iterable($components) === true) {
                     // If components is an array or other iterable.
                     foreach ($components as $comp) {
-                        $compName = is_string($comp) === true ? $comp : (string) $comp;
+                        if (is_string($comp) === true) {
+                            $compName = $comp;
+                        } else {
+                            $compName = (string) $comp;
+                        }
 
                         if (strtoupper($compName) === 'VTODO') {
                             $supportsVtodo = true;

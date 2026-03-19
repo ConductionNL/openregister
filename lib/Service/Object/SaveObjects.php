@@ -277,10 +277,17 @@ class SaveObjects
 
         // PERFORMANCE OPTIMIZATION: Reduce logging overhead during bulk operations.
         if (count($objects) > 10000 || ($isMixedSchema === true && count($objects) > 1000)) {
-            $opLabel = $isMixedSchema === true
-                ? 'Starting mixed-schema bulk save operation'
-                : 'Starting single-schema bulk save operation';
-            $opType  = $isMixedSchema === true ? 'mixed-schema' : 'single-schema';
+            if ($isMixedSchema === true) {
+                $opLabel = 'Starting mixed-schema bulk save operation';
+            } else {
+                $opLabel = 'Starting single-schema bulk save operation';
+            }
+
+            if ($isMixedSchema === true) {
+                $opType = 'mixed-schema';
+            } else {
+                $opType = 'single-schema';
+            }
 
             $this->logger->info(
                 $opLabel,
@@ -289,7 +296,7 @@ class SaveObjects
                     'operation'    => $opType,
                 ]
             );
-        }
+        }//end if
 
         // PERFORMANCE OPTIMIZATION: Use fast path for single-schema operations.
         // PERFORMANCE OPTIMIZATION: Use fast path for single-schema operations.
@@ -387,9 +394,11 @@ class SaveObjects
         $overallSpeed = count($processedObjects) / max($totalTime, 0.001);
 
         // ADD PERFORMANCE METRICS: Include timing and speed metrics like ImportService does.
-        $efficiency = count($processedObjects) > 0
-            ? round((count($processedObjects) / $totalObjects) * 100, 1)
-            : 0;
+        if (count($processedObjects) > 0) {
+            $efficiency = round((count($processedObjects) / $totalObjects) * 100, 1);
+        } else {
+            $efficiency = 0;
+        }
 
         $result['performance'] = [
             'totalTime'        => round($totalTime, 3),
@@ -654,8 +663,12 @@ class SaveObjects
         );
 
         // PERFORMANCE OPTIMIZATION: Pre-calculate metadata once.
-        $currentUser  = $this->userSession->getUser();
-        $defaultOwner = $currentUser !== null ? $currentUser->getUID() : null;
+        $currentUser = $this->userSession->getUser();
+        if ($currentUser !== null) {
+            $defaultOwner = $currentUser->getUID();
+        } else {
+            $defaultOwner = null;
+        }
 
         // NO ERROR SUPPRESSION: Let organisation service errors bubble up immediately!
         $defaultOrganisation = $this->organisationService->getOrganisationForNewEntity();
@@ -711,7 +724,12 @@ class SaveObjects
         Register|string|int $register,
         Schema|string|int $schema
     ): array {
-        $registerId = $register instanceof Register ? $register->getId() : $register;
+        if ($register instanceof Register === true) {
+            $registerId = $register->getId();
+        } else {
+            $registerId = $register;
+        }
+
         if ($register instanceof Register) {
             self::$registerCache[$registerId] = $register;
         }
@@ -720,7 +738,12 @@ class SaveObjects
             $register = $this->loadRegisterWithCache(registerId: $registerId);
         }
 
-        $schemaId = $schema instanceof Schema ? $schema->getId() : $schema;
+        if ($schema instanceof Schema === true) {
+            $schemaId = $schema->getId();
+        } else {
+            $schemaId = $schema;
+        }
+
         if ($schema instanceof Schema) {
             $schemaObj = $schema;
             self::$schemaCache[$schemaId] = $schemaObj;
@@ -767,7 +790,7 @@ class SaveObjects
         $selfData['schema']   = $selfData['schema'] ?? $schemaId;
 
         // PERFORMANCE: Accept any non-empty string as ID, prioritize CSV 'id' column.
-        $providedId = $object['id'] ?? $selfData['id'] ?? null;
+        $providedId       = $object['id'] ?? $selfData['id'] ?? null;
         $selfData['uuid'] = Uuid::v4()->toRfc4122();
         $selfData['id']   = $selfData['uuid'];
 
@@ -798,7 +821,11 @@ class SaveObjects
         $selfData = $this->applyHydratedMetadata(selfData: $selfData, object: $object, tempEntity: $tempEntity);
 
         // DEBUG: Log actual data structure to understand what we're receiving.
-        $selfKeys = isset($object['@self']) === true ? array_keys($object['@self']) : 'none';
+        if (isset($object['@self']) === true) {
+            $selfKeys = array_keys($object['@self']);
+        } else {
+            $selfKeys = 'none';
+        }
 
         $this->logger->info(
                 "[SaveObjects] DEBUG - Single schema object structure",
@@ -1428,7 +1455,11 @@ class SaveObjects
             // Only extract @self if it exists (mixed schema or other paths).
             // Object is already a flat $selfData array from prepareSingleSchemaObjectsOptimized,
             // or extract @self if it exists (mixed schema or other paths).
-            $selfData = isset($object['@self']) === true ? $object['@self'] : $object;
+            if (isset($object['@self']) === true) {
+                $selfData = $object['@self'];
+            } else {
+                $selfData = $object;
+            }
 
             // Generate or validate object identifiers (uuid, id, register, schema).
             $selfData = $this->generateObjectIdentifiers(selfData: $selfData, object: $object);
@@ -1466,7 +1497,7 @@ class SaveObjects
                             'relationCount' => count($selfData['relations']),
                         ]
                         );
-            } elseif (isset($schemaCache[$selfData['schema']]) === true) {
+            } else if (isset($schemaCache[$selfData['schema']]) === true) {
                 $schema    = $schemaCache[$selfData['schema']];
                 $relations = $this->scanForRelations(data: $businessData, prefix: '', schema: $schema);
                 $selfData['relations'] = $relations;
@@ -1479,7 +1510,7 @@ class SaveObjects
                             'relations'     => array_slice($relations, 0, 3, true),
                         ]
                         );
-            }
+            }//end if
 
             // Store the clean business data in the database object column.
             $selfData['object'] = $businessData;
@@ -1584,8 +1615,12 @@ class SaveObjects
     {
         // Set owner to current user if not provided (with null check).
         if (isset($selfData['owner']) === false || empty($selfData['owner']) === true) {
-            $currentUser        = $this->userSession->getUser();
-            $selfData['owner']  = $currentUser !== null ? $currentUser->getUID() : null;
+            $currentUser = $this->userSession->getUser();
+            if ($currentUser !== null) {
+                $selfData['owner'] = $currentUser->getUID();
+            } else {
+                $selfData['owner'] = null;
+            }
         }
 
         // Set organization using optimized OrganisationService method if not provided.
@@ -1761,7 +1796,11 @@ class SaveObjects
                 continue;
             }
 
-            $currentPath = $prefix !== '' ? $prefix.'.'.$key : $key;
+            if ($prefix !== '') {
+                $currentPath = $prefix.'.'.$key;
+            } else {
+                $currentPath = $key;
+            }
 
             $propertyRelations = $this->scanPropertyForRelation(
                 key: $key,
@@ -1878,7 +1917,7 @@ class SaveObjects
             if (trim($item) !== '' && $this->isReference(value: $item) === true) {
                 $relations[$currentPath.'.'.$index] = $item;
             }
-        }
+        }//end foreach
 
         return $relations;
     }//end scanArrayForRelations()

@@ -1663,7 +1663,7 @@ class SettingsService
             }
 
             // Check for configuration mismatches (type, multiValued, docValues).
-            $expectedConfig      = $expectedFields[$fieldName];
+            $expectedConfig          = $expectedFields[$fieldName];
                 $expectedType        = $expectedConfig['type'] ?? '';
                 $actualType          = $actualField['type'] ?? '';
                 $expectedMultiValued = $expectedConfig['multiValued'] ?? false;
@@ -1672,36 +1672,36 @@ class SettingsService
                 $actualDocValues     = $actualField['docValues'] ?? false;
 
                 // Check if any configuration differs.
-                if ($expectedType !== $actualType
-                    || $expectedMultiValued !== $actualMultiValued
-                    || $expectedDocValues !== $actualDocValues
-                ) {
-                    $differences = [];
-                    if ($expectedType !== $actualType) {
-                        $differences[] = 'type';
-                    }
+            if ($expectedType !== $actualType
+                || $expectedMultiValued !== $actualMultiValued
+                || $expectedDocValues !== $actualDocValues
+            ) {
+                $differences = [];
+                if ($expectedType !== $actualType) {
+                    $differences[] = 'type';
+                }
 
-                    if ($expectedMultiValued !== $actualMultiValued) {
-                        $differences[] = 'multiValued';
-                    }
+                if ($expectedMultiValued !== $actualMultiValued) {
+                    $differences[] = 'multiValued';
+                }
 
-                    if ($expectedDocValues !== $actualDocValues) {
-                        $differences[] = 'docValues';
-                    }
+                if ($expectedDocValues !== $actualDocValues) {
+                    $differences[] = 'docValues';
+                }
 
-                    $mismatched[] = [
-                        'field'                => $fieldName,
-                        'expected_type'        => $expectedType,
-                        'actual_type'          => $actualType,
-                        'expected_multiValued' => $expectedMultiValued,
-                        'actual_multiValued'   => $actualMultiValued,
-                        'expected_docValues'   => $expectedDocValues,
-                        'actual_docValues'     => $actualDocValues,
-                        'differences'          => $differences,
-                        'expected_config'      => $expectedConfig,
-                        'actual_config'        => $actualField,
-                    ];
-                }//end if
+                $mismatched[] = [
+                    'field'                => $fieldName,
+                    'expected_type'        => $expectedType,
+                    'actual_type'          => $actualType,
+                    'expected_multiValued' => $expectedMultiValued,
+                    'actual_multiValued'   => $actualMultiValued,
+                    'expected_docValues'   => $expectedDocValues,
+                    'actual_docValues'     => $actualDocValues,
+                    'differences'          => $differences,
+                    'expected_config'      => $expectedConfig,
+                    'actual_config'        => $actualField,
+                ];
+            }//end if
         }//end foreach
 
         return [
@@ -1875,13 +1875,15 @@ class SettingsService
             $platform   = $this->db->getDatabasePlatform();
             $isPostgres = stripos($platform::class, 'PostgreSQL') !== false;
 
-            $tablesQuery = $isPostgres === true
-                ? "SELECT tablename FROM pg_tables
+            if ($isPostgres === true) {
+                $tablesQuery = "SELECT tablename FROM pg_tables
                    WHERE schemaname = 'public'
-                   AND tablename LIKE 'oc_openregister_table_%'"
-                : "SELECT table_name as tablename FROM information_schema.tables
+                   AND tablename LIKE 'oc_openregister_table_%'";
+            } else {
+                $tablesQuery = "SELECT table_name as tablename FROM information_schema.tables
                    WHERE table_schema = DATABASE()
                    AND table_name LIKE 'oc_openregister_table_%'";
+            }
 
             $tablesResult = $this->db->executeQuery($tablesQuery);
             $tables       = $tablesResult->fetchAll(\PDO::FETCH_COLUMN);
@@ -1940,9 +1942,11 @@ class SettingsService
         }
 
         // Build query for sources count based on table existence.
-        $sourcesCountQuery = $sourcesTableExists === true
-            ? "(SELECT COUNT(*) FROM {$qb->getTableName('openconnector_sources')})"
-            : '0';
+        if ($sourcesTableExists === true) {
+            $sourcesCountQuery = "(SELECT COUNT(*) FROM {$qb->getTableName('openconnector_sources')})";
+        } else {
+            $sourcesCountQuery = '0';
+        }
 
         // Build a single query that gets all other counts at once using subqueries.
         $auditTable  = $qb->getTableName('openregister_audit_trails');

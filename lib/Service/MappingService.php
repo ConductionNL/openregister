@@ -270,12 +270,24 @@ class MappingService
         $keys = array_keys($output);
         if (count($keys) === 1 && $keys[0] === '#') {
             $rootValue = $output['#'];
-            $output    = ($rootValue === null) ? [] : (is_array($rootValue) ? $rootValue : [$rootValue]);
+            if ($rootValue === null) {
+                $output = [];
+            } else if (is_array($rootValue) === true) {
+                $output = $rootValue;
+            }
+
+            if ($rootValue !== null && is_array($rootValue) === false) {
+                $output = [$rootValue];
+            }
         }
 
         // Ensure output is always an array.
         if (is_array($output) === false) {
-            $output = ($output === null) ? [] : [$output];
+            if ($output === null) {
+                $output = [];
+            } else {
+                $output = [$output];
+            }
         }
 
         return $output;

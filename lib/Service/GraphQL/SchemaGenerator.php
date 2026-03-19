@@ -488,7 +488,11 @@ class SchemaGenerator
 
             // Annotate authorization requirements in description.
             if (isset($authInfo[$name]) === true) {
-                $description = ($description !== null && $description !== '') ? $description.'. '.$authInfo[$name] : $authInfo[$name];
+                if ($description !== null && $description !== '') {
+                    $description = $description.'. '.$authInfo[$name];
+                } else {
+                    $description = $authInfo[$name];
+                }
             }
 
             $fields[$fieldName] = [

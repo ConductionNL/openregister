@@ -95,7 +95,11 @@ class TransformationHandler
             // Only extract @self if it exists (mixed schema or other paths).
             // Object is already a flat $selfData array from prepareSingleSchemaObjectsOptimized,
             // or extract @self if it exists (mixed schema or other paths).
-            $selfData = ($object['@self'] ?? null) !== null ? $object['@self'] : $object;
+            if (($object['@self'] ?? null) !== null) {
+                $selfData = $object['@self'];
+            } else {
+                $selfData = $object;
+            }
 
             // Auto-wire @self metadata with proper UUID validation and generation.
             new DateTime();
@@ -111,15 +115,19 @@ class TransformationHandler
             // CRITICAL FIX: Use register and schema from object data if available.
             // Register and schema should be provided in object data for this method.
             if (($selfData['register'] ?? null) === null && ($object['register'] ?? null) !== null) {
-                $selfData['register'] = is_object($object['register']) === true
-                    ? $object['register']->getId()
-                    : $object['register'];
+                if (is_object($object['register']) === true) {
+                    $selfData['register'] = $object['register']->getId();
+                } else {
+                    $selfData['register'] = $object['register'];
+                }
             }
 
             if (($selfData['schema'] ?? null) === null && ($object['schema'] ?? null) !== null) {
-                $selfData['schema'] = is_object($object['schema']) === true
-                    ? $object['schema']->getId()
-                    : $object['schema'];
+                if (is_object($object['schema']) === true) {
+                    $selfData['schema'] = $object['schema']->getId();
+                } else {
+                    $selfData['schema'] = $object['schema'];
+                }
             }
 
             // Note: Register and schema should be set in object data before calling this method.
@@ -159,8 +167,12 @@ class TransformationHandler
 
             // Set owner to current user if not provided (with null check).
             if (($selfData['owner'] ?? null) === null || empty($selfData['owner']) === true) {
-                $currentUser       = $this->userSession->getUser();
-                $selfData['owner'] = ($currentUser !== null) === true ? $currentUser->getUID() : null;
+                $currentUser = $this->userSession->getUser();
+                if ($currentUser !== null) {
+                    $selfData['owner'] = $currentUser->getUID();
+                } else {
+                    $selfData['owner'] = null;
+                }
             }
 
             // Set organization using optimized OrganisationService method if not provided.
@@ -249,7 +261,7 @@ class TransformationHandler
                         'relationCount' => count($selfData['relations']),
                     ]
                 );
-            } elseif (($schemaCache[$selfData['schema']] ?? null) !== null) {
+            } else if (($schemaCache[$selfData['schema']] ?? null) !== null) {
                 $schema    = $schemaCache[$selfData['schema']];
                 $relations = $this->relCascadeHandler->scanForRelations(
                     data: $businessData,
@@ -268,7 +280,7 @@ class TransformationHandler
                         'relations'     => array_slice($relations, 0, 3, true),
                     ]
                 );
-            }
+            }//end if
 
             // Store the clean business data in the database object column.
             $selfData['object'] = $businessData;

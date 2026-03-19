@@ -357,7 +357,11 @@ class ObjectService
                 if ($folderNode !== null) {
                     // Update the entity with the folder ID.
                     $folderIdValue = $folderNode->getId();
-                    $entity->setFolder($folderIdValue !== null ? (string) $folderIdValue : null);
+                    if ($folderIdValue !== null) {
+                        $entity->setFolder((string) $folderIdValue);
+                    } else {
+                        $entity->setFolder(null);
+                    }
 
                     // Save the entity with the new folder ID.
                     $this->objectMapper->update($entity);
@@ -411,9 +415,9 @@ class ObjectService
                         _multitenancy: false
                     );
                 }
-            }
+            }//end if
 
-            if (is_numeric($register) !== true) {
+            if (is_numeric($register) !== true && ($register instanceof Register) === false) {
                 // It's a slug string - find() already supports slugs via orX(id, uuid, slug).
                 $register = $this->registerMapper->find(
                     id: $register,
@@ -469,9 +473,9 @@ class ObjectService
                             _multitenancy: false
                         );
                     }
-                }
+                }//end if
 
-                if (is_numeric($schema) !== true) {
+                if (is_numeric($schema) !== true && ($schema instanceof Schema) === false) {
                     // It's a slug string - find() supports slugs via orX(id, uuid, slug).
                     $schema = $this->schemaMapper->find(
                         id: $schema,
@@ -515,13 +519,15 @@ class ObjectService
             // (routes to magic tables for better performance).
             // Fall back to MagicMapper without register/schema context.
             $hasContext = $this->currentRegister !== null && $this->currentSchema !== null;
-            $object = $hasContext === true
-                ? $this->objectMapper->find(
+            if ($hasContext === true) {
+                $object = $this->objectMapper->find(
                     identifier: $object,
                     register: $this->currentRegister,
                     schema: $this->currentSchema
-                )
-                : $this->objectMapper->find($object);
+                );
+            } else {
+                $object = $this->objectMapper->find($object);
+            }
         }
 
         $this->currentObject = $object;
@@ -1859,26 +1865,18 @@ class ObjectService
             $query = $this->applyViewsToQuery(query: $query, viewIds: $views);
         }
 
-        // IDs and uses are passed as proper parameters, not added to query.
-        $requestedSource = $query['_source'] ?? null;
+        // Strip deprecated _source parameter (silently ignore for backward compatibility).
+        unset($query['_source']);
 
-        // Simple switch: Use SOLR if explicitly requested OR if SOLR is enabled in config.
-        // BUT force database when ids or uses parameters are provided (relation-based searches).
-        $hasIds          = isset($query['_ids']) === true;
-        $hasUses         = isset($query['_uses']) === true;
-        $hasIdsParam     = $ids !== null;
-        $hasUsesParam    = $uses !== null;
-        $isSolrRequested = ($requestedSource === 'index' || $requestedSource === 'solr');
-        $isSolrEnabled   = $this->isSolrAvailable() === true;
-        $isNotDatabase   = $requestedSource !== 'database';
-        if ((            $isSolrRequested === true
+        // Use SOLR if enabled in config, unless relation-based search params are provided.
+        $hasIds        = isset($query['_ids']) === true;
+        $hasUses       = isset($query['_uses']) === true;
+        $hasIdsParam   = $ids !== null;
+        $hasUsesParam  = $uses !== null;
+        $isSolrEnabled = $this->isSolrAvailable() === true;
+        if ($isSolrEnabled === true
             && $hasIdsParam === false && $hasUsesParam === false
-            && $hasIds === false && $hasUses === false)
-            || (            $requestedSource === null
-            && $isSolrEnabled === true
-            && $isNotDatabase === true
-            && $hasIdsParam === false && $hasUsesParam === false
-            && $hasIds === false && $hasUses === false)
+            && $hasIds === false && $hasUses === false
         ) {
             // Forward to Index service - let it handle availability checks and error handling.
             $indexService = $this->container->get(IndexService::class);
@@ -1934,10 +1932,10 @@ class ObjectService
             return $result;
         }//end if
 
-        // Bypass multitenancy for schemas with public read access (unless _source=database is explicitly set).
+        // Bypass multitenancy for schemas with public read access.
         // Public schemas should be visible to all users regardless of organisation.
         $effectiveMt = $_multitenancy;
-        if ($_multitenancy === true && $requestedSource !== 'database' && $this->currentSchema !== null) {
+        if ($_multitenancy === true && $this->currentSchema !== null) {
             $schemaAuth = $this->currentSchema->getAuthorization();
             $readGroups = $schemaAuth['read'] ?? [];
             if (in_array('public', $readGroups, true) === true) {
