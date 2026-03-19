@@ -126,39 +126,63 @@ import { auditTrailStore, navigationStore, registerStore, schemaStore } from '..
 			</template>
 
 			<!-- Statistics Section -->
-			<div class="statsSection">
-				<h3>{{ t('openregister', 'Audit Trail Statistics') }}</h3>
-				<div class="statCard">
-					<div class="statNumber">
-						{{ totalAuditTrails }}
-					</div>
-					<div class="statLabel">
-						{{ t('openregister', 'Total Audit Trails') }}
-					</div>
+			<div class="section">
+				<div class="sectionTitle">
+					{{ t('openregister', 'Audit Trail Statistics') }}
 				</div>
-				<div class="statCard">
-					<div class="statNumber">
-						{{ createCount }}
-					</div>
-					<div class="statLabel">
-						{{ t('openregister', 'Create Operations') }}
-					</div>
-				</div>
-				<div class="statCard">
-					<div class="statNumber">
-						{{ updateCount }}
-					</div>
-					<div class="statLabel">
-						{{ t('openregister', 'Update Operations') }}
-					</div>
-				</div>
-				<div class="statCard">
-					<div class="statNumber">
-						{{ deleteCount }}
-					</div>
-					<div class="statLabel">
-						{{ t('openregister', 'Delete Operations') }}
-					</div>
+				<div class="statsStack">
+					<CnStatsBlock
+						:title="t('openregister', 'Total Audit Trails')"
+						:count="totalAuditTrails"
+						:count-label="t('openregister', 'entries')"
+						variant="primary"
+						horizontal
+						show-zero-count>
+						<template #icon>
+							<TextBoxOutline :size="24" />
+						</template>
+					</CnStatsBlock>
+					<CnKpiGrid :columns="2">
+						<CnStatsBlock
+							:title="t('openregister', 'Create')"
+							:count="createCount"
+							:count-label="t('openregister', 'operations')"
+							variant="success"
+							show-zero-count>
+							<template #icon>
+								<Plus :size="24" />
+							</template>
+						</CnStatsBlock>
+						<CnStatsBlock
+							:title="t('openregister', 'Update')"
+							:count="updateCount"
+							:count-label="t('openregister', 'operations')"
+							variant="warning"
+							show-zero-count>
+							<template #icon>
+								<Pencil :size="24" />
+							</template>
+						</CnStatsBlock>
+						<CnStatsBlock
+							:title="t('openregister', 'Delete')"
+							:count="deleteCount"
+							:count-label="t('openregister', 'operations')"
+							variant="error"
+							show-zero-count>
+							<template #icon>
+								<Delete :size="24" />
+							</template>
+						</CnStatsBlock>
+						<CnStatsBlock
+							:title="t('openregister', 'Read')"
+							:count="readCount"
+							:count-label="t('openregister', 'operations')"
+							show-zero-count>
+							<template #icon>
+								<Eye :size="24" />
+							</template>
+						</CnStatsBlock>
+					</CnKpiGrid>
 				</div>
 			</div>
 
@@ -212,12 +236,15 @@ import {
 	NcTextField,
 	NcCheckboxRadioSwitch,
 } from '@nextcloud/vue'
+import { CnStatsBlock, CnKpiGrid } from '@conduction/nextcloud-vue'
 import FilterOutline from 'vue-material-design-icons/FilterOutline.vue'
 import ChartLine from 'vue-material-design-icons/ChartLine.vue'
 import CogOutline from 'vue-material-design-icons/CogOutline.vue'
 import Plus from 'vue-material-design-icons/Plus.vue'
 import Pencil from 'vue-material-design-icons/Pencil.vue'
+import Delete from 'vue-material-design-icons/Delete.vue'
 import Eye from 'vue-material-design-icons/Eye.vue'
+import TextBoxOutline from 'vue-material-design-icons/TextBoxOutline.vue'
 import FilterOffOutline from 'vue-material-design-icons/FilterOffOutline.vue'
 
 export default {
@@ -232,12 +259,16 @@ export default {
 		NcDateTimePickerNative,
 		NcTextField,
 		NcCheckboxRadioSwitch,
+		CnStatsBlock,
+		CnKpiGrid,
 		FilterOutline,
 		ChartLine,
 		CogOutline,
 		Plus,
 		Pencil,
+		Delete,
 		Eye,
+		TextBoxOutline,
 		FilterOffOutline,
 	},
 	data() {
@@ -273,6 +304,7 @@ export default {
 			createCount: 0,
 			updateCount: 0,
 			deleteCount: 0,
+			readCount: 0,
 			actionDistribution: [],
 			topObjects: [],
 			filterTimeout: null,
@@ -474,6 +506,7 @@ export default {
 				this.createCount = stats.create || 0
 				this.updateCount = stats.update || 0
 				this.deleteCount = stats.delete || 0
+				this.readCount = stats.read || 0
 			} catch (error) {
 				// Handle error silently
 			}
@@ -706,19 +739,40 @@ export default {
 </script>
 
 <style scoped>
-.filterSection,
-.statsSection {
+.section {
+	padding: 12px 0;
+	border-bottom: 1px solid var(--color-border);
+
+	&:last-child {
+		border-bottom: none;
+	}
+}
+
+.sectionTitle {
+	color: var(--color-text-maxcontrast);
+	font-size: 14px;
+	font-weight: bold;
+	padding: 0 16px;
+	margin: 0 0 12px 0;
+}
+
+.statsStack {
+	display: flex;
+	flex-direction: column;
+	gap: 12px;
+	padding: 0 8px;
+}
+
+.filterSection {
 	padding: 12px 0;
 	border-bottom: 1px solid var(--color-border);
 }
 
-.filterSection:last-child,
-.statsSection:last-child {
+.filterSection:last-child {
 	border-bottom: none;
 }
 
-.filterSection h3,
-.statsSection h3 {
+.filterSection h3 {
 	color: var(--color-text-maxcontrast);
 	font-size: 14px;
 	font-weight: bold;
@@ -744,66 +798,8 @@ export default {
 	margin-bottom: 12px;
 }
 
-.actionOption {
-	display: flex;
-	align-items: center;
-	gap: 8px;
-}
-
-.actionOption.action-create {
-	color: var(--color-success);
-}
-
-.actionOption.action-update {
-	color: var(--color-warning);
-}
-
-.actionOption.action-delete {
-	color: var(--color-error);
-}
-
-.actionOption.action-read {
-	color: var(--color-info);
-}
-
 .filter-hint {
 	margin: 8px 16px;
-}
-
-.statsSection {
-	padding: 16px;
-}
-
-.statCard {
-	background: var(--color-background-hover);
-	border-radius: var(--border-radius);
-	padding: 16px;
-	margin-bottom: 12px;
-	text-align: center;
-}
-
-.statCard.create {
-	border-left: 4px solid var(--color-success);
-}
-
-.statCard.update {
-	border-left: 4px solid var(--color-warning);
-}
-
-.statCard.delete {
-	border-left: 4px solid var(--color-error);
-}
-
-.statNumber {
-	font-size: 2rem;
-	font-weight: bold;
-	color: var(--color-primary);
-	margin-bottom: 4px;
-}
-
-.statLabel {
-	font-size: 0.9rem;
-	color: var(--color-text-maxcontrast);
 }
 
 .actionDistribution,
@@ -817,66 +813,6 @@ export default {
 	font-size: 1rem;
 	font-weight: 500;
 	color: var(--color-main-text);
-}
-
-.actionBar {
-	margin-bottom: 12px;
-}
-
-.actionLabel {
-	display: flex;
-	justify-content: space-between;
-	align-items: center;
-	margin-bottom: 4px;
-	font-size: 0.9rem;
-}
-
-.actionLabel .action-create {
-	color: var(--color-success);
-	font-weight: bold;
-}
-
-.actionLabel .action-update {
-	color: var(--color-warning);
-	font-weight: bold;
-}
-
-.actionLabel .action-delete {
-	color: var(--color-error);
-	font-weight: bold;
-}
-
-.actionLabel .action-read {
-	color: var(--color-info);
-	font-weight: bold;
-}
-
-.actionProgress {
-	background: var(--color-background-darker);
-	border-radius: 4px;
-	height: 8px;
-	overflow: hidden;
-}
-
-.actionProgressBar {
-	height: 100%;
-	transition: width 0.3s ease;
-}
-
-.actionProgressBar.action-create {
-	background: var(--color-success);
-}
-
-.actionProgressBar.action-update {
-	background: var(--color-warning);
-}
-
-.actionProgressBar.action-delete {
-	background: var(--color-error);
-}
-
-.actionProgressBar.action-read {
-	background: var(--color-info);
 }
 
 /* Add some spacing between select inputs */
