@@ -40,7 +40,6 @@ use Psr\Log\LoggerInterface;
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
  * @SuppressWarnings(PHPMD.ExcessiveClassComplexity) Complex RAG context retrieval with multiple search strategies
- * @SuppressWarnings(PHPMD.ElseExpression)
  */
 class ContextRetrievalHandler
 {

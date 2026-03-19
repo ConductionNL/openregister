@@ -272,7 +272,7 @@ class CacheSettingsHandler
       *
       * @return float Hit rate percentage
       *
-      * @SuppressWarnings(PHPMD.ElseExpression) Else clause improves readability of simple ratio calculation
+      * Else clause improves readability of simple ratio calculation
       */
     private function calculateHitRate(array $stats): float
     {
@@ -631,7 +631,7 @@ class CacheSettingsHandler
       * @return array Result with service, cleared count, success, and before/after stats.
       *
       * @SuppressWarnings                       (PHPMD.UnusedFormalParameter)
-      * @SuppressWarnings(PHPMD.ElseExpression) Conditional handling of optional array keys requires if-else structure
+      * Conditional handling of optional array keys requires if-else structure
       */
     private function clearSchemaCache(?string $_userId=null): array
     {

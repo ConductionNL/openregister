@@ -49,7 +49,6 @@ use OCP\IRequest;
  * @SuppressWarnings(PHPMD.CyclomaticComplexity)
  * @SuppressWarnings(PHPMD.NPathComplexity)
  * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
- * @SuppressWarnings(PHPMD.ElseExpression)
  */
 class FileExtractionController extends Controller
 {
@@ -110,22 +109,20 @@ class FileExtractionController extends Controller
                 );
             }
 
+            $searchTerm = null;
             if ($search !== null && $search !== '') {
                 $searchTerm = $search;
-            } else {
-                $searchTerm = null;
             }
 
             // For riskLevel/entityCount sorting, fetch all then sort in PHP.
             $phpSort = in_array($sort, ['riskLevel', 'entityCount'], true);
+            $dbLimit  = $limit;
+            $dbOffset = $offset;
+            $dbSort   = $sort;
             if ($phpSort === true) {
                 $dbLimit  = null;
                 $dbOffset = null;
                 $dbSort   = 'extractedAt';
-            } else {
-                $dbLimit  = $limit;
-                $dbOffset = $offset;
-                $dbSort   = $sort;
             }
 
             $summaries  = $this->chunkMapper->getFileSourceSummaries($dbLimit, $dbOffset, $searchTerm, $dbSort, $order);
@@ -162,10 +159,9 @@ class FileExtractionController extends Controller
                 usort(
                         $data,
                         function ($a, $b) use ($sort, $order, $riskOrder) {
+                            $cmp = ($a[$sort] ?? 0) <=> ($b[$sort] ?? 0);
                             if ($sort === 'riskLevel') {
                                 $cmp = ($riskOrder[$a['riskLevel']] ?? 0) <=> ($riskOrder[$b['riskLevel']] ?? 0);
-                            } else {
-                                $cmp = ($a[$sort] ?? 0) <=> ($b[$sort] ?? 0);
                             }
 
                             if ($order === 'ASC') {

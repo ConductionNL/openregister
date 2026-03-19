@@ -35,8 +35,6 @@ use OCP\IDBConnection;
  * @method list<Chunk> findEntities(IQueryBuilder $query)
  *
  * @template-extends QBMapper<Chunk>
- *
- * @SuppressWarnings(PHPMD.ElseExpression)
  */
 class ChunkMapper extends QBMapper
 {
@@ -290,10 +288,9 @@ class ChunkMapper extends QBMapper
         ];
 
         $sqlSort = $sortMap[$sort] ?? 'last_extracted';
+        $sqlOrder = 'DESC';
         if (strtoupper($order) === 'ASC') {
             $sqlOrder = 'ASC';
-        } else {
-            $sqlOrder = 'DESC';
         }
 
         $qb = $this->db->getQueryBuilder();

@@ -979,7 +979,6 @@ class ConfigurationSettingsHandler
      *     Backward compatibility requires multiple field existence checks
      * @SuppressWarnings(PHPMD.NPathComplexity)
      *     Default configuration structure requires comprehensive initialization
-     * @SuppressWarnings(PHPMD.ElseExpression)
      *     Nested else branches handle optional vector config backward compatibility
      */
     public function getLLMSettingsOnly(): array

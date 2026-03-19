@@ -166,7 +166,6 @@ class MappingService
      *
      * @throws Exception When mapping fails
      *
-     * @SuppressWarnings(PHPMD.ElseExpression)
      */
     public function executeMapping(Mapping $mapping, array $input, bool $list=false): array
     {
@@ -305,7 +304,6 @@ class MappingService
      *
      * @return void
      *
-     * @SuppressWarnings(PHPMD.ElseExpression)
      */
     private function handleCast(Dot $dotArray, string $key, string $cast): void
     {

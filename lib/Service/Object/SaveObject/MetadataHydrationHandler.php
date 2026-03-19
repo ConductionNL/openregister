@@ -52,7 +52,6 @@ use Psr\Log\LoggerInterface;
  * Reason: Metadata hydration handles multiple complex scenarios for template processing
  * @SuppressWarnings(PHPMD.CyclomaticComplexity)
  * @SuppressWarnings(PHPMD.NPathComplexity)
- * @SuppressWarnings(PHPMD.ElseExpression)
  */
 class MetadataHydrationHandler
 {

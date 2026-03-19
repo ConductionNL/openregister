@@ -82,7 +82,7 @@ class TransformationHandler
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)  Complex transformation with multiple field validations
      * @SuppressWarnings(PHPMD.NPathComplexity)       Many code paths for different object structures and metadata
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Method handles complete transformation workflow
-     * @SuppressWarnings(PHPMD.ElseExpression)        Else branches handle different object structures and fallbacks
+     * Else branches handle different object structures and fallbacks
      */
     public function transformObjectsToDatabaseFormatInPlace(array &$objects, array $schemaCache): array
     {

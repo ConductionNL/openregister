@@ -32,7 +32,6 @@ use OCP\IDBConnection;
  *
  * @SuppressWarnings(PHPMD.ExcessiveClassLength)
  * @SuppressWarnings(PHPMD.ExcessiveClassComplexity)
- * @SuppressWarnings(PHPMD.ElseExpression)
  * @SuppressWarnings(PHPMD.StaticAccess)
  */
 class MariaDbFacetHandler

@@ -221,7 +221,7 @@ class WebhookService
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)  Complex delivery with retry and error handling
      * @SuppressWarnings(PHPMD.NPathComplexity)       Multiple exception handling paths
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Comprehensive webhook delivery with logging
-     * @SuppressWarnings(PHPMD.ElseExpression)        Fallback for connection errors without response
+     * Fallback for connection errors without response
      */
     public function deliverWebhook(Webhook $webhook, string $eventName, array $payload, int $attempt=1): bool
     {
@@ -623,7 +623,7 @@ class WebhookService
      *
      * @psalm-return array{status_code: int, body: string}
      *
-     * @SuppressWarnings(PHPMD.ElseExpression) Different handling for GET vs POST/PUT/PATCH/DELETE methods
+     * Different handling for GET vs POST/PUT/PATCH/DELETE methods
      */
     private function sendRequest(Webhook $webhook, array $payload): array
     {
@@ -778,7 +778,7 @@ class WebhookService
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Complex request interception logic
      * @SuppressWarnings(PHPMD.NPathComplexity)      Multiple webhook processing paths
-     * @SuppressWarnings(PHPMD.ElseExpression)       Fallback when formatter is unavailable
+     * Fallback when formatter is unavailable
      */
     public function interceptRequest(IRequest $request, string $eventType): array
     {

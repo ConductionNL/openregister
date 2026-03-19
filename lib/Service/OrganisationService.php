@@ -302,7 +302,7 @@ class OrganisationService
      * @return Organisation The default organisation
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)  Default org logic requires many fallback and validation branches
-     * @SuppressWarnings(PHPMD.ElseExpression)        Else clause needed for clear fallback logic when no UUID in settings
+     * Else clause needed for clear fallback logic when no UUID in settings
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Default org logic requires comprehensive fallback chain
      */
     private function fetchDefaultOrganisationFromDatabase(): Organisation
@@ -1099,7 +1099,7 @@ class OrganisationService
      * @return Organisation|null The active organisation or null
      *
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Active org logic requires comprehensive fallback chain
-     * @SuppressWarnings(PHPMD.ElseExpression)        Else clause needed for clear invalid access handling
+     * Else clause needed for clear invalid access handling
      */
     private function fetchActiveOrganisationFromDatabase(string $userId, ?array $preloadedOrgs=null): ?Organisation
     {

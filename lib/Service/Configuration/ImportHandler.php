@@ -64,7 +64,6 @@ use Symfony\Component\Yaml\Yaml;
  * @SuppressWarnings(PHPMD.UnusedPrivateField)
  * Reason: Configuration import requires comprehensive dependencies and complex validation logic.
  *         Reserved fields for future features.
- * @SuppressWarnings(PHPMD.ElseExpression)
  * @SuppressWarnings(PHPMD.StaticAccess)
  * @SuppressWarnings(PHPMD.UnusedFormalParameter)
  */

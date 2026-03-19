@@ -36,7 +36,6 @@ use Symfony\Component\Console\Output\OutputInterface;
  * @SuppressWarnings(PHPMD.CyclomaticComplexity)
  * @SuppressWarnings(PHPMD.NPathComplexity)
  * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
- * @SuppressWarnings(PHPMD.ElseExpression)
  */
 class MigrateStorageCommand extends Command
 {
@@ -170,10 +169,9 @@ class MigrateStorageCommand extends Command
         $output->writeln('<info>Storage Status:</info>');
         $output->writeln('  Blob storage:  <comment>'.$status['blobStorage']['count'].' objects</comment>');
         $magicExists = $status['magicTable']['exists'];
+        $magicInfo = 'does not exist';
         if ($magicExists === true) {
             $magicInfo = $status['magicTable']['count'].' objects';
-        } else {
-            $magicInfo = 'does not exist';
         }
 
         $output->writeln('  Magic table:   <comment>'.$magicInfo.'</comment>');
@@ -184,10 +182,9 @@ class MigrateStorageCommand extends Command
         }
 
         // Run migration.
+        $directionLabel = 'magic table -> blob';
         if ($direction === 'to-magic') {
             $directionLabel = 'blob -> magic table';
-        } else {
-            $directionLabel = 'magic table -> blob';
         }
 
         $output->writeln('<info>Migrating: '.$directionLabel.'</info>');
@@ -200,15 +197,14 @@ class MigrateStorageCommand extends Command
         $output->writeln('');
 
         try {
+            $report = $this->migrationService->migrateToBlobStorage(
+                register: $register,
+                schema: $schema,
+                batchSize: $batchSize,
+                dryRun: $dryRun
+            );
             if ($direction === 'to-magic') {
                 $report = $this->migrationService->migrateToMagicTable(
-                    register: $register,
-                    schema: $schema,
-                    batchSize: $batchSize,
-                    dryRun: $dryRun
-                );
-            } else {
-                $report = $this->migrationService->migrateToBlobStorage(
                     register: $register,
                     schema: $schema,
                     batchSize: $batchSize,

@@ -34,7 +34,6 @@ use OCP\IRequest;
  *
  * @SuppressWarnings(PHPMD.CyclomaticComplexity)
  * @SuppressWarnings(PHPMD.NPathComplexity)
- * @SuppressWarnings(PHPMD.ElseExpression)
  */
 class GraphQLSubscriptionController extends Controller
 {
@@ -83,10 +82,9 @@ class GraphQLSubscriptionController extends Controller
             $registerId = (int) $registerId;
         }
 
+        $lastEventId = null;
         if (empty($lastId) === false) {
             $lastEventId = $lastId;
-        } else {
-            $lastEventId = null;
         }
 
         // Set SSE headers.
@@ -119,10 +117,9 @@ class GraphQLSubscriptionController extends Controller
         $startTime    = time();
         $maxDuration  = 30;
         $pollInterval = 1;
+        $currentLastId = $lastEventId;
         if (empty($events) === false) {
             $currentLastId = end($events)['id'];
-        } else {
-            $currentLastId = $lastEventId;
         }
 
         while ((time() - $startTime) < $maxDuration) {

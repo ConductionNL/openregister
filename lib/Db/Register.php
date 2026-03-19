@@ -76,7 +76,6 @@ use OCP\AppFramework\Db\Entity;
  * @psalm-suppress PropertyNotSetInConstructor $id is set by Nextcloud's Entity base class
  *
  * @SuppressWarnings(PHPMD.CyclomaticComplexity)
- * @SuppressWarnings(PHPMD.ElseExpression)
  */
 class Register extends Entity implements JsonSerializable
 {
@@ -753,11 +752,10 @@ class Register extends Entity implements JsonSerializable
         if (is_string($configuration) === true) {
             try {
                 $decoded = json_decode($configuration, true);
+                // Invalid JSON, set to null.
+                $this->configuration = null;
                 if (json_last_error() === JSON_ERROR_NONE && is_array($decoded) === true) {
                     $this->configuration = $decoded;
-                } else {
-                    // Invalid JSON, set to null.
-                    $this->configuration = null;
                 }
             } catch (Exception $e) {
                 // If decoding fails, set to null.

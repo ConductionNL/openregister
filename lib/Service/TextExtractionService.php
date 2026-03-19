@@ -887,7 +887,7 @@ class TextExtractionService
      *
      * @throws Exception If file cannot be read
      *
-     * @SuppressWarnings(PHPMD.ElseExpression) Else needed for multi-format extraction branching
+     * Else needed for multi-format extraction branching
      */
     private function performTextExtraction(int $fileId, array $ncFile): ?string
     {
@@ -1870,7 +1870,7 @@ class TextExtractionService
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)  Complex recursive splitting with multiple separator fallbacks
      * @SuppressWarnings(PHPMD.NPathComplexity)       Complex recursive splitting with multiple separator fallbacks
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Comprehensive recursive text splitting logic
-     * @SuppressWarnings(PHPMD.ElseExpression)        Else needed for chunking decision paths
+     * Else needed for chunking decision paths
      */
     private function recursiveSplit(string $text, array $separators, int $chunkSize, int $chunkOverlap): array
     {
@@ -2037,7 +2037,7 @@ class TextExtractionService
      *
      * @return float Average chunk size in characters
      *
-     * @SuppressWarnings(PHPMD.ElseExpression) Else needed for chunk type detection
+     * Else needed for chunk type detection
      */
     private function calculateAvgChunkSize(array $chunks): float
     {

@@ -287,7 +287,7 @@ class ObjectHandler implements TextExtractionHandlerInterface
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Recursive extraction requires multiple type checks
      * @SuppressWarnings(PHPMD.NPathComplexity)      Multiple value type handling paths
-     * @SuppressWarnings(PHPMD.ElseExpression)       Multiple conditions for different type handling
+     * Multiple conditions for different type handling
      */
     private function extractTextFromArray(array $data, string $prefix='', int $depth=0): string
     {

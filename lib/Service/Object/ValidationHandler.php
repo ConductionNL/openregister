@@ -45,7 +45,6 @@ use Exception;
  *
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)   Validation requires multiple exception and entity dependencies
  * @SuppressWarnings(PHPMD.ExcessiveClassComplexity) Validation orchestration requires multiple validation strategy methods
- * @SuppressWarnings(PHPMD.ElseExpression)
  * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
  * @SuppressWarnings(PHPMD.UnusedFormalParameter)
  */
@@ -748,7 +747,6 @@ class ValidationHandler
      *     id: int, name: null|string, uuid: null|string}>, schema_id: int}
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Comprehensive validation with detailed error extraction
-     * @SuppressWarnings(PHPMD.ElseExpression)       Different error extraction paths for validation and generic exceptions
      */
     public function validateSchemaObjects(int $schemaId, callable $saveCallback): array
     {

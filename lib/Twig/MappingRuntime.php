@@ -110,7 +110,6 @@ class MappingRuntime implements RuntimeExtensionInterface
      *
      * @return array The mapped output
      *
-     * @SuppressWarnings(PHPMD.ElseExpression)
      */
     public function executeMapping(Mapping|array|string|int $mapping, array $input, bool $list=false): array
     {

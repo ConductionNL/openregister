@@ -277,7 +277,6 @@ class SolrSettingsHandler
      *     Multiple metric calculations require conditional handling
      * @SuppressWarnings(PHPMD.NPathComplexity)
      *     Statistics calculations depend on multiple optional values
-     * @SuppressWarnings(PHPMD.ElseExpression)
      *     Multiple conditional branches for calculating performance metrics require else clauses
      */
     private function transformSolrStatsToDashboard(array $rawStats): array

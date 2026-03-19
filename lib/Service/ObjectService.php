@@ -154,7 +154,6 @@ use function React\Promise\all;
  * @SuppressWarnings(PHPMD.ExcessivePublicCount)     Public API requires many entry points
  * @SuppressWarnings(PHPMD.BooleanArgumentFlag)      Boolean flags for RBAC and multitenancy
  * @SuppressWarnings(PHPMD.CyclomaticComplexity)
- * @SuppressWarnings(PHPMD.ElseExpression)
  * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
  * @SuppressWarnings(PHPMD.UnusedFormalParameter)
  */
@@ -344,7 +343,6 @@ class ObjectService
      * @psalm-return   void
      * @phpstan-return void
      *
-     * @SuppressWarnings(PHPMD.ElseExpression) Else needed for null vs ID folder handling
      */
     public function ensureObjectFolderExists(ObjectEntity $entity): void
     {
@@ -383,7 +381,6 @@ class ObjectService
      *
      * @return static Returns self for method chaining
      *
-     * @SuppressWarnings(PHPMD.ElseExpression) Else needed for numeric vs slug lookup paths
      */
     public function setRegister(Register | string | int $register): static
     {
@@ -440,7 +437,6 @@ class ObjectService
      *
      * @return static Returns self for method chaining
      *
-     * @SuppressWarnings(PHPMD.ElseExpression) Else needed for numeric vs slug lookup paths
      */
     public function setSchema(Schema | string | int $schema): static
     {
@@ -1475,7 +1471,6 @@ class ObjectService
          *
          * @return string|null The active organization UUID or null if none found
          *
-         * @SuppressWarnings(PHPMD.ElseExpression) Else needed for null organization handling
          */
     private function getActiveOrganisationForContext(): ?string
     {

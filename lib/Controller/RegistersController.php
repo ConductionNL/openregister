@@ -75,7 +75,6 @@ use Symfony\Component\Uid\Uuid;
  * @suppressWarnings(PHPMD.ExcessiveClassComplexity)
  * @suppressWarnings(PHPMD.TooManyPublicMethods)
  * @suppressWarnings(PHPMD.CouplingBetweenObjects)
- * @SuppressWarnings(PHPMD.ElseExpression)
  * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
  */
 class RegistersController extends Controller
@@ -316,16 +315,24 @@ class RegistersController extends Controller
                         // Add stats to each expanded schema.
                         foreach ($register['schemas'] as &$schema) {
                             $schemaId = $schema['id'] ?? null;
+                            $hasCount = 'no';
                             if (isset($schemaCounts[$schemaId]) === true) {
                                 $hasCount = 'yes';
-                            } else {
-                                $hasCount = 'no';
                             }
 
                             $this->logger->debug(
                                 message: "[RegistersController] Processing schema {$schemaId},".' has count: '.$hasCount,
                                 context: ['file' => __FILE__, 'line' => __LINE__]
                             );
+                            // Default: no objects found for this schema.
+                            $schema['stats'] = [
+                                'objects' => ['total' => 0],
+                            ];
+                            $this->logger->debug(
+                                message: "[RegistersController] No count for schema {$schemaId}, set to 0",
+                                context: ['file' => __FILE__, 'line' => __LINE__]
+                            );
+
                             if ($schemaId !== null && isset($schemaCounts[$schemaId]) === true) {
                                 $schema['stats'] = [
                                     'objects' => $schemaCounts[$schemaId],
@@ -334,15 +341,6 @@ class RegistersController extends Controller
                                 $msg = "[RegistersController] Set stats for schema {$schemaId}: {$statsJson}";
                                 $this->logger->debug(
                                     message: $msg,
-                                    context: ['file' => __FILE__, 'line' => __LINE__]
-                                );
-                            } else {
-                                // No objects found for this schema.
-                                $schema['stats'] = [
-                                    'objects' => ['total' => 0],
-                                ];
-                                $this->logger->debug(
-                                    message: "[RegistersController] No count for schema {$schemaId}, set to 0",
                                     context: ['file' => __FILE__, 'line' => __LINE__]
                                 );
                             }

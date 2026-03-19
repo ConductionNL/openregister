@@ -62,7 +62,7 @@ use Symfony\Component\Uid\Uuid;
  * @template-extends QBMapper<Mapping>
  *
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
- * @SuppressWarnings(PHPMD.ElseExpression)         Else clauses improve readability in find and update methods
+ * Else clauses improve readability in find and update methods
  */
 class MappingMapper extends QBMapper
 {

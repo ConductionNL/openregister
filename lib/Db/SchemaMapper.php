@@ -77,7 +77,6 @@ use OCA\OpenRegister\Service\Schemas\PropertyValidatorHandler;
  * @SuppressWarnings(PHPMD.ExcessiveClassComplexity)
  * @SuppressWarnings(PHPMD.TooManyMethods)           Many methods required for schema management and analysis
  * @SuppressWarnings(PHPMD.TooManyPublicMethods)
- * @SuppressWarnings(PHPMD.ElseExpression)
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
  * @SuppressWarnings(PHPMD.CyclomaticComplexity)
  * @SuppressWarnings(PHPMD.NPathComplexity)
@@ -225,17 +224,8 @@ class SchemaMapper extends QBMapper
         bool $_multitenancy=true
     ): Schema {
         // Check request-scoped cache to avoid redundant DB queries for the same schema.
-        if ($_rbac === true) {
-            $rbacFlag = '1';
-        } else {
-            $rbacFlag = '0';
-        }
-
-        if ($_multitenancy === true) {
-            $mtFlag = '1';
-        } else {
-            $mtFlag = '0';
-        }
+        $rbacFlag = $_rbac === true ? '1' : '0';
+        $mtFlag   = $_multitenancy === true ? '1' : '0';
 
         $cacheKey = strtolower((string) $id).':'.$rbacFlag.':'.$mtFlag;
         if (isset($this->findCache[$cacheKey]) === true) {
@@ -256,28 +246,22 @@ class SchemaMapper extends QBMapper
         // Note: Only include id comparison if $id is actually numeric (PostgreSQL strict typing).
         // Slug comparison is case-insensitive using LOWER() function.
         $lowerId = strtolower((string) $id);
+        // Default: match by uuid or slug only.
+        $orConditions = $qb->expr()->orX(
+            $qb->expr()->eq('uuid', $qb->createNamedParameter(value: $id, type: IQueryBuilder::PARAM_STR)),
+            $qb->expr()->eq(
+                $qb->func()->lower('slug'),
+                $qb->createNamedParameter(value: $lowerId, type: IQueryBuilder::PARAM_STR)
+            )
+        );
+
         if (is_numeric($id) === true) {
-            $qb->where(
-                $qb->expr()->orX(
-                    $qb->expr()->eq('id', $qb->createNamedParameter(value: (int) $id, type: IQueryBuilder::PARAM_INT)),
-                    $qb->expr()->eq('uuid', $qb->createNamedParameter(value: $id, type: IQueryBuilder::PARAM_STR)),
-                    $qb->expr()->eq(
-                        $qb->func()->lower('slug'),
-                        $qb->createNamedParameter(value: $lowerId, type: IQueryBuilder::PARAM_STR)
-                    )
-                )
+            $orConditions->add(
+                $qb->expr()->eq('id', $qb->createNamedParameter(value: (int) $id, type: IQueryBuilder::PARAM_INT))
             );
-        } else {
-            $qb->where(
-                $qb->expr()->orX(
-                    $qb->expr()->eq('uuid', $qb->createNamedParameter(value: $id, type: IQueryBuilder::PARAM_STR)),
-                    $qb->expr()->eq(
-                        $qb->func()->lower('slug'),
-                        $qb->createNamedParameter(value: $lowerId, type: IQueryBuilder::PARAM_STR)
-                    )
-                )
-            );
-        }//end if
+        }
+
+        $qb->where($orConditions);
 
         // Apply organisation filter with published entity bypass support
         // Published schemas can bypass multi-tenancy restrictions if configured
@@ -312,17 +296,8 @@ class SchemaMapper extends QBMapper
         $schema = $this->resolveSchemaExtension(schema: $schema);
 
         // Cache by all possible identifiers to handle lookups by id, uuid, or slug.
-        if ($_rbac === true) {
-            $rbacChar = '1';
-        } else {
-            $rbacChar = '0';
-        }
-
-        if ($_multitenancy === true) {
-            $mtChar = '1';
-        } else {
-            $mtChar = '0';
-        }
+        $rbacChar = $_rbac === true ? '1' : '0';
+        $mtChar   = $_multitenancy === true ? '1' : '0';
 
         $rbacSuffix = ':'.$rbacChar.':'.$mtChar;
         $this->findCache[$cacheKey] = $schema;
@@ -1194,7 +1169,9 @@ class SchemaMapper extends QBMapper
             $targetSchemaId   = (string) $targetSchema->getId();
             $targetSchemaUuid = $targetSchema->getUuid();
             $targetSchemaSlug = $targetSchema->getSlug();
-        } else {
+        }
+
+        if ($schema instanceof Schema === true) {
             $targetSchemaId   = (string) $schema->getId();
             $targetSchemaUuid = $schema->getUuid();
             $targetSchemaSlug = $schema->getSlug();
@@ -1667,10 +1644,9 @@ class SchemaMapper extends QBMapper
             unset($propDef);
             $isNative = isset($nativeProperties[$propName]);
 
+            $source = 'inherited';
             if ($isNative === true) {
                 $source = 'native';
-            } else {
-                $source = 'inherited';
             }
 
             $inheritedFrom = null;
@@ -2762,11 +2738,11 @@ class SchemaMapper extends QBMapper
     public function findExtendedBy(int|string $schemaIdentifier, ?string $knownUuid=null, ?string $knownSlug=null): array
     {
         // Use pre-known values when available to avoid a redundant find() query per schema.
-        if ($knownUuid !== null || $knownSlug !== null) {
-            $targetId   = (string) $schemaIdentifier;
-            $targetUuid = $knownUuid;
-            $targetSlug = $knownSlug;
-        } else {
+        $targetId   = (string) $schemaIdentifier;
+        $targetUuid = $knownUuid;
+        $targetSlug = $knownSlug;
+
+        if ($knownUuid === null && $knownSlug === null) {
             // Fallback: fetch the schema to get all its identifiers.
             try {
                 $targetSchema = $this->find(id: $schemaIdentifier);

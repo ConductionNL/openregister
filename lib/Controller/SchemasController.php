@@ -69,7 +69,6 @@ use Psr\Log\LoggerInterface;
  * @suppressWarnings(PHPMD.ExcessiveClassComplexity)
  * @suppressWarnings(PHPMD.TooManyPublicMethods)
  * @suppressWarnings(PHPMD.CouplingBetweenObjects)
- * @SuppressWarnings(PHPMD.ElseExpression)
  */
 class SchemasController extends Controller
 {
@@ -645,13 +644,12 @@ class SchemasController extends Controller
      */
     public function upload(?int $id=null): JSONResponse
     {
+        // Default: create a new schema.
+        $schema = new Schema();
+        $schema->setUuid(Uuid::v4()->toRfc4122());
         if ($id !== null) {
             // If ID is provided, find the existing schema.
             $schema = $this->schemaMapper->find($id);
-        } else {
-            // Otherwise, create a new schema.
-            $schema = new Schema();
-            $schema->setUuid(Uuid::v4()->toRfc4122());
         }
 
         // Get the uploaded JSON data.

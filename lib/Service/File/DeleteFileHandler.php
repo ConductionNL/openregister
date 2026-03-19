@@ -40,7 +40,6 @@ use Psr\Log\LoggerInterface;
  * @link     https://github.com/ConductionNL/openregister
  * @version  1.0.0
  *
- * @SuppressWarnings(PHPMD.ElseExpression)
  */
 class DeleteFileHandler
 {

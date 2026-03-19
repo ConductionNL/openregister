@@ -44,7 +44,6 @@ use OCP\Migration\SimpleMigrationStep;
  *
  * @psalm-suppress UnusedClass
  *
- * @SuppressWarnings(PHPMD.ElseExpression)
  */
 class Version1Date20260118000000 extends SimpleMigrationStep
 {

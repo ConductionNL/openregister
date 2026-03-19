@@ -45,7 +45,6 @@ use Psr\Log\LoggerInterface;
  * Progress is tracked in appconfig for admin visibility.
  *
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
- * @SuppressWarnings(PHPMD.ElseExpression)
  */
 class BlobMigrationJob extends TimedJob
 {
@@ -281,12 +280,11 @@ class BlobMigrationJob extends TimedJob
             $platform   = $db->getDatabasePlatform();
             $isPostgres = stripos($platform::class, 'PostgreSQL') !== false;
 
+            // phpcs:ignore Generic.Files.LineLength.TooLong -- SQL query.
+            $sql = "SELECT 1 FROM information_schema.tables WHERE table_name = 'oc_openregister_objects' AND table_schema = DATABASE() LIMIT 1";
             if ($isPostgres === true) {
                 // phpcs:ignore Generic.Files.LineLength.MaxExceeded
                 $sql = "SELECT 1 FROM information_schema.tables WHERE table_name = 'oc_openregister_objects' AND table_schema = current_schema() LIMIT 1";
-            } else {
-                // phpcs:ignore Generic.Files.LineLength.TooLong -- SQL query.
-                $sql = "SELECT 1 FROM information_schema.tables WHERE table_name = 'oc_openregister_objects' AND table_schema = DATABASE() LIMIT 1";
             }
 
             $stmt = $db->prepare($sql);

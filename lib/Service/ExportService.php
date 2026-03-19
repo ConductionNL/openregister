@@ -50,7 +50,6 @@ use React\EventLoop\Loop;
  * @SuppressWarnings(PHPMD.ExcessiveClassComplexity)
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
  * @SuppressWarnings(PHPMD.CyclomaticComplexity)
- * @SuppressWarnings(PHPMD.ElseExpression)
  */
 class ExportService
 {

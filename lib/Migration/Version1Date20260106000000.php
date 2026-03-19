@@ -46,7 +46,7 @@ use OCP\Migration\SimpleMigrationStep;
  * @psalm-suppress UnusedClass
  *
  * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Table creation requires detailed column definitions
- * @SuppressWarnings(PHPMD.ElseExpression)        Else clause used for table existence check
+ * Else clause used for table existence check
  */
 class Version1Date20260106000000 extends SimpleMigrationStep
 {

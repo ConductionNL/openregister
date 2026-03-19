@@ -33,7 +33,6 @@ use OCA\OpenRegister\Db\Schema as RegisterSchema;
  *
  * @SuppressWarnings(PHPMD.ExcessiveClassComplexity)
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
- * @SuppressWarnings(PHPMD.ElseExpression)
  * @SuppressWarnings(PHPMD.StaticAccess)
  */
 class TypeMapperHandler

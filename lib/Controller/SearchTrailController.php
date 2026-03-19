@@ -35,7 +35,6 @@ use OCP\IRequest;
  *
  * @suppressWarnings(PHPMD.TooManyPublicMethods)
  * @suppressWarnings(PHPMD.ExcessiveClassComplexity)
- * @SuppressWarnings(PHPMD.ElseExpression)
  */
 class SearchTrailController extends Controller
 {
@@ -722,15 +721,14 @@ class SearchTrailController extends Controller
             }//end foreach
 
             // Generate export content based on format.
+            // Default to CSV.
+            $content     = $this->arrayToCsv(data: $exportData);
+            $contentType = 'text/csv';
+            $filename    = 'search-trails-'.date('Y-m-d-H-i-s').'.csv';
             if ($format === 'json') {
                 $content     = json_encode($exportData, JSON_PRETTY_PRINT);
                 $contentType = 'application/json';
                 $filename    = 'search-trails-'.date('Y-m-d-H-i-s').'.json';
-            } else {
-                // Default to CSV.
-                $content     = $this->arrayToCsv(data: $exportData);
-                $contentType = 'text/csv';
-                $filename    = 'search-trails-'.date('Y-m-d-H-i-s').'.csv';
             }
 
             // Return export data.

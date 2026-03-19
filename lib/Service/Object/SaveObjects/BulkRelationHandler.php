@@ -190,7 +190,7 @@ class BulkRelationHandler
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)  Complex post-save relation processing with multiple validations
      * @SuppressWarnings(PHPMD.NPathComplexity)       Many code paths for relation types and writeBack operations
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Method handles complete post-save relation workflow
-     * @SuppressWarnings(PHPMD.ElseExpression)        Else branches improve readability for array vs single value handling
+     * Else branches improve readability for array vs single value handling
      */
     public function handlePostSaveInverseRelations(
         array $savedObjects,
@@ -325,7 +325,7 @@ class BulkRelationHandler
      * @psalm-return   void
      * @phpstan-return void
      *
-     * @SuppressWarnings(PHPMD.ElseExpression) Else branch used for early continue when UUID already present
+     * Else branch used for early continue when UUID already present
      */
     private function performBulkWriteBackUpdatesWithContext(array $writeBackOperations): void
     {
@@ -407,7 +407,7 @@ class BulkRelationHandler
      *
      * @SuppressWarnings(PHPMD.StaticAccess)         Uuid::isValid is standard Symfony UID pattern
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Complex relation type detection with multiple conditions
-     * @SuppressWarnings(PHPMD.ElseExpression)       Else branches handle schema vs heuristic detection paths
+     * Else branches handle schema vs heuristic detection paths
      */
     public function scanForRelations(array $data, string $prefix='', ?Schema $schema=null): array
     {

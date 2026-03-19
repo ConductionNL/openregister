@@ -1326,7 +1326,7 @@ class SchemaService
      *
      * @return array Enum constraint comparison results
      *
-     * @SuppressWarnings(PHPMD.ElseExpression) Enum comparison requires else for value difference detection
+     * Enum comparison requires else for value difference detection
      */
     private function compareEnumConstraint(array $currentConfig, array $analysis): array
     {

@@ -105,7 +105,7 @@ class ChunkProcessingHandler
      * @SuppressWarnings(PHPMD.NPathComplexity)       Many paths due to database-computed classification handling
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Complete chunk processing pipeline in single method
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag)   Boolean flags for feature toggles in bulk operations
-     * @SuppressWarnings(PHPMD.ElseExpression)        Multiple conditional paths for object classification and reconstruction
+     * Multiple conditional paths for object classification and reconstruction
      */
     public function processObjectsChunk(
         array $objects,

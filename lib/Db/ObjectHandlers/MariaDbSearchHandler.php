@@ -34,7 +34,6 @@ use OCP\DB\QueryBuilder\IQueryBuilder;
  *
  * @SuppressWarnings(PHPMD.ExcessiveClassLength)     JSON search requires many query building methods
  * @SuppressWarnings(PHPMD.ExcessiveClassComplexity) Complex SQL/JSON query building logic
- * @SuppressWarnings(PHPMD.ElseExpression)
  */
 class MariaDbSearchHandler
 {

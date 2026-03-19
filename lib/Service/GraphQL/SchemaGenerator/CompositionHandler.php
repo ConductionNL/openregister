@@ -28,7 +28,6 @@ use OCA\OpenRegister\Db\Schema as RegisterSchema;
  *
  * @psalm-suppress UnusedClass
  *
- * @SuppressWarnings(PHPMD.ElseExpression)
  */
 class CompositionHandler
 {

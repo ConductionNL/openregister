@@ -39,7 +39,6 @@ use Psr\Log\LoggerInterface;
  *
  * @SuppressWarnings(PHPMD.CyclomaticComplexity)
  * @SuppressWarnings(PHPMD.NPathComplexity)
- * @SuppressWarnings(PHPMD.ElseExpression)
  */
 class TranslationHandler
 {

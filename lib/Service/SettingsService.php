@@ -122,7 +122,6 @@ use Psr\Log\LoggerInterface;
  * @SuppressWarnings(PHPMD.ExcessivePublicCount)     Public API facade requires many public entry points
  * @SuppressWarnings(PHPMD.TooManyFields)            Settings service coordinates many specialized handlers
  * @SuppressWarnings(PHPMD.LongVariable)             Descriptive variable names improve code readability
- * @SuppressWarnings(PHPMD.ElseExpression)
  * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
  * @SuppressWarnings(PHPMD.UnusedFormalParameter)
  */
@@ -945,7 +944,6 @@ class SettingsService
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)  Multiple validation paths and error handling
      * @SuppressWarnings(PHPMD.NPathComplexity)       Multiple validation paths and error handling
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag)   Boolean flag needed for error collection behavior
-     * @SuppressWarnings(PHPMD.ElseExpression)        Else needed for serial vs parallel processing
      */
     public function massValidateObjects(
         int $maxObjects=0,
@@ -1182,7 +1180,6 @@ class SettingsService
      * @return void
      *
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Batch processing requires comprehensive logic
-     * @SuppressWarnings(PHPMD.ElseExpression)        Else needed for success vs failure handling
      */
     private function processJobsSerial(
         array $batchJobs,
@@ -1403,7 +1400,6 @@ class SettingsService
      *     error: string, object_id: null|string, object_name: null|string,
      *     register: null|string, schema: null|string}>, duration: float}
      *
-     * @SuppressWarnings(PHPMD.ElseExpression) Else needed for success vs failure handling
      */
     private function processBatchDirectly(
         \OCA\OpenRegister\Db\MagicMapper $objectMapper,
@@ -1625,7 +1621,6 @@ class SettingsService
      * @return array Field comparison results
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Multiple field comparison paths
-     * @SuppressWarnings(PHPMD.ElseExpression)       Else needed for field comparison logic
      */
     public function compareFields(array $actualFields, array $expectedFields): array
     {

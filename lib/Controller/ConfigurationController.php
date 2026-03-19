@@ -51,7 +51,6 @@ use Psr\Log\LoggerInterface;
  * @suppressWarnings(PHPMD.TooManyMethods)
  * @suppressWarnings(PHPMD.TooManyPublicMethods)
  * @suppressWarnings(PHPMD.CouplingBetweenObjects)
- * @SuppressWarnings(PHPMD.ElseExpression)
  */
 class ConfigurationController extends Controller
 {
@@ -737,6 +736,20 @@ class ConfigurationController extends Controller
             $results = [];
 
             // Call appropriate service.
+            // Default to GitLab search.
+            $this->logger->info(
+                message: '[ConfigurationController] About to call GitLab search service',
+                context: ['file' => __FILE__, 'line' => __LINE__]
+            );
+            $results = $this->gitlabHandler->searchConfigurations(
+                search: $search,
+                page: $page
+            );
+            $this->logger->info(
+                message: '[ConfigurationController] GitLab search completed',
+                context: ['file' => __FILE__, 'line' => __LINE__, 'result_count' => count($results['results'] ?? [])]
+            );
+
             if ($source === 'github') {
                 $this->logger->info(
                     message: '[ConfigurationController] About to call GitHub search service',
@@ -747,20 +760,7 @@ class ConfigurationController extends Controller
                     message: '[ConfigurationController] GitHub search completed',
                     context: ['file' => __FILE__, 'line' => __LINE__, 'result_count' => count($results['results'] ?? [])]
                 );
-            } else {
-                $this->logger->info(
-                    message: '[ConfigurationController] About to call GitLab search service',
-                    context: ['file' => __FILE__, 'line' => __LINE__]
-                );
-                $results = $this->gitlabHandler->searchConfigurations(
-                    search: $search,
-                    page: $page
-                );
-                $this->logger->info(
-                    message: '[ConfigurationController] GitLab search completed',
-                    context: ['file' => __FILE__, 'line' => __LINE__, 'result_count' => count($results['results'] ?? [])]
-                );
-            }//end if
+            }
 
             return new JSONResponse(data: $results, statusCode: 200);
         } catch (Exception $e) {

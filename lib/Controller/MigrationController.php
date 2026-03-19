@@ -24,8 +24,6 @@ use OCP\IRequest;
 
 /**
  * Controller for storage migration between blob and magic tables.
- *
- * @SuppressWarnings(PHPMD.ElseExpression)
  */
 class MigrationController extends Controller
 {
@@ -118,15 +116,14 @@ class MigrationController extends Controller
                 schemaId: $schemaParam
             );
 
+            $report = $this->migrationService->migrateToBlobStorage(
+                register: $resolved['register'],
+                schema: $resolved['schema'],
+                batchSize: $batchSize,
+                dryRun: $dryRun
+            );
             if ($direction === 'to-magic') {
                 $report = $this->migrationService->migrateToMagicTable(
-                    register: $resolved['register'],
-                    schema: $resolved['schema'],
-                    batchSize: $batchSize,
-                    dryRun: $dryRun
-                );
-            } else {
-                $report = $this->migrationService->migrateToBlobStorage(
                     register: $resolved['register'],
                     schema: $resolved['schema'],
                     batchSize: $batchSize,

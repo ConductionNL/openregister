@@ -90,8 +90,6 @@ use OCA\OpenRegister\Service\Schemas\PropertyValidatorHandler;
  * @SuppressWarnings(PHPMD.TooManyFields)
  *
  * @psalm-suppress PropertyNotSetInConstructor $id is set by Nextcloud's Entity base class
- *
- * @SuppressWarnings(PHPMD.ElseExpression)
  * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
  * @SuppressWarnings(PHPMD.NPathComplexity)
  */
@@ -464,11 +462,10 @@ class Schema extends Entity implements JsonSerializable
         if (is_string($required) === true) {
             try {
                 $decoded = json_decode($required, true);
+                // Invalid JSON, set to empty array.
+                $this->required = [];
                 if (json_last_error() === JSON_ERROR_NONE && is_array($decoded) === true) {
                     $this->required = $decoded;
-                } else {
-                    // Invalid JSON, set to empty array.
-                    $this->required = [];
                 }
             } catch (Exception $e) {
                 // If decoding fails, set to empty array.
@@ -922,12 +919,11 @@ class Schema extends Entity implements JsonSerializable
             }
 
             // Get the actual value to compare against.
+            // Regular field: match against object data.
+            $actualValue = $objectData[$field] ?? null;
             if ($field === '_organisation') {
                 // Special field: match against @self.organisation.
                 $actualValue = $objectOrganisation;
-            } else {
-                // Regular field: match against object data.
-                $actualValue = $objectData[$field] ?? null;
             }
 
             // If the actual value is an array with an 'id' key (resolved relation), use the id.
