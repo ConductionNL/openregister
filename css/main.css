@@ -912,10 +912,6 @@
    TAB COMPONENTS
    ======================================== */
 
-.tabContainer {
-  margin-top: 20px;
-}
-
 /* Bootstrap Vue Tab Styling */
 :deep(.nav-tabs) {
   border-bottom: 1px solid var(--color-border);

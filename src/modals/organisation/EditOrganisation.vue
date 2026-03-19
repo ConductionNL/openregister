@@ -3,415 +3,363 @@ import { organisationStore, navigationStore } from '../../store/store.js'
 </script>
 
 <template>
-	<NcDialog :name="organisationStore.organisationItem?.uuid && !createAnother ? 'Edit Organisation' : 'Create Organisation'"
-		size="large"
-		:can-close="true"
-		@update:open="handleDialogOpen">
-		<NcNoteCard v-if="success" type="success">
-			<p>Organisation successfully {{ organisationStore.organisationItem?.uuid && !createAnother ? 'updated' : 'created' }}</p>
-		</NcNoteCard>
-		<NcNoteCard v-if="error" type="error">
-			<p>{{ error }}</p>
-		</NcNoteCard>
-		<div v-if="createAnother || !success">
-			<!-- Tabs -->
-			<div class="tabContainer">
-				<BTabs v-model="activeTab" content-class="mt-3" justified>
-					<BTab active>
-						<template #title>
-							<Cog :size="16" />
-							<span>Settings</span>
-						</template>
-						<div class="form-editor">
-							<NcTextField
-								:disabled="loading"
-								label="Name *"
-								:value.sync="organisationItem.name"
-								:error="!organisationItem.name.trim()"
-								placeholder="Enter organisation name" />
+	<Fragment>
+		<CnTabbedFormDialog
+			ref="dialog"
+			:tabs="dialogTabs"
+			:item="organisationStore.organisationItem?.uuid ? organisationStore.organisationItem : null"
+			entity-name="Organisation"
+			:show-create-another="true"
+			:disable-save="!organisationItem.name.trim()"
+			@confirm="saveOrganisation"
+			@close="closeModal"
+			@reset="resetForm">
+			<!-- Settings Tab -->
+			<template #tab-settings="{ loading: dialogLoading }">
+				<NcTextField
+					:disabled="dialogLoading"
+					label="Name *"
+					:value.sync="organisationItem.name"
+					:error="!organisationItem.name.trim()"
+					placeholder="Enter organisation name" />
 
-							<NcTextField
-								:disabled="loading"
-								label="Slug"
-								:value.sync="organisationItem.slug"
-								placeholder="Optional URL-friendly identifier" />
+				<NcTextField
+					:disabled="dialogLoading"
+					label="Slug"
+					:value.sync="organisationItem.slug"
+					placeholder="Optional URL-friendly identifier" />
 
-							<NcTextArea
-								:disabled="loading"
-								label="Description"
-								:value.sync="organisationItem.description"
-								placeholder="Enter organisation description (optional)"
-								:rows="4" />
+				<NcTextArea
+					:disabled="dialogLoading"
+					label="Description"
+					:value.sync="organisationItem.description"
+					placeholder="Enter organisation description (optional)"
+					:rows="4" />
 
-							<div class="groups-select-container">
-								<label class="groups-label">Nextcloud Groups</label>
-								<NcSelect
-									v-model="selectedGroups"
-									:disabled="loading || loadingGroups"
-									:options="availableGroups"
-									label="name"
-									track-by="id"
-									:multiple="true"
-									:label-outside="true"
-									:filterable="false"
-									placeholder="Search groups..."
-									@search-change="searchGroups"
-									@input="updateGroups">
-									<template #option="{ name }">
-										<div class="group-option">
-											<span class="group-name">{{ name }}</span>
-										</div>
-									</template>
-									<template #no-options>
-										<span v-if="loadingGroups">Loading groups...</span>
-										<span v-else>No groups found. Try a different search.</span>
-									</template>
-								</NcSelect>
-								<p class="field-hint">
-									Only members of selected groups can access this organisation
-								</p>
+				<div class="groups-select-container">
+					<label class="groups-label">Nextcloud Groups</label>
+					<NcSelect
+						v-model="selectedGroups"
+						:disabled="dialogLoading || loadingGroups"
+						:options="availableGroups"
+						label="name"
+						track-by="id"
+						:multiple="true"
+						:label-outside="true"
+						:filterable="false"
+						placeholder="Search groups..."
+						@search-change="searchGroups"
+						@input="updateGroups">
+						<template #option="{ name }">
+							<div class="group-option">
+								<span class="group-name">{{ name }}</span>
 							</div>
-
-							<NcCheckboxRadioSwitch
-								:disabled="loading"
-								:checked.sync="organisationItem.active">
-								Active
-							</NcCheckboxRadioSwitch>
-
-							<NcNoteCard v-if="!organisationItem.active" type="warning">
-								<p>Inactive organisations cannot be used</p>
-							</NcNoteCard>
-						</div>
-					</BTab>
-
-					<BTab>
-						<template #title>
-							<Database :size="16" />
-							<span>Quota</span>
 						</template>
-						<div class="form-editor">
-							<NcTextField
-								:disabled="loading"
-								label="Storage Quota (MB)"
-								type="number"
-								placeholder="0 = unlimited"
-								:value="storageQuotaMB"
-								@update:value="updateStorageQuota" />
-
-							<NcTextField
-								:disabled="loading"
-								label="Bandwidth Quota (MB/month)"
-								type="number"
-								placeholder="0 = unlimited"
-								:value="bandwidthQuotaMB"
-								@update:value="updateBandwidthQuota" />
-
-							<NcTextField
-								:disabled="loading"
-								label="API Request Quota (requests/day)"
-								type="number"
-								placeholder="0 = unlimited"
-								:value="organisationItem.quota?.requests || 0"
-								@update:value="updateRequestQuota" />
-
-							<NcTextField
-								:disabled="loading"
-								label="User Quota"
-								type="number"
-								placeholder="0 = unlimited"
-								:value="organisationItem.quota?.users || 0"
-								@update:value="updateUserQuota" />
-
-							<NcTextField
-								:disabled="loading"
-								label="Group Quota"
-								type="number"
-								placeholder="0 = unlimited"
-								:value="organisationItem.quota?.groups || 0"
-								@update:value="updateGroupQuota" />
-						</div>
-					</BTab>
-
-					<BTab :disabled="!organisationItem.uuid">
-						<template #title>
-							<AccountMultiple :size="16" />
-							<span>Users</span>
+						<template #no-options>
+							<span v-if="loadingGroups">Loading groups...</span>
+							<span v-else>No groups found. Try a different search.</span>
 						</template>
-						<div class="users-section">
-							<div class="users-header">
+					</NcSelect>
+					<p class="field-hint">
+						Only members of selected groups can access this organisation
+					</p>
+				</div>
+
+				<NcCheckboxRadioSwitch
+					:disabled="dialogLoading"
+					:checked.sync="organisationItem.active">
+					Active
+				</NcCheckboxRadioSwitch>
+
+				<NcNoteCard v-if="!organisationItem.active" type="warning">
+					<p>Inactive organisations cannot be used</p>
+				</NcNoteCard>
+			</template>
+
+			<!-- Quota Tab -->
+			<template #tab-quota="{ loading: dialogLoading }">
+				<NcTextField
+					:disabled="dialogLoading"
+					label="Storage Quota (MB)"
+					type="number"
+					placeholder="0 = unlimited"
+					:value="storageQuotaMB"
+					@update:value="updateStorageQuota" />
+
+				<NcTextField
+					:disabled="dialogLoading"
+					label="Bandwidth Quota (MB/month)"
+					type="number"
+					placeholder="0 = unlimited"
+					:value="bandwidthQuotaMB"
+					@update:value="updateBandwidthQuota" />
+
+				<NcTextField
+					:disabled="dialogLoading"
+					label="API Request Quota (requests/day)"
+					type="number"
+					placeholder="0 = unlimited"
+					:value="organisationItem.quota?.requests || 0"
+					@update:value="updateRequestQuota" />
+
+				<NcTextField
+					:disabled="dialogLoading"
+					label="User Quota"
+					type="number"
+					placeholder="0 = unlimited"
+					:value="organisationItem.quota?.users || 0"
+					@update:value="updateUserQuota" />
+
+				<NcTextField
+					:disabled="dialogLoading"
+					label="Group Quota"
+					type="number"
+					placeholder="0 = unlimited"
+					:value="organisationItem.quota?.groups || 0"
+					@update:value="updateGroupQuota" />
+			</template>
+
+			<!-- Users Tab -->
+			<template #tab-users="{ loading: dialogLoading }">
+				<div class="users-section">
+					<div class="users-header">
+						<NcButton
+							v-if="organisationItem.uuid"
+							type="primary"
+							:disabled="dialogLoading"
+							@click="showAddUserDialog = true">
+							<template #icon>
+								<AccountPlus :size="20" />
+							</template>
+							Add User
+						</NcButton>
+					</div>
+
+					<div v-if="loadingUsers" class="loading-users">
+						<NcLoadingIcon :size="20" />
+						<span>Loading users...</span>
+					</div>
+
+					<div v-else-if="organisationUsers.length > 0" class="users-list">
+						<h3>Members ({{ organisationUsers.length }})</h3>
+						<div class="user-items">
+							<div v-for="userId in organisationUsers" :key="userId" class="user-item">
+								<div class="user-info">
+									<AccountCircle :size="20" class="user-icon" />
+									<span class="user-id">{{ userId }}</span>
+									<span v-if="userId === organisationItem.owner" class="owner-badge">Owner</span>
+								</div>
 								<NcButton
-									v-if="organisationItem.uuid"
-									type="primary"
-									:disabled="loading"
-									@click="showAddUserDialog = true">
+									v-if="userId !== organisationItem.owner"
+									type="tertiary"
+									:disabled="dialogLoading || removingUser === userId"
+									@click="removeUser(userId)">
 									<template #icon>
-										<AccountPlus :size="20" />
+										<NcLoadingIcon v-if="removingUser === userId" :size="16" />
+										<AccountMinus v-else :size="16" />
 									</template>
-									Add User
+									Remove
 								</NcButton>
 							</div>
-
-							<div v-if="loadingUsers" class="loading-users">
-								<NcLoadingIcon :size="20" />
-								<span>Loading users...</span>
-							</div>
-
-							<div v-else-if="organisationUsers.length > 0" class="users-list">
-								<h3>Members ({{ organisationUsers.length }})</h3>
-								<div class="user-items">
-									<div v-for="userId in organisationUsers" :key="userId" class="user-item">
-										<div class="user-info">
-											<AccountCircle :size="20" class="user-icon" />
-											<span class="user-id">{{ userId }}</span>
-											<span v-if="userId === organisationItem.owner" class="owner-badge">Owner</span>
-										</div>
-										<NcButton
-											v-if="userId !== organisationItem.owner"
-											type="tertiary"
-											:disabled="loading || removingUser === userId"
-											@click="removeUser(userId)">
-											<template #icon>
-												<NcLoadingIcon v-if="removingUser === userId" :size="16" />
-												<AccountMinus v-else :size="16" />
-											</template>
-											Remove
-										</NcButton>
-									</div>
-								</div>
-							</div>
-
-							<div v-else class="no-users">
-								<p>No users in this organisation.</p>
-							</div>
-
-							<NcNoteCard v-if="!organisationItem.uuid" type="warning">
-								<p>Save the organisation first to manage users.</p>
-							</NcNoteCard>
 						</div>
+					</div>
+
+					<div v-else class="no-users">
+						<p>No users in this organisation.</p>
+					</div>
+
+					<NcNoteCard v-if="!organisationItem.uuid" type="warning">
+						<p>Save the organisation first to manage users.</p>
+					</NcNoteCard>
+				</div>
+			</template>
+
+			<!-- Security Tab -->
+			<template #tab-security>
+				<div v-if="loadingGroups" class="loading-groups">
+					<NcLoadingIcon :size="20" />
+					<span>Loading user groups...</span>
+				</div>
+
+				<BTabs v-else content-class="mt-3" pills>
+					<!-- Registers -->
+					<BTab title="Registers">
+						<RbacTable
+							entity-type="register"
+							:authorization="organisationItem.authorization || {}"
+							:available-groups="availableGroups"
+							:organisation-groups="organisationItem.groups || []"
+							@update="updateEntityPermission" />
 					</BTab>
 
-					<BTab>
-						<template #title>
-							<Shield :size="16" />
-							<span>Security</span>
-						</template>
-						<div class="security-section">
-							<div v-if="loadingGroups" class="loading-groups">
-								<NcLoadingIcon :size="20" />
-								<span>Loading user groups...</span>
-							</div>
+					<!-- Schemas -->
+					<BTab title="Schemas">
+						<RbacTable
+							entity-type="schema"
+							:authorization="organisationItem.authorization || {}"
+							:available-groups="availableGroups"
+							:organisation-groups="organisationItem.groups || []"
+							@update="updateEntityPermission" />
+					</BTab>
 
-							<div v-else class="rbac-container">
-								<BTabs content-class="mt-3" pills>
-									<!-- Registers -->
-									<BTab title="Registers">
-										<RbacTable
-											entity-type="register"
-											:authorization="organisationItem.authorization || {}"
-											:available-groups="availableGroups"
-											:organisation-groups="organisationItem.groups || []"
-											@update="updateEntityPermission" />
-									</BTab>
+					<!-- Objects -->
+					<BTab title="Objects">
+						<RbacTable
+							entity-type="object"
+							:authorization="organisationItem.authorization || {}"
+							:available-groups="availableGroups"
+							:organisation-groups="organisationItem.groups || []"
+							@update="updateEntityPermission" />
+					</BTab>
 
-									<!-- Schemas -->
-									<BTab title="Schemas">
-										<RbacTable
-											entity-type="schema"
-											:authorization="organisationItem.authorization || {}"
-											:available-groups="availableGroups"
-											:organisation-groups="organisationItem.groups || []"
-											@update="updateEntityPermission" />
-									</BTab>
+					<!-- Views -->
+					<BTab title="Views">
+						<RbacTable
+							entity-type="view"
+							:authorization="organisationItem.authorization || {}"
+							:available-groups="availableGroups"
+							:organisation-groups="organisationItem.groups || []"
+							@update="updateEntityPermission" />
+					</BTab>
 
-									<!-- Objects -->
-									<BTab title="Objects">
-										<RbacTable
-											entity-type="object"
-											:authorization="organisationItem.authorization || {}"
-											:available-groups="availableGroups"
-											:organisation-groups="organisationItem.groups || []"
-											@update="updateEntityPermission" />
-									</BTab>
+					<!-- Agents -->
+					<BTab title="Agents">
+						<RbacTable
+							entity-type="agent"
+							:authorization="organisationItem.authorization || {}"
+							:available-groups="availableGroups"
+							:organisation-groups="organisationItem.groups || []"
+							@update="updateEntityPermission" />
+					</BTab>
 
-									<!-- Views -->
-									<BTab title="Views">
-										<RbacTable
-											entity-type="view"
-											:authorization="organisationItem.authorization || {}"
-											:available-groups="availableGroups"
-											:organisation-groups="organisationItem.groups || []"
-											@update="updateEntityPermission" />
-									</BTab>
+					<!-- Configurations -->
+					<BTab title="Configurations">
+						<RbacTable
+							entity-type="configuration"
+							:authorization="organisationItem.authorization || {}"
+							:available-groups="availableGroups"
+							:organisation-groups="organisationItem.groups || []"
+							@update="updateEntityPermission" />
+					</BTab>
 
-									<!-- Agents -->
-									<BTab title="Agents">
-										<RbacTable
-											entity-type="agent"
-											:authorization="organisationItem.authorization || {}"
-											:available-groups="availableGroups"
-											:organisation-groups="organisationItem.groups || []"
-											@update="updateEntityPermission" />
-									</BTab>
+					<!-- Applications -->
+					<BTab title="Applications">
+						<RbacTable
+							entity-type="application"
+							:authorization="organisationItem.authorization || {}"
+							:available-groups="availableGroups"
+							:organisation-groups="organisationItem.groups || []"
+							@update="updateEntityPermission" />
+					</BTab>
 
-									<!-- Configurations -->
-									<BTab title="Configurations">
-										<RbacTable
-											entity-type="configuration"
-											:authorization="organisationItem.authorization || {}"
-											:available-groups="availableGroups"
-											:organisation-groups="organisationItem.groups || []"
-											@update="updateEntityPermission" />
-									</BTab>
+					<!-- Special Rights -->
+					<BTab title="Special Rights">
+						<div class="special-rights-container">
+							<p class="rbac-description">
+								Grant additional permissions beyond standard CRUD operations
+							</p>
 
-									<!-- Applications -->
-									<BTab title="Applications">
-										<RbacTable
-											entity-type="application"
-											:authorization="organisationItem.authorization || {}"
-											:available-groups="availableGroups"
-											:organisation-groups="organisationItem.groups || []"
-											@update="updateEntityPermission" />
-									</BTab>
-
-									<!-- Special Rights -->
-									<BTab title="Special Rights">
-										<div class="special-rights-container">
-											<p class="rbac-description">
-												Grant additional permissions beyond standard CRUD operations
-											</p>
-
-											<table class="rbac-table special-rights-table">
-												<thead>
-													<tr>
-														<th>Right</th>
-														<th>Description</th>
-														<th>Groups</th>
-													</tr>
-												</thead>
-												<tbody>
-													<tr>
-														<td class="right-name">
-															<span class="right-badge">object_publish</span>
-														</td>
-														<td class="right-description">
-															Publish objects to make them publicly available
-														</td>
-														<td class="right-groups">
-															<NcSelect
-																v-model="selectedSpecialRights.object_publish"
-																:options="filteredAvailableGroups"
-																label="name"
-																track-by="id"
-																:multiple="true"
-																placeholder="Select groups..."
-																@input="updateSpecialRight('object_publish', $event)" />
-														</td>
-													</tr>
-													<tr>
-														<td class="right-name">
-															<span class="right-badge">agent_use</span>
-														</td>
-														<td class="right-description">
-															Use AI agents for processing and analysis
-														</td>
-														<td class="right-groups">
-															<NcSelect
-																v-model="selectedSpecialRights.agent_use"
-																:options="filteredAvailableGroups"
-																label="name"
-																track-by="id"
-																:multiple="true"
-																placeholder="Select groups..."
-																@input="updateSpecialRight('agent_use', $event)" />
-														</td>
-													</tr>
-													<tr>
-														<td class="right-name">
-															<span class="right-badge">dashboard_view</span>
-														</td>
-														<td class="right-description">
-															Access organisation dashboard and analytics
-														</td>
-														<td class="right-groups">
-															<NcSelect
-																v-model="selectedSpecialRights.dashboard_view"
-																:options="filteredAvailableGroups"
-																label="name"
-																track-by="id"
-																:multiple="true"
-																placeholder="Select groups..."
-																@input="updateSpecialRight('dashboard_view', $event)" />
-														</td>
-													</tr>
-													<tr>
-														<td class="right-name">
-															<span class="right-badge">llm_use</span>
-														</td>
-														<td class="right-description">
-															Use Large Language Model features
-														</td>
-														<td class="right-groups">
-															<NcSelect
-																v-model="selectedSpecialRights.llm_use"
-																:options="filteredAvailableGroups"
-																label="name"
-																track-by="id"
-																:multiple="true"
-																placeholder="Select groups..."
-																@input="updateSpecialRight('llm_use', $event)" />
-														</td>
-													</tr>
-												</tbody>
-											</table>
-										</div>
-									</BTab>
-								</BTabs>
-							</div>
+							<table class="rbac-table special-rights-table">
+								<thead>
+									<tr>
+										<th>Right</th>
+										<th>Description</th>
+										<th>Groups</th>
+									</tr>
+								</thead>
+								<tbody>
+									<tr>
+										<td class="right-name">
+											<span class="right-badge">object_publish</span>
+										</td>
+										<td class="right-description">
+											Publish objects to make them publicly available
+										</td>
+										<td class="right-groups">
+											<NcSelect
+												v-model="selectedSpecialRights.object_publish"
+												:options="filteredAvailableGroups"
+												label="name"
+												track-by="id"
+												:multiple="true"
+												placeholder="Select groups..."
+												@input="updateSpecialRight('object_publish', $event)" />
+										</td>
+									</tr>
+									<tr>
+										<td class="right-name">
+											<span class="right-badge">agent_use</span>
+										</td>
+										<td class="right-description">
+											Use AI agents for processing and analysis
+										</td>
+										<td class="right-groups">
+											<NcSelect
+												v-model="selectedSpecialRights.agent_use"
+												:options="filteredAvailableGroups"
+												label="name"
+												track-by="id"
+												:multiple="true"
+												placeholder="Select groups..."
+												@input="updateSpecialRight('agent_use', $event)" />
+										</td>
+									</tr>
+									<tr>
+										<td class="right-name">
+											<span class="right-badge">dashboard_view</span>
+										</td>
+										<td class="right-description">
+											Access organisation dashboard and analytics
+										</td>
+										<td class="right-groups">
+											<NcSelect
+												v-model="selectedSpecialRights.dashboard_view"
+												:options="filteredAvailableGroups"
+												label="name"
+												track-by="id"
+												:multiple="true"
+												placeholder="Select groups..."
+												@input="updateSpecialRight('dashboard_view', $event)" />
+										</td>
+									</tr>
+									<tr>
+										<td class="right-name">
+											<span class="right-badge">llm_use</span>
+										</td>
+										<td class="right-description">
+											Use Large Language Model features
+										</td>
+										<td class="right-groups">
+											<NcSelect
+												v-model="selectedSpecialRights.llm_use"
+												:options="filteredAvailableGroups"
+												label="name"
+												track-by="id"
+												:multiple="true"
+												placeholder="Select groups..."
+												@input="updateSpecialRight('llm_use', $event)" />
+										</td>
+									</tr>
+								</tbody>
+							</table>
 						</div>
 					</BTab>
 				</BTabs>
-			</div>
-		</div>
+			</template>
+		</CnTabbedFormDialog>
 
-		<template #actions>
-			<NcCheckboxRadioSwitch
-				v-if="!organisationStore.organisationItem?.uuid"
-				class="create-another-checkbox"
-				:disabled="loading"
-				:checked.sync="createAnother">
-				Create another
-			</NcCheckboxRadioSwitch>
-			<NcButton @click="closeModal">
-				<template #icon>
-					<Cancel :size="20" />
-				</template>
-				{{ success ? 'Close' : 'Cancel' }}
-			</NcButton>
-			<NcButton v-if="createAnother || !success"
-				:disabled="loading || !organisationItem.name.trim()"
-				type="primary"
-				@click="saveOrganisation()">
-				<template #icon>
-					<NcLoadingIcon v-if="loading" :size="20" />
-					<ContentSaveOutline v-if="!loading && organisationStore.organisationItem?.uuid" :size="20" />
-					<Plus v-if="!loading && !organisationStore.organisationItem?.uuid" :size="20" />
-				</template>
-				{{ organisationStore.organisationItem?.uuid && !createAnother ? 'Save' : 'Create' }}
-			</NcButton>
-		</template>
 		<RemoveUserDialog
 			:show="showRemoveUserDialog"
 			:user-id="userToRemove"
 			:removing="removingUser !== null"
 			@cancel="cancelRemoveUser"
 			@confirm="confirmRemoveUser" />
-	</NcDialog>
+	</Fragment>
 </template>
 
 <script>
 import {
 	NcButton,
-	NcDialog,
 	NcTextField,
 	NcTextArea,
 	NcSelect,
@@ -419,12 +367,10 @@ import {
 	NcNoteCard,
 	NcCheckboxRadioSwitch,
 } from '@nextcloud/vue'
+import { CnTabbedFormDialog } from '@conduction/nextcloud-vue'
 import { BTabs, BTab } from 'bootstrap-vue'
 import { showSuccess, showError } from '@nextcloud/dialogs'
 
-import ContentSaveOutline from 'vue-material-design-icons/ContentSaveOutline.vue'
-import Cancel from 'vue-material-design-icons/Cancel.vue'
-import Plus from 'vue-material-design-icons/Plus.vue'
 import AccountCircle from 'vue-material-design-icons/AccountCircle.vue'
 import AccountMinus from 'vue-material-design-icons/AccountMinus.vue'
 import AccountPlus from 'vue-material-design-icons/AccountPlus.vue'
@@ -439,7 +385,7 @@ import RbacTable from '../../components/RbacTable.vue'
 export default {
 	name: 'EditOrganisation',
 	components: {
-		NcDialog,
+		CnTabbedFormDialog,
 		NcTextField,
 		NcTextArea,
 		NcSelect,
@@ -452,20 +398,12 @@ export default {
 		RemoveUserDialog,
 		RbacTable,
 		// Icons
-		ContentSaveOutline,
-		Cancel,
-		Plus,
 		AccountCircle,
 		AccountMinus,
 		AccountPlus,
-		Cog,
-		Database,
-		AccountMultiple,
-		Shield,
 	},
 	data() {
 		return {
-			activeTab: 0,
 			organisationItem: {
 				name: '',
 				slug: '',
@@ -496,14 +434,22 @@ export default {
 			showRemoveUserDialog: false,
 			showAddUserDialog: false,
 			userToRemove: null,
-			createAnother: false,
-			success: false,
-			loading: false,
-			error: false,
-			closeModalTimeout: null,
 		}
 	},
 	computed: {
+		/**
+		 * Tab definitions for CnTabbedFormDialog
+		 *
+		 * @return {Array} Tab configuration
+		 */
+		dialogTabs() {
+			return [
+				{ id: 'settings', title: 'Settings', icon: Cog },
+				{ id: 'quota', title: 'Quota', icon: Database },
+				{ id: 'users', title: 'Users', icon: AccountMultiple, disabled: !this.organisationItem.uuid },
+				{ id: 'security', title: 'Security', icon: Shield },
+			]
+		},
 		storageQuotaMB() {
 			if (!this.organisationItem.quota?.storage) return 0
 			return Math.round(this.organisationItem.quota.storage / (1024 * 1024))
@@ -536,7 +482,6 @@ export default {
 				// Only reinitialize if the UUID changed (different organisation) or went from null to something
 				if (newVal && (!oldVal || newVal.uuid !== oldVal?.uuid)) {
 					this.initializeOrganisationItem()
-					// Users are already included in the organisation object, no need to fetch separately
 				}
 			},
 			deep: true,
@@ -575,7 +520,6 @@ export default {
 					this.initializeOrganisationItem()
 				}).catch(error => {
 					console.error('Error loading Nextcloud groups:', error)
-					this.error = 'Failed to load Nextcloud groups'
 					this.loadingGroups = false
 				})
 			}
@@ -688,6 +632,29 @@ export default {
 		},
 
 		/**
+		 * Reset form data for "create another" mode
+		 *
+		 * @return {void}
+		 */
+		resetForm() {
+			this.organisationItem = {
+				name: '',
+				slug: '',
+				description: '',
+				active: true,
+				quota: {
+					storage: 0,
+					bandwidth: 0,
+					requests: 0,
+					users: 0,
+					groups: 0,
+				},
+				groups: [],
+			}
+			this.selectedGroups = []
+		},
+
+		/**
 		 * Show confirmation dialog before removing a user
 		 *
 		 * @param {string} userId - User ID to remove
@@ -719,7 +686,6 @@ export default {
 			if (!this.organisationItem.uuid || !this.userToRemove) return
 
 			this.removingUser = this.userToRemove
-			this.error = null
 
 			try {
 				const response = await fetch(
@@ -750,26 +716,15 @@ export default {
 					showSuccess(this.$t('openregister', 'User removed successfully'))
 				} else {
 					const errorData = await response.json()
-					this.error = errorData.error || 'Failed to remove user from organisation'
-					showError(this.error)
+					const errorMsg = errorData.error || 'Failed to remove user from organisation'
+					showError(errorMsg)
 				}
 			} catch (error) {
 				console.error('Error removing user:', error)
-				this.error = 'Failed to remove user from organisation'
-				showError(this.error)
+				showError('Failed to remove user from organisation')
 			} finally {
 				this.removingUser = null
 			}
-		},
-
-		/**
-		 * Get current user
-		 *
-		 * @return {string}
-		 */
-		getCurrentUser() {
-			// Implementation would depend on how you get current user
-			return 'current-user' // Placeholder
 		},
 
 		/**
@@ -785,25 +740,13 @@ export default {
 		},
 
 		/**
-		 * Remove a group from selection
-		 *
-		 * @param {object} groupToRemove - Group to remove
-		 * @return {void}
-		 */
-		removeGroup(groupToRemove) {
-			this.selectedGroups = this.selectedGroups.filter(g => g.id !== groupToRemove.id)
-			// Store only the group IDs, not the full objects
-			this.organisationItem.groups = this.selectedGroups.map(group => group.id)
-		},
-
-		/**
 		 * Update storage quota (converts MB to bytes)
 		 *
 		 * @param {number} value - Quota in MB
 		 * @return {void}
 		 */
 		updateStorageQuota(value) {
-		// Convert MB to bytes (0 = unlimited)
+			// Convert MB to bytes (0 = unlimited)
 			const mbValue = value ? parseInt(value) : 0
 			if (!this.organisationItem.quota) {
 				this.organisationItem.quota = { storage: 0, bandwidth: 0, requests: 0, users: 0, groups: 0 }
@@ -818,7 +761,7 @@ export default {
 		 * @return {void}
 		 */
 		updateBandwidthQuota(value) {
-		// Convert MB to bytes (0 = unlimited)
+			// Convert MB to bytes (0 = unlimited)
 			const mbValue = value ? parseInt(value) : 0
 			if (!this.organisationItem.quota) {
 				this.organisationItem.quota = { storage: 0, bandwidth: 0, requests: 0, users: 0, groups: 0 }
@@ -833,7 +776,7 @@ export default {
 		 * @return {void}
 		 */
 		updateRequestQuota(value) {
-		// 0 = unlimited
+			// 0 = unlimited
 			if (!this.organisationItem.quota) {
 				this.organisationItem.quota = { storage: 0, bandwidth: 0, requests: 0, users: 0, groups: 0 }
 			}
@@ -847,7 +790,7 @@ export default {
 		 * @return {void}
 		 */
 		updateUserQuota(value) {
-		// 0 = unlimited
+			// 0 = unlimited
 			if (!this.organisationItem.quota) {
 				this.organisationItem.quota = { storage: 0, bandwidth: 0, requests: 0, users: 0, groups: 0 }
 			}
@@ -861,7 +804,7 @@ export default {
 		 * @return {void}
 		 */
 		updateGroupQuota(value) {
-		// 0 = unlimited
+			// 0 = unlimited
 			if (!this.organisationItem.quota) {
 				this.organisationItem.quota = { storage: 0, bandwidth: 0, requests: 0, users: 0, groups: 0 }
 			}
@@ -874,14 +817,9 @@ export default {
 		 * @return {void}
 		 */
 		closeModal() {
-			this.success = false
-			this.error = null
-			this.createAnother = false
 			this.selectedGroups = []
-			this.activeTab = 0
 			navigationStore.setModal(false)
 			navigationStore.setDialog(false)
-			clearTimeout(this.closeModalTimeout)
 		},
 
 		/**
@@ -890,13 +828,9 @@ export default {
 		 * @return {Promise<void>}
 		 */
 		async saveOrganisation() {
-			this.loading = true
-			this.error = null
-
 			// Validate required fields
 			if (!this.organisationItem.name.trim()) {
-				this.error = 'Organisation name is required'
-				this.loading = false
+				this.$refs.dialog.setResult({ error: 'Organisation name is required' })
 				return
 			}
 
@@ -914,59 +848,14 @@ export default {
 						await organisationStore.getActiveOrganisation()
 					}
 
-					if (this.createAnother) {
-						// Clear the form after successful creation
-						setTimeout(() => {
-							this.organisationItem = {
-								name: '',
-								slug: '',
-								description: '',
-								active: true,
-								quota: {
-									storage: null,
-									bandwidth: null,
-									requests: null,
-								},
-								groups: [],
-							}
-							this.selectedGroups = []
-							this.activeTab = 0
-						}, 500)
-
-						this.success = true
-						this.error = false
-
-						// Clear success message after 2s
-						setTimeout(() => {
-							this.success = null
-						}, 2000)
-					} else {
-						this.success = true
-						this.error = false
-
-						this.closeModalTimeout = setTimeout(this.closeModal, 2000)
-					}
+					this.$refs.dialog.setResult({ success: true })
 				}
 
 			} catch (error) {
 				console.error('Error saving organisation:', error)
-				this.success = false
-				this.error = error.message || 'An error occurred while saving the organisation'
-			} finally {
-				this.loading = false
-			}
-		},
-
-		/**
-		 * Handle dialog open/close event
-		 *
-		 * @param {boolean} isOpen - Whether the dialog is open
-		 * @return {void}
-		 */
-		handleDialogOpen(isOpen) {
-			// Only close the modal if the dialog is being closed (isOpen = false)
-			if (!isOpen) {
-				this.closeModal()
+				this.$refs.dialog.setResult({
+					error: error.message || 'An error occurred while saving the organisation',
+				})
 			}
 		},
 
@@ -1059,29 +948,7 @@ export default {
 </script>
 
 <style scoped>
-/* EditOrganisation-specific styles */
-.tabContainer {
-	margin-top: 20px;
-}
-
-/* Tab title styling with icons */
-.tabContainer :deep(.nav-link) {
-	display: flex;
-	align-items: center;
-	gap: 8px;
-	justify-content: center;
-}
-
-.form-editor {
-	display: flex;
-	flex-direction: column;
-	gap: 16px;
-	padding: 16px 0;
-}
-
-.create-another-checkbox {
-	margin-right: auto;
-}
+/* Organisation-specific styles (tab shell handled by CnTabbedFormDialog) */
 
 .groups-select-container {
 	display: flex;
@@ -1111,13 +978,6 @@ export default {
 	font-weight: 500;
 }
 
-.security-section {
-	display: flex;
-	flex-direction: column;
-	gap: 16px;
-	padding: 16px 0;
-}
-
 .loading-groups {
 	display: flex;
 	align-items: center;
@@ -1126,62 +986,11 @@ export default {
 	padding: 16px;
 }
 
-.groups-list {
-	display: flex;
-	flex-direction: column;
-	gap: 12px;
-}
-
-.groups-list h3 {
-	margin: 0;
-	font-size: 16px;
-	font-weight: 500;
-	color: var(--color-main-text);
-}
-
-.group-items {
-	display: flex;
-	flex-direction: column;
-	gap: 8px;
-}
-
-.group-item {
-	display: flex;
-	align-items: center;
-	justify-content: space-between;
-	padding: 8px 12px;
-	background-color: var(--color-background-hover);
-	border-radius: var(--border-radius);
-}
-
-.group-badge {
-	display: inline-flex;
-	align-items: center;
-	padding: 4px 12px;
-	background-color: var(--color-primary-element-light);
-	color: var(--color-primary-element-text);
-	border-radius: 16px;
-	font-size: 13px;
-	font-weight: 500;
-}
-
-.no-groups {
-	padding: 16px;
-	text-align: center;
-	color: var(--color-text-lighter);
-	font-style: italic;
-}
-
-.no-groups p {
-	margin: 0;
-}
-
 /* Users section styles */
 .users-section {
 	display: flex;
 	flex-direction: column;
 	gap: 16px;
-	padding: 16px 0;
 }
 
 .users-header {
@@ -1265,26 +1074,6 @@ export default {
 }
 
 /* RBAC Security Tab Styling */
-.rbac-container {
-	display: flex;
-	flex-direction: column;
-	gap: 16px;
-	padding: 16px 0;
-}
-
-.rbac-section {
-	display: flex;
-	flex-direction: column;
-	gap: 12px;
-}
-
-.rbac-section h3 {
-	margin: 0;
-	font-size: 18px;
-	font-weight: 600;
-	color: var(--color-main-text);
-}
-
 .rbac-description {
 	font-size: 14px;
 	color: var(--color-text-lighter);
