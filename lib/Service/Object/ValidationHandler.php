@@ -334,11 +334,7 @@ class ValidationHandler
         $objectsToProcess = count($allObjects);
         $chunkSize        = $this->calculateChunkSize(objectsToProcess: $objectsToProcess);
 
-        if ($objectsToProcess > 0) {
-            $estimatedChunks = ceil($objectsToProcess / $chunkSize);
-        } else {
-            $estimatedChunks = 0;
-        }//end if
+        $estimatedChunks = $objectsToProcess > 0 ? ceil($objectsToProcess / $chunkSize) : 0;
 
         $this->logger->info(
             message: '[ValidationHandler] Starting chunked validation',
@@ -709,13 +705,7 @@ class ValidationHandler
     {
         $objectsData = [];
         foreach ($objectsChunk as $object) {
-            if (is_array($object) === true) {
-                // Already an array from magic table.
-                $objectsData[] = $object;
-            } else {
-                // ObjectEntity - get the object data.
-                $objectsData[] = $object->getObject();
-            }
+            $objectsData[] = is_array($object) === true ? $object : $object->getObject();
         }
 
         return $objectsData;
@@ -795,7 +785,9 @@ class ValidationHandler
                             'keyword' => $error['keyword'] ?? 'validation',
                         ];
                     }
-                } else {
+                }
+
+                if ($e instanceof \OCA\OpenRegister\Exception\ValidationException === false) {
                     // Generic error.
                     $errors[] = [
                         'path'    => 'general',

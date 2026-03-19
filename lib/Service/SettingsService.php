@@ -1043,7 +1043,9 @@ class SettingsService
                 collectErrors: $collectErrors,
                 parallelBatches: 4
             );
-        } else {
+        }
+
+        if ($mode !== 'parallel') {
             $this->processJobsSerial(
                 batchJobs: $batchJobs,
                 objectMapper: $objectMapper,
@@ -1106,7 +1108,9 @@ class SettingsService
                     $results['stats']['total_objects'],
                     $results['stats']['successful_saves']
                 );
-            } else {
+            }
+
+            if ($collectErrors !== true) {
                 $results['success'] = false;
 
                 /*
@@ -1226,7 +1230,9 @@ class SettingsService
                     if ($savedObject !== null) {
                         $batchSuccesses++;
                         $results['stats']['successful_saves']++;
-                    } else {
+                    }
+
+                    if ($savedObject === null) {
                         $results['stats']['failed_saves']++;
                         $batchErrors[] = [
                             'object_id'   => $object->getUuid(),
@@ -1441,7 +1447,9 @@ class SettingsService
 
                 if ($savedObject !== null) {
                     $batchSuccesses++;
-                } else {
+                }
+
+                if ($savedObject === null) {
                     $batchErrors[] = [
                         'object_id'   => $object->getUuid(),
                         'object_name' => $object->getName() ?? $object->getUuid(),
@@ -1651,9 +1659,11 @@ class SettingsService
                     'actual_type'   => $actualField['type'] ?? 'unknown',
                     'actual_config' => $actualField,
                 ];
-            } else {
-                // Check for configuration mismatches (type, multiValued, docValues).
-                $expectedConfig      = $expectedFields[$fieldName];
+                continue;
+            }
+
+            // Check for configuration mismatches (type, multiValued, docValues).
+            $expectedConfig      = $expectedFields[$fieldName];
                 $expectedType        = $expectedConfig['type'] ?? '';
                 $actualType          = $actualField['type'] ?? '';
                 $expectedMultiValued = $expectedConfig['multiValued'] ?? false;
@@ -1692,7 +1702,6 @@ class SettingsService
                         'actual_config'        => $actualField,
                     ];
                 }//end if
-            }//end if
         }//end foreach
 
         return [
@@ -1866,17 +1875,13 @@ class SettingsService
             $platform   = $this->db->getDatabasePlatform();
             $isPostgres = stripos($platform::class, 'PostgreSQL') !== false;
 
-            if ($isPostgres === true) {
-                // PostgreSQL query.
-                $tablesQuery = "SELECT tablename FROM pg_tables 
-                                WHERE schemaname = 'public' 
-                                AND tablename LIKE 'oc_openregister_table_%'";
-            } else {
-                // MySQL/MariaDB query.
-                $tablesQuery = "SELECT table_name as tablename FROM information_schema.tables 
-                                WHERE table_schema = DATABASE() 
-                                AND table_name LIKE 'oc_openregister_table_%'";
-            }
+            $tablesQuery = $isPostgres === true
+                ? "SELECT tablename FROM pg_tables
+                   WHERE schemaname = 'public'
+                   AND tablename LIKE 'oc_openregister_table_%'"
+                : "SELECT table_name as tablename FROM information_schema.tables
+                   WHERE table_schema = DATABASE()
+                   AND table_name LIKE 'oc_openregister_table_%'";
 
             $tablesResult = $this->db->executeQuery($tablesQuery);
             $tables       = $tablesResult->fetchAll(\PDO::FETCH_COLUMN);
@@ -1935,11 +1940,9 @@ class SettingsService
         }
 
         // Build query for sources count based on table existence.
-        if ($sourcesTableExists === true) {
-            $sourcesCountQuery = "(SELECT COUNT(*) FROM {$qb->getTableName('openconnector_sources')})";
-        } else {
-            $sourcesCountQuery = '0';
-        }
+        $sourcesCountQuery = $sourcesTableExists === true
+            ? "(SELECT COUNT(*) FROM {$qb->getTableName('openconnector_sources')})"
+            : '0';
 
         // Build a single query that gets all other counts at once using subqueries.
         $auditTable  = $qb->getTableName('openregister_audit_trails');

@@ -188,9 +188,8 @@ class UserService
         // Add organization information in the format expected by the frontend.
         // Frontend expects: { active: { uuid, naam, id, slug }, all: [...] }
         // Use cached result if available (avoids ~20-30 redundant queries when called twice in updateMe).
-        if ($this->cachedOrgStats !== null) {
-            $organisationStats = $this->cachedOrgStats;
-        } else {
+        $organisationStats = $this->cachedOrgStats;
+        if ($this->cachedOrgStats === null) {
             try {
                 $organisationStats = $this->organisationService->getUserOrganisationStats();
             } catch (\Exception $e) {
@@ -251,11 +250,9 @@ class UserService
                 $data['activeOrganisation']
             );
             $result['organisation_updated'] = $organisationResult;
-            if ($organisationResult === true) {
-                $result['organisation_message'] = 'Active organization updated successfully';
-            } else {
-                $result['organisation_message'] = 'Failed to update active organization';
-            }
+            $result['organisation_message'] = $organisationResult === true
+                ? 'Active organization updated successfully'
+                : 'Failed to update active organization';
 
             // Remove the organization field from data to prevent it from being processed as a user property.
             unset($data['activeOrganisation']);

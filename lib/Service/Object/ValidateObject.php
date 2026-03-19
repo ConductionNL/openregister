@@ -1000,11 +1000,9 @@ class ValidateObject
         if (($propertySchema->oneOf ?? null) !== null
             && (is_array($propertySchema->oneOf) === true || is_object($propertySchema->oneOf) === true)
         ) {
-            if (is_object($propertySchema->oneOf) === true) {
-                $oneOfArray = get_object_vars($propertySchema->oneOf);
-            } else {
-                $oneOfArray = $propertySchema->oneOf;
-            }
+            $oneOfArray = is_object($propertySchema->oneOf) === true
+                ? get_object_vars($propertySchema->oneOf)
+                : $propertySchema->oneOf;
 
             if (empty($oneOfArray) === false) {
                 // Ensure items object exists.
@@ -1148,23 +1146,24 @@ class ValidateObject
                 ],
             ];
             $itemsSchema->description = 'UUID reference or object with id field';
-        } else {
-            // Transform to a simple object structure for nested objects.
-            // Remove $ref to prevent circular references.
-            unset($itemsSchema->{'$ref'});
+            return $itemsSchema;
+        }
 
-            // Create a simple object structure.
-            $itemsSchema->type        = 'object';
-            $itemsSchema->description = 'Nested object';
+        // Transform to a simple object structure for nested objects.
+        // Remove $ref to prevent circular references.
+        unset($itemsSchema->{'$ref'});
 
-            // Add basic properties that most objects should have.
-            $itemsSchema->properties = (object) [
-                'id' => (object) [
-                    'type'        => 'string',
-                    'description' => 'Object identifier',
-                ],
-            ];
-        }//end if
+        // Create a simple object structure.
+        $itemsSchema->type        = 'object';
+        $itemsSchema->description = 'Nested object';
+
+        // Add basic properties that most objects should have.
+        $itemsSchema->properties = (object) [
+            'id' => (object) [
+                'type'        => 'string',
+                'description' => 'Object identifier',
+            ],
+        ];
 
         return $itemsSchema;
     }//end transformArrayItemsForValidation()

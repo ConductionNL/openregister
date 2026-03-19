@@ -357,11 +357,7 @@ class ObjectService
                 if ($folderNode !== null) {
                     // Update the entity with the folder ID.
                     $folderIdValue = $folderNode->getId();
-                    if ($folderIdValue !== null) {
-                        $entity->setFolder((string) $folderIdValue);
-                    } else {
-                        $entity->setFolder(null);
-                    }
+                    $entity->setFolder($folderIdValue !== null ? (string) $folderIdValue : null);
 
                     // Save the entity with the new folder ID.
                     $this->objectMapper->update($entity);
@@ -404,7 +400,9 @@ class ObjectService
                     && $registers[0] instanceof Register;
                 if ($isRegisterInstance === true) {
                     $register = $registers[0];
-                } else {
+                }
+
+                if ($isRegisterInstance !== true) {
                     // Fallback to direct database lookup if cache fails.
                     $register = $this->registerMapper->find(
                         id: $register,
@@ -413,7 +411,9 @@ class ObjectService
                         _multitenancy: false
                     );
                 }
-            } else {
+            }
+
+            if (is_numeric($register) !== true) {
                 // It's a slug string - find() already supports slugs via orX(id, uuid, slug).
                 $register = $this->registerMapper->find(
                     id: $register,
@@ -421,7 +421,7 @@ class ObjectService
                     _rbac: false,
                     _multitenancy: false
                 );
-            }//end if
+            }
         }//end if
 
         $this->currentRegister = $register;
@@ -458,7 +458,9 @@ class ObjectService
                     $isSchemaInstance = $schemaExists && $schemas[0] instanceof Schema;
                     if ($isSchemaInstance === true) {
                         $schema = $schemas[0];
-                    } else {
+                    }
+
+                    if ($isSchemaInstance !== true) {
                         // Fallback to direct database lookup if cache fails.
                         $schema = $this->schemaMapper->find(
                             id: $schema,
@@ -467,7 +469,9 @@ class ObjectService
                             _multitenancy: false
                         );
                     }
-                } else {
+                }
+
+                if (is_numeric($schema) !== true) {
                     // It's a slug string - find() supports slugs via orX(id, uuid, slug).
                     $schema = $this->schemaMapper->find(
                         id: $schema,
@@ -475,7 +479,7 @@ class ObjectService
                         _rbac: false,
                         _multitenancy: false
                     );
-                }//end if
+                }
             } catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
                 // Debug logging to understand WHY schema lookup fails.
                 $this->logger->error(
@@ -509,16 +513,15 @@ class ObjectService
             // Look up the object by ID or UUID.
             // Use MagicMapper when register and schema context are available
             // (routes to magic tables for better performance).
-            if ($this->currentRegister !== null && $this->currentSchema !== null) {
-                $object = $this->objectMapper->find(
+            // Fall back to MagicMapper without register/schema context.
+            $hasContext = $this->currentRegister !== null && $this->currentSchema !== null;
+            $object = $hasContext === true
+                ? $this->objectMapper->find(
                     identifier: $object,
                     register: $this->currentRegister,
                     schema: $this->currentSchema
-                );
-            } else {
-                // Fall back to MagicMapper without register/schema context.
-                $object = $this->objectMapper->find($object);
-            }
+                )
+                : $this->objectMapper->find($object);
         }
 
         $this->currentObject = $object;
@@ -1475,9 +1478,9 @@ class ObjectService
 
             if ($activeOrganisation !== null) {
                 return $activeOrganisation->getUuid();
-            } else {
-                return null;
             }
+
+            return null;
         } catch (Exception $e) {
             // Log error but continue without organization context.
             return null;
@@ -1909,9 +1912,9 @@ class ObjectService
                 $resultsToProcess = $result['results'] ?? [];
 
                 // Only process if results exist and is an array.
-                if (is_array($resultsToProcess) === false || empty($resultsToProcess) === true) {
-                    $result['@self']['names'] = [];
-                } else {
+                $result['@self']['names'] = [];
+
+                if (is_array($resultsToProcess) === true && empty($resultsToProcess) === false) {
                     try {
                         $result['@self']['names'] = $this->collectNamesForResults(results: $resultsToProcess);
                     } catch (\Throwable $e) {
@@ -1976,9 +1979,9 @@ class ObjectService
             $resultsToProcess = $result['results'] ?? [];
 
             // Only process if results exist and is an array.
-            if (is_array($resultsToProcess) === false || empty($resultsToProcess) === true) {
-                $result['@self']['names'] = [];
-            } else {
+            $result['@self']['names'] = [];
+
+            if (is_array($resultsToProcess) === true && empty($resultsToProcess) === false) {
                 try {
                     $result['@self']['names'] = $this->collectNamesForResults(results: $resultsToProcess);
                 } catch (\Throwable $e) {

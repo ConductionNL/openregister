@@ -586,11 +586,7 @@ class SchemaCacheHandler
         $ttl = min($ttl, self::MAX_CACHE_TTL);
 
         $now = new DateTime();
-        if ($ttl > 0) {
-            $expires = (clone $now)->add(new DateInterval("PT{$ttl}S"));
-        } else {
-            $expires = null;
-        }
+        $expires = $ttl > 0 ? (clone $now)->add(new DateInterval("PT{$ttl}S")) : null;
 
         // Use INSERT ... ON DUPLICATE KEY UPDATE for MySQL/MariaDB compatibility.
         $qb = $this->db->getQueryBuilder();

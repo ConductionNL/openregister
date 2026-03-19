@@ -1648,23 +1648,15 @@ class SaveObject
                 if (($isRelatedObject === true || $isCascade === true) && empty($oldUuids) === false) {
                     // Resolve the sub-object's schema and register for magic-mapped lookups.
                     $subSchemaRef = $definition['items']['$ref'] ?? $definition['$ref'] ?? null;
-                    if ($subSchemaRef !== null) {
-                        $subSchemaId = $this->resolveSchemaReference(reference: $subSchemaRef);
-                    } else {
-                        $subSchemaId = null;
-                    }
-
-                    if ($subSchemaId !== null) {
-                        $subSchema = $this->getCachedSchema(schemaId: $subSchemaId);
-                    } else {
-                        $subSchema = null;
-                    }
-
-                    if ($objectEntity->getRegister() !== null) {
-                        $subRegister = $this->getCachedRegister(registerId: $objectEntity->getRegister());
-                    } else {
-                        $subRegister = null;
-                    }
+                    $subSchemaId  = $subSchemaRef !== null
+                        ? $this->resolveSchemaReference(reference: $subSchemaRef)
+                        : null;
+                    $subSchema    = $subSchemaId !== null
+                        ? $this->getCachedSchema(schemaId: $subSchemaId)
+                        : null;
+                    $subRegister  = $objectEntity->getRegister() !== null
+                        ? $this->getCachedRegister(registerId: $objectEntity->getRegister())
+                        : null;
 
                     $this->deleteOrphanedRelatedObjects(
                         orphanedUuids: $oldUuids,
@@ -1734,23 +1726,15 @@ class SaveObject
                         if (empty($orphanedUuids) === false) {
                             // Resolve the sub-object's schema and register for magic-mapped lookups.
                             $subSchemaRef = $definition['items']['$ref'] ?? $definition['$ref'] ?? null;
-                            if ($subSchemaRef !== null) {
-                                $subSchemaId = $this->resolveSchemaReference(reference: $subSchemaRef);
-                            } else {
-                                $subSchemaId = null;
-                            }
-
-                            if ($subSchemaId !== null) {
-                                $subSchema = $this->getCachedSchema(schemaId: $subSchemaId);
-                            } else {
-                                $subSchema = null;
-                            }
-
-                            if ($objectEntity->getRegister() !== null) {
-                                $subRegister = $this->getCachedRegister(registerId: $objectEntity->getRegister());
-                            } else {
-                                $subRegister = null;
-                            }
+                            $subSchemaId  = $subSchemaRef !== null
+                                ? $this->resolveSchemaReference(reference: $subSchemaRef)
+                                : null;
+                            $subSchema    = $subSchemaId !== null
+                                ? $this->getCachedSchema(schemaId: $subSchemaId)
+                                : null;
+                            $subRegister  = $objectEntity->getRegister() !== null
+                                ? $this->getCachedRegister(registerId: $objectEntity->getRegister())
+                                : null;
 
                             $this->deleteOrphanedRelatedObjects(
                                 orphanedUuids: array_values($orphanedUuids),
@@ -1759,7 +1743,9 @@ class SaveObject
                             );
                         }//end if
                     }//end if
-                } else {
+                }//end if
+
+                if ($isRelatedObject !== true) {
                     // Handle the result based on whether inversedBy is present.
                     $hasInversedBy      = ($definition['inversedBy'] ?? null) !== null;
                     $hasItemsInversedBy = (($definition['items']['inversedBy'] ?? null) !== null) === true;
@@ -2074,12 +2060,8 @@ class SaveObject
                 );
 
                 // Soft delete: set deletion metadata and update (consistent with DeleteObject).
-                $user = $this->userSession->getUser();
-                if ($user !== null) {
-                    $userId = $user->getUID();
-                } else {
-                    $userId = 'system';
-                }
+                $user   = $this->userSession->getUser();
+                $userId = $user !== null ? $user->getUID() : 'system';
 
                 $deletionData = [
                     'deletedBy' => $userId,
@@ -3385,29 +3367,21 @@ class SaveObject
             // Resolve the target register: property-level config or object's register.
             $targetRegister = $property['register'] ?? $register;
 
-            if ($isArray === true && is_array($value) === true) {
-                // Validate each UUID in the array.
-                foreach ($value as $uuid) {
-                    if (empty($uuid) === true) {
-                        continue;
-                    }
+            // Normalize to array for uniform validation.
+            $uuidsToValidate = ($isArray === true && is_array($value) === true) ? $value : [$value];
 
-                    $this->validateReferenceExists(
-                        propertyName: $propertyName,
-                        uuid: (string) $uuid,
-                        schemaRef: $ref,
-                        register: $targetRegister
-                    );
+            foreach ($uuidsToValidate as $uuid) {
+                if (empty($uuid) === true) {
+                    continue;
                 }
-            } else {
-                // Validate single-value reference.
+
                 $this->validateReferenceExists(
                     propertyName: $propertyName,
-                    uuid: (string) $value,
+                    uuid: (string) $uuid,
                     schemaRef: $ref,
                     register: $targetRegister
                 );
-            }//end if
+            }
         }//end foreach
     }//end validateReferences()
 

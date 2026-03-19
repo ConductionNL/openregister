@@ -93,42 +93,33 @@ class TransformationHandler
             // CRITICAL FIX: Objects from prepareSingleSchemaObjectsOptimized are already flat $selfData arrays.
             // They don't have an '@self' key because they ARE the self data.
             // Only extract @self if it exists (mixed schema or other paths).
-            if (($object['@self'] ?? null) !== null) {
-                $selfData = $object['@self'];
-            } else {
-                // Object is already a flat $selfData array from prepareSingleSchemaObjectsOptimized.
-                $selfData = $object;
-            }
+            // Object is already a flat $selfData array from prepareSingleSchemaObjectsOptimized,
+            // or extract @self if it exists (mixed schema or other paths).
+            $selfData = ($object['@self'] ?? null) !== null ? $object['@self'] : $object;
 
             // Auto-wire @self metadata with proper UUID validation and generation.
             new DateTime();
 
             // Accept any non-empty string as ID, prioritize CSV 'id' column over @self.id.
             $providedId = $object['id'] ?? $selfData['id'] ?? null;
+            // Default: generate new UUID; override if a non-empty ID is provided.
+            $selfData['uuid'] = Uuid::v4()->toRfc4122();
             if (($providedId !== null) === true && empty(trim($providedId)) === false) {
-                // Accept any non-empty string as identifier.
                 $selfData['uuid'] = $providedId;
-            } else {
-                // No ID provided or empty - generate new UUID.
-                $selfData['uuid'] = Uuid::v4()->toRfc4122();
             }
 
             // CRITICAL FIX: Use register and schema from object data if available.
             // Register and schema should be provided in object data for this method.
             if (($selfData['register'] ?? null) === null && ($object['register'] ?? null) !== null) {
-                if (is_object($object['register']) === true) {
-                    $selfData['register'] = $object['register']->getId();
-                } else {
-                    $selfData['register'] = $object['register'];
-                }
+                $selfData['register'] = is_object($object['register']) === true
+                    ? $object['register']->getId()
+                    : $object['register'];
             }
 
             if (($selfData['schema'] ?? null) === null && ($object['schema'] ?? null) !== null) {
-                if (is_object($object['schema']) === true) {
-                    $selfData['schema'] = $object['schema']->getId();
-                } else {
-                    $selfData['schema'] = $object['schema'];
-                }
+                $selfData['schema'] = is_object($object['schema']) === true
+                    ? $object['schema']->getId()
+                    : $object['schema'];
             }
 
             // Note: Register and schema should be set in object data before calling this method.
@@ -168,12 +159,8 @@ class TransformationHandler
 
             // Set owner to current user if not provided (with null check).
             if (($selfData['owner'] ?? null) === null || empty($selfData['owner']) === true) {
-                $currentUser = $this->userSession->getUser();
-                if (($currentUser !== null) === true) {
-                    $selfData['owner'] = $currentUser->getUID();
-                } else {
-                    $selfData['owner'] = null;
-                }
+                $currentUser       = $this->userSession->getUser();
+                $selfData['owner'] = ($currentUser !== null) === true ? $currentUser->getUID() : null;
             }
 
             // Set organization using optimized OrganisationService method if not provided.
@@ -200,14 +187,18 @@ class TransformationHandler
             );
 
             // TEMPORARY FIX: Extract business data properly based on actual structure.
-            if (($object['object'] ?? null) !== null && is_array($object['object']) === true) {
+            $hasObjectProperty = ($object['object'] ?? null) !== null && is_array($object['object']) === true;
+
+            if ($hasObjectProperty === true) {
                 // NEW STRUCTURE: object property contains business data.
                 $businessData = $object['object'];
                 $this->logger->info(
                     message: '[TransformationHandler] Using object property for business data (mixed)',
                     context: ['file' => __FILE__, 'line' => __LINE__]
                 );
-            } else {
+            }
+
+            if ($hasObjectProperty !== true) {
                 // LEGACY STRUCTURE: Remove metadata fields to isolate business data.
                 $businessData   = $object;
                 $metadataFields = [
@@ -246,28 +237,9 @@ class TransformationHandler
 
             // RELATIONS EXTRACTION: Scan the business data for relations (UUIDs and URLs).
             // ONLY scan if relations weren't already set during preparation phase.
-            if (($selfData['relations'] ?? null) === null || empty($selfData['relations']) === true) {
-                if (($schemaCache[$selfData['schema']] ?? null) !== null) {
-                    $schema    = $schemaCache[$selfData['schema']];
-                    $relations = $this->relCascadeHandler->scanForRelations(
-                        data: $businessData,
-                        prefix: '',
-                        schema: $schema
-                    );
-                    $selfData['relations'] = $relations;
+            $relationsAlreadySet = ($selfData['relations'] ?? null) !== null && empty($selfData['relations']) === false;
 
-                    $this->logger->info(
-                        message: '[TransformationHandler] Relations scanned in transformation',
-                        context: [
-                            'file'          => __FILE__,
-                            'line'          => __LINE__,
-                            'uuid'          => $selfData['uuid'] ?? 'unknown',
-                            'relationCount' => count($relations),
-                            'relations'     => array_slice($relations, 0, 3, true),
-                        ]
-                    );
-                }
-            } else {
+            if ($relationsAlreadySet === true) {
                 $this->logger->info(
                     message: '[TransformationHandler] Relations already set from preparation',
                     context: [
@@ -277,7 +249,26 @@ class TransformationHandler
                         'relationCount' => count($selfData['relations']),
                     ]
                 );
-            }//end if
+            } elseif (($schemaCache[$selfData['schema']] ?? null) !== null) {
+                $schema    = $schemaCache[$selfData['schema']];
+                $relations = $this->relCascadeHandler->scanForRelations(
+                    data: $businessData,
+                    prefix: '',
+                    schema: $schema
+                );
+                $selfData['relations'] = $relations;
+
+                $this->logger->info(
+                    message: '[TransformationHandler] Relations scanned in transformation',
+                    context: [
+                        'file'          => __FILE__,
+                        'line'          => __LINE__,
+                        'uuid'          => $selfData['uuid'] ?? 'unknown',
+                        'relationCount' => count($relations),
+                        'relations'     => array_slice($relations, 0, 3, true),
+                    ]
+                );
+            }
 
             // Store the clean business data in the database object column.
             $selfData['object'] = $businessData;

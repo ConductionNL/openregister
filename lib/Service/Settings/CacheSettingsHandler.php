@@ -281,9 +281,9 @@ class CacheSettingsHandler
 
         if ($requests > 0) {
             return ($hits / $requests) * 100;
-        } else {
-            return 0.0;
         }
+
+        return 0.0;
     }//end calculateHitRate()
 
      /**
@@ -641,17 +641,8 @@ class CacheSettingsHandler
             $afterStats = $this->schemaCacheService->getCacheStatistics();
 
             // Stats arrays may contain 'entries' key even if not in type definition.
-            if (array_key_exists('entries', $beforeStats) === true) {
-                $beforeEntries = $beforeStats['entries'];
-            } else {
-                $beforeEntries = 0;
-            }
-
-            if (array_key_exists('entries', $afterStats) === true) {
-                $afterEntries = $afterStats['entries'];
-            } else {
-                $afterEntries = 0;
-            }
+            $beforeEntries = $beforeStats['entries'] ?? 0;
+            $afterEntries  = $afterStats['entries'] ?? 0;
 
             return [
                 'service' => 'schema',

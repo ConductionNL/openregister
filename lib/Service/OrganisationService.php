@@ -337,7 +337,9 @@ class OrganisationService
                         uuid: $defaultOrg->getUuid()
                     );
                 }//end try
-            } else {
+            }
+
+            if ($defaultOrgUuid === null) {
                 // No UUID in settings, create a new default organisation.
                 $defaultOrg     = $this->createOrganisation(
                     name: 'Default Organisation',
@@ -352,7 +354,7 @@ class OrganisationService
                 }
 
                 $this->setDefaultOrganisationId(uuid: $defaultOrg->getUuid());
-            }//end if
+            }
 
             // Only check admin users and RBAC permissions when the org was just created.
             // For existing orgs, admin setup was already done at creation time.
@@ -1118,20 +1120,20 @@ class OrganisationService
                 // Verify user still has access to this organisation.
                 if ($organisation->hasUser($userId) === true) {
                     return $organisation;
-                } else {
-                    // User no longer has access, clear the setting and cache.
-                    $this->config->deleteUserValue($userId, self::APP_NAME, self::CONFIG_ACTIVE_ORGANISATION);
-                    $this->clearActiveOrganisationCache(userId: $userId);
-                        $this->logger->info(
-                        message: '[OrganisationService] Cleared invalid active organisation',
-                        context: [
-                            'file'             => __FILE__,
-                            'line'             => __LINE__,
-                            'userId'           => $userId,
-                            'organisationUuid' => $activeUuid,
-                        ]
-                    );
                 }
+
+                // User no longer has access, clear the setting and cache.
+                $this->config->deleteUserValue($userId, self::APP_NAME, self::CONFIG_ACTIVE_ORGANISATION);
+                $this->clearActiveOrganisationCache(userId: $userId);
+                $this->logger->info(
+                    message: '[OrganisationService] Cleared invalid active organisation',
+                    context: [
+                        'file'             => __FILE__,
+                        'line'             => __LINE__,
+                        'userId'           => $userId,
+                        'organisationUuid' => $activeUuid,
+                    ]
+                );
             } catch (DoesNotExistException $e) {
                 // Active organisation no longer exists, clear from config and cache.
                 $this->config->deleteUserValue($userId, self::APP_NAME, self::CONFIG_ACTIVE_ORGANISATION);

@@ -161,7 +161,9 @@ class ValidationOperationsHandler
 
                 if ($validationResult->isValid() === true) {
                     $validationResults['valid_objects']++;
-                } else {
+                }
+
+                if ($validationResult->isValid() !== true) {
                     $validationResults['invalid_objects']++;
                     $validationResults['validation_errors'][] = [
                         'object_id'   => $object->getUuid(),

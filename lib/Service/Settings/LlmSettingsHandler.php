@@ -134,7 +134,9 @@ class LlmSettingsHandler
                     'backend'   => 'php',
                     'solrField' => '_embedding_',
                 ];
-            } else {
+            }
+
+            if (isset($decoded['vectorConfig']) === true) {
                 // Ensure all vector config fields exist.
                 if (isset($decoded['vectorConfig']['backend']) === false) {
                     $decoded['vectorConfig']['backend'] = 'php';

@@ -99,11 +99,9 @@ class MetadataHydrationHandler
         // If object data has 'object' key that is an array (structured format), use that for property access.
         // Otherwise use the objectData directly (flat format).
         // Note: 'object' may also be a regular string property (e.g., a URL in ObjectInformatieObject).
-        if (isset($objectData['object']) === true && is_array($objectData['object']) === true) {
-            $businessData = $objectData['object'];
-        } else {
-            $businessData = $objectData;
-        }
+        $businessData = (isset($objectData['object']) === true && is_array($objectData['object']) === true)
+            ? $objectData['object']
+            : $objectData;
 
         // Get schema properties for relation field detection.
         $schemaProperties = $schema->getProperties() ?? [];
@@ -361,6 +359,14 @@ class MetadataHydrationHandler
             // Check if this expression uses the ifFilled filter: "field | ifFilled: valIfFilled, valIfEmpty".
             $ifFilledRegex = '/^(.+?)\|\s*ifFilled\s*:\s*(.+)$/s';
             $mapRegex      = '/^(.+?)\|\s*map\s*:\s*(.+)$/s';
+            // Default: simple field path lookup with relation resolution.
+            $value = $this->getValueFromPath(data: $data, path: $fieldExpression);
+            $value = $this->resolveRelationValue(
+                fieldName: $fieldExpression,
+                value: $value,
+                schemaProperties: $schemaProperties
+            );
+
             if (preg_match($ifFilledRegex, $fieldExpression, $ifFilledMatch) === 1) {
                 $value = $this->processIfFilledFilter(
                     data: $data,
@@ -382,16 +388,7 @@ class MetadataHydrationHandler
                     fieldChain: $fieldExpression,
                     schemaProperties: $schemaProperties
                 );
-            } else {
-                $value = $this->getValueFromPath(data: $data, path: $fieldExpression);
-
-                // Resolve UUID to object name for relation fields.
-                $value = $this->resolveRelationValue(
-                    fieldName: $fieldExpression,
-                    value: $value,
-                    schemaProperties: $schemaProperties
-                );
-            }//end if
+            }
 
             // Convert arrays to string representation if still an array at this point.
             if (is_array($value) === true) {

@@ -277,13 +277,10 @@ class SaveObjects
 
         // PERFORMANCE OPTIMIZATION: Reduce logging overhead during bulk operations.
         if (count($objects) > 10000 || ($isMixedSchema === true && count($objects) > 1000)) {
-            if ($isMixedSchema === true) {
-                $opLabel = 'Starting mixed-schema bulk save operation';
-                $opType  = 'mixed-schema';
-            } else {
-                $opLabel = 'Starting single-schema bulk save operation';
-                $opType  = 'single-schema';
-            }
+            $opLabel = $isMixedSchema === true
+                ? 'Starting mixed-schema bulk save operation'
+                : 'Starting single-schema bulk save operation';
+            $opType  = $isMixedSchema === true ? 'mixed-schema' : 'single-schema';
 
             $this->logger->info(
                 $opLabel,
@@ -295,14 +292,19 @@ class SaveObjects
         }
 
         // PERFORMANCE OPTIMIZATION: Use fast path for single-schema operations.
-        if ($isMixedSchema === false && $schema !== null) {
+        // PERFORMANCE OPTIMIZATION: Use fast path for single-schema operations.
+        $useFastPath = ($isMixedSchema === false && $schema !== null);
+
+        if ($useFastPath === true) {
             // FAST PATH: Single-schema operation - avoid complex mixed-schema logic.
             [$processedObjects, $globalSchemaCache, $prepInvalidObjs] = $this->prepareSingleSchemaObjectsOptimized(
                 objects: $objects,
                 register: $register,
                 schema: $schema
             );
-        } else {
+        }
+
+        if ($useFastPath === false) {
             // STANDARD PATH: Mixed-schema operation - use full preparation logic.
             [$processedObjects, $globalSchemaCache, $prepInvalidObjs] = $this->prepareObjectsForBulkSave(objects: $objects);
         }
@@ -385,11 +387,9 @@ class SaveObjects
         $overallSpeed = count($processedObjects) / max($totalTime, 0.001);
 
         // ADD PERFORMANCE METRICS: Include timing and speed metrics like ImportService does.
-        if (count($processedObjects) > 0) {
-            $efficiency = round((count($processedObjects) / $totalObjects) * 100, 1);
-        } else {
-            $efficiency = 0;
-        }
+        $efficiency = count($processedObjects) > 0
+            ? round((count($processedObjects) / $totalObjects) * 100, 1)
+            : 0;
 
         $result['performance'] = [
             'totalTime'        => round($totalTime, 3),
@@ -452,25 +452,25 @@ class SaveObjects
     {
         // ULTRA-PERFORMANCE: Aggressive chunk sizes for sub-1-second imports.
         // Optimized for 33k+ object datasets.
-        if ($totalObjects <= 100) {
+        if ($totalObjects <= 1000) {
+            // Process all at once for small/medium sets.
             return $totalObjects;
-            // Process all at once for small sets.
-        } else if ($totalObjects <= 1000) {
-            return $totalObjects;
-            // Process all at once for medium sets.
-        } else if ($totalObjects <= 5000) {
-            return 2500;
-            // Large chunks for large sets.
-        } else if ($totalObjects <= 10000) {
-            return 5000;
-            // Very large chunks.
-        } else if ($totalObjects <= 50000) {
-            return 10000;
-            // Ultra-large chunks for massive datasets.
-        } else {
-            return 20000;
-            // Maximum chunk size for huge datasets.
         }
+
+        if ($totalObjects <= 5000) {
+            return 2500;
+        }
+
+        if ($totalObjects <= 10000) {
+            return 5000;
+        }
+
+        if ($totalObjects <= 50000) {
+            return 10000;
+        }
+
+        // Maximum chunk size for huge datasets.
+        return 20000;
 
     }//end calculateOptimalChunkSize()
 
@@ -654,12 +654,8 @@ class SaveObjects
         );
 
         // PERFORMANCE OPTIMIZATION: Pre-calculate metadata once.
-        $currentUser = $this->userSession->getUser();
-        if ($currentUser !== null) {
-            $defaultOwner = $currentUser->getUID();
-        } else {
-            $defaultOwner = null;
-        }
+        $currentUser  = $this->userSession->getUser();
+        $defaultOwner = $currentUser !== null ? $currentUser->getUID() : null;
 
         // NO ERROR SUPPRESSION: Let organisation service errors bubble up immediately!
         $defaultOrganisation = $this->organisationService->getOrganisationForNewEntity();
@@ -715,20 +711,22 @@ class SaveObjects
         Register|string|int $register,
         Schema|string|int $schema
     ): array {
+        $registerId = $register instanceof Register ? $register->getId() : $register;
         if ($register instanceof Register) {
-            $registerId = $register->getId();
             self::$registerCache[$registerId] = $register;
-        } else {
-            $registerId = $register;
-            $register   = $this->loadRegisterWithCache(registerId: $registerId);
         }
 
+        if ($register instanceof Register === false) {
+            $register = $this->loadRegisterWithCache(registerId: $registerId);
+        }
+
+        $schemaId = $schema instanceof Schema ? $schema->getId() : $schema;
         if ($schema instanceof Schema) {
             $schemaObj = $schema;
-            $schemaId  = $schema->getId();
             self::$schemaCache[$schemaId] = $schemaObj;
-        } else {
-            $schemaId  = $schema;
+        }
+
+        if ($schema instanceof Schema === false) {
             $schemaObj = $this->loadSchemaWithCache(schemaId: $schemaId);
         }
 
@@ -770,14 +768,12 @@ class SaveObjects
 
         // PERFORMANCE: Accept any non-empty string as ID, prioritize CSV 'id' column.
         $providedId = $object['id'] ?? $selfData['id'] ?? null;
+        $selfData['uuid'] = Uuid::v4()->toRfc4122();
+        $selfData['id']   = $selfData['uuid'];
+
         if ($providedId !== null && empty(trim($providedId)) === false) {
             $selfData['uuid'] = $providedId;
             $selfData['id']   = $providedId;
-            // Also set in @self for consistency.
-        } else {
-            $selfData['uuid'] = Uuid::v4()->toRfc4122();
-            $selfData['id']   = $selfData['uuid'];
-            // Set @self.id to generated UUID.
         }
 
         // PERFORMANCE: Use pre-calculated metadata values.
@@ -802,11 +798,7 @@ class SaveObjects
         $selfData = $this->applyHydratedMetadata(selfData: $selfData, object: $object, tempEntity: $tempEntity);
 
         // DEBUG: Log actual data structure to understand what we're receiving.
-        if (isset($object['@self']) === true) {
-            $selfKeys = array_keys($object['@self']);
-        } else {
-            $selfKeys = 'none';
-        }
+        $selfKeys = isset($object['@self']) === true ? array_keys($object['@self']) : 'none';
 
         $this->logger->info(
                 "[SaveObjects] DEBUG - Single schema object structure",
@@ -1032,10 +1024,11 @@ class SaveObjects
         if (is_array($firstItem) === true && isset($firstItem['created'], $firstItem['updated']) === true) {
             // NEW APPROACH: Complete objects with database-computed classification returned.
             $this->classifyDatabaseComputedResults(bulkResult: $bulkResult, result: $result);
-        } else {
-            // FALLBACK: UUID array returned (legacy behavior).
-            $this->classifyLegacyResults(bulkResult: $bulkResult, transformedObjects: $transformedObjects, result: $result);
+            return;
         }
+
+        // FALLBACK: UUID array returned (legacy behavior).
+        $this->classifyLegacyResults(bulkResult: $bulkResult, transformedObjects: $transformedObjects, result: $result);
     }//end buildChunkResults()
 
     /**
@@ -1433,12 +1426,9 @@ class SaveObjects
             // CRITICAL FIX: Objects from prepareSingleSchemaObjectsOptimized are already flat $selfData arrays.
             // They don't have an '@self' key because they ARE the self data.
             // Only extract @self if it exists (mixed schema or other paths).
-            if (isset($object['@self']) === true) {
-                $selfData = $object['@self'];
-            } else {
-                // Object is already a flat $selfData array from prepareSingleSchemaObjectsOptimized.
-                $selfData = $object;
-            }
+            // Object is already a flat $selfData array from prepareSingleSchemaObjectsOptimized,
+            // or extract @self if it exists (mixed schema or other paths).
+            $selfData = isset($object['@self']) === true ? $object['@self'] : $object;
 
             // Generate or validate object identifiers (uuid, id, register, schema).
             $selfData = $this->generateObjectIdentifiers(selfData: $selfData, object: $object);
@@ -1468,22 +1458,7 @@ class SaveObjects
 
             // RELATIONS EXTRACTION: Scan the business data for relations (UUIDs and URLs).
             // ONLY scan if relations weren't already set during preparation phase.
-            if (isset($selfData['relations']) === false || empty($selfData['relations']) === true) {
-                if (isset($schemaCache[$selfData['schema']]) === true) {
-                    $schema    = $schemaCache[$selfData['schema']];
-                    $relations = $this->scanForRelations(data: $businessData, prefix: '', schema: $schema);
-                    $selfData['relations'] = $relations;
-
-                    $this->logger->info(
-                            "[SaveObjects] Relations scanned in transformation",
-                            [
-                                'uuid'          => $selfData['uuid'] ?? 'unknown',
-                                'relationCount' => count($relations),
-                                'relations'     => array_slice($relations, 0, 3, true),
-                            ]
-                            );
-                }
-            } else {
+            if (isset($selfData['relations']) === true && empty($selfData['relations']) === false) {
                 $this->logger->info(
                         "[SaveObjects] Relations already set from preparation",
                         [
@@ -1491,7 +1466,20 @@ class SaveObjects
                             'relationCount' => count($selfData['relations']),
                         ]
                         );
-            }//end if
+            } elseif (isset($schemaCache[$selfData['schema']]) === true) {
+                $schema    = $schemaCache[$selfData['schema']];
+                $relations = $this->scanForRelations(data: $businessData, prefix: '', schema: $schema);
+                $selfData['relations'] = $relations;
+
+                $this->logger->info(
+                        "[SaveObjects] Relations scanned in transformation",
+                        [
+                            'uuid'          => $selfData['uuid'] ?? 'unknown',
+                            'relationCount' => count($relations),
+                            'relations'     => array_slice($relations, 0, 3, true),
+                        ]
+                        );
+            }
 
             // Store the clean business data in the database object column.
             $selfData['object'] = $businessData;
@@ -1521,17 +1509,15 @@ class SaveObjects
     {
         // Auto-wire @self metadata with proper UUID validation and generation.
         // Accept any non-empty string as ID, prioritize CSV 'id' column over @self.id.
-        $providedId = $object['id'] ?? $selfData['id'] ?? null;
+        // Default: generate new UUID.
+        $providedId       = $object['id'] ?? $selfData['id'] ?? null;
+        $selfData['uuid'] = Uuid::v4()->toRfc4122();
+        $selfData['id']   = $selfData['uuid'];
+
+        // Override: accept any non-empty string as identifier.
         if ($providedId !== null && empty(trim($providedId)) === false) {
-            // Accept any non-empty string as identifier.
             $selfData['uuid'] = $providedId;
             $selfData['id']   = $providedId;
-            // Also set in @self for consistency.
-        } else {
-            // No ID provided or empty - generate new UUID.
-            $selfData['uuid'] = Uuid::v4()->toRfc4122();
-            $selfData['id']   = $selfData['uuid'];
-            // Set @self.id to generated UUID.
         }
 
         // CRITICAL FIX: Use register and schema from method parameters if not provided in object data.
@@ -1598,12 +1584,8 @@ class SaveObjects
     {
         // Set owner to current user if not provided (with null check).
         if (isset($selfData['owner']) === false || empty($selfData['owner']) === true) {
-            $currentUser = $this->userSession->getUser();
-            if ($currentUser !== null) {
-                $selfData['owner'] = $currentUser->getUID();
-            } else {
-                $selfData['owner'] = null;
-            }
+            $currentUser        = $this->userSession->getUser();
+            $selfData['owner']  = $currentUser !== null ? $currentUser->getUID() : null;
         }
 
         // Set organization using optimized OrganisationService method if not provided.
@@ -1779,11 +1761,7 @@ class SaveObjects
                 continue;
             }
 
-            if ($prefix !== '') {
-                $currentPath = $prefix.'.'.$key;
-            } else {
-                $currentPath = $key;
-            }
+            $currentPath = $prefix !== '' ? $prefix.'.'.$key : $key;
 
             $propertyRelations = $this->scanPropertyForRelation(
                 key: $key,
@@ -1874,40 +1852,33 @@ class SaveObjects
                           isset($propertyConfig['items']['type']) &&
                           $propertyConfig['items']['type'] === 'object';
 
-        if ($isArrayOfObjects === true) {
-            // For arrays of objects, scan each item for relations.
-            foreach ($value as $index => $item) {
-                if (is_array($item) === true) {
-                    $itemRelations = $this->scanForRelations(
-                        data: $item,
-                        prefix: $currentPath.'.'.$index,
-                        schema: $schema
-                    );
-                    $relations     = array_merge($relations, $itemRelations);
-                } else if (is_string($item) === true && empty($item) === false) {
-                    // String values in object arrays are always treated as relations.
-                    $relations[$currentPath.'.'.$index] = $item;
-                }
+        foreach ($value as $index => $item) {
+            if (is_array($item) === true) {
+                // Recursively scan nested arrays/objects.
+                $itemRelations = $this->scanForRelations(
+                    data: $item,
+                    prefix: $currentPath.'.'.$index,
+                    schema: $schema
+                );
+                $relations     = array_merge($relations, $itemRelations);
+                continue;
             }
-        } else {
-            // For non-object arrays, check each item.
-            foreach ($value as $index => $item) {
-                if (is_array($item) === true) {
-                    // Recursively scan nested arrays/objects.
-                    $itemRelations = $this->scanForRelations(
-                        data: $item,
-                        prefix: $currentPath.'.'.$index,
-                        schema: $schema
-                    );
-                    $relations     = array_merge($relations, $itemRelations);
-                } else if (is_string($item) === true && empty($item) === false && trim($item) !== '') {
-                    // Check if the string looks like a reference.
-                    if ($this->isReference(value: $item) === true) {
-                        $relations[$currentPath.'.'.$index] = $item;
-                    }
-                }
+
+            if (is_string($item) === false || empty($item) === true) {
+                continue;
             }
-        }//end if
+
+            if ($isArrayOfObjects === true) {
+                // String values in object arrays are always treated as relations.
+                $relations[$currentPath.'.'.$index] = $item;
+                continue;
+            }
+
+            // For non-object arrays, check if the string looks like a reference.
+            if (trim($item) !== '' && $this->isReference(value: $item) === true) {
+                $relations[$currentPath.'.'.$index] = $item;
+            }
+        }
 
         return $relations;
     }//end scanArrayForRelations()

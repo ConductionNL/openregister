@@ -272,12 +272,10 @@ class TaskService
             $vtodo->PRIORITY = (int) $data['priority'];
         }
 
-        if (isset($data['due']) === true) {
-            if (empty($data['due']) === true) {
-                unset($vtodo->DUE);
-            } else {
-                $vtodo->DUE = new DateTime($data['due']);
-            }
+        if (isset($data['due']) === true && empty($data['due']) === true) {
+            unset($vtodo->DUE);
+        } else if (isset($data['due']) === true) {
+            $vtodo->DUE = new DateTime($data['due']);
         }
 
         // Update DTSTAMP.
@@ -348,14 +346,10 @@ class TaskService
                     }
                 } else if (is_string($components) === true) {
                     $supportsVtodo = stripos($components, 'VTODO') !== false;
-                } else {
+                } else if (is_iterable($components) === true) {
                     // If components is an array or other iterable.
                     foreach ($components as $comp) {
-                        if (is_string($comp) === true) {
-                            $compName = $comp;
-                        } else {
-                            $compName = (string) $comp;
-                        }
+                        $compName = is_string($comp) === true ? $comp : (string) $comp;
 
                         if (strtoupper($compName) === 'VTODO') {
                             $supportsVtodo = true;

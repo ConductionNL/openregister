@@ -299,6 +299,14 @@ class WebhookService
             $errorDetails = [];
 
             // Get status code from exception if available.
+            if ($e->hasResponse() !== true) {
+                // Connection error or timeout.
+                $errorDetails['connection_error'] = true;
+                if ($e->getCode() !== 0) {
+                    $errorDetails['error_code'] = $e->getCode();
+                }
+            }
+
             if ($e->hasResponse() === true) {
                 $response   = $e->getResponse();
                 $statusCode = $response->getStatusCode();
@@ -320,13 +328,7 @@ class WebhookService
                 } catch (\Exception $bodyException) {
                     // Ignore body reading errors.
                 }
-            } else {
-                // Connection error or timeout.
-                $errorDetails['connection_error'] = true;
-                if ($e->getCode() !== 0) {
-                    $errorDetails['error_code'] = $e->getCode();
-                }
-            }//end if
+            }
 
             // Add request details to error message.
             $errorDetails['request_url']    = $webhook->getUrl();
@@ -646,13 +648,9 @@ class WebhookService
             'timeout' => $webhook->getTimeout(),
         ];
 
-        // For GET requests, use query parameters instead of JSON body.
-        if (strtoupper($webhook->getMethod()) === 'GET') {
-            $options['query'] = $payload;
-        } else {
-            // For POST, PUT, PATCH, DELETE, send JSON body.
-            $options['json'] = $payload;
-        }
+        // For GET requests, use query parameters; for others, send JSON body.
+        $payloadKey = strtoupper($webhook->getMethod()) === 'GET' ? 'query' : 'json';
+        $options[$payloadKey] = $payload;
 
         $response = $this->client->request(
             method: $webhook->getMethod(),

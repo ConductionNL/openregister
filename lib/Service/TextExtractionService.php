@@ -957,7 +957,9 @@ class TextExtractionService
             } else if ($this->isSpreadsheet(mimeType: $mimeType) === true) {
                 // Extract text from XLSX/XLS using PhpSpreadsheet.
                 $extractedText = $this->extractSpreadsheet(file: $file);
-            } else {
+            }
+
+            if (isset($extractedText) === false) {
                 // Unsupported file type.
                 $this->logger->info(
                     message: '[TextExtractionService] Unsupported file type',
@@ -970,7 +972,7 @@ class TextExtractionService
                 );
 
                 return null;
-            }//end if
+            }
 
             return $extractedText;
         } catch (Exception $e) {
@@ -1900,64 +1902,64 @@ class TextExtractionService
         $currentOffset = 0;
 
         foreach ($splits as $split) {
-            if ($currentChunk === '') {
-                $testChunk = $split;
-            } else {
-                $testChunk = $currentChunk.$separator.$split;
-            }
+            $testChunk = $currentChunk === '' ? $split : $currentChunk.$separator.$split;
 
             if (strlen($testChunk) <= $chunkSize) {
                 // Can add to current chunk.
                 $currentChunk = $testChunk;
-            } else {
-                // Current chunk is full.
-                if ($currentChunk !== '') {
-                    $chunkLength = strlen($currentChunk);
+                continue;
+            }
 
-                    if (strlen(trim($currentChunk)) >= self::MIN_CHUNK_SIZE) {
-                        $chunks[] = [
-                            'text'         => trim($currentChunk),
-                            'start_offset' => $currentOffset,
-                            'end_offset'   => $currentOffset + $chunkLength,
-                        ];
-                    }
+            // Current chunk is full — handle non-empty current chunk.
+            if ($currentChunk !== '') {
+                $chunkLength = strlen($currentChunk);
 
-                    $currentOffset += $chunkLength;
+                if (strlen(trim($currentChunk)) >= self::MIN_CHUNK_SIZE) {
+                    $chunks[] = [
+                        'text'         => trim($currentChunk),
+                        'start_offset' => $currentOffset,
+                        'end_offset'   => $currentOffset + $chunkLength,
+                    ];
+                }
 
-                    // Add overlap from end of previous chunk.
-                    if ($chunkOverlap > 0 && strlen($currentChunk) > $chunkOverlap) {
-                        $overlapText    = substr($currentChunk, -$chunkOverlap);
-                        $currentChunk   = $overlapText.$separator.$split;
-                        $currentOffset -= $chunkOverlap;
-                    } else {
-                        $currentChunk = $split;
-                    }
-                } else {
-                    // Single split is too large, need to split it further.
-                    if (strlen($split) > $chunkSize) {
-                        $subChunks = $this->recursiveSplit(
-                            text: $split,
-                            separators: $separators,
-                            chunkSize: $chunkSize,
-                            chunkOverlap: $chunkOverlap
-                        );
+                $currentOffset += $chunkLength;
 
-                        // Adjust offsets.
-                        foreach ($subChunks as $subChunk) {
-                            $chunks[] = [
-                                'text'         => $subChunk['text'],
-                                'start_offset' => $currentOffset + $subChunk['start_offset'],
-                                'end_offset'   => $currentOffset + $subChunk['end_offset'],
-                            ];
-                        }
+                // Add overlap from end of previous chunk (save old chunk for overlap extraction).
+                $previousChunk = $currentChunk;
+                $currentChunk  = $split;
+                if ($chunkOverlap > 0 && $chunkLength > $chunkOverlap) {
+                    $overlapText    = substr($previousChunk, -$chunkOverlap);
+                    $currentChunk   = $overlapText.$separator.$split;
+                    $currentOffset -= $chunkOverlap;
+                }
 
-                        $currentOffset += strlen($split);
-                        $currentChunk   = '';
-                    } else {
-                        $currentChunk = $split;
-                    }//end if
-                }//end if
-            }//end if
+                continue;
+            }
+
+            // Current chunk is empty and single split is too large — need to split it further.
+            if (strlen($split) > $chunkSize) {
+                $subChunks = $this->recursiveSplit(
+                    text: $split,
+                    separators: $separators,
+                    chunkSize: $chunkSize,
+                    chunkOverlap: $chunkOverlap
+                );
+
+                // Adjust offsets.
+                foreach ($subChunks as $subChunk) {
+                    $chunks[] = [
+                        'text'         => $subChunk['text'],
+                        'start_offset' => $currentOffset + $subChunk['start_offset'],
+                        'end_offset'   => $currentOffset + $subChunk['end_offset'],
+                    ];
+                }
+
+                $currentOffset += strlen($split);
+                $currentChunk   = '';
+                continue;
+            }
+
+            $currentChunk = $split;
         }//end foreach
 
         // Don't forget the last chunk.
@@ -2048,12 +2050,11 @@ class TextExtractionService
         $totalSize = 0;
         foreach ($chunks as $chunk) {
             // Extract text from chunk.
+            $text = '';
             if (is_array($chunk) === true && (($chunk['text'] ?? null) !== null)) {
                 $text = $chunk['text'];
             } else if (is_string($chunk) === true) {
                 $text = $chunk;
-            } else {
-                $text = '';
             }
 
             $totalSize += strlen($text);

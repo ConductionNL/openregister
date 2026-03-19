@@ -229,11 +229,9 @@ class BulkRelationHandler
                     continue;
                 }
 
-                if (is_array($objectData[$propertyName]) === true) {
-                    $relatedObjectIds = $objectData[$propertyName];
-                } else {
-                    $relatedObjectIds = [$objectData[$propertyName]];
-                }
+                $relatedObjectIds = is_array($objectData[$propertyName]) === true
+                    ? $objectData[$propertyName]
+                    : [$objectData[$propertyName]];
 
                 foreach ($relatedObjectIds as $relatedId) {
                     if (empty($relatedId) === false && empty($inverseConfig['writeBack']) === false) {
@@ -281,11 +279,9 @@ class BulkRelationHandler
                     continue;
                 }
 
-                if (is_array($objectData[$propertyName]) === true) {
-                    $relatedObjectIds = $objectData[$propertyName];
-                } else {
-                    $relatedObjectIds = [$objectData[$propertyName]];
-                }
+                $relatedObjectIds = is_array($objectData[$propertyName]) === true
+                    ? $objectData[$propertyName]
+                    : [$objectData[$propertyName]];
 
                 foreach ($relatedObjectIds as $relatedId) {
                     if (empty($relatedId) === false && (($relatedObjectsMap[$relatedId] ?? null) !== null)) {
@@ -359,11 +355,11 @@ class BulkRelationHandler
             }
 
             // Add source UUID to inverse property if not already present.
-            if (in_array($sourceUuid, $objectData[$inverseProperty], true) === false) {
-                $objectData[$inverseProperty][] = $sourceUuid;
-            } else {
+            if (in_array($sourceUuid, $objectData[$inverseProperty], true) === true) {
                 continue;
             }
+
+            $objectData[$inverseProperty][] = $sourceUuid;
 
             // Update the object with modified data.
             $targetObject->setObject($objectData);
@@ -422,11 +418,7 @@ class BulkRelationHandler
         }
 
         foreach ($data as $key => $value) {
-            if ($prefix !== '') {
-                $currentPath = "$prefix.$key";
-            } else {
-                $currentPath = $key;
-            }
+            $currentPath = $prefix !== '' ? "$prefix.$key" : $key;
 
             // Check if this property is defined in the schema.
             $propertyConfig = $schemaProperties[$key] ?? null;
@@ -447,7 +439,9 @@ class BulkRelationHandler
                         // Type 'object' with a string value is always a relation.
                         $isRelation = true;
                     }
-                } else {
+                }
+
+                if ($propertyConfig === null) {
                     // No schema info - use heuristics.
                     // If it looks like a UUID or URL, treat it as a relation.
                     if (\Symfony\Component\Uid\Uuid::isValid($value) === true) {

@@ -206,11 +206,7 @@ class ChunkProcessingHandler
         $result['statistics']['unchanged'] = count($unchangedObjects);
         $result['unchanged'] = array_map(
             function ($obj) {
-                if (is_array($obj) === true) {
-                    return $obj;
-                } else {
-                    return $obj->jsonSerialize();
-                }
+                return is_array($obj) === true ? $obj : $obj->jsonSerialize();
             },
             $unchangedObjects
         );
@@ -232,13 +228,25 @@ class ChunkProcessingHandler
         $unchangedObjects     = [];
         $reconstructedObjects = [];
 
+        if (is_array($bulkResult) !== true) {
+            // Fallback for unexpected return format.
+            $this->logger->warning(
+                message: '[ChunkProcessingHandler] Unexpected bulk result format, using fallback',
+                context: ['file' => __FILE__, 'line' => __LINE__]
+            );
+            foreach ($transformedObjects ?? [] as $objData) {
+                $savedObjectIds[] = $objData['uuid'];
+                $result['statistics']['saved']++;
+            }
+        }
+
         if (is_array($bulkResult) === true) {
             // Check if we got complete objects (new approach) or just UUIDs (fallback).
-            $firstItem = reset($bulkResult);
+            $firstItem         = reset($bulkResult);
+            $hasDatabaseStatus = is_array($firstItem) === true
+                && isset($firstItem['object_status']) === true;
 
-            if (is_array($firstItem) === true
-                && isset($firstItem['object_status']) === true
-            ) {
+            if ($hasDatabaseStatus === true) {
                 // NEW APPROACH: Complete objects with database-computed classification returned.
                 $this->logger->info(
                     message: '[ChunkProcessingHandler] Processing complete objects with database-computed classification',
@@ -258,21 +266,18 @@ class ChunkProcessingHandler
 
                     switch ($objectStatus) {
                         case 'created':
-                            // 🆕 CREATED: Object was created during this operation (database-computed).
                             $createdObjects[]  = $completeObject;
                             $result['saved'][] = $objEntity->jsonSerialize();
                             $result['statistics']['saved']++;
                             break;
 
                         case 'updated':
-                            // 📝 UPDATED: Existing object was modified during this operation (database-computed).
                             $updatedObjects[]    = $completeObject;
                             $result['updated'][] = $objEntity->jsonSerialize();
                             $result['statistics']['updated']++;
                             break;
 
                         case 'unchanged':
-                            // ⏸️ UNCHANGED: Existing object was not modified (database-computed).
                             $unchangedObjects[]    = $completeObject;
                             $result['unchanged'][] = $objEntity->jsonSerialize();
                             $result['statistics']['unchanged']++;
@@ -307,7 +312,9 @@ class ChunkProcessingHandler
                         'classification_method' => 'database_computed_sql',
                     ]
                 );
-            } else {
+            }//end if
+
+            if ($hasDatabaseStatus !== true) {
                 // FALLBACK: UUID array returned (legacy behavior).
                 $this->logger->info(
                     message: '[ChunkProcessingHandler] Processing UUID array (legacy mode)',
@@ -322,16 +329,6 @@ class ChunkProcessingHandler
                     }
                 }
             }//end if
-        } else {
-            // Fallback for unexpected return format.
-            $this->logger->warning(
-                message: '[ChunkProcessingHandler] Unexpected bulk result format, using fallback',
-                context: ['file' => __FILE__, 'line' => __LINE__]
-            );
-            foreach ($transformedObjects ?? [] as $objData) {
-                $savedObjectIds[] = $objData['uuid'];
-                $result['statistics']['saved']++;
-            }
         }//end if
 
         // STEP 5: ENHANCED OBJECT RESPONSE - Already populated in STEP 4.
@@ -347,9 +344,10 @@ class ChunkProcessingHandler
                     'unchanged_objects' => count($result['unchanged']),
                 ]
             );
-        } else {
+        }
+
+        if (empty($reconstructedObjects) === true) {
             // FALLBACK: Use traditional object reconstruction (placeholder).
-            // This would need the reconstructSavedObjects method implementation.
             $this->logger->info(
                 message: '[ChunkProcessingHandler] Using fallback object reconstruction',
                 context: ['file' => __FILE__, 'line' => __LINE__]
@@ -361,7 +359,7 @@ class ChunkProcessingHandler
                     $result['saved'][] = $objData;
                 }
             }
-        }//end if
+        }
 
         // STEP 6: Calculate processing time.
         $endTime        = microtime(true);

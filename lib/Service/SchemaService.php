@@ -1350,7 +1350,9 @@ class SchemaService
                         'recommended' => implode(', ', $enumValues),
                         'description' => "Property appears to have predefined values: ".implode(', ', $enumValues),
                     ];
-                } else {
+                }
+
+                if ($currentEnum !== null && empty($currentEnum) !== true) {
                     // Check if current enum differs from analysis.
                     $currentEnumSorted  = $currentEnum;
                     $analysisEnumSorted = $enumValues;
