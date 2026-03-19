@@ -111,6 +111,7 @@ use Twig\Loader\ArrayLoader;
  * @SuppressWarnings(PHPMD.TooManyMethods)           Many methods required for full object save functionality
  * @SuppressWarnings(PHPMD.ExcessiveClassComplexity) Complex cascading and relation logic
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)   Requires many service and mapper dependencies
+ * @SuppressWarnings(PHPMD.ElseExpression)           Complex cascading/relation logic uses else for readability
  */
 
 class SaveObject

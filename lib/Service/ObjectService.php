@@ -153,6 +153,7 @@ use function React\Promise\all;
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)   Requires coordination with many specialized handlers
  * @SuppressWarnings(PHPMD.ExcessivePublicCount)     Public API requires many entry points
  * @SuppressWarnings(PHPMD.BooleanArgumentFlag)      Boolean flags for RBAC and multitenancy
+ * @SuppressWarnings(PHPMD.ElseExpression)           Context setters use else for ID vs slug lookup paths
  */
 class ObjectService
 {

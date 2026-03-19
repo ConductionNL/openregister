@@ -62,6 +62,7 @@ use Symfony\Component\Yaml\Yaml;
  * @SuppressWarnings(PHPMD.CyclomaticComplexity)
  * @SuppressWarnings(PHPMD.NPathComplexity)
  * @SuppressWarnings(PHPMD.UnusedPrivateField)
+ * @SuppressWarnings(PHPMD.ElseExpression)
  * Reason: Configuration import requires comprehensive dependencies and complex validation logic.
  *         Reserved fields for future features.
  */

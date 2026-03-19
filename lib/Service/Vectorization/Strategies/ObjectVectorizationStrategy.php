@@ -34,6 +34,8 @@ use Psr\Log\LoggerInterface;
  *
  * @category Service
  * @package  OCA\OpenRegister\Service\Vectorization
+ *
+ * @SuppressWarnings(PHPMD.ElseExpression) Entity handling uses else for array vs object serialization
  */
 class ObjectVectorizationStrategy implements VectorizationStrategyInterface
 {

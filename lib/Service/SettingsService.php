@@ -122,6 +122,7 @@ use Psr\Log\LoggerInterface;
  * @SuppressWarnings(PHPMD.ExcessivePublicCount)     Public API facade requires many public entry points
  * @SuppressWarnings(PHPMD.TooManyFields)            Settings service coordinates many specialized handlers
  * @SuppressWarnings(PHPMD.LongVariable)             Descriptive variable names improve code readability
+ * @SuppressWarnings(PHPMD.ElseExpression)           Mass validation uses else for serial vs parallel processing
  */
 class SettingsService
 {

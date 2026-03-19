@@ -64,6 +64,7 @@ use Psr\Log\LoggerInterface;
  * @SuppressWarnings(PHPMD.ExcessiveClassComplexity) Complex JSON Schema validation logic
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)   Validation requires multiple format and schema dependencies
  * @SuppressWarnings(PHPMD.TooManyMethods)           Validation requires per-type and per-format validator methods
+ * @SuppressWarnings(PHPMD.ElseExpression)           Schema validation uses else for type conversion fallbacks
  */
 
 class ValidateObject

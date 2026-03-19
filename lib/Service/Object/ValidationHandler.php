@@ -45,6 +45,7 @@ use Exception;
  *
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)   Validation requires multiple exception and entity dependencies
  * @SuppressWarnings(PHPMD.ExcessiveClassComplexity) Validation orchestration requires multiple validation strategy methods
+ * @SuppressWarnings(PHPMD.ElseExpression)           Validation error extraction uses else for exception type branching
  */
 class ValidationHandler
 {

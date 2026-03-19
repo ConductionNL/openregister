@@ -49,6 +49,7 @@ use Psr\Log\LoggerInterface;
  * @package  OCA\OpenRegister\Service\Objects\SaveObject
  *
  * @SuppressWarnings(PHPMD.ExcessiveClassComplexity)
+ * @SuppressWarnings(PHPMD.ElseExpression)
  * Reason: Metadata hydration handles multiple complex scenarios for template processing
  */
 class MetadataHydrationHandler

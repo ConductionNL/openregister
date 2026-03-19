@@ -49,6 +49,7 @@ use Psr\Log\LoggerInterface;
  * @version  2.0.0
  *
  * @SuppressWarnings(PHPMD.ExcessiveClassComplexity) Complex faceting logic with multiple strategies
+ * @SuppressWarnings(PHPMD.ElseExpression)           Facet transformation requires else for aggregated vs non-aggregated paths
  */
 class FacetHandler
 {

@@ -47,6 +47,7 @@ use Symfony\Component\Uid\Uuid;
  *
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
  * @SuppressWarnings(PHPMD.ExcessiveClassComplexity) Core referential integrity algorithm handles 5 action types
+ * @SuppressWarnings(PHPMD.ElseExpression)           Complex graph walking and SQL generation require else branches
  */
 class ReferentialIntegrityService
 {

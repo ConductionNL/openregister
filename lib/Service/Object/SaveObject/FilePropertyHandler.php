@@ -43,6 +43,7 @@ use Psr\Log\LoggerInterface;
  *
  * @SuppressWarnings(PHPMD.ExcessiveClassLength)     File processing requires comprehensive validation and parsing methods
  * @SuppressWarnings(PHPMD.ExcessiveClassComplexity) Complex file handling with multiple input formats
+ * @SuppressWarnings(PHPMD.ElseExpression)           File input parsing requires else for URL vs base64 vs data URI handling
  */
 class FilePropertyHandler
 {

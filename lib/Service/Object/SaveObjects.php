@@ -50,6 +50,7 @@ use Symfony\Component\Uid\Uuid;
  * @SuppressWarnings(PHPMD.TooManyMethods)           Many methods required for bulk processing pipeline
  * @SuppressWarnings(PHPMD.ExcessiveClassComplexity) Complex bulk operation optimization logic
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)   Bulk operations require many handler dependencies
+ * @SuppressWarnings(PHPMD.ElseExpression)           Bulk save paths use else for single vs mixed schema handling
  */
 class SaveObjects
 {

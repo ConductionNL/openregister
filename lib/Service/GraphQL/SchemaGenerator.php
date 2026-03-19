@@ -41,6 +41,8 @@ use OCA\OpenRegister\Service\GraphQL\Scalar\UuidType;
  * and connection types.
  *
  * @psalm-suppress UnusedClass
+ *
+ * @SuppressWarnings(PHPMD.ElseExpression) Schema type generation uses else for object vs scalar field handling
  */
 class SchemaGenerator
 {

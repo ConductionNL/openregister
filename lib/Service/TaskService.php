@@ -37,6 +37,7 @@ use Sabre\VObject\Reader;
  * @package  OCA\OpenRegister\Service
  *
  * @SuppressWarnings(PHPMD.ExcessiveClassComplexity) Task orchestration requires coordination across multiple services
+ * @SuppressWarnings(PHPMD.ElseExpression)           CalDAV component detection uses else for different component types
  */
 class TaskService
 {

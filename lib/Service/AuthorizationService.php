@@ -33,6 +33,7 @@ use OCP\IUserSession;
  * @package OCA\OpenRegister\Service
  *
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
+ * @SuppressWarnings(PHPMD.ElseExpression)           JWT validation uses else for payload/authorization branching
  */
 class AuthorizationService
 {
