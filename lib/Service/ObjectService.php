@@ -1920,8 +1920,11 @@ class ObjectService
                     try {
                         $result['@self']['names'] = $this->collectNamesForResults(results: $resultsToProcess);
                     } catch (\Throwable $e) {
+                        $errMsg  = $e->getMessage();
+                        $errFile = $e->getFile();
+                        $errLine = $e->getLine();
                         $this->logger->error(
-                            message: '[ObjectService] _names extension failed: '.$e->getMessage().' at '.$e->getFile().':'.$e->getLine(),
+                            message: "[ObjectService] _names extension failed: {$errMsg} at {$errFile}:{$errLine}",
                             context: ['file' => __FILE__, 'line' => __LINE__]
                         );
                         $result['@self']['names']       = [];
@@ -1984,8 +1987,10 @@ class ObjectService
                 try {
                     $result['@self']['names'] = $this->collectNamesForResults(results: $resultsToProcess);
                 } catch (\Throwable $e) {
+                    $errFile = $e->getFile();
+                    $errLine = $e->getLine();
                     $this->logger->error(
-                        message: '[ObjectService] _names extension failed: '.$e->getMessage().' at '.$e->getFile().':'.$e->getLine(),
+                        message: '[ObjectService] _names extension failed: '.$e->getMessage()." at {$errFile}:{$errLine}",
                         context: ['file' => __FILE__, 'line' => __LINE__]
                     );
                     $result['@self']['names']       = [];

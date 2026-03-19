@@ -221,8 +221,9 @@ class UpdateFileHandler
                         try {
                             $folderFiles = $objectFolder->getDirectoryListing();
                             $fileNames   = array_map(fn($f) => $f->getName(), $folderFiles);
+                            $fileList    = implode(', ', $fileNames);
                             $this->logger->info(
-                                message: '[UpdateFileHandler] updateFile: Files in object folder: '.implode(', ', $fileNames),
+                                message: "[UpdateFileHandler] updateFile: Files in object folder: $fileList",
                                 context: [
                                     'file' => __FILE__,
                                     'line' => __LINE__,
@@ -337,8 +338,10 @@ class UpdateFileHandler
                                 );
                             }
                         } catch (Exception $e) {
+                            $eMsg   = $e->getMessage();
+                            $errMsg = "[UpdateFileHandler] updateFile: Error finding file by ID {$fileId}: {$eMsg}";
                             $this->logger->error(
-                                message: "[UpdateFileHandler] updateFile: Error finding file by ID $fileId: ".$e->getMessage(),
+                                message: $errMsg,
                                 context: ['file' => __FILE__, 'line' => __LINE__]
                             );
                         }//end try

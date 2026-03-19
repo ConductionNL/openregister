@@ -382,8 +382,9 @@ class RegisterService
         }
 
         try {
+            $schemaCount = count($schemas);
             $this->logger->debug(
-                message: '[RegisterService] GetSchemaObjectCounts: Processing '.count($schemas).' schemas for register '.$registerId,
+                message: "[RegisterService] GetSchemaObjectCounts: Processing $schemaCount schemas for register $registerId",
                 context: ['file' => __FILE__, 'line' => __LINE__]
             );
 

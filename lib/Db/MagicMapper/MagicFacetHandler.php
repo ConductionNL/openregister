@@ -1960,8 +1960,9 @@ class MagicFacetHandler
                     );
                     $this->warmedFields[$fieldCacheKey] = true;
                 } catch (\Exception $e) {
+                    $eMsg = $e->getMessage();
                     $this->logger->warning(
-                        message: '[MagicFacetHandler] Failed to persist facet labels to distributed cache: '.$e->getMessage(),
+                        message: "[MagicFacetHandler] Failed to persist facet labels to distributed cache: {$eMsg}",
                         context: ['file' => __FILE__, 'line' => __LINE__]
                     );
                 }

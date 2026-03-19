@@ -91,10 +91,12 @@ class McpResourcesService
                 foreach ($schemaIds as $schemaId) {
                     try {
                         $schema      = $this->schemaMapper->find($schemaId);
+                        $regTitle    = $register->getTitle();
+                        $schTitle    = $schema->getTitle();
                         $resources[] = [
                             'uri'         => 'openregister://objects/'.$register->getId().'/'.$schema->getId(),
-                            'name'        => $register->getTitle().' — '.$schema->getTitle(),
-                            'description' => 'Objects in register "'.$register->getTitle().'" with schema "'.$schema->getTitle().'"',
+                            'name'        => "$regTitle — $schTitle",
+                            'description' => "Objects in register \"{$regTitle}\" with schema \"{$schTitle}\"",
                             'mimeType'    => 'application/json',
                         ];
                     } catch (DoesNotExistException $e) {
