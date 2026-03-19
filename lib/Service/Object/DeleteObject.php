@@ -165,7 +165,10 @@ class DeleteObject
         // @psalm-suppress UndefinedInterfaceMethod.
         if ($object instanceof ObjectEntity === true) {
             $identifier = $object->getUuid();
-        } else {
+        }
+
+        if ($object instanceof ObjectEntity === false) {
+            // @psalm-suppress UndefinedInterfaceMethod.
             $identifier = $object['id'];
         }
 
@@ -176,10 +179,9 @@ class DeleteObject
             _rbac: false,
             _multitenancy: false
         );
+        $objectEntity = $context['object'];
         if ($object instanceof ObjectEntity === true) {
             $objectEntity = $object;
-        } else {
-            $objectEntity = $context['object'];
         }
 
         $registerEntity = $context['register'];

@@ -1902,10 +1902,9 @@ class TextExtractionService
         $currentOffset = 0;
 
         foreach ($splits as $split) {
+            $testChunk = $currentChunk.$separator.$split;
             if ($currentChunk === '') {
                 $testChunk = $split;
-            } else {
-                $testChunk = $currentChunk.$separator.$split;
             }
 
             if (strlen($testChunk) <= $chunkSize) {

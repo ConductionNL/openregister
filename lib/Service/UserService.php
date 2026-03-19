@@ -250,10 +250,9 @@ class UserService
                 $data['activeOrganisation']
             );
             $result['organisation_updated'] = $organisationResult;
+            $result['organisation_message'] = 'Failed to update active organization';
             if ($organisationResult === true) {
                 $result['organisation_message'] = 'Active organization updated successfully';
-            } else {
-                $result['organisation_message'] = 'Failed to update active organization';
             }
 
             // Remove the organization field from data to prevent it from being processed as a user property.

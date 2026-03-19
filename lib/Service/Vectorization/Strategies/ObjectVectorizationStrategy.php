@@ -147,7 +147,9 @@ class ObjectVectorizationStrategy implements VectorizationStrategyInterface
         // Get object data.
         if (is_array($entity) === true) {
             $objectData = $entity;
-        } else {
+        }
+
+        if (is_array($entity) === false) {
             $objectData = $entity->jsonSerialize();
         }
 
@@ -202,14 +204,15 @@ class ObjectVectorizationStrategy implements VectorizationStrategyInterface
     {
         if (is_array($entity) === true) {
             $objectData = $entity;
-        } else {
+        }
+
+        if (is_array($entity) === false) {
             $objectData = $entity->jsonSerialize();
         }
 
+        $objectId = 'unknown';
         if (($objectData['id'] ?? null) !== null) {
             $objectId = $objectData['id'];
-        } else {
-            $objectId = 'unknown';
         }
 
         // DEBUG: Log what we're receiving.
@@ -339,7 +342,9 @@ class ObjectVectorizationStrategy implements VectorizationStrategyInterface
     {
         if (is_array($entity) === true) {
             $objectData = $entity;
-        } else {
+        }
+
+        if (is_array($entity) === false) {
             $objectData = $entity->jsonSerialize();
         }
 

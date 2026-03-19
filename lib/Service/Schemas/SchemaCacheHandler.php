@@ -585,11 +585,10 @@ class SchemaCacheHandler
         // Enforce maximum cache TTL for office environments.
         $ttl = min($ttl, self::MAX_CACHE_TTL);
 
-        $now = new DateTime();
+        $now     = new DateTime();
+        $expires = null;
         if ($ttl > 0) {
             $expires = (clone $now)->add(new DateInterval("PT{$ttl}S"));
-        } else {
-            $expires = null;
         }
 
         // Use INSERT ... ON DUPLICATE KEY UPDATE for MySQL/MariaDB compatibility.

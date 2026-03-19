@@ -1150,11 +1150,7 @@ class MagicMapper extends AbstractObjectMapper
                 if ($field === '_relevance') {
                     // Only use _search_score if we have a search term.
                     if ($hasSearch === true) {
-                        if (strtoupper($direction) === 'DESC') {
-                            $dir = 'DESC';
-                        } else {
-                            $dir = 'ASC';
-                        }
+                        $dir = strtoupper($direction) === 'DESC' ? 'DESC' : 'ASC';
 
                         $orderClauses[] = "_search_score {$dir}";
                     }
@@ -1177,11 +1173,7 @@ class MagicMapper extends AbstractObjectMapper
                     );
                 }
 
-                if (strtoupper($direction) === 'DESC') {
-                    $dir = 'DESC';
-                } else {
-                    $dir = 'ASC';
-                }
+                $dir = strtoupper($direction) === 'DESC' ? 'DESC' : 'ASC';
 
                 $orderClauses[] = "{$columnName} {$dir}";
             }//end foreach
@@ -3012,22 +3004,14 @@ class MagicMapper extends AbstractObjectMapper
                             $cleanedArray[] = $item;
                         }
 
-                        if (empty($cleanedArray) === true) {
-                            $value = null;
-                        } else {
-                            $value = $cleanedArray;
-                        }
+                        $value = (empty($cleanedArray) === true) ? null : $cleanedArray;
                     }//end if
 
                     // Convert boolean values to integers (0/1) for database compatibility.
                     // PHP's false can be incorrectly converted to empty string '' by some drivers.
                     // Using 0/1 integers ensures PostgreSQL and other databases handle booleans correctly.
                     if (is_bool($value) === true) {
-                        if ($value === true) {
-                            $value = 1;
-                        } else {
-                            $value = 0;
-                        }
+                        $value = ($value === true) ? 1 : 0;
                     }
 
                     // Convert complex types to JSON.

@@ -70,7 +70,6 @@ use OCP\AppFramework\Http\DataDownloadResponse;
  * @suppressWarnings(PHPMD.TooManyMethods)
  * @suppressWarnings(PHPMD.TooManyPublicMethods)
  * @suppressWarnings(PHPMD.CouplingBetweenObjects)
- * @suppressWarnings(PHPMD.ElseExpression)           File upload extraction requires conditional branching
  * @suppressWarnings(PHPMD.ExcessiveMethodLength)    Complex file upload handling with multiple formats
  * @SuppressWarnings(PHPMD.CyclomaticComplexity)
  * @SuppressWarnings(PHPMD.NPathComplexity)
@@ -310,28 +309,24 @@ class ObjectsController extends Controller
     ): void {
         $fileCount = count($nameValue);
         for ($i = 0; $i < $fileCount; $i++) {
+            $typeArray = [];
             if (is_array($uploadedFile['type'] ?? null) === true) {
                 $typeArray = $uploadedFile['type'];
-            } else {
-                $typeArray = [];
             }
 
+            $tmpNameArray = [];
             if (is_array($uploadedFile['tmp_name'] ?? null) === true) {
                 $tmpNameArray = $uploadedFile['tmp_name'];
-            } else {
-                $tmpNameArray = [];
             }
 
+            $errorArray = [];
             if (is_array($uploadedFile['error'] ?? null) === true) {
                 $errorArray = $uploadedFile['error'];
-            } else {
-                $errorArray = [];
             }
 
+            $sizeArray = [];
             if (is_array($uploadedFile['size'] ?? null) === true) {
                 $sizeArray = $uploadedFile['size'];
-            } else {
-                $sizeArray = [];
             }
 
             // Only add if tmp_name is not empty.
@@ -1017,6 +1012,12 @@ class ObjectsController extends Controller
                     || empty($query['_unset'] ?? null) === false;
 
                 // Apply complex rendering if needed (extensions, fields, filters).
+                // Convert ObjectEntity array to JSON-serializable format (no complex rendering).
+                $serializedResults = [];
+                foreach ($results as $entity) {
+                    $serializedResults[] = $entity->jsonSerialize();
+                }
+
                 if ($hasComplexRendering === true && is_array($results) === true && empty($results) === false) {
                     $renderHandler     = \OC::$server->get(\OCA\OpenRegister\Service\Object\RenderObject::class);
                     $serializedResults = $renderHandler->renderEntities(
@@ -1028,12 +1029,6 @@ class ObjectsController extends Controller
                         _rbac: $rbac,
                         _multitenancy: $multi
                     );
-                } else {
-                    // Convert ObjectEntity array to JSON-serializable format (no complex rendering).
-                    $serializedResults = [];
-                    foreach ($results as $entity) {
-                        $serializedResults[] = $entity->jsonSerialize();
-                    }
                 }
 
                 // Calculate pagination - need a separate count query since search applies limit/offset.
@@ -1042,10 +1037,11 @@ class ObjectsController extends Controller
                 $page   = $query['_page'] ?? null;
 
                 // Convert page to offset if page is provided but offset is not.
-                if ($page !== null && $offset === null && $limit > 0) {
+                // Convert page to offset if page is provided but offset is not.
+                $originalOffset = $offset;
+                $offset         = (int) ($offset ?? 0);
+                if ($page !== null && $originalOffset === null && $limit > 0) {
                     $offset = ((int) $page - 1) * $limit;
-                } else {
-                    $offset = (int) ($offset ?? 0);
                 }
 
                 // Build count query (same filters, no pagination).
@@ -1059,17 +1055,12 @@ class ObjectsController extends Controller
                     schema: $schemaEntity
                 );
 
+                $page  = 1;
                 $pages = 1;
                 if ($limit > 0) {
                     $pages = (int) ceil($total / $limit);
                     // Calculate page from offset if not explicitly provided.
-                    if ($page === null) {
-                        $page = (int) floor($offset / $limit) + 1;
-                    } else {
-                        $page = (int) $page;
-                    }
-                } else {
-                    $page = 1;
+                    $page = (int) floor($offset / $limit) + 1;
                 }
 
                 // Get active organisation for debugging metadata.
@@ -2147,10 +2138,9 @@ class ObjectsController extends Controller
 
         // Extract uploaded files — works because this is a POST request.
         $uploadedFiles = $this->extractAllUploadedFiles();
+        $uploadedFilesValue = null;
         if (empty($uploadedFiles) === false) {
             $uploadedFilesValue = $uploadedFiles;
-        } else {
-            $uploadedFilesValue = null;
         }
 
         // Determine RBAC and multitenancy settings based on admin status.
@@ -3188,16 +3178,14 @@ class ObjectsController extends Controller
             }
 
             // Parse limit/offset with sensible defaults for chunked processing.
+            $limitInt = null;
             if ($limit !== null) {
                 $limitInt = (int) $limit;
-            } else {
-                $limitInt = null;
             }
 
+            $offsetInt = 0;
             if ($offset !== null) {
                 $offsetInt = (int) $offset;
-            } else {
-                $offsetInt = 0;
             }
 
             $this->logger->info(
@@ -3423,10 +3411,9 @@ class ObjectsController extends Controller
                     // For sequential arrays, strip each element if it's an associative array.
                     $stripped = [];
                     foreach ($value as $item) {
+                        $stripped[] = $item;
                         if (is_array($item) === true) {
-                            $stripped[] = $this->stripEmptyValues(data: $item);
-                        } else {
-                            $stripped[] = $item;
+                            $stripped[count($stripped) - 1] = $this->stripEmptyValues(data: $item);
                         }
                     }
 

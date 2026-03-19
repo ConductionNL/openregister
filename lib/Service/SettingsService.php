@@ -1875,14 +1875,13 @@ class SettingsService
             $platform   = $this->db->getDatabasePlatform();
             $isPostgres = stripos($platform::class, 'PostgreSQL') !== false;
 
+            $tablesQuery = "SELECT table_name as tablename FROM information_schema.tables
+                   WHERE table_schema = DATABASE()
+                   AND table_name LIKE 'oc_openregister_table_%'";
             if ($isPostgres === true) {
                 $tablesQuery = "SELECT tablename FROM pg_tables
                    WHERE schemaname = 'public'
                    AND tablename LIKE 'oc_openregister_table_%'";
-            } else {
-                $tablesQuery = "SELECT table_name as tablename FROM information_schema.tables
-                   WHERE table_schema = DATABASE()
-                   AND table_name LIKE 'oc_openregister_table_%'";
             }
 
             $tablesResult = $this->db->executeQuery($tablesQuery);
@@ -1942,10 +1941,9 @@ class SettingsService
         }
 
         // Build query for sources count based on table existence.
+        $sourcesCountQuery = '0';
         if ($sourcesTableExists === true) {
             $sourcesCountQuery = "(SELECT COUNT(*) FROM {$qb->getTableName('openconnector_sources')})";
-        } else {
-            $sourcesCountQuery = '0';
         }
 
         // Build a single query that gets all other counts at once using subqueries.

@@ -99,10 +99,9 @@ class MetadataHydrationHandler
         // If object data has 'object' key that is an array (structured format), use that for property access.
         // Otherwise use the objectData directly (flat format).
         // Note: 'object' may also be a regular string property (e.g., a URL in ObjectInformatieObject).
+        $businessData = $objectData;
         if ((isset($objectData['object']) === true && is_array($objectData['object']) === true)) {
             $businessData = $objectData['object'];
-        } else {
-            $businessData = $objectData;
         }
 
         // Get schema properties for relation field detection.

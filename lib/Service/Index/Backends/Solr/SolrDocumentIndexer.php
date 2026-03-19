@@ -114,11 +114,7 @@ class SolrDocumentIndexer
             $document = $this->documentBuilder->createDocument($object);
 
             // Index the document.
-            if ($commit === true) {
-                $commitValue = 'true';
-            } else {
-                $commitValue = 'false';
-            }
+            $commitValue = ($commit === true) ? 'true' : 'false';
 
             $url = $this->httpClient->getEndpointUrl($collection).'/update?commit='.$commitValue;
 
@@ -198,10 +194,9 @@ class SolrDocumentIndexer
 
         if (empty($documents) === false) {
             try {
+                $commitValue = 'false';
                 if ($commit === true) {
                     $commitValue = 'true';
-                } else {
-                    $commitValue = 'false';
                 }
 
                 $url = $this->httpClient->getEndpointUrl($collection).'/update?commit='.$commitValue;
@@ -266,11 +261,7 @@ class SolrDocumentIndexer
         }
 
         try {
-            if ($commit === true) {
-                $commitValue = 'true';
-            } else {
-                $commitValue = 'false';
-            }
+            $commitValue = ($commit === true) ? 'true' : 'false';
 
             $url = $this->httpClient->getEndpointUrl($collection).'/update?commit='.$commitValue;
             $this->httpClient->post($url, $documents);
@@ -322,11 +313,7 @@ class SolrDocumentIndexer
         }
 
         try {
-            if ($commit === true) {
-                $commitValue = 'true';
-            } else {
-                $commitValue = 'false';
-            }
+            $commitValue = ($commit === true) ? 'true' : 'false';
 
             $url = $this->httpClient->getEndpointUrl($collection).'/update?commit='.$commitValue;
 
@@ -389,11 +376,7 @@ class SolrDocumentIndexer
         }
 
         try {
-            if ($commit === true) {
-                $commitValue = 'true';
-            } else {
-                $commitValue = 'false';
-            }
+            $commitValue = ($commit === true) ? 'true' : 'false';
 
             $url = $this->httpClient->getEndpointUrl($collection).'/update?commit='.$commitValue;
 

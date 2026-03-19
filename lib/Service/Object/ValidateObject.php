@@ -1000,10 +1000,9 @@ class ValidateObject
         if (($propertySchema->oneOf ?? null) !== null
             && (is_array($propertySchema->oneOf) === true || is_object($propertySchema->oneOf) === true)
         ) {
+            $oneOfArray = $propertySchema->oneOf;
             if (is_object($propertySchema->oneOf) === true) {
                 $oneOfArray = get_object_vars($propertySchema->oneOf);
-            } else {
-                $oneOfArray = $propertySchema->oneOf;
             }
 
             if (empty($oneOfArray) === false) {

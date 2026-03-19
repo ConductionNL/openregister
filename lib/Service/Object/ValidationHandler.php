@@ -334,10 +334,9 @@ class ValidationHandler
         $objectsToProcess = count($allObjects);
         $chunkSize        = $this->calculateChunkSize(objectsToProcess: $objectsToProcess);
 
+        $estimatedChunks = 0;
         if ($objectsToProcess > 0) {
             $estimatedChunks = ceil($objectsToProcess / $chunkSize);
-        } else {
-            $estimatedChunks = 0;
         }
 
         $this->logger->info(
@@ -711,9 +710,10 @@ class ValidationHandler
         foreach ($objectsChunk as $object) {
             if (is_array($object) === true) {
                 $objectsData[] = $object;
-            } else {
-                $objectsData[] = $object->getObject();
+                continue;
             }
+
+            $objectsData[] = $object->getObject();
         }
 
         return $objectsData;

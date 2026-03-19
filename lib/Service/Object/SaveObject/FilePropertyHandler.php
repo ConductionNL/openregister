@@ -365,10 +365,9 @@ class FilePropertyHandler
     ): string {
         $timestamp = time();
         $random    = bin2hex(random_bytes(4));
+        $indexSuffix = '';
         if ($index !== null) {
             $indexSuffix = "_{$index}";
-        } else {
-            $indexSuffix = '';
         }
 
         return "{$propertyName}{$indexSuffix}_{$timestamp}_{$random}.{$extension}";

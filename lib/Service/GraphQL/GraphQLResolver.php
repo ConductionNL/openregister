@@ -637,19 +637,13 @@ class GraphQLResolver
         $data['_register'] = $object->getRegister();
         $data['_schema']   = $object->getSchema();
 
-        $created = $object->getCreated();
-        if ($created instanceof \DateTimeInterface === true) {
-            $data['_created'] = $created->format(\DateTimeInterface::ATOM);
-        } else {
-            $data['_created'] = $created;
-        }
+        $created          = $object->getCreated();
+        $data['_created'] = ($created instanceof \DateTimeInterface === true)
+            ? $created->format(\DateTimeInterface::ATOM) : $created;
 
-        $updated = $object->getUpdated();
-        if ($updated instanceof \DateTimeInterface === true) {
-            $data['_updated'] = $updated->format(\DateTimeInterface::ATOM);
-        } else {
-            $data['_updated'] = $updated;
-        }
+        $updated          = $object->getUpdated();
+        $data['_updated'] = ($updated instanceof \DateTimeInterface === true)
+            ? $updated->format(\DateTimeInterface::ATOM) : $updated;
 
         $data['_owner'] = $object->getOwner();
 

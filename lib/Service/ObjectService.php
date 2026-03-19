@@ -357,10 +357,9 @@ class ObjectService
                 if ($folderNode !== null) {
                     // Update the entity with the folder ID.
                     $folderIdValue = $folderNode->getId();
+                    $entity->setFolder(null);
                     if ($folderIdValue !== null) {
                         $entity->setFolder((string) $folderIdValue);
-                    } else {
-                        $entity->setFolder(null);
                     }
 
                     // Save the entity with the new folder ID.
@@ -519,14 +518,13 @@ class ObjectService
             // (routes to magic tables for better performance).
             // Fall back to MagicMapper without register/schema context.
             $hasContext = $this->currentRegister !== null && $this->currentSchema !== null;
+            $object = $this->objectMapper->find($object);
             if ($hasContext === true) {
                 $object = $this->objectMapper->find(
                     identifier: $object,
                     register: $this->currentRegister,
                     schema: $this->currentSchema
                 );
-            } else {
-                $object = $this->objectMapper->find($object);
             }
         }
 
