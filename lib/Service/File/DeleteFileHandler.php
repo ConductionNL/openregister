@@ -79,11 +79,7 @@ class DeleteFileHandler
     public function deleteFile(Node|string|int $file, ?ObjectEntity $object=null): bool
     {
         // Determine file name for error logging.
-        if ($file instanceof Node === true) {
-            $fileName = $file->getName();
-        } else {
-            $fileName = (string) $file;
-        }
+        $fileName = ($file instanceof Node === true) ? $file->getName() : (string) $file;
 
         if ($file instanceof Node === false) {
             $file = $this->readFileHandler->getFile(object: $object, file: $file);

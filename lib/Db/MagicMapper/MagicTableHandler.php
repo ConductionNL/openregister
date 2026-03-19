@@ -413,7 +413,9 @@ class MagicTableHandler
             // Calculate regular properties (excluding metadata).
             $regularPropCount = count($requiredColumns) - $metadataCount;
 
-            $unchangedCount = count($currentColumns) - count($columnStats['columnsAdded']) - count($columnStats['columnsDropped']);
+            $added          = count($columnStats['columnsAdded']);
+            $dropped        = count($columnStats['columnsDropped']);
+            $unchangedCount = count($currentColumns) - $added - $dropped;
 
             $result = [
                 'success'               => true,

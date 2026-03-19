@@ -413,7 +413,8 @@ class SaveObjects
         $unchangedCount = count($result['unchanged']);
         if ($unchangedCount > 0) {
             $totalProcessed = count($result['saved']) + count($result['updated']) + $unchangedCount;
-            $result['performance']['deduplicationEfficiency'] = round(($unchangedCount / $totalProcessed) * 100, 1).'% operations avoided';
+            $pct            = round(($unchangedCount / $totalProcessed) * 100, 1);
+            $result['performance']['deduplicationEfficiency'] = $pct.'% operations avoided';
         }
 
         return $result;
@@ -652,8 +653,11 @@ class SaveObjects
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Single-schema optimization path with many edge cases
      * @SuppressWarnings(PHPMD.NPathComplexity)
      */
-    private function prepareSingleSchemaObjectsOptimized(array $objects, Register|string|int $register, Schema|string|int $schema): array
-    {
+    private function prepareSingleSchemaObjectsOptimized(
+        array $objects,
+        Register|string|int $register,
+        Schema|string|int $schema
+    ): array {
         $startTime = microtime(true);
 
         // PERFORMANCE OPTIMIZATION: Load and validate schema context once.
@@ -1347,7 +1351,12 @@ class SaveObjects
 
         // Handle single object relations.
         if ($propertyInfo['isArray'] === false && is_string($value) === true && Uuid::isValid($value) === true) {
-            $this->applyInverseRelationToTarget(targetUuid: $value, inversedBy: $inversedBy, objectUuid: $objectUuid, objectsByUuid: $objectsByUuid);
+            $this->applyInverseRelationToTarget(
+                targetUuid: $value,
+                inversedBy: $inversedBy,
+                objectUuid: $objectUuid,
+                objectsByUuid: $objectsByUuid
+            );
             return;
         }
 
