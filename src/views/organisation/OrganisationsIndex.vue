@@ -22,6 +22,7 @@ import { organisationStore, navigationStore } from '../../store/store.js'
 			:show-mass-export="false"
 			:show-mass-copy="false"
 			:show-mass-delete="false"
+			mass-action-name-field="name"
 			show-view-toggle
 			add-label="Organisatie Aanmaken"
 			row-key="uuid"
@@ -29,6 +30,7 @@ import { organisationStore, navigationStore } from '../../store/store.js'
 			:row-class="getRowClass"
 			:actions="rowActions"
 			:refreshing="isRefreshing"
+			@delete="handleDelete"
 			@add="createOrganisation"
 			@refresh="handleRefresh"
 			@page-changed="onPageChanged"
@@ -214,11 +216,7 @@ export default {
 					label: 'Verwijderen',
 					icon: TrashCanOutline,
 					destructive: true,
-					disabled: (row) => !this.canDeleteOrganisation(row),
-					handler: (row) => {
-						organisationStore.setOrganisationItem(row)
-						navigationStore.setModal('deleteOrganisation')
-					},
+					handler: (row) => this.$refs.indexPage.openDeleteDialog(row),
 				},
 			]
 		},
@@ -254,9 +252,22 @@ export default {
 			return organisation.owner === 'system'
 				   || organisation.owner === this.getCurrentUser()
 		},
-		canDeleteOrganisation(organisation) {
-			return !organisation.isDefault
-				   && organisation.owner === this.getCurrentUser()
+		async handleDelete(id) {
+			const organisation = organisationStore.userStats.list.find(
+				(org) => String(org.id) === String(id),
+			)
+			if (!organisation) {
+				this.$refs.indexPage.setSingleDeleteResult({ error: 'Organisation not found' })
+				return
+			}
+			try {
+				const { response } = await organisationStore.deleteOrganisation(organisation)
+				this.$refs.indexPage.setSingleDeleteResult({ success: response.ok })
+			} catch (error) {
+				this.$refs.indexPage.setSingleDeleteResult({
+					error: error.message || 'An error occurred while deleting the organisation',
+				})
+			}
 		},
 		async setActiveOrganisation(uuid) {
 			try {
