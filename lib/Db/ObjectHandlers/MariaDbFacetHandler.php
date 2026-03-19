@@ -337,11 +337,10 @@ class MariaDbFacetHandler
         $extractSql    = "JSON_UNQUOTE(JSON_EXTRACT(object, ".$jsonPathParam."))";
 
         // Build interval-specific grouping expression.
+        $dateFormat = $this->getDateFormatForInterval(interval: $interval);
+        $dateKeySql = "DATE_FORMAT(".$extractSql.", '$dateFormat')";
         if ($interval === 'quarter') {
             $dateKeySql = "CONCAT(YEAR(".$extractSql."), '-Q', QUARTER(".$extractSql."))";
-        } else {
-            $dateFormat = $this->getDateFormatForInterval(interval: $interval);
-            $dateKeySql = "DATE_FORMAT(".$extractSql.", '$dateFormat')";
         }
 
         $queryBuilder->selectAlias(

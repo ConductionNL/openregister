@@ -205,19 +205,19 @@ class MappingMapper extends QBMapper
             ->from($this->getTableName());
 
         // Step 3: If it's a string but can be converted to a numeric value, check if it's actually numeric.
+        // Default: for numeric values, search in id column.
+        $qb->where(
+            $qb->expr()->eq('id', $qb->createNamedParameter($id, IQueryBuilder::PARAM_INT))
+        );
         if (is_string($id) === true && ctype_digit($id) === false) {
             // For non-numeric strings, search in uuid and slug columns.
+            $qb->resetQueryPart('where');
             $qb->where(
                 $qb->expr()->orX(
                     $qb->expr()->eq('uuid', $qb->createNamedParameter($id)),
                     $qb->expr()->eq('slug', $qb->createNamedParameter($id)),
                     $qb->expr()->eq('id', $qb->createNamedParameter($id))
                 )
-            );
-        } else {
-            // For numeric values, search in id column.
-            $qb->where(
-                $qb->expr()->eq('id', $qb->createNamedParameter($id, IQueryBuilder::PARAM_INT))
             );
         }
 
@@ -351,14 +351,13 @@ class MappingMapper extends QBMapper
         // Set version if not provided (auto-increment patch version).
         if (isset($data['version']) === false || empty($data['version']) === true) {
             $currentVersion = $mapping->getVersion();
+            $data['version'] = '0.0.1';
             if (empty($currentVersion) === false) {
                 $version = explode('.', $currentVersion);
                 if (isset($version[2]) === true) {
                     $version[2]      = (int) $version[2] + 1;
                     $data['version'] = implode('.', $version);
                 }
-            } else {
-                $data['version'] = '0.0.1';
             }
         }
 

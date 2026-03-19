@@ -140,13 +140,12 @@ class MagicStatisticsHandler
             $platform   = $this->db->getDatabasePlatform();
             $isPostgres = stripos($platform::class, 'PostgreSQL') !== false;
 
+            $sql = "SELECT table_name FROM information_schema.tables
+                    WHERE table_schema = DATABASE()
+                    AND table_name LIKE 'oc_openregister_table_%'";
             if ($isPostgres === true) {
                 $sql = "SELECT table_name FROM information_schema.tables
                         WHERE table_schema = current_schema()
-                        AND table_name LIKE 'oc_openregister_table_%'";
-            } else {
-                $sql = "SELECT table_name FROM information_schema.tables
-                        WHERE table_schema = DATABASE()
                         AND table_name LIKE 'oc_openregister_table_%'";
             }
 

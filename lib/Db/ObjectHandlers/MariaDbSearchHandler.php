@@ -469,10 +469,9 @@ class MariaDbSearchHandler
             return false;
         }
 
+        $values = $operatorValue;
         if (is_string($operatorValue) === true) {
             $values = array_map('trim', explode(',', $operatorValue));
-        } else {
-            $values = $operatorValue;
         }
 
         if (empty($values) === true) {
@@ -696,10 +695,9 @@ class MariaDbSearchHandler
             return false;
         }
 
+        $values = $operatorValue;
         if (is_string($operatorValue) === true) {
             $values = array_map('trim', explode(',', $operatorValue));
-        } else {
-            $values = $operatorValue;
         }
 
         if (empty($values) === true) {
@@ -747,10 +745,9 @@ class MariaDbSearchHandler
         }
 
         if ($hasAnd === true) {
+            $values = $value['and'];
             if (is_string($value['and']) === true) {
                 $values = array_map('trim', explode(',', $value['and']));
-            } else {
-                $values = $value['and'];
             }
 
             foreach ($values as $val) {
@@ -762,10 +759,9 @@ class MariaDbSearchHandler
             return true;
         }
 
+        $values = $value['or'];
         if (is_string($value['or']) === true) {
             $values = array_map('trim', explode(',', $value['or']));
-        } else {
-            $values = $value['or'];
         }
 
         $orConditions = $queryBuilder->expr()->orX();

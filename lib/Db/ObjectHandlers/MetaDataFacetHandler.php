@@ -166,11 +166,10 @@ class MetaDataFacetHandler
         $queryBuilder = $this->db->getQueryBuilder();
 
         // Build interval-specific grouping expression.
+        $dateFormat = $this->getDateFormatForInterval(interval: $interval);
+        $dateKeySql = "DATE_FORMAT($field, '$dateFormat')";
         if ($interval === 'quarter') {
             $dateKeySql = "CONCAT(YEAR($field), '-Q', QUARTER($field))";
-        } else {
-            $dateFormat = $this->getDateFormatForInterval(interval: $interval);
-            $dateKeySql = "DATE_FORMAT($field, '$dateFormat')";
         }
 
         $queryBuilder->selectAlias(
@@ -838,10 +837,9 @@ class MetaDataFacetHandler
      */
     private function applyOrMetadataOperator(IQueryBuilder $queryBuilder, string $field, mixed $operatorValue): void
     {
+        $values = $operatorValue;
         if (is_string($operatorValue) === true) {
             $values = array_map('trim', explode(',', $operatorValue));
-        } else {
-            $values = $operatorValue;
         }
 
         $orConditions = $queryBuilder->expr()->orX();

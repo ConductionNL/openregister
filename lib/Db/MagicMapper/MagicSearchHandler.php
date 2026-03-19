@@ -184,10 +184,9 @@ class MagicSearchHandler
         // The _order parameter may arrive as a JSON string from URL query params.
         if (is_string($order) === true) {
             $decoded = json_decode($order, true);
+            $order = [];
             if (is_array($decoded) === true) {
                 $order = $decoded;
-            } else {
-                $order = [];
             }
         }
 
@@ -209,10 +208,9 @@ class MagicSearchHandler
 
         // Check if fuzzy search is enabled for relevance scoring.
         $fuzzyEnabled = false;
+        $searchTerm = null;
         if ($search !== null && trim($search) !== '') {
             $searchTerm = trim($search);
-        } else {
-            $searchTerm = null;
         }
 
         $fuzzyParam = $query['_fuzzy'] ?? null;
@@ -223,35 +221,31 @@ class MagicSearchHandler
         // Add SELECT clause based on count vs search.
         if ($count === true) {
             $queryBuilder->selectAlias($queryBuilder->createFunction('COUNT(*)'), 'count');
-        } else {
-            $queryBuilder->select('t.*');
-
-            // Add relevance score column when fuzzy search is enabled.
-            // This allows us to return the similarity score as a percentage in @self.relevance.
-            if ($fuzzyEnabled === true && $searchTerm !== null) {
-                $searchTermParam = $queryBuilder->createNamedParameter($searchTerm);
-                $queryBuilder->addSelect(
-                    $queryBuilder->createFunction(
-                        'ROUND(similarity(t._name::text, '."{$searchTermParam}) * 100)::integer AS _relevance"
-                    )
-                );
-            }
-
-            // Apply sorting BEFORE pagination so the query optimizer can use
-            // indexes for ORDER BY … LIMIT instead of sorting the full result set.
-            if (empty($order) === false) {
-                $this->applySorting(qb: $queryBuilder, order: $order, schema: $schema, searchTerm: $searchTerm);
-            }
-
-            $queryBuilder->setMaxResults($limit)
-                ->setFirstResult($offset);
-        }//end if
-
-        // Execute query and return results.
-        if ($count === true) {
             $result = $queryBuilder->executeQuery();
             return (int) $result->fetchOne();
         }
+
+        $queryBuilder->select('t.*');
+
+        // Add relevance score column when fuzzy search is enabled.
+        // This allows us to return the similarity score as a percentage in @self.relevance.
+        if ($fuzzyEnabled === true && $searchTerm !== null) {
+            $searchTermParam = $queryBuilder->createNamedParameter($searchTerm);
+            $queryBuilder->addSelect(
+                $queryBuilder->createFunction(
+                    'ROUND(similarity(t._name::text, '."{$searchTermParam}) * 100)::integer AS _relevance"
+                )
+            );
+        }
+
+        // Apply sorting BEFORE pagination so the query optimizer can use
+        // indexes for ORDER BY … LIMIT instead of sorting the full result set.
+        if (empty($order) === false) {
+            $this->applySorting(qb: $queryBuilder, order: $order, schema: $schema, searchTerm: $searchTerm);
+        }
+
+        $queryBuilder->setMaxResults($limit)
+            ->setFirstResult($offset);
 
         return $this->executeSearchQuery(qb: $queryBuilder, register: $register, schema: $schema, tableName: $tableName);
     }//end searchObjects()
@@ -578,10 +572,9 @@ class MagicSearchHandler
     private function buildArrayPropertyConditionSql(string $columnName, mixed $value, object $connection): string
     {
         // Normalize value to array.
+        $values = [$value];
         if (is_array($value) === true) {
             $values = $value;
-        } else {
-            $values = [$value];
         }
 
         if (empty($values) === true || count($values) === 1) {
@@ -848,44 +841,7 @@ class MagicSearchHandler
 
         foreach ($filters as $field => $value) {
             // Check if this field exists as a column in the schema.
-            if (($properties[$field] ?? null) !== null) {
-                $columnName   = $this->sanitizeColumnName(name: $field);
-                $propertyType = $properties[$field]['type'] ?? 'string';
-
-                if ($value === 'IS NOT NULL') {
-                    $qb->andWhere($qb->expr()->isNotNull("t.{$columnName}"));
-                    continue;
-                }
-
-                if ($value === 'IS NULL') {
-                    $qb->andWhere($qb->expr()->isNull("t.{$columnName}"));
-                    continue;
-                }
-
-                // Handle array type columns (JSON arrays in PostgreSQL).
-                if ($propertyType === 'array') {
-                    $this->applyJsonArrayFilter(qb: $qb, columnName: $columnName, value: $value);
-                    continue;
-                }
-
-                // Handle object type columns (JSON objects with 'value' key containing UUID).
-                if ($propertyType === 'object') {
-                    $this->applyJsonObjectFilter(qb: $qb, columnName: $columnName, value: $value);
-                    continue;
-                }
-
-                if (is_array($value) === true) {
-                    $qb->andWhere(
-                        $qb->expr()->in(
-                            "t.{$columnName}",
-                            $qb->createNamedParameter($value, IQueryBuilder::PARAM_STR_ARRAY)
-                        )
-                    );
-                    continue;
-                }
-
-                $qb->andWhere($qb->expr()->eq("t.{$columnName}", $qb->createNamedParameter($value)));
-            } else {
+            if (($properties[$field] ?? null) === null) {
                 // Property doesn't exist in this schema but a filter was requested.
                 // Track the ignored filter for client feedback.
                 $this->ignoredFilters[] = $field;
@@ -894,7 +850,45 @@ class MagicSearchHandler
                 // This ensures multi-schema searches don't return unfiltered results
                 // from schemas that lack the filtered property.
                 $qb->andWhere('1 = 0');
-            }//end if
+                continue;
+            }
+
+            $columnName   = $this->sanitizeColumnName(name: $field);
+            $propertyType = $properties[$field]['type'] ?? 'string';
+
+            if ($value === 'IS NOT NULL') {
+                $qb->andWhere($qb->expr()->isNotNull("t.{$columnName}"));
+                continue;
+            }
+
+            if ($value === 'IS NULL') {
+                $qb->andWhere($qb->expr()->isNull("t.{$columnName}"));
+                continue;
+            }
+
+            // Handle array type columns (JSON arrays in PostgreSQL).
+            if ($propertyType === 'array') {
+                $this->applyJsonArrayFilter(qb: $qb, columnName: $columnName, value: $value);
+                continue;
+            }
+
+            // Handle object type columns (JSON objects with 'value' key containing UUID).
+            if ($propertyType === 'object') {
+                $this->applyJsonObjectFilter(qb: $qb, columnName: $columnName, value: $value);
+                continue;
+            }
+
+            if (is_array($value) === true) {
+                $qb->andWhere(
+                    $qb->expr()->in(
+                        "t.{$columnName}",
+                        $qb->createNamedParameter($value, IQueryBuilder::PARAM_STR_ARRAY)
+                    )
+                );
+                continue;
+            }
+
+            $qb->andWhere($qb->expr()->eq("t.{$columnName}", $qb->createNamedParameter($value)));
         }//end foreach
     }//end applyObjectFilters()
 
@@ -1323,114 +1317,98 @@ class MagicSearchHandler
 
             // Set JSON metadata fields (stored as JSONB in magic tables).
             if (($metadataData['relations'] ?? null) !== null) {
+                $relations = $metadataData['relations'];
                 if (is_string($metadataData['relations']) === true) {
                     $relations = json_decode($metadataData['relations'], true);
-                } else {
-                    $relations = $metadataData['relations'];
                 }
 
+                $objectEntity->setRelations([]);
                 if (is_array($relations) === true) {
                     $objectEntity->setRelations($relations);
-                } else {
-                    $objectEntity->setRelations([]);
                 }
             }
 
             if (($metadataData['files'] ?? null) !== null) {
+                $files = $metadataData['files'];
                 if (is_string($metadataData['files']) === true) {
                     $files = json_decode($metadataData['files'], true);
-                } else {
-                    $files = $metadataData['files'];
                 }
 
+                $objectEntity->setFiles([]);
                 if (is_array($files) === true) {
                     $objectEntity->setFiles($files);
-                } else {
-                    $objectEntity->setFiles([]);
                 }
             }
 
             if (($metadataData['locked'] ?? null) !== null) {
+                $locked = $metadataData['locked'];
                 if (is_string($metadataData['locked']) === true) {
                     $locked = json_decode($metadataData['locked'], true);
-                } else {
-                    $locked = $metadataData['locked'];
                 }
 
+                $objectEntity->setLocked(null);
                 if (is_array($locked) === true) {
                     $objectEntity->setLocked($locked);
-                } else {
-                    $objectEntity->setLocked(null);
                 }
             }
 
             if (($metadataData['groups'] ?? null) !== null) {
+                $groups = $metadataData['groups'];
                 if (is_string($metadataData['groups']) === true) {
                     $groups = json_decode($metadataData['groups'], true);
-                } else {
-                    $groups = $metadataData['groups'];
                 }
 
+                $objectEntity->setGroups([]);
                 if (is_array($groups) === true) {
                     $objectEntity->setGroups($groups);
-                } else {
-                    $objectEntity->setGroups([]);
                 }
             }
 
             if (($metadataData['authorization'] ?? null) !== null) {
+                $auth = $metadataData['authorization'];
                 if (is_string($metadataData['authorization']) === true) {
                     $auth = json_decode($metadataData['authorization'], true);
-                } else {
-                    $auth = $metadataData['authorization'];
                 }
 
+                $objectEntity->setAuthorization([]);
                 if (is_array($auth) === true) {
                     $objectEntity->setAuthorization($auth);
-                } else {
-                    $objectEntity->setAuthorization([]);
                 }
             }
 
             if (($metadataData['validation'] ?? null) !== null) {
+                $validation = $metadataData['validation'];
                 if (is_string($metadataData['validation']) === true) {
                     $validation = json_decode($metadataData['validation'], true);
-                } else {
-                    $validation = $metadataData['validation'];
                 }
 
+                $objectEntity->setValidation([]);
                 if (is_array($validation) === true) {
                     $objectEntity->setValidation($validation);
-                } else {
-                    $objectEntity->setValidation([]);
                 }
             }
 
             if (($metadataData['geo'] ?? null) !== null) {
+                $geo = $metadataData['geo'];
                 if (is_string($metadataData['geo']) === true) {
                     $geo = json_decode($metadataData['geo'], true);
-                } else {
-                    $geo = $metadataData['geo'];
                 }
 
+                $objectEntity->setGeo([]);
                 if (is_array($geo) === true) {
                     $objectEntity->setGeo($geo);
-                } else {
-                    $objectEntity->setGeo([]);
                 }
             }
 
             if (($metadataData['retention'] ?? null) !== null) {
+                $retention = $metadataData['retention'];
                 if (is_string($metadataData['retention']) === true) {
                     $retention = json_decode($metadataData['retention'], true);
-                } else {
-                    $retention = $metadataData['retention'];
                 }
 
+                $objectEntity->setRetention([]);
                 if (is_array($retention) === true) {
                     $objectEntity->setRetention($retention);
-                } else {
-                    $objectEntity->setRetention([]);
                 }
             }
 

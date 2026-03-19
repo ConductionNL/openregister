@@ -635,16 +635,18 @@ class MagicBulkHandler
                     // UUID didn't exist before upsert - this is a newly created record.
                     $obj['object_status'] = 'created';
                     $createdCount++;
-                } else {
+                }
+
+                if (isset($existingUuids[$objUuid]) === true) {
                     // UUID existed before - check if it was actually updated.
                     // Compare _updated timestamp with operation start time.
                     $updatedTime = $obj['_updated'] ?? null;
+                    $obj['object_status'] = 'unchanged';
+                    $unchangedCount++;
                     if ($updatedTime !== null && $updatedTime >= $operationStartTime) {
                         $obj['object_status'] = 'updated';
+                        $unchangedCount--;
                         $updatedCount++;
-                    } else {
-                        $obj['object_status'] = 'unchanged';
-                        $unchangedCount++;
                     }
                 }
 

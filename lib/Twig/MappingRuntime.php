@@ -118,11 +118,13 @@ class MappingRuntime implements RuntimeExtensionInterface
             $mappingObject->hydrate($mapping);
             $mapping = $mappingObject;
         } else if (is_string($mapping) === true || is_int($mapping) === true) {
+            if (is_string($mapping) !== true || str_starts_with($mapping, 'http') !== true) {
+                $mapping = $this->mappingMapper->find($mapping);
+            }
+
             if (is_string($mapping) === true && str_starts_with($mapping, 'http') === true) {
                 $results = $this->mappingMapper->findByRef($mapping);
                 $mapping = $results[0];
-            } else {
-                $mapping = $this->mappingMapper->find($mapping);
             }
         }
 
