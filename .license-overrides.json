@@ -1,0 +1,8 @@
+{
+	"npm": {
+		"@fortawesome/free-solid-svg-icons@6.6.0": "License is (CC-BY-4.0 AND MIT) — both CC-BY-4.0 and MIT are individually approved open-source licenses, compound AND expression not parsed by checker"
+	},
+	"composer": {
+		"smalot/pdfparser": "License is LGPL-3.0 — equivalent to LGPL-3.0-only which is on the allowlist, SPDX identifier variation not recognized by checker"
+	}
+}
