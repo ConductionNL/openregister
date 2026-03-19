@@ -29,10 +29,10 @@ const config = {
       /** @type {import('@docusaurus/preset-classic').Options} */
       ({
         docs: {
-          path: '../docs',
+          path: './',
           sidebarPath: require.resolve('./sidebars.js'),
           editUrl:
-            'https://github.com/conductionnl/openregister/tree/main/docusaurus/',
+            'https://github.com/conductionnl/openregister/tree/main/docs/',
         },
         blog: false,
         theme: {
