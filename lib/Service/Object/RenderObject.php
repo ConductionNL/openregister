@@ -962,9 +962,10 @@ class RenderObject
                 $inversePropertyNames = array_keys($inversedProperties);
 
                 // Normalize extend to array.
-                $extendArray = explode(',', $_extend);
                 if (is_array($_extend) === true) {
                     $extendArray = $_extend;
+                } else {
+                    $extendArray = explode(',', $_extend);
                 }
 
                 // Check if any inverse property is being extended (or 'all' is specified).
