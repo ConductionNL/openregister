@@ -84,7 +84,7 @@ export default {
 				objectStore.setObjectItem({ '@self': row['@self'] || { id: row.id } })
 			}
 		},
-		handleCopy({ id, newName }) {
+		handleCopy({ id, newName: _newName }) {
 			const row = this.normalizedObjects.find((r) => String(r.id) === String(id))
 			if (row) {
 				objectStore.setObjectItem(row)

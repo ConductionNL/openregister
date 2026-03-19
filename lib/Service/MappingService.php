@@ -198,10 +198,9 @@ class MappingService
 
         // Determine pass through.
         // Let's get the dot array based on https://github.com/adbario/php-dot-notation.
+        $dotArray = new Dot();
         if ($mapping->getPassThrough() === true) {
             $dotArray = new Dot($input);
-        } else {
-            $dotArray = new Dot();
         }
 
         $dotInput = new Dot($input);
@@ -272,24 +271,12 @@ class MappingService
         $keys = array_keys($output);
         if (count($keys) === 1 && $keys[0] === '#') {
             $rootValue = $output['#'];
-            if ($rootValue === null) {
-                $output = [];
-            } else {
-                if (is_array($rootValue) === true) {
-                    $output = $rootValue;
-                } else {
-                    $output = [$rootValue];
-                }
-            }
+            $output    = ($rootValue === null) ? [] : (is_array($rootValue) ? $rootValue : [$rootValue]);
         }
 
         // Ensure output is always an array.
         if (is_array($output) === false) {
-            if ($output === null) {
-                $output = [];
-            } else {
-                $output = [$output];
-            }
+            $output = ($output === null) ? [] : [$output];
         }
 
         return $output;

@@ -736,11 +736,7 @@ class SaveObject
         $relations = $savedEntity->getRelations();
         $savedUuid = $savedEntity->getUuid();
 
-        if ($relations !== null) {
-            $relationsCount = count($relations);
-        } else {
-            $relationsCount = 0;
-        }
+        $relationsCount = ($relations !== null) ? count($relations) : 0;
 
         $this->logger->debug(
             message: '[SaveObject] updateInverseRelations called',
@@ -1172,11 +1168,15 @@ class SaveObject
                         if (isset($twigContext[$sourceProperty]) === true) {
                             // Direct copy preserves arrays and other types.
                             $renderedDefaults[$key] = $twigContext[$sourceProperty];
-                        } else {
+                        }
+
+                        if (isset($twigContext[$sourceProperty]) === false) {
                             // Source property not found, use empty value.
                             $renderedDefaults[$key] = null;
                         }
-                    } else {
+                    }
+
+                    if (preg_match($simpleRefPattern, $defaultValue, $matches) !== 1) {
                         // Complex template, use MetadataHydrationHandler which supports
                         // pipe-based filters (| map:) and fallback syntax (| field2).
                         $rendered = $this->metaHydrationHandler->processTwigLikeTemplate(

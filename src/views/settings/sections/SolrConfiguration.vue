@@ -1724,7 +1724,7 @@ export default {
 			this.showDeleteCollectionDialog = false
 		},
 
-		async handleCollectionDeleted(result) {
+		async handleCollectionDeleted(_result) {
 			// Close the modal
 			this.closeDeleteCollectionModal()
 

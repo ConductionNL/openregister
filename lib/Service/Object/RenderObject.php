@@ -604,10 +604,9 @@ class RenderObject
 
         // Determine if base64 format is requested.
         // Check both the property config and items config (for arrays).
+        $fileConfig = $propertyConfig;
         if ($isArrayProperty === true) {
             $fileConfig = ($propertyConfig['items'] ?? []);
-        } else {
-            $fileConfig = $propertyConfig;
         }
 
         $returnBase64 = ($fileConfig['format'] ?? '') === 'base64';
@@ -626,11 +625,13 @@ class RenderObject
                     if ($base64Content !== null) {
                         $hydratedFiles[] = $base64Content;
                     }
-                } else {
-                    $fileObject = $this->getFileObject(fileId: $fileId);
-                    if ($fileObject !== null) {
-                        $hydratedFiles[] = $fileObject;
-                    }
+
+                    continue;
+                }
+
+                $fileObject = $this->getFileObject(fileId: $fileId);
+                if ($fileObject !== null) {
+                    $hydratedFiles[] = $fileObject;
                 }
             }
 
@@ -961,11 +962,7 @@ class RenderObject
                 $inversePropertyNames = array_keys($inversedProperties);
 
                 // Normalize extend to array.
-                if (is_array($_extend) === true) {
-                    $extendArray = $_extend;
-                } else {
-                    $extendArray = explode(',', $_extend);
-                }
+                $extendArray = is_array($_extend) ? $_extend : explode(',', $_extend);
 
                 // Check if any inverse property is being extended (or 'all' is specified).
                 $shouldHandleInverse = in_array('all', $extendArray, true)
@@ -1613,11 +1610,7 @@ class RenderObject
 
         // Normalize inversedBy to an array to support multi-field inverse relations.
         // Example: "inversedBy": ["moduleA", "moduleB"] means the entity can appear in either field.
-        if (is_array(value: $inversedByField) === true) {
-            $inversedByFields = $inversedByField;
-        } else {
-            $inversedByFields = [$inversedByField];
-        }
+        $inversedByFields = is_array($inversedByField) ? $inversedByField : [$inversedByField];
 
         return [
             'targetSchemaRef'  => $targetSchemaRef,
@@ -1740,11 +1733,7 @@ class RenderObject
 
         // Pass additional field names for multi-field inversedBy so the SQL also searches
         // columns that may store references in {"value": "uuid"} format not in _relations.
-        if (count($inversedByFields) > 1) {
-            $additionalFields = array_slice($inversedByFields, 1);
-        } else {
-            $additionalFields = [];
-        }
+        $additionalFields = (count($inversedByFields) > 1) ? array_slice($inversedByFields, 1) : [];
 
         $magicMapper = \OC::$server->get(\OCA\OpenRegister\Db\MagicMapper::class);
 
@@ -2045,11 +2034,7 @@ class RenderObject
             }
 
             // Normalize inversedBy to an array to support multi-field inverse relations.
-            if (is_array(value: $inversedByProperty) === true) {
-                $inversedByProperties = $inversedByProperty;
-            } else {
-                $inversedByProperties = [$inversedByProperty];
-            }
+            $inversedByProperties = is_array($inversedByProperty) ? $inversedByProperty : [$inversedByProperty];
 
             // Resolve schema reference to actual schema ID.
             $schemaId = $entity->getSchema();
@@ -2066,11 +2051,7 @@ class RenderObject
 
             // Initialize the target property if not already set to preserve any existing values.
             if (isset($objectData[$targetProperty]) === false) {
-                if ($isArray === true) {
-                    $objectData[$targetProperty] = [];
-                } else {
-                    $objectData[$targetProperty] = null;
-                }
+                $objectData[$targetProperty] = ($isArray === true) ? [] : null;
             }
 
             // Find objects that have our UUID in ANY of their inversedBy fields.
@@ -2182,7 +2163,13 @@ class RenderObject
                 if ($propertyConfig['type'] === 'array') {
                     $isArray = true;
                 }
-            } else {
+            }
+
+            // Skip properties without inversedBy configuration.
+            $hasItemsInverse    = ($propertyConfig['type'] ?? null) === 'array'
+                && ($propertyConfig['items']['inversedBy'] ?? null) !== null;
+            $hasDirectInverse = ($propertyConfig['inversedBy'] ?? null) !== null;
+            if ($hasItemsInverse === false && $hasDirectInverse === false) {
                 continue;
             }
 
@@ -2212,12 +2199,12 @@ class RenderObject
             // Set the target property value with full rendered objects.
             if ($isArray === true) {
                 $objectData[$targetProperty] = $renderedObjects;
-            } else {
-                if (empty($renderedObjects) === false) {
-                    $objectData[$targetProperty] = end($renderedObjects);
-                } else {
-                    $objectData[$targetProperty] = null;
-                }
+            }
+
+            if ($isArray === false) {
+                $objectData[$targetProperty] = (empty($renderedObjects) === false)
+                    ? end($renderedObjects)
+                    : null;
             }
         }//end foreach
 

@@ -121,10 +121,9 @@ class CompositionHandler
 
         foreach ($allOf as $ref) {
             $refSlug = null;
+            $refSlug = $ref;
             if (is_array(value: $ref) === true) {
                 $refSlug = ($ref['$ref'] ?? null);
-            } else {
-                $refSlug = $ref;
             }
 
             $refSchema = null;

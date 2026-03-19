@@ -458,6 +458,8 @@ class ExportService
             $objectData = $object->getObject();
 
             foreach ($headers as $col => $header) {
+                $value = $this->getObjectValue(object: $object, header: $header);
+                $sheet->setCellValue(coordinate: $col.$row, value: $value);
                 if (isset($nameColumns[$col]) === true) {
                     // This is a companion name column — resolve UUIDs to names.
                     $sourceProperty = $nameColumns[$col];
@@ -466,9 +468,6 @@ class ExportService
                         coordinate: $col.$row,
                         value: $this->resolveUuidsToNames(value: $value, uuidToNameMap: $uuidToNameMap)
                     );
-                } else {
-                    $value = $this->getObjectValue(object: $object, header: $header);
-                    $sheet->setCellValue(coordinate: $col.$row, value: $value);
                 }
             }
 

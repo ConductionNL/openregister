@@ -573,7 +573,7 @@ export default {
 		closeModal() {
 			navigationStore.setModal(false)
 		},
-		updateMappingFromUI(sourceProperty) {
+		updateMappingFromUI(_sourceProperty) {
 			// Convert UI mappings to our simple mapping format
 			this.convertUIToMapping()
 		},

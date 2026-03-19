@@ -518,22 +518,20 @@ class FacetHandler
             // Check if this is a non-aggregated facet (added by calculateFacetsWithFallback).
             $isNonAggregated = $facetData['_nonAggregated'] ?? false;
 
-            if ($isNonAggregated === true) {
-                $order = $this->transformNonAggregatedFacet(
+            $order = ($isNonAggregated === true)
+                ? $this->transformNonAggregatedFacet(
                     field: $field,
                     facetData: $facetData,
                     transformed: $transformed,
                     currentOrder: $order
-                );
-            } else {
-                $order = $this->transformAggregatedFacet(
+                )
+                : $this->transformAggregatedFacet(
                     field: $field,
                     facetData: $facetData,
                     aggregatedConfigs: $aggregatedConfigs,
                     transformed: $transformed,
                     currentOrder: $order
                 );
-            }//end if
         }//end foreach
 
         return $transformed;
@@ -671,10 +669,9 @@ class FacetHandler
         );
 
         $configOrder = $naConfig['order'] ?? null;
+        $facetOrder  = ++$order;
         if ($configOrder !== null) {
             $facetOrder = (int) $configOrder;
-        } else {
-            $facetOrder = ++$order;
         }
 
         if ($configOrder === null) {
@@ -729,16 +726,11 @@ class FacetHandler
         $order       = $currentOrder;
         $fieldConfig = $aggregatedConfigs[$field] ?? null;
 
-        if ($fieldConfig !== null) {
-            $configOrder = $fieldConfig['order'] ?? null;
-        } else {
-            $configOrder = null;
-        }
+        $configOrder = ($fieldConfig !== null) ? ($fieldConfig['order'] ?? null) : null;
 
+        $facetOrder = ++$order;
         if ($configOrder !== null) {
             $facetOrder = (int) $configOrder;
-        } else {
-            $facetOrder = ++$order;
         }//end if
 
         if ($configOrder === null) {
@@ -746,16 +738,14 @@ class FacetHandler
         }
 
         // Use config title/description if available, then fall back to facet data or auto-generated.
+        $title = $facetData['title'] ?? $this->formatFieldTitle(field: $field);
         if ($fieldConfig !== null && ($fieldConfig['title'] ?? null) !== null) {
             $title = $fieldConfig['title'];
-        } else {
-            $title = $facetData['title'] ?? $this->formatFieldTitle(field: $field);
         }
 
+        $description = 'object field: '.$field;
         if ($fieldConfig !== null && ($fieldConfig['description'] ?? null) !== null) {
             $description = $fieldConfig['description'];
-        } else {
-            $description = 'object field: '.$field;
         }
 
         $definition = [
@@ -1195,7 +1185,9 @@ class FacetHandler
                             'facetConfig' => $facetConfig,
                             'title'       => $property['title'] ?? null,
                         ];
-                    } else {
+                    }
+
+                    if ($facetConfig['aggregated'] !== false) {
                         // Aggregated fields: merge across schemas (existing behavior).
                         $facetableFields['object_fields'][$propertyKey] = [
                             'type'        => $facetType,

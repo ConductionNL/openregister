@@ -1074,7 +1074,7 @@ export default {
 		},
 
 		// Toggle individual facet on/off
-		toggleFacet(fieldName, fieldInfo) {
+		toggleFacet(fieldName, _fieldInfo) {
 			// When toggling facet, clear any existing data for that field
 			if (this.enabledFacets[fieldName]) {
 				// Facet was enabled, now being disabled

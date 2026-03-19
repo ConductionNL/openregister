@@ -1031,7 +1031,7 @@ export default {
 			},
 		},
 		formData: {
-			handler(newValue) {
+			handler(_newValue) {
 				if (!this.isInternalUpdate) {
 					this.updateJsonFromForm()
 				}
@@ -1684,7 +1684,7 @@ export default {
 
 			return `Property '${key}' has an invalid value`
 		},
-		getPropertyWarningMessage(key, value) {
+		getPropertyWarningMessage(key, _value) {
 			return `Property '${key}' exists in the object but is not defined in the current schema. This might happen when property names are changed in the schema.`
 		},
 		getPropertyNewMessage(key) {

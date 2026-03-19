@@ -299,11 +299,10 @@ class TypeMapperHandler
 
             // Each filter field accepts the base type or a comparison object.
             $baseType = $this->mapPropertyToGraphQLType(property: $property);
+            // Simple types use the base type; complex types use JSON for filtering.
+            $fields[$fieldName] = $baseType;
             if ($baseType instanceof ObjectType || $baseType instanceof \GraphQL\Type\Definition\ListOfType) {
-                // Complex types use JSON for filtering.
                 $fields[$fieldName] = $this->scalars['JSON'];
-            } else {
-                $fields[$fieldName] = $baseType;
             }
         }
 

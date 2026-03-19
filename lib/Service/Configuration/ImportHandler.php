@@ -1912,7 +1912,9 @@ class ImportHandler
                         'action'  => 'updated',
                     ];
                     $deployedWorkflows[$name]         = $existing;
-                } else {
+                }
+
+                if ($existing === null) {
                     $engineId = $adapter->deployWorkflow(workflowDefinition: $entry['workflow']);
                     $deployed = $this->deployedWfMapper->createFromArray(
                             [
@@ -2571,7 +2573,9 @@ class ImportHandler
                     message: "[ImportHandler] Updated existing configuration for app {$appId} with version {$version}",
                     context: ['file' => __FILE__, 'line' => __LINE__]
                 );
-            } else {
+            }
+
+            if ($existingConfig === null) {
                 // Create new configuration.
                 $configuration = new Configuration();
                 $configuration->setTitle($title);
@@ -2964,6 +2968,8 @@ class ImportHandler
                     try {
                         // Try to find existing object using MagicMapper.
                         // Disable RBAC/multitenancy to find objects from any app/tenant.
+                        // No MagicMapper or register context available - cannot look up.
+                        $existingObject = null;
                         if ($this->routingMapper !== null && $objectRegister !== null) {
                             $existingObject = $this->routingMapper->find(
                                 identifier: $lookupIdentifier,
@@ -2973,9 +2979,6 @@ class ImportHandler
                                 _rbac: false,
                                 _multitenancy: false
                             );
-                        } else {
-                            // No MagicMapper or register context available - cannot look up.
-                            $existingObject = null;
                         }
                     } catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
                         // Object doesn't exist - this is expected, we'll create it.
@@ -3039,11 +3042,10 @@ class ImportHandler
                     $objectEntity->setUpdated($now);
 
                     // Insert into database using MagicMapper if available.
+                    // Fallback: MagicMapper not available, use objectEntityMapper.
+                    $createdObject = $this->objectEntityMapper->insert($objectEntity);
                     if ($this->routingMapper !== null) {
                         $createdObject = $this->routingMapper->insert($objectEntity);
-                    } else {
-                        // Fallback: MagicMapper not available, use objectEntityMapper.
-                        $createdObject = $this->objectEntityMapper->insert($objectEntity);
                     }
 
                     $result['objects'][] = $createdObject->getId();

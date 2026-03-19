@@ -137,7 +137,9 @@ class FilePublishingHandler
             $foundMsg  = "[FilePublishingHandler] publishFile: Found file by ID: ".$fileNode->getName();
             $foundMsg .= " (ID: ".$fileNode->getId().")";
             $this->logger->info(message: $foundMsg, context: ['file' => __FILE__, 'line' => __LINE__]);
-        } else {
+        }//end if
+
+        if (is_int($file) === false) {
             // Handle string file paths (existing logic).
             // Clean file path and extract filename using utility method.
             $pathInfo = $this->fileService->extractFileNameFromPath($file);
@@ -337,7 +339,9 @@ class FilePublishingHandler
             $foundMsg  = "[FilePublishingHandler] unpublishFile: Found file by ID: ".$file->getName();
             $foundMsg .= " (ID: ".$file->getId().")";
             $this->logger->info(message: $foundMsg, context: ['file' => __FILE__, 'line' => __LINE__]);
-        } else {
+        }//end if
+
+        if (is_int($filePath) === false) {
             // Handle string file paths (existing logic).
             // Clean file path and extract filename using utility method.
             $pathInfo = $this->fileService->extractFileNameFromPath($filePath);

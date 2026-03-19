@@ -161,30 +161,19 @@ class DeleteObject
     public function delete(array | JsonSerializable $object, ?array $cascadeContext=null): bool
     {
         // Handle ObjectEntity passed from deleteObject() - skip redundant lookup.
-        if ($object instanceof ObjectEntity === true) {
-            $objectEntity = $object;
-            // Get register/schema context for this object.
-            $context        = $this->objectEntityMapper->findAcrossAllSources(
-                identifier: $objectEntity->getUuid(),
-                includeDeleted: true,
-                _rbac: false,
-                _multitenancy: false
-            );
-            $registerEntity = $context['register'];
-            $schemaEntity   = $context['schema'];
-        } else {
-            // Handle array input - find object with context (searches across all magic tables).
-            // @psalm-suppress UndefinedInterfaceMethod.
-            $context        = $this->objectEntityMapper->findAcrossAllSources(
-                identifier: $object['id'],
-                includeDeleted: false,
-                _rbac: false,
-                _multitenancy: false
-            );
-            $objectEntity   = $context['object'];
-            $registerEntity = $context['register'];
-            $schemaEntity   = $context['schema'];
-        }//end if
+        // Handle array input - find object with context (searches across all magic tables).
+        // @psalm-suppress UndefinedInterfaceMethod.
+        $identifier     = ($object instanceof ObjectEntity) ? $object->getUuid() : $object['id'];
+        $includeDeleted = ($object instanceof ObjectEntity);
+        $context        = $this->objectEntityMapper->findAcrossAllSources(
+            identifier: $identifier,
+            includeDeleted: $includeDeleted,
+            _rbac: false,
+            _multitenancy: false
+        );
+        $objectEntity   = ($object instanceof ObjectEntity) ? $object : $context['object'];
+        $registerEntity = $context['register'];
+        $schemaEntity   = $context['schema'];
 
         // **SOFT DELETE**: Mark object as deleted instead of removing from database.
         // Set deletion metadata with user, timestamp, and organization information.

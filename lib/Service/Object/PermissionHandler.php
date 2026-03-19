@@ -578,12 +578,10 @@ class PermissionHandler
             }
 
             // Get the actual value to compare against.
+            // Regular field: match against object data; special _organisation field: match against @self.organisation.
+            $actualValue = $objectData[$field] ?? null;
             if ($field === '_organisation') {
-                // Special field: match against @self.organisation.
                 $actualValue = $objectOrganisation;
-            } else {
-                // Regular field: match against object data.
-                $actualValue = $objectData[$field] ?? null;
             }
 
             // If the actual value is an array with an 'id' key (resolved relation), use the id.

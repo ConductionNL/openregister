@@ -200,59 +200,65 @@ class ResponseGenerationHandler
                 if ($agent?->getTemperature() !== null) {
                     $config->modelOptions['temperature'] = $agent->getTemperature();
                 }
-            } else {
-                // OpenAI and Fireworks use OpenAIConfig.
+            } else if ($chatProvider === 'openai') {
+                // OpenAI uses OpenAIConfig.
                 $config = new OpenAIConfig();
 
-                if ($chatProvider === 'openai') {
-                    $openaiConfig = $llmConfig['openaiConfig'] ?? [];
-                    if (empty($openaiConfig['apiKey']) === true) {
-                        throw new Exception('OpenAI API key is not configured', 503);
-                    }
+                $openaiConfig = $llmConfig['openaiConfig'] ?? [];
+                if (empty($openaiConfig['apiKey']) === true) {
+                    throw new Exception('OpenAI API key is not configured', 503);
+                }
 
-                    $config->apiKey = $openaiConfig['apiKey'];
-                    // Use agent model if set and not empty, otherwise fallback to global config.
-                    $agentModel    = $agent?->getModel();
-                    $config->model = ($openaiConfig['chatModel'] ?? 'gpt-4o-mini');
-                    if (empty($agentModel) === false) {
-                        $config->model = $agentModel;
-                    }
+                $config->apiKey = $openaiConfig['apiKey'];
+                // Use agent model if set and not empty, otherwise fallback to global config.
+                $agentModel    = $agent?->getModel();
+                $config->model = ($openaiConfig['chatModel'] ?? 'gpt-4o-mini');
+                if (empty($agentModel) === false) {
+                    $config->model = $agentModel;
+                }
 
-                    if (empty($openaiConfig['organizationId']) === false) {
-                        /*
-                         * @psalm-suppress UndefinedPropertyAssignment LLPhant dynamic properties
-                         */
+                if (empty($openaiConfig['organizationId']) === false) {
+                    /*
+                     * @psalm-suppress UndefinedPropertyAssignment LLPhant dynamic properties
+                     */
 
-                        $config->organizationId = $openaiConfig['organizationId'];
-                    }
-                } else if ($chatProvider === 'fireworks') {
-                    $fireworksConfig = $llmConfig['fireworksConfig'] ?? [];
-                    if (empty($fireworksConfig['apiKey']) === true) {
-                        throw new Exception('Fireworks AI API key is not configured', 503);
-                    }
+                    $config->organizationId = $openaiConfig['organizationId'];
+                }
 
-                    $config->apiKey = $fireworksConfig['apiKey'];
-                    // Use agent model if set and not empty, otherwise fallback to global config.
-                    $agentModel    = $agent?->getModel();
-                    $config->model = ($fireworksConfig['chatModel'] ?? 'accounts/fireworks/models/llama-v3p1-8b-instruct');
-                    if (empty($agentModel) === false) {
-                        $config->model = $agentModel;
-                    }
+                // Set temperature from agent or default (OpenAI).
+                if ($agent?->getTemperature() !== null) {
+                    /*
+                     * @psalm-suppress UndefinedPropertyAssignment LLPhant dynamic properties
+                     */
 
-                    // Fireworks AI uses OpenAI-compatible API.
-                    $baseUrl = rtrim($fireworksConfig['baseUrl'] ?? 'https://api.fireworks.ai/inference/v1', '/');
-                    if (str_ends_with($baseUrl, '/v1') === false) {
-                        $baseUrl .= '/v1';
-                    }
+                    $config->temperature = $agent->getTemperature();
+                }
+            } else if ($chatProvider === 'fireworks') {
+                // Fireworks uses OpenAIConfig.
+                $config = new OpenAIConfig();
 
-                    $config->url = $baseUrl;
-                }//end if
+                $fireworksConfig = $llmConfig['fireworksConfig'] ?? [];
+                if (empty($fireworksConfig['apiKey']) === true) {
+                    throw new Exception('Fireworks AI API key is not configured', 503);
+                }
 
-                if ($chatProvider !== 'openai' && $chatProvider !== 'fireworks') {
-                    throw new Exception("Unsupported chat provider: {$chatProvider}");
-                }//end if
+                $config->apiKey = $fireworksConfig['apiKey'];
+                // Use agent model if set and not empty, otherwise fallback to global config.
+                $agentModel    = $agent?->getModel();
+                $config->model = ($fireworksConfig['chatModel'] ?? 'accounts/fireworks/models/llama-v3p1-8b-instruct');
+                if (empty($agentModel) === false) {
+                    $config->model = $agentModel;
+                }
 
-                // Set temperature from agent or default (OpenAI/Fireworks).
+                // Fireworks AI uses OpenAI-compatible API.
+                $baseUrl = rtrim($fireworksConfig['baseUrl'] ?? 'https://api.fireworks.ai/inference/v1', '/');
+                if (str_ends_with($baseUrl, '/v1') === false) {
+                    $baseUrl .= '/v1';
+                }
+
+                $config->url = $baseUrl;
+
+                // Set temperature from agent or default (Fireworks).
                 if ($agent?->getTemperature() !== null) {
                     /*
                      * @psalm-suppress UndefinedPropertyAssignment LLPhant dynamic properties
@@ -261,6 +267,10 @@ class ResponseGenerationHandler
                     $config->temperature = $agent->getTemperature();
                 }
             }//end if
+
+            if ($chatProvider !== 'ollama' && $chatProvider !== 'openai' && $chatProvider !== 'fireworks') {
+                throw new Exception("Unsupported chat provider: {$chatProvider}");
+            }
 
             // Build system prompt.
             $defaultPrompt = "You are a helpful AI assistant that helps users find and understand their data.";
@@ -290,7 +300,23 @@ class ResponseGenerationHandler
             $llmTime      = 0.0;
             $llmStartTime = microtime(true);
 
-            // Create chat instance based on provider.
+            // Create chat instance based on provider (OpenAI default).
+            $chat = new OpenAIChat($config);
+
+            // Add functions if available.
+            if (empty($functions) === false) {
+                // Convert array-based function definitions to FunctionInfo objects.
+                $functionInfoObjects = $this->toolHandler->convertFunctionsToFunctionInfo(
+                    functions: $functions,
+                    tools: $tools
+                );
+                $chat->setTools($functionInfoObjects);
+            }
+
+            // Use generateChat() for message arrays, which properly handles tools/functions.
+            $response = $chat->generateChat($messageHistory);
+            $llmTime  = microtime(true) - $llmStartTime;
+
             if ($chatProvider === 'fireworks') {
                 /*
                  * For Fireworks, use direct HTTP to avoid OpenAI library error handling bugs.
@@ -321,23 +347,6 @@ class ResponseGenerationHandler
                 }
 
                 // Use generateChat() for message arrays.
-                $response = $chat->generateChat($messageHistory);
-                $llmTime  = microtime(true) - $llmStartTime;
-            } else {
-                // OpenAI chat.
-                $chat = new OpenAIChat($config);
-
-                // Add functions if available.
-                if (empty($functions) === false) {
-                    // Convert array-based function definitions to FunctionInfo objects.
-                    $functionInfoObjects = $this->toolHandler->convertFunctionsToFunctionInfo(
-                        functions: $functions,
-                        tools: $tools
-                    );
-                    $chat->setTools($functionInfoObjects);
-                }
-
-                // Use generateChat() for message arrays, which properly handles tools/functions.
                 $response = $chat->generateChat($messageHistory);
                 $llmTime  = microtime(true) - $llmStartTime;
             }//end if

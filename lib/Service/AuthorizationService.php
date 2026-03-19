@@ -145,20 +145,19 @@ class AuthorizationService
     {
         $now = new DateTime();
 
-        if (isset($payload['iat']) === true) {
-            $iat = new DateTime('@'.$payload['iat']);
-        } else {
+        if (isset($payload['iat']) === false) {
             throw new AuthenticationException(
                 message: 'The token has no time of creation',
                 details: ['iat' => null]
             );
         }
 
+        $iat = new DateTime('@'.$payload['iat']);
+
+        $exp = clone $iat;
+        $exp->modify('+1 Hour');
         if (isset($payload['exp']) === true) {
             $exp = new DateTime('@'.$payload['exp']);
-        } else {
-            $exp = clone $iat;
-            $exp->modify('+1 Hour');
         }
 
         if ($exp->diff($now)->format('%R') === '+') {
@@ -235,24 +234,24 @@ class AuthorizationService
         $signature = $this->base64urlDecode(data: $signatureB64);
 
         // Verify HMAC signature.
-        if (isset(self::HMAC_MAP[$algorithm]) === true) {
-            $hmacValid = $this->verifyHmac(
-                headerB64: $headerB64,
-                payloadB64: $payloadB64,
-                signature: $signature,
-                secret: $publicKey,
-                algorithm: $algorithm
-            );
-            if ($hmacValid === false) {
-                throw new AuthenticationException(
-                    message: 'The token could not be validated',
-                    details: ['reason' => 'The token does not match the public key']
-                );
-            }
-        } else {
+        if (isset(self::HMAC_MAP[$algorithm]) === false) {
             throw new AuthenticationException(
                 message: 'The token algorithm is not supported',
                 details: ['algorithm' => $algorithm]
+            );
+        }
+
+        $hmacValid = $this->verifyHmac(
+            headerB64: $headerB64,
+            payloadB64: $payloadB64,
+            signature: $signature,
+            secret: $publicKey,
+            algorithm: $algorithm
+        );
+        if ($hmacValid === false) {
+            throw new AuthenticationException(
+                message: 'The token could not be validated',
+                details: ['reason' => 'The token does not match the public key']
             );
         }
 

@@ -373,11 +373,11 @@ export default {
 				window.open(websiteUrl, '_blank')
 			}
 		},
-		showSuccessMessage(message) {
+		showSuccessMessage(_message) {
 			// Implementation would depend on your notification system
 			// TODO: Integrate with Nextcloud notification system
 		},
-		showErrorMessage(message) {
+		showErrorMessage(_message) {
 			// Implementation would depend on your notification system
 			// TODO: Integrate with Nextcloud notification system
 		},

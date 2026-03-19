@@ -336,7 +336,7 @@ export default {
 	},
 	watch: {
 		filesComputed: {
-			handler(newFiles, oldFiles) {
+			handler(newFiles, _oldFiles) {
 				if (newFiles?.length) {
 					this.addAttachments()
 				}

@@ -1534,10 +1534,9 @@ class CacheHandler
 
                             if ($uuid !== null) {
                                 // Use name if available, otherwise fall back to UUID.
+                                $effectiveName = $uuid;
                                 if (($name !== null) && trim($name) !== '') {
                                     $effectiveName = $name;
-                                } else {
-                                    $effectiveName = $uuid;
                                 }
 
                                 // Overwrite any existing name (magic table has enriched names).

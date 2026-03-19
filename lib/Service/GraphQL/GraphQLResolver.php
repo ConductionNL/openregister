@@ -228,14 +228,13 @@ class GraphQLResolver
         $hasNextPage     = (($offset + $limit) < $totalCount);
         $hasPreviousPage = ($offset > 0);
 
-        $edgesEmpty = empty($edges);
+        $startCursor = null;
+        $endCursor   = null;
+        $edgesEmpty  = empty($edges);
         if ($edgesEmpty === false) {
             $startCursor = $edges[0]['cursor'];
             $lastEdge    = end($edges);
             $endCursor   = $lastEdge['cursor'];
-        } else {
-            $startCursor = null;
-            $endCursor   = null;
         }
 
         return [
@@ -638,19 +637,11 @@ class GraphQLResolver
         $data['_register'] = $object->getRegister();
         $data['_schema']   = $object->getSchema();
 
-        $created = $object->getCreated();
-        if ($created instanceof \DateTimeInterface) {
-            $data['_created'] = $created->format(\DateTimeInterface::ATOM);
-        } else {
-            $data['_created'] = $created;
-        }
+        $created            = $object->getCreated();
+        $data['_created'] = ($created instanceof \DateTimeInterface) ? $created->format(\DateTimeInterface::ATOM) : $created;
 
-        $updated = $object->getUpdated();
-        if ($updated instanceof \DateTimeInterface) {
-            $data['_updated'] = $updated->format(\DateTimeInterface::ATOM);
-        } else {
-            $data['_updated'] = $updated;
-        }
+        $updated            = $object->getUpdated();
+        $data['_updated'] = ($updated instanceof \DateTimeInterface) ? $updated->format(\DateTimeInterface::ATOM) : $updated;
 
         $data['_owner'] = $object->getOwner();
 

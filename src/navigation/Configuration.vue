@@ -268,7 +268,7 @@ export default {
 	},
 	methods: {
 		// We use the catalogi in the menu so lets fetch those
-		fetchData(newPage) {
+		fetchData(_newPage) {
 			this.loading = true
 
 			fetch(

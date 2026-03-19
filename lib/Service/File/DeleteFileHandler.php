@@ -82,11 +82,9 @@ class DeleteFileHandler
         // Initialize fileName before conditional assignment.
         $fileName = '';
 
+        $fileName = ($file instanceof Node) ? $file->getName() : (string) $file;
         if ($file instanceof Node === false) {
-            $fileName = (string) $file;
-            $file     = $this->readFileHandler->getFile(object: $object, file: $file);
-        } else {
-            $fileName = $file->getName();
+            $file = $this->readFileHandler->getFile(object: $object, file: $file);
         }
 
         if ($file === null) {

@@ -137,16 +137,20 @@ class TranslationHandler
             // Try the resolved language first, then fall back to default.
             if (isset($value[$resolvedLanguage]) === true) {
                 $objectData[$propName] = $value[$resolvedLanguage];
-            } else if (isset($value[$defaultLanguage]) === true) {
+                continue;
+            }
+
+            if (isset($value[$defaultLanguage]) === true) {
                 $objectData[$propName] = $value[$defaultLanguage];
                 $this->languageService->setFallbackUsed(true);
-            } else {
-                // Last resort: return the first available translation.
-                $firstValue = reset($value);
-                if ($firstValue !== false) {
-                    $objectData[$propName] = $firstValue;
-                    $this->languageService->setFallbackUsed(true);
-                }
+                continue;
+            }
+
+            // Last resort: return the first available translation.
+            $firstValue = reset($value);
+            if ($firstValue !== false) {
+                $objectData[$propName] = $firstValue;
+                $this->languageService->setFallbackUsed(true);
             }
         }//end foreach
 

@@ -522,7 +522,7 @@ export default {
 		 * @param {object} options - Export options
 		 * @return {void}
 		 */
-		exportFilteredItems(options) {
+		exportFilteredItems(_options) {
 			// TODO: Implement export functionality for deleted items
 		},
 		/**
