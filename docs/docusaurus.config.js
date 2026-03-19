@@ -20,7 +20,11 @@ const config = {
   // metadata like html lang
   i18n: {
     defaultLocale: 'en',
-    locales: ['en'],
+    locales: ['en', 'nl'],
+    localeConfigs: {
+      en: { label: 'English' },
+      nl: { label: 'Nederlands' },
+    },
   },
 
   presets: [
@@ -93,6 +97,10 @@ const config = {
           {
             href: 'https://github.com/conductionnl/openregister',
             label: 'GitHub',
+            position: 'right',
+          },
+          {
+            type: 'localeDropdown',
             position: 'right',
           },
         ],
