@@ -34,6 +34,7 @@ use OCP\IURLGenerator;
  * @psalm-suppress UnusedClass - Used via DI in McpController
  *
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
+ * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
  */
 class McpDiscoveryService
 {
@@ -138,7 +139,7 @@ class McpDiscoveryService
             [
                 'id'          => 'objects',
                 'name'        => 'Objects',
-                'description' => 'Data records stored in register/schema pairs. Full CRUD, filtering, pagination, lock/unlock, publish.',
+                'description' => 'Data records in register/schema pairs. CRUD, filtering, pagination, lock/unlock, publish.',
             ],
             [
                 'id'          => 'search',
@@ -873,7 +874,7 @@ class McpDiscoveryService
                 [
                     'method'      => 'POST',
                     'path'        => '/api/views',
-                    'description' => 'Create a view. Body: { "name": "...", "filters": {...}, "register": id, "schema": id }.',
+                    'description' => 'Create a view. Body: { "name", "filters", "register", "schema" }.',
                 ],
                 [
                     'method'      => 'PUT',

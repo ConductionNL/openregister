@@ -1,5 +1,9 @@
 # Schema Hooks Specification
 
+---
+status: implemented
+---
+
 ## Purpose
 Enables schema-level configuration of workflow hooks that fire on object lifecycle events. Hooks use CloudEvents 1.0 format and support synchronous (request-response) and asynchronous (fire-and-forget) delivery modes with configurable failure behavior.
 
@@ -203,3 +207,10 @@ All hook executions MUST be logged for debugging and audit purposes.
 - **Open questions:**
   - Should hook execution logs be stored in the database or only in Nextcloud's log file?
   - How should the `reverted` event interact with content versioning?
+
+## Nextcloud Integration Analysis
+
+- **Status**: Already implemented in OpenRegister
+- **Existing Implementation**: `HookExecutor` processes sync/async hooks with CloudEvents 1.0 payloads. `HookListener` is a PSR-14 event listener. Stoppable events (`ObjectCreatingEvent`, `ObjectUpdatingEvent`, `ObjectDeletingEvent`) implement `StoppableEventInterface`. `HookRetryJob` handles "queue" failure mode. `CloudEventFormatter` formats payloads.
+- **Nextcloud Core Integration**: Uses `IEventDispatcher` for dispatching typed events extending the `OCP\EventDispatcher\Event` base class. `HookListener` registered via `IBootstrap::register()`. Background retry jobs use Nextcloud's `QueuedJob` (via `HookRetryJob`). The stoppable event pattern follows PSR-14 which aligns with Nextcloud's event dispatcher implementation.
+- **Recommendation**: Mark as implemented. The hook system deeply integrates with NC's event dispatcher. Consider adding `filterCondition` support and comprehensive execution logging with duration metrics as future enhancements.

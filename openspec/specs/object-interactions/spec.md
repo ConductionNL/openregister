@@ -1,5 +1,5 @@
 ---
-status: reviewed
+status: implemented
 reviewed_date: 2026-02-28
 ---
 
@@ -326,3 +326,24 @@ The system MUST clean up tasks and notes when an OpenRegister object is deleted.
 - **Architecture diagram included**: Clear visual representation of the system architecture.
 - **Known limitations documented**: Authorization gaps and performance notes are explicitly called out.
 - **No open questions**: The spec covers all MVP scenarios comprehensively.
+
+## Nextcloud Integration Analysis
+
+**Status**: Fully implemented. TaskService, NoteService, TasksController, NotesController, CommentsEntityListener, and ObjectCleanupListener are all in place and functional.
+
+**Nextcloud Core Interfaces Used**:
+- `CalDavBackend` (`OCA\DAV\CalDAV\CalDavBackend`): Used by `TaskService` for all CalDAV VTODO operations (create, read, update, delete). Tasks are stored in the user's default VTODO-supporting calendar with `X-OPENREGISTER-*` custom properties for object linking.
+- `ICommentsManager` (`OCP\Comments\ICommentsManager`): Used by `NoteService` for comment CRUD operations. Notes are stored as Nextcloud comments with `objectType: "openregister"` and `objectId: {uuid}`.
+- `IEventDispatcher` (`OCP\EventDispatcher\IEventDispatcher`): `CommentsEntityListener` listens for `CommentsEntityEvent` to register "openregister" as a valid comment entity type. `ObjectCleanupListener` listens for `ObjectDeletedEvent` to cascade-delete linked tasks and notes.
+- `IUserSession` / `IUserManager`: Used by `NoteService` for current user context and display name resolution on note authors.
+
+**Recommended Enhancements**:
+- Fire typed events (`ObjectTaskCreatedEvent`, `ObjectNoteCreatedEvent`) via `IEventDispatcher` when tasks or notes are added to objects. This would enable consuming apps (Procest, Pipelinq) to react to interaction events — e.g., updating a case status when a task is completed, or sending notifications when a note is added.
+- Register task and note activity in the Nextcloud Activity stream via `IActivityManager` / `IProvider`. This would surface object interactions (task created, task completed, note added) in the user's activity feed alongside other Nextcloud activity.
+- Use `EntityRelation` tracking for interaction statistics — count tasks and notes per object for display in list views (e.g., badge counts on object cards).
+
+**Dependencies on Existing OpenRegister Features**:
+- `ObjectEntityMapper` — validates object existence before task/note creation and during comment entity registration.
+- `ObjectDeletedEvent` — internal event fired by `ObjectService` when objects are deleted, triggering cleanup.
+- `Application.php` — registers `CommentsEntityListener` and `ObjectCleanupListener` during app initialization.
+- Routes registered in `routes.php` — task and note sub-resource endpoints under the objects URL pattern.

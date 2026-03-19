@@ -537,11 +537,10 @@ class Organisation extends Entity implements JsonSerializable
         if (is_string($authorization) === true) {
             try {
                 $decoded = json_decode($authorization, true);
+                // Invalid JSON, use default.
+                $authorization = null;
                 if (json_last_error() === JSON_ERROR_NONE && is_array($decoded) === true) {
                     $authorization = $decoded;
-                } else {
-                    // Invalid JSON, use default.
-                    $authorization = null;
                 }
             } catch (\Exception $e) {
                 // If decoding fails, use default.

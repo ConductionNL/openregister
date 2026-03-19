@@ -84,7 +84,6 @@ class LlmSettingsHandler
      *     Backward compatibility requires multiple field existence checks
      * @SuppressWarnings(PHPMD.NPathComplexity)
      *     Default configuration structure requires comprehensive initialization
-     * @SuppressWarnings(PHPMD.ElseExpression)
      *     Nested else branches handle optional vector config backward compatibility
      */
     public function getLLMSettingsOnly(): array
@@ -135,7 +134,9 @@ class LlmSettingsHandler
                     'backend'   => 'php',
                     'solrField' => '_embedding_',
                 ];
-            } else {
+            }
+
+            if (isset($decoded['vectorConfig']) === true) {
                 // Ensure all vector config fields exist.
                 if (isset($decoded['vectorConfig']['backend']) === false) {
                     $decoded['vectorConfig']['backend'] = 'php';

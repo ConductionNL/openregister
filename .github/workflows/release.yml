@@ -1,0 +1,39 @@
+name: Release
+
+on:
+  push:
+    branches: [development]
+  pull_request:
+    branches: [beta, main]
+    types: [closed]
+
+jobs:
+  unstable:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/development'
+    uses: ConductionNL/.github/.github/workflows/release.yml@main
+    with:
+      release-type: unstable
+      app-name: openregister
+      verify-vendor-deps: true
+      vendor-check-paths: 'openai-php/client/src,theodo-group/llphant/src'
+    secrets: inherit
+
+  beta:
+    if: github.event.pull_request.merged == true && github.base_ref == 'beta'
+    uses: ConductionNL/.github/.github/workflows/release.yml@main
+    with:
+      release-type: beta
+      app-name: openregister
+      verify-vendor-deps: true
+      vendor-check-paths: 'openai-php/client/src,theodo-group/llphant/src'
+    secrets: inherit
+
+  stable:
+    if: github.event.pull_request.merged == true && github.base_ref == 'main'
+    uses: ConductionNL/.github/.github/workflows/release.yml@main
+    with:
+      release-type: stable
+      app-name: openregister
+      verify-vendor-deps: true
+      vendor-check-paths: 'openai-php/client/src,theodo-group/llphant/src'
+    secrets: inherit

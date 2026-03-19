@@ -287,10 +287,10 @@ export default {
 		/**
 		 * View template details
 		 *
-		 * @param {object} template - Template object
+		 * @param {object} _template - Template object
 		 * @return {void}
 		 */
-		viewTemplate(template) {
+		viewTemplate(_template) {
 			// TODO: Navigate to template details page when available
 			// console.log('View template:', template)
 		},

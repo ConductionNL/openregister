@@ -51,6 +51,8 @@ use Psr\Log\LoggerInterface;
  * @copyright 2024 Conduction b.v.
  *
  * @psalm-suppress UnusedClass
+ *
+ * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
  */
 class NamesController extends Controller
 {

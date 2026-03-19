@@ -59,6 +59,8 @@ use OCP\AppFramework\Db\Entity;
  * @method void setCreated(?DateTime $created)
  * @method string|null getOrganisation()
  * @method void setOrganisation(?string $organisation)
+ * @method DateTime|null getExpires()
+ * @method void setExpires(?DateTime $expires)
  *
  * @psalm-suppress PossiblyUnusedMethod
  * @psalm-suppress PropertyNotSetInConstructor $id is set by Nextcloud's Entity base class

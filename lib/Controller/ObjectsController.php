@@ -72,6 +72,8 @@ use OCP\AppFramework\Http\DataDownloadResponse;
  * @suppressWarnings(PHPMD.CouplingBetweenObjects)
  * @suppressWarnings(PHPMD.ElseExpression)           File upload extraction requires conditional branching
  * @suppressWarnings(PHPMD.ExcessiveMethodLength)    Complex file upload handling with multiple formats
+ * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+ * @SuppressWarnings(PHPMD.NPathComplexity)
  */
 class ObjectsController extends Controller
 {
@@ -93,21 +95,21 @@ class ObjectsController extends Controller
     /**
      * Constructor for the ObjectsController
      *
-     * @param string             $appName            The name of the app
-     * @param IRequest           $request            The request object
-     * @param IAppConfig         $config             The app configuration object
-     * @param IAppManager        $appManager         The app manager
-     * @param ContainerInterface $container          The DI container
-     * @param RegisterMapper     $registerMapper     The register mapper
-     * @param SchemaMapper       $schemaMapper       The schema mapper
-     * @param AuditTrailMapper   $auditTrailMapper   The audit trail mapper
-     * @param ObjectService      $objectService      The object service
-     * @param IUserSession       $userSession        The user session
-     * @param IGroupManager      $groupManager       The group manager
-     * @param ExportService      $exportService      The export service
-     * @param ImportService      $importService      The import service
-     * @param WebhookService     $webhookService     The webhook service (optional)
-     * @param LoggerInterface    $logger             The logger (optional)
+     * @param string             $appName          The name of the app
+     * @param IRequest           $request          The request object
+     * @param IAppConfig         $config           The app configuration object
+     * @param IAppManager        $appManager       The app manager
+     * @param ContainerInterface $container        The DI container
+     * @param RegisterMapper     $registerMapper   The register mapper
+     * @param SchemaMapper       $schemaMapper     The schema mapper
+     * @param AuditTrailMapper   $auditTrailMapper The audit trail mapper
+     * @param ObjectService      $objectService    The object service
+     * @param IUserSession       $userSession      The user session
+     * @param IGroupManager      $groupManager     The group manager
+     * @param ExportService      $exportService    The export service
+     * @param ImportService      $importService    The import service
+     * @param WebhookService     $webhookService   The webhook service (optional)
+     * @param LoggerInterface    $logger           The logger (optional)
      *
      * @return void
      *
@@ -525,7 +527,7 @@ class ObjectsController extends Controller
             'offset'  => $offset,
             'page'    => $page,
             'filters' => $params,
-            'sort'    => $this->normalizeOrderParameter($params['order'] ?? $params['_order'] ?? []),
+            'sort'    => $this->normalizeOrderParameter(order: $params['order'] ?? $params['_order'] ?? []),
             '_search' => ($params['_search'] ?? null),
             '_extend' => $this->normalizeExtendParameter(extend: $params['extend'] ?? $params['_extend'] ?? null),
             '_fields' => ($params['fields'] ?? $params['_fields'] ?? null),
@@ -870,7 +872,7 @@ class ObjectsController extends Controller
      *
      * Supported parameters:
      * - Standard filters: Any object field (e.g., name, status, etc.)
-     * - Metadata filters: register, schema, uuid, created, updated, published, etc.
+     * - Metadata filters: register, schema, uuid, created, updated, etc.
      * - Pagination: _limit, _offset, _page
      * - Search: _search
      * - Rendering: _extend, _fields, _filter/_unset
@@ -955,8 +957,8 @@ class ObjectsController extends Controller
         $rbac   = filter_var($params['rbac'] ?? true, FILTER_VALIDATE_BOOLEAN);
         // Check both _multi and multi params (URL uses _multi, but we also support multi).
         $multiExplicitlySet = isset($params['_multi']) || isset($params['multi']);
-        $multi     = filter_var($params['_multi'] ?? $params['multi'] ?? true, FILTER_VALIDATE_BOOLEAN);
-        $deleted   = filter_var($params['deleted'] ?? false, FILTER_VALIDATE_BOOLEAN);
+        $multi   = filter_var($params['_multi'] ?? $params['multi'] ?? true, FILTER_VALIDATE_BOOLEAN);
+        $deleted = filter_var($params['deleted'] ?? false, FILTER_VALIDATE_BOOLEAN);
 
         // Check if magic mapping is enabled for this register+schema.
         $registerEntity = $resolved['registerEntity'] ?? null;
@@ -1253,7 +1255,7 @@ class ObjectsController extends Controller
      *
      * Supported parameters:
      * - Standard filters: Any object field (e.g., name, status, etc.)
-     * - Metadata filters: register, schema, uuid, created, updated, published, etc.
+     * - Metadata filters: register, schema, uuid, created, updated, etc.
      * - Pagination: _limit, _offset, _page
      * - Search: _search
      * - Rendering: _extend, _fields, _filter/_unset

@@ -1,3 +1,7 @@
+---
+status: partial
+---
+
 # register-i18n Specification
 
 ## Purpose
@@ -124,3 +128,19 @@ The codebase does use Nextcloud's `IL10N` for UI string translations (app labels
   - Should translations be stored as a JSON sub-object per property (e.g., `{"nl": "...", "en": "..."}`) or as separate object versions?
   - How should the MagicMapper (magic tables) handle translatable columns?
   - What is the priority: SDG compliance (NL+EN minimum) or full multi-language support?
+
+## Nextcloud Integration Analysis
+
+**Status**: PARTIALLY IMPLEMENTED
+
+**What Exists**: Multi-organization support exists with flexible schema metadata, meaning the data model can already accommodate additional per-field metadata. Nextcloud's `IL10N` service is used for UI string translations (app labels, button text). The object storage model uses a flexible JSON `object` column that could store per-field translation variants without schema changes. The API layer (`ObjectController`) already processes request headers and could be extended for `Accept-Language` negotiation.
+
+**Gap Analysis**: No `translatable` flag exists on schema properties. No per-field translation storage mechanism is implemented -- objects store single-language values. No `Accept-Language` header negotiation occurs in API responses. No language switcher exists in the object edit UI. No language-specific search indexing or per-register language configuration is available. The gap between UI translations (IL10N) and data-level i18n is complete -- these are entirely separate concerns.
+
+**Nextcloud Core Integration Points**:
+- **IL10N / IL10NFactory**: Use `\OCP\IL10N\IFactory::get('openregister', $lang)` for UI-level translations of field labels and schema names. This is already partially used but should be extended to translate schema property display names per language.
+- **IRequest / AppFramework Middleware**: Create a custom middleware that reads `Accept-Language` from `\OCP\IRequest::getHeader('Accept-Language')` and parses it per RFC 9110. Store the resolved language in a request-scoped service for use by `RenderObject` when selecting which translation variant to return.
+- **IConfig (per-register settings)**: Store available languages and default language per register using `\OCP\IConfig::setAppValue()` with register-scoped keys (e.g., `register_{id}_languages`), or add a `languages` JSON field to the Register entity.
+- **Nextcloud Search / ISearchProvider**: When implementing language-specific search indexing, use the existing `ISearchProvider` integration to pass language context to Solr/Elasticsearch analyzers, selecting the appropriate stemmer per language.
+
+**Recommendation**: Implement translations as a JSON sub-object per translatable property (e.g., `{"nl": "Paspoort aanvragen", "en": "Passport application"}`), stored within the existing object JSON column. This avoids database schema changes and works with the current magic table approach by storing the default language value in the indexed column. Add `Accept-Language` middleware in AppFramework to resolve the requested language early in the request lifecycle. Start with NL+EN to satisfy SDG requirements, with the architecture supporting additional languages via register configuration. The UI language switcher can use Vue tabs above translatable fields, similar to the existing NL Design tab pattern.

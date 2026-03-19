@@ -161,3 +161,13 @@ On updates (PUT/PATCH), properties whose values have not changed MUST NOT be re-
 - **Specific enough to implement?** Yes -- this spec is fully implemented and the scenarios match the code behavior.
 - **Missing/ambiguous:** Nothing significant -- the spec is well-defined and matches the implementation.
 - **Open questions:** None -- this spec is complete.
+
+## Nextcloud Integration Analysis
+
+**Status**: Implemented
+
+**Existing Implementation**: SaveObject.php contains validateReferences() which iterates schema properties to find those with $ref and validateReference: true, then checks existence via validateReferenceExists(). The resolveSchemaReference() method resolves $ref by numeric ID, UUID, or slug. Validation is called in both createObject() and updateObject() flows. On updates, unchanged references are skipped by comparing old vs new data. Array references are validated individually per UUID. Null/empty values are skipped. Cross-register reference support is available via the register property configuration. HTTP 422 responses include descriptive error messages with property name, UUID, and target schema name. RelationHandler and EntityRelation entity manage the relation graph with contracts/uses/used endpoints.
+
+**Nextcloud Core Integration**: The reference validation is integrated into the object save pipeline which runs within Nextcloud's request lifecycle. Validation occurs during the save transaction, ensuring referential integrity before data is committed to the database via Nextcloud's IDBConnection. Events are fired on relation changes through Nextcloud's IEventDispatcher, allowing other apps or listeners to react to changes in the object dependency graph. The EntityRelation entity is stored in Nextcloud's database using standard OCP\AppFramework\Db\Entity patterns, making relation data queryable alongside other OpenRegister entities.
+
+**Recommendation**: The reference existence validation is fully implemented and well-integrated with Nextcloud's database and event infrastructure. The implementation correctly validates during object save, fires events on relation changes, and supports cross-register references. No significant Nextcloud integration gaps exist. Minor enhancements could include: caching resolved schema references in Nextcloud's ICache (OCP\ICache) to avoid repeated database lookups during bulk operations with many cross-references, and exposing relation graph data through Nextcloud's search providers for discoverability of connected objects.

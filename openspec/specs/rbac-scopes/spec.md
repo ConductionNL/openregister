@@ -221,3 +221,13 @@ The PermissionHandler MUST be called for all GraphQL queries and mutations with 
 - **AND** they query `order { title klant { naam } }`
 - **THEN** `klant` MUST return `null` with a partial error at `["order", "klant"]` with `extensions.code: "FORBIDDEN"`
 - **AND** the `title` field MUST still return data (partial success)
+
+## Nextcloud Integration Analysis
+
+**Status**: Implemented
+
+**Existing Implementation**: OasService extracts RBAC groups from schema property authorization blocks and generates OAuth2 scopes in the OAS output. The extractGroupFromRule() method parses individual authorization rules. Per-operation security requirements are applied at the operation level (GET uses read groups, POST/PUT/DELETE use update groups). PermissionHandler handles schema-level authorization, PropertyRbacHandler handles property-level authorization, and MagicRbacHandler filters query results at the database level. Consumer entity maps API consumers to Nextcloud users with JWT, API key, and other authentication methods. AuthorizationService orchestrates authentication and authorization. ConditionMatcher evaluates conditional authorization rules with organisation matching. BaseOas.json provides the foundation with basicAuth and oauth2 security schemes.
+
+**Nextcloud Core Integration**: The RBAC scopes system maps Nextcloud group memberships directly to OAuth2 scopes in the generated OpenAPI specification. This creates a bridge between Nextcloud's native group-based access control (managed via OCP\IGroupManager) and standard OAuth2 scope semantics understood by external API consumers. When a Consumer entity authenticates via JWT or API key, it is resolved to a Nextcloud user via mappedUserId, and that user's group memberships determine the effective scopes. The MCP discovery endpoint also exposes these scopes, enabling OAuth2 clients to understand available permissions. This approach is consistent with how Nextcloud itself handles app-level permissions through group restrictions.
+
+**Recommendation**: The RBAC-to-OAuth2 scope mapping is fully implemented and provides excellent interoperability between Nextcloud's group system and standard API authorization patterns. The ZGW autorisaties mapping documented in this spec is particularly valuable for Dutch government deployments. No major changes are needed for the Nextcloud integration. Minor enhancements could include: registering available scopes in Nextcloud's capabilities API for programmatic discovery, and ensuring that the admin group bypass is consistently documented in the generated OAS security descriptions. The GraphQL enforcement additions (PermissionHandler called for all queries/mutations) ensure consistent authorization across all access methods.

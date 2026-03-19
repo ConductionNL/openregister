@@ -32,6 +32,7 @@ use OCP\IDBConnection;
  *
  * @SuppressWarnings(PHPMD.ExcessiveClassLength)
  * @SuppressWarnings(PHPMD.ExcessiveClassComplexity)
+ * @SuppressWarnings(PHPMD.StaticAccess)
  */
 class MariaDbFacetHandler
 {
@@ -336,11 +337,10 @@ class MariaDbFacetHandler
         $extractSql    = "JSON_UNQUOTE(JSON_EXTRACT(object, ".$jsonPathParam."))";
 
         // Build interval-specific grouping expression.
+        $dateFormat = $this->getDateFormatForInterval(interval: $interval);
+        $dateKeySql = "DATE_FORMAT(".$extractSql.", '$dateFormat')";
         if ($interval === 'quarter') {
             $dateKeySql = "CONCAT(YEAR(".$extractSql."), '-Q', QUARTER(".$extractSql."))";
-        } else {
-            $dateFormat = $this->getDateFormatForInterval(interval: $interval);
-            $dateKeySql = "DATE_FORMAT(".$extractSql.", '$dateFormat')";
         }
 
         $queryBuilder->selectAlias(
@@ -435,7 +435,7 @@ class MariaDbFacetHandler
             case 'week':
                 // Format: 2025-12 (year-week).
                 if (preg_match('/^(\d{4})-(\d{1,2})$/', $dateKey, $matches) === 1) {
-                    $date = new \DateTime();
+                    $date = new DateTime();
                     $date->setISODate((int) $matches[1], (int) $matches[2], 1);
                     $from = $date->format('Y-m-d');
                     $date->setISODate((int) $matches[1], (int) $matches[2], 7);

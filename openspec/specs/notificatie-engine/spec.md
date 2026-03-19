@@ -136,3 +136,13 @@ Users MUST be able to opt out of specific notification channels or rules.
   - Should the notification engine build on top of the existing webhook system or replace it?
   - Should email delivery be delegated to n8n workflows rather than implemented natively?
   - What is the relationship between this spec and the existing `WebhookService`?
+
+## Nextcloud Integration Analysis
+
+**Status**: Implemented
+
+**Existing Implementation**: Notifier class implements INotifier for formatting in-app notifications with translation support. NotificationService integrates with Nextcloud's INotificationManager for creating and dispatching notifications. WebhookService handles outbound webhook delivery with WebhookEventListener triggering on object CRUD events. Webhook entities are stored via WebhookMapper with delivery logging in WebhookLog/WebhookLogMapper. WebhookRetryJob and WebhookDeliveryJob handle async delivery and retry logic. CloudEventFormatter formats webhook payloads following the CloudEvents specification.
+
+**Nextcloud Core Integration**: The notification engine is natively integrated with Nextcloud's INotifier interface (OCP\Notification\INotifier), registered during app bootstrap via IBootstrap::register(). This means OpenRegister notifications appear in the standard Nextcloud notification bell, supporting both web push (via the Nextcloud Push app) and email delivery (via Nextcloud's built-in notification-to-email feature). The Notifier class handles i18n through Nextcloud's IL10N translation system. Webhook delivery runs asynchronously via Nextcloud's BackgroundJob system, ensuring that notification processing does not block the originating request. The INotificationManager handles notification lifecycle (create, mark processed, dismiss).
+
+**Recommendation**: The in-app notification integration via INotifier is the correct and native approach for Nextcloud. The webhook delivery system with CloudEvents formatting provides a solid foundation for external system integration. For email notifications specifically, the recommended path is to rely on Nextcloud's notification-to-email feature (users configure email delivery in their notification settings) rather than implementing direct SMTP sending, which aligns with the noted direction of phasing out direct mail in favor of n8n workflows. Enhancements to consider: configurable notification rules per schema with condition evaluation, template-based message formatting using Twig (already available in the codebase), and notification batching for bulk operations to prevent notification floods.

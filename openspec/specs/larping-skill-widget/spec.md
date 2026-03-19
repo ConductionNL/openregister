@@ -1,3 +1,7 @@
+---
+status: draft
+---
+
 ## ADDED Requirements
 
 ### Requirement: The dashboard MUST display a skill usage pie chart
@@ -114,3 +118,25 @@ The widget only works when LarpingApp is configured to store characters and skil
 - **WHEN** the dashboard loads
 - **THEN** the widget MUST display "Configure OpenRegister data source to enable this widget"
 - **AND** the widget MUST NOT attempt GraphQL queries
+
+## Nextcloud Integration Analysis
+
+**Status**: Not yet implemented. No LarpingApp-specific dashboard widget exists in the codebase. The LarpingApp has a dashboard view but no Nextcloud-native dashboard widget integration.
+
+**Nextcloud Core Interfaces**:
+- `IDashboardWidget` / `IAPIWidgetV2` (`OCP\Dashboard`): Implement a `SkillUsageWidget` class that registers with Nextcloud's dashboard framework. Use `IAPIWidgetV2` for streaming/async data loading — the widget fetches skill usage data via two GraphQL queries and renders a donut chart. This makes the widget available on Nextcloud's main dashboard page alongside other app widgets.
+- `IBootstrap` (`OCP\AppFramework\Bootstrap\IBootstrap`): Register the widget during LarpingApp's bootstrap phase via `$context->registerDashboardWidget(SkillUsageWidget::class)`. This ensures the widget appears in Nextcloud's dashboard widget picker.
+- `IInitialState` (`OCP\IInitialState`): Pass LarpingApp's OpenRegister configuration (character_register, character_schema, skill_register, skill_schema) to the frontend via initial state, so the Vue widget component knows which GraphQL queries to construct without additional API calls.
+- `IAppConfig`: Read LarpingApp's data source configuration (`character_source`, `skill_source`) to determine whether to show the widget or display a configuration message.
+
+**Implementation Approach**:
+- Create a `SkillUsageWidget.php` in LarpingApp implementing `IAPIWidgetV2`. The widget provides a title ("Skill Usage by Characters"), a widget ID, and an icon. The actual rendering happens in a Vue component registered for the widget.
+- Build a `SkillUsageChart.vue` component that executes two GraphQL queries against OpenRegister's `/api/graphql` endpoint: (1) fetch characters with their `skills` UUID arrays, (2) resolve skill UUIDs to names. Aggregate counts client-side and render using a donut chart (Chart.js or vue-chartjs).
+- The widget reads configuration from `IInitialState` to construct schema-specific GraphQL queries. If `character_source` is not `openregister`, display a configuration prompt instead of the chart.
+- Use Nextcloud's CSS custom properties for theme-aware chart colors (dark mode support). The chart component checks `document.body.dataset.themes` or uses `getComputedStyle` to read `--color-primary`, `--color-primary-element`, etc.
+- Place the widget within the existing `.graphs` CSS grid container on LarpingApp's own dashboard page, alongside registering it as a Nextcloud-native dashboard widget for the main dashboard.
+
+**Dependencies on Existing OpenRegister Features**:
+- GraphQL API (`/api/graphql`) — data source for character and skill queries.
+- LarpingApp's OpenRegister configuration — `character_register`, `character_schema`, `skill_register`, `skill_schema` app config values.
+- LarpingApp's dashboard CSS grid infrastructure (DASH-030 through DASH-034) — layout container for the widget on LarpingApp's own dashboard page.

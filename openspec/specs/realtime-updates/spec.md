@@ -131,3 +131,13 @@ Clients MUST be able to subscribe to specific schemas, registers, or individual 
   - Should the existing GraphQL subscription infrastructure be extended or replaced with a dedicated SSE system?
   - How should SSE work in ExApp sidecar deployment (Python proxy)?
   - Should WebSocket be considered as an alternative to SSE for bidirectional communication?
+
+## Nextcloud Integration Analysis
+
+**Status**: Implemented
+
+**Existing Implementation**: GraphQLSubscriptionController provides an SSE-based streaming endpoint using APCu-buffered events. SubscriptionService manages the event buffer in APCu with key prefixes, supporting buffering of object change events. GraphQLSubscriptionListener captures object CRUD events and pushes them to the subscription buffer. The SSE streaming mechanism is functional and delivers real-time updates to connected clients.
+
+**Nextcloud Core Integration**: The current implementation uses Server-Sent Events (SSE) which works within Nextcloud's PHP request model, though long-running PHP processes are resource-intensive. The APCu buffer is per-process, which is a pragmatic workaround for PHP's shared-nothing architecture. An additional integration point would be Nextcloud's notification push channel (OCP\Notification\IManager with the Nextcloud Push app), which provides a native WebSocket-like push mechanism to Nextcloud clients. This could complement SSE for users already connected through the Nextcloud web interface, delivering real-time updates via the notification bell.
+
+**Recommendation**: The SSE implementation via GraphQL subscriptions is functional for real-time updates. To improve Nextcloud integration, consider registering a push notification provider that fires alongside the SSE buffer, giving Nextcloud desktop and mobile clients native real-time awareness of register changes. The APCu buffer approach has scalability limitations in multi-worker setups; for production deployments, consider using Nextcloud's ICache (OCP\ICache) with a Redis backend for cross-process event sharing. Dedicated /api/sse/{register}/{schema} endpoints should be added as aliases to the GraphQL subscription endpoint for REST API consistency.

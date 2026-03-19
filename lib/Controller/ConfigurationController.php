@@ -736,6 +736,20 @@ class ConfigurationController extends Controller
             $results = [];
 
             // Call appropriate service.
+            // Default to GitLab search.
+            $this->logger->info(
+                message: '[ConfigurationController] About to call GitLab search service',
+                context: ['file' => __FILE__, 'line' => __LINE__]
+            );
+            $results = $this->gitlabHandler->searchConfigurations(
+                search: $search,
+                page: $page
+            );
+            $this->logger->info(
+                message: '[ConfigurationController] GitLab search completed',
+                context: ['file' => __FILE__, 'line' => __LINE__, 'result_count' => count($results['results'] ?? [])]
+            );
+
             if ($source === 'github') {
                 $this->logger->info(
                     message: '[ConfigurationController] About to call GitHub search service',
@@ -746,20 +760,7 @@ class ConfigurationController extends Controller
                     message: '[ConfigurationController] GitHub search completed',
                     context: ['file' => __FILE__, 'line' => __LINE__, 'result_count' => count($results['results'] ?? [])]
                 );
-            } else {
-                $this->logger->info(
-                    message: '[ConfigurationController] About to call GitLab search service',
-                    context: ['file' => __FILE__, 'line' => __LINE__]
-                );
-                $results = $this->gitlabHandler->searchConfigurations(
-                    search: $search,
-                    page: $page
-                );
-                $this->logger->info(
-                    message: '[ConfigurationController] GitLab search completed',
-                    context: ['file' => __FILE__, 'line' => __LINE__, 'result_count' => count($results['results'] ?? [])]
-                );
-            }//end if
+            }
 
             return new JSONResponse(data: $results, statusCode: 200);
         } catch (Exception $e) {
@@ -1242,7 +1243,8 @@ class ConfigurationController extends Controller
 
             $configuration = $this->configurationMapper->insert($configuration);
 
-            $msg = '[ConfigurationController] Created configuration'." entity with ID {$configuration->getId()} for app {$appId}";
+            $configId = $configuration->getId();
+            $msg      = "[ConfigurationController] Created configuration entity with ID {$configId} for app {$appId}";
             $this->logger->info(
                 message: $msg,
                 context: ['file' => __FILE__, 'line' => __LINE__]
@@ -1267,7 +1269,8 @@ class ConfigurationController extends Controller
             // But we need to save the sync status.
             $this->configurationMapper->update($configuration);
 
-            $msg = '[ConfigurationController] Successfully imported'." configuration {$configuration->getTitle()} from {$sourceType}";
+            $configTitle = $configuration->getTitle();
+            $msg         = "[ConfigurationController] Successfully imported configuration {$configTitle} from {$sourceType}";
             $this->logger->info(
                 message: $msg,
                 context: ['file' => __FILE__, 'line' => __LINE__]

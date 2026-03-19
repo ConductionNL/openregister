@@ -1,3 +1,7 @@
+---
+status: draft
+---
+
 # avg-verwerkingsregister Specification
 
 ## Purpose
@@ -138,3 +142,28 @@ The complete processing register MUST be exportable for supervisory authority (A
   - How does purpose-bound access control interact with the existing RBAC system?
   - What is the format for the Art 30 export — VNG template, custom, or configurable?
   - How should the BSN cross-schema search be implemented efficiently across potentially large datasets?
+
+## Nextcloud Integration Analysis
+
+**Status**: Not yet implemented as a formal processing register. `GdprEntity` exists for PII detection and `SearchTrail` tracks access patterns, but no processing activities register, purpose-bound access control, data subject access requests, or Art 30 export exist.
+
+**Nextcloud Core Interfaces**:
+- `INotifier` / `INotification`: Send notifications for data subject access requests (inzageverzoeken) — notify the privacy officer when a request is filed, and notify the requester when the report is ready. Also notify when retention periods trigger erasure eligibility.
+- `IEventDispatcher`: Fire `PersonalDataAccessedEvent` on every read/write to schemas marked as containing personal data. This event carries the user, object UUID, action type, and linked verwerkingsactiviteit. Listeners log these events to the processing log.
+- `Middleware`: Implement a `PurposeBindingMiddleware` that intercepts requests to schemas flagged as containing personal data. The middleware checks whether the requesting user's role is linked to a valid verwerkingsactiviteit for the target schema. If no valid purpose exists, return HTTP 403.
+- `AuditTrail` (OpenRegister's `AuditTrailMapper`): Extend audit trail entries to include `verwerkingsactiviteit` and `doelbinding` references, providing the legally required processing evidence for GDPR Art 30 compliance.
+
+**Implementation Approach**:
+- Model verwerkingsactiviteiten as a dedicated OpenRegister register and schema. Each processing activity object stores: name, purpose (doelbinding), legal basis (grondslag), data categories, data subjects (betrokkenen), retention period, and processor information. This register serves as the Art 30 register itself.
+- Link processing activities to schemas via a configuration on the schema entity (e.g., a `verwerkingsactiviteitId` property on `Schema`). This link determines which purpose applies to all operations on that schema's objects.
+- For data subject access requests, implement a `DataSubjectSearchService` that queries all schemas marked as containing personal data, searching for objects matching a BSN or other personal identifier. The service aggregates results across schemas and includes all processing log entries for matching objects.
+- For the right to erasure, implement an `ErasureRequestHandler` that evaluates each matching object against its schema's retention period. Objects with expired retention are deleted/anonymized; objects with active retention are flagged as retention-blocked with an explanation.
+- Art 30 register export: Create an `Art30ExportService` that generates a PDF or structured JSON/XML document listing all verwerkingsactiviteiten with their full details. Use Docudesk for PDF generation if available.
+
+**Dependencies on Existing OpenRegister Features**:
+- `GdprEntity` / `GdprEntityMapper` — existing PII detection entities, can be extended or referenced.
+- `SearchTrail` / `SearchTrailMapper` — existing access logging, provides partial processing evidence.
+- `EntityRecognitionHandler` — detects personal data entities in text content.
+- `ObjectService` — CRUD operations where processing logging hooks are inserted.
+- `AuditTrailMapper` — foundation for processing log entries with purpose references.
+- `SchemaService` — schema-level configuration for PII marking and verwerkingsactiviteit linking.

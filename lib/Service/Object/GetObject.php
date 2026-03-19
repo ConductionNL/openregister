@@ -54,9 +54,9 @@ class GetObject
     /**
      * Constructor for GetObject handler.
      *
-     * @param MagicMapper $objectMapper     Object entity data mapper.
-     * @param AuditTrailMapper    $auditTrailMapper Audit trail mapper for logs.
-     * @param SettingsService     $settingsService  Settings service for accessing trail settings.
+     * @param MagicMapper      $objectMapper     Object entity data mapper.
+     * @param AuditTrailMapper $auditTrailMapper Audit trail mapper for logs.
+     * @param SettingsService  $settingsService  Settings service for accessing trail settings.
      */
     public function __construct(
         private readonly MagicMapper $objectMapper,

@@ -277,7 +277,6 @@ class SolrSettingsHandler
      *     Multiple metric calculations require conditional handling
      * @SuppressWarnings(PHPMD.NPathComplexity)
      *     Statistics calculations depend on multiple optional values
-     * @SuppressWarnings(PHPMD.ElseExpression)
      *     Multiple conditional branches for calculating performance metrics require else clauses
      */
     private function transformSolrStatsToDashboard(array $rawStats): array
@@ -340,28 +339,24 @@ class SolrSettingsHandler
             $opsPerSec = 0;
         }
 
-        // Calculate error rate.
         if ($totalOps > 0) {
             $errorRate = round(($serviceStats['errors'] ?? 0) / $totalOps * 100, 2);
         } else {
             $errorRate = 0;
         }
 
-        // Determine core status.
         if ($rawStats['available'] === true) {
             $coreStatus = 'active';
         } else {
             $coreStatus = 'inactive';
         }
 
-        // Calculate average search time.
         if (($serviceStats['searches'] ?? 0) > 0) {
             $avgSearchTimeMs = round(($serviceStats['search_time'] ?? 0) / ($serviceStats['searches'] ?? 1), 2);
         } else {
             $avgSearchTimeMs = 0;
         }
 
-        // Calculate average index time.
         if (($serviceStats['indexes'] ?? 0) > 0) {
             $avgIndexTimeMs = round(($serviceStats['index_time'] ?? 0) / ($serviceStats['indexes'] ?? 1), 2);
         } else {

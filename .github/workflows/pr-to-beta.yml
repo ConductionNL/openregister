@@ -1,9 +1,0 @@
-name: Create or update PR to beta
-
-on:
-  push:
-    branches: [development]
-
-jobs:
-  sync:
-    uses: ConductionNL/.github/.github/workflows/sync-to-beta.yml@main

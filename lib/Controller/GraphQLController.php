@@ -107,12 +107,11 @@ class GraphQLController extends Controller
         $headers = [];
         if (isset($result['data']) === false && isset($result['errors']) === true) {
             $firstCode = ($result['errors'][0]['extensions']['code'] ?? null);
+            $status    = 400;
             if ($firstCode === 'RATE_LIMITED') {
                 $status     = 429;
                 $retryAfter = ($result['errors'][0]['extensions']['retryAfter'] ?? 60);
                 $headers['Retry-After'] = (string) $retryAfter;
-            } else {
-                $status = 400;
             }
         }
 
@@ -139,6 +138,7 @@ class GraphQLController extends Controller
         $html = $this->getGraphiQLHtml();
 
         // Create a response that renders raw HTML.
+        // @psalm-suppress MissingTemplateParam.
         $response = new class ($html) extends Response {
 
             /**

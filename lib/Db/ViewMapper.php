@@ -62,6 +62,7 @@ use Symfony\Component\Uid\Uuid;
  * @template-extends QBMapper<View>
  *
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
+ * @SuppressWarnings(PHPMD.UnusedFormalParameter)
  */
 class ViewMapper extends QBMapper
 {

@@ -1,3 +1,7 @@
+---
+status: draft
+---
+
 # document-zaakdossier Specification
 
 ## Purpose
@@ -138,3 +142,27 @@ Users MUST be able to download all dossier documents as a ZIP archive.
   - How does the dossier view integrate with Nextcloud's native Files app — can users browse the same files in both places?
   - Should the ZIP download include document metadata (CSV manifest) alongside the files?
   - How large can a dossier get before performance becomes a concern?
+
+## Nextcloud Integration Analysis
+
+**Status**: Partially implemented. Basic file upload and linking to objects works via `FileService` and `FolderManagementHandler`. Structured dossier views, document type classification, drag-and-drop with type selection, version history display, and bulk ZIP download are not built.
+
+**Nextcloud Core Interfaces**:
+- Nextcloud Files API (WebDAV / `OCP\Files`): Use `IStorage` and `IRootFolder` for document storage in structured paths (`/{register}/{schema}/{objectId}/{documentType}/`). Leverage Nextcloud's native file versioning (`IVersionsBackend`) for document version tracking without custom implementation.
+- `SystemTag` API (`ISystemTagManager`): Use Nextcloud's system tags for document type classification. Tag files with document types (e.g., `aanvraag`, `advies`, `besluit`) enabling cross-dossier search by document type and integration with Nextcloud's native file tag filtering.
+- `IArchiver` / ZIP streaming: Use Nextcloud's `IOutput` streaming for ZIP archive generation of complete dossiers, avoiding memory issues with large file sets. Alternatively, use `ZipStreamer` for on-the-fly ZIP creation.
+- `IEventDispatcher`: Fire `DossierDocumentUploadedEvent` when documents are added to a dossier, allowing consuming apps (Procest, etc.) to react to new documents (e.g., trigger workflow steps).
+
+**Implementation Approach**:
+- Extend `FolderManagementHandler` to create document-type sub-folders within the object folder structure. When a document is uploaded with a type classification, store it in `/{register}/{schema}/{objectId}/{documentType}/filename.ext`.
+- Build a `DossierView.vue` component that fetches all files for an object via `FileService`, groups them by document type (derived from folder structure or metadata), and renders a structured list with upload date, size, and version info.
+- Implement drag-and-drop upload using the HTML5 Drag and Drop API in the dossier Vue component. On drop, show a modal dialog for document type selection before uploading via `CreateFileHandler`.
+- For document version history, query Nextcloud's versions API (`/dav/versions/{userId}/versions/{fileId}`) and display in a side panel. Each version shows timestamp and uploading user.
+- Bulk ZIP download: Create a `DossierExportHandler` that streams all dossier files as a ZIP archive, preserving the document-type folder structure. Use `QueuedJob` for very large dossiers.
+
+**Dependencies on Existing OpenRegister Features**:
+- `FileService` / `CreateFileHandler` / `ReadFileHandler` — existing file CRUD operations.
+- `FolderManagementHandler` — folder structure management in Nextcloud Files.
+- `ObjectService` — object context for dossier association.
+- `FilePublishingHandler` — publication workflow for public-facing documents.
+- `TextExtractionService` — full-text extraction from uploaded documents for search.

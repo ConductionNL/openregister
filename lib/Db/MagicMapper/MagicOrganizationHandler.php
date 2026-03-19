@@ -122,12 +122,12 @@ class MagicOrganizationHandler
             );
 
             // No active organization - admins can see null-org objects, others get no results.
-            if ($isAdmin === true) {
-                $qb->andWhere($qb->expr()->isNull('t._organisation'));
-            } else {
+            if ($isAdmin !== true) {
                 $qb->andWhere('1 = 0');
+                return;
             }
 
+            $qb->andWhere($qb->expr()->isNull('t._organisation'));
             return;
         }//end if
 
@@ -135,15 +135,15 @@ class MagicOrganizationHandler
         $conditions = [];
 
         // Condition 1: Objects belonging to the user's active organization(s).
+        $conditions[] = $qb->expr()->in(
+            't._organisation',
+            $qb->createNamedParameter($activeOrgUuids, IQueryBuilder::PARAM_STR_ARRAY)
+        );
         if (count($activeOrgUuids) === 1) {
+            array_pop($conditions);
             $conditions[] = $qb->expr()->eq(
                 't._organisation',
                 $qb->createNamedParameter($activeOrgUuids[0])
-            );
-        } else {
-            $conditions[] = $qb->expr()->in(
-                't._organisation',
-                $qb->createNamedParameter($activeOrgUuids, IQueryBuilder::PARAM_STR_ARRAY)
             );
         }
 

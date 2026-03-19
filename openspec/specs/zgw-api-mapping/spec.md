@@ -1,3 +1,7 @@
+---
+status: draft
+---
+
 # ZGW API Mapping
 
 ## Purpose
@@ -358,3 +362,25 @@ The ZGW mapping layer MUST be a generic capability in OpenRegister, not ZGW-spec
   - How should the Autorisaties API be handled (spec says out of scope but clients may expect it)?
   - Should ZGW compliance be validated against VNG API test platform?
   - How does this interact with the existing OpenConnector mapping engine (migration path)?
+
+## Nextcloud Integration Analysis
+
+**Status**: Not yet implemented. The mapping engine exists in OpenRegister but ZGW-specific API routes, pagination, and query parameter mapping are not built.
+
+**Nextcloud Core Interfaces**:
+- `IRegistration` / `routes.php`: Register a dedicated ZGW route group (`/api/zgw/{zgwApi}/v1/{resource}/{uuid?}`) as a separate controller prefix in `appinfo/routes.php`, keeping ZGW endpoints isolated from the standard OpenRegister REST API.
+- `ICapability`: Expose ZGW endpoint availability and supported API versions via `ICapability` so that external ZGW clients can discover which APIs are active through Nextcloud's capabilities endpoint (`/ocs/v2.php/cloud/capabilities`).
+- `IRequest`: Use Nextcloud's request object for content negotiation and ZGW-specific headers (e.g., `Accept-Crs`, `Content-Crs` for coordinate reference systems required by some ZGW APIs).
+
+**Implementation Approach**:
+- Create a `ZgwController` (or per-API controllers: `ZgwZakenController`, `ZgwCatalogiController`, etc.) registered as a separate route group in `routes.php`. Each controller delegates to `MappingService` for property translation between English schema properties and Dutch ZGW field names.
+- Extend `MappingService` with a `zgw_enum()` Twig filter for value mapping (e.g., confidentiality levels). The existing `MappingExtension` and `MappingRuntime` classes provide the extension point for registering custom Twig filters.
+- Implement a `ZgwPaginationHelper` that reformats OpenRegister's standard pagination into ZGW HAL-style format (`count`, `next`, `previous`, `results`).
+- ZGW query parameters (e.g., `zaaktype` URL references) are parsed in middleware or controller-level logic to extract UUIDs from full URLs before passing to `ObjectService` filters.
+
+**Dependencies on Existing OpenRegister Features**:
+- `MappingService` (Twig-based mapping engine) — already implemented, core dependency.
+- `MappingMapper` / `Mapping` entity — stores mapping definitions, already implemented.
+- `ObjectService` — standard CRUD and filtering for register objects.
+- `SchemaService` / `RegisterService` — schema and register lookups for route-to-data resolution.
+- Procest app — stores ZGW mapping configuration and default mappings for the 12 ZGW resource types.

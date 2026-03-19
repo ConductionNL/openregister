@@ -36,6 +36,8 @@ use OCA\OpenRegister\Service\Index\Backends\SolrBackend;
  *
  * @category Service
  * @package  OCA\OpenRegister\Service\Vectorization\Handlers
+ *
+ * @SuppressWarnings(PHPMD.UnusedFormalParameter)
  */
 class VectorStorageHandler
 {

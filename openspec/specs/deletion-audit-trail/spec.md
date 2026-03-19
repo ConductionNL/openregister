@@ -1,5 +1,9 @@
 # deletion-audit-trail Specification
 
+---
+status: implemented
+---
+
 ## Purpose
 Log all referential integrity actions (CASCADE delete, SET_NULL, SET_DEFAULT, RESTRICT block) in OpenRegister's existing AuditTrail system. When objects are modified or deleted as part of a cascade operation, each action produces an AuditTrail entry that records what happened, why, and which user initiated it.
 
@@ -123,3 +127,10 @@ The NO_ACTION onDelete behavior means no referential integrity action is taken, 
 - Open questions:
   - Should the `triggerObject` in chain cascades reference the original root trigger or the immediate parent?
   - Are audit trail entries for referential integrity actions included in the standard audit trail API queries or filtered separately?
+
+## Nextcloud Integration Analysis
+
+- **Status**: Already implemented in OpenRegister
+- **Existing Implementation**: `ReferentialIntegrityService` creates AuditTrail entries for all referential integrity actions: `cascade_delete`, `set_null`, `set_default`, `restrict_blocked`. Chain cascade deletions tracked with trigger object context. User context propagated through cascade chains. `DeleteObject` triggers referential integrity checks. `RelationCascadeHandler` handles cascade operations during save.
+- **Nextcloud Core Integration**: Fires `ObjectDeletedEvent` via `IEventDispatcher` which other NC apps can listen to. Integrates with NC's notification system via `INotifier` for alerting users about cascade deletions or RESTRICT blocks. `AuditTrailMapper` uses NC's `QBMapper` for database operations. Consider surfacing deletion events in NC's Activity stream via `IProvider`.
+- **Recommendation**: Mark as implemented. The referential integrity audit trail is comprehensive. Consider adding `INotifier` integration to notify object owners when their objects are affected by cascade operations.

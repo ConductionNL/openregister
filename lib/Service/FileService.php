@@ -106,6 +106,7 @@ use Psr\Log\LoggerInterface;
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
  * @SuppressWarnings(PHPMD.TooManyFields)            File service orchestrates many handler classes
  * @SuppressWarnings(PHPMD.LongVariable)             Handler properties use descriptive names for clarity
+ * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
  */
 class FileService
 {

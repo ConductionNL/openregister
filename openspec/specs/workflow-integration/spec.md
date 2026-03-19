@@ -1,5 +1,9 @@
 # workflow-integration Specification
 
+---
+status: implemented
+---
+
 ## Purpose
 Integrate BPMN-style workflow automation with register operations via n8n and other workflow engines. Register events (create, update, delete, status change) MUST trigger configurable workflows for process automation, escalation, approval chains, and scheduled tasks. The integration MUST support zero-coding workflow configuration for functional administrators.
 
@@ -145,3 +149,10 @@ The system MUST support multi-step approval workflows where objects require sign
   - Should approval chains be first-class OpenRegister entities or purely n8n workflow configurations?
   - How should workflow execution history be stored (OpenRegister database? n8n execution log? Both?)
   - Should the workflow configuration UI be in OpenRegister or delegated to the engine's native UI?
+
+## Nextcloud Integration Analysis
+
+- **Status**: Already implemented in OpenRegister
+- **Existing Implementation**: `HookExecutor` executes workflows on object lifecycle events. `HookListener` dispatches events to the executor. `WorkflowEngineInterface` with `N8nAdapter` and `WindmillAdapter` provide engine-agnostic execution. `WorkflowResult` handles structured responses. `WorkflowEngineController` exposes REST API for engine management. Pre-configured n8n workflow templates in `n8n_workflows.openregister.json`.
+- **Nextcloud Core Integration**: Background jobs use `TimedJob` and `QueuedJob` for async workflow execution and retry (`HookRetryJob`). Event-driven via `IEventDispatcher`. Workflow engine services registered in the DI container via `IBootstrap::register()`. n8n ExApp integration routes through Nextcloud's `IAppApiService` proxy.
+- **Recommendation**: Mark as implemented. The core event-workflow pipeline is functional. UI features (workflow configuration tab, execution history dashboard, approval chain support) are not yet implemented but are not NC-integration blockers.

@@ -24,6 +24,8 @@ use Psr\Log\LoggerInterface;
  * SchemaMapper for schema translation operations
  *
  * @package OCA\OpenRegister\Service\Index
+ *
+ * @SuppressWarnings(PHPMD.UnusedFormalParameter)
  */
 class SchemaMapper
 {

@@ -23,13 +23,16 @@ module.exports = defineConfig([{
 				map: [
 					['@', './src'],
 					['@floating-ui/dom-actual', './node_modules/@floating-ui/dom'],
+					['@conduction/nextcloud-vue', '../nextcloud-vue/src'],
 				],
-				extensions: ['.js', '.ts', '.vue', '.json'],
+				extensions: ['.js', '.ts', '.vue', '.json', '.css'],
 			},
 		},
 	},
 
 	rules: {
+		// Allow unused i18n functions (t, n) — imported for future translation wiring
+		'no-unused-vars': ['error', { varsIgnorePattern: '^(t|n)$', argsIgnorePattern: '^_' }],
 		'jsdoc/require-jsdoc': 'off',
 		'vue/first-attribute-linebreak': 'off',
 		'@typescript-eslint/no-explicit-any': 'off',

@@ -149,3 +149,13 @@ Specific schemas MUST be configurable to allow unauthenticated read access for p
   - Should API consumers be manageable via API or only via the admin UI?
   - What is the relationship between OpenRegister's Consumer entity and Nextcloud's built-in app passwords?
   - Should rate limiting be per-IP, per-consumer, or both? What are sensible defaults?
+
+## Nextcloud Integration Analysis
+
+**Status**: Implemented
+
+**Existing Implementation**: AuthenticationService handles multi-method authentication supporting Nextcloud session, Basic Auth, and Bearer JWT tokens. Consumer entity stores API consumer definitions with fields for uuid, name, description, domains (CORS), IPs, authType, secret, and mappedUserId. ConsumersController provides API consumer management endpoints. AuthorizationService integrates with ConsumerMapper for RBAC checks. SecurityService enforces security policies. Twig authentication extensions provide oauthToken functions for mapping templates. Public endpoint support uses @PublicPage annotations on controllers. Nextcloud session auth works natively through the framework.
+
+**Nextcloud Core Integration**: The authentication system uses Nextcloud session auth (via OCP\IUserSession) as the primary authentication method for browser-based access, which provides seamless SSO when Nextcloud is configured with SAML (user_saml app) or OIDC (user_oidc app) identity providers. Basic Auth resolves credentials against Nextcloud's user backend (OCP\IUserManager). The Consumer entity bridges external API clients to Nextcloud users via mappedUserId, ensuring that all RBAC checks use the same Nextcloud identity regardless of authentication method. Brute-force protection leverages Nextcloud's built-in BruteForceProtection (OCP\Security\Bruteforce\IThrottler) to rate-limit failed authentication attempts per IP. Public endpoints use Nextcloud's @PublicPage annotation framework.
+
+**Recommendation**: The multi-auth system is well-integrated with Nextcloud's authentication infrastructure. The key strength is that all authentication methods ultimately resolve to a Nextcloud user identity, ensuring consistent RBAC enforcement. For SSO specifically, no OpenRegister-specific code is needed because Nextcloud's user_saml and user_oidc apps handle the identity mapping transparently. Improvements to consider: implementing per-consumer rate limiting using APCu counters with Retry-After headers, adding authentication event logging to Nextcloud's audit log via ILogFactory, and implementing one-time JWT secret display in the consumer creation workflow. The existing brute-force protection via Nextcloud's IThrottler is appropriate for IP-level rate limiting.

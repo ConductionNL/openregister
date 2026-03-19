@@ -49,6 +49,8 @@ use Psr\Log\LoggerInterface;
  * @version GIT: <git_id>
  *
  * @link https://www.OpenRegister.app
+ *
+ * @SuppressWarnings(PHPMD.BooleanArgumentFlag)
  */
 class RegisterService
 {
@@ -382,8 +384,9 @@ class RegisterService
         }
 
         try {
+            $schemaCount = count($schemas);
             $this->logger->debug(
-                message: '[RegisterService] GetSchemaObjectCounts: Processing '.count($schemas).' schemas for register '.$registerId,
+                message: "[RegisterService] GetSchemaObjectCounts: Processing $schemaCount schemas for register $registerId",
                 context: ['file' => __FILE__, 'line' => __LINE__]
             );
 
@@ -403,23 +406,23 @@ class RegisterService
                 $tableName   = 'openregister_table_'.$registerId.'_'.$schemaId;
                 $tableExists = $this->db->tableExists($tableName);
 
-                if ($tableExists === true) {
-                    $quotedTableName = $this->db->getQueryBuilder()->getTableName($tableName);
-                    $unionQueries[]  = "
-                        SELECT
-                            CAST({$schemaId} AS VARCHAR) as schema_id,
-                            COUNT(*) as total,
-                            COUNT(CASE WHEN _deleted IS NOT NULL THEN 1 END) as deleted,
-                            0 as invalid,
-                            0 as locked,
-                            0 as published,
-                            0 as size
-                        FROM {$quotedTableName}
-                    ";
-                } else {
+                if ($tableExists !== true) {
                     // Table doesn't exist yet, return 0 for all stats.
                     $result[$schemaId] = $this->getZeroCountStats();
+                    continue;
                 }
+
+                $quotedTableName = $this->db->getQueryBuilder()->getTableName($tableName);
+                $unionQueries[]  = "
+                    SELECT
+                        CAST({$schemaId} AS VARCHAR) as schema_id,
+                        COUNT(*) as total,
+                        COUNT(CASE WHEN _deleted IS NOT NULL THEN 1 END) as deleted,
+                        0 as invalid,
+                        0 as locked,
+                        0 as size
+                    FROM {$quotedTableName}
+                ";
             }//end foreach
 
             if (empty($unionQueries) === true) {
@@ -465,28 +468,26 @@ class RegisterService
      *
      * @param array|null $row Optional database result row to extract counts from.
      *
-     * @return array{total: int, deleted: int, invalid: int, locked: int, published: int, size: int}
+     * @return array{total: int, deleted: int, invalid: int, locked: int, size: int}
      */
     private function getZeroCountStats(?array $row=null): array
     {
         if ($row !== null) {
             return [
-                'total'     => (int) $row['total'],
-                'deleted'   => (int) $row['deleted'],
-                'invalid'   => (int) $row['invalid'],
-                'locked'    => (int) $row['locked'],
-                'published' => (int) $row['published'],
-                'size'      => (int) $row['size'],
+                'total'   => (int) $row['total'],
+                'deleted' => (int) $row['deleted'],
+                'invalid' => (int) $row['invalid'],
+                'locked'  => (int) $row['locked'],
+                'size'    => (int) $row['size'],
             ];
         }
 
         return [
-            'total'     => 0,
-            'deleted'   => 0,
-            'invalid'   => 0,
-            'locked'    => 0,
-            'published' => 0,
-            'size'      => 0,
+            'total'   => 0,
+            'deleted' => 0,
+            'invalid' => 0,
+            'locked'  => 0,
+            'size'    => 0,
         ];
     }//end getZeroCountStats()
 }//end class

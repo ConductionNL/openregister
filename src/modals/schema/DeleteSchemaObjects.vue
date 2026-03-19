@@ -1,4 +1,5 @@
 <script setup>
+import { translate as t, translatePlural as n } from '@nextcloud/l10n'
 import { schemaStore, navigationStore, registerStore } from '../../store/store.js'
 import SchemaStatsBlock from '../../components/SchemaStatsBlock.vue'
 </script>

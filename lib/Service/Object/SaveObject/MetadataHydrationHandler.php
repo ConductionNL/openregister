@@ -50,6 +50,8 @@ use Psr\Log\LoggerInterface;
  *
  * @SuppressWarnings(PHPMD.ExcessiveClassComplexity)
  * Reason: Metadata hydration handles multiple complex scenarios for template processing
+ * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+ * @SuppressWarnings(PHPMD.NPathComplexity)
  */
 class MetadataHydrationHandler
 {
@@ -72,7 +74,6 @@ class MetadataHydrationHandler
      * from the object data based on schema configuration.
      *
      * NOTE: Image field handling is kept in SaveObject due to complex file operations.
-     * NOTE: Published/Depublished field handling is kept in SaveObject due to DateTime complexity.
      *
      * Metadata can be configured in schema using:
      * - Direct field paths: "title", "description"
@@ -98,7 +99,7 @@ class MetadataHydrationHandler
         // If object data has 'object' key that is an array (structured format), use that for property access.
         // Otherwise use the objectData directly (flat format).
         // Note: 'object' may also be a regular string property (e.g., a URL in ObjectInformatieObject).
-        if (isset($objectData['object']) === true && is_array($objectData['object']) === true) {
+        if ((isset($objectData['object']) === true && is_array($objectData['object']) === true)) {
             $businessData = $objectData['object'];
         } else {
             $businessData = $objectData;
@@ -360,6 +361,14 @@ class MetadataHydrationHandler
             // Check if this expression uses the ifFilled filter: "field | ifFilled: valIfFilled, valIfEmpty".
             $ifFilledRegex = '/^(.+?)\|\s*ifFilled\s*:\s*(.+)$/s';
             $mapRegex      = '/^(.+?)\|\s*map\s*:\s*(.+)$/s';
+            // Default: simple field path lookup with relation resolution.
+            $value = $this->getValueFromPath(data: $data, path: $fieldExpression);
+            $value = $this->resolveRelationValue(
+                fieldName: $fieldExpression,
+                value: $value,
+                schemaProperties: $schemaProperties
+            );
+
             if (preg_match($ifFilledRegex, $fieldExpression, $ifFilledMatch) === 1) {
                 $value = $this->processIfFilledFilter(
                     data: $data,
@@ -379,15 +388,6 @@ class MetadataHydrationHandler
                 $value = $this->processFieldWithFallbacks(
                     data: $data,
                     fieldChain: $fieldExpression,
-                    schemaProperties: $schemaProperties
-                );
-            } else {
-                $value = $this->getValueFromPath(data: $data, path: $fieldExpression);
-
-                // Resolve UUID to object name for relation fields.
-                $value = $this->resolveRelationValue(
-                    fieldName: $fieldExpression,
-                    value: $value,
                     schemaProperties: $schemaProperties
                 );
             }//end if

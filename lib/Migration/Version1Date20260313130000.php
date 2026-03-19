@@ -34,17 +34,18 @@ use Psr\Log\LoggerInterface;
  * This migration iterates all such tables and removes the deprecated columns.
  *
  * @package OCA\OpenRegister\Migration
+ *
+ * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+ * @SuppressWarnings(PHPMD.NPathComplexity)
  */
 class Version1Date20260313130000 extends SimpleMigrationStep
 {
     /**
      * Constructor
      *
-     * @param IDBConnection   $db     Database connection
      * @param LoggerInterface $logger Logger for migration progress
      */
     public function __construct(
-        private readonly IDBConnection $db,
         private readonly LoggerInterface $logger
     ) {
     }//end __construct()

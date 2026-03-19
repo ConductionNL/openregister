@@ -138,11 +138,10 @@ class SolrQueryExecutor
     /**
      * Search with pagination.
      *
-     * @param array $query        Query parameters
+     * @param array $query         Query parameters
      * @param bool  $_rbac         Apply RBAC filters
      * @param bool  $_multitenancy Apply multitenancy filters
-     * @param bool  $published    Filter for published only
-     * @param bool  $deleted      Include deleted items
+     * @param bool  $deleted       Include deleted items
      *
      * @return array Paginated search results with pagination info.
      *
@@ -154,19 +153,14 @@ class SolrQueryExecutor
         array $query=[],
         bool $_rbac=true,
         bool $_multitenancy=true,
-        bool $published=false,
         bool $deleted=false
     ): array {
         // Build Solr query from OpenRegister query format.
         $solrQuery = $this->buildSolrQuery(query: $query);
 
         // Apply filters.
-        if ($_rbac === true || $_multitenancy === true || $published === true || $deleted === false) {
+        if ($_rbac === true || $_multitenancy === true || $deleted === false) {
             $filters = [];
-
-            if ($published === true) {
-                $filters[] = 'published:true';
-            }
 
             if ($deleted === false) {
                 $filters[] = '-deleted:true';

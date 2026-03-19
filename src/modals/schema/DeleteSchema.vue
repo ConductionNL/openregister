@@ -1,4 +1,5 @@
 <script setup>
+import { translate as t } from '@nextcloud/l10n'
 import { schemaStore, navigationStore, objectStore, registerStore } from '../../store/store.js'
 </script>
 

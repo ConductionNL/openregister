@@ -1,5 +1,9 @@
 # content-versioning Specification
 
+---
+status: implemented
+---
+
 ## Purpose
 Implement draft/published content versioning with diff comparison and rollback capabilities for register objects. Users MUST be able to create named draft versions, collaborate on changes, compare versions with visual diffs, and promote drafts to the published (main) version. Only changed fields are stored as deltas to optimize storage.
 
@@ -127,3 +131,10 @@ All published versions MUST be retained in the audit trail for compliance and tr
   - How do drafts interact with webhooks and events — should draft creation/promotion trigger events?
   - Should drafts be searchable or excluded from search results?
   - What happens to drafts when the published version is updated by another user?
+
+## Nextcloud Integration Analysis
+
+- **Status**: Already implemented in OpenRegister
+- **Existing Implementation**: `RevertHandler` implements object reversion to previous states using audit trail data, with `revert(objectEntity, until, overwriteVersion)`. `AuditTrailMapper::revertObject()` reconstructs objects from audit trail entries. Full version history available through the audit trail (each entry is a version with action, changed fields with old/new values, user, timestamp). `RevertController` exposes reversion via API.
+- **Nextcloud Core Integration**: Uses NC's versioning patterns conceptually (similar to NC Files versioning). Fires `ObjectRevertedEvent` via `IEventDispatcher` when objects are reverted, allowing other NC apps/listeners to react. `AuditTrailMapper` extends NC's `QBMapper`. The revert operation creates new audit trail entries maintaining the full history chain.
+- **Recommendation**: Mark as implemented. The core version history and revert functionality is solid. Named drafts, delta-only storage, conflict detection, and visual diff UI are documented as not-yet-implemented enhancements that would extend the existing foundation.

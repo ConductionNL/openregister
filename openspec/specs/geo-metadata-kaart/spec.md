@@ -1,3 +1,7 @@
+---
+status: draft
+---
+
 # geo-metadata-kaart Specification
 
 ## Purpose
@@ -138,3 +142,26 @@ docker exec -u www-data nextcloud php occ openregister:load-register /var/www/ht
   - Should the map widget be a standalone page or embeddable in the object list view?
   - What happens with objects that have invalid/missing coordinates?
   - Should BAG resolution happen synchronously on save or asynchronously?
+
+## Nextcloud Integration Analysis
+
+**Status**: Not yet implemented. No geospatial property types, map widget, spatial queries, or BAG integration exist in the codebase. GeoJSON data can be stored as arbitrary JSON in object properties but without validation or indexing.
+
+**Nextcloud Core Interfaces**:
+- `IPublicShareTemplateFactory` / Widget framework: The Leaflet map widget could be implemented as a Vue component within OpenRegister's frontend, rendered in object list views and detail views. For dashboard integration, implement `IDashboardWidget` to show a map overview widget on the Nextcloud dashboard.
+- `routes.php`: Expose WFS/WMS-like endpoints (e.g., `/api/geo/{register}/{schema}`) for GeoJSON FeatureCollection output, enabling integration with external GIS tools and potentially the Nextcloud Maps app.
+- `IAppConfig`: Store geo configuration (default tile server URL, BAG API endpoint, coordinate reference system preferences) in Nextcloud's app configuration.
+- Nextcloud Maps integration: If the Nextcloud Maps app is installed, register OpenRegister geo objects as a map layer source via Maps' extension points (if available). Otherwise, provide standalone Leaflet-based visualization.
+
+**Implementation Approach**:
+- Add `geo:point`, `geo:polygon`, and `geo:bag` as recognized property types in the schema property system. Validation logic in `SchemaService` or a dedicated `GeoValidationHandler` ensures GeoJSON format compliance (RFC 7946) and polygon closure.
+- Build a `MapWidget.vue` component using Leaflet.js with `leaflet.markercluster` for clustering. The widget reads objects with geo properties from the standard API and renders markers/polygons. Use PDOK tile services for Dutch government map layers (OpenStreetMap, satellite, cadastral).
+- Implement spatial query parameters (`geo.bbox`, `geo.near`, `geo.radius`) in `MagicSearchHandler`. For database-level spatial queries, use PostgreSQL's built-in geometry functions or application-level Haversine filtering for SQLite/MySQL. For Solr/Elasticsearch backends, use native geo_shape queries.
+- Create a `BagResolutionService` that calls the BAG API (via OpenConnector or direct HTTP) to resolve BAG nummeraanduiding IDs to coordinates and address data. Resolution can be triggered on save (synchronous) or via a `QueuedJob` (asynchronous).
+
+**Dependencies on Existing OpenRegister Features**:
+- `SchemaService` / property type system — extension point for new geo property types.
+- `MagicSearchHandler` — query parameter parsing and filter execution for spatial queries.
+- `ObjectService` — standard CRUD pipeline where geo validation hooks into pre-save.
+- `ObjectEntity` — stores GeoJSON as part of the object's JSON data property.
+- Frontend `src/views/` — integration point for the Leaflet map widget component.

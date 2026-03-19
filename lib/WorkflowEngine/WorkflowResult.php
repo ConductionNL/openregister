@@ -86,8 +86,9 @@ class WorkflowResult implements JsonSerializable
         array $metadata=[]
     ) {
         if (in_array(needle: $status, haystack: self::VALID_STATUSES, strict: true) === false) {
+            $validList = implode(separator: ', ', array: self::VALID_STATUSES);
             throw new InvalidArgumentException(
-                message: "Invalid workflow result status '$status'. ".'Must be one of: '.implode(separator: ', ', array: self::VALID_STATUSES)
+                message: "Invalid workflow result status '$status'. Must be one of: $validList"
             );
         }
 

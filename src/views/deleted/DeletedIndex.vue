@@ -1,4 +1,5 @@
 <script setup>
+import { translate as t, translatePlural as n } from '@nextcloud/l10n'
 import { deletedStore, registerStore, schemaStore, navigationStore } from '../../store/store.js'
 import formatBytes from '../../services/formatBytes.js'
 </script>
@@ -521,7 +522,7 @@ export default {
 		 * @param {object} options - Export options
 		 * @return {void}
 		 */
-		exportFilteredItems(options) {
+		exportFilteredItems(_options) {
 			// TODO: Implement export functionality for deleted items
 		},
 		/**

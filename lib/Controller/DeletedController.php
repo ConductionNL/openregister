@@ -44,13 +44,13 @@ class DeletedController extends Controller
     /**
      * Constructor for the DeletedController
      *
-     * @param string             $appName            The name of the app
-     * @param IRequest           $request            The request object
-     * @param MagicMapper $objectEntityMapper The object entity mapper
-     * @param RegisterMapper     $registerMapper     The register mapper
-     * @param SchemaMapper       $schemaMapper       The schema mapper
-     * @param ObjectService      $objectService      The object service
-     * @param IUserSession       $userSession        The user session
+     * @param string         $appName            The name of the app
+     * @param IRequest       $request            The request object
+     * @param MagicMapper    $objectEntityMapper The object entity mapper
+     * @param RegisterMapper $registerMapper     The register mapper
+     * @param SchemaMapper   $schemaMapper       The schema mapper
+     * @param ObjectService  $objectService      The object service
+     * @param IUserSession   $userSession        The user session
      *
      * @return void
      */

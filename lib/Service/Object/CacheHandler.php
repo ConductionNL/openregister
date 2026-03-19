@@ -57,6 +57,8 @@ use Psr\Log\LoggerInterface;
  * @SuppressWarnings(PHPMD.TooManyPublicMethods)     Public API for comprehensive cache management
  * @SuppressWarnings(PHPMD.ExcessiveClassComplexity) Complex cache invalidation and warming logic
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)   Cache handler requires multiple dependencies for comprehensive caching
+ * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+ * @SuppressWarnings(PHPMD.NPathComplexity)
  */
 class CacheHandler
 {
@@ -204,7 +206,7 @@ class CacheHandler
                 return null;
             }//end getUser()
         };
-        $this->container = $container;
+        $this->container   = $container;
     }//end __construct()
 
     /**
@@ -1532,10 +1534,9 @@ class CacheHandler
 
                             if ($uuid !== null) {
                                 // Use name if available, otherwise fall back to UUID.
+                                $effectiveName = $uuid;
                                 if (($name !== null) && trim($name) !== '') {
                                     $effectiveName = $name;
-                                } else {
-                                    $effectiveName = $uuid;
                                 }
 
                                 // Overwrite any existing name (magic table has enriched names).

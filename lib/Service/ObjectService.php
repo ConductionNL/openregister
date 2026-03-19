@@ -153,6 +153,9 @@ use function React\Promise\all;
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)   Requires coordination with many specialized handlers
  * @SuppressWarnings(PHPMD.ExcessivePublicCount)     Public API requires many entry points
  * @SuppressWarnings(PHPMD.BooleanArgumentFlag)      Boolean flags for RBAC and multitenancy
+ * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+ * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
+ * @SuppressWarnings(PHPMD.UnusedFormalParameter)
  */
 class ObjectService
 {
@@ -210,8 +213,9 @@ class ObjectService
      * @param RegisterMapper                 $registerMapper      Mapper for register operations.
      * @param SchemaMapper                   $schemaMapper        Mapper for schema operations.
      * @param ViewMapper                     $viewMapper          Mapper for view operations.
-     * @param MagicMapper            $objectMapper        Unified mapper for object
-     *                                                            operations (routes to magic tables).
+     * @param MagicMapper                    $objectMapper        Unified mapper for object
+     *                                                            operations (routes to
+     *                                                            magic tables).
      * @param FileService                    $fileService         Service for file operations.
      * @param IUserSession                   $userSession         User session for getting current user.
      * @param SearchTrailService             $searchTrailService  Service for search trail operations.
@@ -338,8 +342,6 @@ class ObjectService
      *
      * @psalm-return   void
      * @phpstan-return void
-     *
-     * @SuppressWarnings(PHPMD.ElseExpression) Else needed for null vs ID folder handling
      */
     public function ensureObjectFolderExists(ObjectEntity $entity): void
     {
@@ -377,8 +379,6 @@ class ObjectService
      * @param Register|string|int $register The register object or its ID/UUID
      *
      * @return static Returns self for method chaining
-     *
-     * @SuppressWarnings(PHPMD.ElseExpression) Else needed for numeric vs slug lookup paths
      */
     public function setRegister(Register | string | int $register): static
     {
@@ -404,7 +404,9 @@ class ObjectService
                     && $registers[0] instanceof Register;
                 if ($isRegisterInstance === true) {
                     $register = $registers[0];
-                } else {
+                }
+
+                if ($isRegisterInstance !== true) {
                     // Fallback to direct database lookup if cache fails.
                     $register = $this->registerMapper->find(
                         id: $register,
@@ -413,7 +415,9 @@ class ObjectService
                         _multitenancy: false
                     );
                 }
-            } else {
+            }//end if
+
+            if (is_numeric($register) !== true && ($register instanceof Register) === false) {
                 // It's a slug string - find() already supports slugs via orX(id, uuid, slug).
                 $register = $this->registerMapper->find(
                     id: $register,
@@ -421,7 +425,7 @@ class ObjectService
                     _rbac: false,
                     _multitenancy: false
                 );
-            }//end if
+            }
         }//end if
 
         $this->currentRegister = $register;
@@ -434,8 +438,6 @@ class ObjectService
      * @param Schema|string|int $schema The schema object or its ID/UUID
      *
      * @return static Returns self for method chaining
-     *
-     * @SuppressWarnings(PHPMD.ElseExpression) Else needed for numeric vs slug lookup paths
      */
     public function setSchema(Schema | string | int $schema): static
     {
@@ -460,7 +462,9 @@ class ObjectService
                     $isSchemaInstance = $schemaExists && $schemas[0] instanceof Schema;
                     if ($isSchemaInstance === true) {
                         $schema = $schemas[0];
-                    } else {
+                    }
+
+                    if ($isSchemaInstance !== true) {
                         // Fallback to direct database lookup if cache fails.
                         $schema = $this->schemaMapper->find(
                             id: $schema,
@@ -469,7 +473,9 @@ class ObjectService
                             _multitenancy: false
                         );
                     }
-                } else {
+                }//end if
+
+                if (is_numeric($schema) !== true && ($schema instanceof Schema) === false) {
                     // It's a slug string - find() supports slugs via orX(id, uuid, slug).
                     $schema = $this->schemaMapper->find(
                         id: $schema,
@@ -477,7 +483,7 @@ class ObjectService
                         _rbac: false,
                         _multitenancy: false
                     );
-                }//end if
+                }
             } catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
                 // Debug logging to understand WHY schema lookup fails.
                 $this->logger->error(
@@ -511,14 +517,15 @@ class ObjectService
             // Look up the object by ID or UUID.
             // Use MagicMapper when register and schema context are available
             // (routes to magic tables for better performance).
-            if ($this->currentRegister !== null && $this->currentSchema !== null) {
+            // Fall back to MagicMapper without register/schema context.
+            $hasContext = $this->currentRegister !== null && $this->currentSchema !== null;
+            if ($hasContext === true) {
                 $object = $this->objectMapper->find(
                     identifier: $object,
                     register: $this->currentRegister,
                     schema: $this->currentSchema
                 );
             } else {
-                // Fall back to MagicMapper without register/schema context.
                 $object = $this->objectMapper->find($object);
             }
         }
@@ -956,7 +963,7 @@ class ObjectService
     public function findByRelations(string $search, bool $partialMatch=true): array
     {
         // Use the findByRelation method from MagicMapper to find objects by their relations.
-        return $this->objectMapper->findByRelation(search: $search, partialMatch: $partialMatch);
+        return $this->objectMapper->findByRelation(uuid: $search, _search: $search, _partialMatch: $partialMatch);
     }//end findByRelations()
 
     /**
@@ -1469,8 +1476,6 @@ class ObjectService
          * to ensure consistency between save and retrieval operations.
          *
          * @return string|null The active organization UUID or null if none found
-         *
-         * @SuppressWarnings(PHPMD.ElseExpression) Else needed for null organization handling
          */
     private function getActiveOrganisationForContext(): ?string
     {
@@ -1479,9 +1484,9 @@ class ObjectService
 
             if ($activeOrganisation !== null) {
                 return $activeOrganisation->getUuid();
-            } else {
-                return null;
             }
+
+            return null;
         } catch (Exception $e) {
             // Log error but continue without organization context.
             return null;
@@ -1860,26 +1865,18 @@ class ObjectService
             $query = $this->applyViewsToQuery(query: $query, viewIds: $views);
         }
 
-        // IDs and uses are passed as proper parameters, not added to query.
-        $requestedSource = $query['_source'] ?? null;
+        // Strip deprecated _source parameter (silently ignore for backward compatibility).
+        unset($query['_source']);
 
-        // Simple switch: Use SOLR if explicitly requested OR if SOLR is enabled in config.
-        // BUT force database when ids or uses parameters are provided (relation-based searches).
-        $hasIds          = isset($query['_ids']) === true;
-        $hasUses         = isset($query['_uses']) === true;
-        $hasIdsParam     = $ids !== null;
-        $hasUsesParam    = $uses !== null;
-        $isSolrRequested = ($requestedSource === 'index' || $requestedSource === 'solr');
-        $isSolrEnabled   = $this->isSolrAvailable() === true;
-        $isNotDatabase   = $requestedSource !== 'database';
-        if ((            $isSolrRequested === true
+        // Use SOLR if enabled in config, unless relation-based search params are provided.
+        $hasIds        = isset($query['_ids']) === true;
+        $hasUses       = isset($query['_uses']) === true;
+        $hasIdsParam   = $ids !== null;
+        $hasUsesParam  = $uses !== null;
+        $isSolrEnabled = $this->isSolrAvailable() === true;
+        if ($isSolrEnabled === true
             && $hasIdsParam === false && $hasUsesParam === false
-            && $hasIds === false && $hasUses === false)
-            || (            $requestedSource === null
-            && $isSolrEnabled === true
-            && $isNotDatabase === true
-            && $hasIdsParam === false && $hasUsesParam === false
-            && $hasIds === false && $hasUses === false)
+            && $hasIds === false && $hasUses === false
         ) {
             // Forward to Index service - let it handle availability checks and error handling.
             $indexService = $this->container->get(IndexService::class);
@@ -1913,14 +1910,17 @@ class ObjectService
                 $resultsToProcess = $result['results'] ?? [];
 
                 // Only process if results exist and is an array.
-                if (is_array($resultsToProcess) === false || empty($resultsToProcess) === true) {
-                    $result['@self']['names'] = [];
-                } else {
+                $result['@self']['names'] = [];
+
+                if (is_array($resultsToProcess) === true && empty($resultsToProcess) === false) {
                     try {
                         $result['@self']['names'] = $this->collectNamesForResults(results: $resultsToProcess);
                     } catch (\Throwable $e) {
+                        $errMsg  = $e->getMessage();
+                        $errFile = $e->getFile();
+                        $errLine = $e->getLine();
                         $this->logger->error(
-                            message: '[ObjectService] _names extension failed: '.$e->getMessage().' at '.$e->getFile().':'.$e->getLine(),
+                            message: "[ObjectService] _names extension failed: {$errMsg} at {$errFile}:{$errLine}",
                             context: ['file' => __FILE__, 'line' => __LINE__]
                         );
                         $result['@self']['names']       = [];
@@ -1932,10 +1932,10 @@ class ObjectService
             return $result;
         }//end if
 
-        // Bypass multitenancy for schemas with public read access (unless _source=database is explicitly set).
+        // Bypass multitenancy for schemas with public read access.
         // Public schemas should be visible to all users regardless of organisation.
         $effectiveMt = $_multitenancy;
-        if ($_multitenancy === true && $requestedSource !== 'database' && $this->currentSchema !== null) {
+        if ($_multitenancy === true && $this->currentSchema !== null) {
             $schemaAuth = $this->currentSchema->getAuthorization();
             $readGroups = $schemaAuth['read'] ?? [];
             if (in_array('public', $readGroups, true) === true) {
@@ -1953,11 +1953,11 @@ class ObjectService
             uses: $uses
         );
         // Preserve source from result (e.g., magic_mapper for multi-schema), only default to database if not set.
-        $result['@self']['source']    = $result['@self']['source'] ?? 'database';
-        $result['@self']['query']     = $query;
-        $result['@self']['rbac']      = $_rbac;
-        $result['@self']['multi']     = $_multitenancy;
-        $result['@self']['deleted']   = $deleted;
+        $result['@self']['source']  = $result['@self']['source'] ?? 'database';
+        $result['@self']['query']   = $query;
+        $result['@self']['rbac']    = $_rbac;
+        $result['@self']['multi']   = $_multitenancy;
+        $result['@self']['deleted'] = $deleted;
 
         // Add extended objects only if _extend is requested.
         // Normalize _extend to array (handles comma-separated string from URL).
@@ -1977,14 +1977,16 @@ class ObjectService
             $resultsToProcess = $result['results'] ?? [];
 
             // Only process if results exist and is an array.
-            if (is_array($resultsToProcess) === false || empty($resultsToProcess) === true) {
-                $result['@self']['names'] = [];
-            } else {
+            $result['@self']['names'] = [];
+
+            if (is_array($resultsToProcess) === true && empty($resultsToProcess) === false) {
                 try {
                     $result['@self']['names'] = $this->collectNamesForResults(results: $resultsToProcess);
                 } catch (\Throwable $e) {
+                    $errFile = $e->getFile();
+                    $errLine = $e->getLine();
                     $this->logger->error(
-                        message: '[ObjectService] _names extension failed: '.$e->getMessage().' at '.$e->getFile().':'.$e->getLine(),
+                        message: '[ObjectService] _names extension failed: '.$e->getMessage()." at {$errFile}:{$errLine}",
                         context: ['file' => __FILE__, 'line' => __LINE__]
                     );
                     $result['@self']['names']       = [];
@@ -2371,7 +2373,6 @@ class ObjectService
         return $this->validateHandler->handleValidationException($exception);
     }//end handleValidationException()
 
-
     /**
      * Lock an object
      *
@@ -2493,15 +2494,15 @@ class ObjectService
             schema: $this->currentSchema,
             _rbac: $_rbac,
             _multitenancy: $_multitenancy,
-            validation: $validation,
-            events: $events,
+            _validation: $validation,
+            _events: $events,
             deduplicateIds: $deduplicateIds,
             enrich: $enrich
         );
 
         // Invalidate collection caches after successful bulk operations.
-        $createdCount  = $bulkResult['statistics']['objectsCreated'] ?? 0;
-        $updatedCount  = $bulkResult['statistics']['objectsUpdated'] ?? 0;
+        $createdCount  = (int) ($bulkResult['statistics']['objectsCreated'] ?? 0);
+        $updatedCount  = (int) ($bulkResult['statistics']['objectsUpdated'] ?? 0);
         $totalAffected = $createdCount + $updatedCount;
 
         if ($totalAffected > 0) {
@@ -2592,17 +2593,20 @@ class ObjectService
      * @param bool  $_rbac         Whether to apply RBAC filtering
      * @param bool  $_multitenancy Whether to apply multi-organization filtering
      *
-     * @return array Array of IDs of deleted objects
+     * @return array Associative array with 'deleted_uuids', 'skipped_uuids', and 'cascade_count' keys.
+     *               'deleted_uuids' contains UUIDs of successfully deleted objects.
+     *               'skipped_uuids' contains UUIDs skipped due to RESTRICT or errors.
+     *               'cascade_count' contains total count of objects affected by cascade operations.
      *
      * @phpstan-param  array<int, string> $uuids
      * @psalm-param    array<int, string> $uuids
-     * @phpstan-return array<int, int>
-     * @psalm-return   array<int, int>
+     * @phpstan-return array{deleted_uuids: array<int, string>, skipped_uuids: array<int, string>, cascade_count: int}
+     * @psalm-return   array{deleted_uuids: array<int, string>, skipped_uuids: array<int, string>, cascade_count: int}
      */
     public function deleteObjects(array $uuids=[], bool $_rbac=true, bool $_multitenancy=true): array
     {
         if (empty($uuids) === true) {
-            return [];
+            return ['deleted_uuids' => [], 'skipped_uuids' => [], 'cascade_count' => 0];
         }
 
         // Apply RBAC and multi-organization filtering if enabled.
@@ -2615,11 +2619,49 @@ class ObjectService
             );
         }
 
-        // Use the unified mapper's bulk delete operation.
-        $deletedObjectIds = $this->objectMapper->deleteObjects(
-            uuids: $filteredUuids,
-            hardDelete: false
-        );
+        // Process each object individually through the delete handler so that
+        // referential integrity rules (CASCADE, SET_NULL, SET_DEFAULT, RESTRICT)
+        // are enforced per object. Skips objects that fail (e.g., RESTRICT blocks).
+        $deletedObjectIds  = [];
+        $skippedUuids      = [];
+        $totalCascadeCount = 0;
+        foreach ($filteredUuids as $uuid) {
+            try {
+                $result = $this->deleteHandler->deleteObject(
+                    register: $this->currentRegister,
+                    schema: $this->currentSchema,
+                    uuid: $uuid,
+                    originalObjectId: null,
+                    _rbac: $_rbac,
+                    _multitenancy: $_multitenancy
+                );
+                if ($result === true) {
+                    $deletedObjectIds[] = $uuid;
+                    $totalCascadeCount += $this->deleteHandler->getLastCascadeCount();
+                }
+            } catch (\OCA\OpenRegister\Exception\ReferentialIntegrityException $e) {
+                // RESTRICT blocks should not abort the entire bulk operation.
+                // Log and skip this object, continue with the rest.
+                $this->logger->info(
+                    message: '[ObjectService] Bulk delete skipped object due to RESTRICT constraint',
+                    context: [
+                        'uuid'     => $uuid,
+                        'blockers' => count($e->getAnalysis()->blockers),
+                    ]
+                );
+                $skippedUuids[] = $uuid;
+            } catch (\Exception $e) {
+                // Other failures (transaction rollback, etc.) are logged and skipped.
+                $this->logger->warning(
+                    message: '[ObjectService] Bulk delete failed for object',
+                    context: [
+                        'uuid'  => $uuid,
+                        'error' => $e->getMessage(),
+                    ]
+                );
+                $skippedUuids[] = $uuid;
+            }//end try
+        }//end foreach
 
         // Invalidate collection caches after bulk delete operations.
         if (empty($deletedObjectIds) === false) {
@@ -2634,16 +2676,19 @@ class ObjectService
                 $this->logger->warning(
                     message: '[ObjectService] Bulk delete cache invalidation failed',
                     context: [
-                        'error'         => $e->getMessage(),
-                        'deletedCount'  => count($deletedObjectIds),
+                        'error'        => $e->getMessage(),
+                        'deletedCount' => count($deletedObjectIds),
                     ]
                 );
             }
         }
 
-        return $deletedObjectIds;
+        return [
+            'deleted_uuids' => $deletedObjectIds,
+            'skipped_uuids' => $skippedUuids,
+            'cascade_count' => $totalCascadeCount,
+        ];
     }//end deleteObjects()
-
 
     /**
      * Delete all objects belonging to a specific schema
@@ -2666,7 +2711,7 @@ class ObjectService
     public function deleteObjectsBySchema(int $registerId, int $schemaId, bool $hardDelete=false): array
     {
         // TODO: Reimplement using MagicMapper for schema-wide delete on magic tables.
-        throw new \RuntimeException(
+        throw new RuntimeException(
             'deleteObjectsBySchema needs reimplementation using MagicMapper (blob objects table retired)'
         );
     }//end deleteObjectsBySchema()
@@ -2690,7 +2735,7 @@ class ObjectService
     public function deleteObjectsByRegister(int $registerId): array
     {
         // TODO: Reimplement using MagicMapper for register-wide delete on magic tables.
-        throw new \RuntimeException(
+        throw new RuntimeException(
             'deleteObjectsByRegister needs reimplementation using MagicMapper (blob objects table retired)'
         );
     }//end deleteObjectsByRegister()
@@ -2721,7 +2766,7 @@ class ObjectService
      *
      * @param string $objectId      Object ID or UUID
      * @param array  $query         Search query parameters
-     * @param bool   $_rbac          Apply RBAC filters
+     * @param bool   $_rbac         Apply RBAC filters
      * @param bool   $_multitenancy Apply multitenancy filters
      *
      * @return array Results with object entities and pagination info.
@@ -2749,7 +2794,7 @@ class ObjectService
      *
      * @param string $objectId      Object ID or UUID
      * @param array  $query         Search query parameters
-     * @param bool   $_rbac          Apply RBAC filters
+     * @param bool   $_rbac         Apply RBAC filters
      * @param bool   $_multitenancy Apply multitenancy filters
      *
      * @return array Paginated results with referencing objects
@@ -2827,7 +2872,7 @@ class ObjectService
      * List objects with filtering and pagination
      *
      * @param array       $query         Search query parameters
-     * @param bool        $_rbac          Apply RBAC filters
+     * @param bool        $_rbac         Apply RBAC filters
      * @param bool        $_multitenancy Apply multitenancy filters
      * @param bool        $_deleted      Include deleted objects
      * @param array|null  $_ids          Optional array of object IDs to filter

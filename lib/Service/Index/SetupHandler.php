@@ -2243,37 +2243,7 @@ class SetupHandler
      * This method can be used by both setup and warmup processes to ensure
      * consistent schema field configuration across all SOLR operations.
      *
-     * @return (bool|string)[][] Field definitions with SOLR type configuration
-     *
-     * @psalm-return array{
-     *     self_tenant: array{
-     *         type: 'string', stored: true, indexed: true, multiValued: false, required: true, docValues: true
-     *     },
-     *     self_object_id: array{type: 'pint', stored: true, indexed: true, multiValued: false, docValues: false},
-     *     self_uuid: array{type: 'string', stored: true, indexed: true, multiValued: false, docValues: false},
-     *     self_register: array{type: 'pint', stored: true, indexed: true, multiValued: false, docValues: true},
-     *     self_schema: array{type: 'pint', stored: true, indexed: true, multiValued: false, docValues: true},
-     *     self_schema_version: array{type: 'string', stored: true, indexed: true, multiValued: false, docValues: true},
-     *     self_owner: array{type: 'string', stored: true, indexed: true, multiValued: false, docValues: false},
-     *     self_organisation: array{type: 'string', stored: true, indexed: true, multiValued: false, docValues: true},
-     *     self_application: array{type: 'string', stored: true, indexed: true, multiValued: false, docValues: true},
-     *     self_name: array{type: 'string', stored: true, indexed: true, multiValued: false, docValues: false},
-     *     self_description: array{type: 'text_general', stored: true, indexed: true, multiValued: false, docValues: false},
-     *     self_summary: array{type: 'text_general', stored: true, indexed: true, multiValued: false},
-     *     self_image: array{type: 'string', stored: true, indexed: false, multiValued: false},
-     *     self_slug: array{type: 'string', stored: true, indexed: true, multiValued: false},
-     *     self_uri: array{type: 'string', stored: true, indexed: true, multiValued: false},
-     *     self_version: array{type: 'string', stored: true, indexed: true, multiValued: false},
-     *     self_size: array{type: 'string', stored: true, indexed: false, multiValued: false},
-     *     self_folder: array{type: 'string', stored: true, indexed: true, multiValued: false},
-     *     self_created: array{type: 'pdate', stored: true, indexed: true, multiValued: false, docValues: true},
-     *     self_updated: array{type: 'pdate', stored: true, indexed: true, multiValued: false, docValues: true},
-     *     self_published: array{type: 'pdate', stored: true, indexed: true, multiValued: false, docValues: true},
-     *     self_depublished: array{type: 'pdate', stored: true, indexed: true, multiValued: false, docValues: true},
-     *     self_relations: array{type: 'string', stored: true, indexed: true, multiValued: true},
-     *     self_files: array{type: 'string', stored: true, indexed: true, multiValued: true},
-     *     self_parent_uuid: array{type: 'string', stored: true, indexed: true, multiValued: false}
-     * }
+     * @return array<string, array<string, bool|string>> Field definitions with SOLR type configuration
      *
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Field definitions require comprehensive specification
      */

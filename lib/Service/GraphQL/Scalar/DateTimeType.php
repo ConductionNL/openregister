@@ -24,6 +24,9 @@ use GraphQL\Utils\Utils;
  * DateTime scalar type for ISO 8601 date-time strings.
  *
  * @psalm-suppress UnusedClass
+ *
+ * @SuppressWarnings(PHPMD.StaticAccess)
+ * @SuppressWarnings(PHPMD.UnusedFormalParameter)
  */
 class DateTimeType extends ScalarType
 {
@@ -84,16 +87,16 @@ class DateTimeType extends ScalarType
             );
         }
 
-        $dt = \DateTimeImmutable::createFromFormat(\DateTimeInterface::ATOM, $value);
-        if ($dt === false) {
-            $dt = \DateTimeImmutable::createFromFormat('Y-m-d\TH:i:s', $value);
+        $dateTime = \DateTimeImmutable::createFromFormat(\DateTimeInterface::ATOM, $value);
+        if ($dateTime === false) {
+            $dateTime = \DateTimeImmutable::createFromFormat('Y-m-d\TH:i:s', $value);
         }
 
-        if ($dt === false) {
-            $dt = \DateTimeImmutable::createFromFormat('Y-m-d', $value);
+        if ($dateTime === false) {
+            $dateTime = \DateTimeImmutable::createFromFormat('Y-m-d', $value);
         }
 
-        if ($dt === false) {
+        if ($dateTime === false) {
             throw new Error(
                 'DateTime cannot represent invalid date-time value: '.$value
             );

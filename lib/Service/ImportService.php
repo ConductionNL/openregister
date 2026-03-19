@@ -60,8 +60,9 @@ use React\EventLoop\Loop;
  * @SuppressWarnings(PHPMD.ExcessiveParameterList)   Import methods require comprehensive configuration parameters
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)   Requires many dependencies for import operations
  * @SuppressWarnings(PHPMD.LongVariable)             Descriptive variable names improve code readability
+ * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
+ * @SuppressWarnings(PHPMD.UnusedFormalParameter)
  */
-
 class ImportService
 {
 
@@ -139,10 +140,10 @@ class ImportService
      * Constructor for the ImportService
      *
      * @param SchemaMapper    $schemaMapper  The schema mapper
-     * @param ObjectService  $objectService The object service
-     * @param LoggerInterface $logger       The logger interface
-     * @param IGroupManager  $groupManager  The group manager
-     * @param IJobList       $jobList       The background job list
+     * @param ObjectService   $objectService The object service
+     * @param LoggerInterface $logger        The logger interface
+     * @param IGroupManager   $groupManager  The group manager
+     * @param IJobList        $jobList       The background job list
      */
     public function __construct(
         SchemaMapper $schemaMapper,
@@ -151,11 +152,11 @@ class ImportService
         IGroupManager $groupManager,
         IJobList $jobList
     ) {
-        $this->schemaMapper       = $schemaMapper;
-        $this->objectService      = $objectService;
-        $this->logger       = $logger;
-        $this->groupManager = $groupManager;
-        $this->jobList      = $jobList;
+        $this->schemaMapper  = $schemaMapper;
+        $this->objectService = $objectService;
+        $this->logger        = $logger;
+        $this->groupManager  = $groupManager;
+        $this->jobList       = $jobList;
 
         // Initialize cache arrays to prevent issues.
         $this->schemaPropertiesCache = [];

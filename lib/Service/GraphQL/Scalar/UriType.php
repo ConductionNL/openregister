@@ -24,6 +24,9 @@ use GraphQL\Utils\Utils;
  * URI scalar type for valid URI strings.
  *
  * @psalm-suppress UnusedClass
+ *
+ * @SuppressWarnings(PHPMD.StaticAccess)
+ * @SuppressWarnings(PHPMD.UnusedFormalParameter)
  */
 class UriType extends ScalarType
 {

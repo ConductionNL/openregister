@@ -34,6 +34,7 @@ use Psr\Log\LoggerInterface;
  *
  * @SuppressWarnings(PHPMD.TooManyPublicMethods)     Many document building utility methods required
  * @SuppressWarnings(PHPMD.ExcessiveClassComplexity) Complex document transformation logic
+ * @SuppressWarnings(PHPMD.UnusedFormalParameter)
  */
 class DocumentBuilder
 {

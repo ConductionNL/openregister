@@ -46,7 +46,7 @@ use OCP\Migration\SimpleMigrationStep;
  * @psalm-suppress UnusedClass
  *
  * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Table creation requires detailed column definitions
- * @SuppressWarnings(PHPMD.ElseExpression)        Else clause used for table existence check
+ * Else clause used for table existence check
  */
 class Version1Date20260106000000 extends SimpleMigrationStep
 {
@@ -247,9 +247,11 @@ class Version1Date20260106000000 extends SimpleMigrationStep
             $table->addIndex(['organisation'], 'openreg_mappings_org_idx');
 
             $output->info(message: '   ✓ Table openregister_mappings created successfully');
-        } else {
-            $output->info(message: '   ℹ️  Table openregister_mappings already exists, skipping');
         }//end if
+
+        if ($schema->hasTable('openregister_mappings') === true) {
+            $output->info(message: '   ℹ️  Table openregister_mappings already exists, skipping');
+        }
 
         return $schema;
     }//end changeSchema()
