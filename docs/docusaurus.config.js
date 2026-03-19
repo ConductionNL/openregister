@@ -30,6 +30,7 @@ const config = {
       ({
         docs: {
           path: './',
+          exclude: ['**/node_modules/**'],
           sidebarPath: require.resolve('./sidebars.js'),
           editUrl:
             'https://github.com/conductionnl/openregister/tree/main/docs/',
