@@ -491,7 +491,10 @@ class DeleteObject
                 $triggerSlug
             );
 
-            $this->lastCascadeCount = count($analysis->cascadeTargets) + count($analysis->nullifyTargets) + count($analysis->defaultTargets);
+            $cCount = count($analysis->cascadeTargets);
+            $nCount = count($analysis->nullifyTargets);
+            $dCount = count($analysis->defaultTargets);
+            $this->lastCascadeCount = ($cCount + $nCount + $dCount);
 
             $this->runLegacyCascade(context: $context, object: $object, uuid: $uuid);
 
