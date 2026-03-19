@@ -52,9 +52,9 @@ class CrudHandler
     /**
      * Constructor
      *
-     * @param MagicMapper $objectMapper  Object entity mapper
-     * @param ObjectService       $objectService Object service for save/search operations
-     * @param LoggerInterface     $logger        PSR-3 logger
+     * @param MagicMapper     $objectMapper  Object entity mapper
+     * @param ObjectService   $objectService Object service for save/search operations
+     * @param LoggerInterface $logger        PSR-3 logger
      */
     public function __construct(
         private readonly MagicMapper $objectMapper,
@@ -67,7 +67,7 @@ class CrudHandler
      * List objects with filters and pagination
      *
      * @param array       $query         Search query parameters
-     * @param bool        $_rbac          Apply RBAC filters
+     * @param bool        $_rbac         Apply RBAC filters
      * @param bool        $_multitenancy Apply multitenancy filters
      * @param bool        $deleted       Include deleted objects
      * @param array|null  $_ids          Optional array of object IDs to filter
@@ -144,7 +144,7 @@ class CrudHandler
      * Get a single object by ID
      *
      * @param string $objectId      Object ID or UUID
-     * @param bool   $_rbac          Apply RBAC filters
+     * @param bool   $_rbac         Apply RBAC filters
      * @param bool   $_multitenancy Apply multitenancy filters
      *
      * @return null Object entity or null if not found
@@ -191,7 +191,7 @@ class CrudHandler
      * Create a new object
      *
      * @param array $data          Object data
-     * @param bool  $_rbac          Apply RBAC filters
+     * @param bool  $_rbac         Apply RBAC filters
      * @param bool  $_multitenancy Apply multitenancy filters
      *
      * @return null Created object
@@ -240,7 +240,7 @@ class CrudHandler
      *
      * @param string $objectId      Object ID or UUID
      * @param array  $data          Object data
-     * @param bool   $_rbac          Apply RBAC filters
+     * @param bool   $_rbac         Apply RBAC filters
      * @param bool   $_multitenancy Apply multitenancy filters
      *
      * @return null Updated object
@@ -299,7 +299,7 @@ class CrudHandler
      *
      * @param string $objectId      Object ID or UUID
      * @param array  $data          Partial object data
-     * @param bool   $_rbac          Apply RBAC filters
+     * @param bool   $_rbac         Apply RBAC filters
      * @param bool   $_multitenancy Apply multitenancy filters
      *
      * @return ObjectEntity Patched object
@@ -375,7 +375,7 @@ class CrudHandler
      * Delete an object
      *
      * @param string $objectId      Object ID or UUID
-     * @param bool   $_rbac          Apply RBAC filters
+     * @param bool   $_rbac         Apply RBAC filters
      * @param bool   $_multitenancy Apply multitenancy filters
      *
      * @return true True if deleted successfully

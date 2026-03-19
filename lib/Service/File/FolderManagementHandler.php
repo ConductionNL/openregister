@@ -76,14 +76,14 @@ class FolderManagementHandler
     /**
      * Constructor for FolderManagementHandler.
      *
-     * @param IRootFolder        $rootFolder         Root folder for file operations.
-     * @param MagicMapper $objectEntityMapper Mapper for object entities.
-     * @param RegisterMapper     $registerMapper     Mapper for registers.
-     * @param IUserSession       $userSession        User session for user context.
-     * @param IGroupManager      $groupManager       Group manager for group operations.
-     * @param LoggerInterface    $logger             Logger for logging operations.
-     * @param FileService|null   $fileService        File service facade for cross-handler coordination
-     *                                               (injected lazily to avoid circular dependency).
+     * @param IRootFolder      $rootFolder         Root folder for file operations.
+     * @param MagicMapper      $objectEntityMapper Mapper for object entities.
+     * @param RegisterMapper   $registerMapper     Mapper for registers.
+     * @param IUserSession     $userSession        User session for user context.
+     * @param IGroupManager    $groupManager       Group manager for group operations.
+     * @param LoggerInterface  $logger             Logger for logging operations.
+     * @param FileService|null $fileService        File service facade for cross-handler coordination
+     *                                             (injected lazily to avoid circular dependency).
      */
     public function __construct(
         private readonly IRootFolder $rootFolder,

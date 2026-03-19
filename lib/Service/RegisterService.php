@@ -470,20 +470,20 @@ class RegisterService
     {
         if ($row !== null) {
             return [
-                'total'     => (int) $row['total'],
-                'deleted'   => (int) $row['deleted'],
-                'invalid'   => (int) $row['invalid'],
-                'locked'    => (int) $row['locked'],
-                'size'      => (int) $row['size'],
+                'total'   => (int) $row['total'],
+                'deleted' => (int) $row['deleted'],
+                'invalid' => (int) $row['invalid'],
+                'locked'  => (int) $row['locked'],
+                'size'    => (int) $row['size'],
             ];
         }
 
         return [
-            'total'     => 0,
-            'deleted'   => 0,
-            'invalid'   => 0,
-            'locked'    => 0,
-            'size'      => 0,
+            'total'   => 0,
+            'deleted' => 0,
+            'invalid' => 0,
+            'locked'  => 0,
+            'size'    => 0,
         ];
     }//end getZeroCountStats()
 }//end class

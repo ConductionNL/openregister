@@ -221,7 +221,7 @@ class ComputedFieldHandler
             // Create a template from the expression.
             $twig         = $this->getTwig();
             $templateName = 'computed_'.$propertyName.'_'.md5($expression);
-            /** @var ArrayLoader $loader */
+            // @var ArrayLoader $loader.
             $loader = $twig->getLoader();
             $loader->setTemplate($templateName, $expression);
 

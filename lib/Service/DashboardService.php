@@ -114,12 +114,12 @@ class DashboardService
      *
      * Initializes service with required mappers and logger for dashboard operations.
      *
-     * @param MagicMapper $objectMapper     Object entity mapper for object statistics
-     * @param AuditTrailMapper   $auditTrailMapper Audit trail mapper for log statistics
-     * @param WebhookLogMapper   $webhookLogMapper Webhook log mapper for webhook statistics
-     * @param RegisterMapper     $registerMapper   Register mapper for register operations
-     * @param SchemaMapper       $schemaMapper     Schema mapper for schema operations
-     * @param LoggerInterface    $logger           Logger instance for error tracking
+     * @param MagicMapper      $objectMapper     Object entity mapper for object statistics
+     * @param AuditTrailMapper $auditTrailMapper Audit trail mapper for log statistics
+     * @param WebhookLogMapper $webhookLogMapper Webhook log mapper for webhook statistics
+     * @param RegisterMapper   $registerMapper   Register mapper for register operations
+     * @param SchemaMapper     $schemaMapper     Schema mapper for schema operations
+     * @param LoggerInterface  $logger           Logger instance for error tracking
      *
      * @return void
      */
@@ -162,11 +162,11 @@ class DashboardService
 
             return [
                 'objects'     => [
-                    'total'     => $objectStats['total'],
-                    'size'      => $objectStats['size'],
-                    'invalid'   => $objectStats['invalid'],
-                    'deleted'   => $objectStats['deleted'],
-                    'locked'    => $objectStats['locked'],
+                    'total'   => $objectStats['total'],
+                    'size'    => $objectStats['size'],
+                    'invalid' => $objectStats['invalid'],
+                    'deleted' => $objectStats['deleted'],
+                    'locked'  => $objectStats['locked'],
                 ],
                 'logs'        => [
                     'total' => $logStats['total'],
@@ -188,11 +188,11 @@ class DashboardService
             );
             return [
                 'objects'     => [
-                    'total'     => 0,
-                    'size'      => 0,
-                    'invalid'   => 0,
-                    'deleted'   => 0,
-                    'locked'    => 0,
+                    'total'   => 0,
+                    'size'    => 0,
+                    'invalid' => 0,
+                    'deleted' => 0,
+                    'locked'  => 0,
                 ],
                 'logs'        => [
                     'total' => 0,
@@ -245,11 +245,11 @@ class DashboardService
 
             return [
                 'objects' => [
-                    'total'     => $objectStats['total'],
-                    'size'      => $objectStats['size'],
-                    'invalid'   => $objectStats['invalid'],
-                    'deleted'   => $objectStats['deleted'],
-                    'locked'    => $objectStats['locked'],
+                    'total'   => $objectStats['total'],
+                    'size'    => $objectStats['size'],
+                    'invalid' => $objectStats['invalid'],
+                    'deleted' => $objectStats['deleted'],
+                    'locked'  => $objectStats['locked'],
                 ],
                 'logs'    => [
                     'total' => $auditStats['total'],
@@ -267,11 +267,11 @@ class DashboardService
             );
             return [
                 'objects' => [
-                    'total'     => 0,
-                    'size'      => 0,
-                    'invalid'   => 0,
-                    'deleted'   => 0,
-                    'locked'    => 0,
+                    'total'   => 0,
+                    'size'    => 0,
+                    'invalid' => 0,
+                    'deleted' => 0,
+                    'locked'  => 0,
                 ],
                 'logs'    => [
                     'total' => 0,

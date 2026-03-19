@@ -57,8 +57,8 @@ abstract class AbstractObjectMapper
      * @param Register|null $register       Optional register to filter by.
      * @param Schema|null   $schema         Optional schema to filter by.
      * @param bool          $includeDeleted Whether to include deleted objects.
-     * @param bool          $_rbac           Whether to apply RBAC checks (default: true).
-     * @param bool          $_multitenancy   Whether to apply multitenancy filtering (default: true).
+     * @param bool          $_rbac          Whether to apply RBAC checks (default: true).
+     * @param bool          $_multitenancy  Whether to apply multitenancy filtering (default: true).
      *
      * @return ObjectEntity The found object.
      *
@@ -298,12 +298,12 @@ abstract class AbstractObjectMapper
     /**
      * Search for objects with complex filtering.
      *
-     * @param array       $query         Query parameters.
-     * @param string|null $activeOrgUuid Active organisation UUID.
+     * @param array       $query          Query parameters.
+     * @param string|null $_activeOrgUuid Active organisation UUID.
      * @param bool        $_rbac          Whether to apply RBAC checks.
      * @param bool        $_multitenancy  Whether to apply multitenancy filtering.
-     * @param array|null  $ids           Array of IDs or UUIDs to filter by.
-     * @param string|null $uses          Value that must be present in relations.
+     * @param array|null  $ids            Array of IDs or UUIDs to filter by.
+     * @param string|null $uses           Value that must be present in relations.
      *
      * @return ObjectEntity[]|int
      *
@@ -323,12 +323,12 @@ abstract class AbstractObjectMapper
     /**
      * Count search results.
      *
-     * @param array       $query         Query parameters.
-     * @param string|null $activeOrgUuid Active organisation UUID.
+     * @param array       $query          Query parameters.
+     * @param string|null $_activeOrgUuid Active organisation UUID.
      * @param bool        $_rbac          Whether to apply RBAC checks.
      * @param bool        $_multitenancy  Whether to apply multitenancy filtering.
-     * @param array|null  $ids           Array of IDs or UUIDs to filter by.
-     * @param string|null $uses          Value that must be present in relations.
+     * @param array|null  $ids            Array of IDs or UUIDs to filter by.
+     * @param string|null $uses           Value that must be present in relations.
      *
      * @return int Count of objects.
      *
@@ -346,7 +346,7 @@ abstract class AbstractObjectMapper
     /**
      * Count all objects with optional filtering.
      *
-     * @param array|null    $filters  Filter parameters.
+     * @param array|null    $_filters Filter parameters.
      * @param Schema|null   $schema   Optional schema to filter by.
      * @param Register|null $register Optional register to filter by.
      *

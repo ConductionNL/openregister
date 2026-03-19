@@ -139,7 +139,7 @@ class GraphQLController extends Controller
         $html = $this->getGraphiQLHtml();
 
         // Create a response that renders raw HTML.
-        /** @psalm-suppress MissingTemplateParam */
+        // @psalm-suppress MissingTemplateParam.
         $response = new class ($html) extends Response {
 
             /**

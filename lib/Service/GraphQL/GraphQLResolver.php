@@ -564,6 +564,7 @@ class GraphQLResolver
      *
      * @return array<string, mixed> The query array
      */
+
     /**
      * Convert GraphQL args to HTTP request params format for ObjectService.buildSearchQuery().
      *
@@ -707,10 +708,6 @@ class GraphQLResolver
     }//end encodeCursor()
 
     /**
-     * Decode a pagination cursor.
-     *
-     * @param string $cursor The encoded cursor
-     *
      * Get collected partial errors.
      *
      * @return Error[]

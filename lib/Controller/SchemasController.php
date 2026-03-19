@@ -82,7 +82,7 @@ class SchemasController extends Controller
      * @param IRequest            $request             HTTP request object
      * @param IAppConfig          $config              App configuration for settings
      * @param SchemaMapper        $schemaMapper        Schema mapper for database operations
-     * @param MagicMapper  $objectEntityMapper  Object entity mapper for object queries
+     * @param MagicMapper         $objectEntityMapper  Object entity mapper for object queries
      * @param DownloadService     $downloadService     Download service for file downloads
      * @param UploadService       $uploadService       Upload service for file uploads
      * @param AuditTrailMapper    $auditTrailMapper    Audit trail mapper for log statistics
@@ -228,11 +228,11 @@ class SchemasController extends Controller
             foreach ($schemasArr as &$schema) {
                 $schema['stats'] = [
                     'objects'   => $objectStats[$schema['id']] ?? [
-                        'total'     => 0,
-                        'size'      => 0,
-                        'invalid'   => 0,
-                        'deleted'   => 0,
-                        'locked'    => 0,
+                        'total'   => 0,
+                        'size'    => 0,
+                        'invalid' => 0,
+                        'deleted' => 0,
+                        'locked'  => 0,
                     ],
                     'logs'      => $logStats[$schema['id']] ?? ['total' => 0, 'size' => 0],
                     'files'     => [ 'total' => 0, 'size' => 0 ],
@@ -880,11 +880,11 @@ class SchemasController extends Controller
                 'objects_count' => $objectStats['total'],
             // Alternative field name for compatibility.
                 'objects'       => [
-                    'total'     => $objectStats['total'],
-                    'invalid'   => $objectStats['invalid'],
-                    'deleted'   => $objectStats['deleted'],
-                    'locked'    => $objectStats['locked'],
-                    'size'      => $objectStats['size'],
+                    'total'   => $objectStats['total'],
+                    'invalid' => $objectStats['invalid'],
+                    'deleted' => $objectStats['deleted'],
+                    'locked'  => $objectStats['locked'],
+                    'size'    => $objectStats['size'],
                 ],
                 'logs'          => $this->auditTrailMapper->getStatistics(registerId: null, schemaId: $id),
                 'files'         => ['total' => 0, 'size' => 0],

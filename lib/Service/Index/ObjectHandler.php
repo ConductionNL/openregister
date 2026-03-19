@@ -68,10 +68,10 @@ class ObjectHandler
     /**
      * Search objects in Solr.
      *
-     * @param array $query        Search query parameters
+     * @param array $query         Search query parameters
      * @param bool  $_rbac         Apply RBAC filters
      * @param bool  $_multitenancy Apply multitenancy filters
-     * @param bool  $deleted      Include deleted objects
+     * @param bool  $deleted       Include deleted objects
      *
      * @return (array|int|mixed)[] Search results in OpenRegister format
      *
@@ -116,10 +116,10 @@ class ObjectHandler
     /**
      * Build Solr query from OpenRegister query parameters.
      *
-     * @param array $query        OpenRegister query
+     * @param array $query         OpenRegister query
      * @param bool  $_rbac         Apply RBAC filters
      * @param bool  $_multitenancy Apply multitenancy filters
-     * @param bool  $deleted      Include deleted objects
+     * @param bool  $deleted       Include deleted objects
      *
      * @return (int|mixed|string[])[] Solr query parameters
      *

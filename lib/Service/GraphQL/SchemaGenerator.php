@@ -439,7 +439,7 @@ class SchemaGenerator
      * @return array<string, array<string, mixed>> The field configuration
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) JSON Schema composition (allOf/oneOf/anyOf) requires deep branching
-     * @SuppressWarnings(PHPMD.NPathComplexity) Composition + property mapping creates high path count
+     * @SuppressWarnings(PHPMD.NPathComplexity)      Composition + property mapping creates high path count
      */
     private function buildObjectFields(RegisterSchema $schema): array
     {

@@ -34,11 +34,11 @@ class ObjectHandler implements TextExtractionHandlerInterface
     /**
      * Constructor.
      *
-     * @param MagicMapper $objectMapper   Object mapper.
-     * @param ChunkMapper        $chunkMapper    Chunk mapper.
-     * @param SchemaMapper       $schemaMapper   Schema mapper.
-     * @param RegisterMapper     $registerMapper Register mapper.
-     * @param LoggerInterface    $logger         Logger.
+     * @param MagicMapper     $objectMapper   Object mapper.
+     * @param ChunkMapper     $chunkMapper    Chunk mapper.
+     * @param SchemaMapper    $schemaMapper   Schema mapper.
+     * @param RegisterMapper  $registerMapper Register mapper.
+     * @param LoggerInterface $logger         Logger.
      */
     public function __construct(
         private readonly MagicMapper $objectMapper,

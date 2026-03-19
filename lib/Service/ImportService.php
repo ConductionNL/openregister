@@ -139,10 +139,10 @@ class ImportService
      * Constructor for the ImportService
      *
      * @param SchemaMapper    $schemaMapper  The schema mapper
-     * @param ObjectService  $objectService The object service
-     * @param LoggerInterface $logger       The logger interface
-     * @param IGroupManager  $groupManager  The group manager
-     * @param IJobList       $jobList       The background job list
+     * @param ObjectService   $objectService The object service
+     * @param LoggerInterface $logger        The logger interface
+     * @param IGroupManager   $groupManager  The group manager
+     * @param IJobList        $jobList       The background job list
      */
     public function __construct(
         SchemaMapper $schemaMapper,
@@ -151,11 +151,11 @@ class ImportService
         IGroupManager $groupManager,
         IJobList $jobList
     ) {
-        $this->schemaMapper       = $schemaMapper;
-        $this->objectService      = $objectService;
-        $this->logger       = $logger;
-        $this->groupManager = $groupManager;
-        $this->jobList      = $jobList;
+        $this->schemaMapper  = $schemaMapper;
+        $this->objectService = $objectService;
+        $this->logger        = $logger;
+        $this->groupManager  = $groupManager;
+        $this->jobList       = $jobList;
 
         // Initialize cache arrays to prevent issues.
         $this->schemaPropertiesCache = [];

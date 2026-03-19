@@ -51,12 +51,12 @@ class ValidationHandler
     /**
      * Constructor for ValidationHandler.
      *
-     * @param ValidateObject     $validateHandler    Handler for object validation.
-     * @param MagicMapper $objectEntityMapper Mapper for object entities.
-     * @param RegisterMapper     $registerMapper     Mapper for registers.
-     * @param SchemaMapper       $schemaMapper       Mapper for schemas.
-     * @param MagicMapper        $magicMapper        Mapper for magic tables.
-     * @param LoggerInterface    $logger             Logger for logging operations.
+     * @param ValidateObject  $validateHandler    Handler for object validation.
+     * @param MagicMapper     $objectEntityMapper Mapper for object entities.
+     * @param RegisterMapper  $registerMapper     Mapper for registers.
+     * @param SchemaMapper    $schemaMapper       Mapper for schemas.
+     * @param MagicMapper     $magicMapper        Mapper for magic tables.
+     * @param LoggerInterface $logger             Logger for logging operations.
      */
     public function __construct(
         private readonly ValidateObject $validateHandler,

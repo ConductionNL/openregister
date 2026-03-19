@@ -200,7 +200,7 @@ class AuthorizationService
 
         [$headerB64, $payloadB64, $signatureB64] = $parts;
 
-        $headerJson = $this->base64urlDecode($headerB64);
+        $headerJson = $this->base64urlDecode(data: $headerB64);
         if ($headerJson === false) {
             throw new AuthenticationException(
                 message: 'The token could not be validated',
@@ -216,7 +216,7 @@ class AuthorizationService
             );
         }
 
-        $payloadJson = $this->base64urlDecode($payloadB64);
+        $payloadJson = $this->base64urlDecode(data: $payloadB64);
         if ($payloadJson === false) {
             throw new AuthenticationException(
                 message: 'The token could not be validated',
@@ -245,7 +245,7 @@ class AuthorizationService
         $publicKey = $authConf['publicKey'] ?? '';
         $algorithm = $authConf['algorithm'] ?? $header['alg'];
 
-        $signature = $this->base64urlDecode($signatureB64);
+        $signature = $this->base64urlDecode(data: $signatureB64);
         if ($signature === false) {
             throw new AuthenticationException(
                 message: 'The token could not be validated',
@@ -255,7 +255,14 @@ class AuthorizationService
 
         // Verify HMAC signature.
         if (isset(self::HMAC_MAP[$algorithm]) === true) {
-            if ($this->verifyHmac($headerB64, $payloadB64, $signature, $publicKey, $algorithm) === false) {
+            $hmacValid = $this->verifyHmac(
+                headerB64: $headerB64,
+                payloadB64: $payloadB64,
+                signature: $signature,
+                secret: $publicKey,
+                algorithm: $algorithm
+            );
+            if ($hmacValid === false) {
                 throw new AuthenticationException(
                     message: 'The token could not be validated',
                     details: ['reason' => 'The token does not match the public key']

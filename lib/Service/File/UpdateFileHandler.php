@@ -300,7 +300,8 @@ class UpdateFileHandler
                     $userFolder = $this->folderMgmtHandler->getOpenRegisterUserFolder();
                     $file       = $userFolder->get(path: $filePath);
                     $fileId     = $file->getId();
-                    $msg        = "[UpdateFileHandler] updateFile: Found file in user folder at path: $filePath (ID: $fileId)";
+                    $msg        = "[UpdateFileHandler] updateFile: Found file in user folder";
+                    $msg       .= " at path: $filePath (ID: $fileId)";
                     $this->logger->info(message: $msg, context: ['file' => __FILE__, 'line' => __LINE__]);
                 } catch (NotFoundException $e) {
                     $this->logger->error(

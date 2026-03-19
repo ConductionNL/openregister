@@ -52,7 +52,7 @@ class RelationHandler
     /**
      * Constructor for RelationHandler.
      *
-     * @param MagicMapper $objectEntityMapper Mapper for object entities.
+     * @param MagicMapper        $objectEntityMapper Mapper for object entities.
      * @param SchemaMapper       $schemaMapper       Mapper for schemas.
      * @param PerformanceHandler $performanceHandler Handler for performance operations.
      * @param MagicRbacHandler   $rbacHandler        Handler for RBAC operations.

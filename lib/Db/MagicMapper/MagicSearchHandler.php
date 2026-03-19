@@ -182,7 +182,11 @@ class MagicSearchHandler
         // The _order parameter may arrive as a JSON string from URL query params.
         if (is_string($order) === true) {
             $decoded = json_decode($order, true);
-            $order   = is_array($decoded) === true ? $decoded : [];
+            if (is_array($decoded) === true) {
+                $order = $decoded;
+            } else {
+                $order = [];
+            }
         }
 
         $count  = $query['_count'] ?? false;
@@ -273,14 +277,14 @@ class MagicSearchHandler
         $search         = $query['_search'] ?? null;
         $includeDeleted = $query['_includeDeleted'] ?? false;
         $ids            = $query['_ids'] ?? null;
-        $_rbac           = $query['_rbac'] ?? true;
-        $_multitenancy   = $query['_multitenancy'] ?? true;
+        $_rbac          = $query['_rbac'] ?? true;
+        $_multitenancy  = $query['_multitenancy'] ?? true;
         $relationsContains = $query['_relations_contains'] ?? null;
         $source            = $query['_source'] ?? null;
 
         // Resolve multitenancy flag based on public schema access and explicit request.
         $multitenancyExplicit = $this->isExplicitlyTrue(value: $query['_multitenancy_explicit'] ?? false);
-        $_multitenancy         = $this->resolveMultitenancyFlag(
+        $_multitenancy        = $this->resolveMultitenancyFlag(
             _multitenancy: $_multitenancy,
             multitenancyExplicit: $multitenancyExplicit,
             source: $source,
@@ -372,7 +376,7 @@ class MagicSearchHandler
         // Extract options from query.
         $search         = $query['_search'] ?? null;
         $includeDeleted = $query['_includeDeleted'] ?? false;
-        $_rbac           = $query['_rbac'] ?? true;
+        $_rbac          = $query['_rbac'] ?? true;
 
         // 1. Deleted filter.
         if ($includeDeleted === false) {
@@ -684,7 +688,7 @@ class MagicSearchHandler
      * multitenancy with _multi=true. This allows public data to be visible across orgs
      * while still giving users the option to filter by their own organisation.
      *
-     * @param bool        $_multitenancy         Current multitenancy flag
+     * @param bool        $_multitenancy        Current multitenancy flag
      * @param bool        $multitenancyExplicit Whether multitenancy was explicitly requested
      * @param string|null $source               Data source type
      * @param Schema      $schema               Schema to check for public access
@@ -721,8 +725,8 @@ class MagicSearchHandler
      *
      * @param IQueryBuilder $qb                   Query builder to modify
      * @param Schema        $schema               Schema for access control rules
-     * @param bool          $_rbac                 Whether RBAC filtering is enabled
-     * @param bool          $_multitenancy         Whether multitenancy filtering is enabled
+     * @param bool          $_rbac                Whether RBAC filtering is enabled
+     * @param bool          $_multitenancy        Whether multitenancy filtering is enabled
      * @param bool          $multitenancyExplicit Whether multitenancy was explicitly requested
      *
      * @return void

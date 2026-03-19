@@ -145,10 +145,10 @@ class IndexService
      *
      * Delegates to ObjectHandler.
      *
-     * @param array $query        Search query
+     * @param array $query         Search query
      * @param bool  $_rbac         Apply RBAC filters
      * @param bool  $_multitenancy Apply multitenancy filters
-     * @param bool  $deleted      Include deleted objects
+     * @param bool  $deleted       Include deleted objects
      *
      * @return (array|int|mixed)[] Search results
      *

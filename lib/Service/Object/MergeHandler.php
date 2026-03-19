@@ -45,9 +45,9 @@ class MergeHandler
     /**
      * Constructor for MergeHandler.
      *
-     * @param MagicMapper $objectEntityMapper Mapper for object entities.
-     * @param FileService        $fileService        Service for file operations.
-     * @param IUserSession       $userSession        User session for tracking deletions.
+     * @param MagicMapper  $objectEntityMapper Mapper for object entities.
+     * @param FileService  $fileService        Service for file operations.
+     * @param IUserSession $userSession        User session for tracking deletions.
      */
     public function __construct(
         private readonly MagicMapper $objectEntityMapper,

@@ -49,7 +49,6 @@ use Psr\Log\LoggerInterface;
  */
 class MagicTableHandler
 {
-
     /**
      * Constructor for MagicTableHandler
      *

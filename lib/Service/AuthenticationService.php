@@ -244,7 +244,7 @@ class AuthenticationService
         $tokenLocation = $configuration['tokenLocation'];
         unset($configuration['tokenUrl']);
 
-        $callConfig = [];
+        $callConfig         = [];
         $callConfig['json'] = $configuration;
 
         $client   = new Client();
@@ -410,7 +410,12 @@ class AuthenticationService
         $jwk     = $this->getJWK(configuration: $configuration);
 
         if (isset($configuration['x5t']) === true) {
-            return $this->generateJWT(payload: $payload, jwk: $jwk, algorithm: $configuration['algorithm'], x5t: $configuration['x5t']);
+            return $this->generateJWT(
+                payload: $payload,
+                jwk: $jwk,
+                algorithm: $configuration['algorithm'],
+                x5t: $configuration['x5t']
+            );
         }
 
         return $this->generateJWT(payload: $payload, jwk: $jwk, algorithm: $configuration['algorithm']);

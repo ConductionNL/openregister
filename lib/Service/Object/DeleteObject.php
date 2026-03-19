@@ -59,7 +59,7 @@ use Psr\Log\LoggerInterface;
  * @version   GIT: <git_id>
  * @copyright 2024 Conduction b.v.
  *
- * @SuppressWarnings(PHPMD.CouplingBetweenObjects) Delete operations require coordination with multiple services
+ * @SuppressWarnings(PHPMD.CouplingBetweenObjects)   Delete operations require coordination with multiple services
  * @SuppressWarnings(PHPMD.ExcessiveClassComplexity) Complexity at threshold (50) due to integrity + cascade + audit logic
  */
 

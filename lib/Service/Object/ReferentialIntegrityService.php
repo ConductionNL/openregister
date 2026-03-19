@@ -19,7 +19,8 @@
  *
  * @link https://OpenRegister.app
  *
- * @SuppressWarnings(PHPMD.CouplingBetweenObjects) Referential integrity requires coordination with schema, object, and mapper services
+ * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
+ * Referential integrity requires coordination with schema, object, and mapper services.
  */
 
 declare(strict_types=1);
@@ -289,7 +290,8 @@ class ReferentialIntegrityService
      *
      * @return void
      *
-     * @SuppressWarnings(PHPMD.CyclomaticComplexity) Reduced from 19 to ~12 by extracting buildSchemaRegisterMap + indexRelationsForSchema
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+     * Reduced from 19 to ~12 by extracting buildSchemaRegisterMap + indexRelationsForSchema.
      */
     private function ensureRelationIndex(): void
     {

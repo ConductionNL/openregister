@@ -81,11 +81,11 @@ class FacetHandler
     /**
      * Constructor for FacetHandler.
      *
-     * @param MagicMapper $unifiedObjectMapper Unified object mapper with storage routing.
-     * @param SchemaMapper        $schemaMapper        Schema database mapper.
-     * @param ICacheFactory       $cacheFactory        Cache factory for distributed caching.
-     * @param IUserSession        $userSession         User session for tenant isolation.
-     * @param LoggerInterface     $logger              Logger for debugging and monitoring.
+     * @param MagicMapper     $unifiedObjectMapper Unified object mapper with storage routing.
+     * @param SchemaMapper    $schemaMapper        Schema database mapper.
+     * @param ICacheFactory   $cacheFactory        Cache factory for distributed caching.
+     * @param IUserSession    $userSession         User session for tenant isolation.
+     * @param LoggerInterface $logger              Logger for debugging and monitoring.
      *
      * @return void
      */

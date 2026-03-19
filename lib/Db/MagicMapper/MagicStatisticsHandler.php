@@ -49,7 +49,8 @@ use Psr\Log\LoggerInterface;
  * counting and visualization data.
  *
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
- * @SuppressWarnings(PHPMD.ExcessiveClassComplexity) Statistics methods extracted from MagicMapper retain inherent query complexity
+ * @SuppressWarnings(PHPMD.ExcessiveClassComplexity)
+ * Statistics methods from MagicMapper retain inherent query complexity.
  */
 class MagicStatisticsHandler
 {
@@ -234,7 +235,7 @@ class MagicStatisticsHandler
                     if (in_array($pairRegisterId, $registerId, true) === false) {
                         continue;
                     }
-                } elseif ($pairRegisterId !== $registerId) {
+                } else if ($pairRegisterId !== $registerId) {
                     continue;
                 }
             }
@@ -245,7 +246,7 @@ class MagicStatisticsHandler
                     if (in_array($pairSchemaId, $schemaId, true) === false) {
                         continue;
                     }
-                } elseif ($pairSchemaId !== $schemaId) {
+                } else if ($pairSchemaId !== $schemaId) {
                     continue;
                 }
             }
@@ -253,7 +254,7 @@ class MagicStatisticsHandler
             // Apply exclusion filter.
             $excluded = false;
             foreach ($exclude as $ex) {
-                if (isset($ex['register'], $ex['schema'])
+                if (isset($ex['register'], $ex['schema']) === true
                     && (int) $ex['register'] === $pairRegisterId
                     && (int) $ex['schema'] === $pairSchemaId
                 ) {
@@ -270,7 +271,7 @@ class MagicStatisticsHandler
                 $register = $this->registerMapper->find($pairRegisterId, _multitenancy: false, _rbac: false);
                 $schema   = $this->schemaMapper->find($pairSchemaId, _multitenancy: false, _rbac: false);
 
-                $count = $this->countObjectsInRegisterSchemaTable(
+                $count  = $this->countObjectsInRegisterSchemaTable(
                     query: [],
                     register: $register,
                     schema: $schema
@@ -279,7 +280,7 @@ class MagicStatisticsHandler
             } catch (\Exception $e) {
                 // Skip tables that can't be queried.
             }
-        }
+        }//end foreach
 
         return [
             'total'   => $total,
@@ -341,7 +342,7 @@ class MagicStatisticsHandler
             } catch (\Exception $e) {
                 // Skip tables that can't be queried.
             }
-        }
+        }//end foreach
 
         return $statsMap;
     }//end getStatisticsGroupedBySchema()
@@ -361,7 +362,7 @@ class MagicStatisticsHandler
         $labels = [];
         $series = [];
 
-        $allPairs = $this->getAllRegisterSchemaPairs();
+        $allPairs       = $this->getAllRegisterSchemaPairs();
         $registerCounts = [];
 
         foreach ($allPairs as $pair) {
@@ -395,7 +396,7 @@ class MagicStatisticsHandler
             } catch (\Exception $e) {
                 // Skip.
             }
-        }
+        }//end foreach
 
         foreach ($registerCounts as $name => $count) {
             $labels[] = $name;
@@ -420,7 +421,7 @@ class MagicStatisticsHandler
         $labels = [];
         $series = [];
 
-        $allPairs = $this->getAllRegisterSchemaPairs();
+        $allPairs     = $this->getAllRegisterSchemaPairs();
         $schemaCounts = [];
 
         foreach ($allPairs as $pair) {
@@ -454,7 +455,7 @@ class MagicStatisticsHandler
             } catch (\Exception $e) {
                 // Skip.
             }
-        }
+        }//end foreach
 
         foreach ($schemaCounts as $name => $count) {
             $labels[] = $name;

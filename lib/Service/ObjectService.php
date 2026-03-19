@@ -210,8 +210,9 @@ class ObjectService
      * @param RegisterMapper                 $registerMapper      Mapper for register operations.
      * @param SchemaMapper                   $schemaMapper        Mapper for schema operations.
      * @param ViewMapper                     $viewMapper          Mapper for view operations.
-     * @param MagicMapper            $objectMapper        Unified mapper for object
-     *                                                            operations (routes to magic tables).
+     * @param MagicMapper                    $objectMapper        Unified mapper for object
+     *                                                            operations (routes to
+     *                                                            magic tables).
      * @param FileService                    $fileService         Service for file operations.
      * @param IUserSession                   $userSession         User session for getting current user.
      * @param SearchTrailService             $searchTrailService  Service for search trail operations.
@@ -1953,11 +1954,11 @@ class ObjectService
             uses: $uses
         );
         // Preserve source from result (e.g., magic_mapper for multi-schema), only default to database if not set.
-        $result['@self']['source']    = $result['@self']['source'] ?? 'database';
-        $result['@self']['query']     = $query;
-        $result['@self']['rbac']      = $_rbac;
-        $result['@self']['multi']     = $_multitenancy;
-        $result['@self']['deleted']   = $deleted;
+        $result['@self']['source']  = $result['@self']['source'] ?? 'database';
+        $result['@self']['query']   = $query;
+        $result['@self']['rbac']    = $_rbac;
+        $result['@self']['multi']   = $_multitenancy;
+        $result['@self']['deleted'] = $deleted;
 
         // Add extended objects only if _extend is requested.
         // Normalize _extend to array (handles comma-separated string from URL).
@@ -2371,7 +2372,6 @@ class ObjectService
         return $this->validateHandler->handleValidationException($exception);
     }//end handleValidationException()
 
-
     /**
      * Lock an object
      *
@@ -2621,9 +2621,9 @@ class ObjectService
         // Process each object individually through the delete handler so that
         // referential integrity rules (CASCADE, SET_NULL, SET_DEFAULT, RESTRICT)
         // are enforced per object. Skips objects that fail (e.g., RESTRICT blocks).
-        $deletedObjectIds   = [];
-        $skippedUuids       = [];
-        $totalCascadeCount  = 0;
+        $deletedObjectIds  = [];
+        $skippedUuids      = [];
+        $totalCascadeCount = 0;
         foreach ($filteredUuids as $uuid) {
             try {
                 $result = $this->deleteHandler->deleteObject(
@@ -2675,8 +2675,8 @@ class ObjectService
                 $this->logger->warning(
                     message: '[ObjectService] Bulk delete cache invalidation failed',
                     context: [
-                        'error'         => $e->getMessage(),
-                        'deletedCount'  => count($deletedObjectIds),
+                        'error'        => $e->getMessage(),
+                        'deletedCount' => count($deletedObjectIds),
                     ]
                 );
             }
@@ -2688,7 +2688,6 @@ class ObjectService
             'cascade_count' => $totalCascadeCount,
         ];
     }//end deleteObjects()
-
 
     /**
      * Delete all objects belonging to a specific schema
@@ -2766,7 +2765,7 @@ class ObjectService
      *
      * @param string $objectId      Object ID or UUID
      * @param array  $query         Search query parameters
-     * @param bool   $_rbac          Apply RBAC filters
+     * @param bool   $_rbac         Apply RBAC filters
      * @param bool   $_multitenancy Apply multitenancy filters
      *
      * @return array Results with object entities and pagination info.
@@ -2794,7 +2793,7 @@ class ObjectService
      *
      * @param string $objectId      Object ID or UUID
      * @param array  $query         Search query parameters
-     * @param bool   $_rbac          Apply RBAC filters
+     * @param bool   $_rbac         Apply RBAC filters
      * @param bool   $_multitenancy Apply multitenancy filters
      *
      * @return array Paginated results with referencing objects
@@ -2872,7 +2871,7 @@ class ObjectService
      * List objects with filtering and pagination
      *
      * @param array       $query         Search query parameters
-     * @param bool        $_rbac          Apply RBAC filters
+     * @param bool        $_rbac         Apply RBAC filters
      * @param bool        $_multitenancy Apply multitenancy filters
      * @param bool        $_deleted      Include deleted objects
      * @param array|null  $_ids          Optional array of object IDs to filter

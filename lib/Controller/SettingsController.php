@@ -158,6 +158,7 @@ class SettingsController extends Controller
      * @param SettingsService      $settingsService      The settings service.
      * @param VectorizationService $vectorizationService The vectorization service.
      * @param LoggerInterface      $logger               The logger.
+     * @param IL10N|null           $l10n                 The localization service.
      *
      * @SuppressWarnings(PHPMD.ExcessiveParameterList) Nextcloud DI injects all controller dependencies via constructor
      */

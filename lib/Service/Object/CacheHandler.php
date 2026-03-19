@@ -204,7 +204,7 @@ class CacheHandler
                 return null;
             }//end getUser()
         };
-        $this->container = $container;
+        $this->container   = $container;
     }//end __construct()
 
     /**

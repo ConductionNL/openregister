@@ -151,11 +151,10 @@ use OCA\OpenRegister\Exception\HookStoppedException;
 class MagicMapper extends AbstractObjectMapper
 {
     /**
-     * Table name prefix for register+schema-specific tables
+     * Table name prefix for register+schema-specific tables.
      *
      * NOTE: Does NOT include 'oc_' prefix as Nextcloud's QueryBuilder adds that automatically.
-     */
-    /**
+     *
      * @internal Used by MagicTableHandler
      */
     public const TABLE_PREFIX = 'openregister_table_';
@@ -280,28 +279,33 @@ class MagicMapper extends AbstractObjectMapper
     private ?bool $hasPgTrgm = null;
 
     /**
-     * Constructor for MagicMapper service
+     * Count of constructor calls.
+     *
+     * @var integer
+     */
+    private static int $constructCount = 0;
+
+    /**
+     * Constructor for MagicMapper service.
      *
      * Initializes the service with required dependencies for database operations,
      * schema and register management, configuration handling, logging, and specialized handlers.
      *
-     * @param IDBConnection      $db               Database connection for table operations
-     * @param SchemaMapper       $schemaMapper     Mapper for schema operations
-     * @param RegisterMapper     $registerMapper   Mapper for register operations
-     * @param IConfig            $config           Nextcloud config for settings
-     * @param IEventDispatcher   $eventDispatcher  Event dispatcher for audit trail events
-     * @param IUserSession       $userSession      User session for authentication context
-     * @param IGroupManager      $groupManager     Group manager for RBAC operations
-     * @param IUserManager       $userManager      User manager for user operations
-     * @param IAppConfig         $appConfig        App configuration for feature flags
-     * @param LoggerInterface    $logger           Logger for debugging and monitoring
-     * @param SettingsService    $settingsService  Settings service for configuration
-     * @param ContainerInterface $container        Container for lazy loading services
+     * @param IDBConnection      $db              Database connection for table operations
+     * @param SchemaMapper       $schemaMapper    Mapper for schema operations
+     * @param RegisterMapper     $registerMapper  Mapper for register operations
+     * @param IConfig            $config          Nextcloud config for settings
+     * @param IEventDispatcher   $eventDispatcher Event dispatcher for audit trail events
+     * @param IUserSession       $userSession     User session for authentication context
+     * @param IGroupManager      $groupManager    Group manager for RBAC operations
+     * @param IUserManager       $userManager     User manager for user operations
+     * @param IAppConfig         $appConfig       App configuration for feature flags
+     * @param LoggerInterface    $logger          Logger for debugging and monitoring
+     * @param SettingsService    $settingsService Settings service for configuration
+     * @param ContainerInterface $container       Container for lazy loading services
      *
      * @SuppressWarnings(PHPMD.ExcessiveParameterList) Nextcloud DI requires constructor injection
      */
-    private static int $constructCount = 0;
-
     public function __construct(
         private readonly IDBConnection $db,
         private readonly SchemaMapper $schemaMapper,
@@ -317,11 +321,20 @@ class MagicMapper extends AbstractObjectMapper
         private readonly ContainerInterface $container
     ) {
         self::$constructCount++;
-        file_put_contents('/tmp/or-debug.log', "MagicMapper::__construct #".self::$constructCount."\n", FILE_APPEND);
+        file_put_contents(
+            '/tmp/or-debug.log',
+            "MagicMapper::__construct #".self::$constructCount."\n",
+            FILE_APPEND
+        );
         if (self::$constructCount > 2) {
-            file_put_contents('/tmp/or-debug.log', "CIRCULAR! Stack:\n".(new Exception())->getTraceAsString()."\n", FILE_APPEND);
+            file_put_contents(
+                '/tmp/or-debug.log',
+                "CIRCULAR! Stack:\n".(new Exception())->getTraceAsString()."\n",
+                FILE_APPEND
+            );
             return;
         }
+
         // Initialize specialized handlers for modular functionality.
         $this->initializeHandlers();
     }//end __construct()
@@ -475,7 +488,6 @@ class MagicMapper extends AbstractObjectMapper
         self::$tableStructureCache = [];
         self::$calcVersionCache    = [];
     }//end clearAllStaticCaches()
-
 
     /**
      * Check if PostgreSQL pg_trgm extension is available
@@ -851,8 +863,10 @@ class MagicMapper extends AbstractObjectMapper
                 schemaSlug: $schema->getSlug()
             );
             if ($isMagicEnabled === true) {
+                $msg  = '[MagicMapper] Register+schema table does not exist';
+                $msg .= ' but magic mapping enabled, creating table for facets';
                 $this->logger->info(
-                    message: '[MagicMapper] Register+schema table does not exist but magic mapping enabled, creating table for facets',
+                    message: $msg,
                     context: [
                         'file'       => __FILE__,
                         'line'       => __LINE__,
@@ -1080,8 +1094,10 @@ class MagicMapper extends AbstractObjectMapper
                     schemaSlug: $schema->getSlug()
                 );
                 if ($isMagicEnabled === true) {
+                    $msg  = '[MagicMapper] Register+schema table does not exist';
+                    $msg .= ' but magic mapping enabled, creating table for cross-search';
                     $this->logger->info(
-                        message: '[MagicMapper] Register+schema table does not exist but magic mapping enabled, creating table for cross-search',
+                        message: $msg,
                         context: [
                             'file'       => __FILE__,
                             'line'       => __LINE__,
@@ -1580,7 +1596,8 @@ class MagicMapper extends AbstractObjectMapper
             $isPostgres = stripos($platform::class, 'PostgreSQL') !== false;
 
             if ($isPostgres === true) {
-                $sql = "SELECT 1 FROM information_schema.tables WHERE table_name = ? AND table_schema = current_schema() LIMIT 1";
+                $sql  = "SELECT 1 FROM information_schema.tables";
+                $sql .= " WHERE table_name = ? AND table_schema = current_schema() LIMIT 1";
             } else {
                 // MySQL/MariaDB/SQLite.
                 $sql = "SELECT 1 FROM information_schema.tables WHERE table_name = ? AND table_schema = DATABASE() LIMIT 1";
@@ -2954,8 +2971,10 @@ class MagicMapper extends AbstractObjectMapper
                         && (($propertyConfig['items']['type'] ?? '') === 'file');
 
                     if ($isFileProperty === true && is_string($value) === true && strpos($value, 'data:') === 0) {
+                        $msg  = '[MagicMapper] File property contains unprocessed';
+                        $msg .= ' base64 data URL - setting to null to prevent DB error';
                         $this->logger->warning(
-                            message: '[MagicMapper] File property contains unprocessed base64 data URL - setting to null to prevent DB error',
+                            message: $msg,
                             context: [
                                 'file'         => __FILE__,
                                 'line'         => __LINE__,
@@ -2970,9 +2989,13 @@ class MagicMapper extends AbstractObjectMapper
                     if ($isArrayOfFiles === true && is_array($value) === true) {
                         $cleanedArray = [];
                         foreach ($value as $item) {
-                            if (is_string($item) === true && strpos($item, 'data:') === 0) {
+                            if (is_string($item) === true
+                                && strpos($item, 'data:') === 0
+                            ) {
+                                $msg  = '[MagicMapper] Array file item contains';
+                                $msg .= ' unprocessed base64 data URL - skipping item';
                                 $this->logger->warning(
-                                    message: '[MagicMapper] Array file item contains unprocessed base64 data URL - skipping item',
+                                    message: $msg,
                                     context: [
                                         'file'         => __FILE__,
                                         'line'         => __LINE__,
@@ -3952,14 +3975,7 @@ class MagicMapper extends AbstractObjectMapper
     }//end dropTable()
 
     /**
-     * Check if string is valid JSON
-     *
-     * @param string $string The string to check
-     *
-     * @return bool True if string is valid JSON
-     *
-    /**
-     * Clear all caches for MagicMapper
+     * Clear all caches for MagicMapper.
      *
      * @param int|null $registerId Optional register ID to clear cache for specific register
      * @param int|null $schemaId   Optional schema ID to clear cache for specific schema
@@ -4024,8 +4040,8 @@ class MagicMapper extends AbstractObjectMapper
      * @param string|int $identifier     Object identifier (ID, UUID, slug, or URI).
      * @param Register   $register       The register context.
      * @param Schema     $schema         The schema context.
-     * @param bool       $_rbac           Whether to apply RBAC.
-     * @param bool       $_multitenancy   Whether to apply multi-tenancy.
+     * @param bool       $_rbac          Whether to apply RBAC.
+     * @param bool       $_multitenancy  Whether to apply multi-tenancy.
      * @param bool       $includeDeleted Whether to include soft-deleted objects.
      *
      * @throws \OCP\AppFramework\Db\DoesNotExistException If object not found.
@@ -5438,7 +5454,9 @@ class MagicMapper extends AbstractObjectMapper
      * For PostgreSQL, it uses casting to text and LIKE for JSON columns.
      * For other databases, it uses LIKE on all columns.
      *
-     * @param string $uuid The UUID to search for
+     * @param string      $uuid          The UUID to search for
+     * @param string|null $_search       Optional search filter
+     * @param bool        $_partialMatch Whether to use partial matching
      *
      * @return ObjectEntity[] Array of objects that contain the UUID
      *
@@ -5687,7 +5705,9 @@ class MagicMapper extends AbstractObjectMapper
                     // - For arrays: use @> containment operator (can't use ? as it conflicts with PDO placeholders).
                     // - For objects: use jsonb_each_text to search values.
                     $arrSql       = "(jsonb_typeof(_relations)='array' AND _relations @> to_jsonb(?::text))";
-                    $objSql       = "(jsonb_typeof(_relations)='object' AND EXISTS(SELECT 1 FROM jsonb_each_text(_relations) kv WHERE kv.value=?))";
+                    $objSql       = "(jsonb_typeof(_relations)='object'";
+                    $objSql      .= " AND EXISTS(SELECT 1 FROM jsonb_each_text(_relations) kv";
+                    $objSql      .= " WHERE kv.value=?))";
                     $conditions[] = "({$arrSql} OR {$objSql})";
                     $params[]     = $uuid;
                     $params[]     = $uuid;
@@ -6176,8 +6196,8 @@ class MagicMapper extends AbstractObjectMapper
      * @param Register|null $register       Optional register to filter by.
      * @param Schema|null   $schema         Optional schema to filter by.
      * @param bool          $includeDeleted Whether to include deleted objects.
-     * @param bool          $_rbac           Whether to apply RBAC checks (default: true).
-     * @param bool          $_multitenancy   Whether to apply multitenancy filtering (default: true).
+     * @param bool          $_rbac          Whether to apply RBAC checks (default: true).
+     * @param bool          $_multitenancy  Whether to apply multitenancy filtering (default: true).
      *
      * @return ObjectEntity The found object.
      *
@@ -6355,7 +6375,7 @@ class MagicMapper extends AbstractObjectMapper
                     register: $register,
                     schema: $schema
                 );
-                $results = array_merge($results, $entities);
+                $results  = array_merge($results, $entities);
             } catch (\Exception $e) {
                 $this->logger->warning(
                     message: '[MagicMapper] Failed to search table for findBySchema',
@@ -6367,8 +6387,8 @@ class MagicMapper extends AbstractObjectMapper
                         'error'      => $e->getMessage(),
                     ]
                 );
-            }
-        }
+            }//end try
+        }//end foreach
 
         return $results;
     }//end findBySchema()
@@ -6463,8 +6483,8 @@ class MagicMapper extends AbstractObjectMapper
                     ]
                 );
                 $oldEntity = $entity;
-            }
-        }
+            }//end try
+        }//end if
 
         if ($register === null || $schema === null) {
             throw new Exception('Cannot update object without register and schema context');
@@ -6535,12 +6555,21 @@ class MagicMapper extends AbstractObjectMapper
      */
     public function lockObject(string $uuid, ?int $lockDuration=null): array
     {
-        $result   = $this->findAcrossAllSources(identifier: $uuid, _multitenancy: false, _rbac: false);
+        $result   = $this->findAcrossAllSources(
+            identifier: $uuid,
+            _multitenancy: false,
+            _rbac: false
+        );
         $entity   = $result['object'];
         $register = $result['register'];
         $schema   = $result['schema'];
 
-        $locked = $this->lockObjectEntity(entity: $entity, register: $register, schema: $schema, lockDuration: $lockDuration);
+        $locked = $this->lockObjectEntity(
+            entity: $entity,
+            register: $register,
+            schema: $schema,
+            lockDuration: $lockDuration
+        );
 
         return ['locked' => $locked->getLocked(), 'uuid' => $uuid];
     }//end lockObject()
@@ -6554,7 +6583,11 @@ class MagicMapper extends AbstractObjectMapper
      */
     public function unlockObject(string $uuid): bool
     {
-        $result   = $this->findAcrossAllSources(identifier: $uuid, _multitenancy: false, _rbac: false);
+        $result   = $this->findAcrossAllSources(
+            identifier: $uuid,
+            _multitenancy: false,
+            _rbac: false
+        );
         $entity   = $result['object'];
         $register = $result['register'];
         $schema   = $result['schema'];
@@ -6651,11 +6684,11 @@ class MagicMapper extends AbstractObjectMapper
                     );
 
                     $allResults = array_merge($allResults, $groupResults);
-                }
+                }//end foreach
 
                 return $allResults;
-            }
-        }
+            }//end if
+        }//end if
 
         return $this->ultraFastBulkSaveSingleSchema(
             insertObjects: $insertObjects,
@@ -6709,7 +6742,7 @@ class MagicMapper extends AbstractObjectMapper
                     );
                 }
             }
-        }
+        }//end if
 
         if ($register === null || $schema === null) {
             throw new Exception('Cannot bulk save without register and schema context');
@@ -6748,11 +6781,15 @@ class MagicMapper extends AbstractObjectMapper
         $grouped = [];
         foreach ($uuids as $uuid) {
             try {
-                $result     = $this->findAcrossAllSources(identifier: $uuid, _multitenancy: false, _rbac: false);
-                $register   = $result['register'];
-                $schema     = $result['schema'];
-                $key        = $register->getId().'-'.$schema->getId();
-                $grouped[$key] ??= ['register' => $register, 'schema' => $schema, 'uuids' => []];
+                $result   = $this->findAcrossAllSources(
+                identifier: $uuid,
+                _multitenancy: false,
+                _rbac: false
+                );
+                $register = $result['register'];
+                $schema   = $result['schema'];
+                $key      = $register->getId().'-'.$schema->getId();
+                $grouped[$key]          ??= ['register' => $register, 'schema' => $schema, 'uuids' => []];
                 $grouped[$key]['uuids'][] = $uuid;
             } catch (\Exception $e) {
                 // Skip UUIDs that can't be found.
@@ -6978,8 +7015,8 @@ class MagicMapper extends AbstractObjectMapper
                     message: '[MagicMapper] Failed to find schema for multi-schema facets',
                     context: ['file' => __FILE__, 'line' => __LINE__, 'schemaId' => $sId, 'error' => $e->getMessage()]
                 );
-            }
-        }
+            }//end try
+        }//end foreach
 
         if (empty($registerSchemaPairs) === true) {
             return [];
@@ -7036,7 +7073,7 @@ class MagicMapper extends AbstractObjectMapper
             } catch (\Exception $e) {
                 // Skip missing schemas.
             }
-        }
+        }//end foreach
 
         return $facetableFields;
     }//end getFacetableFieldsFromSchemas()
@@ -7044,12 +7081,12 @@ class MagicMapper extends AbstractObjectMapper
     /**
      * Search objects.
      *
-     * @param array       $query         Search query
-     * @param string|null $activeOrgUuid Organisation UUID
+     * @param array       $query          Search query
+     * @param string|null $_activeOrgUuid Organisation UUID
      * @param bool        $_rbac          Apply RBAC
      * @param bool        $_multitenancy  Apply multitenancy
-     * @param array|null  $ids           Specific IDs
-     * @param string|null $uses          Uses filter
+     * @param array|null  $ids            Specific IDs
+     * @param string|null $uses           Uses filter
      *
      * @return ObjectEntity[]|int
      *
@@ -7098,12 +7135,12 @@ class MagicMapper extends AbstractObjectMapper
     /**
      * Count search objects.
      *
-     * @param array       $query         Search query
-     * @param string|null $activeOrgUuid Organisation UUID
+     * @param array       $query          Search query
+     * @param string|null $_activeOrgUuid Organisation UUID
      * @param bool        $_rbac          Apply RBAC
      * @param bool        $_multitenancy  Apply multitenancy
-     * @param array|null  $ids           Specific IDs
-     * @param string|null $uses          Uses filter
+     * @param array|null  $ids            Specific IDs
+     * @param string|null $uses           Uses filter
      *
      * @return int Object count
      *
@@ -7144,7 +7181,7 @@ class MagicMapper extends AbstractObjectMapper
     /**
      * Count all objects with optional filtering.
      *
-     * @param array|null    $filters  Filters
+     * @param array|null    $_filters Filters
      * @param Schema|null   $schema   Schema filter
      * @param Register|null $register Register filter
      *
@@ -7188,7 +7225,7 @@ class MagicMapper extends AbstractObjectMapper
             } catch (\Exception $e) {
                 // Skip.
             }
-        }
+        }//end foreach
 
         return $total;
     }//end countAll()
@@ -7230,17 +7267,17 @@ class MagicMapper extends AbstractObjectMapper
     /**
      * Optimized paginated search that loads register/schema once and performs both search and count.
      *
-     * @param array       $searchQuery   Query for search (with _limit, _offset).
-     * @param array       $countQuery    Query for count (without pagination).
-     * @param string|null $activeOrgUuid Active organization UUID.
+     * @param array       $searchQuery    Query for search (with _limit, _offset).
+     * @param array       $countQuery     Query for count (without pagination).
+     * @param string|null $_activeOrgUuid Active organization UUID.
      * @param bool        $_rbac          Whether to apply RBAC.
      * @param bool        $_multitenancy  Whether to apply multitenancy.
-     * @param array|null  $ids           Optional ID filter.
-     * @param string|null $uses          Optional uses filter.
+     * @param array|null  $ids            Optional ID filter.
+     * @param string|null $uses           Optional uses filter.
      *
      * @return array{results: ObjectEntity[], total: int, register: ?array, schema: ?array}
      *
-     * @SuppressWarnings(PHPMD.BooleanArgumentFlag)      Flags control security filtering behavior
+     * @SuppressWarnings(PHPMD.BooleanArgumentFlag)   Flags control security filtering behavior
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)
      * @SuppressWarnings(PHPMD.NPathComplexity)
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
@@ -7352,7 +7389,7 @@ class MagicMapper extends AbstractObjectMapper
                     'count_ms'  => $countTime,
                 ],
             ];
-        }
+        }//end if
 
         // ID search across all tables.
         $queryIds   = $searchQuery['_ids'] ?? null;
@@ -7425,18 +7462,19 @@ class MagicMapper extends AbstractObjectMapper
      * @param array       $registerIds   Register IDs to search.
      * @param array       $schemaIds     Array of schema IDs to search.
      * @param string|null $activeOrgUuid Organisation UUID.
-     * @param bool        $_rbac          Apply RBAC.
-     * @param bool        $_multitenancy  Apply multitenancy.
+     * @param bool        $_rbac         Apply RBAC.
+     * @param bool        $_multitenancy Apply multitenancy.
      * @param array|null  $ids           Specific IDs to filter.
      * @param string|null $uses          Uses filter.
      *
      * @return array{results: ObjectEntity[], total: int, registers: array, schemas: array}
      *
-     * @SuppressWarnings(PHPMD.BooleanArgumentFlag)      Flags control security filtering behavior
+     * @SuppressWarnings(PHPMD.BooleanArgumentFlag)   Flags control security filtering behavior
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)
      * @SuppressWarnings(PHPMD.NPathComplexity)
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
-     * @psalm-suppress UnusedParam Parameters reserved for future per-schema security filtering.
+     * @psalm-suppress                                UnusedParam
+     * Parameters reserved for future per-schema security filtering.
      */
     private function searchObjectsPaginatedMultiSchema(
         array $searchQuery,
@@ -7510,8 +7548,8 @@ class MagicMapper extends AbstractObjectMapper
 
                 $registerSchemaPairs[] = ['register' => $matchedRegister, 'schema' => $schema];
 
-                $schemaCountQuery                  = $countQuery;
-                $schemaCountQuery['_rbac']         = $_rbac;
+                $schemaCountQuery          = $countQuery;
+                $schemaCountQuery['_rbac'] = $_rbac;
                 $schemaCountQuery['_multitenancy'] = $_multitenancy;
                 $schemaCount = $this->countObjectsInRegisterSchemaTable(
                     query: $schemaCountQuery,
@@ -7524,8 +7562,8 @@ class MagicMapper extends AbstractObjectMapper
                     message: '[MagicMapper] Failed to load schema for multi-schema search',
                     context: ['file' => __FILE__, 'line' => __LINE__, 'schemaId' => $sId, 'error' => $e->getMessage()]
                 );
-            }
-        }
+            }//end try
+        }//end foreach
 
         if (empty($registerSchemaPairs) === true) {
             return [
@@ -7538,8 +7576,8 @@ class MagicMapper extends AbstractObjectMapper
             ];
         }
 
-        $unionQuery                  = $searchQuery;
-        $unionQuery['_rbac']         = $_rbac;
+        $unionQuery          = $searchQuery;
+        $unionQuery['_rbac'] = $_rbac;
         $unionQuery['_multitenancy'] = $_multitenancy;
 
         $results = $this->searchAcrossMultipleTables(
@@ -7562,7 +7600,7 @@ class MagicMapper extends AbstractObjectMapper
      *
      * @param array $objects      Array of ObjectEntity objects to filter.
      * @param array $schemasCache Cache of schema data by ID.
-     * @param bool  $_rbac         Whether RBAC is enabled.
+     * @param bool  $_rbac        Whether RBAC is enabled.
      *
      * @return array Filtered array of ObjectEntity objects.
      *
@@ -7623,7 +7661,7 @@ class MagicMapper extends AbstractObjectMapper
             ) {
                 $filtered[] = $object;
             }
-        }
+        }//end foreach
 
         return $filtered;
     }//end filterBySchemaRbac()
@@ -7633,7 +7671,7 @@ class MagicMapper extends AbstractObjectMapper
      *
      * @param array $results     Array of ObjectEntity results from the storage search.
      * @param array $searchQuery The original search query parameters (for _limit/_offset).
-     * @param bool  $_rbac        Whether to apply RBAC filtering.
+     * @param bool  $_rbac       Whether to apply RBAC filtering.
      *
      * @return array{results: array, total: int, registers: array, schemas: array}
      */
@@ -7667,7 +7705,7 @@ class MagicMapper extends AbstractObjectMapper
                     // Skip if schema not found.
                 }
             }
-        }
+        }//end foreach
 
         $results = $this->filterBySchemaRbac(objects: $results, schemasCache: $schemasCache, _rbac: $_rbac);
 
@@ -7708,8 +7746,8 @@ class MagicMapper extends AbstractObjectMapper
      * @param array       $searchQuery   The search query parameters (must contain _search).
      * @param array       $countQuery    The count query parameters.
      * @param string|null $activeOrgUuid The active organisation UUID for multitenancy.
-     * @param bool        $_rbac          Whether to apply RBAC filtering.
-     * @param bool        $_multitenancy  Whether to apply multitenancy filtering.
+     * @param bool        $_rbac         Whether to apply RBAC filtering.
+     * @param bool        $_multitenancy Whether to apply multitenancy filtering.
      *
      * @return array Search results with pagination info.
      *
@@ -7730,8 +7768,8 @@ class MagicMapper extends AbstractObjectMapper
 
         foreach ($idPairs as $idPair) {
             try {
-                $regId  = $idPair['registerId'];
-                $schId  = $idPair['schemaId'];
+                $regId = $idPair['registerId'];
+                $schId = $idPair['schemaId'];
 
                 $register = $this->registerMapper->find($regId, _multitenancy: false, _rbac: false);
                 $schema   = $this->schemaMapper->find($schId, _multitenancy: false, _rbac: false);
@@ -7748,7 +7786,7 @@ class MagicMapper extends AbstractObjectMapper
             } catch (\Exception $e) {
                 continue;
             }
-        }
+        }//end foreach
 
         if (empty($registerSchemaPairs) === true) {
             return [
@@ -7760,8 +7798,8 @@ class MagicMapper extends AbstractObjectMapper
             ];
         }
 
-        $unionQuery                  = $searchQuery;
-        $unionQuery['_rbac']         = $_rbac;
+        $unionQuery          = $searchQuery;
+        $unionQuery['_rbac'] = $_rbac;
         $unionQuery['_multitenancy'] = $_multitenancy;
 
         $results = $this->searchAcrossMultipleTables(

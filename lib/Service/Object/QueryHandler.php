@@ -56,15 +56,15 @@ class QueryHandler
     /**
      * Constructor for QueryHandler.
      *
-     * @param MagicMapper                      $objectMapper        Unified mapper for objects.
-     * @param GetObject                                $getHandler          Get handler.
-     * @param RenderObject                             $renderHandler       Render handler.
-     * @param SearchQueryHandler                       $searchQueryHandler  Search handler.
-     * @param FacetHandler                             $facetHandler        Facet handler.
-     * @param PerformanceOptimizationHandler           $performanceHandler  Performance handler.
-     * @param IAppContainer                            $container           App container.
-     * @param LoggerInterface                          $logger              Logger.
-     * @param IRequest                                 $request             Request object.
+     * @param MagicMapper                    $objectMapper       Unified mapper for objects.
+     * @param GetObject                      $getHandler         Get handler.
+     * @param RenderObject                   $renderHandler      Render handler.
+     * @param SearchQueryHandler             $searchQueryHandler Search handler.
+     * @param FacetHandler                   $facetHandler       Facet handler.
+     * @param PerformanceOptimizationHandler $performanceHandler Performance handler.
+     * @param IAppContainer                  $container          App container.
+     * @param LoggerInterface                $logger             Logger.
+     * @param IRequest                       $request            Request object.
      *
      * @SuppressWarnings(PHPMD.ExcessiveParameterList) Nextcloud DI requires constructor injection
      */
@@ -300,11 +300,11 @@ class QueryHandler
                 _multitenancy: $_multitenancy,
                 deleted: $deleted
             );
-            $result['@self']['source']    = 'index';
-            $result['@self']['query']     = $query;
-            $result['@self']['rbac']      = $_rbac;
-            $result['@self']['multi']     = $_multitenancy;
-            $result['@self']['deleted']   = $deleted;
+            $result['@self']['source']  = 'index';
+            $result['@self']['query']   = $query;
+            $result['@self']['rbac']    = $_rbac;
+            $result['@self']['multi']   = $_multitenancy;
+            $result['@self']['deleted'] = $deleted;
             return $result;
         }
 
@@ -318,11 +318,11 @@ class QueryHandler
             uses: $uses
         );
         // Use source from result if available (e.g., magic_mapper for multi-schema), otherwise default to database.
-        $result['@self']['source']    = $result['@self']['source'] ?? 'database';
-        $result['@self']['query']     = $query;
-        $result['@self']['rbac']      = $_rbac;
-        $result['@self']['multi']     = $_multitenancy;
-        $result['@self']['deleted']   = $deleted;
+        $result['@self']['source']  = $result['@self']['source'] ?? 'database';
+        $result['@self']['query']   = $query;
+        $result['@self']['rbac']    = $_rbac;
+        $result['@self']['multi']   = $_multitenancy;
+        $result['@self']['deleted'] = $deleted;
 
         return $result;
     }//end searchObjectsPaginated()
