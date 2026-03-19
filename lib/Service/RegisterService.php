@@ -403,23 +403,24 @@ class RegisterService
                 $tableName   = 'openregister_table_'.$registerId.'_'.$schemaId;
                 $tableExists = $this->db->tableExists($tableName);
 
-                if ($tableExists === true) {
-                    $quotedTableName = $this->db->getQueryBuilder()->getTableName($tableName);
-                    $unionQueries[]  = "
-                        SELECT
-                            CAST({$schemaId} AS VARCHAR) as schema_id,
-                            COUNT(*) as total,
-                            COUNT(CASE WHEN _deleted IS NOT NULL THEN 1 END) as deleted,
-                            0 as invalid,
-                            0 as locked,
-                            0 as published,
-                            0 as size
-                        FROM {$quotedTableName}
-                    ";
-                } else {
+                if ($tableExists !== true) {
                     // Table doesn't exist yet, return 0 for all stats.
                     $result[$schemaId] = $this->getZeroCountStats();
+                    continue;
                 }
+
+                $quotedTableName = $this->db->getQueryBuilder()->getTableName($tableName);
+                $unionQueries[]  = "
+                    SELECT
+                        CAST({$schemaId} AS VARCHAR) as schema_id,
+                        COUNT(*) as total,
+                        COUNT(CASE WHEN _deleted IS NOT NULL THEN 1 END) as deleted,
+                        0 as invalid,
+                        0 as locked,
+                        0 as published,
+                        0 as size
+                    FROM {$quotedTableName}
+                ";
             }//end foreach
 
             if (empty($unionQueries) === true) {

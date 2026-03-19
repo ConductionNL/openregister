@@ -147,7 +147,9 @@ class DeleteObject
             );
             $registerEntity = $context['register'];
             $schemaEntity   = $context['schema'];
-        } else {
+        }
+
+        if ($object instanceof ObjectEntity !== true) {
             // Handle array input - find object with context (searches across all magic tables).
             // @psalm-suppress UndefinedInterfaceMethod.
             $context        = $this->objectEntityMapper->findAcrossAllSources(

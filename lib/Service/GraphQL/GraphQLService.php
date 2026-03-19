@@ -343,7 +343,9 @@ class GraphQLService
         $key  = 'openregister_graphql_rate_';
         if ($user !== null) {
             $key .= 'user_'.preg_replace('/[^a-zA-Z0-9_]/', '_', $user->getUID());
-        } else {
+        }
+
+        if ($user === null) {
             $ip = $this->request->getRemoteAddress();
             if (empty($ip) === true) {
                 // No identifiable client (CLI/test context) — skip rate limiting.
