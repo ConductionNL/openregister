@@ -1010,18 +1010,20 @@ class ReferentialIntegrityService
             $objectData = $object->getObject();
             $isArray    = $target['isArray'] ?? false;
 
-            if ($isArray === true && is_array($objectData[$target['property']] ?? null) === true) {
-                // Remove the specific UUID from the array.
+            // Default: set scalar reference to null.
+            $objectData[$target['property']] = null;
+
+            // Override: for array properties, filter out the specific UUID instead.
+            $currentValue = $object->getObject()[$target['property']] ?? null;
+            if ($isArray === true && is_array($currentValue) === true) {
                 $objectData[$target['property']] = array_values(
                     array_filter(
-                        $objectData[$target['property']],
+                        $currentValue,
                         function ($val) use ($target) {
                             return $val !== $target['sourceUuid'];
                         }
                     )
                 );
-            } elseif ($isArray !== true) {
-                $objectData[$target['property']] = null;
             }
 
             $object->setObject($objectData);
@@ -1111,19 +1113,20 @@ class ReferentialIntegrityService
             $registerId = $target['register'] ?? null;
             $schemaId   = $target['schema'] ?? null;
 
-            if ($registerId !== null && $schemaId !== null) {
-                $groupKey = $registerId.'::'.$schemaId;
-                $groups[$groupKey]['registerId'] = $registerId;
-                $groups[$groupKey]['schemaId']   = $schemaId;
-                $groups[$groupKey]['targets'][]  = $target;
-            } else {
+            if ($registerId === null || $schemaId === null) {
                 // Fallback: targets without register info get their own single-item group.
                 $groups['fallback_'.$target['objectUuid']] = [
                     'registerId' => $registerId,
                     'schemaId'   => $schemaId,
                     'targets'    => [$target],
                 ];
+                continue;
             }
+
+            $groupKey = $registerId.'::'.$schemaId;
+            $groups[$groupKey]['registerId'] = $registerId;
+            $groups[$groupKey]['schemaId']   = $schemaId;
+            $groups[$groupKey]['targets'][]  = $target;
         }
 
         // Process each group with batch delete.
