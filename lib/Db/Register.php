@@ -67,6 +67,8 @@ use OCP\AppFramework\Db\Entity;
  * @method void setDeleted(?DateTime $deleted)
  * @method array|null getConfiguration()
  * @method void setConfiguration(array|string|null $configuration)
+ * @method array|null getLanguages()
+ * @method void setLanguages(array|string|null $languages)
  *
  * @SuppressWarnings(PHPMD.ExcessiveClassComplexity)
  * @SuppressWarnings(PHPMD.TooManyFields)
@@ -250,6 +252,13 @@ class Register extends Entity implements JsonSerializable
     protected ?array $configuration = [];
 
     /**
+     * Supported languages for this register
+     *
+     * @var array|null Supported languages for this register
+     */
+    protected ?array $languages = [];
+
+    /**
      * Constructor for the Register class
      *
      * Sets up field types for all properties
@@ -276,6 +285,7 @@ class Register extends Entity implements JsonSerializable
         $this->addType(fieldName: 'published', type: 'datetime');
         $this->addType(fieldName: 'depublished', type: 'datetime');
         $this->addType(fieldName: 'configuration', type: 'json');
+        $this->addType(fieldName: 'languages', type: 'json');
     }//end __construct()
 
     /**
@@ -478,6 +488,7 @@ class Register extends Entity implements JsonSerializable
             'authorization' => $this->authorization,
             'groups'        => $groups,
             'configuration' => $this->configuration,
+            'languages'     => $this->languages,
             'published'     => $published,
             'depublished'   => $depublished,
             'quota'         => [
