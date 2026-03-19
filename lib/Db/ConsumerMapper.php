@@ -25,7 +25,7 @@ use Symfony\Component\Uid\Uuid;
  * @package OCA\OpenRegister\Db
  *
  * @template-extends                     QBMapper<Consumer>
- * @SuppressWarnings(PHPMD.StaticAccess)
+ * @SuppressWarnings(PHPMD.StaticAccess) — Uuid::v4 is standard Symfony UID pattern
  */
 class ConsumerMapper extends QBMapper
 {

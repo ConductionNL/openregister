@@ -25,7 +25,7 @@ use GraphQL\Utils\Utils;
  *
  * @psalm-suppress UnusedClass
  *
- * @SuppressWarnings(PHPMD.StaticAccess)
+ * @SuppressWarnings(PHPMD.StaticAccess) — Utils::printSafe/DateTimeImmutable::createFromFormat are standard patterns
  * @SuppressWarnings(PHPMD.UnusedFormalParameter)
  */
 class DateTimeType extends ScalarType

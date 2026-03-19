@@ -32,7 +32,7 @@ use OCP\IDBConnection;
  *
  * @SuppressWarnings(PHPMD.ExcessiveClassLength)
  * @SuppressWarnings(PHPMD.ExcessiveClassComplexity)
- * @SuppressWarnings(PHPMD.StaticAccess)
+ * @SuppressWarnings(PHPMD.StaticAccess) — DateTime::createFromFormat is standard PHP date pattern
  */
 class MariaDbFacetHandler
 {

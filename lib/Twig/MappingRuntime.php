@@ -44,8 +44,7 @@ use Twig\Extension\RuntimeExtensionInterface;
  * @package  OCA\OpenRegister\Twig
  *
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
- * @SuppressWarnings(PHPMD.BooleanArgumentFlag)
- * @SuppressWarnings(PHPMD.StaticAccess)
+ * @SuppressWarnings(PHPMD.StaticAccess) — Uuid::v4 is standard Symfony UID pattern
  */
 class MappingRuntime implements RuntimeExtensionInterface
 {
@@ -109,6 +108,8 @@ class MappingRuntime implements RuntimeExtensionInterface
      * @param bool                     $list    Whether the mapping runs on multiple instances
      *
      * @return array The mapped output
+     *
+     * @SuppressWarnings(PHPMD.BooleanArgumentFlag) $list is a simple processing-mode toggle
      */
     public function executeMapping(Mapping|array|string|int $mapping, array $input, bool $list=false): array
     {

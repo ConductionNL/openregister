@@ -49,7 +49,7 @@ use Symfony\Component\Yaml\Yaml;
  * @link https://www.OpenRegister.app
  *
  * @SuppressWarnings(PHPMD.CyclomaticComplexity)
- * @SuppressWarnings(PHPMD.StaticAccess)
+ * @SuppressWarnings(PHPMD.StaticAccess) — Yaml::parse is standard Symfony Yaml pattern
  */
 class FetchHandler
 {

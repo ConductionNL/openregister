@@ -33,7 +33,7 @@ use OCA\OpenRegister\Db\Schema as RegisterSchema;
  *
  * @SuppressWarnings(PHPMD.ExcessiveClassComplexity)
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
- * @SuppressWarnings(PHPMD.StaticAccess)
+ * @SuppressWarnings(PHPMD.StaticAccess) — Type::nonNull/listOf/id/string/int are standard graphql-php patterns
  */
 class TypeMapperHandler
 {

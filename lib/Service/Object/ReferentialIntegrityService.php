@@ -51,7 +51,7 @@ use Symfony\Component\Uid\Uuid;
  * @SuppressWarnings(PHPMD.CyclomaticComplexity)
  * @SuppressWarnings(PHPMD.NPathComplexity)
  * @SuppressWarnings(PHPMD.ExcessiveClassLength)
- * @SuppressWarnings(PHPMD.StaticAccess)
+ * @SuppressWarnings(PHPMD.StaticAccess) — Uuid::isValid is standard Symfony UID pattern
  * @SuppressWarnings(PHPMD.UnusedFormalParameter)
  */
 class ReferentialIntegrityService

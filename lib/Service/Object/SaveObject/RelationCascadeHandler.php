@@ -617,7 +617,7 @@ class RelationCascadeHandler
      *
      * @psalm-return list<string>
      *
-     * @SuppressWarnings(PHPMD.StaticAccess)
+     * @SuppressWarnings(PHPMD.StaticAccess) — Uuid::isValid is standard Symfony UID pattern
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)
      */
     public function cascadeMultipleObjects(ObjectEntity $objectEntity, array $property, array $propData): array

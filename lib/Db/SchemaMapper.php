@@ -81,7 +81,7 @@ use OCA\OpenRegister\Service\Schemas\PropertyValidatorHandler;
  * @SuppressWarnings(PHPMD.CyclomaticComplexity)
  * @SuppressWarnings(PHPMD.NPathComplexity)
  * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
- * @SuppressWarnings(PHPMD.StaticAccess)
+ * @SuppressWarnings(PHPMD.StaticAccess) — Uuid::v4/Schema::fromRow are standard factory patterns
  * @SuppressWarnings(PHPMD.UnusedFormalParameter)
  */
 class SchemaMapper extends QBMapper
@@ -214,7 +214,7 @@ class SchemaMapper extends QBMapper
      *
      * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag)   Flags control security filtering behavior
-     * @SuppressWarnings(PHPMD.StaticAccess)          Schema::fromRow is a standard entity factory pattern
+     * @SuppressWarnings(PHPMD.StaticAccess) — Uuid::v4/Schema::fromRow are standard factory patterns          Schema::fromRow is a standard entity factory pattern
      */
     public function find(
         string | int $id,
@@ -564,7 +564,7 @@ class SchemaMapper extends QBMapper
      *
      * @return void
      *
-     * @SuppressWarnings(PHPMD.StaticAccess) Uuid::v4 is standard Symfony UID pattern
+     * @SuppressWarnings(PHPMD.StaticAccess) — Uuid::v4/Schema::fromRow are standard factory patterns Uuid::v4 is standard Symfony UID pattern
      */
     private function cleanObject(Schema $schema): void
     {
@@ -596,7 +596,7 @@ class SchemaMapper extends QBMapper
      *
      * @return void
      *
-     * @SuppressWarnings(PHPMD.StaticAccess) Uuid::v4 is standard Symfony UID pattern
+     * @SuppressWarnings(PHPMD.StaticAccess) — Uuid::v4/Schema::fromRow are standard factory patterns Uuid::v4 is standard Symfony UID pattern
      */
     private function ensureSchemaIdentifiers(Schema $schema): void
     {

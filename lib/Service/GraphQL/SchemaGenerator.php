@@ -51,7 +51,7 @@ use OCA\OpenRegister\Service\GraphQL\SchemaGenerator\TypeMapperHandler;
  *
  * @SuppressWarnings(PHPMD.ExcessiveClassComplexity)
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
- * @SuppressWarnings(PHPMD.StaticAccess)
+ * @SuppressWarnings(PHPMD.StaticAccess) — Type::nonNull/SchemaConfig::create are standard graphql-php patterns
  * @SuppressWarnings(PHPMD.UnusedFormalParameter)
  */
 class SchemaGenerator

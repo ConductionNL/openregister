@@ -64,7 +64,7 @@ use Symfony\Component\Yaml\Yaml;
  * @SuppressWarnings(PHPMD.UnusedPrivateField)
  * Reason: Configuration import requires comprehensive dependencies and complex validation logic.
  *         Reserved fields for future features.
- * @SuppressWarnings(PHPMD.StaticAccess)
+ * @SuppressWarnings(PHPMD.StaticAccess) — Yaml::parse is standard Symfony Yaml pattern
  * @SuppressWarnings(PHPMD.UnusedFormalParameter)
  */
 class ImportHandler
@@ -346,7 +346,7 @@ class ImportHandler
      *
      * @return array|null The decoded array or null if decoding fails.
      *
-     * @SuppressWarnings(PHPMD.StaticAccess) Yaml::parse is standard Symfony Yaml pattern
+     * @SuppressWarnings(PHPMD.StaticAccess) — Yaml::parse is standard Symfony Yaml pattern Yaml::parse is standard Symfony Yaml pattern
      */
     public function decode(string $data, ?string $type): ?array
     {

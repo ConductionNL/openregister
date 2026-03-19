@@ -39,7 +39,7 @@ use Twig\Loader\ArrayLoader;
  * @package OCA\OpenRegister\Service
  *
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
- * @SuppressWarnings(PHPMD.StaticAccess)
+ * @SuppressWarnings(PHPMD.StaticAccess) — JWKFactory uses static factory methods by design
  */
 class AuthenticationService
 {

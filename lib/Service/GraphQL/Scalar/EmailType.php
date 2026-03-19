@@ -25,7 +25,7 @@ use GraphQL\Utils\Utils;
  *
  * @psalm-suppress UnusedClass
  *
- * @SuppressWarnings(PHPMD.StaticAccess)
+ * @SuppressWarnings(PHPMD.StaticAccess) — Utils::printSafe is standard webonyx/graphql-php pattern
  * @SuppressWarnings(PHPMD.UnusedFormalParameter)
  */
 class EmailType extends ScalarType

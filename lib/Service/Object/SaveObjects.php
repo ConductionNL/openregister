@@ -88,7 +88,7 @@ use Symfony\Component\Uid\Uuid;
  * @SuppressWarnings(PHPMD.CyclomaticComplexity)
  * @SuppressWarnings(PHPMD.NPathComplexity)
  * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
- * @SuppressWarnings(PHPMD.StaticAccess)
+ * @SuppressWarnings(PHPMD.StaticAccess) — Uuid::v4/isValid are standard Symfony UID patterns
  * @SuppressWarnings(PHPMD.UnusedFormalParameter)
  */
 class SaveObjects

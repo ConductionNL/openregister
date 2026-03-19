@@ -37,7 +37,7 @@ use OCP\IRequest;
  *
  * @package OCA\OpenRegister\Middleware
  *
- * @SuppressWarnings(PHPMD.StaticAccess)
+ * @SuppressWarnings(PHPMD.StaticAccess) — LanguageService::parseAcceptLanguageHeader is a stateless utility
  */
 class LanguageMiddleware extends Middleware
 {

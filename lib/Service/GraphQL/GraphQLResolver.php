@@ -45,7 +45,7 @@ use Psr\Log\LoggerInterface;
  * @SuppressWarnings(PHPMD.ExcessiveClassComplexity)
  * @SuppressWarnings(PHPMD.CyclomaticComplexity)
  * @SuppressWarnings(PHPMD.NPathComplexity)
- * @SuppressWarnings(PHPMD.StaticAccess)
+ * @SuppressWarnings(PHPMD.StaticAccess) — GraphQLErrorFormatter uses static factory methods by design
  * @SuppressWarnings(PHPMD.UnusedFormalParameter)
  */
 class GraphQLResolver

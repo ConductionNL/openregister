@@ -25,7 +25,7 @@ use OCA\OpenRegister\Exception\NotAuthorizedException;
  *
  * @psalm-suppress UnusedClass
  *
- * @SuppressWarnings(PHPMD.StaticAccess)
+ * @SuppressWarnings(PHPMD.StaticAccess) — FormattedError::createFromException is standard graphql-php pattern
  */
 class GraphQLErrorFormatter
 {
