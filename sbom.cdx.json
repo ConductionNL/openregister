@@ -2,10 +2,10 @@
   "$schema": "http://cyclonedx.org/schema/bom-1.5.schema.json",
   "bomFormat": "CycloneDX",
   "specVersion": "1.5",
-  "serialNumber": "urn:uuid:3c7a92f0-762c-4a0f-9402-c58ab7bbf3dd",
+  "serialNumber": "urn:uuid:cadeae51-63b3-41e2-973b-12a1e65f0878",
   "version": 1,
   "metadata": {
-    "timestamp": "2026-03-19T15:04:20Z",
+    "timestamp": "2026-03-19T15:23:31Z",
     "tools": [
       {
         "name": "composer",
@@ -82,10 +82,10 @@
       }
     ],
     "component": {
-      "bom-ref": "conductionnl/openregister-dev-feature/REGISTERS-478/organisaties-page",
+      "bom-ref": "conductionnl/openregister-dev-feature/nextcloud-vue-package-usage",
       "type": "application",
       "name": "openregister",
-      "version": "dev-feature/REGISTERS-478/organisaties-page",
+      "version": "dev-feature/nextcloud-vue-package-usage",
       "group": "conductionnl",
       "description": "Quickly build data registers based on schema.json",
       "author": "Conduction b.v.",
@@ -96,15 +96,15 @@
           }
         }
       ],
-      "purl": "pkg:composer/conductionnl/openregister@dev-feature/REGISTERS-478/organisaties-page",
+      "purl": "pkg:composer/conductionnl/openregister@dev-feature/nextcloud-vue-package-usage",
       "properties": [
         {
           "name": "cdx:composer:package:distReference",
-          "value": "e705f495770e59597e859c070944ad94b542661a"
+          "value": "e47a59d78ad7687e37dcfb2399e6db261adc88e0"
         },
         {
           "name": "cdx:composer:package:sourceReference",
-          "value": "e705f495770e59597e859c070944ad94b542661a"
+          "value": "e47a59d78ad7687e37dcfb2399e6db261adc88e0"
         },
         {
           "name": "cdx:composer:package:type",
@@ -55484,7 +55484,7 @@
       "ref": "webonyx/graphql-php-15.31.1.0"
     },
     {
-      "ref": "conductionnl/openregister-dev-feature/REGISTERS-478/organisaties-page",
+      "ref": "conductionnl/openregister-dev-feature/nextcloud-vue-package-usage",
       "dependsOn": [
         "adbario/php-dot-notation-3.3.0.0",
         "elasticsearch/elasticsearch-8.19.0.0",
