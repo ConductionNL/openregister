@@ -3,187 +3,133 @@ import { applicationStore, organisationStore, navigationStore } from '../../stor
 </script>
 
 <template>
-	<NcDialog :name="applicationStore.applicationItem?.uuid ? 'Edit Application' : 'Create Application'"
-		:open="true"
-		size="large"
-		:can-close="true"
-		@update:open="handleDialogOpen">
-		<NcNoteCard v-if="success" type="success">
-			<p>Application successfully {{ applicationStore.applicationItem?.uuid ? 'updated' : 'created' }}</p>
-		</NcNoteCard>
-		<NcNoteCard v-if="error" type="error">
-			<p>{{ error }}</p>
-		</NcNoteCard>
-		<div v-if="!success">
-			<!-- Tabs -->
-			<div class="tabContainer">
-				<BTabs v-model="activeTab" content-class="mt-3" justified>
-					<BTab active>
-						<template #title>
-							<Cog :size="16" />
-							<span>Settings</span>
-						</template>
-						<div class="form-editor">
-							<NcTextField
-								:disabled="loading"
-								label="Name *"
-								:value.sync="applicationItem.name"
-								:error="!applicationItem.name.trim()"
-								placeholder="Enter application name" />
+	<CnTabbedFormDialog
+		ref="dialog"
+		:tabs="dialogTabs"
+		:item="applicationStore.applicationItem?.uuid ? applicationStore.applicationItem : null"
+		entity-name="Application"
+		:show-create-another="true"
+		:disable-save="!applicationItem.name.trim()"
+		@confirm="saveApplication"
+		@close="closeModal"
+		@reset="resetForm">
+		<!-- Settings Tab -->
+		<template #tab-settings="{ loading: dialogLoading }">
+			<NcTextField
+				:disabled="dialogLoading"
+				label="Name *"
+				:value.sync="applicationItem.name"
+				:error="!applicationItem.name.trim()"
+				placeholder="Enter application name" />
 
-							<NcTextArea
-								:disabled="loading"
-								label="Description"
-								:value.sync="applicationItem.description"
-								placeholder="Enter application description (optional)"
-								:rows="4" />
+			<NcTextArea
+				:disabled="dialogLoading"
+				label="Description"
+				:value.sync="applicationItem.description"
+				placeholder="Enter application description (optional)"
+				:rows="4" />
 
-							<!-- Organisation is automatically set to active organisation by backend -->
+			<!-- Organisation is automatically set to active organisation by backend -->
 
-							<div class="groups-select-container">
-								<label class="groups-label">Nextcloud Groups</label>
-								<NcSelect
-									v-model="selectedGroups"
-									:disabled="loading || loadingGroups"
-									:options="availableGroups"
-									label="name"
-									track-by="id"
-									:multiple="true"
-									:label-outside="true"
-									:filterable="false"
-									placeholder="Search groups..."
-									@search-change="searchGroups"
-									@input="updateGroups">
-									<template #option="{ name }">
-										<div class="group-option">
-											<span class="group-name">{{ name }}</span>
-										</div>
-									</template>
-									<template #no-options>
-										<span v-if="loadingGroups">Loading groups...</span>
-										<span v-else>No groups found. Try a different search.</span>
-									</template>
-								</NcSelect>
-								<p class="field-hint">
-									Only members of selected groups can access this application
-								</p>
-							</div>
+			<div class="groups-select-container">
+				<label class="groups-label">Nextcloud Groups</label>
+				<NcSelect
+					v-model="selectedGroups"
+					:disabled="dialogLoading || loadingGroups"
+					:options="availableGroups"
+					label="name"
+					track-by="id"
+					:multiple="true"
+					:label-outside="true"
+					:filterable="false"
+					placeholder="Search groups..."
+					@search-change="searchGroups"
+					@input="updateGroups">
+					<template #option="{ name }">
+						<div class="group-option">
+							<span class="group-name">{{ name }}</span>
 						</div>
-					</BTab>
-
-					<BTab>
-						<template #title>
-							<Database :size="16" />
-							<span>Quota</span>
-						</template>
-						<div class="form-editor">
-							<NcTextField
-								:disabled="loading"
-								label="Storage Quota (MB)"
-								type="number"
-								placeholder="0 = unlimited"
-								:value="storageQuotaMB"
-								@update:value="updateStorageQuota" />
-
-							<NcTextField
-								:disabled="loading"
-								label="Bandwidth Quota (MB/month)"
-								type="number"
-								placeholder="0 = unlimited"
-								:value="bandwidthQuotaMB"
-								@update:value="updateBandwidthQuota" />
-
-							<NcTextField
-								:disabled="loading"
-								label="API Request Quota (requests/day)"
-								type="number"
-								placeholder="0 = unlimited"
-								:value="applicationItem.quota?.requests || 0"
-								@update:value="updateRequestQuota" />
-
-							<NcTextField
-								:disabled="loading"
-								label="User Quota"
-								type="number"
-								placeholder="0 = unlimited (not applicable for applications)"
-								:value="applicationItem.quota?.users || 0"
-								@update:value="updateUserQuota" />
-
-							<NcTextField
-								:disabled="loading"
-								label="Group Quota"
-								type="number"
-								placeholder="0 = unlimited"
-								:value="applicationItem.quota?.groups || 0"
-								@update:value="updateGroupQuota" />
-						</div>
-					</BTab>
-
-					<BTab>
-						<template #title>
-							<Shield :size="16" />
-							<span>Security</span>
-						</template>
-						<div class="security-section">
-							<div class="rbac-container">
-								<div class="rbac-section">
-									<p class="rbac-description">
-										Configure CRUD permissions for this application.
-										Empty permissions = open access for all application groups.
-										The 'admin' group always has full access.
-									</p>
-
-									<RbacTable
-										entity-type="application"
-										:authorization="applicationItem.authorization"
-										:available-groups="availableGroups"
-										:organisation-groups="applicationItem.groups || []"
-										@update="updateApplicationPermission" />
-								</div>
-							</div>
-						</div>
-					</BTab>
-				</BTabs>
+					</template>
+					<template #no-options>
+						<span v-if="loadingGroups">Loading groups...</span>
+						<span v-else>No groups found. Try a different search.</span>
+					</template>
+				</NcSelect>
+				<p class="field-hint">
+					Only members of selected groups can access this application
+				</p>
 			</div>
-		</div>
-
-		<template #actions>
-			<NcButton @click="closeModal">
-				<template #icon>
-					<Cancel :size="20" />
-				</template>
-				{{ success ? 'Close' : 'Cancel' }}
-			</NcButton>
-			<NcButton v-if="!success"
-				:disabled="loading || !applicationItem.name.trim()"
-				type="primary"
-				@click="saveApplication()">
-				<template #icon>
-					<NcLoadingIcon v-if="loading" :size="20" />
-					<ContentSaveOutline v-if="!loading && applicationStore.applicationItem?.uuid" :size="20" />
-					<Plus v-if="!loading && !applicationStore.applicationItem?.uuid" :size="20" />
-				</template>
-				{{ applicationStore.applicationItem?.uuid ? 'Save' : 'Create' }}
-			</NcButton>
 		</template>
-	</NcDialog>
+
+		<!-- Quota Tab -->
+		<template #tab-quota="{ loading: dialogLoading }">
+			<NcTextField
+				:disabled="dialogLoading"
+				label="Storage Quota (MB)"
+				type="number"
+				placeholder="0 = unlimited"
+				:value="storageQuotaMB"
+				@update:value="updateStorageQuota" />
+
+			<NcTextField
+				:disabled="dialogLoading"
+				label="Bandwidth Quota (MB/month)"
+				type="number"
+				placeholder="0 = unlimited"
+				:value="bandwidthQuotaMB"
+				@update:value="updateBandwidthQuota" />
+
+			<NcTextField
+				:disabled="dialogLoading"
+				label="API Request Quota (requests/day)"
+				type="number"
+				placeholder="0 = unlimited"
+				:value="applicationItem.quota?.requests || 0"
+				@update:value="updateRequestQuota" />
+
+			<NcTextField
+				:disabled="dialogLoading"
+				label="User Quota"
+				type="number"
+				placeholder="0 = unlimited (not applicable for applications)"
+				:value="applicationItem.quota?.users || 0"
+				@update:value="updateUserQuota" />
+
+			<NcTextField
+				:disabled="dialogLoading"
+				label="Group Quota"
+				type="number"
+				placeholder="0 = unlimited"
+				:value="applicationItem.quota?.groups || 0"
+				@update:value="updateGroupQuota" />
+		</template>
+
+		<!-- Security Tab -->
+		<template #tab-security>
+			<p class="rbac-description">
+				Configure CRUD permissions for this application.
+				Empty permissions = open access for all application groups.
+				The 'admin' group always has full access.
+			</p>
+
+			<RbacTable
+				entity-type="application"
+				:authorization="applicationItem.authorization"
+				:available-groups="availableGroups"
+				:organisation-groups="applicationItem.groups || []"
+				@update="updateApplicationPermission" />
+		</template>
+	</CnTabbedFormDialog>
 </template>
 
 <script>
 import {
-	NcButton,
-	NcDialog,
 	NcTextField,
 	NcTextArea,
 	NcSelect,
-	NcLoadingIcon,
-	NcNoteCard,
 } from '@nextcloud/vue'
-import { BTabs, BTab } from 'bootstrap-vue'
+import { CnTabbedFormDialog } from '@conduction/nextcloud-vue'
 
-import ContentSaveOutline from 'vue-material-design-icons/ContentSaveOutline.vue'
-import Cancel from 'vue-material-design-icons/Cancel.vue'
-import Plus from 'vue-material-design-icons/Plus.vue'
 import Cog from 'vue-material-design-icons/Cog.vue'
 import Database from 'vue-material-design-icons/Database.vue'
 import Shield from 'vue-material-design-icons/Shield.vue'
@@ -193,27 +139,14 @@ import RbacTable from '../../components/RbacTable.vue'
 export default {
 	name: 'EditApplication',
 	components: {
-		NcDialog,
+		CnTabbedFormDialog,
 		NcTextField,
 		NcTextArea,
 		NcSelect,
-		NcButton,
-		NcLoadingIcon,
-		NcNoteCard,
-		BTabs,
-		BTab,
 		RbacTable,
-		// Icons
-		ContentSaveOutline,
-		Cancel,
-		Plus,
-		Cog,
-		Database,
-		Shield,
 	},
 	data() {
 		return {
-			activeTab: 0,
 			applicationItem: {
 				name: '',
 				description: '',
@@ -237,13 +170,21 @@ export default {
 			availableGroups: [],
 			loadingGroups: false,
 			groupSearchDebounce: null,
-			success: false,
-			loading: false,
-			error: false,
-			closeModalTimeout: null,
 		}
 	},
 	computed: {
+		/**
+		 * Tab definitions for CnTabbedFormDialog
+		 *
+		 * @return {Array} Tab configuration
+		 */
+		dialogTabs() {
+			return [
+				{ id: 'settings', title: 'Settings', icon: Cog },
+				{ id: 'quota', title: 'Quota', icon: Database },
+				{ id: 'security', title: 'Security', icon: Shield },
+			]
+		},
 		storageQuotaMB() {
 			if (!this.applicationItem.quota?.storage) return 0
 			return Math.round(this.applicationItem.quota.storage / (1024 * 1024))
@@ -253,7 +194,7 @@ export default {
 			return Math.round(this.applicationItem.quota.bandwidth / (1024 * 1024))
 		},
 		filteredAvailableGroups() {
-		// Filter available groups to only show groups assigned to the application
+			// Filter available groups to only show groups assigned to the application
 			if (!this.applicationItem.groups || this.applicationItem.groups.length === 0) {
 				return this.availableGroups
 			}
@@ -300,7 +241,7 @@ export default {
 					this.initializeApplicationItem()
 				}).catch(error => {
 					console.error('Error loading Nextcloud groups:', error)
-					this.error = 'Failed to load Nextcloud groups'
+					this.$refs.dialog.setResult({ error: 'Failed to load Nextcloud groups' })
 					this.loadingGroups = false
 				})
 			}
@@ -403,6 +344,33 @@ export default {
 		},
 
 		/**
+		 * Reset form data for "create another" mode
+		 *
+		 * @return {void}
+		 */
+		resetForm() {
+			this.applicationItem = {
+				name: '',
+				description: '',
+				quota: {
+					storage: 0,
+					bandwidth: 0,
+					requests: 0,
+					users: 0,
+					groups: 0,
+				},
+				groups: [],
+				authorization: {
+					create: [],
+					read: [],
+					update: [],
+					delete: [],
+				},
+			}
+			this.selectedGroups = []
+		},
+
+		/**
 		 * Update groups selection
 		 *
 		 * @param {Array} groups - Selected groups
@@ -410,18 +378,6 @@ export default {
 		 */
 		updateGroups(groups) {
 			this.selectedGroups = groups || []
-			// Store only the group IDs, not the full objects
-			this.applicationItem.groups = this.selectedGroups.map(group => group.id)
-		},
-
-		/**
-		 * Remove a group from selection
-		 *
-		 * @param {object} groupToRemove - Group to remove
-		 * @return {void}
-		 */
-		removeGroup(groupToRemove) {
-			this.selectedGroups = this.selectedGroups.filter(g => g.id !== groupToRemove.id)
 			// Store only the group IDs, not the full objects
 			this.applicationItem.groups = this.selectedGroups.map(group => group.id)
 		},
@@ -454,11 +410,11 @@ export default {
 			// Update the permission
 			const groupIndex = this.applicationItem.authorization[action].indexOf(groupId)
 			if (hasPermission && groupIndex === -1) {
-			// Add the group
+				// Add the group
 				this.applicationItem.authorization[action].push(groupId)
 				console.info(`Added ${groupId} to ${action}:`, this.applicationItem.authorization[action])
 			} else if (!hasPermission && groupIndex !== -1) {
-			// Remove the group
+				// Remove the group
 				this.applicationItem.authorization[action].splice(groupIndex, 1)
 				console.info(`Removed ${groupId} from ${action}:`, this.applicationItem.authorization[action])
 			}
@@ -474,7 +430,7 @@ export default {
 		 * @return {void}
 		 */
 		updateStorageQuota(value) {
-		// Convert MB to bytes (0 = unlimited)
+			// Convert MB to bytes (0 = unlimited)
 			const mbValue = value ? parseInt(value) : 0
 			if (!this.applicationItem.quota) {
 				this.applicationItem.quota = { storage: 0, bandwidth: 0, requests: 0, users: 0, groups: 0 }
@@ -489,7 +445,7 @@ export default {
 		 * @return {void}
 		 */
 		updateBandwidthQuota(value) {
-		// Convert MB to bytes (0 = unlimited)
+			// Convert MB to bytes (0 = unlimited)
 			const mbValue = value ? parseInt(value) : 0
 			if (!this.applicationItem.quota) {
 				this.applicationItem.quota = { storage: 0, bandwidth: 0, requests: 0, users: 0, groups: 0 }
@@ -518,7 +474,7 @@ export default {
 		 * @return {void}
 		 */
 		updateUserQuota(value) {
-		// 0 = unlimited (not applicable for applications, but kept for consistency)
+			// 0 = unlimited (not applicable for applications, but kept for consistency)
 			if (!this.applicationItem.quota) {
 				this.applicationItem.quota = { storage: 0, bandwidth: 0, requests: 0, users: 0, groups: 0 }
 			}
@@ -532,7 +488,7 @@ export default {
 		 * @return {void}
 		 */
 		updateGroupQuota(value) {
-		// 0 = unlimited
+			// 0 = unlimited
 			if (!this.applicationItem.quota) {
 				this.applicationItem.quota = { storage: 0, bandwidth: 0, requests: 0, users: 0, groups: 0 }
 			}
@@ -545,13 +501,9 @@ export default {
 		 * @return {void}
 		 */
 		closeModal() {
-			this.success = false
-			this.error = null
 			this.selectedGroups = []
-			this.activeTab = 0
 			navigationStore.setModal(false)
 			navigationStore.setDialog(false)
-			clearTimeout(this.closeModalTimeout)
 		},
 
 		/**
@@ -560,13 +512,9 @@ export default {
 		 * @return {Promise<void>}
 		 */
 		async saveApplication() {
-			this.loading = true
-			this.error = null
-
 			// Validate required fields
 			if (!this.applicationItem.name.trim()) {
-				this.error = 'Application name is required'
-				this.loading = false
+				this.$refs.dialog.setResult({ error: 'Application name is required' })
 				return
 			}
 
@@ -575,31 +523,15 @@ export default {
 					...this.applicationItem,
 				})
 
-				this.success = response.ok
-				this.error = false
-
 				if (response.ok) {
-					this.closeModalTimeout = setTimeout(this.closeModal, 2000)
+					this.$refs.dialog.setResult({ success: true })
 				}
 
 			} catch (error) {
-				this.success = false
-				this.error = error.message || 'An error occurred while saving the application'
-			} finally {
-				this.loading = false
-			}
-		},
-
-		/**
-		 * Handle dialog open/close event
-		 *
-		 * @param {boolean} isOpen - Whether the dialog is open
-		 * @return {void}
-		 */
-		handleDialogOpen(isOpen) {
-			// Only close the modal if the dialog is being closed (isOpen = false)
-			if (!isOpen) {
-				this.closeModal()
+				console.error('Error saving application:', error)
+				this.$refs.dialog.setResult({
+					error: error.message || 'An error occurred while saving the application',
+				})
 			}
 		},
 	},
@@ -607,41 +539,7 @@ export default {
 </script>
 
 <style scoped>
-/* EditApplication-specific styles */
-.tabContainer {
-	margin-top: 20px;
-}
-
-/* Tab title styling with icons */
-.tabContainer :deep(.nav-link) {
-	display: flex;
-	align-items: center;
-	gap: 8px;
-	justify-content: center;
-}
-
-.form-editor {
-	display: flex;
-	flex-direction: column;
-	gap: 16px;
-	padding: 16px 0;
-}
-
-.option-content {
-	display: flex;
-	flex-direction: column;
-	gap: 4px;
-}
-
-.option-title {
-	font-weight: 500;
-	color: var(--color-main-text);
-}
-
-.option-description {
-	font-size: 12px;
-	color: var(--color-text-lighter);
-}
+/* Application-specific styles (tab shell handled by CnTabbedFormDialog) */
 
 .groups-select-container {
 	display: flex;
@@ -671,87 +569,9 @@ export default {
 	font-weight: 500;
 }
 
-.security-section {
-	display: flex;
-	flex-direction: column;
-	gap: 16px;
-	padding: 16px 0;
-}
-
-.rbac-container {
-	display: flex;
-	flex-direction: column;
-	gap: 16px;
-	padding: 0;
-}
-
-.rbac-section {
-	display: flex;
-	flex-direction: column;
-	gap: 12px;
-}
-
 .rbac-description {
 	font-size: 14px;
 	color: var(--color-text-lighter);
 	margin: 0 0 16px 0;
-}
-
-.loading-groups {
-	display: flex;
-	align-items: center;
-	gap: 8px;
-	color: var(--color-text-lighter);
-	padding: 16px;
-}
-
-.groups-list {
-	display: flex;
-	flex-direction: column;
-	gap: 12px;
-}
-
-.groups-list h3 {
-	margin: 0;
-	font-size: 16px;
-	font-weight: 500;
-	color: var(--color-main-text);
-}
-
-.group-items {
-	display: flex;
-	flex-direction: column;
-	gap: 8px;
-}
-
-.group-item {
-	display: flex;
-	align-items: center;
-	justify-content: space-between;
-	padding: 8px 12px;
-	background-color: var(--color-background-hover);
-	border-radius: var(--border-radius);
-}
-
-.group-badge {
-	display: inline-flex;
-	align-items: center;
-	padding: 4px 12px;
-	background-color: var(--color-primary-element-light);
-	color: var(--color-primary-element-text);
-	border-radius: 16px;
-	font-size: 13px;
-	font-weight: 500;
-}
-
-.no-groups {
-	padding: 16px;
-	text-align: center;
-	color: var(--color-text-lighter);
-	font-style: italic;
-}
-
-.no-groups p {
-	margin: 0;
 }
 </style>
