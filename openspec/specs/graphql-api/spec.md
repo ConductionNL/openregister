@@ -1,8 +1,8 @@
-# GraphQL API
-
 ---
 status: implemented
 ---
+# GraphQL API
+
 
 ## Purpose
 
