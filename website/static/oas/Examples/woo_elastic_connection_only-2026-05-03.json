@@ -1131,7 +1131,44 @@
             }
         },
         "jobs": [],
-        "registers": [],
+        "registers": {
+            "woo": {
+                "slug": "woo",
+                "title": "Woo",
+                "version": "1.0.6",
+                "description": "Woo-register met TOOI-informatiecategorie\u00ebn",
+                "schemas": [
+                    "vergaderstukken_decentrale_overheden",
+                    "subsidieverplichtingen_anders_dan_met_beschikking",
+                    "overige_besluiten_van_algemene_strekking",
+                    "organisatie_en_werkwijze",
+                    "ontwerpen_van_wet_en_regelgeving_met_adviesaanvraag",
+                    "onderzoeksrapporten",
+                    "klachtoordelen",
+                    "wetten_en_algemeen_verbindende_voorschriften",
+                    "woo_verzoeken_en_besluiten",
+                    "vergaderstukken_staten_generaal",
+                    "convenanten",
+                    "agendas_en_besluitenlijsten_bestuurscolleges",
+                    "adviezen",
+                    "bereikbaarheidsgegevens",
+                    "beschikkingen",
+                    "bij-vertegenwoordigende-organen-ingekomen-stukken",
+                    "jaarplan-of-jaarverslag"
+                ],
+                "source": "internal",
+                "tablePrefix": "",
+                "folder": "98",
+                "updated": "2025-07-04T13:34:03+00:00",
+                "created": "2025-05-26T19:17:59+00:00",
+                "owner": "",
+                "application": null,
+                "organisation": null,
+                "authorization": null,
+                "groups": null,
+                "deleted": null
+            }
+        },
         "schemas": [],
         "objects": []
     },
