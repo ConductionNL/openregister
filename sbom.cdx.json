@@ -2,14 +2,14 @@
   "$schema": "http://cyclonedx.org/schema/bom-1.5.schema.json",
   "bomFormat": "CycloneDX",
   "specVersion": "1.5",
-  "serialNumber": "urn:uuid:f25e16e5-1fcc-49c6-9a3f-600d8e7da1da",
+  "serialNumber": "urn:uuid:cadeae51-63b3-41e2-973b-12a1e65f0878",
   "version": 1,
   "metadata": {
-    "timestamp": "2026-03-17T14:49:11Z",
+    "timestamp": "2026-03-19T15:23:31Z",
     "tools": [
       {
         "name": "composer",
-        "version": "2.9.3"
+        "version": "2.9.5"
       },
       {
         "vendor": "cyclonedx",
@@ -82,10 +82,10 @@
       }
     ],
     "component": {
-      "bom-ref": "conductionnl/openregister-dev-feature/REGISTERS-479/Applicaties-page",
+      "bom-ref": "conductionnl/openregister-dev-feature/nextcloud-vue-package-usage",
       "type": "application",
       "name": "openregister",
-      "version": "dev-feature/REGISTERS-479/Applicaties-page",
+      "version": "dev-feature/nextcloud-vue-package-usage",
       "group": "conductionnl",
       "description": "Quickly build data registers based on schema.json",
       "author": "Conduction b.v.",
@@ -96,15 +96,15 @@
           }
         }
       ],
-      "purl": "pkg:composer/conductionnl/openregister@dev-feature/REGISTERS-479/Applicaties-page",
+      "purl": "pkg:composer/conductionnl/openregister@dev-feature/nextcloud-vue-package-usage",
       "properties": [
         {
           "name": "cdx:composer:package:distReference",
-          "value": "b64f5436b4023376bbb8eff5d47e65044e662ab3"
+          "value": "e47a59d78ad7687e37dcfb2399e6db261adc88e0"
         },
         {
           "name": "cdx:composer:package:sourceReference",
-          "value": "b64f5436b4023376bbb8eff5d47e65044e662ab3"
+          "value": "e47a59d78ad7687e37dcfb2399e6db261adc88e0"
         },
         {
           "name": "cdx:composer:package:type",
@@ -55484,7 +55484,7 @@
       "ref": "webonyx/graphql-php-15.31.1.0"
     },
     {
-      "ref": "conductionnl/openregister-dev-feature/REGISTERS-479/Applicaties-page",
+      "ref": "conductionnl/openregister-dev-feature/nextcloud-vue-package-usage",
       "dependsOn": [
         "adbario/php-dot-notation-3.3.0.0",
         "elasticsearch/elasticsearch-8.19.0.0",

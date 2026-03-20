@@ -22,12 +22,15 @@ import { organisationStore, navigationStore } from '../../store/store.js'
 			:show-mass-export="false"
 			:show-mass-copy="false"
 			:show-mass-delete="false"
+			mass-action-name-field="name"
 			show-view-toggle
 			add-label="Organisatie Aanmaken"
 			row-key="uuid"
 			empty-text="Geen organisaties gevonden"
 			:row-class="getRowClass"
+			:actions="rowActions"
 			:refreshing="isRefreshing"
+			@delete="handleDelete"
 			@add="createOrganisation"
 			@refresh="handleRefresh"
 			@page-changed="onPageChanged"
@@ -72,13 +75,7 @@ import { organisationStore, navigationStore } from '../../store/store.js'
 				<OrganisationCard
 					:item="object"
 					:is-active="isActiveOrganisation(object)"
-					:can-edit="canEditOrganisation(object)"
-					:can-delete="canDeleteOrganisation(object)"
-					@view="viewOrganisation"
-					@set-active="setActiveOrganisation"
-					@edit="editOrganisation"
-					@go-to="goToOrganisation"
-					@add-user="openJoinModal" />
+					:actions="rowActions" />
 			</template>
 
 			<!-- Custom column: name with badges -->
@@ -113,62 +110,6 @@ import { organisationStore, navigationStore } from '../../store/store.js'
 			<template #column-updated="{ row }">
 				{{ row.updated ? formatDate(row.updated) : '-' }}
 			</template>
-
-			<!-- Custom row actions -->
-			<template #row-actions="{ row }">
-				<NcActions :primary="false">
-					<template #icon>
-						<DotsHorizontal :size="20" />
-					</template>
-					<NcActionButton close-after-click
-						@click="viewOrganisation(row)">
-						<template #icon>
-							<Eye :size="20" />
-						</template>
-						Bekijken
-					</NcActionButton>
-					<NcActionButton v-if="!isActiveOrganisation(row)"
-						close-after-click
-						@click="setActiveOrganisation(row.uuid)">
-						<template #icon>
-							<Check :size="20" />
-						</template>
-						Instellen als Actief
-					</NcActionButton>
-					<NcActionButton v-if="canEditOrganisation(row)"
-						close-after-click
-						@click="editOrganisation(row)">
-						<template #icon>
-							<Pencil :size="20" />
-						</template>
-						Bewerken
-					</NcActionButton>
-					<NcActionButton v-if="row.website"
-						close-after-click
-						@click="goToOrganisation(row)">
-						<template #icon>
-							<OpenInNew :size="20" />
-						</template>
-						Ga naar organisatie
-					</NcActionButton>
-					<NcActionButton
-						close-after-click
-						@click="openJoinModal(row)">
-						<template #icon>
-							<AccountMultiplePlus :size="20" />
-						</template>
-						Add User
-					</NcActionButton>
-					<NcActionButton v-if="canDeleteOrganisation(row)"
-						close-after-click
-						@click="organisationStore.setOrganisationItem(row); navigationStore.setModal('deleteOrganisation')">
-						<template #icon>
-							<TrashCanOutline :size="20" />
-						</template>
-						Verwijderen
-					</NcActionButton>
-				</NcActions>
-			</template>
 		</CnIndexPage>
 
 		<!-- Organisation Switcher Modal -->
@@ -197,9 +138,8 @@ import { organisationStore, navigationStore } from '../../store/store.js'
 </template>
 
 <script>
-import { NcAppContent, NcActions, NcActionButton, NcButton, NcModal } from '@nextcloud/vue'
+import { NcAppContent, NcButton, NcModal } from '@nextcloud/vue'
 import { CnIndexPage } from '@conduction/nextcloud-vue'
-import DotsHorizontal from 'vue-material-design-icons/DotsHorizontal.vue'
 import Pencil from 'vue-material-design-icons/Pencil.vue'
 import TrashCanOutline from 'vue-material-design-icons/TrashCanOutline.vue'
 import AccountPlus from 'vue-material-design-icons/AccountPlus.vue'
@@ -217,20 +157,11 @@ export default {
 	components: {
 		NcAppContent,
 		CnIndexPage,
-		NcActions,
-		NcActionButton,
 		NcButton,
 		NcModal,
 		OrganisationCard,
-		DotsHorizontal,
-		Pencil,
-		TrashCanOutline,
 		AccountPlus,
-		AccountMultiplePlus,
 		SwapHorizontal,
-		Eye,
-		OpenInNew,
-		Check,
 	},
 	data() {
 		return {
@@ -248,6 +179,45 @@ export default {
 				{ key: 'status', label: 'Status' },
 				{ key: 'created', label: 'Aangemaakt', sortable: true },
 				{ key: 'updated', label: 'Bijgewerkt', sortable: true },
+			]
+		},
+		rowActions() {
+			return [
+				{
+					label: 'Bekijken',
+					icon: Eye,
+					disabled: true,
+					handler: (row) => this.viewOrganisation(row),
+				},
+				{
+					label: 'Instellen als Actief',
+					icon: Check,
+					disabled: (row) => this.isActiveOrganisation(row),
+					handler: (row) => this.setActiveOrganisation(row.uuid),
+				},
+				{
+					label: 'Bewerken',
+					icon: Pencil,
+					disabled: (row) => !this.canEditOrganisation(row),
+					handler: (row) => this.editOrganisation(row),
+				},
+				{
+					label: 'Ga naar organisatie',
+					icon: OpenInNew,
+					disabled: (row) => !row.website,
+					handler: (row) => this.goToOrganisation(row),
+				},
+				{
+					label: 'Add User',
+					icon: AccountMultiplePlus,
+					handler: (row) => this.openJoinModal(row),
+				},
+				{
+					label: 'Verwijderen',
+					icon: TrashCanOutline,
+					destructive: true,
+					handler: (row) => this.$refs.indexPage.openDeleteDialog(row),
+				},
 			]
 		},
 		paginationData() {
@@ -282,9 +252,22 @@ export default {
 			return organisation.owner === 'system'
 				   || organisation.owner === this.getCurrentUser()
 		},
-		canDeleteOrganisation(organisation) {
-			return !organisation.isDefault
-				   && organisation.owner === this.getCurrentUser()
+		async handleDelete(id) {
+			const organisation = organisationStore.userStats.list.find(
+				(org) => String(org.id) === String(id),
+			)
+			if (!organisation) {
+				this.$refs.indexPage.setSingleDeleteResult({ error: 'Organisation not found' })
+				return
+			}
+			try {
+				const { response } = await organisationStore.deleteOrganisation(organisation)
+				this.$refs.indexPage.setSingleDeleteResult({ success: response.ok })
+			} catch (error) {
+				this.$refs.indexPage.setSingleDeleteResult({
+					error: error.message || 'An error occurred while deleting the organisation',
+				})
+			}
 		},
 		async setActiveOrganisation(uuid) {
 			try {
