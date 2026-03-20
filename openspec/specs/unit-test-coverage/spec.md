@@ -2,581 +2,483 @@
 status: active
 ---
 
-# Unit Test Coverage to 100%
-
-Achieve 100% unit test code coverage for all PHP source files in `lib/` (excluding `Migration/` and `AppInfo/Application.php`). Tests SHALL exercise every code path — not just the happy flow, but all branches, error paths, edge cases, and boundary conditions.
-
-## Current State
-
-- **Phase 1 COMPLETE**: All 314 errors + 2 failures fixed — **1,121 tests pass** with 0 errors, 0 failures
-- **361 source files** in scope, **30 test files** exist
-- Coverage threshold is set at 75% (`composer coverage:check`)
-- Phase 2 (write ~136 new test files for ~330 untested source files) is planned
-
-## Testing Standards
-
-All unit tests SHALL follow the conventions established in the existing codebase.
-
-### Requirement: Use PHPUnit\Framework\TestCase with comprehensive mocking
-
-All unit tests in `tests/Unit/` SHALL extend `PHPUnit\Framework\TestCase` and run with `phpunit-unit.xml` using the minimal `bootstrap-unit.php`. No test SHALL depend on `Test\TestCase`, Nextcloud server bootstrap, or database connections — all external dependencies SHALL be mocked.
-
-**Established mock pattern** (from `MagicMapperTest`, `SettingsControllerTest`, `FileTextExtractionJobTest`):
+# Unit Test Coverage
 
-```php
-class ExampleServiceTest extends \PHPUnit\Framework\TestCase
-{
-    private ExampleService $service;
-    private SomeDependency&MockObject $mockDependency;
-    private LoggerInterface&MockObject $mockLogger;
-
-    protected function setUp(): void
-    {
-        parent::setUp();
-        $this->mockDependency = $this->createMock(SomeDependency::class);
-        $this->mockLogger = $this->createMock(LoggerInterface::class);
-        $this->service = new ExampleService(
-            $this->mockDependency,
-            $this->mockLogger,
-        );
-    }
-}
-```
-
-### Requirement: Test all code paths, not just the happy flow
-
-Every public method with branching logic (if/else, switch, try/catch, early returns, null checks) SHALL have tests for each branch. Coverage means every line is executed, so each conditional path needs its own test scenario.
-
-**What "all paths" means per method:**
-
-- **If/else branches**: Separate test for each branch condition
-- **Early returns**: Test the condition that triggers the early return AND the condition that continues
-- **Try/catch blocks**: Test both the success path and the exception path (using `willThrowException()` on mocks)
-- **Null coalescing / optional params**: Test with value present AND with null/missing value
-- **Loops**: Test with empty collection, single item, and multiple items
-- **Switch/match**: Test each case and the default
+## Purpose
 
-**Established pattern** (from `ConfigurationServiceTest`):
-```php
-// Test multiple branches of the same method
-public function testHasUpdateAvailable(): void {
-    $config = new Configuration();
+Achieve comprehensive unit test code coverage for all PHP source files in OpenRegister's `lib/` directory (excluding `Migration/` and `AppInfo/Application.php`), targeting 75% line and method coverage as the enforced gate with a stretch goal of 100%. This spec defines the testing standards, mocking strategies, coverage enforcement mechanisms, and per-category test requirements that ensure every code path -- happy flows, error branches, edge cases, and boundary conditions -- is exercised by automated tests. Reliable test coverage is essential for Dutch government deployments where untested features lead to regressions, broken APIs, and failed tender compliance (ref: ADR-009 Mandatory Test Coverage).
 
-    // Branch 1: No remote version → false
-    $config->setLocalVersion('1.0.0');
-    $config->setRemoteVersion(null);
-    $this->assertFalse($config->hasUpdateAvailable());
+## Requirements
 
-    // Branch 2: Same version → false
-    $config->setRemoteVersion('1.0.0');
-    $this->assertFalse($config->hasUpdateAvailable());
+### Requirement: Coverage Gate Enforcement at 75% Line and Method Coverage
 
-    // Branch 3: Newer remote → true
-    $config->setRemoteVersion('1.1.0');
-    $this->assertTrue($config->hasUpdateAvailable());
-}
-```
+The project SHALL enforce a minimum 75% line and method coverage threshold via `composer coverage:check`, which runs `scripts/coverage-guard.php` against the Clover XML report. The coverage baseline is stored in `.coverage-baseline` and SHALL NOT decrease between pull requests. When coverage improves, `composer coverage:update` SHALL update the baseline. The CI pipeline SHALL fail any PR that causes coverage to drop below the baseline. The stretch goal is 100% coverage for all in-scope files (~409 source files excluding `lib/Migration/` and `lib/AppInfo/Application.php`).
 
-### Requirement: Use data providers for parameterized scenarios
+#### Scenario: Coverage gate blocks regression
+- **GIVEN** the current coverage baseline is stored in `.coverage-baseline`
+- **WHEN** a pull request introduces code that reduces line coverage below the baseline
+- **THEN** `composer coverage:check` SHALL exit with code 1 and print a "FAIL: Coverage dropped" message
 
-When a method accepts variable input and the test logic is the same but values differ, use `#[DataProvider]` attributes with named test cases. This avoids duplicated test methods and makes failures descriptive.
+#### Scenario: Coverage gate allows improvement
+- **GIVEN** the current coverage baseline is 50%
+- **WHEN** a pull request increases line coverage to 55%
+- **THEN** `composer coverage:check` SHALL exit with code 0 and print "Coverage improved by 5%"
 
-**Established pattern** (from `MagicMapperTest`):
-```php
-#[DataProvider('registerSchemaTableNameProvider')]
-public function testGetTableNameForRegisterSchema(
-    int $registerId, int $schemaId, string $expected
-): void {
-    $result = $this->magicMapper->getTableName($registerId, $schemaId);
-    $this->assertEquals($expected, $result);
-}
+#### Scenario: Coverage baseline update after improvement
+- **GIVEN** coverage has improved from 50% to 60%
+- **WHEN** `composer coverage:update` is run with the current Clover report
+- **THEN** `.coverage-baseline` SHALL be updated to 60.00
 
-public static function registerSchemaTableNameProvider(): array {
-    return [
-        'basic_combination' => [1, 1, 'oc_openregister_table_1_1'],
-        'different_ids' => [5, 12, 'oc_openregister_table_5_12'],
-        'zero_ids' => [0, 0, 'oc_openregister_table_0_0'],
-    ];
-}
-```
+#### Scenario: Coverage reports are generated in multiple formats
+- **GIVEN** the `phpunit-unit.xml` configuration
+- **WHEN** `composer test:coverage` is run inside the Nextcloud container with PCOV enabled
+- **THEN** coverage reports SHALL be generated as Clover XML (`coverage/clover.xml`), HTML (`coverage/html/`), and text output to stdout
 
-### Requirement: Verify side effects with mock expectations
+#### Scenario: Excluded directories do not count against coverage
+- **GIVEN** the PHPUnit source configuration excludes `lib/Migration/` and `lib/AppInfo/Application.php`
+- **WHEN** coverage is calculated
+- **THEN** files in those directories SHALL NOT appear in the coverage report as uncovered
 
-Tests SHALL verify not just return values but also that the correct service/mapper methods are called with the correct arguments. Use `expects()`, `with()`, and `willReturn()` / `willThrowException()` chains.
+### Requirement: All Unit Tests SHALL Use PHPUnit\Framework\TestCase with Comprehensive Mocking
 
-**Key expectation patterns** (from `FileTextExtractionJobTest`, `SettingsControllerTest`):
+All unit tests in `tests/Unit/` SHALL extend `PHPUnit\Framework\TestCase` and run with `phpunit-unit.xml` using the `bootstrap-unit.php` bootstrap. No unit test SHALL depend on `Test\TestCase`, Nextcloud server bootstrap, or database connections -- all external dependencies SHALL be mocked using PHPUnit's `createMock()`. Mock typing SHALL use PHPUnit 10 intersection types (`ClassName&MockObject`). Tests SHALL use positional parameters only on all PHPUnit API calls, as PHPUnit 10+ marks all methods with `@no-named-arguments`.
 
-- `expects($this->once())` — method must be called exactly once
-- `expects($this->never())` — method must NOT be called (for skip/error paths)
-- `expects($this->atLeastOnce())` — called one or more times
-- `->with($this->equalTo($value))` — verify arguments
-- `->with($this->stringContains('partial'))` — partial argument matching
-- `->with($this->callback(fn($ctx) => $ctx['key'] === 'val'))` — complex argument assertions
-- `->willThrowException(new \Exception('msg'))` — simulate failures
-- `->willReturnCallback(function($arg) { ... })` — dynamic return values
+#### Scenario: Test class structure follows established pattern
+- **GIVEN** a new test class for `ExampleService`
+- **WHEN** the test class is created
+- **THEN** it SHALL extend `\PHPUnit\Framework\TestCase`, declare typed mock properties using `ClassName&MockObject`, initialize all mocks in `setUp()`, and construct the service under test with all mocked dependencies matching the constructor signature exactly
 
-### Requirement: Use real Entity instances, never mock Nextcloud entities
+#### Scenario: No Nextcloud server dependency in unit tests
+- **GIVEN** any test file in `tests/Unit/`
+- **WHEN** the test suite runs via `composer test:unit`
+- **THEN** no test SHALL require Nextcloud's `lib/base.php`, `IDBConnection`, or any live service -- all SHALL be mocked
 
-Nextcloud Entity classes use `__call` magic for getters/setters. PHPUnit 10+ cannot properly mock `__call`-based methods. All tests SHALL use real entity instances with setters instead of mocking entities.
+#### Scenario: PHPUnit API calls use positional parameters only
+- **GIVEN** a test file that calls PHPUnit assertion or mock methods
+- **WHEN** the test is authored
+- **THEN** all calls to `expects()`, `method()`, `willReturn()`, `with()`, `assertSame()`, `assertEquals()`, etc. SHALL use positional parameters, never named arguments
 
-**Critical rule:** NEVER use named arguments on Entity setters — `__call` passes `['name' => val]` but Entity's `setter()` uses `$args[0]`.
+### Requirement: Test All Code Paths Including Error Branches and Edge Cases
 
-```php
-// CORRECT — real instance with positional args
-$schema = new Schema();
-$schema->setTitle('Test Schema');
-$schema->setProperties(json_encode([['title' => 'name', 'type' => 'string']]));
+Every public method with branching logic (if/else, switch, try/catch, early returns, null checks, loops) SHALL have tests for each distinct branch. Coverage means every line is executed, so each conditional path needs its own test scenario. This includes: if/else branches (separate test per condition), early returns (test both trigger and continuation), try/catch blocks (success path and exception path via `willThrowException()`), null coalescing and optional params (with value and with null), loops (empty collection, single item, multiple items), and switch/match (each case plus default).
 
-// WRONG — mock (breaks __call magic)
-$schema = $this->createMock(Schema::class);
-$schema->method('getTitle')->willReturn('Test Schema');
+#### Scenario: If/else branches each get a dedicated test
+- **GIVEN** a service method with an if/else branch based on input validity
+- **WHEN** tests are written for this method
+- **THEN** there SHALL be at least one test for the true branch and one test for the false branch, each with descriptive naming like `testMethodNameWithValidInput` and `testMethodNameWithInvalidInput`
 
-// WRONG — named arg (breaks __call)
-$schema->setTitle(title: 'Test Schema');
-```
+#### Scenario: Try/catch exception paths are tested via mock throwing
+- **GIVEN** a service method that catches exceptions from a mapper
+- **WHEN** tests are written for the exception path
+- **THEN** the mapper mock SHALL be configured with `willThrowException(new \Exception('msg'))` and the test SHALL verify the catch block behavior (logging, error return, re-throw)
 
-**For entities that need method overrides** (e.g., to control `hasPropertyAuthorization`), use a Testable subclass:
+#### Scenario: Null and empty input edge cases are covered
+- **GIVEN** a method that accepts optional parameters
+- **WHEN** tests are written
+- **THEN** there SHALL be tests with null values, empty strings, empty arrays, and zero values to verify default/fallback behavior
 
-```php
-class TestableSchema extends Schema {
-    private bool $hasAuth = true;
-    public function setHasPropertyAuthorization(bool $v): void { $this->hasAuth = $v; }
-    public function hasPropertyAuthorization(string $p): bool { return $this->hasAuth; }
-}
-```
+#### Scenario: Loop boundary conditions are tested
+- **GIVEN** a method that iterates over a collection
+- **WHEN** tests are written
+- **THEN** there SHALL be tests with an empty collection (0 items), a single item, and multiple items to cover all loop paths
 
-### Requirement: Use real ArrayLoader instances (final class)
+### Requirement: Use Real Entity Instances, Never Mock Nextcloud Entities
 
-`Twig\Loader\ArrayLoader` is declared `final` and cannot be mocked. Tests that need a Twig loader SHALL use a real `ArrayLoader` instance.
+Nextcloud Entity classes use `__call` magic for getters/setters, which PHPUnit 10+ cannot properly mock. All tests SHALL use real entity instances with positional setter arguments. Named arguments on Entity setters are FORBIDDEN because `__call` passes `['name' => val]` but Entity's `setter()` uses `$args[0]`, causing silent data corruption. For entities that need method overrides, use a Testable subclass pattern. The Entity `$id` property is `private` in the parent class and SHALL be set via `ReflectionProperty` in tests.
 
-### Requirement: No named parameters on PHPUnit API calls
+#### Scenario: Entity created as real instance with positional args
+- **GIVEN** a test needs a `Schema` entity with specific field values
+- **WHEN** the entity is constructed
+- **THEN** it SHALL be created via `new Schema()` with setters using positional arguments (`$schema->setTitle('Test')`, not `$schema->setTitle(title: 'Test')`)
 
-PHPUnit 10+ marks all API methods with `@no-named-arguments`. Tests SHALL use positional parameters only on all PHPUnit method calls (`expects`, `method`, `willReturn`, `with`, `assertSame`, `assertEquals`, etc.).
+#### Scenario: Entity ID set via Reflection
+- **GIVEN** a test needs an entity with a specific ID
+- **WHEN** the ID is set
+- **THEN** it SHALL use `ReflectionProperty` on the `'id'` field since `$id` is `private` in `\OCP\AppFramework\Db\Entity`
 
-```php
-// CORRECT
-$mock->expects($this->once())->method('save')->willReturn($entity);
-$this->assertSame('expected', $result);
+#### Scenario: Broken setter bypassed via ReflectionProperty
+- **GIVEN** an entity setter that uses named arguments internally (e.g., `Register::setSchemas()`)
+- **WHEN** the test needs to set the field value
+- **THEN** it SHALL use `ReflectionProperty` to bypass the broken setter and test the getter separately
 
-// WRONG — named parameters
-$mock->expects(constraint: $this->once());
-$this->assertSame(expected: 'expected', actual: $result);
-```
+#### Scenario: Testable subclass for method overrides
+- **GIVEN** a test needs to control entity behavior (e.g., `hasPropertyAuthorization`)
+- **WHEN** a mock is not possible due to `__call` magic
+- **THEN** the test SHALL define a `TestableClassName extends ClassName` subclass with overridable methods
 
-### Requirement: Use Reflection for private methods when necessary
+### Requirement: Use Data Providers for Parameterized Scenarios
 
-When a public method delegates to private helpers that contain complex logic worth testing individually, use `ReflectionClass` to access them.
+When a method accepts variable input and the test logic is the same but values differ, tests SHALL use `#[DataProvider('providerName')]` attributes (PHPUnit 10 style, not `@dataProvider` annotations) with named test cases. This avoids duplicated test methods, makes failure messages descriptive, and enables testing large input spaces efficiently. Event classes, exception classes, format validators, and entity field type tests are prime candidates for DataProvider usage.
 
-**Established pattern** (from `MagicMapperTest`):
-```php
-$reflection = new \ReflectionClass($this->service);
-$method = $reflection->getMethod('privateMethodName');
-$method->setAccessible(true);
-$result = $method->invoke($this->service, $arg1, $arg2);
-```
+#### Scenario: Event classes grouped by CRUD pattern via DataProvider
+- **GIVEN** Register entity has Created, Updated, and Deleted events
+- **WHEN** tests are written
+- **THEN** a single `RegisterEventsTest` SHALL use `#[DataProvider('registerEventProvider')]` to test all three event classes with shared assertion logic (instanceof Event, getter returns same entity)
 
-### Requirement: Test naming convention
+#### Scenario: Format validator tested with valid and invalid inputs
+- **GIVEN** `BsnFormat` validates 9-digit BSN numbers with checksum
+- **WHEN** tests are written
+- **THEN** a DataProvider SHALL supply named cases: `'valid_bsn'`, `'invalid_checksum'`, `'too_short'`, `'too_long'`, `'non_numeric'`, `'empty_string'`, `'null_input'`
 
-Test methods SHALL follow `test[MethodOrBehavior][Scenario]` naming:
-- `testCreateOrganisationWithValidData` — happy path
-- `testCreateOrganisationWithEmptyName` — validation failure
-- `testCreateOrganisationWhenMapperThrows` — exception handling
-- `testDeleteOrganisationAsLastMember` — edge case
+#### Scenario: Entity field types tested across all entities
+- **GIVEN** multiple entities have similar getter/setter patterns
+- **WHEN** field type tests are parameterized
+- **THEN** DataProviders SHALL supply field name, input value, expected output, and type for each field
 
-## Phase 1: Fix Broken Existing Tests (COMPLETE)
+### Requirement: Verify Side Effects with Mock Expectations
 
-All 316 test failures have been resolved. **1,121 tests now pass with 0 errors, 0 failures.** The fixes fell into 4 categories.
+Tests SHALL verify not just return values but also that the correct service/mapper methods are called with the correct arguments. Mock expectations SHALL use `expects($this->once())` for methods that must be called exactly once, `expects($this->never())` for methods that must NOT be called (error/skip paths), `->with($this->equalTo($value))` for exact argument matching, `->with($this->callback(fn($ctx) => ...))` for complex argument assertions, and `->willThrowException()` to simulate failures. The `willReturnCallback()` pattern SHALL be used for dynamic return values.
 
-### Requirement: Fix OrganisationService constructor mismatch (245 errors)
+#### Scenario: Service method calls mapper with correct arguments
+- **GIVEN** `ObjectService::getObject()` delegates to `MagicMapper::find()`
+- **WHEN** the test calls `getObject(42)`
+- **THEN** the mapper mock SHALL have `expects($this->once())->method('find')->with($this->equalTo(42))`
 
-Four test files instantiate `OrganisationService` with the wrong number/type of constructor arguments. The constructor expects 9 parameters but tests pass 3-4.
+#### Scenario: Error path verifies logger is called
+- **GIVEN** a service method catches an exception and logs it
+- **WHEN** the exception path is triggered via `willThrowException()`
+- **THEN** the logger mock SHALL have `expects($this->once())->method('error')->with($this->stringContains('failed'))`
 
-**Constructor signature** (`lib/Service/OrganisationService.php`):
-```php
-__construct(
-    OrganisationMapper $organisationMapper,
-    IUserSession $userSession,
-    ISession $session,
-    IConfig $config,
-    IAppConfig $appConfig,
-    IGroupManager $groupManager,
-    IUserManager $userManager,
-    LoggerInterface $logger,
-    ?SettingsService $settingsService = null
-)
-```
+#### Scenario: Skip path verifies method is never called
+- **GIVEN** a controller returns early when input validation fails
+- **WHEN** invalid input triggers the early return
+- **THEN** the service mock SHALL have `expects($this->never())->method('create')`
 
-**Affected files:**
-- `tests/Unit/Service/OrganisationCrudTest.php` (11 errors)
-- `tests/Unit/Service/PerformanceScalabilityTest.php` (6 errors)
-- `tests/Unit/Service/SessionCacheManagementTest.php` (4 errors)
-- `tests/Unit/Service/UserOrganisationRelationshipTest.php` (10 errors)
-- Plus ~214 errors in other Organisation-related test files
+### Requirement: Test All Service Classes with Full Branch Coverage (~175 source files)
 
-#### Scenario: Tests create OrganisationService with correct mocks
+Service classes contain the bulk of business logic. Tests SHALL cover every public method in every service class and handler. The service layer is organized into: root services (`ObjectService`, `RegisterService`, `SchemaService`, `OrganisationService`, `ConfigurationService`, `WebhookService`, `FileService`, `IndexService`, `ImportService`, `ExportService`, `AuthenticationService`, `AuthorizationService`, `ChatService`, `VectorizationService`, `TextExtractionService`, `GraphQL/GraphQLService`, `Mcp/McpProtocolService`, and ~20 others), plus handler subdirectories (`Object/`, `File/`, `Configuration/`, `Settings/`, `Index/`, `Chat/`, `Schemas/`, `Vectorization/`, `TextExtraction/`, `GraphQL/`, `Mcp/`, `Handler/`). Each handler SHALL be tested for success, failure (mapper throws `DoesNotExistException`, `MultipleObjectsReturnedException`), empty/null input, malformed input, and each if/else/switch branch.
 
-- **WHEN** each affected test file's `setUp()` method creates an `OrganisationService`
-- **THEN** it SHALL mock and pass all 9 constructor parameters in the correct order and with correct types
-- **AND** all OrganisationService-related tests SHALL pass without TypeError
-
-### Requirement: Fix missing class references (41 errors)
-
-Tests mock classes that no longer exist in the codebase due to refactoring.
-
-#### Scenario: Update GuzzleSolrService reference (32 errors)
-
-- **GIVEN** `SettingsServiceTest.php` mocks `OCA\OpenRegister\Service\GuzzleSolrService` which does not exist
-- **WHEN** the test setUp creates service mocks
-- **THEN** it SHALL use the current class name (likely `IndexService` or `SolrBackend`) or remove the mock if the dependency was eliminated
-- **AND** the `SettingsService` constructor signature SHALL be checked and all mocks SHALL match it exactly
-
-#### Scenario: Update PublishObject reference (8 errors)
-
-- **GIVEN** `ObjectServiceRefactoredMethodsTest.php` mocks `OCA\OpenRegister\Service\Object\PublishObject` which does not exist
-- **WHEN** the test setUp creates service mocks
-- **THEN** it SHALL use `PublishHandler` (the current class name) or whichever class replaced it
-- **AND** the `ObjectService` constructor signature SHALL be verified and all mocks SHALL match
-
-#### Scenario: Fix VectorEmbeddingServiceTest base class (1 error)
-
-- **GIVEN** `VectorEmbeddingServiceTest.php` extends `Test\TestCase` (Nextcloud integration base)
-- **WHEN** this test runs in the unit test suite (which has no Nextcloud autoloader)
-- **THEN** it SHALL extend `PHPUnit\Framework\TestCase` instead, with all dependencies mocked
-
-### Requirement: Fix SemVer format validation (2 failures)
-
-#### Scenario: Valid semver versions are accepted
-
-- **GIVEN** the `SemVerFormat` validator in `lib/Formats/SemVerFormat.php`
-- **WHEN** validating standard versions like `"1.0.0"` and `"0.0.0"`
-- **THEN** they SHALL be marked as valid
-- **AND** the regex/validation logic SHALL be corrected to match the SemVer 2.0.0 specification
-
-#### Scenario: Invalid semver versions are rejected
-
-- **WHEN** validating strings like `"1.0"`, `"v1.0.0"`, `"1.0.0.0"`, `"abc"`, `""`
-- **THEN** they SHALL be marked as invalid
-
-## Phase 2: Test Untested Source Directories
-
-After Phase 1, coverage will still be low because most source directories have zero test files. Tests SHALL be added for all directories below. Every test SHALL cover all code paths in the class under test.
-
-### Requirement: Test Db entities and mappers (69 files)
-
-Unit tests SHALL cover all entity classes and their mapper classes. Entities follow a predictable pattern (getters, setters, `jsonSerialize()`) but many contain conditional logic, type coercion, or computed properties that need branch coverage.
-
-#### Scenario: Entity getters and setters — all types and edge cases
-
-- **GIVEN** any Db entity class (e.g., `Register`, `Schema`, `ObjectEntity`)
-- **WHEN** setters are called with valid data, null values, empty strings, and boundary values
-- **THEN** the corresponding getters SHALL return the expected values for each case
-- **AND** type coercion behavior SHALL be tested (e.g., string to DateTime, JSON string to array)
-
-#### Scenario: Entity JSON serialization — complete and partial data
-
-- **GIVEN** an entity with all fields populated
-- **WHEN** `jsonSerialize()` is called
-- **THEN** all fields SHALL appear in the returned array with correct types
-- **AND** when optional fields are null, they SHALL serialize as null or be omitted per the entity's logic
-
-#### Scenario: Entity default values and construction
-
-- **GIVEN** an entity class
-- **WHEN** constructed with no arguments
-- **THEN** all default values SHALL be set correctly
-- **AND** `getId()` SHALL return null for new (unsaved) entities
-
-#### Scenario: MagicMapper handlers — query building branches
-
-- **GIVEN** `MagicMapper` handlers (`MagicBulkHandler`, `MagicFacetHandler`, `MagicOrganizationHandler`, `MagicRbacHandler`, `MagicSearchHandler`)
-- **WHEN** query building methods are called with different filter combinations, empty filters, invalid filters, and combinations of search + facet + RBAC
-- **THEN** they SHALL produce correct SQL fragments and parameter bindings for each combination
-- **AND** edge cases (no filters, all filters, unknown filter keys) SHALL be handled
-
-#### Scenario: ObjectEntity handlers — all operation modes
-
-- **GIVEN** `ObjectEntity` handler classes (`BulkOperationsHandler`, `CrudHandler`, `FacetsHandler`, `LockingHandler`, `QueryBuilderHandler`, `QueryOptimizationHandler`, `StatisticsHandler`)
-- **WHEN** their public methods are called with mocked dependencies
-- **THEN** each branching path (e.g., locked vs unlocked, cached vs uncached, found vs not found) SHALL be tested
-
-### Requirement: Test Event classes (39 files)
-
-#### Scenario: Event construction and data access
-
-- **GIVEN** any event class (e.g., `ObjectCreatedEvent`, `SchemaUpdatedEvent`, `RegisterDeletedEvent`)
-- **WHEN** constructed with an entity
-- **THEN** the entity SHALL be retrievable via getter methods
-- **AND** the event SHALL be an instance of `\OCP\EventDispatcher\Event`
-
-#### Scenario: Event classes grouped by CRUD pattern
-
-- **GIVEN** most events follow a Created/Updated/Deleted pattern per entity type
-- **WHEN** testing these events
-- **THEN** use a `#[DataProvider]` to test all variants of the same entity's events in a single test class (e.g., `RegisterEventsTest` covers `RegisterCreatedEvent`, `RegisterUpdatedEvent`, `RegisterDeletedEvent`)
-
-### Requirement: Test Controller classes (51 files, 48 untested)
-
-Tests exist for `ConfigurationController`, `FilesController`, and `SettingsController`. The remaining 48 controllers need tests.
-
-#### Scenario: Controller CRUD actions — success path
-
-- **GIVEN** any API controller (e.g., `ObjectsController`, `RegistersController`, `SchemasController`)
-- **WHEN** `index()`, `show()`, `create()`, `update()`, or `destroy()` is called with valid input
-- **THEN** it SHALL return a `JSONResponse` with HTTP 200/201 and the expected data structure
-- **AND** the service layer SHALL be called with the correct arguments (verified via `expects($this->once())`)
-
-#### Scenario: Controller error handling — service throws exception
-
-- **GIVEN** a controller action
-- **WHEN** the underlying service throws `\Exception`, `ValidationException`, `NotAuthorizedException`, or `NotFoundException`
-- **THEN** the controller SHALL return a `JSONResponse` with the appropriate error status (400, 403, 404, 500)
-- **AND** the error response SHALL contain a descriptive message
-- **AND** the error SHALL be logged (verified via logger mock)
-
-#### Scenario: Controller input validation — missing or invalid parameters
-
-- **GIVEN** a controller action that expects specific request parameters
-- **WHEN** called with missing required params, wrong types, or empty values
-- **THEN** it SHALL return a validation error response (400)
-
-#### Scenario: Controller authorization checks
-
-- **GIVEN** a controller with RBAC or organisation-scoped access
-- **WHEN** called by an unauthorized user (mocked via `IUserSession`)
-- **THEN** it SHALL return 403 Forbidden
-
-### Requirement: Test Service classes (~130 untested files)
-
-Service classes contain the bulk of the business logic and branching. Each service handler SHALL have tests for every public method and every branch within those methods.
-
-#### Scenario: Service handlers — success, failure, and edge cases
-
-- **GIVEN** any service handler (e.g., `CrudHandler`, `CacheHandler`, `AuditHandler`)
-- **WHEN** public methods are called with mocked mappers and dependencies
-- **THEN** tests SHALL cover:
-  - The happy path with valid input
-  - What happens when a mapper throws `DoesNotExistException` (not found)
-  - What happens when a mapper throws `MultipleObjectsReturnedException`
-  - What happens with empty/null input
-  - What happens with malformed input
-  - Each if/else and switch branch in the method
-
-#### Scenario: Object service — save, get, delete, validate paths
-
-- **GIVEN** `SaveObject`, `GetObject`, `DeleteObject`, `ValidateObject` and their sub-handlers
+#### Scenario: ObjectService CRUD handlers tested for all operation modes
+- **GIVEN** `SaveObject`, `GetObject`, `DeleteObject`, `ValidateObject` and their sub-handlers (`ComputedFieldHandler`, `FilePropertyHandler`, `MetadataHydrationHandler`, `RelationCascadeHandler`)
 - **WHEN** operations are performed
-- **THEN** each handler SHALL be tested for:
-  - New object creation vs update of existing object
-  - With and without file properties
-  - With and without relations/cascading
-  - Validation success and validation failure (each validation rule)
-  - Lock check (locked vs unlocked object)
-  - Permission check (authorized vs unauthorized)
+- **THEN** each handler SHALL be tested for: new object creation vs update, with/without file properties, with/without relation cascading, validation success and each validation failure rule, lock check (locked vs unlocked), and permission check (authorized vs unauthorized)
 
-#### Scenario: Index backends — Solr and Elasticsearch branches
-
-- **GIVEN** search backend classes (`SolrBackend`, `ElasticsearchBackend` and their sub-handlers)
+#### Scenario: Index backend handlers tested for search and indexing
+- **GIVEN** `SolrBackend`, `ElasticsearchBackend` and their sub-handlers in `Backends/Solr/` and `Backends/Elasticsearch/`
 - **WHEN** index/search/facet operations are called
-- **THEN** tests SHALL cover:
-  - Successful indexing and search
-  - Connection failure / timeout (mock HTTP client to throw)
-  - Empty search results
-  - Faceted search with and without facet configuration
-  - Schema creation and update paths
-  - Bulk indexing with partial failures
+- **THEN** tests SHALL cover successful indexing, connection failure (mock HTTP client throws), empty search results, faceted search with/without facet configuration, schema creation/update, and bulk indexing with partial failures
 
-#### Scenario: File service handlers — all file operation branches
-
-- **GIVEN** file service handlers (`CreateFileHandler`, `DeleteFileHandler`, `ReadFileHandler`, `UpdateFileHandler`, etc.)
-- **WHEN** file operations are requested
-- **THEN** tests SHALL cover:
-  - File found vs file not found
-  - File owned by user vs shared file vs system file
-  - Valid file type vs rejected file type
-  - Folder exists vs folder needs creation
-  - File with tags vs without tags
-
-#### Scenario: Configuration service — fetch, import, export branches
-
-- **GIVEN** `ConfigurationService` and its handlers (`FetchHandler`, `ImportHandler`, `ExportHandler`, `GitHubHandler`, `GitLabHandler`)
+#### Scenario: Configuration service handlers tested for fetch/import/export
+- **GIVEN** `FetchHandler`, `ImportHandler`, `ExportHandler`, `GitHubHandler`, `GitLabHandler`, `CacheHandler`, `PreviewHandler`, `UploadHandler`
 - **WHEN** configuration operations are performed
-- **THEN** tests SHALL cover:
-  - Local config vs remote config (GitHub/GitLab)
-  - Config found vs not found
-  - Valid config format vs malformed config
-  - Version comparison (newer, older, same)
-  - Cache hit vs cache miss
+- **THEN** tests SHALL cover local vs remote config, config found vs not found, valid vs malformed format, version comparison (newer/older/same), cache hit vs miss, and upload validation
 
-#### Scenario: Webhook service — delivery and retry paths
+#### Scenario: File service handlers tested for all file operations
+- **GIVEN** `CreateFileHandler`, `DeleteFileHandler`, `ReadFileHandler`, `UpdateFileHandler`, `FileCrudHandler`, `FileValidationHandler`, `FolderManagementHandler`, `TaggingHandler`, `FileOwnershipHandler`, `FileSharingHandler`, `FilePublishingHandler`, `DocumentProcessingHandler`, `FileFormattingHandler`
+- **WHEN** file operations are requested
+- **THEN** tests SHALL cover file found vs not found, valid vs rejected file type, folder exists vs needs creation, user-owned vs shared vs system file, and file with/without tags
 
-- **GIVEN** `WebhookService` and `CloudEventFormatter`
-- **WHEN** webhook delivery is triggered
-- **THEN** tests SHALL cover:
-  - Successful delivery (HTTP 2xx)
-  - Failed delivery (HTTP 4xx/5xx)
-  - Connection timeout
-  - Retry logic (max retries reached vs retries remaining)
-  - CloudEvents format validation
+#### Scenario: GraphQL service tested for schema generation and query resolution
+- **GIVEN** `GraphQLService`, `GraphQLResolver`, `SchemaGenerator`, `TypeMapperHandler`, `CompositionHandler`, `QueryComplexityAnalyzer`, `GraphQLErrorFormatter`, `SubscriptionService`, and scalar types (`DateTimeType`, `EmailType`, `JsonType`, `UploadType`, `UriType`, `UuidType`)
+- **WHEN** GraphQL operations are performed
+- **THEN** tests SHALL cover schema generation from OpenRegister schemas, query resolution with mocked data, mutation handling, subscription lifecycle, scalar type parsing/serialization, complexity analysis thresholds, and error formatting
 
-#### Scenario: Organisation service — multi-tenancy paths
+### Requirement: Test All Controller Classes with CRUD and Error Handling (~46 root + 12 Settings)
 
-- **GIVEN** `OrganisationService` with its membership, caching, and settings logic
-- **WHEN** organisation operations are performed
-- **THEN** tests SHALL cover:
-  - User joins organisation, is already member, joins non-existent org
-  - User leaves organisation, is last member, is not member
-  - Active organisation set, cleared, cached, cache expired
-  - Default organisation exists vs doesn't exist
-  - Multi-tenancy filtering enabled vs disabled
+Controller tests SHALL verify that each CRUD action (`index`, `show`, `create`, `update`, `destroy`) returns the correct `JSONResponse` with appropriate HTTP status codes. Error handling SHALL be tested by configuring service mocks to throw `\Exception`, `ValidationException`, `NotAuthorizedException`, `NotFoundException`, and verifying the controller returns 400, 403, 404, or 500 responses with descriptive error messages. Authorization checks SHALL be tested by mocking `IUserSession` for unauthorized users and verifying 403 responses. Input validation SHALL be tested with missing required params, wrong types, and empty values.
 
-### Requirement: Test Tool classes (7 files)
+#### Scenario: Controller index action returns paginated results
+- **GIVEN** `ObjectsController::index()` is called with valid pagination parameters
+- **WHEN** the underlying service returns a list of objects
+- **THEN** the controller SHALL return a `JSONResponse` with HTTP 200 and the list data
 
-#### Scenario: Tool interface compliance and all process() branches
+#### Scenario: Controller create action returns 201 on success
+- **GIVEN** `RegistersController::create()` is called with valid register data
+- **WHEN** the service successfully creates the register
+- **THEN** the controller SHALL return HTTP 201 with the created entity data
 
-- **GIVEN** tool classes (`AgentTool`, `ApplicationTool`, `ObjectsTool`, `RegisterTool`, `SchemaTool`)
-- **WHEN** `getName()`, `getDescription()`, `getInputSchema()`, and `process()` are called
-- **THEN** they SHALL return valid tool definitions
-- **AND** `process()` SHALL be tested with:
-  - Valid input → delegates to correct service method
-  - Missing required input → returns error
-  - Service throws exception → returns error message
-  - Each action variant (list, get, create, update, delete) if the tool supports multiple actions
+#### Scenario: Controller handles service exception with 500
+- **GIVEN** any controller action
+- **WHEN** the underlying service throws an unhandled `\Exception`
+- **THEN** the controller SHALL return HTTP 500 with an error message and the error SHALL be logged
 
-### Requirement: Test remaining directories
+#### Scenario: Controller handles not found with 404
+- **GIVEN** `SchemasController::show()` is called with a non-existent ID
+- **WHEN** the service throws `DoesNotExistException`
+- **THEN** the controller SHALL return HTTP 404
 
-#### Scenario: Exception classes — construction and inheritance (7 files)
+#### Scenario: Controller handles unauthorized access with 403
+- **GIVEN** a controller action with RBAC or organisation-scoped access
+- **WHEN** called by an unauthorized user (mocked `IUserSession`)
+- **THEN** the controller SHALL return HTTP 403
 
-- **GIVEN** custom exception classes (`ValidationException`, `LockedException`, `NotAuthorizedException`, `DatabaseConstraintException`, `RegisterNotFoundException`, `SchemaNotFoundException`, `CustomValidationException`)
-- **WHEN** constructed with a message, code, and optional previous exception
-- **THEN** they SHALL extend the correct base exception class
-- **AND** `getMessage()`, `getCode()`, and `getPrevious()` SHALL return the correct values
-- **AND** any custom methods (e.g., `getValidationErrors()` on `ValidationException`) SHALL be tested with data providers for multiple error scenarios
+### Requirement: Test All Db Entities and Mapper Handlers with Full Field Coverage (~65 source files)
 
-#### Scenario: Listener classes — handle() with matching and non-matching events (6 files)
+Entity tests SHALL cover constructor defaults, getter/setter round-trips for all field types (string, int, bool, DateTime, JSON arrays), `jsonSerialize()` output with all fields populated and with null optional fields, `__toString()` fallback chains, and any business methods. Mapper handler tests (MagicMapper handlers: `MagicBulkHandler`, `MagicFacetHandler`, `MagicOrganizationHandler`, `MagicRbacHandler`, `MagicSearchHandler`; and ObjectEntity handlers: `BulkOperationsHandler`, `CrudHandler`, `FacetsHandler`, `LockingHandler`, `QueryBuilderHandler`, `QueryOptimizationHandler`, `StatisticsHandler`) SHALL test query building with different filter combinations, empty filters, invalid filters, and edge cases. NOTE: `lib/Db/` is currently excluded from coverage in `phpunit-unit.xml` -- this exclusion MUST be narrowed to only auto-generated mappers or removed entirely for Db tests to count toward coverage.
 
-- **GIVEN** event listener classes (`FileChangeListener`, `ObjectChangeListener`, `ObjectCleanupListener`, `CommentsEntityListener`, `ToolRegistrationListener`, `WebhookEventListener`)
-- **WHEN** `handle()` is called with a matching event
-- **THEN** the correct service methods SHALL be called (verified via mock expectations)
-- **AND WHEN** `handle()` is called and the service throws an exception
-- **THEN** the listener SHALL handle it gracefully (log error, not re-throw)
+#### Scenario: Entity default values verified after construction
+- **GIVEN** any Db entity (e.g., `Register`, `Schema`, `ObjectEntity`, `Organisation`, `Agent`, `Application`, `Configuration`)
+- **WHEN** constructed with no arguments
+- **THEN** all fields SHALL have their documented default values and `getId()` SHALL return null
 
-#### Scenario: BackgroundJob classes — run() success and failure paths (7 untested of 8)
+#### Scenario: Entity JSON serialization includes all fields
+- **GIVEN** an entity with all fields populated including DateTime and JSON array fields
+- **WHEN** `jsonSerialize()` is called
+- **THEN** all fields SHALL appear in the returned array with correct types, DateTime fields SHALL use ISO 8601 format (`->format('c')`), and null optional fields SHALL serialize as null
 
-- **GIVEN** background job classes (`CacheWarmupJob`, `NameCacheWarmupJob`, `CronFileTextExtractionJob`, `ObjectTextExtractionJob`, `SolrNightlyWarmupJob`, `SolrWarmupJob`, `WebhookDeliveryJob`)
-- **WHEN** `run()` is called with valid job arguments
-- **THEN** the correct service SHALL be called
-- **AND WHEN** `run()` is called with missing arguments
-- **THEN** the job SHALL log a warning and return without error
-- **AND WHEN** the underlying service throws an exception
-- **THEN** the job SHALL catch it and log the error (verified via `$this->mockLogger->expects($this->once())->method('error')`)
+#### Scenario: MagicMapper RBAC handler applies correct query filters
+- **GIVEN** `MagicRbacHandler` with a user who has restricted data access
+- **WHEN** query building methods are called
+- **THEN** the generated SQL SHALL include the correct WHERE clauses for RBAC filtering and parameter bindings SHALL match
 
-#### Scenario: Command classes — execute() with valid and invalid input (3 files)
+#### Scenario: ObjectEntity handlers tested for locked and unlocked states
+- **GIVEN** `LockingHandler` with a locked object
+- **WHEN** an update operation is attempted
+- **THEN** the handler SHALL throw `LockedException` and the lock metadata SHALL be preserved
 
-- **GIVEN** CLI command classes (`MigrateStorageCommand`, `SolrDebugCommand`, `SolrManagementCommand`)
-- **WHEN** `execute()` is called with mocked `InputInterface` and `OutputInterface`
-- **THEN** tests SHALL cover:
-  - Valid arguments → service called, success message output
-  - Missing arguments → error message output, non-zero return code
-  - Service exception → error output, non-zero return code
+### Requirement: Test All Event Classes via DataProvider Grouping (~39 source files)
 
-#### Scenario: Cron job classes — run() and error handling (4 files)
+Event classes follow a predictable CRUD pattern per entity type. Tests SHALL group events using DataProviders: single-entity events (Created/Deleted) verify Event inheritance and entity getter; Updated events verify both old and new entity retrieval; special events (`DeepLinkRegistrationEvent`, `ToolRegistrationEvent`, `UserProfileUpdatedEvent`) are tested with dedicated methods. The following entity event families SHALL be covered: Register, Schema, Object (including Creating, Updating, Deleting, Locked, Unlocked, Reverted), Agent, Application, Configuration, Conversation, Organisation, Source, View.
 
-- **GIVEN** cron classes (`ConfigurationCheckJob`, `LogCleanUpTask`, `SyncConfigurationsJob`, `WebhookRetryJob`)
-- **WHEN** `run()` is called
-- **THEN** the correct service method SHALL be called
-- **AND** exception handling SHALL be tested (service failure → logged, not re-thrown)
+#### Scenario: CRUD events for each entity type pass DataProvider test
+- **GIVEN** `RegisterCreatedEvent`, `RegisterUpdatedEvent`, `RegisterDeletedEvent`
+- **WHEN** each is constructed with a real Register entity
+- **THEN** each SHALL be an instance of `\OCP\EventDispatcher\Event` and the getter SHALL return the exact same entity instance
 
-#### Scenario: Notification, Repair, Search, Settings, Sections (5 files)
+#### Scenario: Updated events expose both old and new entities
+- **GIVEN** `SchemaUpdatedEvent` constructed with a new Schema and an old Schema
+- **WHEN** getters are called
+- **THEN** `getSchema()` SHALL return the new entity and `getOldSchema()` SHALL return the old entity, and they SHALL be different instances
 
-- **GIVEN** `Notifier`, `RegisterRiskLevelMetadata`, `ObjectsProvider`, `OpenRegisterAdmin` (settings + sections)
-- **WHEN** their public interface methods are called
-- **THEN** they SHALL return correctly typed results
-- **AND** each conditional branch within these classes SHALL be covered (e.g., `Notifier` with known vs unknown notification type, `ObjectsProvider` with results vs no results)
+#### Scenario: Object events cover all lifecycle stages
+- **GIVEN** Object has 9 event classes: Created, Creating, Updated, Updating, Deleted, Deleting, Locked, Unlocked, Reverted
+- **WHEN** each is constructed and tested
+- **THEN** all 9 SHALL pass construction and getter assertions
 
-### Requirement: Test Formats classes (2 files)
+### Requirement: Test All BackgroundJob, Command, Cron, and Listener Classes
 
-#### Scenario: BsnFormat validation — all branches
+BackgroundJob classes (`BlobMigrationJob`, `CacheWarmupJob`, `CronFileTextExtractionJob`, `FileTextExtractionJob`, `HookRetryJob`, `NameCacheWarmupJob`, `ObjectTextExtractionJob`, `SolrNightlyWarmupJob`, `SolrWarmupJob`, `WebhookDeliveryJob`) SHALL have `run()` tested with valid arguments, missing arguments (log warning, return gracefully), and service exceptions (catch, log error). Command classes (`MigrateStorageCommand`, `SolrDebugCommand`, `SolrManagementCommand`) SHALL have `execute()` tested with mocked `InputInterface`/`OutputInterface` for valid arguments, missing arguments, and service exceptions. Cron classes (`ConfigurationCheckJob`, `LogCleanUpTask`, `SyncConfigurationsJob`, `WebhookRetryJob`) SHALL have `run()` tested for success and exception handling. Listener classes (`CommentsEntityListener`, `FileChangeListener`, `GraphQLSubscriptionListener`, `HookListener`, `ObjectChangeListener`, `ObjectCleanupListener`, `ToolRegistrationListener`, `WebhookEventListener`) SHALL have `handle()` tested with matching events, non-matching events, and service exceptions (graceful handling, no re-throw).
 
-- **GIVEN** the `BsnFormat` validator
-- **WHEN** validating BSN numbers
-- **THEN** tests SHALL cover (via data provider):
-  - Valid 9-digit BSN with correct checksum
-  - Invalid checksum
-  - Wrong length (too short, too long)
-  - Non-numeric input
-  - Null/empty input
+#### Scenario: BackgroundJob handles missing arguments gracefully
+- **GIVEN** `WebhookDeliveryJob::run()` is called with an empty argument array
+- **WHEN** the job executes
+- **THEN** it SHALL log a warning via the logger mock and return without throwing
 
-#### Scenario: SemVerFormat validation — all branches
+#### Scenario: BackgroundJob handles service exception
+- **GIVEN** `CacheWarmupJob::run()` is called and the underlying service throws
+- **WHEN** the exception propagates to the job
+- **THEN** the job SHALL catch it and log the error via `$this->mockLogger->expects($this->once())->method('error')`
 
-- **GIVEN** the `SemVerFormat` validator
-- **WHEN** validating version strings
-- **THEN** tests SHALL cover (via data provider):
-  - Valid versions: `"1.0.0"`, `"0.0.0"`, `"1.2.3-alpha"`, `"1.2.3+build"`
-  - Invalid versions: `"1.0"`, `"v1.0.0"`, `"1.0.0.0"`, `""`, `null`
+#### Scenario: Command returns non-zero exit code on error
+- **GIVEN** `SolrManagementCommand::execute()` is called with valid arguments
+- **WHEN** the underlying service throws an exception
+- **THEN** the command SHALL write an error message to the output mock and return a non-zero exit code
 
-## Phase 3: Coverage Enforcement
+#### Scenario: Listener handles matching event by calling service
+- **GIVEN** `WebhookEventListener::handle()` receives an `ObjectCreatedEvent`
+- **WHEN** the event matches the listener's registered type
+- **THEN** the webhook service mock SHALL be called with the event data
 
-### Requirement: Raise coverage threshold to 100%
+#### Scenario: Listener handles service exception gracefully
+- **GIVEN** `FileChangeListener::handle()` receives a matching event but the service throws
+- **WHEN** the exception occurs during handling
+- **THEN** the listener SHALL catch it and log the error, NOT re-throw it
 
-#### Scenario: CI enforces 100% line coverage
+### Requirement: Test All Exception and Format Classes
 
-- **GIVEN** all tests pass and cover all source files
-- **WHEN** `composer test:coverage` is run
-- **THEN** the clover report SHALL show 100% line coverage
-- **AND** `composer coverage:check` threshold SHALL be updated from 75% to 100%
+Custom exception classes (`ValidationException`, `LockedException`, `NotAuthorizedException`, `DatabaseConstraintException`, `RegisterNotFoundException`, `SchemaNotFoundException`, `CustomValidationException`, `ReferentialIntegrityException`, `AuthenticationException`, `HookStoppedException`) SHALL be tested for construction with message, code, and optional previous exception, correct inheritance hierarchy, and any custom methods (e.g., `getValidationErrors()` on `ValidationException`). Format validators (`BsnFormat`, `SemVerFormat`) SHALL be tested with DataProviders covering all valid and invalid input categories.
+
+#### Scenario: ValidationException carries structured validation errors
+- **GIVEN** a `ValidationException` constructed with a message and validation error array
+- **WHEN** `getValidationErrors()` is called
+- **THEN** it SHALL return the exact error array passed to the constructor
+
+#### Scenario: BSN format validates checksum algorithm correctly
+- **GIVEN** a DataProvider with BSN test cases
+- **WHEN** `BsnFormat::validate()` is called with each case
+- **THEN** valid 9-digit BSNs with correct 11-proof checksum SHALL pass, and invalid checksums, wrong lengths, non-numeric input, and empty input SHALL fail
+
+#### Scenario: SemVer format validates version strings per SemVer 2.0.0
+- **GIVEN** a DataProvider with version strings
+- **WHEN** `SemVerFormat::validate()` is called
+- **THEN** `"1.0.0"`, `"0.0.0"`, `"1.2.3-alpha"`, `"1.2.3+build"` SHALL be valid, and `"1.0"`, `"v1.0.0"`, `"1.0.0.0"`, `""` SHALL be invalid
+
+### Requirement: Test Organisation Service Multi-Tenancy Paths
+
+`OrganisationService` with its membership, caching, and settings logic SHALL be tested for all multi-tenancy scenarios. This is critical for Dutch government deployments where organisation isolation is a security requirement. Tests SHALL cover user joining/leaving organisations, active organisation switching, cache behavior, and default organisation fallback.
+
+#### Scenario: User joins organisation successfully
+- **GIVEN** a user who is not a member of organisation X
+- **WHEN** `joinOrganisation()` is called
+- **THEN** the mapper SHALL be called to create the membership and the cache SHALL be invalidated
+
+#### Scenario: User attempts to join already-joined organisation
+- **GIVEN** a user who is already a member of organisation X
+- **WHEN** `joinOrganisation()` is called again
+- **THEN** the service SHALL return without creating a duplicate membership
+
+#### Scenario: Last member leaves organisation
+- **GIVEN** an organisation with only one member
+- **WHEN** that member calls `leaveOrganisation()`
+- **THEN** the service SHALL handle this edge case according to policy (prevent or allow with warning)
+
+#### Scenario: Active organisation cache expires
+- **GIVEN** a user with a cached active organisation
+- **WHEN** the cache TTL expires
+- **THEN** the next access SHALL re-fetch from the session/database and update the cache
+
+#### Scenario: Default organisation fallback when none set
+- **GIVEN** a user with no active organisation set
+- **WHEN** `getActiveOrganisation()` is called
+- **THEN** the service SHALL fall back to the default organisation or return null if none exists
+
+### Requirement: Test Webhook Service Delivery and Retry Logic
+
+`WebhookService` and `CloudEventFormatter` SHALL be tested for delivery success and failure paths, retry logic, and CloudEvents format compliance. This ensures reliable event notification delivery to external systems.
+
+#### Scenario: Webhook delivery succeeds on first attempt
+- **GIVEN** a webhook subscription and an event to deliver
+- **WHEN** the HTTP client returns 200
+- **THEN** the delivery SHALL be marked as successful and no retry SHALL be scheduled
+
+#### Scenario: Webhook delivery fails with HTTP 500
+- **GIVEN** a webhook delivery attempt
+- **WHEN** the HTTP client returns 500
+- **THEN** a retry SHALL be scheduled via `WebhookDeliveryJob` and the failure SHALL be logged
+
+#### Scenario: Webhook delivery retries exhausted
+- **GIVEN** a webhook that has been retried the maximum number of times
+- **WHEN** the next retry also fails
+- **THEN** the delivery SHALL be marked as permanently failed and no further retries SHALL be scheduled
+
+#### Scenario: CloudEvents format is correct
+- **GIVEN** an `ObjectCreatedEvent` to format
+- **WHEN** `CloudEventFormatter::format()` is called
+- **THEN** the output SHALL contain `specversion`, `type`, `source`, `id`, `time`, and `data` fields per the CloudEvents 1.0 spec
+
+### Requirement: Test Import and Export Service Handlers
+
+`ImportService` and `ExportService` handle bulk data operations critical for government data migration workflows. Tests SHALL cover CSV, JSON, and XLSX import/export paths including validation, transformation, error handling, and partial failure recovery.
+
+#### Scenario: CSV import with valid data
+- **GIVEN** a CSV file with headers matching a schema's properties
+- **WHEN** `ImportService::import()` is called
+- **THEN** objects SHALL be created for each valid row and the import summary SHALL report success count
+
+#### Scenario: Import with validation errors on some rows
+- **GIVEN** a CSV file where 3 of 10 rows fail schema validation
+- **WHEN** the import is processed
+- **THEN** valid rows SHALL be imported, invalid rows SHALL be collected as errors, and the summary SHALL report both counts
+
+#### Scenario: Export to JSON produces valid output
+- **GIVEN** a register with 100 objects
+- **WHEN** `ExportService::export()` is called with format 'json'
+- **THEN** the output SHALL be valid JSON containing all objects serialized per their schema
+
+### Requirement: CI Integration with composer check:strict
+
+All unit tests SHALL pass as part of `composer check:strict`, which runs `lint`, `phpcs`, `phpmd`, `psalm`, `phpstan`, and `test:all` in sequence. The `test:unit` script runs `phpunit --testsuite="Unit Tests"` against the `tests/Unit/` directory. Tests SHALL also be executable inside the Docker container via `docker exec -w /var/www/html/custom_apps/openregister nextcloud php vendor/bin/phpunit -c phpunit-unit.xml`. Coverage measurement requires `php-pcov` installed in the container.
+
+#### Scenario: All unit tests pass in check:strict pipeline
+- **GIVEN** the full `composer check:strict` pipeline
+- **WHEN** it reaches the `test:all` step
+- **THEN** all unit tests SHALL pass with 0 errors and 0 failures
+
+#### Scenario: Unit tests run in Docker container
+- **GIVEN** the Nextcloud Docker container with OpenRegister mounted
+- **WHEN** `docker exec -w /var/www/html/custom_apps/openregister nextcloud php vendor/bin/phpunit -c phpunit-unit.xml` is run
+- **THEN** all unit tests SHALL pass
+
+#### Scenario: Coverage measurement with PCOV
+- **GIVEN** `php-pcov` is installed in the container
+- **WHEN** `php -d pcov.enabled=1 -d pcov.directory=/var/www/html/custom_apps/openregister/lib vendor/bin/phpunit -c phpunit-unit.xml --coverage-clover=coverage/clover.xml` is run
+- **THEN** a valid Clover XML report SHALL be generated with line-level coverage data
+
+#### Scenario: Specific tests can be filtered
+- **GIVEN** a developer working on `ObjectService`
+- **WHEN** `phpunit -c phpunit-unit.xml --filter ObjectServiceTest` is run
+- **THEN** only `ObjectServiceTest` tests SHALL execute, enabling fast feedback loops
+
+### Requirement: Test Naming Convention and File Organization
+
+Test methods SHALL follow `test[MethodOrBehavior][Scenario]` naming (e.g., `testCreateObjectWithValidData`, `testDeleteObjectWhenLocked`, `testGetObjectNotFound`). Test files SHALL mirror the `lib/` directory structure under `tests/Unit/` (e.g., `lib/Service/Object/SaveObject.php` maps to `tests/Unit/Service/Object/SaveObjectTest.php`). Test classes SHALL be named `[ClassName]Test`.
+
+#### Scenario: Test naming is descriptive and follows convention
+- **GIVEN** a test for `OrganisationService::joinOrganisation()` error handling
+- **WHEN** the test method is named
+- **THEN** it SHALL be named `testJoinOrganisationWhenAlreadyMember` or similar pattern that describes the method, scenario, and expected behavior
+
+#### Scenario: Test file mirrors source file path
+- **GIVEN** source file `lib/Service/Configuration/GitHubHandler.php`
+- **WHEN** the test file is created
+- **THEN** it SHALL be located at `tests/Unit/Service/Configuration/GitHubHandlerTest.php`
+
+#### Scenario: DataProvider methods are named descriptively
+- **GIVEN** a DataProvider for BSN validation test cases
+- **WHEN** the provider method is named
+- **THEN** it SHALL be named `bsnValidationProvider` or `validAndInvalidBsnProvider` and each case SHALL have a descriptive string key
+
+### Requirement: Use Reflection for Private Methods and Final Classes
+
+When a public method delegates to private helpers that contain complex logic worth testing individually, `ReflectionClass` SHALL be used to access them. When a class is declared `final` (e.g., `Twig\Loader\ArrayLoader`), tests SHALL use real instances rather than mocks. This applies to all `final` Nextcloud or vendor classes encountered during testing.
+
+#### Scenario: Private method tested via Reflection
+- **GIVEN** a service with a private helper method containing complex validation logic
+- **WHEN** the test needs to verify the private method directly
+- **THEN** it SHALL use `$reflection = new \ReflectionClass($service); $method = $reflection->getMethod('methodName'); $method->setAccessible(true); $result = $method->invoke($service, $args);`
+
+#### Scenario: Final class used as real instance
+- **GIVEN** a service depends on `Twig\Loader\ArrayLoader` which is `final`
+- **WHEN** the test initializes the Twig environment
+- **THEN** it SHALL use `new ArrayLoader(['template' => 'content'])` instead of `$this->createMock(ArrayLoader::class)`
+
+#### Scenario: Private property accessed for assertion
+- **GIVEN** a test needs to verify internal state after an operation
+- **WHEN** the state is stored in a private property
+- **THEN** `ReflectionProperty` SHALL be used with `setAccessible(true)` to read the value
+
+### Requirement: Resolve phpunit-unit.xml Db Exclusion for Accurate Coverage
+
+The current `phpunit-unit.xml` excludes `lib/Db/` from coverage measurement, which means Entity, Mapper, and Handler tests (65+ source files) do not count toward coverage metrics. This exclusion SHALL be narrowed to only exclude auto-generated or trivial files, or removed entirely. The `lib/Db/MagicMapper/` handlers and `lib/Db/ObjectHandlers/` contain significant business logic that MUST be included in coverage measurement.
+
+#### Scenario: Db handler tests contribute to coverage
+- **GIVEN** the `phpunit-unit.xml` source exclusion is updated
+- **WHEN** `MagicRbacHandlerTest` runs with coverage enabled
+- **THEN** `lib/Db/MagicMapper/MagicRbacHandler.php` lines SHALL appear in the coverage report
+
+#### Scenario: Simple entity files are included in coverage
+- **GIVEN** entity files like `Register.php`, `Schema.php`, `ObjectEntity.php`
+- **WHEN** their corresponding tests run with coverage enabled
+- **THEN** entity getter/setter/jsonSerialize lines SHALL be counted in the coverage report
+
+#### Scenario: Only Migration directory remains excluded
+- **GIVEN** the updated `phpunit-unit.xml`
+- **WHEN** the source exclusion list is reviewed
+- **THEN** only `lib/Migration/` and `lib/AppInfo/Application.php` SHALL be excluded, matching the original spec intent
 
 ## Estimated Scope
 
-| Category | Files to Test | Est. Test Files Needed |
-|----------|--------------|----------------------|
-| Fix broken tests | — | 0 (fix existing 6 files) |
-| Db entities + mappers | 69 | ~25 |
-| Events | 39 | ~5 (grouped by CRUD pattern) |
-| Controllers | 48 | ~20 |
-| Services | ~130 | ~50 |
-| Tools | 7 | ~3 |
-| Exceptions | 7 | 1 |
-| Listeners | 6 | ~3 |
-| BackgroundJobs | 7 | ~4 |
-| Commands | 3 | ~2 |
-| Cron | 4 | ~2 |
-| Formats | 2 | 1 (exists, needs fixes) |
-| Other (Notif, Repair, etc.) | 5 | ~3 |
-| **Total** | **~330 new** | **~118 new test files** |
+| Category | Source Files | Test Files (existing) | Test Files (needed) | Status |
+|---|---|---|---|---|
+| Event | 39 | 5 | 0 | Complete (DataProvider grouping) |
+| Exception | 10 | 2 | ~1 | 8 uncovered exceptions |
+| Formats | 2 | 1 | 0 | SemVer fix needed |
+| Db entities + mappers + handlers | 65 | 31 | ~15 | 34 uncovered |
+| Controller (root + Settings) | 58 | 78 | ~5 | Nearly complete |
+| Service (root + subdirectories) | 175 | 147 | ~28 | Core handlers pending |
+| BackgroundJob | 10 | 8 | ~2 | 2 uncovered |
+| Command | 3 | 4 | 0 | Complete |
+| Cron | 4 | 4 | 0 | Complete |
+| Listener | 8 | 7 | ~1 | 1 uncovered |
+| GraphQL | 12 | 0 | ~6 | Not yet started |
+| Notification/Repair/Search/Settings | 5 | ~5 | 0 | Covered |
+| **Total in scope** | **~409** | **~317** | **~58** | |
+| Migration (excluded) | 91 | 0 | 0 | Out of scope |
+| AppInfo/Application.php (excluded) | 1 | 0 | 0 | Out of scope |
 
-### Current Implementation Status
+## Standards and References
 
-**Phase 1 is COMPLETE. Phase 2 is in progress.**
+- **PHPUnit 10.5+** testing framework with `#[DataProvider]` attributes and intersection mock types
+- **PHP PCOV** extension for code coverage (faster than Xdebug)
+- **ADR-009: Mandatory Test Coverage** -- every new or changed backend feature MUST have corresponding unit tests; 75% coverage target for new code
+- **Related spec: `api-test-coverage`** -- covers Newman/Postman API-level testing (complementary to this spec)
+- **PSR-4 autoloading** for test namespaces matching `lib/` structure
+- **Nextcloud app testing guidelines** -- tests run inside Docker container with full Nextcloud environment for integration, PHPUnit\Framework\TestCase only for unit
 
-- **1,121 tests pass** with 0 errors, 0 failures
-- **~30 test files** exist across `tests/Unit/` covering: BackgroundJob, Command, Controller, Cron, Db, Dto, Event, EventListener, Exception, Formats, Listener, Notification, Repair, Search, Sections, Service, Settings, Tool, Twig
-- Coverage threshold is currently set at 75% (`composer coverage:check`)
-- Phase 2 (writing ~118 new test files for ~330 untested source files) has not been completed
+## Specificity Assessment
 
-**Existing test directories:**
-- `tests/Unit/BackgroundJob/` -- FileTextExtractionJobTest
-- `tests/Unit/Controller/` -- ConfigurationController, FilesController, SettingsController tests
-- `tests/Unit/Db/` -- MagicMapperTest and entity tests
-- `tests/Unit/Service/` -- Various service tests (OrganisationService, ConfigurationService, etc.)
-- `tests/Unit/Formats/` -- BSN and SemVer format tests
-- `tests/Unit/Event/` -- Event class tests
-- `tests/Unit/Exception/` -- Exception class tests
-- `tests/Unit/Tool/` -- Tool class tests
-
-**What is NOT yet implemented:**
-- ~118 new test files for Phase 2 (bulk of untested service handlers, controllers, mappers)
-- 100% line coverage target (Phase 3)
-- CI enforcement at 100% threshold
-
-### Standards & References
-- PHPUnit 10+ testing framework (https://phpunit.de/)
-- PHP PCOV extension for code coverage
-- Nextcloud app testing guidelines
-- PSR-4 autoloading for test namespaces
-
-### Specificity Assessment
-- **Specific enough to implement?** Yes -- this is one of the most detailed specs, with explicit patterns, naming conventions, and file-by-file scope.
-- **Missing/ambiguous:** Nothing significant -- the spec is comprehensive.
+- **Specific enough to implement?** Yes -- explicit patterns, naming conventions, file-by-file scope, and categorized batches
 - **Open questions:**
-  - Should integration tests (requiring database/Nextcloud container) be counted toward the 100% target?
-  - What is the timeline for Phase 2 completion?
+  - Should `lib/Db/` exclusion be fully removed or narrowed? (Recommendation: narrow to exclude only auto-generated mapper boilerplate)
+  - Timeline for reaching 100% from current baseline? (Depends on ~58 remaining test files)
+  - Should integration tests (requiring database/container) count toward the 75% gate? (Recommendation: no, keep unit and integration metrics separate)
