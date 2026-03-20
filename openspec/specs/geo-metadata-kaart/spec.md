@@ -1,5 +1,5 @@
 ---
-status: proposed
+status: moved-to-change
 ---
 
 # Geo Metadata Kaart
