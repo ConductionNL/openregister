@@ -140,7 +140,8 @@
                     "resultsPosition": "",
                     "endpoint": "",
                     "headers": [],
-                    "query": []
+                    "query": [],
+                    "triggerOnlyOnEvents": ["UPDATE", "DELETE"]
                 },
                 "sourceLastChanged": "2025-10-03T08:53:56+00:00",
                 "sourceLastChecked": "2025-10-03T08:53:56+00:00",
@@ -181,7 +182,8 @@
                     "resultsPosition": "",
                     "endpoint": "",
                     "headers": [],
-                    "query": []
+                    "query": [],
+                    "triggerOnlyOnEvents": ["UPDATE", "DELETE"]
                 },
                 "sourceLastChanged": "2025-10-03T09:06:13+00:00",
                 "sourceLastChecked": "2025-10-03T09:06:13+00:00",
@@ -247,7 +249,8 @@
                     "resultsPosition": "",
                     "endpoint": "",
                     "headers": [],
-                    "query": []
+                    "query": [],
+                    "triggerOnlyOnEvents": ["UPDATE", "DELETE"]
                 },
                 "sourceLastChanged": "2025-10-03T13:55:41+00:00",
                 "sourceLastChecked": "2025-10-03T13:55:41+00:00",
@@ -313,7 +316,8 @@
                     "resultsPosition": "",
                     "endpoint": "",
                     "headers": [],
-                    "query": []
+                    "query": [],
+                    "triggerOnlyOnEvents": ["UPDATE", "DELETE"]
                 },
                 "sourceLastChanged": "2025-10-03T13:58:13+00:00",
                 "sourceLastChecked": "2025-10-03T13:58:13+00:00",
@@ -354,7 +358,8 @@
                     "resultsPosition": "",
                     "endpoint": "",
                     "headers": [],
-                    "query": []
+                    "query": [],
+                    "triggerOnlyOnEvents": ["UPDATE", "DELETE"]
                 },
                 "sourceLastChanged": "2025-10-03T14:01:03+00:00",
                 "sourceLastChecked": "2025-10-03T14:01:03+00:00",
@@ -402,7 +407,8 @@
                     "resultsPosition": "",
                     "endpoint": "",
                     "headers": [],
-                    "query": []
+                    "query": [],
+                    "triggerOnlyOnEvents": ["UPDATE", "DELETE"]
                 },
                 "sourceLastChanged": "2025-10-03T14:09:15+00:00",
                 "sourceLastChecked": "2025-10-03T14:09:15+00:00",
@@ -468,7 +474,8 @@
                     "resultsPosition": "",
                     "endpoint": "",
                     "headers": [],
-                    "query": []
+                    "query": [],
+                    "triggerOnlyOnEvents": ["UPDATE", "DELETE"]
                 },
                 "sourceLastChanged": "2025-10-03T14:10:05+00:00",
                 "sourceLastChecked": "2025-10-03T14:10:05+00:00",
@@ -534,7 +541,8 @@
                     "resultsPosition": "",
                     "endpoint": "",
                     "headers": [],
-                    "query": []
+                    "query": [],
+                    "triggerOnlyOnEvents": ["UPDATE", "DELETE"]
                 },
                 "sourceLastChanged": "2025-10-03T14:11:39+00:00",
                 "sourceLastChecked": "2025-10-03T14:11:39+00:00",
@@ -600,7 +608,8 @@
                     "resultsPosition": "",
                     "endpoint": "",
                     "headers": [],
-                    "query": []
+                    "query": [],
+                    "triggerOnlyOnEvents": ["UPDATE", "DELETE"]
                 },
                 "sourceLastChanged": "2025-10-03T14:12:12+00:00",
                 "sourceLastChecked": "2025-10-03T14:12:12+00:00",
@@ -666,7 +675,8 @@
                     "resultsPosition": "",
                     "endpoint": "",
                     "headers": [],
-                    "query": []
+                    "query": [],
+                    "triggerOnlyOnEvents": ["UPDATE", "DELETE"]
                 },
                 "sourceLastChanged": "2025-10-03T14:13:13+00:00",
                 "sourceLastChecked": "2025-10-03T14:13:13+00:00",
@@ -732,7 +742,8 @@
                     "resultsPosition": "",
                     "endpoint": "",
                     "headers": [],
-                    "query": []
+                    "query": [],
+                    "triggerOnlyOnEvents": ["UPDATE", "DELETE"]
                 },
                 "sourceLastChanged": "2025-10-03T14:13:55+00:00",
                 "sourceLastChecked": "2025-10-03T14:13:55+00:00",
@@ -798,7 +809,8 @@
                     "resultsPosition": "",
                     "endpoint": "",
                     "headers": [],
-                    "query": []
+                    "query": [],
+                    "triggerOnlyOnEvents": ["UPDATE", "DELETE"]
                 },
                 "sourceLastChanged": "2025-10-03T14:14:31+00:00",
                 "sourceLastChecked": "2025-10-03T14:14:31+00:00",
@@ -864,7 +876,8 @@
                     "resultsPosition": "",
                     "endpoint": "",
                     "headers": [],
-                    "query": []
+                    "query": [],
+                    "triggerOnlyOnEvents": ["UPDATE", "DELETE"]
                 },
                 "sourceLastChanged": "2025-10-03T14:16:26+00:00",
                 "sourceLastChecked": "2025-10-03T14:16:26+00:00",
@@ -930,7 +943,8 @@
                     "resultsPosition": "",
                     "endpoint": "",
                     "headers": [],
-                    "query": []
+                    "query": [],
+                    "triggerOnlyOnEvents": ["UPDATE", "DELETE"]
                 },
                 "sourceLastChanged": "2025-10-03T14:17:44+00:00",
                 "sourceLastChecked": "2025-10-03T14:17:44+00:00",
@@ -996,7 +1010,8 @@
                     "resultsPosition": "",
                     "endpoint": "",
                     "headers": [],
-                    "query": []
+                    "query": [],
+                    "triggerOnlyOnEvents": ["UPDATE", "DELETE"]
                 },
                 "sourceLastChanged": "2025-10-03T14:18:28+00:00",
                 "sourceLastChecked": "2025-10-03T14:18:28+00:00",
@@ -1062,7 +1077,8 @@
                     "resultsPosition": "",
                     "endpoint": "",
                     "headers": [],
-                    "query": []
+                    "query": [],
+                    "triggerOnlyOnEvents": ["UPDATE", "DELETE"]
                 },
                 "sourceLastChanged": "2025-10-03T14:19:14+00:00",
                 "sourceLastChecked": "2025-10-03T14:19:14+00:00",
