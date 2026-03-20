@@ -1,9 +1,8 @@
-# Content Versioning
-
 ---
 status: implemented
 ---
 
+# Content Versioning
 ## Purpose
 Content versioning provides a complete lifecycle for register objects, enabling users to track every change as a numbered version, create named draft versions for work-in-progress edits, compare any two versions with field-level diffs, and roll back to any previous state. This capability is essential for government compliance (WOO, Archiefwet), editorial workflows where changes require review before publication, and multi-user collaboration where concurrent edits must be managed safely.
 

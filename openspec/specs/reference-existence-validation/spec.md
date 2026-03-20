@@ -1,3 +1,7 @@
+---
+status: implemented
+---
+
 # reference-existence-validation Specification
 
 ## Purpose

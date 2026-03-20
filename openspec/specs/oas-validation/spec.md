@@ -1,3 +1,7 @@
+---
+status: implemented
+---
+
 # OAS Validation Specification
 
 ## Purpose

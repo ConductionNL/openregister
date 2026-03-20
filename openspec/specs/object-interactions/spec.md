@@ -1,3 +1,7 @@
+---
+status: implemented
+---
+
 # Object Interactions
 
 ## Purpose
@@ -7,7 +11,6 @@ OpenRegister objects require rich interaction capabilities — notes, tasks, fil
 **Standards**: RFC 5545 (iCalendar/VTODO), RFC 9253 (iCalendar LINK property), Nextcloud Comments API, Nextcloud Activity API, CloudEvents v1.0
 **Cross-references**: [audit-trail-immutable](../audit-trail-immutable/spec.md), [event-driven-architecture](../event-driven-architecture/spec.md), [notificatie-engine](../notificatie-engine/spec.md)
 
----
 
 ## Requirements
 

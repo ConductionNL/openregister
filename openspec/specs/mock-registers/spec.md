@@ -1,3 +1,7 @@
+---
+status: implemented
+---
+
 # Mock Registers
 
 ## Purpose

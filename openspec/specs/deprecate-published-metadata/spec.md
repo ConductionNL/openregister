@@ -1,3 +1,7 @@
+---
+status: partial
+---
+
 # Deprecate Published/Depublished Metadata
 
 ## Purpose

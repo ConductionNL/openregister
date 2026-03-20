@@ -1,3 +1,7 @@
+---
+status: implemented
+---
+
 # Authentication and Authorization System
 
 ## Purpose

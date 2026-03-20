@@ -1,3 +1,7 @@
+---
+status: partial
+---
+
 # RBAC per Zaaktype
 
 ## Purpose

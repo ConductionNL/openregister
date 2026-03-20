@@ -1,3 +1,7 @@
+---
+status: partial
+---
+
 # Notificatie Engine
 
 ## Purpose

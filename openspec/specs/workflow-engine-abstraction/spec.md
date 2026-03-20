@@ -1,9 +1,8 @@
-# Workflow Engine Abstraction
-
 ---
 status: implemented
 ---
 
+# Workflow Engine Abstraction
 ## Purpose
 
 Provides an engine-agnostic interface for OpenRegister to interact with workflow engines (n8n, Windmill, and future engines), enabling the system to deploy, execute, monitor, and manage workflows without coupling to any specific engine's API. This is the foundation layer that other specs (Schema Hooks, Workflow-in-Import, Workflow Integration) build upon: every hook execution, import-time workflow deployment, and event-driven automation flows through the `WorkflowEngineInterface` and `WorkflowEngineRegistry` defined here. By abstracting engine specifics behind adapters, OpenRegister can support multiple simultaneous engines, allow engine migration without data loss, and extend to new engines via a single interface implementation.

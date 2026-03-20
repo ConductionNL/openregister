@@ -1,9 +1,8 @@
-# GraphQL API
-
 ---
 status: implemented
 ---
 
+# GraphQL API
 ## Purpose
 
 Provide an auto-generated GraphQL API alongside the existing REST API for register data, enabling clients to request exactly the fields they need in a single round-trip and resolve nested relationships without over-fetching. The GraphQL schema MUST be derived dynamically from register schema definitions at runtime, supporting queries with nested object resolution, mutations for CRUD operations, and subscriptions for real-time updates via Server-Sent Events (SSE).

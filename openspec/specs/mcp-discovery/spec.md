@@ -1,3 +1,7 @@
+---
+status: implemented
+---
+
 # MCP Discovery
 
 ## Purpose

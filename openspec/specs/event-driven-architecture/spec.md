@@ -1,3 +1,7 @@
+---
+status: implemented
+---
+
 # Event-Driven Architecture
 
 ## Purpose

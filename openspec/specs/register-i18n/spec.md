@@ -1,3 +1,7 @@
+---
+status: partial
+---
+
 # Register Internationalization
 
 ## Purpose
