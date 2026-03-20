@@ -28,6 +28,7 @@ import { objectStore, navigationStore } from '../../store/store.js'
 			:refreshing="isRefreshing"
 			row-key="id"
 			:empty-text="t('openregister', 'No audit trail entries found')"
+			:name-formatter="formatAuditTrailName"
 			@delete="onDelete"
 			@mass-delete="onMassDelete"
 			@refresh="handleRefresh"
@@ -191,6 +192,9 @@ export default {
 	},
 	methods: {
 		formatBytes,
+		formatAuditTrailName(item) {
+			return t('openregister', 'Audit Trail #{id}', { id: item.id })
+		},
 		async loadAuditTrails() {
 			try {
 				await objectStore.refreshGlobalAuditTrails()
