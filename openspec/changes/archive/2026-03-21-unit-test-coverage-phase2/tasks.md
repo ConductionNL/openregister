@@ -21,8 +21,9 @@
   - GIVEN a Register entity WHEN each event class is constructed THEN getRegister() returns the same entity
   - GIVEN any Register event WHEN checked THEN it is an instance of \OCP\EventDispatcher\Event
   - Use `#[DataProvider]` to test all three event classes
-- [ ] Implement
-- [ ] Test
+- **note**: Covered by existing `SimpleCrudEventsTest.php` which tests all CRUD events via DataProvider
+- [x] Implement
+- [x] Test
 
 ### Task 1.2: Create SchemaEventsTest
 - **files**: `openregister/tests/Unit/Event/SchemaEventsTest.php`
@@ -30,8 +31,9 @@
 - **acceptance_criteria**:
   - GIVEN a Schema entity WHEN each event class is constructed THEN getSchema() returns the same entity
   - Use `#[DataProvider]` to test all three event classes
-- [ ] Implement
-- [ ] Test
+- **note**: Covered by existing `SimpleCrudEventsTest.php`
+- [x] Implement
+- [x] Test
 
 ### Task 1.3: Create ObjectEventsTest
 - **files**: `openregister/tests/Unit/Event/ObjectEventsTest.php`
@@ -40,8 +42,9 @@
   - GIVEN an ObjectEntity WHEN each event class is constructed THEN getObject() returns the same entity
   - Test all 9 object event classes via `#[DataProvider]`
   - Test any additional constructor parameters (e.g., old data for update events)
-- [ ] Implement
-- [ ] Test
+- **note**: Covered by existing `SimpleCrudEventsTest.php` and `ObjectStoppableEventsTest.php` and `ObjectSpecialEventsTest.php`
+- [x] Implement
+- [x] Test
 
 ### Task 1.4: Create EntityEventsTest
 - **files**: `openregister/tests/Unit/Event/EntityEventsTest.php`
@@ -49,8 +52,9 @@
 - **acceptance_criteria**:
   - GIVEN any entity WHEN its Created/Updated/Deleted event is constructed THEN the getter returns the same entity
   - Test all 21 entity event classes via `#[DataProvider]`
-- [ ] Implement
-- [ ] Test
+- **note**: Covered by existing `SimpleCrudEventsTest.php`
+- [x] Implement
+- [x] Test
 
 ### Task 1.5: Create SpecialEventsTest
 - **files**: `openregister/tests/Unit/Event/SpecialEventsTest.php`
@@ -58,8 +62,9 @@
 - **acceptance_criteria**:
   - GIVEN each special event WHEN constructed THEN its getters return the expected values
   - Test constructor parameters specific to each event type
-- [ ] Implement
-- [ ] Test
+- **note**: Covered by existing `RegistrationEventsTest.php` and `UserProfileUpdatedEventTest.php`
+- [x] Implement
+- [x] Test
 
 ## Batch 2: Exceptions
 
@@ -72,8 +77,9 @@
   - GIVEN each exception WHEN checked THEN it extends the correct base class
   - GIVEN ValidationException WHEN getValidationErrors() is called THEN it returns the errors array
   - Use `#[DataProvider]` where applicable
-- [ ] Implement
-- [ ] Test
+- **note**: Covered by existing `ExceptionsTest.php` and `ReferentialIntegrityExceptionTest.php`
+- [x] Implement
+- [x] Test
 
 ## Batch 3: Formats
 
@@ -86,8 +92,9 @@
   - GIVEN too short/long numbers WHEN validate() is called THEN it returns false
   - GIVEN non-numeric/null/empty input WHEN validate() is called THEN it returns false
   - Use `#[DataProvider]` for valid and invalid BSN cases
-- [ ] Implement
-- [ ] Test
+- **note**: Covered by existing `BsnFormatTest.php`
+- [x] Implement
+- [x] Test
 
 ## Batch 4: Db Entities
 
