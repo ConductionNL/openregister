@@ -1,5 +1,5 @@
 <script setup>
-import { auditTrailStore, navigationStore, registerStore, schemaStore } from '../../store/store.js'
+import { objectStore, navigationStore, registerStore, schemaStore } from '../../store/store.js'
 
 </script>
 
@@ -125,77 +125,14 @@ import { auditTrailStore, navigationStore, registerStore, schemaStore } from '..
 				<ChartLine :size="20" />
 			</template>
 
-			<!-- Statistics Section -->
-			<div class="statsSection">
-				<h3>{{ t('openregister', 'Audit Trail Statistics') }}</h3>
-				<div class="statCard">
-					<div class="statNumber">
-						{{ totalAuditTrails }}
-					</div>
-					<div class="statLabel">
-						{{ t('openregister', 'Total Audit Trails') }}
-					</div>
-				</div>
-				<div class="statCard">
-					<div class="statNumber">
-						{{ createCount }}
-					</div>
-					<div class="statLabel">
-						{{ t('openregister', 'Create Operations') }}
-					</div>
-				</div>
-				<div class="statCard">
-					<div class="statNumber">
-						{{ updateCount }}
-					</div>
-					<div class="statLabel">
-						{{ t('openregister', 'Update Operations') }}
-					</div>
-				</div>
-				<div class="statCard">
-					<div class="statNumber">
-						{{ deleteCount }}
-					</div>
-					<div class="statLabel">
-						{{ t('openregister', 'Delete Operations') }}
-					</div>
-				</div>
-			</div>
-
-			<!-- Action Distribution -->
-			<div class="actionDistribution">
-				<h4>{{ t('openregister', 'Action Distribution') }}</h4>
-				<NcListItem v-for="(action, index) in actionDistribution"
-					:key="index"
-					:name="action.action"
-					:bold="false">
-					<template #icon>
-						<Pencil v-if="action.action === 'update'" :size="32" />
-						<Plus v-else-if="action.action === 'create'" :size="32" />
-						<Delete v-else-if="action.action === 'delete'" :size="32" />
-						<Eye v-else :size="32" />
-					</template>
-					<template #subname>
-						{{ t('openregister', '{count} entries', { count: action.count }) }}
-					</template>
-				</NcListItem>
-			</div>
-
-			<!-- Top Objects -->
-			<div class="topObjects">
-				<h4>{{ t('openregister', 'Most Active Objects') }}</h4>
-				<NcListItem v-for="(object, index) in topObjects"
-					:key="index"
-					:name="object.name"
-					:bold="false">
-					<template #icon>
-						<CogOutline :size="32" />
-					</template>
-					<template #subname>
-						{{ t('openregister', '{count} entries', { count: object.count }) }}
-					</template>
-				</NcListItem>
-			</div>
+			<CnStatsPanel :sections="auditStatsSections">
+				<template #item-icon-actionDistribution="{ item }">
+					<Pencil v-if="item.key === 'update'" :size="32" />
+					<Plus v-else-if="item.key === 'create'" :size="32" />
+					<Delete v-else-if="item.key === 'delete'" :size="32" />
+					<Eye v-else :size="32" />
+				</template>
+			</CnStatsPanel>
 		</NcAppSidebarTab>
 	</NcAppSidebar>
 </template>
@@ -207,17 +144,19 @@ import {
 	NcSelect,
 	NcNoteCard,
 	NcButton,
-	NcListItem,
 	NcDateTimePickerNative,
 	NcTextField,
 	NcCheckboxRadioSwitch,
 } from '@nextcloud/vue'
+import { CnStatsPanel } from '@conduction/nextcloud-vue'
 import FilterOutline from 'vue-material-design-icons/FilterOutline.vue'
 import ChartLine from 'vue-material-design-icons/ChartLine.vue'
 import CogOutline from 'vue-material-design-icons/CogOutline.vue'
 import Plus from 'vue-material-design-icons/Plus.vue'
 import Pencil from 'vue-material-design-icons/Pencil.vue'
+import Delete from 'vue-material-design-icons/Delete.vue'
 import Eye from 'vue-material-design-icons/Eye.vue'
+import TextBoxOutline from 'vue-material-design-icons/TextBoxOutline.vue'
 import FilterOffOutline from 'vue-material-design-icons/FilterOffOutline.vue'
 
 export default {
@@ -228,15 +167,15 @@ export default {
 		NcSelect,
 		NcNoteCard,
 		NcButton,
-		NcListItem,
 		NcDateTimePickerNative,
 		NcTextField,
 		NcCheckboxRadioSwitch,
+		CnStatsPanel,
 		FilterOutline,
 		ChartLine,
-		CogOutline,
 		Plus,
 		Pencil,
+		Delete,
 		Eye,
 		FilterOffOutline,
 	},
@@ -273,6 +212,7 @@ export default {
 			createCount: 0,
 			updateCount: 0,
 			deleteCount: 0,
+			readCount: 0,
 			actionDistribution: [],
 			topObjects: [],
 			filterTimeout: null,
@@ -333,16 +273,92 @@ export default {
 				schema,
 			}
 		},
+		globalAuditTrailResults() {
+			return objectStore.globalAuditTrails.results
+		},
 		userOptions() {
-			if (!auditTrailStore.auditTrailList || !auditTrailStore.auditTrailList.length) {
+			if (!objectStore.globalAuditTrails.results || !objectStore.globalAuditTrails.results.length) {
 				return []
 			}
 			// Get unique users from audit trail list
-			const users = [...new Set(auditTrailStore.auditTrailList.map(trail => trail.userName || trail.user).filter(Boolean))]
+			const users = [...new Set(objectStore.globalAuditTrails.results.map(trail => trail.userName || trail.user).filter(Boolean))]
 			return users.map(user => ({
 				label: user,
 				value: user,
 			}))
+		},
+		auditStatsSections() {
+			return [
+				{
+					type: 'stats',
+					id: 'total',
+					title: t('openregister', 'Audit Trail Statistics'),
+					layout: 'stack',
+					items: [{
+						title: t('openregister', 'Total Audit Trails'),
+						count: this.totalAuditTrails,
+						countLabel: t('openregister', 'entries'),
+						variant: 'primary',
+						icon: TextBoxOutline,
+					}],
+				},
+				{
+					type: 'stats',
+					id: 'operations',
+					layout: 'grid',
+					columns: 2,
+					items: [
+						{
+							title: t('openregister', 'Create'),
+							count: this.createCount,
+							countLabel: t('openregister', 'operations'),
+							variant: 'success',
+							icon: Plus,
+						},
+						{
+							title: t('openregister', 'Update'),
+							count: this.updateCount,
+							countLabel: t('openregister', 'operations'),
+							variant: 'warning',
+							icon: Pencil,
+						},
+						{
+							title: t('openregister', 'Delete'),
+							count: this.deleteCount,
+							countLabel: t('openregister', 'operations'),
+							variant: 'error',
+							icon: Delete,
+						},
+						{
+							title: t('openregister', 'Read'),
+							count: this.readCount,
+							countLabel: t('openregister', 'operations'),
+							icon: Eye,
+						},
+					],
+				},
+				{
+					type: 'list',
+					id: 'actionDistribution',
+					title: t('openregister', 'Action Distribution'),
+					items: this.actionDistribution.map(a => ({
+						key: a.action,
+						name: a.action,
+						subname: t('openregister', '{count} entries', { count: a.count }),
+					})),
+				},
+				{
+					type: 'list',
+					id: 'topObjects',
+					title: t('openregister', 'Most Active Objects'),
+					items: this.topObjects.map(obj => ({
+						key: obj.name,
+						name: obj.name,
+						subname: t('openregister', '{count} entries', { count: obj.count }),
+						icon: CogOutline,
+					})),
+				},
+			]
 		},
 	},
 	watch: {
@@ -354,7 +370,7 @@ export default {
 			},
 			deep: true,
 		},
-		'auditTrailStore.auditTrailList'() {
+		globalAuditTrailResults() {
 			this.updateFilteredCount()
 			this.loadStatistics()
 			this.loadActionDistribution()
@@ -379,20 +395,13 @@ export default {
 			schemaStore.refreshSchemaList()
 		}
 
-		// Load initial audit trail data and ensure it's refreshed
+		// Load initial audit trail data, then derive stats from it
 		this.loadAuditTrailData()
-
-		this.loadStatistics()
-		this.loadActionDistribution()
-		this.loadTopObjects()
 
 		// Listen for filtered count updates
 		this.$root.$on('audit-trail-filtered-count', (count) => {
 			this.filteredCount = count
 		})
-
-		// Watch store changes and update count
-		this.updateFilteredCount()
 
 		// Initialize from query params after lists potentially load
 		this.applyQueryParamsFromRoute()
@@ -407,8 +416,11 @@ export default {
 		 */
 		async loadAuditTrailData() {
 			try {
-				await auditTrailStore.refreshAuditTrailList()
+				await objectStore.refreshGlobalAuditTrails()
 				this.updateFilteredCount()
+				this.loadStatistics()
+				this.loadActionDistribution()
+				this.loadTopObjects()
 			} catch (error) {
 				// Handle error silently
 			}
@@ -460,8 +472,8 @@ export default {
 		 * @return {void}
 		 */
 		updateFilteredCount() {
-			this.filteredCount = auditTrailStore.auditTrailList.length
-			this.totalAuditTrails = auditTrailStore.auditTrailPagination.total || auditTrailStore.auditTrailList.length
+			this.filteredCount = objectStore.globalAuditTrails.results.length
+			this.totalAuditTrails = objectStore.globalAuditTrails.total || objectStore.globalAuditTrails.results.length
 		},
 		/**
 		 * Load statistics
@@ -469,45 +481,55 @@ export default {
 		 */
 		async loadStatistics() {
 			try {
-				const stats = await auditTrailStore.getStatistics()
+				const stats = await objectStore.fetchAuditTrailStatistics()
 				this.totalAuditTrails = stats.total || 0
 				this.createCount = stats.create || 0
 				this.updateCount = stats.update || 0
 				this.deleteCount = stats.delete || 0
+				this.readCount = stats.read || 0
 			} catch (error) {
 				// Handle error silently
 			}
 		},
 		/**
 		 * Load action distribution for stats
-		 * @return {Promise<void>}
 		 */
-		async loadActionDistribution() {
-			try {
-				const actionData = await auditTrailStore.getActionDistribution()
-				this.actionDistribution = actionData.map(action => ({
-					action: action.action || action.name,
-					count: action.count || 0,
-					percentage: action.percentage || 0,
-				}))
-			} catch (error) {
-				// Handle error silently
-			}
+		loadActionDistribution() {
+			const results = objectStore.globalAuditTrails.results || []
+			const total = results.length
+			const actions = ['create', 'update', 'delete', 'read']
+
+			this.actionDistribution = actions
+				.map(action => {
+					const count = results.filter(item => item.action === action).length
+					return {
+						action,
+						count,
+						percentage: total > 0 ? Math.round((count / total) * 100) : 0,
+					}
+				})
+				.filter(item => item.count > 0)
 		},
 		/**
 		 * Load top objects for stats
-		 * @return {Promise<void>}
 		 */
-		async loadTopObjects() {
-			try {
-				const objectData = await auditTrailStore.getTopObjects()
-				this.topObjects = objectData.map(object => ({
-					name: object.objectId || object.name || `Object ${object.id}`,
-					count: object.count || 0,
+		loadTopObjects() {
+			const results = objectStore.globalAuditTrails.results || []
+			const objectCounts = {}
+
+			results.forEach(item => {
+				if (item.object) {
+					objectCounts[item.object] = (objectCounts[item.object] || 0) + 1
+				}
+			})
+
+			this.topObjects = Object.entries(objectCounts)
+				.map(([objectId, count]) => ({
+					name: `Object ${objectId}`,
+					count,
 				}))
-			} catch (error) {
-				// Handle error silently
-			}
+				.sort((a, b) => b.count - a.count)
+				.slice(0, 10)
 		},
 		/**
 		 * Handle register change
@@ -673,8 +695,8 @@ export default {
 			if (this.objectFilter) filters.object = this.objectFilter
 			if (this.showOnlyWithChanges) filters.onlyWithChanges = true
 
-			auditTrailStore.setAuditTrailFilters(filters)
-			auditTrailStore.refreshAuditTrailList()
+			objectStore.setAuditTrailFilters(filters)
+			objectStore.refreshGlobalAuditTrails()
 			this.$root.$emit('audit-trail-filters-changed', filters)
 		},
 		/**
@@ -695,8 +717,8 @@ export default {
 			schemaStore.setSchemaItem(null)
 
 			// Clear store filters
-			auditTrailStore.setAuditTrailFilters({})
-			auditTrailStore.refreshAuditTrailList()
+			objectStore.clearAuditTrailFilters()
+			objectStore.refreshGlobalAuditTrails()
 
 			// Reflect in URL
 			this.updateRouteQueryFromState()
@@ -706,19 +728,40 @@ export default {
 </script>
 
 <style scoped>
-.filterSection,
-.statsSection {
+.section {
+	padding: 12px 0;
+	border-bottom: 1px solid var(--color-border);
+
+	&:last-child {
+		border-bottom: none;
+	}
+}
+
+.sectionTitle {
+	color: var(--color-text-maxcontrast);
+	font-size: 14px;
+	font-weight: bold;
+	padding: 0 16px;
+	margin: 0 0 12px 0;
+}
+
+.statsStack {
+	display: flex;
+	flex-direction: column;
+	gap: 12px;
+	padding: 0 8px;
+}
+
+.filterSection {
 	padding: 12px 0;
 	border-bottom: 1px solid var(--color-border);
 }
 
-.filterSection:last-child,
-.statsSection:last-child {
+.filterSection:last-child {
 	border-bottom: none;
 }
 
-.filterSection h3,
-.statsSection h3 {
+.filterSection h3 {
 	color: var(--color-text-maxcontrast);
 	font-size: 14px;
 	font-weight: bold;
@@ -744,66 +787,8 @@ export default {
 	margin-bottom: 12px;
 }
 
-.actionOption {
-	display: flex;
-	align-items: center;
-	gap: 8px;
-}
-
-.actionOption.action-create {
-	color: var(--color-success);
-}
-
-.actionOption.action-update {
-	color: var(--color-warning);
-}
-
-.actionOption.action-delete {
-	color: var(--color-error);
-}
-
-.actionOption.action-read {
-	color: var(--color-info);
-}
-
 .filter-hint {
 	margin: 8px 16px;
-}
-
-.statsSection {
-	padding: 16px;
-}
-
-.statCard {
-	background: var(--color-background-hover);
-	border-radius: var(--border-radius);
-	padding: 16px;
-	margin-bottom: 12px;
-	text-align: center;
-}
-
-.statCard.create {
-	border-left: 4px solid var(--color-success);
-}
-
-.statCard.update {
-	border-left: 4px solid var(--color-warning);
-}
-
-.statCard.delete {
-	border-left: 4px solid var(--color-error);
-}
-
-.statNumber {
-	font-size: 2rem;
-	font-weight: bold;
-	color: var(--color-primary);
-	margin-bottom: 4px;
-}
-
-.statLabel {
-	font-size: 0.9rem;
-	color: var(--color-text-maxcontrast);
 }
 
 .actionDistribution,
@@ -817,66 +802,6 @@ export default {
 	font-size: 1rem;
 	font-weight: 500;
 	color: var(--color-main-text);
-}
-
-.actionBar {
-	margin-bottom: 12px;
-}
-
-.actionLabel {
-	display: flex;
-	justify-content: space-between;
-	align-items: center;
-	margin-bottom: 4px;
-	font-size: 0.9rem;
-}
-
-.actionLabel .action-create {
-	color: var(--color-success);
-	font-weight: bold;
-}
-
-.actionLabel .action-update {
-	color: var(--color-warning);
-	font-weight: bold;
-}
-
-.actionLabel .action-delete {
-	color: var(--color-error);
-	font-weight: bold;
-}
-
-.actionLabel .action-read {
-	color: var(--color-info);
-	font-weight: bold;
-}
-
-.actionProgress {
-	background: var(--color-background-darker);
-	border-radius: 4px;
-	height: 8px;
-	overflow: hidden;
-}
-
-.actionProgressBar {
-	height: 100%;
-	transition: width 0.3s ease;
-}
-
-.actionProgressBar.action-create {
-	background: var(--color-success);
-}
-
-.actionProgressBar.action-update {
-	background: var(--color-warning);
-}
-
-.actionProgressBar.action-delete {
-	background: var(--color-error);
-}
-
-.actionProgressBar.action-read {
-	background: var(--color-info);
 }
 
 /* Add some spacing between select inputs */

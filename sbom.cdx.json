@@ -2,10 +2,10 @@
   "$schema": "http://cyclonedx.org/schema/bom-1.5.schema.json",
   "bomFormat": "CycloneDX",
   "specVersion": "1.5",
-  "serialNumber": "urn:uuid:f65e3579-42de-4d9c-a573-8218a06637a1",
+  "serialNumber": "urn:uuid:56ecfac0-d619-4a96-a748-697a81a7b0bf",
   "version": 1,
   "metadata": {
-    "timestamp": "2026-03-18T20:45:55Z",
+    "timestamp": "2026-03-20T14:18:48Z",
     "tools": [
       {
         "name": "composer",
@@ -82,10 +82,10 @@
       }
     ],
     "component": {
-      "bom-ref": "conductionnl/openregister-dev-feature/REGISTERS-482/configuration-page",
+      "bom-ref": "conductionnl/openregister-dev-feature/REGISTERS-483/audit-trails-page",
       "type": "application",
       "name": "openregister",
-      "version": "dev-feature/REGISTERS-482/configuration-page",
+      "version": "dev-feature/REGISTERS-483/audit-trails-page",
       "group": "conductionnl",
       "description": "Quickly build data registers based on schema.json",
       "author": "Conduction b.v.",
@@ -96,15 +96,15 @@
           }
         }
       ],
-      "purl": "pkg:composer/conductionnl/openregister@dev-feature/REGISTERS-482/configuration-page",
+      "purl": "pkg:composer/conductionnl/openregister@dev-feature/REGISTERS-483/audit-trails-page",
       "properties": [
         {
           "name": "cdx:composer:package:distReference",
-          "value": "f496d30112c18cd1767173ea65e9a9a55ff1d97b"
+          "value": "d5fe66f90b78f626f6621e17105a44569fa49a84"
         },
         {
           "name": "cdx:composer:package:sourceReference",
-          "value": "f496d30112c18cd1767173ea65e9a9a55ff1d97b"
+          "value": "d5fe66f90b78f626f6621e17105a44569fa49a84"
         },
         {
           "name": "cdx:composer:package:type",
@@ -55484,7 +55484,7 @@
       "ref": "webonyx/graphql-php-15.31.1.0"
     },
     {
-      "ref": "conductionnl/openregister-dev-feature/REGISTERS-482/configuration-page",
+      "ref": "conductionnl/openregister-dev-feature/REGISTERS-483/audit-trails-page",
       "dependsOn": [
         "adbario/php-dot-notation-3.3.0.0",
         "elasticsearch/elasticsearch-8.19.0.0",

@@ -1,5 +1,5 @@
 <script setup>
-import { auditTrailStore, navigationStore } from '../../store/store.js'
+import { objectStore, navigationStore } from '../../store/store.js'
 </script>
 
 <template>
@@ -7,67 +7,67 @@ import { auditTrailStore, navigationStore } from '../../store/store.js'
 		:name="t('openregister', 'Audit Trail Changes')"
 		size="large"
 		:can-close="true"
-		@close="closeDialog">
-		<div v-if="auditTrailStore.auditTrailItem" class="audit-trail-changes">
+		@close="closeDialog"
+		@update:open="closeDialog">
+		<div v-if="objectStore.auditTrailItem" class="audit-trail-changes">
 			<!-- Header Information -->
-			<div class="changes-header">
-				<h3>{{ t('openregister', 'Changes for Audit Trail #{id}', { id: auditTrailStore.auditTrailItem.id }) }}</h3>
-				<div class="audit-info">
-					<span class="action-badge" :class="`action-${auditTrailStore.auditTrailItem.action}`">
-						<Plus v-if="auditTrailStore.auditTrailItem.action === 'create'" :size="16" />
-						<Pencil v-else-if="auditTrailStore.auditTrailItem.action === 'update'" :size="16" />
-						<Delete v-else-if="auditTrailStore.auditTrailItem.action === 'delete'" :size="16" />
-						<Eye v-else-if="auditTrailStore.auditTrailItem.action === 'read'" :size="16" />
-						{{ auditTrailStore.auditTrailItem.action?.toUpperCase() }}
-					</span>
-					<span class="timestamp">
-						{{ formatDate(auditTrailStore.auditTrailItem.created) }}
-					</span>
-					<span class="user">
-						{{ auditTrailStore.auditTrailItem.userName || auditTrailStore.auditTrailItem.user || 'Unknown User' }}
-					</span>
-				</div>
+			<div class="details-section">
+				<h3>{{ t('openregister', 'Changes for Audit Trail #{id}', { id: objectStore.auditTrailItem.id }) }}</h3>
+				<CnDetailGrid :items="headerInfoItems">
+					<template #item-0>
+						<CnStatusBadge
+							:label="objectStore.auditTrailItem.action ? objectStore.auditTrailItem.action.toUpperCase() : 'NO ACTION'"
+							:color-map="actionColorMap"
+							solid>
+							<template #icon>
+								<Plus v-if="objectStore.auditTrailItem.action === 'create'" :size="16" />
+								<Pencil v-else-if="objectStore.auditTrailItem.action === 'update'" :size="16" />
+								<Delete v-else-if="objectStore.auditTrailItem.action === 'delete'" :size="16" />
+								<Eye v-else-if="objectStore.auditTrailItem.action === 'read'" :size="16" />
+							</template>
+						</CnStatusBadge>
+					</template>
+					<template #item-1>
+						<NcDateTime :relative-time="false" :timestamp="new Date(objectStore.auditTrailItem.created)" :ignore-seconds="false" />
+					</template>
+				</CnDetailGrid>
 			</div>
 
 			<!-- Changes Table -->
-			<div v-if="hasChanges" class="changes-section">
-				<div v-if="isTableChanges" class="changes-table-container">
-					<table class="changes-table">
-						<thead>
-							<tr>
-								<th>{{ t('openregister', 'Field') }}</th>
-								<th>{{ t('openregister', 'Old Value') }}</th>
-								<th>{{ t('openregister', 'New Value') }}</th>
-								<th>{{ t('openregister', 'Change Type') }}</th>
-							</tr>
-						</thead>
-						<tbody>
-							<tr v-for="(change, field) in changes" :key="field" class="change-row">
-								<td class="field-name">
-									{{ field }}
-								</td>
-								<td class="old-value">
-									<pre v-if="isObject(change.old)">{{ formatValue(change.old) }}</pre>
-									<span v-else>{{ formatValue(change.old) }}</span>
-								</td>
-								<td class="new-value">
-									<pre v-if="isObject(change.new)">{{ formatValue(change.new) }}</pre>
-									<span v-else>{{ formatValue(change.new) }}</span>
-								</td>
-								<td class="change-type">
-									<span class="type-badge" :class="getChangeType(change)">
-										{{ getChangeTypeLabel(change) }}
-									</span>
-								</td>
-							</tr>
-						</tbody>
-					</table>
+			<div v-if="hasChanges" class="details-section">
+				<div v-if="isTableChanges">
+					<CnDataTable
+						:columns="tableColumns"
+						:rows="tableRows"
+						:selectable="false"
+						:empty-text="t('openregister', 'No changes recorded')">
+						<template #column-oldValue="{ value }">
+							<pre v-if="isObject(value)" class="value-pre">{{ formatValue(value) }}</pre>
+							<span v-else>{{ formatValue(value) }}</span>
+						</template>
+
+						<template #column-newValue="{ value }">
+							<pre v-if="isObject(value)" class="value-pre">{{ formatValue(value) }}</pre>
+							<span v-else>{{ formatValue(value) }}</span>
+						</template>
+
+						<template #column-changeType="{ row }">
+							<CnStatusBadge
+								:label="row.changeTypeLabel"
+								:variant="changeTypeVariantMap[row.changeType]"
+								size="small"
+								solid />
+						</template>
+					</CnDataTable>
 				</div>
 
 				<!-- Raw changes view for non-standard formats -->
-				<div v-else class="raw-changes-container">
+				<div v-else>
 					<h4>{{ t('openregister', 'Raw Changes Data') }}</h4>
-					<pre>{{ formatChanges(auditTrailStore.auditTrailItem.changed) }}</pre>
+					<CnJsonViewer
+						:value="formatChanges(objectStore.auditTrailItem.changed)"
+						:read-only="true"
+						height="300px" />
 				</div>
 			</div>
 
@@ -109,9 +109,11 @@ import { auditTrailStore, navigationStore } from '../../store/store.js'
 <script>
 import {
 	NcButton,
+	NcDateTime,
 	NcDialog,
 	NcEmptyContent,
 } from '@nextcloud/vue'
+import { CnStatusBadge, CnJsonViewer, CnDetailGrid, CnDataTable } from '@conduction/nextcloud-vue'
 
 import Close from 'vue-material-design-icons/Close.vue'
 import ContentCopy from 'vue-material-design-icons/ContentCopy.vue'
@@ -124,9 +126,14 @@ import InformationOutline from 'vue-material-design-icons/InformationOutline.vue
 export default {
 	name: 'AuditTrailChanges',
 	components: {
+		NcDateTime,
 		NcDialog,
 		NcButton,
 		NcEmptyContent,
+		CnStatusBadge,
+		CnJsonViewer,
+		CnDetailGrid,
+		CnDataTable,
 		// Icons
 		Close,
 		ContentCopy,
@@ -136,13 +143,15 @@ export default {
 		Delete,
 		InformationOutline,
 	},
+	data() {
+		return {
+			actionColorMap: { create: 'success', update: 'warning', delete: 'error', read: 'info' },
+			changeTypeVariantMap: { added: 'success', removed: 'error', modified: 'warning', unchanged: 'default' },
+		}
+	},
 	computed: {
-		/**
-		 * Check if audit trail has changes data
-		 * @return {boolean} True if has changes
-		 */
 		hasChanges() {
-			const changed = auditTrailStore.auditTrailItem?.changed
+			const changed = objectStore.auditTrailItem?.changed
 			if (!changed) return false
 
 			if (Array.isArray(changed)) {
@@ -156,17 +165,11 @@ export default {
 			return !!changed
 		},
 
-		/**
-		 * Get processed changes data
-		 * @return {object} Processed changes
-		 */
 		changes() {
-			const changed = auditTrailStore.auditTrailItem?.changed
+			const changed = objectStore.auditTrailItem?.changed
 			if (!changed) return {}
 
-			// Try to process as table-style changes
 			if (typeof changed === 'object' && !Array.isArray(changed)) {
-				// Check if it's in the format { field: { old: value, new: value } }
 				const hasStandardFormat = Object.values(changed).every(value =>
 					typeof value === 'object'
 					&& value !== null
@@ -181,48 +184,51 @@ export default {
 			return {}
 		},
 
-		/**
-		 * Check if changes are in table format
-		 * @return {boolean} True if table format
-		 */
 		isTableChanges() {
 			return Object.keys(this.changes).length > 0
 		},
+
+		headerInfoItems() {
+			const item = objectStore.auditTrailItem
+			if (!item) return []
+
+			return [
+				{ label: this.t('openregister', 'Action') },
+				{ label: this.t('openregister', 'Timestamp') },
+				{ label: this.t('openregister', 'User'), value: item.userName || item.user || this.t('openregister', 'Unknown User') },
+			]
+		},
+
+		tableColumns() {
+			return [
+				{ key: 'field', label: this.t('openregister', 'Field') },
+				{ key: 'oldValue', label: this.t('openregister', 'Old Value') },
+				{ key: 'newValue', label: this.t('openregister', 'New Value') },
+				{ key: 'changeType', label: this.t('openregister', 'Change Type'), width: '120px' },
+			]
+		},
+
+		tableRows() {
+			return Object.entries(this.changes).map(([field, change]) => ({
+				id: field,
+				field,
+				oldValue: change.old,
+				newValue: change.new,
+				changeType: this.getChangeType(change),
+				changeTypeLabel: this.getChangeTypeLabel(change),
+			}))
+		},
 	},
 	methods: {
-		/**
-		 * Close the dialog
-		 * @return {void}
-		 */
 		closeDialog() {
 			navigationStore.setDialog(false)
 		},
 
-		/**
-		 * Format date for display
-		 * @param {string} dateString - Date string to format
-		 * @return {string} Formatted date
-		 */
-		formatDate(dateString) {
-			if (!dateString) return '-'
-			try {
-				return new Date(dateString).toLocaleString()
-			} catch (error) {
-				return dateString
-			}
-		},
-
-		/**
-		 * Format changes data for display
-		 * @param {*} changes - Changes data
-		 * @return {string} Formatted changes
-		 */
 		formatChanges(changes) {
 			if (!changes) return ''
 
 			try {
 				if (typeof changes === 'string') {
-					// Try to parse if it's a JSON string
 					try {
 						const parsed = JSON.parse(changes)
 						return JSON.stringify(parsed, null, 2)
@@ -237,11 +243,6 @@ export default {
 			}
 		},
 
-		/**
-		 * Format value for display
-		 * @param {*} value - Value to format
-		 * @return {string} Formatted value
-		 */
 		formatValue(value) {
 			if (value === null) return 'null'
 			if (value === undefined) return 'undefined'
@@ -258,20 +259,10 @@ export default {
 			return String(value)
 		},
 
-		/**
-		 * Check if value is an object
-		 * @param {*} value - Value to check
-		 * @return {boolean} True if object
-		 */
 		isObject(value) {
 			return value !== null && typeof value === 'object'
 		},
 
-		/**
-		 * Get change type class
-		 * @param {object} change - Change object
-		 * @return {string} CSS class for change type
-		 */
 		getChangeType(change) {
 			if (!Object.prototype.hasOwnProperty.call(change, 'old') && Object.prototype.hasOwnProperty.call(change, 'new')) {
 				return 'added'
@@ -285,11 +276,6 @@ export default {
 			return 'unchanged'
 		},
 
-		/**
-		 * Get change type label
-		 * @param {object} change - Change object
-		 * @return {string} Human readable change type
-		 */
 		getChangeTypeLabel(change) {
 			const type = this.getChangeType(change)
 			switch (type) {
@@ -304,13 +290,9 @@ export default {
 			}
 		},
 
-		/**
-		 * Copy changes data to clipboard
-		 * @return {Promise<void>}
-		 */
 		async copyChanges() {
 			try {
-				const changes = this.formatChanges(auditTrailStore.auditTrailItem.changed)
+				const changes = this.formatChanges(objectStore.auditTrailItem.changed)
 				await navigator.clipboard.writeText(changes)
 				OC.Notification.showSuccess(this.t('openregister', 'Changes copied to clipboard'))
 			} catch (error) {
@@ -319,10 +301,6 @@ export default {
 			}
 		},
 
-		/**
-		 * Switch to full details view
-		 * @return {void}
-		 */
 		viewFullDetails() {
 			navigationStore.setDialog('auditTrailDetails')
 		},
@@ -335,106 +313,20 @@ export default {
 	padding: 16px 0;
 }
 
-.changes-header {
+.details-section {
 	margin-bottom: 24px;
-	padding-bottom: 16px;
-	border-bottom: 1px solid var(--color-border);
 }
 
-.changes-header h3 {
-	margin: 0 0 12px 0;
-	font-size: 1.2rem;
+.details-section h3 {
+	margin: 0 0 16px 0;
+	font-size: 1.1rem;
 	font-weight: 600;
 	color: var(--color-main-text);
-}
-
-.audit-info {
-	display: flex;
-	align-items: center;
-	gap: 16px;
-	flex-wrap: wrap;
-}
-
-.action-badge {
-	display: inline-flex;
-	align-items: center;
-	gap: 4px;
-	padding: 4px 8px;
-	border-radius: 12px;
-	font-size: 0.75rem;
-	font-weight: 600;
-	color: white;
-	background: var(--color-text-maxcontrast);
-}
-
-.action-badge.action-create {
-	background: var(--color-success);
-}
-
-.action-badge.action-update {
-	background: var(--color-warning);
-}
-
-.action-badge.action-delete {
-	background: var(--color-error);
-}
-
-.action-badge.action-read {
-	background: var(--color-info);
-}
-
-.timestamp,
-.user {
-	color: var(--color-text-maxcontrast);
-	font-size: 0.9rem;
-}
-
-.changes-section {
-	margin-bottom: 24px;
-}
-
-.changes-table-container {
-	background: var(--color-main-background);
-	border: 1px solid var(--color-border);
-	border-radius: var(--border-radius);
-	overflow: hidden;
-}
-
-.changes-table {
-	width: 100%;
-	border-collapse: collapse;
-}
-
-.changes-table th,
-.changes-table td {
-	padding: 12px;
-	text-align: left;
 	border-bottom: 1px solid var(--color-border);
+	padding-bottom: 8px;
 }
 
-.changes-table th {
-	background: var(--color-background-hover);
-	font-weight: 500;
-	color: var(--color-text-maxcontrast);
-}
-
-.change-row:hover {
-	background: var(--color-background-hover);
-}
-
-.field-name {
-	font-weight: 500;
-	min-width: 150px;
-}
-
-.old-value,
-.new-value {
-	max-width: 200px;
-	word-break: break-word;
-}
-
-.old-value pre,
-.new-value pre {
+.value-pre {
 	margin: 0;
 	font-family: 'Courier New', monospace;
 	font-size: 0.8rem;
@@ -444,60 +336,6 @@ export default {
 	background: var(--color-background-darker);
 	padding: 8px;
 	border-radius: 4px;
-}
-
-.change-type {
-	width: 100px;
-}
-
-.type-badge {
-	display: inline-flex;
-	padding: 2px 6px;
-	border-radius: 8px;
-	font-size: 0.7rem;
-	font-weight: 500;
-	color: white;
-}
-
-.type-badge.added {
-	background: var(--color-success);
-}
-
-.type-badge.removed {
-	background: var(--color-error);
-}
-
-.type-badge.modified {
-	background: var(--color-warning);
-}
-
-.type-badge.unchanged {
-	background: var(--color-text-maxcontrast);
-}
-
-.raw-changes-container {
-	background: var(--color-background-darker);
-	border: 1px solid var(--color-border);
-	border-radius: var(--border-radius);
-	padding: 16px;
-}
-
-.raw-changes-container h4 {
-	margin: 0 0 12px 0;
-	font-size: 1rem;
-	font-weight: 500;
-	color: var(--color-main-text);
-}
-
-.raw-changes-container pre {
-	margin: 0;
-	font-family: 'Courier New', monospace;
-	font-size: 0.85rem;
-	white-space: pre-wrap;
-	word-break: break-word;
-	color: var(--color-main-text);
-	max-height: 400px;
-	overflow-y: auto;
 }
 
 .no-changes {

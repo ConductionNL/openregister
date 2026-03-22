@@ -1,5 +1,5 @@
 <script setup>
-import { auditTrailStore, navigationStore } from '../../store/store.js'
+import { objectStore, navigationStore } from '../../store/store.js'
 </script>
 
 <template>
@@ -7,78 +7,51 @@ import { auditTrailStore, navigationStore } from '../../store/store.js'
 		:name="t('openregister', 'Audit Trail Details')"
 		size="large"
 		:can-close="true"
-		@close="closeDialog">
-		<div v-if="auditTrailStore.auditTrailItem" class="audit-trail-details">
-			<!-- Header Information -->
+		@update:open="closeDialog">
+		<div v-if="objectStore.auditTrailItem" class="audit-trail-details">
+			<!-- Basic Information -->
 			<div class="details-section">
 				<h3>{{ t('openregister', 'Basic Information') }}</h3>
-				<div class="details-grid">
-					<div class="detail-item">
-						<label>{{ t('openregister', 'ID') }}</label>
-						<span>{{ auditTrailStore.auditTrailItem.id }}</span>
-					</div>
-					<div class="detail-item">
-						<label>{{ t('openregister', 'Action') }}</label>
-						<span class="action-badge" :class="`action-${auditTrailStore.auditTrailItem.action}`">
-							<Plus v-if="auditTrailStore.auditTrailItem.action === 'create'" :size="16" />
-							<Pencil v-else-if="auditTrailStore.auditTrailItem.action === 'update'" :size="16" />
-							<Delete v-else-if="auditTrailStore.auditTrailItem.action === 'delete'" :size="16" />
-							<Eye v-else-if="auditTrailStore.auditTrailItem.action === 'read'" :size="16" />
-							{{ auditTrailStore.auditTrailItem.action?.toUpperCase() }}
-						</span>
-					</div>
-					<div class="detail-item">
-						<label>{{ t('openregister', 'Created') }}</label>
-						<span>{{ formatDate(auditTrailStore.auditTrailItem.created) }}</span>
-					</div>
-					<div class="detail-item">
-						<label>{{ t('openregister', 'Object ID') }}</label>
-						<span>{{ auditTrailStore.auditTrailItem.object || '-' }}</span>
-					</div>
-					<div class="detail-item">
-						<label>{{ t('openregister', 'Register ID') }}</label>
-						<span>{{ auditTrailStore.auditTrailItem.register || '-' }}</span>
-					</div>
-					<div class="detail-item">
-						<label>{{ t('openregister', 'Schema ID') }}</label>
-						<span>{{ auditTrailStore.auditTrailItem.schema || '-' }}</span>
-					</div>
-					<div class="detail-item">
-						<label>{{ t('openregister', 'User') }}</label>
-						<span>{{ auditTrailStore.auditTrailItem.userName || auditTrailStore.auditTrailItem.user || '-' }}</span>
-					</div>
-					<div class="detail-item">
-						<label>{{ t('openregister', 'Size') }}</label>
-						<span>{{ auditTrailStore.auditTrailItem.size || '-' }}</span>
-					</div>
-				</div>
+				<CnDetailGrid :items="basicInfoItems">
+					<template #item-1>
+						<CnStatusBadge
+							:label="objectStore.auditTrailItem.action ? objectStore.auditTrailItem.action.toUpperCase() : 'NO ACTION'"
+							:color-map="actionColorMap"
+							solid>
+							<template #icon>
+								<Plus v-if="objectStore.auditTrailItem.action === 'create'" :size="16" />
+								<Pencil v-else-if="objectStore.auditTrailItem.action === 'update'" :size="16" />
+								<Delete v-else-if="objectStore.auditTrailItem.action === 'delete'" :size="16" />
+								<Eye v-else-if="objectStore.auditTrailItem.action === 'read'" :size="16" />
+							</template>
+						</CnStatusBadge>
+					</template>
+				</CnDetailGrid>
 			</div>
 
 			<!-- Changes Information -->
 			<div v-if="hasChanges" class="details-section">
 				<h3>{{ t('openregister', 'Changes') }}</h3>
-				<div class="changes-container">
-					<pre>{{ formatChanges(auditTrailStore.auditTrailItem.changed) }}</pre>
-				</div>
+				<CnJsonViewer
+					:value="formatChanges(objectStore.auditTrailItem.changed)"
+					:read-only="true" />
 			</div>
 
 			<!-- Request Data -->
-			<div v-if="auditTrailStore.auditTrailItem.request" class="details-section">
+			<div v-if="objectStore.auditTrailItem.request" class="details-section">
 				<h3>{{ t('openregister', 'Request Data') }}</h3>
-				<div class="request-container">
-					<pre>{{ formatJson(auditTrailStore.auditTrailItem.request) }}</pre>
-				</div>
+				<CnJsonViewer
+					:value="formatJson(objectStore.auditTrailItem.request)"
+					:read-only="true"
+					height="100px" />
 			</div>
 
 			<!-- Additional Fields -->
-			<div class="details-section">
+			<div v-if="additionalFieldItems.length" class="details-section">
 				<h3>{{ t('openregister', 'Additional Information') }}</h3>
-				<div class="additional-fields">
-					<div v-for="[key, value] in additionalFields" :key="key" class="detail-item">
-						<label>{{ formatFieldName(key) }}</label>
-						<span>{{ formatFieldValue(value) }}</span>
-					</div>
-				</div>
+				<CnDetailGrid
+					layout="horizontal"
+					:items="additionalFieldItems" />
 			</div>
 		</div>
 
@@ -110,6 +83,7 @@ import {
 	NcButton,
 	NcDialog,
 } from '@nextcloud/vue'
+import { CnStatusBadge, CnJsonViewer, CnDetailGrid } from '@conduction/nextcloud-vue'
 
 import Close from 'vue-material-design-icons/Close.vue'
 import ContentCopy from 'vue-material-design-icons/ContentCopy.vue'
@@ -124,6 +98,9 @@ export default {
 	components: {
 		NcDialog,
 		NcButton,
+		CnStatusBadge,
+		CnJsonViewer,
+		CnDetailGrid,
 		// Icons
 		Close,
 		ContentCopy,
@@ -133,13 +110,18 @@ export default {
 		Delete,
 		Eye,
 	},
+	data() {
+		return {
+			actionColorMap: { create: 'success', update: 'warning', delete: 'error', read: 'info' },
+		}
+	},
 	computed: {
 		/**
 		 * Check if audit trail has changes data
 		 * @return {boolean} True if has changes
 		 */
 		hasChanges() {
-			const changed = auditTrailStore.auditTrailItem?.changed
+			const changed = objectStore.auditTrailItem?.changed
 			if (!changed) return false
 
 			if (Array.isArray(changed)) {
@@ -154,20 +136,44 @@ export default {
 		},
 
 		/**
-		 * Get additional fields that aren't in the main display
-		 * @return {Array} Array of key-value pairs
+		 * Basic information items for the detail grid
+		 * @return {Array<{ label: string, value: string }>}
 		 */
-		additionalFields() {
-			if (!auditTrailStore.auditTrailItem) return []
+		basicInfoItems() {
+			const item = objectStore.auditTrailItem
+			if (!item) return []
+
+			return [
+				{ label: this.t('openregister', 'ID'), value: item.id },
+				{ label: this.t('openregister', 'Action') },
+				{ label: this.t('openregister', 'Created'), value: this.formatDate(item.created) },
+				{ label: this.t('openregister', 'Object ID'), value: item.object || '-' },
+				{ label: this.t('openregister', 'Register ID'), value: item.register || '-' },
+				{ label: this.t('openregister', 'Schema ID'), value: item.schema || '-' },
+				{ label: this.t('openregister', 'User'), value: item.userName || item.user || '-' },
+				{ label: this.t('openregister', 'Size'), value: item.size || '-' },
+			]
+		},
+
+		/**
+		 * Additional fields formatted as items for the horizontal detail grid
+		 * @return {Array<{ label: string, value: string }>}
+		 */
+		additionalFieldItems() {
+			if (!objectStore.auditTrailItem) return []
 
 			const mainFields = [
 				'id', 'action', 'created', 'object', 'register',
 				'schema', 'user', 'userName', 'size', 'changed', 'request',
 			]
 
-			return Object.entries(auditTrailStore.auditTrailItem)
+			return Object.entries(objectStore.auditTrailItem)
 				.filter(([key]) => !mainFields.includes(key))
 				.filter(([, value]) => value !== null && value !== undefined && value !== '')
+				.map(([key, value]) => ({
+					label: this.formatFieldName(key),
+					value: this.formatFieldValue(value),
+				}))
 		},
 	},
 	methods: {
@@ -280,7 +286,7 @@ export default {
 		 */
 		async copyFullData() {
 			try {
-				const data = JSON.stringify(auditTrailStore.auditTrailItem, null, 2)
+				const data = JSON.stringify(objectStore.auditTrailItem, null, 2)
 				await navigator.clipboard.writeText(data)
 				OC.Notification.showSuccess(this.t('openregister', 'Full data copied to clipboard'))
 			} catch (error) {
@@ -295,7 +301,7 @@ export default {
 		 */
 		async copyChanges() {
 			try {
-				const changes = this.formatChanges(auditTrailStore.auditTrailItem.changed)
+				const changes = this.formatChanges(objectStore.auditTrailItem.changed)
 				await navigator.clipboard.writeText(changes)
 				OC.Notification.showSuccess(this.t('openregister', 'Changes copied to clipboard'))
 			} catch (error) {
@@ -325,101 +331,4 @@ export default {
 	padding-bottom: 8px;
 }
 
-.details-grid {
-	display: grid;
-	grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-	gap: 16px;
-}
-
-.detail-item {
-	display: flex;
-	flex-direction: column;
-	gap: 4px;
-}
-
-.detail-item label {
-	font-size: 0.9rem;
-	font-weight: 500;
-	color: var(--color-text-maxcontrast);
-}
-
-.detail-item span {
-	padding: 8px 12px;
-	background: var(--color-background-hover);
-	border-radius: var(--border-radius);
-	font-family: var(--font-face);
-	word-break: break-all;
-}
-
-.action-badge {
-	display: inline-flex !important;
-	align-items: center;
-	gap: 4px;
-	padding: 4px 8px !important;
-	border-radius: 12px !important;
-	font-size: 0.75rem;
-	font-weight: 600;
-	color: white;
-	background: var(--color-text-maxcontrast);
-	width: fit-content;
-}
-
-.action-badge.action-create {
-	background: var(--color-success) !important;
-}
-
-.action-badge.action-update {
-	background: var(--color-warning) !important;
-}
-
-.action-badge.action-delete {
-	background: var(--color-error) !important;
-}
-
-.action-badge.action-read {
-	background: var(--color-info) !important;
-}
-
-.changes-container,
-.request-container {
-	background: var(--color-background-darker);
-	border: 1px solid var(--color-border);
-	border-radius: var(--border-radius);
-	padding: 16px;
-	max-height: 400px;
-	overflow-y: auto;
-}
-
-.changes-container pre,
-.request-container pre {
-	margin: 0;
-	font-family: 'Courier New', monospace;
-	font-size: 0.85rem;
-	white-space: pre-wrap;
-	word-break: break-word;
-	color: var(--color-main-text);
-}
-
-.additional-fields {
-	display: flex;
-	flex-direction: column;
-	gap: 12px;
-}
-
-.additional-fields .detail-item {
-	flex-direction: row;
-	align-items: center;
-	gap: 16px;
-}
-
-.additional-fields .detail-item label {
-	min-width: 150px;
-	flex-shrink: 0;
-}
-
-.additional-fields .detail-item span {
-	flex: 1;
-	max-height: 100px;
-	overflow-y: auto;
-}
 </style>
