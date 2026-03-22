@@ -1,6 +1,7 @@
 ---
-status: draft
+status: implemented
 ---
+
 # Referential Integrity
 
 ## Purpose

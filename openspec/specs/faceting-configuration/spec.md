@@ -4,6 +4,7 @@ status: implemented
 # Faceting Configuration
 
 
+# Faceting Configuration
 ## Purpose
 Provides a comprehensive, backend-agnostic faceting system for OpenRegister that enables per-property facet definition on schema properties, supports multiple facet types (terms, date histogram, range), and delivers configurable facet metadata (title, description, order, aggregation control) through the REST and GraphQL APIs. The system is designed to solve the fundamental conflict between pagination and facet computation by calculating facets on the full filtered dataset independently of pagination, while maintaining backward compatibility with the legacy boolean `facetable` flag and offering intelligent caching at multiple layers (in-memory, APCu/distributed, and database-persistent) to ensure sub-200ms facet response times even on large datasets.
 

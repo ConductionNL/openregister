@@ -4,6 +4,7 @@ status: implemented
 # Immutable Audit Trail
 
 
+# Immutable Audit Trail
 ## Purpose
 
 Implement an immutable audit trail with cryptographic hash chaining for all register operations, ensuring every create, read (of sensitive data), update, and delete is recorded in a tamper-evident log that satisfies Dutch government compliance requirements (BIO2, AVG/GDPR Article 30, Archiefwet 1995, NEN-ISO 16175-1:2020). The audit trail MUST be independently verifiable, exportable for compliance auditing, and retained for configurable periods (minimum 10 years for government records). It serves as the foundational evidence layer for content versioning, object reversion, archiving/destruction workflows, and referential integrity tracking.

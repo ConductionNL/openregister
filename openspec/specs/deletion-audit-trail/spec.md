@@ -4,6 +4,7 @@ status: implemented
 # Deletion Audit Trail
 
 
+# Deletion Audit Trail
 ## Purpose
 
 Provide a comprehensive audit and lifecycle management system for all deletion operations in OpenRegister, encompassing soft delete (marking objects as deleted without physical removal), configurable retention before permanent purge, restore from soft delete, cascade delete tracking, and full GDPR-compliant audit trail entries. The spec ensures that every deletion -- whether user-initiated, cascade-triggered, or system-scheduled -- is recorded with sufficient context to reconstruct what happened, why, and by whom, satisfying Dutch government compliance requirements (BIO, AVG/GDPR Article 30, Archiefwet 1995, NEN-ISO 16175-1:2020).
