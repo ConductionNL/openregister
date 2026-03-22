@@ -1,5 +1,5 @@
 ---
-status: draft
+status: implemented
 ---
 
 # Archivering en Vernietiging
