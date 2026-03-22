@@ -3092,6 +3092,7 @@ class SettingsService
 
             if (empty($retentionConfig)) {
                 return [
+					'enableGlobalObjectRetention' => false,
                     'objectArchiveRetention' => 31536000000, // 1 year default
                     'objectDeleteRetention'  => 63072000000, // 2 years default
                     'searchTrailRetention'   => 2592000000,  // 1 month default
@@ -3106,6 +3107,7 @@ class SettingsService
 
             $retentionData = json_decode($retentionConfig, true);
             return [
+                'enableGlobalObjectRetention' => $retentionData['enableGlobalObjectRetention'] ?? false,
                 'objectArchiveRetention' => $retentionData['objectArchiveRetention'] ?? 31536000000,
                 'objectDeleteRetention'  => $retentionData['objectDeleteRetention'] ?? 63072000000,
                 'searchTrailRetention'   => $retentionData['searchTrailRetention'] ?? 2592000000,
@@ -3132,6 +3134,7 @@ class SettingsService
     {
         try {
             $retentionConfig = [
+				'enableGlobalObjectRetention' => $retentionData['enableGlobalObjectRetention'] ?? false,
                 'objectArchiveRetention' => $retentionData['objectArchiveRetention'] ?? 31536000000,
                 'objectDeleteRetention'  => $retentionData['objectDeleteRetention'] ?? 63072000000,
                 'searchTrailRetention'   => $retentionData['searchTrailRetention'] ?? 2592000000,

@@ -7013,5 +7013,68 @@ class ObjectService
         }
     }//end isSearchTrailsEnabled()
 
+	/**
+	 * Fetches from the database all objects that are expired according to the respective measurements of schema settings or global settings.
+	 * @TODO: Also support register level and object level
+	 *
+	 * @return array
+	 * @throws \DateMalformedStringException
+	 */
+	public function getExpiredObjects(): array
+	{
+		$schemas = $this->schemaMapper->findAll(filters: ['configuration' => 'IS NOT NULL'], multi: false, rbac: false); // and configuration.objectArchiveRetention IS NOT NULL OR configuration.objectDeleteRetention IS NOT NULL
+
+		$this->logger->debug(message: "[ObjectService] Found schemas with config", context: ['count'  => count($schemas)]);
+
+		$config = [];
+		foreach ($schemas as $schema) {
+
+			if (isset($schema->getConfiguration()['objectArchiveRetention']) === true && empty($schema->getConfiguration()['objectArchiveRetention']) === false) {
+				$config['schemas'][] = [
+					'id' => $schema->getId(),
+					'expiration' => (new \DateTime('now - ' . $schema->getConfiguration()['objectArchiveRetention'] . 'ms'))->format('c'),
+					'deletion' => (isset($schema->getConfiguration()['objectDeleteRetention']) === true && empty($schema->getConfiguration()['objectDeleteRetention']) === false)
+						? (new \DateTime('now - ' . $schema->getConfiguration()['objectDeleteRetention'] . 'ms'))->format('c')
+						: ($this->settingsService->getRetentionSettingsOnly()['objectDeleteRetention'] > 0 ? (new \DateTime('now -' . $this->settingsService->getRetentionSettingsOnly()['objectDeleteRetention'] . 'ms'))->format('c') : null),
+				];
+			}
+		}
+
+		if (isset($this->settingsService->getRetentionSettingsOnly()['enableGlobalObjectRetention']) === true && $this->settingsService->getRetentionSettingsOnly()['enableGlobalObjectRetention'] === true) {
+			$config['global'] = [
+				'expiration' => (new \DateTime('now -' . $this->settingsService->getRetentionSettingsOnly()['objectArchiveRetention'] . 'ms'))->format('c'),
+				'deletion' => $this->settingsService->getRetentionSettingsOnly()['objectDeleteRetention'] > 0 ? (new \DateTime('now -' . $this->settingsService->getRetentionSettingsOnly()['objectDeleteRetention'] . 'ms'))->format('c') : null,
+			];
+		} else {
+			$config['global'] = [
+				'expiration' => null,
+				'deletion' => null,
+			];
+		}
+
+		$this->logger->debug(message: "[ObjectService] Finding exipred objects", context: $config);
+
+		return $this->getMapper()->findExpired(config: $config);
+
+	}
+
+	/**
+	 * Fetches the ids of objects that are expired and deletes them. If the objects are not yet deleted, it will perform a soft delete, otherwise a hard delete.
+	 *
+	 * @return void
+	 */
+	public function deleteExpiredObjects(): void
+	{
+		$objects = $this->getExpiredObjects();
+
+		$this->logger->debug(message: '[ObjectService] Expired objects found', context: $objects);
+
+		$this->deleteObjects(
+			uuids: array_map(function ($object) {return $object['uuid'];}, $objects),
+			rbac: false,
+			multi: false
+		);
+	}
+
 
 }//end class

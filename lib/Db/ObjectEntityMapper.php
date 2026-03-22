@@ -752,14 +752,14 @@ class ObjectEntityMapper extends QBMapper
 
         $multitenancyData = json_decode($multitenancyConfig, true);
         $bypassEnabled = $multitenancyData['publishedObjectsBypassMultiTenancy'] ?? false;
-        
+
         // Allow per-request override via _crossOrg query parameter.
         // _crossOrg=false: Disable bypass for this request (only your org's objects).
         // _crossOrg=true: Enable bypass for this request (include published from other orgs).
         if (isset($_GET['_crossOrg'])) {
             $bypassEnabled = filter_var($_GET['_crossOrg'], FILTER_VALIDATE_BOOLEAN);
         }
-        
+
         return $bypassEnabled;
 
     }//end shouldPublishedObjectsBypassMultiTenancy()
@@ -1071,6 +1071,72 @@ class ObjectEntityMapper extends QBMapper
         return $this->findEntities(query: $qb);
 
     }//end findAll()
+
+	/**
+	 * Find objects that are expired
+	 *
+	 * @param array $config Config array containing the criteria for which objects are expired.
+	 * @return array An array of expired object by uuid, schema and register
+	 * @throws \OCP\DB\Exception
+	 */
+	public function findExpired(array $config): array
+	{
+		$limit = 1000;
+
+		$qb = $this->db->getQueryBuilder();
+
+		// Select only critical fields
+		$qb->select('o.uuid', 'o.schema', 'o.register')
+			->from('openregister_objects', 'o')
+			->setMaxResults($limit);
+
+		$qb->createNamedParameter(
+			value: "$.timestamp",
+			placeHolder: ":path"
+		);
+
+		if (
+			$config['global']['expiration'] === null
+			&& $config['global']['deletion'] === null
+			&& empty($config['schemas']) === true
+		) {
+			return [];
+		}
+
+		// First check on the basis of schema
+		foreach ($config['schemas'] as $schema) {
+			// Find the objects that have to be soft deleted
+			$qb->orWhere(
+				$qb->expr()->andX(
+					$qb->expr()->eq('o.schema', $qb->createNamedParameter($schema['id'])),
+					$qb->expr()->lte('o.updated', $qb->createNamedParameter($schema['expiration']/*, IQueryBuilder::PARAM_DATE*/)),
+					$qb->expr()->isNull('o.deleted'),
+				)
+			);
+
+			// Find the objects that have to be hard deleted
+			$qb->orWhere(
+				$qb->expr()->andX(
+					$qb->expr()->eq('o.schema', $qb->createNamedParameter($schema['id'])),
+					$qb->expr()->lte($qb->createFunction('json_unquote(json_extract(o.deleted, :path))'), $qb->createNamedParameter($schema['deletion'])),
+				)
+			);
+		}
+
+		// Then check for global expiration parameters
+		if ($config['global']['expiration'] !== null) {
+			$qb->orWhere($qb->expr()->lte('o.updated', $qb->createNamedParameter($config['global']['expiration']/*, IQueryBuilder::PARAM_DATE*/)));
+		}
+
+		if ($config['global']['deletion'] !== null) {
+			$qb->orWhere($qb->expr()->lte($qb->createFunction('json_unquote(json_extract(o.deleted, :path))'), $qb->createNamedParameter($config['global']['deletion'])));
+		}
+
+		$result = $qb->executeQuery();
+		$this->logger->debug(message: '[ObjectEntityMapper] Running SQL statement', context: ['sql-statement' => $qb->getSQL(), 'parameters' => $qb->getParameters()]);
+
+		return $result->fetchAll();
+	}
 
 
     /**
@@ -4460,7 +4526,7 @@ class ObjectEntityMapper extends QBMapper
                 ->from($tableName)
                 ->where($qb->expr()->in('uuid', $qb->createNamedParameter($uuidChunk, \Doctrine\DBAL\Connection::PARAM_STR_ARRAY)));
 
-            $objects = $qb->execute()->fetchAll();
+            $objects = $qb->executeQuery()->fetchAll();
 
             // Separate objects for soft delete and hard delete
             $softDeleteIds = [];

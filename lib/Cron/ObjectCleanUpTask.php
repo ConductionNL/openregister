@@ -35,44 +35,26 @@ use Psr\Log\LoggerInterface;
  *
  * @package OCA\OpenRegister\Cron
  */
-class LogCleanUpTask extends TimedJob
+class ObjectCleanUpTask extends TimedJob
 {
-
-    /**
-     * The audit trail mapper for database operations
-     *
-     * @var AuditTrailMapper
-     */
-    private readonly AuditTrailMapper $auditTrailMapper;
-
-    /**
-     * The logger for logging operations
-     *
-     * @var LoggerInterface
-     */
-    private readonly LoggerInterface $logger;
-
 
     /**
      * Constructor for the LogCleanUpTask
      *
      * @param ITimeFactory     $time             The time factory for time operations
-     * @param AuditTrailMapper $auditTrailMapper The audit trail mapper for database operations
      * @param LoggerInterface  $logger           The logger for logging operations
      *
      * @return void
      */
     public function __construct(
         ITimeFactory $time,
-        AuditTrailMapper $auditTrailMapper,
-        LoggerInterface $logger
+        private LoggerInterface $logger,
+		private ObjectService $objectService
     ) {
         parent::__construct($time);
-        $this->auditTrailMapper = $auditTrailMapper;
-        $this->logger = $logger;
 
-        // Run every hour (3600 seconds)
-        $this->setInterval(3600);
+        // Run every 15 minutes (900 seconds)
+        $this->setInterval(60);
 
         // Delay until low-load time
         $this->setTimeSensitivity(IJob::TIME_INSENSITIVE);
@@ -95,36 +77,17 @@ class LogCleanUpTask extends TimedJob
      */
     public function run(mixed $argument): void
     {
-        try {
-            // Attempt to clear expired logs
-            $logsCleared = $this->auditTrailMapper->clearLogs();
+		try {
+			$this->objectService->deleteExpiredObjects();
+			$this->objectService->deleteExpiredObjects(); //second run to perform hard delete when delete-retention is small enough to enforce hard deletion.
 
-            // Log the result for monitoring purposes
-            if ($logsCleared === true) {
-                $this->logger->info(
-                'Successfully cleared expired audit trail logs',
-                [
-                    'app' => 'openregister',
-                ]
-                );
-            } else {
-                $this->logger->debug(
-                'No expired audit trail logs found to clear',
-                [
-                    'app' => 'openregister',
-                ]
-                );
-            }
-        } catch (\Exception $e) {
-            // Log any errors that occur during cleanup
-            $this->logger->error(
-            'Failed to clear expired audit trail logs: '.$e->getMessage(),
-            [
-                'app'       => 'openregister',
-                'exception' => $e,
-            ]
-            );
-        }//end try
+			$this->logger->info('Successfully cleared expired objects', ['app' => 'openregister']);
+		} catch (\Exception $e) {
+			$this->logger->error('Failed to clear expired objects: '.$e->getMessage(), [
+				'app'       => 'openregister',
+				'exception' => $e,
+			]);
+		}
 
     }//end run()
 
