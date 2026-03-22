@@ -1,0 +1,21 @@
+# Tasks: Unit Test Coverage
+
+- [ ] Implement: Coverage Gate Enforcement at 75% Line and Method Coverage
+- [ ] Implement: All Unit Tests SHALL Use PHPUnit\Framework\TestCase with Comprehensive Mocking
+- [ ] Implement: Test All Code Paths Including Error Branches and Edge Cases
+- [ ] Implement: Use Real Entity Instances, Never Mock Nextcloud Entities
+- [ ] Implement: Use Data Providers for Parameterized Scenarios
+- [ ] Implement: Verify Side Effects with Mock Expectations
+- [ ] Implement: Test All Service Classes with Full Branch Coverage (~175 source files)
+- [ ] Implement: Test All Controller Classes with CRUD and Error Handling (~46 root + 12 Settings)
+- [ ] Implement: Test All Db Entities and Mapper Handlers with Full Field Coverage (~65 source files)
+- [ ] Implement: Test All Event Classes via DataProvider Grouping (~39 source files)
+- [ ] Implement: Test All BackgroundJob, Command, Cron, and Listener Classes
+- [ ] Implement: Test All Exception and Format Classes
+- [ ] Implement: Test Organisation Service Multi-Tenancy Paths
+- [ ] Implement: Test Webhook Service Delivery and Retry Logic
+- [ ] Implement: Test Import and Export Service Handlers
+- [ ] Implement: CI Integration with composer check:strict
+- [ ] Implement: Test Naming Convention and File Organization
+- [ ] Implement: Use Reflection for Private Methods and Final Classes
+- [ ] Implement: Resolve phpunit-unit.xml Db Exclusion for Accurate Coverage
