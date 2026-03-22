@@ -147,18 +147,21 @@ class DeleteObject
      *                                               When non-null, indicates this deletion was triggered by
      *                                               referential integrity enforcement and includes keys like
      *                                               'triggerObject', 'triggerSchema', 'action_type'.
+     * @param bool                   $permanent      When true, physically removes the record from the database
+     *                                               instead of soft-deleting. Used by archival destruction workflow.
      *
      * @return bool Whether the deletion was successful.
      *
      * @throws Exception If there is an error during deletion.
      *
+     * @SuppressWarnings(PHPMD.BooleanArgumentFlag)
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Soft delete with audit trail requires multiple conditional paths
      * @SuppressWarnings(PHPMD.NPathComplexity)      Multiple decision paths for soft delete, cache invalidation,
      *                                               and audit trail operations
      *
      * @psalm-suppress UndefinedInterfaceMethod Array access on JsonSerializable handled by type check
      */
-    public function delete(array | JsonSerializable $object, ?array $cascadeContext=null): bool
+    public function delete(array | JsonSerializable $object, ?array $cascadeContext=null, bool $permanent=false): bool
     {
         // Handle ObjectEntity passed from deleteObject() - skip redundant lookup.
         // Handle array input - find object with context (searches across all magic tables).
@@ -184,6 +187,35 @@ class DeleteObject
 
         $registerEntity = $context['register'];
         $schemaEntity   = $context['schema'];
+
+        // **PERMANENT DELETE**: Physical removal from database (archival destruction workflow).
+        if ($permanent === true) {
+            $this->logger->info(
+                message: '[DeleteObject] Permanent deletion requested (archival destruction)',
+                context: [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
+                    'uuid' => $objectEntity->getUuid(),
+                ]
+            );
+
+            $this->objectEntityMapper->deleteObjectEntity(
+                entity: $objectEntity,
+                register: $registerEntity,
+                schema: $schemaEntity,
+                hardDelete: true
+            );
+            $result = true;
+
+            // Cache invalidation for permanent delete.
+            $this->cacheHandler->invalidateForObjectChange(
+                registerId: is_numeric($objectEntity->getRegister()) ? (int) $objectEntity->getRegister() : null,
+                schemaId: is_numeric($objectEntity->getSchema()) ? (int) $objectEntity->getSchema() : null,
+                operation: 'permanent_delete'
+            );
+
+            return $result;
+        }//end if
 
         // **SOFT DELETE**: Mark object as deleted instead of removing from database.
         // Set deletion metadata with user, timestamp, and organization information.
