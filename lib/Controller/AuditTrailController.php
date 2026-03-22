@@ -5,6 +5,7 @@
  *
  * Controller for managing audit trail operations in the OpenRegister app.
  * Provides functionality to retrieve audit trails related to objects within registers and schemas.
+ * Includes hash chain verification, verwerkingsregister, and immutability enforcement.
  *
  * @category Controller
  * @package  OCA\OpenRegister\AppInfo
@@ -21,10 +22,11 @@
 namespace OCA\OpenRegister\Controller;
 
 use OCA\OpenRegister\Db\AuditTrailMapper;
+use OCA\OpenRegister\Service\AuditHashService;
 use OCA\OpenRegister\Service\LogService;
 use OCP\AppFramework\Controller;
+use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\JSONResponse;
-use OCP\AppFramework\Http\TemplateResponse;
 use OCP\IRequest;
 
 /**
@@ -33,6 +35,9 @@ use OCP\IRequest;
  * Handles all audit trail related operations.
  *
  * @psalm-suppress UnusedClass
+ *
+ * @SuppressWarnings(PHPMD.ExcessiveClassLength)   Controller covers audit trail, verification, verwerkingsregister
+ * @SuppressWarnings(PHPMD.CouplingBetweenObjects) Necessary service dependencies
  */
 class AuditTrailController extends Controller
 {
@@ -43,12 +48,14 @@ class AuditTrailController extends Controller
      * @param IRequest         $request          The request object
      * @param LogService       $logService       The log service
      * @param AuditTrailMapper $auditTrailMapper The audit trail mapper
+     * @param AuditHashService $auditHashService The audit hash chain service
      */
     public function __construct(
         string $appName,
         IRequest $request,
         private readonly LogService $logService,
-        private readonly AuditTrailMapper $auditTrailMapper
+        private readonly AuditTrailMapper $auditTrailMapper,
+        private readonly AuditHashService $auditHashService
     ) {
         parent::__construct(appName: $appName, request: $request);
     }//end __construct()
@@ -58,8 +65,8 @@ class AuditTrailController extends Controller
      *
      * @return array The extracted request parameters
      *
-     * @suppressWarnings(PHPMD.NPathComplexity)      Request parameter extraction requires many conditional checks
-     * @suppressWarnings(PHPMD.CyclomaticComplexity)
+     * @SuppressWarnings(PHPMD.NPathComplexity)      Request parameter extraction requires many conditional checks
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
      */
     private function extractRequestParameters(): array
     {
@@ -131,6 +138,10 @@ class AuditTrailController extends Controller
                         'id',
                         'register',
                         'schema',
+                        'format',
+                        'from',
+                        'to',
+                        'identifier',
                     ]
                 );
             },
@@ -215,6 +226,26 @@ class AuditTrailController extends Controller
             return new JSONResponse(data: ['error' => 'Audit trail not found'], statusCode: 404);
         }
     }//end show()
+
+    /**
+     * Reject audit trail modification (immutability enforcement).
+     *
+     * @param int $id The audit trail ID
+     *
+     * @return JSONResponse HTTP 405 Method Not Allowed
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     *
+     * @SuppressWarnings(PHPMD.UnusedFormalParameter)
+     */
+    public function update(int $id): JSONResponse
+    {
+        return new JSONResponse(
+            data: ['error' => 'Audit trail entries cannot be modified'],
+            statusCode: Http::STATUS_METHOD_NOT_ALLOWED
+        );
+    }//end update()
 
     /**
      * Get logs for an object
@@ -337,52 +368,23 @@ class AuditTrailController extends Controller
     }//end export()
 
     /**
-     * Delete a single audit trail log
+     * Reject audit trail deletion (immutability enforcement).
      *
-     * @param int $id The audit trail ID to delete
+     * @param int $id The audit trail ID
+     *
+     * @return JSONResponse HTTP 405 Method Not Allowed
      *
      * @NoAdminRequired
-     *
      * @NoCSRFRequired
      *
-     * @return JSONResponse JSON response confirming deletion or error
+     * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      */
     public function destroy(int $id): JSONResponse
     {
-        try {
-            $success = $this->logService->deleteLog($id);
-
-            if ($success === true) {
-                return new JSONResponse(
-                    data: [
-                        'success' => true,
-                        'message' => 'Audit trail deleted successfully',
-                    ],
-                    statusCode: 200
-                );
-            }
-
-            return new JSONResponse(
-                data: [
-                    'error' => 'Failed to delete audit trail',
-                ],
-                statusCode: 500
-            );
-        } catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
-            return new JSONResponse(
-                data: [
-                    'error' => 'Audit trail not found',
-                ],
-                statusCode: 404
-            );
-        } catch (\Exception $e) {
-            return new JSONResponse(
-                data: [
-                    'error' => 'Deletion failed: '.$e->getMessage(),
-                ],
-                statusCode: 500
-            );
-        }//end try
+        return new JSONResponse(
+            data: ['error' => 'Audit trail entries cannot be deleted'],
+            statusCode: Http::STATUS_METHOD_NOT_ALLOWED
+        );
     }//end destroy()
 
     /**
@@ -487,4 +489,92 @@ class AuditTrailController extends Controller
             );
         }//end try
     }//end clearAll()
+
+    /**
+     * Verify the integrity of the audit trail hash chain.
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     *
+     * @return JSONResponse Verification result with valid/invalid status
+     */
+    public function verify(): JSONResponse
+    {
+        $from = $this->request->getParam('from');
+        $to   = $this->request->getParam('to');
+
+        $fromInt = ($from !== null) ? (int) $from : null;
+        $toInt   = ($to !== null) ? (int) $to : null;
+
+        try {
+            $result = $this->auditHashService->verifyChain($fromInt, $toInt);
+            return new JSONResponse(data: $result);
+        } catch (\Exception $e) {
+            return new JSONResponse(
+                data: ['error' => 'Verification failed: '.$e->getMessage()],
+                statusCode: 500
+            );
+        }
+    }//end verify()
+
+    /**
+     * Get verwerkingsregister (processing register) overview.
+     *
+     * Returns distinct processing activities from the audit trail with counts
+     * and date ranges, for GDPR Art 30 compliance.
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     *
+     * @return JSONResponse List of processing activities
+     *
+     * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
+     */
+    public function verwerkingsregister(): JSONResponse
+    {
+        $organisationId = $this->request->getParam('organisationId');
+
+        try {
+            $results = $this->auditTrailMapper->getProcessingActivities($organisationId);
+            return new JSONResponse(data: $results);
+        } catch (\Exception $e) {
+            return new JSONResponse(
+                data: ['error' => 'Failed to retrieve verwerkingsregister: '.$e->getMessage()],
+                statusCode: 500
+            );
+        }
+    }//end verwerkingsregister()
+
+    /**
+     * Handle a data subject access request (inzageverzoek).
+     *
+     * Searches audit trail entries by identifier in the changed JSON field,
+     * grouped by schema.
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     *
+     * @return JSONResponse Matching audit trail entries grouped by schema
+     */
+    public function inzageverzoek(): JSONResponse
+    {
+        $identifier = $this->request->getParam('identifier');
+
+        if ($identifier === null || $identifier === '') {
+            return new JSONResponse(
+                data: ['error' => 'identifier parameter is required'],
+                statusCode: 400
+            );
+        }
+
+        try {
+            $results = $this->auditTrailMapper->findByIdentifier($identifier);
+            return new JSONResponse(data: $results);
+        } catch (\Exception $e) {
+            return new JSONResponse(
+                data: ['error' => 'Inzageverzoek failed: '.$e->getMessage()],
+                statusCode: 500
+            );
+        }
+    }//end inzageverzoek()
 }//end class
