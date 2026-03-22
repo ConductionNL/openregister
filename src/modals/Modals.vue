@@ -10,7 +10,6 @@ import { navigationStore } from '../store/store.js'
 		<PublishRegister />
 		<DeleteRegister />
 		<EditConfiguration v-if="navigationStore.modal === 'editConfiguration'" />
-		<DeleteConfiguration v-if="navigationStore.dialog === 'deleteConfiguration'" />
 		<ImportConfiguration />
 		<ExportConfiguration />
 		<PublishConfiguration />
@@ -59,7 +58,6 @@ import ExportRegister from './register/ExportRegister.vue'
 import PublishRegister from './register/PublishRegister.vue'
 import DeleteRegister from './register/DeleteRegister.vue'
 import EditConfiguration from './configuration/EditConfiguration.vue'
-import DeleteConfiguration from './configuration/DeleteConfiguration.vue'
 import ImportConfiguration from './configuration/ImportConfiguration.vue'
 import ExportConfiguration from './configuration/ExportConfiguration.vue'
 import PublishConfiguration from './configuration/PublishConfiguration.vue'
@@ -106,7 +104,6 @@ export default {
 		PublishRegister,
 		DeleteRegister,
 		EditConfiguration,
-		DeleteConfiguration,
 		ImportConfiguration,
 		ExportConfiguration,
 		PublishConfiguration,

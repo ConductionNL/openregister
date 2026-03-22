@@ -1,56 +1,95 @@
 <template>
-	<div class="configurationCard"
-		:class="{
-			'configurationCard--imported': isImported,
-			'configurationCard--local': isImported && isLocalConfiguration,
-			'configurationCard--external': isImported && !isLocalConfiguration
-		}">
-		<div class="cardHeader">
-			<h2 v-tooltip.bottom="configuration.description || configuration.config?.description">
-				<CogOutline :size="20" />
-				{{ configuration.title || configuration.config?.title }}
-				<!-- Status Badges -->
+	<CnCard
+		:title="cardTitle"
+		:description="description"
+		:active="isImported"
+		:active-variant="isLocalConfiguration ? 'warning' : 'success'">
+		<template #icon>
+			<CogOutline :size="20" />
+		</template>
+
+		<!-- Status Badges -->
+		<template #labels>
+			<span class="cn-card__labels">
 				<template v-if="isImported">
 					<template v-if="isLocalConfiguration">
-						<span class="configBadge configBadge--local">
-							<CheckCircle :size="16" />
-							Local
-						</span>
-						<span v-if="displayConfiguration.app" class="configBadge configBadge--app">
-							<ApplicationCog :size="16" />
-							{{ displayConfiguration.app }}
-						</span>
+						<CnStatusBadge
+							label="Local"
+							variant="warning"
+							:solid="true">
+							<template #icon>
+								<CheckCircle :size="16" />
+							</template>
+						</CnStatusBadge>
+						<CnStatusBadge
+							v-if="displayConfiguration.app"
+							:label="displayConfiguration.app"
+							variant="default"
+							:solid="true">
+							<template #icon>
+								<ApplicationCog :size="16" />
+							</template>
+						</CnStatusBadge>
 					</template>
-					<span v-else class="configBadge configBadge--external">
-						<Cloud :size="16" />
-						External
-					</span>
-					<span v-if="!isLocalConfiguration && displayConfiguration.syncEnabled" class="configBadge" :class="'configBadge--sync-' + displayConfiguration.syncStatus">
-						<Sync v-if="displayConfiguration.syncStatus === 'success'" :size="16" />
-						<AlertCircle v-else-if="displayConfiguration.syncStatus === 'failed'" :size="16" />
-						<ClockOutline v-else :size="16" />
-						{{ getSyncStatusText(displayConfiguration) }}
-					</span>
-					<span v-if="hasUpdateAvailable" class="configBadge configBadge--update">
-						<Update :size="16" />
-						Update Available
-					</span>
-					<span v-if="isPublished" class="configBadge configBadge--published">
-						<CloudUploadOutline :size="16" />
-						Published
-					</span>
+					<CnStatusBadge
+						v-else
+						label="External"
+						variant="success"
+						:solid="true">
+						<template #icon>
+							<Cloud :size="16" />
+						</template>
+					</CnStatusBadge>
+					<CnStatusBadge
+						v-if="!isLocalConfiguration && displayConfiguration.syncEnabled"
+						:label="getSyncStatusText(displayConfiguration)"
+						:variant="syncBadgeVariant"
+						:solid="true">
+						<template #icon>
+							<Sync v-if="displayConfiguration.syncStatus === 'success'" :size="16" />
+							<AlertCircle v-else-if="displayConfiguration.syncStatus === 'failed'" :size="16" />
+							<ClockOutline v-else :size="16" />
+						</template>
+					</CnStatusBadge>
+					<CnStatusBadge
+						v-if="hasUpdateAvailable"
+						label="Update Available"
+						variant="warning"
+						:solid="true">
+						<template #icon>
+							<Update :size="16" />
+						</template>
+					</CnStatusBadge>
+					<CnStatusBadge
+						v-if="isPublished"
+						label="Published"
+						variant="error"
+						:solid="true">
+						<template #icon>
+							<CloudUploadOutline :size="16" />
+						</template>
+					</CnStatusBadge>
 				</template>
 				<template v-else>
-					<!-- For discovered/external configurations -->
-					<span v-if="configuration.config?.app" class="configBadge configBadge--app">
-						{{ configuration.config.app }}
-					</span>
-					<span class="configBadge configBadge--discovered">
-						<Magnify :size="16" />
-						Discovered
-					</span>
+					<CnStatusBadge
+						v-if="configuration.config?.app"
+						:label="configuration.config.app"
+						variant="default"
+						:solid="true" />
+					<CnStatusBadge
+						label="Discovered"
+						variant="primary"
+						:solid="true">
+						<template #icon>
+							<Magnify :size="16" />
+						</template>
+					</CnStatusBadge>
 				</template>
-			</h2>
+			</span>
+		</template>
+
+		<!-- Actions -->
+		<template #actions>
 			<NcActions :primary="true" menu-name="Actions">
 				<template #icon>
 					<DotsHorizontal :size="20" />
@@ -122,23 +161,18 @@
 					</NcActionButton>
 				</template>
 			</NcActions>
-		</div>
+		</template>
 
-		<!-- Configuration Details -->
-		<div class="configurationDetails">
-			<p v-if="description" class="configurationDescription">
-				{{ description }}
-			</p>
-
-			<!-- Meta information footer (organization, repo, stars, versions) -->
-			<div v-if="hasMetadata" class="cardMeta">
+		<!-- Meta information footer -->
+		<template v-if="hasMetadata" #footer>
+			<div class="cn-card__footer">
 				<!-- Repository link -->
 				<a
 					v-if="repositoryFullName"
 					:href="repositoryUrl"
 					target="_blank"
 					rel="noopener noreferrer"
-					class="metaItem metaLink">
+					class="cn-card__footer-link">
 					<SourceBranch :size="16" />
 					{{ repositoryFullName }}
 				</a>
@@ -149,46 +183,47 @@
 					:href="displayConfiguration.organization.url"
 					target="_blank"
 					rel="noopener noreferrer"
-					class="metaItem metaLink">
+					class="cn-card__footer-link">
 					<OfficeBuilding :size="16" />
 					{{ displayConfiguration.organization.name }}
 				</a>
 
 				<!-- Stars count -->
-				<span v-if="displayConfiguration.stars" class="metaItem">
+				<span v-if="displayConfiguration.stars" class="configurationCard__meta-item">
 					<Star :size="16" />
 					{{ displayConfiguration.stars }}
 				</span>
 
 				<!-- App ID badge (fallback if no repo info) -->
-				<span v-if="displayConfiguration.app && !repositoryFullName" class="metaItem">
+				<span v-if="displayConfiguration.app && !repositoryFullName" class="configurationCard__meta-item">
 					<ApplicationCog :size="16" />
 					{{ displayConfiguration.app }}
 				</span>
 
 				<!-- Source type (fallback if no repo info) -->
-				<span v-if="displayConfiguration.sourceType && !repositoryFullName" class="metaItem">
+				<span v-if="displayConfiguration.sourceType && !repositoryFullName" class="configurationCard__meta-item">
 					<Cloud :size="16" />
 					{{ getSourceTypeLabel(displayConfiguration.sourceType) }}
 				</span>
 
 				<!-- Version info -->
-				<span v-if="displayConfiguration.version || displayConfiguration.localVersion" class="metaItem">
+				<span v-if="displayConfiguration.version || displayConfiguration.localVersion" class="configurationCard__meta-item">
 					<Tag :size="16" />
 					v{{ displayConfiguration.version || displayConfiguration.localVersion }}
 				</span>
 
-				<span v-if="displayConfiguration.remoteVersion && displayConfiguration.remoteVersion !== (displayConfiguration.version || displayConfiguration.localVersion)" class="metaItem">
+				<span v-if="displayConfiguration.remoteVersion && displayConfiguration.remoteVersion !== (displayConfiguration.version || displayConfiguration.localVersion)" class="configurationCard__meta-item">
 					<Update :size="16" />
 					v{{ displayConfiguration.remoteVersion }} available
 				</span>
 			</div>
-		</div>
-	</div>
+		</template>
+	</CnCard>
 </template>
 
 <script>
 import { NcActions, NcActionButton } from '@nextcloud/vue'
+import { CnCard, CnStatusBadge } from '@conduction/nextcloud-vue'
 import CogOutline from 'vue-material-design-icons/CogOutline.vue'
 import DotsHorizontal from 'vue-material-design-icons/DotsHorizontal.vue'
 import Eye from 'vue-material-design-icons/Eye.vue'
@@ -234,6 +269,8 @@ import { configurationStore, navigationStore } from '../../store/store.js'
 export default {
 	name: 'ConfigurationCard',
 	components: {
+		CnCard,
+		CnStatusBadge,
 		NcActions,
 		NcActionButton,
 		CogOutline,
@@ -278,6 +315,14 @@ export default {
 		}
 	},
 	computed: {
+		/**
+		 * Card title from either format
+		 *
+		 * @return {string}
+		 */
+		cardTitle() {
+			return this.configuration.title || this.configuration.config?.title || ''
+		},
 		/**
 		 * Check if this is a discovered configuration (has config.app structure)
 		 *
@@ -402,8 +447,6 @@ export default {
 			const displayConfig = this.displayConfiguration
 			const originalConfig = this.configuration
 
-			// Debug logging removed for production
-
 			// Check isLocal property from either source (boolean true or string 'true')
 			const isLocal = displayConfig.isLocal ?? originalConfig.isLocal
 			if (isLocal === true || isLocal === 'true') {
@@ -428,9 +471,7 @@ export default {
 		 * @return {boolean}
 		 */
 		isRemoteConfiguration() {
-			const result = this.isImported && this.displayConfiguration.sourceType && this.displayConfiguration.sourceType !== 'local'
-
-			return result
+			return this.isImported && this.displayConfiguration.sourceType && this.displayConfiguration.sourceType !== 'local'
 		},
 		/**
 		 * Check if update is available
@@ -463,6 +504,17 @@ export default {
 		viewSourceUrl() {
 			const config = this.displayConfiguration
 			return config.url || config.sourceUrl || null
+		},
+		/**
+		 * Get the sync badge variant based on sync status
+		 *
+		 * @return {string}
+		 */
+		syncBadgeVariant() {
+			const status = this.displayConfiguration.syncStatus
+			if (status === 'success') return 'success'
+			if (status === 'failed') return 'error'
+			return 'default'
 		},
 		/**
 		 * Check if configuration has any metadata to display in footer
@@ -581,16 +633,12 @@ export default {
 						if (!existsInStore) {
 							configurationStore.configurationList.push(importedConfig)
 						}
-
-						// Debug logging removed for production
 					} else {
 						// Not imported
 						this.importedConfigId = null
-						// Debug logging removed for production
 					}
 				}
 			} catch (error) {
-				// Debug logging removed for production
 				// On error, assume not imported
 				this.importedConfigId = null
 			} finally {
@@ -652,37 +700,34 @@ export default {
 		 * Handle view action
 		 */
 		handleView() {
-			const config = this.existingConfiguration || this.displayConfiguration
 			if (this.isDiscovered && this.existingConfiguration) {
 				// For discovered configs that are imported, open the local one
 				configurationStore.setConfigurationItem(this.existingConfiguration)
 				navigationStore.setModal('viewConfiguration')
 			} else {
-				this.$emit('view', config)
+				this.$emit('view', this.existingConfiguration || this.displayConfiguration)
 			}
 		},
 		/**
 		 * Handle edit action
 		 */
 		handleEdit() {
-			const config = this.existingConfiguration || this.displayConfiguration
 			if (this.isDiscovered && this.existingConfiguration) {
 				configurationStore.setConfigurationItem(this.existingConfiguration)
 				navigationStore.setModal('editConfiguration')
 			} else {
-				this.$emit('edit', config)
+				this.$emit('edit', this.existingConfiguration || this.displayConfiguration)
 			}
 		},
 		/**
 		 * Handle export action
 		 */
 		handleExport() {
-			const config = this.existingConfiguration || this.displayConfiguration
 			if (this.isDiscovered && this.existingConfiguration) {
 				configurationStore.setConfigurationItem(this.existingConfiguration)
 				navigationStore.setModal('exportConfiguration')
 			} else {
-				this.$emit('export', config)
+				this.$emit('export', this.existingConfiguration || this.displayConfiguration)
 			}
 		},
 		/**
@@ -697,31 +742,23 @@ export default {
 		 * Handle delete action
 		 */
 		handleDelete() {
-			const config = this.existingConfiguration || this.displayConfiguration
-			if (this.isDiscovered && this.existingConfiguration) {
-				configurationStore.setConfigurationItem(this.existingConfiguration)
-				navigationStore.setDialog('deleteConfiguration')
-			} else {
-				this.$emit('delete', config)
-			}
+			this.$emit('delete', this.existingConfiguration || this.displayConfiguration)
 		},
 		/**
 		 * Handle check version action
 		 */
 		handleCheckVersion() {
-			const config = this.existingConfiguration || this.displayConfiguration
-			this.$emit('check-version', config)
+			this.$emit('check-version', this.existingConfiguration || this.displayConfiguration)
 		},
 		/**
 		 * Handle preview update action
 		 */
 		handlePreviewUpdate() {
-			const config = this.existingConfiguration || this.displayConfiguration
 			if (this.isDiscovered && this.existingConfiguration) {
 				configurationStore.setConfigurationItem(this.existingConfiguration)
 				navigationStore.setModal('previewConfiguration')
 			} else {
-				this.$emit('preview-update', config)
+				this.$emit('preview-update', this.existingConfiguration || this.displayConfiguration)
 			}
 		},
 	},
@@ -729,198 +766,11 @@ export default {
 </script>
 
 <style scoped>
-.configurationCard {
-	border: 2px solid var(--color-border);
-	border-radius: 8px;
-	padding: 16px;
-	display: flex;
-	flex-direction: column;
-	gap: 12px;
-	transition: all 0.2s;
-	background-color: var(--color-main-background);
-}
-
-.configurationCard:hover {
-	border-color: var(--color-primary);
-	box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-}
-
-.configurationCard--imported {
-	/* Base imported style - will be overridden by local/external */
-}
-
-/* Local configuration card (orange border) */
-.configurationCard--local {
-	border-color: var(--color-warning);
-	background-color: rgba(var(--color-warning-rgb), 0.05);
-}
-
-.configurationCard--local:hover {
-	border-color: var(--color-warning);
-	box-shadow: 0 2px 8px rgba(var(--color-warning-rgb), 0.2);
-}
-
-/* External configuration card (green border) */
-.configurationCard--external {
-	border-color: var(--color-success);
-	background-color: rgba(var(--color-success-rgb), 0.05);
-}
-
-.configurationCard--external:hover {
-	border-color: var(--color-success);
-	box-shadow: 0 2px 8px rgba(var(--color-success-rgb), 0.2);
-}
-
-.cardHeader {
-	display: flex;
-	align-items: center;
-	gap: 12px;
-	justify-content: space-between;
-}
-
-.cardHeader h2 {
-	margin: 0;
-	font-size: 1.1em;
-	flex: 1;
-	display: flex;
-	align-items: center;
-	gap: 8px;
-	flex-wrap: wrap;
-}
-
-.configurationDetails {
-	margin-top: 0.5rem;
-}
-
-.configurationDescription {
-	color: var(--color-text-lighter);
-	font-size: 0.9em;
-	margin: 0 0 1rem 0;
-	line-height: 1.5;
-}
-
-.cardMeta {
-	display: flex;
-	flex-wrap: wrap;
-	gap: 12px;
-	padding-top: 8px;
-	border-top: 1px solid var(--color-border);
-}
-
-.metaItem {
-	display: flex;
+.configurationCard__meta-item {
+	display: inline-flex;
 	align-items: center;
 	gap: 4px;
 	font-size: 0.85em;
 	color: var(--color-text-maxcontrast);
-}
-
-.metaLink {
-	color: var(--color-primary);
-	text-decoration: none;
-	transition: all 0.2s;
-}
-
-.metaLink:hover {
-	color: var(--color-primary-element);
-	text-decoration: underline;
-}
-
-.configurationInfo {
-	display: flex;
-	flex-direction: column;
-	gap: 0.5rem;
-}
-
-.configurationInfoItem {
-	display: flex;
-	gap: 0.5rem;
-}
-
-.configurationInfoItem strong {
-	min-width: 120px;
-}
-
-.urlText {
-	font-family: monospace;
-	font-size: 0.9em;
-	color: var(--color-primary);
-	word-break: break-all;
-}
-
-.badge-success {
-	display: inline-block;
-	padding: 2px 8px;
-	border-radius: 10px;
-	background-color: var(--color-success);
-	color: white;
-	font-size: 0.85em;
-	font-weight: 500;
-}
-
-/* Configuration Badges */
-.configBadge {
-	display: inline-flex;
-	align-items: center;
-	gap: 4px;
-	padding: 2px 8px;
-	border-radius: 12px;
-	font-size: 0.75em;
-	font-weight: 600;
-	vertical-align: middle;
-}
-
-/* Local configuration badge (orange/warning) */
-.configBadge--local {
-	background-color: var(--color-warning);
-	color: var(--color-main-background);
-}
-
-/* External configuration badge (green/success) */
-.configBadge--external {
-	background-color: var(--color-success);
-	color: white;
-}
-
-/* App source badge (gray/secondary) */
-.configBadge--app {
-	background-color: var(--color-background-dark);
-	color: var(--color-text-lighter);
-	text-transform: uppercase;
-}
-
-/* Discovered badge */
-.configBadge--discovered {
-	background-color: var(--color-primary-element-light);
-	color: var(--color-primary-element-text);
-}
-
-/* Sync status badges */
-.configBadge--sync-success {
-	background-color: var(--color-success-light);
-	color: var(--color-success-dark);
-}
-
-.configBadge--sync-failed {
-	background-color: var(--color-error-light);
-	color: var(--color-error-dark);
-}
-
-.configBadge--sync-pending,
-.configBadge--sync-never {
-	background-color: var(--color-background-dark);
-	color: var(--color-text-lighter);
-}
-
-/* Update available badge */
-.configBadge--update {
-	background-color: var(--color-warning);
-	color: var(--color-main-text);
-}
-
-/* Published badge (red/error) */
-.configBadge--published {
-	background-color: var(--color-error);
-	color: white;
 }
 </style>

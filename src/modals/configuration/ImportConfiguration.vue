@@ -3,309 +3,274 @@ import { configurationStore, navigationStore, registerStore, schemaStore } from 
 </script>
 
 <template>
-	<NcDialog v-if="navigationStore.modal === 'importConfiguration'"
-		name="importConfiguration"
-		title="Import Configuration"
+	<CnTabbedFormDialog
+		v-if="navigationStore.modal === 'importConfiguration'"
+		ref="dialog"
+		dialog-title="Import Configuration"
+		entity-name="Configuration"
+		confirm-label="Import"
 		size="large"
-		:can-close="!loading"
-		@update:open="closeModal">
-		<NcNoteCard v-if="success" type="success">
-			<p>{{ successMessage }}</p>
-		</NcNoteCard>
+		:tabs="dialogTabs"
+		:item="null"
+		:show-create-another="false"
+		:disable-save="!canImport"
+		success-text="Configuration imported successfully!"
+		@confirm="performImport"
+		@close="closeModal"
+		@update:active-tab="activeTab = $event">
+		<template #confirm-icon>
+			<ImportIcon :size="20" />
+		</template>
 
-		<NcNoteCard v-if="error" type="error">
-			<p>{{ error }}</p>
-		</NcNoteCard>
+		<!-- Synchronization Settings - Below Tabs -->
+		<template #below-tabs>
+			<div class="syncSettings">
+				<h4>{{ t('openregister', 'Synchronization Settings') }}</h4>
+				<NcCheckboxRadioSwitch
+					:checked="syncEnabled"
+					type="switch"
+					@update:checked="syncEnabled = $event">
+					{{ t('openregister', 'Enable automatic synchronization') }}
+				</NcCheckboxRadioSwitch>
 
-		<div class="tabContainer">
-			<BTabs v-model="activeTab" content-class="mt-3" justified>
-				<!-- Discover Tab -->
-				<BTab active>
-					<template #title>
-						<Magnify :size="16" />
-						<span>Discover</span>
+				<NcTextField
+					v-if="syncEnabled"
+					:value.sync="syncInterval"
+					type="number"
+					label="Sync Interval (hours)"
+					placeholder="24"
+					:min="1"
+					:max="168">
+					<template #helper>
+						{{ t('openregister', 'How often to check for updates (1-168 hours)') }}
 					</template>
-					<div class="tabContent">
-						<p class="tabDescription">
-							Search GitHub and GitLab for OpenRegister configurations created by the community.
-						</p>
+				</NcTextField>
+			</div>
+		</template>
 
-						<!-- Token Warning -->
-						<NcNoteCard v-if="!hasGithubToken || !hasGitlabToken" type="warning">
-							<p>
-								<strong>{{ getTokenWarningTitle() }}</strong><br>
-								{{ getTokenWarningMessage() }}
-							</p>
-							<p style="margin-top: 8px;">
-								<a :href="settingsUrl" target="_blank" style="color: var(--color-primary-element); font-weight: 600;">
-									→ Configure API Tokens in Settings
-								</a>
-							</p>
-						</NcNoteCard>
+		<!-- Discover Tab -->
+		<template #tab-discover>
+			<p class="tabDescription">
+				Search GitHub and GitLab for OpenRegister configurations created by the community.
+			</p>
 
-						<div class="searchContainer">
-							<NcTextField
-								:value.sync="searchQuery"
-								label="Search configurations"
-								placeholder="Enter search terms or leave empty to browse all"
-								@keyup.enter="searchConfigurations">
-								<Magnify :size="20" />
-							</NcTextField>
+			<!-- Token Warning -->
+			<NcNoteCard v-if="!hasGithubToken || !hasGitlabToken" type="warning">
+				<p>
+					<strong>{{ getTokenWarningTitle() }}</strong><br>
+					{{ getTokenWarningMessage() }}
+				</p>
+				<p style="margin-top: 8px;">
+					<a :href="settingsUrl" target="_blank" style="color: var(--color-primary-element); font-weight: 600;">
+						→ Configure API Tokens in Settings
+					</a>
+				</p>
+			</NcNoteCard>
 
-							<NcButton
-								class="github-button"
-								:disabled="!hasGithubToken || searchLoading"
-								@click="searchSource = 'github'; searchConfigurations()">
-								<template #icon>
-									<Github :size="20" />
-								</template>
-								{{ t('openregister', 'Search GitHub') }}
-							</NcButton>
+			<div class="searchContainer">
+				<NcTextField
+					:value.sync="searchQuery"
+					label="Search configurations"
+					placeholder="Enter search terms or leave empty to browse all"
+					@keyup.enter="searchConfigurations">
+					<Magnify :size="20" />
+				</NcTextField>
 
-							<NcButton
-								class="gitlab-button"
-								:disabled="!hasGitlabToken || searchLoading"
-								@click="searchSource = 'gitlab'; searchConfigurations()">
-								<template #icon>
-									<Gitlab :size="20" />
-								</template>
-								{{ t('openregister', 'Search GitLab') }}
-							</NcButton>
-						</div>
-
-						<!-- Individual Token Warnings -->
-						<div v-if="!hasGithubToken || !hasGitlabToken" class="token-warnings">
-							<div v-if="!hasGithubToken" class="token-warning-item">
-								<Github :size="16" />
-								<span>GitHub token not configured - Search disabled</span>
-							</div>
-							<div v-if="!hasGitlabToken" class="token-warning-item">
-								<Gitlab :size="16" />
-								<span>GitLab token not configured - Search disabled</span>
-							</div>
-						</div>
-
-						<NcLoadingIcon v-if="searchLoading" :size="64" />
-
-						<!-- Search Error -->
-						<NcNoteCard v-else-if="searchError" type="error">
-							<p><strong>Search Failed</strong></p>
-							<p>{{ searchError }}</p>
-						</NcNoteCard>
-
-						<div v-else-if="searchResults.length > 0" class="resultsGrid">
-							<ConfigurationCard
-								v-for="(result, index) in searchResults"
-								:key="index"
-								:configuration="result"
-								@import="importDiscoveredConfiguration(result)"
-								@check-version="handleCheckVersion" />
-						</div>
-
-						<NcEmptyContent v-else-if="hasSearched"
-							name="No configurations found"
-							description="Try adjusting your search terms or browse a different source.">
-							<template #icon>
-								<Magnify :size="64" />
-							</template>
-						</NcEmptyContent>
-					</div>
-				</BTab>
-
-				<!-- GitHub/GitLab Tab -->
-				<BTab>
-					<template #title>
-						<Github :size="16" />
-						<span>GitHub / GitLab</span>
+				<NcButton
+					class="github-button"
+					:disabled="!hasGithubToken || searchLoading"
+					@click="searchSource = 'github'; searchConfigurations()">
+					<template #icon>
+						<Github :size="20" />
 					</template>
-					<div class="tabContent">
-						<p class="tabDescription">
-							Import a configuration from a specific GitHub or GitLab repository and branch.
-						</p>
+					{{ t('openregister', 'Search GitHub') }}
+				</NcButton>
 
-						<NcSelect
-							v-model="repoSource"
-							:options="['GitHub', 'GitLab']"
-							input-label="Source Platform" />
-
-						<NcTextField
-							v-if="repoSource === 'GitHub'"
-							:value.sync="repoOwner"
-							label="Repository Owner"
-							placeholder="e.g., ConductionNL" />
-
-						<NcTextField
-							v-if="repoSource === 'GitLab'"
-							:value.sync="repoNamespace"
-							label="Namespace"
-							placeholder="e.g., conduction" />
-
-						<NcTextField
-							:value.sync="repoName"
-							:label="repoSource === 'GitHub' ? 'Repository Name' : 'Project Name'"
-							placeholder="e.g., openregister" />
-
-						<NcButton
-							:disabled="!canFetchBranches"
-							@click="fetchBranches">
-							<template #icon>
-								<SourceBranch :size="20" />
-							</template>
-							Load Branches
-						</NcButton>
-
-						<NcSelect
-							v-if="branches.length > 0"
-							v-model="selectedBranch"
-							:options="branches"
-							input-label="Branch"
-							@change="fetchConfigurationFiles" />
-
-						<div v-if="configFiles.length > 0" class="filesGrid">
-							<div
-								v-for="file in configFiles"
-								:key="file.path"
-								class="fileCard"
-								:class="{ selected: selectedFile === file }"
-								@click="selectedFile = file">
-								<h4>{{ file.config.title }}</h4>
-								<p class="fileDescription">
-									{{ file.config.description || 'No description' }}
-								</p>
-								<span class="filePath">{{ file.path }}</span>
-								<span class="fileVersion">v{{ file.config.version }}</span>
-							</div>
-						</div>
-					</div>
-				</BTab>
-
-				<!-- URL Tab -->
-				<BTab>
-					<template #title>
-						<LinkVariant :size="16" />
-						<span>Import from URL</span>
+				<NcButton
+					class="gitlab-button"
+					:disabled="!hasGitlabToken || searchLoading"
+					@click="searchSource = 'gitlab'; searchConfigurations()">
+					<template #icon>
+						<Gitlab :size="20" />
 					</template>
-					<div class="tabContent">
-						<p class="tabDescription">
-							Import a configuration from a direct URL. The URL must point to a valid OpenRegister JSON file.
-						</p>
+					{{ t('openregister', 'Search GitLab') }}
+				</NcButton>
+			</div>
 
-						<NcTextField
-							:value.sync="importUrl"
-							label="Configuration URL"
-							placeholder="https://example.com/config.json"
-							@input="urlError = null" />
+			<!-- Individual Token Warnings -->
+			<div v-if="!hasGithubToken || !hasGitlabToken" class="token-warnings">
+				<div v-if="!hasGithubToken" class="token-warning-item">
+					<Github :size="16" />
+					<span>GitHub token not configured - Search disabled</span>
+				</div>
+				<div v-if="!hasGitlabToken" class="token-warning-item">
+					<Gitlab :size="16" />
+					<span>GitLab token not configured - Search disabled</span>
+				</div>
+			</div>
 
-						<NcNoteCard v-if="urlError" type="warning">
-							<p>{{ urlError }}</p>
-						</NcNoteCard>
-					</div>
-				</BTab>
+			<NcLoadingIcon v-if="searchLoading" :size="64" />
 
-				<!-- File Upload Tab -->
-				<BTab>
-					<template #title>
-						<FileUpload :size="16" />
-						<span>Import from File</span>
-					</template>
-					<div class="tabContent">
-						<p class="tabDescription">
-							Upload a configuration JSON file from your computer.
-						</p>
+			<!-- Search Error -->
+			<NcNoteCard v-else-if="searchError" type="error">
+				<p><strong>Search Failed</strong></p>
+				<p>{{ searchError }}</p>
+			</NcNoteCard>
 
-						<div class="fileUploadZone"
-							:class="{ 'dragover': isDragging }"
-							@click="!selectedUploadFile && $refs.fileInput.click()"
-							@drop.prevent="handleFileDrop"
-							@dragover.prevent="isDragging = true"
-							@dragleave.prevent="isDragging = false">
-							<input
-								id="configFileInput"
-								ref="fileInput"
-								type="file"
-								accept=".json,application/json"
-								style="display: none;"
-								@change="handleFileSelect">
+			<div v-else-if="searchResults.length > 0" class="resultsGrid">
+				<ConfigurationCard
+					v-for="(result, index) in searchResults"
+					:key="index"
+					:configuration="result"
+					@import="importDiscoveredConfiguration(result)"
+					@check-version="handleCheckVersion" />
+			</div>
 
-							<FileUpload :size="48" class="uploadIcon" />
+			<NcEmptyContent v-else-if="hasSearched"
+				name="No configurations found"
+				description="Try adjusting your search terms or browse a different source.">
+				<template #icon>
+					<Magnify :size="64" />
+				</template>
+			</NcEmptyContent>
+		</template>
 
-							<p v-if="!selectedUploadFile" class="uploadText">
-								<strong>Drop your configuration file here</strong><br>
-								or click anywhere to browse
-							</p>
+		<!-- GitHub/GitLab Tab -->
+		<template #tab-repository="{ loading: dialogLoading }">
+			<p class="tabDescription">
+				Import a configuration from a specific GitHub or GitLab repository and branch.
+			</p>
 
-							<div v-else class="selectedFileInfo">
-								<Check :size="32" class="checkIcon" />
-								<p><strong>{{ selectedUploadFile.name }}</strong></p>
-								<p class="fileSize">
-									{{ formatFileSize(selectedUploadFile.size) }}
-								</p>
-								<NcButton @click.stop="clearFileSelection">
-									<template #icon>
-										<Cancel :size="20" />
-									</template>
-									Clear
-								</NcButton>
-							</div>
-						</div>
-
-						<NcNoteCard v-if="fileError" type="error">
-							<p>{{ fileError }}</p>
-						</NcNoteCard>
-					</div>
-				</BTab>
-			</BTabs>
-		</div>
-
-		<!-- Synchronization Settings - Always Visible -->
-		<div v-if="!success" class="syncSettings">
-			<h4>{{ t('openregister', 'Synchronization Settings') }}</h4>
-			<NcCheckboxRadioSwitch
-				:checked="syncEnabled"
-				type="switch"
-				@update:checked="syncEnabled = $event">
-				{{ t('openregister', 'Enable automatic synchronization') }}
-			</NcCheckboxRadioSwitch>
+			<NcSelect
+				v-model="repoSource"
+				:disabled="dialogLoading"
+				:options="['GitHub', 'GitLab']"
+				input-label="Source Platform" />
 
 			<NcTextField
-				v-if="syncEnabled"
-				:value.sync="syncInterval"
-				type="number"
-				label="Sync Interval (hours)"
-				placeholder="24"
-				:min="1"
-				:max="168">
-				<template #helper>
-					{{ t('openregister', 'How often to check for updates (1-168 hours)') }}
-				</template>
-			</NcTextField>
-		</div>
+				v-if="repoSource === 'GitHub'"
+				:disabled="dialogLoading"
+				:value.sync="repoOwner"
+				label="Repository Owner"
+				placeholder="e.g., ConductionNL" />
 
-		<template #actions>
-			<NcButton :disabled="loading" @click="closeModal">
-				<template #icon>
-					<Cancel :size="20" />
-				</template>
-				{{ t('openregister', 'Cancel') }}
-			</NcButton>
+			<NcTextField
+				v-if="repoSource === 'GitLab'"
+				:disabled="dialogLoading"
+				:value.sync="repoNamespace"
+				label="Namespace"
+				placeholder="e.g., conduction" />
+
+			<NcTextField
+				:disabled="dialogLoading"
+				:value.sync="repoName"
+				:label="repoSource === 'GitHub' ? 'Repository Name' : 'Project Name'"
+				placeholder="e.g., openregister" />
+
 			<NcButton
-				:disabled="loading || !canImport"
-				type="primary"
-				@click="performImport">
+				:disabled="!canFetchBranches || dialogLoading"
+				@click="fetchBranches">
 				<template #icon>
-					<NcLoadingIcon v-if="loading" :size="20" />
-					<Import v-else :size="20" />
+					<SourceBranch :size="20" />
 				</template>
-				{{ t('openregister', 'Import') }}
+				Load Branches
 			</NcButton>
+
+			<NcSelect
+				v-if="branches.length > 0"
+				v-model="selectedBranch"
+				:disabled="dialogLoading"
+				:options="branches"
+				input-label="Branch"
+				@change="fetchConfigurationFiles" />
+
+			<div v-if="configFiles.length > 0" class="filesGrid">
+				<div
+					v-for="file in configFiles"
+					:key="file.path"
+					class="fileCard"
+					:class="{ selected: selectedFile === file }"
+					@click="selectedFile = file">
+					<h4>{{ file.config.title }}</h4>
+					<p class="fileDescription">
+						{{ file.config.description || 'No description' }}
+					</p>
+					<span class="filePath">{{ file.path }}</span>
+					<span class="fileVersion">v{{ file.config.version }}</span>
+				</div>
+			</div>
 		</template>
-	</NcDialog>
+
+		<!-- URL Tab -->
+		<template #tab-url="{ loading: dialogLoading }">
+			<p class="tabDescription">
+				Import a configuration from a direct URL. The URL must point to a valid OpenRegister JSON file.
+			</p>
+
+			<NcTextField
+				:disabled="dialogLoading"
+				:value.sync="importUrl"
+				label="Configuration URL"
+				placeholder="https://example.com/config.json"
+				@input="urlError = null" />
+
+			<NcNoteCard v-if="urlError" type="warning">
+				<p>{{ urlError }}</p>
+			</NcNoteCard>
+		</template>
+
+		<!-- File Upload Tab -->
+		<template #tab-file>
+			<p class="tabDescription">
+				Upload a configuration JSON file from your computer.
+			</p>
+
+			<div class="fileUploadZone"
+				:class="{ 'dragover': isDragging }"
+				@click="!selectedUploadFile && $refs.fileInput.click()"
+				@drop.prevent="handleFileDrop"
+				@dragover.prevent="isDragging = true"
+				@dragleave.prevent="isDragging = false">
+				<input
+					id="configFileInput"
+					ref="fileInput"
+					type="file"
+					accept=".json,application/json"
+					style="display: none;"
+					@change="handleFileSelect">
+
+				<FileUpload :size="48" class="uploadIcon" />
+
+				<p v-if="!selectedUploadFile" class="uploadText">
+					<strong>Drop your configuration file here</strong><br>
+					or click anywhere to browse
+				</p>
+
+				<div v-else class="selectedFileInfo">
+					<Check :size="32" class="checkIcon" />
+					<p><strong>{{ selectedUploadFile.name }}</strong></p>
+					<p class="fileSize">
+						{{ formatFileSize(selectedUploadFile.size) }}
+					</p>
+					<NcButton @click.stop="clearFileSelection">
+						<template #icon>
+							<Cancel :size="20" />
+						</template>
+						Clear
+					</NcButton>
+				</div>
+			</div>
+
+			<NcNoteCard v-if="fileError" type="error">
+				<p>{{ fileError }}</p>
+			</NcNoteCard>
+		</template>
+	</CnTabbedFormDialog>
 </template>
 
 <script>
 import {
 	NcButton,
-	NcDialog,
 	NcLoadingIcon,
 	NcNoteCard,
 	NcCheckboxRadioSwitch,
@@ -313,11 +278,10 @@ import {
 	NcSelect,
 	NcEmptyContent,
 } from '@nextcloud/vue'
+import { CnTabbedFormDialog } from '@conduction/nextcloud-vue'
 
-import { BTabs, BTab } from 'bootstrap-vue'
-
+import ImportIcon from 'vue-material-design-icons/Import.vue'
 import Cancel from 'vue-material-design-icons/Cancel.vue'
-import Import from 'vue-material-design-icons/Import.vue'
 import Magnify from 'vue-material-design-icons/Magnify.vue'
 import Github from 'vue-material-design-icons/Github.vue'
 import Gitlab from 'vue-material-design-icons/Gitlab.vue'
@@ -335,35 +299,28 @@ import { showError, showSuccess } from '@nextcloud/dialogs'
 export default {
 	name: 'ImportConfiguration',
 	components: {
-		NcDialog,
+		CnTabbedFormDialog,
 		NcButton,
 		NcLoadingIcon,
 		NcNoteCard,
 		NcCheckboxRadioSwitch,
-		BTabs,
-		BTab,
 		NcTextField,
 		NcSelect,
 		NcEmptyContent,
 		ConfigurationCard,
 		// Icons
+		ImportIcon,
 		Cancel,
-		Import,
 		Magnify,
 		Github,
 		Gitlab,
 		SourceBranch,
-		LinkVariant,
 		FileUpload,
 		Check,
 	},
 	data() {
 		return {
 			activeTab: 0,
-			loading: false,
-			success: false,
-			successMessage: '',
-			error: null,
 
 			// Token availability
 			hasGithubToken: false,
@@ -403,6 +360,14 @@ export default {
 	},
 
 	computed: {
+		dialogTabs() {
+			return [
+				{ id: 'discover', title: 'Discover', icon: Magnify },
+				{ id: 'repository', title: 'GitHub / GitLab', icon: Github },
+				{ id: 'url', title: 'Import from URL', icon: LinkVariant },
+				{ id: 'file', title: 'Import from File', icon: FileUpload },
+			]
+		},
 		settingsUrl() {
 			return window.location.origin + '/index.php/settings/admin/openregister#api-tokens'
 		},
@@ -413,8 +378,11 @@ export default {
 			return this.repoNamespace && this.repoName
 		},
 		canImport() {
-		// Tab 0: Discover (imports are handled per-card, not via main button)
-		// Tab 1: GitHub/GitLab
+			// Tab 0: Discover (imports are handled per-card, not via main button)
+			if (this.activeTab === 0) {
+				return false
+			}
+			// Tab 1: GitHub/GitLab
 			if (this.activeTab === 1) {
 				return this.selectedFile !== null
 			}
@@ -434,31 +402,17 @@ export default {
 		await this.checkTokenAvailability()
 	},
 	methods: {
-		/**
-		 * Check if API tokens are configured
-		 */
 		async checkTokenAvailability() {
 			try {
 				const response = await axios.get(generateUrl('/apps/openregister/api/settings/api-tokens'))
-				// Check if tokens exist and are not empty strings
-				// The backend returns masked tokens, so we just check if they exist
 				this.hasGithubToken = !!(response.data.github_token && response.data.github_token.length > 0)
 				this.hasGitlabToken = !!(response.data.gitlab_token && response.data.gitlab_token.length > 0)
-
-				// Debug logging removed for production
 			} catch (error) {
-				// Debug logging removed for production
-				// Assume no tokens if check fails
 				this.hasGithubToken = false
 				this.hasGitlabToken = false
 			}
 		},
 
-		/**
-		 * Get token warning title based on which tokens are missing
-		 *
-		 * @return {string}
-		 */
 		getTokenWarningTitle() {
 			if (!this.hasGithubToken && !this.hasGitlabToken) {
 				return 'API Tokens Not Configured'
@@ -469,11 +423,6 @@ export default {
 			}
 		},
 
-		/**
-		 * Get token warning message based on which tokens are missing
-		 *
-		 * @return {string}
-		 */
 		getTokenWarningMessage() {
 			if (!this.hasGithubToken && !this.hasGitlabToken) {
 				return 'Discovery requires API tokens for GitHub and/or GitLab. Configure your tokens in the settings to enable search.'
@@ -485,14 +434,10 @@ export default {
 		},
 
 		closeModal() {
-			navigationStore.setModal(false)
 			this.resetForm()
+			navigationStore.setModal(false)
 		},
 		resetForm() {
-			this.loading = false
-			this.success = false
-			this.successMessage = ''
-			this.error = null
 			this.searchQuery = ''
 			this.searchResults = []
 			this.searchError = null
@@ -515,7 +460,6 @@ export default {
 		async searchConfigurations() {
 			this.searchLoading = true
 			this.hasSearched = true
-			this.error = null
 			this.searchError = null
 			this.searchResults = []
 
@@ -525,19 +469,13 @@ export default {
 					this.searchQuery,
 				)
 			} catch (error) {
-				// Set search-specific error for contextual display in the Discover tab
 				this.searchError = error.message || 'Failed to search configurations'
-				// Also set general error for top-level display
-				this.error = error.message || 'Failed to search configurations'
 				console.error('Search error:', error)
 			} finally {
 				this.searchLoading = false
 			}
 		},
 		async importDiscoveredConfiguration(result) {
-			this.loading = true
-			this.error = null
-
 			try {
 				// Determine import method based on source
 				if (result.repository) {
@@ -563,20 +501,17 @@ export default {
 					})
 				}
 
-				this.successMessage = 'Configuration imported successfully!'
-				this.success = true
 				// Refresh all lists to show newly imported entities
 				await Promise.all([
 					configurationStore.refreshConfigurationList(),
 					registerStore.refreshRegisterList(),
 					schemaStore.refreshSchemaList(),
 				])
-				setTimeout(() => this.closeModal(), 1500)
+				this.$refs.dialog.setResult({ success: true })
 			} catch (error) {
-				// Don't show error if configuration already exists (UI shows this visually)
 				const errorMessage = error.message || 'Failed to import configuration'
 				if (!errorMessage.includes('already exists')) {
-					this.error = errorMessage
+					this.$refs.dialog.setResult({ error: errorMessage })
 				}
 				// Always refresh all lists to update UI
 				await Promise.all([
@@ -584,13 +519,9 @@ export default {
 					registerStore.refreshRegisterList(),
 					schemaStore.refreshSchemaList(),
 				])
-			} finally {
-				this.loading = false
 			}
 		},
 		async fetchBranches() {
-			this.loading = true
-			this.error = null
 			this.branches = []
 			this.selectedBranch = null
 			this.configFiles = []
@@ -614,16 +545,12 @@ export default {
 					await this.fetchConfigurationFiles()
 				}
 			} catch (error) {
-				this.error = error.message || 'Failed to fetch branches'
-			} finally {
-				this.loading = false
+				this.$refs.dialog.setResult({ error: error.message || 'Failed to fetch branches' })
 			}
 		},
 		async fetchConfigurationFiles() {
 			if (!this.selectedBranch) return
 
-			this.loading = true
-			this.error = null
 			this.configFiles = []
 			this.selectedFile = null
 
@@ -637,17 +564,12 @@ export default {
 					params,
 				)
 			} catch (error) {
-				this.error = error.message || 'Failed to fetch configuration files'
-			} finally {
-				this.loading = false
+				this.$refs.dialog.setResult({ error: error.message || 'Failed to fetch configuration files' })
 			}
 		},
 		async performImport() {
-			this.loading = true
-			this.error = null
-
 			try {
-			// Tab 1: GitHub/GitLab
+				// Tab 1: GitHub/GitLab
 				if (this.activeTab === 1) {
 					const params = {
 						path: this.selectedFile.path,
@@ -670,21 +592,16 @@ export default {
 							...params,
 						})
 					}
-
-					this.successMessage = `Configuration imported from ${this.repoSource}!`
 				} else if (this.activeTab === 2) {
 					// Tab 2: URL
-					// Validate URL
 					try {
-						// eslint-disable-next-line no-new
-						const validUrl = new URL(this.importUrl) // URL validation successful
-						// Use validUrl.href to avoid no-new and no-void rule violations
+						const validUrl = new URL(this.importUrl)
 						if (!validUrl.href) {
 							throw new Error('Invalid URL')
 						}
 					} catch {
 						this.urlError = 'Please enter a valid URL'
-						this.loading = false
+						this.$refs.dialog.setResult({ error: 'Please enter a valid URL' })
 						return
 					}
 
@@ -693,26 +610,22 @@ export default {
 						syncEnabled: this.syncEnabled,
 						syncInterval: parseInt(this.syncInterval),
 					})
-
-					this.successMessage = 'Configuration imported from URL!'
 				} else if (this.activeTab === 3) {
 					// Tab 3: File Upload
 					await this.importFromFile()
-					this.successMessage = 'Configuration imported from file!'
 				}
 
-				this.success = true
 				// Refresh all lists to show newly imported entities
 				await Promise.all([
 					configurationStore.refreshConfigurationList(),
 					registerStore.refreshRegisterList(),
 					schemaStore.refreshSchemaList(),
 				])
-				setTimeout(() => this.closeModal(), 1500)
+				this.$refs.dialog.setResult({ success: true })
 			} catch (error) {
-				this.error = error.message || 'Failed to import configuration'
-			} finally {
-				this.loading = false
+				this.$refs.dialog.setResult({
+					error: error.message || 'Failed to import configuration',
+				})
 			}
 		},
 		handleFileSelect(event) {
@@ -731,13 +644,11 @@ export default {
 		validateAndSetFile(file) {
 			this.fileError = null
 
-			// Validate file type
 			if (!file.name.endsWith('.json')) {
 				this.fileError = 'Please upload a JSON file'
 				return
 			}
 
-			// Validate file size (max 10MB)
 			if (file.size > 10 * 1024 * 1024) {
 				this.fileError = 'File is too large (max 10MB)'
 				return
@@ -780,7 +691,6 @@ export default {
 			return response.data
 		},
 		async handleCheckVersion(configuration) {
-			// Handle check version for already imported configurations
 			try {
 				const response = await axios.post(
 					generateUrl(`/apps/openregister/api/configurations/${configuration.id}/check-version`),
@@ -794,7 +704,6 @@ export default {
 					showSuccess('Configuration is up to date')
 				}
 
-				// Refresh the list to show updated version info
 				await configurationStore.refreshConfigurationList()
 			} catch (error) {
 				console.error('Failed to check version:', error)
@@ -806,17 +715,6 @@ export default {
 </script>
 
 <style scoped>
-.tabContainer {
-	width: 100%;
-}
-
-.tabContent {
-	padding: 20px;
-	display: flex;
-	flex-direction: column;
-	gap: 16px;
-}
-
 .tabDescription {
 	color: var(--color-text-lighter);
 	margin-bottom: 8px;
@@ -890,7 +788,7 @@ export default {
 }
 
 .syncSettings {
-	margin: 24px 0;
+	margin: 0;
 	padding: 20px;
 	border: 1px solid var(--color-border);
 	border-radius: 8px;
