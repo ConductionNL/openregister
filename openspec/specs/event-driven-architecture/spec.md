@@ -1,3 +1,6 @@
+---
+status: implemented
+---
 # Event-Driven Architecture
 
 ## Purpose
@@ -5,7 +8,10 @@ OpenRegister implements a comprehensive event-driven architecture built on Nextc
 
 **Source**: Gap identified in cross-platform analysis; four platforms implement event-driven architectures. Core implementation exists with 39+ typed event classes in `lib/Event/`, 8 event listeners in `lib/Listener/`, and webhook delivery infrastructure.
 
+
 ## Requirements
+
+
 
 ### Requirement: All entity mutations MUST dispatch typed PHP events via IEventDispatcher
 Every create, update, and delete operation across all entity types MUST dispatch a typed event class extending `OCP\EventDispatcher\Event` through Nextcloud's `IEventDispatcher::dispatchTyped()`. This ensures all mutations are observable by any registered listener, whether internal or from another Nextcloud app.
@@ -44,6 +50,7 @@ Every create, update, and delete operation across all entity types MUST dispatch
 - **THEN** an `ObjectLockedEvent` MUST be dispatched carrying the locked `ObjectEntity`
 - **AND** when the object is later reverted to a previous state, an `ObjectRevertedEvent` MUST be dispatched with the object and the revert point (`DateTime` or audit trail ID) accessible via `getRevertPoint()`
 
+
 ### Requirement: Pre-mutation events MUST support rejection and data modification via StoppableEventInterface
 Pre-mutation event classes (`ObjectCreatingEvent`, `ObjectUpdatingEvent`, `ObjectDeletingEvent`) MUST implement `Psr\EventDispatcher\StoppableEventInterface` to allow schema hooks and other listeners to reject operations or modify data before persistence.
 
@@ -66,6 +73,7 @@ Pre-mutation event classes (`ObjectCreatingEvent`, `ObjectUpdatingEvent`, `Objec
 - **WHEN** the `ObjectUpdatingEvent` is dispatched and a hook stops propagation
 - **THEN** the update MUST be aborted and the object in the database MUST remain in its pre-update state
 - **AND** the old object state from `$event->getOldObject()` MUST be preserved
+
 
 ### Requirement: Event listeners MUST be registered in Application.php via registerEventListener
 All event listener bindings MUST be declared in `Application::registerEventListeners()` using `IRegistrationContext::registerEventListener()`. This ensures Nextcloud's lazy-loading mechanism defers listener instantiation until the event is actually dispatched.
@@ -94,6 +102,7 @@ All event listener bindings MUST be declared in `Application::registerEventListe
 - **THEN** all five listeners MUST be invoked by Nextcloud's event dispatcher
 - **AND** each listener MUST execute independently -- a failure in one MUST NOT prevent others from executing
 
+
 ### Requirement: WebhookEventListener MUST extract structured payloads from all event types
 The `WebhookEventListener` MUST handle all 39+ event types by extracting a structured payload containing `objectType`, `action`, and the serialized entity data. This payload is then forwarded to `WebhookService` for delivery to configured webhook endpoints.
 
@@ -119,6 +128,7 @@ The `WebhookEventListener` MUST handle all 39+ event types by extracting a struc
 - **WHEN** `extractPayload()` is called
 - **THEN** it MUST return `null`
 - **AND** the listener MUST log a warning and skip webhook delivery for that event
+
 
 ### Requirement: Webhook delivery MUST support CloudEvents v1.0 format with configurable payload strategies
 The `WebhookService` MUST support three payload strategies in priority order: (1) Mapping transformation via a referenced `Mapping` entity, (2) CloudEvents v1.0 format via `CloudEventFormatter` when `useCloudEvents` is enabled, (3) Standard format with event name, webhook metadata, data, and timestamp.
@@ -156,6 +166,7 @@ The `WebhookService` MUST support three payload strategies in priority order: (1
 - **THEN** the HTTP request MUST include an `X-Webhook-Signature` header containing the `sha256` HMAC of the JSON-encoded payload using the webhook's secret
 - **AND** the receiving system can verify the signature to ensure payload integrity
 
+
 ### Requirement: Webhook delivery MUST support filtering by event payload attributes
 Administrators MUST be able to configure filters on webhook entities using dot-notation keys to match against event payload values. Only events whose payload matches all configured filters SHALL be delivered.
 
@@ -180,6 +191,7 @@ Administrators MUST be able to configure filters on webhook entities using dot-n
 - **GIVEN** a webhook has no filters configured (empty array or null)
 - **WHEN** any event fires that the webhook is subscribed to
 - **THEN** the webhook MUST be delivered regardless of payload content
+
 
 ### Requirement: Webhook delivery MUST implement retry with configurable backoff strategies
 Failed webhook deliveries MUST be retried up to `maxRetries` times using the configured `retryPolicy` (exponential, linear, or fixed). The `WebhookRetryJob` cron job MUST poll for failed deliveries every 5 minutes and re-attempt delivery for entries whose `next_retry_at` timestamp has passed.
@@ -207,6 +219,7 @@ Failed webhook deliveries MUST be retried up to `maxRetries` times using the con
 - **WHEN** a delivery succeeds or fails
 - **THEN** `WebhookMapper::updateStatistics()` MUST increment the appropriate counter and update the corresponding timestamp
 
+
 ### Requirement: Cross-app event consumption MUST work via standard Nextcloud IEventListener registration
 Other Nextcloud apps (opencatalogi, docudesk, zaakafhandelapp, pipelinq, procest) MUST be able to listen for OpenRegister events by registering event listeners in their own `Application::register()` method using `IRegistrationContext::registerEventListener()`.
 
@@ -229,6 +242,7 @@ Other Nextcloud apps (opencatalogi, docudesk, zaakafhandelapp, pipelinq, procest
 - **AND** OpenRegister MUST NOT need any configuration or awareness of which external apps are listening
 - **AND** listener instantiation MUST be lazy (deferred until event dispatch)
 
+
 ### Requirement: GraphQL subscription listeners MUST push events for real-time SSE delivery
 The `GraphQLSubscriptionListener` MUST listen for `ObjectCreatedEvent`, `ObjectUpdatedEvent`, and `ObjectDeletedEvent` and push event data to the `SubscriptionService` buffer for Server-Sent Events (SSE) delivery to connected GraphQL subscription clients.
 
@@ -249,6 +263,7 @@ The `GraphQLSubscriptionListener` MUST listen for `ObjectCreatedEvent`, `ObjectU
 - **WHEN** an `ObjectDeletedEvent` is dispatched
 - **THEN** the subscription service MUST receive the full object entity (pre-deletion snapshot) via `pushEvent('delete', $event->getObject())`
 - **AND** the client MUST be able to identify which object was deleted and update its local state
+
 
 ### Requirement: Event listener isolation MUST prevent cascading failures
 Each event listener MUST handle its own exceptions internally. A failure in one listener (e.g., Solr indexing error, webhook delivery timeout, subscription push failure) MUST NOT prevent other listeners from executing or cause the original database operation to fail.
@@ -271,6 +286,7 @@ Each event listener MUST handle its own exceptions internally. A failure in one 
 - **THEN** the object deletion MUST already be committed (the event is post-mutation)
 - **AND** the cleanup failure MUST be logged but MUST NOT cause a rollback
 
+
 ### Requirement: Webhook entities MUST support event subscription configuration with wildcard matching
 The `Webhook` entity's `events` field MUST store a JSON array of event class names or wildcard patterns. The `matchesEvent()` method MUST support exact class name matching and `fnmatch()` pattern matching. An empty events array MUST match all events.
 
@@ -290,6 +306,7 @@ The `Webhook` entity's `events` field MUST store a JSON array of event class nam
 - **GIVEN** a webhook with events `[]`
 - **WHEN** any event type fires
 - **THEN** `matchesEvent()` MUST return `true` (empty means "subscribe to all")
+
 
 ### Requirement: Schema hooks MUST be executed via HookListener and HookExecutor on object lifecycle events
 The `HookListener` MUST load the schema for the object being mutated, check for configured hooks via `Schema::getHooks()`, and delegate execution to `HookExecutor::executeHooks()`. Hooks MUST run on both pre-mutation events (Creating, Updating, Deleting) and post-mutation events (Created, Updated, Deleted).
@@ -313,6 +330,7 @@ The `HookListener` MUST load the schema for the object being mutated, check for 
 - **WHEN** any object lifecycle event fires for an object with this schema
 - **THEN** `HookListener::handle()` MUST return early after checking `empty($hooks)` without calling HookExecutor
 
+
 ### Requirement: HookRetryJob MUST re-execute failed hooks with exponential backoff and CloudEvents payload
 When a schema hook fails because the workflow engine is unreachable (engine-down scenario with `onEngineDown: 'queue'`), the `HookRetryJob` MUST re-queue the hook execution as a `QueuedJob` with incrementing attempt numbers up to `MAX_RETRIES` (5).
 
@@ -333,6 +351,7 @@ When a schema hook fails because the workflow engine is unreachable (engine-down
 - **GIVEN** a hook retry is executing
 - **WHEN** the payload is built for the workflow engine
 - **THEN** `CloudEventFormatter::formatAsCloudEvent()` MUST produce a payload with `type: 'nl.openregister.object.hook-retry'` and `source: '/apps/openregister/schemas/{schemaId}'` and `subject: 'object:{objectUuid}'`
+
 
 ### Requirement: Event dispatch MUST be suppressible for bulk operations
 When performing bulk imports or data migrations, the system MUST support suppressing event dispatch to avoid overwhelming listeners and maintain acceptable performance. The `MagicMapper::insertObjectEntity()` and `deleteObjectEntity()` methods MUST accept a `$dispatchEvents` parameter that defaults to `true`.
@@ -355,6 +374,7 @@ When performing bulk imports or data migrations, the system MUST support suppres
 - **THEN** no `ObjectDeletingEvent` or `ObjectDeletedEvent` MUST be dispatched
 - **AND** cleanup operations (notes, tasks, Solr removal) MUST be handled separately by the caller
 
+
 ### Requirement: Event payloads for webhook delivery MUST include register and schema context for object events
 All object-related event payloads extracted by `WebhookEventListener` MUST include the `register` ID and `schema` ID alongside the serialized object data. This enables webhook consumers to route and filter events by register or schema without needing to parse the object data.
 
@@ -373,6 +393,7 @@ All object-related event payloads extracted by `WebhookEventListener` MUST inclu
 - **GIVEN** a Schema is deleted
 - **WHEN** `WebhookEventListener::extractPayload()` processes the `SchemaDeletedEvent`
 - **THEN** the payload MUST contain `objectType: 'schema'`, `action: 'deleted'`, and the schema's `jsonSerialize()` output under the `schema` key
+
 
 ### Requirement: Request interception MUST support pre-mutation webhook notifications
 The `WebhookService::interceptRequest()` method MUST find webhooks configured with `configuration.interceptRequests: true`, format the incoming HTTP request as a CloudEvents payload using `CloudEventFormatter::formatRequestAsCloudEvent()`, and deliver it to the configured endpoint before the controller processes the request.

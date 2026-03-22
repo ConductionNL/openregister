@@ -1,8 +1,8 @@
-# Immutable Audit Trail
-
 ---
 status: implemented
 ---
+# Immutable Audit Trail
+
 
 ## Purpose
 

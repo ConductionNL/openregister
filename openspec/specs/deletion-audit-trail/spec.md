@@ -1,8 +1,8 @@
-# Deletion Audit Trail
-
 ---
 status: implemented
 ---
+# Deletion Audit Trail
+
 
 ## Purpose
 
