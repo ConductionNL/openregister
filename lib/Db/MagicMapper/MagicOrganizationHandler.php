@@ -103,13 +103,22 @@ class MagicOrganizationHandler
             $isAdmin    = in_array('admin', $userGroups, true);
         }
 
-        // Check if admin bypass is enabled.
+        // Check if admin bypass is enabled (disabled in SaaS mode).
         if ($adminBypassEnabled === true && $isAdmin === true) {
-            $this->logger->debug(
-                message: '[MagicOrganizationHandler] Admin bypass enabled, skipping org filter',
-                context: ['file' => __FILE__, 'line' => __LINE__]
-            );
-            return;
+            // In SaaS mode, never bypass organisation boundary.
+            $saasMode = $this->isSaasModeEnabled();
+            if ($saasMode === true) {
+                $this->logger->debug(
+                    message: '[MagicOrganizationHandler] SaaS mode active — admin bypass disabled for org boundary',
+                    context: ['file' => __FILE__, 'line' => __LINE__]
+                );
+            } else {
+                $this->logger->debug(
+                    message: '[MagicOrganizationHandler] Admin bypass enabled, skipping org filter',
+                    context: ['file' => __FILE__, 'line' => __LINE__]
+                );
+                return;
+            }
         }
 
         // Get the active organization UUID(s) for the current user.
@@ -316,4 +325,23 @@ class MagicOrganizationHandler
     {
         return $this->userSession->getUser() !== null;
     }//end isUserLoggedIn()
+
+    /**
+     * Check if SaaS mode is enabled in multitenancy configuration.
+     *
+     * When SaaS mode is enabled, organisation boundaries cannot be bypassed
+     * even with admin override.
+     *
+     * @return bool True if SaaS mode is enabled
+     */
+    private function isSaasModeEnabled(): bool
+    {
+        $multitenancyConfig = $this->appConfig->getValueString('openregister', 'multitenancy', '');
+        if (empty($multitenancyConfig) === true) {
+            return false;
+        }
+
+        $multitenancyData = json_decode($multitenancyConfig, true);
+        return ($multitenancyData['saasMode'] ?? false) === true;
+    }//end isSaasModeEnabled()
 }//end class
