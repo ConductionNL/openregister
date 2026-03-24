@@ -6,10 +6,8 @@ namespace Unit\Controller;
 
 use OCA\OpenRegister\Controller\AuditTrailController;
 use OCA\OpenRegister\Db\AuditTrailMapper;
-use OCA\OpenRegister\Service\AuditHashService;
 use OCA\OpenRegister\Service\LogService;
 use OCP\AppFramework\Db\DoesNotExistException;
-use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -21,23 +19,20 @@ class AuditTrailControllerTest extends TestCase
     private IRequest&MockObject $request;
     private LogService&MockObject $logService;
     private AuditTrailMapper&MockObject $auditTrailMapper;
-    private AuditHashService&MockObject $auditHashService;
 
     protected function setUp(): void
     {
         parent::setUp();
 
-        $this->request          = $this->createMock(IRequest::class);
-        $this->logService       = $this->createMock(LogService::class);
+        $this->request = $this->createMock(IRequest::class);
+        $this->logService = $this->createMock(LogService::class);
         $this->auditTrailMapper = $this->createMock(AuditTrailMapper::class);
-        $this->auditHashService = $this->createMock(AuditHashService::class);
 
         $this->controller = new AuditTrailController(
             'openregister',
             $this->request,
             $this->logService,
-            $this->auditTrailMapper,
-            $this->auditHashService
+            $this->auditTrailMapper
         );
     }
 
@@ -173,276 +168,34 @@ class AuditTrailControllerTest extends TestCase
         $this->assertEquals(500, $result->getStatus());
     }
 
-    // ── Immutability enforcement tests ──
-
-    public function testUpdateReturns405(): void
+    public function testDestroySuccess(): void
     {
-        $result = $this->controller->update(1);
+        $this->logService->method('deleteLog')->willReturn(true);
 
-        $this->assertEquals(Http::STATUS_METHOD_NOT_ALLOWED, $result->getStatus());
-        $data = $result->getData();
-        $this->assertEquals('Audit trail entries cannot be modified', $data['error']);
-    }
-
-    public function testDestroyReturns405(): void
-    {
         $result = $this->controller->destroy(1);
 
-        $this->assertEquals(Http::STATUS_METHOD_NOT_ALLOWED, $result->getStatus());
-        $data = $result->getData();
-        $this->assertEquals('Audit trail entries cannot be deleted', $data['error']);
-    }
-
-    // ── Verification endpoint tests ──
-
-    public function testVerifySuccess(): void
-    {
-        $this->request->method('getParam')
-            ->willReturnMap([
-                ['from', null, null],
-                ['to', null, null],
-            ]);
-
-        $this->auditHashService->method('verifyChain')->willReturn([
-            'valid'            => true,
-            'entriesVerified'  => 50,
-            'brokenAt'         => null,
-            'skippedNullHashes' => 0,
-        ]);
-
-        $result = $this->controller->verify();
-
         $this->assertEquals(200, $result->getStatus());
         $data = $result->getData();
-        $this->assertTrue($data['valid']);
-        $this->assertEquals(50, $data['entriesVerified']);
+        $this->assertTrue($data['success']);
     }
 
-    public function testVerifyWithRange(): void
+    public function testDestroyReturnsFalse(): void
     {
-        $this->request->method('getParam')
-            ->willReturnMap([
-                ['from', null, '10'],
-                ['to', null, '20'],
-            ]);
+        $this->logService->method('deleteLog')->willReturn(false);
 
-        $this->auditHashService->method('verifyChain')->willReturn([
-            'valid'            => true,
-            'entriesVerified'  => 11,
-            'brokenAt'         => null,
-            'skippedNullHashes' => 0,
-            'range'            => ['from' => 10, 'to' => 20],
-        ]);
+        $result = $this->controller->destroy(1);
 
-        $result = $this->controller->verify();
-
-        $this->assertEquals(200, $result->getStatus());
-        $data = $result->getData();
-        $this->assertTrue($data['valid']);
+        $this->assertEquals(500, $result->getStatus());
     }
 
-    public function testVerifyDetectsTamper(): void
+    public function testDestroyNotFound(): void
     {
-        $this->request->method('getParam')
-            ->willReturnMap([
-                ['from', null, null],
-                ['to', null, null],
-            ]);
+        $this->logService->method('deleteLog')
+            ->willThrowException(new DoesNotExistException('Not found'));
 
-        $this->auditHashService->method('verifyChain')->willReturn([
-            'valid'            => false,
-            'entriesVerified'  => 49,
-            'brokenAt'         => 50,
-            'skippedNullHashes' => 0,
-        ]);
+        $result = $this->controller->destroy(999);
 
-        $result = $this->controller->verify();
-
-        $this->assertEquals(200, $result->getStatus());
-        $data = $result->getData();
-        $this->assertFalse($data['valid']);
-        $this->assertEquals(50, $data['brokenAt']);
-    }
-
-    // ── Verwerkingsregister tests ──
-
-    public function testVerwerkingsregisterSuccess(): void
-    {
-        $this->request->method('getParam')
-            ->willReturnMap([
-                ['organisationId', null, null],
-            ]);
-
-        $activities = [
-            [
-                'processingActivityId' => 'pa-001',
-                'entryCount'           => 10,
-                'firstSeen'            => '2025-01-01',
-                'lastSeen'             => '2025-12-31',
-            ],
-        ];
-
-        $this->auditTrailMapper->method('getProcessingActivities')->willReturn($activities);
-
-        $result = $this->controller->verwerkingsregister();
-
-        $this->assertEquals(200, $result->getStatus());
-        $data = $result->getData();
-        $this->assertCount(1, $data);
-        $this->assertEquals('pa-001', $data[0]['processingActivityId']);
-    }
-
-    public function testVerwerkingsregisterEmpty(): void
-    {
-        $this->request->method('getParam')
-            ->willReturnMap([
-                ['organisationId', null, null],
-            ]);
-
-        $this->auditTrailMapper->method('getProcessingActivities')->willReturn([]);
-
-        $result = $this->controller->verwerkingsregister();
-
-        $this->assertEquals(200, $result->getStatus());
-        $this->assertSame([], $result->getData());
-    }
-
-    // ── Inzageverzoek tests ──
-
-    public function testInzageverzoekSuccess(): void
-    {
-        $this->request->method('getParam')
-            ->willReturnMap([
-                ['identifier', null, '123456789'],
-            ]);
-
-        $this->auditTrailMapper->method('findByIdentifier')->willReturn([
-            'results'      => [['schemaUuid' => 'schema-1', 'entries' => []]],
-            'totalEntries' => 5,
-        ]);
-
-        $result = $this->controller->inzageverzoek();
-
-        $this->assertEquals(200, $result->getStatus());
-        $data = $result->getData();
-        $this->assertEquals(5, $data['totalEntries']);
-    }
-
-    public function testInzageverzoekMissingIdentifier(): void
-    {
-        $this->request->method('getParam')
-            ->willReturnMap([
-                ['identifier', null, null],
-            ]);
-
-        $result = $this->controller->inzageverzoek();
-
-        $this->assertEquals(400, $result->getStatus());
-        $data = $result->getData();
-        $this->assertEquals('identifier parameter is required', $data['error']);
-    }
-
-    public function testInzageverzoekEmptyIdentifier(): void
-    {
-        $this->request->method('getParam')
-            ->willReturnMap([
-                ['identifier', null, ''],
-            ]);
-
-        $result = $this->controller->inzageverzoek();
-
-        $this->assertEquals(400, $result->getStatus());
-    }
-
-    // ── extractRequestParameters branch coverage ──
-
-    public function testIndexWithUnderscoreLimitAndOffset(): void
-    {
-        $this->request->method('getParams')->willReturn([
-            '_limit'  => '5',
-            '_offset' => '10',
-        ]);
-        $this->logService->method('getAllLogs')->willReturn([]);
-        $this->logService->method('countAllLogs')->willReturn(0);
-
-        $result = $this->controller->index();
-
-        $this->assertEquals(200, $result->getStatus());
-        $data = $result->getData();
-        $this->assertEquals(5, $data['limit']);
-        $this->assertEquals(10, $data['offset']);
-    }
-
-    public function testIndexWithPageCalculatesOffset(): void
-    {
-        $this->request->method('getParams')->willReturn([
-            'page' => '3',
-        ]);
-        $this->logService->method('getAllLogs')->willReturn([]);
-        $this->logService->method('countAllLogs')->willReturn(0);
-
-        $result = $this->controller->index();
-
-        $this->assertEquals(200, $result->getStatus());
-        $data = $result->getData();
-        $this->assertEquals(40, $data['offset']);
-        $this->assertEquals(3, $data['page']);
-    }
-
-    public function testIndexWithUnderscorePageParam(): void
-    {
-        $this->request->method('getParams')->willReturn([
-            '_page' => '2',
-        ]);
-        $this->logService->method('getAllLogs')->willReturn([]);
-        $this->logService->method('countAllLogs')->willReturn(0);
-
-        $result = $this->controller->index();
-
-        $this->assertEquals(200, $result->getStatus());
-        $data = $result->getData();
-        $this->assertEquals(20, $data['offset']);
-    }
-
-    public function testIndexWithSortParam(): void
-    {
-        $this->request->method('getParams')->willReturn([
-            'sort'  => 'updated',
-            'order' => 'ASC',
-        ]);
-        $this->logService->method('getAllLogs')->willReturn([]);
-        $this->logService->method('countAllLogs')->willReturn(0);
-
-        $result = $this->controller->index();
-
-        $this->assertEquals(200, $result->getStatus());
-    }
-
-    public function testIndexWithUnderscoreSortParam(): void
-    {
-        $this->request->method('getParams')->willReturn([
-            '_sort'  => 'action',
-            '_order' => 'DESC',
-        ]);
-        $this->logService->method('getAllLogs')->willReturn([]);
-        $this->logService->method('countAllLogs')->willReturn(0);
-
-        $result = $this->controller->index();
-
-        $this->assertEquals(200, $result->getStatus());
-    }
-
-    public function testIndexWithSearchParam(): void
-    {
-        $this->request->method('getParams')->willReturn([
-            '_search' => 'create',
-        ]);
-        $this->logService->method('getAllLogs')->willReturn([]);
-        $this->logService->method('countAllLogs')->willReturn(0);
-
-        $result = $this->controller->index();
-
-        $this->assertEquals(200, $result->getStatus());
+        $this->assertEquals(404, $result->getStatus());
     }
 
     public function testDestroyMultipleSuccess(): void
@@ -515,8 +268,119 @@ class AuditTrailControllerTest extends TestCase
         $this->assertFalse($data['success']);
     }
 
+    // ── extractRequestParameters branch coverage ──
+
+    public function testIndexWithUnderscoreLimitAndOffset(): void
+    {
+        // Covers the _limit / _offset / _page alternate param names.
+        $this->request->method('getParams')->willReturn([
+            '_limit'  => '5',
+            '_offset' => '10',
+        ]);
+        $this->logService->method('getAllLogs')->willReturn([]);
+        $this->logService->method('countAllLogs')->willReturn(0);
+
+        $result = $this->controller->index();
+
+        $this->assertEquals(200, $result->getStatus());
+        $data = $result->getData();
+        $this->assertEquals(5, $data['limit']);
+        $this->assertEquals(10, $data['offset']);
+    }
+
+    public function testIndexWithPageCalculatesOffset(): void
+    {
+        // page=3, limit=20 → offset = (3-1)*20 = 40.
+        $this->request->method('getParams')->willReturn([
+            'page' => '3',
+        ]);
+        $this->logService->method('getAllLogs')->willReturn([]);
+        $this->logService->method('countAllLogs')->willReturn(0);
+
+        $result = $this->controller->index();
+
+        $this->assertEquals(200, $result->getStatus());
+        $data = $result->getData();
+        $this->assertEquals(40, $data['offset']);
+        $this->assertEquals(3, $data['page']);
+    }
+
+    public function testIndexWithUnderscorePageParam(): void
+    {
+        // _page alternate name.
+        $this->request->method('getParams')->willReturn([
+            '_page' => '2',
+        ]);
+        $this->logService->method('getAllLogs')->willReturn([]);
+        $this->logService->method('countAllLogs')->willReturn(0);
+
+        $result = $this->controller->index();
+
+        $this->assertEquals(200, $result->getStatus());
+        $data = $result->getData();
+        $this->assertEquals(20, $data['offset']);
+    }
+
+    public function testIndexWithSortParam(): void
+    {
+        // Covers the sort extraction branch.
+        $this->request->method('getParams')->willReturn([
+            'sort'  => 'updated',
+            'order' => 'ASC',
+        ]);
+        $this->logService->method('getAllLogs')->willReturn([]);
+        $this->logService->method('countAllLogs')->willReturn(0);
+
+        $result = $this->controller->index();
+
+        $this->assertEquals(200, $result->getStatus());
+    }
+
+    public function testIndexWithUnderscoreSortParam(): void
+    {
+        // Covers the _sort / _order alternate names.
+        $this->request->method('getParams')->willReturn([
+            '_sort'  => 'action',
+            '_order' => 'DESC',
+        ]);
+        $this->logService->method('getAllLogs')->willReturn([]);
+        $this->logService->method('countAllLogs')->willReturn(0);
+
+        $result = $this->controller->index();
+
+        $this->assertEquals(200, $result->getStatus());
+    }
+
+    public function testIndexWithSearchParam(): void
+    {
+        // Covers _search alternate name.
+        $this->request->method('getParams')->willReturn([
+            '_search' => 'create',
+        ]);
+        $this->logService->method('getAllLogs')->willReturn([]);
+        $this->logService->method('countAllLogs')->willReturn(0);
+
+        $result = $this->controller->index();
+
+        $this->assertEquals(200, $result->getStatus());
+    }
+
+    public function testDestroyGeneralException(): void
+    {
+        // Covers the generic \Exception branch in destroy() (lines 378-384).
+        $this->logService->method('deleteLog')
+            ->willThrowException(new \Exception('Unexpected error'));
+
+        $result = $this->controller->destroy(1);
+
+        $this->assertEquals(500, $result->getStatus());
+        $data = $result->getData();
+        $this->assertStringContainsString('Deletion failed', $data['error']);
+    }
+
     public function testDestroyMultipleWithArrayIds(): void
     {
+        // Covers the is_array($ids) branch in destroyMultiple() (lines 417-418).
         $this->request->method('getParams')->willReturn([]);
         $this->request->method('getParam')
             ->willReturnMap([
