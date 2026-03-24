@@ -1,33 +1,17 @@
-## Why
+# Activity Provider
 
-When objects are created, updated, or deleted in OpenRegister -- whether by Procest (cases), Pipelinq (leads), DocuDesk (documents), or any other consuming app -- these events are invisible in Nextcloud's Activity stream. Only Pipelinq currently publishes activities with its own provider. A centralized activity provider in OpenRegister would let all consuming apps publish lifecycle events through one shared system, eliminating duplication and ensuring consistent activity formatting across the platform.
+## Problem
+OpenRegister currently dispatches internal events (`ObjectCreatedEvent`, `ObjectUpdatedEvent`, `ObjectDeletedEvent`, `RegisterCreatedEvent`, `SchemaCreatedEvent`, etc.) but does not integrate with Nextcloud's Activity app. This means users have no visibility into what has changed in their registers, schemas, or objects through Nextcloud's standard activity stream, dashboard widget, or email notifications. For a data registration platform that multiple users collaborate on, this is a significant gap: administrators cannot see who changed what, team members are unaware of new objects or schema modifications, and there is no audit-friendly timeline of changes visible in the standard Nextcloud UI.
 
-## What Changes
+## Proposed Solution
+Implement a full Nextcloud **Activity Provider** integration for OpenRegister that:
 
-- Add a new `ObjectActivityProvider` implementing `OCP\Activity\IProvider` that parses and formats activity events for display in Nextcloud's Activity stream
-- Define activity subject types: `object_created`, `object_updated`, `object_deleted`, `object_assigned`, `entity_linked`, `entity_detected`, `action_performed`
-- Add an `ActivityPublishListener` that listens to existing OpenRegister events (`ObjectCreatedEvent`, `ObjectUpdatedEvent`, `ObjectDeletedEvent`) and publishes them to the activity manager
-- Add an `ObjectActivitySetting` implementing `OCP\Activity\ISetting` for user preference control (enable/disable per activity category)
-- Add an `ObjectActivityFilter` implementing `OCP\Activity\IFilter` to filter the activity stream to show only OpenRegister activities
-- Use Nextcloud's rich object format for activity parameters (`{object}`, `{register}`, `{user}`, `{entity}`, `{file}`) enabling clickable, styled activity entries
-- Add a new `ActivityPublishEvent` that consuming apps can dispatch to publish custom activities through OpenRegister's centralized provider, removing the need for each app to implement its own activity provider
-- Leverage Nextcloud's built-in activity email digest system for email notifications (no custom email implementation)
+1. **Publishes activity events** for all CRUD operations on the three core entity types: Objects (created, updated, deleted), Registers (created, updated, deleted), and Schemas (created, updated, deleted).
+2. **Provides an `IProvider` implementation** that parses stored events into human-readable activity entries with rich subject parameters (clickable entity names, user references).
+3. **Provides an `IFilter` implementation** so users can filter the activity stream to show only OpenRegister events.
+4. **Provides `ActivitySettings` subclasses** so users can configure which OpenRegister activity types they want to see in their stream and receive via email notifications.
+5. **Publishes events via a dedicated `ActivityService`** that listens to OpenRegister's existing `EventDispatcher` events, translating them into Nextcloud Activity events with proper metadata (author, affected user, object type/ID, timestamp, link).
+6. **Registers all activity components** via `info.xml` `<activity>` declarations (provider, settings, filter) following Nextcloud conventions.
+7. **Supports i18n** with Dutch and English translations for all activity subjects and settings per ADR-005.
 
-## Capabilities
-
-### New Capabilities
-- `activity-provider`: Activity provider, filter, settings, event listener, and rich object formatting for publishing OpenRegister object lifecycle events to Nextcloud's Activity stream
-- `activity-integration-api`: Public event-based API (`ActivityPublishEvent`) that consuming apps dispatch to publish custom activities through OpenRegister's centralized activity provider
-
-### Modified Capabilities
-- `event-driven-architecture`: Adds new `ActivityPublishEvent` to the existing event system and new `ActivityPublishListener` that subscribes to existing object lifecycle events
-
-## Impact
-
-- **New PHP classes**: `lib/Activity/ObjectActivityProvider.php`, `lib/Activity/ObjectActivitySetting.php`, `lib/Activity/ObjectActivityFilter.php`, `lib/Listener/ActivityPublishListener.php`, `lib/Event/ActivityPublishEvent.php`
-- **Modified**: `lib/AppInfo/Application.php` (register provider, setting, filter, and listener via `IRegistrationContext`)
-- **Dependencies**: Requires the Nextcloud `activity` app to be installed and enabled (standard Nextcloud component, no external dependencies)
-- **Existing events consumed**: `ObjectCreatedEvent`, `ObjectUpdatedEvent`, `ObjectDeletedEvent` (already dispatched by OpenRegister's mappers)
-- **Deep link integration**: Uses the existing `DeepLinkRegistrationEvent` system for generating activity link URLs
-- **Dependent apps**: opencatalogi, softwarecatalog, procest, pipelinq, docudesk can all benefit by dispatching `ActivityPublishEvent` instead of implementing their own providers
-- **No breaking changes**: This is purely additive functionality
+This uses the standard `OCP\Activity\IManager`, `OCP\Activity\IProvider`, `OCP\Activity\IFilter`, and `OCP\Activity\ActivitySettings` APIs (available since NC 11+/NC 20+).

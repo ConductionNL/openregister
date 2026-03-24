@@ -1,31 +1,22 @@
-## Why
+# Action Registry
 
-Currently, if multiple consuming apps (Procest, Pipelinq, DocuDesk, OpenCatalogi, ZaakAfhandelApp) want to offer contextual actions on files, mail messages, contacts, or other Nextcloud items, each app would need to independently implement Nextcloud integration points (sidebar tabs, file actions, etc.), leading to code duplication and inconsistent UX. We need a centralized action registry in OpenRegister -- following the same pattern as the existing `DeepLinkRegistrationEvent` -- where apps register their actions once, and OpenRegister handles rendering them across all Nextcloud integration surfaces.
+## Problem
+OpenRegister currently ties automated behavior to schemas via the `hooks` JSON property on the Schema entity. While this works for simple use cases, it creates several problems as the system scales:
 
-## What Changes
+1. **No reusability**: The same hook configuration (e.g., "validate BSN via n8n workflow X") must be duplicated across every schema that needs it. When the workflow ID changes, every schema must be updated manually.
+2. **No discoverability**: There is no central place to see all configured automations across all schemas. Administrators must inspect each schema individually to understand what workflows are active.
+3. **No composability**: Hooks cannot be shared, versioned, or composed independently of schemas. There is no way to build a library of reusable automation building blocks.
+4. **No standalone triggers**: All hooks are schema-bound. There is no way to define actions that respond to non-object events (register changes, schema changes, source changes) or that operate on a schedule without being attached to a specific schema.
+5. **Limited governance**: Without a first-class entity, there is no audit trail for action configuration changes, no RBAC on who can create/modify actions, and no lifecycle management (enable/disable/archive).
 
-- Create an `Action` value object with fields: `id`, `appId`, `label`, `description`, `icon`, `url` (template with placeholders like `{fileId}`, `{entityId}`, `{contactId}`), `callback` (API endpoint for inline actions), `contexts` (array: "file", "mail", "contact", "calendar", "profile", "global"), `filters` (mimeTypes, entityTypes, schemaIds, permissions), `order`, `destructive` flag
-- Create `ActionRegistrationEvent` (emitted during boot in `Application.php`) with methods: `registerAction()`, `getActions()`, `getActionsForContext()`, `getActionsForContextWithFilters()`
-- Create `ActionRegistryService` singleton that collects actions from the event and caches them in APCu (`ICacheFactory`) with TTL 300s; cache invalidation on `AppEnableEvent`/`AppDisableEvent`; public methods: `getActions()`, `getActionsForContext()`, `getActionsForFile()`, `getActionsForEntity()`, `invalidateCache()`
-- Add API endpoints: `GET /api/actions`, `GET /api/actions/{context}`, `GET /api/actions/file/{fileId}`, `GET /api/actions/entity/{entityId}`
-- Register an `InitialStateProvider` that injects the action registry into the frontend (key: "actions") so JS sidebar tabs access actions without API calls
-- OpenRegister registers one example action ("View in Register") for contexts file, mail, contact
+## Proposed Solution
+Introduce an **Action** entity as a first-class Nextcloud database entity (`oc_openregister_actions`) that decouples automation definitions from schemas. Actions are reusable, discoverable, composable units of automated behavior that can be:
 
-## Capabilities
+- **Bound to schemas** via a many-to-many relationship (replacing or augmenting inline `hooks`)
+- **Bound to any event type** (object, register, schema, source, configuration lifecycle events)
+- **Triggered on a schedule** (cron-based) independent of any event
+- **Managed via CRUD API** with full audit trail, RBAC, and lifecycle states (draft/active/disabled/archived)
+- **Versioned** so that changes to action definitions can be tracked and rolled back
+- **Tested** via a dry-run endpoint that simulates execution without side effects
 
-### New Capabilities
-- `action-registry`: Centralized event-based action registration system with APCu caching, API endpoints, InitialState injection, and filter evaluation for contextual actions across Nextcloud integration surfaces
-
-### Modified Capabilities
-- `event-driven-architecture`: Adds new `ActionRegistrationEvent` to the existing event dispatch system in `Application.php` boot phase
-
-## Impact
-
-- **New PHP classes**: `lib/Event/ActionRegistrationEvent.php`, `lib/Service/ActionRegistryService.php`, `lib/Controller/ActionsController.php`, `lib/Model/Action.php`
-- **Modified**: `lib/AppInfo/Application.php` (dispatch `ActionRegistrationEvent` in boot, register cache invalidation listeners for `AppEnableEvent`/`AppDisableEvent`, register `InitialStateProvider`)
-- **New routes**: 4 API endpoints in `appinfo/routes.php`
-- **Caching**: Uses `ICacheFactory` (APCu) with prefix `openregister_actions`, TTL 300s
-- **Pattern reference**: Follows existing `DeepLinkRegistrationEvent` pattern
-- **No UI**: This change provides infrastructure only; all UI surfaces (sidebar tabs, file actions, etc.) are separate changes that depend on this one
-- **No breaking changes**: Purely additive
-- **Dependent changes**: `files-sidebar-tabs`, `file-actions`, `mail-sidebar`, `contacts-actions`, `workflow-operations`, `profile-actions` all consume this registry
+The Action entity wraps the existing `HookExecutor` and `WorkflowEngineRegistry` infrastructure, providing a management layer on top of the already-implemented event-driven architecture and workflow integration.

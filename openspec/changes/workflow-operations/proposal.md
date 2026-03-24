@@ -1,36 +1,67 @@
-## Why
+# Proposal: workflow-operations
 
-Administrators want to automate the connection between Nextcloud file events and OpenRegister operations without leaving the Nextcloud admin interface. Currently, linking files to register objects, triggering entity detection on uploaded documents, or creating objects from file uploads requires either manual action or building custom n8n workflows. Nextcloud's built-in Workflow Engine (Flow) provides a user-friendly, zero-code way to define these rules (e.g., "When a file is uploaded to folder X, create a register object" or "When a file is tagged 'confidential', run entity detection"), but OpenRegister does not yet register any operations or checks with it.
+## Summary
 
-## What Changes
+Add the missing operational capabilities for OpenRegister's workflow integration: a workflow configuration UI for schema settings, scheduled workflow triggers via Nextcloud TimedJobs, a multi-step approval chain state machine, workflow execution history with a monitoring dashboard, and a "test hook" dry-run facility. These features close the gap between the implemented backend pipeline (HookExecutor, adapters, registry) and the end-user/admin experience needed for production use in government environments.
 
-- Register four new Workflow Engine operations that expose OpenRegister capabilities as Flow actions:
-  - **Create Register Object** — creates a new object in a specified register/schema when a file event fires, with configurable field mappings and the file attached
-  - **Link to Register Object** — links a file to an existing register object using configurable matching strategies (by folder, metadata, or file name pattern)
-  - **Run Entity Detection** — extracts text from a file and runs entity recognition (regex, presidio, LLM) on the content
-  - **Execute Action** — runs a registered action from the action registry with the file context
-- Register two new Workflow Engine checks (conditions) for use in Flow rules:
-  - **File has linked entities** — evaluates whether a file has OpenRegister entities detected, with entity type and confidence threshold filters
-  - **File is linked to object** — evaluates whether a file is linked to any register object, with optional register/schema filter
-- Listen to `RegisterOperationsEvent` in `Application.php` to register all operations and checks with the Workflow Engine
-- Add Vue configuration components for each operation, loaded lazily via `src/workflow.js` entry point
-- Heavy operations (entity detection) dispatch background jobs; light operations (link to object) run synchronously within a 5s budget
+## Demand Evidence
 
-## Capabilities
+**Cluster: Workflow/process automation** -- 38% of analyzed government tenders require workflow/process automation capabilities.
+**Cluster: Approval chains** -- Government organisations universally require multi-step approval for permits, subsidies, and case handling.
+**Cluster: Monitoring/observability** -- Functional administrators need visibility into workflow execution status without accessing server logs.
 
-### New Capabilities
-- `workflow-operations`: Registration of OpenRegister operations (Create Object, Link to Object, Run Entity Detection, Execute Action) and checks (Has Entities, Has Object) with Nextcloud's Workflow Engine, including Vue configuration UI components and background job dispatching for heavy operations
+### Sample Requirements from Tenders
 
-### Modified Capabilities
-- `event-driven-architecture`: The Workflow Engine operations consume file-based Nextcloud events (file created, updated, tagged, shared) rather than OpenRegister object events; the existing event infrastructure needs to bridge file events to OpenRegister service calls
+1. "Beheerders moeten zonder programmeerkennis workflows kunnen configureren en koppelen aan zaaktypen."
+2. "Het systeem ondersteunt meervoudige goedkeuringsketens met escalatie bij termijnoverschrijding."
+3. "Uitvoering van workflows moet traceerbaar zijn via een auditoverzicht in de beheerinterface."
+4. "Het systeem biedt de mogelijkheid om workflows op vaste tijdstippen te laten draaien."
+5. "Beheerders moeten workflows kunnen testen met voorbeelddata voordat deze in productie worden geactiveerd."
 
-## Impact
+## Affected Projects
 
-- **New PHP classes**: `OCA\OpenRegister\Workflow\CreateObjectOperation`, `LinkToObjectOperation`, `EntityDetectionOperation`, `ExecuteActionOperation`, `HasEntitiesCheck`, `HasObjectCheck`, plus a `RegisterWorkflowListener` for `RegisterOperationsEvent`
-- **New Vue components**: Configuration UIs for each operation (register/schema selector, field mappings, matching strategy, detection method toggles, action picker)
-- **New webpack entry**: `src/workflow.js` for lazy-loaded Workflow admin UI components
-- **Dependencies**: `action-registry` change (for Execute Action operation); Nextcloud Workflow Engine (`workflowengine` core app, always available)
-- **Existing services used**: `ObjectService` (create/link objects), `TextExtractionService` (entity detection), `ActionRegistryService` (action execution)
-- **Background jobs**: New `TimedJob` or `QueuedJob` subclass for async entity detection operations
-- **No database migrations**: Operations store their configuration in the Workflow Engine's own `oc_flow_operations` table
-- **No breaking changes**: All additions are opt-in; existing behavior is unaffected
+- [x] Project: `openregister` -- UI components, scheduled job service, approval state machine, execution history entity/API
+
+## Scope
+
+### In Scope
+
+- **Workflow configuration UI**: Vue tab in schema settings to list, add, edit, and delete hooks; select engine and workflow from registered engines; configure mode, order, timeout, and failure modes
+- **Scheduled workflow triggers**: `ScheduledWorkflowJob` (TimedJob) that triggers workflows on a cron-like interval, with a `ScheduledWorkflow` entity linking a workflow to a register/schema and interval
+- **Multi-step approval state machine**: `ApprovalChain` entity defining approval steps (role, order), `ApprovalStep` tracking per-object progress, and hooks that advance/reject objects through the chain
+- **Workflow execution history**: `WorkflowExecution` entity persisting hook execution results (hookId, objectUuid, engine, status, durationMs, errors, timestamp) with a REST API and Vue monitoring panel
+- **Test hook / dry-run**: API endpoint and UI button to execute a hook with sample data derived from the schema without persisting changes
+
+### Out of Scope
+
+- Workflow editing (use engine's native UI -- n8n editor, Windmill editor)
+- Complex filterCondition expression language (kept as simple key-value equality for now)
+- Notification templates/channels (use n8n's built-in notification nodes)
+- Workflow template marketplace or library
+
+## Approach
+
+1. Create `WorkflowExecution` entity and mapper to persist hook execution history from HookExecutor
+2. Add `WorkflowExecutionController` with list/show endpoints and filtering by objectId, schemaId, hookId, status
+3. Create `ScheduledWorkflow` entity/mapper and `ScheduledWorkflowJob` TimedJob that triggers workflows via the engine adapter on a configurable interval
+4. Create `ApprovalChain` and `ApprovalStep` entities for tracking multi-step approval progress per object
+5. Add `ApprovalController` with endpoints for chain CRUD, step approval/rejection, and status queries
+6. Add `WorkflowEngineController::testHook()` endpoint that executes a workflow with sample data and returns the result without database persistence
+7. Build Vue components: `SchemaWorkflowTab`, `HookForm`, `WorkflowExecutionPanel`, `ApprovalChainPanel`, `TestHookDialog`
+
+## Cross-Project Dependencies
+
+- **workflow-engine-abstraction**: Foundation layer with `WorkflowEngineInterface`, adapters, and registry (already implemented)
+- **schema-hooks**: Hook configuration format on schemas (already implemented)
+- **event-driven-architecture**: Typed PHP events and StoppableEventInterface (already implemented)
+
+## Rollback Strategy
+
+- UI components can be removed by reverting Vue source and rebuilding
+- New entities (`WorkflowExecution`, `ScheduledWorkflow`, `ApprovalChain`, `ApprovalStep`) are purely additive -- drop their migrations to roll back
+- `ScheduledWorkflowJob` entries in `oc_jobs` can be removed via `IJobList::remove()`
+- Existing HookExecutor and workflow pipeline remain unchanged
+
+## Open Questions
+
+None -- scope is confirmed based on the "Not yet implemented" items in the workflow-integration spec.

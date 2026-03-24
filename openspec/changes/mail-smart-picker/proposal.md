@@ -1,33 +1,16 @@
-## Why
+# Mail Smart Picker
 
-Users frequently need to reference OpenRegister entities (persons, organizations, cases, leads) in emails, documents, and chat messages, but currently must manually copy names, IDs, or URLs. The Nextcloud Smart Picker provides a standardized way to search and insert rich entity references with preview cards across Mail compose, Text editor, Talk chat, and any other app supporting the reference widget system. Implementing an `IDiscoverableReferenceProvider` makes OpenRegister data discoverable and insertable from anywhere in Nextcloud.
+## Problem
+Users composing emails in Nextcloud Mail (or writing in any rich-text context that supports the Smart Picker, such as Text, Talk, or Collectives) have no way to search for and insert references to OpenRegister objects. They must manually copy-paste URLs or object identifiers, which is error-prone, breaks the preview experience, and creates no structured link between the mail and the data object. Given that OpenRegister is the data backbone for many Conduction apps (OpenCatalogi, Procest, Pipelinq, ZaakAfhandelApp, Software Catalogus), users frequently need to reference register objects in their communications.
 
-## What Changes
+## Proposed Solution
+Implement a Nextcloud **Reference Provider** (Smart Picker integration) for OpenRegister that:
 
-- Add a new PHP class `OCA\OpenRegister\Reference\EntityReferenceProvider` implementing `IDiscoverableReferenceProvider` and `ISearchableReferenceProvider`
-- Register the reference provider via `IRegistrationContext::registerReferenceProvider()` in `Application.php`
-- Add a `RenderReferenceEvent` listener to load the JavaScript widget bundle when OpenRegister references are rendered
-- Create a Vue component `src/components/Reference/EntityReferenceWidget.vue` for rich preview cards
-- Register the widget type via `OCP.Collaboration.registerType()` in JavaScript
-- Search across entities and objects using existing `ObjectService` and `EntityMapper` infrastructure
-- Resolve OpenRegister URLs (e.g., `/apps/openregister/objects/{register}/{schema}/{id}`) to rich reference cards showing type icon, title, metadata, and deep links
-- Support type-prefixed search filtering (e.g., "person: John", "case: 2024-001")
-- Cache resolved references in APCu for performance
+1. **Registers as a discoverable, searchable reference provider** so it appears in the Smart Picker modal across all Nextcloud apps that support rich references (Mail, Text, Talk, Collectives).
+2. **Allows users to search OpenRegister objects** via the existing `ObjectsProvider` search provider, with optional filtering by register and schema.
+3. **Resolves OpenRegister object URLs into rich reference previews** showing object title, schema, register, key properties, and last-updated timestamp.
+4. **Provides a custom Vue widget** for rendering the rich object preview inline in the editor (card-style with icon, title, properties, and a link to the full object).
+5. **Leverages the existing Deep Link Registry** so that previews link to the consuming app (e.g., OpenCatalogi) rather than the raw OpenRegister admin view when a deep link is registered.
+6. **Supports public references** for objects in publicly-accessible schemas, enabling rich previews even for unauthenticated viewers.
 
-## Capabilities
-
-### New Capabilities
-- `smart-picker-reference`: Reference provider for the Nextcloud Smart Picker, enabling search and insertion of OpenRegister entities/objects as rich references in Mail, Text, Talk, and other apps. Covers the PHP provider implementation, URL matching/resolution, search across registers/schemas/entities, the Vue preview widget, and APCu caching.
-
-### Modified Capabilities
-- `deep-link-registry`: Reference cards should use the existing deep link registry to resolve object URLs to consuming app URLs (e.g., linking a Procest case to Procest rather than OpenRegister). No spec-level requirement change, only consumption of existing capability.
-
-## Impact
-
-- **New files**: `lib/Reference/EntityReferenceProvider.php`, `lib/Listener/RenderReferenceListener.php`, `src/components/Reference/EntityReferenceWidget.vue`, `src/reference.js` (entry point for widget bundle)
-- **Modified files**: `lib/AppInfo/Application.php` (register provider + event listener), `webpack.config.js` (add reference entry point)
-- **APIs consumed**: `OCP\Collaboration\Reference\IDiscoverableReferenceProvider`, `OCP\Collaboration\Reference\ISearchableReferenceProvider`, `OCP\Collaboration\Reference\RenderReferenceEvent`
-- **Internal services used**: `ObjectService` (search objects), `EntityMapper` (search entities), deep link registry
-- **No breaking changes**: This is a purely additive feature with no impact on existing APIs or data
-- **No hard dependencies**: Works independently; enhanced by the action-registry change if present
-- **Performance**: Search capped at 10 results per type, 25 total; APCu caching for resolved references; target <500ms response time
+This uses the standard Nextcloud `OCP\Collaboration\Reference` API (available since NC 25, searchable since NC 26) and requires no changes to the Mail app itself.

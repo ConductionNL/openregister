@@ -1,31 +1,44 @@
-## Why
+# Mail Sidebar
 
-Email is a primary communication channel for government workers. When they receive an email, they often need to look up the sender in their case management system (Procest), CRM (Pipelinq), or document system (DocuDesk). Currently this requires switching apps and manually searching. Showing linked entities, related objects, and available actions directly in the Nextcloud Mail sidebar saves time and reduces context switching.
+## Problem
 
-## What Changes
+When a Nextcloud user views an email in the Mail app, there is no way to see which OpenRegister objects are related to that email. Case handlers working with Procest, ZaakAfhandelApp, or Pipelinq must manually search for cases by copying sender addresses or subject lines from emails into the OpenRegister search. This context-switching breaks workflow continuity and wastes time.
 
-- **Mail app integration**: Research and implement extension points in the Nextcloud Mail app to add sidebar tabs (via `LoadAdditionalScriptsEvent`, sidebar tab API, or DOM injection fallback)
-- **Entity matching engine**: New `MailIntegrationService` that matches email sender/recipients against OpenRegister entities by email address, display name, and domain
-- **Entities tab**: Vue component showing matched entities (persons, organizations) grouped by sender/to/cc, with type icons, match badges, linked object counts, and DeepLink click-through
-- **Objects tab**: Vue component showing register objects linked to matched entities via EntityRelation lookups
-- **Actions tab**: Vue component showing context-filtered actions from the action registry (`context: "mail"`), passing mail-specific context (emailId, senderEmail, senderName, subject, messageId)
-- **New API endpoints**: Three authenticated endpoints for mail entity matching, object lookup, and mail-context action retrieval
-- **Caching layer**: APCu caching for email-to-entity mappings (TTL 60s) and per-email object lookups, with client-side debounce (300ms) for rapid email navigation
+The nextcloud-entity-relations spec establishes the `openregister_email_links` table that maps emails to objects, and the `EmailService` that manages those links. However, this linkage is only visible from the OpenRegister side (object detail -> emails tab). There is no reverse integration: when viewing an email in the Mail app, users cannot see or manage the objects linked to that email.
 
-## Capabilities
+## Context
 
-### New Capabilities
-- `mail-sidebar-integration`: Mail app extension point research, tab registration, script injection, and sidebar UI framework for the Entities/Objects/Actions tabs
-- `mail-entity-matching`: Backend service for matching email metadata (address, name, domain) against OpenRegister entities, with APCu caching and new API endpoints
+- **Existing infrastructure**: `openregister_email_links` table, `EmailService`, `EmailsController` (from nextcloud-entity-relations spec)
+- **Nextcloud Mail integration point**: The Mail app does not provide a formal sidebar extension API. Integration requires injecting a sidebar panel via Nextcloud's collaboration resources system or registering a custom script that extends the Mail app UI
+- **Alternative approach**: Nextcloud 28+ supports apps registering "additional scripts" that load into other apps' pages via `OCP\Util::addScript()`
+- **Consuming apps**: Procest (case workflows), Pipelinq (pipeline management), ZaakAfhandelApp (ZGW case handling)
+- **Related specs**: nextcloud-entity-relations (email linking), object-interactions (notes/tasks/files), deep-link-registry (deep links to objects)
 
-### Modified Capabilities
-- `deep-link-registry`: Entity and object cards in the mail sidebar need DeepLink URLs for click-through navigation to consuming apps
+## Proposed Solution
 
-## Impact
+Build a Mail sidebar integration that shows OpenRegister objects related to the currently viewed email. The integration consists of:
 
-- **New files**: `MailIntegrationService.php`, `MailIntegrationController.php`, `src/components/MailSidebar/EntitiesTab.vue`, `ObjectsTab.vue`, `ActionsTab.vue`
-- **Routes**: Three new API routes under `/api/mail/`
-- **Dependencies**: Requires Nextcloud Mail app installed and enabled; depends on `action-registry` change for Actions tab; soft dependency on `files-sidebar-tabs` for shared component patterns
-- **Existing code**: Leverages `EntityMapper`, `EntityRelationMapper`, and the DeepLink registry
-- **Performance**: APCu caching prevents repeated DB queries for same-sender emails within a session
-- **Consuming apps**: Procest, Pipelinq, DocuDesk register mail-context actions (e.g., "Create Case from Email", "Create Lead from Email", "Archive Email")
+1. **Backend API** -- A reverse-lookup endpoint that finds objects by mail message ID, mail account ID, or sender email address. This leverages the existing `openregister_email_links` table.
+2. **Mail app script injection** -- Use `OCP\Util::addScript()` to inject a JavaScript bundle into the Mail app that renders a sidebar panel showing linked objects.
+3. **Sidebar panel UI** -- A Vue component that displays linked objects with key metadata (title, schema, register, status), allows quick linking/unlinking, and provides a "search and link" flow for associating new objects with the email.
+4. **Auto-suggestion** -- When viewing an email, automatically query for objects that match the sender's email address, even if not explicitly linked, providing discovery of potentially relevant cases.
+
+## Scope
+
+### In scope
+- Reverse-lookup API endpoint (find objects by mail message/sender)
+- Mail app script injection via `OCP\Util::addScript()`
+- Sidebar panel Vue component for the Mail app
+- Display of linked objects with metadata
+- Quick link/unlink actions from the sidebar
+- Search-and-link flow (search objects, link to current email)
+- Auto-suggestion of objects matching sender email address
+- Deep links from sidebar to object detail in OpenRegister
+- i18n support (Dutch and English)
+
+### Out of scope
+- Sending emails from OpenRegister (n8n's responsibility)
+- Modifying the email itself
+- Integration with other mail clients (Thunderbird, Outlook)
+- Creating new objects from the sidebar (navigate to OpenRegister for that)
+- Nextcloud Talk/Spreed sidebar integration (separate future change)
