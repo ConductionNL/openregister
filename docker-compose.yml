@@ -771,6 +771,39 @@ services:
       retries: 5
       start_period: 120s
 
+  # GreenMail - Lightweight SMTP/IMAP/POP3 test mail server
+  # Start with: docker-compose --profile mail up
+  # Web UI at: http://localhost:8085
+  # SMTP: localhost:3025, IMAP: localhost:3143
+  # Accounts auto-created on first login (user=password=email address)
+  # Documentation: https://greenmail-mail-test.github.io/greenmail/
+  greenmail:
+    profiles:
+      - mail
+    image: greenmail/standalone:2.1.2
+    container_name: openregister-greenmail
+    restart: always
+    ports:
+      - "3025:3025"    # SMTP
+      - "3143:3143"    # IMAP
+      - "3110:3110"    # POP3
+      - "8085:8080"    # Web UI / REST API
+    environment:
+      GREENMAIL_OPTS: "-Dgreenmail.setup.test.all -Dgreenmail.hostname=0.0.0.0 -Dgreenmail.auth.disabled"
+      JAVA_OPTS: "-Xmx256m"
+    healthcheck:
+      test: ["CMD-SHELL", "nc -z localhost 3025 && nc -z localhost 3143"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+        reservations:
+          memory: 128M
+
   # Open-Xchange App Suite - Email and Groupware
   # Start with: docker-compose --profile ox up
   # Access at: http://localhost:8087
