@@ -61,10 +61,6 @@ use OCP\AppFramework\Db\Entity;
  * @method void setOrganisation(?string $organisation)
  * @method DateTime|null getExpires()
  * @method void setExpires(?DateTime $expires)
- * @method string|null getHash()
- * @method void setHash(?string $hash)
- * @method string|null getPreviousHash()
- * @method void setPreviousHash(?string $previousHash)
  *
  * @psalm-suppress PossiblyUnusedMethod
  * @psalm-suppress PropertyNotSetInConstructor $id is set by Nextcloud's Entity base class
@@ -262,20 +258,6 @@ class AuditTrail extends Entity implements JsonSerializable
     protected ?DateTime $expires = null;
 
     /**
-     * SHA-256 hash of this entry chained to the previous entry
-     *
-     * @var string|null SHA-256 hash of this entry chained to the previous entry
-     */
-    protected ?string $hash = null;
-
-    /**
-     * SHA-256 hash of the previous audit trail entry in the chain
-     *
-     * @var string|null SHA-256 hash of the previous audit trail entry
-     */
-    protected ?string $previousHash = null;
-
-    /**
      * Constructor for the AuditTrail class
      *
      * Sets up field types for all properties
@@ -307,8 +289,6 @@ class AuditTrail extends Entity implements JsonSerializable
         $this->addType(fieldName: 'retentionPeriod', type: 'string');
         $this->addType(fieldName: 'size', type: 'integer');
         $this->addType(fieldName: 'expires', type: 'datetime');
-        $this->addType(fieldName: 'hash', type: 'string');
-        $this->addType(fieldName: 'previousHash', type: 'string');
     }//end __construct()
 
     /**
@@ -405,9 +385,7 @@ class AuditTrail extends Entity implements JsonSerializable
      *     confidentiality: null|string,
      *     retentionPeriod: null|string,
      *     size: int|null,
-     *     expires: null|string,
-     *     hash: null|string,
-     *     previousHash: null|string
+     *     expires: null|string
      * }
      */
     public function jsonSerialize(): array
@@ -449,8 +427,6 @@ class AuditTrail extends Entity implements JsonSerializable
             'retentionPeriod'       => $this->retentionPeriod,
             'size'                  => $this->size,
             'expires'               => $expires,
-            'hash'                  => $this->hash,
-            'previousHash'          => $this->previousHash,
         ];
     }//end jsonSerialize()
 
