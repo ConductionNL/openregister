@@ -163,13 +163,13 @@ class ArchiefactiedatumCalculator
     ): ?DateTime {
         switch ($afleidingswijze) {
             case self::AFLEIDINGSWIJZE_AFGEHANDELD:
-                return $this->brondatumFromClosure($closureDate);
+                return $this->brondatumFromClosure(closureDate: $closureDate);
 
             case self::AFLEIDINGSWIJZE_EIGENSCHAP:
-                return $this->brondatumFromProperty($archiveConfig, $objectData);
+                return $this->brondatumFromProperty(archiveConfig: $archiveConfig, objectData: $objectData);
 
             case self::AFLEIDINGSWIJZE_TERMIJN:
-                return $this->brondatumFromTermijn($archiveConfig, $closureDate);
+                return $this->brondatumFromTermijn(archiveConfig: $archiveConfig, closureDate: $closureDate);
 
             default:
                 $this->logger->warning(

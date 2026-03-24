@@ -209,8 +209,8 @@ class DeleteObject
 
             // Cache invalidation for permanent delete.
             $this->cacheHandler->invalidateForObjectChange(
-                registerId: is_numeric($objectEntity->getRegister()) ? (int) $objectEntity->getRegister() : null,
-                schemaId: is_numeric($objectEntity->getSchema()) ? (int) $objectEntity->getSchema() : null,
+                registerId: is_numeric($objectEntity->getRegister()) === true ? (int) $objectEntity->getRegister() : null,
+                schemaId: is_numeric($objectEntity->getSchema()) === true ? (int) $objectEntity->getSchema() : null,
                 operation: 'permanent_delete'
             );
 
