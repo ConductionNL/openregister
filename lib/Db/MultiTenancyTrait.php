@@ -693,6 +693,11 @@ trait MultiTenancyTrait
 
         $activeOrg = $this->organisationService->getActiveOrganisation();
         if ($activeOrg === null) {
+            // CLI context — no active organisation is expected. Allow access.
+            if (\OC::$CLI === true) {
+                return true;
+            }
+
             // No active organisation, deny access.
             return false;
         }
@@ -717,6 +722,12 @@ trait MultiTenancyTrait
 
         $user = $this->userSession->getUser();
         if ($user === null) {
+            // CLI context (occ commands, repair steps, cron jobs) — no user session exists.
+            // These are trusted system operations that must always succeed.
+            if (\OC::$CLI === true) {
+                return true;
+            }
+
             return false;
         }
 
