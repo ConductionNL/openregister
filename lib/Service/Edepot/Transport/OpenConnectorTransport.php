@@ -63,7 +63,7 @@ class OpenConnectorTransport implements TransportInterface
         );
 
         try {
-            $this->validateConfig($config);
+            $this->validateConfig(config: $config);
 
             if (file_exists($sipFilePath) === false) {
                 throw new RuntimeException("SIP file not found: {$sipFilePath}");
@@ -127,7 +127,7 @@ class OpenConnectorTransport implements TransportInterface
     public function testConnection(array $config): bool
     {
         try {
-            $this->validateConfig($config);
+            $this->validateConfig(config: $config);
 
             $baseUrl  = rtrim(($config['baseUrl'] ?? 'http://localhost:8080'), '/');
             $sourceId = $config['sourceId'];

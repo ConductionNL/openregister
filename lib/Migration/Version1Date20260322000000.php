@@ -49,8 +49,8 @@ class Version1Date20260322000000 extends SimpleMigrationStep
         $schema  = $schemaClosure();
         $changed = false;
 
-        $changed = $this->addOrganisationColumns($schema, $output) || $changed;
-        $changed = $this->createTenantUsageTable($schema, $output) || $changed;
+        $changed = $this->addOrganisationColumns(schema: $schema, output: $output) || $changed;
+        $changed = $this->createTenantUsageTable(schema: $schema, output: $output) || $changed;
 
         if ($changed === true) {
             return $schema;

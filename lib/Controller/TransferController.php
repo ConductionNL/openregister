@@ -74,11 +74,11 @@ class TransferController extends Controller
     /**
      * Get a specific transfer list.
      *
-     * @NoCSRFRequired
-     *
      * @param string $id The transfer list UUID.
      *
      * @return JSONResponse The transfer list data.
+     *
+     * @NoCSRFRequired
      */
     public function show(string $id): JSONResponse
     {

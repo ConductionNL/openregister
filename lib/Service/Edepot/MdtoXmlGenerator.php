@@ -80,13 +80,8 @@ class MdtoXmlGenerator
     /**
      * Generate MDTO XML for an object.
      *
-     * @param ObjectEntity      $object The object to generate XML for.
-     * @param array<int, array{
-     *     name: string,
-     *     size: int,
-     *     format: string,
-     *     checksum: string
-     * }>                           $files  Associated file metadata.
+     * @param ObjectEntity $object The object to generate XML for.
+     * @param array        $files  Associated file metadata (name, size, format, checksum).
      *
      * @return string The generated MDTO XML string.
      *
@@ -96,7 +91,7 @@ class MdtoXmlGenerator
     {
         $retention = ($object->getRetention() ?? []);
 
-        $this->validateRequiredFields($object, $retention);
+        $this->validateRequiredFields(object: $object, retention: $retention);
 
         $dom = new DOMDocument('1.0', 'UTF-8');
         $dom->formatOutput = true;
@@ -104,19 +99,19 @@ class MdtoXmlGenerator
         $root = $dom->createElementNS(self::MDTO_NAMESPACE, self::MDTO_PREFIX.':informatieobject');
         $dom->appendChild($root);
 
-        $this->addIdentificatie($dom, $root, $object);
-        $this->addNaam($dom, $root, $object);
-        $this->addWaardering($dom, $root, $retention);
-        $this->addBewaartermijn($dom, $root, $retention);
-        $this->addInformatiecategorie($dom, $root, $retention);
-        $this->addArchiefvormer($dom, $root);
+        $this->addIdentificatie(dom: $dom, parent: $root, object: $object);
+        $this->addNaam(dom: $dom, parent: $root, object: $object);
+        $this->addWaardering(dom: $dom, parent: $root, retention: $retention);
+        $this->addBewaartermijn(dom: $dom, parent: $root, retention: $retention);
+        $this->addInformatiecategorie(dom: $dom, parent: $root, retention: $retention);
+        $this->addArchiefvormer(dom: $dom, parent: $root);
 
         if (empty($retention['toelichting']) === false) {
-            $this->addTextElement($dom, $root, 'toelichting', $retention['toelichting']);
+            $this->addTextElement(dom: $dom, parent: $root, name: 'toelichting', content: $retention['toelichting']);
         }
 
         foreach ($files as $file) {
-            $this->addBestand($dom, $root, $file);
+            $this->addBestand(dom: $dom, parent: $root, file: $file);
         }
 
         $xml = $dom->saveXML();
@@ -208,7 +203,7 @@ class MdtoXmlGenerator
     {
         $data  = ($object->getObject() ?? []);
         $title = ($data['title'] ?? $data['naam'] ?? $data['name'] ?? $object->getUuid());
-        $this->addTextElement($dom, $parent, 'naam', (string) $title);
+        $this->addTextElement(dom: $dom, parent: $parent, name: 'naam', content: (string) $title);
     }//end addNaam()
 
     /**
@@ -224,7 +219,7 @@ class MdtoXmlGenerator
     {
         $nominatie  = ($retention['archiefnominatie'] ?? '');
         $waardering = (self::WAARDERING_MAP[$nominatie] ?? $nominatie);
-        $this->addTextElement($dom, $parent, 'waardering', $waardering);
+        $this->addTextElement(dom: $dom, parent: $parent, name: 'waardering', content: $waardering);
     }//end addWaardering()
 
     /**
@@ -239,7 +234,7 @@ class MdtoXmlGenerator
     private function addBewaartermijn(DOMDocument $dom, DOMElement $parent, array $retention): void
     {
         $bewaartermijn = ($retention['bewaartermijn'] ?? '');
-        $this->addTextElement($dom, $parent, 'bewaartermijn', (string) $bewaartermijn);
+        $this->addTextElement(dom: $dom, parent: $parent, name: 'bewaartermijn', content: (string) $bewaartermijn);
     }//end addBewaartermijn()
 
     /**
@@ -254,7 +249,7 @@ class MdtoXmlGenerator
     private function addInformatiecategorie(DOMDocument $dom, DOMElement $parent, array $retention): void
     {
         $classificatie = ($retention['classificatie'] ?? 'onbekend');
-        $this->addTextElement($dom, $parent, 'informatiecategorie', (string) $classificatie);
+        $this->addTextElement(dom: $dom, parent: $parent, name: 'informatiecategorie', content: (string) $classificatie);
     }//end addInformatiecategorie()
 
     /**
@@ -303,9 +298,9 @@ class MdtoXmlGenerator
     {
         $bestand = $dom->createElementNS(self::MDTO_NAMESPACE, self::MDTO_PREFIX.':bestand');
 
-        $this->addTextElement($dom, $bestand, 'naam', $file['name']);
-        $this->addTextElement($dom, $bestand, 'omvang', (string) $file['size']);
-        $this->addTextElement($dom, $bestand, 'bestandsformaat', $file['format']);
+        $this->addTextElement(dom: $dom, parent: $bestand, name: 'naam', content: $file['name']);
+        $this->addTextElement(dom: $dom, parent: $bestand, name: 'omvang', content: (string) $file['size']);
+        $this->addTextElement(dom: $dom, parent: $bestand, name: 'bestandsformaat', content: $file['format']);
 
         $checksumElement = $dom->createElementNS(self::MDTO_NAMESPACE, self::MDTO_PREFIX.':checksum');
 

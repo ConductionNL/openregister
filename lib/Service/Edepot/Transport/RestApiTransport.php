@@ -64,13 +64,13 @@ class RestApiTransport implements TransportInterface
         );
 
         try {
-            $this->validateConfig($config);
+            $this->validateConfig(config: $config);
 
             if (file_exists($sipFilePath) === false) {
                 throw new RuntimeException("SIP file not found: {$sipFilePath}");
             }
 
-            $headers = $this->buildAuthHeaders($config);
+            $headers = $this->buildAuthHeaders(config: $config);
 
             $response = $this->httpClient->post(
                     $config['endpointUrl'],
@@ -164,8 +164,8 @@ class RestApiTransport implements TransportInterface
     public function testConnection(array $config): bool
     {
         try {
-            $this->validateConfig($config);
-            $headers = $this->buildAuthHeaders($config);
+            $this->validateConfig(config: $config);
+            $headers = $this->buildAuthHeaders(config: $config);
 
             $response = $this->httpClient->get(
                     $config['endpointUrl'],

@@ -72,7 +72,7 @@ class TransferCheckJob extends TimedJob
             'edepot_check_interval',
             (string) self::DEFAULT_INTERVAL
         );
-        $this->setInterval($interval);
+        $this->setInterval(seconds: $interval);
     }//end __construct()
 
     /**

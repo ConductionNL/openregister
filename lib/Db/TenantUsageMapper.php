@@ -42,7 +42,7 @@ class TenantUsageMapper extends QBMapper
      */
     public function __construct(IDBConnection $db)
     {
-        parent::__construct($db, 'openregister_tenant_usage', TenantUsage::class);
+        parent::__construct(db: $db, tableName: 'openregister_tenant_usage', entityClass: TenantUsage::class);
     }//end __construct()
 
     /**
@@ -76,7 +76,7 @@ class TenantUsageMapper extends QBMapper
             );
 
         try {
-            return $this->findEntity($qb);
+            return $this->findEntity(query: $qb);
         } catch (\Exception $e) {
             return null;
         }
@@ -120,7 +120,7 @@ class TenantUsageMapper extends QBMapper
             )
             ->orderBy('period', 'ASC');
 
-        return $this->findEntities($qb);
+        return $this->findEntities(query: $qb);
     }//end findByOrgAndDateRange()
 
     /**
@@ -141,14 +141,14 @@ class TenantUsageMapper extends QBMapper
         int $bandwidthBytes,
         int $storageBytes
     ): TenantUsage {
-        $existing = $this->findByOrgAndPeriod($organisationUuid, $period);
+        $existing = $this->findByOrgAndPeriod(organisationUuid: $organisationUuid, period: $period);
 
         if ($existing !== null) {
             $existing->setRequestCount($existing->getRequestCount() + $requestCount);
             $existing->setBandwidthBytes($existing->getBandwidthBytes() + $bandwidthBytes);
             $existing->setStorageBytes($storageBytes);
             $existing->setUpdated(new DateTime());
-            return $this->update($existing);
+            return $this->update(entity: $existing);
         }
 
         $entity = new TenantUsage();
@@ -160,7 +160,7 @@ class TenantUsageMapper extends QBMapper
         $entity->setCreated(new DateTime());
         $entity->setUpdated(new DateTime());
 
-        return $this->insert($entity);
+        return $this->insert(entity: $entity);
     }//end upsertUsage()
 
     /**

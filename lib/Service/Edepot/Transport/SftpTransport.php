@@ -60,7 +60,7 @@ class SftpTransport implements TransportInterface
         );
 
         try {
-            $this->validateConfig($config);
+            $this->validateConfig(config: $config);
 
             if (file_exists($sipFilePath) === false) {
                 throw new RuntimeException("SIP file not found: {$sipFilePath}");
@@ -71,7 +71,7 @@ class SftpTransport implements TransportInterface
 
             // Use phpseclib for SFTP if available.
             if (class_exists('\phpseclib3\Net\SFTP') === true) {
-                $sftp   = $this->createSftpConnection($config);
+                $sftp   = $this->createSftpConnection(config: $config);
                 $result = $sftp->put($remotePath, $sipFilePath, \phpseclib3\Net\SFTP::SOURCE_LOCAL_FILE);
 
                 if ($result === false) {
@@ -126,7 +126,7 @@ class SftpTransport implements TransportInterface
     public function testConnection(array $config): bool
     {
         try {
-            $this->validateConfig($config);
+            $this->validateConfig(config: $config);
 
             if (class_exists('\phpseclib3\Net\SFTP') === false) {
                 $this->logger->warning(
@@ -135,7 +135,7 @@ class SftpTransport implements TransportInterface
                 return false;
             }
 
-            $sftp = $this->createSftpConnection($config);
+            $sftp = $this->createSftpConnection(config: $config);
             $sftp->pwd();
             return true;
         } catch (\Exception $e) {

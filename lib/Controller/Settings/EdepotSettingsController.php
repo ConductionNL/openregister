@@ -158,7 +158,7 @@ class EdepotSettingsController extends Controller
             // Test connection if requested.
             $testResult = null;
             if (isset($params['testConnection']) === true && $params['testConnection'] === true) {
-                $transport  = $this->resolveTransport(($params['transport'] ?? 'rest_api'));
+                $transport  = $this->resolveTransport(type: ($params['transport'] ?? 'rest_api'));
                 $config     = $this->transferService->getTransportConfig();
                 $testResult = $transport->testConnection($config);
             }
@@ -185,7 +185,7 @@ class EdepotSettingsController extends Controller
     {
         try {
             $config    = $this->transferService->getTransportConfig();
-            $transport = $this->resolveTransport(($config['transport'] ?? 'rest_api'));
+            $transport = $this->resolveTransport(type: ($config['transport'] ?? 'rest_api'));
             $result    = $transport->testConnection($config);
 
             return new JSONResponse(

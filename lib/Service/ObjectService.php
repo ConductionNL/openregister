@@ -1075,7 +1075,7 @@ class ObjectService
 
         // Reject updates to transferred objects (archiefstatus = overgebracht).
         if ($uuid !== null) {
-            $this->rejectIfTransferred($uuid);
+            $this->rejectIfTransferred(uuid: $uuid);
         }
 
         // Track if UUID was originally null (to distinguish user-provided vs auto-generated UUIDs).
@@ -1429,7 +1429,7 @@ class ObjectService
     public function deleteObject(string $uuid, bool $_rbac=true, bool $_multitenancy=true): bool
     {
         // Reject deletion of transferred objects (archiefstatus = overgebracht).
-        $this->rejectIfTransferred($uuid);
+        $this->rejectIfTransferred(uuid: $uuid);
 
         // Find the object to get its owner for permission check (include soft-deleted objects).
         try {

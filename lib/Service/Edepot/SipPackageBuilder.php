@@ -84,19 +84,9 @@ class SipPackageBuilder
      * Returns an array of file paths to generated ZIP archives. Multiple archives
      * are created when the combined file size exceeds the maximum package size.
      *
-     * @param string            $transferId     The transfer list UUID.
-     * @param array<int, array{
-     *     object: ObjectEntity,
-     *     files: array<int, array{
-     *         name: string,
-     *         size: int,
-     *         format: string,
-     *         checksum: string,
-     *         path: string,
-     *         isRendition: bool
-     *     }>
-     * }>                                            $objectsWithFiles Objects and their file metadata.
-     * @param int               $maxPackageSize Maximum package size in bytes.
+     * @param string $transferId       The transfer list UUID.
+     * @param array  $objectsWithFiles Objects and their file metadata (object, files[]).
+     * @param int    $maxPackageSize   Maximum package size in bytes.
      *
      * @return array<int, string> Array of file paths to generated SIP ZIP archives.
      *
@@ -116,16 +106,16 @@ class SipPackageBuilder
             );
         }
 
-        $batches      = $this->splitIntoBatches($objectsWithFiles, $maxPackageSize);
+        $batches      = $this->splitIntoBatches(objectsWithFiles: $objectsWithFiles, maxSize: $maxPackageSize);
         $totalBatches = count($batches);
         $sipFiles     = [];
 
         foreach ($batches as $index => $batch) {
             $sipFiles[] = $this->buildSinglePackage(
-                $transferId,
-                $batch,
-                ($index + 1),
-                $totalBatches
+                transferId: $transferId,
+                objectsWithFiles: $batch,
+                sequenceNumber: ($index + 1),
+                totalPackages: $totalBatches
             );
         }
 
@@ -135,30 +125,10 @@ class SipPackageBuilder
     /**
      * Split objects into batches based on maximum package size.
      *
-     * @param array<int, array{
-     *     object: ObjectEntity,
-     *     files: array<int, array{
-     *         name: string,
-     *         size: int,
-     *         format: string,
-     *         checksum: string,
-     *         path: string,
-     *         isRendition: bool
-     *     }>
-     * }>      $objectsWithFiles Objects and their file metadata.
-     * @param int               $maxSize Maximum package size in bytes.
+     * @param array $objectsWithFiles Objects and their file metadata.
+     * @param int   $maxSize          Maximum package size in bytes.
      *
-     * @return array<int, array<int, array{
-     *     object: ObjectEntity,
-     *     files: array<int, array{
-     *         name: string,
-     *         size: int,
-     *         format: string,
-     *         checksum: string,
-     *         path: string,
-     *         isRendition: bool
-     *     }>
-     * }>> Array of batches.
+     * @return array<int, array> Array of batches.
      */
     private function splitIntoBatches(array $objectsWithFiles, int $maxSize): array
     {
@@ -192,20 +162,10 @@ class SipPackageBuilder
     /**
      * Build a single SIP package ZIP archive.
      *
-     * @param string            $transferId     The transfer list UUID.
-     * @param array<int, array{
-     *     object: ObjectEntity,
-     *     files: array<int, array{
-     *         name: string,
-     *         size: int,
-     *         format: string,
-     *         checksum: string,
-     *         path: string,
-     *         isRendition: bool
-     *     }>
-     * }>          $objectsWithFiles Objects in this batch.
-     * @param int               $sequenceNumber This package's position in the sequence.
-     * @param int               $totalPackages  Total number of packages.
+     * @param string $transferId       The transfer list UUID.
+     * @param array  $objectsWithFiles Objects in this batch.
+     * @param int    $sequenceNumber   This package's position in the sequence.
+     * @param int    $totalPackages    Total number of packages.
      *
      * @return string Path to the generated ZIP file.
      */

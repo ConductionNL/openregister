@@ -501,7 +501,7 @@ trait MultiTenancyTrait
         if ($isAdmin === true && $this->isAdminOverrideEnabled() === true) {
             // Audit log the admin cross-tenant override.
             if (isset($this->logger) === true) {
-                $userId = ($user !== null && method_exists($user, 'getUID')) ? $user->getUID() : 'unknown';
+                $userId = ($user !== null && method_exists($user, 'getUID') === true) ? $user->getUID() : 'unknown';
                 $this->logger->info(
                     '[MultiTenancyTrait] Admin override: cross-organisation access granted',
                     [

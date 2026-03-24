@@ -49,9 +49,9 @@ class TenantUsageSyncJob extends TimedJob
         private readonly TenantUsageMapper $tenantUsageMapper,
         private readonly LoggerInterface $logger
     ) {
-        parent::__construct($time);
+        parent::__construct(time: $time);
         // Run every 5 minutes.
-        $this->setInterval(300);
+        $this->setInterval(seconds: 300);
     }//end __construct()
 
     /**
@@ -101,8 +101,10 @@ class TenantUsageSyncJob extends TimedJob
             $requestKey   = "or_quota_{$orgUuid}_{$hourBucket}";
             $bandwidthKey = "or_bw_{$orgUuid}_{$hourBucket}";
 
-            $requestCount   = apcu_fetch($requestKey, $reqSuccess) ?: 0;
-            $bandwidthBytes = apcu_fetch($bandwidthKey, $bwSuccess) ?: 0;
+            $fetchedRequests  = apcu_fetch($requestKey);
+            $fetchedBandwidth = apcu_fetch($bandwidthKey);
+            $requestCount     = ($fetchedRequests !== false ? $fetchedRequests : 0);
+            $bandwidthBytes   = ($fetchedBandwidth !== false ? $fetchedBandwidth : 0);
 
             if ($requestCount === 0 && $bandwidthBytes === 0) {
                 continue;
@@ -110,11 +112,11 @@ class TenantUsageSyncJob extends TimedJob
 
             try {
                 $this->tenantUsageMapper->upsertUsage(
-                    $orgUuid,
-                    $period,
-                    (int) $requestCount,
-                    (int) $bandwidthBytes,
-                    0
+                    organisationUuid: $orgUuid,
+                    period: $period,
+                    requestCount: (int) $requestCount,
+                    bandwidthBytes: (int) $bandwidthBytes,
+                    storageBytes: 0
                 );
                 $syncedCount++;
             } catch (\Exception $e) {
