@@ -110,8 +110,7 @@
 			</div>
 
 			<!-- Bulk Actions -->
-			<div v-for="register in registers"
-				v-if="expandedRegisters[register.id] && register.configuration && register.configuration.roles"
+			<div v-for="register in registersWithBulkActions"
 				:key="'bulk-' + register.id"
 				class="bulk-actions">
 				<h4>Bulk Role Assignment: {{ register.title || 'Register #' + register.id }}</h4>
@@ -171,6 +170,20 @@ export default {
 
 	computed: {
 		...mapStores(useRegisterStore, useSchemaStore),
+
+		/**
+		 * Returns only the registers that are expanded and have role configuration.
+		 * Used in the bulk actions section to avoid mixing v-for with v-if.
+		 *
+		 * @return {Array} Filtered list of registers with bulk action support
+		 */
+		registersWithBulkActions() {
+			return this.registers.filter(
+				register => this.expandedRegisters[register.id]
+					&& register.configuration
+					&& register.configuration.roles,
+			)
+		},
 	},
 
 	async mounted() {
