@@ -47,9 +47,9 @@ class TenantDeprovisionJob extends TimedJob
         private readonly TenantLifecycleService $tenantLifecycleService,
         private readonly LoggerInterface $logger
     ) {
-        parent::__construct($time);
+        parent::__construct(time: $time);
         // Run every hour.
-        $this->setInterval(3600);
+        $this->setInterval(seconds: 3600);
     }//end __construct()
 
     /**

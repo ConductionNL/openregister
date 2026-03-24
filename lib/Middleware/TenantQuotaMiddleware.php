@@ -132,7 +132,7 @@ class TenantQuotaMiddleware extends Middleware
         }
 
         // Check request quota.
-        $this->checkRequestQuota($organisation);
+        $this->checkRequestQuota(organisation: $organisation);
     }//end beforeController()
 
     /**
@@ -160,7 +160,8 @@ class TenantQuotaMiddleware extends Middleware
 
         // Track bandwidth from response content length.
         if ($response instanceof JSONResponse) {
-            $content       = json_encode($response->getData()) ?: '';
+            $encoded       = json_encode($response->getData());
+            $content       = ($encoded !== false) ? $encoded : '';
             $contentLength = strlen($content);
         } else {
             // Estimate from headers or use 0.

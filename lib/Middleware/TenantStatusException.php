@@ -40,7 +40,7 @@ class TenantStatusException extends Exception
         private readonly string $status,
         int $code=403
     ) {
-        parent::__construct($message, $code);
+        parent::__construct(message: $message, code: $code);
     }//end __construct()
 
     /**

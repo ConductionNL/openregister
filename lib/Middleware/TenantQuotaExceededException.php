@@ -42,7 +42,7 @@ class TenantQuotaExceededException extends Exception
         private readonly string $resetAt,
         private readonly int $retryAfter
     ) {
-        parent::__construct($message, 429);
+        parent::__construct(message: $message, code: 429);
     }//end __construct()
 
     /**

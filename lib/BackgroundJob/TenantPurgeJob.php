@@ -58,9 +58,9 @@ class TenantPurgeJob extends TimedJob
         private readonly IAppConfig $appConfig,
         private readonly LoggerInterface $logger
     ) {
-        parent::__construct($time);
+        parent::__construct(time: $time);
         // Run daily.
-        $this->setInterval(86400);
+        $this->setInterval(seconds: 86400);
     }//end __construct()
 
     /**

@@ -234,7 +234,7 @@ class TenantLifecycleService
     public function suspend(Organisation $organisation): Organisation
     {
         $currentStatus = $organisation->getStatus() ?? self::STATUS_ACTIVE;
-        $this->validateTransition($currentStatus, self::STATUS_SUSPENDED);
+        $this->validateTransition(currentStatus: $currentStatus, targetStatus: self::STATUS_SUSPENDED);
 
         $organisation->setStatus(self::STATUS_SUSPENDED);
         $organisation->setSuspendedAt(new DateTime());
@@ -261,7 +261,7 @@ class TenantLifecycleService
     public function reactivate(Organisation $organisation): Organisation
     {
         $currentStatus = $organisation->getStatus() ?? self::STATUS_ACTIVE;
-        $this->validateTransition($currentStatus, self::STATUS_ACTIVE);
+        $this->validateTransition(currentStatus: $currentStatus, targetStatus: self::STATUS_ACTIVE);
 
         $organisation->setStatus(self::STATUS_ACTIVE);
         $organisation->setSuspendedAt(null);
@@ -288,7 +288,7 @@ class TenantLifecycleService
     public function deprovision(Organisation $organisation): Organisation
     {
         $currentStatus = $organisation->getStatus() ?? self::STATUS_ACTIVE;
-        $this->validateTransition($currentStatus, self::STATUS_DEPROVISIONING);
+        $this->validateTransition(currentStatus: $currentStatus, targetStatus: self::STATUS_DEPROVISIONING);
 
         $organisation->setStatus(self::STATUS_DEPROVISIONING);
         $organisation->setDeprovisionedAt(new DateTime());
@@ -315,7 +315,7 @@ class TenantLifecycleService
     public function archive(Organisation $organisation): Organisation
     {
         $currentStatus = $organisation->getStatus() ?? self::STATUS_DEPROVISIONING;
-        $this->validateTransition($currentStatus, self::STATUS_ARCHIVED);
+        $this->validateTransition(currentStatus: $currentStatus, targetStatus: self::STATUS_ARCHIVED);
 
         $organisation->setStatus(self::STATUS_ARCHIVED);
 
