@@ -360,7 +360,7 @@ class MagicSearchHandler
      *
      * @return string[] Array of SQL WHERE conditions (without leading AND/WHERE).
      */
-    public function buildWhereConditionsSql(array $query, Schema $schema): array
+    public function buildWhereConditionsSql(array $query, Schema $schema, ?array $existingColumns=null): array
     {
         $conditions = [];
         // Get connection for value quoting through QueryBuilder.
@@ -391,7 +391,8 @@ class MagicSearchHandler
                 search: trim($search),
                 schema: $schema,
                 query: $query,
-                connection: $connection
+                connection: $connection,
+                existingColumns: $existingColumns
             );
             if ($searchCondition !== null) {
                 $conditions[] = $searchCondition;
@@ -454,7 +455,8 @@ class MagicSearchHandler
         string $search,
         Schema $schema,
         array $query,
-        object $connection
+        object $connection,
+        ?array $existingColumns=null
     ): ?string {
         $searchConditions = [];
         $likePattern      = $connection->quote('%'.$search.'%');
@@ -468,7 +470,12 @@ class MagicSearchHandler
         foreach ($properties as $propName => $propDef) {
             $type = $propDef['type'] ?? 'string';
             if ($type === 'string') {
-                $columnName         = $this->sanitizeColumnName(name: $propName);
+                $columnName = $this->sanitizeColumnName(name: $propName);
+                // In UNION contexts, only search columns that actually exist in this table.
+                if ($existingColumns !== null && in_array($columnName, $existingColumns, true) === false) {
+                    continue;
+                }
+
                 $searchConditions[] = "{$columnName}::text ILIKE {$likePattern}";
             }
         }

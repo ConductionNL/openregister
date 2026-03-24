@@ -1272,11 +1272,13 @@ class MagicMapper extends AbstractObjectMapper
         // Columns that don't exist use NULL::text AS placeholder.
         // Cast to text ensures type compatibility across schemas in UNION.
         // (e.g., one schema has 'type' as text, another as jsonb).
+        $existingColumns = [];
         foreach (array_keys($allPropertyColumns) as $columnName) {
             $quotedCol = $this->quoteIdentifier(name: $columnName, isPostgres: $isPostgres);
             $colExpr   = "NULL::text AS {$quotedCol}";
             if ($this->columnExistsInTable(tableName: $tableName, columnName: $columnName) === true) {
-                $colExpr = "{$quotedCol}::text AS {$quotedCol}";
+                $colExpr           = "{$quotedCol}::text AS {$quotedCol}";
+                $existingColumns[] = $columnName;
             }
 
             $selectColumns[] = $colExpr;
@@ -1301,6 +1303,13 @@ class MagicMapper extends AbstractObjectMapper
                 $type = $propDef['type'] ?? 'string';
                 if (in_array($type, ['string', 'text'], true) === true) {
                     $columnName = $this->sanitizeColumnName(name: $propName);
+                    // Only score columns that actually exist in this table.
+                    // Columns from other schemas are aliased as NULL in the SELECT
+                    // and cannot be referenced by similarity()/ILIKE expressions.
+                    if ($this->columnExistsInTable(tableName: $tableName, columnName: $columnName) === false) {
+                        continue;
+                    }
+
                     $quotedCol  = $this->quoteIdentifier(name: $columnName, isPostgres: $isPostgres);
                     // Fallback: use CASE with ILIKE for basic relevance scoring.
                     $likePattern = "'%".trim($quotedTerm, "'")."%'";
@@ -1329,7 +1338,12 @@ class MagicMapper extends AbstractObjectMapper
 
         // Build WHERE conditions using shared method (single source of truth for filters).
         // This ensures search, count, and facets all use the same filter logic.
-        $whereClauses = $this->searchHandler->buildWhereConditionsSql(query: $query, schema: $schema);
+        // Pass existing columns so property-based search only targets columns in this table.
+        $whereClauses = $this->searchHandler->buildWhereConditionsSql(
+            query: $query,
+            schema: $schema,
+            existingColumns: $existingColumns
+        );
 
         if (empty($whereClauses) === false) {
             $selectSql .= ' WHERE '.implode(' AND ', $whereClauses);
