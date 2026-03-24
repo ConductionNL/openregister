@@ -88,7 +88,7 @@ class TenantQuotaMiddleware extends Middleware
      *
      * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      */
-    public function beforeController(string $controller, string $methodName): void
+    public function beforeController(string|\OCP\AppFramework\Controller $controller, string $methodName): void
     {
         // Skip for non-authenticated requests (public endpoints).
         $user = $this->userSession->getUser();
@@ -146,7 +146,7 @@ class TenantQuotaMiddleware extends Middleware
      *
      * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      */
-    public function afterController(string $controller, string $methodName, Response $response): Response
+    public function afterController(string|\OCP\AppFramework\Controller $controller, string $methodName, Response $response): Response
     {
         $organisation = $this->organisationService->getActiveOrganisation();
         if ($organisation === null) {
@@ -193,7 +193,7 @@ class TenantQuotaMiddleware extends Middleware
      *
      * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      */
-    public function afterException(string $controller, string $methodName, \Exception $exception): ?Response
+    public function afterException(string|\OCP\AppFramework\Controller $controller, string $methodName, \Exception $exception): ?Response
     {
         if ($exception instanceof TenantStatusException) {
             return new JSONResponse(
