@@ -40,15 +40,15 @@ use OCP\Migration\SimpleMigrationStep;
  */
 class Version1Date20250828120000 extends SimpleMigrationStep
 {
-    /**
-     * @param IDBConnection $connection The database connection
-     * @param IConfig       $config     The configuration interface
-     */
+	/**
+	 * @param IDBConnection $connection The database connection
+	 * @param IConfig $config The configuration interface
+	 */
     public function __construct(
         private readonly IDBConnection $connection,
         private readonly IConfig $config,
     ) {
-    }//end __construct()
+    }
 
     /**
      * Apply database schema changes for faceting performance.
@@ -65,7 +65,7 @@ class Version1Date20250828120000 extends SimpleMigrationStep
      */
     public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper
     {
-        /*
+        /**
          * @var ISchemaWrapper $schema
          */
 

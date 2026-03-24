@@ -31,6 +31,7 @@ use Exception;
 use RuntimeException;
 use stdClass;
 use ReflectionClass;
+use OCA\OpenRegister\Service\AuditHashService;
 use OCP\IDBConnection;
 use Symfony\Component\Uid\Uuid;
 
@@ -61,17 +62,55 @@ class AuditTrailMapper extends QBMapper
     /**
      * Constructor for the AuditTrailMapper
      *
-     * @param IDBConnection                     $db        The database connection
-     * @param \Psr\Container\ContainerInterface $container DI container for lazy mapper resolution
+     * @param IDBConnection                     $db               The database connection
+     * @param \Psr\Container\ContainerInterface $container        DI container for lazy mapper resolution
+     * @param AuditHashService                  $auditHashService Hash chain service
      */
     public function __construct(
         IDBConnection $db,
-        private readonly \Psr\Container\ContainerInterface $container
+        private readonly \Psr\Container\ContainerInterface $container,
+        private readonly AuditHashService $auditHashService
     ) {
         parent::__construct(db: $db, tableName: 'openregister_audit_trails', entityClass: AuditTrail::class);
     }//end __construct()
 
+    /**
+     * Insert a new audit trail entry with hash chain computation.
+     *
+     * Wraps the insert in a transaction to serialize hash chain writes
+     * and prevent race conditions.
+     *
+     * @param Entity $entity The audit trail entity to insert
+     *
+     * @return AuditTrail The inserted entity with hash fields set
+     */
+    public function insert(Entity $entity): AuditTrail
+    {
+        // Use a transaction to serialize hash chain writes.
+        $this->db->beginTransaction();
 
+        try {
+            // Get the last hash in the chain (locks the row for serialization).
+            $previousHash = $this->auditHashService->getLastHash();
+
+            // Compute the hash for this entry.
+            $hash = $this->auditHashService->computeHash($entity, $previousHash);
+
+            // Set hash fields on the entity.
+            $entity->setPreviousHash($previousHash);
+            $entity->setHash($hash);
+
+            // Call parent insert.
+            $result = parent::insert(entity: $entity);
+
+            $this->db->commit();
+
+            return $result;
+        } catch (\Exception $e) {
+            $this->db->rollBack();
+            throw $e;
+        }//end try
+    }//end insert()
 
     /**
      * Finds an audit trail by id
@@ -1183,38 +1222,126 @@ class AuditTrailMapper extends QBMapper
         }//end try
     }//end getStatisticsGroupedBySchema()
 
+    /**
+     * Get distinct processing activities from the audit trail.
+     *
+     * Returns aggregated processing activity data for the verwerkingsregister,
+     * including entry counts and first/last seen timestamps.
+     *
+     * @param string|null $organisationId Optional filter by organisation ID
+     *
+     * @return array List of processing activity summaries
+     *
+     * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
+     */
+    public function getProcessingActivities(?string $organisationId=null): array
+    {
+        $qb = $this->db->getQueryBuilder();
+
+        $qb->select('processing_activity_id')
+            ->addSelect('processing_activity_url')
+            ->addSelect('organisation_id')
+            ->addSelect('organisation_id_type')
+            ->addSelect('confidentiality')
+            ->addSelect('retention_period')
+            ->selectAlias($qb->func()->count('*'), 'entry_count')
+            ->selectAlias($qb->func()->min('created'), 'first_seen')
+            ->selectAlias($qb->func()->max('created'), 'last_seen')
+            ->from('openregister_audit_trails')
+            ->where(
+                $qb->expr()->isNotNull('processing_activity_id')
+            )
+            ->andWhere(
+                $qb->expr()->neq('processing_activity_id', $qb->createNamedParameter(''))
+            )
+            ->groupBy('processing_activity_id')
+            ->addGroupBy('processing_activity_url')
+            ->addGroupBy('organisation_id')
+            ->addGroupBy('organisation_id_type')
+            ->addGroupBy('confidentiality')
+            ->addGroupBy('retention_period');
+
+        if ($organisationId !== null && $organisationId !== '') {
+            $qb->andWhere(
+                $qb->expr()->eq(
+                    'organisation_id',
+                    $qb->createNamedParameter($organisationId)
+                )
+            );
+        }
+
+        $result = $qb->executeQuery();
+        $rows   = [];
+
+        while (($row = $result->fetch()) !== false) {
+            $rows[] = [
+                'processingActivityId'  => $row['processing_activity_id'],
+                'processingActivityUrl' => $row['processing_activity_url'],
+                'organisationId'        => $row['organisation_id'],
+                'organisationIdType'    => $row['organisation_id_type'],
+                'confidentiality'       => $row['confidentiality'],
+                'retentionPeriod'       => $row['retention_period'],
+                'entryCount'            => (int) $row['entry_count'],
+                'firstSeen'             => $row['first_seen'],
+                'lastSeen'              => $row['last_seen'],
+            ];
+        }
+
+        $result->closeCursor();
+
+        return $rows;
+    }//end getProcessingActivities()
 
     /**
-     * Create a custom audit trail entry for archival operations.
+     * Find audit trail entries by identifier in the changed JSON field.
      *
-     * @param ObjectEntity $object  The object the entry relates to
-     * @param string       $action  The archival action (e.g., archival.destroyed)
-     * @param array        $context Additional context data
+     * Groups results by schema UUID for data subject access requests.
      *
-     * @return AuditTrail The created audit trail entry
+     * @param string $identifier The identifier to search for
      *
-     * @SuppressWarnings(PHPMD.StaticAccess)
+     * @return array{results: array, totalEntries: int} Grouped audit entries
      */
-    public function createAuditTrailEntry(
-        ObjectEntity $object,
-        string $action,
-        array $context=[]
-    ): AuditTrail {
-        $user   = \OC::$server->getUserSession()->getUser();
-        $userId = $user !== null ? $user->getUID() : 'system';
+    public function findByIdentifier(string $identifier): array
+    {
+        $qb = $this->db->getQueryBuilder();
 
-        $auditTrail = new AuditTrail();
-        $auditTrail->setUuid(\Symfony\Component\Uid\Uuid::v4()->toRfc4122());
-        $auditTrail->setObjectUuid($object->getUuid());
-        $auditTrail->setRegister($object->getRegister());
-        $auditTrail->setSchema($object->getSchema());
-        $auditTrail->setAction($action);
-        $auditTrail->setChanged($context);
-        $auditTrail->setUser($userId);
-        $auditTrail->setCreated(new \DateTime());
+        $qb->select('*')
+            ->from('openregister_audit_trails')
+            ->where(
+                $qb->expr()->like(
+                    'changed',
+                    $qb->createNamedParameter('%'.$this->db->escapeLikeParameter($identifier).'%')
+                )
+            )
+            ->orderBy('created', 'DESC');
 
-        return $this->insert(entity: $auditTrail);
-    }//end createAuditTrailEntry()
+        $entries = $this->findEntities(query: $qb);
 
+        if (count($entries) === 0) {
+            return [
+                'results'      => [],
+                'totalEntries' => 0,
+            ];
+        }
 
+        // Group by schema UUID.
+        $grouped = [];
+        foreach ($entries as $entry) {
+            $schemaUuid = $entry->getSchemaUuid() ?? 'unknown';
+
+            if (isset($grouped[$schemaUuid]) === false) {
+                $grouped[$schemaUuid] = [
+                    'schemaUuid' => $schemaUuid,
+                    'entries'    => [],
+                ];
+            }
+
+            $grouped[$schemaUuid]['entries'][] = $entry;
+        }
+
+        return [
+            'results'      => array_values($grouped),
+            'totalEntries' => count($entries),
+        ];
+    }//end findByIdentifier()
 }//end class
