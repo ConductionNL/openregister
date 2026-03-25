@@ -169,9 +169,9 @@ class LogService
             // But we still allow audit trail access for the object.
         }
 
-        // Step 3: Add object ID to filters to restrict logs to this object.
-        $filters           = $config['filters'] ?? [];
-        $filters['object'] = $object->getId();
+        // Step 3: Add object UUID to filters to restrict logs to this object.
+        $filters                = $config['filters'] ?? [];
+        $filters['object_uuid'] = $object->getUuid();
 
         // Note: We do NOT add register/schema filters here because:
         // 1. The object already ensures it belongs to the correct register/schema
@@ -234,10 +234,10 @@ class LogService
             // But we still allow audit trail access for the object.
         }
 
-        // Step 3: Get all logs for this object using filter.
+        // Step 3: Get all logs for this object using UUID filter.
         // No pagination needed since we're only counting.
         $logs = $this->auditTrailMapper->findAll(
-            filters: ['object' => $object->getId()]
+            filters: ['object_uuid' => $object->getUuid()]
         );
 
         // Step 4: Return count of log entries.
