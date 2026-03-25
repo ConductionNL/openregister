@@ -139,12 +139,12 @@ class MagicTableHandler
                             'missingColumns' => array_keys($missingColumns),
                         ]
                     );
-                }
+                }//end if
 
                 // Schema changed or columns missing, update table.
                 $result = $this->syncTableForRegisterSchema(register: $register, schema: $schema);
                 return $result['success'] ?? true;
-            }
+            }//end if
 
             // Create new table or recreate if forced.
             if (($tableExists === true) && ($force === true)) {
