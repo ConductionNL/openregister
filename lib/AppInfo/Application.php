@@ -761,9 +761,16 @@ class Application extends App implements IBootstrap
      */
     public function boot(IBootContext $context): void
     {
-        // Deep link registration is deferred to avoid circular DI resolution.
-        // DeepLinkRegistryService depends on RegisterMapper/SchemaMapper which
-        // trigger circular resolution chains when resolved during boot.
-        // Consuming apps register their patterns lazily on first use instead.
+        // Register scheduled workflow and cleanup TimedJobs.
+        $container = $context->getAppContainer();
+        $jobList   = $container->get(\OCP\BackgroundJob\IJobList::class);
+
+        if ($jobList->has(\OCA\OpenRegister\BackgroundJob\ScheduledWorkflowJob::class, null) === false) {
+            $jobList->add(\OCA\OpenRegister\BackgroundJob\ScheduledWorkflowJob::class);
+        }
+
+        if ($jobList->has(\OCA\OpenRegister\BackgroundJob\ExecutionHistoryCleanupJob::class, null) === false) {
+            $jobList->add(\OCA\OpenRegister\BackgroundJob\ExecutionHistoryCleanupJob::class);
+        }
     }//end boot()
 }//end class
