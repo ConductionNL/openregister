@@ -123,10 +123,10 @@ class ObjectsProvider implements IFilteringProvider
         SchemaMapper $schemaMapper,
         RegisterMapper $registerMapper
     ) {
-        $this->l10n             = $l10n;
-        $this->urlGenerator     = $urlGenerator;
-        $this->objectService    = $objectService;
-        $this->logger           = $logger;
+        $this->l10n          = $l10n;
+        $this->urlGenerator  = $urlGenerator;
+        $this->objectService = $objectService;
+        $this->logger        = $logger;
         $this->deepLinkRegistry = $deepLinkRegistry;
         $this->schemaMapper     = $schemaMapper;
         $this->registerMapper   = $registerMapper;
@@ -438,7 +438,8 @@ class ObjectsProvider implements IFilteringProvider
         if (isset($this->nameCache[$key]) === false) {
             try {
                 $schema = $this->schemaMapper->find($schemaId);
-                $this->nameCache[$key] = $schema->getTitle() ?: (string) $schemaId;
+                $title  = $schema->getTitle();
+                $this->nameCache[$key] = ($title !== null && $title !== '' ? $title : (string) $schemaId);
             } catch (\Exception $e) {
                 $this->nameCache[$key] = (string) $schemaId;
             }
@@ -460,7 +461,8 @@ class ObjectsProvider implements IFilteringProvider
         if (isset($this->nameCache[$key]) === false) {
             try {
                 $register = $this->registerMapper->find($registerId);
-                $this->nameCache[$key] = $register->getTitle() ?: (string) $registerId;
+                $title    = $register->getTitle();
+                $this->nameCache[$key] = ($title !== null && $title !== '' ? $title : (string) $registerId);
             } catch (\Exception $e) {
                 $this->nameCache[$key] = (string) $registerId;
             }
@@ -485,11 +487,11 @@ class ObjectsProvider implements IFilteringProvider
 
         // Add schema/register names (resolved from IDs) if available.
         if (empty($object['schema']) === false) {
-            $parts[] = $this->resolveSchemaName((int) $object['schema']);
+            $parts[] = $this->resolveSchemaName(schemaId: (int) $object['schema']);
         }
 
         if (empty($object['register']) === false) {
-            $parts[] = $this->resolveRegisterName((int) $object['register']);
+            $parts[] = $this->resolveRegisterName(registerId: (int) $object['register']);
         }
 
         // Add summary/description if available.
