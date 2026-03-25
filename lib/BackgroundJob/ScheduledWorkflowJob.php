@@ -47,11 +47,11 @@ class ScheduledWorkflowJob extends TimedJob
     /**
      * Constructor for ScheduledWorkflowJob.
      *
-     * @param ITimeFactory             $time             Time factory
-     * @param ScheduledWorkflowMapper  $workflowMapper   Scheduled workflow mapper
-     * @param WorkflowEngineRegistry   $engineRegistry   Engine registry
-     * @param WorkflowExecutionMapper  $executionMapper  Execution history mapper
-     * @param LoggerInterface          $logger           Logger
+     * @param ITimeFactory            $time            Time factory
+     * @param ScheduledWorkflowMapper $workflowMapper  Scheduled workflow mapper
+     * @param WorkflowEngineRegistry  $engineRegistry  Engine registry
+     * @param WorkflowExecutionMapper $executionMapper Execution history mapper
+     * @param LoggerInterface         $logger          Logger
      */
     public function __construct(
         ITimeFactory $time,
@@ -60,9 +60,9 @@ class ScheduledWorkflowJob extends TimedJob
         private readonly WorkflowExecutionMapper $executionMapper,
         private readonly LoggerInterface $logger
     ) {
-        parent::__construct($time);
+        parent::__construct(time: $time);
         // Run every 60 seconds; individual schedules are checked internally.
-        $this->setInterval(60);
+        $this->setInterval(interval: 60);
     }//end __construct()
 
     /**
@@ -80,7 +80,7 @@ class ScheduledWorkflowJob extends TimedJob
 
         foreach ($schedules as $schedule) {
             try {
-                $this->evaluateSchedule($schedule);
+                $this->evaluateSchedule(schedule: $schedule);
             } catch (Exception $e) {
                 $this->logger->error(
                     message: '[ScheduledWorkflowJob] Error processing schedule',
@@ -120,22 +120,23 @@ class ScheduledWorkflowJob extends TimedJob
         try {
             $engines = $this->engineRegistry->getEnginesByType($engineType);
             if (empty($engines) === true) {
-                $this->handleError($schedule, $startTime, "No engine found for type '$engineType'");
+                $this->handleError(schedule: $schedule, startTime: $startTime, error: "No engine found for type '$engineType'");
                 return;
             }
 
             $engine  = $engines[0];
             $adapter = $this->engineRegistry->resolveAdapter($engine);
 
-            $payloadData = $schedule->getPayload() !== null
-                ? (json_decode($schedule->getPayload(), true) ?? [])
-                : [];
+            $payloadData = $schedule->getPayload() !== null ? (json_decode($schedule->getPayload(), true) ?? []) : [];
 
-            $data = array_merge($payloadData, [
-                'scheduledWorkflowId' => $schedule->getId(),
-                'registerId'          => $schedule->getRegisterId(),
-                'schemaId'            => $schedule->getSchemaId(),
-            ]);
+            $data = array_merge(
+                    $payloadData,
+                    [
+                        'scheduledWorkflowId' => $schedule->getId(),
+                        'registerId'          => $schedule->getRegisterId(),
+                        'schemaId'            => $schedule->getSchemaId(),
+                    ]
+                    );
 
             $result = $adapter->executeWorkflow(
                 workflowId: $schedule->getWorkflowId(),
@@ -151,23 +152,23 @@ class ScheduledWorkflowJob extends TimedJob
             $this->workflowMapper->update($schedule);
 
             // Persist execution history.
-            $this->executionMapper->createFromArray([
-                'hookId'     => 'scheduled-' . $schedule->getId(),
-                'eventType'  => 'scheduled',
-                'objectUuid' => 'scheduled-' . $schedule->getUuid(),
-                'schemaId'   => $schedule->getSchemaId(),
-                'registerId' => $schedule->getRegisterId(),
-                'engine'     => $engineType,
-                'workflowId' => $schedule->getWorkflowId(),
-                'mode'       => 'sync',
-                'status'     => $result->getStatus(),
-                'durationMs' => $durationMs,
-                'errors'     => $result->isError() === true
-                    ? json_encode($result->getErrors())
-                    : null,
-                'metadata'   => json_encode($result->getMetadata()),
-                'executedAt' => $now,
-            ]);
+            $this->executionMapper->createFromArray(
+                    [
+                        'hookId'     => 'scheduled-'.$schedule->getId(),
+                        'eventType'  => 'scheduled',
+                        'objectUuid' => 'scheduled-'.$schedule->getUuid(),
+                        'schemaId'   => $schedule->getSchemaId(),
+                        'registerId' => $schedule->getRegisterId(),
+                        'engine'     => $engineType,
+                        'workflowId' => $schedule->getWorkflowId(),
+                        'mode'       => 'sync',
+                        'status'     => $result->getStatus(),
+                        'durationMs' => $durationMs,
+                        'errors'     => $result->isError() === true ? json_encode($result->getErrors()) : null,
+                        'metadata'   => json_encode($result->getMetadata()),
+                        'executedAt' => $now,
+                    ]
+                    );
 
             $this->logger->info(
                 message: '[ScheduledWorkflowJob] Executed schedule',
@@ -179,7 +180,7 @@ class ScheduledWorkflowJob extends TimedJob
                 ]
             );
         } catch (Exception $e) {
-            $this->handleError($schedule, $startTime, $e->getMessage());
+            $this->handleError(schedule: $schedule, startTime: $startTime, error: $e->getMessage());
         }//end try
     }//end evaluateSchedule()
 
@@ -211,26 +212,28 @@ class ScheduledWorkflowJob extends TimedJob
         }
 
         try {
-            $this->executionMapper->createFromArray([
-                'hookId'     => 'scheduled-' . $schedule->getId(),
-                'eventType'  => 'scheduled',
-                'objectUuid' => 'scheduled-' . $schedule->getUuid(),
-                'schemaId'   => $schedule->getSchemaId(),
-                'registerId' => $schedule->getRegisterId(),
-                'engine'     => $schedule->getEngine(),
-                'workflowId' => $schedule->getWorkflowId(),
-                'mode'       => 'sync',
-                'status'     => 'error',
-                'durationMs' => $durationMs,
-                'errors'     => json_encode([['message' => $error]]),
-                'executedAt' => $now,
-            ]);
+            $this->executionMapper->createFromArray(
+                    [
+                        'hookId'     => 'scheduled-'.$schedule->getId(),
+                        'eventType'  => 'scheduled',
+                        'objectUuid' => 'scheduled-'.$schedule->getUuid(),
+                        'schemaId'   => $schedule->getSchemaId(),
+                        'registerId' => $schedule->getRegisterId(),
+                        'engine'     => $schedule->getEngine(),
+                        'workflowId' => $schedule->getWorkflowId(),
+                        'mode'       => 'sync',
+                        'status'     => 'error',
+                        'durationMs' => $durationMs,
+                        'errors'     => json_encode([['message' => $error]]),
+                        'executedAt' => $now,
+                    ]
+                    );
         } catch (Exception $e) {
             $this->logger->error(
                 message: '[ScheduledWorkflowJob] Failed to persist error execution',
                 context: ['scheduleId' => $schedule->getId(), 'error' => $e->getMessage()]
             );
-        }
+        }//end try
 
         $this->logger->error(
             message: '[ScheduledWorkflowJob] Schedule execution failed',

@@ -281,7 +281,7 @@ class TaggingHandler
                 context: ['file' => __FILE__, 'line' => __LINE__]
             );
             return [];
-        }
+        }//end try
     }//end getObjectTags()
 
     /**

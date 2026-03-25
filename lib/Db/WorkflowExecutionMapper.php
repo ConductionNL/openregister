@@ -73,7 +73,7 @@ class WorkflowExecutionMapper extends QBMapper
      *
      * @return array<int, WorkflowExecution>
      */
-    public function findAll(array $filters = [], ?int $limit = 50, ?int $offset = 0): array
+    public function findAll(array $filters=[], ?int $limit=50, ?int $offset=0): array
     {
         $qb = $this->db->getQueryBuilder();
 
@@ -81,7 +81,7 @@ class WorkflowExecutionMapper extends QBMapper
             ->from($this->getTableName())
             ->orderBy('executed_at', 'DESC');
 
-        $this->applyFilters($qb, $filters);
+        $this->applyFilters(qb: $qb, filters: $filters);
 
         if ($limit !== null) {
             $qb->setMaxResults($limit);
@@ -101,14 +101,14 @@ class WorkflowExecutionMapper extends QBMapper
      *
      * @return int Total count
      */
-    public function countAll(array $filters = []): int
+    public function countAll(array $filters=[]): int
     {
         $qb = $this->db->getQueryBuilder();
 
         $qb->select($qb->createFunction('COUNT(*)'))
             ->from($this->getTableName());
 
-        $this->applyFilters($qb, $filters);
+        $this->applyFilters(qb: $qb, filters: $filters);
 
         $result = $qb->executeQuery();
         $count  = (int) $result->fetchOne();

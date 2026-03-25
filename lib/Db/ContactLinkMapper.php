@@ -35,7 +35,7 @@ class ContactLinkMapper extends QBMapper
      */
     public function __construct(IDBConnection $db)
     {
-        parent::__construct($db, 'openregister_contact_links', ContactLink::class);
+        parent::__construct(db: $db, tableName: 'openregister_contact_links', entityClass: ContactLink::class);
     }//end __construct()
 
     /**
@@ -53,7 +53,7 @@ class ContactLinkMapper extends QBMapper
             ->where($qb->expr()->eq('object_uuid', $qb->createNamedParameter($objectUuid)))
             ->orderBy('linked_at', 'DESC');
 
-        return $this->findEntities($qb);
+        return $this->findEntities(query: $qb);
     }//end findByObjectUuid()
 
     /**
@@ -71,7 +71,7 @@ class ContactLinkMapper extends QBMapper
             ->where($qb->expr()->eq('contact_uid', $qb->createNamedParameter($contactUid)))
             ->orderBy('linked_at', 'DESC');
 
-        return $this->findEntities($qb);
+        return $this->findEntities(query: $qb);
     }//end findByContactUid()
 
     /**

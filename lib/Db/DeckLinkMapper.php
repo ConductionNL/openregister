@@ -35,7 +35,7 @@ class DeckLinkMapper extends QBMapper
      */
     public function __construct(IDBConnection $db)
     {
-        parent::__construct($db, 'openregister_deck_links', DeckLink::class);
+        parent::__construct(db: $db, tableName: 'openregister_deck_links', entityClass: DeckLink::class);
     }//end __construct()
 
     /**
@@ -53,7 +53,7 @@ class DeckLinkMapper extends QBMapper
             ->where($qb->expr()->eq('object_uuid', $qb->createNamedParameter($objectUuid)))
             ->orderBy('linked_at', 'DESC');
 
-        return $this->findEntities($qb);
+        return $this->findEntities(query: $qb);
     }//end findByObjectUuid()
 
     /**
@@ -71,7 +71,7 @@ class DeckLinkMapper extends QBMapper
             ->where($qb->expr()->eq('board_id', $qb->createNamedParameter($boardId, IQueryBuilder::PARAM_INT)))
             ->orderBy('linked_at', 'DESC');
 
-        return $this->findEntities($qb);
+        return $this->findEntities(query: $qb);
     }//end findByBoardId()
 
     /**
@@ -91,7 +91,7 @@ class DeckLinkMapper extends QBMapper
             ->andWhere($qb->expr()->eq('card_id', $qb->createNamedParameter($cardId, IQueryBuilder::PARAM_INT)));
 
         try {
-            return $this->findEntity($qb);
+            return $this->findEntity(query: $qb);
         } catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
             return null;
         }

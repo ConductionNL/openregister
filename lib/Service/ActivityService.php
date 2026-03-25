@@ -60,8 +60,8 @@ class ActivityService
      */
     public function publishObjectCreated(ObjectEntity $object): void
     {
-        $title = $object->getName() ?: $object->getUuid() ?: 'Unknown';
-        $link  = $this->buildObjectLink($object);
+        $title = $this->resolveTitle(primary: $object->getName(), fallback: $object->getUuid());
+        $link  = $this->buildObjectLink(object: $object);
 
         $this->publish(
             subject: 'object_created',
@@ -85,10 +85,10 @@ class ActivityService
      *
      * @SuppressWarnings(PHPMD.UnusedFormalParameter) — $oldObject reserved for future diff support
      */
-    public function publishObjectUpdated(ObjectEntity $newObject, ?ObjectEntity $oldObject = null): void
+    public function publishObjectUpdated(ObjectEntity $newObject, ?ObjectEntity $oldObject=null): void
     {
-        $title = $newObject->getName() ?: $newObject->getUuid() ?: 'Unknown';
-        $link  = $this->buildObjectLink($newObject);
+        $title = $this->resolveTitle(primary: $newObject->getName(), fallback: $newObject->getUuid());
+        $link  = $this->buildObjectLink(object: $newObject);
 
         $this->publish(
             subject: 'object_updated',
@@ -111,7 +111,7 @@ class ActivityService
      */
     public function publishObjectDeleted(ObjectEntity $object): void
     {
-        $title = $object->getName() ?: $object->getUuid() ?: 'Unknown';
+        $title = $this->resolveTitle(primary: $object->getName(), fallback: $object->getUuid());
 
         $this->publish(
             subject: 'object_deleted',
@@ -134,8 +134,8 @@ class ActivityService
      */
     public function publishRegisterCreated(Register $register): void
     {
-        $title = $register->getTitle() ?: $register->getUuid() ?: 'Unknown';
-        $link  = $this->buildRegisterLink($register);
+        $title = $this->resolveTitle(primary: $register->getTitle(), fallback: $register->getUuid());
+        $link  = $this->buildRegisterLink(register: $register);
 
         $this->publish(
             subject: 'register_created',
@@ -158,8 +158,8 @@ class ActivityService
      */
     public function publishRegisterUpdated(Register $register): void
     {
-        $title = $register->getTitle() ?: $register->getUuid() ?: 'Unknown';
-        $link  = $this->buildRegisterLink($register);
+        $title = $this->resolveTitle(primary: $register->getTitle(), fallback: $register->getUuid());
+        $link  = $this->buildRegisterLink(register: $register);
 
         $this->publish(
             subject: 'register_updated',
@@ -182,7 +182,7 @@ class ActivityService
      */
     public function publishRegisterDeleted(Register $register): void
     {
-        $title = $register->getTitle() ?: $register->getUuid() ?: 'Unknown';
+        $title = $this->resolveTitle(primary: $register->getTitle(), fallback: $register->getUuid());
 
         $this->publish(
             subject: 'register_deleted',
@@ -205,8 +205,8 @@ class ActivityService
      */
     public function publishSchemaCreated(Schema $schema): void
     {
-        $title = $schema->getTitle() ?: $schema->getUuid() ?: 'Unknown';
-        $link  = $this->buildSchemaLink($schema);
+        $title = $this->resolveTitle(primary: $schema->getTitle(), fallback: $schema->getUuid());
+        $link  = $this->buildSchemaLink(schema: $schema);
 
         $this->publish(
             subject: 'schema_created',
@@ -229,8 +229,8 @@ class ActivityService
      */
     public function publishSchemaUpdated(Schema $schema): void
     {
-        $title = $schema->getTitle() ?: $schema->getUuid() ?: 'Unknown';
-        $link  = $this->buildSchemaLink($schema);
+        $title = $this->resolveTitle(primary: $schema->getTitle(), fallback: $schema->getUuid());
+        $link  = $this->buildSchemaLink(schema: $schema);
 
         $this->publish(
             subject: 'schema_updated',
@@ -253,7 +253,7 @@ class ActivityService
      */
     public function publishSchemaDeleted(Schema $schema): void
     {
-        $title = $schema->getTitle() ?: $schema->getUuid() ?: 'Unknown';
+        $title = $this->resolveTitle(primary: $schema->getTitle(), fallback: $schema->getUuid());
 
         $this->publish(
             subject: 'schema_deleted',
@@ -281,7 +281,7 @@ class ActivityService
         $schemaId   = $object->getSchema();
         $uuid       = $object->getUuid();
 
-        return $baseUrl . '#/registers/' . $registerId . '/schemas/' . $schemaId . '/objects/' . $uuid;
+        return $baseUrl.'#/registers/'.$registerId.'/schemas/'.$schemaId.'/objects/'.$uuid;
     }//end buildObjectLink()
 
     /**
@@ -295,7 +295,7 @@ class ActivityService
     {
         $baseUrl = $this->urlGenerator->linkToRouteAbsolute('openregister.dashboard.page');
 
-        return $baseUrl . '#/registers/' . $register->getId();
+        return $baseUrl.'#/registers/'.$register->getId();
     }//end buildRegisterLink()
 
     /**
@@ -309,7 +309,7 @@ class ActivityService
     {
         $baseUrl = $this->urlGenerator->linkToRouteAbsolute('openregister.dashboard.page');
 
-        return $baseUrl . '#/schemas/' . $schema->getId();
+        return $baseUrl.'#/schemas/'.$schema->getId();
     }//end buildSchemaLink()
 
     /**
@@ -337,7 +337,7 @@ class ActivityService
         string $objectId,
         string $objectName,
         string $link,
-        ?string $ownerUserId = null,
+        ?string $ownerUserId=null,
     ): void {
         try {
             $currentUser = $this->userSession->getUser();
@@ -441,4 +441,26 @@ class ActivityService
 
         $this->activityManager->publish($event);
     }//end publishEvent()
+
+    /**
+     * Resolve a display title from primary and fallback values.
+     *
+     * @param string|null $primary  The primary title candidate.
+     * @param string|null $fallback The fallback title candidate.
+     *
+     * @return string The resolved title.
+     */
+    private function resolveTitle(?string $primary, ?string $fallback): string
+    {
+        if ($primary !== null && $primary !== '') {
+            return $primary;
+        }
+
+        if ($fallback !== null && $fallback !== '') {
+            return $fallback;
+        }
+
+        return 'Unknown';
+
+    }//end resolveTitle()
 }//end class

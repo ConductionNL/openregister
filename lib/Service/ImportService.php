@@ -642,9 +642,7 @@ class ImportService
             // The $publish parameter is kept for backward compatibility but is a no-op.
             if ($publish === true) {
                 $this->logger->warning(
-                    message: '[ImportService] The $publish parameter is deprecated. '
-                        . 'Object-level published metadata has been removed. '
-                        . 'Use RBAC authorization rules with $now for publication control.',
+                    message: '[ImportService] The $publish parameter is deprecated. Use RBAC $now rules instead.',
                     context: [
                         'file' => __FILE__,
                         'line' => __LINE__,
@@ -719,7 +717,7 @@ class ImportService
      * @param bool                                          $events        Whether to dispatch events
      * @param bool                                          $_rbac         Whether to apply RBAC
      * @param bool                                          $_multitenancy Multi-tenancy filtering
-     * @param bool                                          $publish       DEPRECATED: No-op. Object-level publish metadata removed; use RBAC $now rules
+     * @param bool                                          $publish       DEPRECATED: No-op. Publish metadata removed.
      * @param IUser|null                                    $currentUser   The current user performing the import
      * @param bool                                          $enrich        Whether to enrich objects with metadata
      *
@@ -825,9 +823,7 @@ class ImportService
             // The $publish parameter is kept for backward compatibility but is a no-op.
             if ($publish === true) {
                 $this->logger->warning(
-                    message: '[ImportService] The $publish parameter is deprecated. '
-                        . 'Object-level published metadata has been removed. '
-                        . 'Use RBAC authorization rules with $now for publication control.',
+                    message: '[ImportService] The $publish parameter is deprecated. Use RBAC $now rules instead.',
                     context: [
                         'file' => __FILE__,
                         'line' => __LINE__,
@@ -1521,7 +1517,6 @@ class ImportService
             }
         }
     }//end validateObjectProperties()
-
 
     /**
      * Schedule SOLR warmup job after successful import

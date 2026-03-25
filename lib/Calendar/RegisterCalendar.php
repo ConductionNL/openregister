@@ -135,7 +135,7 @@ class RegisterCalendar implements ICalendar
      */
     public function getKey(): string
     {
-        return 'openregister-schema-' . $this->schema->getId();
+        return 'openregister-schema-'.$this->schema->getId();
     }//end getKey()
 
     /**
@@ -145,7 +145,7 @@ class RegisterCalendar implements ICalendar
      */
     public function getUri(): string
     {
-        return 'openregister-schema-' . $this->schema->getId();
+        return 'openregister-schema-'.$this->schema->getId();
     }//end getUri()
 
     /**
@@ -205,24 +205,24 @@ class RegisterCalendar implements ICalendar
      * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      */
     public function search(
-        string $pattern = '',
-        array $searchProperties = [],
-        array $options = [],
-        ?int $limit = null,
-        ?int $offset = null
+        string $pattern='',
+        array $searchProperties=[],
+        array $options=[],
+        ?int $limit=null,
+        ?int $offset=null
     ): array {
         try {
             // Extract user ID from principal URI for RBAC.
-            $userId = $this->extractUserId($this->principalUri);
+            $userId = $this->extractUserId(principalUri: $this->principalUri);
             if ($userId === null) {
                 return [];
             }
 
             // Build query filters from timerange.
-            $filters = $this->buildTimerangeFilters($options);
+            $filters = $this->buildTimerangeFilters(options: $options);
 
             // Get all registers that use this schema.
-            $registers = $this->findRegistersForSchema($this->schema);
+            $registers = $this->findRegistersForSchema(schema: $this->schema);
 
             if (empty($registers) === true) {
                 return [];
@@ -252,7 +252,7 @@ class RegisterCalendar implements ICalendar
                         }
 
                         // Apply text pattern filter on summary.
-                        if ($pattern !== '' && $this->matchesPattern($event, $pattern) === false) {
+                        if ($pattern !== '' && $this->matchesPattern(event: $event, pattern: $pattern) === false) {
                             continue;
                         }
 
@@ -260,7 +260,7 @@ class RegisterCalendar implements ICalendar
                     }
                 } catch (\Exception $e) {
                     $this->logger->warning(
-                        '[RegisterCalendar] Failed to query register ' . $register->getId() . ': ' . $e->getMessage(),
+                        '[RegisterCalendar] Failed to query register '.$register->getId().': '.$e->getMessage(),
                         ['exception' => $e]
                     );
                 }//end try
@@ -269,7 +269,7 @@ class RegisterCalendar implements ICalendar
             return $events;
         } catch (\Exception $e) {
             $this->logger->warning(
-                '[RegisterCalendar] Search failed: ' . $e->getMessage(),
+                '[RegisterCalendar] Search failed: '.$e->getMessage(),
                 ['exception' => $e]
             );
             return [];
@@ -305,7 +305,7 @@ class RegisterCalendar implements ICalendar
             return null;
         }
 
-        $timerange = $options['timerange'];
+        $timerange    = $options['timerange'];
         $dtstartField = $this->calendarConfig['dtstart'] ?? null;
 
         if ($dtstartField === null) {
@@ -320,7 +320,7 @@ class RegisterCalendar implements ICalendar
                 $start = $start->format('Y-m-d H:i:s');
             }
 
-            $filters[$dtstartField . '>='] = (string) $start;
+            $filters[$dtstartField.'>='] = (string) $start;
         }
 
         if (isset($timerange['end']) === true) {
@@ -329,7 +329,7 @@ class RegisterCalendar implements ICalendar
                 $end = $end->format('Y-m-d H:i:s');
             }
 
-            $filters[$dtstartField . '<='] = (string) $end;
+            $filters[$dtstartField.'<='] = (string) $end;
         }
 
         return empty($filters) === true ? null : $filters;
@@ -345,7 +345,7 @@ class RegisterCalendar implements ICalendar
     private function findRegistersForSchema(Schema $schema): array
     {
         try {
-            $allRegisters = $this->registerMapper->findAll();
+            $allRegisters      = $this->registerMapper->findAll();
             $matchingRegisters = [];
 
             foreach ($allRegisters as $register) {
@@ -360,11 +360,11 @@ class RegisterCalendar implements ICalendar
             return $matchingRegisters;
         } catch (\Exception $e) {
             $this->logger->warning(
-                '[RegisterCalendar] Failed to find registers for schema ' . $schema->getId() . ': ' . $e->getMessage(),
+                '[RegisterCalendar] Failed to find registers for schema '.$schema->getId().': '.$e->getMessage(),
                 ['exception' => $e]
             );
             return [];
-        }
+        }//end try
     }//end findRegistersForSchema()
 
     /**
@@ -381,10 +381,9 @@ class RegisterCalendar implements ICalendar
             return false;
         }
 
-        $vevent = $event['objects'][0];
+        $vevent  = $event['objects'][0];
         $summary = $vevent['SUMMARY'][0] ?? '';
 
         return stripos($summary, $pattern) !== false;
     }//end matchesPattern()
-
 }//end class
