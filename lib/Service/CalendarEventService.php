@@ -115,7 +115,7 @@ class CalendarEventService
             }
 
             try {
-                $eventArray = $this->veventToArray($calendarData, (string) $calendarId, $calendarObject['uri']);
+                $eventArray = $this->veventToArray(calendarData: $calendarData, calendarId: (string) $calendarId, uri: $calendarObject['uri']);
                 if ($eventArray !== null && $eventArray['objectUuid'] === $objectUuid) {
                     $events[] = $eventArray;
                 }
@@ -155,7 +155,7 @@ class CalendarEventService
 
         $uid     = strtoupper(bin2hex(random_bytes(16)));
         $dtstamp = gmdate('Ymd\THis\Z');
-        $summary = $this->escapeIcalText($data['summary'] ?? 'Untitled event');
+        $summary = $this->escapeIcalText(text: $data['summary'] ?? 'Untitled event');
 
         $lines   = [];
         $lines[] = 'BEGIN:VCALENDAR';
@@ -172,16 +172,16 @@ class CalendarEventService
         }
 
         if (empty($data['dtend']) === false) {
-            $dtend = new DateTime($data['dtend']);
+            $dtend   = new DateTime($data['dtend']);
             $lines[] = 'DTEND:'.$dtend->format('Ymd\THis\Z');
         }
 
         if (empty($data['location']) === false) {
-            $lines[] = 'LOCATION:'.$this->escapeIcalText($data['location']);
+            $lines[] = 'LOCATION:'.$this->escapeIcalText(text: $data['location']);
         }
 
         if (empty($data['description']) === false) {
-            $lines[] = 'DESCRIPTION:'.$this->escapeIcalText($data['description']);
+            $lines[] = 'DESCRIPTION:'.$this->escapeIcalText(text: $data['description']);
         }
 
         if (empty($data['attendees']) === false && is_array($data['attendees']) === true) {
@@ -196,7 +196,7 @@ class CalendarEventService
         $lines[] = 'X-OPENREGISTER-OBJECT:'.$objectUuid;
 
         // RFC 9253 LINK property.
-        $linkLabel = $this->escapeIcalText($objectTitle);
+        $linkLabel = $this->escapeIcalText(text: $objectTitle);
         $linkUri   = '/apps/openregister/api/objects/'.$registerId.'/'.$schemaId.'/'.$objectUuid;
         $lines[]   = 'LINK;LINKREL="related";LABEL="'.$linkLabel.'";VALUE=URI:'.$linkUri;
 
@@ -208,7 +208,7 @@ class CalendarEventService
 
         $this->calDavBackend->createCalendarObject($calendarId, $uri, $calendarData);
 
-        return $this->veventToArray($calendarData, (string) $calendarId, $uri);
+        return $this->veventToArray(calendarData: $calendarData, calendarId: (string) $calendarId, uri: $uri);
     }//end createEvent()
 
     /**
@@ -250,7 +250,7 @@ class CalendarEventService
         $calendarData = $vcalendar->serialize();
         $this->calDavBackend->updateCalendarObject($calendarId, $eventUri, $calendarData);
 
-        return $this->veventToArray($calendarData, (string) $calendarId, $eventUri);
+        return $this->veventToArray(calendarData: $calendarData, calendarId: (string) $calendarId, uri: $eventUri);
     }//end linkEvent()
 
     /**
@@ -305,11 +305,11 @@ class CalendarEventService
      */
     public function unlinkEventsForObject(string $objectUuid): void
     {
-        $events = $this->getEventsForObject($objectUuid);
+        $events = $this->getEventsForObject(objectUuid: $objectUuid);
 
         foreach ($events as $event) {
             try {
-                $this->unlinkEvent($event['calendarId'], $event['id']);
+                $this->unlinkEvent(calendarId: $event['calendarId'], eventUri: $event['id']);
             } catch (Exception $e) {
                 $this->logger->warning(
                     'Failed to unlink event '.$event['id'].' from object '.$objectUuid.': '.$e->getMessage()
@@ -388,7 +388,7 @@ class CalendarEventService
             return null;
         }
 
-        $linkData = $this->extractOpenRegisterProperties($vevent);
+        $linkData = $this->extractOpenRegisterProperties(vtodo: $vevent);
 
         $dtstart = null;
         if (isset($vevent->DTSTART) === true) {

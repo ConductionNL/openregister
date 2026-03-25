@@ -104,106 +104,242 @@ use OCP\AppFramework\Db\Entity;
 class Action extends Entity implements JsonSerializable
 {
 
-    /** @var string */
+    /**
+     * The uuid.
+     *
+     * @var string
+     */
     protected string $uuid = '';
 
-    /** @var string */
+    /**
+     * The name.
+     *
+     * @var string
+     */
     protected string $name = '';
 
-    /** @var string|null */
+    /**
+     * The slug.
+     *
+     * @var string|null
+     */
     protected ?string $slug = null;
 
-    /** @var string|null */
+    /**
+     * The description.
+     *
+     * @var string|null
+     */
     protected ?string $description = null;
 
-    /** @var string|null */
+    /**
+     * The version.
+     *
+     * @var string|null
+     */
     protected ?string $version = '1.0.0';
 
-    /** @var string */
+    /**
+     * The status.
+     *
+     * @var string
+     */
     protected string $status = 'draft';
 
-    /** @var string */
+    /**
+     * The event type.
+     *
+     * @var string
+     */
     protected string $eventType = '';
 
-    /** @var string */
+    /**
+     * The engine.
+     *
+     * @var string
+     */
     protected string $engine = '';
 
-    /** @var string */
+    /**
+     * The workflow id.
+     *
+     * @var string
+     */
     protected string $workflowId = '';
 
-    /** @var string */
+    /**
+     * The mode.
+     *
+     * @var string
+     */
     protected string $mode = 'sync';
 
-    /** @var int */
+    /**
+     * The execution order.
+     *
+     * @var integer
+     */
     protected int $executionOrder = 0;
 
-    /** @var int */
+    /**
+     * The timeout.
+     *
+     * @var integer
+     */
     protected int $timeout = 30;
 
-    /** @var string */
+    /**
+     * The on failure.
+     *
+     * @var string
+     */
     protected string $onFailure = 'reject';
 
-    /** @var string */
+    /**
+     * The on timeout.
+     *
+     * @var string
+     */
     protected string $onTimeout = 'reject';
 
-    /** @var string */
+    /**
+     * The on engine down.
+     *
+     * @var string
+     */
     protected string $onEngineDown = 'allow';
 
-    /** @var string|null */
+    /**
+     * The filter condition.
+     *
+     * @var string|null
+     */
     protected ?string $filterCondition = null;
 
-    /** @var string|null */
+    /**
+     * The configuration.
+     *
+     * @var string|null
+     */
     protected ?string $configuration = null;
 
-    /** @var int|null */
+    /**
+     * The mapping.
+     *
+     * @var integer|null
+     */
     protected ?int $mapping = null;
 
-    /** @var string|null */
+    /**
+     * The schemas.
+     *
+     * @var string|null
+     */
     protected ?string $schemas = null;
 
-    /** @var string|null */
+    /**
+     * The registers.
+     *
+     * @var string|null
+     */
     protected ?string $registers = null;
 
-    /** @var string|null */
+    /**
+     * The schedule.
+     *
+     * @var string|null
+     */
     protected ?string $schedule = null;
 
-    /** @var int */
+    /**
+     * The max retries.
+     *
+     * @var integer
+     */
     protected int $maxRetries = 3;
 
-    /** @var string */
+    /**
+     * The retry policy.
+     *
+     * @var string
+     */
     protected string $retryPolicy = 'exponential';
 
-    /** @var bool */
+    /**
+     * The enabled.
+     *
+     * @var boolean
+     */
     protected bool $enabled = true;
 
-    /** @var string|null */
+    /**
+     * The owner.
+     *
+     * @var string|null
+     */
     protected ?string $owner = null;
 
-    /** @var string|null */
+    /**
+     * The application.
+     *
+     * @var string|null
+     */
     protected ?string $application = null;
 
-    /** @var string|null */
+    /**
+     * The organisation.
+     *
+     * @var string|null
+     */
     protected ?string $organisation = null;
 
-    /** @var DateTime|null */
+    /**
+     * The last executed at.
+     *
+     * @var DateTime|null
+     */
     protected ?DateTime $lastExecutedAt = null;
 
-    /** @var int */
+    /**
+     * The execution count.
+     *
+     * @var integer
+     */
     protected int $executionCount = 0;
 
-    /** @var int */
+    /**
+     * The success count.
+     *
+     * @var integer
+     */
     protected int $successCount = 0;
 
-    /** @var int */
+    /**
+     * The failure count.
+     *
+     * @var integer
+     */
     protected int $failureCount = 0;
 
-    /** @var DateTime|null */
+    /**
+     * The created.
+     *
+     * @var DateTime|null
+     */
     protected ?DateTime $created = null;
 
-    /** @var DateTime|null */
+    /**
+     * The updated.
+     *
+     * @var DateTime|null
+     */
     protected ?DateTime $updated = null;
 
-    /** @var DateTime|null */
+    /**
+     * The deleted.
+     *
+     * @var DateTime|null
+     */
     protected ?DateTime $deleted = null;
 
     /**

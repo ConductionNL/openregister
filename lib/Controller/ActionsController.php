@@ -115,15 +115,15 @@ class ActionsController extends Controller
         try {
             $params = $this->request->getParams();
 
-            $limit = isset($params['_limit']) ? (int) $params['_limit'] : null;
-            $offset = isset($params['_offset']) ? (int) $params['_offset'] : null;
+            $limit  = isset($params['_limit']) === true ? (int) $params['_limit'] : null;
+            $offset = isset($params['_offset']) === true ? (int) $params['_offset'] : null;
 
             if (isset($params['_page']) === true && $limit !== null) {
                 $offset = ((int) $params['_page'] - 1) * $limit;
             }
 
             // Build filters from known filterable fields.
-            $filters = [];
+            $filters          = [];
             $filterableFields = ['status', 'event_type', 'engine', 'enabled', 'mode'];
             foreach ($filterableFields as $field) {
                 if (isset($params[$field]) === true) {
@@ -143,7 +143,7 @@ class ActionsController extends Controller
             // Apply search filter in PHP if provided.
             if ($search !== null && $search !== '') {
                 $searchLower = strtolower($search);
-                $actions = array_values(
+                $actions     = array_values(
                     array_filter(
                         $actions,
                         function ($action) use ($searchLower) {
@@ -158,7 +158,7 @@ class ActionsController extends Controller
             $allActions = $this->actionMapper->findAll(filters: $filters);
             if ($search !== null && $search !== '') {
                 $searchLower = strtolower($search);
-                $allActions = array_filter(
+                $allActions  = array_filter(
                     $allActions,
                     function ($action) use ($searchLower) {
                         return str_contains(strtolower($action->getName()), $searchLower)
@@ -269,7 +269,7 @@ class ActionsController extends Controller
                 data: ['error' => 'Failed to create action: '.$e->getMessage()],
                 statusCode: 500
             );
-        }
+        }//end try
     }//end create()
 
     /**
@@ -311,7 +311,7 @@ class ActionsController extends Controller
                 data: ['error' => 'Failed to update action: '.$e->getMessage()],
                 statusCode: 500
             );
-        }
+        }//end try
     }//end update()
 
     /**
@@ -329,7 +329,7 @@ class ActionsController extends Controller
     #[NoCSRFRequired]
     public function patch(int $id): JSONResponse
     {
-        return $this->update($id);
+        return $this->update(objectId: $id);
     }//end patch()
 
     /**
@@ -401,7 +401,7 @@ class ActionsController extends Controller
                 data: ['error' => 'Failed to test action: '.$e->getMessage()],
                 statusCode: 500
             );
-        }
+        }//end try
     }//end test()
 
     /**
@@ -421,8 +421,8 @@ class ActionsController extends Controller
     {
         try {
             $params = $this->request->getParams();
-            $limit  = isset($params['_limit']) ? (int) $params['_limit'] : 25;
-            $offset = isset($params['_offset']) ? (int) $params['_offset'] : 0;
+            $limit  = isset($params['_limit']) === true ? (int) $params['_limit'] : 25;
+            $offset = isset($params['_offset']) === true ? (int) $params['_offset'] : 0;
 
             $logs = $this->actionLogMapper->findByActionId(
                 actionId: $id,
@@ -451,7 +451,7 @@ class ActionsController extends Controller
                 data: ['error' => 'Failed to retrieve action logs'],
                 statusCode: 500
             );
-        }
+        }//end try
     }//end logs()
 
     /**
