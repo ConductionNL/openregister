@@ -7,40 +7,39 @@
  * @package OpenRegister
  */
 
+console.info('[OpenRegister] mail-sidebar.js loaded')
+
 import Vue from 'vue'
 import MailSidebar from './mail-sidebar/MailSidebar.vue'
+
+console.info('[OpenRegister] Vue and MailSidebar imported successfully')
 
 const MOUNT_POINT_ID = 'openregister-mail-sidebar'
 const MOUNT_RETRY_INTERVAL = 1000
 const MOUNT_MAX_RETRIES = 30
 
 /**
- * Attempt to find a suitable mount point in the Mail app DOM.
+ * Check if we're on a Mail app page.
  *
- * @return {HTMLElement|null} The mount point element or null.
+ * @return {boolean} True if the current page is the Mail app.
  */
-function findMountPoint() {
-	// Try the Mail app content area
-	const appContent = document.getElementById('app-content-vue')
-		|| document.getElementById('app-content')
-		|| document.querySelector('.app-content')
-		|| document.querySelector('#content')
-
-	return appContent || null
+function isMailPage() {
+	return window.location.pathname.includes('/apps/mail')
 }
 
 /**
- * Create and inject the sidebar container element.
+ * Create and inject the sidebar container element as a sibling to the content area.
+ * Mounts outside the Mail Vue app tree to avoid Virtual DOM conflicts.
  *
- * @param {HTMLElement} parent The parent element to append to.
  * @return {HTMLElement} The created container element.
  */
-function createContainer(parent) {
+function createContainer() {
 	const container = document.createElement('div')
 	container.id = MOUNT_POINT_ID
 	container.setAttribute('role', 'complementary')
 	container.setAttribute('aria-label', 'OpenRegister: Linked Objects sidebar')
-	parent.appendChild(container)
+	// Mount as a direct child of body, positioned fixed on the right
+	document.body.appendChild(container)
 	return container
 }
 
@@ -48,35 +47,27 @@ function createContainer(parent) {
  * Mount the Vue sidebar application.
  */
 function mountSidebar() {
-	let retries = 0
-
-	const tryMount = () => {
-		const mountPoint = findMountPoint()
-
-		if (!mountPoint) {
-			retries++
-			if (retries < MOUNT_MAX_RETRIES) {
-				setTimeout(tryMount, MOUNT_RETRY_INTERVAL)
-				return
-			}
-			console.warn('Mail sidebar: could not find mount point, skipping injection')
-			return
-		}
-
-		// Check if already mounted
-		if (document.getElementById(MOUNT_POINT_ID)) {
-			return
-		}
-
-		const container = createContainer(mountPoint)
-
-		new Vue({
-			el: container,
-			render: (h) => h(MailSidebar),
-		})
+	// Only mount on Mail app pages
+	if (!isMailPage()) {
+		console.debug('[OpenRegister] Not a Mail page, skipping sidebar injection')
+		return
 	}
 
-	tryMount()
+	// Check if already mounted
+	if (document.getElementById(MOUNT_POINT_ID)) {
+		console.debug('[OpenRegister] Sidebar already mounted')
+		return
+	}
+
+	console.info('[OpenRegister] Mounting mail sidebar')
+	const container = createContainer()
+
+	new Vue({
+		el: container,
+		render: (h) => h(MailSidebar),
+	})
+
+	console.info('[OpenRegister] Mail sidebar mounted successfully')
 }
 
 // Wait for DOM to be ready

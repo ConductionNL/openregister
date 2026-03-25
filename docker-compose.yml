@@ -1391,3 +1391,23 @@ services:
       timeout: 10s
       retries: 5
       start_period: 120s
+
+  # GreenMail — SMTP/IMAP test mail server (use --profile mail)
+  greenmail:
+    profiles:
+      - mail
+    image: greenmail/standalone:2.0.1
+    container_name: openregister-greenmail
+    restart: unless-stopped
+    ports:
+      - "3025:3025"
+      - "3143:3143"
+      - "8085:8080"
+    environment:
+      - GREENMAIL_OPTS=-Dgreenmail.setup.test.all -Dgreenmail.hostname=0.0.0.0 -Dgreenmail.users=testadmin:password1@test.local -Dgreenmail.verbose
+    healthcheck:
+      test: ["CMD", "sh", "-c", "nc -z 127.0.0.1 3025"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s

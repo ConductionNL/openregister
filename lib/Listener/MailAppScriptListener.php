@@ -66,13 +66,6 @@ class MailAppScriptListener implements IEventListener
      */
     public function handle(Event $event): void
     {
-        // Only handle BeforeTemplateRenderedEvent from the Mail app.
-        // We use string comparison to avoid a hard dependency on the Mail app classes.
-        $eventClass = get_class($event);
-        if (str_contains($eventClass, 'OCA\\Mail\\') === false) {
-            return;
-        }
-
         // Check Mail app is enabled.
         $user = $this->userSession->getUser();
         if ($user === null) {
@@ -88,9 +81,12 @@ class MailAppScriptListener implements IEventListener
             return;
         }
 
-        // Inject the sidebar script.
-        Util::addScript('openregister', 'openregister-mail-sidebar');
-        Util::addStyle('openregister', 'mail-sidebar');
+        // Inject the sidebar script (only if compiled JS exists).
+        $jsPath = __DIR__ . '/../../js/openregister-mail-sidebar.js';
+        if (file_exists($jsPath) === true) {
+            Util::addScript('openregister', 'openregister-mail-sidebar');
+            Util::addStyle('openregister', 'mail-sidebar');
+        }
 
         $this->logger->debug('Mail sidebar script injected for user {user}', [
             'user' => $user->getUID(),
