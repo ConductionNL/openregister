@@ -1310,7 +1310,7 @@ class MagicMapper extends AbstractObjectMapper
                         continue;
                     }
 
-                    $quotedCol  = $this->quoteIdentifier(name: $columnName, isPostgres: $isPostgres);
+                    $quotedCol = $this->quoteIdentifier(name: $columnName, isPostgres: $isPostgres);
                     // Fallback: use CASE with ILIKE for basic relevance scoring.
                     $likePattern = "'%".trim($quotedTerm, "'")."%'";
                     $scoreExpr   = "CASE WHEN {$quotedCol}::text ILIKE {$likePattern} THEN 1 ELSE 0 END";
@@ -1321,7 +1321,7 @@ class MagicMapper extends AbstractObjectMapper
 
                     $searchColumns[] = $scoreExpr;
                 }
-            }
+            }//end foreach
 
             $selectColumns[] = '0 AS _search_score';
             if (empty($searchColumns) === false) {

@@ -108,12 +108,12 @@ class TasksController extends Controller
             return new JSONResponse(data: ['error' => 'Object not found'], statusCode: 404);
         } catch (Exception $e) {
             // No VTODO calendar = no tasks; return empty for listing.
-            if (str_contains($e->getMessage(), 'No VTODO-supporting calendar')) {
+            if (str_contains($e->getMessage(), 'No VTODO-supporting calendar') === true) {
                 return new JSONResponse(data: ['results' => [], 'total' => 0]);
             }
 
             return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 500);
-        }
+        }//end try
     }//end index()
 
     /**

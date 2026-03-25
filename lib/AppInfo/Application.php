@@ -768,6 +768,6 @@ class Application extends App implements IBootstrap
         $server     = $context->getServerContainer();
         $dispatcher = $server->get(IEventDispatcher::class);
         $registry   = $server->get(DeepLinkRegistryService::class);
-        $dispatcher->dispatchTyped(new DeepLinkRegistrationEvent($registry));
+        $dispatcher->dispatchTyped(new DeepLinkRegistrationEvent(registry: $registry));
     }//end boot()
 }//end class

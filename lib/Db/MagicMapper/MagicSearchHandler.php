@@ -355,8 +355,9 @@ class MagicSearchHandler
      * Includes RBAC filtering when enabled (default). Values are quoted inline
      * (not parameterized) for UNION query compatibility.
      *
-     * @param array  $query  Search parameters including filters.
-     * @param Schema $schema The schema for property filtering.
+     * @param array      $query           Search parameters including filters.
+     * @param Schema     $schema          The schema for property filtering.
+     * @param array|null $existingColumns Optional list of existing column names.
      *
      * @return string[] Array of SQL WHERE conditions (without leading AND/WHERE).
      */
@@ -444,10 +445,11 @@ class MagicSearchHandler
      * Without _fuzzy=true: ~140ms (ILIKE only)
      * With _fuzzy=true: ~160ms (ILIKE + similarity on _name)
      *
-     * @param string $search     Trimmed search term
-     * @param Schema $schema     Schema for determining searchable columns
-     * @param array  $query      Full query array for extracting _fuzzy param
-     * @param object $connection Database connection for value quoting
+     * @param string     $search          Trimmed search term
+     * @param Schema     $schema          Schema for determining searchable columns
+     * @param array      $query           Full query array for extracting _fuzzy param
+     * @param object     $connection      Database connection for value quoting
+     * @param array|null $existingColumns Optional list of existing column names.
      *
      * @return string|null SQL condition or null if no search conditions generated
      */
