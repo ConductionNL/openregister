@@ -84,7 +84,9 @@ use OCA\OpenRegister\Service\OrganisationService;
 use OCA\OpenRegister\Service\SettingsService;
 use OCA\OpenRegister\Service\IndexService;
 use OCP\AppFramework\IAppContainer;
+use OCP\Collaboration\Reference\IReferenceManager;
 use OCP\DB\QueryBuilder\IQueryBuilder;
+use OCP\IURLGenerator;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\Uid\Uuid;
 
@@ -277,7 +279,9 @@ class ObjectService
         private readonly LoggerInterface $logger,
         private readonly CacheHandler $cacheHandler,
         private readonly SettingsService $settingsService,
-        private readonly IAppContainer $container
+        private readonly IAppContainer $container,
+        private readonly IReferenceManager $referenceManager,
+        private readonly IURLGenerator $urlGenerator
         // TODO: CIRCULAR DEPENDENCY ISSUE - ExportService, ImportService, and VectorizationService
         // These services have deep circular dependencies:
         // - ExportService → uses SaveObjects → potentially loops back
@@ -1141,6 +1145,28 @@ class ObjectService
             _validation: true,
             uploadedFiles: $uploadedFiles
         );
+
+        // Invalidate reference cache for this object so Smart Picker previews refresh.
+        try {
+            $objectUuid  = $savedObject->getUuid();
+            $registerId  = $this->currentRegister?->getId();
+            $schemaId    = $this->currentSchema?->getId();
+            if ($objectUuid !== null && $registerId !== null && $schemaId !== null) {
+                $objectUrl = $this->urlGenerator->getAbsoluteURL(
+                    $this->urlGenerator->linkToRoute(
+                        'openregister.objects.show',
+                        ['register' => $registerId, 'schema' => $schemaId, 'id' => $objectUuid]
+                    )
+                );
+                $this->referenceManager->invalidateCache($objectUrl);
+            }
+        } catch (\Exception $e) {
+            // Cache invalidation is best-effort; never fail the save.
+            $this->logger->debug(
+                '[ObjectService] Reference cache invalidation failed: {error}',
+                ['error' => $e->getMessage()]
+            );
+        }
 
         // Render and return the saved object.
         return $this->renderHandler->renderEntity(
