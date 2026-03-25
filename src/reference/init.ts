@@ -9,6 +9,7 @@
  * @license  EUPL-1.2
  */
 
+// eslint-disable-next-line import/no-unresolved
 import { registerWidget } from '@nextcloud/vue-richtext'
 
 registerWidget('openregister-object', async () => {
