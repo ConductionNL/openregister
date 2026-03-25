@@ -516,5 +516,23 @@ return [
 
 		// GraphQL Subscriptions (SSE).
 		['name' => 'graphQLSubscription#subscribe', 'url' => '/api/graphql/subscribe', 'verb' => 'GET'],
+
+		// Archival & Destruction Workflow — Selection Lists.
+		['name' => 'archival#listSelectionLists', 'url' => '/api/archival/selection-lists', 'verb' => 'GET'],
+		['name' => 'archival#createSelectionList', 'url' => '/api/archival/selection-lists', 'verb' => 'POST'],
+		['name' => 'archival#getSelectionList', 'url' => '/api/archival/selection-lists/{id}', 'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
+		['name' => 'archival#updateSelectionList', 'url' => '/api/archival/selection-lists/{id}', 'verb' => 'PUT', 'requirements' => ['id' => '[^/]+']],
+		['name' => 'archival#deleteSelectionList', 'url' => '/api/archival/selection-lists/{id}', 'verb' => 'DELETE', 'requirements' => ['id' => '[^/]+']],
+
+		// Archival & Destruction Workflow — Object Retention Metadata.
+		['name' => 'archival#getRetention', 'url' => '/api/archival/objects/{id}/retention', 'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
+		['name' => 'archival#setRetention', 'url' => '/api/archival/objects/{id}/retention', 'verb' => 'PUT', 'requirements' => ['id' => '[^/]+']],
+
+		// Archival & Destruction Workflow — Destruction Lists.
+		['name' => 'archival#listDestructionLists', 'url' => '/api/archival/destruction-lists', 'verb' => 'GET'],
+		['name' => 'archival#generateDestructionList', 'url' => '/api/archival/destruction-lists/generate', 'verb' => 'POST'],
+		['name' => 'archival#getDestructionList', 'url' => '/api/archival/destruction-lists/{id}', 'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
+		['name' => 'archival#approveDestructionList', 'url' => '/api/archival/destruction-lists/{id}/approve', 'verb' => 'POST', 'requirements' => ['id' => '[^/]+']],
+		['name' => 'archival#rejectFromDestructionList', 'url' => '/api/archival/destruction-lists/{id}/reject', 'verb' => 'POST', 'requirements' => ['id' => '[^/]+']],
     ],
 ];
