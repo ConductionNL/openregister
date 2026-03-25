@@ -95,6 +95,29 @@ class MetadataHydrationHandler
         $config     = $schema->getConfiguration() ?? [];
         $objectData = $entity->getObject();
 
+        // DEPRECATED: Log warnings for deprecated published metadata config keys.
+        // Object-level published/depublished metadata has been removed.
+        // Use RBAC authorization rules with $now for publication control instead.
+        $deprecatedKeys = ['objectPublishedField', 'objectDepublishedField', 'autoPublish'];
+        foreach ($deprecatedKeys as $key) {
+            if (isset($config[$key]) === true) {
+                $this->logger->warning(
+                    message: "[MetadataHydrationHandler] Schema configuration key '{$key}' is deprecated. "
+                        . 'Object-level published/depublished metadata has been removed. '
+                        . 'Use RBAC authorization rules with $now for publication control. '
+                        . 'Example: {"read": [{"group": "public", "match": {"publicatieDatum": {"$lte": "$now"}}}]}',
+                    context: [
+                        'file'     => __FILE__,
+                        'line'     => __LINE__,
+                        'app'      => 'openregister',
+                        'schemaId' => $schema->getId(),
+                        'key'      => $key,
+                        'value'    => $config[$key],
+                    ]
+                );
+            }
+        }
+
         // CRITICAL FIX: Extract business data from correct location.
         // If object data has 'object' key that is an array (structured format), use that for property access.
         // Otherwise use the objectData directly (flat format).

@@ -228,7 +228,7 @@ trait MultiTenancyTrait
      *
      * This method provides comprehensive organisation filtering including:
      * - Hierarchical organisation support (active org + all parents)
-     * - Published entity bypass for multi-tenancy (works for objects, schemas, registers)
+     * - Published entity bypass for multi-tenancy (Register/Schema entities only)
      * - Admin override capabilities
      * - System default organisation special handling
      * - NULL organisation legacy data access for admins
@@ -236,7 +236,7 @@ trait MultiTenancyTrait
      *
      * Features:
      * 1. Hierarchical Access: Users see entities from their active org AND parent orgs
-     * 2. Published Entities: Can bypass multi-tenancy if configured (any table with published/depublished columns)
+     * 2. Published Entities: Register/Schema entities can bypass multi-tenancy via published/depublished columns
      * 3. Admin Override: Admins can see all entities if enabled in config
      * 4. Default Org: Special behavior for system-wide default organisation
      * 5. Legacy Data: Admins can access NULL organisation entities
