@@ -21,12 +21,12 @@
 - [x] Handle attendees in VEVENT creation
 
 ## Contact Relations
-- [ ] Implement ContactService (link/create/unlink vCard contacts with X-OPENREGISTER-* properties)
-- [ ] Implement ContactsController with REST endpoints
-- [ ] Add contact routes to routes.php
-- [ ] Implement role management on contact-object links
-- [ ] Implement reverse lookup (find objects for a contact)
-- [ ] Handle dual storage (vCard properties + database table)
+- [x] Implement ContactService (link/create/unlink vCard contacts with X-OPENREGISTER-* properties)
+- [x] Implement ContactsController with REST endpoints
+- [x] Add contact routes to routes.php
+- [x] Implement role management on contact-object links
+- [x] Implement reverse lookup (find objects for a contact)
+- [x] Handle dual storage (vCard properties + database table)
 
 ## Deck Card Relations
 - [ ] Implement DeckCardService (create/link/unlink Deck cards)
