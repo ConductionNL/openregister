@@ -7,11 +7,11 @@
 - [x] Create DeckLink entity and DeckLinkMapper
 
 ## Email Relations
-- [ ] Implement EmailService (link/unlink/list emails, verify mail message exists)
-- [ ] Implement EmailsController with REST endpoints
-- [ ] Add email routes to routes.php
-- [ ] Add email search endpoint (find objects by sender)
-- [ ] Handle Mail app not installed (HTTP 501 graceful degradation)
+- [x] Implement EmailService (link/unlink/list emails, verify mail message exists)
+- [x] Implement EmailsController with REST endpoints
+- [x] Add email routes to routes.php
+- [x] Add email search endpoint (find objects by sender)
+- [x] Handle Mail app not installed (HTTP 501 graceful degradation)
 
 ## Calendar Event Relations
 - [ ] Implement CalendarEventService (create/link/unlink VEVENT with X-OPENREGISTER-* properties)
