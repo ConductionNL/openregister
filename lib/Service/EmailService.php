@@ -1,18 +1,18 @@
 <?php
 
 /**
- * Service for managing email-to-object links.
+ * EmailService
  *
- * @category Service
- * @package  OCA\OpenRegister\Service
+ * Service that wraps Nextcloud Mail message lookups and manages email-to-object links.
+ * Emails are immutable; this service only creates/removes link references.
  *
+ * @category  Service
+ * @package   OCA\OpenRegister\Service
  * @author    Conduction Development Team <dev@conduction.nl>
  * @copyright 2024 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
- *
- * @version GIT: <git-id>
- *
- * @link https://www.OpenRegister.app
+ * @version   GIT: <git-id>
+ * @link      https://OpenRegister.app
  */
 
 declare(strict_types=1);
@@ -20,232 +20,271 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service;
 
 use DateTime;
+use Exception;
 use OCA\OpenRegister\Db\EmailLink;
 use OCA\OpenRegister\Db\EmailLinkMapper;
-use OCA\OpenRegister\Db\RegisterMapper;
-use OCA\OpenRegister\Db\SchemaMapper;
-use OCP\AppFramework\Db\DoesNotExistException;
+use OCP\App\IAppManager;
+use OCP\IDBConnection;
+use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
 
 /**
- * Class EmailService
+ * EmailService manages email-to-object links via the openregister_email_links table.
  *
- * Provides reverse-lookup and quick-link functionality for email-object links.
- *
- * @psalm-suppress UnusedClass
+ * @category Service
+ * @package  OCA\OpenRegister\Service
  *
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
  */
 class EmailService
 {
+
+    /**
+     * Email link mapper.
+     *
+     * @var EmailLinkMapper
+     */
+    private readonly EmailLinkMapper $emailLinkMapper;
+
+    /**
+     * App manager for checking Mail app availability.
+     *
+     * @var IAppManager
+     */
+    private readonly IAppManager $appManager;
+
+    /**
+     * Database connection for direct Mail queries.
+     *
+     * @var IDBConnection
+     */
+    private readonly IDBConnection $db;
+
+    /**
+     * User session for current user context.
+     *
+     * @var IUserSession
+     */
+    private readonly IUserSession $userSession;
+
+    /**
+     * Logger for error reporting.
+     *
+     * @var LoggerInterface
+     */
+    private readonly LoggerInterface $logger;
+
     /**
      * Constructor.
      *
-     * @param EmailLinkMapper $emailLinkMapper The email link mapper.
-     * @param RegisterMapper  $registerMapper  The register mapper.
-     * @param SchemaMapper    $schemaMapper    The schema mapper.
-     * @param LoggerInterface $logger          The logger.
+     * @param EmailLinkMapper $emailLinkMapper Email link mapper
+     * @param IAppManager     $appManager      App manager
+     * @param IDBConnection   $db              Database connection
+     * @param IUserSession    $userSession     User session
+     * @param LoggerInterface $logger          Logger
+     *
+     * @return void
      */
     public function __construct(
-        private readonly EmailLinkMapper $emailLinkMapper,
-        private readonly RegisterMapper $registerMapper,
-        private readonly SchemaMapper $schemaMapper,
-        private readonly LoggerInterface $logger
+        EmailLinkMapper $emailLinkMapper,
+        IAppManager $appManager,
+        IDBConnection $db,
+        IUserSession $userSession,
+        LoggerInterface $logger
     ) {
+        $this->emailLinkMapper = $emailLinkMapper;
+        $this->appManager      = $appManager;
+        $this->db              = $db;
+        $this->userSession     = $userSession;
+        $this->logger          = $logger;
     }//end __construct()
 
     /**
-     * Find objects linked to a specific email message.
+     * Check if the Nextcloud Mail app is installed and enabled.
      *
-     * @param int $accountId The mail account ID.
-     * @param int $messageId The mail message ID.
-     *
-     * @return array{results: array<int, array<string, mixed>>, total: int}
+     * @return bool True if Mail app is available.
      */
-    public function findByMessageId(int $accountId, int $messageId): array
+    public function isMailAvailable(): bool
     {
-        $links   = $this->emailLinkMapper->findByAccountAndMessage($accountId, $messageId);
-        $results = [];
-
-        foreach ($links as $link) {
-            $results[] = $this->resolveLink($link);
-        }
-
-        return [
-            'results' => $results,
-            'total'   => count($results),
-        ];
-    }//end findByMessageId()
+        return $this->appManager->isEnabledForUser('mail');
+    }//end isMailAvailable()
 
     /**
-     * Find objects linked to emails from a specific sender.
+     * Get all email links for an object.
      *
-     * Returns distinct objects with email count, ordered by count descending.
+     * @param string   $objectUuid The object UUID.
+     * @param int|null $limit      Maximum results.
+     * @param int|null $offset     Results offset.
      *
-     * @param string $sender The sender email address.
-     *
-     * @return array{results: array<int, array<string, mixed>>, total: int}
+     * @return array{results: array, total: int} Email links with total count.
      */
-    public function findObjectsBySender(string $sender): array
+    public function getEmailsForObject(string $objectUuid, ?int $limit = null, ?int $offset = null): array
     {
-        $rows    = $this->emailLinkMapper->findBySender($sender);
-        $results = [];
+        $links = $this->emailLinkMapper->findByObjectUuid($objectUuid, $limit, $offset);
+        $total = $this->emailLinkMapper->countByObjectUuid($objectUuid);
 
-        foreach ($rows as $row) {
-            $registerTitle = $this->resolveRegisterTitle((int)$row['register_id']);
-            $schemaTitle   = $this->resolveSchemaTitle(
-                $row['schema_id'] !== null ? (int)$row['schema_id'] : null
-            );
-
-            $results[] = [
-                'objectUuid'       => $row['object_uuid'],
-                'registerId'       => (int)$row['register_id'],
-                'registerTitle'    => $registerTitle,
-                'schemaId'         => $row['schema_id'] !== null ? (int)$row['schema_id'] : null,
-                'schemaTitle'      => $schemaTitle,
-                'linkedEmailCount' => (int)$row['linked_email_count'],
-            ];
-        }
-
-        return [
-            'results' => $results,
-            'total'   => count($results),
-        ];
-    }//end findObjectsBySender()
-
-    /**
-     * Create a quick link between an email and an object.
-     *
-     * @param array<string, mixed> $params The link parameters.
-     *
-     * @return array<string, mixed> The created link with resolved metadata.
-     *
-     * @throws \RuntimeException If a duplicate link exists or object not found.
-     */
-    public function quickLink(array $params): array
-    {
-        $accountId  = (int)$params['mailAccountId'];
-        $messageId  = (int)$params['mailMessageId'];
-        $objectUuid = (string)$params['objectUuid'];
-
-        // Check for duplicate.
-        $existing = $this->emailLinkMapper->findExistingLink(
-            $accountId,
-            $messageId,
-            $objectUuid
+        $results = array_map(
+            static function (EmailLink $link): array {
+                return $link->jsonSerialize();
+            },
+            $links
         );
+
+        return ['results' => $results, 'total' => $total];
+    }//end getEmailsForObject()
+
+    /**
+     * Link an existing email to an object.
+     *
+     * @param string $objectUuid   The object UUID.
+     * @param int    $registerId   The register ID.
+     * @param int    $mailAccountId The mail account ID.
+     * @param int    $mailMessageId The mail message ID.
+     *
+     * @return EmailLink The created link.
+     *
+     * @throws Exception If the email does not exist or is already linked.
+     */
+    public function linkEmail(
+        string $objectUuid,
+        int $registerId,
+        int $mailAccountId,
+        int $mailMessageId
+    ): EmailLink {
+        // Check for duplicate.
+        $existing = $this->emailLinkMapper->findByObjectAndMessage($objectUuid, $mailMessageId);
         if ($existing !== null) {
-            throw new \RuntimeException('Email already linked to this object', 409);
+            throw new Exception('Email already linked to this object', 409);
+        }
+
+        // Verify the email exists in the Mail app database.
+        $messageData = $this->fetchMailMessage($mailMessageId, $mailAccountId);
+        if ($messageData === null) {
+            throw new Exception('Mail message not found', 404);
+        }
+
+        $user = $this->userSession->getUser();
+        if ($user === null) {
+            throw new Exception('No user logged in');
         }
 
         $link = new EmailLink();
-        $link->setMailAccountId($accountId);
-        $link->setMailMessageId($messageId);
-        $link->setMailMessageUid($params['mailMessageUid'] ?? null);
-        $link->setSubject($params['subject'] ?? null);
-        $link->setSender($params['sender'] ?? null);
-        $link->setMailDate($params['date'] ?? null);
         $link->setObjectUuid($objectUuid);
-        $link->setRegisterId((int)$params['registerId']);
-        $link->setSchemaId(
-            isset($params['schemaId']) ? (int)$params['schemaId'] : null
-        );
-        $link->setLinkedBy($params['linkedBy'] ?? null);
+        $link->setRegisterId($registerId);
+        $link->setMailAccountId($mailAccountId);
+        $link->setMailMessageId($mailMessageId);
+        $link->setMailMessageUid($messageData['uid'] ?? null);
+        $link->setSubject($messageData['subject'] ?? null);
+        $link->setSender($messageData['sender'] ?? null);
+        $link->setLinkedBy($user->getUID());
         $link->setLinkedAt(new DateTime());
 
-        $link = $this->emailLinkMapper->insert($link);
+        if (isset($messageData['date']) === true && $messageData['date'] !== null) {
+            $link->setDate(new DateTime($messageData['date']));
+        }
 
-        return $this->resolveLink($link);
-    }//end quickLink()
+        return $this->emailLinkMapper->insert($link);
+    }//end linkEmail()
 
     /**
-     * Delete an email link by ID.
+     * Remove an email link.
      *
      * @param int $linkId The link ID.
      *
      * @return void
      *
-     * @throws DoesNotExistException If the link does not exist.
+     * @throws Exception If the link is not found.
      */
-    public function deleteLink(int $linkId): void
+    public function unlinkEmail(int $linkId): void
     {
-        $link = $this->emailLinkMapper->findById($linkId);
-        $this->emailLinkMapper->delete($link);
-    }//end deleteLink()
-
-    /**
-     * Resolve an EmailLink entity to an array with register/schema titles.
-     *
-     * @param EmailLink $link The email link entity.
-     *
-     * @return array<string, mixed> The resolved link data.
-     */
-    private function resolveLink(EmailLink $link): array
-    {
-        $registerTitle = $this->resolveRegisterTitle($link->getRegisterId());
-        $schemaTitle   = $this->resolveSchemaTitle($link->getSchemaId());
-
-        return [
-            'linkId'        => $link->getId(),
-            'objectUuid'    => $link->getObjectUuid(),
-            'registerId'    => $link->getRegisterId(),
-            'registerTitle' => $registerTitle,
-            'schemaId'      => $link->getSchemaId(),
-            'schemaTitle'   => $schemaTitle,
-            'subject'       => $link->getSubject(),
-            'sender'        => $link->getSender(),
-            'linkedBy'      => $link->getLinkedBy(),
-            'linkedAt'      => $link->getLinkedAt()?->format(DateTime::ATOM),
-        ];
-    }//end resolveLink()
-
-    /**
-     * Resolve a register title by ID.
-     *
-     * @param int|null $registerId The register ID.
-     *
-     * @return string|null The register title or null.
-     */
-    private function resolveRegisterTitle(?int $registerId): ?string
-    {
-        if ($registerId === null) {
-            return null;
-        }
-
         try {
-            $register = $this->registerMapper->find($registerId);
-            return $register->getTitle();
-        } catch (\Exception $e) {
-            $this->logger->warning(
-                'Could not resolve register title for ID {id}',
-                ['id' => $registerId, 'exception' => $e]
-            );
-            return null;
+            $link = $this->emailLinkMapper->find($linkId);
+            $this->emailLinkMapper->delete($link);
+        } catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
+            throw new Exception('Email link not found', 404);
         }
-    }//end resolveRegisterTitle()
+    }//end unlinkEmail()
 
     /**
-     * Resolve a schema title by ID.
+     * Search email links by sender.
      *
-     * @param int|null $schemaId The schema ID.
+     * @param string $sender The sender email address.
      *
-     * @return string|null The schema title or null.
+     * @return array Array of email links with object UUIDs.
      */
-    private function resolveSchemaTitle(?int $schemaId): ?string
+    public function searchBySender(string $sender): array
     {
-        if ($schemaId === null) {
-            return null;
-        }
+        $links = $this->emailLinkMapper->findBySender($sender);
 
+        return array_map(
+            static function (EmailLink $link): array {
+                return $link->jsonSerialize();
+            },
+            $links
+        );
+    }//end searchBySender()
+
+    /**
+     * Delete all email links for an object (cleanup).
+     *
+     * @param string $objectUuid The object UUID.
+     *
+     * @return int Number of deleted links.
+     */
+    public function deleteLinksForObject(string $objectUuid): int
+    {
+        return $this->emailLinkMapper->deleteByObjectUuid($objectUuid);
+    }//end deleteLinksForObject()
+
+    /**
+     * Fetch a mail message from the Mail app's database.
+     *
+     * @param int $messageId  The mail message ID.
+     * @param int $accountId  The mail account ID.
+     *
+     * @return array|null Message data or null if not found.
+     */
+    private function fetchMailMessage(int $messageId, int $accountId): ?array
+    {
         try {
-            $schema = $this->schemaMapper->find($schemaId);
-            return $schema->getTitle();
-        } catch (\Exception $e) {
-            $this->logger->warning(
-                'Could not resolve schema title for ID {id}',
-                ['id' => $schemaId, 'exception' => $e]
-            );
+            $qb = $this->db->getQueryBuilder();
+            $qb->select('m.id', 'm.uid', 'm.subject', 'm.sent_at')
+                ->addSelect('r.email as sender_email')
+                ->from('mail_messages', 'm')
+                ->leftJoin('m', 'mail_recipients', 'r', $qb->expr()->andX(
+                    $qb->expr()->eq('r.message_id', 'm.id'),
+                    $qb->expr()->eq('r.type', $qb->createNamedParameter(0))
+                ))
+                ->where($qb->expr()->eq('m.id', $qb->createNamedParameter($messageId)))
+                ->andWhere($qb->expr()->eq('m.mailbox_id', $qb->createFunction(
+                    '(SELECT mb.id FROM *PREFIX*mail_mailboxes mb WHERE mb.account_id = '
+                    .$qb->createNamedParameter($accountId)
+                    .' AND mb.id = m.mailbox_id LIMIT 1)'
+                )))
+                ->setMaxResults(1);
+
+            $result = $qb->executeQuery();
+            $row    = $result->fetch();
+            $result->closeCursor();
+
+            if ($row === false) {
+                return null;
+            }
+
+            $sentAt = null;
+            if (isset($row['sent_at']) === true && $row['sent_at'] !== null) {
+                $sentAt = date('c', (int) $row['sent_at']);
+            }
+
+            return [
+                'uid'     => (string) ($row['uid'] ?? ''),
+                'subject' => $row['subject'] ?? null,
+                'sender'  => $row['sender_email'] ?? null,
+                'date'    => $sentAt,
+            ];
+        } catch (Exception $e) {
+            $this->logger->warning('Failed to fetch mail message: '.$e->getMessage());
             return null;
-        }
-    }//end resolveSchemaTitle()
+        }//end try
+    }//end fetchMailMessage()
 }//end class

@@ -1,9 +1,9 @@
 <?php
 
 /**
- * ContactsController
+ * CalendarEventsController
  *
- * REST controller for contact relation operations on OpenRegister objects.
+ * REST controller for calendar event relation operations on OpenRegister objects.
  *
  * @category  Controller
  * @package   OCA\OpenRegister\Controller
@@ -19,7 +19,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Controller;
 
 use Exception;
-use OCA\OpenRegister\Service\ContactService;
+use OCA\OpenRegister\Service\CalendarEventService;
 use OCA\OpenRegister\Service\ObjectService;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -27,23 +27,23 @@ use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
 
 /**
- * ContactsController handles contact relation operations for objects.
+ * CalendarEventsController handles calendar event operations for objects.
  *
  * @category Controller
  * @package  OCA\OpenRegister\Controller
  */
-class ContactsController extends Controller
+class CalendarEventsController extends Controller
 {
 
     /**
-     * Contact service.
+     * Calendar event service.
      *
-     * @var ContactService
+     * @var CalendarEventService
      */
-    private readonly ContactService $contactService;
+    private readonly CalendarEventService $calendarEventService;
 
     /**
-     * Object service.
+     * Object service for object validation.
      *
      * @var ObjectService
      */
@@ -52,33 +52,33 @@ class ContactsController extends Controller
     /**
      * Constructor.
      *
-     * @param string         $appName        Application name
-     * @param IRequest       $request        HTTP request
-     * @param ContactService $contactService Contact service
-     * @param ObjectService  $objectService  Object service
+     * @param string               $appName              Application name
+     * @param IRequest             $request              HTTP request object
+     * @param CalendarEventService $calendarEventService Calendar event service
+     * @param ObjectService        $objectService        Object service
      *
      * @return void
      */
     public function __construct(
         string $appName,
         IRequest $request,
-        ContactService $contactService,
+        CalendarEventService $calendarEventService,
         ObjectService $objectService
     ) {
         parent::__construct($appName, $request);
 
-        $this->contactService = $contactService;
-        $this->objectService  = $objectService;
+        $this->calendarEventService = $calendarEventService;
+        $this->objectService        = $objectService;
     }//end __construct()
 
     /**
-     * List all contacts for a specific object.
+     * List all calendar events for a specific object.
      *
      * @param string $register The register slug
      * @param string $schema   The schema slug
      * @param string $id       The object ID
      *
-     * @return JSONResponse
+     * @return JSONResponse JSON response with events
      *
      * @NoAdminRequired
      * @NoCSRFRequired
@@ -91,9 +91,9 @@ class ContactsController extends Controller
                 return new JSONResponse(['error' => 'Object not found'], 404);
             }
 
-            $result = $this->contactService->getContactsForObject($object->getUuid());
+            $events = $this->calendarEventService->getEventsForObject($object->getUuid());
 
-            return new JSONResponse($result);
+            return new JSONResponse(['results' => $events, 'total' => count($events)]);
         } catch (DoesNotExistException $e) {
             return new JSONResponse(['error' => 'Object not found'], 404);
         } catch (Exception $e) {
@@ -102,16 +102,13 @@ class ContactsController extends Controller
     }//end index()
 
     /**
-     * Link or create a contact for an object.
-     *
-     * If addressbookId and contactUri are provided, links an existing contact.
-     * If fullName is provided, creates a new contact and links it.
+     * Create a new calendar event linked to an object.
      *
      * @param string $register The register slug
      * @param string $schema   The schema slug
      * @param string $id       The object ID
      *
-     * @return JSONResponse
+     * @return JSONResponse JSON response with the created event
      *
      * @NoAdminRequired
      * @NoCSRFRequired
@@ -126,56 +123,39 @@ class ContactsController extends Controller
 
             $data = $this->request->getParams();
 
-            if (empty($data['addressbookId']) === false && empty($data['contactUri']) === false) {
-                // Link existing contact.
-                $link = $this->contactService->linkContact(
-                    $object->getUuid(),
-                    (int) $object->getRegister(),
-                    (int) $data['addressbookId'],
-                    $data['contactUri'],
-                    $data['role'] ?? null
-                );
-            } else if (empty($data['fullName']) === false) {
-                // Create new contact.
-                $link = $this->contactService->createAndLinkContact(
-                    $object->getUuid(),
-                    (int) $object->getRegister(),
-                    $data
-                );
-            } else {
-                return new JSONResponse(
-                    ['error' => 'Either addressbookId+contactUri or fullName is required'],
-                    400
-                );
+            if (empty($data['summary']) === true) {
+                return new JSONResponse(['error' => 'Event summary is required'], 400);
             }
 
-            return new JSONResponse($link->jsonSerialize(), 201);
+            $event = $this->calendarEventService->createEvent(
+                (int) $object->getRegister(),
+                (int) $object->getSchema(),
+                $object->getUuid(),
+                $object->getName() ?? $object->getUuid(),
+                $data
+            );
+
+            return new JSONResponse($event, 201);
         } catch (DoesNotExistException $e) {
             return new JSONResponse(['error' => 'Object not found'], 404);
         } catch (Exception $e) {
-            $code = $e->getCode();
-            if ($code === 404) {
-                return new JSONResponse(['error' => $e->getMessage()], 404);
-            }
-
             return new JSONResponse(['error' => $e->getMessage()], 400);
         }//end try
     }//end create()
 
     /**
-     * Update a contact link (role change).
+     * Link an existing calendar event to an object.
      *
-     * @param string $register  The register slug
-     * @param string $schema    The schema slug
-     * @param string $id        The object ID
-     * @param string $contactId The contact link ID
+     * @param string $register The register slug
+     * @param string $schema   The schema slug
+     * @param string $id       The object ID
      *
-     * @return JSONResponse
+     * @return JSONResponse JSON response with the linked event
      *
      * @NoAdminRequired
      * @NoCSRFRequired
      */
-    public function update(string $register, string $schema, string $id, string $contactId): JSONResponse
+    public function link(string $register, string $schema, string $id): JSONResponse
     {
         try {
             $object = $this->validateObject($register, $schema, $id);
@@ -185,39 +165,40 @@ class ContactsController extends Controller
 
             $data = $this->request->getParams();
 
-            if (empty($data['role']) === true) {
-                return new JSONResponse(['error' => 'role is required'], 400);
+            if (empty($data['calendarId']) === true || empty($data['eventUri']) === true) {
+                return new JSONResponse(['error' => 'calendarId and eventUri are required'], 400);
             }
 
-            $link = $this->contactService->updateRole((int) $contactId, $data['role']);
+            $event = $this->calendarEventService->linkEvent(
+                (int) $data['calendarId'],
+                $data['eventUri'],
+                (int) $object->getRegister(),
+                (int) $object->getSchema(),
+                $object->getUuid()
+            );
 
-            return new JSONResponse($link->jsonSerialize());
+            return new JSONResponse($event);
         } catch (DoesNotExistException $e) {
             return new JSONResponse(['error' => 'Object not found'], 404);
         } catch (Exception $e) {
-            $code = $e->getCode();
-            if ($code === 404) {
-                return new JSONResponse(['error' => $e->getMessage()], 404);
-            }
-
             return new JSONResponse(['error' => $e->getMessage()], 400);
         }//end try
-    }//end update()
+    }//end link()
 
     /**
-     * Remove a contact link.
+     * Unlink a calendar event from an object.
      *
-     * @param string $register  The register slug
-     * @param string $schema    The schema slug
-     * @param string $id        The object ID
-     * @param string $contactId The contact link ID
+     * @param string $register The register slug
+     * @param string $schema   The schema slug
+     * @param string $id       The object ID
+     * @param string $eventId  The event URI
      *
-     * @return JSONResponse
+     * @return JSONResponse JSON response confirming deletion
      *
      * @NoAdminRequired
      * @NoCSRFRequired
      */
-    public function destroy(string $register, string $schema, string $id, string $contactId): JSONResponse
+    public function destroy(string $register, string $schema, string $id, string $eventId): JSONResponse
     {
         try {
             $object = $this->validateObject($register, $schema, $id);
@@ -225,41 +206,29 @@ class ContactsController extends Controller
                 return new JSONResponse(['error' => 'Object not found'], 404);
             }
 
-            $this->contactService->unlinkContact((int) $contactId);
+            // Find the event in user's calendars to get calendarId.
+            $events     = $this->calendarEventService->getEventsForObject($object->getUuid());
+            $calendarId = null;
+            foreach ($events as $existingEvent) {
+                if ($existingEvent['id'] === $eventId) {
+                    $calendarId = $existingEvent['calendarId'];
+                    break;
+                }
+            }
+
+            if ($calendarId === null) {
+                return new JSONResponse(['error' => 'Event not found'], 404);
+            }
+
+            $this->calendarEventService->unlinkEvent($calendarId, $eventId);
 
             return new JSONResponse(['success' => true]);
         } catch (DoesNotExistException $e) {
             return new JSONResponse(['error' => 'Object not found'], 404);
         } catch (Exception $e) {
-            $code = $e->getCode();
-            if ($code === 404) {
-                return new JSONResponse(['error' => $e->getMessage()], 404);
-            }
-
             return new JSONResponse(['error' => $e->getMessage()], 400);
         }//end try
     }//end destroy()
-
-    /**
-     * Find all objects linked to a contact.
-     *
-     * @param string $contactUid The contact UID
-     *
-     * @return JSONResponse
-     *
-     * @NoAdminRequired
-     * @NoCSRFRequired
-     */
-    public function objects(string $contactUid): JSONResponse
-    {
-        try {
-            $results = $this->contactService->getObjectsForContact($contactUid);
-
-            return new JSONResponse(['results' => $results, 'total' => count($results)]);
-        } catch (Exception $e) {
-            return new JSONResponse(['error' => $e->getMessage()], 500);
-        }
-    }//end objects()
 
     /**
      * Validate that the object exists.
@@ -268,7 +237,7 @@ class ContactsController extends Controller
      * @param string $schema   The schema slug
      * @param string $id       The object ID
      *
-     * @return \OCA\OpenRegister\Db\ObjectEntity|null
+     * @return \OCA\OpenRegister\Db\ObjectEntity|null The object or null
      */
     private function validateObject(
         string $register,

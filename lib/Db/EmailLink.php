@@ -1,7 +1,7 @@
 <?php
 
 /**
- * EmailLink entity maps emails to OpenRegister objects.
+ * EmailLink entity for linking Nextcloud Mail messages to OpenRegister objects.
  *
  * @category Db
  * @package  OCA\OpenRegister\Db
@@ -26,8 +26,10 @@ use OCP\AppFramework\Db\Entity;
 /**
  * Class EmailLink
  *
- * Links a Nextcloud Mail message to an OpenRegister object.
- *
+ * @method string getObjectUuid()
+ * @method void setObjectUuid(string $objectUuid)
+ * @method int getRegisterId()
+ * @method void setRegisterId(int $registerId)
  * @method int getMailAccountId()
  * @method void setMailAccountId(int $mailAccountId)
  * @method int getMailMessageId()
@@ -38,99 +40,46 @@ use OCP\AppFramework\Db\Entity;
  * @method void setSubject(?string $subject)
  * @method string|null getSender()
  * @method void setSender(?string $sender)
- * @method string|null getMailDate()
- * @method void setMailDate(?string $mailDate)
- * @method string getObjectUuid()
- * @method void setObjectUuid(string $objectUuid)
- * @method int getRegisterId()
- * @method void setRegisterId(int $registerId)
- * @method int|null getSchemaId()
- * @method void setSchemaId(?int $schemaId)
- * @method string|null getLinkedBy()
- * @method void setLinkedBy(?string $linkedBy)
- * @method DateTime|null getLinkedAt()
- * @method void setLinkedAt(?DateTime $linkedAt)
+ * @method DateTime|null getDate()
+ * @method void setDate(?DateTime $date)
+ * @method string getLinkedBy()
+ * @method void setLinkedBy(string $linkedBy)
+ * @method DateTime getLinkedAt()
+ * @method void setLinkedAt(DateTime $linkedAt)
  *
- * @psalm-suppress PropertyNotSetInConstructor
+ * @psalm-suppress PropertyNotSetInConstructor $id is set by Nextcloud's Entity base class
  */
 class EmailLink extends Entity implements JsonSerializable
 {
 
-    /**
-     * The Nextcloud Mail account ID.
-     *
-     * @var integer|null
-     */
-    protected ?int $mailAccountId = null;
-
-    /**
-     * The Nextcloud Mail message ID.
-     *
-     * @var integer|null
-     */
-    protected ?int $mailMessageId = null;
-
-    /**
-     * The mail message UID (optional, for cross-referencing).
-     *
-     * @var string|null
-     */
-    protected ?string $mailMessageUid = null;
-
-    /**
-     * The email subject.
-     *
-     * @var string|null
-     */
-    protected ?string $subject = null;
-
-    /**
-     * The email sender address.
-     *
-     * @var string|null
-     */
-    protected ?string $sender = null;
-
-    /**
-     * The email date.
-     *
-     * @var string|null
-     */
-    protected ?string $mailDate = null;
-
-    /**
-     * The OpenRegister object UUID.
-     *
-     * @var string|null
-     */
+    /** @var string|null */
     protected ?string $objectUuid = null;
 
-    /**
-     * The register ID the object belongs to.
-     *
-     * @var integer|null
-     */
+    /** @var int|null */
     protected ?int $registerId = null;
 
-    /**
-     * The schema ID of the object (optional, resolved from object).
-     *
-     * @var integer|null
-     */
-    protected ?int $schemaId = null;
+    /** @var int|null */
+    protected ?int $mailAccountId = null;
 
-    /**
-     * The user who created the link.
-     *
-     * @var string|null
-     */
+    /** @var int|null */
+    protected ?int $mailMessageId = null;
+
+    /** @var string|null */
+    protected ?string $mailMessageUid = null;
+
+    /** @var string|null */
+    protected ?string $subject = null;
+
+    /** @var string|null */
+    protected ?string $sender = null;
+
+    /** @var DateTime|null */
+    protected ?DateTime $date = null;
+
+    /** @var string|null */
     protected ?string $linkedBy = null;
 
-    /**
-     * When the link was created.
-     *
-     * @var DateTime|null
-     */
+    /** @var DateTime|null */
     protected ?DateTime $linkedAt = null;
 
     /**
@@ -138,37 +87,35 @@ class EmailLink extends Entity implements JsonSerializable
      */
     public function __construct()
     {
-        $this->addType(fieldName: 'mailAccountId', type: 'integer');
-        $this->addType(fieldName: 'mailMessageId', type: 'integer');
-        $this->addType(fieldName: 'mailMessageUid', type: 'string');
-        $this->addType(fieldName: 'subject', type: 'string');
-        $this->addType(fieldName: 'sender', type: 'string');
-        $this->addType(fieldName: 'mailDate', type: 'string');
-        $this->addType(fieldName: 'objectUuid', type: 'string');
-        $this->addType(fieldName: 'registerId', type: 'integer');
-        $this->addType(fieldName: 'schemaId', type: 'integer');
-        $this->addType(fieldName: 'linkedBy', type: 'string');
-        $this->addType(fieldName: 'linkedAt', type: 'datetime');
+        $this->addType('objectUuid', 'string');
+        $this->addType('registerId', 'integer');
+        $this->addType('mailAccountId', 'integer');
+        $this->addType('mailMessageId', 'integer');
+        $this->addType('mailMessageUid', 'string');
+        $this->addType('subject', 'string');
+        $this->addType('sender', 'string');
+        $this->addType('date', 'datetime');
+        $this->addType('linkedBy', 'string');
+        $this->addType('linkedAt', 'datetime');
     }//end __construct()
 
     /**
      * JSON serialization.
      *
-     * @return array<string, mixed>
+     * @return array
      */
     public function jsonSerialize(): array
     {
         return [
             'id'             => $this->id,
+            'objectUuid'     => $this->objectUuid,
+            'registerId'     => $this->registerId,
             'mailAccountId'  => $this->mailAccountId,
             'mailMessageId'  => $this->mailMessageId,
             'mailMessageUid' => $this->mailMessageUid,
             'subject'        => $this->subject,
             'sender'         => $this->sender,
-            'mailDate'       => $this->mailDate,
-            'objectUuid'     => $this->objectUuid,
-            'registerId'     => $this->registerId,
-            'schemaId'       => $this->schemaId,
+            'date'           => $this->date?->format(DateTime::ATOM),
             'linkedBy'       => $this->linkedBy,
             'linkedAt'       => $this->linkedAt?->format(DateTime::ATOM),
         ];

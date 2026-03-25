@@ -1,237 +1,146 @@
 <?php
 
-declare(strict_types=1);
-
 namespace Unit\Service;
 
 use DateTime;
+use Exception;
 use OCA\OpenRegister\Db\EmailLink;
 use OCA\OpenRegister\Db\EmailLinkMapper;
-use OCA\OpenRegister\Db\Register;
-use OCA\OpenRegister\Db\RegisterMapper;
-use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\EmailService;
+use OCP\App\IAppManager;
+use OCP\IDBConnection;
+use OCP\IUser;
+use OCP\IUserSession;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 
-/**
- * Unit tests for EmailService.
- */
 class EmailServiceTest extends TestCase
 {
     private EmailLinkMapper&MockObject $emailLinkMapper;
-    private RegisterMapper&MockObject $registerMapper;
-    private SchemaMapper&MockObject $schemaMapper;
+    private IAppManager&MockObject $appManager;
+    private IDBConnection&MockObject $db;
+    private IUserSession&MockObject $userSession;
     private LoggerInterface&MockObject $logger;
     private EmailService $service;
 
     protected function setUp(): void
     {
         $this->emailLinkMapper = $this->createMock(EmailLinkMapper::class);
-        $this->registerMapper = $this->createMock(RegisterMapper::class);
-        $this->schemaMapper = $this->createMock(SchemaMapper::class);
+        $this->appManager = $this->createMock(IAppManager::class);
+        $this->db = $this->createMock(IDBConnection::class);
+        $this->userSession = $this->createMock(IUserSession::class);
         $this->logger = $this->createMock(LoggerInterface::class);
 
         $this->service = new EmailService(
             $this->emailLinkMapper,
-            $this->registerMapper,
-            $this->schemaMapper,
+            $this->appManager,
+            $this->db,
+            $this->userSession,
             $this->logger
         );
     }
 
-    private function createEmailLink(
-        int $id,
-        int $accountId,
-        int $messageId,
-        string $objectUuid,
-        int $registerId,
-        ?int $schemaId = null,
-        ?string $linkedBy = null
-    ): EmailLink {
+    private function createUser(string $uid): IUser&MockObject
+    {
+        $user = $this->createMock(IUser::class);
+        $user->method('getUID')->willReturn($uid);
+        return $user;
+    }
+
+    public function testIsMailAvailableReturnsTrueWhenEnabled(): void
+    {
+        $this->appManager->method('isEnabledForUser')->with('mail')->willReturn(true);
+        $this->assertTrue($this->service->isMailAvailable());
+    }
+
+    public function testIsMailAvailableReturnsFalseWhenDisabled(): void
+    {
+        $this->appManager->method('isEnabledForUser')->with('mail')->willReturn(false);
+        $this->assertFalse($this->service->isMailAvailable());
+    }
+
+    public function testGetEmailsForObjectReturnsResults(): void
+    {
         $link = new EmailLink();
-        $link->setId($id);
-        $link->setMailAccountId($accountId);
-        $link->setMailMessageId($messageId);
-        $link->setObjectUuid($objectUuid);
-        $link->setRegisterId($registerId);
-        $link->setSchemaId($schemaId);
-        $link->setLinkedBy($linkedBy);
-        $link->setLinkedAt(new DateTime('2026-03-20T14:30:00+00:00'));
-        return $link;
+        $link->setObjectUuid('abc-123');
+        $link->setSubject('Test');
+
+        $this->emailLinkMapper->method('findByObjectUuid')->with('abc-123', 10, 0)->willReturn([$link]);
+        $this->emailLinkMapper->method('countByObjectUuid')->with('abc-123')->willReturn(1);
+
+        $result = $this->service->getEmailsForObject('abc-123', 10, 0);
+
+        $this->assertSame(1, $result['total']);
+        $this->assertCount(1, $result['results']);
+        $this->assertSame('Test', $result['results'][0]['subject']);
     }
 
-    private function createRegisterMock(int $id, string $title): Register&MockObject
+    public function testGetEmailsForObjectReturnsEmpty(): void
     {
-        $register = $this->createMock(Register::class);
-        $register->method('getTitle')->willReturn($title);
-        return $register;
-    }
+        $this->emailLinkMapper->method('findByObjectUuid')->willReturn([]);
+        $this->emailLinkMapper->method('countByObjectUuid')->willReturn(0);
 
-    private function createSchemaMock(int $id, string $title): Schema&MockObject
-    {
-        $schema = $this->createMock(Schema::class);
-        $schema->method('getTitle')->willReturn($title);
-        return $schema;
-    }
-
-    public function testFindByMessageIdReturnsLinkedObjects(): void
-    {
-        $link1 = $this->createEmailLink(1, 1, 42, 'abc-123', 1, 3, 'admin');
-        $link2 = $this->createEmailLink(2, 1, 42, 'def-456', 1, 3, 'admin');
-
-        $this->emailLinkMapper->expects($this->once())
-            ->method('findByAccountAndMessage')
-            ->with(1, 42)
-            ->willReturn([$link1, $link2]);
-
-        $this->registerMapper->method('find')
-            ->with(1)
-            ->willReturn($this->createRegisterMock(1, 'Vergunningen'));
-
-        $this->schemaMapper->method('find')
-            ->with(3)
-            ->willReturn($this->createSchemaMock(3, 'Omgevingsvergunning'));
-
-        $result = $this->service->findByMessageId(1, 42);
-
-        $this->assertSame(2, $result['total']);
-        $this->assertCount(2, $result['results']);
-        $this->assertSame('abc-123', $result['results'][0]['objectUuid']);
-        $this->assertSame('Vergunningen', $result['results'][0]['registerTitle']);
-        $this->assertSame('Omgevingsvergunning', $result['results'][0]['schemaTitle']);
-    }
-
-    public function testFindByMessageIdReturnsEmptyWhenNoLinks(): void
-    {
-        $this->emailLinkMapper->expects($this->once())
-            ->method('findByAccountAndMessage')
-            ->with(1, 99)
-            ->willReturn([]);
-
-        $result = $this->service->findByMessageId(1, 99);
+        $result = $this->service->getEmailsForObject('nonexistent');
 
         $this->assertSame(0, $result['total']);
-        $this->assertEmpty($result['results']);
+        $this->assertSame([], $result['results']);
     }
 
-    public function testFindObjectsBySenderReturnsGroupedResults(): void
+    public function testLinkEmailThrowsOnDuplicate(): void
     {
-        $this->emailLinkMapper->expects($this->once())
-            ->method('findBySender')
-            ->with('burger@test.local')
-            ->willReturn([
-                ['object_uuid' => 'abc-123', 'register_id' => '1', 'schema_id' => '3', 'linked_email_count' => '2'],
-                ['object_uuid' => 'ghi-789', 'register_id' => '2', 'schema_id' => '5', 'linked_email_count' => '1'],
-            ]);
+        $existing = new EmailLink();
+        $this->emailLinkMapper->method('findByObjectAndMessage')->willReturn($existing);
 
-        $this->registerMapper->method('find')
-            ->willReturnCallback(function (int $id) {
-                return match ($id) {
-                    1 => $this->createRegisterMock(1, 'Vergunningen'),
-                    2 => $this->createRegisterMock(2, 'Meldingen'),
-                    default => throw new \Exception('Not found'),
-                };
-            });
+        $this->expectException(Exception::class);
+        $this->expectExceptionMessage('Email already linked to this object');
 
-        $this->schemaMapper->method('find')
-            ->willReturnCallback(function (int $id) {
-                return match ($id) {
-                    3 => $this->createSchemaMock(3, 'Omgevingsvergunning'),
-                    5 => $this->createSchemaMock(5, 'Melding'),
-                    default => throw new \Exception('Not found'),
-                };
-            });
-
-        $result = $this->service->findObjectsBySender('burger@test.local');
-
-        $this->assertSame(2, $result['total']);
-        $this->assertSame('abc-123', $result['results'][0]['objectUuid']);
-        $this->assertSame(2, $result['results'][0]['linkedEmailCount']);
-        $this->assertSame('ghi-789', $result['results'][1]['objectUuid']);
+        $this->service->linkEmail('abc-123', 5, 1, 42);
     }
 
-    public function testFindObjectsBySenderReturnsEmptyForUnknownSender(): void
+    public function testUnlinkEmailSuccess(): void
     {
-        $this->emailLinkMapper->expects($this->once())
-            ->method('findBySender')
-            ->with('unknown@example.com')
-            ->willReturn([]);
+        $link = new EmailLink();
+        $this->emailLinkMapper->method('find')->with(7)->willReturn($link);
+        $this->emailLinkMapper->expects($this->once())->method('delete')->with($link);
 
-        $result = $this->service->findObjectsBySender('unknown@example.com');
-
-        $this->assertSame(0, $result['total']);
-        $this->assertEmpty($result['results']);
+        $this->service->unlinkEmail(7);
     }
 
-    public function testQuickLinkCreatesNewLink(): void
+    public function testUnlinkEmailNotFound(): void
     {
-        $this->emailLinkMapper->expects($this->once())
-            ->method('findExistingLink')
-            ->with(1, 42, 'abc-123')
-            ->willReturn(null);
+        $this->emailLinkMapper->method('find')
+            ->willThrowException(new \OCP\AppFramework\Db\DoesNotExistException(''));
 
-        $this->emailLinkMapper->expects($this->once())
-            ->method('insert')
-            ->willReturnCallback(function (EmailLink $link) {
-                $link->setId(1);
-                return $link;
-            });
+        $this->expectException(Exception::class);
+        $this->expectExceptionMessage('Email link not found');
 
-        $this->registerMapper->method('find')
-            ->willReturn($this->createRegisterMock(1, 'Vergunningen'));
-        $this->schemaMapper->method('find')
-            ->willReturn($this->createSchemaMock(3, 'Omgevingsvergunning'));
-
-        $result = $this->service->quickLink([
-            'mailAccountId' => 1,
-            'mailMessageId' => 42,
-            'objectUuid' => 'abc-123',
-            'registerId' => 1,
-            'schemaId' => 3,
-            'linkedBy' => 'admin',
-        ]);
-
-        $this->assertSame(1, $result['linkId']);
-        $this->assertSame('abc-123', $result['objectUuid']);
-        $this->assertSame('Vergunningen', $result['registerTitle']);
+        $this->service->unlinkEmail(999);
     }
 
-    public function testQuickLinkThrowsOnDuplicate(): void
+    public function testSearchBySenderReturnLinks(): void
     {
-        $existing = $this->createEmailLink(1, 1, 42, 'abc-123', 1, 3);
+        $link = new EmailLink();
+        $link->setObjectUuid('abc-123');
+        $link->setSender('sender@test.local');
 
-        $this->emailLinkMapper->expects($this->once())
-            ->method('findExistingLink')
-            ->with(1, 42, 'abc-123')
-            ->willReturn($existing);
+        $this->emailLinkMapper->method('findBySender')->with('sender@test.local')->willReturn([$link]);
 
-        $this->expectException(\RuntimeException::class);
-        $this->expectExceptionCode(409);
+        $results = $this->service->searchBySender('sender@test.local');
 
-        $this->service->quickLink([
-            'mailAccountId' => 1,
-            'mailMessageId' => 42,
-            'objectUuid' => 'abc-123',
-            'registerId' => 1,
-        ]);
+        $this->assertCount(1, $results);
+        $this->assertSame('sender@test.local', $results[0]['sender']);
     }
 
-    public function testDeleteLinkCallsMapper(): void
+    public function testDeleteLinksForObject(): void
     {
-        $link = $this->createEmailLink(7, 1, 42, 'abc-123', 1);
-
         $this->emailLinkMapper->expects($this->once())
-            ->method('findById')
-            ->with(7)
-            ->willReturn($link);
+            ->method('deleteByObjectUuid')
+            ->with('abc-123')
+            ->willReturn(3);
 
-        $this->emailLinkMapper->expects($this->once())
-            ->method('delete')
-            ->with($link);
+        $count = $this->service->deleteLinksForObject('abc-123');
 
-        $this->service->deleteLink(7);
+        $this->assertSame(3, $count);
     }
 }

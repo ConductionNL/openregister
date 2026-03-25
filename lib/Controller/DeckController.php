@@ -1,9 +1,9 @@
 <?php
 
 /**
- * EmailsController
+ * DeckController
  *
- * REST controller for email relation operations on OpenRegister objects.
+ * REST controller for Deck card relation operations on OpenRegister objects.
  *
  * @category  Controller
  * @package   OCA\OpenRegister\Controller
@@ -19,7 +19,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Controller;
 
 use Exception;
-use OCA\OpenRegister\Service\EmailService;
+use OCA\OpenRegister\Service\DeckCardService;
 use OCA\OpenRegister\Service\ObjectService;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -27,23 +27,23 @@ use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
 
 /**
- * EmailsController handles email relation operations for objects in registers.
+ * DeckController handles Deck card relation operations for objects.
  *
  * @category Controller
  * @package  OCA\OpenRegister\Controller
  */
-class EmailsController extends Controller
+class DeckController extends Controller
 {
 
     /**
-     * Email service.
+     * Deck card service.
      *
-     * @var EmailService
+     * @var DeckCardService
      */
-    private readonly EmailService $emailService;
+    private readonly DeckCardService $deckCardService;
 
     /**
-     * Object service for object validation.
+     * Object service.
      *
      * @var ObjectService
      */
@@ -52,45 +52,42 @@ class EmailsController extends Controller
     /**
      * Constructor.
      *
-     * @param string        $appName       Application name
-     * @param IRequest      $request       HTTP request object
-     * @param EmailService  $emailService  Email service
-     * @param ObjectService $objectService Object service for object validation
+     * @param string          $appName         Application name
+     * @param IRequest        $request         HTTP request
+     * @param DeckCardService $deckCardService Deck card service
+     * @param ObjectService   $objectService   Object service
      *
      * @return void
      */
     public function __construct(
         string $appName,
         IRequest $request,
-        EmailService $emailService,
+        DeckCardService $deckCardService,
         ObjectService $objectService
     ) {
         parent::__construct($appName, $request);
 
-        $this->emailService  = $emailService;
-        $this->objectService = $objectService;
+        $this->deckCardService = $deckCardService;
+        $this->objectService   = $objectService;
     }//end __construct()
 
     /**
-     * List all email links for a specific object.
+     * List all Deck cards for a specific object.
      *
-     * @param string $register The register slug or identifier
-     * @param string $schema   The schema slug or identifier
-     * @param string $id       The ID of the object
+     * @param string $register The register slug
+     * @param string $schema   The schema slug
+     * @param string $id       The object ID
      *
-     * @return JSONResponse JSON response with email links
+     * @return JSONResponse
      *
      * @NoAdminRequired
      * @NoCSRFRequired
      */
-    public function index(
-        string $register,
-        string $schema,
-        string $id
-    ): JSONResponse {
-        if ($this->emailService->isMailAvailable() === false) {
+    public function index(string $register, string $schema, string $id): JSONResponse
+    {
+        if ($this->deckCardService->isDeckAvailable() === false) {
             return new JSONResponse(
-                ['error' => 'Nextcloud Mail app is not installed', 'code' => 'APP_NOT_AVAILABLE'],
+                ['error' => 'Nextcloud Deck app is not installed', 'code' => 'APP_NOT_AVAILABLE'],
                 501
             );
         }
@@ -101,40 +98,33 @@ class EmailsController extends Controller
                 return new JSONResponse(['error' => 'Object not found'], 404);
             }
 
-            $params = $this->request->getParams();
-            $limit  = isset($params['limit']) ? (int) $params['limit'] : null;
-            $offset = isset($params['offset']) ? (int) $params['offset'] : null;
-
-            $result = $this->emailService->getEmailsForObject($object->getUuid(), $limit, $offset);
+            $result = $this->deckCardService->getCardsForObject($object->getUuid());
 
             return new JSONResponse($result);
         } catch (DoesNotExistException $e) {
             return new JSONResponse(['error' => 'Object not found'], 404);
         } catch (Exception $e) {
             return new JSONResponse(['error' => $e->getMessage()], 500);
-        }//end try
+        }
     }//end index()
 
     /**
-     * Link an email to a specific object.
+     * Create or link a Deck card to an object.
      *
-     * @param string $register The register slug or identifier
-     * @param string $schema   The schema slug or identifier
-     * @param string $id       The ID of the object
+     * @param string $register The register slug
+     * @param string $schema   The schema slug
+     * @param string $id       The object ID
      *
-     * @return JSONResponse JSON response with the created email link
+     * @return JSONResponse
      *
      * @NoAdminRequired
      * @NoCSRFRequired
      */
-    public function create(
-        string $register,
-        string $schema,
-        string $id
-    ): JSONResponse {
-        if ($this->emailService->isMailAvailable() === false) {
+    public function create(string $register, string $schema, string $id): JSONResponse
+    {
+        if ($this->deckCardService->isDeckAvailable() === false) {
             return new JSONResponse(
-                ['error' => 'Nextcloud Mail app is not installed', 'code' => 'APP_NOT_AVAILABLE'],
+                ['error' => 'Nextcloud Deck app is not installed', 'code' => 'APP_NOT_AVAILABLE'],
                 501
             );
         }
@@ -147,18 +137,10 @@ class EmailsController extends Controller
 
             $data = $this->request->getParams();
 
-            if (empty($data['mailAccountId']) === true || empty($data['mailMessageId']) === true) {
-                return new JSONResponse(
-                    ['error' => 'mailAccountId and mailMessageId are required'],
-                    400
-                );
-            }
-
-            $link = $this->emailService->linkEmail(
+            $link = $this->deckCardService->linkOrCreateCard(
                 $object->getUuid(),
                 (int) $object->getRegister(),
-                (int) $data['mailAccountId'],
-                (int) $data['mailMessageId']
+                $data
             );
 
             return new JSONResponse($link->jsonSerialize(), 201);
@@ -179,27 +161,23 @@ class EmailsController extends Controller
     }//end create()
 
     /**
-     * Remove an email link from an object.
+     * Remove a Deck card link from an object.
      *
-     * @param string $register The register slug or identifier
-     * @param string $schema   The schema slug or identifier
-     * @param string $id       The ID of the object
-     * @param string $emailId  The email link ID
+     * @param string $register The register slug
+     * @param string $schema   The schema slug
+     * @param string $id       The object ID
+     * @param string $deckId   The deck link ID
      *
-     * @return JSONResponse JSON response confirming deletion
+     * @return JSONResponse
      *
      * @NoAdminRequired
      * @NoCSRFRequired
      */
-    public function destroy(
-        string $register,
-        string $schema,
-        string $id,
-        string $emailId
-    ): JSONResponse {
-        if ($this->emailService->isMailAvailable() === false) {
+    public function destroy(string $register, string $schema, string $id, string $deckId): JSONResponse
+    {
+        if ($this->deckCardService->isDeckAvailable() === false) {
             return new JSONResponse(
-                ['error' => 'Nextcloud Mail app is not installed', 'code' => 'APP_NOT_AVAILABLE'],
+                ['error' => 'Nextcloud Deck app is not installed', 'code' => 'APP_NOT_AVAILABLE'],
                 501
             );
         }
@@ -210,7 +188,7 @@ class EmailsController extends Controller
                 return new JSONResponse(['error' => 'Object not found'], 404);
             }
 
-            $this->emailService->unlinkEmail((int) $emailId);
+            $this->deckCardService->unlinkCard((int) $deckId);
 
             return new JSONResponse(['success' => true]);
         } catch (DoesNotExistException $e) {
@@ -226,46 +204,41 @@ class EmailsController extends Controller
     }//end destroy()
 
     /**
-     * Search email links by sender.
+     * Find all objects linked to cards on a board.
      *
-     * @return JSONResponse JSON response with matching email links
+     * @param string $boardId The board ID
+     *
+     * @return JSONResponse
      *
      * @NoAdminRequired
      * @NoCSRFRequired
      */
-    public function search(): JSONResponse
+    public function objects(string $boardId): JSONResponse
     {
-        if ($this->emailService->isMailAvailable() === false) {
+        if ($this->deckCardService->isDeckAvailable() === false) {
             return new JSONResponse(
-                ['error' => 'Nextcloud Mail app is not installed', 'code' => 'APP_NOT_AVAILABLE'],
+                ['error' => 'Nextcloud Deck app is not installed', 'code' => 'APP_NOT_AVAILABLE'],
                 501
             );
         }
 
         try {
-            $params = $this->request->getParams();
-            $sender = $params['sender'] ?? null;
-
-            if (empty($sender) === true) {
-                return new JSONResponse(['error' => 'sender parameter is required'], 400);
-            }
-
-            $results = $this->emailService->searchBySender($sender);
+            $results = $this->deckCardService->getObjectsForBoard((int) $boardId);
 
             return new JSONResponse(['results' => $results, 'total' => count($results)]);
         } catch (Exception $e) {
             return new JSONResponse(['error' => $e->getMessage()], 500);
         }
-    }//end search()
+    }//end objects()
 
     /**
-     * Validate that the object exists and return it.
+     * Validate that the object exists.
      *
-     * @param string $register The register slug or identifier
-     * @param string $schema   The schema slug or identifier
+     * @param string $register The register slug
+     * @param string $schema   The schema slug
      * @param string $id       The object ID
      *
-     * @return \OCA\OpenRegister\Db\ObjectEntity|null The object or null
+     * @return \OCA\OpenRegister\Db\ObjectEntity|null
      */
     private function validateObject(
         string $register,
