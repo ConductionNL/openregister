@@ -65,7 +65,7 @@ class DeepLinkRegistration
      *
      * @return string The resolved URL
      */
-    public function resolveUrl(array $objectData, array $contactContext = []): string
+    public function resolveUrl(array $objectData, array $contactContext=[]): string
     {
         $replacements = [
             '{uuid}'     => $objectData['uuid'] ?? '',

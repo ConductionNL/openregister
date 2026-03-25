@@ -381,11 +381,11 @@ class FileService
      * @param FileFormattingHandler     $fileFormatHandler    File formatting handler
      * @param DocumentProcessingHandler $docProcHandler       Document processing handler
      * @param FilePublishingHandler     $filePubHandler       File publishing handler
-     * @param FileVersioningHandler    $fileVerHandler       File versioning handler
-     * @param FileLockHandler          $fileLockHandler      File lock handler
-     * @param FileBatchHandler         $fileBatchHandler     File batch handler
-     * @param FilePreviewHandler       $filePreviewHandler   File preview handler
-     * @param FileAuditHandler         $fileAuditHandler     File audit handler
+     * @param FileVersioningHandler     $fileVerHandler       File versioning handler
+     * @param FileLockHandler           $fileLockHandler      File lock handler
+     * @param FileBatchHandler          $fileBatchHandler     File batch handler
+     * @param FilePreviewHandler        $filePreviewHandler   File preview handler
+     * @param FileAuditHandler          $fileAuditHandler     File audit handler
      *
      * @SuppressWarnings(PHPMD.ExcessiveParameterList) Nextcloud DI requires constructor injection
      */
@@ -1841,13 +1841,13 @@ class FileService
         $parent = $file->getParent();
         try {
             $parent->get($newName);
-            throw new Exception("A file with name \"" . $newName . "\" already exists for this object");
+            throw new Exception("A file with name \"".$newName."\" already exists for this object");
         } catch (\OCP\Files\NotFoundException $e) {
             // Name is available.
         }
 
         // Perform the rename via move in same folder.
-        $file->move($parent->getPath() . "/" . $newName);
+        $file->move($parent->getPath()."/".$newName);
 
         $this->logger->info(
             message: "[FileService] Renamed file {$fileId} to {$newName}",
@@ -1860,9 +1860,9 @@ class FileService
     /**
      * Copy a file to another object.
      *
-     * @param ObjectEntity $sourceObject  The source object entity.
-     * @param int          $fileId        The source file ID.
-     * @param ObjectEntity $targetObject  The target object entity.
+     * @param ObjectEntity $sourceObject The source object entity.
+     * @param int          $fileId       The source file ID.
+     * @param ObjectEntity $targetObject The target object entity.
      *
      * @return File The new file copy.
      *
@@ -1875,7 +1875,7 @@ class FileService
             throw new Exception("Source file not found");
         }
 
-        $content = $sourceFile->getContent();
+        $content  = $sourceFile->getContent();
         $fileName = $sourceFile->getName();
 
         // Use CreateFileHandler to create the file in target object folder.
@@ -1886,7 +1886,7 @@ class FileService
         );
 
         $this->logger->info(
-            message: "[FileService] Copied file {$fileId} from object {" . $sourceObject->getUuid() . "} to {" . $targetObject->getUuid() . "}",
+            message: "[FileService] Copied file {$fileId} from object {".$sourceObject->getUuid()."} to {".$targetObject->getUuid()."}",
             context: ["file" => __FILE__, "line" => __LINE__]
         );
 
@@ -1896,9 +1896,9 @@ class FileService
     /**
      * Move a file to another object (copy + delete source).
      *
-     * @param ObjectEntity $sourceObject  The source object entity.
-     * @param int          $fileId        The source file ID.
-     * @param ObjectEntity $targetObject  The target object entity.
+     * @param ObjectEntity $sourceObject The source object entity.
+     * @param int          $fileId       The source file ID.
+     * @param ObjectEntity $targetObject The target object entity.
      *
      * @return File The moved file.
      *
@@ -1910,13 +1910,13 @@ class FileService
         $this->fileLockHandler->assertCanModify($fileId);
 
         // Copy first.
-        $newFile = $this->copyFile($sourceObject, $fileId, $targetObject);
+        $newFile = $this->copyFile(sourceObject: $sourceObject, fileId: $fileId, targetObject: $targetObject);
 
         // Delete source.
         $this->deleteFile(file: $fileId, object: $sourceObject);
 
         $this->logger->info(
-            message: "[FileService] Moved file {$fileId} from object {" . $sourceObject->getUuid() . "} to {" . $targetObject->getUuid() . "}",
+            message: "[FileService] Moved file {$fileId} from object {".$sourceObject->getUuid()."} to {".$targetObject->getUuid()."}",
             context: ["file" => __FILE__, "line" => __LINE__]
         );
 

@@ -119,7 +119,7 @@ class RelationsController extends Controller
         ContactService $contactService,
         DeckCardService $deckCardService
     ) {
-        parent::__construct($appName, $request);
+        parent::__construct(appName: $appName, request: $request);
 
         $this->objectService        = $objectService;
         $this->noteService          = $noteService;
@@ -148,7 +148,7 @@ class RelationsController extends Controller
     public function index(string $register, string $schema, string $id): JSONResponse
     {
         try {
-            $object = $this->validateObject($register, $schema, $id);
+            $object = $this->validateObject(object: $register, schema: $schema, schemaObject: $id);
             if ($object === null) {
                 return new JSONResponse(['error' => 'Object not found'], 404);
             }
@@ -162,10 +162,10 @@ class RelationsController extends Controller
                 $typesFilter = array_map('trim', explode(',', $params['types']));
             }
 
-            $relations = $this->gatherRelations($objectUuid, $typesFilter);
+            $relations = $this->gatherRelations(objectUuid: $objectUuid, typesFilter: $typesFilter);
 
             if ($view === 'timeline') {
-                return new JSONResponse($this->buildTimeline($relations));
+                return new JSONResponse($this->buildTimeline(relations: $relations));
             }
 
             return new JSONResponse($relations);
@@ -272,8 +272,7 @@ class RelationsController extends Controller
                 $item['type'] = rtrim($type, 's');
 
                 // Normalize date for sorting.
-                $date = $item['date'] ?? $item['linkedAt'] ?? $item['createdAt']
-                    ?? $item['dtstart'] ?? $item['created'] ?? null;
+                $date = $item['date'] ?? $item['linkedAt'] ?? $item['createdAt'] ?? $item['dtstart'] ?? $item['created'] ?? null;
                 $item['_sortDate'] = $date;
 
                 $timeline[] = $item;
@@ -281,9 +280,12 @@ class RelationsController extends Controller
         }
 
         // Sort by date descending.
-        usort($timeline, static function (array $a, array $b): int {
-            return strcmp($b['_sortDate'] ?? '', $a['_sortDate'] ?? '');
-        });
+        usort(
+                $timeline,
+                static function (array $a, array $b): int {
+                    return strcmp($b['_sortDate'] ?? '', $a['_sortDate'] ?? '');
+                }
+                );
 
         // Remove sort key.
         foreach ($timeline as &$item) {

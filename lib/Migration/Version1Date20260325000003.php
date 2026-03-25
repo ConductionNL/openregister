@@ -43,7 +43,10 @@ class Version1Date20260325000003 extends SimpleMigrationStep
      */
     public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper
     {
-        /** @var ISchemaWrapper $schema */
+        /*
+         * @var ISchemaWrapper $schema
+         */
+
         $schema = $schemaClosure();
 
         $changed = false;
@@ -51,94 +54,174 @@ class Version1Date20260325000003 extends SimpleMigrationStep
         if ($schema->hasTable('openregister_approval_chains') === false) {
             $chainsTable = $schema->createTable('openregister_approval_chains');
 
-            $chainsTable->addColumn('id', Types::BIGINT, [
-                'autoincrement' => true,
-                'notnull'       => true,
-            ]);
-            $chainsTable->addColumn('uuid', Types::STRING, [
-                'notnull' => true,
-                'length'  => 36,
-            ]);
-            $chainsTable->addColumn('name', Types::STRING, [
-                'notnull' => true,
-                'length'  => 255,
-            ]);
-            $chainsTable->addColumn('schema_id', Types::BIGINT, [
-                'notnull' => true,
-            ]);
-            $chainsTable->addColumn('status_field', Types::STRING, [
-                'notnull' => true,
-                'length'  => 255,
-                'default' => 'status',
-            ]);
-            $chainsTable->addColumn('steps', Types::TEXT, [
-                'notnull' => true,
-            ]);
-            $chainsTable->addColumn('enabled', Types::BOOLEAN, [
-                'notnull' => true,
-                'default' => true,
-            ]);
-            $chainsTable->addColumn('created', Types::DATETIME, [
-                'notnull' => true,
-            ]);
-            $chainsTable->addColumn('updated', Types::DATETIME, [
-                'notnull' => true,
-            ]);
+            $chainsTable->addColumn(
+                    'id',
+                    Types::BIGINT,
+                    [
+                        'autoincrement' => true,
+                        'notnull'       => true,
+                    ]
+                    );
+            $chainsTable->addColumn(
+                    'uuid',
+                    Types::STRING,
+                    [
+                        'notnull' => true,
+                        'length'  => 36,
+                    ]
+                    );
+            $chainsTable->addColumn(
+                    'name',
+                    Types::STRING,
+                    [
+                        'notnull' => true,
+                        'length'  => 255,
+                    ]
+                    );
+            $chainsTable->addColumn(
+                    'schema_id',
+                    Types::BIGINT,
+                    [
+                        'notnull' => true,
+                    ]
+                    );
+            $chainsTable->addColumn(
+                    'status_field',
+                    Types::STRING,
+                    [
+                        'notnull' => true,
+                        'length'  => 255,
+                        'default' => 'status',
+                    ]
+                    );
+            $chainsTable->addColumn(
+                    'steps',
+                    Types::TEXT,
+                    [
+                        'notnull' => true,
+                    ]
+                    );
+            $chainsTable->addColumn(
+                    'enabled',
+                    Types::BOOLEAN,
+                    [
+                        'notnull' => true,
+                        'default' => true,
+                    ]
+                    );
+            $chainsTable->addColumn(
+                    'created',
+                    Types::DATETIME,
+                    [
+                        'notnull' => true,
+                    ]
+                    );
+            $chainsTable->addColumn(
+                    'updated',
+                    Types::DATETIME,
+                    [
+                        'notnull' => true,
+                    ]
+                    );
 
             $chainsTable->setPrimaryKey(['id']);
             $changed = true;
-        }
+        }//end if
 
         if ($schema->hasTable('openregister_approval_steps') === false) {
             $stepsTable = $schema->createTable('openregister_approval_steps');
 
-            $stepsTable->addColumn('id', Types::BIGINT, [
-                'autoincrement' => true,
-                'notnull'       => true,
-            ]);
-            $stepsTable->addColumn('uuid', Types::STRING, [
-                'notnull' => true,
-                'length'  => 36,
-            ]);
-            $stepsTable->addColumn('chain_id', Types::BIGINT, [
-                'notnull' => true,
-            ]);
-            $stepsTable->addColumn('object_uuid', Types::STRING, [
-                'notnull' => true,
-                'length'  => 36,
-            ]);
-            $stepsTable->addColumn('step_order', Types::INTEGER, [
-                'notnull' => true,
-            ]);
-            $stepsTable->addColumn('role', Types::STRING, [
-                'notnull' => true,
-                'length'  => 255,
-            ]);
-            $stepsTable->addColumn('status', Types::STRING, [
-                'notnull' => true,
-                'length'  => 20,
-                'default' => 'pending',
-            ]);
-            $stepsTable->addColumn('decided_by', Types::STRING, [
-                'notnull' => false,
-                'length'  => 255,
-            ]);
-            $stepsTable->addColumn('comment', Types::TEXT, [
-                'notnull' => false,
-            ]);
-            $stepsTable->addColumn('decided_at', Types::DATETIME, [
-                'notnull' => false,
-            ]);
-            $stepsTable->addColumn('created', Types::DATETIME, [
-                'notnull' => true,
-            ]);
+            $stepsTable->addColumn(
+                    'id',
+                    Types::BIGINT,
+                    [
+                        'autoincrement' => true,
+                        'notnull'       => true,
+                    ]
+                    );
+            $stepsTable->addColumn(
+                    'uuid',
+                    Types::STRING,
+                    [
+                        'notnull' => true,
+                        'length'  => 36,
+                    ]
+                    );
+            $stepsTable->addColumn(
+                    'chain_id',
+                    Types::BIGINT,
+                    [
+                        'notnull' => true,
+                    ]
+                    );
+            $stepsTable->addColumn(
+                    'object_uuid',
+                    Types::STRING,
+                    [
+                        'notnull' => true,
+                        'length'  => 36,
+                    ]
+                    );
+            $stepsTable->addColumn(
+                    'step_order',
+                    Types::INTEGER,
+                    [
+                        'notnull' => true,
+                    ]
+                    );
+            $stepsTable->addColumn(
+                    'role',
+                    Types::STRING,
+                    [
+                        'notnull' => true,
+                        'length'  => 255,
+                    ]
+                    );
+            $stepsTable->addColumn(
+                    'status',
+                    Types::STRING,
+                    [
+                        'notnull' => true,
+                        'length'  => 20,
+                        'default' => 'pending',
+                    ]
+                    );
+            $stepsTable->addColumn(
+                    'decided_by',
+                    Types::STRING,
+                    [
+                        'notnull' => false,
+                        'length'  => 255,
+                    ]
+                    );
+            $stepsTable->addColumn(
+                    'comment',
+                    Types::TEXT,
+                    [
+                        'notnull' => false,
+                    ]
+                    );
+            $stepsTable->addColumn(
+                    'decided_at',
+                    Types::DATETIME,
+                    [
+                        'notnull' => false,
+                    ]
+                    );
+            $stepsTable->addColumn(
+                    'created',
+                    Types::DATETIME,
+                    [
+                        'notnull' => true,
+                    ]
+                    );
 
             $stepsTable->setPrimaryKey(['id']);
             $stepsTable->addIndex(['chain_id', 'object_uuid'], 'or_apstep_chain_obj');
             $stepsTable->addIndex(['status'], 'or_apstep_status');
             $stepsTable->addIndex(['role'], 'or_apstep_role');
             $changed = true;
-        }
+        }//end if
 
         if ($changed === false) {
             return null;

@@ -45,12 +45,12 @@ class ActionService
      * @var array<string, string>
      */
     private const HOOK_EVENT_MAP = [
-        'creating'  => 'ObjectCreatingEvent',
-        'created'   => 'ObjectCreatedEvent',
-        'updating'  => 'ObjectUpdatingEvent',
-        'updated'   => 'ObjectUpdatedEvent',
-        'deleting'  => 'ObjectDeletingEvent',
-        'deleted'   => 'ObjectDeletedEvent',
+        'creating' => 'ObjectCreatingEvent',
+        'created'  => 'ObjectCreatedEvent',
+        'updating' => 'ObjectUpdatingEvent',
+        'updated'  => 'ObjectUpdatedEvent',
+        'deleting' => 'ObjectDeletingEvent',
+        'deleted'  => 'ObjectDeletedEvent',
     ];
 
     /**
@@ -125,7 +125,7 @@ class ActionService
 
         $action = $this->actionMapper->insert(entity: $action);
 
-        $this->eventDispatcher->dispatchTyped(new ActionCreatedEvent($action));
+        $this->eventDispatcher->dispatchTyped(new ActionCreatedEvent(action: $action));
 
         $this->logger->info(
             message: '[ActionService] Action created',
@@ -155,7 +155,7 @@ class ActionService
 
         $action = $this->actionMapper->update(entity: $action);
 
-        $this->eventDispatcher->dispatchTyped(new ActionUpdatedEvent($action));
+        $this->eventDispatcher->dispatchTyped(new ActionUpdatedEvent(action: $action));
 
         return $action;
     }//end updateAction()
@@ -179,7 +179,7 @@ class ActionService
 
         $action = $this->actionMapper->update(entity: $action);
 
-        $this->eventDispatcher->dispatchTyped(new ActionDeletedEvent($action));
+        $this->eventDispatcher->dispatchTyped(new ActionDeletedEvent(action: $action));
 
         $this->logger->info(
             message: '[ActionService] Action soft-deleted',
@@ -222,14 +222,13 @@ class ActionService
         $conditions    = $action->getFilterConditionArray();
         if (empty($conditions) === false) {
             foreach ($conditions as $key => $expected) {
-                $actual = $this->getNestedValue($samplePayload, $key);
+                $actual = $this->getNestedValue(array: $samplePayload, key: $key);
                 if (is_array($expected) === true) {
                     if (in_array($actual, $expected) === false) {
                         $filterMatch     = false;
-                        $filterReasons[] = "filter_condition mismatch: {$key} expected one of ["
-                            .implode(', ', $expected)."], got '{$actual}'";
+                        $filterReasons[] = "filter_condition mismatch: {$key} expected one of [".implode(', ', $expected)."], got '{$actual}'";
                     }
-                } elseif ($actual !== $expected) {
+                } else if ($actual !== $expected) {
                     $filterMatch     = false;
                     $filterReasons[] = "filter_condition mismatch: {$key} expected '{$expected}', got '{$actual}'";
                 }
@@ -239,14 +238,14 @@ class ActionService
         $matched = $eventMatch && $schemaMatch && $registerMatch && $filterMatch;
 
         return [
-            'matched'        => $matched,
-            'action'         => $action->jsonSerialize(),
-            'eventMatch'     => $eventMatch,
-            'schemaMatch'    => $schemaMatch,
-            'registerMatch'  => $registerMatch,
-            'filterMatch'    => $filterMatch,
-            'filterReasons'  => $filterReasons,
-            'builtPayload'   => $matched ? $samplePayload : null,
+            'matched'       => $matched,
+            'action'        => $action->jsonSerialize(),
+            'eventMatch'    => $eventMatch,
+            'schemaMatch'   => $schemaMatch,
+            'registerMatch' => $registerMatch,
+            'filterMatch'   => $filterMatch,
+            'filterReasons' => $filterReasons,
+            'builtPayload'  => $matched === true ? $samplePayload : null,
         ];
     }//end testAction()
 
@@ -289,10 +288,9 @@ class ActionService
 
                 $isDuplicate = false;
                 foreach ($existing as $existingAction) {
-                    if (
-                        $existingAction->getName() === $name
-                        && $existingAction->matchesEvent($eventType)
-                        && in_array($schemaUuid, $existingAction->getSchemasArray())
+                    if ($existingAction->getName() === $name
+                        && $existingAction->matchesEvent($eventType) === true
+                        && in_array($schemaUuid, $existingAction->getSchemasArray()) === true
                     ) {
                         $isDuplicate = true;
                         break;
@@ -304,18 +302,20 @@ class ActionService
                     continue;
                 }
 
-                $action = $this->createAction([
-                    'name'           => $name,
-                    'eventType'      => $eventType,
-                    'engine'         => $hook['engine'] ?? 'n8n',
-                    'workflowId'     => $hook['workflowId'] ?? '',
-                    'mode'           => $hook['mode'] ?? 'sync',
-                    'executionOrder' => $hook['order'] ?? 0,
-                    'timeout'        => $hook['timeout'] ?? 30,
-                    'onFailure'      => $hook['onFailure'] ?? 'reject',
-                    'schemas'        => [$schemaUuid],
-                    'status'         => 'active',
-                ]);
+                $action = $this->createAction(
+                        data: [
+                            'name'           => $name,
+                            'eventType'      => $eventType,
+                            'engine'         => $hook['engine'] ?? 'n8n',
+                            'workflowId'     => $hook['workflowId'] ?? '',
+                            'mode'           => $hook['mode'] ?? 'sync',
+                            'executionOrder' => $hook['order'] ?? 0,
+                            'timeout'        => $hook['timeout'] ?? 30,
+                            'onFailure'      => $hook['onFailure'] ?? 'reject',
+                            'schemas'        => [$schemaUuid],
+                            'status'         => 'active',
+                        ]
+                        );
 
                 $report['created'][] = $action->jsonSerialize();
             } catch (\Exception $e) {
