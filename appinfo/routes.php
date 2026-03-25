@@ -519,5 +519,11 @@ return [
 
 		// GraphQL Subscriptions (SSE).
 		['name' => 'graphQLSubscription#subscribe', 'url' => '/api/graphql/subscribe', 'verb' => 'GET'],
+
+		// Email Links - Reverse-lookup and quick-link for Mail sidebar.
+		['name' => 'emails#byMessage', 'url' => '/api/emails/by-message/{accountId}/{messageId}', 'verb' => 'GET', 'requirements' => ['accountId' => '\d+', 'messageId' => '\d+']],
+		['name' => 'emails#bySender', 'url' => '/api/emails/by-sender', 'verb' => 'GET'],
+		['name' => 'emails#quickLink', 'url' => '/api/emails/quick-link', 'verb' => 'POST'],
+		['name' => 'emails#deleteLink', 'url' => '/api/emails/{linkId}', 'verb' => 'DELETE', 'requirements' => ['linkId' => '\d+']],
     ],
 ];

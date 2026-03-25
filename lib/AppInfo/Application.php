@@ -119,7 +119,6 @@ use OCA\OpenRegister\Service\Schemas\SchemaCacheHandler;
 use OCA\OpenRegister\Command\SolrDebugCommand;
 use OCA\OpenRegister\Command\SolrManagementCommand;
 use OCA\OpenRegister\Service\Schemas\FacetCacheHandler;
-use OCA\OpenRegister\Reference\ObjectReferenceProvider;
 use OCA\OpenRegister\Search\ObjectsProvider;
 use OCA\OpenRegister\Service\DeepLinkRegistryService;
 use OCA\OpenRegister\Event\DeepLinkRegistrationEvent;
@@ -141,8 +140,9 @@ use OCA\OpenRegister\Listener\ObjectChangeListener;
 use OCA\OpenRegister\Listener\ObjectCleanupListener;
 use OCA\OpenRegister\Listener\ToolRegistrationListener;
 use OCA\OpenRegister\Listener\GraphQLSubscriptionListener;
-use OCA\OpenRegister\Listener\ActivityEventListener;
 use OCA\OpenRegister\Listener\WebhookEventListener;
+use OCA\OpenRegister\Listener\MailAppScriptListener;
+use OCP\AppFramework\Http\Events\BeforeTemplateRenderedEvent;
 use OCA\OpenRegister\Listener\HookListener;
 use OCA\OpenRegister\Service\NoteService;
 use OCA\OpenRegister\Service\TaskService;
@@ -198,7 +198,6 @@ use OCA\OpenRegister\Service\Configuration\PreviewHandler;
 use OCA\OpenRegister\Service\Configuration\UploadHandler as ConfigurationUploadHandler;
 use OCA\OpenRegister\Service\LanguageService;
 use OCA\OpenRegister\Middleware\LanguageMiddleware;
-use OCA\OpenRegister\Calendar\RegisterCalendarProvider;
 
 /**
  * Class Application
@@ -267,9 +266,6 @@ class Application extends App implements IBootstrap
         $this->registerVectorizationService(context: $context);
         $this->registerObjectInteractionServices(context: $context);
         $this->registerEventListeners(context: $context);
-
-        // Register calendar provider for virtual calendars from schema date fields.
-        $context->registerCalendarProvider(RegisterCalendarProvider::class);
     }//end register()
 
     /**
@@ -560,7 +556,6 @@ class Application extends App implements IBootstrap
         );
 
         $context->registerSearchProvider(ObjectsProvider::class);
-        $context->registerReferenceProvider(ObjectReferenceProvider::class);
     }//end registerConfigurationServices()
 
     /**
@@ -758,16 +753,8 @@ class Application extends App implements IBootstrap
         // ObjectCleanupListener cleans up notes and tasks when an object is deleted.
         $context->registerEventListener(ObjectDeletedEvent::class, ObjectCleanupListener::class);
 
-        // ActivityEventListener publishes Nextcloud Activity events for entity lifecycle.
-        $context->registerEventListener(ObjectCreatedEvent::class, ActivityEventListener::class);
-        $context->registerEventListener(ObjectUpdatedEvent::class, ActivityEventListener::class);
-        $context->registerEventListener(ObjectDeletedEvent::class, ActivityEventListener::class);
-        $context->registerEventListener(RegisterCreatedEvent::class, ActivityEventListener::class);
-        $context->registerEventListener(RegisterUpdatedEvent::class, ActivityEventListener::class);
-        $context->registerEventListener(RegisterDeletedEvent::class, ActivityEventListener::class);
-        $context->registerEventListener(SchemaCreatedEvent::class, ActivityEventListener::class);
-        $context->registerEventListener(SchemaUpdatedEvent::class, ActivityEventListener::class);
-        $context->registerEventListener(SchemaDeletedEvent::class, ActivityEventListener::class);
+        // MailAppScriptListener injects sidebar script into Nextcloud Mail app.
+        $context->registerEventListener(BeforeTemplateRenderedEvent::class, MailAppScriptListener::class);
     }//end registerEventListeners()
 
     /**
