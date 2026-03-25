@@ -140,6 +140,7 @@ use OCA\OpenRegister\Listener\ObjectChangeListener;
 use OCA\OpenRegister\Listener\ObjectCleanupListener;
 use OCA\OpenRegister\Listener\ToolRegistrationListener;
 use OCA\OpenRegister\Listener\GraphQLSubscriptionListener;
+use OCA\OpenRegister\Listener\ActivityEventListener;
 use OCA\OpenRegister\Listener\WebhookEventListener;
 use OCA\OpenRegister\Listener\HookListener;
 use OCA\OpenRegister\Service\NoteService;
@@ -750,6 +751,17 @@ class Application extends App implements IBootstrap
 
         // ObjectCleanupListener cleans up notes and tasks when an object is deleted.
         $context->registerEventListener(ObjectDeletedEvent::class, ObjectCleanupListener::class);
+
+        // ActivityEventListener publishes Nextcloud Activity events for entity lifecycle.
+        $context->registerEventListener(ObjectCreatedEvent::class, ActivityEventListener::class);
+        $context->registerEventListener(ObjectUpdatedEvent::class, ActivityEventListener::class);
+        $context->registerEventListener(ObjectDeletedEvent::class, ActivityEventListener::class);
+        $context->registerEventListener(RegisterCreatedEvent::class, ActivityEventListener::class);
+        $context->registerEventListener(RegisterUpdatedEvent::class, ActivityEventListener::class);
+        $context->registerEventListener(RegisterDeletedEvent::class, ActivityEventListener::class);
+        $context->registerEventListener(SchemaCreatedEvent::class, ActivityEventListener::class);
+        $context->registerEventListener(SchemaUpdatedEvent::class, ActivityEventListener::class);
+        $context->registerEventListener(SchemaDeletedEvent::class, ActivityEventListener::class);
     }//end registerEventListeners()
 
     /**
