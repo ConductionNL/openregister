@@ -876,7 +876,7 @@ export default {
 .cardHeader {
 	padding: 16px;
 	flex-wrap: wrap;
-    margin: 0;
+	margin: 0;
 }
 
 .cardHeader h2 {
@@ -935,24 +935,26 @@ export default {
 // style and clamping for registerDescription cannot be mixed due to odd behavior when using padding with clamping,
 // and margin is not a good substitution due to style changes.
 .registerDescription-container { // ensures style
-    padding: 16px;
-    margin: 0 0 12px 0;
-    font-size: 0.95em;
+	padding: 16px;
+	margin: 0 0 12px 0;
+	font-size: 0.95em;
 	line-height: 1.5;
-    background-color: var(--color-background-hover);
+	background-color: var(--color-background-hover);
 	color: var(--color-text-lighter);
-    cursor: pointer;
-    transition: max-height 0.3s ease;
+	cursor: pointer;
+	transition: max-height 0.3s ease;
 }
+
 .registerDescription-container:hover {
 	background-color: var(--color-background-dark);
 }
+
 .registerDescription { // does the clamping
-    display: -webkit-box;
-    -webkit-line-clamp: 3;
-    -webkit-box-orient: vertical;
-    overflow: hidden;
-    cursor: pointer;
+	display: -webkit-box;
+	-webkit-line-clamp: 3;
+	-webkit-box-orient: vertical;
+	overflow: hidden;
+	cursor: pointer;
 }
 
 .registerDescription--expanded {
