@@ -2,19 +2,19 @@
 
 ## Provider Registration & Bootstrap
 
-- [ ] Create `lib/Calendar/RegisterCalendarProvider.php` implementing `OCP\Calendar\ICalendarProvider`
+- [x] Create `lib/Calendar/RegisterCalendarProvider.php` implementing `OCP\Calendar\ICalendarProvider`
   - Inject `SchemaMapper`, `MagicMapper`, `MagicRbacHandler`, `IUserSession`, `LoggerInterface`
   - `getCalendars()` loads all schemas with `calendarProvider.enabled: true` in configuration
   - Returns one `RegisterCalendar` per enabled schema
   - Filters by `$calendarUris` when provided (match against `openregister-schema-{id}`)
   - Catches exceptions and returns empty array on error (logged as warning)
 
-- [ ] Register calendar provider in `lib/AppInfo/Application.php`
+- [x] Register calendar provider in `lib/AppInfo/Application.php`
   - Add `$context->registerCalendarProvider(RegisterCalendarProvider::class)` in the `register()` method
 
 ## Virtual Calendar Implementation
 
-- [ ] Create `lib/Calendar/RegisterCalendar.php` implementing `OCP\Calendar\ICalendar`
+- [x] Create `lib/Calendar/RegisterCalendar.php` implementing `OCP\Calendar\ICalendar`
   - Constructor: `Schema`, calendar config array, `MagicMapper`, `MagicRbacHandler`, `CalendarEventTransformer`, principal URI
   - `getKey()` returns `"openregister-schema-{schemaId}"`
   - `getUri()` returns `"openregister-schema-{schemaId}"`
@@ -23,7 +23,7 @@
   - `getPermissions()` returns `Constants::PERMISSION_READ`
   - `isDeleted()` returns `false`
 
-- [ ] Implement `RegisterCalendar::search()` method
+- [x] Implement `RegisterCalendar::search()` method
   - Extract timerange from `$options['timerange']['start']` and `$options['timerange']['end']`
   - Build MagicMapper query filtering on the configured `dtstart` field within the timerange
   - Apply RBAC filters via `MagicRbacHandler` using the stored principal URI
@@ -35,7 +35,7 @@
 
 ## Event Transformer
 
-- [ ] Create `lib/Calendar/CalendarEventTransformer.php`
+- [x] Create `lib/Calendar/CalendarEventTransformer.php`
   - `transform(ObjectEntity $object, Schema $schema, array $calendarConfig): array`
   - Generate stable UID: `"openregister-{schemaId}-{objectUuid}"`
   - Interpolate `titleTemplate` by replacing `{property}` placeholders with object data values
@@ -49,7 +49,7 @@
   - Set CATEGORIES to `["OpenRegister", schemaDisplayName]`
   - Set `calendar-key` and `calendar-uri` to `"openregister-schema-{schemaId}"`
 
-- [ ] Implement allDay auto-detection in transformer
+- [x] Implement allDay auto-detection in transformer
   - Check schema property format for the dtstart field
   - `format: date` -> allDay=true, VALUE=DATE
   - `format: date-time` -> allDay=false, VALUE=DATE-TIME
@@ -58,19 +58,19 @@
 
 ## Schema Configuration
 
-- [ ] Add `getCalendarProviderConfig(): ?array` convenience method to `lib/Db/Schema.php`
+- [x] Add `getCalendarProviderConfig(): ?array` convenience method to `lib/Db/Schema.php`
   - Extract `calendarProvider` section from the `configuration` JSON field
   - Return null if not present or `enabled` is false
   - Return the full config array when enabled
 
-- [ ] Add validation for calendar provider configuration in schema update logic
+- [x] Add validation for calendar provider configuration in schema update logic
   - When `calendarProvider.enabled` is true, require `dtstart` and `titleTemplate` fields
   - Return HTTP 400 with descriptive error if required fields are missing
   - Log a warning (but do not reject) if referenced property names don't exist in schema properties
 
 ## RBAC Integration
 
-- [ ] Integrate RBAC filtering in `RegisterCalendar::search()`
+- [x] Integrate RBAC filtering in `RegisterCalendar::search()`
   - Extract user ID from the stored principal URI (format: `principals/users/{userId}`)
   - Pass user context to MagicMapper queries to enforce row-level and schema-level access controls
   - Ensure admin users can see all objects
@@ -78,7 +78,7 @@
 
 ## Frontend: Schema Calendar Configuration Tab
 
-- [ ] Create `src/views/schemas/tabs/CalendarProviderTab.vue`
+- [x] Create `src/views/schema/CalendarProviderTab.vue`
   - Toggle switch for `calendarProvider.enabled`
   - Dropdown for `dtstart` (populated with date/datetime schema properties)
   - Dropdown for `dtend` (optional, populated with date/datetime schema properties)
@@ -91,20 +91,20 @@
   - Optional status mapping section (key-value pairs of object status -> VEVENT status)
   - Save button that PUTs the updated configuration to `/api/schemas/{id}`
 
-- [ ] Add CalendarProviderTab to schema detail view
-  - Import and register the tab in `src/views/schemas/SchemaDetail.vue`
+- [x] Add CalendarProviderTab to schema detail view
+  - Import and register the tab in `src/views/schema/SchemaDetails.vue`
   - Add "Calendar" tab label with calendar icon
   - Pass schema data and properties to the tab component
 
 ## Testing
 
-- [ ] Unit tests for `RegisterCalendarProvider`
+- [x] Unit tests for `RegisterCalendarProvider`
   - Test `getCalendars()` returns correct count of calendars for enabled schemas
   - Test `getCalendars()` with URI filter returns only matching calendars
   - Test `getCalendars()` returns empty array when no schemas are enabled
   - Test graceful error handling when schema loading fails
 
-- [ ] Unit tests for `RegisterCalendar`
+- [x] Unit tests for `RegisterCalendar`
   - Test metadata methods (`getKey`, `getUri`, `getDisplayName`, `getDisplayColor`, `getPermissions`, `isDeleted`)
   - Test fallback display name to schema title
   - Test default color when not configured
@@ -114,7 +114,7 @@
   - Test `search()` skips objects with null date fields
   - Test RBAC filtering excludes unauthorized objects
 
-- [ ] Unit tests for `CalendarEventTransformer`
+- [x] Unit tests for `CalendarEventTransformer`
   - Test all-day event transformation (VALUE=DATE)
   - Test datetime event transformation (VALUE=DATE-TIME)
   - Test title template interpolation with all fields present

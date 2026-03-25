@@ -1395,6 +1395,35 @@ class Schema extends Entity implements JsonSerializable
     }//end getConfiguration()
 
     /**
+     * Get the calendar provider configuration from the schema configuration
+     *
+     * Extracts the calendarProvider section from the configuration JSON.
+     * Returns null if not present or if enabled is false.
+     *
+     * @return array|null The calendar provider config array, or null if disabled/absent
+     */
+    public function getCalendarProviderConfig(): ?array
+    {
+        $configuration = $this->getConfiguration();
+
+        if ($configuration === null) {
+            return null;
+        }
+
+        $calendarConfig = $configuration['calendarProvider'] ?? null;
+
+        if ($calendarConfig === null || is_array($calendarConfig) === false) {
+            return null;
+        }
+
+        if (empty($calendarConfig['enabled']) === true) {
+            return null;
+        }
+
+        return $calendarConfig;
+    }//end getCalendarProviderConfig()
+
+    /**
      * Set the configuration for the schema with validation
      *
      * Validates and sets the configuration array for the schema.
@@ -1479,7 +1508,7 @@ class Schema extends Entity implements JsonSerializable
         $validatedConfig = [];
         $stringFields    = ['objectNameField', 'objectDescriptionField', 'objectSummaryField', 'objectImageField'];
         $boolFields      = ['allowFiles'];
-        $passThrough     = ['unique', 'facetCacheTtl'];
+        $passThrough     = ['unique', 'facetCacheTtl', 'calendarProvider'];
 
         foreach ($configuration as $key => $value) {
             if (in_array($key, $stringFields, true) === true) {
@@ -1499,6 +1528,12 @@ class Schema extends Entity implements JsonSerializable
                 continue;
             }
 
+            if ($key === 'calendarProvider' && is_array($value) === true) {
+                $this->validateCalendarProviderConfig($value);
+                $validatedConfig[$key] = $value;
+                continue;
+            }
+
             if (in_array($key, $passThrough, true) === true) {
                 $validatedConfig[$key] = $value;
             }
@@ -1506,6 +1541,38 @@ class Schema extends Entity implements JsonSerializable
 
         return $validatedConfig;
     }//end validateConfigurationArray()
+
+    /**
+     * Validate calendar provider configuration
+     *
+     * When calendarProvider.enabled is true, dtstart and titleTemplate are required.
+     * Warns (but does not reject) if referenced property names don't exist in schema properties.
+     *
+     * @param array $config The calendarProvider config array
+     *
+     * @throws InvalidArgumentException If required fields are missing when enabled
+     *
+     * @return void
+     */
+    private function validateCalendarProviderConfig(array $config): void
+    {
+        // Only validate required fields when enabled.
+        if (empty($config['enabled']) === true) {
+            return;
+        }
+
+        if (empty($config['dtstart']) === true) {
+            throw new InvalidArgumentException(
+                'calendarProvider.dtstart is required when calendar provider is enabled'
+            );
+        }
+
+        if (empty($config['titleTemplate']) === true) {
+            throw new InvalidArgumentException(
+                'calendarProvider.titleTemplate is required when calendar provider is enabled'
+            );
+        }
+    }//end validateCalendarProviderConfig()
 
     /**
      * Validate a string configuration value
