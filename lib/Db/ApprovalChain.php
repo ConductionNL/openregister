@@ -46,28 +46,60 @@ use OCP\AppFramework\Db\Entity;
 class ApprovalChain extends Entity implements JsonSerializable
 {
 
-    /** @var string|null */
+    /**
+     * The uuid.
+     *
+     * @var string|null
+     */
     protected ?string $uuid = null;
 
-    /** @var string|null */
+    /**
+     * The name.
+     *
+     * @var string|null
+     */
     protected ?string $name = null;
 
-    /** @var int|null */
+    /**
+     * The schema id.
+     *
+     * @var integer|null
+     */
     protected ?int $schemaId = null;
 
-    /** @var string|null */
+    /**
+     * The status field.
+     *
+     * @var string|null
+     */
     protected ?string $statusField = 'status';
 
-    /** @var string|null */
+    /**
+     * The steps.
+     *
+     * @var string|null
+     */
     protected ?string $steps = null;
 
-    /** @var bool */
+    /**
+     * The enabled.
+     *
+     * @var boolean
+     */
     protected bool $enabled = true;
 
-    /** @var DateTime|null */
+    /**
+     * The created.
+     *
+     * @var DateTime|null
+     */
     protected ?DateTime $created = null;
 
-    /** @var DateTime|null */
+    /**
+     * The updated.
+     *
+     * @var DateTime|null
+     */
     protected ?DateTime $updated = null;
 
     /**
@@ -109,13 +141,19 @@ class ApprovalChain extends Entity implements JsonSerializable
     public function hydrate(array $object): self
     {
         $fields = [
-            'uuid', 'name', 'schemaId', 'statusField',
-            'steps', 'enabled', 'created', 'updated',
+            'uuid',
+            'name',
+            'schemaId',
+            'statusField',
+            'steps',
+            'enabled',
+            'created',
+            'updated',
         ];
 
         foreach ($object as $key => $value) {
             if (in_array($key, $fields, true) === true) {
-                $setter = 'set' . ucfirst($key);
+                $setter = 'set'.ucfirst($key);
                 if ($key === 'steps' && is_array($value) === true) {
                     $value = json_encode($value);
                 }

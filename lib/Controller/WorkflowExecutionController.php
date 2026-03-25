@@ -35,10 +35,10 @@ class WorkflowExecutionController extends Controller
     /**
      * Constructor for WorkflowExecutionController.
      *
-     * @param string                   $appName         App name
-     * @param IRequest                 $request         Request
-     * @param WorkflowExecutionMapper  $executionMapper Execution mapper
-     * @param LoggerInterface          $logger          Logger
+     * @param string                  $appName         App name
+     * @param IRequest                $request         Request
+     * @param WorkflowExecutionMapper $executionMapper Execution mapper
+     * @param LoggerInterface         $logger          Logger
      */
     public function __construct(
         string $appName,
@@ -99,12 +99,14 @@ class WorkflowExecutionController extends Controller
         $results = $this->executionMapper->findAll($filters, $limit, $offset);
         $total   = $this->executionMapper->countAll($filters);
 
-        return new JSONResponse([
-            'results' => array_map(fn ($e) => $e->jsonSerialize(), $results),
-            'total'   => $total,
-            'limit'   => $limit,
-            'offset'  => $offset,
-        ]);
+        return new JSONResponse(
+                [
+                    'results' => array_map(fn ($e) => $e->jsonSerialize(), $results),
+                    'total'   => $total,
+                    'limit'   => $limit,
+                    'offset'  => $offset,
+                ]
+                );
     }//end index()
 
     /**

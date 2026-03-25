@@ -37,7 +37,7 @@ document.addEventListener('DOMContentLoaded', () => {
 		name: t('openregister', 'Register Objects'),
 		icon: databaseOutlineIcon,
 
-		async mount(el, fileInfo, context) {
+		async mount(el, fileInfo, _context) {
 			if (el._registerObjectsVm) {
 				el._registerObjectsVm.$destroy()
 			}
@@ -80,7 +80,7 @@ document.addEventListener('DOMContentLoaded', () => {
 		name: t('openregister', 'Extraction'),
 		icon: textBoxSearchOutlineIcon,
 
-		async mount(el, fileInfo, context) {
+		async mount(el, fileInfo, _context) {
 			if (el._extractionVm) {
 				el._extractionVm.$destroy()
 			}

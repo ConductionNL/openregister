@@ -403,7 +403,7 @@ class UserController extends Controller
         try {
             $currentUser = $this->userService->getCurrentUser();
             if ($currentUser === null) {
-                return $this->errorResponse('Not authenticated', 401);
+                return $this->errorResponse(message: 'Not authenticated', statusCode: 401);
             }
 
             // Rate limiting.
@@ -425,14 +425,14 @@ class UserController extends Controller
             $newPassword     = $data['newPassword'] ?? '';
 
             if ($currentPassword === '' || $newPassword === '') {
-                return $this->errorResponse('Both currentPassword and newPassword are required', 400);
+                return $this->errorResponse(message: 'Both currentPassword and newPassword are required', statusCode: 400);
             }
 
             $result   = $this->userService->changePassword($currentUser, $currentPassword, $newPassword);
             $response = new JSONResponse(data: $result);
             return $this->securityService->addSecurityHeaders(response: $response);
         } catch (\RuntimeException $e) {
-            $code = $e->getCode() ?: 500;
+            $code = ($e->getCode() !== 0 ? $e->getCode() : 500);
             if ($code === 403) {
                 $clientIp = $this->securityService->getClientIpAddress(request: $this->request);
                 $this->securityService->recordFailedLoginAttempt(
@@ -442,10 +442,10 @@ class UserController extends Controller
                 );
             }
 
-            return $this->errorResponse($e->getMessage(), $code);
+            return $this->errorResponse(message: $e->getMessage(), statusCode: $code);
         } catch (Exception $e) {
-            $this->logError('Failed to change password', $e);
-            return $this->errorResponse('Failed to change password', 500);
+            $this->logError(message: 'Failed to change password', exception: $e);
+            return $this->errorResponse(message: 'Failed to change password', statusCode: 500);
         }//end try
     }//end changePassword()
 
@@ -463,7 +463,7 @@ class UserController extends Controller
         try {
             $currentUser = $this->userService->getCurrentUser();
             if ($currentUser === null) {
-                return $this->errorResponse('Not authenticated', 401);
+                return $this->errorResponse(message: 'Not authenticated', statusCode: 401);
             }
 
             // Read the uploaded file data from the request body.
@@ -472,17 +472,17 @@ class UserController extends Controller
             $size     = strlen($data);
 
             if ($size === 0) {
-                return $this->errorResponse('No image data provided', 400);
+                return $this->errorResponse(message: 'No image data provided', statusCode: 400);
             }
 
             $result   = $this->userService->uploadAvatar($currentUser, $data, $mimeType, $size);
             $response = new JSONResponse(data: $result);
             return $this->securityService->addSecurityHeaders(response: $response);
         } catch (\RuntimeException $e) {
-            return $this->errorResponse($e->getMessage(), $e->getCode() ?: 500);
+            return $this->errorResponse(message: $e->getMessage(), statusCode: ($e->getCode() !== 0 ? $e->getCode() : 500));
         } catch (Exception $e) {
-            $this->logError('Failed to upload avatar', $e);
-            return $this->errorResponse('Failed to upload avatar', 500);
+            $this->logError(message: 'Failed to upload avatar', exception: $e);
+            return $this->errorResponse(message: 'Failed to upload avatar', statusCode: 500);
         }//end try
     }//end uploadAvatar()
 
@@ -500,17 +500,17 @@ class UserController extends Controller
         try {
             $currentUser = $this->userService->getCurrentUser();
             if ($currentUser === null) {
-                return $this->errorResponse('Not authenticated', 401);
+                return $this->errorResponse(message: 'Not authenticated', statusCode: 401);
             }
 
             $result   = $this->userService->deleteAvatar($currentUser);
             $response = new JSONResponse(data: $result);
             return $this->securityService->addSecurityHeaders(response: $response);
         } catch (\RuntimeException $e) {
-            return $this->errorResponse($e->getMessage(), $e->getCode() ?: 500);
+            return $this->errorResponse(message: $e->getMessage(), statusCode: ($e->getCode() !== 0 ? $e->getCode() : 500));
         } catch (Exception $e) {
-            $this->logError('Failed to delete avatar', $e);
-            return $this->errorResponse('Failed to delete avatar', 500);
+            $this->logError(message: 'Failed to delete avatar', exception: $e);
+            return $this->errorResponse(message: 'Failed to delete avatar', statusCode: 500);
         }//end try
     }//end deleteAvatar()
 
@@ -528,27 +528,27 @@ class UserController extends Controller
         try {
             $currentUser = $this->userService->getCurrentUser();
             if ($currentUser === null) {
-                return $this->errorResponse('Not authenticated', 401);
+                return $this->errorResponse(message: 'Not authenticated', statusCode: 401);
             }
 
             $exportData = $this->userService->exportPersonalData($currentUser);
 
-            $filename = 'openregister-export-' . $currentUser->getUID() . '-' . date('Y-m-d') . '.json';
+            $filename = 'openregister-export-'.$currentUser->getUID().'-'.date('Y-m-d').'.json';
             $json     = json_encode($exportData, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
 
             return new DataDownloadResponse($json, $filename, 'application/json');
         } catch (\RuntimeException $e) {
-            $code = $e->getCode() ?: 500;
+            $code = ($e->getCode() !== 0 ? $e->getCode() : 500);
             if ($code === 429) {
                 $errorData = json_decode($e->getMessage(), true);
                 $response  = new JSONResponse(data: $errorData ?? ['error' => $e->getMessage()], statusCode: 429);
                 return $this->securityService->addSecurityHeaders(response: $response);
             }
 
-            return $this->errorResponse($e->getMessage(), $code);
+            return $this->errorResponse(message: $e->getMessage(), statusCode: $code);
         } catch (Exception $e) {
-            $this->logError('Failed to export data', $e);
-            return $this->errorResponse('Failed to export data', 500);
+            $this->logError(message: 'Failed to export data', exception: $e);
+            return $this->errorResponse(message: 'Failed to export data', statusCode: 500);
         }//end try
     }//end exportData()
 
@@ -566,15 +566,15 @@ class UserController extends Controller
         try {
             $currentUser = $this->userService->getCurrentUser();
             if ($currentUser === null) {
-                return $this->errorResponse('Not authenticated', 401);
+                return $this->errorResponse(message: 'Not authenticated', statusCode: 401);
             }
 
             $prefs    = $this->userService->getNotificationPreferences($currentUser);
             $response = new JSONResponse(data: $prefs);
             return $this->securityService->addSecurityHeaders(response: $response);
         } catch (Exception $e) {
-            $this->logError('Failed to get notification preferences', $e);
-            return $this->errorResponse('Failed to get notification preferences', 500);
+            $this->logError(message: 'Failed to get notification preferences', exception: $e);
+            return $this->errorResponse(message: 'Failed to get notification preferences', statusCode: 500);
         }//end try
     }//end getNotificationPreferences()
 
@@ -592,7 +592,7 @@ class UserController extends Controller
         try {
             $currentUser = $this->userService->getCurrentUser();
             if ($currentUser === null) {
-                return $this->errorResponse('Not authenticated', 401);
+                return $this->errorResponse(message: 'Not authenticated', statusCode: 401);
             }
 
             $data = $this->request->getParams();
@@ -608,10 +608,10 @@ class UserController extends Controller
             $response = new JSONResponse(data: $prefs);
             return $this->securityService->addSecurityHeaders(response: $response);
         } catch (\InvalidArgumentException $e) {
-            return $this->errorResponse($e->getMessage(), 400);
+            return $this->errorResponse(message: $e->getMessage(), statusCode: 400);
         } catch (Exception $e) {
-            $this->logError('Failed to update notification preferences', $e);
-            return $this->errorResponse('Failed to update notification preferences', 500);
+            $this->logError(message: 'Failed to update notification preferences', exception: $e);
+            return $this->errorResponse(message: 'Failed to update notification preferences', statusCode: 500);
         }//end try
     }//end updateNotificationPreferences()
 
@@ -629,7 +629,7 @@ class UserController extends Controller
         try {
             $currentUser = $this->userService->getCurrentUser();
             if ($currentUser === null) {
-                return $this->errorResponse('Not authenticated', 401);
+                return $this->errorResponse(message: 'Not authenticated', statusCode: 401);
             }
 
             $limit  = (int) ($this->request->getParam('_limit', '25'));
@@ -642,8 +642,8 @@ class UserController extends Controller
             $response = new JSONResponse(data: $activity);
             return $this->securityService->addSecurityHeaders(response: $response);
         } catch (Exception $e) {
-            $this->logError('Failed to get activity', $e);
-            return $this->errorResponse('Failed to get activity history', 500);
+            $this->logError(message: 'Failed to get activity', exception: $e);
+            return $this->errorResponse(message: 'Failed to get activity history', statusCode: 500);
         }//end try
     }//end getActivity()
 
@@ -661,15 +661,15 @@ class UserController extends Controller
         try {
             $currentUser = $this->userService->getCurrentUser();
             if ($currentUser === null) {
-                return $this->errorResponse('Not authenticated', 401);
+                return $this->errorResponse(message: 'Not authenticated', statusCode: 401);
             }
 
             $tokens   = $this->userService->listApiTokens($currentUser);
             $response = new JSONResponse(data: $tokens);
             return $this->securityService->addSecurityHeaders(response: $response);
         } catch (Exception $e) {
-            $this->logError('Failed to list tokens', $e);
-            return $this->errorResponse('Failed to list tokens', 500);
+            $this->logError(message: 'Failed to list tokens', exception: $e);
+            return $this->errorResponse(message: 'Failed to list tokens', statusCode: 500);
         }//end try
     }//end listTokens()
 
@@ -687,7 +687,7 @@ class UserController extends Controller
         try {
             $currentUser = $this->userService->getCurrentUser();
             if ($currentUser === null) {
-                return $this->errorResponse('Not authenticated', 401);
+                return $this->errorResponse(message: 'Not authenticated', statusCode: 401);
             }
 
             $data      = $this->request->getParams();
@@ -695,47 +695,46 @@ class UserController extends Controller
             $expiresIn = $data['expiresIn'] ?? null;
 
             if ($name === '') {
-                return $this->errorResponse('Token name is required', 400);
+                return $this->errorResponse(message: 'Token name is required', statusCode: 400);
             }
 
             $token    = $this->userService->createApiToken($currentUser, $name, $expiresIn);
             $response = new JSONResponse(data: $token, statusCode: 201);
             return $this->securityService->addSecurityHeaders(response: $response);
         } catch (\RuntimeException $e) {
-            return $this->errorResponse($e->getMessage(), $e->getCode() ?: 500);
+            return $this->errorResponse(message: $e->getMessage(), statusCode: ($e->getCode() !== 0 ? $e->getCode() : 500));
         } catch (Exception $e) {
-            $this->logError('Failed to create token', $e);
-            return $this->errorResponse('Failed to create token', 500);
+            $this->logError(message: 'Failed to create token', exception: $e);
+            return $this->errorResponse(message: 'Failed to create token', statusCode: 500);
         }//end try
     }//end createToken()
 
     /**
      * Revoke an API token for the current user
      *
-     * @NoAdminRequired
-     *
-     * @NoCSRFRequired
-     *
      * @param string $id The token ID to revoke
      *
      * @return JSONResponse JSON response with result
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
      */
     public function revokeToken(string $id): JSONResponse
     {
         try {
             $currentUser = $this->userService->getCurrentUser();
             if ($currentUser === null) {
-                return $this->errorResponse('Not authenticated', 401);
+                return $this->errorResponse(message: 'Not authenticated', statusCode: 401);
             }
 
             $result   = $this->userService->revokeApiToken($currentUser, $id);
             $response = new JSONResponse(data: $result);
             return $this->securityService->addSecurityHeaders(response: $response);
         } catch (\RuntimeException $e) {
-            return $this->errorResponse($e->getMessage(), $e->getCode() ?: 500);
+            return $this->errorResponse(message: $e->getMessage(), statusCode: ($e->getCode() !== 0 ? $e->getCode() : 500));
         } catch (Exception $e) {
-            $this->logError('Failed to revoke token', $e);
-            return $this->errorResponse('Failed to revoke token', 500);
+            $this->logError(message: 'Failed to revoke token', exception: $e);
+            return $this->errorResponse(message: 'Failed to revoke token', statusCode: 500);
         }//end try
     }//end revokeToken()
 
@@ -753,7 +752,7 @@ class UserController extends Controller
         try {
             $currentUser = $this->userService->getCurrentUser();
             if ($currentUser === null) {
-                return $this->errorResponse('Not authenticated', 401);
+                return $this->errorResponse(message: 'Not authenticated', statusCode: 401);
             }
 
             $data   = $this->request->getParams();
@@ -763,17 +762,17 @@ class UserController extends Controller
             $response = new JSONResponse(data: $result);
             return $this->securityService->addSecurityHeaders(response: $response);
         } catch (\RuntimeException $e) {
-            $code = $e->getCode() ?: 500;
+            $code = ($e->getCode() !== 0 ? $e->getCode() : 500);
             if ($code === 409) {
                 $errorData = json_decode($e->getMessage(), true);
                 $response  = new JSONResponse(data: $errorData ?? ['error' => $e->getMessage()], statusCode: 409);
                 return $this->securityService->addSecurityHeaders(response: $response);
             }
 
-            return $this->errorResponse($e->getMessage(), $code);
+            return $this->errorResponse(message: $e->getMessage(), statusCode: $code);
         } catch (Exception $e) {
-            $this->logError('Failed to request deactivation', $e);
-            return $this->errorResponse('Failed to request deactivation', 500);
+            $this->logError(message: 'Failed to request deactivation', exception: $e);
+            return $this->errorResponse(message: 'Failed to request deactivation', statusCode: 500);
         }//end try
     }//end requestDeactivation()
 
@@ -791,15 +790,15 @@ class UserController extends Controller
         try {
             $currentUser = $this->userService->getCurrentUser();
             if ($currentUser === null) {
-                return $this->errorResponse('Not authenticated', 401);
+                return $this->errorResponse(message: 'Not authenticated', statusCode: 401);
             }
 
             $status   = $this->userService->getDeactivationStatus($currentUser);
             $response = new JSONResponse(data: $status);
             return $this->securityService->addSecurityHeaders(response: $response);
         } catch (Exception $e) {
-            $this->logError('Failed to get deactivation status', $e);
-            return $this->errorResponse('Failed to get deactivation status', 500);
+            $this->logError(message: 'Failed to get deactivation status', exception: $e);
+            return $this->errorResponse(message: 'Failed to get deactivation status', statusCode: 500);
         }//end try
     }//end getDeactivationStatus()
 
@@ -817,17 +816,17 @@ class UserController extends Controller
         try {
             $currentUser = $this->userService->getCurrentUser();
             if ($currentUser === null) {
-                return $this->errorResponse('Not authenticated', 401);
+                return $this->errorResponse(message: 'Not authenticated', statusCode: 401);
             }
 
             $result   = $this->userService->cancelDeactivation($currentUser);
             $response = new JSONResponse(data: $result);
             return $this->securityService->addSecurityHeaders(response: $response);
         } catch (\RuntimeException $e) {
-            return $this->errorResponse($e->getMessage(), $e->getCode() ?: 500);
+            return $this->errorResponse(message: $e->getMessage(), statusCode: ($e->getCode() !== 0 ? $e->getCode() : 500));
         } catch (Exception $e) {
-            $this->logError('Failed to cancel deactivation', $e);
-            return $this->errorResponse('Failed to cancel deactivation', 500);
+            $this->logError(message: 'Failed to cancel deactivation', exception: $e);
+            return $this->errorResponse(message: 'Failed to cancel deactivation', statusCode: 500);
         }//end try
     }//end cancelDeactivation()
 
@@ -859,7 +858,7 @@ class UserController extends Controller
     private function logError(string $message, Exception $exception): void
     {
         $this->logger->error(
-            message: '[UserController] ' . $message,
+            message: '[UserController] '.$message,
             context: [
                 'file'          => __FILE__,
                 'line'          => __LINE__,

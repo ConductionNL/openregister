@@ -102,19 +102,19 @@ class FileBatchHandler
         ObjectEntity $object,
         string $action,
         array $fileIds,
-        array $params = []
+        array $params=[]
     ): array {
         // Validate action.
         if (in_array($action, self::ALLOWED_ACTIONS, true) === false) {
             throw new Exception(
-                'Invalid batch action. Allowed: ' . implode(', ', self::ALLOWED_ACTIONS)
+                'Invalid batch action. Allowed: '.implode(', ', self::ALLOWED_ACTIONS)
             );
         }
 
         // Validate batch size.
         if (count($fileIds) > self::MAX_BATCH_SIZE) {
             throw new Exception(
-                'Batch operations are limited to ' . self::MAX_BATCH_SIZE . ' files per request'
+                'Batch operations are limited to '.self::MAX_BATCH_SIZE.' files per request'
             );
         }
 
@@ -128,14 +128,14 @@ class FileBatchHandler
 
         foreach ($fileIds as $fileId) {
             try {
-                $this->executeAction($object, $action, (int) $fileId, $params);
+                $this->executeAction(object: $object, action: $action, fileId: (int) $fileId, params: $params);
                 $results[] = ['fileId' => $fileId, 'success' => true];
                 $succeeded++;
             } catch (Exception $e) {
                 $results[] = ['fileId' => $fileId, 'success' => false, 'error' => $e->getMessage()];
                 $failed++;
                 $this->logger->warning(
-                    message: "[FileBatchHandler] Batch {$action} failed for file {$fileId}: " . $e->getMessage(),
+                    message: "[FileBatchHandler] Batch {$action} failed for file {$fileId}: ".$e->getMessage(),
                     context: ['file' => __FILE__, 'line' => __LINE__]
                 );
             }//end try

@@ -1155,7 +1155,6 @@ class ObjectService
             // ContactMatchingService not available — skip cache invalidation.
         }
 
-
         // Render and return the saved object.
         return $this->renderHandler->renderEntity(
             entity: $savedObject,

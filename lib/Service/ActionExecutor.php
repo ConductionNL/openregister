@@ -64,9 +64,9 @@ class ActionExecutor
     /**
      * Execute a list of matching actions for an event
      *
-     * @param Action[] $actions Sorted actions to execute
-     * @param Event    $event   The triggering event
-     * @param array    $payload Event payload data
+     * @param Action[] $actions   Sorted actions to execute
+     * @param Event    $event     The triggering event
+     * @param array    $payload   Event payload data
      * @param string   $eventType Event type string
      *
      * @return void
@@ -125,7 +125,7 @@ class ActionExecutor
             if ($action->getMode() === 'async') {
                 // Fire-and-forget: execute but don't process response for event modification.
                 try {
-                    $result = $engine->execute(
+                    $result   = $engine->execute(
                         $action->getWorkflowId(),
                         $cloudEventPayload,
                         $action->getTimeout()
@@ -197,11 +197,11 @@ class ActionExecutor
     public function buildCloudEventPayload(Action $action, array $payload, string $eventType): array
     {
         return [
-            'specversion' => '1.0',
-            'type'        => 'nl.openregister.action.'.$eventType,
-            'source'      => '/openregister/actions/'.$action->getUuid(),
-            'id'          => \Symfony\Component\Uid\Uuid::v4()->toRfc4122(),
-            'time'        => (new \DateTime())->format('c'),
+            'specversion'     => '1.0',
+            'type'            => 'nl.openregister.action.'.$eventType,
+            'source'          => '/openregister/actions/'.$action->getUuid(),
+            'id'              => \Symfony\Component\Uid\Uuid::v4()->toRfc4122(),
+            'time'            => (new \DateTime())->format('c'),
             'datacontenttype' => 'application/json',
             'data'            => $payload,
             'action'          => [
@@ -261,14 +261,17 @@ class ActionExecutor
         $failureMode = $action->getOnFailure();
 
         if ($failureMode === 'queue' || $action->getOnEngineDown() === 'queue') {
-            $this->jobList->add(ActionRetryJob::class, [
-                'action_id'    => $action->getId(),
-                'payload'      => $payload,
-                'attempt'      => 2,
-                'max_retries'  => $action->getMaxRetries(),
-                'retry_policy' => $action->getRetryPolicy(),
-                'error'        => $error,
-            ]);
+            $this->jobList->add(
+                    ActionRetryJob::class,
+                    [
+                        'action_id'    => $action->getId(),
+                        'payload'      => $payload,
+                        'attempt'      => 2,
+                        'max_retries'  => $action->getMaxRetries(),
+                        'retry_policy' => $action->getRetryPolicy(),
+                        'error'        => $error,
+                    ]
+                    );
 
             $this->logger->info(
                 message: '[ActionExecutor] Failed action queued for retry',
@@ -280,13 +283,13 @@ class ActionExecutor
     /**
      * Create an ActionLog entry for an execution
      *
-     * @param Action      $action    The action that was executed
-     * @param string      $eventType Event type
-     * @param array       $payload   Request payload
-     * @param array|null  $response  Response payload
-     * @param string      $status    Execution status
+     * @param Action      $action     The action that was executed
+     * @param string      $eventType  Event type
+     * @param array       $payload    Request payload
+     * @param array|null  $response   Response payload
+     * @param string      $status     Execution status
      * @param int         $durationMs Duration in milliseconds
-     * @param string|null $error     Error message if failed
+     * @param string|null $error      Error message if failed
      *
      * @return void
      *
@@ -307,8 +310,8 @@ class ActionExecutor
             $log->setActionUuid($action->getUuid());
             $log->setEventType($eventType);
             $log->setObjectUuid($payload['data']['object']['uuid'] ?? $payload['objectUuid'] ?? null);
-            $log->setSchemaId(isset($payload['data']['schema']) ? (int) $payload['data']['schema'] : null);
-            $log->setRegisterId(isset($payload['data']['register']) ? (int) $payload['data']['register'] : null);
+            $log->setSchemaId(isset($payload['data']['schema']) === true ? (int) $payload['data']['schema'] : null);
+            $log->setRegisterId(isset($payload['data']['register']) === true ? (int) $payload['data']['register'] : null);
             $log->setEngine($action->getEngine());
             $log->setWorkflowId($action->getWorkflowId());
             $log->setStatus($status);
@@ -323,6 +326,6 @@ class ActionExecutor
                 message: '[ActionExecutor] Failed to create action log entry',
                 context: ['error' => $e->getMessage()]
             );
-        }
+        }//end try
     }//end createLogEntry()
 }//end class

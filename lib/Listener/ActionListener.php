@@ -43,8 +43,8 @@ class ActionListener implements IEventListener
     /**
      * Constructor
      *
-     * @param ActionMapper   $actionMapper   Action mapper for finding matching actions
-     * @param ActionExecutor $actionExecutor Action executor for running actions
+     * @param ActionMapper    $actionMapper   Action mapper for finding matching actions
+     * @param ActionExecutor  $actionExecutor Action executor for running actions
      * @param LoggerInterface $logger         Logger
      */
     public function __construct(
@@ -73,10 +73,10 @@ class ActionListener implements IEventListener
 
         try {
             // Determine event type from class name (short name).
-            $eventType = $this->getEventTypeName($event);
+            $eventType = $this->getEventTypeName(event: $event);
 
             // Extract payload from event.
-            $payload      = $this->extractPayload($event);
+            $payload      = $this->extractPayload(event: $event);
             $schemaUuid   = $payload['schemaUuid'] ?? null;
             $registerUuid = $payload['registerUuid'] ?? null;
 
@@ -92,7 +92,7 @@ class ActionListener implements IEventListener
             }
 
             // Apply filter_condition matching.
-            $filteredActions = $this->applyFilterConditions($actions, $payload);
+            $filteredActions = $this->applyFilterConditions(actions: $actions, payload: $payload);
 
             if (empty($filteredActions) === true) {
                 return;
@@ -240,13 +240,13 @@ class ActionListener implements IEventListener
                     }
 
                     foreach ($conditions as $key => $expected) {
-                        $actual = $this->getNestedValue($payload, $key);
+                        $actual = $this->getNestedValue(array: $payload, key: $key);
 
                         if (is_array($expected) === true) {
                             if (in_array($actual, $expected) === false) {
                                 return false;
                             }
-                        } elseif ($actual !== $expected) {
+                        } else if ($actual !== $expected) {
                             return false;
                         }
                     }
