@@ -1326,7 +1326,14 @@
         "Consumer not found": "Consumer not found",
         "Backend parameter is required": "Backend parameter is required",
         "Failed to get database information: %s": "Failed to get database information: %s",
-        "SOLR setup error: %s": "SOLR setup error: %s",
-        "Reindex failed: %s": "Reindex failed: %s"
+        "Reindex failed: %s": "Reindex failed: %s",
+        "View in OpenRegister": "View in OpenRegister",
+        "No matching entities found": "No matching entities found",
+        "Contact matching": "Contact matching",
+        "At least email or name must be provided": "At least email or name must be provided",
+        "Internal server error": "Internal server error",
+        "Match by email": "Match by email",
+        "Match by name": "Match by name",
+        "Match by organization": "Match by organization"
     }
 }

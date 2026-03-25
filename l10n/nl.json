@@ -1326,7 +1326,14 @@
         "Consumer not found": "Consumer niet gevonden",
         "Backend parameter is required": "Backend-parameter is vereist",
         "Failed to get database information: %s": "Database-informatie ophalen mislukt: %s",
-        "SOLR setup error: %s": "SOLR-installatiefout: %s",
-        "Reindex failed: %s": "Herindexering mislukt: %s"
+        "Reindex failed: %s": "Herindexering mislukt: %s",
+        "View in OpenRegister": "Bekijk in OpenRegister",
+        "No matching entities found": "Geen gekoppelde entiteiten gevonden",
+        "Contact matching": "Contact koppeling",
+        "At least email or name must be provided": "Ten minste e-mail of naam is vereist",
+        "Internal server error": "Interne serverfout",
+        "Match by email": "Koppeling via e-mail",
+        "Match by name": "Koppeling via naam",
+        "Match by organization": "Koppeling via organisatie"
     }
 }
