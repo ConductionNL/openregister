@@ -978,7 +978,7 @@ class UserService
 
         return [
             'success'   => true,
-            'avatarUrl' => '/avatar/' . $userId . '/128',
+            'avatarUrl' => '/avatar/'.$userId.'/128',
         ];
     }//end uploadAvatar()
 
@@ -1029,16 +1029,18 @@ class UserService
         $userId = $user->getUID();
 
         // Check rate limit.
-        $lastExport = $this->config->getUserValue($userId, self::APP_NAME, 'last_export_time', '0');
+        $lastExport      = $this->config->getUserValue($userId, self::APP_NAME, 'last_export_time', '0');
         $timeSinceExport = time() - (int) $lastExport;
 
         if ($timeSinceExport < self::EXPORT_RATE_LIMIT) {
             $retryAfter = self::EXPORT_RATE_LIMIT - $timeSinceExport;
             throw new \RuntimeException(
-                json_encode([
-                    'error'       => 'Data export is limited to once per hour',
-                    'retry_after' => $retryAfter,
-                ]),
+                json_encode(
+                        [
+                            'error'       => 'Data export is limited to once per hour',
+                            'retry_after' => $retryAfter,
+                        ]
+                        ),
                 429
             );
         }
@@ -1047,10 +1049,10 @@ class UserService
         $this->config->setUserValue($userId, self::APP_NAME, 'last_export_time', (string) time());
 
         // Build profile data.
-        $profile = $this->buildUserDataArray($user);
+        $profile = $this->buildUserDataArray(user: $user);
 
         // Get audit trail entries.
-        $auditData = $this->auditTrailMapper->findByActor($userId, 1000, 0);
+        $auditData  = $this->auditTrailMapper->findByActor($userId, 1000, 0);
         $auditTrail = array_map(
             function ($entry) {
                 return $entry->jsonSerialize();
@@ -1082,7 +1084,7 @@ class UserService
         $prefs  = [];
 
         foreach (self::DEFAULT_NOTIFICATION_PREFS as $key => $defaultValue) {
-            $stored = $this->config->getUserValue($userId, self::APP_NAME, 'notification_' . $key, '');
+            $stored = $this->config->getUserValue($userId, self::APP_NAME, 'notification_'.$key, '');
 
             if ($stored === '') {
                 $prefs[$key] = $defaultValue;
@@ -1131,12 +1133,12 @@ class UserService
                 continue;
             }
 
-            $storeValue = is_bool($value) ? ($value ? 'true' : 'false') : (string) $value;
-            $this->config->setUserValue($userId, self::APP_NAME, 'notification_' . $key, $storeValue);
+            $storeValue = is_bool($value) === true ? ($value === true ? 'true' : 'false') : (string) $value;
+            $this->config->setUserValue($userId, self::APP_NAME, 'notification_'.$key, $storeValue);
         }
 
         // Return complete preferences.
-        return $this->getNotificationPreferences($user);
+        return $this->getNotificationPreferences(user: $user);
     }//end setNotificationPreferences()
 
     /**
@@ -1155,11 +1157,11 @@ class UserService
      */
     public function getUserActivity(
         IUser $user,
-        int $limit = 25,
-        int $offset = 0,
-        ?string $type = null,
-        ?string $from = null,
-        ?string $to = null
+        int $limit=25,
+        int $offset=0,
+        ?string $type=null,
+        ?string $from=null,
+        ?string $to=null
     ): array {
         $data = $this->auditTrailMapper->findByActor(
             $user->getUID(),
@@ -1174,13 +1176,13 @@ class UserService
             function ($entry) {
                 $serialized = $entry->jsonSerialize();
                 return [
-                    'id'          => $serialized['id'] ?? null,
-                    'type'        => $serialized['action'] ?? null,
-                    'objectUuid'  => $serialized['objectUuid'] ?? null,
-                    'register'    => $serialized['register'] ?? null,
-                    'schema'      => $serialized['schema'] ?? null,
-                    'timestamp'   => $serialized['created'] ?? null,
-                    'summary'     => ($serialized['action'] ?? 'action') . ' on object',
+                    'id'         => $serialized['id'] ?? null,
+                    'type'       => $serialized['action'] ?? null,
+                    'objectUuid' => $serialized['objectUuid'] ?? null,
+                    'register'   => $serialized['register'] ?? null,
+                    'schema'     => $serialized['schema'] ?? null,
+                    'timestamp'  => $serialized['created'] ?? null,
+                    'summary'    => ($serialized['action'] ?? 'action').' on object',
                 ];
             },
             $data['results']
@@ -1205,14 +1207,14 @@ class UserService
      *
      * @throws \RuntimeException If maximum tokens reached
      */
-    public function createApiToken(IUser $user, string $name, ?string $expiresIn = null): array
+    public function createApiToken(IUser $user, string $name, ?string $expiresIn=null): array
     {
         $userId = $user->getUID();
-        $tokens = $this->getStoredTokens($userId);
+        $tokens = $this->getStoredTokens(userId: $userId);
 
         if (count($tokens) >= self::MAX_TOKENS) {
             throw new \RuntimeException(
-                'Maximum number of API tokens (' . self::MAX_TOKENS . ') reached. Revoke an existing token first.',
+                'Maximum number of API tokens ('.self::MAX_TOKENS.') reached. Revoke an existing token first.',
                 400
             );
         }
@@ -1224,10 +1226,10 @@ class UserService
         // Calculate expiration.
         $expires = null;
         if ($expiresIn !== null && $expiresIn !== '') {
-            $expires = $this->parseExpiration($expiresIn);
+            $expires = $this->parseExpiration(expiresIn: $expiresIn);
         }
 
-        $now = date('c');
+        $now       = date('c');
         $tokenData = [
             'id'       => $tokenId,
             'name'     => $name,
@@ -1239,7 +1241,7 @@ class UserService
         ];
 
         $tokens[$tokenId] = $tokenData;
-        $this->storeTokens($userId, $tokens);
+        $this->storeTokens(userId: $userId, tokens: $tokens);
 
         return [
             'id'      => $tokenId,
@@ -1259,21 +1261,23 @@ class UserService
      */
     public function listApiTokens(IUser $user): array
     {
-        $tokens = $this->getStoredTokens($user->getUID());
+        $tokens = $this->getStoredTokens(userId: $user->getUID());
 
-        return array_values(array_map(
+        return array_values(
+                array_map(
             function ($token) {
                 return [
                     'id'       => $token['id'],
                     'name'     => $token['name'],
-                    'preview'  => '****' . ($token['preview'] ?? ''),
+                    'preview'  => '****'.($token['preview'] ?? ''),
                     'created'  => $token['created'],
                     'lastUsed' => $token['lastUsed'] ?? null,
                     'expires'  => $token['expires'] ?? null,
                 ];
             },
-            $tokens
-        ));
+                $tokens
+        )
+                );
     }//end listApiTokens()
 
     /**
@@ -1289,14 +1293,14 @@ class UserService
     public function revokeApiToken(IUser $user, string $tokenId): array
     {
         $userId = $user->getUID();
-        $tokens = $this->getStoredTokens($userId);
+        $tokens = $this->getStoredTokens(userId: $userId);
 
         if (isset($tokens[$tokenId]) === false) {
             throw new \RuntimeException('Token not found', 404);
         }
 
         unset($tokens[$tokenId]);
-        $this->storeTokens($userId, $tokens);
+        $this->storeTokens(userId: $userId, tokens: $tokens);
 
         return [
             'success' => true,
@@ -1316,7 +1320,7 @@ class UserService
      *
      * @throws \RuntimeException If duplicate request exists
      */
-    public function requestDeactivation(IUser $user, string $reason = ''): array
+    public function requestDeactivation(IUser $user, string $reason=''): array
     {
         $userId = $user->getUID();
 
@@ -1325,15 +1329,17 @@ class UserService
         if ($existing !== '') {
             $existingData = json_decode($existing, true);
             throw new \RuntimeException(
-                json_encode([
-                    'error'       => 'A deactivation request is already pending',
-                    'requestedAt' => $existingData['requestedAt'] ?? null,
-                ]),
+                json_encode(
+                        [
+                            'error'       => 'A deactivation request is already pending',
+                            'requestedAt' => $existingData['requestedAt'] ?? null,
+                        ]
+                        ),
                 409
             );
         }
 
-        $now = date('c');
+        $now         = date('c');
         $requestData = [
             'status'      => 'pending',
             'reason'      => $reason,
@@ -1458,7 +1464,7 @@ class UserService
 
         $interval = $intervalMap[$unit] ?? 'days';
         $date     = new \DateTime();
-        $date->modify('+' . $value . ' ' . $interval);
+        $date->modify('+'.$value.' '.$interval);
 
         return $date->format('c');
     }//end parseExpiration()

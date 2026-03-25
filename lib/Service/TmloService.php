@@ -59,10 +59,10 @@ class TmloService
     /**
      * Valid values for archiefstatus field
      */
-    public const ARCHIEFSTATUS_ACTIEF         = 'actief';
-    public const ARCHIEFSTATUS_SEMI_STATISCH  = 'semi_statisch';
-    public const ARCHIEFSTATUS_OVERGEBRACHT   = 'overgebracht';
-    public const ARCHIEFSTATUS_VERNIETIGD     = 'vernietigd';
+    public const ARCHIEFSTATUS_ACTIEF        = 'actief';
+    public const ARCHIEFSTATUS_SEMI_STATISCH = 'semi_statisch';
+    public const ARCHIEFSTATUS_OVERGEBRACHT  = 'overgebracht';
+    public const ARCHIEFSTATUS_VERNIETIGD    = 'vernietigd';
 
     /**
      * MDTO XML namespace
@@ -117,7 +117,6 @@ class TmloService
         self::ARCHIEFSTATUS_VERNIETIGD    => [],
     ];
 
-
     /**
      * Constructor.
      *
@@ -132,7 +131,6 @@ class TmloService
     ) {
     }//end __construct()
 
-
     /**
      * Check if TMLO is enabled for a given register.
      *
@@ -145,7 +143,6 @@ class TmloService
         $config = $register->getConfiguration();
         return ($config['tmloEnabled'] ?? false) === true;
     }//end isTmloEnabled()
-
 
     /**
      * Get TMLO defaults from a schema's configuration.
@@ -164,7 +161,6 @@ class TmloService
         return ($config['tmloDefaults'] ?? []);
     }//end getSchemaDefaults()
 
-
     /**
      * Populate TMLO defaults on an object entity.
      *
@@ -180,7 +176,7 @@ class TmloService
      */
     public function populateDefaults(ObjectEntity $object, Register $register, Schema $schema): ObjectEntity
     {
-        if ($this->isTmloEnabled($register) === false) {
+        if ($this->isTmloEnabled(register: $register) === false) {
             return $object;
         }
 
@@ -191,7 +187,7 @@ class TmloService
         }
 
         // Get schema-level defaults.
-        $defaults = $this->getSchemaDefaults($schema);
+        $defaults = $this->getSchemaDefaults(schema: $schema);
 
         // Merge defaults: only fill in fields that are not already set.
         foreach (self::TMLO_FIELDS as $field) {
@@ -207,14 +203,13 @@ class TmloService
 
         // Calculate archiefactiedatum from bewaarTermijn if not explicitly set.
         if (($tmlo['archiefactiedatum'] ?? null) === null && ($tmlo['bewaarTermijn'] ?? null) !== null) {
-            $tmlo['archiefactiedatum'] = $this->calculateArchiefactiedatum($tmlo['bewaarTermijn']);
+            $tmlo['archiefactiedatum'] = $this->calculateArchiefactiedatum(duration: $tmlo['bewaarTermijn']);
         }
 
         $object->setTmlo($tmlo);
 
         return $object;
     }//end populateDefaults()
-
 
     /**
      * Calculate archiefactiedatum from an ISO-8601 duration string.
@@ -239,7 +234,6 @@ class TmloService
         }
     }//end calculateArchiefactiedatum()
 
-
     /**
      * Validate TMLO field values.
      *
@@ -258,8 +252,7 @@ class TmloService
             && $tmlo['archiefnominatie'] !== null
             && in_array($tmlo['archiefnominatie'], self::VALID_ARCHIEFNOMINATIE, true) === false
         ) {
-            $errors[] = 'archiefnominatie must be one of: '.implode(', ', self::VALID_ARCHIEFNOMINATIE)
-                .'. Got: '.$tmlo['archiefnominatie'];
+            $errors[] = 'archiefnominatie must be one of: '.implode(', ', self::VALID_ARCHIEFNOMINATIE).'. Got: '.$tmlo['archiefnominatie'];
         }
 
         // Validate archiefstatus.
@@ -267,8 +260,7 @@ class TmloService
             && $tmlo['archiefstatus'] !== null
             && in_array($tmlo['archiefstatus'], self::VALID_ARCHIEFSTATUS, true) === false
         ) {
-            $errors[] = 'archiefstatus must be one of: '.implode(', ', self::VALID_ARCHIEFSTATUS)
-                .'. Got: '.$tmlo['archiefstatus'];
+            $errors[] = 'archiefstatus must be one of: '.implode(', ', self::VALID_ARCHIEFSTATUS).'. Got: '.$tmlo['archiefstatus'];
         }
 
         // Validate bewaarTermijn as ISO-8601 duration.
@@ -276,8 +268,7 @@ class TmloService
             try {
                 new DateInterval($tmlo['bewaarTermijn']);
             } catch (Exception $e) {
-                $errors[] = 'bewaarTermijn must be a valid ISO-8601 duration (e.g., P7Y, P5Y6M). Got: '
-                    .$tmlo['bewaarTermijn'];
+                $errors[] = 'bewaarTermijn must be a valid ISO-8601 duration (e.g., P7Y, P5Y6M). Got: '.$tmlo['bewaarTermijn'];
             }
         }
 
@@ -285,14 +276,12 @@ class TmloService
         if (isset($tmlo['archiefactiedatum']) === true && $tmlo['archiefactiedatum'] !== null) {
             $date = DateTime::createFromFormat('Y-m-d', $tmlo['archiefactiedatum']);
             if ($date === false || $date->format('Y-m-d') !== $tmlo['archiefactiedatum']) {
-                $errors[] = 'archiefactiedatum must be a valid ISO-8601 date (YYYY-MM-DD). Got: '
-                    .$tmlo['archiefactiedatum'];
+                $errors[] = 'archiefactiedatum must be a valid ISO-8601 date (YYYY-MM-DD). Got: '.$tmlo['archiefactiedatum'];
             }
         }
 
         return $errors;
     }//end validateFieldValues()
-
 
     /**
      * Validate an archival status transition.
@@ -302,7 +291,7 @@ class TmloService
      * 2. Required fields are present for the target status
      * 3. archiefnominatie matches the target status
      *
-     * @param array  $tmlo     The full TMLO metadata (with new archiefstatus)
+     * @param array  $tmlo      The full TMLO metadata (with new archiefstatus)
      * @param string $oldStatus The current/old archiefstatus
      *
      * @return array Array of validation errors (empty if valid)
@@ -320,9 +309,8 @@ class TmloService
         // Check if the transition is allowed.
         $allowedTargets = (self::VALID_TRANSITIONS[$oldStatus] ?? []);
         if (in_array($newStatus, $allowedTargets, true) === false) {
-            $errors[] = "Transition from '{$oldStatus}' to '{$newStatus}' is not allowed. "
-                ."Allowed transitions from '{$oldStatus}': "
-                .(empty($allowedTargets) === true ? 'none (terminal state)' : implode(', ', $allowedTargets));
+            $allowed  = (empty($allowedTargets) === true ? 'none (terminal state)' : implode(', ', $allowedTargets));
+            $errors[] = "Transition from '{$oldStatus}' to '{$newStatus}' is not allowed. Allowed transitions from '{$oldStatus}': {$allowed}";
             return $errors;
         }
 
@@ -357,7 +345,6 @@ class TmloService
         return $errors;
     }//end validateStatusTransition()
 
-
     /**
      * Generate MDTO-compliant XML for a single object.
      *
@@ -379,12 +366,11 @@ class TmloService
         $dom = new DOMDocument('1.0', 'UTF-8');
         $dom->formatOutput = true;
 
-        $root = $this->createMdtoObjectElement($dom, $object, $tmlo);
+        $root = $this->createMdtoObjectElement(dom: $dom, object: $object, tmlo: $tmlo);
         $dom->appendChild($root);
 
         return $dom->saveXML();
     }//end generateMdtoXml()
-
 
     /**
      * Generate MDTO-compliant XML for multiple objects.
@@ -407,13 +393,12 @@ class TmloService
                 continue;
             }
 
-            $element = $this->createMdtoObjectElement($dom, $object, $tmlo);
+            $element = $this->createMdtoObjectElement(dom: $dom, object: $object, tmlo: $tmlo);
             $collection->appendChild($element);
         }
 
         return $dom->saveXML();
     }//end generateBatchMdtoXml()
-
 
     /**
      * Create a single MDTO object XML element.
@@ -435,9 +420,9 @@ class TmloService
         $idKenmerk = $dom->createElementNS(
             self::MDTO_NAMESPACE,
             'mdto:identificatieKenmerk',
-            $this->xmlEscape($object->getUuid() ?? '')
+            $this->xmlEscape(value: $object->getUuid() ?? '')
         );
-        $idBron = $dom->createElementNS(self::MDTO_NAMESPACE, 'mdto:identificatieBron', 'OpenRegister');
+        $idBron    = $dom->createElementNS(self::MDTO_NAMESPACE, 'mdto:identificatieBron', 'OpenRegister');
         $idElement->appendChild($idKenmerk);
         $idElement->appendChild($idBron);
         $root->appendChild($idElement);
@@ -446,17 +431,17 @@ class TmloService
         $naam = $dom->createElementNS(
             self::MDTO_NAMESPACE,
             'mdto:naam',
-            $this->xmlEscape($object->getName() ?? $object->getUuid() ?? '')
+            $this->xmlEscape(value: $object->getName() ?? $object->getUuid() ?? '')
         );
         $root->appendChild($naam);
 
         // TMLO fields.
         if (($tmlo['classificatie'] ?? null) !== null) {
-            $classEl = $dom->createElementNS(self::MDTO_NAMESPACE, 'mdto:classificatie');
+            $classEl   = $dom->createElementNS(self::MDTO_NAMESPACE, 'mdto:classificatie');
             $classCode = $dom->createElementNS(
                 self::MDTO_NAMESPACE,
                 'mdto:classificatieCode',
-                $this->xmlEscape($tmlo['classificatie'])
+                $this->xmlEscape(value: $tmlo['classificatie'])
             );
             $classEl->appendChild($classCode);
             $root->appendChild($classEl);
@@ -467,7 +452,7 @@ class TmloService
                 $dom->createElementNS(
                     self::MDTO_NAMESPACE,
                     'mdto:waarpinaering',
-                    $this->mapArchiefnominatie($tmlo['archiefnominatie'])
+                    $this->mapArchiefnominatie(nominatie: $tmlo['archiefnominatie'])
                 )
             );
         }
@@ -477,7 +462,7 @@ class TmloService
                 $dom->createElementNS(
                     self::MDTO_NAMESPACE,
                     'mdto:archiefactiedatum',
-                    $this->xmlEscape($tmlo['archiefactiedatum'])
+                    $this->xmlEscape(value: $tmlo['archiefactiedatum'])
                 )
             );
         }
@@ -487,7 +472,7 @@ class TmloService
                 $dom->createElementNS(
                     self::MDTO_NAMESPACE,
                     'mdto:archiefstatus',
-                    $this->mapArchiefstatus($tmlo['archiefstatus'])
+                    $this->mapArchiefstatus(status: $tmlo['archiefstatus'])
                 )
             );
         }
@@ -497,7 +482,7 @@ class TmloService
                 $dom->createElementNS(
                     self::MDTO_NAMESPACE,
                     'mdto:bewaartermijn',
-                    $this->xmlEscape($tmlo['bewaarTermijn'])
+                    $this->xmlEscape(value: $tmlo['bewaarTermijn'])
                 )
             );
         }
@@ -507,14 +492,13 @@ class TmloService
                 $dom->createElementNS(
                     self::MDTO_NAMESPACE,
                     'mdto:vernietigingsCategorie',
-                    $this->xmlEscape($tmlo['vernietigingsCategorie'])
+                    $this->xmlEscape(value: $tmlo['vernietigingsCategorie'])
                 )
             );
         }
 
         return $root;
     }//end createMdtoObjectElement()
-
 
     /**
      * Map TMLO archiefnominatie to MDTO waardering value.
@@ -533,7 +517,6 @@ class TmloService
         return ($mapping[$nominatie] ?? $nominatie);
     }//end mapArchiefnominatie()
 
-
     /**
      * Map TMLO archiefstatus to MDTO archiefstatus value.
      *
@@ -545,14 +528,13 @@ class TmloService
     {
         $mapping = [
             self::ARCHIEFSTATUS_ACTIEF        => 'in bewerking',
-            self::ARCHIEFSTATUS_SEMI_STATISCH  => 'afgesloten',
-            self::ARCHIEFSTATUS_OVERGEBRACHT   => 'overgebracht',
-            self::ARCHIEFSTATUS_VERNIETIGD     => 'vernietigd',
+            self::ARCHIEFSTATUS_SEMI_STATISCH => 'afgesloten',
+            self::ARCHIEFSTATUS_OVERGEBRACHT  => 'overgebracht',
+            self::ARCHIEFSTATUS_VERNIETIGD    => 'vernietigd',
         ];
 
         return ($mapping[$status] ?? $status);
     }//end mapArchiefstatus()
-
 
     /**
      * Escape a string for safe XML inclusion.
@@ -565,6 +547,4 @@ class TmloService
     {
         return htmlspecialchars($value, ENT_XML1 | ENT_QUOTES, 'UTF-8');
     }//end xmlEscape()
-
-
 }//end class

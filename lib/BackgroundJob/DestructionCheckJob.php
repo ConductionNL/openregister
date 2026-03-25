@@ -55,8 +55,8 @@ class DestructionCheckJob extends TimedJob
     /**
      * Constructor.
      *
-     * @param ITimeFactory    $time    Time factory for parent class
-     * @param LoggerInterface $logger  Logger instance
+     * @param ITimeFactory    $time   Time factory for parent class
+     * @param LoggerInterface $logger Logger instance
      */
     public function __construct(
         ITimeFactory $time,
@@ -84,11 +84,14 @@ class DestructionCheckJob extends TimedJob
         $this->logger->info('[DestructionCheckJob] Starting daily destruction check');
 
         try {
-            /** @var ArchivalService $archivalService */
+            /*
+             * @var ArchivalService $archivalService
+             */
+
             $archivalService = \OC::$server->get(ArchivalService::class);
 
             $eligibleObjects = $archivalService->findObjectsDueForDestruction();
-            $count = count($eligibleObjects);
+            $count           = count($eligibleObjects);
 
             if ($count === 0) {
                 $this->logger->info('[DestructionCheckJob] No objects due for destruction');
@@ -108,7 +111,7 @@ class DestructionCheckJob extends TimedJob
             }
         } catch (\Exception $e) {
             $this->logger->error(
-                '[DestructionCheckJob] Error during destruction check: ' . $e->getMessage(),
+                '[DestructionCheckJob] Error during destruction check: '.$e->getMessage(),
                 ['exception' => $e]
             );
         }//end try

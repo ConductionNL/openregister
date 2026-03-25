@@ -3202,7 +3202,7 @@ class SaveObject
         }
 
         // Populate TMLO archival metadata defaults if register has TMLO enabled.
-        $this->populateTmloDefaults($objectEntity, $schema, $selfData);
+        $this->populateTmloDefaults(objectEntity: $objectEntity, schema: $schema, selfData: $selfData);
 
         // Set user information if available.
         $user = $this->userSession->getUser();
@@ -3290,7 +3290,7 @@ class SaveObject
         $this->hydrateObjectMetadata(entity: $existingObject, schema: $schema);
 
         // Validate TMLO metadata if present (status transitions and field values).
-        $this->validateTmloOnUpdate($existingObject, $selfData);
+        $this->validateTmloOnUpdate(existingObject: $existingObject, selfData: $selfData);
 
         // NOTE: Relations are already updated in prepareObjectForCreation() - no need to update again
         // Duplicate call would overwrite relations after handleInverseRelationsWriteBack removes properties
@@ -3345,7 +3345,6 @@ class SaveObject
         }
     }//end setSelfMetadata()
 
-
     /**
      * Populate TMLO defaults on a new object if the register has TMLO enabled.
      *
@@ -3389,7 +3388,6 @@ class SaveObject
         $this->tmloService->populateDefaults($objectEntity, $register, $schema);
     }//end populateTmloDefaults()
 
-
     /**
      * Validate TMLO metadata on an object update (status transitions and field values).
      *
@@ -3422,7 +3420,7 @@ class SaveObject
 
         if ($newStatus !== null && $newStatus !== $oldStatus) {
             // Merge old TMLO with new for complete validation context.
-            $mergedTmlo = array_merge(($oldTmlo ?? []), $newTmlo);
+            $mergedTmlo       = array_merge(($oldTmlo ?? []), $newTmlo);
             $transitionErrors = $this->tmloService->validateStatusTransition($mergedTmlo, $oldStatus);
             if (empty($transitionErrors) === false) {
                 throw new Exception('TMLO status transition failed: '.implode('; ', $transitionErrors));
@@ -3432,7 +3430,6 @@ class SaveObject
         // Update the TMLO field on the entity.
         $existingObject->setTmlo(array_merge(($oldTmlo ?? []), $newTmlo));
     }//end validateTmloOnUpdate()
-
 
     /**
      * Validate reference existence for all properties with validateReference: true.

@@ -84,14 +84,14 @@ class ContactsController extends Controller
     /**
      * Constructor.
      *
-     * @param string                  $appName         Application name
-     * @param IRequest                $request         HTTP request
-     * @param ContactService          $contactService  Contact service
-     * @param ObjectService           $objectService   Object service
-     * @param ContactMatchingService  $matchingService Contact matching service
+     * @param string                  $appName          Application name
+     * @param IRequest                $request          HTTP request
+     * @param ContactService          $contactService   Contact service
+     * @param ObjectService           $objectService    Object service
+     * @param ContactMatchingService  $matchingService  Contact matching service
      * @param DeepLinkRegistryService $deepLinkRegistry Deep link registry
-     * @param IL10N                   $l10n            Localization service
-     * @param LoggerInterface         $logger          Logger
+     * @param IL10N                   $l10n             Localization service
+     * @param LoggerInterface         $logger           Logger
      *
      * @return void
      */
@@ -105,14 +105,14 @@ class ContactsController extends Controller
         IL10N $l10n,
         LoggerInterface $logger
     ) {
-        parent::__construct($appName, $request);
+        parent::__construct(appName: $appName, request: $request);
 
-        $this->contactService  = $contactService;
-        $this->objectService   = $objectService;
-        $this->matchingService = $matchingService;
+        $this->contactService   = $contactService;
+        $this->objectService    = $objectService;
+        $this->matchingService  = $matchingService;
         $this->deepLinkRegistry = $deepLinkRegistry;
-        $this->l10n            = $l10n;
-        $this->logger          = $logger;
+        $this->l10n   = $l10n;
+        $this->logger = $logger;
     }//end __construct()
 
     /**
@@ -130,7 +130,7 @@ class ContactsController extends Controller
     public function index(string $register, string $schema, string $id): JSONResponse
     {
         try {
-            $object = $this->validateObject($register, $schema, $id);
+            $object = $this->validateObject(object: $register, schema: $schema, schemaObject: $id);
             if ($object === null) {
                 return new JSONResponse(['error' => 'Object not found'], 404);
             }
@@ -163,7 +163,7 @@ class ContactsController extends Controller
     public function create(string $register, string $schema, string $id): JSONResponse
     {
         try {
-            $object = $this->validateObject($register, $schema, $id);
+            $object = $this->validateObject(object: $register, schema: $schema, schemaObject: $id);
             if ($object === null) {
                 return new JSONResponse(['error' => 'Object not found'], 404);
             }
@@ -191,7 +191,7 @@ class ContactsController extends Controller
                     ['error' => 'Either addressbookId+contactUri or fullName is required'],
                     400
                 );
-            }
+            }//end if
 
             return new JSONResponse($link->jsonSerialize(), 201);
         } catch (DoesNotExistException $e) {
@@ -222,7 +222,7 @@ class ContactsController extends Controller
     public function update(string $register, string $schema, string $id, string $contactId): JSONResponse
     {
         try {
-            $object = $this->validateObject($register, $schema, $id);
+            $object = $this->validateObject(object: $register, schema: $schema, schemaObject: $id);
             if ($object === null) {
                 return new JSONResponse(['error' => 'Object not found'], 404);
             }
@@ -264,7 +264,7 @@ class ContactsController extends Controller
     public function destroy(string $register, string $schema, string $id, string $contactId): JSONResponse
     {
         try {
-            $object = $this->validateObject($register, $schema, $id);
+            $object = $this->validateObject(object: $register, schema: $schema, schemaObject: $id);
             if ($object === null) {
                 return new JSONResponse(['error' => 'Object not found'], 404);
             }
@@ -353,7 +353,7 @@ class ContactsController extends Controller
                 empty($name) === false ? (string) $name : null,
                 empty($organization) === false ? (string) $organization : null
             );
-            $enrichedMatches = $this->enrichMatches($matches);
+            $enrichedMatches = $this->enrichMatches(matches: $matches);
 
             return new JSONResponse(['matches' => $enrichedMatches, 'total' => count($enrichedMatches)]);
         } catch (\Exception $e) {
@@ -374,8 +374,8 @@ class ContactsController extends Controller
     {
         return array_map(
             function (array $match): array {
-                $registerId   = (int) ($match['register']['id'] ?? 0);
-                $schemaId     = (int) ($match['schema']['id'] ?? 0);
+                $registerId    = (int) ($match['register']['id'] ?? 0);
+                $schemaId      = (int) ($match['schema']['id'] ?? 0);
                 $match['url']  = $this->deepLinkRegistry->resolveUrl($registerId, $schemaId, $match);
                 $match['icon'] = $this->deepLinkRegistry->resolveIcon($registerId, $schemaId);
 

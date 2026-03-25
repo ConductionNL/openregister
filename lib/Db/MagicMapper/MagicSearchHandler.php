@@ -599,7 +599,6 @@ class MagicSearchHandler
         return '('.implode(' OR ', $orParts).')';
     }//end buildArrayPropertyConditionSql()
 
-
     /**
      * Build SQL conditions for TMLO metadata JSON field filters.
      *
@@ -619,9 +618,9 @@ class MagicSearchHandler
      */
     private function buildTmloFilterConditionsSql(array $query, object $connection): array
     {
-        $conditions        = [];
-        $archiefactieFrom  = null;
-        $archiefactieTo    = null;
+        $conditions       = [];
+        $archiefactieFrom = null;
+        $archiefactieTo   = null;
 
         foreach ($query as $key => $value) {
             if (str_starts_with($key, 'tmlo.') === false) {
@@ -642,26 +641,21 @@ class MagicSearchHandler
             }
 
             // Standard exact match on TMLO JSON sub-field.
-            $quotedValue = $connection->quote((string) $value);
-            $conditions[] = "_tmlo::jsonb ->> "
-                .$connection->quote($subField)
-                ." = {$quotedValue}";
+            $quotedValue  = $connection->quote((string) $value);
+            $conditions[] = "_tmlo::jsonb ->> ".$connection->quote($subField)." = {$quotedValue}";
         }//end foreach
 
         // Build archiefactiedatum range condition.
         if ($archiefactieFrom !== null) {
-            $conditions[] = "_tmlo::jsonb ->> 'archiefactiedatum' >= "
-                .$connection->quote($archiefactieFrom);
+            $conditions[] = "_tmlo::jsonb ->> 'archiefactiedatum' >= ".$connection->quote($archiefactieFrom);
         }
 
         if ($archiefactieTo !== null) {
-            $conditions[] = "_tmlo::jsonb ->> 'archiefactiedatum' <= "
-                .$connection->quote($archiefactieTo);
+            $conditions[] = "_tmlo::jsonb ->> 'archiefactiedatum' <= ".$connection->quote($archiefactieTo);
         }
 
         return $conditions;
     }//end buildTmloFilterConditionsSql()
-
 
     /**
      * Get the list of reserved query parameter names
