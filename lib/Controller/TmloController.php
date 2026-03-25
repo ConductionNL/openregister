@@ -85,8 +85,8 @@ class TmloController extends Controller
     public function exportSingle(string $register, string $schema, string $id): Response
     {
         try {
-            $registerEntity = $this->registerMapper->find((int) $register);
-            $schemaEntity   = $this->schemaMapper->find((int) $schema);
+            $registerEntity = $this->registerMapper->find($register);
+            $schemaEntity   = $this->schemaMapper->find($schema);
 
             $object = $this->objectService->find(
                 identifier: $id,
@@ -127,8 +127,8 @@ class TmloController extends Controller
     public function exportBatch(string $register, string $schema): Response
     {
         try {
-            $registerEntity = $this->registerMapper->find((int) $register);
-            $schemaEntity   = $this->schemaMapper->find((int) $schema);
+            $registerEntity = $this->registerMapper->find($register);
+            $schemaEntity   = $this->schemaMapper->find($schema);
 
             // Get all query parameters for filtering.
             $params  = $this->request->getParams();
@@ -177,7 +177,7 @@ class TmloController extends Controller
     public function summary(string $register, string $schema): JSONResponse
     {
         try {
-            $registerEntity = $this->registerMapper->find((int) $register);
+            $registerEntity = $this->registerMapper->find($register);
 
             if ($this->tmloService->isTmloEnabled($registerEntity) === false) {
                 return new JSONResponse(
@@ -186,7 +186,7 @@ class TmloController extends Controller
                 );
             }
 
-            $schemaEntity = $this->schemaMapper->find((int) $schema);
+            $schemaEntity = $this->schemaMapper->find($schema);
 
             // Initialize counts.
             $counts = [

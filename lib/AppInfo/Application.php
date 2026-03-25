@@ -314,7 +314,10 @@ class Application extends App implements IBootstrap
                     accountManager: $container->get('OCP\Accounts\IAccountManager'),
                     logger: $container->get('Psr\Log\LoggerInterface'),
                     organisationService: $container->get(OrganisationService::class),
-                    eventDispatcher: $container->get('OCP\EventDispatcher\IEventDispatcher')
+                    eventDispatcher: $container->get('OCP\EventDispatcher\IEventDispatcher'),
+                    avatarManager: $container->get('OCP\IAvatarManager'),
+                    auditTrailMapper: $container->get(\OCA\OpenRegister\Db\AuditTrailMapper::class),
+                    secureRandom: $container->get('OCP\Security\ISecureRandom')
                 );
             }
         );
@@ -555,6 +558,8 @@ class Application extends App implements IBootstrap
         );
 
         $context->registerSearchProvider(ObjectsProvider::class);
+        $context->registerReferenceProvider(\OCA\OpenRegister\Reference\ObjectReferenceProvider::class);
+        $context->registerCalendarProvider(\OCA\OpenRegister\Calendar\RegisterCalendarProvider::class);
     }//end registerConfigurationServices()
 
     /**
@@ -754,6 +759,17 @@ class Application extends App implements IBootstrap
 
         // ObjectCleanupListener cleans up notes and tasks when an object is deleted.
         $context->registerEventListener(ObjectDeletedEvent::class, ObjectCleanupListener::class);
+
+        // ActivityEventListener publishes Nextcloud Activity events for entity lifecycle.
+        $context->registerEventListener(ObjectCreatedEvent::class, \OCA\OpenRegister\Listener\ActivityEventListener::class);
+        $context->registerEventListener(ObjectUpdatedEvent::class, \OCA\OpenRegister\Listener\ActivityEventListener::class);
+        $context->registerEventListener(ObjectDeletedEvent::class, \OCA\OpenRegister\Listener\ActivityEventListener::class);
+        $context->registerEventListener(RegisterCreatedEvent::class, \OCA\OpenRegister\Listener\ActivityEventListener::class);
+        $context->registerEventListener(RegisterUpdatedEvent::class, \OCA\OpenRegister\Listener\ActivityEventListener::class);
+        $context->registerEventListener(RegisterDeletedEvent::class, \OCA\OpenRegister\Listener\ActivityEventListener::class);
+        $context->registerEventListener(SchemaCreatedEvent::class, \OCA\OpenRegister\Listener\ActivityEventListener::class);
+        $context->registerEventListener(SchemaUpdatedEvent::class, \OCA\OpenRegister\Listener\ActivityEventListener::class);
+        $context->registerEventListener(SchemaDeletedEvent::class, \OCA\OpenRegister\Listener\ActivityEventListener::class);
     }//end registerEventListeners()
 
     /**
