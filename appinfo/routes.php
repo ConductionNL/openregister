@@ -320,6 +320,7 @@ return [
         // Notes operations under objects (Nextcloud Comments wrapper).
         ['name' => 'notes#index', 'url' => '/api/objects/{register}/{schema}/{id}/notes', 'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
         ['name' => 'notes#create', 'url' => '/api/objects/{register}/{schema}/{id}/notes', 'verb' => 'POST', 'requirements' => ['id' => '[^/]+']],
+        ['name' => 'notes#update', 'url' => '/api/objects/{register}/{schema}/{id}/notes/{noteId}', 'verb' => 'PUT', 'requirements' => ['id' => '[^/]+', 'noteId' => '[^/]+']],
         ['name' => 'notes#destroy', 'url' => '/api/objects/{register}/{schema}/{id}/notes/{noteId}', 'verb' => 'DELETE', 'requirements' => ['id' => '[^/]+', 'noteId' => '[^/]+']],
         
         // Schemas.
@@ -395,6 +396,9 @@ return [
         ['name' => 'organisation#leave', 'url' => '/api/organisations/{uuid}/leave', 'verb' => 'POST'],
 		// Tags.
 		['name' => 'tags#getAllTags', 'url' => '/api/tags', 'verb' => 'GET'],
+        ['name' => 'tags#index', 'url' => '/api/objects/{register}/{schema}/{id}/tags', 'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
+        ['name' => 'tags#add', 'url' => '/api/objects/{register}/{schema}/{id}/tags', 'verb' => 'POST', 'requirements' => ['id' => '[^/]+']],
+        ['name' => 'tags#remove', 'url' => '/api/objects/{register}/{schema}/{id}/tags/{tag}', 'verb' => 'DELETE', 'requirements' => ['id' => '[^/]+', 'tag' => '[^/]+']],
 		
 		// Views - Saved search configurations.
 		['name' => 'views#index', 'url' => '/api/views', 'verb' => 'GET'],

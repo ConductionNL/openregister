@@ -51,6 +51,13 @@ class TaggingHandler
     private const FILE_TAG_TYPE = 'files';
 
     /**
+     * Object tag type identifier for OpenRegister objects.
+     *
+     * @var string
+     */
+    private const OBJECT_TAG_TYPE = 'openregister';
+
+    /**
      * Constructor for TaggingHandler.
      *
      * @param ISystemTagManager      $systemTagManager System tag manager.
@@ -239,9 +246,93 @@ class TaggingHandler
     }//end generateObjectTag()
 
     /**
+     * Get tags for an OpenRegister object.
+     *
+     * @param string $objectUuid The object UUID.
+     *
+     * @return string[] Tag names attached to this object.
+     *
+     * @phpstan-return array<int, string>
+     * @psalm-return   list<string>
+     */
+    public function getObjectTags(string $objectUuid): array
+    {
+        try {
+            $tagIds = $this->systemTagMapper->getTagIdsForObjects(
+                objIds: [$objectUuid],
+                objectType: self::OBJECT_TAG_TYPE
+            );
+
+            if (isset($tagIds[$objectUuid]) === false || empty($tagIds[$objectUuid]) === true) {
+                return [];
+            }
+
+            $tags     = $this->systemTagManager->getTagsByIds($tagIds[$objectUuid]);
+            $tagNames = [];
+            foreach ($tags as $tag) {
+                $tagNames[] = $tag->getName();
+            }
+
+            sort($tagNames);
+            return $tagNames;
+        } catch (Exception $e) {
+            $this->logger->error(
+                message: '[TaggingHandler] Error getting tags for object '.$objectUuid.': '.$e->getMessage(),
+                context: ['file' => __FILE__, 'line' => __LINE__]
+            );
+            return [];
+        }
+    }//end getObjectTags()
+
+    /**
+     * Add a tag to an OpenRegister object.
+     *
+     * @param string $objectUuid The object UUID.
+     * @param string $tagName    The tag name to add.
+     *
+     * @return void
+     */
+    public function addObjectTag(string $objectUuid, string $tagName): void
+    {
+        $tag = $this->findOrCreateTag(tagName: $tagName);
+        $this->systemTagMapper->assignTags(
+            objId: $objectUuid,
+            objectType: self::OBJECT_TAG_TYPE,
+            tagIds: [$tag->getId()]
+        );
+    }//end addObjectTag()
+
+    /**
+     * Remove a tag from an OpenRegister object.
+     *
+     * @param string $objectUuid The object UUID.
+     * @param string $tagName    The tag name to remove.
+     *
+     * @return void
+     *
+     * @throws Exception If the tag is not found.
+     */
+    public function removeObjectTag(string $objectUuid, string $tagName): void
+    {
+        $allTags = $this->systemTagManager->getAllTags(visibilityFilter: null, nameSearchPattern: $tagName);
+        foreach ($allTags as $tag) {
+            if ($tag->getName() === $tagName) {
+                $this->systemTagMapper->unassignTags(
+                    objId: $objectUuid,
+                    objectType: self::OBJECT_TAG_TYPE,
+                    tagIds: [$tag->getId()]
+                );
+                return;
+            }
+        }
+
+        throw new Exception('Tag not found: '.$tagName);
+    }//end removeObjectTag()
+
+    /**
      * Get all system tags.
      *
-     * @return string[]
+     * @return string[] Tag names.
      *
      * @phpstan-return array<int, string>
      *
