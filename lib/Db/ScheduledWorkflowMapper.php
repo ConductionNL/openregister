@@ -72,7 +72,7 @@ class ScheduledWorkflowMapper extends QBMapper
      *
      * @return array<int, ScheduledWorkflow>
      */
-    public function findAll(?int $limit = null, ?int $offset = null): array
+    public function findAll(?int $limit=null, ?int $offset=null): array
     {
         $qb = $this->db->getQueryBuilder();
 

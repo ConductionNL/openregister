@@ -45,10 +45,10 @@ class FileSidebarController extends Controller
     /**
      * Constructor.
      *
-     * @param string             $appName             Application name.
-     * @param IRequest           $request             HTTP request.
-     * @param FileSidebarService $fileSidebarService  File sidebar service.
-     * @param LoggerInterface    $logger              Logger.
+     * @param string             $appName            Application name.
+     * @param IRequest           $request            HTTP request.
+     * @param FileSidebarService $fileSidebarService File sidebar service.
+     * @param LoggerInterface    $logger             Logger.
      */
     public function __construct(
         string $appName,

@@ -22,7 +22,6 @@ use OCP\EventDispatcher\Event;
  */
 class FileCopiedEvent extends Event
 {
-
     /**
      * Constructor for FileCopiedEvent
      *
@@ -35,7 +34,7 @@ class FileCopiedEvent extends Event
     public function __construct(
         private readonly string $objectUuid,
         private readonly int $fileId,
-        private readonly array $data = []
+        private readonly array $data=[]
     ) {
         parent::__construct();
     }//end __construct()
