@@ -215,10 +215,7 @@ class AuditTrailMapper extends QBMapper
                 continue;
             }
 
-            $direction = 'ASC';
-            if (strtoupper($direction) === 'DESC') {
-                $direction = 'DESC';
-            }
+            $direction = strtoupper($direction) === 'DESC' ? 'DESC' : 'ASC';
 
             $qb->addOrderBy($field, $direction);
         }//end foreach
