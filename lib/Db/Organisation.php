@@ -62,16 +62,6 @@ use Symfony\Component\Uid\Uuid;
  * @method void setRequestQuota(?int $requestQuota)
  * @method array|null getAuthorization()
  * @method static setAuthorization(array|string|null $authorization)
- * @method string|null getStatus()
- * @method void setStatus(?string $status)
- * @method string|null getEnvironment()
- * @method void setEnvironment(?string $environment)
- * @method DateTime|null getProvisionedAt()
- * @method void setProvisionedAt(?DateTime $provisionedAt)
- * @method DateTime|null getSuspendedAt()
- * @method void setSuspendedAt(?DateTime $suspendedAt)
- * @method DateTime|null getDeprovisionedAt()
- * @method void setDeprovisionedAt(?DateTime $deprovisionedAt)
  * @method string|null getParent()
  * @method static setParent(?string $parent)
  *
@@ -200,45 +190,6 @@ class Organisation extends Entity implements JsonSerializable
     protected ?array $authorization = null;
 
     /**
-     * Tenant lifecycle status
-     *
-     * Valid values: provisioning, active, suspended, deprovisioning, archived
-     *
-     * @var string|null Lifecycle status
-     */
-    protected ?string $status = 'active';
-
-    /**
-     * OTAP environment type
-     *
-     * Valid values: development, test, acceptance, production
-     *
-     * @var string|null Environment type
-     */
-    protected ?string $environment = 'production';
-
-    /**
-     * Timestamp when the organisation was provisioned
-     *
-     * @var DateTime|null Provisioning timestamp
-     */
-    protected ?DateTime $provisionedAt = null;
-
-    /**
-     * Timestamp when the organisation was suspended
-     *
-     * @var DateTime|null Suspension timestamp
-     */
-    protected ?DateTime $suspendedAt = null;
-
-    /**
-     * Timestamp when the organisation deprovisioning started
-     *
-     * @var DateTime|null Deprovisioning timestamp
-     */
-    protected ?DateTime $deprovisionedAt = null;
-
-    /**
      * UUID of parent organisation for hierarchical organisation structures
      *
      * Enables parent-child relationships where children inherit access
@@ -299,11 +250,6 @@ class Organisation extends Entity implements JsonSerializable
         $this->addType(fieldName: 'request_quota', type: 'integer');
         $this->addType(fieldName: 'authorization', type: 'json');
         $this->addType(fieldName: 'parent', type: 'string');
-        $this->addType(fieldName: 'status', type: 'string');
-        $this->addType(fieldName: 'environment', type: 'string');
-        $this->addType(fieldName: 'provisioned_at', type: 'datetime');
-        $this->addType(fieldName: 'suspended_at', type: 'datetime');
-        $this->addType(fieldName: 'deprovisioned_at', type: 'datetime');
     }//end __construct()
 
     /**
@@ -689,18 +635,18 @@ class Organisation extends Entity implements JsonSerializable
         $groups = $this->getGroups();
 
         return [
-            'id'              => $this->id,
-            'uuid'            => $this->uuid,
-            'slug'            => $this->slug,
-            'name'            => $this->name,
-            'description'     => $this->description,
-            'users'           => $users,
-            'groups'          => $groups,
-            'owner'           => $this->owner,
-            'active'          => $this->isActive(),
-            'parent'          => $this->parent,
-            'children'        => $this->children ?? [],
-            'quota'           => [
+            'id'            => $this->id,
+            'uuid'          => $this->uuid,
+            'slug'          => $this->slug,
+            'name'          => $this->name,
+            'description'   => $this->description,
+            'users'         => $users,
+            'groups'        => $groups,
+            'owner'         => $this->owner,
+            'active'        => $this->isActive(),
+            'parent'        => $this->parent,
+            'children'      => $this->children ?? [],
+            'quota'         => [
                 'storage'   => $this->storageQuota,
                 'bandwidth' => $this->bandwidthQuota,
                 'requests'  => $this->requestQuota,
@@ -709,7 +655,7 @@ class Organisation extends Entity implements JsonSerializable
                 'groups'    => null,
         // To be set via admin configuration.
             ],
-            'usage'           => [
+            'usage'         => [
                 'storage'   => 0,
             // To be calculated from actual usage.
                 'bandwidth' => 0,
@@ -719,14 +665,9 @@ class Organisation extends Entity implements JsonSerializable
                 'users'     => count($users),
                 'groups'    => count($groups),
             ],
-            'authorization'   => $this->authorization ?? $this->getDefaultAuthorization(),
-            'status'          => $this->status ?? 'active',
-            'environment'     => $this->environment ?? 'production',
-            'provisionedAt'   => $this->provisionedAt instanceof DateTime ? $this->provisionedAt->format('c') : null,
-            'suspendedAt'     => $this->suspendedAt instanceof DateTime ? $this->suspendedAt->format('c') : null,
-            'deprovisionedAt' => $this->deprovisionedAt instanceof DateTime ? $this->deprovisionedAt->format('c') : null,
-            'created'         => $this->getCreatedFormatted(),
-            'updated'         => $this->getUpdatedFormatted(),
+            'authorization' => $this->authorization ?? $this->getDefaultAuthorization(),
+            'created'       => $this->getCreatedFormatted(),
+            'updated'       => $this->getUpdatedFormatted(),
         ];
     }//end jsonSerialize()
 

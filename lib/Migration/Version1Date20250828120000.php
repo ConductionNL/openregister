@@ -41,6 +41,8 @@ use OCP\Migration\SimpleMigrationStep;
 class Version1Date20250828120000 extends SimpleMigrationStep
 {
     /**
+     * Constructor.
+     *
      * @param IDBConnection $connection The database connection
      * @param IConfig       $config     The configuration interface
      */

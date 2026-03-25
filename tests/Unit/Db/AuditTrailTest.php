@@ -44,8 +44,6 @@ class AuditTrailTest extends TestCase
         $this->assertSame('string', $fieldTypes['retentionPeriod']);
         $this->assertSame('integer', $fieldTypes['size']);
         $this->assertSame('datetime', $fieldTypes['expires']);
-        $this->assertSame('string', $fieldTypes['hash']);
-        $this->assertSame('string', $fieldTypes['previousHash']);
     }
 
     public function testConstructorDefaultValues(): void
@@ -177,7 +175,6 @@ class AuditTrailTest extends TestCase
             'created', 'organisationId', 'organisationIdType',
             'processingActivityId', 'processingActivityUrl', 'processingId',
             'confidentiality', 'retentionPeriod', 'size', 'expires',
-            'hash', 'previousHash',
         ];
         foreach ($expectedKeys as $key) {
             $this->assertArrayHasKey($key, $json);
@@ -215,41 +212,5 @@ class AuditTrailTest extends TestCase
     public function testToStringFallback(): void
     {
         $this->assertSame('Audit Trail', (string)$this->auditTrail);
-    }
-
-    public function testSetAndGetHashFields(): void
-    {
-        $this->auditTrail->setHash('a1b2c3d4e5f6');
-        $this->auditTrail->setPreviousHash('f6e5d4c3b2a1');
-
-        $this->assertSame('a1b2c3d4e5f6', $this->auditTrail->getHash());
-        $this->assertSame('f6e5d4c3b2a1', $this->auditTrail->getPreviousHash());
-    }
-
-    public function testHashFieldsDefaultToNull(): void
-    {
-        $this->assertNull($this->auditTrail->getHash());
-        $this->assertNull($this->auditTrail->getPreviousHash());
-    }
-
-    public function testJsonSerializeIncludesHashFields(): void
-    {
-        $this->auditTrail->setHash('abc123');
-        $this->auditTrail->setPreviousHash('def456');
-
-        $json = $this->auditTrail->jsonSerialize();
-
-        $this->assertArrayHasKey('hash', $json);
-        $this->assertArrayHasKey('previousHash', $json);
-        $this->assertSame('abc123', $json['hash']);
-        $this->assertSame('def456', $json['previousHash']);
-    }
-
-    public function testJsonSerializeHashFieldsNullWhenNotSet(): void
-    {
-        $json = $this->auditTrail->jsonSerialize();
-
-        $this->assertNull($json['hash']);
-        $this->assertNull($json['previousHash']);
     }
 }

@@ -255,9 +255,6 @@ class Application extends App implements IBootstrap
         // Register the LanguageMiddleware for Accept-Language header parsing.
         $context->registerMiddleware(LanguageMiddleware::class);
 
-        // Register the TenantQuotaMiddleware for tenant quota enforcement and status checks.
-        $context->registerMiddleware(\OCA\OpenRegister\Middleware\TenantQuotaMiddleware::class);
-
         // Register all services in phases to resolve circular dependencies.
         $this->registerMappersWithCircularDependencies(context: $context);
         $this->registerCacheAndFileHandlers(context: $context);

@@ -275,41 +275,6 @@ class ConfigurationSettingsController extends Controller
     }//end updateRetentionSettings()
 
     /**
-     * Get archival settings (destruction scheduling, selectielijst, etc.)
-     *
-     * @NoCSRFRequired
-     *
-     * @return JSONResponse JSON response with archival settings
-     */
-    public function getArchivalSettings(): JSONResponse
-    {
-        try {
-            $data = $this->settingsService->getArchivalSettingsOnly();
-            return new JSONResponse(data: $data);
-        } catch (Exception $e) {
-            return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 500);
-        }
-    }//end getArchivalSettings()
-
-    /**
-     * Update archival settings
-     *
-     * @NoCSRFRequired
-     *
-     * @return JSONResponse JSON response with updated archival settings
-     */
-    public function updateArchivalSettings(): JSONResponse
-    {
-        try {
-            $data   = $this->request->getParams();
-            $result = $this->settingsService->updateArchivalSettingsOnly($data);
-            return new JSONResponse(data: $result);
-        } catch (Exception $e) {
-            return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 500);
-        }
-    }//end updateArchivalSettings()
-
-    /**
      * Get object collection field status
      *
      * @NoCSRFRequired
