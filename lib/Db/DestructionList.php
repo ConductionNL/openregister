@@ -195,22 +195,27 @@ class DestructionList extends Entity implements JsonSerializable
     public function hydrate(array $data): static
     {
         if (isset($data['uuid']) === true) {
-            $this->setUuid($data['uuid']);
+            $this->setUuid(uuid: $data['uuid']);
         }
+
         if (isset($data['name']) === true) {
-            $this->setName($data['name']);
+            $this->setName(name: $data['name']);
         }
+
         if (isset($data['status']) === true) {
-            $this->setStatus($data['status']);
+            $this->setStatus(status: $data['status']);
         }
+
         if (isset($data['objects']) === true) {
-            $this->setObjects($data['objects']);
+            $this->setObjects(objects: $data['objects']);
         }
+
         if (isset($data['notes']) === true) {
-            $this->setNotes($data['notes']);
+            $this->setNotes(notes: $data['notes']);
         }
+
         if (isset($data['organisation']) === true) {
-            $this->setOrganisation($data['organisation']);
+            $this->setOrganisation(organisation: $data['organisation']);
         }
 
         return $this;

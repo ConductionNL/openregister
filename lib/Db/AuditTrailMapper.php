@@ -515,11 +515,11 @@ class AuditTrailMapper extends QBMapper
      */
     public function findByActor(
         string $userId,
-        int $limit = 25,
-        int $offset = 0,
-        ?string $type = null,
-        ?string $from = null,
-        ?string $to = null
+        int $limit=25,
+        int $offset=0,
+        ?string $type=null,
+        ?string $from=null,
+        ?string $to=null
     ): array {
         // Build count query first.
         $countQb = $this->db->getQueryBuilder();
@@ -550,7 +550,7 @@ class AuditTrailMapper extends QBMapper
 
         // Apply date range filter to both queries.
         if ($from !== null && $from !== '') {
-            $fromDate = $from . ' 00:00:00';
+            $fromDate = $from.' 00:00:00';
             $qb->andWhere(
                 $qb->expr()->gte('created', $qb->createNamedParameter($fromDate, IQueryBuilder::PARAM_STR))
             );
@@ -560,7 +560,7 @@ class AuditTrailMapper extends QBMapper
         }
 
         if ($to !== null && $to !== '') {
-            $toDate = $to . ' 23:59:59';
+            $toDate = $to.' 23:59:59';
             $qb->andWhere(
                 $qb->expr()->lte('created', $qb->createNamedParameter($toDate, IQueryBuilder::PARAM_STR))
             );

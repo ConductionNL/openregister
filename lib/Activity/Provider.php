@@ -77,7 +77,7 @@ class Provider implements IProvider
      *
      * @SuppressWarnings(PHPMD.UnusedFormalParameter) — $previousEvent required by IProvider interface
      */
-    public function parse($language, IEvent $event, ?IEvent $previousEvent = null): IEvent
+    public function parse($language, IEvent $event, ?IEvent $previousEvent=null): IEvent
     {
         if ($event->getApp() !== Application::APP_ID) {
             throw new UnknownActivityException();

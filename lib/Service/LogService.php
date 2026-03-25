@@ -170,7 +170,7 @@ class LogService
         }
 
         // Step 3: Add object UUID to filters to restrict logs to this object.
-        $filters                = $config['filters'] ?? [];
+        $filters = $config['filters'] ?? [];
         $filters['object_uuid'] = $object->getUuid();
 
         // Note: We do NOT add register/schema filters here because:

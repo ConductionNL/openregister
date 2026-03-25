@@ -144,8 +144,8 @@ class DeckCardService
 
         if (empty($data['cardId']) === false) {
             // Link existing card.
-            $cardId  = (int) $data['cardId'];
-            $cardInfo = $this->getDeckCardInfo($cardId);
+            $cardId   = (int) $data['cardId'];
+            $cardInfo = $this->getDeckCardInfo(cardId: $cardId);
             if ($cardInfo === null) {
                 throw new Exception('Deck card not found', 404);
             }
@@ -165,7 +165,13 @@ class DeckCardService
             $stackId   = (int) $data['stackId'];
             $cardTitle = $data['title'] ?? 'Untitled';
 
-            $cardId = $this->createDeckCard($boardId, $stackId, $cardTitle, $data['description'] ?? '', $objectUuid);
+            $cardId = $this->createDeckCard(
+                boardId: $boardId,
+                    stackId: $stackId,
+                    title: $cardTitle,
+                description: $data['description'] ?? '',
+                    objectUuid: $objectUuid
+            );
             if ($cardId === null) {
                 throw new Exception('Failed to create Deck card');
             }

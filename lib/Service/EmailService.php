@@ -94,9 +94,9 @@ class EmailService
     ) {
         $this->emailLinkMapper = $emailLinkMapper;
         $this->appManager      = $appManager;
-        $this->db              = $db;
-        $this->userSession     = $userSession;
-        $this->logger          = $logger;
+        $this->db          = $db;
+        $this->userSession = $userSession;
+        $this->logger      = $logger;
     }//end __construct()
 
     /**
@@ -118,7 +118,7 @@ class EmailService
      *
      * @return array{results: array, total: int} Email links with total count.
      */
-    public function getEmailsForObject(string $objectUuid, ?int $limit = null, ?int $offset = null): array
+    public function getEmailsForObject(string $objectUuid, ?int $limit=null, ?int $offset=null): array
     {
         $links = $this->emailLinkMapper->findByObjectUuid($objectUuid, $limit, $offset);
         $total = $this->emailLinkMapper->countByObjectUuid($objectUuid);
@@ -136,8 +136,8 @@ class EmailService
     /**
      * Link an existing email to an object.
      *
-     * @param string $objectUuid   The object UUID.
-     * @param int    $registerId   The register ID.
+     * @param string $objectUuid    The object UUID.
+     * @param int    $registerId    The register ID.
      * @param int    $mailAccountId The mail account ID.
      * @param int    $mailMessageId The mail message ID.
      *
@@ -158,7 +158,7 @@ class EmailService
         }
 
         // Verify the email exists in the Mail app database.
-        $messageData = $this->fetchMailMessage($mailMessageId, $mailAccountId);
+        $messageData = $this->fetchMailMessage(messageId: $mailMessageId, accountId: $mailAccountId);
         if ($messageData === null) {
             throw new Exception('Mail message not found', 404);
         }
@@ -239,8 +239,8 @@ class EmailService
     /**
      * Fetch a mail message from the Mail app's database.
      *
-     * @param int $messageId  The mail message ID.
-     * @param int $accountId  The mail account ID.
+     * @param int $messageId The mail message ID.
+     * @param int $accountId The mail account ID.
      *
      * @return array|null Message data or null if not found.
      */
@@ -251,16 +251,24 @@ class EmailService
             $qb->select('m.id', 'm.uid', 'm.subject', 'm.sent_at')
                 ->addSelect('r.email as sender_email')
                 ->from('mail_messages', 'm')
-                ->leftJoin('m', 'mail_recipients', 'r', $qb->expr()->andX(
+                ->leftJoin(
+                        'm',
+                        'mail_recipients',
+                        'r',
+                        $qb->expr()->andX(
                     $qb->expr()->eq('r.message_id', 'm.id'),
                     $qb->expr()->eq('r.type', $qb->createNamedParameter(0))
-                ))
+                )
+                        )
                 ->where($qb->expr()->eq('m.id', $qb->createNamedParameter($messageId)))
-                ->andWhere($qb->expr()->eq('m.mailbox_id', $qb->createFunction(
-                    '(SELECT mb.id FROM *PREFIX*mail_mailboxes mb WHERE mb.account_id = '
-                    .$qb->createNamedParameter($accountId)
-                    .' AND mb.id = m.mailbox_id LIMIT 1)'
-                )))
+                ->andWhere(
+                        $qb->expr()->eq(
+                        'm.mailbox_id',
+                        $qb->createFunction(
+                    $this->buildMailboxSubquery(qb: $qb, accountId: $accountId)
+                        )
+                        )
+                        )
                 ->setMaxResults(1);
 
             $result = $qb->executeQuery();
@@ -287,4 +295,19 @@ class EmailService
             return null;
         }//end try
     }//end fetchMailMessage()
+
+    /**
+     * Build the mailbox subquery string for filtering by account.
+     *
+     * @param \OCP\DB\QueryBuilder\IQueryBuilder $qb        The query builder.
+     * @param int                                $accountId The mail account ID.
+     *
+     * @return string The subquery string.
+     */
+    private function buildMailboxSubquery(\OCP\DB\QueryBuilder\IQueryBuilder $qb, int $accountId): string
+    {
+        $param = $qb->createNamedParameter($accountId);
+        return '(SELECT mb.id FROM *PREFIX*mail_mailboxes mb WHERE mb.account_id = '.$param.' AND mb.id = m.mailbox_id LIMIT 1)';
+
+    }//end buildMailboxSubquery()
 }//end class

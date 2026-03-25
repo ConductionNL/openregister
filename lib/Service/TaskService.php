@@ -376,9 +376,10 @@ class TaskService
             $principal,
             'tasks',
             [
-                '{DAV:}displayname'                                            => 'Tasks',
-                '{urn:ietf:params:xml:ns:caldav}supported-calendar-component-set'
-                    => new \Sabre\CalDAV\Xml\Property\SupportedCalendarComponentSet(['VTODO']),
+                '{DAV:}displayname'                                               => 'Tasks',
+                '{urn:ietf:params:xml:ns:caldav}supported-calendar-component-set' => new \Sabre\CalDAV\Xml\Property\SupportedCalendarComponentSet(
+                    ['VTODO']
+                ),
             ]
         );
 
