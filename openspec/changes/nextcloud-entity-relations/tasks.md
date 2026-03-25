@@ -29,11 +29,11 @@
 - [x] Handle dual storage (vCard properties + database table)
 
 ## Deck Card Relations
-- [ ] Implement DeckCardService (create/link/unlink Deck cards)
-- [ ] Implement DeckController with REST endpoints
-- [ ] Add deck routes to routes.php
-- [ ] Implement board-level object listing
-- [ ] Handle Deck app not installed (HTTP 501 graceful degradation)
+- [x] Implement DeckCardService (create/link/unlink Deck cards)
+- [x] Implement DeckController with REST endpoints
+- [x] Add deck routes to routes.php
+- [x] Implement board-level object listing
+- [x] Handle Deck app not installed (HTTP 501 graceful degradation)
 
 ## Unified Relations API
 - [ ] Implement RelationsController with unified endpoint
