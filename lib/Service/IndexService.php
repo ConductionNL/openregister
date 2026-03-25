@@ -892,6 +892,25 @@ class IndexService
      *
      * @return array List of available ConfigSets.
      */
+    /**
+     * List all Solr collections.
+     *
+     * This is a Solr-specific operation. Returns an empty array if the
+     * backend doesn't support collections (non-Solr backends).
+     *
+     * @return array List of available collections.
+     */
+    public function listCollections(): array
+    {
+        // Check if backend is Solr and has listCollections method.
+        if (method_exists($this->searchBackend, 'listCollections') === true) {
+            return $this->searchBackend->listCollections();
+        }
+
+        // Return empty array for non-Solr backends.
+        return [];
+    }//end listCollections()
+
     public function listConfigSets(): array
     {
         // Check if backend is Solr and has listConfigSets method.

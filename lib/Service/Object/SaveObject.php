@@ -55,8 +55,6 @@ use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\Uid\Uuid;
 use OCP\AppFramework\Db\DoesNotExistException;
-use Twig\Environment;
-use Twig\Loader\ArrayLoader;
 
 /**
  * Individual Object Save/Create/Update Handler
@@ -124,13 +122,6 @@ class SaveObject
     private const URL_PATH_IDENTIFIER = 'openregister.objects.show';
 
     /**
-     * Twig template engine instance
-     *
-     * @var Environment
-     */
-    private Environment $twig;
-
-    /**
      * Cache for sub-objects created during cascade operations.
      *
      * Stores created sub-objects indexed by their UUID for inclusion in @self.objects.
@@ -190,7 +181,6 @@ class SaveObject
      * @param ComputedFieldHandler     $computedFieldHandler Handler for computed field evaluation
      * @param TranslationHandler       $translationHandler   Handler for translation operations
      * @param LoggerInterface          $logger               Logger interface for logging operations
-     * @param ArrayLoader              $arrayLoader          Twig array loader for template rendering
      *
      * @SuppressWarnings(PHPMD.ExcessiveParameterList) Nextcloud DI requires constructor injection
      */
@@ -211,9 +201,7 @@ class SaveObject
         private readonly ComputedFieldHandler $computedFieldHandler,
         private readonly TranslationHandler $translationHandler,
         private readonly LoggerInterface $logger,
-        ArrayLoader $arrayLoader,
     ) {
-        $this->twig = new Environment($arrayLoader);
     }//end __construct()
 
     /**

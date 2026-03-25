@@ -24,14 +24,10 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Object\SaveObject;
 
 use OCA\OpenRegister\Db\MagicMapper;
+use OCA\OpenRegister\Db\MappingMapper;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Twig\MappingExtension;
-use OCA\OpenRegister\Twig\MappingRuntimeLoader;
+use OCA\OpenRegister\Service\MappingService;
 use Psr\Log\LoggerInterface;
-use Twig\Environment;
-use Twig\Extension\SandboxExtension;
-use Twig\Loader\ArrayLoader;
-use Twig\Sandbox\SecurityPolicy;
 
 /**
  * Computed Field Handler
@@ -62,22 +58,22 @@ class ComputedFieldHandler
     /**
      * Twig environment instance for expression evaluation.
      *
-     * @var Environment|null
+     * @var \Twig\Environment|null
      */
-    private ?Environment $twig = null;
+    private ?\Twig\Environment $twig = null;
 
     /**
      * Constructor for ComputedFieldHandler.
      *
-     * @param MagicMapper          $objectMapper         Mapper for fetching referenced objects.
-     * @param MappingExtension     $mappingExtension     Twig extension with custom filters and functions.
-     * @param MappingRuntimeLoader $mappingRuntimeLoader Twig runtime loader for mapping functions.
-     * @param LoggerInterface      $logger               Logger for error and debug messages.
+     * @param MagicMapper     $objectMapper   Mapper for fetching referenced objects.
+     * @param MappingService  $mappingService Mapping service used to build the Twig runtime loader.
+     * @param MappingMapper   $mappingMapper  Mapping mapper used to build the Twig runtime loader.
+     * @param LoggerInterface $logger         Logger for error and debug messages.
      */
     public function __construct(
         private readonly MagicMapper $objectMapper,
-        private readonly MappingExtension $mappingExtension,
-        private readonly MappingRuntimeLoader $mappingRuntimeLoader,
+        private readonly MappingService $mappingService,
+        private readonly MappingMapper $mappingMapper,
         private readonly LoggerInterface $logger,
     ) {
     }//end __construct()
@@ -85,28 +81,36 @@ class ComputedFieldHandler
     /**
      * Get or create the sandboxed Twig environment.
      *
-     * Creates a Twig environment with:
-     * - ArrayLoader for dynamic template strings
-     * - MappingExtension for custom filters/functions
-     * - SandboxExtension for security (restricts available tags, filters, functions)
+     * Lazily initialises Twig so that this handler can be instantiated safely
+     * when vendor/autoload.php is absent. Returns null when Twig is unavailable.
      *
-     * @return Environment The configured Twig environment
+     * @return \Twig\Environment|null The configured Twig environment, or null when unavailable.
      */
-    private function getTwig(): Environment
+    private function getTwig(): ?\Twig\Environment
     {
         if ($this->twig !== null) {
             return $this->twig;
         }
 
-        $loader     = new ArrayLoader();
-        $this->twig = new Environment($loader);
+        // Guard: do not attempt to load Twig classes if Twig is not installed.
+        if (class_exists(\Twig\Environment::class) === false) {
+            return null;
+        }
+
+        $loader     = new \Twig\Loader\ArrayLoader();
+        $this->twig = new \Twig\Environment($loader);
 
         // Add the mapping extension for custom filters and functions.
-        $this->twig->addExtension($this->mappingExtension);
-        $this->twig->addRuntimeLoader($this->mappingRuntimeLoader);
+        $this->twig->addExtension(new \OCA\OpenRegister\Twig\MappingExtension());
+        $this->twig->addRuntimeLoader(
+            new \OCA\OpenRegister\Twig\MappingRuntimeLoader(
+                mappingService: $this->mappingService,
+                mappingMapper: $this->mappingMapper,
+            )
+        );
 
         // Configure sandbox for security.
-        $policy = new SecurityPolicy(
+        $policy = new \Twig\Sandbox\SecurityPolicy(
             allowedTags: [],
             allowedFilters: [
                 'date',
@@ -143,7 +147,7 @@ class ComputedFieldHandler
             ]
         );
 
-        $sandbox = new SandboxExtension($policy, sandboxed: true);
+        $sandbox = new \Twig\Extension\SandboxExtension($policy, sandboxed: true);
         $this->twig->addExtension($sandbox);
 
         return $this->twig;
@@ -220,7 +224,11 @@ class ComputedFieldHandler
             $context = $this->buildTwigContext(data: $data, schema: $schema);
 
             // Create a template from the expression.
-            $twig         = $this->getTwig();
+            $twig = $this->getTwig();
+            if ($twig === null) {
+                return null;
+            }
+
             $templateName = 'computed_'.$propertyName.'_'.md5($expression);
 
             /*

@@ -28,8 +28,6 @@ use Jose\Component\Signature\Algorithm\RS512;
 use Jose\Component\Signature\JWSBuilder;
 use Jose\Component\Signature\Serializer\CompactSerializer;
 use Symfony\Component\HttpFoundation\Exception\BadRequestException;
-use Twig\Environment;
-use Twig\Loader\ArrayLoader;
 
 /**
  * Service for handling authentication against external services.
@@ -78,20 +76,35 @@ class AuthenticationService
     /**
      * Twig environment for payload rendering.
      *
-     * @var Environment
+     * @var \Twig\Environment|null
      */
-    private Environment $twig;
+    private ?\Twig\Environment $twig = null;
 
     /**
      * Constructor.
-     *
-     * @param ArrayLoader $loader The Twig array loader
      */
-    public function __construct(ArrayLoader $loader)
+    public function __construct()
     {
-        $this->twig = new Environment($loader);
-
     }//end __construct()
+
+    /**
+     * Get or lazily create the Twig environment.
+     *
+     * @return \Twig\Environment|null
+     */
+    private function getTwig(): ?\Twig\Environment
+    {
+        if ($this->twig !== null) {
+            return $this->twig;
+        }
+
+        if (class_exists(\Twig\Environment::class) === false) {
+            return null;
+        }
+
+        $this->twig = new \Twig\Environment(new \Twig\Loader\ArrayLoader());
+        return $this->twig;
+    }//end getTwig()
 
     /**
      * Create call options for OAuth with Client Credentials.
@@ -314,7 +327,12 @@ class AuthenticationService
      */
     private function getJWTPayload(array $configuration): array
     {
-        $renderedPayload = $this->twig->createTemplate($configuration['payload'])->render($configuration);
+        $twig = $this->getTwig();
+        if ($twig === null) {
+            throw new \RuntimeException('Twig is not available (vendor/autoload.php missing or composer install not run).');
+        }
+
+        $renderedPayload = $twig->createTemplate($configuration['payload'])->render($configuration);
 
         return json_decode(json: $renderedPayload, associative: true);
 

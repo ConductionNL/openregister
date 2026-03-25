@@ -184,7 +184,6 @@ use OCA\OpenRegister\Event\ConversationUpdatedEvent;
 use OCA\OpenRegister\Event\ConversationDeletedEvent;
 use OCA\OpenRegister\Event\OrganisationUpdatedEvent;
 use OCA\OpenRegister\Event\OrganisationDeletedEvent;
-use Twig\Loader\ArrayLoader;
 use GuzzleHttp\Client;
 use Psr\Container\ContainerInterface;
 use OCA\OpenRegister\Service\Configuration\GitHubHandler;

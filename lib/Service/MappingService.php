@@ -60,9 +60,9 @@ class MappingService
     /**
      * Twig templating environment
      *
-     * @var Environment
+     * @var Environment|null
      */
-    private Environment $twig;
+    private ?Environment $twig = null;
 
     /**
      * In-memory cache for compiled Twig templates, keyed by template string hash
@@ -104,16 +104,6 @@ class MappingService
         ICacheFactory $cacheFactory,
         private readonly LoggerInterface $logger
     ) {
-        $loader     = new ArrayLoader([]);
-        $this->twig = new Environment($loader);
-        $this->twig->addExtension(new MappingExtension());
-        $this->twig->addRuntimeLoader(
-            new MappingRuntimeLoader(
-                mappingService: $this,
-                mappingMapper: $this->mappingMapper,
-            )
-        );
-
         // Initialize distributed cache for mapping entity lookups.
         try {
             $this->mappingCache = $cacheFactory->createDistributed(self::CACHE_PREFIX);
@@ -529,6 +519,38 @@ class MappingService
     }//end areAllArrayKeysNull()
 
     /**
+     * Get or lazily create the Twig environment.
+     *
+     * Defers Twig initialisation until first use so the service can be
+     * instantiated safely even when the Composer autoloader has not yet
+     * registered the Twig classes (e.g. vendor/autoload.php missing).
+     *
+     * @return Environment|null The Twig environment, or null when Twig is unavailable.
+     */
+    private function getTwigEnvironment(): ?Environment
+    {
+        if ($this->twig !== null) {
+            return $this->twig;
+        }
+
+        if (class_exists(Environment::class) === false) {
+            return null;
+        }
+
+        $loader     = new ArrayLoader([]);
+        $this->twig = new Environment($loader);
+        $this->twig->addExtension(new MappingExtension());
+        $this->twig->addRuntimeLoader(
+            new MappingRuntimeLoader(
+                mappingService: $this,
+                mappingMapper: $this->mappingMapper,
+            )
+        );
+
+        return $this->twig;
+    }//end getTwigEnvironment()
+
+    /**
      * Returns a compiled Twig template from the in-memory cache, compiling on first use.
      *
      * Avoids re-parsing the same Twig template string on repeated calls within a request.
@@ -543,7 +565,12 @@ class MappingService
         $cacheKey = hash('sha256', $templateString);
 
         if (isset($this->templateCache[$cacheKey]) === false) {
-            $this->templateCache[$cacheKey] = $this->twig->createTemplate($templateString);
+            $twig = $this->getTwigEnvironment();
+            if ($twig === null) {
+                throw new \RuntimeException('Twig is not available (vendor/autoload.php missing or composer install not run).');
+            }
+
+            $this->templateCache[$cacheKey] = $twig->createTemplate($templateString);
         }
 
         return $this->templateCache[$cacheKey];
