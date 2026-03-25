@@ -885,14 +885,6 @@ class IndexService
     }//end getHttpClient()
 
     /**
-     * List available ConfigSets from Solr.
-     *
-     * This is a Solr-specific operation. Returns an empty array if the
-     * backend doesn't support ConfigSets (non-Solr backends).
-     *
-     * @return array List of available ConfigSets.
-     */
-    /**
      * List all Solr collections.
      *
      * This is a Solr-specific operation. Returns an empty array if the
@@ -911,6 +903,14 @@ class IndexService
         return [];
     }//end listCollections()
 
+    /**
+     * List available ConfigSets from Solr.
+     *
+     * This is a Solr-specific operation. Returns an empty array if the
+     * backend doesn't support ConfigSets (non-Solr backends).
+     *
+     * @return array List of available ConfigSets.
+     */
     public function listConfigSets(): array
     {
         // Check if backend is Solr and has listConfigSets method.
