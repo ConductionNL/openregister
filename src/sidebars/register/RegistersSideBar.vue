@@ -299,7 +299,6 @@ export default {
 			if (stats.invalid) breakdown.invalid = stats.invalid
 			if (stats.deleted) breakdown.deleted = stats.deleted
 			if (stats.locked) breakdown.locked = stats.locked
-			if (stats.published) breakdown.published = stats.published
 			return Object.keys(breakdown).length > 0 ? breakdown : null
 		},
 		sizeBreakdown(size) {

@@ -98,13 +98,6 @@ import formatBytes from '../../services/formatBytes.js'
 								<td>{{ schemaStats.objects?.deleted || 0 }}</td>
 								<td>-</td>
 							</tr>
-							<tr class="subRow">
-								<td class="indented">
-									{{ t('openregister', 'Published') }}
-								</td>
-								<td>{{ schemaStats.objects?.published || 0 }}</td>
-								<td>-</td>
-							</tr>
 							<tr>
 								<td>{{ t('openregister', 'Files') }}</td>
 								<td>{{ schemaStats.files?.total || 0 }}</td>
