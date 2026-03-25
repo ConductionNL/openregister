@@ -516,5 +516,9 @@ return [
 
 		// GraphQL Subscriptions (SSE).
 		['name' => 'graphQLSubscription#subscribe', 'url' => '/api/graphql/subscribe', 'verb' => 'GET'],
+
+		// Files sidebar tab endpoints.
+		['name' => 'fileSidebar#getObjectsForFile', 'url' => '/api/files/{fileId}/objects', 'verb' => 'GET', 'requirements' => ['fileId' => '\d+']],
+		['name' => 'fileSidebar#getExtractionStatus', 'url' => '/api/files/{fileId}/extraction-status', 'verb' => 'GET', 'requirements' => ['fileId' => '\d+']],
     ],
 ];
