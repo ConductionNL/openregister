@@ -13,6 +13,9 @@ return [
         'Consumers' => ['url' => 'api/consumers'],
     ],
     'routes' => [
+        // Contact matching API endpoint.
+        ['name' => 'contacts#match', 'url' => '/api/contacts/match', 'verb' => 'GET'],
+
         // PATCH routes for resources (partial updates).
         ['name' => 'registers#patch', 'url' => '/api/registers/{id}', 'verb' => 'PATCH', 'requirements' => ['id' => '[^/]+']],
         ['name' => 'schemas#patch', 'url' => '/api/schemas/{id}', 'verb' => 'PATCH', 'requirements' => ['id' => '[^/]+']],
