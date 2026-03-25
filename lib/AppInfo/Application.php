@@ -196,6 +196,7 @@ use OCA\OpenRegister\Service\Configuration\PreviewHandler;
 use OCA\OpenRegister\Service\Configuration\UploadHandler as ConfigurationUploadHandler;
 use OCA\OpenRegister\Service\LanguageService;
 use OCA\OpenRegister\Middleware\LanguageMiddleware;
+use OCA\OpenRegister\Calendar\RegisterCalendarProvider;
 
 /**
  * Class Application
@@ -264,6 +265,9 @@ class Application extends App implements IBootstrap
         $this->registerVectorizationService(context: $context);
         $this->registerObjectInteractionServices(context: $context);
         $this->registerEventListeners(context: $context);
+
+        // Register calendar provider for virtual calendars from schema date fields.
+        $context->registerCalendarProvider(RegisterCalendarProvider::class);
     }//end register()
 
     /**
