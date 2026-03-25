@@ -14,11 +14,11 @@
 - [x] Handle Mail app not installed (HTTP 501 graceful degradation)
 
 ## Calendar Event Relations
-- [ ] Implement CalendarEventService (create/link/unlink VEVENT with X-OPENREGISTER-* properties)
-- [ ] Implement CalendarEventsController with REST endpoints
-- [ ] Add calendar event routes to routes.php
-- [ ] Implement calendar selection (find first VEVENT-supporting calendar)
-- [ ] Handle attendees in VEVENT creation
+- [x] Implement CalendarEventService (create/link/unlink VEVENT with X-OPENREGISTER-* properties)
+- [x] Implement CalendarEventsController with REST endpoints
+- [x] Add calendar event routes to routes.php
+- [x] Implement calendar selection (find first VEVENT-supporting calendar)
+- [x] Handle attendees in VEVENT creation
 
 ## Contact Relations
 - [ ] Implement ContactService (link/create/unlink vCard contacts with X-OPENREGISTER-* properties)
