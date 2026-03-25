@@ -112,8 +112,8 @@ class ContactsMenuProvider implements IProvider
         $this->deepLinkRegistry = $deepLinkRegistry;
         $this->actionFactory    = $actionFactory;
         $this->urlGenerator     = $urlGenerator;
-        $this->l10n             = $l10n;
-        $this->logger           = $logger;
+        $this->l10n   = $l10n;
+        $this->logger = $logger;
     }//end __construct()
 
     /**
@@ -126,7 +126,7 @@ class ContactsMenuProvider implements IProvider
     public function process(IEntry $entry): void
     {
         try {
-            $this->doProcess($entry);
+            $this->doProcess(entry: $entry);
         } catch (\Throwable $e) {
             $this->logger->warning(
                 '[ContactsMenu] Error processing contact entry: {error}',
@@ -169,10 +169,10 @@ class ContactsMenuProvider implements IProvider
         }
 
         // Inject count badge (highest priority = renders first).
-        $this->injectCountBadge($entry, $matches, $primaryEmail);
+        $this->injectCountBadge(entry: $entry, matches: $matches, primaryEmail: $primaryEmail);
 
         // Inject individual entity actions.
-        $this->injectEntityActions($entry, $matches, $primaryEmail, $fullName);
+        $this->injectEntityActions(entry: $entry, matches: $matches, primaryEmail: $primaryEmail, fullName: $fullName);
     }//end doProcess()
 
     /**
@@ -191,7 +191,7 @@ class ContactsMenuProvider implements IProvider
         // Build human-readable count string.
         $parts = [];
         foreach ($counts as $schemaTitle => $count) {
-            $parts[] = $count . ' ' . $schemaTitle;
+            $parts[] = $count.' '.$schemaTitle;
         }
 
         $countText = implode(', ', $parts);
@@ -199,7 +199,7 @@ class ContactsMenuProvider implements IProvider
         // Build search URL filtered by email.
         $searchUrl = $this->urlGenerator->linkToRouteAbsolute(
             'openregister.dashboard.index'
-        ) . '#/search?_search=' . urlencode($primaryEmail);
+        ).'#/search?_search='.urlencode($primaryEmail);
 
         $action = $this->actionFactory->newLinkAction(
             $this->urlGenerator->imagePath('openregister', 'app-dark.svg'),
@@ -251,14 +251,12 @@ class ContactsMenuProvider implements IProvider
                 // Fallback to OpenRegister's generic object detail route.
                 $url = $this->urlGenerator->linkToRouteAbsolute(
                     'openregister.dashboard.index'
-                ) . '#/objects/' . urlencode($uuid);
+                ).'#/objects/'.urlencode($uuid);
             }
 
-            $icon = $this->deepLinkRegistry->resolveIcon($registerId, $schemaId)
-                ?? $this->urlGenerator->imagePath('openregister', 'app-dark.svg');
+            $icon = $this->deepLinkRegistry->resolveIcon($registerId, $schemaId) ?? $this->urlGenerator->imagePath('openregister', 'app-dark.svg');
 
-            $label = $this->l10n->t('View in OpenRegister')
-                . ' (' . ($match['title'] ?? 'Unknown') . ')';
+            $label = $this->l10n->t('View in OpenRegister').' ('.($match['title'] ?? 'Unknown').')';
 
             $action = $this->actionFactory->newLinkAction(
                 $icon,
@@ -269,6 +267,6 @@ class ContactsMenuProvider implements IProvider
             $action->setPriority(10);
 
             $entry->addAction($action);
-        }
+        }//end foreach
     }//end injectEntityActions()
 }//end class

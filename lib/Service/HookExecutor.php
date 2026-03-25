@@ -820,31 +820,31 @@ class HookExecutor
 
         // Persist execution history to WorkflowExecution entity.
         try {
-            $this->executionMapper->createFromArray([
-                'hookId'     => $hookId,
-                'eventType'  => $eventType,
-                'objectUuid' => $objectUuid,
-                'schemaId'   => $object->getSchema(),
-                'registerId' => $object->getRegister(),
-                'engine'     => $engineName,
-                'workflowId' => $workflowId,
-                'mode'       => $mode,
-                'status'     => $persistedStatus,
-                'durationMs' => $durationMs,
-                'errors'     => $error !== null ? json_encode([['message' => $error]]) : null,
-                'metadata'   => json_encode($context),
-                'payload'    => ($payload !== null || $success === false) && $payload !== null
-                    ? json_encode($payload)
-                    : null,
-                'executedAt' => new \DateTime(),
-            ]);
+            $this->executionMapper->createFromArray(
+                    [
+                        'hookId'     => $hookId,
+                        'eventType'  => $eventType,
+                        'objectUuid' => $objectUuid,
+                        'schemaId'   => $object->getSchema(),
+                        'registerId' => $object->getRegister(),
+                        'engine'     => $engineName,
+                        'workflowId' => $workflowId,
+                        'mode'       => $mode,
+                        'status'     => $persistedStatus,
+                        'durationMs' => $durationMs,
+                        'errors'     => $error !== null ? json_encode([['message' => $error]]) : null,
+                        'metadata'   => json_encode($context),
+                        'payload'    => ($payload !== null || $success === false) && $payload !== null ? json_encode($payload) : null,
+                        'executedAt' => new \DateTime(),
+                    ]
+                    );
         } catch (Exception $e) {
             // Persistence failure MUST NOT fail the original hook execution.
             $this->logger->warning(
                 message: '[HookExecutor] Failed to persist execution history',
                 context: ['hookId' => $hookId, 'error' => $e->getMessage()]
             );
-        }
+        }//end try
 
         if ($success === true) {
             $this->logger->info(
