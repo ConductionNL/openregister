@@ -98,17 +98,20 @@ The system MUST support generating a NEN 2082 compliance report showing which re
 - AND the report MUST identify gaps with remediation guidance
 
 ### Current Implementation Status
-- **NOT implemented:** No archiving or destruction lifecycle management exists in the codebase.
-  - No `archiefnominatie`, `archiefactiedatum`, `archiefstatus`, or `classificatie` fields on objects or schemas
-  - No selection list (selectielijst) entity or configuration
-  - No destruction list generation or approval workflow
+- **Phase 1 IMPLEMENTED (2026-03-25):**
+  - Archival metadata stored in `ObjectEntity.retention` JSON field (archiefnominatie, archiefactiedatum, archiefstatus, classificatie)
+  - `SelectionList` entity and mapper for configurable retention rules (selectielijsten)
+  - `DestructionList` entity and mapper with approval workflow (pending_review -> approved -> completed)
+  - `ArchivalService` with validation, date calculation, destruction list generation/approval/rejection
+  - `ArchivalController` with full API: selection list CRUD, retention metadata GET/PUT, destruction list endpoints
+  - `DestructionCheckJob` daily background job for automated destruction scanning
+  - Audit trail integration via `AuditTrailMapper.createAuditTrail()` with action `archival.destroyed`
+  - Database migration `Version1Date20260325120000` creating two new tables
+  - 48 unit tests across 5 test files
+- **NOT YET implemented (future phases):**
   - No e-Depot export (SIP generation, MDTO XML)
   - No NEN 2082 compliance reporting
-- **Partial foundations:**
-  - `ObjectEntity` (`lib/Db/ObjectEntity.php`) supports arbitrary JSON data via the `object` property, so archival metadata could be stored as schema properties
-  - `AuditTrailMapper` (`lib/Db/AuditTrailMapper.php`) already logs create/update/delete actions, which could record `archival.destroyed` events
-  - `ExportService` (`lib/Db/ExportService.php`) exists for CSV/Excel export, but not for MDTO XML or SIP packages
-  - Retention period tracking does not exist at any level (register, schema, or object)
+  - No integration with external archival systems
 
 ### Standards & References
 - **MDTO** (Metagegevens Duurzaam Toegankelijke Overheidsinformatie) — Dutch standard for archival metadata
