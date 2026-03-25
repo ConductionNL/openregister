@@ -30,6 +30,29 @@ return [
         ['name' => 'emails#quickLink', 'url' => '/api/emails/quick-link', 'verb' => 'POST'],
         ['name' => 'emails#deleteLink', 'url' => '/api/emails/{linkId}', 'verb' => 'DELETE', 'requirements' => ['linkId' => '\d+']],
 
+        // Workflow executions.
+        ['name' => 'workflowExecution#index', 'url' => '/api/workflow-executions', 'verb' => 'GET'],
+        ['name' => 'workflowExecution#show', 'url' => '/api/workflow-executions/{id}', 'verb' => 'GET', 'requirements' => ['id' => '\d+']],
+        ['name' => 'workflowExecution#destroy', 'url' => '/api/workflow-executions/{id}', 'verb' => 'DELETE', 'requirements' => ['id' => '\d+']],
+
+        // Scheduled workflows.
+        ['name' => 'scheduledWorkflow#index', 'url' => '/api/scheduled-workflows', 'verb' => 'GET'],
+        ['name' => 'scheduledWorkflow#create', 'url' => '/api/scheduled-workflows', 'verb' => 'POST'],
+        ['name' => 'scheduledWorkflow#show', 'url' => '/api/scheduled-workflows/{id}', 'verb' => 'GET', 'requirements' => ['id' => '\d+']],
+        ['name' => 'scheduledWorkflow#update', 'url' => '/api/scheduled-workflows/{id}', 'verb' => 'PUT', 'requirements' => ['id' => '\d+']],
+        ['name' => 'scheduledWorkflow#destroy', 'url' => '/api/scheduled-workflows/{id}', 'verb' => 'DELETE', 'requirements' => ['id' => '\d+']],
+
+        // Approval chains and steps.
+        ['name' => 'approval#index', 'url' => '/api/approval-chains', 'verb' => 'GET'],
+        ['name' => 'approval#create', 'url' => '/api/approval-chains', 'verb' => 'POST'],
+        ['name' => 'approval#show', 'url' => '/api/approval-chains/{id}', 'verb' => 'GET', 'requirements' => ['id' => '\d+']],
+        ['name' => 'approval#update', 'url' => '/api/approval-chains/{id}', 'verb' => 'PUT', 'requirements' => ['id' => '\d+']],
+        ['name' => 'approval#destroy', 'url' => '/api/approval-chains/{id}', 'verb' => 'DELETE', 'requirements' => ['id' => '\d+']],
+        ['name' => 'approval#objects', 'url' => '/api/approval-chains/{id}/objects', 'verb' => 'GET', 'requirements' => ['id' => '\d+']],
+        ['name' => 'approval#steps', 'url' => '/api/approval-steps', 'verb' => 'GET'],
+        ['name' => 'approval#approve', 'url' => '/api/approval-steps/{id}/approve', 'verb' => 'POST', 'requirements' => ['id' => '\d+']],
+        ['name' => 'approval#reject', 'url' => '/api/approval-steps/{id}/reject', 'verb' => 'POST', 'requirements' => ['id' => '\d+']],
+
         // Mappings - Custom routes.
         ['name' => 'mappings#test', 'url' => '/api/mappings/test', 'verb' => 'POST'],
 
@@ -256,7 +279,41 @@ return [
         ['name' => 'objects#canDelete', 'url' => '/api/objects/{register}/{schema}/{id}/can-delete', 'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
         ['name' => 'objects#merge', 'url' => '/api/objects/{register}/{schema}/{id}/merge', 'verb' => 'POST', 'requirements' => ['id' => '[^/]+']],
         ['name' => 'objects#migrate', 'url' => '/api/migrate', 'verb' => 'POST'],
-        // Relations.
+        // File actions (advanced).
+        ['name' => 'files#rename', 'url' => '/api/objects/{register}/{schema}/{id}/files/{fileId}/rename', 'verb' => 'PUT', 'requirements' => ['id' => '[^/]+', 'fileId' => '\d+']],
+        ['name' => 'files#copy', 'url' => '/api/objects/{register}/{schema}/{id}/files/{fileId}/copy', 'verb' => 'POST', 'requirements' => ['id' => '[^/]+', 'fileId' => '\d+']],
+        ['name' => 'files#move', 'url' => '/api/objects/{register}/{schema}/{id}/files/{fileId}/move', 'verb' => 'POST', 'requirements' => ['id' => '[^/]+', 'fileId' => '\d+']],
+        ['name' => 'files#listVersions', 'url' => '/api/objects/{register}/{schema}/{id}/files/{fileId}/versions', 'verb' => 'GET', 'requirements' => ['id' => '[^/]+', 'fileId' => '\d+']],
+        ['name' => 'files#restoreVersion', 'url' => '/api/objects/{register}/{schema}/{id}/files/{fileId}/versions/{versionId}/restore', 'verb' => 'POST', 'requirements' => ['id' => '[^/]+', 'fileId' => '\d+', 'versionId' => '[^/]+']],
+        ['name' => 'files#lock', 'url' => '/api/objects/{register}/{schema}/{id}/files/{fileId}/lock', 'verb' => 'POST', 'requirements' => ['id' => '[^/]+', 'fileId' => '\d+']],
+        ['name' => 'files#unlock', 'url' => '/api/objects/{register}/{schema}/{id}/files/{fileId}/unlock', 'verb' => 'POST', 'requirements' => ['id' => '[^/]+', 'fileId' => '\d+']],
+        ['name' => 'files#batch', 'url' => '/api/objects/{register}/{schema}/{id}/files/batch', 'verb' => 'POST', 'requirements' => ['id' => '[^/]+']],
+        ['name' => 'files#preview', 'url' => '/api/objects/{register}/{schema}/{id}/files/{fileId}/preview', 'verb' => 'GET', 'requirements' => ['id' => '[^/]+', 'fileId' => '\d+']],
+        ['name' => 'files#updateLabels', 'url' => '/api/objects/{register}/{schema}/{id}/files/{fileId}/labels', 'verb' => 'PUT', 'requirements' => ['id' => '[^/]+', 'fileId' => '\d+']],
+
+        // Calendar event relations (CalDAV VEVENT wrapper).
+        ['name' => 'calendarEvents#index', 'url' => '/api/objects/{register}/{schema}/{id}/events', 'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
+        ['name' => 'calendarEvents#create', 'url' => '/api/objects/{register}/{schema}/{id}/events', 'verb' => 'POST', 'requirements' => ['id' => '[^/]+']],
+        ['name' => 'calendarEvents#link', 'url' => '/api/objects/{register}/{schema}/{id}/events/link', 'verb' => 'POST', 'requirements' => ['id' => '[^/]+']],
+        ['name' => 'calendarEvents#destroy', 'url' => '/api/objects/{register}/{schema}/{id}/events/{eventId}', 'verb' => 'DELETE', 'requirements' => ['id' => '[^/]+', 'eventId' => '[^/]+']],
+
+        // Contact relations (CardDAV wrapper).
+        ['name' => 'contacts#index', 'url' => '/api/objects/{register}/{schema}/{id}/contacts', 'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
+        ['name' => 'contacts#create', 'url' => '/api/objects/{register}/{schema}/{id}/contacts', 'verb' => 'POST', 'requirements' => ['id' => '[^/]+']],
+        ['name' => 'contacts#update', 'url' => '/api/objects/{register}/{schema}/{id}/contacts/{contactId}', 'verb' => 'PUT', 'requirements' => ['id' => '[^/]+', 'contactId' => '\d+']],
+        ['name' => 'contacts#destroy', 'url' => '/api/objects/{register}/{schema}/{id}/contacts/{contactId}', 'verb' => 'DELETE', 'requirements' => ['id' => '[^/]+', 'contactId' => '\d+']],
+        ['name' => 'contacts#objects', 'url' => '/api/contacts/{contactUid}/objects', 'verb' => 'GET'],
+
+        // Deck card relations (Nextcloud Deck wrapper).
+        ['name' => 'deck#index', 'url' => '/api/objects/{register}/{schema}/{id}/deck', 'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
+        ['name' => 'deck#create', 'url' => '/api/objects/{register}/{schema}/{id}/deck', 'verb' => 'POST', 'requirements' => ['id' => '[^/]+']],
+        ['name' => 'deck#destroy', 'url' => '/api/objects/{register}/{schema}/{id}/deck/{deckId}', 'verb' => 'DELETE', 'requirements' => ['id' => '[^/]+', 'deckId' => '\d+']],
+        ['name' => 'deck#objects', 'url' => '/api/deck/boards/{boardId}/objects', 'verb' => 'GET', 'requirements' => ['boardId' => '\d+']],
+
+        // Unified entity relations.
+        ['name' => 'relations#index', 'url' => '/api/objects/{register}/{schema}/{id}/relations', 'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
+
+        // Relations (object graph).
         ['name' => 'objects#contracts', 'url' => '/api/objects/{register}/{schema}/{id}/contracts', 'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
         ['name' => 'objects#uses', 'url' => '/api/objects/{register}/{schema}/{id}/uses', 'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
         ['name' => 'objects#used', 'url' => '/api/objects/{register}/{schema}/{id}/used', 'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
