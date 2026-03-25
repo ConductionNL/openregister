@@ -70,10 +70,11 @@ function mountSidebar() {
 
 		const container = createContainer(mountPoint)
 
-		new Vue({
+		const app = new Vue({
 			el: container,
 			render: (h) => h(MailSidebar),
 		})
+		return app
 	}
 
 	tryMount()

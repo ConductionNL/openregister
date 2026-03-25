@@ -52,34 +52,74 @@ use OCP\AppFramework\Db\Entity;
 class EmailLink extends Entity implements JsonSerializable
 {
 
-    /** @var string|null */
+    /**
+     * The object uuid.
+     *
+     * @var string|null
+     */
     protected ?string $objectUuid = null;
 
-    /** @var int|null */
+    /**
+     * The register id.
+     *
+     * @var integer|null
+     */
     protected ?int $registerId = null;
 
-    /** @var int|null */
+    /**
+     * The mail account id.
+     *
+     * @var integer|null
+     */
     protected ?int $mailAccountId = null;
 
-    /** @var int|null */
+    /**
+     * The mail message id.
+     *
+     * @var integer|null
+     */
     protected ?int $mailMessageId = null;
 
-    /** @var string|null */
+    /**
+     * The mail message uid.
+     *
+     * @var string|null
+     */
     protected ?string $mailMessageUid = null;
 
-    /** @var string|null */
+    /**
+     * The subject.
+     *
+     * @var string|null
+     */
     protected ?string $subject = null;
 
-    /** @var string|null */
+    /**
+     * The sender.
+     *
+     * @var string|null
+     */
     protected ?string $sender = null;
 
-    /** @var DateTime|null */
+    /**
+     * The mail date.
+     *
+     * @var DateTime|null
+     */
     protected ?DateTime $mailDate = null;
 
-    /** @var string|null */
+    /**
+     * The linked by.
+     *
+     * @var string|null
+     */
     protected ?string $linkedBy = null;
 
-    /** @var DateTime|null */
+    /**
+     * The linked at.
+     *
+     * @var DateTime|null
+     */
     protected ?DateTime $linkedAt = null;
 
     /**
@@ -87,16 +127,16 @@ class EmailLink extends Entity implements JsonSerializable
      */
     public function __construct()
     {
-        $this->addType('objectUuid', 'string');
-        $this->addType('registerId', 'integer');
-        $this->addType('mailAccountId', 'integer');
-        $this->addType('mailMessageId', 'integer');
-        $this->addType('mailMessageUid', 'string');
-        $this->addType('subject', 'string');
-        $this->addType('sender', 'string');
-        $this->addType('mailDate', 'datetime');
-        $this->addType('linkedBy', 'string');
-        $this->addType('linkedAt', 'datetime');
+        $this->addType(fieldName: 'objectUuid', type: 'string');
+        $this->addType(fieldName: 'registerId', type: 'integer');
+        $this->addType(fieldName: 'mailAccountId', type: 'integer');
+        $this->addType(fieldName: 'mailMessageId', type: 'integer');
+        $this->addType(fieldName: 'mailMessageUid', type: 'string');
+        $this->addType(fieldName: 'subject', type: 'string');
+        $this->addType(fieldName: 'sender', type: 'string');
+        $this->addType(fieldName: 'mailDate', type: 'datetime');
+        $this->addType(fieldName: 'linkedBy', type: 'string');
+        $this->addType(fieldName: 'linkedAt', type: 'datetime');
     }//end __construct()
 
     /**

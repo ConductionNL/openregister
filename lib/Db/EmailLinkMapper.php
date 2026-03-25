@@ -36,7 +36,7 @@ class EmailLinkMapper extends QBMapper
      */
     public function __construct(IDBConnection $db)
     {
-        parent::__construct($db, 'openregister_email_links', EmailLink::class);
+        parent::__construct(db: $db, tableName: 'openregister_email_links', entityClass: EmailLink::class);
     }//end __construct()
 
     /**
@@ -48,7 +48,7 @@ class EmailLinkMapper extends QBMapper
      *
      * @return EmailLink[] Array of email links.
      */
-    public function findByObjectUuid(string $objectUuid, ?int $limit = null, ?int $offset = null): array
+    public function findByObjectUuid(string $objectUuid, ?int $limit=null, ?int $offset=null): array
     {
         $qb = $this->db->getQueryBuilder();
         $qb->select('*')
@@ -64,7 +64,7 @@ class EmailLinkMapper extends QBMapper
             $qb->setFirstResult($offset);
         }
 
-        return $this->findEntities($qb);
+        return $this->findEntities(query: $qb);
     }//end findByObjectUuid()
 
     /**
@@ -103,13 +103,13 @@ class EmailLinkMapper extends QBMapper
             ->where($qb->expr()->eq('sender', $qb->createNamedParameter($sender)))
             ->orderBy('mail_date', 'DESC');
 
-        return $this->findEntities($qb);
+        return $this->findEntities(query: $qb);
     }//end findBySender()
 
     /**
      * Find a specific email link by object UUID and mail message ID.
      *
-     * @param string $objectUuid   The object UUID.
+     * @param string $objectUuid    The object UUID.
      * @param int    $mailMessageId The mail message ID.
      *
      * @return EmailLink|null The link or null if not found.
@@ -123,7 +123,7 @@ class EmailLinkMapper extends QBMapper
             ->andWhere($qb->expr()->eq('mail_message_id', $qb->createNamedParameter($mailMessageId, IQueryBuilder::PARAM_INT)));
 
         try {
-            return $this->findEntity($qb);
+            return $this->findEntity(query: $qb);
         } catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
             return null;
         }

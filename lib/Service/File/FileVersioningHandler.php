@@ -41,7 +41,6 @@ use Psr\Log\LoggerInterface;
  */
 class FileVersioningHandler
 {
-
     /**
      * Constructor for FileVersioningHandler.
      *
@@ -93,7 +92,7 @@ class FileVersioningHandler
 
         try {
             // Get the current version as the first entry.
-            $versions = [];
+            $versions   = [];
             $versions[] = [
                 'versionId'         => 'current',
                 'timestamp'         => (new DateTime())->setTimestamp($file->getMTime())->format('c'),
@@ -108,18 +107,18 @@ class FileVersioningHandler
             // Nextcloud's IVersionManager is in OCA\Files_Versions namespace.
             if (class_exists('OCA\Files_Versions\Versions\IVersionManager') === true) {
                 $versionManager = \OCP\Server::get('OCA\Files_Versions\Versions\IVersionManager');
-                $user = $this->userSession->getUser();
+                $user           = $this->userSession->getUser();
                 if ($versionManager !== null && $user !== null) {
-                    $storage = $file->getStorage();
+                    $storage      = $file->getStorage();
                     $fileVersions = $versionManager->getVersionsForFile($user, $file);
                     foreach ($fileVersions as $version) {
                         $versions[] = [
-                            'versionId'         => 'v-' . $version->getTimestamp(),
+                            'versionId'         => 'v-'.$version->getTimestamp(),
                             'timestamp'         => (new DateTime())->setTimestamp($version->getTimestamp())->format('c'),
                             'size'              => $version->getSize(),
                             'author'            => $version->getSourceFileName(),
                             'authorDisplayName' => $version->getSourceFileName(),
-                            'label'             => method_exists($version, 'getLabel') ? $version->getLabel() : null,
+                            'label'             => method_exists($version, 'getLabel') === true ? $version->getLabel() : null,
                             'isCurrent'         => false,
                         ];
                     }
@@ -129,12 +128,12 @@ class FileVersioningHandler
             return ['versions' => $versions];
         } catch (Exception $e) {
             $this->logger->warning(
-                message: '[FileVersioningHandler] Failed to list versions: ' . $e->getMessage(),
+                message: '[FileVersioningHandler] Failed to list versions: '.$e->getMessage(),
                 context: ['file' => __FILE__, 'line' => __LINE__]
             );
             return [
                 'versions' => [],
-                'warning'  => 'Failed to retrieve file versions: ' . $e->getMessage(),
+                'warning'  => 'Failed to retrieve file versions: '.$e->getMessage(),
             ];
         }//end try
     }//end listVersions()
@@ -164,7 +163,7 @@ class FileVersioningHandler
         try {
             if (class_exists('OCA\Files_Versions\Versions\IVersionManager') === true) {
                 $versionManager = \OCP\Server::get('OCA\Files_Versions\Versions\IVersionManager');
-                $user = $this->userSession->getUser();
+                $user           = $this->userSession->getUser();
                 if ($versionManager !== null && $user !== null) {
                     $fileVersions = $versionManager->getVersionsForFile($user, $file);
                     foreach ($fileVersions as $version) {
@@ -183,7 +182,7 @@ class FileVersioningHandler
             throw new Exception('Version not found');
         } catch (Exception $e) {
             $this->logger->error(
-                message: '[FileVersioningHandler] Failed to restore version: ' . $e->getMessage(),
+                message: '[FileVersioningHandler] Failed to restore version: '.$e->getMessage(),
                 context: ['file' => __FILE__, 'line' => __LINE__]
             );
             throw $e;

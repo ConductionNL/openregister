@@ -160,9 +160,9 @@ class ObjectReferenceProvider extends ADiscoverableReferenceProvider implements 
         LoggerInterface $logger,
         ?string $userId
     ) {
-        $this->urlGenerator     = $urlGenerator;
-        $this->l10n             = $l10n;
-        $this->objectService    = $objectService;
+        $this->urlGenerator  = $urlGenerator;
+        $this->l10n          = $l10n;
+        $this->objectService = $objectService;
         $this->deepLinkRegistry = $deepLinkRegistry;
         $this->schemaMapper     = $schemaMapper;
         $this->registerMapper   = $registerMapper;
@@ -236,7 +236,7 @@ class ObjectReferenceProvider extends ADiscoverableReferenceProvider implements 
      */
     public function matchReference(string $referenceText): bool
     {
-        return $this->parseReference($referenceText) !== null;
+        return $this->parseReference(referenceText: $referenceText) !== null;
     }//end matchReference()
 
     /**
@@ -254,7 +254,7 @@ class ObjectReferenceProvider extends ADiscoverableReferenceProvider implements 
      */
     public function resolveReference(string $referenceText): ?IReference
     {
-        $parsed = $this->parseReference($referenceText);
+        $parsed = $this->parseReference(referenceText: $referenceText);
         if ($parsed === null) {
             return null;
         }
@@ -279,18 +279,18 @@ class ObjectReferenceProvider extends ADiscoverableReferenceProvider implements 
             $selfData   = $objectData['@self'] ?? [];
 
             // Extract title.
-            $title = $this->extractTitle($objectData, $selfData);
+            $title = $this->extractTitle(objectData: $objectData, selfData: $selfData);
 
             // Extract description.
-            $description = $this->extractDescription($objectData);
+            $description = $this->extractDescription(objectData: $objectData);
 
             // Resolve schema and register names.
-            $schemaTitle   = $this->resolveSchemaName($schemaId);
-            $registerTitle = $this->resolveRegisterName($registerId);
+            $schemaTitle   = $this->resolveSchemaName(schemaId: $schemaId);
+            $registerTitle = $this->resolveRegisterName(registerId: $registerId);
 
             // Resolve deep link URL.
             $flatData = array_merge(
-                is_array($selfData) ? $selfData : [],
+                is_array($selfData) === true ? $selfData : [],
                 ['uuid' => $uuid, 'register' => $registerId, 'schema' => $schemaId]
             );
 
@@ -320,7 +320,7 @@ class ObjectReferenceProvider extends ADiscoverableReferenceProvider implements 
             }
 
             // Extract preview properties.
-            $properties = $this->extractPreviewProperties($objectData);
+            $properties = $this->extractPreviewProperties(objectData: $objectData);
 
             // Get updated timestamp.
             $updated = $selfData['updated'] ?? $objectData['updated'] ?? '';
@@ -370,12 +370,12 @@ class ObjectReferenceProvider extends ADiscoverableReferenceProvider implements 
      */
     public function getCachePrefix(string $referenceId): string
     {
-        $parsed = $this->parseReference($referenceId);
+        $parsed = $this->parseReference(referenceText: $referenceId);
         if ($parsed === null) {
             return $referenceId;
         }
 
-        return $parsed['registerId'] . '/' . $parsed['schemaId'] . '/' . $parsed['uuid'];
+        return $parsed['registerId'].'/'.$parsed['schemaId'].'/'.$parsed['uuid'];
     }//end getCachePrefix()
 
     /**
@@ -411,10 +411,8 @@ class ObjectReferenceProvider extends ADiscoverableReferenceProvider implements 
         $uuidPattern = '[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}';
 
         // Pattern 1: Hash-routed UI URL.
-        // /apps/openregister/#/registers/{id}/schemas/{id}/objects/{uuid}
-        $hashPattern = '/^' . $escapedBase
-            . '(?:\/index\.php)?\/apps\/openregister\/#\/registers\/(\d+)\/schemas\/(\d+)\/objects\/('
-            . $uuidPattern . ')$/i';
+        // /apps/openregister/#/registers/{id}/schemas/{id}/objects/{uuid}.
+        $hashPattern = '/^'.$escapedBase.'(?:\/index\.php)?\/apps\/openregister\/#\/registers\/(\d+)\/schemas\/(\d+)\/objects\/('.$uuidPattern.')$/i';
 
         if (preg_match($hashPattern, $referenceText, $matches) === 1) {
             return [
@@ -425,10 +423,8 @@ class ObjectReferenceProvider extends ADiscoverableReferenceProvider implements 
         }
 
         // Pattern 2: API object URL.
-        // /apps/openregister/api/objects/{registerId}/{schemaId}/{uuid}
-        $apiPattern = '/^' . $escapedBase
-            . '(?:\/index\.php)?\/apps\/openregister\/api\/objects\/(\d+)\/(\d+)\/('
-            . $uuidPattern . ')$/i';
+        // /apps/openregister/api/objects/{registerId}/{schemaId}/{uuid}.
+        $apiPattern = '/^'.$escapedBase.'(?:\/index\.php)?\/apps\/openregister\/api\/objects\/(\d+)\/(\d+)\/('.$uuidPattern.')$/i';
 
         if (preg_match($apiPattern, $referenceText, $matches) === 1) {
             return [
@@ -439,10 +435,8 @@ class ObjectReferenceProvider extends ADiscoverableReferenceProvider implements 
         }
 
         // Pattern 3: Direct object show route.
-        // /apps/openregister/objects/{registerId}/{schemaId}/{uuid}
-        $directPattern = '/^' . $escapedBase
-            . '(?:\/index\.php)?\/apps\/openregister\/objects\/(\d+)\/(\d+)\/('
-            . $uuidPattern . ')$/i';
+        // /apps/openregister/objects/{registerId}/{schemaId}/{uuid}.
+        $directPattern = '/^'.$escapedBase.'(?:\/index\.php)?\/apps\/openregister\/objects\/(\d+)\/(\d+)\/('.$uuidPattern.')$/i';
 
         if (preg_match($directPattern, $referenceText, $matches) === 1) {
             return [

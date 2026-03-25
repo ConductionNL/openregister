@@ -41,7 +41,6 @@ use Symfony\Component\Uid\Uuid;
  */
 class SelectionListMapper extends QBMapper
 {
-
     /**
      * Constructor.
      *
@@ -49,7 +48,7 @@ class SelectionListMapper extends QBMapper
      */
     public function __construct(IDBConnection $db)
     {
-        parent::__construct($db, 'openregister_selection_lists');
+        parent::__construct(db: $db, tableName: 'openregister_selection_lists');
     }//end __construct()
 
     /**
@@ -68,7 +67,7 @@ class SelectionListMapper extends QBMapper
             ->from($this->getTableName())
             ->where($qb->expr()->eq('id', $qb->createNamedParameter($id, IQueryBuilder::PARAM_INT)));
 
-        return $this->findEntity($qb);
+        return $this->findEntity(query: $qb);
     }//end find()
 
     /**
@@ -87,7 +86,7 @@ class SelectionListMapper extends QBMapper
             ->from($this->getTableName())
             ->where($qb->expr()->eq('uuid', $qb->createNamedParameter($uuid)));
 
-        return $this->findEntity($qb);
+        return $this->findEntity(query: $qb);
     }//end findByUuid()
 
     /**
@@ -104,7 +103,7 @@ class SelectionListMapper extends QBMapper
             ->from($this->getTableName())
             ->where($qb->expr()->eq('category', $qb->createNamedParameter($category)));
 
-        return $this->findEntities($qb);
+        return $this->findEntities(query: $qb);
     }//end findByCategory()
 
     /**
@@ -115,7 +114,7 @@ class SelectionListMapper extends QBMapper
      *
      * @return SelectionList[]
      */
-    public function findAll(?int $limit = null, ?int $offset = null): array
+    public function findAll(?int $limit=null, ?int $offset=null): array
     {
         $qb = $this->db->getQueryBuilder();
         $qb->select('*')
@@ -125,11 +124,12 @@ class SelectionListMapper extends QBMapper
         if ($limit !== null) {
             $qb->setMaxResults($limit);
         }
+
         if ($offset !== null) {
             $qb->setFirstResult($offset);
         }
 
-        return $this->findEntities($qb);
+        return $this->findEntities(query: $qb);
     }//end findAll()
 
     /**
@@ -144,10 +144,11 @@ class SelectionListMapper extends QBMapper
         if ($entity->getUuid() === null) {
             $entity->setUuid(Uuid::v4()->toRfc4122());
         }
+
         $entity->setCreated(new \DateTime());
         $entity->setUpdated(new \DateTime());
 
-        return $this->insert($entity);
+        return $this->insert(entity: $entity);
     }//end createEntry()
 
     /**
@@ -161,6 +162,6 @@ class SelectionListMapper extends QBMapper
     {
         $entity->setUpdated(new \DateTime());
 
-        return $this->update($entity);
+        return $this->update(objectId: $entity);
     }//end updateEntry()
 }//end class

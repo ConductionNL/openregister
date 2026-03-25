@@ -85,7 +85,7 @@ class FileSidebarService
         $results = [];
 
         try {
-            // findAll respects RBAC — only registers the user can access.
+            // FindAll respects RBAC — only registers the user can access.
             $registers = $this->registerMapper->findAll();
         } catch (\Exception $e) {
             $this->logger->warning(
@@ -114,11 +114,11 @@ class FileSidebarService
                     continue;
                 }
 
-                $found = $this->searchTableForFileId($tableName, $fileId);
+                $found = $this->searchTableForFileId(tableName: $tableName, fileId: $fileId);
                 foreach ($found as $row) {
                     $results[] = [
                         'uuid'     => $row['uuid'] ?? ($row['id'] ?? ''),
-                        'title'    => $this->extractTitle($row),
+                        'title'    => $this->extractTitle(row: $row),
                         'register' => [
                             'id'    => $register->getId(),
                             'title' => $register->getTitle() ?? 'Register '.$register->getId(),
@@ -155,9 +155,20 @@ class FileSidebarService
 
             // System columns that should not be searched for file references.
             $systemColumns = [
-                'id', 'uuid', 'register', 'schema', 'object', 'created',
-                'updated', 'owner', 'organisation', 'authorization', 'version',
-                'status', 'folder', 'textContent',
+                'id',
+                'uuid',
+                'register',
+                'schema',
+                'object',
+                'created',
+                'updated',
+                'owner',
+                'organisation',
+                'authorization',
+                'version',
+                'status',
+                'folder',
+                'textContent',
             ];
 
             $searchColumns = [];
@@ -298,8 +309,8 @@ class FileSidebarService
 
             // Look up entity type from GdprEntity.
             try {
-                $entity   = $this->gdprEntityMapper->find($relation->getEntityId());
-                $type     = $entity->getType();
+                $entity = $this->gdprEntityMapper->find($relation->getEntityId());
+                $type   = $entity->getType();
                 if (isset($entityTypeCounts[$type]) === false) {
                     $entityTypeCounts[$type] = 0;
                 }
