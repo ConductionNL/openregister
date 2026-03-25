@@ -10,6 +10,8 @@
 
 import Vue from 'vue'
 import { translate as t } from '@nextcloud/l10n'
+import RegisterObjectsTab from './components/files-sidebar/RegisterObjectsTab.vue'
+import ExtractionTab from './components/files-sidebar/ExtractionTab.vue'
 
 // MDI icon SVG paths (inline to avoid icon library dependency).
 // database-outline
@@ -37,15 +39,10 @@ document.addEventListener('DOMContentLoaded', () => {
 		name: t('openregister', 'Register Objects'),
 		icon: databaseOutlineIcon,
 
-		async mount(el, fileInfo, context) {
+		mount(el, fileInfo, context) {
 			if (el._registerObjectsVm) {
 				el._registerObjectsVm.$destroy()
 			}
-
-			const { default: RegisterObjectsTab } = await import(
-				/* webpackChunkName: "files-sidebar-objects-tab" */
-				'./components/files-sidebar/RegisterObjectsTab.vue'
-			)
 
 			const View = Vue.extend(RegisterObjectsTab)
 			el._registerObjectsVm = new View({
@@ -80,15 +77,10 @@ document.addEventListener('DOMContentLoaded', () => {
 		name: t('openregister', 'Extraction'),
 		icon: textBoxSearchOutlineIcon,
 
-		async mount(el, fileInfo, context) {
+		mount(el, fileInfo, context) {
 			if (el._extractionVm) {
 				el._extractionVm.$destroy()
 			}
-
-			const { default: ExtractionTab } = await import(
-				/* webpackChunkName: "files-sidebar-extraction-tab" */
-				'./components/files-sidebar/ExtractionTab.vue'
-			)
 
 			const View = Vue.extend(ExtractionTab)
 			el._extractionVm = new View({
