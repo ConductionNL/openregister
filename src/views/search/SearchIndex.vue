@@ -53,6 +53,17 @@ export default {
 		computedObjectType() {
 			return objectStore.createObjectTypeSlug(objectStore.searchRegister, objectStore.searchSchema)
 		},
+		normalizedSchema() {
+			const schema = objectStore.searchSchema
+			if (!schema || !schema.properties) return schema
+			const properties = {}
+			for (const [key, prop] of Object.entries(schema.properties)) {
+				properties[key] = prop.order !== undefined
+					? { ...prop, order: Number(prop.order) }
+					: prop
+			}
+			return { ...schema, properties }
+		},
 	},
 	methods: {
 		handleRefresh() {
@@ -111,7 +122,7 @@ export default {
 		<!-- creation logic is handled inside CnIndexPage due to store and object-type props -->
 		<CnIndexPage
 			:title="pageTitle"
-			:schema="objectStore.searchSchema"
+			:schema="normalizedSchema"
 			:register="objectStore.searchRegister"
 			:objects="normalizedObjects"
 			:store="objectStore"
@@ -119,7 +130,7 @@ export default {
 			:loading="objectStore.searchLoading"
 			:pagination="objectStore.searchPagination"
 			row-key="id"
-			:include-columns="objectStore.searchVisibleColumns"
+			:include-columns="objectStore.searchVisibleColumns && objectStore.searchVisibleColumns.length ? objectStore.searchVisibleColumns : null"
 			:selectable="hasSelectedRegisters && hasSelectedSchemas"
 			:selected-ids="selectedIdsForPage"
 			:sort-key="objectStore.searchParams.sortKey"
