@@ -45,11 +45,11 @@
 - [x] Extend ObjectCleanupListener for calendar event unlinking
 - [x] Extend ObjectCleanupListener for contact links cleanup
 - [x] Extend ObjectCleanupListener for deck links cleanup
-- [ ] Add CloudEvents for email.linked/unlinked
-- [ ] Add CloudEvents for event.linked/unlinked/created
-- [ ] Add CloudEvents for contact.linked/unlinked/created
-- [ ] Add CloudEvents for deck.linked/unlinked/created
-- [ ] Add audit trail entries for all relation mutations
+- [x] Add CloudEvents for email.linked/unlinked
+- [x] Add CloudEvents for event.linked/unlinked/created
+- [x] Add CloudEvents for contact.linked/unlinked/created
+- [x] Add CloudEvents for deck.linked/unlinked/created
+- [x] Add audit trail entries for all relation mutations
 
 ## Service Registration
 - [x] Register new services in Application.php

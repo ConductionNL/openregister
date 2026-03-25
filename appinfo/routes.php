@@ -317,6 +317,34 @@ return [
         ['name' => 'notes#index', 'url' => '/api/objects/{register}/{schema}/{id}/notes', 'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
         ['name' => 'notes#create', 'url' => '/api/objects/{register}/{schema}/{id}/notes', 'verb' => 'POST', 'requirements' => ['id' => '[^/]+']],
         ['name' => 'notes#destroy', 'url' => '/api/objects/{register}/{schema}/{id}/notes/{noteId}', 'verb' => 'DELETE', 'requirements' => ['id' => '[^/]+', 'noteId' => '[^/]+']],
+
+        // Email relations under objects (Nextcloud Mail wrapper).
+        ['name' => 'emails#index',   'url' => '/api/objects/{register}/{schema}/{id}/emails',            'verb' => 'GET',    'requirements' => ['id' => '[^/]+']],
+        ['name' => 'emails#create',  'url' => '/api/objects/{register}/{schema}/{id}/emails',            'verb' => 'POST',   'requirements' => ['id' => '[^/]+']],
+        ['name' => 'emails#destroy', 'url' => '/api/objects/{register}/{schema}/{id}/emails/{emailId}',  'verb' => 'DELETE', 'requirements' => ['id' => '[^/]+', 'emailId' => '\d+']],
+        ['name' => 'emails#search',  'url' => '/api/emails/search',                                      'verb' => 'GET'],
+
+        // Calendar event relations under objects (CalDAV VEVENT wrapper).
+        ['name' => 'calendarEvents#index',   'url' => '/api/objects/{register}/{schema}/{id}/events',              'verb' => 'GET',    'requirements' => ['id' => '[^/]+']],
+        ['name' => 'calendarEvents#create',  'url' => '/api/objects/{register}/{schema}/{id}/events',              'verb' => 'POST',   'requirements' => ['id' => '[^/]+']],
+        ['name' => 'calendarEvents#link',    'url' => '/api/objects/{register}/{schema}/{id}/events/link',         'verb' => 'POST',   'requirements' => ['id' => '[^/]+']],
+        ['name' => 'calendarEvents#destroy', 'url' => '/api/objects/{register}/{schema}/{id}/events/{eventId}',   'verb' => 'DELETE', 'requirements' => ['id' => '[^/]+', 'eventId' => '[^/]+']],
+
+        // Contact relations under objects (CardDAV wrapper).
+        ['name' => 'contacts#index',   'url' => '/api/objects/{register}/{schema}/{id}/contacts',                'verb' => 'GET',    'requirements' => ['id' => '[^/]+']],
+        ['name' => 'contacts#create',  'url' => '/api/objects/{register}/{schema}/{id}/contacts',                'verb' => 'POST',   'requirements' => ['id' => '[^/]+']],
+        ['name' => 'contacts#update',  'url' => '/api/objects/{register}/{schema}/{id}/contacts/{contactId}',    'verb' => 'PUT',    'requirements' => ['id' => '[^/]+', 'contactId' => '\d+']],
+        ['name' => 'contacts#destroy', 'url' => '/api/objects/{register}/{schema}/{id}/contacts/{contactId}',    'verb' => 'DELETE', 'requirements' => ['id' => '[^/]+', 'contactId' => '\d+']],
+        ['name' => 'contacts#objects', 'url' => '/api/contacts/{contactUid}/objects',                             'verb' => 'GET',    'requirements' => ['contactUid' => '[^/]+']],
+
+        // Deck card relations under objects (Nextcloud Deck wrapper).
+        ['name' => 'deck#index',   'url' => '/api/objects/{register}/{schema}/{id}/deck',            'verb' => 'GET',    'requirements' => ['id' => '[^/]+']],
+        ['name' => 'deck#create',  'url' => '/api/objects/{register}/{schema}/{id}/deck',            'verb' => 'POST',   'requirements' => ['id' => '[^/]+']],
+        ['name' => 'deck#destroy', 'url' => '/api/objects/{register}/{schema}/{id}/deck/{deckId}',   'verb' => 'DELETE', 'requirements' => ['id' => '[^/]+', 'deckId' => '\d+']],
+        ['name' => 'deck#objects', 'url' => '/api/deck/boards/{boardId}/objects',                     'verb' => 'GET',    'requirements' => ['boardId' => '\d+']],
+
+        // Unified relations endpoint.
+        ['name' => 'relations#index', 'url' => '/api/objects/{register}/{schema}/{id}/relations', 'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
         
         // Schemas.
         ['name' => 'schemas#upload', 'url' => '/api/schemas/upload', 'verb' => 'POST'],
