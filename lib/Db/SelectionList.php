@@ -72,7 +72,7 @@ class SelectionList extends Entity implements JsonSerializable
     /**
      * Number of years to retain objects in this category.
      *
-     * @var int|null
+     * @var integer|null
      */
     protected ?int $retentionYears = null;
 
@@ -171,25 +171,31 @@ class SelectionList extends Entity implements JsonSerializable
     public function hydrate(array $data): static
     {
         if (isset($data['uuid']) === true) {
-            $this->setUuid($data['uuid']);
+            $this->setUuid(uuid: $data['uuid']);
         }
+
         if (isset($data['category']) === true) {
-            $this->setCategory($data['category']);
+            $this->setCategory(category: $data['category']);
         }
+
         if (isset($data['retentionYears']) === true) {
-            $this->setRetentionYears((int) $data['retentionYears']);
+            $this->setRetentionYears(retentionYears: (int) $data['retentionYears']);
         }
+
         if (isset($data['action']) === true) {
-            $this->setAction($data['action']);
+            $this->setAction(action: $data['action']);
         }
+
         if (isset($data['description']) === true) {
-            $this->setDescription($data['description']);
+            $this->setDescription(description: $data['description']);
         }
+
         if (isset($data['schemaOverrides']) === true) {
-            $this->setSchemaOverrides($data['schemaOverrides']);
+            $this->setSchemaOverrides(schemaOverrides: $data['schemaOverrides']);
         }
+
         if (isset($data['organisation']) === true) {
-            $this->setOrganisation($data['organisation']);
+            $this->setOrganisation(organisation: $data['organisation']);
         }
 
         return $this;

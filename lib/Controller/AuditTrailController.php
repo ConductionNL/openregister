@@ -99,16 +99,16 @@ class AuditTrailController extends Controller
         // Extract sort parameters.
         // Supports both flat format (sort=created&order=DESC)
         // and bracket format (_sort[created]=DESC).
-        $sort     = [];
-        $sortRaw  = $params['sort'] ?? $params['_sort'] ?? null;
+        $sort    = [];
+        $sortRaw = $params['sort'] ?? $params['_sort'] ?? null;
 
         if (is_array($sortRaw) === true) {
-            // Bracket format: _sort[created]=DESC
+            // Bracket format: _sort[created]=DESC.
             foreach ($sortRaw as $field => $direction) {
                 $sort[$field] = strtoupper($direction) === 'ASC' ? 'ASC' : 'DESC';
             }
         } else if ($sortRaw !== null) {
-            // Flat format: sort=created&order=DESC
+            // Flat format: sort=created&order=DESC.
             $sortOrder      = $params['order'] ?? $params['_order'] ?? 'DESC';
             $sort[$sortRaw] = strtoupper($sortOrder) === 'ASC' ? 'ASC' : 'DESC';
         }
