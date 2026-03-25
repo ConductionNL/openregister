@@ -64,11 +64,11 @@
 - [ ] Add entity stores for email/event/contact/deck links
 
 ## Testing
-- [ ] Unit tests for EmailService
-- [ ] Unit tests for CalendarEventService
-- [ ] Unit tests for ContactService
-- [ ] Unit tests for DeckCardService
-- [ ] Unit tests for RelationsController
+- [x] Unit tests for EmailService
+- [x] Unit tests for CalendarEventService
+- [x] Unit tests for ContactService
+- [x] Unit tests for DeckCardService
+- [x] Unit tests for RelationsController
 - [ ] Integration tests with Greenmail (email linking)
 - [ ] Integration tests with CalDAV (event creation)
 - [ ] Integration tests with CardDAV (contact linking)

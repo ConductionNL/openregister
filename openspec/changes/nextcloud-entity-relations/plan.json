@@ -8,7 +8,7 @@
       "id": 1,
       "title": "Database migration and link entities",
       "github_issue": 1071,
-      "status": "todo",
+      "status": "done",
       "spec_ref": "openspec/changes/nextcloud-entity-relations/specs/nextcloud-entity-relations/spec.md#storage-model",
       "acceptance_criteria": [
         "Migration creates openregister_email_links, openregister_contact_links, openregister_deck_links tables",
@@ -30,7 +30,7 @@
       "id": 2,
       "title": "EmailService and EmailsController",
       "github_issue": 1079,
-      "status": "todo",
+      "status": "done",
       "spec_ref": "openspec/changes/nextcloud-entity-relations/specs/nextcloud-entity-relations/spec.md#requirement-email-relations-via-nextcloud-mail",
       "acceptance_criteria": [
         "GIVEN object, WHEN POST /emails with valid mailMessageId, THEN link created HTTP 201",
@@ -49,7 +49,7 @@
       "id": 3,
       "title": "CalendarEventService and CalendarEventsController",
       "github_issue": 1083,
-      "status": "todo",
+      "status": "done",
       "spec_ref": "openspec/changes/nextcloud-entity-relations/specs/nextcloud-entity-relations/spec.md#requirement-calendar-event-relations-via-caldav-vevent",
       "acceptance_criteria": [
         "GIVEN object, WHEN POST /events, THEN VEVENT created with X-OPENREGISTER-* and LINK",
@@ -66,7 +66,7 @@
       "id": 4,
       "title": "ContactService and ContactsController",
       "github_issue": 1084,
-      "status": "todo",
+      "status": "done",
       "spec_ref": "openspec/changes/nextcloud-entity-relations/specs/nextcloud-entity-relations/spec.md#requirement-contact-relations-via-carddav",
       "acceptance_criteria": [
         "GIVEN object, WHEN POST /contacts with addressbookId/contactUri/role, THEN dual storage created",
@@ -84,7 +84,7 @@
       "id": 5,
       "title": "DeckCardService and DeckController",
       "github_issue": 1085,
-      "status": "todo",
+      "status": "done",
       "spec_ref": "openspec/changes/nextcloud-entity-relations/specs/nextcloud-entity-relations/spec.md#requirement-deck-card-relations-via-nextcloud-deck-api",
       "acceptance_criteria": [
         "GIVEN object + Deck installed, WHEN POST /deck with boardId/stackId/title, THEN card created",
@@ -102,7 +102,7 @@
       "id": 6,
       "title": "RelationsController and unified endpoint",
       "github_issue": 1087,
-      "status": "todo",
+      "status": "done",
       "spec_ref": "openspec/changes/nextcloud-entity-relations/specs/nextcloud-entity-relations/spec.md#requirement-unified-relations-api",
       "acceptance_criteria": [
         "GET /relations returns all relation types grouped",
@@ -118,7 +118,7 @@
       "id": 7,
       "title": "ObjectCleanupListener extension and events",
       "github_issue": 1089,
-      "status": "todo",
+      "status": "done",
       "spec_ref": "openspec/changes/nextcloud-entity-relations/specs/nextcloud-entity-relations/spec.md#requirement-object-deletion-cleanup-for-new-entity-types",
       "acceptance_criteria": [
         "On object delete: email links deleted, events unlinked, contacts cleaned, deck cleaned",
@@ -134,7 +134,7 @@
       "id": 8,
       "title": "Routes and service registration",
       "github_issue": 1090,
-      "status": "todo",
+      "status": "done",
       "spec_ref": "openspec/changes/nextcloud-entity-relations/design.md#api-routes",
       "acceptance_criteria": [
         "All routes from design doc added to routes.php",
