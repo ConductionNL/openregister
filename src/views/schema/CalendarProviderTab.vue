@@ -36,7 +36,7 @@ import { translate as t } from '@nextcloud/l10n'
 				<NcColorPicker v-model="localConfig.color">
 					<NcButton>
 						<template #icon>
-							<Circle :size="20" :fill-color="localConfig.color || '#0082C9'" />
+							<CircleIcon :size="20" :fill-color="localConfig.color || '#0082C9'" />
 						</template>
 						{{ localConfig.color || '#0082C9' }}
 					</NcButton>
@@ -139,7 +139,7 @@ import {
 	NcSelect,
 	NcTextField,
 } from '@nextcloud/vue'
-import Circle from 'vue-material-design-icons/Circle.vue'
+import CircleIcon from 'vue-material-design-icons/Circle.vue'
 import ContentSave from 'vue-material-design-icons/ContentSave.vue'
 import { schemaStore } from '../../store/store.js'
 
@@ -152,7 +152,7 @@ export default {
 		NcLoadingIcon,
 		NcSelect,
 		NcTextField,
-		Circle,
+		CircleIcon,
 		ContentSave,
 	},
 	props: {

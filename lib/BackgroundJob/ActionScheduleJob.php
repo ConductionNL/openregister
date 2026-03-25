@@ -44,9 +44,9 @@ class ActionScheduleJob extends TimedJob
     /**
      * Constructor
      *
-     * @param ITimeFactory   $time           Time factory
-     * @param ActionMapper   $actionMapper   Action mapper
-     * @param ActionExecutor $actionExecutor Action executor
+     * @param ITimeFactory    $time           Time factory
+     * @param ActionMapper    $actionMapper   Action mapper
+     * @param ActionExecutor  $actionExecutor Action executor
      * @param LoggerInterface $logger         Logger
      */
     public function __construct(
@@ -56,7 +56,7 @@ class ActionScheduleJob extends TimedJob
         private readonly LoggerInterface $logger
     ) {
         parent::__construct(time: $time);
-        $this->setInterval(60);
+        $this->setInterval(interval: 60);
     }//end __construct()
 
     /**

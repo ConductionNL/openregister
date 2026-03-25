@@ -146,7 +146,7 @@ class ApprovalStepMapper extends QBMapper
      *
      * @return array<int, ApprovalStep>
      */
-    public function findAllFiltered(array $filters = [], ?int $limit = null, ?int $offset = null): array
+    public function findAllFiltered(array $filters=[], ?int $limit=null, ?int $offset=null): array
     {
         $qb = $this->db->getQueryBuilder();
 

@@ -44,10 +44,10 @@ class MailAppScriptListener implements IEventListener
     /**
      * Constructor.
      *
-     * @param IAppManager     $appManager      The app manager.
-     * @param IUserSession    $userSession     The user session.
-     * @param RegisterMapper  $registerMapper  The register mapper.
-     * @param LoggerInterface $logger          The logger.
+     * @param IAppManager     $appManager     The app manager.
+     * @param IUserSession    $userSession    The user session.
+     * @param RegisterMapper  $registerMapper The register mapper.
+     * @param LoggerInterface $logger         The logger.
      */
     public function __construct(
         private readonly IAppManager $appManager,
@@ -92,9 +92,12 @@ class MailAppScriptListener implements IEventListener
         Util::addScript('openregister', 'openregister-mail-sidebar');
         Util::addStyle('openregister', 'mail-sidebar');
 
-        $this->logger->debug('Mail sidebar script injected for user {user}', [
-            'user' => $user->getUID(),
-        ]);
+        $this->logger->debug(
+                'Mail sidebar script injected for user {user}',
+                [
+                    'user' => $user->getUID(),
+                ]
+                );
     }//end handle()
 
     /**

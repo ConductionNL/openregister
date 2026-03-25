@@ -56,43 +56,95 @@ use OCP\AppFramework\Db\Entity;
 class ScheduledWorkflow extends Entity implements JsonSerializable
 {
 
-    /** @var string|null */
+    /**
+     * The uuid.
+     *
+     * @var string|null
+     */
     protected ?string $uuid = null;
 
-    /** @var string|null */
+    /**
+     * The name.
+     *
+     * @var string|null
+     */
     protected ?string $name = null;
 
-    /** @var string|null */
+    /**
+     * The engine.
+     *
+     * @var string|null
+     */
     protected ?string $engine = null;
 
-    /** @var string|null */
+    /**
+     * The workflow id.
+     *
+     * @var string|null
+     */
     protected ?string $workflowId = null;
 
-    /** @var int|null */
+    /**
+     * The register id.
+     *
+     * @var integer|null
+     */
     protected ?int $registerId = null;
 
-    /** @var int|null */
+    /**
+     * The schema id.
+     *
+     * @var integer|null
+     */
     protected ?int $schemaId = null;
 
-    /** @var int */
+    /**
+     * The interval sec.
+     *
+     * @var integer
+     */
     protected int $intervalSec = 86400;
 
-    /** @var bool */
+    /**
+     * The enabled.
+     *
+     * @var boolean
+     */
     protected bool $enabled = true;
 
-    /** @var string|null */
+    /**
+     * The payload.
+     *
+     * @var string|null
+     */
     protected ?string $payload = null;
 
-    /** @var DateTime|null */
+    /**
+     * The last run.
+     *
+     * @var DateTime|null
+     */
     protected ?DateTime $lastRun = null;
 
-    /** @var string|null */
+    /**
+     * The last status.
+     *
+     * @var string|null
+     */
     protected ?string $lastStatus = null;
 
-    /** @var DateTime|null */
+    /**
+     * The created.
+     *
+     * @var DateTime|null
+     */
     protected ?DateTime $created = null;
 
-    /** @var DateTime|null */
+    /**
+     * The updated.
+     *
+     * @var DateTime|null
+     */
     protected ?DateTime $updated = null;
 
     /**
@@ -125,14 +177,24 @@ class ScheduledWorkflow extends Entity implements JsonSerializable
     public function hydrate(array $object): self
     {
         $fields = [
-            'uuid', 'name', 'engine', 'workflowId', 'registerId',
-            'schemaId', 'intervalSec', 'enabled', 'payload',
-            'lastRun', 'lastStatus', 'created', 'updated',
+            'uuid',
+            'name',
+            'engine',
+            'workflowId',
+            'registerId',
+            'schemaId',
+            'intervalSec',
+            'enabled',
+            'payload',
+            'lastRun',
+            'lastStatus',
+            'created',
+            'updated',
         ];
 
         foreach ($object as $key => $value) {
             if (in_array($key, $fields, true) === true) {
-                $setter = 'set' . ucfirst($key);
+                $setter = 'set'.ucfirst($key);
                 $this->$setter($value);
             }
         }

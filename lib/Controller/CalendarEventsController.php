@@ -65,7 +65,7 @@ class CalendarEventsController extends Controller
         CalendarEventService $calendarEventService,
         ObjectService $objectService
     ) {
-        parent::__construct($appName, $request);
+        parent::__construct(appName: $appName, request: $request);
 
         $this->calendarEventService = $calendarEventService;
         $this->objectService        = $objectService;
@@ -86,7 +86,7 @@ class CalendarEventsController extends Controller
     public function index(string $register, string $schema, string $id): JSONResponse
     {
         try {
-            $object = $this->validateObject($register, $schema, $id);
+            $object = $this->validateObject(object: $register, schema: $schema, schemaObject: $id);
             if ($object === null) {
                 return new JSONResponse(['error' => 'Object not found'], 404);
             }
@@ -116,7 +116,7 @@ class CalendarEventsController extends Controller
     public function create(string $register, string $schema, string $id): JSONResponse
     {
         try {
-            $object = $this->validateObject($register, $schema, $id);
+            $object = $this->validateObject(object: $register, schema: $schema, schemaObject: $id);
             if ($object === null) {
                 return new JSONResponse(['error' => 'Object not found'], 404);
             }
@@ -158,7 +158,7 @@ class CalendarEventsController extends Controller
     public function link(string $register, string $schema, string $id): JSONResponse
     {
         try {
-            $object = $this->validateObject($register, $schema, $id);
+            $object = $this->validateObject(object: $register, schema: $schema, schemaObject: $id);
             if ($object === null) {
                 return new JSONResponse(['error' => 'Object not found'], 404);
             }
@@ -201,7 +201,7 @@ class CalendarEventsController extends Controller
     public function destroy(string $register, string $schema, string $id, string $eventId): JSONResponse
     {
         try {
-            $object = $this->validateObject($register, $schema, $id);
+            $object = $this->validateObject(object: $register, schema: $schema, schemaObject: $id);
             if ($object === null) {
                 return new JSONResponse(['error' => 'Object not found'], 404);
             }

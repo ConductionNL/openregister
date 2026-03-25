@@ -39,7 +39,6 @@ use Psr\Log\LoggerInterface;
  */
 class FileAuditHandler
 {
-
     /**
      * Constructor for FileAuditHandler.
      *
@@ -76,7 +75,7 @@ class FileAuditHandler
     ): void {
         try {
             $userId = $this->getCurrentUserId();
-            $data = [
+            $data   = [
                 'fileId'   => $fileId,
                 'fileName' => $fileName,
                 'fileSize' => $fileSize,
@@ -96,7 +95,7 @@ class FileAuditHandler
         } catch (Exception $e) {
             // Audit logging should never break the download flow.
             $this->logger->warning(
-                message: '[FileAuditHandler] Failed to log download: ' . $e->getMessage(),
+                message: '[FileAuditHandler] Failed to log download: '.$e->getMessage(),
                 context: ['file' => __FILE__, 'line' => __LINE__]
             );
         }//end try
@@ -117,12 +116,12 @@ class FileAuditHandler
             $userId = $this->getCurrentUserId();
 
             $this->logger->info(
-                message: '[FileAuditHandler] Bulk download logged for ' . count($fileIds) . " files by {$userId}",
+                message: '[FileAuditHandler] Bulk download logged for '.count($fileIds)." files by {$userId}",
                 context: ['file' => __FILE__, 'line' => __LINE__]
             );
         } catch (Exception $e) {
             $this->logger->warning(
-                message: '[FileAuditHandler] Failed to log bulk download: ' . $e->getMessage(),
+                message: '[FileAuditHandler] Failed to log bulk download: '.$e->getMessage(),
                 context: ['file' => __FILE__, 'line' => __LINE__]
             );
         }//end try

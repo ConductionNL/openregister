@@ -62,7 +62,7 @@ class CalendarEventTransformer
         Schema $schema,
         array $calendarConfig
     ): ?array {
-        $objectData = $object->getObject();
+        $objectData   = $object->getObject();
         $dtstartField = $calendarConfig['dtstart'] ?? null;
 
         if ($dtstartField === null) {
@@ -75,24 +75,24 @@ class CalendarEventTransformer
             return null;
         }
 
-        $schemaId = $schema->getId();
-        $objectUuid = $object->getUuid();
-        $uid = 'openregister-' . $schemaId . '-' . $objectUuid;
-        $calendarKey = 'openregister-schema-' . $schemaId;
+        $schemaId    = $schema->getId();
+        $objectUuid  = $object->getUuid();
+        $uid         = 'openregister-'.$schemaId.'-'.$objectUuid;
+        $calendarKey = 'openregister-schema-'.$schemaId;
 
         // Determine allDay mode.
-        $allDay = $this->determineAllDay($calendarConfig, $schema, $dtstartField);
+        $allDay = $this->determineAllDay(calendarConfig: $calendarConfig, schema: $schema, dtstartField: $dtstartField);
 
         // Build DTSTART.
-        $dtstart = $this->formatDateValue($dtstartValue, $allDay);
+        $dtstart = $this->formatDateValue(value: $dtstartValue, allDay: $allDay);
 
         // Build DTEND.
-        $dtend = $this->buildDtend($objectData, $calendarConfig, $dtstartValue, $allDay);
+        $dtend = $this->buildDtend(objectData: $objectData, calendarConfig: $calendarConfig, dtstartValue: $dtstartValue, allDay: $allDay);
 
         // Interpolate title.
         $summary = $this->interpolateTemplate(
-            $calendarConfig['titleTemplate'] ?? $objectUuid,
-            $objectData
+            template: $calendarConfig['titleTemplate'] ?? $objectUuid,
+            objectData: $objectData
         );
 
         // Build the VEVENT objects array.
@@ -101,7 +101,7 @@ class CalendarEventTransformer
             'SUMMARY'    => [$summary, []],
             'DTSTART'    => $dtstart,
             'DTEND'      => $dtend,
-            'STATUS'     => [$this->resolveStatus($objectData, $calendarConfig), []],
+            'STATUS'     => [$this->resolveStatus(objectData: $objectData, calendarConfig: $calendarConfig), []],
             'TRANSP'     => ['TRANSPARENT', []],
             'CATEGORIES' => [['OpenRegister', $schema->getTitle() ?? 'Schema'], []],
         ];
@@ -109,8 +109,8 @@ class CalendarEventTransformer
         // Optional description.
         if (empty($calendarConfig['descriptionTemplate']) === false) {
             $description = $this->interpolateTemplate(
-                $calendarConfig['descriptionTemplate'],
-                $objectData
+                template: $calendarConfig['descriptionTemplate'],
+                objectData: $objectData
             );
             $veventProperties['DESCRIPTION'] = [$description, []];
         }
@@ -125,7 +125,7 @@ class CalendarEventTransformer
 
         // URL to OpenRegister object.
         $register = $object->getRegister();
-        $url = '/apps/openregister/#/objects/' . $register . '/' . $schemaId . '/' . $objectUuid;
+        $url      = '/apps/openregister/#/objects/'.$register.'/'.$schemaId.'/'.$objectUuid;
         $veventProperties['URL'] = [$url, []];
 
         return [
@@ -215,7 +215,7 @@ class CalendarEventTransformer
         if (empty($calendarConfig['dtend']) === false) {
             $dtendValue = $objectData[$calendarConfig['dtend']] ?? null;
             if (empty($dtendValue) === false) {
-                return $this->formatDateValue($dtendValue, $allDay);
+                return $this->formatDateValue(value: $dtendValue, allDay: $allDay);
             }
         }
 
@@ -247,7 +247,7 @@ class CalendarEventTransformer
         return preg_replace_callback(
             '/\{([^}]+)\}/',
             function ($matches) use ($objectData) {
-                $key = $matches[1];
+                $key   = $matches[1];
                 $value = $objectData[$key] ?? '';
 
                 if (is_array($value) === true) {
@@ -282,5 +282,4 @@ class CalendarEventTransformer
 
         return $calendarConfig['statusMapping'][$statusValue] ?? 'CONFIRMED';
     }//end resolveStatus()
-
 }//end class

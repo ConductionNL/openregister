@@ -52,34 +52,74 @@ use OCP\AppFramework\Db\Entity;
 class ContactLink extends Entity implements JsonSerializable
 {
 
-    /** @var string|null */
+    /**
+     * The object uuid.
+     *
+     * @var string|null
+     */
     protected ?string $objectUuid = null;
 
-    /** @var int|null */
+    /**
+     * The register id.
+     *
+     * @var integer|null
+     */
     protected ?int $registerId = null;
 
-    /** @var string|null */
+    /**
+     * The contact uid.
+     *
+     * @var string|null
+     */
     protected ?string $contactUid = null;
 
-    /** @var int|null */
+    /**
+     * The addressbook id.
+     *
+     * @var integer|null
+     */
     protected ?int $addressbookId = null;
 
-    /** @var string|null */
+    /**
+     * The contact uri.
+     *
+     * @var string|null
+     */
     protected ?string $contactUri = null;
 
-    /** @var string|null */
+    /**
+     * The display name.
+     *
+     * @var string|null
+     */
     protected ?string $displayName = null;
 
-    /** @var string|null */
+    /**
+     * The email.
+     *
+     * @var string|null
+     */
     protected ?string $email = null;
 
-    /** @var string|null */
+    /**
+     * The role.
+     *
+     * @var string|null
+     */
     protected ?string $role = null;
 
-    /** @var string|null */
+    /**
+     * The linked by.
+     *
+     * @var string|null
+     */
     protected ?string $linkedBy = null;
 
-    /** @var DateTime|null */
+    /**
+     * The linked at.
+     *
+     * @var DateTime|null
+     */
     protected ?DateTime $linkedAt = null;
 
     /**
@@ -87,16 +127,16 @@ class ContactLink extends Entity implements JsonSerializable
      */
     public function __construct()
     {
-        $this->addType('objectUuid', 'string');
-        $this->addType('registerId', 'integer');
-        $this->addType('contactUid', 'string');
-        $this->addType('addressbookId', 'integer');
-        $this->addType('contactUri', 'string');
-        $this->addType('displayName', 'string');
-        $this->addType('email', 'string');
-        $this->addType('role', 'string');
-        $this->addType('linkedBy', 'string');
-        $this->addType('linkedAt', 'datetime');
+        $this->addType(fieldName: 'objectUuid', type: 'string');
+        $this->addType(fieldName: 'registerId', type: 'integer');
+        $this->addType(fieldName: 'contactUid', type: 'string');
+        $this->addType(fieldName: 'addressbookId', type: 'integer');
+        $this->addType(fieldName: 'contactUri', type: 'string');
+        $this->addType(fieldName: 'displayName', type: 'string');
+        $this->addType(fieldName: 'email', type: 'string');
+        $this->addType(fieldName: 'role', type: 'string');
+        $this->addType(fieldName: 'linkedBy', type: 'string');
+        $this->addType(fieldName: 'linkedAt', type: 'datetime');
     }//end __construct()
 
     /**

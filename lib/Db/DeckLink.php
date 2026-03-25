@@ -48,28 +48,60 @@ use OCP\AppFramework\Db\Entity;
 class DeckLink extends Entity implements JsonSerializable
 {
 
-    /** @var string|null */
+    /**
+     * The object uuid.
+     *
+     * @var string|null
+     */
     protected ?string $objectUuid = null;
 
-    /** @var int|null */
+    /**
+     * The register id.
+     *
+     * @var integer|null
+     */
     protected ?int $registerId = null;
 
-    /** @var int|null */
+    /**
+     * The board id.
+     *
+     * @var integer|null
+     */
     protected ?int $boardId = null;
 
-    /** @var int|null */
+    /**
+     * The stack id.
+     *
+     * @var integer|null
+     */
     protected ?int $stackId = null;
 
-    /** @var int|null */
+    /**
+     * The card id.
+     *
+     * @var integer|null
+     */
     protected ?int $cardId = null;
 
-    /** @var string|null */
+    /**
+     * The card title.
+     *
+     * @var string|null
+     */
     protected ?string $cardTitle = null;
 
-    /** @var string|null */
+    /**
+     * The linked by.
+     *
+     * @var string|null
+     */
     protected ?string $linkedBy = null;
 
-    /** @var DateTime|null */
+    /**
+     * The linked at.
+     *
+     * @var DateTime|null
+     */
     protected ?DateTime $linkedAt = null;
 
     /**
@@ -77,14 +109,14 @@ class DeckLink extends Entity implements JsonSerializable
      */
     public function __construct()
     {
-        $this->addType('objectUuid', 'string');
-        $this->addType('registerId', 'integer');
-        $this->addType('boardId', 'integer');
-        $this->addType('stackId', 'integer');
-        $this->addType('cardId', 'integer');
-        $this->addType('cardTitle', 'string');
-        $this->addType('linkedBy', 'string');
-        $this->addType('linkedAt', 'datetime');
+        $this->addType(fieldName: 'objectUuid', type: 'string');
+        $this->addType(fieldName: 'registerId', type: 'integer');
+        $this->addType(fieldName: 'boardId', type: 'integer');
+        $this->addType(fieldName: 'stackId', type: 'integer');
+        $this->addType(fieldName: 'cardId', type: 'integer');
+        $this->addType(fieldName: 'cardTitle', type: 'string');
+        $this->addType(fieldName: 'linkedBy', type: 'string');
+        $this->addType(fieldName: 'linkedAt', type: 'datetime');
     }//end __construct()
 
     /**
