@@ -1,406 +1,656 @@
----
-status: implemented
----
-
-# Mock Registers
+# Mock Registers Specification
 
 ## Purpose
 
-Provide self-contained mock registers for the five Dutch base registries -- BRP (persons), KVK (businesses), BAG (addresses/buildings), DSO (environmental permits), and ORI (council information) -- so that Procest, Pipelinq, and other consuming apps can develop and demonstrate integrations without external API credentials, government certificates, or network access. Each register ships as a `*_register.json` file in `lib/Settings/` following the OpenAPI 3.0.0 + `x-openregister` extension pattern, with seed data in the `components.objects[]` array using the `@self` envelope format, imported via the `ConfigurationService -> ImportHandler` pipeline.
-
-This capability is a key competitive differentiator: competitor products (KISS, Dimpact ZAC, Open Formulieren) all require extensive external infrastructure to run locally. Our mock registers make the entire suite self-contained from `docker compose up`.
-
-## Requirements
-
-### Requirement: BRP Mock Register (Basisregistratie Personen)
-
-The system SHALL provide a mock BRP register with fictional person records aligned to the Haal Centraal BRP Personen Bevragen API v2 data model. Seed data MUST be derived from the official RVIG (Rijksdienst voor Identiteitsgegevens) test dataset. The register MUST contain at least 30 person records selected from the RVIG test dataset, covering at least 5 complete family units with consistent cross-references, spanning at least 6 municipalities (Amsterdam 0363, Rotterdam 0599, Den Haag 0518, Utrecht 0344, Groningen 0014, Almere 0034). All BSNs MUST pass 11-proef validation. The schema `ingeschreven-persoon` MUST include fields for burgerservicenummer, naam (voornamen, voorletters, voorvoegsel, geslachtsnaam, aanduidingNaamgebruik), geslachtsaanduiding, geboorte, nationaliteit, verblijfplaats (with BAG linking fields adresseerbaarObjectIdentificatie and nummeraanduidingIdentificatie), gemeenteVanInschrijving, immigratie, overlijden, partners, ouders, and kinderen.
-
-#### Scenario: Load BRP register from JSON file
-- **GIVEN** the file `lib/Settings/brp_register.json` exists with valid OpenAPI 3.0.0 + x-openregister format
-- **WHEN** an administrator runs `occ openregister:load-register /var/www/html/custom_apps/openregister/lib/Settings/brp_register.json`
-- **THEN** the system SHALL create a register with slug `brp`, a schema `ingeschreven-persoon`, and at least 30 person object records
-- **AND** the ConfigurationService ImportHandler SHALL process the `components.objects[]` array using the `@self` envelope to resolve register and schema references
-
-#### Scenario: BSN validation on all seed persons
-- **GIVEN** the BRP register has been loaded with seed data
-- **WHEN** any person record's `burgerservicenummer` is extracted
-- **THEN** the value MUST pass the Dutch 11-proef validation algorithm (weighted sum of digits mod 11 equals 0)
-- **AND** the BSN MUST be exactly 9 digits long
-
-#### Scenario: Family unit cross-referencing
-- **GIVEN** the BRP register contains the family unit of Stephan Janssen (BSN 999990627)
-- **WHEN** the system resolves his `kinderen` array references
-- **THEN** each child BSN (999997580, 999995145) MUST correspond to an existing person record in the same register
-- **AND** each child's `ouders` array MUST contain a back-reference to BSN 999990627
-
-#### Scenario: Coverage of required demographic scenarios
-- **GIVEN** the BRP register is fully loaded
-- **WHEN** the seed data is inspected
-- **THEN** it MUST include at least one record for each scenario: married couple with children, single parent, deceased person (e.g. Astrid Abels BSN 999999655 with overlijden.datum), foreign national (e.g. Thanatos Olympos BSN 999995091), minor with custody, and person "in onderzoek" (e.g. Jan-Kees Brouwers BSN 999993355)
-
-#### Scenario: Address linking to BAG register
-- **GIVEN** the BRP and BAG registers are both loaded
-- **WHEN** at least 5 BRP person records are inspected
-- **THEN** their `verblijfplaats.adresseerbaarObjectIdentificatie` values MUST match existing BAG `verblijfsobject.identificatie` records
-- **AND** their `verblijfplaats.nummeraanduidingIdentificatie` values MUST match existing BAG `nummeraanduiding.identificatie` records
-
-### Requirement: KVK Mock Register (Kamer van Koophandel)
-
-The system SHALL provide a mock KVK register with fictional business records aligned to the KVK Handelsregister API data model. Seed data MUST be derived from the official KVK test environment (`https://api.kvk.nl/test/api/`). The register MUST contain at least 15 `maatschappelijke-activiteit` records and at least 8 `vestiging` records covering legal forms BV, NV, Eenmanszaak, Stichting, VOF, and Cooperatie, spanning at least 4 provinces. At least one business MUST have `materieleRegistratie.datumEinde` set (inactive business). Addresses SHOULD link to BAG mock data where possible.
-
-#### Scenario: Load KVK register with two schemas
-- **GIVEN** the file `lib/Settings/kvk_register.json` exists
-- **WHEN** the register is imported via the ImportHandler
-- **THEN** the system SHALL create a register with slug `kvk` containing two schemas: `maatschappelijke-activiteit` and `vestiging`
-- **AND** the vestiging objects SHALL reference their parent maatschappelijke-activiteit via `kvkNummer`
-
-#### Scenario: Legal form diversity
-- **GIVEN** the KVK register is loaded
-- **WHEN** the seed data is queried by `rechtsvorm`
-- **THEN** at least the following legal forms MUST be present: Besloten Vennootschap, Naamloze Vennootschap, Eenmanszaak, Stichting, Vennootschap Onder Firma, Cooperatie
-
-#### Scenario: Hoofdvestiging and nevenvestiging relationship
-- **GIVEN** a maatschappelijke-activiteit record for Test BV Donald (KVK 68750110)
-- **WHEN** the associated vestiging records are queried by `kvkNummer`
-- **THEN** exactly one vestiging MUST have `indHoofdvestiging` set to "Ja"
-- **AND** any additional vestigingen MUST have `indHoofdvestiging` set to "Nee"
-
-#### Scenario: SBI activity codes present
-- **GIVEN** any maatschappelijke-activiteit record in the KVK register
-- **WHEN** the `sbiActiviteiten` array is inspected
-- **THEN** it MUST contain at least one entry with valid `sbiCode`, `sbiOmschrijving`, and `indHoofdactiviteit` fields
-- **AND** exactly one entry per business MUST have `indHoofdactiviteit` set to "Ja"
-
-#### Scenario: KVK addresses link to BAG
-- **GIVEN** the KVK and BAG registers are both loaded
-- **WHEN** at least 3 vestiging records are inspected
-- **THEN** their `adressen[].straatnaam`, `huisnummer`, and `postcode` combinations MUST match corresponding BAG `nummeraanduiding` records
-
-### Requirement: BAG Mock Register (Basisregistratie Adressen en Gebouwen)
-
-The system SHALL provide a mock BAG register with address and building records aligned to the Kadaster BAG API v2 / PDOK BAG data model. Seed data MUST be obtained from the PDOK BAG OGC API Features endpoint (`https://api.pdok.nl/kadaster/bag/ogc/v2`), which is freely accessible without authentication. The register MUST contain at least 30 `nummeraanduiding` records, at least 20 `verblijfsobject` records, and at least 15 `pand` records. All BAG IDs MUST follow the official 16-digit format (`GGGGTTNNNNNNNNNN`) with correct municipality codes and object type codes.
-
-#### Scenario: BAG identification format validation
-- **GIVEN** any BAG record (nummeraanduiding, verblijfsobject, or pand)
-- **WHEN** the `identificatie` field is inspected
-- **THEN** it MUST be exactly 16 digits
-- **AND** the first 4 digits MUST be a valid Dutch municipality code (e.g. 0363 for Amsterdam)
-- **AND** digits 5-6 MUST correspond to the correct object type code (01=Verblijfsobject, 10=Pand, 20=Nummeraanduiding)
-
-#### Scenario: Gebruiksdoel diversity
-- **GIVEN** the BAG register is loaded with verblijfsobject records
-- **WHEN** the `gebruiksdoel` arrays are aggregated
-- **THEN** at least three different gebruiksdoel values MUST be present (at minimum: woonfunctie, kantoorfunctie, winkelfunctie)
-
-#### Scenario: Pand-to-verblijfsobject referencing
-- **GIVEN** the BAG register is loaded
-- **WHEN** a verblijfsobject record's `pandIdentificatie` is resolved
-- **THEN** it MUST match an existing `pand.identificatie` in the same register
-- **AND** the pand MUST have a valid `oorspronkelijkBouwjaar` (4-digit year)
-
-#### Scenario: Municipality coverage matches BRP
-- **GIVEN** both the BRP and BAG registers are loaded
-- **WHEN** the municipality codes in BAG identification prefixes are extracted
-- **THEN** they MUST include at minimum the same 6 municipalities as the BRP register (Amsterdam 0363, Rotterdam 0599, Den Haag 0518, Utrecht 0344, Groningen 0014, Almere 0034)
-
-### Requirement: DSO Mock Register (Digitaal Stelsel Omgevingswet)
-
-The system SHALL provide a mock DSO register with environmental permit data aligned to the CIM-OW/IMOW data model. The register MUST contain at least 20 `activiteit` records covering common construction scenarios, at least 10 `locatie` records, at least 5 `omgevingsdocument` records, and at least 10 `vergunningaanvraag` records in various statuses (ingediend, in_behandeling, verleend, geweigerd, ingetrokken). Activity hierarchy MUST be internally consistent -- every `bovenliggendeActiviteit` reference MUST resolve to a valid parent activiteit.
-
-#### Scenario: Common construction activities present
-- **GIVEN** the DSO register is loaded
-- **WHEN** the activiteit records are inspected
-- **THEN** they MUST include at minimum: dakkapel plaatsen, aanbouw bouwen, zonnepanelen installeren, schutting plaatsen, and boom kappen
-- **AND** each activiteit MUST have a valid `regelkwalificatie` from the enum (vergunningplicht, meldingsplicht, informatieplicht, vergunningvrij)
-
-#### Scenario: Vergunningaanvraag status distribution
-- **GIVEN** the DSO register has at least 10 vergunningaanvraag records
-- **WHEN** the records are grouped by `status`
-- **THEN** at least 3 different statuses MUST be represented
-- **AND** verleend and geweigerd applications MUST have a `besluitdatum` set
-
-#### Scenario: Activity hierarchy consistency
-- **GIVEN** an activiteit record with a `bovenliggendeActiviteit` reference
-- **WHEN** the reference is resolved
-- **THEN** it MUST point to an existing activiteit record in the same register
-- **AND** no circular references SHALL exist in the hierarchy
-
-#### Scenario: DSO locations link to BAG municipalities
-- **GIVEN** the DSO and BAG registers are both loaded
-- **WHEN** a DSO locatie record's `gemeenteCode` is inspected
-- **THEN** it MUST match a municipality code present in the BAG register's identification prefixes
-- **AND** at least 3 vergunningaanvraag records MUST have location addresses that correspond to BAG nummeraanduiding records
-
-### Requirement: ORI Mock Register (Open Raadsinformatie)
-
-The system SHALL provide a mock ORI register with council information aligned to the VNG ODS-Open-Raadsinformatie specification and the Open State Foundation data model. The register MUST contain a fictional municipality "Voorbeeldstad" with at least 1 raad organization and 3 commissies, at least 8 fracties reflecting typical Dutch council composition, at least 20 raadsleden distributed across fracties, at least 10 vergaderingen spanning 6 months, at least 30 agendapunten, at least 15 raadsdocumenten of various types (motie, amendement, besluit, brief, rapport, notulen), and at least 5 stemmingen with per-fractie results.
-
-#### Scenario: Council composition realism
-- **GIVEN** the ORI register is loaded with fractie records
-- **WHEN** the fracties are inspected
-- **THEN** they MUST include a mix of coalitiepartij and oppositiepartij classifications
-- **AND** the total number of zetels across all fracties MUST be a realistic Dutch council size (typically 25-45)
-- **AND** party names MUST be fictional but recognizable (e.g. "Voorbeeldstad Vooruit", "Groen Links Voorbeeldstad")
-
-#### Scenario: Meeting schedule realism
-- **GIVEN** the ORI register contains vergadering records
-- **WHEN** the `startDatum` values are inspected
-- **THEN** meetings SHOULD fall on Tuesdays and Thursdays (typical Dutch council schedule)
-- **AND** the meetings MUST span at least 6 calendar months
-
-#### Scenario: Agenda-to-meeting referential integrity
-- **GIVEN** the ORI register contains agendapunt records
-- **WHEN** each agendapunt's `vergadering` reference is resolved
-- **THEN** it MUST point to an existing vergadering record
-- **AND** agendapunten with `bovenliggendAgendapunt` MUST reference a valid parent agendapunt
-
-#### Scenario: Voting results consistency
-- **GIVEN** a stemming record with resultaat "aangenomen"
-- **WHEN** the `stemmenVoor` and `stemmenTegen` values are inspected
-- **THEN** `stemmenVoor` MUST be greater than `stemmenTegen`
-- **AND** the sum of stemmenVoor + stemmenTegen + onthoudingen MUST equal the total number of participating raadsleden
-- **AND** the `fractieResultaten` array MUST contain one entry per participating fractie
-
-#### Scenario: Document type diversity
-- **GIVEN** the ORI register contains raadsdocument records
-- **WHEN** the documents are grouped by `type`
-- **THEN** at least 4 different document types MUST be present from the set: motie, amendement, besluit, brief, rapport, notulen
-
-### Requirement: Register JSON File Format Compliance
-
-Each mock register MUST be delivered as a `*_register.json` file in `lib/Settings/` following the OpenAPI 3.0.0 + `x-openregister` extension pattern used by existing app registers (procest_register.json, pipelinq_register.json). The `x-openregister` block MUST include `type: "mock"` to distinguish demo data from production registers. Seed data objects MUST use the `@self` envelope format with `register`, `schema`, and `slug` keys in the `components.objects[]` array.
-
-#### Scenario: Valid OpenAPI structure
-- **GIVEN** any mock register JSON file (brp_register.json, kvk_register.json, bag_register.json, dso_register.json, ori_register.json)
-- **WHEN** the file is parsed as JSON
-- **THEN** it MUST contain top-level keys: `openapi` (value "3.0.0"), `info` (with title, description, version), `x-openregister`, `paths`, and `components`
-- **AND** `components` MUST contain `registers`, `schemas`, and `objects` sub-keys
-
-#### Scenario: Object @self envelope format
-- **GIVEN** any object in the `components.objects[]` array
-- **WHEN** the `@self` key is inspected
-- **THEN** it MUST contain `register` (matching a key in `components.registers`), `schema` (matching a key in `components.schemas`), and `slug` (a unique human-readable identifier)
-
-#### Scenario: Mock type identification
-- **GIVEN** any mock register JSON file
-- **WHEN** the `x-openregister.type` field is inspected
-- **THEN** it MUST be set to `"mock"` to allow consuming apps to distinguish demo data from production registers
-
-### Requirement: Idempotent Import via ConfigurationService Pipeline
-
-Mock register import MUST be idempotent. The ImportHandler MUST skip creation of registers, schemas, and objects that already exist (matched by slug) when `force` is `false`. Re-importing the same file MUST NOT create duplicate records. A `force: true` flag MUST allow re-importing to update existing records. The ObjectService `searchObjects` method SHALL be used with `_rbac: false` and `_multitenancy: false` to find existing objects regardless of organisation context, preventing duplicates across tenants.
-
-#### Scenario: First-time import creates all records
-- **GIVEN** no BRP register exists in the system
-- **WHEN** the administrator imports `brp_register.json` via `ConfigurationService`
-- **THEN** the ImportHandler SHALL create the register, schema, and all seed objects
-- **AND** each object SHALL be findable via `ObjectService::searchObjects` with the correct register and schema IDs
-
-#### Scenario: Repeated import skips existing records
-- **GIVEN** the BRP register was previously imported successfully
-- **WHEN** the administrator imports `brp_register.json` again with `force: false`
-- **THEN** the ImportHandler SHALL detect existing register, schemas, and objects by slug
-- **AND** no duplicate records SHALL be created
-- **AND** the import log SHALL indicate records were skipped
-
-#### Scenario: Force import updates existing records
-- **GIVEN** the BRP register was previously imported and seed data has been modified
-- **WHEN** the administrator imports `brp_register.json` with `force: true`
-- **THEN** the ImportHandler SHALL update existing objects to match the JSON file contents
-- **AND** the version check (`version_compare`) SHALL be bypassed
-
-### Requirement: Cross-Register Referencing Integrity
-
-Mock register data MUST be cross-referenced where the same real-world entity appears in multiple registers. BRP person addresses MUST link to BAG via `adresseerbaarObjectIdentificatie` and `nummeraanduidingIdentificatie`. KVK vestiging addresses MUST match BAG nummeraanduiding records by postcode + huisnummer. DSO vergunningaanvraag locations MUST reference BAG municipality codes. At minimum: 5 BRP-BAG links, 3 KVK-BAG links, and 3 DSO-BAG links MUST exist.
-
-#### Scenario: BRP person address resolves in BAG
-- **GIVEN** person Suzanne Moulin (BSN 999993653) in the BRP register
-- **WHEN** her `verblijfplaats.adresseerbaarObjectIdentificatie` is looked up in the BAG register
-- **THEN** a matching `verblijfsobject` record MUST exist
-- **AND** the verblijfsobject's associated nummeraanduiding postcode and woonplaats MUST match the BRP person's verblijfplaats.postcode and verblijfplaats.woonplaats
-
-#### Scenario: KVK business address resolves in BAG
-- **GIVEN** a KVK vestiging record with a bezoekadres
-- **WHEN** the address (straatnaam + huisnummer + postcode) is searched in the BAG register's nummeraanduiding records
-- **THEN** a matching nummeraanduiding record MUST exist
-- **AND** the nummeraanduiding's openbareRuimteNaam MUST match the vestiging's straatnaam
-
-#### Scenario: Cross-register import order independence
-- **GIVEN** the BAG register has NOT yet been imported
-- **WHEN** the BRP register is imported first (containing BAG cross-references)
-- **THEN** the import SHALL succeed without errors
-- **AND** BAG reference fields SHALL be stored as-is (dangling references are acceptable until BAG is imported)
-- **AND** once BAG is subsequently imported, the references SHALL become resolvable
-
-### Requirement: Data Realism and Quality
-
-Seed data MUST be realistic enough for meaningful demonstrations and integration testing. Person names MUST include typical Dutch naming patterns (voorvoegsel like "de", "van der", "van den"). Business names MUST use recognizable formats. Addresses MUST use real Dutch street names, valid postcodes (format ####XX), and correct municipality assignments. Dates MUST be temporally consistent (birth dates before marriage dates, registration dates in logical order). No field that would be non-null in production SHALL be left empty in seed data without an explicit reason documented in the spec.
-
-#### Scenario: Dutch naming conventions in BRP data
-- **GIVEN** the BRP seed data is loaded
-- **WHEN** person names are inspected
-- **THEN** at least 3 persons MUST have a `voorvoegsel` value (e.g. "de", "van", "van der")
-- **AND** at least 1 person MUST demonstrate `aanduidingNaamgebruik` other than "E" (eigen geslachtsnaam)
-
-#### Scenario: Valid Dutch postcodes
-- **GIVEN** any address in BRP, KVK, or BAG seed data
-- **WHEN** the `postcode` field is inspected
-- **THEN** it MUST match the pattern `[1-9][0-9]{3}[A-Z]{2}` (four digits starting with non-zero, two uppercase letters)
-
-#### Scenario: Temporal consistency of dates
-- **GIVEN** a BRP person record with geboorte, partners (with verbintenis date), and kinderen
-- **WHEN** the dates are compared
-- **THEN** the person's geboortedatum MUST precede any partner verbintenis date
-- **AND** the person's geboortedatum MUST precede any child's geboortedatum
-- **AND** if overlijden is present, overlijden.datum MUST be after geboortedatum
-
-### Requirement: Performance with Mock Data Loaded
-
-The system MUST maintain acceptable performance with all five mock registers loaded simultaneously. The total seed data volume (approximately 250+ objects across 5 registers and 15+ schemas) MUST NOT degrade normal CRUD operations. Object listing with pagination (`_limit=20`, `_offset=0`) on a register with 35+ objects SHALL respond within 500ms. The SchemaMapper and RegisterMapper lookups used during import SHALL be cached by the ObjectService to avoid repeated database queries.
-
-#### Scenario: Object listing performance with loaded mock data
-- **GIVEN** all five mock registers are loaded (approximately 250+ objects total)
-- **WHEN** a paginated list request is made: `GET /api/objects/{brp_register_id}/{person_schema_id}?_limit=20&_offset=0`
-- **THEN** the response SHALL be returned within 500ms
-- **AND** the response SHALL include correct pagination metadata (total count, page info)
-
-#### Scenario: Search performance across mock data
-- **GIVEN** all five mock registers are loaded
-- **WHEN** a full-text search is performed: `GET /api/objects/{brp_register_id}/{person_schema_id}?_search=Rotterdam`
-- **THEN** the response SHALL be returned within 1000ms
-- **AND** results SHALL include all persons with Rotterdam in their verblijfplaats
-
-#### Scenario: Import performance for largest register
-- **GIVEN** the ORI register file contains approximately 115 seed objects across 6 schemas
-- **WHEN** the register is imported via `occ openregister:load-register`
-- **THEN** the full import (register + schemas + objects) SHALL complete within 60 seconds
-- **AND** no PHP memory limit errors SHALL occur with the default 512MB memory limit
-
-### Requirement: Mock Register Reset and Refresh
-
-The system MUST support resetting mock registers to their original state. Administrators MUST be able to delete all data from a specific mock register and re-import it from the JSON file. The reset operation MUST remove all objects, then re-import from the source file. The system SHOULD support selective reset (single register) and bulk reset (all mock registers).
-
-#### Scenario: Reset single mock register
-- **GIVEN** the BRP mock register has been loaded and some objects have been modified or deleted by users
-- **WHEN** the administrator runs `occ openregister:load-register --force /var/www/html/custom_apps/openregister/lib/Settings/brp_register.json`
-- **THEN** all modified objects SHALL be restored to their original seed data state
-- **AND** the object count SHALL match the original JSON file's object count
-
-#### Scenario: Reset does not affect non-mock registers
-- **GIVEN** the system contains both mock registers (type: "mock") and production registers
-- **WHEN** a mock register reset operation is performed
-- **THEN** only objects in the targeted mock register SHALL be affected
-- **AND** all production registers and their objects SHALL remain untouched
-
-#### Scenario: Reset via API endpoint
-- **GIVEN** an authenticated administrator session
-- **WHEN** a POST request is made to `/api/registers/import` with the mock register JSON body
-- **THEN** the import SHALL succeed with the same result as the OCC command
-- **AND** the response SHALL include counts of created, updated, and skipped records
-
-### Requirement: I18n of Mock Register Content
-
-Mock register metadata (register title, description, schema descriptions) MUST support Dutch and English per ADR-005. User-facing labels in the register and schema definitions SHALL use Nextcloud's `t()` translation system where displayed in the UI. The seed data content itself (person names, business names, addresses) MUST remain in Dutch as it represents Dutch government base registry data, but schema property descriptions SHOULD be bilingual. See also: `register-i18n` spec for the full i18n data model.
-
-#### Scenario: Register title displayed in user's locale
-- **GIVEN** the BRP register has title "BRP (Basisregistratie Personen)"
-- **WHEN** a user with locale `en` views the register list in the OpenRegister UI
-- **THEN** the register title SHOULD be displayed as "BRP (Personal Records Database)" or the Dutch title with an English subtitle
-- **AND** the register description SHOULD be available in both nl and en
-
-#### Scenario: Schema property descriptions bilingual
-- **GIVEN** the `ingeschreven-persoon` schema has property `burgerservicenummer`
-- **WHEN** the schema is rendered in the UI
-- **THEN** the property description SHOULD be available in Dutch ("Burgerservicenummer, voldoet aan 11-proef") and English ("Citizen Service Number, passes 11-check validation")
-
-#### Scenario: Seed data content remains in Dutch
-- **GIVEN** a BRP person record for Marianne de Jong
-- **WHEN** the object is displayed to a user with locale `en`
-- **THEN** the person's name, address, and municipality name SHALL remain in Dutch (these are proper nouns / official registry values)
-- **AND** only UI labels, column headers, and navigation elements SHALL be translated
-
-### Requirement: Mock Data Distinguishability
-
-The system MUST provide a mechanism for consuming apps and administrators to distinguish mock/demo data from production data. The `x-openregister.type` field set to `"mock"` on register JSON files MUST be persisted as register metadata. Consuming apps (Pipelinq, Procest) SHOULD be able to query registers by type to filter out mock data in production deployments. The system SHOULD display a visual indicator in the UI when viewing mock register data.
-
-#### Scenario: Filter registers by type via API
-- **GIVEN** both mock registers and production registers exist in the system
-- **WHEN** a consuming app queries `GET /api/registers?type=mock`
-- **THEN** only registers with `x-openregister.type: "mock"` SHALL be returned
-
-#### Scenario: Visual indicator in register list
-- **GIVEN** the BRP mock register is loaded
-- **WHEN** an administrator views the register list in the OpenRegister admin UI
-- **THEN** mock registers SHOULD display a badge or label indicating "Demo" or "Mock"
-- **AND** the badge SHOULD be visually distinct (e.g. orange/yellow color) from production registers
-
-#### Scenario: Mock data exclusion in production
-- **GIVEN** an administrator has set `mock_registers_enabled` to `false` in IAppConfig
-- **WHEN** the app performs its installation/upgrade repair steps
-- **THEN** no mock register JSON files SHALL be auto-imported
-- **AND** previously imported mock data SHALL NOT be deleted (explicit reset required)
-
-### Requirement: Schema Compliance with ADR-006
-
-All mock register schemas MUST comply with ADR-006 (OpenRegister Schema Standards). Each schema MUST have a unique descriptive name, explicit property types (string, integer, boolean, datetime, array, object), and required property markings. Cross-entity references MUST use OpenRegister's relation mechanism rather than storing foreign keys as plain strings. Where applicable, schemas SHOULD align with schema.org vocabulary (e.g. BRP person maps to schema:Person concepts, KVK business maps to schema:Organization concepts) with a Dutch API mapping layer per ADR-006.
-
-#### Scenario: Property types explicitly defined
-- **GIVEN** the `ingeschreven-persoon` schema definition in `brp_register.json`
-- **WHEN** the schema's `properties` block is inspected
-- **THEN** every property MUST have an explicit `type` (string, integer, boolean, array, object)
-- **AND** string properties with restricted values MUST define an `enum` constraint
-
-#### Scenario: Required properties marked
-- **GIVEN** the `maatschappelijke-activiteit` schema in `kvk_register.json`
-- **WHEN** the schema's `required` array is inspected
-- **THEN** it MUST include at minimum: `kvkNummer`, `naam`, `rechtsvorm`
-
-#### Scenario: Schema descriptions present
-- **GIVEN** any schema in any mock register JSON file
-- **WHEN** the schema definition is inspected
-- **THEN** it MUST include a `description` field explaining the entity's purpose
-- **AND** the description MUST be at least 20 characters long
-
-### Requirement: Consuming App Discovery
-
-Mock registers MUST be discoverable by consuming apps (Pipelinq, Procest, OpenConnector) without hardcoding register or schema IDs. Consuming apps SHALL look up registers by slug (e.g. `brp`, `kvk`, `bag`) and schemas by slug (e.g. `ingeschreven-persoon`, `maatschappelijke-activiteit`) using the ObjectService or API. The register and schema slugs defined in the mock register JSON files MUST be stable across versions and SHALL NOT change without a major version bump.
-
-#### Scenario: Pipelinq discovers BRP register by slug
-- **GIVEN** the BRP mock register is loaded with slug `brp`
-- **WHEN** Pipelinq's klantbeeld-360 feature calls `store.getters.getRegisterBySlug('brp')`
-- **THEN** the BRP register entity SHALL be returned with its database ID
-- **AND** `store.getters.getSchemaBySlug('ingeschreven-persoon')` SHALL return the person schema
-
-#### Scenario: API-based register discovery
-- **GIVEN** all mock registers are loaded
-- **WHEN** a consuming app queries `GET /api/registers?slug=kvk`
-- **THEN** the response SHALL contain exactly one register with slug `kvk`
-- **AND** the register's schemas SHALL be accessible via the returned register ID
-
-#### Scenario: Slug stability across versions
-- **GIVEN** mock register JSON files at version 1.0.0 define slugs `brp`, `kvk`, `bag`, `dso`, `ori`
-- **WHEN** version 1.1.0 of the files is released
-- **THEN** the same slugs MUST be preserved
-- **AND** any slug change MUST be accompanied by a major version bump and migration documentation
-
-### Requirement: Data Import/Export Integration
-
-Mock register data MUST be compatible with the data-import-export spec's batch import and export capabilities. Seed data loaded from mock register JSON files MUST be exportable via the standard export pipeline (CSV, Excel, JSON formats). Exported mock data MUST be re-importable without data loss. This ensures mock registers serve as both demo data and as templates for creating production registers with similar structures.
-
-#### Scenario: Export mock register to CSV
-- **GIVEN** the BRP mock register is loaded with 35 person records
-- **WHEN** an administrator exports the register via `GET /api/objects/{register_id}/{schema_id}?_format=csv`
-- **THEN** the response SHALL be a valid CSV file with 35 data rows plus a header row
-- **AND** all schema properties SHALL appear as column headers
-
-#### Scenario: Round-trip import/export
-- **GIVEN** the KVK mock register is loaded
-- **WHEN** the maatschappelijke-activiteit objects are exported to JSON and then re-imported into a new register
-- **THEN** the re-imported objects SHALL contain identical data to the originals
-- **AND** no field values SHALL be lost or truncated during the round-trip
-
-#### Scenario: Mock register as production template
-- **GIVEN** an administrator wants to create a production BRP-like register with real data
-- **WHEN** they export the BRP mock register's schema definitions (without seed objects)
-- **THEN** the exported schema SHALL be usable as a template for creating a new empty register with the same structure
+Provide mock/demo registers for the five Dutch base registries on OpenRegister: **BRP** (persons), **KVK** (businesses), **BAG** (addresses/buildings), **DSO** (environmental permits), and **ORI** (council information). These registers contain realistic seed data sourced from official test environments and open APIs, enabling Procest, Pipelinq, and other apps to develop and demo integrations without external API credentials or government certificates.
+
+**Why this matters**: The alternative products we compete with (KISS, Dimpact ZAC, Open Formulieren) all require extensive external infrastructure to run locally — KISS couldn't even be spun up without OIDC, Elasticsearch, ZGW backends, KVK API and Haal Centraal API. Our mock registers make the entire suite self-contained.
+
+**Delivery format**: Each register is a `*_register.json` file in `lib/Settings/` following the existing OpenAPI 3.0.0 + `x-openregister` extension pattern (same as `procest_register.json`, `pipelinq_register.json`). Seed data lives in the `components.objects[]` array using the `@self` envelope format. Files are imported via the existing RepairStep → SettingsService → ImportHandler pipeline.
+
+---
+
+## REQ-MOCK-001: BRP Mock Register (Basisregistratie Personen)
+
+The system MUST provide a mock BRP register with fictional person records aligned to the Haal Centraal BRP Personen Bevragen API v2 data model.
+
+### Data source: RVIG test personas
+
+The seed data MUST be derived from the official RVIG (Rijksdienst voor Identiteitsgegevens) test dataset. The Haal Centraal BRP mock (`ghcr.io/brp-api/personen-mock:2.7.0-latest`) ships 1182 test persons with complete family relationships, nationality, immigration, and address history. Key reference personas:
+
+| BSN | Name | Scenario |
+|-----|------|----------|
+| `999993653` | Suzanne Moulin | French national in Rotterdam, immigration history |
+| `999990627` | Stephan Janssen | Father with 2 children (999997580, 999995145) |
+| `999992570` | Albert Vogel | Man with partner, child, 2 parents |
+| `999995376` | Brigitte Moulin | French-born, partner Jean Roussaex |
+| `999999655` | Astrid Abels | Deceased person (2020-06-06) |
+| `999995091` | Thanatos Olympos | Greek national, immigrated 1989 |
+| `999993355` | Jan-Kees Brouwers | Person "in onderzoek" |
+| `999970033` | Mira Maasland | Minor (born 2017), custody scenario |
+| `999990949` | Marianne de Jong | Common Dutch name with voorvoegsel |
+
+### Schema: `ingeschreven-persoon`
+
+| Property | Type | Description | Haal Centraal field |
+|----------|------|-------------|-------------------|
+| `burgerservicenummer` | string (9 digits) | BSN, passes 11-proef | `burgerservicenummer` |
+| `voornamen` | string | First names (space-separated) | `naam.voornamen` |
+| `voorletters` | string | Initials (derived) | `naam.voorletters` |
+| `voorvoegsel` | string | Name prefix ("de", "van der") | `naam.voorvoegsel` |
+| `geslachtsnaam` | string | Family name | `naam.geslachtsnaam` |
+| `aanduidingNaamgebruik` | string (enum) | E=eigen, P=partner, V=partner+eigen, N=eigen+partner | `naam.aanduidingNaamgebruik.code` |
+| `geslachtsaanduiding` | string (enum) | M=man, V=vrouw, O=onbekend | `geslacht.code` |
+| `geboortedatum` | string (date) | ISO 8601 | `geboorte.datum` |
+| `geboorteplaats` | string | Birth place | `geboorte.plaats.omschrijving` |
+| `geboorteland` | string | Birth country | `geboorte.land.omschrijving` |
+| `geboortelandCode` | string | Country code | `geboorte.land.code` |
+| `nationaliteit` | string | Nationality description | `nationaliteiten[0].nationaliteit.omschrijving` |
+| `nationaliteitCode` | string | Nationality code | `nationaliteiten[0].nationaliteit.code` |
+| `verblijfplaats` | object | Current address | `verblijfplaats` |
+| `verblijfplaats.straat` | string | Street name | `verblijfplaats.naamOpenbareRuimte` |
+| `verblijfplaats.huisnummer` | integer | House number | `verblijfplaats.huisnummer` |
+| `verblijfplaats.huisletter` | string | House letter (optional) | `verblijfplaats.huisletter` |
+| `verblijfplaats.huisnummertoevoeging` | string | Addition (optional) | `verblijfplaats.huisnummertoevoeging` |
+| `verblijfplaats.postcode` | string | Postal code (####XX) | `verblijfplaats.postcode` |
+| `verblijfplaats.woonplaats` | string | City | `verblijfplaats.woonplaats` |
+| `verblijfplaats.adresseerbaarObjectIdentificatie` | string (16 digits) | BAG link | `verblijfplaats.adresseerbaarObjectIdentificatie` |
+| `verblijfplaats.nummeraanduidingIdentificatie` | string (16 digits) | BAG link | `verblijfplaats.nummeraanduidingIdentificatie` |
+| `verblijfplaats.functieAdres` | string | W=woonadres, B=briefadres | `verblijfplaats.functieAdres.code` |
+| `gemeenteVanInschrijving` | string | Municipality name | `gemeenteVanInschrijving.omschrijving` |
+| `gemeenteVanInschrijvingCode` | string | Municipality code | `gemeenteVanInschrijving.code` |
+| `datumInschrijvingInGemeente` | string (date) | Registration date | `datumInschrijvingInGemeente` |
+| `immigratie` | object | Immigration details (optional) | `immigratie` |
+| `immigratie.datumVestiging` | string (date) | Settlement date | `immigratie.datumVestigingInNederland` |
+| `immigratie.landVanHerkomst` | string | Country of origin | `immigratie.landVanwaarIngeschreven.omschrijving` |
+| `overlijden` | object | Death details (optional) | `overlijden` |
+| `overlijden.datum` | string (date) | Date of death | `overlijden.datum` |
+| `overlijden.plaats` | string | Place of death | `overlijden.plaats.omschrijving` |
+| `partners` | array | Partner references | `partners[]` |
+| `partners[].burgerservicenummer` | string | Partner's BSN | `partners[].burgerservicenummer` |
+| `partners[].naam` | string | Partner's full name | computed |
+| `partners[].soortVerbintenis` | string | H=huwelijk, P=partnerschap | `partners[].soortVerbintenis.code` |
+| `ouders` | array | Parent references | `ouders[]` |
+| `ouders[].burgerservicenummer` | string | Parent's BSN | `ouders[].burgerservicenummer` |
+| `ouders[].naam` | string | Parent's full name | computed |
+| `ouders[].ouderAanduiding` | string | "1" or "2" | `ouders[].ouderAanduiding` |
+| `kinderen` | array | Children references | `kinderen[]` |
+| `kinderen[].burgerservicenummer` | string | Child's BSN | `kinderen[].burgerservicenummer` |
+| `kinderen[].naam` | string | Child's full name | computed |
+
+### Seed data requirements
+
+- MUST contain at least 30 person records selected from the RVIG test dataset
+- MUST include at least 5 complete family units with consistent cross-references
+- MUST cover: married couple with children, single parent, deceased person, foreign national, minor with custody, person "in onderzoek"
+- MUST span at least 6 municipalities (Amsterdam 0363, Rotterdam 0599, Den Haag 0518, Utrecht 0344, Groningen 0014, Almere 0034)
+- All BSNs MUST pass 11-proef validation
+- Addresses SHOULD link to BAG mock data via `adresseerbaarObjectIdentificatie` where both registers contain matching records
+
+### Reference codes table
+
+| Code Type | Code | Description |
+|-----------|------|-------------|
+| Geslacht | M | Man |
+| Geslacht | V | Vrouw |
+| Geslacht | O | Onbekend |
+| Naamgebruik | E | Eigen geslachtsnaam |
+| Naamgebruik | P | Naam partner |
+| Naamgebruik | V | Partner + eigen |
+| Naamgebruik | N | Eigen + partner |
+| Verbintenis | H | Huwelijk |
+| Verbintenis | P | Geregistreerd partnerschap |
+| FunctieAdres | W | Woonadres |
+| FunctieAdres | B | Briefadres |
+| Land | 6030 | Nederland |
+| Land | 5002 | Frankrijk |
+| Land | 6003 | Griekenland |
+| Land | 6014 | Verenigde Staten |
+| Land | 5001 | Canada |
+| Nationaliteit | 0001 | Nederlandse |
+| Nationaliteit | 0057 | Franse |
+| Nationaliteit | 0059 | Griekse |
+| Nationaliteit | 0223 | Amerikaans burger |
+
+---
+
+## REQ-MOCK-002: KVK Mock Register (Kamer van Koophandel)
+
+The system MUST provide a mock KVK register with fictional business records aligned to the KVK Handelsregister API data model.
+
+### Data source: KVK test environment
+
+The seed data MUST be derived from the official KVK test environment (`https://api.kvk.nl/test/api/`). This environment is freely accessible with API key `l7xx1f2691f2520d487b902f4e0b57a0b197` (no registration required). The test data uses Disney-themed company names.
+
+| KVK Nummer | Name | Rechtsvorm | Plaats |
+|-----------|------|------------|-------|
+| `69599084` | Test EMZ Dagobert | Eenmanszaak | Amsterdam |
+| `68727720` | Test NV Katrien | Naamloze Vennootschap | Veendam |
+| `68750110` | Test BV Donald | Besloten Vennootschap | Lollum |
+| `69599068` | Test Stichting Bolderbast | Stichting | Lochem |
+| `69599076` | Test VOF Guus | Vennootschap Onder Firma | Almere |
+| `90000102` | Stichting Free opentrans | Stichting | Leiden |
+| `90001354` | Grand Kontex B.V. | Besloten Vennootschap | Sterksel |
+| `55344526` | Regional Stimflex Cooperatie | Cooperatie | (buitenland) |
+
+### Schema: `maatschappelijke-activiteit`
+
+| Property | Type | Description | KVK API field |
+|----------|------|-------------|--------------|
+| `kvkNummer` | string (8 digits) | Registration number | `kvkNummer` |
+| `naam` | string | Primary name | `naam` |
+| `handelsnamen` | array | Trade names with ordering | `handelsnamen[].{naam, volgorde}` |
+| `rechtsvorm` | string | Legal form description | `_embedded.eigenaar.rechtsvorm` |
+| `uitgebreideRechtsvorm` | string | Detailed legal form | `_embedded.eigenaar.uitgebreideRechtsvorm` |
+| `formeleRegistratiedatum` | string (date) | Registration date | `formeleRegistratiedatum` (YYYYMMDD→ISO) |
+| `materieleRegistratie` | object | Material registration dates | `materieleRegistratie` |
+| `materieleRegistratie.datumAanvang` | string (date) | Start date | `materieleRegistratie.datumAanvang` |
+| `materieleRegistratie.datumEinde` | string (date) | End date (null=active) | `materieleRegistratie.datumEinde` |
+| `totaalWerkzamePersonen` | integer | Total employees | `totaalWerkzamePersonen` |
+| `sbiActiviteiten` | array | SBI activity codes | `sbiActiviteiten[]` |
+| `sbiActiviteiten[].sbiCode` | string | SBI code | `sbiActiviteiten[].sbiCode` |
+| `sbiActiviteiten[].sbiOmschrijving` | string | SBI description | `sbiActiviteiten[].sbiOmschrijving` |
+| `sbiActiviteiten[].indHoofdactiviteit` | string | "Ja"/"Nee" | `sbiActiviteiten[].indHoofdactiviteit` |
+| `indNonMailing` | string | "Ja"/"Nee" | `indNonMailing` |
+| `actief` | boolean | Currently active | computed from datumEinde |
+
+### Schema: `vestiging`
+
+| Property | Type | Description | KVK API field |
+|----------|------|-------------|--------------|
+| `vestigingsnummer` | string (12 digits) | Branch number | `vestigingsnummer` |
+| `kvkNummer` | string (8 digits) | Parent KVK number | `kvkNummer` |
+| `eersteHandelsnaam` | string | Primary trade name | `eersteHandelsnaam` |
+| `indHoofdvestiging` | string | "Ja"/"Nee" | `indHoofdvestiging` |
+| `indCommercieleVestiging` | string | "Ja"/"Nee" | `indCommercieleVestiging` |
+| `voltijdWerkzamePersonen` | integer | Full-time employees | `voltijdWerkzamePersonen` |
+| `deeltijdWerkzamePersonen` | integer | Part-time employees | `deeltijdWerkzamePersonen` |
+| `totaalWerkzamePersonen` | integer | Total employees | `totaalWerkzamePersonen` |
+| `adressen` | array | Addresses | `adressen[]` |
+| `adressen[].type` | string | "bezoekadres" or "correspondentieadres" | `adressen[].type` |
+| `adressen[].straatnaam` | string | Street | `adressen[].straatnaam` |
+| `adressen[].huisnummer` | integer | House number | `adressen[].huisnummer` |
+| `adressen[].huisletter` | string | House letter | `adressen[].huisletter` |
+| `adressen[].postcode` | string | Postal code | `adressen[].postcode` |
+| `adressen[].plaats` | string | City | `adressen[].plaats` |
+| `adressen[].land` | string | Country | `adressen[].land` |
+| `handelsnamen` | array | Trade names | `handelsnamen[].{naam, volgorde}` |
+| `sbiActiviteiten` | array | SBI activities | same as parent |
+
+### Seed data requirements
+
+- MUST contain at least 15 business records from the KVK test environment
+- MUST include at least 8 vestiging records (some companies have hoofdvestiging + nevenvestiging)
+- MUST cover legal forms: BV, NV, Eenmanszaak, Stichting, VOF, Cooperatie
+- MUST include at least one inactive business with `datumEinde` set
+- MUST span at least 4 provinces
+- Addresses SHOULD link to BAG mock data where possible
+
+---
+
+## REQ-MOCK-003: BAG Mock Register (Basisregistratie Adressen en Gebouwen)
+
+The system MUST provide a mock BAG register with address and building records aligned to the Kadaster BAG API v2 / PDOK BAG data model.
+
+### Data source: PDOK (freely accessible, no auth required)
+
+Seed data MUST be obtained from the PDOK BAG OGC API Features endpoint (`https://api.pdok.nl/kadaster/bag/ogc/v2`). This API is freely accessible without authentication and provides the full BAG dataset. Records SHOULD correspond to the addresses used in the BRP and KVK mock registers for cross-referencing.
+
+Additional free sources:
+- PDOK Locatieserver: `https://api.pdok.nl/bzk/locatieserver/search/v3_1/free?q={address}`
+- BAG Linked Data API: `https://bag.basisregistraties.overheid.nl/api/v1/`
+
+### Schema: `nummeraanduiding`
+
+| Property | Type | Description | BAG API field |
+|----------|------|-------------|--------------|
+| `identificatie` | string (16 digits) | BAG ID (GGGGTTNNNNNNNNNN) | `identificatie` |
+| `huisnummer` | integer | House number (1-99999) | `huisnummer` |
+| `huisletter` | string (1) | Optional letter | `huisletter` |
+| `huisnummertoevoeging` | string (4) | Optional addition | `huisnummertoevoeging` |
+| `postcode` | string (6) | Dutch postcode | `postcode` |
+| `status` | string | Current status | `status` |
+| `typeAdresseerbaarObject` | string | Verblijfsobject/Standplaats/Ligplaats | `typeAdresseerbaarObject` |
+| `openbareRuimteNaam` | string | Street name | from related OpenbareRuimte |
+| `woonplaatsNaam` | string | City name | from related Woonplaats |
+
+### Schema: `verblijfsobject`
+
+| Property | Type | Description |
+|----------|------|-------------|
+| `identificatie` | string (16 digits) | BAG ID (type code `01`) |
+| `gebruiksdoel` | array of strings | One or more of 11 values (woonfunctie, kantoorfunctie, etc.) |
+| `oppervlakte` | integer | Floor area in m² |
+| `status` | string | e.g. "Verblijfsobject in gebruik" |
+| `pandIdentificatie` | string (16 digits) | Reference to Pand |
+| `nummeraanduidingIdentificatie` | string (16 digits) | Reference to Nummeraanduiding |
+
+### Schema: `pand`
+
+| Property | Type | Description |
+|----------|------|-------------|
+| `identificatie` | string (16 digits) | BAG ID (type code `10`) |
+| `oorspronkelijkBouwjaar` | string (4) | Construction year |
+| `status` | string | e.g. "Pand in gebruik" |
+
+### BAG identification format
+
+Format: `GGGGTTNNNNNNNNNN` (16 digits)
+- `GGGG` = Municipality code (e.g. `0363` = Amsterdam)
+- `TT` = Object type (`01`=Verblijfsobject, `02`=Ligplaats, `03`=Standplaats, `10`=Pand, `20`=Nummeraanduiding, `30`=OpenbareRuimte)
+- `NNNNNNNNNN` = Sequential number
+
+### Seed data requirements
+
+- MUST contain at least 30 nummeraanduiding records
+- MUST contain at least 20 verblijfsobject records
+- MUST contain at least 15 pand records
+- Records MUST correspond to addresses used in BRP and KVK seed data
+- MUST include multiple gebruiksdoel types (woonfunctie, kantoorfunctie, winkelfunctie)
+- MUST span the same municipalities as BRP seed data
+- BAG IDs MUST follow the official 16-digit format with correct municipality codes
+
+### Gebruiksdoel enum values
+
+| Value | Description |
+|-------|-------------|
+| `woonfunctie` | Residential |
+| `bijeenkomstfunctie` | Assembly |
+| `celfunctie` | Detention |
+| `gezondheidszorgfunctie` | Healthcare |
+| `industriefunctie` | Industrial |
+| `kantoorfunctie` | Office |
+| `logiesfunctie` | Lodging |
+| `onderwijsfunctie` | Education |
+| `sportfunctie` | Sports |
+| `winkelfunctie` | Retail |
+| `overige gebruiksfunctie` | Other |
+
+---
+
+## REQ-MOCK-004: DSO Mock Register (Digitaal Stelsel Omgevingswet)
+
+The system MUST provide a mock DSO register with environmental permit data aligned to the CIM-OW/IMOW data model.
+
+### Data source: DSO developer portal + Amsterdam Vergunningcheck
+
+DSO APIs require API keys via `developer.omgevingswet.overheid.nl`. For seed data, use the open-source Amsterdam Vergunningcheck data model (https://github.com/Amsterdam/vergunningcheck) and the CIM-OW specification (https://geonovum.github.io/dso-cim-ow/) for structurally correct test records.
+
+### Schema: `activiteit`
+
+| Property | Type | Description |
+|----------|------|-------------|
+| `identificatie` | string | Unique ID |
+| `naam` | string | Activity name (e.g. "Dakkapel plaatsen") |
+| `activiteitgroep` | string | Category group |
+| `regelkwalificatie` | string (enum) | vergunningplicht, meldingsplicht, informatieplicht, vergunningvrij |
+| `bovenliggendeActiviteit` | string | Parent activity (hierarchy) |
+| `omschrijving` | string | Description |
+
+### Schema: `locatie`
+
+| Property | Type | Description |
+|----------|------|-------------|
+| `identificatie` | string | Unique ID |
+| `naam` | string | Location name |
+| `type` | string | Location type |
+| `gemeenteCode` | string | Municipality code |
+| `gemeenteNaam` | string | Municipality name |
+| `adres` | object | Optional address reference |
+
+### Schema: `omgevingsdocument`
+
+| Property | Type | Description |
+|----------|------|-------------|
+| `identificatie` | string | Document ID |
+| `type` | string (enum) | omgevingsplan, omgevingsverordening, waterschapsverordening, AMvB, ministeriele_regeling |
+| `status` | string | Publication status |
+| `bevoegdGezag` | string | Authority (OIN) |
+| `titel` | string | Document title |
+| `publicatiedatum` | string (date) | Publication date |
+
+### Schema: `vergunningaanvraag`
+
+| Property | Type | Description |
+|----------|------|-------------|
+| `identificatie` | string | Application ID |
+| `activiteiten` | array | Referenced activities |
+| `locatie` | object | Application location |
+| `initiatiefnemer` | object | Applicant details |
+| `bevoegdGezag` | string | Competent authority |
+| `status` | string (enum) | ingediend, in_behandeling, verleend, geweigerd, ingetrokken |
+| `indieningsdatum` | string (date) | Submission date |
+| `besluitdatum` | string (date) | Decision date (optional) |
+| `bijlagen` | array | Attachments |
+
+### Seed data requirements
+
+- MUST contain at least 20 activiteit records covering common construction scenarios (dakkapel, aanbouw, zonnepanelen, etc.)
+- MUST contain at least 10 locatie records in mock municipalities
+- MUST contain at least 5 omgevingsdocument records
+- MUST contain at least 10 vergunningaanvraag records in various statuses
+- Activity hierarchy MUST be consistent (bovenliggendeActiviteit references valid parents)
+
+---
+
+## REQ-MOCK-005: ORI Mock Register (Open Raadsinformatie)
+
+The system MUST provide a mock ORI register with council information aligned to the VNG ODS-Open-Raadsinformatie specification and the Open State Foundation Elasticsearch data model.
+
+### Data source: Open State Foundation API (freely accessible, no auth)
+
+The live ORI Elasticsearch API at `https://api.openraadsinformatie.nl/v1/elastic/` is freely accessible and contains 7.26 million records across 331 municipalities. Seed data SHOULD be derived from real council meetings from one representative municipality (e.g. Utrecht `ori_utrecht*` — richest dataset with all entity types).
+
+Additional sources:
+- VNG OAS 2.0 spec: https://github.com/VNG-Realisatie/ODS-Open-Raadsinformatie
+- Open State connector source: https://github.com/openstate/open-raadsinformatie
+
+### Schema: `vergadering`
+
+| Property | Type | Description | ORI field |
+|----------|------|-------------|----------|
+| `naam` | string | Meeting name | `name` |
+| `type` | string (enum) | raadsvergadering, commissievergadering, etc. | `classification[]` |
+| `status` | string (enum) | gepland, bevestigd, afgelast | mapped from `status` |
+| `startDatum` | string (datetime) | Start date/time | `start_date` |
+| `eindDatum` | string (datetime) | End date/time | `end_date` |
+| `locatie` | string | Meeting location | `location` |
+| `organisatie` | string | Organization reference | `organization` |
+| `commissie` | string | Committee reference | `committee` |
+
+### Schema: `agendapunt`
+
+| Property | Type | Description |
+|----------|------|-------------|
+| `onderwerp` | string | Subject/title |
+| `omschrijving` | string | Description |
+| `volgorde` | integer | Position on agenda |
+| `vergadering` | string | Reference to vergadering |
+| `bovenliggendAgendapunt` | string | Parent item (for sub-items) |
+| `bijlagen` | array | Document references |
+
+### Schema: `raadsdocument`
+
+| Property | Type | Description |
+|----------|------|-------------|
+| `titel` | string | Document title |
+| `type` | string (enum) | motie, amendement, besluit, brief, rapport, notulen |
+| `classificatie` | string | Category |
+| `url` | string | Document URL |
+| `bestandsnaam` | string | File name |
+| `bestandsgrootte` | integer | File size in bytes |
+| `inhoudType` | string | MIME type |
+
+### Schema: `stemming`
+
+| Property | Type | Description |
+|----------|------|-------------|
+| `onderwerp` | string | Subject voted on |
+| `type` | string | Vote type |
+| `resultaat` | string (enum) | aangenomen, verworpen |
+| `agendapunt` | string | Reference to agendapunt |
+| `stemmenVoor` | integer | Votes in favor |
+| `stemmenTegen` | integer | Votes against |
+| `onthoudingen` | integer | Abstentions |
+| `fractieResultaten` | array | Per-party results |
+
+### Schema: `raadslid`
+
+| Property | Type | Description |
+|----------|------|-------------|
+| `naam` | string | Full name |
+| `fractie` | string | Party/faction reference |
+| `functie` | string (enum) | raadslid, wethouder, burgemeester, griffier |
+| `actief` | boolean | Currently active |
+
+### Schema: `fractie`
+
+| Property | Type | Description |
+|----------|------|-------------|
+| `naam` | string | Party name |
+| `zetels` | integer | Number of seats |
+| `classificatie` | string | coalitiepartij, oppositiepartij |
+
+### Seed data requirements
+
+- MUST contain a fictional municipality "Voorbeeldstad" with:
+  - At least 1 raad (council) organization + 3 commissies (committees)
+  - At least 8 fracties (parties) reflecting typical Dutch council composition
+  - At least 20 raadsleden (council members) distributed across fracties
+  - At least 10 vergaderingen (meetings) spanning 6 months
+  - At least 30 agendapunten (agenda items)
+  - At least 15 raadsdocumenten (documents) of various types
+  - At least 5 stemmingen (votes) with per-fractie results
+- Data MUST be internally consistent (agendapunten reference valid vergaderingen, etc.)
+- Meeting dates SHOULD be on Tuesdays and Thursdays (typical Dutch council schedule)
+- Party names SHOULD be fictional but recognizable (e.g. "Voorbeeldstad Vooruit", "Groen Links Voorbeeldstad")
+
+---
+
+## REQ-MOCK-006: Register File Format
+
+Each register MUST be delivered as a `*_register.json` file following the existing `x-openregister` pattern.
+
+### File structure
+
+```json
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "BRP Mock Register",
+    "description": "Mock BRP (Basisregistratie Personen) register with RVIG test data",
+    "version": "1.0.0"
+  },
+  "x-openregister": {
+    "type": "mock",
+    "app": "openregister",
+    "openregister": "^v0.2.10",
+    "description": "BRP mock register for development and testing"
+  },
+  "paths": {},
+  "components": {
+    "registers": {
+      "brp": {
+        "slug": "brp",
+        "title": "BRP (Basisregistratie Personen)",
+        "description": "Mock BRP register with fictional RVIG test persons",
+        "folder": "Open Registers/BRP"
+      }
+    },
+    "schemas": {
+      "ingeschreven-persoon": { ... }
+    },
+    "objects": [
+      {
+        "@self": {
+          "register": "brp",
+          "schema": "ingeschreven-persoon",
+          "slug": "suzanne-moulin"
+        },
+        "burgerservicenummer": "999993653",
+        "voornamen": "Suzanne",
+        "geslachtsnaam": "Moulin",
+        ...
+      }
+    ]
+  }
+}
+```
+
+### File naming convention
+
+| Register | File name | Location |
+|----------|-----------|----------|
+| BRP | `brp_register.json` | `openregister/lib/Settings/` |
+| KVK | `kvk_register.json` | `openregister/lib/Settings/` |
+| BAG | `bag_register.json` | `openregister/lib/Settings/` |
+| DSO | `dso_register.json` | `openregister/lib/Settings/` |
+| ORI | `ori_register.json` | `openregister/lib/Settings/` |
+
+### Import mechanism
+
+- Each file MUST be loaded via the existing `RepairStep → SettingsService → ImportHandler` pipeline
+- Import MUST be idempotent (skip if register already exists with `force: false`)
+- A new app config key `mock_registers_enabled` (default: `true`) MUST control whether mock registers are imported
+- Setting `mock_registers_enabled` to `false` MUST prevent import but NOT delete existing mock data
+
+---
+
+## REQ-MOCK-007: Cross-Register Referencing
+
+Mock register data MUST be cross-referenced where the same real-world entity appears in multiple registers.
+
+### Linking strategy
+
+| BRP field | Links to |
+|-----------|----------|
+| `verblijfplaats.adresseerbaarObjectIdentificatie` | BAG `verblijfsobject.identificatie` |
+| `verblijfplaats.nummeraanduidingIdentificatie` | BAG `nummeraanduiding.identificatie` |
+| `gemeenteVanInschrijvingCode` | BAG municipality code in identification prefix |
+
+| KVK field | Links to |
+|-----------|----------|
+| `adressen[].straatnaam + huisnummer + postcode` | BAG `nummeraanduiding` (postcode + huisnummer) |
+
+| DSO field | Links to |
+|-----------|----------|
+| `locatie.gemeenteCode` | BAG municipality code |
+| `vergunningaanvraag.locatie.adres` | BAG `nummeraanduiding` |
+
+### Minimum cross-references
+
+- At least 5 BRP persons MUST have `adresseerbaarObjectIdentificatie` values that match BAG `verblijfsobject` records
+- At least 3 KVK vestigingen MUST have addresses that match BAG `nummeraanduiding` records
+- At least 3 DSO vergunningaanvragen MUST reference locations matching BAG records
+
+---
+
+## REQ-MOCK-008: OCC Commands
+
+The system MUST provide OCC commands for managing mock register data.
+
+### Commands
+
+| Command | Description |
+|---------|-------------|
+| `occ openregister:seed-mock-registers` | Seed all mock registers (skip if exists) |
+| `occ openregister:seed-mock-registers --force` | Delete and re-seed all mock registers |
+| `occ openregister:seed-mock-registers --register=brp` | Seed only the specified register |
+
+---
+
+## Standards & References
+
+| Standard | URL | Relevance |
+|----------|-----|-----------|
+| Haal Centraal BRP Personen API v2 | https://brp-api.github.io/Haal-Centraal-BRP-bevragen/ | BRP data model |
+| RVIG test data | https://www.rvig.nl/proefomgeving-brp-v | BRP test personas |
+| BRP mock Docker image | `ghcr.io/brp-api/personen-mock:2.7.0-latest` | Reference implementation |
+| BSN 11-proef | https://nl.wikipedia.org/wiki/Burgerservicenummer | BSN validation algorithm |
+| KVK test environment | https://developers.kvk.nl/documentation/testing | KVK test data |
+| KVK test API key | `l7xx1f2691f2520d487b902f4e0b57a0b197` | Free test access |
+| SBI classification | https://www.kvk.nl/over-kvk/over-het-handelsregister/sbi-codes/ | Business activity codes |
+| PDOK BAG OGC API | https://api.pdok.nl/kadaster/bag/ogc/v2 | BAG data (free, no auth) |
+| BAG Linked Data API | https://bag.basisregistraties.overheid.nl/api/v1/ | BAG records (free, no auth) |
+| Kadaster BAG API v2 | https://api.bag.kadaster.nl/lvbag/individuelebevragingen/v2/ | BAG reference (free API key) |
+| BAG identification format | https://imbag.github.io/praktijkhandleiding/attributen/identificatie | 16-digit ID format |
+| CIM-OW 3.0 | https://geonovum.github.io/dso-cim-ow/ | DSO data model |
+| IMOW 3.2-rc | https://docs.geostandaarden.nl/ow/imow/ | DSO implementation model |
+| DSO developer portal | https://developer.omgevingswet.overheid.nl/ | DSO API access |
+| Amsterdam Vergunningcheck | https://github.com/Amsterdam/vergunningcheck | DSO open-source reference |
+| VNG ODS-Open-Raadsinformatie | https://github.com/VNG-Realisatie/ODS-Open-Raadsinformatie | ORI specification |
+| Open State Foundation ORI API | https://api.openraadsinformatie.nl/v1/elastic/ | ORI data (free, no auth) |
+| Popolo specification | https://www.popoloproject.com/specs/ | ORI data model base |
+| GGM (Gemeentelijk Gegevensmodel) | ggm-openregister repository | 955 schemas, potential reuse |
+
+## Current Implementation Status
+
+**Implemented.** All five mock register JSON files exist in `openregister/lib/Settings/` and can be loaded on demand:
+
+| Register | File | Records | Slug | Schemas |
+|----------|------|---------|------|---------|
+| BRP | `brp_register.json` | 35 persons | `brp` | `ingeschreven-persoon` |
+| KVK | `kvk_register.json` | 16 businesses + 14 branches | `kvk` | `maatschappelijke-activiteit`, `vestiging` |
+| BAG | `bag_register.json` | 32 addresses + 21 objects + 21 buildings | `bag` | `nummeraanduiding`, `verblijfsobject`, `pand` |
+| DSO | `dso_register.json` | 53 records | `dso` | `activiteit`, `locatie`, `omgevingsdocument`, `vergunningaanvraag` |
+| ORI | `ori_register.json` | 115 records | `ori` | `vergadering`, `agendapunt`, `raadsdocument`, `stemming`, `raadslid`, `fractie` |
+
+### Using Mock Register Data
+
+**Loading via OCC CLI:**
+```bash
+docker exec -u www-data nextcloud php occ openregister:load-register /var/www/html/custom_apps/openregister/lib/Settings/brp_register.json
+docker exec -u www-data nextcloud php occ openregister:load-register /var/www/html/custom_apps/openregister/lib/Settings/kvk_register.json
+docker exec -u www-data nextcloud php occ openregister:load-register /var/www/html/custom_apps/openregister/lib/Settings/bag_register.json
+docker exec -u www-data nextcloud php occ openregister:load-register /var/www/html/custom_apps/openregister/lib/Settings/dso_register.json
+docker exec -u www-data nextcloud php occ openregister:load-register /var/www/html/custom_apps/openregister/lib/Settings/ori_register.json
+```
+
+**Loading via the API:**
+```bash
+curl -X POST "http://localhost:8080/index.php/apps/openregister/api/registers/import" \
+  -u admin:admin -H "Content-Type: application/json" \
+  -d @openregister/lib/Settings/brp_register.json
+```
+
+**Querying loaded data:**
+```bash
+# Find person by BSN
+curl "http://localhost:8080/index.php/apps/openregister/api/objects/{brp_register_id}/{person_schema_id}?_search=999993653" -u admin:admin
+
+# Find business by KVK number
+curl "http://localhost:8080/index.php/apps/openregister/api/objects/{kvk_register_id}/{business_schema_id}?_search=69599084" -u admin:admin
+```
+
+**In Vue frontend stores:**
+```javascript
+const brpRegisterId = store.getters.getRegisterBySlug('brp')?.id
+const personSchemaId = store.getters.getSchemaBySlug('ingeschreven-persoon')?.id
+const response = await fetch(`/index.php/apps/openregister/api/objects/${brpRegisterId}/${personSchemaId}?_search=${bsn}`)
+```
+
+**Not yet implemented:**
+- OCC command `openregister:seed-mock-registers` (REQ-MOCK-008) -- files must be loaded individually via `openregister:load-register`
+- App config key `mock_registers_enabled` -- no toggle to control auto-import
+
+**Foundation available:**
+- Register/schema creation pipeline is well-established (RepairStep -> SettingsService -> ImportHandler)
+- Object seeding via `@self` envelope in `components.objects[]` is proven (OpenCatalogi seeds 8 objects this way)
+- The `ggm-openregister` repository provides 955 GGM schemas that could inform field naming
+- All external data sources for seed data are freely accessible (PDOK, Open State ORI, KVK test env)
+- BRP mock Docker image available for data extraction
+
+## Consuming Apps
+
+| App | Spec | Uses |
+|-----|------|------|
+| Pipelinq | klantbeeld-360 | BRP + KVK enrichment |
+| Pipelinq | kcc-werkplek | BRP + KVK citizen/business identification |
+| Pipelinq | prospect-discovery | KVK prospect search |
+| Pipelinq | contact-relationship-mapping | BRP family relationships |
+| Procest | case-dashboard-view | BRP-persoon linked object |
+| Procest | mijn-overheid-integration | BRP BSN lookup |
+| Procest | stuf-support | BRP for StUF-BG person queries |
+| Procest | zaak-intake-flow | BAG address validation |
+| Procest | vth-module | DSO permit integration |
+| OpenConnector | dso-omgevingsloket | DSO activity/location data |
+| OpenConnector | ibabs-notubiz-connector | ORI council data |
+
+## Specificity Assessment
+
+This spec is implementation-ready. All schemas are fully defined with field types, source mappings, and concrete test data references. The external data sources are verified accessible and documented with URLs and API keys.
+
+**Open questions:**
+1. Should the BRP mock data include the full RVIG test set (1182 persons) or a curated subset (30-50)? Recommendation: curated subset with all scenarios covered, keeping file size manageable.
+2. Should ORI seed data use real council meeting data from the Open State API or fully fictional "Voorbeeldstad" data? Recommendation: fictional for IP clarity, but structure derived from real Utrecht data.
+3. Should the mock register files live in `openregister/lib/Settings/` (loaded always) or in a separate `openregister/data/mock/` directory (loaded only when enabled)? Recommendation: `lib/Settings/` for consistency with existing pattern, gated by `mock_registers_enabled` config.
+
+## Nextcloud Integration Analysis
+
+**Status**: Implemented
+
+**Existing Implementation**: All five mock register JSON files (BRP, KVK, BAG, DSO, ORI) exist in openregister/lib/Settings/ with realistic seed data. BRP contains 35 person records, KVK has 16 businesses and 14 branches, BAG has 32 addresses plus 21 objects and 21 buildings, DSO has 53 records across four schemas, and ORI has 115 records across six schemas. Files follow the OpenAPI 3.0.0 + x-openregister extension pattern. Data can be loaded via the occ openregister:load-register command or the /api/registers/import API endpoint. Cross-register referencing is implemented between BRP/BAG addresses, KVK/BAG addresses, and DSO/BAG locations.
+
+**Nextcloud Core Integration**: Mock register data is loaded via the ConfigurationService import pipeline, which uses Nextcloud's RepairStep mechanism (OCP\Migration\IRepairStep) through the SettingsService and ImportHandler chain. This is the standard Nextcloud pattern for app initialization data. The occ command (openregister:load-register) integrates with Nextcloud's OCC command framework (OCP\Command), making it available through the standard docker exec nextcloud php occ interface. Data is stored in Nextcloud's database via the standard entity/mapper pattern. The bundled JSON files are distributed as part of the Nextcloud app package, requiring no external data sources or network access during installation.
+
+**Recommendation**: The mock registers are well-integrated with Nextcloud's app initialization pipeline. The self-contained nature (no external API calls needed for seed data) is a significant advantage over competitor products that require external infrastructure. To complete the Nextcloud integration, implement the occ openregister:seed-mock-registers command (REQ-MOCK-008) which would load all five registers in one operation with --force and --register flags. Add the mock_registers_enabled IAppConfig key to control auto-import during app installation, using Nextcloud's IAppConfig (OCP\IAppConfig) for the toggle. Consider registering the mock registers as available data sources in Nextcloud's capabilities endpoint so consuming apps (Pipelinq, Procest) can discover them programmatically.

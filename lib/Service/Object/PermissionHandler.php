@@ -25,8 +25,6 @@ namespace OCA\OpenRegister\Service\Object;
 
 use Exception;
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Db\Register;
-use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Db\MagicMapper;
@@ -51,31 +49,9 @@ use Psr\Container\ContainerInterface;
  * @SuppressWarnings(PHPMD.ExcessiveClassComplexity) Permission evaluation requires per-action and per-role branching
  * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
  * @SuppressWarnings(PHPMD.NPathComplexity)
- * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
  */
 class PermissionHandler
 {
-
-    /**
-     * Per-request cache for register authorization lookups.
-     *
-     * Maps register ID to its authorization array (or null if no authorization).
-     * Avoids repeated DB queries when checking permissions for multiple schemas
-     * in the same register within a single request.
-     *
-     * @var array<int, array|null>
-     */
-    private array $cachedRegisterAuth = [];
-
-    /**
-     * Per-request cache for register configuration (roles).
-     *
-     * Maps register ID to its configuration array.
-     *
-     * @var array<int, array|null>
-     */
-    private array $cachedRegisterConfig = [];
-
     /**
      * PermissionHandler constructor.
      *
@@ -159,7 +135,7 @@ class PermissionHandler
             // OrganisationService not available, conditional matching will be limited.
         }
 
-        $authorization = $this->resolveAuthorization(schema: $schema);
+        $authorization = $schema->getAuthorization();
 
         // Get current user if not provided.
         if ($userId === null) {
@@ -645,231 +621,4 @@ class PermissionHandler
         // Return the specific groups that have permission.
         return $authorization[$action] ?? [];
     }//end getAuthorizedGroups()
-
-    /**
-     * Resolve the effective authorization for a schema.
-     *
-     * If the schema has its own authorization block, use it directly.
-     * If not, fall back to the parent register's authorization block.
-     * Role references in the authorization are expanded to action-level permissions.
-     *
-     * @param Schema $schema The schema to resolve authorization for.
-     *
-     * @return array|null The effective authorization array, or null if none configured.
-     */
-    public function resolveAuthorization(Schema $schema): ?array
-    {
-        $authorization = $schema->getAuthorization();
-
-        // If schema has its own authorization, expand roles and return.
-        if (empty($authorization) === false) {
-            return $this->expandRoles(authorization: $authorization, schema: $schema);
-        }
-
-        // Fall back to register authorization.
-        $register = $this->getRegisterForSchema(schema: $schema);
-        if ($register === null) {
-            return null;
-        }
-
-        $registerAuth = $this->getRegisterAuthorization(registerId: $register->getId());
-        if (empty($registerAuth) === false) {
-            return $this->expandRoles(authorization: $registerAuth, schema: $schema);
-        }
-
-        return null;
-    }//end resolveAuthorization()
-
-    /**
-     * Get the parent register for a schema.
-     *
-     * Uses RegisterMapper::getFirstRegisterWithSchema() to find the register
-     * that contains the given schema.
-     *
-     * @param Schema $schema The schema to find the register for.
-     *
-     * @return Register|null The parent register, or null if not found.
-     */
-    private function getRegisterForSchema(Schema $schema): ?Register
-    {
-        try {
-            $registerMapper = $this->container->get(RegisterMapper::class);
-            $registerId     = $registerMapper->getFirstRegisterWithSchema($schema->getId());
-            if ($registerId === null) {
-                return null;
-            }
-
-            return $registerMapper->find($registerId);
-        } catch (\Throwable $e) {
-            $this->logger->warning(
-                message: '[PermissionHandler] Failed to get register for schema',
-                context: [
-                    'file'     => __FILE__,
-                    'line'     => __LINE__,
-                    'schemaId' => $schema->getId(),
-                    'error'    => $e->getMessage(),
-                ]
-            );
-            return null;
-        }
-    }//end getRegisterForSchema()
-
-    /**
-     * Get register authorization with per-request caching.
-     *
-     * Caches the authorization array for each register ID to avoid
-     * repeated database lookups within a single request.
-     *
-     * @param int $registerId The register ID to get authorization for.
-     *
-     * @return array|null The register's authorization array.
-     */
-    private function getRegisterAuthorization(int $registerId): ?array
-    {
-        if (array_key_exists($registerId, $this->cachedRegisterAuth) === true) {
-            return $this->cachedRegisterAuth[$registerId];
-        }
-
-        try {
-            $registerMapper = $this->container->get(RegisterMapper::class);
-            $register       = $registerMapper->find($registerId);
-            $auth           = $register->getAuthorization();
-
-            $this->cachedRegisterAuth[$registerId]   = $auth;
-            $this->cachedRegisterConfig[$registerId] = $register->getConfiguration();
-
-            return $auth;
-        } catch (\Throwable $e) {
-            $this->cachedRegisterAuth[$registerId] = null;
-            return null;
-        }
-    }//end getRegisterAuthorization()
-
-    /**
-     * Get register configuration with per-request caching.
-     *
-     * @param int $registerId The register ID to get configuration for.
-     *
-     * @return array|null The register's configuration array.
-     */
-    private function getRegisterConfiguration(int $registerId): ?array
-    {
-        if (array_key_exists($registerId, $this->cachedRegisterConfig) === true) {
-            return $this->cachedRegisterConfig[$registerId];
-        }
-
-        // Calling getRegisterAuthorization populates both caches.
-        $this->getRegisterAuthorization(registerId: $registerId);
-
-        return $this->cachedRegisterConfig[$registerId] ?? null;
-    }//end getRegisterConfiguration()
-
-    /**
-     * Expand role references in an authorization block to action-level permissions.
-     *
-     * If the authorization contains a 'roles' key mapping role names to group arrays,
-     * this method resolves each role's actions from the parent register's configuration
-     * and merges the resulting group-to-action mappings into the authorization.
-     *
-     * Example input:
-     *   authorization: { "roles": { "viewer": ["public"], "editor": ["behandelaars"] } }
-     *   register roles: [{ name: "viewer", actions: ["read"] }, { name: "editor", actions: ["read","create","update"] }]
-     *
-     * Example output:
-     *   { "read": ["public", "behandelaars"], "create": ["behandelaars"], "update": ["behandelaars"] }
-     *
-     * @param array  $authorization The authorization block to expand.
-     * @param Schema $schema        The schema (used to find parent register for role definitions).
-     *
-     * @return array The authorization with roles expanded to action-level entries.
-     *
-     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
-     */
-    public function expandRoles(array $authorization, Schema $schema): array
-    {
-        if (isset($authorization['roles']) === false || is_array($authorization['roles']) === false) {
-            return $authorization;
-        }
-
-        $roleAssignments = $authorization['roles'];
-        unset($authorization['roles']);
-
-        // Get role definitions from the parent register.
-        $roleDefinitions = $this->getRoleDefinitionsForSchema(schema: $schema);
-        if (empty($roleDefinitions) === true) {
-            $this->logger->warning(
-                message: '[PermissionHandler] Schema has role references but register has no role definitions',
-                context: [
-                    'file'     => __FILE__,
-                    'line'     => __LINE__,
-                    'schemaId' => $schema->getId(),
-                ]
-            );
-            return $authorization;
-        }
-
-        // Build a lookup map: roleName => actions array.
-        $roleMap = [];
-        foreach ($roleDefinitions as $roleDef) {
-            if (isset($roleDef['name']) === true && isset($roleDef['actions']) === true) {
-                $roleMap[$roleDef['name']] = $roleDef['actions'];
-            }
-        }
-
-        // Expand each role assignment into action-level entries.
-        foreach ($roleAssignments as $roleName => $groups) {
-            if (isset($roleMap[$roleName]) === false) {
-                $this->logger->warning(
-                    message: '[PermissionHandler] Unknown role name referenced in authorization',
-                    context: [
-                        'file'     => __FILE__,
-                        'line'     => __LINE__,
-                        'roleName' => $roleName,
-                        'schemaId' => $schema->getId(),
-                    ]
-                );
-                continue;
-            }
-
-            $actions = $roleMap[$roleName];
-            foreach ($actions as $action) {
-                if (isset($authorization[$action]) === false) {
-                    $authorization[$action] = [];
-                }
-
-                // Merge groups, avoiding duplicates.
-                foreach ((array) $groups as $group) {
-                    if (in_array($group, $authorization[$action], true) === false) {
-                        $authorization[$action][] = $group;
-                    }
-                }
-            }
-        }//end foreach
-
-        return $authorization;
-    }//end expandRoles()
-
-    /**
-     * Get role definitions for a schema from its parent register.
-     *
-     * Looks up the parent register's configuration.roles array.
-     *
-     * @param Schema $schema The schema to find role definitions for.
-     *
-     * @return array Array of role definitions, each with 'name', 'description', 'actions'.
-     */
-    private function getRoleDefinitionsForSchema(Schema $schema): array
-    {
-        $register = $this->getRegisterForSchema(schema: $schema);
-        if ($register === null) {
-            return [];
-        }
-
-        $config = $this->getRegisterConfiguration(registerId: $register->getId());
-        if ($config === null || isset($config['roles']) === false) {
-            return [];
-        }
-
-        return $config['roles'];
-    }//end getRoleDefinitionsForSchema()
 }//end class

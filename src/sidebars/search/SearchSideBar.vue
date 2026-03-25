@@ -1504,7 +1504,7 @@ export default {
 <style lang="scss" scoped>
 .section {
 	padding: 16px;
-    margin-bottom: 0;
+	margin-bottom: 0;
 }
 
 .sectionTitle {
@@ -1953,7 +1953,7 @@ export default {
 	gap: 8px;
 }
 
-.facet-checkbox input[type="checkbox"] {
+.facet-checkbox input[type='checkbox'] {
 	margin-top: 2px;
 	flex-shrink: 0;
 }
