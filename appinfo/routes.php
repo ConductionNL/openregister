@@ -11,6 +11,7 @@ return [
         'Endpoints' => ['url' => 'api/endpoints'],
         'Mappings' => ['url' => 'api/mappings'],
         'Consumers' => ['url' => 'api/consumers'],
+        'Actions' => ['url' => 'api/actions'],
     ],
     'routes' => [
         // PATCH routes for resources (partial updates).
@@ -23,6 +24,29 @@ return [
         ['name' => 'endpoints#patch', 'url' => '/api/endpoints/{id}', 'verb' => 'PATCH', 'requirements' => ['id' => '[^/]+']],
         ['name' => 'mappings#patch', 'url' => '/api/mappings/{id}', 'verb' => 'PATCH', 'requirements' => ['id' => '[^/]+']],
         ['name' => 'consumers#patch', 'url' => '/api/consumers/{id}', 'verb' => 'PATCH', 'requirements' => ['id' => '[^/]+']],
+        ['name' => 'actions#patch', 'url' => '/api/actions/{id}', 'verb' => 'PATCH', 'requirements' => ['id' => '[^/]+']],
+
+        // Actions - Custom routes.
+        ['name' => 'actions#test', 'url' => '/api/actions/{id}/test', 'verb' => 'POST', 'requirements' => ['id' => '\d+']],
+        ['name' => 'actions#logs', 'url' => '/api/actions/{id}/logs', 'verb' => 'GET', 'requirements' => ['id' => '\d+']],
+        ['name' => 'actions#migrateFromHooks', 'url' => '/api/actions/migrate-from-hooks/{schemaId}', 'verb' => 'POST', 'requirements' => ['schemaId' => '\d+']],
+
+        // Contacts - matching.
+        ['name' => 'contacts#match', 'url' => '/api/contacts/match', 'verb' => 'GET'],
+
+        // Archival and destruction workflow.
+        ['name' => 'archival#listSelectionLists', 'url' => '/api/archival/selection-lists', 'verb' => 'GET'],
+        ['name' => 'archival#createSelectionList', 'url' => '/api/archival/selection-lists', 'verb' => 'POST'],
+        ['name' => 'archival#getSelectionList', 'url' => '/api/archival/selection-lists/{id}', 'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
+        ['name' => 'archival#updateSelectionList', 'url' => '/api/archival/selection-lists/{id}', 'verb' => 'PUT', 'requirements' => ['id' => '[^/]+']],
+        ['name' => 'archival#deleteSelectionList', 'url' => '/api/archival/selection-lists/{id}', 'verb' => 'DELETE', 'requirements' => ['id' => '[^/]+']],
+        ['name' => 'archival#getRetention', 'url' => '/api/archival/objects/{id}/retention', 'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
+        ['name' => 'archival#setRetention', 'url' => '/api/archival/objects/{id}/retention', 'verb' => 'PUT', 'requirements' => ['id' => '[^/]+']],
+        ['name' => 'archival#listDestructionLists', 'url' => '/api/archival/destruction-lists', 'verb' => 'GET'],
+        ['name' => 'archival#generateDestructionList', 'url' => '/api/archival/destruction-lists/generate', 'verb' => 'POST'],
+        ['name' => 'archival#getDestructionList', 'url' => '/api/archival/destruction-lists/{id}', 'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
+        ['name' => 'archival#approveDestructionList', 'url' => '/api/archival/destruction-lists/{id}/approve', 'verb' => 'POST', 'requirements' => ['id' => '[^/]+']],
+        ['name' => 'archival#rejectFromDestructionList', 'url' => '/api/archival/destruction-lists/{id}/reject', 'verb' => 'POST', 'requirements' => ['id' => '[^/]+']],
 
         // Mappings - Custom routes.
         ['name' => 'mappings#test', 'url' => '/api/mappings/test', 'verb' => 'POST'],

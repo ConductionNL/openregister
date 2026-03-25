@@ -314,7 +314,10 @@ class Application extends App implements IBootstrap
                     accountManager: $container->get('OCP\Accounts\IAccountManager'),
                     logger: $container->get('Psr\Log\LoggerInterface'),
                     organisationService: $container->get(OrganisationService::class),
-                    eventDispatcher: $container->get('OCP\EventDispatcher\IEventDispatcher')
+                    eventDispatcher: $container->get('OCP\EventDispatcher\IEventDispatcher'),
+                    avatarManager: $container->get('OCP\IAvatarManager'),
+                    auditTrailMapper: $container->get(\OCA\OpenRegister\Db\AuditTrailMapper::class),
+                    secureRandom: $container->get('OCP\Security\ISecureRandom')
                 );
             }
         );
