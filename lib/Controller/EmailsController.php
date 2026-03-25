@@ -83,7 +83,7 @@ class EmailsController extends Controller
         \OCP\IUserSession $userSession,
         \Psr\Log\LoggerInterface $logger
     ) {
-        parent::__construct($appName, $request);
+        parent::__construct(appName: $appName, request: $request);
 
         $this->emailService  = $emailService;
         $this->objectService = $objectService;
@@ -116,14 +116,14 @@ class EmailsController extends Controller
         }
 
         try {
-            $object = $this->validateObject($register, $schema, $id);
+            $object = $this->validateObject(object: $register, schema: $schema, schemaObject: $id);
             if ($object === null) {
                 return new JSONResponse(['error' => 'Object not found'], 404);
             }
 
             $params = $this->request->getParams();
-            $limit  = isset($params['limit']) ? (int) $params['limit'] : null;
-            $offset = isset($params['offset']) ? (int) $params['offset'] : null;
+            $limit  = isset($params['limit']) === true ? (int) $params['limit'] : null;
+            $offset = isset($params['offset']) === true ? (int) $params['offset'] : null;
 
             $result = $this->emailService->getEmailsForObject($object->getUuid(), $limit, $offset);
 
@@ -160,7 +160,7 @@ class EmailsController extends Controller
         }
 
         try {
-            $object = $this->validateObject($register, $schema, $id);
+            $object = $this->validateObject(object: $register, schema: $schema, schemaObject: $id);
             if ($object === null) {
                 return new JSONResponse(['error' => 'Object not found'], 404);
             }
@@ -225,7 +225,7 @@ class EmailsController extends Controller
         }
 
         try {
-            $object = $this->validateObject($register, $schema, $id);
+            $object = $this->validateObject(object: $register, schema: $schema, schemaObject: $id);
             if ($object === null) {
                 return new JSONResponse(['error' => 'Object not found'], 404);
             }

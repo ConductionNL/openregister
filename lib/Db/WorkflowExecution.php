@@ -60,49 +60,109 @@ use OCP\AppFramework\Db\Entity;
 class WorkflowExecution extends Entity implements JsonSerializable
 {
 
-    /** @var string|null */
+    /**
+     * The uuid.
+     *
+     * @var string|null
+     */
     protected ?string $uuid = null;
 
-    /** @var string|null */
+    /**
+     * The hook id.
+     *
+     * @var string|null
+     */
     protected ?string $hookId = null;
 
-    /** @var string|null */
+    /**
+     * The event type.
+     *
+     * @var string|null
+     */
     protected ?string $eventType = null;
 
-    /** @var string|null */
+    /**
+     * The object uuid.
+     *
+     * @var string|null
+     */
     protected ?string $objectUuid = null;
 
-    /** @var int|null */
+    /**
+     * The schema id.
+     *
+     * @var integer|null
+     */
     protected ?int $schemaId = null;
 
-    /** @var int|null */
+    /**
+     * The register id.
+     *
+     * @var integer|null
+     */
     protected ?int $registerId = null;
 
-    /** @var string|null */
+    /**
+     * The engine.
+     *
+     * @var string|null
+     */
     protected ?string $engine = null;
 
-    /** @var string|null */
+    /**
+     * The workflow id.
+     *
+     * @var string|null
+     */
     protected ?string $workflowId = null;
 
-    /** @var string|null */
+    /**
+     * The mode.
+     *
+     * @var string|null
+     */
     protected ?string $mode = 'sync';
 
-    /** @var string|null */
+    /**
+     * The status.
+     *
+     * @var string|null
+     */
     protected ?string $status = null;
 
-    /** @var int */
+    /**
+     * The duration ms.
+     *
+     * @var integer
+     */
     protected int $durationMs = 0;
 
-    /** @var string|null */
+    /**
+     * The errors.
+     *
+     * @var string|null
+     */
     protected ?string $errors = null;
 
-    /** @var string|null */
+    /**
+     * The metadata.
+     *
+     * @var string|null
+     */
     protected ?string $metadata = null;
 
-    /** @var string|null */
+    /**
+     * The payload.
+     *
+     * @var string|null
+     */
     protected ?string $payload = null;
 
-    /** @var DateTime|null */
+    /**
+     * The executed at.
+     *
+     * @var DateTime|null
+     */
     protected ?DateTime $executedAt = null;
 
     /**
@@ -137,14 +197,26 @@ class WorkflowExecution extends Entity implements JsonSerializable
     public function hydrate(array $object): self
     {
         $fields = [
-            'uuid', 'hookId', 'eventType', 'objectUuid', 'schemaId',
-            'registerId', 'engine', 'workflowId', 'mode', 'status',
-            'durationMs', 'errors', 'metadata', 'payload', 'executedAt',
+            'uuid',
+            'hookId',
+            'eventType',
+            'objectUuid',
+            'schemaId',
+            'registerId',
+            'engine',
+            'workflowId',
+            'mode',
+            'status',
+            'durationMs',
+            'errors',
+            'metadata',
+            'payload',
+            'executedAt',
         ];
 
         foreach ($object as $key => $value) {
             if (in_array($key, $fields, true) === true) {
-                $setter = 'set' . ucfirst($key);
+                $setter = 'set'.ucfirst($key);
                 $this->$setter($value);
             }
         }

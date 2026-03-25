@@ -131,7 +131,7 @@ class ContactService
         int $registerId,
         int $addressbookId,
         string $contactUri,
-        ?string $role = null
+        ?string $role=null
     ): ContactLink {
         // Verify the contact exists.
         $card = $this->cardDavBackend->getCard($addressbookId, $contactUri);
@@ -180,9 +180,9 @@ class ContactService
     /**
      * Create a new contact and link it to an object.
      *
-     * @param string      $objectUuid The object UUID.
-     * @param int         $registerId The register ID.
-     * @param array       $data       Contact data: fullName, email, phone, role.
+     * @param string $objectUuid The object UUID.
+     * @param int    $registerId The register ID.
+     * @param array  $data       Contact data: fullName, email, phone, role.
      *
      * @return ContactLink The created link.
      *
@@ -228,7 +228,7 @@ class ContactService
 
         $lines[] = 'END:VCARD';
 
-        $cardData  = implode("\r\n", $lines)."\r\n";
+        $cardData   = implode("\r\n", $lines)."\r\n";
         $contactUri = $uid.'.vcf';
 
         $this->cardDavBackend->createCard($addressbook['id'], $contactUri, $cardData);

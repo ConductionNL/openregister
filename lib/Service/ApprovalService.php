@@ -39,11 +39,11 @@ class ApprovalService
     /**
      * Constructor for ApprovalService.
      *
-     * @param ApprovalChainMapper      $chainMapper     Chain mapper
-     * @param ApprovalStepMapper       $stepMapper      Step mapper
-     * @param WorkflowExecutionMapper  $executionMapper Execution history mapper
-     * @param IGroupManager            $groupManager    Group manager for role checks
-     * @param LoggerInterface          $logger          Logger
+     * @param ApprovalChainMapper     $chainMapper     Chain mapper
+     * @param ApprovalStepMapper      $stepMapper      Step mapper
+     * @param WorkflowExecutionMapper $executionMapper Execution history mapper
+     * @param IGroupManager           $groupManager    Group manager for role checks
+     * @param LoggerInterface         $logger          Logger
      */
     public function __construct(
         private readonly ApprovalChainMapper $chainMapper,
@@ -73,13 +73,15 @@ class ApprovalService
         foreach ($steps as $index => $stepDef) {
             $status = ($index === 0) ? 'pending' : 'waiting';
 
-            $step = $this->stepMapper->createFromArray([
-                'chainId'    => $chain->getId(),
-                'objectUuid' => $objectUuid,
-                'stepOrder'  => ($stepDef['order'] ?? ($index + 1)),
-                'role'       => ($stepDef['role'] ?? ''),
-                'status'     => $status,
-            ]);
+            $step = $this->stepMapper->createFromArray(
+                    [
+                        'chainId'    => $chain->getId(),
+                        'objectUuid' => $objectUuid,
+                        'stepOrder'  => ($stepDef['order'] ?? ($index + 1)),
+                        'role'       => ($stepDef['role'] ?? ''),
+                        'status'     => $status,
+                    ]
+                    );
 
             $createdSteps[] = $step;
         }
@@ -100,7 +102,7 @@ class ApprovalService
      *
      * @throws Exception If user is not authorised or step is not pending
      */
-    public function approveStep(int $stepId, string $userId, string $comment = ''): array
+    public function approveStep(int $stepId, string $userId, string $comment=''): array
     {
         $step = $this->stepMapper->find($stepId);
 
@@ -109,7 +111,7 @@ class ApprovalService
         }
 
         // Verify role membership.
-        $this->verifyRole($userId, $step->getRole());
+        $this->verifyRole(userId: $userId, role: $step->getRole());
 
         // Update the step.
         $step->setStatus('approved');
@@ -144,7 +146,7 @@ class ApprovalService
         }
 
         // Persist execution history.
-        $this->persistApprovalExecution($chain, $step, 'approved');
+        $this->persistApprovalExecution(chain: $chain, step: $step, status: 'approved');
 
         return [
             'step'            => $step,
@@ -165,7 +167,7 @@ class ApprovalService
      *
      * @throws Exception If user is not authorised or step is not pending
      */
-    public function rejectStep(int $stepId, string $userId, string $comment = ''): array
+    public function rejectStep(int $stepId, string $userId, string $comment=''): array
     {
         $step = $this->stepMapper->find($stepId);
 
@@ -174,7 +176,7 @@ class ApprovalService
         }
 
         // Verify role membership.
-        $this->verifyRole($userId, $step->getRole());
+        $this->verifyRole(userId: $userId, role: $step->getRole());
 
         // Update the step.
         $step->setStatus('rejected');
@@ -197,7 +199,7 @@ class ApprovalService
         }
 
         // Persist execution history.
-        $this->persistApprovalExecution($chain, $step, 'rejected');
+        $this->persistApprovalExecution(chain: $chain, step: $step, status: 'rejected');
 
         return [
             'step'           => $step,
@@ -238,30 +240,34 @@ class ApprovalService
         string $status
     ): void {
         try {
-            $this->executionMapper->createFromArray([
-                'hookId'     => 'approval-chain-' . $chain->getId(),
-                'eventType'  => 'approval',
-                'objectUuid' => $step->getObjectUuid(),
-                'schemaId'   => $chain->getSchemaId(),
-                'engine'     => 'approval',
-                'workflowId' => 'chain-' . $chain->getId() . '-step-' . $step->getStepOrder(),
-                'mode'       => 'sync',
-                'status'     => $status,
-                'durationMs' => 0,
-                'metadata'   => json_encode([
-                    'chainName' => $chain->getName(),
-                    'stepOrder' => $step->getStepOrder(),
-                    'role'      => $step->getRole(),
-                    'decidedBy' => $step->getDecidedBy(),
-                    'comment'   => $step->getComment(),
-                ]),
-                'executedAt' => new DateTime(),
-            ]);
+            $this->executionMapper->createFromArray(
+                    [
+                        'hookId'     => 'approval-chain-'.$chain->getId(),
+                        'eventType'  => 'approval',
+                        'objectUuid' => $step->getObjectUuid(),
+                        'schemaId'   => $chain->getSchemaId(),
+                        'engine'     => 'approval',
+                        'workflowId' => 'chain-'.$chain->getId().'-step-'.$step->getStepOrder(),
+                        'mode'       => 'sync',
+                        'status'     => $status,
+                        'durationMs' => 0,
+                        'metadata'   => json_encode(
+                        [
+                            'chainName' => $chain->getName(),
+                            'stepOrder' => $step->getStepOrder(),
+                            'role'      => $step->getRole(),
+                            'decidedBy' => $step->getDecidedBy(),
+                            'comment'   => $step->getComment(),
+                        ]
+                        ),
+                        'executedAt' => new DateTime(),
+                    ]
+                    );
         } catch (Exception $e) {
             $this->logger->warning(
                 message: '[ApprovalService] Failed to persist approval execution',
                 context: ['chainId' => $chain->getId(), 'stepId' => $step->getId(), 'error' => $e->getMessage()]
             );
-        }
+        }//end try
     }//end persistApprovalExecution()
 }//end class

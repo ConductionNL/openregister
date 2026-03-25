@@ -6,8 +6,8 @@ declare module '*.vue' {
 
 declare module '@nextcloud/vue-richtext' {
 	export function registerWidget(
-		id: string,
-		callback: () => Promise<unknown>,
-		onDestroy?: () => void,
+		_id: string,
+		_callback: () => Promise<unknown>,
+		_onDestroy?: () => void,
 	): void
 }
