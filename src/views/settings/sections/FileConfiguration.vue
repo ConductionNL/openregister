@@ -1250,7 +1250,7 @@ export default {
 	font-size: 14px;
 }
 
-.setting-item input[type="number"],
+.setting-item input[type='number'],
 .setting-item select {
 	max-width: 200px;
 	padding: 8px 12px;

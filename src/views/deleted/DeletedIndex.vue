@@ -520,6 +520,7 @@ export default {
 		/**
 		 * Export filtered items with specified options
 		 * @param {object} options - Export options
+		 * @param _options
 		 * @return {void}
 		 */
 		exportFilteredItems(_options) {
@@ -656,8 +657,8 @@ export default {
 
 /* Actions button styling */
 .actionsButton > div > button {
-    margin-top: 0px !important;
-    margin-right: 0px !important;
-    padding-right: 0px !important;
+	margin-top: 0px !important;
+	margin-right: 0px !important;
+	padding-right: 0px !important;
 }
 </style>
