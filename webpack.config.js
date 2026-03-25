@@ -80,6 +80,10 @@ webpackConfig.entry = {
 		import: path.join(__dirname, 'src', 'settings.js'),
 		filename: appId + '-settings.js',
 	},
+	reference: {
+		import: path.join(__dirname, 'src', 'reference', 'init.ts'),
+		filename: appId + '-reference.js',
+	},
 }
 
 // Replace VueLoaderPlugin (don't push — duplicates break templates when using local package)

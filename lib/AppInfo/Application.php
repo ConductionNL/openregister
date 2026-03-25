@@ -119,6 +119,7 @@ use OCA\OpenRegister\Service\Schemas\SchemaCacheHandler;
 use OCA\OpenRegister\Command\SolrDebugCommand;
 use OCA\OpenRegister\Command\SolrManagementCommand;
 use OCA\OpenRegister\Service\Schemas\FacetCacheHandler;
+use OCA\OpenRegister\Reference\ObjectReferenceProvider;
 use OCA\OpenRegister\Search\ObjectsProvider;
 use OCA\OpenRegister\Service\DeepLinkRegistryService;
 use OCA\OpenRegister\Event\DeepLinkRegistrationEvent;
@@ -559,6 +560,7 @@ class Application extends App implements IBootstrap
         );
 
         $context->registerSearchProvider(ObjectsProvider::class);
+        $context->registerReferenceProvider(ObjectReferenceProvider::class);
     }//end registerConfigurationServices()
 
     /**
