@@ -41,7 +41,7 @@ use OCP\AppFramework\Db\Entity;
  * @method string|null getSender()
  * @method void setSender(?string $sender)
  * @method DateTime|null getDate()
- * @method void setDate(?DateTime $date)
+ * @method void setMailDate(?DateTime $mailDate)
  * @method string getLinkedBy()
  * @method void setLinkedBy(string $linkedBy)
  * @method DateTime getLinkedAt()
@@ -74,7 +74,7 @@ class EmailLink extends Entity implements JsonSerializable
     protected ?string $sender = null;
 
     /** @var DateTime|null */
-    protected ?DateTime $date = null;
+    protected ?DateTime $mailDate = null;
 
     /** @var string|null */
     protected ?string $linkedBy = null;
@@ -94,7 +94,7 @@ class EmailLink extends Entity implements JsonSerializable
         $this->addType('mailMessageUid', 'string');
         $this->addType('subject', 'string');
         $this->addType('sender', 'string');
-        $this->addType('date', 'datetime');
+        $this->addType('mailDate', 'datetime');
         $this->addType('linkedBy', 'string');
         $this->addType('linkedAt', 'datetime');
     }//end __construct()
@@ -115,7 +115,7 @@ class EmailLink extends Entity implements JsonSerializable
             'mailMessageUid' => $this->mailMessageUid,
             'subject'        => $this->subject,
             'sender'         => $this->sender,
-            'date'           => $this->date?->format(DateTime::ATOM),
+            'mailDate'       => $this->mailDate?->format(DateTime::ATOM),
             'linkedBy'       => $this->linkedBy,
             'linkedAt'       => $this->linkedAt?->format(DateTime::ATOM),
         ];

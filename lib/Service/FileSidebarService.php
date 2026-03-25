@@ -150,7 +150,7 @@ class FileSidebarService
     {
         try {
             // Get column names for the table to search all data columns.
-            $schemaManager = $this->db->createSchemaManager();
+            $schemaManager = $this->db->getInner()->createSchemaManager();
             $columns       = $schemaManager->listTableColumns($tableName);
 
             // System columns that should not be searched for file references.

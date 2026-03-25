@@ -24,6 +24,12 @@ return [
         ['name' => 'mappings#patch', 'url' => '/api/mappings/{id}', 'verb' => 'PATCH', 'requirements' => ['id' => '[^/]+']],
         ['name' => 'consumers#patch', 'url' => '/api/consumers/{id}', 'verb' => 'PATCH', 'requirements' => ['id' => '[^/]+']],
 
+        // Email links (mail sidebar).
+        ['name' => 'emails#byMessage', 'url' => '/api/emails/by-message/{accountId}/{messageId}', 'verb' => 'GET', 'requirements' => ['accountId' => '\d+', 'messageId' => '\d+']],
+        ['name' => 'emails#bySender', 'url' => '/api/emails/by-sender', 'verb' => 'GET'],
+        ['name' => 'emails#quickLink', 'url' => '/api/emails/quick-link', 'verb' => 'POST'],
+        ['name' => 'emails#deleteLink', 'url' => '/api/emails/{linkId}', 'verb' => 'DELETE', 'requirements' => ['linkId' => '\d+']],
+
         // Mappings - Custom routes.
         ['name' => 'mappings#test', 'url' => '/api/mappings/test', 'verb' => 'POST'],
 
