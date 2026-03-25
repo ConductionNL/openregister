@@ -114,4 +114,8 @@ Vrij en open source onder de EUPL-licentie.
 	<notification>
 		<service>OCA\OpenRegister\Notification\Notifier</service>
 	</notification>
+
+	<contactsmenu>
+		<provider>OCA\OpenRegister\Contacts\ContactsMenuProvider</provider>
+	</contactsmenu>
 </info>
