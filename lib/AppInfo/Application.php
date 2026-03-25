@@ -141,13 +141,8 @@ use OCA\OpenRegister\Listener\ObjectCleanupListener;
 use OCA\OpenRegister\Listener\ToolRegistrationListener;
 use OCA\OpenRegister\Listener\GraphQLSubscriptionListener;
 use OCA\OpenRegister\Listener\WebhookEventListener;
-use OCA\OpenRegister\Listener\MailAppScriptListener;
-use OCP\AppFramework\Http\Events\BeforeTemplateRenderedEvent;
+use OCA\OpenRegister\Listener\FilesSidebarListener;
 use OCA\OpenRegister\Listener\HookListener;
-use OCA\OpenRegister\Listener\ActionListener;
-use OCA\OpenRegister\Event\ActionCreatedEvent;
-use OCA\OpenRegister\Event\ActionUpdatedEvent;
-use OCA\OpenRegister\Event\ActionDeletedEvent;
 use OCA\OpenRegister\Service\NoteService;
 use OCA\OpenRegister\Service\TaskService;
 use OCP\Comments\CommentsEntityEvent;
@@ -743,47 +738,6 @@ class Application extends App implements IBootstrap
         $context->registerEventListener(ObjectUpdatedEvent::class, HookListener::class);
         $context->registerEventListener(ObjectDeletedEvent::class, HookListener::class);
 
-        // ActionListener for action-registry event handling (after HookListener for backward compat).
-        $context->registerEventListener(ObjectCreatingEvent::class, ActionListener::class);
-        $context->registerEventListener(ObjectCreatedEvent::class, ActionListener::class);
-        $context->registerEventListener(ObjectUpdatingEvent::class, ActionListener::class);
-        $context->registerEventListener(ObjectUpdatedEvent::class, ActionListener::class);
-        $context->registerEventListener(ObjectDeletingEvent::class, ActionListener::class);
-        $context->registerEventListener(ObjectDeletedEvent::class, ActionListener::class);
-        $context->registerEventListener(ObjectLockedEvent::class, ActionListener::class);
-        $context->registerEventListener(ObjectUnlockedEvent::class, ActionListener::class);
-        $context->registerEventListener(ObjectRevertedEvent::class, ActionListener::class);
-        $context->registerEventListener(RegisterCreatedEvent::class, ActionListener::class);
-        $context->registerEventListener(RegisterUpdatedEvent::class, ActionListener::class);
-        $context->registerEventListener(RegisterDeletedEvent::class, ActionListener::class);
-        $context->registerEventListener(SchemaCreatedEvent::class, ActionListener::class);
-        $context->registerEventListener(SchemaUpdatedEvent::class, ActionListener::class);
-        $context->registerEventListener(SchemaDeletedEvent::class, ActionListener::class);
-        $context->registerEventListener(SourceCreatedEvent::class, ActionListener::class);
-        $context->registerEventListener(SourceUpdatedEvent::class, ActionListener::class);
-        $context->registerEventListener(SourceDeletedEvent::class, ActionListener::class);
-        $context->registerEventListener(ConfigurationCreatedEvent::class, ActionListener::class);
-        $context->registerEventListener(ConfigurationUpdatedEvent::class, ActionListener::class);
-        $context->registerEventListener(ConfigurationDeletedEvent::class, ActionListener::class);
-        $context->registerEventListener(ViewCreatedEvent::class, ActionListener::class);
-        $context->registerEventListener(ViewUpdatedEvent::class, ActionListener::class);
-        $context->registerEventListener(ViewDeletedEvent::class, ActionListener::class);
-        $context->registerEventListener(AgentCreatedEvent::class, ActionListener::class);
-        $context->registerEventListener(AgentUpdatedEvent::class, ActionListener::class);
-        $context->registerEventListener(AgentDeletedEvent::class, ActionListener::class);
-        $context->registerEventListener(ApplicationCreatedEvent::class, ActionListener::class);
-        $context->registerEventListener(ApplicationUpdatedEvent::class, ActionListener::class);
-        $context->registerEventListener(ApplicationDeletedEvent::class, ActionListener::class);
-        $context->registerEventListener(ConversationCreatedEvent::class, ActionListener::class);
-        $context->registerEventListener(ConversationUpdatedEvent::class, ActionListener::class);
-        $context->registerEventListener(ConversationDeletedEvent::class, ActionListener::class);
-        $context->registerEventListener(OrganisationCreatedEvent::class, ActionListener::class);
-        $context->registerEventListener(OrganisationUpdatedEvent::class, ActionListener::class);
-        $context->registerEventListener(OrganisationDeletedEvent::class, ActionListener::class);
-        $context->registerEventListener(ActionCreatedEvent::class, ActionListener::class);
-        $context->registerEventListener(ActionUpdatedEvent::class, ActionListener::class);
-        $context->registerEventListener(ActionDeletedEvent::class, ActionListener::class);
-
         // WebhookEventListener for webhook delivery.
         $context->registerEventListener(ObjectCreatedEvent::class, WebhookEventListener::class);
 
@@ -792,14 +746,14 @@ class Application extends App implements IBootstrap
         $context->registerEventListener(ObjectUpdatedEvent::class, GraphQLSubscriptionListener::class);
         $context->registerEventListener(ObjectDeletedEvent::class, GraphQLSubscriptionListener::class);
 
+        // FilesSidebarListener injects the sidebar tab script into the Files app.
+        $context->registerEventListener('OCA\Files\Event\LoadAdditionalScriptsEvent', FilesSidebarListener::class);
+
         // CommentsEntityListener registers "openregister" objectType for Nextcloud Comments.
         $context->registerEventListener(CommentsEntityEvent::class, CommentsEntityListener::class);
 
         // ObjectCleanupListener cleans up notes and tasks when an object is deleted.
         $context->registerEventListener(ObjectDeletedEvent::class, ObjectCleanupListener::class);
-
-        // MailAppScriptListener injects sidebar script into Nextcloud Mail app.
-        $context->registerEventListener(BeforeTemplateRenderedEvent::class, MailAppScriptListener::class);
     }//end registerEventListeners()
 
     /**
@@ -811,16 +765,9 @@ class Application extends App implements IBootstrap
      */
     public function boot(IBootContext $context): void
     {
-        // Register scheduled workflow and cleanup TimedJobs.
-        $container = $context->getAppContainer();
-        $jobList   = $container->get(\OCP\BackgroundJob\IJobList::class);
-
-        if ($jobList->has(\OCA\OpenRegister\BackgroundJob\ScheduledWorkflowJob::class, null) === false) {
-            $jobList->add(\OCA\OpenRegister\BackgroundJob\ScheduledWorkflowJob::class);
-        }
-
-        if ($jobList->has(\OCA\OpenRegister\BackgroundJob\ExecutionHistoryCleanupJob::class, null) === false) {
-            $jobList->add(\OCA\OpenRegister\BackgroundJob\ExecutionHistoryCleanupJob::class);
-        }
+        // Deep link registration is deferred to avoid circular DI resolution.
+        // DeepLinkRegistryService depends on RegisterMapper/SchemaMapper which
+        // trigger circular resolution chains when resolved during boot.
+        // Consuming apps register their patterns lazily on first use instead.
     }//end boot()
 }//end class

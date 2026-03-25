@@ -80,9 +80,9 @@ webpackConfig.entry = {
 		import: path.join(__dirname, 'src', 'settings.js'),
 		filename: appId + '-settings.js',
 	},
-	mailSidebar: {
-		import: path.join(__dirname, 'src', 'mail-sidebar.js'),
-		filename: appId + '-mail-sidebar.js',
+	filesSidebar: {
+		import: path.join(__dirname, 'src', 'files-sidebar.js'),
+		filename: appId + '-filesSidebar.js',
 	},
 }
 
