@@ -28,10 +28,6 @@
 					<span class="breakdown-label">{{ t('openregister', 'Deleted:') }}</span>
 					<span class="breakdown-value deleted">{{ objectStats.deleted }}</span>
 				</div>
-				<div class="breakdown-item">
-					<span class="breakdown-label">{{ t('openregister', 'Published:') }}</span>
-					<span class="breakdown-value published">{{ objectStats.published }}</span>
-				</div>
 				<div v-if="objectStats.locked !== undefined" class="breakdown-item">
 					<span class="breakdown-label">{{ t('openregister', 'Locked:') }}</span>
 					<span class="breakdown-value locked">{{ objectStats.locked }}</span>
@@ -163,11 +159,6 @@ export default {
 	.breakdown-value.deleted {
 		color: var(--color-error);
 		background: var(--color-error-light);
-	}
-
-	.breakdown-value.published {
-		color: var(--color-success);
-		background: var(--color-success-light);
 	}
 
 	.breakdown-value.locked {

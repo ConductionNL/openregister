@@ -31,7 +31,6 @@ export type TSchema = {
             invalid: number
             deleted: number
             locked: number
-            published: number
         },
         logs: {
             total: number
