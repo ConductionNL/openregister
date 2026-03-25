@@ -141,6 +141,8 @@ use OCA\OpenRegister\Listener\ObjectCleanupListener;
 use OCA\OpenRegister\Listener\ToolRegistrationListener;
 use OCA\OpenRegister\Listener\GraphQLSubscriptionListener;
 use OCA\OpenRegister\Listener\WebhookEventListener;
+use OCA\OpenRegister\Listener\MailAppScriptListener;
+use OCP\AppFramework\Http\Events\BeforeTemplateRenderedEvent;
 use OCA\OpenRegister\Listener\HookListener;
 use OCA\OpenRegister\Service\NoteService;
 use OCA\OpenRegister\Service\TaskService;
@@ -750,6 +752,9 @@ class Application extends App implements IBootstrap
 
         // ObjectCleanupListener cleans up notes and tasks when an object is deleted.
         $context->registerEventListener(ObjectDeletedEvent::class, ObjectCleanupListener::class);
+
+        // MailAppScriptListener injects sidebar script into Nextcloud Mail app.
+        $context->registerEventListener(BeforeTemplateRenderedEvent::class, MailAppScriptListener::class);
     }//end registerEventListeners()
 
     /**
