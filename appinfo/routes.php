@@ -13,9 +13,6 @@ return [
         'Consumers' => ['url' => 'api/consumers'],
     ],
     'routes' => [
-        // Contact matching API endpoint.
-        ['name' => 'contacts#match', 'url' => '/api/contacts/match', 'verb' => 'GET'],
-
         // PATCH routes for resources (partial updates).
         ['name' => 'registers#patch', 'url' => '/api/registers/{id}', 'verb' => 'PATCH', 'requirements' => ['id' => '[^/]+']],
         ['name' => 'schemas#patch', 'url' => '/api/schemas/{id}', 'verb' => 'PATCH', 'requirements' => ['id' => '[^/]+']],
@@ -320,34 +317,6 @@ return [
         ['name' => 'notes#index', 'url' => '/api/objects/{register}/{schema}/{id}/notes', 'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
         ['name' => 'notes#create', 'url' => '/api/objects/{register}/{schema}/{id}/notes', 'verb' => 'POST', 'requirements' => ['id' => '[^/]+']],
         ['name' => 'notes#destroy', 'url' => '/api/objects/{register}/{schema}/{id}/notes/{noteId}', 'verb' => 'DELETE', 'requirements' => ['id' => '[^/]+', 'noteId' => '[^/]+']],
-
-        // Email relations under objects (Nextcloud Mail wrapper).
-        ['name' => 'emails#index',   'url' => '/api/objects/{register}/{schema}/{id}/emails',            'verb' => 'GET',    'requirements' => ['id' => '[^/]+']],
-        ['name' => 'emails#create',  'url' => '/api/objects/{register}/{schema}/{id}/emails',            'verb' => 'POST',   'requirements' => ['id' => '[^/]+']],
-        ['name' => 'emails#destroy', 'url' => '/api/objects/{register}/{schema}/{id}/emails/{emailId}',  'verb' => 'DELETE', 'requirements' => ['id' => '[^/]+', 'emailId' => '\d+']],
-        ['name' => 'emails#search',  'url' => '/api/emails/search',                                      'verb' => 'GET'],
-
-        // Calendar event relations under objects (CalDAV VEVENT wrapper).
-        ['name' => 'calendarEvents#index',   'url' => '/api/objects/{register}/{schema}/{id}/events',              'verb' => 'GET',    'requirements' => ['id' => '[^/]+']],
-        ['name' => 'calendarEvents#create',  'url' => '/api/objects/{register}/{schema}/{id}/events',              'verb' => 'POST',   'requirements' => ['id' => '[^/]+']],
-        ['name' => 'calendarEvents#link',    'url' => '/api/objects/{register}/{schema}/{id}/events/link',         'verb' => 'POST',   'requirements' => ['id' => '[^/]+']],
-        ['name' => 'calendarEvents#destroy', 'url' => '/api/objects/{register}/{schema}/{id}/events/{eventId}',   'verb' => 'DELETE', 'requirements' => ['id' => '[^/]+', 'eventId' => '[^/]+']],
-
-        // Contact relations under objects (CardDAV wrapper).
-        ['name' => 'contacts#index',   'url' => '/api/objects/{register}/{schema}/{id}/contacts',                'verb' => 'GET',    'requirements' => ['id' => '[^/]+']],
-        ['name' => 'contacts#create',  'url' => '/api/objects/{register}/{schema}/{id}/contacts',                'verb' => 'POST',   'requirements' => ['id' => '[^/]+']],
-        ['name' => 'contacts#update',  'url' => '/api/objects/{register}/{schema}/{id}/contacts/{contactId}',    'verb' => 'PUT',    'requirements' => ['id' => '[^/]+', 'contactId' => '\d+']],
-        ['name' => 'contacts#destroy', 'url' => '/api/objects/{register}/{schema}/{id}/contacts/{contactId}',    'verb' => 'DELETE', 'requirements' => ['id' => '[^/]+', 'contactId' => '\d+']],
-        ['name' => 'contacts#objects', 'url' => '/api/contacts/{contactUid}/objects',                             'verb' => 'GET',    'requirements' => ['contactUid' => '[^/]+']],
-
-        // Deck card relations under objects (Nextcloud Deck wrapper).
-        ['name' => 'deck#index',   'url' => '/api/objects/{register}/{schema}/{id}/deck',            'verb' => 'GET',    'requirements' => ['id' => '[^/]+']],
-        ['name' => 'deck#create',  'url' => '/api/objects/{register}/{schema}/{id}/deck',            'verb' => 'POST',   'requirements' => ['id' => '[^/]+']],
-        ['name' => 'deck#destroy', 'url' => '/api/objects/{register}/{schema}/{id}/deck/{deckId}',   'verb' => 'DELETE', 'requirements' => ['id' => '[^/]+', 'deckId' => '\d+']],
-        ['name' => 'deck#objects', 'url' => '/api/deck/boards/{boardId}/objects',                     'verb' => 'GET',    'requirements' => ['boardId' => '\d+']],
-
-        // Unified relations endpoint.
-        ['name' => 'relations#index', 'url' => '/api/objects/{register}/{schema}/{id}/relations', 'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
         
         // Schemas.
         ['name' => 'schemas#upload', 'url' => '/api/schemas/upload', 'verb' => 'POST'],
@@ -532,32 +501,6 @@ return [
 		['name' => 'workflowEngine#update', 'url' => '/api/engines/{id}', 'verb' => 'PUT', 'requirements' => ['id' => '\d+']],
 		['name' => 'workflowEngine#destroy', 'url' => '/api/engines/{id}', 'verb' => 'DELETE', 'requirements' => ['id' => '\d+']],
 		['name' => 'workflowEngine#health', 'url' => '/api/engines/{id}/health', 'verb' => 'POST', 'requirements' => ['id' => '\d+']],
-		['name' => 'workflowEngine#testHook', 'url' => '/api/engines/{id}/test-hook', 'verb' => 'POST', 'requirements' => ['id' => '\d+']],
-
-		// Workflow Execution History.
-		['name' => 'workflowExecution#index', 'url' => '/api/workflow-executions', 'verb' => 'GET'],
-		['name' => 'workflowExecution#show', 'url' => '/api/workflow-executions/{id}', 'verb' => 'GET', 'requirements' => ['id' => '\d+']],
-		['name' => 'workflowExecution#destroy', 'url' => '/api/workflow-executions/{id}', 'verb' => 'DELETE', 'requirements' => ['id' => '\d+']],
-
-		// Scheduled Workflows.
-		['name' => 'scheduledWorkflow#index', 'url' => '/api/scheduled-workflows', 'verb' => 'GET'],
-		['name' => 'scheduledWorkflow#create', 'url' => '/api/scheduled-workflows', 'verb' => 'POST'],
-		['name' => 'scheduledWorkflow#show', 'url' => '/api/scheduled-workflows/{id}', 'verb' => 'GET', 'requirements' => ['id' => '\d+']],
-		['name' => 'scheduledWorkflow#update', 'url' => '/api/scheduled-workflows/{id}', 'verb' => 'PUT', 'requirements' => ['id' => '\d+']],
-		['name' => 'scheduledWorkflow#destroy', 'url' => '/api/scheduled-workflows/{id}', 'verb' => 'DELETE', 'requirements' => ['id' => '\d+']],
-
-		// Approval Chains.
-		['name' => 'approval#index', 'url' => '/api/approval-chains', 'verb' => 'GET'],
-		['name' => 'approval#create', 'url' => '/api/approval-chains', 'verb' => 'POST'],
-		['name' => 'approval#show', 'url' => '/api/approval-chains/{id}', 'verb' => 'GET', 'requirements' => ['id' => '\d+']],
-		['name' => 'approval#update', 'url' => '/api/approval-chains/{id}', 'verb' => 'PUT', 'requirements' => ['id' => '\d+']],
-		['name' => 'approval#destroy', 'url' => '/api/approval-chains/{id}', 'verb' => 'DELETE', 'requirements' => ['id' => '\d+']],
-		['name' => 'approval#objects', 'url' => '/api/approval-chains/{id}/objects', 'verb' => 'GET', 'requirements' => ['id' => '\d+']],
-
-		// Approval Steps.
-		['name' => 'approval#steps', 'url' => '/api/approval-steps', 'verb' => 'GET'],
-		['name' => 'approval#approve', 'url' => '/api/approval-steps/{id}/approve', 'verb' => 'POST', 'requirements' => ['id' => '\d+']],
-		['name' => 'approval#reject', 'url' => '/api/approval-steps/{id}/reject', 'verb' => 'POST', 'requirements' => ['id' => '\d+']],
 
 		// MCP Discovery - Tiered API discovery for AI agents.
 		// CORS preflight (OPTIONS) is handled automatically by the @CORS annotation.
@@ -574,10 +517,22 @@ return [
 		// GraphQL Subscriptions (SSE).
 		['name' => 'graphQLSubscription#subscribe', 'url' => '/api/graphql/subscribe', 'verb' => 'GET'],
 
-		// Email Links - Reverse-lookup and quick-link for Mail sidebar.
-		['name' => 'emails#byMessage', 'url' => '/api/emails/by-message/{accountId}/{messageId}', 'verb' => 'GET', 'requirements' => ['accountId' => '\d+', 'messageId' => '\d+']],
-		['name' => 'emails#bySender', 'url' => '/api/emails/by-sender', 'verb' => 'GET'],
-		['name' => 'emails#quickLink', 'url' => '/api/emails/quick-link', 'verb' => 'POST'],
-		['name' => 'emails#deleteLink', 'url' => '/api/emails/{linkId}', 'verb' => 'DELETE', 'requirements' => ['linkId' => '\d+']],
+		// Archival & Destruction Workflow — Selection Lists.
+		['name' => 'archival#listSelectionLists', 'url' => '/api/archival/selection-lists', 'verb' => 'GET'],
+		['name' => 'archival#createSelectionList', 'url' => '/api/archival/selection-lists', 'verb' => 'POST'],
+		['name' => 'archival#getSelectionList', 'url' => '/api/archival/selection-lists/{id}', 'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
+		['name' => 'archival#updateSelectionList', 'url' => '/api/archival/selection-lists/{id}', 'verb' => 'PUT', 'requirements' => ['id' => '[^/]+']],
+		['name' => 'archival#deleteSelectionList', 'url' => '/api/archival/selection-lists/{id}', 'verb' => 'DELETE', 'requirements' => ['id' => '[^/]+']],
+
+		// Archival & Destruction Workflow — Object Retention Metadata.
+		['name' => 'archival#getRetention', 'url' => '/api/archival/objects/{id}/retention', 'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
+		['name' => 'archival#setRetention', 'url' => '/api/archival/objects/{id}/retention', 'verb' => 'PUT', 'requirements' => ['id' => '[^/]+']],
+
+		// Archival & Destruction Workflow — Destruction Lists.
+		['name' => 'archival#listDestructionLists', 'url' => '/api/archival/destruction-lists', 'verb' => 'GET'],
+		['name' => 'archival#generateDestructionList', 'url' => '/api/archival/destruction-lists/generate', 'verb' => 'POST'],
+		['name' => 'archival#getDestructionList', 'url' => '/api/archival/destruction-lists/{id}', 'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
+		['name' => 'archival#approveDestructionList', 'url' => '/api/archival/destruction-lists/{id}/approve', 'verb' => 'POST', 'requirements' => ['id' => '[^/]+']],
+		['name' => 'archival#rejectFromDestructionList', 'url' => '/api/archival/destruction-lists/{id}/reject', 'verb' => 'POST', 'requirements' => ['id' => '[^/]+']],
     ],
 ];

@@ -1,18 +1,21 @@
 <?php
 
 /**
- * Database migration to create entity relation link tables.
+ * OpenRegister Migration Version1Date20260325120000
  *
- * Creates openregister_email_links, openregister_contact_links, and
- * openregister_deck_links tables for the Nextcloud Entity Relations feature.
+ * Creates the selection_lists and destruction_lists tables for the
+ * archival and destruction workflow feature.
  *
  * @category Migration
  * @package  OCA\OpenRegister\Migration
  *
- * @author  Conduction Development Team <dev@conduction.nl>
- * @license EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ * @author    Conduction Development Team <dev@conduction.nl>
+ * @copyright 2024 Conduction B.V.
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
- * @link https://OpenRegister.app
+ * @version GIT: <git-id>
+ *
+ * @link https://www.OpenRegister.app
  */
 
 declare(strict_types=1);
@@ -26,100 +29,264 @@ use OCP\Migration\IOutput;
 use OCP\Migration\SimpleMigrationStep;
 
 /**
- * Creates the entity relation link tables for email, contact, and deck integrations.
+ * Create selection_lists and destruction_lists tables for archival workflow.
  *
- * Calendar events use CalDAV properties only (same as tasks) and do not need a table.
+ * @psalm-suppress UnusedClass
  *
- * @package OCA\OpenRegister\Migration
- *
- * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Migration requires defining multiple tables
+ * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
  */
 class Version1Date20260325120000 extends SimpleMigrationStep
 {
     /**
      * Change the database schema.
      *
-     * @param IOutput $output        Migration output
-     * @param Closure $schemaClosure Schema closure
-     * @param array   $options       Migration options
+     * @param IOutput                   $output        Output interface
+     * @param Closure(): ISchemaWrapper $schemaClosure Schema closure
+     * @param array<string, mixed>      $options       Migration options
      *
-     * @return ISchemaWrapper|null The updated schema or null if no changes
+     * @return ISchemaWrapper|null
      *
      * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      */
     public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper
     {
-        $schema  = $schemaClosure();
-        $changed = false;
+        /** @var ISchemaWrapper $schema */
+        $schema = $schemaClosure();
 
-        // Email links table.
-        if ($schema->hasTable('openregister_email_links') === false) {
-            $table = $schema->createTable('openregister_email_links');
-            $table->addColumn('id', Types::BIGINT, ['autoincrement' => true, 'notnull' => true, 'unsigned' => true]);
-            $table->addColumn('object_uuid', Types::STRING, ['notnull' => true, 'length' => 36]);
-            $table->addColumn('register_id', Types::BIGINT, ['notnull' => true, 'unsigned' => true]);
-            $table->addColumn('mail_account_id', Types::BIGINT, ['notnull' => true, 'unsigned' => true]);
-            $table->addColumn('mail_message_id', Types::BIGINT, ['notnull' => true, 'unsigned' => true]);
-            $table->addColumn('mail_message_uid', Types::STRING, ['notnull' => false, 'length' => 255]);
-            $table->addColumn('subject', Types::STRING, ['notnull' => false, 'length' => 512]);
-            $table->addColumn('sender', Types::STRING, ['notnull' => false, 'length' => 255]);
-            $table->addColumn('date', Types::DATETIME, ['notnull' => false]);
-            $table->addColumn('linked_by', Types::STRING, ['notnull' => true, 'length' => 64]);
-            $table->addColumn('linked_at', Types::DATETIME, ['notnull' => true]);
-            $table->setPrimaryKey(['id']);
-            $table->addUniqueIndex(['object_uuid', 'mail_message_id'], 'idx_email_object_msg');
-            $table->addIndex(['object_uuid'], 'idx_email_object_uuid');
-            $table->addIndex(['sender'], 'idx_email_sender');
-            $output->info('Created table openregister_email_links');
-            $changed = true;
-        }
-
-        // Contact links table.
-        if ($schema->hasTable('openregister_contact_links') === false) {
-            $table = $schema->createTable('openregister_contact_links');
-            $table->addColumn('id', Types::BIGINT, ['autoincrement' => true, 'notnull' => true, 'unsigned' => true]);
-            $table->addColumn('object_uuid', Types::STRING, ['notnull' => true, 'length' => 36]);
-            $table->addColumn('register_id', Types::BIGINT, ['notnull' => true, 'unsigned' => true]);
-            $table->addColumn('contact_uid', Types::STRING, ['notnull' => true, 'length' => 255]);
-            $table->addColumn('addressbook_id', Types::BIGINT, ['notnull' => true, 'unsigned' => true]);
-            $table->addColumn('contact_uri', Types::STRING, ['notnull' => true, 'length' => 512]);
-            $table->addColumn('display_name', Types::STRING, ['notnull' => false, 'length' => 255]);
-            $table->addColumn('email', Types::STRING, ['notnull' => false, 'length' => 255]);
-            $table->addColumn('role', Types::STRING, ['notnull' => false, 'length' => 64]);
-            $table->addColumn('linked_by', Types::STRING, ['notnull' => true, 'length' => 64]);
-            $table->addColumn('linked_at', Types::DATETIME, ['notnull' => true]);
-            $table->setPrimaryKey(['id']);
-            $table->addIndex(['object_uuid'], 'idx_contact_object');
-            $table->addIndex(['contact_uid'], 'idx_contact_uid');
-            $table->addIndex(['role'], 'idx_contact_role');
-            $output->info('Created table openregister_contact_links');
-            $changed = true;
-        }
-
-        // Deck links table.
-        if ($schema->hasTable('openregister_deck_links') === false) {
-            $table = $schema->createTable('openregister_deck_links');
-            $table->addColumn('id', Types::BIGINT, ['autoincrement' => true, 'notnull' => true, 'unsigned' => true]);
-            $table->addColumn('object_uuid', Types::STRING, ['notnull' => true, 'length' => 36]);
-            $table->addColumn('register_id', Types::BIGINT, ['notnull' => true, 'unsigned' => true]);
-            $table->addColumn('board_id', Types::BIGINT, ['notnull' => true, 'unsigned' => true]);
-            $table->addColumn('stack_id', Types::BIGINT, ['notnull' => true, 'unsigned' => true]);
-            $table->addColumn('card_id', Types::BIGINT, ['notnull' => true, 'unsigned' => true]);
-            $table->addColumn('card_title', Types::STRING, ['notnull' => false, 'length' => 255]);
-            $table->addColumn('linked_by', Types::STRING, ['notnull' => true, 'length' => 64]);
-            $table->addColumn('linked_at', Types::DATETIME, ['notnull' => true]);
-            $table->setPrimaryKey(['id']);
-            $table->addUniqueIndex(['object_uuid', 'card_id'], 'idx_deck_object_card');
-            $table->addIndex(['object_uuid'], 'idx_deck_object');
-            $table->addIndex(['board_id'], 'idx_deck_board');
-            $output->info('Created table openregister_deck_links');
-            $changed = true;
-        }
-
-        if ($changed === false) {
-            return null;
-        }
+        $this->createSelectionListsTable($schema, $output);
+        $this->createDestructionListsTable($schema, $output);
 
         return $schema;
     }//end changeSchema()
+
+    /**
+     * Create the selection_lists table.
+     *
+     * @param ISchemaWrapper $schema The schema wrapper
+     * @param IOutput        $output Migration output
+     *
+     * @return void
+     */
+    private function createSelectionListsTable(ISchemaWrapper $schema, IOutput $output): void
+    {
+        $tableName = 'openregister_selection_lists';
+
+        if ($schema->hasTable($tableName) === true) {
+            $output->info("Table {$tableName} already exists, skipping");
+            return;
+        }
+
+        $table = $schema->createTable($tableName);
+
+        $table->addColumn(
+            'id',
+            Types::BIGINT,
+            [
+                'autoincrement' => true,
+                'notnull'       => true,
+            ]
+        );
+        $table->addColumn(
+            'uuid',
+            Types::STRING,
+            [
+                'notnull' => true,
+                'length'  => 36,
+            ]
+        );
+        $table->addColumn(
+            'category',
+            Types::STRING,
+            [
+                'notnull' => true,
+                'length'  => 255,
+            ]
+        );
+        $table->addColumn(
+            'retention_years',
+            Types::INTEGER,
+            [
+                'notnull' => true,
+                'default' => 0,
+            ]
+        );
+        $table->addColumn(
+            'action',
+            Types::STRING,
+            [
+                'notnull' => true,
+                'length'  => 50,
+                'default' => 'vernietigen',
+            ]
+        );
+        $table->addColumn(
+            'description',
+            Types::TEXT,
+            [
+                'notnull' => false,
+                'default' => null,
+            ]
+        );
+        $table->addColumn(
+            'schema_overrides',
+            Types::TEXT,
+            [
+                'notnull' => false,
+                'default' => null,
+                'comment' => 'JSON map of schema UUID to override retention years',
+            ]
+        );
+        $table->addColumn(
+            'organisation',
+            Types::STRING,
+            [
+                'notnull' => false,
+                'length'  => 255,
+                'default' => null,
+            ]
+        );
+        $table->addColumn(
+            'created',
+            Types::DATETIME,
+            [
+                'notnull' => false,
+                'default' => null,
+            ]
+        );
+        $table->addColumn(
+            'updated',
+            Types::DATETIME,
+            [
+                'notnull' => false,
+                'default' => null,
+            ]
+        );
+
+        $table->setPrimaryKey(['id']);
+        $table->addUniqueIndex(['uuid'], 'sl_uuid_idx');
+        $table->addIndex(['category'], 'sl_category_idx');
+        $table->addIndex(['organisation'], 'sl_organisation_idx');
+
+        $output->info("Created table {$tableName}");
+    }//end createSelectionListsTable()
+
+    /**
+     * Create the destruction_lists table.
+     *
+     * @param ISchemaWrapper $schema The schema wrapper
+     * @param IOutput        $output Migration output
+     *
+     * @return void
+     */
+    private function createDestructionListsTable(ISchemaWrapper $schema, IOutput $output): void
+    {
+        $tableName = 'openregister_destruction_lists';
+
+        if ($schema->hasTable($tableName) === true) {
+            $output->info("Table {$tableName} already exists, skipping");
+            return;
+        }
+
+        $table = $schema->createTable($tableName);
+
+        $table->addColumn(
+            'id',
+            Types::BIGINT,
+            [
+                'autoincrement' => true,
+                'notnull'       => true,
+            ]
+        );
+        $table->addColumn(
+            'uuid',
+            Types::STRING,
+            [
+                'notnull' => true,
+                'length'  => 36,
+            ]
+        );
+        $table->addColumn(
+            'name',
+            Types::STRING,
+            [
+                'notnull' => true,
+                'length'  => 255,
+            ]
+        );
+        $table->addColumn(
+            'status',
+            Types::STRING,
+            [
+                'notnull' => true,
+                'length'  => 50,
+                'default' => 'pending_review',
+            ]
+        );
+        $table->addColumn(
+            'objects',
+            Types::TEXT,
+            [
+                'notnull' => false,
+                'default' => null,
+                'comment' => 'JSON array of object UUIDs',
+            ]
+        );
+        $table->addColumn(
+            'approved_by',
+            Types::STRING,
+            [
+                'notnull' => false,
+                'length'  => 255,
+                'default' => null,
+            ]
+        );
+        $table->addColumn(
+            'approved_at',
+            Types::DATETIME,
+            [
+                'notnull' => false,
+                'default' => null,
+            ]
+        );
+        $table->addColumn(
+            'notes',
+            Types::TEXT,
+            [
+                'notnull' => false,
+                'default' => null,
+            ]
+        );
+        $table->addColumn(
+            'organisation',
+            Types::STRING,
+            [
+                'notnull' => false,
+                'length'  => 255,
+                'default' => null,
+            ]
+        );
+        $table->addColumn(
+            'created',
+            Types::DATETIME,
+            [
+                'notnull' => false,
+                'default' => null,
+            ]
+        );
+        $table->addColumn(
+            'updated',
+            Types::DATETIME,
+            [
+                'notnull' => false,
+                'default' => null,
+            ]
+        );
+
+        $table->setPrimaryKey(['id']);
+        $table->addUniqueIndex(['uuid'], 'dl_uuid_idx');
+        $table->addIndex(['status'], 'dl_status_idx');
+        $table->addIndex(['organisation'], 'dl_organisation_idx');
+
+        $output->info("Created table {$tableName}");
+    }//end createDestructionListsTable()
 }//end class
