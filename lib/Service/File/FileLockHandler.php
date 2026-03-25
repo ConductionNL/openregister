@@ -69,32 +69,32 @@ class FileLockHandler
     /**
      * Lock a file.
      *
-     * @param int      $fileId    The file ID to lock.
+     * @param int      $fileId     The file ID to lock.
      * @param int|null $ttlMinutes Optional TTL in minutes (default: 30).
      *
      * @return array Lock metadata.
      *
      * @throws Exception If the file is already locked by another user.
      */
-    public function lockFile(int $fileId, ?int $ttlMinutes = null): array
+    public function lockFile(int $fileId, ?int $ttlMinutes=null): array
     {
         $currentUserId = $this->getCurrentUserId();
-        $ttl = $ttlMinutes ?? self::DEFAULT_TTL_MINUTES;
+        $ttl           = $ttlMinutes ?? self::DEFAULT_TTL_MINUTES;
 
         // Check for existing lock.
-        $existingLock = $this->getLockInfo($fileId);
+        $existingLock = $this->getLockInfo(identifier: $fileId);
         if ($existingLock !== null) {
             if ($existingLock['lockedBy'] === $currentUserId) {
                 // Refresh the lock for the same user.
-                return $this->setLock($fileId, $currentUserId, $ttl);
+                return $this->setLock(fileId: $fileId, userId: $currentUserId, ttlMinutes: $ttl);
             }
 
             throw new Exception(
-                'File is locked by ' . $existingLock['lockedBy']
+                'File is locked by '.$existingLock['lockedBy']
             );
         }
 
-        return $this->setLock($fileId, $currentUserId, $ttl);
+        return $this->setLock(fileId: $fileId, userId: $currentUserId, ttlMinutes: $ttl);
     }//end lockFile()
 
     /**
@@ -107,10 +107,10 @@ class FileLockHandler
      *
      * @throws Exception If the current user is not the lock owner and not admin.
      */
-    public function unlockFile(int $fileId, bool $force = false): array
+    public function unlockFile(int $fileId, bool $force=false): array
     {
         $currentUserId = $this->getCurrentUserId();
-        $lockInfo = $this->getLockInfo($fileId);
+        $lockInfo      = $this->getLockInfo(identifier: $fileId);
 
         if ($lockInfo === null) {
             return ['locked' => false];
@@ -128,7 +128,7 @@ class FileLockHandler
         unset($this->locks[$fileId]);
 
         $this->logger->info(
-            message: "[FileLockHandler] File {$fileId} unlocked by {$currentUserId}" . ($force ? ' (force)' : ''),
+            message: "[FileLockHandler] File {$fileId} unlocked by {$currentUserId}".($force === true ? ' (force)' : ''),
             context: ['file' => __FILE__, 'line' => __LINE__]
         );
 
@@ -146,7 +146,7 @@ class FileLockHandler
      */
     public function isLocked(int $fileId): bool
     {
-        return $this->getLockInfo($fileId) !== null;
+        return $this->getLockInfo(identifier: $fileId) !== null;
     }//end isLocked()
 
     /**
@@ -193,14 +193,14 @@ class FileLockHandler
      */
     public function assertCanModify(int $fileId): void
     {
-        $lockInfo = $this->getLockInfo($fileId);
+        $lockInfo = $this->getLockInfo(identifier: $fileId);
         if ($lockInfo === null) {
             return;
         }
 
         $currentUserId = $this->getCurrentUserId();
         if ($lockInfo['lockedBy'] !== $currentUserId) {
-            throw new Exception('File is locked by ' . $lockInfo['lockedBy']);
+            throw new Exception('File is locked by '.$lockInfo['lockedBy']);
         }
     }//end assertCanModify()
 
@@ -215,7 +215,7 @@ class FileLockHandler
      */
     private function setLock(int $fileId, string $userId, int $ttlMinutes): array
     {
-        $now = new DateTime();
+        $now     = new DateTime();
         $expires = (clone $now)->modify("+{$ttlMinutes} minutes");
 
         $this->locks[$fileId] = [

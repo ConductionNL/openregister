@@ -207,7 +207,7 @@ class DeepLinkRegistryService
         int $registerId,
         int $schemaId,
         array $objectData,
-        array $contactContext = []
+        array $contactContext=[]
     ): ?string {
         $registration = $this->resolve(registerId: $registerId, schemaId: $schemaId);
         if ($registration === null) {

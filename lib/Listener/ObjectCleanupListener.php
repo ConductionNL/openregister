@@ -130,7 +130,7 @@ class ObjectCleanupListener implements IEventListener
         $this->calendarEventService = $calendarEventService;
         $this->contactService       = $contactService;
         $this->deckCardService      = $deckCardService;
-        $this->logger               = $logger;
+        $this->logger = $logger;
     }//end __construct()
 
     /**
@@ -153,22 +153,22 @@ class ObjectCleanupListener implements IEventListener
         $objectUuid = $object->getUuid();
 
         // (a) Delete all notes (comments).
-        $this->cleanupNotes($objectUuid);
+        $this->cleanupNotes(objectUuid: $objectUuid);
 
         // (b) Delete all CalDAV tasks.
-        $this->cleanupTasks($objectUuid);
+        $this->cleanupTasks(objectUuid: $objectUuid);
 
         // (c) Delete all email links.
-        $this->cleanupEmails($objectUuid);
+        $this->cleanupEmails(objectUuid: $objectUuid);
 
         // (d) Unlink all calendar events (remove X-OPENREGISTER-* properties).
-        $this->cleanupCalendarEvents($objectUuid);
+        $this->cleanupCalendarEvents(objectUuid: $objectUuid);
 
         // (e) Delete contact links and clean vCard properties.
-        $this->cleanupContacts($objectUuid);
+        $this->cleanupContacts(objectUuid: $objectUuid);
 
         // (f) Delete deck card links.
-        $this->cleanupDeckCards($objectUuid);
+        $this->cleanupDeckCards(objectUuid: $objectUuid);
     }//end handle()
 
     /**
@@ -221,7 +221,7 @@ class ObjectCleanupListener implements IEventListener
                 'Failed to clean up tasks for deleted object: '.$objectUuid.': '.$e->getMessage(),
                 ['exception' => $e]
             );
-        }
+        }//end try
     }//end cleanupTasks()
 
     /**

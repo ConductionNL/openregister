@@ -78,7 +78,7 @@ class FilePreviewHandler
      *
      * @throws Exception If preview cannot be generated.
      */
-    public function getPreview(File $file, ?int $width = null, ?int $height = null): ISimpleFile
+    public function getPreview(File $file, ?int $width=null, ?int $height=null): ISimpleFile
     {
         $width  = $width ?? self::DEFAULT_WIDTH;
         $height = $height ?? self::DEFAULT_HEIGHT;
@@ -99,7 +99,7 @@ class FilePreviewHandler
             return $preview;
         } catch (Exception $e) {
             $this->logger->warning(
-                message: '[FilePreviewHandler] Failed to generate preview: ' . $e->getMessage(),
+                message: '[FilePreviewHandler] Failed to generate preview: '.$e->getMessage(),
                 context: ['file' => __FILE__, 'line' => __LINE__]
             );
             throw new Exception('Preview not available for this file type');
@@ -129,8 +129,6 @@ class FilePreviewHandler
      */
     public function getMimeTypeIconUrl(string $mimeType): string
     {
-        return $this->previewManager->isMimeSupported($mimeType)
-            ? ''
-            : '/core/img/filetypes/file.svg';
+        return $this->previewManager->isMimeSupported($mimeType) === true ? '' : '/core/img/filetypes/file.svg';
     }//end getMimeTypeIconUrl()
 }//end class

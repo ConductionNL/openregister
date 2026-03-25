@@ -65,7 +65,7 @@ class DeckController extends Controller
         DeckCardService $deckCardService,
         ObjectService $objectService
     ) {
-        parent::__construct($appName, $request);
+        parent::__construct(appName: $appName, request: $request);
 
         $this->deckCardService = $deckCardService;
         $this->objectService   = $objectService;
@@ -93,7 +93,7 @@ class DeckController extends Controller
         }
 
         try {
-            $object = $this->validateObject($register, $schema, $id);
+            $object = $this->validateObject(object: $register, schema: $schema, schemaObject: $id);
             if ($object === null) {
                 return new JSONResponse(['error' => 'Object not found'], 404);
             }
@@ -130,7 +130,7 @@ class DeckController extends Controller
         }
 
         try {
-            $object = $this->validateObject($register, $schema, $id);
+            $object = $this->validateObject(object: $register, schema: $schema, schemaObject: $id);
             if ($object === null) {
                 return new JSONResponse(['error' => 'Object not found'], 404);
             }
@@ -183,7 +183,7 @@ class DeckController extends Controller
         }
 
         try {
-            $object = $this->validateObject($register, $schema, $id);
+            $object = $this->validateObject(object: $register, schema: $schema, schemaObject: $id);
             if ($object === null) {
                 return new JSONResponse(['error' => 'Object not found'], 404);
             }
