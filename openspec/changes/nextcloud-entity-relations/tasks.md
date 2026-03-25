@@ -36,9 +36,9 @@
 - [x] Handle Deck app not installed (HTTP 501 graceful degradation)
 
 ## Unified Relations API
-- [ ] Implement RelationsController with unified endpoint
-- [ ] Support type filtering (?types=emails,contacts)
-- [ ] Support timeline view (?view=timeline)
+- [x] Implement RelationsController with unified endpoint
+- [x] Support type filtering (?types=emails,contacts)
+- [x] Support timeline view (?view=timeline)
 
 ## Cleanup & Events
 - [ ] Extend ObjectCleanupListener for email links cleanup
