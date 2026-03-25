@@ -84,9 +84,7 @@ use OCA\OpenRegister\Service\OrganisationService;
 use OCA\OpenRegister\Service\SettingsService;
 use OCA\OpenRegister\Service\IndexService;
 use OCP\AppFramework\IAppContainer;
-use OCP\Collaboration\Reference\IReferenceManager;
 use OCP\DB\QueryBuilder\IQueryBuilder;
-use OCP\IURLGenerator;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\Uid\Uuid;
 
@@ -279,9 +277,7 @@ class ObjectService
         private readonly LoggerInterface $logger,
         private readonly CacheHandler $cacheHandler,
         private readonly SettingsService $settingsService,
-        private readonly IAppContainer $container,
-        private readonly IReferenceManager $referenceManager,
-        private readonly IURLGenerator $urlGenerator
+        private readonly IAppContainer $container
         // TODO: CIRCULAR DEPENDENCY ISSUE - ExportService, ImportService, and VectorizationService
         // These services have deep circular dependencies:
         // - ExportService → uses SaveObjects → potentially loops back
@@ -1146,27 +1142,19 @@ class ObjectService
             uploadedFiles: $uploadedFiles
         );
 
-        // Invalidate reference cache for this object so Smart Picker previews refresh.
+        // Invalidate contact matching cache for objects with email properties.
         try {
-            $objectUuid  = $savedObject->getUuid();
-            $registerId  = $this->currentRegister?->getId();
-            $schemaId    = $this->currentSchema?->getId();
-            if ($objectUuid !== null && $registerId !== null && $schemaId !== null) {
-                $objectUrl = $this->urlGenerator->getAbsoluteURL(
-                    $this->urlGenerator->linkToRoute(
-                        'openregister.objects.show',
-                        ['register' => $registerId, 'schema' => $schemaId, 'id' => $objectUuid]
-                    )
+            $container = \OC::$server;
+            if ($container !== null) {
+                $contactMatchingService = $container->get(
+                    \OCA\OpenRegister\Service\ContactMatchingService::class
                 );
-                $this->referenceManager->invalidateCache($objectUrl);
+                $contactMatchingService->invalidateCacheForObject($object);
             }
         } catch (\Exception $e) {
-            // Cache invalidation is best-effort; never fail the save.
-            $this->logger->debug(
-                '[ObjectService] Reference cache invalidation failed: {error}',
-                ['error' => $e->getMessage()]
-            );
+            // ContactMatchingService not available — skip cache invalidation.
         }
+
 
         // Render and return the saved object.
         return $this->renderHandler->renderEntity(

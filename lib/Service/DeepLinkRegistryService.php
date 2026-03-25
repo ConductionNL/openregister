@@ -195,20 +195,29 @@ class DeepLinkRegistryService
     /**
      * Resolve a URL for a search result, falling back to null if no registration exists.
      *
-     * @param int   $registerId The register database ID
-     * @param int   $schemaId   The schema database ID
-     * @param array $objectData The object data from search results
+     * @param int   $registerId     The register database ID
+     * @param int   $schemaId       The schema database ID
+     * @param array $objectData     The object data from search results
+     * @param array $contactContext Optional contact context for placeholder resolution
+     *                              Supports: contactId, contactEmail, contactName
      *
      * @return string|null The resolved URL, or null to use default
      */
-    public function resolveUrl(int $registerId, int $schemaId, array $objectData): ?string
-    {
+    public function resolveUrl(
+        int $registerId,
+        int $schemaId,
+        array $objectData,
+        array $contactContext = []
+    ): ?string {
         $registration = $this->resolve(registerId: $registerId, schemaId: $schemaId);
         if ($registration === null) {
             return null;
         }
 
-        return $registration->resolveUrl(objectData: $objectData);
+        return $registration->resolveUrl(
+            objectData: $objectData,
+            contactContext: $contactContext
+        );
     }//end resolveUrl()
 
     /**
