@@ -238,6 +238,10 @@ return [
         
         ['name' => 'objects#create', 'url' => '/api/objects/{register}/{schema}', 'verb' => 'POST'],
         ['name' => 'objects#export', 'url' => '/api/objects/{register}/{schema}/export', 'verb' => 'GET'],
+        // TMLO / MDTO archival metadata routes.
+        ['name' => 'tmlo#exportBatch', 'url' => '/api/objects/{register}/{schema}/export/mdto', 'verb' => 'GET'],
+        ['name' => 'tmlo#summary', 'url' => '/api/objects/{register}/{schema}/tmlo/summary', 'verb' => 'GET'],
+        ['name' => 'tmlo#exportSingle', 'url' => '/api/objects/{register}/{schema}/{id}/export/mdto', 'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
         ['name' => 'objects#show', 'url' => '/api/objects/{register}/{schema}/{id}', 'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
         ['name' => 'objects#update', 'url' => '/api/objects/{register}/{schema}/{id}', 'verb' => 'PUT', 'requirements' => ['id' => '[^/]+']],
         ['name' => 'objects#patch', 'url' => '/api/objects/{register}/{schema}/{id}', 'verb' => 'PATCH', 'requirements' => ['id' => '[^/]+']],
