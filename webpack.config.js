@@ -80,6 +80,10 @@ webpackConfig.entry = {
 		import: path.join(__dirname, 'src', 'settings.js'),
 		filename: appId + '-settings.js',
 	},
+	mailSidebar: {
+		import: path.join(__dirname, 'src', 'mail-sidebar.js'),
+		filename: appId + '-mail-sidebar.js',
+	},
 }
 
 // Replace VueLoaderPlugin (don't push — duplicates break templates when using local package)
