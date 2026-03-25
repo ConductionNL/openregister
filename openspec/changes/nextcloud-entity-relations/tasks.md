@@ -1,10 +1,10 @@
 # Tasks: Nextcloud Entity Relations
 
 ## Database & Infrastructure
-- [ ] Create database migration for openregister_email_links, openregister_contact_links, openregister_deck_links tables
-- [ ] Create EmailLink entity and EmailLinkMapper
-- [ ] Create ContactLink entity and ContactLinkMapper
-- [ ] Create DeckLink entity and DeckLinkMapper
+- [x] Create database migration for openregister_email_links, openregister_contact_links, openregister_deck_links tables
+- [x] Create EmailLink entity and EmailLinkMapper
+- [x] Create ContactLink entity and ContactLinkMapper
+- [x] Create DeckLink entity and DeckLinkMapper
 
 ## Email Relations
 - [ ] Implement EmailService (link/unlink/list emails, verify mail message exists)
