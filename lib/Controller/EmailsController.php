@@ -50,12 +50,28 @@ class EmailsController extends Controller
     private readonly ObjectService $objectService;
 
     /**
+     * User session.
+     *
+     * @var \OCP\IUserSession
+     */
+    private readonly \OCP\IUserSession $userSession;
+
+    /**
+     * Logger.
+     *
+     * @var \Psr\Log\LoggerInterface
+     */
+    private readonly \Psr\Log\LoggerInterface $logger;
+
+    /**
      * Constructor.
      *
-     * @param string        $appName       Application name
-     * @param IRequest      $request       HTTP request object
-     * @param EmailService  $emailService  Email service
-     * @param ObjectService $objectService Object service for object validation
+     * @param string                   $appName       Application name
+     * @param IRequest                 $request       HTTP request object
+     * @param EmailService             $emailService  Email service
+     * @param ObjectService            $objectService Object service
+     * @param \OCP\IUserSession        $userSession   User session
+     * @param \Psr\Log\LoggerInterface $logger        Logger
      *
      * @return void
      */
@@ -63,12 +79,16 @@ class EmailsController extends Controller
         string $appName,
         IRequest $request,
         EmailService $emailService,
-        ObjectService $objectService
+        ObjectService $objectService,
+        \OCP\IUserSession $userSession,
+        \Psr\Log\LoggerInterface $logger
     ) {
         parent::__construct($appName, $request);
 
         $this->emailService  = $emailService;
         $this->objectService = $objectService;
+        $this->userSession   = $userSession;
+        $this->logger        = $logger;
     }//end __construct()
 
     /**
@@ -278,4 +298,114 @@ class EmailsController extends Controller
 
         return $this->objectService->getObject();
     }//end validateObject()
+
+    /**
+     * Find email links by message.
+     *
+     * @param int $accountId The mail account ID
+     * @param int $messageId The mail message ID
+     *
+     * @return JSONResponse
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     */
+    public function byMessage(int $accountId, int $messageId): JSONResponse
+    {
+        if ($accountId <= 0 || $messageId <= 0) {
+            return new JSONResponse(['error' => 'Invalid account ID or message ID'], 400);
+        }
+
+        try {
+            $result = $this->emailService->getEmailsForObject((string) $messageId);
+            return new JSONResponse(['results' => $result, 'total' => count($result)]);
+        } catch (\Exception $e) {
+            $this->logger->error('Failed to find objects by message: {error}', ['error' => $e->getMessage()]);
+            return new JSONResponse(['error' => 'Internal server error'], 500);
+        }
+    }//end byMessage()
+
+    /**
+     * Find objects linked to emails from a specific sender.
+     *
+     * @return JSONResponse
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     */
+    public function bySender(): JSONResponse
+    {
+        $sender = $this->request->getParam('sender');
+
+        if (empty($sender) === true) {
+            return new JSONResponse(['error' => 'The sender parameter is required'], 400);
+        }
+
+        try {
+            $result = $this->emailService->searchBySender($sender);
+            return new JSONResponse($result);
+        } catch (\Exception $e) {
+            $this->logger->error('Failed to find objects by sender: {error}', ['error' => $e->getMessage()]);
+            return new JSONResponse(['error' => 'Internal server error'], 500);
+        }
+    }//end bySender()
+
+    /**
+     * Create a quick link between an email and an object.
+     *
+     * @return JSONResponse
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     */
+    public function quickLink(): JSONResponse
+    {
+        $params   = $this->request->getParams();
+        $required = ['mailAccountId', 'mailMessageId', 'objectUuid', 'registerId'];
+        foreach ($required as $field) {
+            if (empty($params[$field]) === true) {
+                return new JSONResponse(['error' => "Missing required field: {$field}"], 400);
+            }
+        }
+
+        $user = $this->userSession->getUser();
+        if ($user !== null) {
+            $params['linkedBy'] = $user->getUID();
+        }
+
+        try {
+            $result = $this->emailService->linkEmail($params);
+            return new JSONResponse($result, 201);
+        } catch (\Exception $e) {
+            $this->logger->error('Failed to create quick link: {error}', ['error' => $e->getMessage()]);
+            return new JSONResponse(['error' => 'Internal server error'], 500);
+        }
+    }//end quickLink()
+
+    /**
+     * Delete an email link by ID.
+     *
+     * @param int $linkId The link ID to delete
+     *
+     * @return JSONResponse
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     */
+    public function deleteLink(int $linkId): JSONResponse
+    {
+        if ($linkId <= 0) {
+            return new JSONResponse(['error' => 'Invalid link ID'], 400);
+        }
+
+        try {
+            $this->emailService->unlinkEmail($linkId);
+            return new JSONResponse(['status' => 'deleted']);
+        } catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
+            return new JSONResponse(['error' => 'Link not found'], 404);
+        } catch (\Exception $e) {
+            $this->logger->error('Failed to delete email link: {error}', ['error' => $e->getMessage()]);
+            return new JSONResponse(['error' => 'Internal server error'], 500);
+        }
+    }//end deleteLink()
 }//end class

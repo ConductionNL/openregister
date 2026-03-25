@@ -180,7 +180,7 @@ class EmailService
         $link->setLinkedAt(new DateTime());
 
         if (isset($messageData['date']) === true && $messageData['date'] !== null) {
-            $link->setDate(new DateTime($messageData['date']));
+            $link->setMailDate(new DateTime($messageData['date']));
         }
 
         return $this->emailLinkMapper->insert($link);

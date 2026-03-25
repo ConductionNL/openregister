@@ -54,7 +54,7 @@ class EmailLinkMapper extends QBMapper
         $qb->select('*')
             ->from($this->getTableName())
             ->where($qb->expr()->eq('object_uuid', $qb->createNamedParameter($objectUuid)))
-            ->orderBy('date', 'DESC');
+            ->orderBy('mail_date', 'DESC');
 
         if ($limit !== null) {
             $qb->setMaxResults($limit);
@@ -101,7 +101,7 @@ class EmailLinkMapper extends QBMapper
         $qb->select('*')
             ->from($this->getTableName())
             ->where($qb->expr()->eq('sender', $qb->createNamedParameter($sender)))
-            ->orderBy('date', 'DESC');
+            ->orderBy('mail_date', 'DESC');
 
         return $this->findEntities($qb);
     }//end findBySender()
