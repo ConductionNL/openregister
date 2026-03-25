@@ -114,4 +114,18 @@ Vrij en open source onder de EUPL-licentie.
 	<notification>
 		<service>OCA\OpenRegister\Notification\Notifier</service>
 	</notification>
+
+	<activity>
+		<providers>
+			<provider>OCA\OpenRegister\Activity\Provider</provider>
+		</providers>
+		<settings>
+			<setting>OCA\OpenRegister\Activity\Setting\ObjectSetting</setting>
+			<setting>OCA\OpenRegister\Activity\Setting\RegisterSetting</setting>
+			<setting>OCA\OpenRegister\Activity\Setting\SchemaSetting</setting>
+		</settings>
+		<filters>
+			<filter>OCA\OpenRegister\Activity\Filter</filter>
+		</filters>
+	</activity>
 </info>
