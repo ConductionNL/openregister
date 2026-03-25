@@ -41,10 +41,10 @@
 - [x] Support timeline view (?view=timeline)
 
 ## Cleanup & Events
-- [ ] Extend ObjectCleanupListener for email links cleanup
-- [ ] Extend ObjectCleanupListener for calendar event unlinking
-- [ ] Extend ObjectCleanupListener for contact links cleanup
-- [ ] Extend ObjectCleanupListener for deck links cleanup
+- [x] Extend ObjectCleanupListener for email links cleanup
+- [x] Extend ObjectCleanupListener for calendar event unlinking
+- [x] Extend ObjectCleanupListener for contact links cleanup
+- [x] Extend ObjectCleanupListener for deck links cleanup
 - [ ] Add CloudEvents for email.linked/unlinked
 - [ ] Add CloudEvents for event.linked/unlinked/created
 - [ ] Add CloudEvents for contact.linked/unlinked/created
@@ -52,8 +52,8 @@
 - [ ] Add audit trail entries for all relation mutations
 
 ## Service Registration
-- [ ] Register new services in Application.php
-- [ ] Register event listeners for cleanup
+- [x] Register new services in Application.php
+- [x] Register event listeners for cleanup
 
 ## Frontend
 - [ ] Create EmailsTab.vue component for object detail
