@@ -1,21 +1,18 @@
 <?php
 
 /**
- * OpenRegister Migration Version1Date20260325120000
+ * Database migration to add file action columns to the openregister_files table.
  *
- * Creates the selection_lists and destruction_lists tables for the
- * archival and destruction workflow feature.
+ * Adds columns for file description, category, locking, and download tracking
+ * to support the file-actions feature set.
  *
  * @category Migration
  * @package  OCA\OpenRegister\Migration
  *
- * @author    Conduction Development Team <dev@conduction.nl>
- * @copyright 2024 Conduction B.V.
- * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ * @author  Conduction Development Team <dev@conduction.nl>
+ * @license EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
- * @version GIT: <git-id>
- *
- * @link https://www.OpenRegister.app
+ * @link https://OpenRegister.app
  */
 
 declare(strict_types=1);
@@ -29,264 +26,143 @@ use OCP\Migration\IOutput;
 use OCP\Migration\SimpleMigrationStep;
 
 /**
- * Create selection_lists and destruction_lists tables for archival workflow.
+ * Adds file action columns to the openregister_files table.
  *
- * @psalm-suppress UnusedClass
+ * New columns:
+ * - description (TEXT) - File description for metadata enrichment
+ * - category (VARCHAR 255) - File category for filtering
+ * - locked_by (VARCHAR 64) - User ID who locked the file
+ * - locked_at (DATETIME) - When the lock was acquired
+ * - lock_expires (DATETIME) - When the lock expires (TTL)
+ * - download_count (INT) - Cached download count for audit
  *
- * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
+ * @package OCA\OpenRegister\Migration
+ *
+ * @SuppressWarnings(PHPMD.UnusedFormalParameter)
  */
 class Version1Date20260325120000 extends SimpleMigrationStep
 {
     /**
      * Change the database schema.
      *
-     * @param IOutput                   $output        Output interface
-     * @param Closure(): ISchemaWrapper $schemaClosure Schema closure
-     * @param array<string, mixed>      $options       Migration options
+     * @param IOutput $output        Migration output
+     * @param Closure $schemaClosure Schema closure
+     * @param array   $options       Migration options
      *
-     * @return ISchemaWrapper|null
+     * @return ISchemaWrapper|null The updated schema or null if no changes
      *
      * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      */
     public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper
     {
-        /** @var ISchemaWrapper $schema */
-        $schema = $schemaClosure();
+        $schema    = $schemaClosure();
+        $tableName = 'openregister_files';
 
-        $this->createSelectionListsTable($schema, $output);
-        $this->createDestructionListsTable($schema, $output);
+        if ($schema->hasTable($tableName) === false) {
+            $output->info("Table {$tableName} does not exist, skipping migration");
+            return null;
+        }
+
+        $table   = $schema->getTable($tableName);
+        $changed = false;
+
+        // Add description column for metadata enrichment.
+        if ($table->hasColumn('description') === false) {
+            $table->addColumn(
+                'description',
+                Types::TEXT,
+                [
+                    'notnull' => false,
+                    'default' => null,
+                    'comment' => 'File description for metadata enrichment',
+                ]
+            );
+            $output->info("Added 'description' column to {$tableName}");
+            $changed = true;
+        }
+
+        // Add category column for file classification.
+        if ($table->hasColumn('category') === false) {
+            $table->addColumn(
+                'category',
+                Types::STRING,
+                [
+                    'notnull' => false,
+                    'length'  => 255,
+                    'default' => null,
+                    'comment' => 'File category for classification and filtering',
+                ]
+            );
+            $output->info("Added 'category' column to {$tableName}");
+            $changed = true;
+        }
+
+        // Add locked_by column for file locking.
+        if ($table->hasColumn('locked_by') === false) {
+            $table->addColumn(
+                'locked_by',
+                Types::STRING,
+                [
+                    'notnull' => false,
+                    'length'  => 64,
+                    'default' => null,
+                    'comment' => 'User ID who locked the file',
+                ]
+            );
+            $output->info("Added 'locked_by' column to {$tableName}");
+            $changed = true;
+        }
+
+        // Add locked_at column for lock timestamp.
+        if ($table->hasColumn('locked_at') === false) {
+            $table->addColumn(
+                'locked_at',
+                Types::DATETIME_MUTABLE,
+                [
+                    'notnull' => false,
+                    'default' => null,
+                    'comment' => 'Timestamp when the file lock was acquired',
+                ]
+            );
+            $output->info("Added 'locked_at' column to {$tableName}");
+            $changed = true;
+        }
+
+        // Add lock_expires column for TTL-based lock expiry.
+        if ($table->hasColumn('lock_expires') === false) {
+            $table->addColumn(
+                'lock_expires',
+                Types::DATETIME_MUTABLE,
+                [
+                    'notnull' => false,
+                    'default' => null,
+                    'comment' => 'Timestamp when the file lock expires (TTL)',
+                ]
+            );
+            $output->info("Added 'lock_expires' column to {$tableName}");
+            $changed = true;
+        }
+
+        // Add download_count column for download tracking.
+        if ($table->hasColumn('download_count') === false) {
+            $table->addColumn(
+                'download_count',
+                Types::INTEGER,
+                [
+                    'notnull' => true,
+                    'default' => 0,
+                    'comment' => 'Cached download count for audit and analytics',
+                ]
+            );
+            $output->info("Added 'download_count' column to {$tableName}");
+            $changed = true;
+        }
+
+        if ($changed === false) {
+            $output->info("All file action columns already exist on {$tableName}, skipping");
+            return null;
+        }
 
         return $schema;
     }//end changeSchema()
-
-    /**
-     * Create the selection_lists table.
-     *
-     * @param ISchemaWrapper $schema The schema wrapper
-     * @param IOutput        $output Migration output
-     *
-     * @return void
-     */
-    private function createSelectionListsTable(ISchemaWrapper $schema, IOutput $output): void
-    {
-        $tableName = 'openregister_selection_lists';
-
-        if ($schema->hasTable($tableName) === true) {
-            $output->info("Table {$tableName} already exists, skipping");
-            return;
-        }
-
-        $table = $schema->createTable($tableName);
-
-        $table->addColumn(
-            'id',
-            Types::BIGINT,
-            [
-                'autoincrement' => true,
-                'notnull'       => true,
-            ]
-        );
-        $table->addColumn(
-            'uuid',
-            Types::STRING,
-            [
-                'notnull' => true,
-                'length'  => 36,
-            ]
-        );
-        $table->addColumn(
-            'category',
-            Types::STRING,
-            [
-                'notnull' => true,
-                'length'  => 255,
-            ]
-        );
-        $table->addColumn(
-            'retention_years',
-            Types::INTEGER,
-            [
-                'notnull' => true,
-                'default' => 0,
-            ]
-        );
-        $table->addColumn(
-            'action',
-            Types::STRING,
-            [
-                'notnull' => true,
-                'length'  => 50,
-                'default' => 'vernietigen',
-            ]
-        );
-        $table->addColumn(
-            'description',
-            Types::TEXT,
-            [
-                'notnull' => false,
-                'default' => null,
-            ]
-        );
-        $table->addColumn(
-            'schema_overrides',
-            Types::TEXT,
-            [
-                'notnull' => false,
-                'default' => null,
-                'comment' => 'JSON map of schema UUID to override retention years',
-            ]
-        );
-        $table->addColumn(
-            'organisation',
-            Types::STRING,
-            [
-                'notnull' => false,
-                'length'  => 255,
-                'default' => null,
-            ]
-        );
-        $table->addColumn(
-            'created',
-            Types::DATETIME,
-            [
-                'notnull' => false,
-                'default' => null,
-            ]
-        );
-        $table->addColumn(
-            'updated',
-            Types::DATETIME,
-            [
-                'notnull' => false,
-                'default' => null,
-            ]
-        );
-
-        $table->setPrimaryKey(['id']);
-        $table->addUniqueIndex(['uuid'], 'sl_uuid_idx');
-        $table->addIndex(['category'], 'sl_category_idx');
-        $table->addIndex(['organisation'], 'sl_organisation_idx');
-
-        $output->info("Created table {$tableName}");
-    }//end createSelectionListsTable()
-
-    /**
-     * Create the destruction_lists table.
-     *
-     * @param ISchemaWrapper $schema The schema wrapper
-     * @param IOutput        $output Migration output
-     *
-     * @return void
-     */
-    private function createDestructionListsTable(ISchemaWrapper $schema, IOutput $output): void
-    {
-        $tableName = 'openregister_destruction_lists';
-
-        if ($schema->hasTable($tableName) === true) {
-            $output->info("Table {$tableName} already exists, skipping");
-            return;
-        }
-
-        $table = $schema->createTable($tableName);
-
-        $table->addColumn(
-            'id',
-            Types::BIGINT,
-            [
-                'autoincrement' => true,
-                'notnull'       => true,
-            ]
-        );
-        $table->addColumn(
-            'uuid',
-            Types::STRING,
-            [
-                'notnull' => true,
-                'length'  => 36,
-            ]
-        );
-        $table->addColumn(
-            'name',
-            Types::STRING,
-            [
-                'notnull' => true,
-                'length'  => 255,
-            ]
-        );
-        $table->addColumn(
-            'status',
-            Types::STRING,
-            [
-                'notnull' => true,
-                'length'  => 50,
-                'default' => 'pending_review',
-            ]
-        );
-        $table->addColumn(
-            'objects',
-            Types::TEXT,
-            [
-                'notnull' => false,
-                'default' => null,
-                'comment' => 'JSON array of object UUIDs',
-            ]
-        );
-        $table->addColumn(
-            'approved_by',
-            Types::STRING,
-            [
-                'notnull' => false,
-                'length'  => 255,
-                'default' => null,
-            ]
-        );
-        $table->addColumn(
-            'approved_at',
-            Types::DATETIME,
-            [
-                'notnull' => false,
-                'default' => null,
-            ]
-        );
-        $table->addColumn(
-            'notes',
-            Types::TEXT,
-            [
-                'notnull' => false,
-                'default' => null,
-            ]
-        );
-        $table->addColumn(
-            'organisation',
-            Types::STRING,
-            [
-                'notnull' => false,
-                'length'  => 255,
-                'default' => null,
-            ]
-        );
-        $table->addColumn(
-            'created',
-            Types::DATETIME,
-            [
-                'notnull' => false,
-                'default' => null,
-            ]
-        );
-        $table->addColumn(
-            'updated',
-            Types::DATETIME,
-            [
-                'notnull' => false,
-                'default' => null,
-            ]
-        );
-
-        $table->setPrimaryKey(['id']);
-        $table->addUniqueIndex(['uuid'], 'dl_uuid_idx');
-        $table->addIndex(['status'], 'dl_status_idx');
-        $table->addIndex(['organisation'], 'dl_organisation_idx');
-
-        $output->info("Created table {$tableName}");
-    }//end createDestructionListsTable()
 }//end class
