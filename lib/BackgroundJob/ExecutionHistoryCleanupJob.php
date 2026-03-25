@@ -57,9 +57,9 @@ class ExecutionHistoryCleanupJob extends TimedJob
         private readonly IAppConfig $appConfig,
         private readonly LoggerInterface $logger
     ) {
-        parent::__construct($time);
+        parent::__construct(time: $time);
         // Run once daily (86400 seconds).
-        $this->setInterval(86400);
+        $this->setInterval(interval: 86400);
     }//end __construct()
 
     /**

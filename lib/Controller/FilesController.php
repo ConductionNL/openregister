@@ -91,12 +91,13 @@ class FilesController extends Controller
      * Initializes controller with required dependencies for file operations.
      * Calls parent constructor to set up base controller functionality.
      *
-     * @param string        $appName       Application name
-     * @param IRequest      $request       HTTP request object
-     * @param FileService   $fileService   File service for file operations
-     * @param ObjectService $objectService Object service for object validation
-     * @param IRootFolder   $rootFolder    Root folder for file access
-     * @param IUserManager  $userManager   User manager for user lookups
+     * @param string           $appName         Application name
+     * @param IRequest         $request         HTTP request object
+     * @param FileService      $fileService     File service for file operations
+     * @param ObjectService    $objectService   Object service for object validation
+     * @param IRootFolder      $rootFolder      Root folder for file access
+     * @param IUserManager     $userManager     User manager for user lookups
+     * @param IEventDispatcher $eventDispatcher Event dispatcher for file events
      *
      * @return void
      */
@@ -1134,8 +1135,9 @@ class FilesController extends Controller
                 str_contains($e->getMessage(), "locked") => 423,
                 default => 400,
             };
+
             return new JSONResponse(data: ["error" => $e->getMessage()], statusCode: $statusCode);
-        }
+        }//end try
     }//end rename()
 
     /**
@@ -1163,7 +1165,7 @@ class FilesController extends Controller
                 return new JSONResponse(data: ["error" => "Source object not found"], statusCode: 404);
             }
 
-            $data = $this->request->getParams();
+            $data           = $this->request->getParams();
             $targetObjectId = $data["targetObjectId"] ?? "";
             $targetRegister = $data["targetRegister"] ?? $register;
             $targetSchema   = $data["targetSchema"] ?? $schema;
@@ -1197,9 +1199,9 @@ class FilesController extends Controller
 
             return new JSONResponse(data: $this->fileService->formatFile($newFile), statusCode: 201);
         } catch (Exception $e) {
-            $statusCode = str_contains($e->getMessage(), "not found") ? 404 : 400;
+            $statusCode = str_contains($e->getMessage(), 'not found') === true ? 404 : 400;
             return new JSONResponse(data: ["error" => $e->getMessage()], statusCode: $statusCode);
-        }
+        }//end try
     }//end copy()
 
     /**
@@ -1227,7 +1229,7 @@ class FilesController extends Controller
                 return new JSONResponse(data: ["error" => "Source object not found"], statusCode: 404);
             }
 
-            $data = $this->request->getParams();
+            $data           = $this->request->getParams();
             $targetObjectId = $data["targetObjectId"] ?? "";
             $targetRegister = $data["targetRegister"] ?? $register;
             $targetSchema   = $data["targetSchema"] ?? $schema;
@@ -1265,8 +1267,9 @@ class FilesController extends Controller
                 str_contains($e->getMessage(), "locked") => 423,
                 default => 400,
             };
+
             return new JSONResponse(data: ["error" => $e->getMessage()], statusCode: $statusCode);
-        }
+        }//end try
     }//end move()
 
     /**
@@ -1355,9 +1358,9 @@ class FilesController extends Controller
 
             return new JSONResponse(data: $this->fileService->formatFile($file));
         } catch (Exception $e) {
-            $statusCode = str_contains($e->getMessage(), "not found") ? 404 : 400;
+            $statusCode = str_contains($e->getMessage(), 'not found') === true ? 404 : 400;
             return new JSONResponse(data: ["error" => $e->getMessage()], statusCode: $statusCode);
-        }
+        }//end try
     }//end restoreVersion()
 
     /**
@@ -1397,9 +1400,9 @@ class FilesController extends Controller
 
             return new JSONResponse(data: $result);
         } catch (Exception $e) {
-            $statusCode = str_contains($e->getMessage(), "locked") ? 423 : 400;
+            $statusCode = str_contains($e->getMessage(), 'locked') === true ? 423 : 400;
             return new JSONResponse(data: ["error" => $e->getMessage()], statusCode: $statusCode);
-        }
+        }//end try
     }//end lock()
 
     /**
@@ -1428,7 +1431,7 @@ class FilesController extends Controller
             }
 
             $data  = $this->request->getParams();
-            $force = $this->parseBool($data["force"] ?? false);
+            $force = $this->parseBool(value: $data["force"] ?? false);
 
             $result = $this->fileService->getLockHandler()->unlockFile($fileId, $force);
 
@@ -1447,8 +1450,9 @@ class FilesController extends Controller
                 str_contains($e->getMessage(), "administrators") => 403,
                 default => 400,
             };
+
             return new JSONResponse(data: ["error" => $e->getMessage()], statusCode: $statusCode);
-        }
+        }//end try
     }//end unlock()
 
     /**
@@ -1493,7 +1497,7 @@ class FilesController extends Controller
             return new JSONResponse(data: $result, statusCode: $statusCode);
         } catch (Exception $e) {
             return new JSONResponse(data: ["error" => $e->getMessage()], statusCode: 400);
-        }
+        }//end try
     }//end batch()
 
     /**
@@ -1544,7 +1548,7 @@ class FilesController extends Controller
                 data: ["error" => $e->getMessage(), "fallbackIcon" => $fallbackIcon],
                 statusCode: 404
             );
-        }
+        }//end try
     }//end preview()
 
     /**
@@ -1590,7 +1594,7 @@ class FilesController extends Controller
             return new JSONResponse(data: $this->fileService->formatFile($result));
         } catch (Exception $e) {
             return new JSONResponse(data: ["error" => $e->getMessage()], statusCode: 400);
-        }
+        }//end try
     }//end updateLabels()
 
     /**

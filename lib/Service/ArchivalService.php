@@ -90,8 +90,7 @@ class ArchivalService
         if (isset($retention['archiefnominatie']) === true) {
             if (in_array($retention['archiefnominatie'], self::VALID_NOMINATIONS, true) === false) {
                 throw new InvalidArgumentException(
-                    "Invalid archiefnominatie '{$retention['archiefnominatie']}'. Must be one of: "
-                    . implode(', ', self::VALID_NOMINATIONS)
+                    "Invalid archiefnominatie '{$retention['archiefnominatie']}'. Must be one of: ".implode(', ', self::VALID_NOMINATIONS)
                 );
             }
         } else {
@@ -102,8 +101,7 @@ class ArchivalService
         if (isset($retention['archiefstatus']) === true) {
             if (in_array($retention['archiefstatus'], self::VALID_STATUSES, true) === false) {
                 throw new InvalidArgumentException(
-                    "Invalid archiefstatus '{$retention['archiefstatus']}'. Must be one of: "
-                    . implode(', ', self::VALID_STATUSES)
+                    "Invalid archiefstatus '{$retention['archiefstatus']}'. Must be one of: ".implode(', ', self::VALID_STATUSES)
                 );
             }
         } else {
@@ -122,6 +120,7 @@ class ArchivalService
                     );
                 }
             }
+
             $retention['archiefactiedatum'] = $date->format('c');
         }
 
@@ -146,7 +145,7 @@ class ArchivalService
     public function calculateArchivalDate(
         SelectionList $selectionList,
         DateTime $closeDate,
-        ?string $schemaUuid = null
+        ?string $schemaUuid=null
     ): DateTime {
         $retentionYears = $selectionList->getRetentionYears();
 
@@ -159,7 +158,7 @@ class ArchivalService
         }
 
         $archivalDate = clone $closeDate;
-        $archivalDate->add(new DateInterval('P' . $retentionYears . 'Y'));
+        $archivalDate->add(new DateInterval('P'.$retentionYears.'Y'));
 
         return $archivalDate;
     }//end calculateArchivalDate()
@@ -195,7 +194,7 @@ class ArchivalService
         $result   = $qb->executeQuery();
         $entities = [];
 
-        while ($row = $result->fetch()) {
+        while (($row = $result->fetch()) !== false) {
             $entity = new ObjectEntity();
             $entity->setUuid($row['uuid'] ?? null);
             $entity->setRegister($row['register'] ?? null);
@@ -209,6 +208,7 @@ class ArchivalService
                     $retention = $decoded;
                 }
             }
+
             $entity->setRetention($retention);
 
             // Check if archiefactiedatum is past.
@@ -250,7 +250,7 @@ class ArchivalService
         );
 
         $list = new DestructionList();
-        $list->setName('Destruction list ' . (new DateTime())->format('Y-m-d H:i:s'));
+        $list->setName('Destruction list '.(new DateTime())->format('Y-m-d H:i:s'));
         $list->setObjects($objectUuids);
 
         return $this->destructionListMapper->createEntry($list);
@@ -284,11 +284,11 @@ class ArchivalService
 
         foreach ($objects as $objectUuid) {
             try {
-                $this->destroyObject($objectUuid, $list->getUuid());
+                $this->destroyObject(objectUuid: $objectUuid, destructionListId: $list->getUuid());
                 $destroyed++;
             } catch (\Exception $e) {
                 $this->logger->error(
-                    "Failed to destroy object {$objectUuid}: " . $e->getMessage(),
+                    "Failed to destroy object {$objectUuid}: ".$e->getMessage(),
                     ['exception' => $e]
                 );
                 $errors++;
@@ -297,7 +297,7 @@ class ArchivalService
 
         $list->setStatus(DestructionList::STATUS_COMPLETED);
         $list->setNotes(
-            ($list->getNotes() ?? '') . "\nDestroyed: {$destroyed}, Errors: {$errors}"
+            ($list->getNotes() ?? '')."\nDestroyed: {$destroyed}, Errors: {$errors}"
         );
         $this->destructionListMapper->updateEntry($list);
 
@@ -311,7 +311,7 @@ class ArchivalService
     /**
      * Destroy a single object and create audit trail.
      *
-     * @param string $objectUuid       The UUID of the object to destroy
+     * @param string $objectUuid        The UUID of the object to destroy
      * @param string $destructionListId The destruction list UUID for audit trail
      *
      * @return void
@@ -380,7 +380,7 @@ class ArchivalService
 
         // Extend archiefactiedatum for rejected objects.
         foreach ($objectUuids as $uuid) {
-            $this->extendRetentionForObject($uuid);
+            $this->extendRetentionForObject(uuid: $uuid);
         }
 
         $list->setObjects($remainingObjects);
@@ -424,12 +424,10 @@ class ArchivalService
                 if (count($selectionLists) > 0) {
                     $retentionYears = $selectionLists[0]->getRetentionYears();
 
-                    $currentDate = isset($retention['archiefactiedatum']) === true
-                        ? new DateTime($retention['archiefactiedatum'])
-                        : new DateTime();
+                    $currentDate = isset($retention['archiefactiedatum']) === true ? new DateTime($retention['archiefactiedatum']) : new DateTime();
 
                     $newDate = clone $currentDate;
-                    $newDate->add(new DateInterval('P' . $retentionYears . 'Y'));
+                    $newDate->add(new DateInterval('P'.$retentionYears.'Y'));
                     $retention['archiefactiedatum'] = $newDate->format('c');
 
                     // Update the retention field.
@@ -439,10 +437,10 @@ class ArchivalService
                         ->where($updateQb->expr()->eq('uuid', $updateQb->createNamedParameter($uuid)));
                     $updateQb->executeStatement();
                 }
-            }
+            }//end if
         } catch (\Exception $e) {
             $this->logger->warning(
-                "Could not extend retention for rejected object {$uuid}: " . $e->getMessage()
+                "Could not extend retention for rejected object {$uuid}: ".$e->getMessage()
             );
         }//end try
     }//end extendRetentionForObject()

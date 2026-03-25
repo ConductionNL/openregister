@@ -45,13 +45,13 @@ class ActionRetryJob extends QueuedJob
     /**
      * Constructor
      *
-     * @param ITimeFactory    $time           Time factory
-     * @param ActionMapper    $actionMapper   Action mapper
-     * @param ActionExecutor  $actionExecutor Action executor
+     * @param ITimeFactory    $time            Time factory
+     * @param ActionMapper    $actionMapper    Action mapper
+     * @param ActionExecutor  $actionExecutor  Action executor
      * @param ActionLogMapper $actionLogMapper Action log mapper
-     * @param ActionService   $actionService  Action service
-     * @param IJobList        $jobList        Job list for re-queuing
-     * @param LoggerInterface $logger         Logger
+     * @param ActionService   $actionService   Action service
+     * @param IJobList        $jobList         Job list for re-queuing
+     * @param LoggerInterface $logger          Logger
      */
     public function __construct(
         ITimeFactory $time,
@@ -76,10 +76,10 @@ class ActionRetryJob extends QueuedJob
      */
     protected function run($arguments): void
     {
-        $actionId   = $arguments['action_id'] ?? 0;
-        $payload    = $arguments['payload'] ?? [];
-        $attempt    = $arguments['attempt'] ?? 2;
-        $maxRetries = $arguments['max_retries'] ?? 3;
+        $actionId    = $arguments['action_id'] ?? 0;
+        $payload     = $arguments['payload'] ?? [];
+        $attempt     = $arguments['attempt'] ?? 2;
+        $maxRetries  = $arguments['max_retries'] ?? 3;
         $retryPolicy = $arguments['retry_policy'] ?? 'exponential';
 
         try {
@@ -151,14 +151,17 @@ class ActionRetryJob extends QueuedJob
             );
 
             // Re-queue with incremented attempt.
-            $this->jobList->add(self::class, [
-                'action_id'    => $actionId,
-                'payload'      => $payload,
-                'attempt'      => ($attempt + 1),
-                'max_retries'  => $maxRetries,
-                'retry_policy' => $retryPolicy,
-                'error'        => $e->getMessage(),
-            ]);
+            $this->jobList->add(
+                    self::class,
+                    [
+                        'action_id'    => $actionId,
+                        'payload'      => $payload,
+                        'attempt'      => ($attempt + 1),
+                        'max_retries'  => $maxRetries,
+                        'retry_policy' => $retryPolicy,
+                        'error'        => $e->getMessage(),
+                    ]
+                    );
         }//end try
     }//end run()
 

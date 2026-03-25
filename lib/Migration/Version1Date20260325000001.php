@@ -43,7 +43,10 @@ class Version1Date20260325000001 extends SimpleMigrationStep
      */
     public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper
     {
-        /** @var ISchemaWrapper $schema */
+        /*
+         * @var ISchemaWrapper $schema
+         */
+
         $schema = $schemaClosure();
 
         if ($schema->hasTable('openregister_workflow_executions') === true) {
@@ -52,65 +55,129 @@ class Version1Date20260325000001 extends SimpleMigrationStep
 
         $table = $schema->createTable('openregister_workflow_executions');
 
-        $table->addColumn('id', Types::BIGINT, [
-            'autoincrement' => true,
-            'notnull'       => true,
-        ]);
-        $table->addColumn('uuid', Types::STRING, [
-            'notnull' => true,
-            'length'  => 36,
-        ]);
-        $table->addColumn('hook_id', Types::STRING, [
-            'notnull' => true,
-            'length'  => 255,
-        ]);
-        $table->addColumn('event_type', Types::STRING, [
-            'notnull' => true,
-            'length'  => 50,
-        ]);
-        $table->addColumn('object_uuid', Types::STRING, [
-            'notnull' => true,
-            'length'  => 36,
-        ]);
-        $table->addColumn('schema_id', Types::BIGINT, [
-            'notnull' => false,
-        ]);
-        $table->addColumn('register_id', Types::BIGINT, [
-            'notnull' => false,
-        ]);
-        $table->addColumn('engine', Types::STRING, [
-            'notnull' => true,
-            'length'  => 50,
-        ]);
-        $table->addColumn('workflow_id', Types::STRING, [
-            'notnull' => true,
-            'length'  => 255,
-        ]);
-        $table->addColumn('mode', Types::STRING, [
-            'notnull' => true,
-            'length'  => 10,
-            'default' => 'sync',
-        ]);
-        $table->addColumn('status', Types::STRING, [
-            'notnull' => true,
-            'length'  => 20,
-        ]);
-        $table->addColumn('duration_ms', Types::INTEGER, [
-            'notnull' => true,
-            'default' => 0,
-        ]);
-        $table->addColumn('errors', Types::TEXT, [
-            'notnull' => false,
-        ]);
-        $table->addColumn('metadata', Types::TEXT, [
-            'notnull' => false,
-        ]);
-        $table->addColumn('payload', Types::TEXT, [
-            'notnull' => false,
-        ]);
-        $table->addColumn('executed_at', Types::DATETIME, [
-            'notnull' => true,
-        ]);
+        $table->addColumn(
+                'id',
+                Types::BIGINT,
+                [
+                    'autoincrement' => true,
+                    'notnull'       => true,
+                ]
+                );
+        $table->addColumn(
+                'uuid',
+                Types::STRING,
+                [
+                    'notnull' => true,
+                    'length'  => 36,
+                ]
+                );
+        $table->addColumn(
+                'hook_id',
+                Types::STRING,
+                [
+                    'notnull' => true,
+                    'length'  => 255,
+                ]
+                );
+        $table->addColumn(
+                'event_type',
+                Types::STRING,
+                [
+                    'notnull' => true,
+                    'length'  => 50,
+                ]
+                );
+        $table->addColumn(
+                'object_uuid',
+                Types::STRING,
+                [
+                    'notnull' => true,
+                    'length'  => 36,
+                ]
+                );
+        $table->addColumn(
+                'schema_id',
+                Types::BIGINT,
+                [
+                    'notnull' => false,
+                ]
+                );
+        $table->addColumn(
+                'register_id',
+                Types::BIGINT,
+                [
+                    'notnull' => false,
+                ]
+                );
+        $table->addColumn(
+                'engine',
+                Types::STRING,
+                [
+                    'notnull' => true,
+                    'length'  => 50,
+                ]
+                );
+        $table->addColumn(
+                'workflow_id',
+                Types::STRING,
+                [
+                    'notnull' => true,
+                    'length'  => 255,
+                ]
+                );
+        $table->addColumn(
+                'mode',
+                Types::STRING,
+                [
+                    'notnull' => true,
+                    'length'  => 10,
+                    'default' => 'sync',
+                ]
+                );
+        $table->addColumn(
+                'status',
+                Types::STRING,
+                [
+                    'notnull' => true,
+                    'length'  => 20,
+                ]
+                );
+        $table->addColumn(
+                'duration_ms',
+                Types::INTEGER,
+                [
+                    'notnull' => true,
+                    'default' => 0,
+                ]
+                );
+        $table->addColumn(
+                'errors',
+                Types::TEXT,
+                [
+                    'notnull' => false,
+                ]
+                );
+        $table->addColumn(
+                'metadata',
+                Types::TEXT,
+                [
+                    'notnull' => false,
+                ]
+                );
+        $table->addColumn(
+                'payload',
+                Types::TEXT,
+                [
+                    'notnull' => false,
+                ]
+                );
+        $table->addColumn(
+                'executed_at',
+                Types::DATETIME,
+                [
+                    'notnull' => true,
+                ]
+                );
 
         $table->setPrimaryKey(['id']);
         $table->addIndex(['object_uuid'], 'or_wfexec_obj_uuid');

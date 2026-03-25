@@ -124,16 +124,16 @@ class RegisterCalendarProvider implements ICalendarProvider
      * Returns one RegisterCalendar per schema that has calendar provider enabled.
      * Respects RBAC: anonymous/unauthenticated principals get no calendars.
      *
-     * @param string $principalUri  The principal URI (e.g., principals/users/admin)
-     * @param array  $calendarUris  Optional URI filter to return only specific calendars
+     * @param string $principalUri The principal URI (e.g., principals/users/admin)
+     * @param array  $calendarUris Optional URI filter to return only specific calendars
      *
      * @return array Array of ICalendar instances
      */
-    public function getCalendars(string $principalUri, array $calendarUris = []): array
+    public function getCalendars(string $principalUri, array $calendarUris=[]): array
     {
         try {
             // Reject anonymous/unauthenticated principals.
-            if ($this->isValidUserPrincipal($principalUri) === false) {
+            if ($this->isValidUserPrincipal(principalUri: $principalUri) === false) {
                 return [];
             }
 
@@ -146,9 +146,9 @@ class RegisterCalendarProvider implements ICalendarProvider
             $calendars = [];
 
             foreach ($enabledSchemas as $schemaData) {
-                $schema = $schemaData['schema'];
-                $config = $schemaData['config'];
-                $calendarUri = 'openregister-schema-' . $schema->getId();
+                $schema      = $schemaData['schema'];
+                $config      = $schemaData['config'];
+                $calendarUri = 'openregister-schema-'.$schema->getId();
 
                 // Filter by requested URIs if provided.
                 if (empty($calendarUris) === false && in_array($calendarUri, $calendarUris, true) === false) {
@@ -169,7 +169,7 @@ class RegisterCalendarProvider implements ICalendarProvider
             return $calendars;
         } catch (\Exception $e) {
             $this->logger->warning(
-                '[RegisterCalendarProvider] Failed to load calendars: ' . $e->getMessage(),
+                '[RegisterCalendarProvider] Failed to load calendars: '.$e->getMessage(),
                 ['exception' => $e]
             );
             return [];
@@ -208,7 +208,7 @@ class RegisterCalendarProvider implements ICalendarProvider
             }
         } catch (\Exception $e) {
             $this->logger->warning(
-                '[RegisterCalendarProvider] Failed to load schemas: ' . $e->getMessage(),
+                '[RegisterCalendarProvider] Failed to load schemas: '.$e->getMessage(),
                 ['exception' => $e]
             );
             $this->enabledSchemasCache = [];
@@ -228,5 +228,4 @@ class RegisterCalendarProvider implements ICalendarProvider
     {
         return preg_match('/^principals\/users\/.+$/', $principalUri) === 1;
     }//end isValidUserPrincipal()
-
 }//end class

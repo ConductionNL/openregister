@@ -252,7 +252,7 @@ class WorkflowEngineController extends Controller
                 timeout: $timeout
             );
 
-            $response = $result->toArray();
+            $response           = $result->toArray();
             $response['dryRun'] = true;
 
             return new JSONResponse($response);
@@ -267,19 +267,25 @@ class WorkflowEngineController extends Controller
                 || str_contains($lower, 'unreachable') === true
                 || str_contains($lower, 'refused') === true
             ) {
-                return new JSONResponse([
-                    'status' => 'error',
-                    'errors' => [['message' => $message]],
-                    'dryRun' => true,
-                ], 502);
+                return new JSONResponse(
+                        [
+                            'status' => 'error',
+                            'errors' => [['message' => $message]],
+                            'dryRun' => true,
+                        ],
+                        502
+                        );
             }
 
             // Workflow errors return 422.
-            return new JSONResponse([
-                'status' => 'error',
-                'errors' => [['message' => $message]],
-                'dryRun' => true,
-            ], 422);
+            return new JSONResponse(
+                    [
+                        'status' => 'error',
+                        'errors' => [['message' => $message]],
+                        'dryRun' => true,
+                    ],
+                    422
+                    );
         }//end try
     }//end testHook()
 }//end class
