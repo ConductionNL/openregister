@@ -11,6 +11,7 @@ return [
         'Endpoints' => ['url' => 'api/endpoints'],
         'Mappings' => ['url' => 'api/mappings'],
         'Consumers' => ['url' => 'api/consumers'],
+        'Actions' => ['url' => 'api/actions'],
     ],
     'routes' => [
         // PATCH routes for resources (partial updates).
@@ -23,6 +24,12 @@ return [
         ['name' => 'endpoints#patch', 'url' => '/api/endpoints/{id}', 'verb' => 'PATCH', 'requirements' => ['id' => '[^/]+']],
         ['name' => 'mappings#patch', 'url' => '/api/mappings/{id}', 'verb' => 'PATCH', 'requirements' => ['id' => '[^/]+']],
         ['name' => 'consumers#patch', 'url' => '/api/consumers/{id}', 'verb' => 'PATCH', 'requirements' => ['id' => '[^/]+']],
+        ['name' => 'actions#patch', 'url' => '/api/actions/{id}', 'verb' => 'PATCH', 'requirements' => ['id' => '[^/]+']],
+
+        // Actions - Custom routes.
+        ['name' => 'actions#test', 'url' => '/api/actions/{id}/test', 'verb' => 'POST', 'requirements' => ['id' => '\\d+']],
+        ['name' => 'actions#logs', 'url' => '/api/actions/{id}/logs', 'verb' => 'GET', 'requirements' => ['id' => '\\d+']],
+        ['name' => 'actions#migrateFromHooks', 'url' => '/api/actions/migrate-from-hooks/{schemaId}', 'verb' => 'POST', 'requirements' => ['schemaId' => '\\d+']],
 
         // Mappings - Custom routes.
         ['name' => 'mappings#test', 'url' => '/api/mappings/test', 'verb' => 'POST'],
