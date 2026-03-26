@@ -15,22 +15,29 @@ const MOUNT_RETRY_INTERVAL = 1000
 const MOUNT_MAX_RETRIES = 30
 
 /**
- * Attempt to find a suitable mount point in the Mail app DOM.
+ * Find the parent element to mount the sidebar as a sibling of the Mail app content.
  *
- * @return {HTMLElement|null} The mount point element or null.
+ * We mount as a SIBLING of #app-content-vue, not inside it, because
+ * Mail's Vue instance owns that element and will destroy injected children
+ * during re-renders.
+ *
+ * @return {HTMLElement|null} The parent element to inject into, or null.
  */
-function findMountPoint() {
-	// Try the Mail app content area
+function findMountParent() {
+	// Mount as sibling of #app-content-vue inside #content-vue
 	const appContent = document.getElementById('app-content-vue')
-		|| document.getElementById('app-content')
-		|| document.querySelector('.app-content')
-		|| document.querySelector('#content')
+	if (appContent && appContent.parentElement) {
+		return appContent.parentElement
+	}
 
-	return appContent || null
+	// Fallback: try #content or body
+	return document.getElementById('content')
+		|| document.getElementById('content-vue')
+		|| document.body
 }
 
 /**
- * Create and inject the sidebar container element.
+ * Create and inject the sidebar container element as a sibling.
  *
  * @param {HTMLElement} parent The parent element to append to.
  * @return {HTMLElement} The created container element.
@@ -52,9 +59,9 @@ function mountSidebar() {
 
 	const tryMount = () => {
 		console.log('[OpenRegister] tryMount attempt', retries)
-		const mountPoint = findMountPoint()
+		const mountParent = findMountParent()
 
-		if (!mountPoint) {
+		if (!mountParent) {
 			retries++
 			if (retries < MOUNT_MAX_RETRIES) {
 				setTimeout(tryMount, MOUNT_RETRY_INTERVAL)
@@ -69,7 +76,7 @@ function mountSidebar() {
 			return
 		}
 
-		const container = createContainer(mountPoint)
+		const container = createContainer(mountParent)
 
 		const app = new Vue({
 			el: container,
