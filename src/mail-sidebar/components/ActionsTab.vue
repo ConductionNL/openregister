@@ -20,8 +20,9 @@
 						type="text"
 						class="or-action-input"
 						:placeholder="t('openregister', 'Search {name}...', { name: schema.title })"
-						@input="debounceSearch(schema)">
-					<ul v-if="searchResults[schema.id] && searchResults[schema.id].length > 0" class="or-action-results">
+						@input="debounceSearch(schema)"
+						@focus="showResults(schema)">
+					<ul v-if="visibleResults[schema.id] && (searchResults[schema.id] || []).length > 0" class="or-action-results">
 						<li
 							v-for="obj in searchResults[schema.id]"
 							:key="obj.id"
@@ -58,7 +59,9 @@ export default {
 			searchTerms: {},
 			searchResults: {},
 			searching: {},
+			visibleResults: {},
 			debounceTimers: {},
+			registerCache: {},
 		}
 	},
 	async created() {
@@ -69,18 +72,59 @@ export default {
 		async loadSchemas() {
 			this.loading = true
 			try {
-				const url = generateUrl('/apps/openregister/api/schemas')
-				const response = await axios.get(url, { params: { _limit: 100 } })
-				const results = response.data?.results || response.data || []
-				this.schemas = results.filter((s) => {
+				// Load schemas and registers in parallel
+				const [schemaResponse, regResponse] = await Promise.all([
+					axios.get(generateUrl('/apps/openregister/api/schemas'), { params: { _limit: 100 } }),
+					axios.get(generateUrl('/apps/openregister/api/registers'), { params: { _limit: 100 } }),
+				])
+
+				const allSchemas = schemaResponse.data?.results || schemaResponse.data || []
+				const registers = regResponse.data?.results || regResponse.data || []
+
+				// Cache register lookups
+				for (const reg of registers) {
+					for (const schemaId of (reg.schemas || [])) {
+						this.registerCache[schemaId] = reg
+					}
+				}
+
+				// Filter to schemas with mail in linkedTypes
+				this.schemas = allSchemas.filter((s) => {
 					const lt = s.configuration?.linkedTypes || []
 					return lt.includes('mail')
 				})
+
+				// Load initial results for each schema
+				for (const schema of this.schemas) {
+					this.loadInitialResults(schema)
+				}
 			} catch (err) {
 				console.error('[ActionsTab] Failed to load schemas:', err)
 			} finally {
 				this.loading = false
 			}
+		},
+		async loadInitialResults(schema) {
+			const register = this.registerCache[schema.id]
+			if (!register) return
+
+			try {
+				const url = generateUrl('/apps/openregister/api/objects/{register}/{schema}', {
+					register: register.id,
+					schema: schema.id,
+				})
+				const response = await axios.get(url, {
+					params: { _limit: 20 },
+					timeout: 10000,
+				})
+				const results = response.data?.results || response.data || []
+				this.$set(this.searchResults, schema.id, results)
+			} catch (err) {
+				console.error('[ActionsTab] Initial load failed for', schema.title, err)
+			}
+		},
+		showResults(schema) {
+			this.$set(this.visibleResults, schema.id, true)
 		},
 		debounceSearch(schema) {
 			if (this.debounceTimers[schema.id]) {
@@ -92,49 +136,37 @@ export default {
 		},
 		async searchObjects(schema) {
 			const term = this.searchTerms[schema.id] || ''
-			if (term.length < 2) {
-				this.$set(this.searchResults, schema.id, [])
+			const register = this.registerCache[schema.id]
+			if (!register) return
+
+			// If empty, reload initial results
+			if (term.length === 0) {
+				this.loadInitialResults(schema)
 				return
 			}
 
 			this.$set(this.searching, schema.id, true)
+			this.$set(this.visibleResults, schema.id, true)
 			try {
-				// Find register ID for this schema
-				const regUrl = generateUrl('/apps/openregister/api/registers')
-				const regResponse = await axios.get(regUrl, { params: { _limit: 100 } })
-				const registers = regResponse.data?.results || regResponse.data || []
-				const register = registers.find((r) => {
-					const schemaIds = r.schemas || []
-					return schemaIds.includes(schema.id)
-				})
-
-				if (!register) {
-					this.$set(this.searchResults, schema.id, [])
-					return
-				}
-
 				const url = generateUrl('/apps/openregister/api/objects/{register}/{schema}', {
 					register: register.id,
 					schema: schema.id,
 				})
 				const response = await axios.get(url, {
-					params: { _search: term, _limit: 10 },
+					params: { _search: term, _limit: 20 },
 					timeout: 10000,
 				})
 				const results = response.data?.results || response.data || []
 				this.$set(this.searchResults, schema.id, results)
 			} catch (err) {
 				console.error('[ActionsTab] Search failed:', err)
-				this.$set(this.searchResults, schema.id, [])
 			} finally {
 				this.$set(this.searching, schema.id, false)
 			}
 		},
 		async linkObject(schema, obj) {
 			const objectUuid = obj.id || obj.uuid || obj._uuid
-			if (!objectUuid || !this.accountId || !this.messageId) {
-				return
-			}
+			if (!objectUuid || !this.accountId || !this.messageId) return
 
 			const mailRef = `${this.accountId}/${this.messageId}`
 			try {
@@ -144,11 +176,11 @@ export default {
 				await axios.post(url, { id: mailRef })
 				showSuccess(t('openregister', 'Linked to {name}', { name: obj._name || objectUuid }))
 
-				// Clear search
+				// Clear search and hide results
 				this.$set(this.searchTerms, schema.id, '')
-				this.$set(this.searchResults, schema.id, [])
+				this.$set(this.visibleResults, schema.id, false)
+				this.loadInitialResults(schema)
 
-				// Notify parent to refresh objects tab
 				this.$emit('linked')
 			} catch (err) {
 				showError(t('openregister', 'Failed to link object'))
