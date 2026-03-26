@@ -65,7 +65,10 @@
 .or-mail-sidebar__content {
 	flex: 1;
 	overflow-y: auto;
+	overflow-x: hidden;
 	padding: 12px;
+	display: flex;
+	flex-direction: column;
 }
 
 /* Header */
@@ -432,49 +435,7 @@
 	}
 }
 
-/* ========================================
-   Tabs
-   ======================================== */
-.or-mail-tabs {
-	display: flex;
-	border-bottom: 1px solid var(--color-border);
-	margin: 0 -12px;
-	padding: 0 12px;
-}
-
-.or-mail-tab {
-	flex: 1;
-	padding: 8px 4px;
-	background: none;
-	border: none;
-	border-bottom: 2px solid transparent;
-	color: var(--color-text-maxcontrast);
-	font-size: 12px;
-	font-weight: 600;
-	cursor: pointer;
-	text-align: center;
-	transition: color 0.15s, border-color 0.15s;
-}
-
-.or-mail-tab:hover {
-	color: var(--color-main-text);
-}
-
-.or-mail-tab--active {
-	color: var(--color-primary);
-	border-bottom-color: var(--color-primary);
-}
-
-.or-mail-tab:focus-visible {
-	outline: 2px solid var(--color-primary);
-	outline-offset: -2px;
-}
-
-.or-mail-tab-content {
-	padding-top: 8px;
-	flex: 1;
-	overflow-y: auto;
-}
+/* Tabs are handled by NcAppSidebar/NcAppSidebarTab components */
 
 /* ========================================
    Tab: Common
@@ -514,13 +475,14 @@
 
 .or-action-input {
 	width: 100%;
-	padding: 6px 10px;
+	padding: 8px 10px;
 	border: 1px solid var(--color-border);
-	border-radius: var(--border-radius, 3px);
+	border-radius: var(--border-radius-large, 6px);
 	background: var(--color-main-background);
 	color: var(--color-main-text);
 	font-size: 13px;
 	box-sizing: border-box;
+	height: 36px;
 }
 
 .or-action-input:focus {
