@@ -72,19 +72,24 @@ function mountSidebar() {
 		}
 
 		// Check if already mounted
-		if (document.getElementById(MOUNT_POINT_ID)) {
+		if (document.querySelector('.or-mail-sidebar')) {
+			console.log('[OpenRegister] Sidebar already mounted, skipping')
 			return
 		}
 
-		const container = createContainer(mountParent)
-		console.log('[OpenRegister] Container created, mounting Vue app...')
+		// Mount Vue instance independently, then append to body.
+		// We cannot mount inside any Vue-managed container (#content-vue, #app-content-vue)
+		// because the parent Vue app will destroy our injected DOM during re-renders.
+		console.log('[OpenRegister] Creating Vue instance...')
 
 		try {
 			const app = new Vue({
-				el: container,
 				render: (h) => h(MailSidebar),
-			})
-			console.log('[OpenRegister] Mail sidebar mounted successfully')
+			}).$mount()
+
+			// Append to document.body — completely outside any Vue-managed tree
+			document.body.appendChild(app.$el)
+			console.log('[OpenRegister] Mail sidebar mounted to body')
 			return app
 		} catch (err) {
 			console.error('[OpenRegister] Vue mount failed:', err)
