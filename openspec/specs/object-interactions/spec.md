@@ -193,7 +193,7 @@ The system MUST expose task operations as REST endpoints under the existing obje
 
 ### REQ-OI-003: Note Service [MVP]
 
-The system MUST provide a `NoteService` that wraps Nextcloud's `ICommentsManager` for creating, reading, and deleting notes (comments) on OpenRegister objects. The service also depends on `IUserSession` (for current user context) and `IUserManager` (for resolving display names).
+The system MUST provide a `NoteService` that wraps Nextcloud's `ICommentsManager` for creating, reading, and deleting notes (comments) on OpenRegister objects. The service also depends on `IUserSession` (for current user context) and `IUserManager` (for resolving display names). When a note is created on an object, the note's ID MUST also be added to the object's `_notes` metadata column for reverse lookup consistency. When a note is deleted, its ID MUST be removed from `_notes`.
 
 #### Scenario: Register OpenRegister as a comments entity type
 
@@ -211,6 +211,7 @@ The system MUST provide a `NoteService` that wraps Nextcloud's `ICommentsManager
   - `actorId`: current user ID
   - `objectType`: `"openregister"`
   - `objectId`: `"abc-123"`
+- AND the note's `id` MUST be added to the object's `_notes` metadata column
 
 #### Scenario: List notes for an object
 
@@ -225,6 +226,7 @@ The system MUST provide a `NoteService` that wraps Nextcloud's `ICommentsManager
 - GIVEN a comment on an OpenRegister object
 - WHEN the service deletes the note via `NoteService::deleteNote(int $noteId)`
 - THEN the comment MUST be removed via `ICommentsManager::delete()`
+- AND the note's `id` MUST be removed from the object's `_notes` metadata column
 - NOTE: The current implementation does NOT enforce author/admin authorization on delete. Any authenticated user with access to the object can delete any note. Authorization enforcement is a future improvement.
 
 ### REQ-OI-004: Notes Controller and API [MVP]
