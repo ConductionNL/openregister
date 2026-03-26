@@ -2946,6 +2946,15 @@ class MagicMapper extends AbstractObjectMapper
             'expires',
         ];
 
+        // Dynamically add linked type fields based on schema's linkedTypes configuration.
+        // LINKED_TYPE_COLUMN_MAP values are column names with _ prefix (e.g., '_mail'),
+        // but the metadata loop adds its own prefix, so we use the linkedType key directly.
+        foreach ($schema->getLinkedTypes() as $linkedType) {
+            if (isset(self::LINKED_TYPE_COLUMN_MAP[$linkedType]) === true && $linkedType !== 'files') {
+                $metadataFields[] = $linkedType;
+            }
+        }
+
         foreach ($metadataFields as $field) {
             $value = $metadata[$field] ?? null;
 
@@ -2981,6 +2990,12 @@ class MagicMapper extends AbstractObjectMapper
                 'groups',
                 'tmlo',
             ];
+            // Add active linked type fields as JSON fields.
+            foreach ($schema->getLinkedTypes() as $linkedType) {
+                if (isset(self::LINKED_TYPE_COLUMN_MAP[$linkedType]) === true && $linkedType !== 'files') {
+                    $jsonFields[] = $linkedType;
+                }
+            }
             if (in_array($field, $jsonFields) === true) {
                 // Convert to JSON if not already a string.
                 // Note: Empty string → NULL conversion is handled at final insert/update stage.

@@ -741,13 +741,13 @@ class ObjectEntity extends Entity implements JsonSerializable
             'created'       => $this->getFormattedDate(date: $this->created),
             'deleted'       => $this->getDeleted(),
             'source'        => $this->source,
-            '_mail'         => $this->getMail(),
-            '_contacts'     => $this->getContacts(),
-            '_notes'        => $this->getNotes(),
-            '_todos'        => $this->getTodos(),
-            '_calendar'     => $this->getCalendar(),
-            '_talk'         => $this->getTalk(),
-            '_deck'         => $this->getDeck(),
+            'mail'          => $this->getMail(),
+            'contacts'      => $this->getContacts(),
+            'notes'         => $this->getNotes(),
+            'todos'         => $this->getTodos(),
+            'calendar'      => $this->getCalendar(),
+            'talk'          => $this->getTalk(),
+            'deck'          => $this->getDeck(),
         ];
 
         // Add relevance score if set (from fuzzy search).
