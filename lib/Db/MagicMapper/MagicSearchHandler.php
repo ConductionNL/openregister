@@ -479,6 +479,8 @@ class MagicSearchHandler
 
         // Search in schema string properties (ILIKE only for performance).
         $properties = $schema->getProperties() ?? [];
+        $platform   = $this->db->getDatabasePlatform();
+        $isPostgres = stripos($platform::class, 'PostgreSQL') !== false;
         foreach ($properties as $propName => $propDef) {
             $type = $propDef['type'] ?? 'string';
             if ($type === 'string') {
@@ -488,7 +490,13 @@ class MagicSearchHandler
                     continue;
                 }
 
-                $searchConditions[] = "{$columnName}::text ILIKE {$likePattern}";
+                // Quote column name to handle reserved words (e.g., 'case', 'status').
+                $quotedCol = $isPostgres === true ? '"' . $columnName . '"' : '`' . $columnName . '`';
+                if ($isPostgres === true) {
+                    $searchConditions[] = "{$quotedCol}::text ILIKE {$likePattern}";
+                } else {
+                    $searchConditions[] = "{$quotedCol} LIKE {$likePattern}";
+                }
             }
         }
 
