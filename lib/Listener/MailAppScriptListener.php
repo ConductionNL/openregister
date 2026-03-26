@@ -21,8 +21,10 @@ namespace OCA\OpenRegister\Listener;
 
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCP\App\IAppManager;
+use OCP\AppFramework\Http\Events\BeforeTemplateRenderedEvent;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventListener;
+use OCP\IRequest;
 use OCP\IUserSession;
 use OCP\Util;
 use Psr\Log\LoggerInterface;
@@ -30,12 +32,13 @@ use Psr\Log\LoggerInterface;
 /**
  * Injects the OpenRegister mail sidebar script when the Mail app renders.
  *
- * Conditions for injection:
- * 1. The event is BeforeTemplateRenderedEvent from the Mail app.
- * 2. The Mail app is installed and enabled for the current user.
+ * Listens for BeforeTemplateRenderedEvent (fired for all app pages) and
+ * only injects the sidebar script when:
+ * 1. The current page is the Mail app.
+ * 2. The user is logged in and has Mail enabled.
  * 3. At least one schema declares 'mail' in its linkedTypes configuration.
  *
- * @template-implements IEventListener<Event>
+ * @template-implements IEventListener<BeforeTemplateRenderedEvent>
  *
  * @psalm-suppress UnusedClass
  */
@@ -46,12 +49,14 @@ class MailAppScriptListener implements IEventListener
      *
      * @param IAppManager     $appManager    The app manager.
      * @param IUserSession    $userSession   The user session.
+     * @param IRequest        $request       The request object.
      * @param SchemaMapper    $schemaMapper  The schema mapper.
      * @param LoggerInterface $logger        The logger.
      */
     public function __construct(
         private readonly IAppManager $appManager,
         private readonly IUserSession $userSession,
+        private readonly IRequest $request,
         private readonly SchemaMapper $schemaMapper,
         private readonly LoggerInterface $logger
     ) {
@@ -66,9 +71,13 @@ class MailAppScriptListener implements IEventListener
      */
     public function handle(Event $event): void
     {
-        // Only handle BeforeTemplateRenderedEvent from the Mail app.
-        $eventClass = get_class($event);
-        if (str_contains($eventClass, 'OCA\\Mail\\') === false) {
+        if (($event instanceof BeforeTemplateRenderedEvent) === false) {
+            return;
+        }
+
+        // Only inject on the Mail app page.
+        $requestUri = $this->request->getRequestUri();
+        if (str_contains($requestUri, '/apps/mail') === false) {
             return;
         }
 
