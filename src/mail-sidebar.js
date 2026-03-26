@@ -77,12 +77,18 @@ function mountSidebar() {
 		}
 
 		const container = createContainer(mountParent)
+		console.log('[OpenRegister] Container created, mounting Vue app...')
 
-		const app = new Vue({
-			el: container,
-			render: (h) => h(MailSidebar),
-		})
-		return app
+		try {
+			const app = new Vue({
+				el: container,
+				render: (h) => h(MailSidebar),
+			})
+			console.log('[OpenRegister] Mail sidebar mounted successfully')
+			return app
+		} catch (err) {
+			console.error('[OpenRegister] Vue mount failed:', err)
+		}
 	}
 
 	tryMount()
