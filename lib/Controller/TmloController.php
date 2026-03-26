@@ -45,18 +45,16 @@ use Psr\Log\LoggerInterface;
  */
 class TmloController extends Controller
 {
-
-
     /**
      * Constructor.
      *
-     * @param string          $appName         The app name
-     * @param IRequest        $request         The request object
-     * @param TmloService     $tmloService     TMLO metadata service
-     * @param ObjectService   $objectService   Object service for querying objects
-     * @param RegisterMapper  $registerMapper  Register mapper
-     * @param SchemaMapper    $schemaMapper    Schema mapper
-     * @param LoggerInterface $logger          Logger interface
+     * @param string          $appName        The app name
+     * @param IRequest        $request        The request object
+     * @param TmloService     $tmloService    TMLO metadata service
+     * @param ObjectService   $objectService  Object service for querying objects
+     * @param RegisterMapper  $registerMapper Register mapper
+     * @param SchemaMapper    $schemaMapper   Schema mapper
+     * @param LoggerInterface $logger         Logger interface
      */
     public function __construct(
         string $appName,
@@ -67,9 +65,8 @@ class TmloController extends Controller
         private readonly SchemaMapper $schemaMapper,
         private readonly LoggerInterface $logger,
     ) {
-        parent::__construct($appName, $request);
+        parent::__construct(appName: $appName, request: $request);
     }//end __construct()
-
 
     /**
      * Export a single object as MDTO-compliant XML.
@@ -85,8 +82,8 @@ class TmloController extends Controller
     public function exportSingle(string $register, string $schema, string $id): Response
     {
         try {
-            $registerEntity = $this->registerMapper->find((int) $register);
-            $schemaEntity   = $this->schemaMapper->find((int) $schema);
+            $registerEntity = $this->registerMapper->find($register);
+            $schemaEntity   = $this->schemaMapper->find($schema);
 
             $object = $this->objectService->find(
                 identifier: $id,
@@ -110,9 +107,8 @@ class TmloController extends Controller
                 ['error' => 'MDTO export failed: '.$e->getMessage()],
                 Http::STATUS_INTERNAL_SERVER_ERROR
             );
-        }
+        }//end try
     }//end exportSingle()
-
 
     /**
      * Export multiple objects as MDTO-compliant XML.
@@ -127,8 +123,8 @@ class TmloController extends Controller
     public function exportBatch(string $register, string $schema): Response
     {
         try {
-            $registerEntity = $this->registerMapper->find((int) $register);
-            $schemaEntity   = $this->schemaMapper->find((int) $schema);
+            $registerEntity = $this->registerMapper->find($register);
+            $schemaEntity   = $this->schemaMapper->find($schema);
 
             // Get all query parameters for filtering.
             $params  = $this->request->getParams();
@@ -158,9 +154,8 @@ class TmloController extends Controller
                 ['error' => 'MDTO batch export failed: '.$e->getMessage()],
                 Http::STATUS_INTERNAL_SERVER_ERROR
             );
-        }
+        }//end try
     }//end exportBatch()
-
 
     /**
      * Get archival status summary for a register/schema combination.
@@ -177,7 +172,7 @@ class TmloController extends Controller
     public function summary(string $register, string $schema): JSONResponse
     {
         try {
-            $registerEntity = $this->registerMapper->find((int) $register);
+            $registerEntity = $this->registerMapper->find($register);
 
             if ($this->tmloService->isTmloEnabled($registerEntity) === false) {
                 return new JSONResponse(
@@ -186,7 +181,7 @@ class TmloController extends Controller
                 );
             }
 
-            $schemaEntity = $this->schemaMapper->find((int) $schema);
+            $schemaEntity = $this->schemaMapper->find($schema);
 
             // Initialize counts.
             $counts = [
@@ -198,7 +193,7 @@ class TmloController extends Controller
 
             // Query objects for each status.
             foreach ($counts as $status => $count) {
-                $result = $this->objectService->findAll(
+                $result          = $this->objectService->findAll(
                     register: $registerEntity,
                     schema: $schemaEntity,
                     filters: ['tmlo.archiefstatus' => $status, '_limit' => 0],
@@ -213,8 +208,6 @@ class TmloController extends Controller
                 ['error' => 'TMLO summary failed: '.$e->getMessage()],
                 Http::STATUS_INTERNAL_SERVER_ERROR
             );
-        }
+        }//end try
     }//end summary()
-
-
 }//end class

@@ -1584,7 +1584,7 @@ class Schema extends Entity implements JsonSerializable
             }
 
             if ($key === 'calendarProvider' && is_array($value) === true) {
-                $this->validateCalendarProviderConfig($value);
+                $this->validateCalendarProviderConfig(config: $value);
                 $validatedConfig[$key] = $value;
                 continue;
             }

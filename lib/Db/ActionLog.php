@@ -66,49 +66,109 @@ use OCP\AppFramework\Db\Entity;
 class ActionLog extends Entity implements JsonSerializable
 {
 
-    /** @var int */
+    /**
+     * The action id.
+     *
+     * @var integer
+     */
     protected int $actionId = 0;
 
-    /** @var string */
+    /**
+     * The action uuid.
+     *
+     * @var string
+     */
     protected string $actionUuid = '';
 
-    /** @var string */
+    /**
+     * The event type.
+     *
+     * @var string
+     */
     protected string $eventType = '';
 
-    /** @var string|null */
+    /**
+     * The object uuid.
+     *
+     * @var string|null
+     */
     protected ?string $objectUuid = null;
 
-    /** @var int|null */
+    /**
+     * The schema id.
+     *
+     * @var integer|null
+     */
     protected ?int $schemaId = null;
 
-    /** @var int|null */
+    /**
+     * The register id.
+     *
+     * @var integer|null
+     */
     protected ?int $registerId = null;
 
-    /** @var string */
+    /**
+     * The engine.
+     *
+     * @var string
+     */
     protected string $engine = '';
 
-    /** @var string */
+    /**
+     * The workflow id.
+     *
+     * @var string
+     */
     protected string $workflowId = '';
 
-    /** @var string */
+    /**
+     * The status.
+     *
+     * @var string
+     */
     protected string $status = '';
 
-    /** @var int|null */
+    /**
+     * The duration ms.
+     *
+     * @var integer|null
+     */
     protected ?int $durationMs = null;
 
-    /** @var string|null */
+    /**
+     * The request payload.
+     *
+     * @var string|null
+     */
     protected ?string $requestPayload = null;
 
-    /** @var string|null */
+    /**
+     * The response payload.
+     *
+     * @var string|null
+     */
     protected ?string $responsePayload = null;
 
-    /** @var string|null */
+    /**
+     * The error message.
+     *
+     * @var string|null
+     */
     protected ?string $errorMessage = null;
 
-    /** @var int */
+    /**
+     * The attempt.
+     *
+     * @var integer
+     */
     protected int $attempt = 1;
 
-    /** @var DateTime */
+    /**
+     * The created.
+     *
+     * @var DateTime
+     */
     protected DateTime $created;
 
     /**

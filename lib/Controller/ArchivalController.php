@@ -44,7 +44,6 @@ use OCP\IUserSession;
  */
 class ArchivalController extends Controller
 {
-
     /**
      * Constructor.
      *
@@ -141,7 +140,7 @@ class ArchivalController extends Controller
                 && in_array($entity->getAction(), SelectionList::VALID_ACTIONS, true) === false
             ) {
                 return new JSONResponse(
-                    ['error' => 'Action must be one of: ' . implode(', ', SelectionList::VALID_ACTIONS)],
+                    ['error' => 'Action must be one of: '.implode(', ', SelectionList::VALID_ACTIONS)],
                     Http::STATUS_BAD_REQUEST
                 );
             }
@@ -154,7 +153,7 @@ class ArchivalController extends Controller
                 ['error' => $e->getMessage()],
                 Http::STATUS_INTERNAL_SERVER_ERROR
             );
-        }
+        }//end try
     }//end createSelectionList()
 
     /**
@@ -277,7 +276,7 @@ class ArchivalController extends Controller
                 ['error' => $e->getMessage()],
                 Http::STATUS_BAD_REQUEST
             );
-        }
+        }//end try
     }//end setRetention()
 
     // ==================================================================================
@@ -294,9 +293,7 @@ class ArchivalController extends Controller
         try {
             $status = $this->request->getParam('status');
 
-            $lists = $status !== null
-                ? $this->destructionListMapper->findByStatus($status)
-                : $this->destructionListMapper->findAll();
+            $lists = $status !== null ? $this->destructionListMapper->findByStatus($status) : $this->destructionListMapper->findAll();
 
             return new JSONResponse(
                 ['results' => $lists, 'total' => count($lists)],
@@ -397,7 +394,7 @@ class ArchivalController extends Controller
                 ['error' => $e->getMessage()],
                 Http::STATUS_BAD_REQUEST
             );
-        }
+        }//end try
     }//end approveDestructionList()
 
     /**
@@ -433,6 +430,6 @@ class ArchivalController extends Controller
                 ['error' => $e->getMessage()],
                 Http::STATUS_BAD_REQUEST
             );
-        }
+        }//end try
     }//end rejectFromDestructionList()
 }//end class

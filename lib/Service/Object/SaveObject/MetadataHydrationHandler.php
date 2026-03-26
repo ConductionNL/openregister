@@ -102,10 +102,7 @@ class MetadataHydrationHandler
         foreach ($deprecatedKeys as $key) {
             if (isset($config[$key]) === true) {
                 $this->logger->warning(
-                    message: "[MetadataHydrationHandler] Schema configuration key '{$key}' is deprecated. "
-                        . 'Object-level published/depublished metadata has been removed. '
-                        . 'Use RBAC authorization rules with $now for publication control. '
-                        . 'Example: {"read": [{"group": "public", "match": {"publicatieDatum": {"$lte": "$now"}}}]}',
+                    message: "[MetadataHydrationHandler] Schema config key '{$key}' is deprecated. Use RBAC \$now rules instead.",
                     context: [
                         'file'     => __FILE__,
                         'line'     => __LINE__,

@@ -50,34 +50,74 @@ use OCP\AppFramework\Db\Entity;
 class ApprovalStep extends Entity implements JsonSerializable
 {
 
-    /** @var string|null */
+    /**
+     * The uuid.
+     *
+     * @var string|null
+     */
     protected ?string $uuid = null;
 
-    /** @var int|null */
+    /**
+     * The chain id.
+     *
+     * @var integer|null
+     */
     protected ?int $chainId = null;
 
-    /** @var string|null */
+    /**
+     * The object uuid.
+     *
+     * @var string|null
+     */
     protected ?string $objectUuid = null;
 
-    /** @var int */
+    /**
+     * The step order.
+     *
+     * @var integer
+     */
     protected int $stepOrder = 0;
 
-    /** @var string|null */
+    /**
+     * The role.
+     *
+     * @var string|null
+     */
     protected ?string $role = null;
 
-    /** @var string|null */
+    /**
+     * The status.
+     *
+     * @var string|null
+     */
     protected ?string $status = 'pending';
 
-    /** @var string|null */
+    /**
+     * The decided by.
+     *
+     * @var string|null
+     */
     protected ?string $decidedBy = null;
 
-    /** @var string|null */
+    /**
+     * The comment.
+     *
+     * @var string|null
+     */
     protected ?string $comment = null;
 
-    /** @var DateTime|null */
+    /**
+     * The decided at.
+     *
+     * @var DateTime|null
+     */
     protected ?DateTime $decidedAt = null;
 
-    /** @var DateTime|null */
+    /**
+     * The created.
+     *
+     * @var DateTime|null
+     */
     protected ?DateTime $created = null;
 
     /**
@@ -107,13 +147,21 @@ class ApprovalStep extends Entity implements JsonSerializable
     public function hydrate(array $object): self
     {
         $fields = [
-            'uuid', 'chainId', 'objectUuid', 'stepOrder', 'role',
-            'status', 'decidedBy', 'comment', 'decidedAt', 'created',
+            'uuid',
+            'chainId',
+            'objectUuid',
+            'stepOrder',
+            'role',
+            'status',
+            'decidedBy',
+            'comment',
+            'decidedAt',
+            'created',
         ];
 
         foreach ($object as $key => $value) {
             if (in_array($key, $fields, true) === true) {
-                $setter = 'set' . ucfirst($key);
+                $setter = 'set'.ucfirst($key);
                 $this->$setter($value);
             }
         }

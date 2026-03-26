@@ -22,7 +22,6 @@ use OCP\EventDispatcher\Event;
  */
 class FileLockedEvent extends Event
 {
-
     /**
      * Constructor for FileLockedEvent
      *
@@ -35,7 +34,7 @@ class FileLockedEvent extends Event
     public function __construct(
         private readonly string $objectUuid,
         private readonly int $fileId,
-        private readonly array $data = []
+        private readonly array $data=[]
     ) {
         parent::__construct();
     }//end __construct()

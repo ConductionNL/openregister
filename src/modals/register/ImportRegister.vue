@@ -304,7 +304,7 @@ import { registerStore, schemaStore, navigationStore, objectStore, dashboardStor
 					</template>
 				</NcCheckboxRadioSwitch>
 
-				</div>
+			</div>
 		</div>
 
 		<template v-if="!success && !importResults" #actions>
