@@ -41,6 +41,7 @@ use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Object\CacheHandler;
 use OCA\OpenRegister\Service\Object\SaveObject\ComputedFieldHandler;
 use OCA\OpenRegister\Service\Object\SaveObject\FilePropertyHandler;
+use OCA\OpenRegister\Service\Object\SaveObject\LinkedEntityPropertyHandler;
 use OCA\OpenRegister\Service\Object\TranslationHandler;
 use OCA\OpenRegister\Service\Object\SaveObject\MetadataHydrationHandler;
 use OCA\OpenRegister\Service\OrganisationService;
@@ -201,6 +202,7 @@ class SaveObject
         private readonly MagicMapper $unifiedObjectMapper,
         private readonly MetadataHydrationHandler $metaHydrationHandler,
         private readonly FilePropertyHandler $filePropertyHandler,
+        private readonly LinkedEntityPropertyHandler $linkedEntityHandler,
         private readonly IUserSession $userSession,
         private readonly AuditTrailMapper $auditTrailMapper,
         private readonly SchemaMapper $schemaMapper,
@@ -3201,6 +3203,9 @@ class SaveObject
             throw new Exception('Object metadata hydration failed: '.$e->getMessage().'. '.$mismatchHint, 0, $e);
         }
 
+        // Extract Nc* property references and populate linked entity metadata columns.
+        $this->linkedEntityHandler->extractAndPopulate($objectEntity, $schema, $preparedData);
+
         // Populate TMLO archival metadata defaults if register has TMLO enabled.
         $this->populateTmloDefaults($objectEntity, $schema, $selfData);
 
@@ -3288,6 +3293,9 @@ class SaveObject
 
         // Hydrate name and description from schema configuration.
         $this->hydrateObjectMetadata(entity: $existingObject, schema: $schema);
+
+        // Extract Nc* property references and populate linked entity metadata columns.
+        $this->linkedEntityHandler->extractAndPopulate($existingObject, $schema, $preparedData);
 
         // Validate TMLO metadata if present (status transitions and field values).
         $this->validateTmloOnUpdate($existingObject, $selfData);

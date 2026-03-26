@@ -95,6 +95,20 @@ use OCP\IUserSession;
  * @method void setRetention(?array $retention)
  * @method array|null getTmlo()
  * @method void setTmlo(?array $tmlo)
+ * @method array|null getMail()
+ * @method void setMail(?array $mail)
+ * @method array|null getContacts()
+ * @method void setContacts(?array $contacts)
+ * @method array|null getNotes()
+ * @method void setNotes(?array $notes)
+ * @method array|null getTodos()
+ * @method void setTodos(?array $todos)
+ * @method array|null getCalendar()
+ * @method void setCalendar(?array $calendar)
+ * @method array|null getTalk()
+ * @method void setTalk(?array $talk)
+ * @method array|null getDeck()
+ * @method void setDeck(?array $deck)
  * @method int|null getSize()
  * @method void setSize(?int $size)
  * @method string|null getName()
@@ -283,6 +297,27 @@ class ObjectEntity extends Entity implements JsonSerializable
      */
     protected ?array $tmlo = [];
 
+    /** @var array|null Linked mail entity IDs */
+    protected ?array $mail = null;
+
+    /** @var array|null Linked contact entity IDs */
+    protected ?array $contacts = null;
+
+    /** @var array|null Linked note entity IDs */
+    protected ?array $notes = null;
+
+    /** @var array|null Linked todo entity IDs */
+    protected ?array $todos = null;
+
+    /** @var array|null Linked calendar event entity IDs */
+    protected ?array $calendar = null;
+
+    /** @var array|null Linked Talk conversation IDs */
+    protected ?array $talk = null;
+
+    /** @var array|null Linked Deck card IDs */
+    protected ?array $deck = null;
+
     /**
      * Size of the object in byte.
      *
@@ -448,6 +483,13 @@ class ObjectEntity extends Entity implements JsonSerializable
         $this->addType(fieldName: 'geo', type: 'json');
         $this->addType(fieldName: 'retention', type: 'json');
         $this->addType(fieldName: 'tmlo', type: 'json');
+        $this->addType(fieldName: 'mail', type: 'json');
+        $this->addType(fieldName: 'contacts', type: 'json');
+        $this->addType(fieldName: 'notes', type: 'json');
+        $this->addType(fieldName: 'todos', type: 'json');
+        $this->addType(fieldName: 'calendar', type: 'json');
+        $this->addType(fieldName: 'talk', type: 'json');
+        $this->addType(fieldName: 'deck', type: 'json');
         $this->addType(fieldName: 'size', type: 'string');
         $this->addType(fieldName: 'schemaVersion', type: 'string');
         $this->addType(fieldName: 'name', type: 'string');

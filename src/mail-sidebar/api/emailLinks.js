@@ -1,5 +1,7 @@
 /**
- * API wrapper for email link endpoints.
+ * API wrapper for linked entity endpoints (mail).
+ *
+ * Uses the generic linked entity API instead of email-specific endpoints.
  *
  * @package OpenRegister
  */
@@ -10,7 +12,7 @@ import { generateUrl } from '@nextcloud/router'
 const TIMEOUT = 10000
 
 /**
- * Get objects linked to a specific email message.
+ * Get objects linked to a specific email message via reverse lookup.
  *
  * @param {number} accountId The mail account ID.
  * @param {number} messageId The mail message ID.
@@ -18,9 +20,9 @@ const TIMEOUT = 10000
  * @return {Promise<object>} The response data with results and total.
  */
 export async function fetchLinkedObjects(accountId, messageId, signal) {
-	const url = generateUrl('/apps/openregister/api/emails/by-message/{accountId}/{messageId}', {
-		accountId,
-		messageId,
+	const entityId = `${accountId}/${messageId}`
+	const url = generateUrl('/apps/openregister/api/linked/mail/{entityId}', {
+		entityId,
 	})
 	const response = await axios.get(url, { timeout: TIMEOUT, signal })
 	return response.data
@@ -28,6 +30,9 @@ export async function fetchLinkedObjects(accountId, messageId, signal) {
 
 /**
  * Get objects linked to emails from a specific sender.
+ *
+ * Note: Sender-based lookup is not directly supported by the generic API.
+ * This falls back to the legacy endpoint until sender-based reverse lookup is implemented.
  *
  * @param {string} sender The sender email address.
  * @param {AbortSignal} [signal] Optional abort signal.
@@ -44,25 +49,33 @@ export async function fetchSenderObjects(sender, signal) {
 }
 
 /**
- * Create a quick link between an email and an object.
+ * Create a link between an email and an object.
  *
- * @param {object} params The link parameters.
- * @return {Promise<object>} The created link data.
+ * @param {object} params The link parameters (objectUuid, mailAccountId, mailMessageId).
+ * @return {Promise<object>} The updated linked IDs.
  */
 export async function createQuickLink(params) {
-	const url = generateUrl('/apps/openregister/api/emails/quick-link')
-	const response = await axios.post(url, params, { timeout: TIMEOUT })
+	const { objectUuid, mailAccountId, mailMessageId } = params
+	const entityId = `${mailAccountId}/${mailMessageId}`
+	const url = generateUrl('/apps/openregister/api/objects/{uuid}/_linked/mail', {
+		uuid: objectUuid,
+	})
+	const response = await axios.post(url, { id: entityId }, { timeout: TIMEOUT })
 	return response.data
 }
 
 /**
- * Delete an email link.
+ * Remove a mail link from an object.
  *
- * @param {number} linkId The link ID to delete.
+ * @param {string} objectUuid The object UUID.
+ * @param {string} entityId The mail entity ID (e.g., "1/6").
  * @return {Promise<object>} The response data.
  */
-export async function deleteEmailLink(linkId) {
-	const url = generateUrl('/apps/openregister/api/emails/{linkId}', { linkId })
+export async function deleteEmailLink(objectUuid, entityId) {
+	const url = generateUrl('/apps/openregister/api/objects/{uuid}/_linked/mail/{entityId}', {
+		uuid: objectUuid,
+		entityId,
+	})
 	const response = await axios.delete(url, { timeout: TIMEOUT })
 	return response.data
 }
