@@ -51,6 +51,7 @@ function mountSidebar() {
 	let retries = 0
 
 	const tryMount = () => {
+		console.log('[OpenRegister] tryMount attempt', retries)
 		const mountPoint = findMountPoint()
 
 		if (!mountPoint) {
@@ -80,9 +81,13 @@ function mountSidebar() {
 	tryMount()
 }
 
+console.log('[OpenRegister] mail-sidebar.js loaded')
+
 // Wait for DOM to be ready
 if (document.readyState === 'loading') {
+	console.log('[OpenRegister] DOM loading, waiting for DOMContentLoaded')
 	document.addEventListener('DOMContentLoaded', mountSidebar)
 } else {
+	console.log('[OpenRegister] DOM ready, mounting immediately')
 	mountSidebar()
 }
