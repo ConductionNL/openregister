@@ -55,14 +55,8 @@ return [
         ['name' => 'linked_entity#addSchemaLink', 'url' => '/api/schemas/{uuid}/_linked/{type}', 'verb' => 'POST', 'requirements' => ['uuid' => '[^/]+', 'type' => '[a-z]+']],
         ['name' => 'linked_entity#reverseLookup', 'url' => '/api/linked/{type}/{entityId}', 'verb' => 'GET', 'requirements' => ['type' => '[a-z]+', 'entityId' => '[^/]+']],
 
-        // Email links — LEGACY: kept only for sender-based lookup during transition.
+        // Email links — sender-based lookup (uses Mail app DB directly).
         ['name' => 'emails#bySender', 'url' => '/api/emails/by-sender', 'verb' => 'GET'],
-
-        // Email links (mail sidebar).
-        ['name' => 'emails#byMessage', 'url' => '/api/emails/by-message/{accountId}/{messageId}', 'verb' => 'GET', 'requirements' => ['accountId' => '\d+', 'messageId' => '\d+']],
-        ['name' => 'emails#bySender', 'url' => '/api/emails/by-sender', 'verb' => 'GET'],
-        ['name' => 'emails#quickLink', 'url' => '/api/emails/quick-link', 'verb' => 'POST'],
-        ['name' => 'emails#deleteLink', 'url' => '/api/emails/{linkId}', 'verb' => 'DELETE', 'requirements' => ['linkId' => '\d+']],
 
         // Workflow executions.
         ['name' => 'workflowExecution#index', 'url' => '/api/workflow-executions', 'verb' => 'GET'],
@@ -357,14 +351,14 @@ return [
         // Contact relations (CardDAV wrapper).
         ['name' => 'contacts#index', 'url' => '/api/objects/{register}/{schema}/{id}/contacts', 'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
         ['name' => 'contacts#create', 'url' => '/api/objects/{register}/{schema}/{id}/contacts', 'verb' => 'POST', 'requirements' => ['id' => '[^/]+']],
-        ['name' => 'contacts#update', 'url' => '/api/objects/{register}/{schema}/{id}/contacts/{contactId}', 'verb' => 'PUT', 'requirements' => ['id' => '[^/]+', 'contactId' => '\d+']],
-        ['name' => 'contacts#destroy', 'url' => '/api/objects/{register}/{schema}/{id}/contacts/{contactId}', 'verb' => 'DELETE', 'requirements' => ['id' => '[^/]+', 'contactId' => '\d+']],
+        ['name' => 'contacts#update', 'url' => '/api/objects/{register}/{schema}/{id}/contacts/{contactUid}', 'verb' => 'PUT', 'requirements' => ['id' => '[^/]+', 'contactUid' => '[^/]+']],
+        ['name' => 'contacts#destroy', 'url' => '/api/objects/{register}/{schema}/{id}/contacts/{contactUid}', 'verb' => 'DELETE', 'requirements' => ['id' => '[^/]+', 'contactUid' => '[^/]+']],
         ['name' => 'contacts#objects', 'url' => '/api/contacts/{contactUid}/objects', 'verb' => 'GET'],
 
         // Deck card relations (Nextcloud Deck wrapper).
         ['name' => 'deck#index', 'url' => '/api/objects/{register}/{schema}/{id}/deck', 'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
         ['name' => 'deck#create', 'url' => '/api/objects/{register}/{schema}/{id}/deck', 'verb' => 'POST', 'requirements' => ['id' => '[^/]+']],
-        ['name' => 'deck#destroy', 'url' => '/api/objects/{register}/{schema}/{id}/deck/{deckId}', 'verb' => 'DELETE', 'requirements' => ['id' => '[^/]+', 'deckId' => '\d+']],
+        ['name' => 'deck#destroy', 'url' => '/api/objects/{register}/{schema}/{id}/deck/{deckRef}', 'verb' => 'DELETE', 'requirements' => ['id' => '[^/]+', 'deckRef' => '[^/]+']],
         ['name' => 'deck#objects', 'url' => '/api/deck/boards/{boardId}/objects', 'verb' => 'GET', 'requirements' => ['boardId' => '\d+']],
 
         // Unified entity relations.
