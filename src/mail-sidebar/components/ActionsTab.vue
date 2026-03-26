@@ -28,7 +28,7 @@
 							:key="obj.id"
 							class="or-action-result"
 							@click="linkObject(schema, obj)">
-							<span class="or-action-result-name">{{ obj._name || obj.id }}</span>
+							<span class="or-action-result-name">{{ objectName(obj) }}</span>
 						</li>
 					</ul>
 					<div v-if="searching[schema.id]" class="or-action-searching">
@@ -69,6 +69,14 @@ export default {
 	},
 	methods: {
 		t,
+		objectName(obj) {
+			return obj['@self']?.name
+				|| obj._name
+				|| obj.title
+				|| obj.name
+				|| obj.naam
+				|| obj.id
+		},
 		async loadSchemas() {
 			this.loading = true
 			try {
@@ -174,7 +182,7 @@ export default {
 					uuid: objectUuid,
 				})
 				await axios.post(url, { id: mailRef })
-				showSuccess(t('openregister', 'Linked to {name}', { name: obj._name || objectUuid }))
+				showSuccess(t('openregister', 'Linked to {name}', { name: this.objectName(obj) }))
 
 				// Clear search and hide results
 				this.$set(this.searchTerms, schema.id, '')
