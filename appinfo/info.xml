@@ -86,6 +86,7 @@ Vrij en open source onder de EUPL-licentie.
 		<job>OCA\OpenRegister\BackgroundJob\CronFileTextExtractionJob</job>
 		<job>OCA\OpenRegister\Cron\WebhookRetryJob</job>
 		<job>OCA\OpenRegister\BackgroundJob\BlobMigrationJob</job>
+		<job>OCA\OpenRegister\BackgroundJob\DestructionCheckJob</job>
 	</background-jobs>
 
     <navigations>
@@ -114,4 +115,8 @@ Vrij en open source onder de EUPL-licentie.
 	<notification>
 		<service>OCA\OpenRegister\Notification\Notifier</service>
 	</notification>
+
+	<contactsmenu>
+		<provider>OCA\OpenRegister\Contacts\ContactsMenuProvider</provider>
+	</contactsmenu>
 </info>

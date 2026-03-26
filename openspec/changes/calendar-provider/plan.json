@@ -1,0 +1,105 @@
+{
+  "change": "calendar-provider",
+  "repo": "ConductionNL/openregister",
+  "tracking_issue": 1018,
+  "parent_issue": 997,
+  "branch": "feature/997/calendar-provider",
+  "tasks": [
+    {
+      "id": 1,
+      "title": "Create RegisterCalendarProvider implementing ICalendarProvider",
+      "spec_ref": "specs/calendar-provider/spec.md#requirement-calendar-provider-registration",
+      "github_issue": 1031,
+      "status": "done",
+      "files_likely_affected": ["lib/Calendar/RegisterCalendarProvider.php"]
+    },
+    {
+      "id": 2,
+      "title": "Register calendar provider in Application.php",
+      "spec_ref": "specs/calendar-provider/spec.md#requirement-calendar-provider-registration",
+      "github_issue": 1032,
+      "status": "done",
+      "files_likely_affected": ["lib/AppInfo/Application.php"]
+    },
+    {
+      "id": 3,
+      "title": "Create RegisterCalendar implementing ICalendar with search",
+      "spec_ref": "specs/calendar-provider/spec.md#requirement-virtual-calendar-implementation",
+      "github_issue": 1033,
+      "status": "done",
+      "files_likely_affected": ["lib/Calendar/RegisterCalendar.php"]
+    },
+    {
+      "id": 4,
+      "title": "Create CalendarEventTransformer",
+      "spec_ref": "specs/calendar-provider/spec.md#requirement-object-to-event-search-and-transformation",
+      "github_issue": 1034,
+      "status": "done",
+      "files_likely_affected": ["lib/Calendar/CalendarEventTransformer.php"]
+    },
+    {
+      "id": 5,
+      "title": "Add getCalendarProviderConfig to Schema entity",
+      "spec_ref": "specs/calendar-provider/spec.md#requirement-schema-calendar-configuration",
+      "github_issue": 1035,
+      "status": "done",
+      "files_likely_affected": ["lib/Db/Schema.php"]
+    },
+    {
+      "id": 6,
+      "title": "Add calendar provider config validation",
+      "spec_ref": "specs/calendar-provider/spec.md#requirement-schema-calendar-configuration",
+      "github_issue": 1036,
+      "status": "done",
+      "files_likely_affected": ["lib/Db/Schema.php"]
+    },
+    {
+      "id": 7,
+      "title": "Integrate RBAC filtering in calendar search",
+      "spec_ref": "specs/calendar-provider/spec.md#requirement-rbac-enforcement-on-calendar-queries",
+      "github_issue": 1037,
+      "status": "done",
+      "files_likely_affected": ["lib/Calendar/RegisterCalendarProvider.php", "lib/Calendar/RegisterCalendar.php"]
+    },
+    {
+      "id": 8,
+      "title": "Create CalendarProviderTab.vue frontend component",
+      "spec_ref": "specs/calendar-provider/spec.md#requirement-frontend-configuration-ui",
+      "github_issue": 1039,
+      "status": "done",
+      "files_likely_affected": ["src/views/schema/CalendarProviderTab.vue"]
+    },
+    {
+      "id": 9,
+      "title": "Add CalendarProviderTab to SchemaDetails.vue",
+      "spec_ref": "specs/calendar-provider/spec.md#requirement-frontend-configuration-ui",
+      "github_issue": 1041,
+      "status": "done",
+      "files_likely_affected": ["src/views/schema/SchemaDetails.vue"]
+    },
+    {
+      "id": 10,
+      "title": "Unit tests for RegisterCalendarProvider",
+      "spec_ref": "specs/calendar-provider/spec.md#requirement-calendar-provider-registration",
+      "github_issue": 1042,
+      "status": "done",
+      "files_likely_affected": ["tests/Unit/Calendar/RegisterCalendarProviderTest.php"]
+    },
+    {
+      "id": 11,
+      "title": "Unit tests for RegisterCalendar",
+      "spec_ref": "specs/calendar-provider/spec.md#requirement-virtual-calendar-implementation",
+      "github_issue": 1044,
+      "status": "done",
+      "files_likely_affected": ["tests/Unit/Calendar/RegisterCalendarTest.php"]
+    },
+    {
+      "id": 12,
+      "title": "Unit tests for CalendarEventTransformer",
+      "spec_ref": "specs/calendar-provider/spec.md#requirement-object-to-event-search-and-transformation",
+      "github_issue": 1046,
+      "status": "done",
+      "files_likely_affected": ["tests/Unit/Calendar/CalendarEventTransformerTest.php"]
+    }
+  ]
+}

@@ -80,6 +80,10 @@ webpackConfig.entry = {
 		import: path.join(__dirname, 'src', 'settings.js'),
 		filename: appId + '-settings.js',
 	},
+	filesSidebar: {
+		import: path.join(__dirname, 'src', 'files-sidebar.js'),
+		filename: appId + '-filesSidebar.js',
+	},
 }
 
 // Replace VueLoaderPlugin (don't push — duplicates break templates when using local package)

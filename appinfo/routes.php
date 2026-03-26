@@ -11,6 +11,7 @@ return [
         'Endpoints' => ['url' => 'api/endpoints'],
         'Mappings' => ['url' => 'api/mappings'],
         'Consumers' => ['url' => 'api/consumers'],
+        'Actions' => ['url' => 'api/actions'],
     ],
     'routes' => [
         // PATCH routes for resources (partial updates).
@@ -23,6 +24,35 @@ return [
         ['name' => 'endpoints#patch', 'url' => '/api/endpoints/{id}', 'verb' => 'PATCH', 'requirements' => ['id' => '[^/]+']],
         ['name' => 'mappings#patch', 'url' => '/api/mappings/{id}', 'verb' => 'PATCH', 'requirements' => ['id' => '[^/]+']],
         ['name' => 'consumers#patch', 'url' => '/api/consumers/{id}', 'verb' => 'PATCH', 'requirements' => ['id' => '[^/]+']],
+        ['name' => 'actions#patch', 'url' => '/api/actions/{id}', 'verb' => 'PATCH', 'requirements' => ['id' => '[^/]+']],
+
+        // Actions - Custom routes.
+        ['name' => 'actions#test', 'url' => '/api/actions/{id}/test', 'verb' => 'POST', 'requirements' => ['id' => '\d+']],
+        ['name' => 'actions#logs', 'url' => '/api/actions/{id}/logs', 'verb' => 'GET', 'requirements' => ['id' => '\d+']],
+        ['name' => 'actions#migrateFromHooks', 'url' => '/api/actions/migrate-from-hooks/{schemaId}', 'verb' => 'POST', 'requirements' => ['schemaId' => '\d+']],
+
+        // Contacts - matching.
+        ['name' => 'contacts#match', 'url' => '/api/contacts/match', 'verb' => 'GET'],
+
+        // Archival and destruction workflow.
+        ['name' => 'archival#listSelectionLists', 'url' => '/api/archival/selection-lists', 'verb' => 'GET'],
+        ['name' => 'archival#createSelectionList', 'url' => '/api/archival/selection-lists', 'verb' => 'POST'],
+        ['name' => 'archival#getSelectionList', 'url' => '/api/archival/selection-lists/{id}', 'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
+        ['name' => 'archival#updateSelectionList', 'url' => '/api/archival/selection-lists/{id}', 'verb' => 'PUT', 'requirements' => ['id' => '[^/]+']],
+        ['name' => 'archival#deleteSelectionList', 'url' => '/api/archival/selection-lists/{id}', 'verb' => 'DELETE', 'requirements' => ['id' => '[^/]+']],
+        ['name' => 'archival#getRetention', 'url' => '/api/archival/objects/{id}/retention', 'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
+        ['name' => 'archival#setRetention', 'url' => '/api/archival/objects/{id}/retention', 'verb' => 'PUT', 'requirements' => ['id' => '[^/]+']],
+        ['name' => 'archival#listDestructionLists', 'url' => '/api/archival/destruction-lists', 'verb' => 'GET'],
+        ['name' => 'archival#generateDestructionList', 'url' => '/api/archival/destruction-lists/generate', 'verb' => 'POST'],
+        ['name' => 'archival#getDestructionList', 'url' => '/api/archival/destruction-lists/{id}', 'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
+        ['name' => 'archival#approveDestructionList', 'url' => '/api/archival/destruction-lists/{id}/approve', 'verb' => 'POST', 'requirements' => ['id' => '[^/]+']],
+        ['name' => 'archival#rejectFromDestructionList', 'url' => '/api/archival/destruction-lists/{id}/reject', 'verb' => 'POST', 'requirements' => ['id' => '[^/]+']],
+
+        // Email links (mail sidebar).
+        ['name' => 'emails#byMessage', 'url' => '/api/emails/by-message/{accountId}/{messageId}', 'verb' => 'GET', 'requirements' => ['accountId' => '\d+', 'messageId' => '\d+']],
+        ['name' => 'emails#bySender', 'url' => '/api/emails/by-sender', 'verb' => 'GET'],
+        ['name' => 'emails#quickLink', 'url' => '/api/emails/quick-link', 'verb' => 'POST'],
+        ['name' => 'emails#deleteLink', 'url' => '/api/emails/{linkId}', 'verb' => 'DELETE', 'requirements' => ['linkId' => '\d+']],
 
         // Mappings - Custom routes.
         ['name' => 'mappings#test', 'url' => '/api/mappings/test', 'verb' => 'POST'],
@@ -238,6 +268,10 @@ return [
         
         ['name' => 'objects#create', 'url' => '/api/objects/{register}/{schema}', 'verb' => 'POST'],
         ['name' => 'objects#export', 'url' => '/api/objects/{register}/{schema}/export', 'verb' => 'GET'],
+        // TMLO / MDTO archival metadata routes.
+        ['name' => 'tmlo#exportBatch', 'url' => '/api/objects/{register}/{schema}/export/mdto', 'verb' => 'GET'],
+        ['name' => 'tmlo#summary', 'url' => '/api/objects/{register}/{schema}/tmlo/summary', 'verb' => 'GET'],
+        ['name' => 'tmlo#exportSingle', 'url' => '/api/objects/{register}/{schema}/{id}/export/mdto', 'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
         ['name' => 'objects#show', 'url' => '/api/objects/{register}/{schema}/{id}', 'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
         ['name' => 'objects#update', 'url' => '/api/objects/{register}/{schema}/{id}', 'verb' => 'PUT', 'requirements' => ['id' => '[^/]+']],
         ['name' => 'objects#patch', 'url' => '/api/objects/{register}/{schema}/{id}', 'verb' => 'PATCH', 'requirements' => ['id' => '[^/]+']],
@@ -316,6 +350,7 @@ return [
         // Notes operations under objects (Nextcloud Comments wrapper).
         ['name' => 'notes#index', 'url' => '/api/objects/{register}/{schema}/{id}/notes', 'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
         ['name' => 'notes#create', 'url' => '/api/objects/{register}/{schema}/{id}/notes', 'verb' => 'POST', 'requirements' => ['id' => '[^/]+']],
+        ['name' => 'notes#update', 'url' => '/api/objects/{register}/{schema}/{id}/notes/{noteId}', 'verb' => 'PUT', 'requirements' => ['id' => '[^/]+', 'noteId' => '[^/]+']],
         ['name' => 'notes#destroy', 'url' => '/api/objects/{register}/{schema}/{id}/notes/{noteId}', 'verb' => 'DELETE', 'requirements' => ['id' => '[^/]+', 'noteId' => '[^/]+']],
         
         // Schemas.
@@ -391,6 +426,9 @@ return [
         ['name' => 'organisation#leave', 'url' => '/api/organisations/{uuid}/leave', 'verb' => 'POST'],
 		// Tags.
 		['name' => 'tags#getAllTags', 'url' => '/api/tags', 'verb' => 'GET'],
+        ['name' => 'tags#index', 'url' => '/api/objects/{register}/{schema}/{id}/tags', 'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
+        ['name' => 'tags#add', 'url' => '/api/objects/{register}/{schema}/{id}/tags', 'verb' => 'POST', 'requirements' => ['id' => '[^/]+']],
+        ['name' => 'tags#remove', 'url' => '/api/objects/{register}/{schema}/{id}/tags/{tag}', 'verb' => 'DELETE', 'requirements' => ['id' => '[^/]+', 'tag' => '[^/]+']],
 		
 		// Views - Saved search configurations.
 		['name' => 'views#index', 'url' => '/api/views', 'verb' => 'GET'],
@@ -477,6 +515,19 @@ return [
 		// User - Profile management and authentication.
 		['name' => 'user#me', 'url' => '/api/user/me', 'verb' => 'GET'],
 		['name' => 'user#updateMe', 'url' => '/api/user/me', 'verb' => 'PUT'],
+		['name' => 'user#changePassword', 'url' => '/api/user/me/password', 'verb' => 'PUT'],
+		['name' => 'user#uploadAvatar', 'url' => '/api/user/me/avatar', 'verb' => 'POST'],
+		['name' => 'user#deleteAvatar', 'url' => '/api/user/me/avatar', 'verb' => 'DELETE'],
+		['name' => 'user#exportData', 'url' => '/api/user/me/export', 'verb' => 'GET'],
+		['name' => 'user#getNotificationPreferences', 'url' => '/api/user/me/notifications', 'verb' => 'GET'],
+		['name' => 'user#updateNotificationPreferences', 'url' => '/api/user/me/notifications', 'verb' => 'PUT'],
+		['name' => 'user#getActivity', 'url' => '/api/user/me/activity', 'verb' => 'GET'],
+		['name' => 'user#listTokens', 'url' => '/api/user/me/tokens', 'verb' => 'GET'],
+		['name' => 'user#createToken', 'url' => '/api/user/me/tokens', 'verb' => 'POST'],
+		['name' => 'user#revokeToken', 'url' => '/api/user/me/tokens/{id}', 'verb' => 'DELETE', 'requirements' => ['id' => '[^/]+']],
+		['name' => 'user#requestDeactivation', 'url' => '/api/user/me/deactivate', 'verb' => 'POST'],
+		['name' => 'user#getDeactivationStatus', 'url' => '/api/user/me/deactivation-status', 'verb' => 'GET'],
+		['name' => 'user#cancelDeactivation', 'url' => '/api/user/me/deactivate', 'verb' => 'DELETE'],
 		['name' => 'user#login', 'url' => '/api/user/login', 'verb' => 'POST'],
 		['name' => 'user#logout', 'url' => '/api/user/logout', 'verb' => 'POST'],
 
@@ -516,5 +567,9 @@ return [
 
 		// GraphQL Subscriptions (SSE).
 		['name' => 'graphQLSubscription#subscribe', 'url' => '/api/graphql/subscribe', 'verb' => 'GET'],
+
+		// Files sidebar tab endpoints.
+		['name' => 'fileSidebar#getObjectsForFile', 'url' => '/api/files/{fileId}/objects', 'verb' => 'GET', 'requirements' => ['fileId' => '\d+']],
+		['name' => 'fileSidebar#getExtractionStatus', 'url' => '/api/files/{fileId}/extraction-status', 'verb' => 'GET', 'requirements' => ['fileId' => '\d+']],
     ],
 ];

@@ -1142,6 +1142,20 @@ class ObjectService
             uploadedFiles: $uploadedFiles
         );
 
+        // Invalidate contact matching cache for objects with email properties.
+        try {
+            $container = \OC::$server;
+            if ($container !== null) {
+                $contactMatchingService = $container->get(
+                    \OCA\OpenRegister\Service\ContactMatchingService::class
+                );
+                $contactMatchingService->invalidateCacheForObject($object);
+            }
+        } catch (\Exception $e) {
+            // ContactMatchingService not available — skip cache invalidation.
+        }
+
+
         // Render and return the saved object.
         return $this->renderHandler->renderEntity(
             entity: $savedObject,

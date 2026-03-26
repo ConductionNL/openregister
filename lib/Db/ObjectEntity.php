@@ -93,6 +93,8 @@ use OCP\IUserSession;
  * @method void setGeo(?array $geo)
  * @method array|null getRetention()
  * @method void setRetention(?array $retention)
+ * @method array|null getTmlo()
+ * @method void setTmlo(?array $tmlo)
  * @method int|null getSize()
  * @method void setSize(?int $size)
  * @method string|null getName()
@@ -267,6 +269,21 @@ class ObjectEntity extends Entity implements JsonSerializable
     protected ?array $retention = [];
 
     /**
+     * TMLO (Toepassingsprofiel Metadatastandaard Lokale Overheden) archival metadata.
+     *
+     * Contains structured archival metadata conforming to TMLO 1.2 / MDTO:
+     * - classificatie: Archival classification code
+     * - archiefnominatie: blijvend_bewaren or vernietigen
+     * - archiefactiedatum: ISO-8601 date for archival action
+     * - archiefstatus: actief, semi_statisch, overgebracht, or vernietigd
+     * - bewaarTermijn: ISO-8601 duration (e.g., P7Y)
+     * - vernietigingsCategorie: Destruction category from VNG Selectielijst
+     *
+     * @var array|null TMLO archival metadata
+     */
+    protected ?array $tmlo = [];
+
+    /**
      * Size of the object in byte.
      *
      * @var string|null Size of the object
@@ -430,6 +447,7 @@ class ObjectEntity extends Entity implements JsonSerializable
         $this->addType(fieldName: 'deleted', type: 'json');
         $this->addType(fieldName: 'geo', type: 'json');
         $this->addType(fieldName: 'retention', type: 'json');
+        $this->addType(fieldName: 'tmlo', type: 'json');
         $this->addType(fieldName: 'size', type: 'string');
         $this->addType(fieldName: 'schemaVersion', type: 'string');
         $this->addType(fieldName: 'name', type: 'string');
@@ -467,6 +485,7 @@ class ObjectEntity extends Entity implements JsonSerializable
             'groups',
             'geo',
             'retention',
+            'tmlo',
         ];
 
         // If this is an array field and it's null, return empty array.
@@ -588,7 +607,7 @@ class ObjectEntity extends Entity implements JsonSerializable
      *     owner: array|null|string, organisation: array|null|string,
      *     groups: mixed, authorization: array|null, folder: null|string,
      *     application: array|null|string, validation: array|null,
-     *     geo: array|null, retention: array|null, size: null|string,
+     *     geo: array|null, retention: array|null, tmlo: array|null, size: null|string,
      *     updated: null|string, created: null|string,
      *     deleted: array|null},...}
      */
@@ -640,7 +659,7 @@ class ObjectEntity extends Entity implements JsonSerializable
      *     owner: array|null|string, organisation: array|null|string,
      *     groups: mixed, authorization: array|null, folder: null|string,
      *     application: array|null|string, validation: array|null,
-     *     geo: array|null, retention: array|null, size: null|string,
+     *     geo: array|null, retention: array|null, tmlo: array|null, size: null|string,
      *     updated: null|string, created: null|string,
      *     deleted: array|null}
      *
@@ -674,6 +693,7 @@ class ObjectEntity extends Entity implements JsonSerializable
             'validation'    => $this->getValidation(),
             'geo'           => $this->getGeo(),
             'retention'     => $this->getRetention(),
+            'tmlo'          => $this->getTmlo(),
             'size'          => $this->size,
             'updated'       => $this->getFormattedDate(date: $this->updated),
             'created'       => $this->getFormattedDate(date: $this->created),

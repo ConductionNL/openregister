@@ -1,0 +1,135 @@
+{
+  "change": "archival-destruction-workflow",
+  "repo": "ConductionNL/openregister",
+  "tracking_issue": 1112,
+  "parent_issue": 947,
+  "tasks": [
+    {
+      "id": 1,
+      "title": "Database migration for selection_lists and destruction_lists tables",
+      "spec_ref": "design.md#database-migration",
+      "acceptance_criteria": [
+        "Migration creates oc_openregister_selection_lists table with all fields",
+        "Migration creates oc_openregister_destruction_lists table with all fields",
+        "Migration is idempotent and reversible"
+      ],
+      "files_likely_affected": ["lib/Migration/Version1Date20260325120000.php"],
+      "github_issue": 1113,
+      "status": "todo"
+    },
+    {
+      "id": 2,
+      "title": "SelectionList entity and mapper",
+      "spec_ref": "design.md#entities",
+      "acceptance_criteria": [
+        "SelectionList entity has all fields with proper types",
+        "SelectionListMapper has findByCategory(), findByUuid(), findAll()",
+        "Entity implements JsonSerializable"
+      ],
+      "files_likely_affected": ["lib/Db/SelectionList.php", "lib/Db/SelectionListMapper.php"],
+      "github_issue": 1114,
+      "status": "todo"
+    },
+    {
+      "id": 3,
+      "title": "DestructionList entity and mapper",
+      "spec_ref": "design.md#entities",
+      "acceptance_criteria": [
+        "DestructionList entity has all fields with proper types",
+        "DestructionListMapper has findByStatus(), findByUuid(), findAll()",
+        "Entity implements JsonSerializable"
+      ],
+      "files_likely_affected": ["lib/Db/DestructionList.php", "lib/Db/DestructionListMapper.php"],
+      "github_issue": 1115,
+      "status": "todo"
+    },
+    {
+      "id": 4,
+      "title": "ArchivalService",
+      "spec_ref": "design.md#service",
+      "acceptance_criteria": [
+        "setRetentionMetadata validates enum values and sets retention field",
+        "calculateArchivalDate computes date from selection list retention years",
+        "generateDestructionList finds eligible objects and creates list",
+        "approveDestructionList deletes objects and creates audit trail",
+        "rejectFromDestructionList removes objects and extends dates"
+      ],
+      "files_likely_affected": ["lib/Service/ArchivalService.php"],
+      "github_issue": 1116,
+      "status": "todo"
+    },
+    {
+      "id": 5,
+      "title": "ArchivalController with API routes",
+      "spec_ref": "design.md#controller",
+      "acceptance_criteria": [
+        "Selection list CRUD endpoints work",
+        "Retention metadata GET/PUT endpoints work",
+        "Destruction list generate/list/get/approve/reject endpoints work",
+        "All routes registered in appinfo/routes.php"
+      ],
+      "files_likely_affected": ["lib/Controller/ArchivalController.php", "appinfo/routes.php"],
+      "github_issue": 1117,
+      "status": "todo"
+    },
+    {
+      "id": 6,
+      "title": "DestructionCheckJob background job",
+      "spec_ref": "design.md#background-job",
+      "acceptance_criteria": [
+        "Job extends TimedJob with 86400s interval",
+        "Job queries objects due for destruction",
+        "Job generates destruction list if objects found",
+        "Job is registered in Application.php"
+      ],
+      "files_likely_affected": ["lib/BackgroundJob/DestructionCheckJob.php", "lib/Db/Application.php"],
+      "github_issue": 1118,
+      "status": "todo"
+    },
+    {
+      "id": 7,
+      "title": "Unit tests for ArchivalService",
+      "spec_ref": "specs/archivering-vernietiging/spec.md",
+      "acceptance_criteria": [
+        "3+ tests for setRetentionMetadata with valid/invalid data",
+        "3+ tests for calculateArchivalDate",
+        "2+ tests for generateDestructionList",
+        "2+ tests for approveDestructionList",
+        "2+ tests for rejectFromDestructionList"
+      ],
+      "files_likely_affected": ["tests/Unit/Service/ArchivalServiceTest.php"],
+      "github_issue": 1119,
+      "status": "todo"
+    },
+    {
+      "id": 8,
+      "title": "Unit tests for DestructionCheckJob and entities",
+      "spec_ref": "specs/archivering-vernietiging/spec.md",
+      "acceptance_criteria": [
+        "2+ tests for DestructionCheckJob run()",
+        "2+ tests for SelectionList entity",
+        "2+ tests for DestructionList entity"
+      ],
+      "files_likely_affected": [
+        "tests/Unit/BackgroundJob/DestructionCheckJobTest.php",
+        "tests/Unit/Db/SelectionListTest.php",
+        "tests/Unit/Db/DestructionListTest.php"
+      ],
+      "github_issue": 1120,
+      "status": "todo"
+    },
+    {
+      "id": 9,
+      "title": "Unit tests for ArchivalController",
+      "spec_ref": "specs/archivering-vernietiging/spec.md",
+      "acceptance_criteria": [
+        "3+ tests for selection list CRUD responses",
+        "2+ tests for retention metadata endpoints",
+        "3+ tests for destruction list workflow endpoints"
+      ],
+      "files_likely_affected": ["tests/Unit/Controller/ArchivalControllerTest.php"],
+      "github_issue": 1121,
+      "status": "todo"
+    }
+  ]
+}

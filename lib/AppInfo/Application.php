@@ -141,6 +141,7 @@ use OCA\OpenRegister\Listener\ObjectCleanupListener;
 use OCA\OpenRegister\Listener\ToolRegistrationListener;
 use OCA\OpenRegister\Listener\GraphQLSubscriptionListener;
 use OCA\OpenRegister\Listener\WebhookEventListener;
+use OCA\OpenRegister\Listener\FilesSidebarListener;
 use OCA\OpenRegister\Listener\HookListener;
 use OCA\OpenRegister\Service\NoteService;
 use OCA\OpenRegister\Service\TaskService;
@@ -313,7 +314,10 @@ class Application extends App implements IBootstrap
                     accountManager: $container->get('OCP\Accounts\IAccountManager'),
                     logger: $container->get('Psr\Log\LoggerInterface'),
                     organisationService: $container->get(OrganisationService::class),
-                    eventDispatcher: $container->get('OCP\EventDispatcher\IEventDispatcher')
+                    eventDispatcher: $container->get('OCP\EventDispatcher\IEventDispatcher'),
+                    avatarManager: $container->get('OCP\IAvatarManager'),
+                    auditTrailMapper: $container->get(\OCA\OpenRegister\Db\AuditTrailMapper::class),
+                    secureRandom: $container->get('OCP\Security\ISecureRandom')
                 );
             }
         );
@@ -744,6 +748,9 @@ class Application extends App implements IBootstrap
         $context->registerEventListener(ObjectCreatedEvent::class, GraphQLSubscriptionListener::class);
         $context->registerEventListener(ObjectUpdatedEvent::class, GraphQLSubscriptionListener::class);
         $context->registerEventListener(ObjectDeletedEvent::class, GraphQLSubscriptionListener::class);
+
+        // FilesSidebarListener injects the sidebar tab script into the Files app.
+        $context->registerEventListener('OCA\Files\Event\LoadAdditionalScriptsEvent', FilesSidebarListener::class);
 
         // CommentsEntityListener registers "openregister" objectType for Nextcloud Comments.
         $context->registerEventListener(CommentsEntityEvent::class, CommentsEntityListener::class);
