@@ -1,5 +1,6 @@
 <!-- eslint-disable -->
 <script setup>
+import { translate as t } from '@nextcloud/l10n'
 import { navigationStore, objectStore } from '../../store/store.js'
 </script>
 
@@ -321,13 +322,15 @@ export default {
 			return objectStore.objectItem
 		},
 		registerId() {
-			return this.objectItem?.['@self']?.register
+			const register = this.objectItem?.['@self']?.register
+			return typeof register === 'object' && register !== null ? register.id : register
 		},
 		schemaId() {
-			return this.objectItem?.['@self']?.schema
+			const schema = this.objectItem?.['@self']?.schema
+			return typeof schema === 'object' && schema !== null ? schema.id : schema
 		},
 		objectId() {
-			return this.objectItem?.['@self']?.id
+			return this.objectItem?.['@self']?.id || this.objectItem?.id
 		},
 		filesComputed() {
 			return files.value
@@ -335,7 +338,7 @@ export default {
 	},
 	watch: {
 		filesComputed: {
-			handler(newFiles, oldFiles) {
+			handler(newFiles, _oldFiles) {
 				if (newFiles?.length) {
 					this.addAttachments()
 				}
@@ -412,10 +415,10 @@ export default {
 
 		getAllTags() {
 			this.tagsLoading = true
-			objectStore.getTags().then(({ response, data }) => {
-
-				const tags = data.map((tag) => tag)
-
+			// @TODO - this functionality always calls and therefore always has to wait.
+			// split this up into a computed value and action, the computed value can dervive tags from `objectStore.getTags` (getter) or `objectStore.tags` (state)
+			// this avoids the waiting time in later calls
+			objectStore.fetchTags().then((tags) => {
 				const newLabelOptions = new Set()
 				const newLabelOptionsEdit = new Set()
 
@@ -499,19 +502,27 @@ export default {
 					return
 				}
 
+				// Build and register the type
+				const type = `${this.registerId}-${this.schemaId}`
+				if (!objectStore.objectTypes?.includes(type)) {
+					objectStore.registerObjectType(type, this.schemaId, this.registerId)
+				}
+
 				// file calls
 				const calls = await Promise.all(filesToUpload.map(async (file) => {
 					file.status = 'uploading'
 
 					try {
-						const responseJson = await objectStore.uploadFiles({
-							register: this.registerId,
-							schema: this.schemaId,
-							objectId: this.objectId,
-							files: [file],
-							labels: this.labelOptions.value || [],
-							share: this.share,
-						})
+						const formData = new FormData()
+						formData.append('files[]', file)
+						if (Array.isArray(file.tags)) {
+							file.tags.forEach(tag => formData.append('tags[]', tag))
+						}
+						if (this.share) {
+							formData.append('share', '1')
+						}
+
+						const responseJson = await objectStore.uploadFiles(type, this.objectId, formData)
 
 						file.status = 'uploaded'
 
@@ -525,11 +536,7 @@ export default {
 				this.getAllTags()
 
 				// Refresh files for the object
-				await objectStore.getFiles({
-					id: this.objectId,
-					register: this.registerId,
-					schema: this.schemaId,
-				})
+				await objectStore.fetchFiles(type, this.objectId)
 
 				const failed = calls.filter(result => result[0] === false)
 
@@ -551,19 +558,20 @@ export default {
 
 <style>
 div[class='modal-container']:has(.TestMappingMainModal) {
-    width: clamp(1000px, 100%, 1200px) !important;
+	width: clamp(1000px, 100%, 1200px) !important;
 }
+
 .modal__content {
-    margin: var(--OC-margin-50);
-    text-align: center;
+	margin: var(--OC-margin-50);
+	text-align: center;
 }
 </style>
 
 <style scoped>
 .zaakDetailsContainer {
-    margin-block-start: var(--OC-margin-20);
-    margin-inline-start: var(--OC-margin-20);
-    margin-inline-end: var(--OC-margin-20);
+	margin-block-start: var(--OC-margin-20);
+	margin-inline-start: var(--OC-margin-20);
+	margin-inline-end: var(--OC-margin-20);
 }
 
 .filesListDragDropNoticeWrapper--disabled{
@@ -571,7 +579,7 @@ div[class='modal-container']:has(.TestMappingMainModal) {
 }
 
 .success {
-    color: green;
+	color: green;
 }
 
 .folderLink {
@@ -610,59 +618,60 @@ div[class='modal-container']:has(.TestMappingMainModal) {
 }
 
 .files-table-td-name span {
-  float: left;
-  overflow: hidden;
-  white-space: nowrap;
-  text-overflow: ellipsis;
-  max-width: calc(100% - 15%);
+	float: left;
+	overflow: hidden;
+	white-space: nowrap;
+	text-overflow: ellipsis;
+	max-width: calc(100% - 15%);
 }
 
 .files-table-td-status {
-    width: 40px;
+	width: 40px;
 }
 
 .files-table-name {
-  color: var(--color-main-text);
+	color: var(--color-main-text);
 }
+
 .files-table-extension {
-  color: var(--color-text-maxcontrast);
+	color: var(--color-text-maxcontrast);
 }
 
 .files-table-tr {
-  color: var(--color-text-maxcontrast);
-  border-bottom: 1px solid var(--color-border);
+	color: var(--color-text-maxcontrast);
+	border-bottom: 1px solid var(--color-border);
 }
 
 .files-table-tr:hover {
-    background-color: var(--color-background-hover);
-    --color-text-maxcontrast: var(--color-main-text);
+	background-color: var(--color-background-hover);
+	--color-text-maxcontrast: var(--color-main-text);
 	--color-border: var(--color-border-dark);
 }
 
 .files-table-tr > td {
-  height: 55px;
+	height: 55px;
 }
 
 .files-table-remove-button {
-  text-align: -webkit-right;
+	text-align: -webkit-right;
 }
 
 .files-list__row-icon {
-  position: relative;
-  display: flex;
-  overflow: visible;
-  align-items: center;
-  flex: 0 0 32px;
-  justify-content: center;
-  width: 32px;
-  height: 100%;
-  margin-right: var(--checkbox-padding);
-  color: var(--color-primary-element);
+	position: relative;
+	display: flex;
+	overflow: visible;
+	align-items: center;
+	flex: 0 0 32px;
+	justify-content: center;
+	width: 32px;
+	height: 100%;
+	margin-right: var(--checkbox-padding);
+	color: var(--color-primary-element);
 }
 
 .files-list__row-action-system-tags {
-  margin-right: 7px;
-  display: flex;
+	margin-right: 7px;
+	display: flex;
 }
 
 .files-list__system-tags {
@@ -716,15 +725,15 @@ div[class='modal-container']:has(.TestMappingMainModal) {
 }
 
 .success {
-    color: var(--color-success);
+	color: var(--color-success);
 }
 
 .failed {
-    color: var(--color-error);
+	color: var(--color-error);
 }
 
 .buttonContainer {
-    display: flex;
-    gap: 10px;
+	display: flex;
+	gap: 10px;
 }
 </style>

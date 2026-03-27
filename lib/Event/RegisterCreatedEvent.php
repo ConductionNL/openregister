@@ -1,4 +1,5 @@
 <?php
+
 /**
  * OpenRegister RegisterCreatedEvent
  *
@@ -35,7 +36,6 @@ class RegisterCreatedEvent extends Event
      */
     private Register $register;
 
-
     /**
      * Constructor for RegisterCreatedEvent
      *
@@ -47,9 +47,7 @@ class RegisterCreatedEvent extends Event
     {
         parent::__construct();
         $this->register = $register;
-
     }//end __construct()
-
 
     /**
      * Get the created register
@@ -59,8 +57,5 @@ class RegisterCreatedEvent extends Event
     public function getRegister(): Register
     {
         return $this->register;
-
     }//end getRegister()
-
-
 }//end class

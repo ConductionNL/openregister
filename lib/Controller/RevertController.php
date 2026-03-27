@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Class RevertController
  *
@@ -17,10 +18,10 @@
  * @link https://OpenRegister.app
  */
 
-
 namespace OCA\OpenRegister\Controller;
 
-use OCA\OpenRegister\Service\RevertService;
+use DateTime;
+use OCA\OpenRegister\Service\Object\RevertHandler;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
@@ -30,28 +31,27 @@ use OCA\OpenRegister\Exception\LockedException;
 
 /**
  * Class RevertController
- * Handles all object reversion operations
+ *
+ * Handles all object reversion operations.
+ *
+ * @psalm-suppress UnusedClass
  */
 class RevertController extends Controller
 {
-
-
     /**
      * Constructor for RevertController
      *
      * @param string        $appName       The name of the app
      * @param IRequest      $request       The request object
-     * @param RevertService $revertService The revert service
+     * @param RevertHandler $revertService The revert service
      */
     public function __construct(
         string $appName,
         IRequest $request,
-        private readonly RevertService $revertService
+        private readonly RevertHandler $revertService
     ) {
-        parent::__construct($appName, $request);
-
+        parent::__construct(appName: $appName, request: $request);
     }//end __construct()
-
 
     /**
      * Revert an object to a previous state
@@ -65,10 +65,11 @@ class RevertController extends Controller
      * @param string $schema   The schema identifier
      * @param string $id       The object ID
      *
-     * @return JSONResponse A JSON response containing the reverted object
-     *
      * @NoAdminRequired
+     *
      * @NoCSRFRequired
+     *
+     * @return JSONResponse JSON response with reverted object or error
      */
     public function revert(string $register, string $schema, string $id): JSONResponse
     {
@@ -77,11 +78,11 @@ class RevertController extends Controller
 
             // Parse the revert point.
             $until = null;
-            if (isset($data['datetime']) === true) {
-                $until = new \DateTime($data['datetime']);
-            } else if (isset($data['auditTrailId']) === true) {
+            if (($data['datetime'] ?? null) !== null) {
+                $until = new DateTime($data['datetime']);
+            } else if (($data['auditTrailId'] ?? null) !== null) {
                 $until = $data['auditTrailId'];
-            } else if (isset($data['version']) === true) {
+            } else if (($data['version'] ?? null) !== null) {
                 $until = $data['version'];
             }
 
@@ -104,7 +105,7 @@ class RevertController extends Controller
                 overwriteVersion: $overwriteVersion
             );
 
-            return new JSONResponse($revertedObject->jsonSerialize());
+            return new JSONResponse(data: $revertedObject->jsonSerialize());
         } catch (DoesNotExistException $e) {
             return new JSONResponse(data: ['error' => 'Object not found'], statusCode: 404);
         } catch (NotAuthorizedException $e) {
@@ -114,8 +115,5 @@ class RevertController extends Controller
         } catch (\Exception $e) {
             return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 500);
         }//end try
-
     }//end revert()
-
-
 }//end class

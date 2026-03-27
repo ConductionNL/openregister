@@ -1,0 +1,48 @@
+includes:
+    - phpstan-baseline.neon
+
+parameters:
+    level: 5
+    paths:
+        - lib
+    bootstrapFiles:
+        - vendor/autoload.php
+    scanDirectories:
+        - vendor/nextcloud/ocp
+    reportUnmatchedIgnoredErrors: false
+    ignoreErrors:
+        # Nextcloud internal classes not available via OCP stubs
+        - '#Call to an undefined method OC::#'
+        - '#Class OC not found#'
+        - '#Access to static property \$server on an unknown class OC#'
+        - '#unknown class OC\\\\#'
+        - '#unknown class OCA\\\\DAV\\\\#'
+        - '#unknown class OC_App#'
+        - '#not found in catched class OC\\\\#'
+        - '#Caught class OC\\\\#'
+        - '#Class OCA\\\\DAV\\\\#'
+        # Doctrine DBAL classes used in migrations and mappers but not in vendor stubs
+        - '#Class Doctrine\\\\DBAL\\\\#'
+        - '#unknown class Doctrine\\\\DBAL\\\\#'
+        - '#on an unknown class Doctrine\\\\DBAL\\\\#'
+        # SecurityException is a Nextcloud internal class
+        - '#Instantiated class OC\\\\AppFramework\\\\Middleware\\\\Security\\\\Exceptions\\\\SecurityException not found#'
+        - '#PHPDoc tag @throws with type OC\\\\AppFramework\\\\Middleware\\\\Security\\\\Exceptions\\\\SecurityException#'
+        - '#unknown class OC\\\\AppFramework\\\\Middleware\\\\Security\\\\Exceptions\\\\SecurityException#'
+        # Named parameters on mapper find/findAll - PHPStan resolves parent QBMapper signature
+        - '#Unknown parameter \$_multitenancy in call to method OCA\\\\OpenRegister\\\\Db\\\\#'
+        - '#Unknown parameter \$_rbac in call to method OCA\\\\OpenRegister\\\\Db\\\\#'
+        - '#Method OCA\\\\OpenRegister\\\\Db\\\\RegisterMapper::find\(\) invoked with \d+ parameters#'
+        - '#Method OCA\\\\OpenRegister\\\\Db\\\\SchemaMapper::find\(\) invoked with \d+ parameters#'
+        - '#Method OCA\\\\OpenRegister\\\\Db\\\\AuditTrailMapper::findAll\(\) invoked with \d+ parameters#'
+        # Named parameters on findAll - same QBMapper resolution issue
+        - '#Unknown parameter \$_rbac in call to method OCA\\\\OpenRegister\\\\Db\\\\SchemaMapper::findAll\(\)#'
+        - '#Unknown parameter \$_multitenancy in call to method OCA\\\\OpenRegister\\\\Db\\\\SchemaMapper::findAll\(\)#'
+        - '#Unknown parameter \$_rbac in call to method OCA\\\\OpenRegister\\\\Db\\\\RegisterMapper::findAll\(\)#'
+        - '#Unknown parameter \$_multitenancy in call to method OCA\\\\OpenRegister\\\\Db\\\\RegisterMapper::findAll\(\)#'
+        # Doctrine\DBAL access patterns in non-migration files
+        - '#Call to method .+ on an unknown class Doctrine\\\\DBAL\\\\#'
+        - '#Call to static method .+ on an unknown class Doctrine\\\\DBAL\\\\#'
+        - '#Access to constant .+ on an unknown class Doctrine\\\\DBAL\\\\#'
+        # Throwing OC internal SecurityException
+        - '#Throwing object of an unknown class OC\\\\#'

@@ -1,26 +1,20 @@
-<script setup>
-import { navigationStore, objectStore, registerStore, schemaStore, viewsStore } from '../../store/store.js'
-</script>
-
 <template>
-	<div>
-		<NcAppSidebar
+	<Fragment>
+		<CnIndexSidebar
 			ref="sidebar"
-			v-model="activeTab"
-			name="Search Objects"
-			subtitle="Select registers, schemas and search"
-			subname="Within the federative network"
+			:schema="objectStore.searchSchema"
+			:visible-columns="objectStore.searchVisibleColumns"
+			:search-value="searchValueForSidebar"
 			:open="navigationStore.sidebarState.search"
-			@update:open="(e) => navigationStore.setSidebarState('search', e)">
-			<!-- Search Tab -->
-			<NcAppSidebarTab
-				id="search-tab"
-				:name="t('openregister', 'Search')"
-				:order="1">
-				<template #icon>
-					<Magnify :size="20" />
-				</template>
-
+			:active-filters="objectStore.searchParams.filters"
+			:facet-data="objectStore.searchFacets"
+			search-tab-label="Search"
+			search-placeholder="Type to search..."
+			@update:open="(e) => navigationStore.setSidebarState('search', e)"
+			@search="onSearchInput"
+			@filter-change="onFilterChange"
+			@columns-change="onColumnsChange">
+			<template #search-above>
 				<!-- Save View Action -->
 				<div class="saveViewSection">
 					<!-- Active View Mode: Show view name with Save and Delete buttons -->
@@ -161,57 +155,6 @@ import { navigationStore, objectStore, registerStore, schemaStore, viewsStore } 
 							{{ selectedSchemas.length }} {{ t('openregister', 'schema(s) selected') }}
 						</p>
 					</div>
-					<div class="filterGroup">
-						<label for="sourceSelect">{{ t('openregister', 'Data Source') }}</label>
-						<NcSelect
-							id="sourceSelect"
-							:model-value="selectedSourceValue"
-							:options="sourceOptions"
-							:input-label="t('openregister', 'Data Source')"
-							placeholder="Select data source"
-							@update:model-value="handleSourceChange" />
-					</div>
-				</div>
-
-				<!-- Search Section -->
-				<div class="section">
-					<h3 class="sectionTitle">
-						{{ t('openregister', 'Search') }}
-					</h3>
-					<div class="search-input-container">
-						<NcTextField
-							v-model="searchQuery"
-							:placeholder="searchPlaceholder"
-							:disabled="searchLoading"
-							@keyup.enter="performSearch" />
-						<NcButton
-							type="primary"
-							:disabled="!canSearch || searchLoading"
-							@click="performSearch">
-							<template #icon>
-								<NcLoadingIcon v-if="searchLoading" :size="20" />
-								<Magnify v-else :size="20" />
-							</template>
-							{{ t('openregister', 'Search') }}
-						</NcButton>
-					</div>
-					<div v-if="searchTerms.length > 0" class="search-terms">
-						<span class="search-terms-label">{{ t('openregister', 'Search terms:') }}</span>
-						<div class="search-chips">
-							<div
-								v-for="(term, index) in searchTerms"
-								:key="index"
-								class="search-chip">
-								<span class="chip-text">{{ term }}</span>
-								<button class="chip-remove" @click="removeSearchTerm(index)">
-									<Close :size="16" />
-								</button>
-							</div>
-						</div>
-					</div>
-					<div v-if="lastSearchStats" class="search-stats">
-						{{ t('openregister', 'Found {total} objects in {time}ms', lastSearchStats) }}
-					</div>
 				</div>
 
 				<!-- Unified Faceting Section -->
@@ -221,7 +164,7 @@ import { navigationStore, objectStore, registerStore, schemaStore, viewsStore } 
 					</h3>
 
 					<!-- Stage 1: Facet Discovery -->
-					<div v-if="!facetableFields && canSearch && !isDatabaseSource" class="facets-discovery-container">
+					<div v-if="!facetableFields && canSearch" class="facets-discovery-container">
 						<NcButton
 							type="secondary"
 							:disabled="facetsLoading"
@@ -237,13 +180,6 @@ import { navigationStore, objectStore, registerStore, schemaStore, viewsStore } 
 						</p>
 					</div>
 
-					<!-- Database Source Notice -->
-					<div v-if="isDatabaseSource && canSearch" class="database-source-notice">
-						<p class="database-notice-text">
-							{{ t('openregister', 'Advanced filters are not available when using database source. Switch to Auto or SOLR Index for filtering options.') }}
-						</p>
-					</div>
-
 					<!-- Loading -->
 					<div v-if="facetsLoading && !facetableFields" class="loading-container">
 						<NcLoadingIcon :size="20" />
@@ -251,7 +187,7 @@ import { navigationStore, objectStore, registerStore, schemaStore, viewsStore } 
 					</div>
 
 					<!-- Available Facets (Stage 1 Complete) -->
-					<div v-else-if="facetableFields && !isDatabaseSource" class="available-facets-container">
+					<div v-else-if="facetableFields" class="available-facets-container">
 						<h4 class="available-facets-title">
 							{{ t('openregister', 'Available Filters') }}
 						</h4>
@@ -311,7 +247,7 @@ import { navigationStore, objectStore, registerStore, schemaStore, viewsStore } 
 					</div>
 
 					<!-- Stage 2: Facet Data (Active Filters) -->
-					<div v-else-if="facetData && Object.keys(facetData).length > 0 && !isDatabaseSource" class="active-facets-container">
+					<div v-else-if="facetData && Object.keys(facetData).length > 0" class="active-facets-container">
 						<h4 class="active-facets-title">
 							{{ t('openregister', 'Active Filters') }}
 						</h4>
@@ -350,182 +286,119 @@ import { navigationStore, objectStore, registerStore, schemaStore, viewsStore } 
 						</div>
 					</div>
 				</div>
+			</template>
 
-				<div class="section">
-					<NcNoteCard type="info" class="search-hint">
-						{{ t('openregister', 'Type search terms and press Enter or click Add to add them. Click Search to find objects.') }}
-					</NcNoteCard>
-				</div>
-			</NcAppSidebarTab>
+			<!-- Views Tab (custom tab via slots) -->
+			<template #tabs>
+				<NcAppSidebarTab
+					id="views-tab"
+					:name="t('openregister', 'Views')"
+					:order="3">
+					<template #icon>
+						<ViewDashboardOutline :size="20" />
+					</template>
 
-			<!-- Views Tab -->
-			<NcAppSidebarTab
-				id="views-tab"
-				:name="t('openregister', 'Views')"
-				:order="2">
-				<template #icon>
-					<ViewDashboardOutline :size="20" />
-				</template>
+					<div class="viewsSection">
+						<h3>{{ t('openregister', 'Saved Views') }}</h3>
+						<p class="viewsDescription">
+							{{ t('openregister', 'Manage your saved search configurations') }}
+						</p>
 
-				<div class="viewsSection">
-					<h3>{{ t('openregister', 'Saved Views') }}</h3>
-					<p class="viewsDescription">
-						{{ t('openregister', 'Manage your saved search configurations') }}
-					</p>
+						<!-- Search Views -->
+						<div class="viewsSearchContainer">
+							<NcTextField
+								v-model="viewSearchQuery"
+								:placeholder="t('openregister', 'Search views...')"
+								:label="t('openregister', 'Search Views')">
+								<template #icon>
+									<Magnify :size="20" />
+								</template>
+							</NcTextField>
+						</div>
 
-					<!-- Search Views -->
-					<div class="viewsSearchContainer">
-						<NcTextField
-							v-model="viewSearchQuery"
-							:placeholder="t('openregister', 'Search views...')"
-							:label="t('openregister', 'Search Views')">
-							<template #icon>
-								<Magnify :size="20" />
-							</template>
-						</NcTextField>
-					</div>
+						<!-- Views Table -->
+						<div v-if="viewsStore.isLoading" class="viewsLoading">
+							<NcLoadingIcon :size="32" />
+							<p>{{ t('openregister', 'Loading views...') }}</p>
+						</div>
 
-					<!-- Views Table -->
-					<div v-if="viewsStore.isLoading" class="viewsLoading">
-						<NcLoadingIcon :size="32" />
-						<p>{{ t('openregister', 'Loading views...') }}</p>
-					</div>
+						<div v-else-if="filteredViews.length === 0" class="noViews">
+							<NcNoteCard type="info">
+								{{ viewSearchQuery ? t('openregister', 'No views match your search') : t('openregister', 'No saved views yet. Create one in the Search tab!') }}
+							</NcNoteCard>
+						</div>
 
-					<div v-else-if="filteredViews.length === 0" class="noViews">
-						<NcNoteCard type="info">
-							{{ viewSearchQuery ? t('openregister', 'No views match your search') : t('openregister', 'No saved views yet. Create one in the Search tab!') }}
-						</NcNoteCard>
-					</div>
+						<div v-else class="viewsTable">
+							<div
+								v-for="view in filteredViews"
+								:key="view.id || view.uuid"
+								class="viewRow"
+								:class="{ 'viewRow--active': isActiveView(view) }">
+								<div class="viewRowHeader">
+									<div class="viewRowTitle">
+										<strong>{{ view.name || t('openregister', 'Untitled View') }}</strong>
+										<span v-if="view.isDefault" class="viewBadge viewBadge--default">
+											{{ t('openregister', 'Default') }}
+										</span>
+										<span v-if="view.isPublic" class="viewBadge viewBadge--public">
+											{{ t('openregister', 'Public') }}
+										</span>
+									</div>
+									<div class="viewRowActions">
+										<!-- Star/Favorite button -->
+										<NcButton
+											:type="isFavorited(view) ? 'primary' : 'secondary'"
+											:aria-label="isFavorited(view) ? t('openregister', 'Remove from favorites') : t('openregister', 'Add to favorites')"
+											@click="toggleFavorite(view)">
+											<template #icon>
+												<Star v-if="isFavorited(view)" :size="20" />
+												<StarOutline v-else :size="20" />
+											</template>
+										</NcButton>
 
-					<div v-else class="viewsTable">
-						<div
-							v-for="view in filteredViews"
-							:key="view.id || view.uuid"
-							class="viewRow"
-							:class="{ 'viewRow--active': isActiveView(view) }">
-							<div class="viewRowHeader">
-								<div class="viewRowTitle">
-									<strong>{{ view.name || t('openregister', 'Untitled View') }}</strong>
-									<span v-if="view.isDefault" class="viewBadge viewBadge--default">
-										{{ t('openregister', 'Default') }}
-									</span>
-									<span v-if="view.isPublic" class="viewBadge viewBadge--public">
-										{{ t('openregister', 'Public') }}
-									</span>
+										<!-- Load View (Magnify) -->
+										<NcButton
+											:type="isActiveView(view) ? 'primary' : 'secondary'"
+											:aria-label="t('openregister', 'Load view')"
+											@click="loadView(view)">
+											<template #icon>
+												<Magnify :size="20" />
+											</template>
+										</NcButton>
+
+										<!-- Edit View (Pencil) -->
+										<NcButton
+											type="secondary"
+											:aria-label="t('openregister', 'Edit view')"
+											@click="openEditDialog(view)">
+											<template #icon>
+												<Pencil :size="20" />
+											</template>
+										</NcButton>
+
+										<!-- Delete View -->
+										<NcButton
+											type="error"
+											:aria-label="t('openregister', 'Delete view')"
+											@click="confirmDeleteView(view)">
+											<template #icon>
+												<Delete :size="20" />
+											</template>
+										</NcButton>
+									</div>
 								</div>
-								<div class="viewRowActions">
-									<!-- Star/Favorite button -->
-									<NcButton
-										:type="isFavorited(view) ? 'primary' : 'secondary'"
-										:aria-label="isFavorited(view) ? t('openregister', 'Remove from favorites') : t('openregister', 'Add to favorites')"
-										@click="toggleFavorite(view)">
-										<template #icon>
-											<Star v-if="isFavorited(view)" :size="20" />
-											<StarOutline v-else :size="20" />
-										</template>
-									</NcButton>
-
-									<!-- Load View (Magnify) -->
-									<NcButton
-										:type="isActiveView(view) ? 'primary' : 'secondary'"
-										:aria-label="t('openregister', 'Load view')"
-										@click="loadView(view)">
-										<template #icon>
-											<Magnify :size="20" />
-										</template>
-									</NcButton>
-
-									<!-- Edit View (Pencil) -->
-									<NcButton
-										type="secondary"
-										:aria-label="t('openregister', 'Edit view')"
-										@click="openEditDialog(view)">
-										<template #icon>
-											<Pencil :size="20" />
-										</template>
-									</NcButton>
-
-									<!-- Delete View -->
-									<NcButton
-										type="error"
-										:aria-label="t('openregister', 'Delete view')"
-										@click="confirmDeleteView(view)">
-										<template #icon>
-											<Delete :size="20" />
-										</template>
-									</NcButton>
-								</div>
-							</div>
-							<p v-if="view.description" class="viewRowDescription">
-								{{ view.description }}
-							</p>
-							<p v-else class="viewRowDescription viewRowDescription--empty">
-								{{ t('openregister', 'No description provided') }}
-							</p>
-						</div>
-					</div>
-				</div>
-			</NcAppSidebarTab>
-
-			<!-- Columns Tab -->
-			<NcAppSidebarTab
-				id="columns-tab"
-				:name="t('openregister', 'Columns')"
-				:order="3">
-				<template #icon>
-					<FormatColumns :size="20" />
-				</template>
-
-				<div class="columnsSection">
-					<h3>{{ t('openregister', 'Column Visibility') }}</h3>
-					<p class="columnsDescription">
-						{{ t('openregister', 'Select which columns to display in the table') }}
-					</p>
-
-					<!-- Schema Properties Sections -->
-					<div v-if="selectedSchemasWithProperties.length > 0">
-						<div v-for="schemaData in selectedSchemasWithProperties" :key="`schema_${schemaData.id}`" class="columnGroup collapsible">
-							<div class="columnGroupHeader" @click="toggleSchemaGroup(schemaData.id)">
-								<ChevronDown v-if="expandedSchemas[schemaData.id]" :size="20" />
-								<ChevronRight v-else :size="20" />
-								<h4>{{ schemaData.title }}</h4>
-							</div>
-							<div v-if="expandedSchemas[schemaData.id]" class="columnGroupContent">
-								<NcCheckboxRadioSwitch
-									v-for="(property, propertyName) in schemaData.properties"
-									:key="`schema_${schemaData.id}_prop_${propertyName}`"
-									:checked="objectStore.columnFilters[`schema_${schemaData.id}_prop_${propertyName}`]"
-									@update:checked="(status) => objectStore.updateColumnFilter(`schema_${schemaData.id}_prop_${propertyName}`, status)">
-									{{ property.title || property.label || propertyName }}
-								</NcCheckboxRadioSwitch>
+								<p v-if="view.description" class="viewRowDescription">
+									{{ view.description }}
+								</p>
+								<p v-else class="viewRowDescription viewRowDescription--empty">
+									{{ t('openregister', 'No description provided') }}
+								</p>
 							</div>
 						</div>
 					</div>
-
-					<NcNoteCard v-else type="info">
-						{{ t('openregister', 'No properties available. Select a schema to view properties.') }}
-					</NcNoteCard>
-
-					<!-- Metadata Section (Collapsible) -->
-					<div class="columnGroup collapsible">
-						<div class="columnGroupHeader" @click="metadataExpanded = !metadataExpanded">
-							<ChevronDown v-if="metadataExpanded" :size="20" />
-							<ChevronRight v-else :size="20" />
-							<h4>{{ t('openregister', 'Metadata') }}</h4>
-						</div>
-						<div v-if="metadataExpanded" class="columnGroupContent">
-							<NcCheckboxRadioSwitch
-								v-for="meta in metadataColumns"
-								:key="`meta_${meta.id}`"
-								:checked="objectStore.columnFilters[`meta_${meta.id}`]"
-								@update:checked="(status) => objectStore.updateColumnFilter(`meta_${meta.id}`, status)">
-								{{ meta.label }}
-							</NcCheckboxRadioSwitch>
-						</div>
-					</div>
-				</div>
-			</NcAppSidebarTab>
-		</NcAppSidebar>
+				</NcAppSidebarTab>
+			</template>
+		</CnIndexSidebar>
 
 		<!-- Edit View Modal -->
 		<EditView
@@ -538,13 +411,14 @@ import { navigationStore, objectStore, registerStore, schemaStore, viewsStore } 
 			v-if="showDeleteDialog"
 			:view="viewToDelete"
 			@close="handleDeleteClose" />
-	</div>
+	</Fragment>
 </template>
 
 <script>
-import { NcAppSidebar, NcAppSidebarTab, NcSelect, NcNoteCard, NcTextField, NcButton, NcLoadingIcon, NcCheckboxRadioSwitch } from '@nextcloud/vue'
+import { navigationStore, objectStore, registerStore, schemaStore, viewsStore } from '../../store/store.js'
+import { NcAppSidebarTab, NcSelect, NcNoteCard, NcTextField, NcButton, NcLoadingIcon } from '@nextcloud/vue'
+import { CnIndexSidebar } from '@conduction/nextcloud-vue'
 import Magnify from 'vue-material-design-icons/Magnify.vue'
-import Close from 'vue-material-design-icons/Close.vue'
 import FilterIcon from 'vue-material-design-icons/Filter.vue'
 import ContentSaveOutline from 'vue-material-design-icons/ContentSaveOutline.vue'
 import Delete from 'vue-material-design-icons/Delete.vue'
@@ -552,9 +426,6 @@ import ViewDashboardOutline from 'vue-material-design-icons/ViewDashboardOutline
 import Star from 'vue-material-design-icons/Star.vue'
 import StarOutline from 'vue-material-design-icons/StarOutline.vue'
 import Pencil from 'vue-material-design-icons/Pencil.vue'
-import FormatColumns from 'vue-material-design-icons/FormatColumns.vue'
-import ChevronDown from 'vue-material-design-icons/ChevronDown.vue'
-import ChevronRight from 'vue-material-design-icons/ChevronRight.vue'
 import CogOutline from 'vue-material-design-icons/CogOutline.vue'
 import { translate as t } from '@nextcloud/l10n'
 import { generateUrl } from '@nextcloud/router'
@@ -564,16 +435,14 @@ import DeleteView from '../../modals/view/DeleteView.vue'
 export default {
 	name: 'SearchSideBar',
 	components: {
-		NcAppSidebar,
+		CnIndexSidebar,
 		NcAppSidebarTab,
 		NcSelect,
 		NcNoteCard,
 		NcTextField,
 		NcButton,
 		NcLoadingIcon,
-		NcCheckboxRadioSwitch,
 		Magnify,
-		Close,
 		FilterIcon,
 		ContentSaveOutline,
 		Delete,
@@ -581,15 +450,17 @@ export default {
 		Star,
 		StarOutline,
 		Pencil,
-		FormatColumns,
-		ChevronDown,
-		ChevronRight,
 		CogOutline,
 		EditView,
 		DeleteView,
 	},
 	data() {
 		return {
+			navigationStore,
+			objectStore,
+			registerStore,
+			schemaStore,
+			viewsStore,
 			activeTab: 'search-tab', // Active tab tracker
 			registerLoading: false,
 			schemaLoading: false,
@@ -607,7 +478,6 @@ export default {
 			enabledFacets: {}, // Which facets user has enabled
 			facetsLoading: false, // Stage 1 loading
 			facetDataLoading: false, // Stage 2 loading
-			selectedSource: 'auto', // 'auto', 'database', 'index'
 			// View management
 			viewSearchQuery: '', // Search query for filtering views
 			showSaveForm: false, // Show inline save form
@@ -629,6 +499,10 @@ export default {
 		}
 	},
 	computed: {
+		/** Search string for CnIndexSidebar; synced to store and used for fetch. */
+		searchValueForSidebar() {
+			return objectStore.searchParams.search || ''
+		},
 		registerOptions() {
 			return {
 				options: registerStore.registerList.map(register => ({
@@ -727,32 +601,6 @@ export default {
 		searchPlaceholder() {
 			return this.searchTerms.length > 0 ? 'Add more search terms...' : 'Type to search...'
 		},
-		sourceOptions() {
-			return [
-				{
-					value: 'auto',
-					label: '🤖 Auto (Intelligent)',
-					description: 'Automatically chooses the best data source',
-				},
-				{
-					value: 'index',
-					label: '🔍 SOLR Index',
-					description: 'Fast search with advanced features, field weighting, and faceting',
-				},
-				{
-					value: 'database',
-					label: '💾 Database',
-					description: 'Direct database queries (slower but always available)',
-				},
-			]
-		},
-		selectedSourceValue() {
-			const source = this.sourceOptions.find(option => option.value === this.selectedSource)
-			return source || this.sourceOptions[0]
-		},
-		isDatabaseSource() {
-			return this.selectedSource === 'database'
-		},
 		hasEnabledFacets() {
 			return Object.values(this.enabledFacets).some(enabled => enabled)
 		},
@@ -843,7 +691,7 @@ export default {
 		},
 	},
 	mounted() {
-		objectStore.initializeColumnFilters()
+		// objectStore.initializeColumnFilters()
 		this.registerLoading = true
 		this.schemaLoading = true
 
@@ -883,6 +731,35 @@ export default {
 	},
 	methods: {
 		t,
+		/**
+		 * CnIndexSidebar @search: update store, keep searchTerms in sync for URL, and refetch.
+		 * @param value
+		 */
+		onSearchInput(value) {
+			const search = value || ''
+			objectStore.updateSearchParams({ search })
+			this.searchTerms = search ? search.trim().split(/\s+/).filter(Boolean) : []
+			objectStore.refetchSearchCollection()
+		},
+		/**
+		 * CnIndexSidebar @filter-change: update store filters, keep facetFilters in sync, and refetch.
+		 * @param root0
+		 * @param root0.key
+		 * @param root0.values
+		 */
+		onFilterChange({ key, values }) {
+			const filters = { ...objectStore.searchParams.filters, [key]: values || [] }
+			objectStore.updateSearchParams({ filters })
+			this.facetFilters = { ...this.facetFilters, [key]: values || [] }
+			objectStore.refetchSearchCollection()
+		},
+		/**
+		 * CnIndexSidebar @columns-change: persist visible columns.
+		 * @param columns
+		 */
+		onColumnsChange(columns) {
+			objectStore.setSearchVisibleColumns(columns)
+		},
 		// Build query params from current sidebar state
 		buildQueryFromState() {
 			const query = {}
@@ -894,9 +771,6 @@ export default {
 			}
 			if (this.searchTerms && this.searchTerms.length > 0) {
 				query.q = this.searchTerms.join(',')
-			}
-			if (this.selectedSource && this.selectedSource !== 'auto') {
-				query.source = this.selectedSource
 			}
 			return query
 		},
@@ -924,11 +798,10 @@ export default {
 		// Apply URL query params into component/store state
 		applyQueryParamsFromRoute() {
 			if (this.$route.path !== '/tables') return
-			const { register, schema, q, source } = this.$route.query || {}
-			// Source
-			if (source) {
-				this.selectedSource = String(source)
-			}
+			const { register, schema, q } = this.$route.query || {}
+			// Clear selection when params absent so table empties
+			if (!register) this.selectedRegisters = []
+			if (!schema) this.selectedSchemas = []
 			// Search terms
 			if (typeof q === 'string') {
 				const terms = q.split(',').map(s => s.trim()).filter(Boolean)
@@ -954,9 +827,10 @@ export default {
 				const regOk = applyRegisters()
 				const schOk = applySchemas()
 				if (regOk && schOk) {
-					// If both selected, perform search
 					if (this.selectedRegisters.length > 0 && this.selectedSchemas.length > 0) {
 						this.performSearchWithFacets()
+					} else {
+						objectStore.clearSearchCollection()
 					}
 					return
 				}
@@ -994,72 +868,55 @@ export default {
 			})
 			this.selectedSchemas = this.selectedSchemas.filter(id => validSchemaIds.has(id))
 
-			// Clear object list when registers change
-			objectStore.setObjectList({
-				results: [],
-				total: 0,
-				page: 1,
-				pages: 0,
-				limit: 20,
-				offset: 0,
-			})
-
-			// Clear all facet data
-			this.resetFacets()
-			this.facetableFields = null
-			// Reflect change in URL
+			if (this.selectedRegisters.length === 0) {
+				objectStore.clearSearchCollection()
+				this.resetFacets()
+			}
+			// Only update URL; route watcher will trigger applyQueryParamsFromRoute -> performSearchWithFacets once
 			this.updateRouteQueryFromState()
 		},
 		async handleSchemaChange(options) {
 			// Handle multi-select - options is an array of values
-			console.info('Schema change - raw options:', options)
-
-			// NcSelect with reduce returns the reduced values directly
-			// For multi-select, it's an array of the reduced values (IDs)
 			if (!options || options.length === 0) {
 				this.selectedSchemas = []
 			} else if (Array.isArray(options)) {
-				// Options should already be an array of IDs thanks to reduce
 				this.selectedSchemas = options
 			} else {
-				// Fallback for single value
 				this.selectedSchemas = [options]
 			}
 
-			console.info('Selected schemas after processing:', this.selectedSchemas)
-			console.info('Can search?', this.canSearch, 'Registers:', this.selectedRegisters.length, 'Schemas:', this.selectedSchemas.length)
-
-			// Clear object list when schemas change
-			objectStore.setObjectList({
-				results: [],
-				total: 0,
-				page: 1,
-				pages: 0,
-				limit: 20,
-				offset: 0,
-			})
-
-			// Clear all facet data
-			this.resetFacets()
-			this.facetableFields = null
-
-			// If we have selections, perform search
-			if (this.canSearch) {
-				await this.performSearch()
+			if (this.selectedSchemas.length === 0) {
+				objectStore.clearSearchCollection()
+				this.resetFacets()
 			}
-
-			// Reflect change in URL
+			// Only update URL; route watcher will trigger applyQueryParamsFromRoute -> performSearchWithFacets once
 			this.updateRouteQueryFromState()
 		},
-		handleSourceChange(option) {
-			this.selectedSource = option.value
-
-			// If we have register and schema selected, refresh the search with new source
-			if (this.canSearch) {
-				this.performSearchWithFacets()
+		/** Push sidebar state into objectStore.searchParams and refetch type 'search'. Sets register/schema context for dialogs and discoverFacets. */
+		syncSearchParamsAndRefetch() {
+			const registerId = this.selectedRegisters.length > 0 ? this.selectedRegisters[0] : null
+			const schemaId = this.selectedSchemas.length > 0 ? this.selectedSchemas[0] : null
+			const search = this.searchTerms.length > 0 ? this.searchTerms.join(' ') : ''
+			const filters = { ...this.facetFilters }
+			if (registerId) {
+				const reg = registerStore.registerList.find((r) => r.id === registerId)
+				if (reg) registerStore.setRegisterItem(reg)
+			} else {
+				registerStore.setRegisterItem(null)
 			}
-			// Reflect change in URL
-			this.updateRouteQueryFromState()
+			if (schemaId) {
+				const schema = schemaStore.schemaList.find((s) => s.id === schemaId)
+				if (schema) schemaStore.setSchemaItem(schema)
+			} else {
+				schemaStore.setSchemaItem(null)
+			}
+			objectStore.setSearchParams({
+				register: registerId,
+				schema: schemaId,
+				search,
+				filters,
+			})
+			objectStore.refetchSearchCollection()
 		},
 		handleSearchInput() {
 			// Parse search terms from input (support comma and space separation)
@@ -1139,44 +996,17 @@ export default {
 			this.updateRouteQueryFromState()
 		},
 
-		// Complete Faceting: Load everything using _facets=extend
+		/** Load facet options for type 'search' via _facets=extend; facet data then comes from objectStore.searchFacets. */
 		async discoverFacets() {
-			if (!registerStore.registerItem || !schemaStore.schemaItem) return
-
+			if (!objectStore.searchParams.register || !objectStore.searchParams.schema) return
 			try {
 				this.facetsLoading = true
 				this.facetableFields = null
-				this.facetData = null
-
-				// Use _facets=extend to get complete faceting data in one call
-				await objectStore.refreshObjectList({
-					register: registerStore.registerItem.id,
-					schema: schemaStore.schemaItem.id,
-					_facets: 'extend',
-					_limit: 0, // We only want facet data, not objects
-				})
-
-				// Extract facetable fields (for UI structure)
-				this.facetableFields = objectStore.facets?.facetable || {}
-
-				// Extract extended facet data (with counts and options)
-				this.facetData = objectStore.facets?.extended || {}
-
-				// Auto-enable all facets since we already have the data
-				this.enabledFacets = {}
-				Object.keys(this.facetableFields['@self'] || {}).forEach(field => {
-					this.enabledFacets[`@self.${field}`] = true
-				})
-				Object.keys(this.facetableFields.object_fields || {}).forEach(field => {
-					this.enabledFacets[field] = true
-				})
-
-				this.logger?.debug('Loaded complete faceting data', {
-					metadataFields: Object.keys(this.facetableFields['@self'] || {}).length,
-					objectFields: Object.keys(this.facetableFields.object_fields || {}).length,
-					facetDataLoaded: Object.keys(this.facetData).length > 0,
-				})
-
+				await objectStore.refetchSearchCollection({ _facets: 'extend', _limit: 0 })
+				this.facetData = objectStore.searchFacets || null
+				this.facetableFields = objectStore.searchSchema?.properties
+					? { object_fields: objectStore.searchSchema.properties }
+					: {}
 			} catch (error) {
 				console.error('Error loading complete faceting data:', error)
 				this.facetableFields = null
@@ -1187,7 +1017,7 @@ export default {
 		},
 
 		// Toggle individual facet on/off
-		toggleFacet(fieldName, fieldInfo) {
+		toggleFacet(fieldName, _fieldInfo) {
 			// When toggling facet, clear any existing data for that field
 			if (this.enabledFacets[fieldName]) {
 				// Facet was enabled, now being disabled
@@ -1232,52 +1062,26 @@ export default {
 			return { _facets: config }
 		},
 
-		// Reset all facets
+		/** Reset all facet/filter state (local and store) so CnIndexSidebar and Advanced Filters UI are cleared. */
 		resetFacets() {
 			this.enabledFacets = {}
 			this.facetFilters = {}
 			this.facetData = null
 			this.facetDataLoading = false
+			objectStore.updateSearchParams({ filters: {} })
+			if (this.canSearch) {
+				objectStore.refetchSearchCollection()
+			}
 		},
 
 		async performSearchWithFacets() {
-			// Perform search with facet configuration to get both results and facet data
 			if (!this.canSearch) return
-
 			try {
 				this.searchLoading = true
-
-				// Apply current filters and search terms to objectStore
-				this.applyFiltersToObjectStore()
-
-				// Build search parameters for multi-register/schema search
-				const searchParams = {
-					includeFacets: true, // Always include facets discovery for search results
-				}
-
-				// Add register and schema arrays as query parameters
-				if (this.selectedRegisters.length > 0) {
-					searchParams.register = this.selectedRegisters
-				}
-				if (this.selectedSchemas.length > 0) {
-					searchParams.schema = this.selectedSchemas
-				}
-
-				// Add source parameter
-				if (this.selectedSource && this.selectedSource !== 'auto') {
-					searchParams._source = this.selectedSource
-				}
-
-				// Perform search using generic objects endpoint
-				await objectStore.refreshObjectList(searchParams)
-
-				// Get the facet data from the objectStore
-				// The API response has facets nested under facets.facets
-				this.facetData = objectStore.facets?.facets || {}
-
+				this.syncSearchParamsAndRefetch()
+				// Sync store facets to local facetData for custom Advanced Filters UI
+				this.facetData = objectStore.searchFacets || null
 			} catch (error) {
-				// Error performing search with facets - set to null to handle gracefully
-				this.facetData = null
 				console.error('Error performing search with facets:', error)
 			} finally {
 				this.searchLoading = false
@@ -1296,9 +1100,15 @@ export default {
 		},
 
 		getFacetOptions(facet) {
-			// Handle different facet data structures from _facets=extend
+			// CnIndexSidebar / package store format: { values: [{ value, count }] }
+			if (facet?.values?.length) {
+				return facet.values.map((v) => ({
+					value: v.value,
+					label: `${v.value} (${v.count ?? 0})`,
+				}))
+			}
+			// Legacy _facets=extend format: facet.data with type and buckets
 			if (!facet || !facet.data) return []
-
 			const facetData = facet.data
 
 			if (facetData.type === 'terms') {
@@ -1410,11 +1220,6 @@ export default {
 				this.selectedSchemas = config.schemas
 			}
 
-			// Apply source (database/index/auto)
-			if (config.source) {
-				this.selectedSource = config.source
-			}
-
 			// Apply search terms (default filters)
 			if (config.searchTerms && Array.isArray(config.searchTerms)) {
 				this.searchTerms = config.searchTerms
@@ -1453,7 +1258,6 @@ export default {
 						// Query parameters only
 						registers: this.selectedRegisters,
 						schemas: this.selectedSchemas,
-						source: this.selectedSource,
 						searchTerms: this.searchTerms,
 						facetFilters: this.facetFilters,
 						enabledFacets: this.enabledFacets,
@@ -1507,7 +1311,6 @@ export default {
 						// Query parameters only
 						registers: this.selectedRegisters,
 						schemas: this.selectedSchemas,
-						source: this.selectedSource,
 						searchTerms: this.searchTerms,
 						facetFilters: this.facetFilters,
 						enabledFacets: this.enabledFacets,
@@ -1668,35 +1471,19 @@ export default {
 			this.applyFacetFilters()
 		},
 
+		/** Sync facet filters into search params (used before refetch when custom facet UI changes). */
 		applyFiltersToObjectStore() {
-			// Convert facet filters to object store activeFilters format
 			const activeFilters = {}
-
-			// Add facet filters
 			Object.entries(this.facetFilters).forEach(([field, values]) => {
 				if (values && values.length > 0) {
-					const filterValues = values.map(option => option.value || option)
+					const filterValues = values.map((option) => (option && option.value !== undefined ? option.value : option))
 					activeFilters[field] = filterValues
 				}
 			})
-
-			// Add search terms and source selection to regular filters
-			const filters = {}
-			if (this.searchTerms.length > 0) {
-				filters._search = this.searchTerms.join(' ')
-			} else {
-				// Ensure previously set _search is cleared when no terms remain
-				filters._search = ''
-			}
-
-			// Add source selection (only if not 'auto')
-			if (this.selectedSource && this.selectedSource !== 'auto') {
-				filters._source = this.selectedSource
-			}
-
-			// Apply filters to object store using the existing activeFilters system
-			objectStore.setActiveFilters(activeFilters)
-			objectStore.setFilters(filters)
+			objectStore.updateSearchParams({
+				search: this.searchTerms.length > 0 ? this.searchTerms.join(' ') : '',
+				filters: activeFilters,
+			})
 		},
 
 		async applyFacetFilters() {
@@ -1717,6 +1504,7 @@ export default {
 <style lang="scss" scoped>
 .section {
 	padding: 16px;
+	margin-bottom: 0;
 }
 
 .sectionTitle {
@@ -2165,7 +1953,7 @@ export default {
 	gap: 8px;
 }
 
-.facet-checkbox input[type="checkbox"] {
+.facet-checkbox input[type='checkbox'] {
 	margin-top: 2px;
 	flex-shrink: 0;
 }

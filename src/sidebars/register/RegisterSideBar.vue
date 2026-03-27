@@ -1,170 +1,201 @@
 <script setup>
-import { registerStore, dashboardStore, navigationStore } from '../../store/store.js'
+import { translate as t, translatePlural as n } from '@nextcloud/l10n'
+import { registerStore, dashboardStore, navigationStore, schemaStore } from '../../store/store.js'
 </script>
 
 <template>
-	<NcAppSidebar
-		v-if="register"
-		ref="sidebar"
-		v-model="activeTab"
-		:name="register.title"
-		:subtitle="register.description"
-		subname="Register Details"
-		:open="navigationStore.sidebarState.register"
-		@update:open="(e) => {
-			navigationStore.setSidebarState('register', e)
-		}">
-		<template #secondary-actions>
-			<NcButton @click="navigationStore.setModal('editRegister')">
-				<template #icon>
-					<Pencil :size="20" />
-				</template>
-				{{ t('openregister', 'Edit Register') }}
-			</NcButton>
-			<NcButton @click="calculateSizes">
-				<template #icon>
-					<Calculator :size="20" />
-				</template>
-				{{ t('openregister', 'Calculate Sizes') }}
-			</NcButton>
-			<NcButton @click="downloadOas">
-				<template #icon>
-					<Download :size="20" />
-				</template>
-				{{ t('openregister', 'Download API Spec') }}
-			</NcButton>
-			<NcButton @click="viewOasDoc">
-				<template #icon>
-					<ApiIcon :size="20" />
-				</template>
-				{{ t('openregister', 'View API Docs') }}
-			</NcButton>
-		</template>
-
-		<NcAppSidebarTab id="stats-tab" name="Statistics" :order="1">
-			<template #icon>
-				<ChartBar :size="20" />
+	<Fragment>
+		<NcAppSidebar
+			v-if="register"
+			ref="sidebar"
+			v-model="activeTab"
+			:name="register.title"
+			:subtitle="register.description"
+			subname="Register Details"
+			:open="navigationStore.sidebarState.register"
+			@update:open="(e) => {
+				navigationStore.setSidebarState('register', e)
+			}">
+			<template #secondary-actions>
+				<NcActionButton @click="showEditDialog = true">
+					<template #icon>
+						<Pencil :size="20" />
+					</template>
+					{{ t('openregister', 'Edit Register') }}
+				</NcActionButton>
+				<NcActionButton @click="calculateSizes">
+					<template #icon>
+						<Calculator :size="20" />
+					</template>
+					{{ t('openregister', 'Calculate Sizes') }}
+				</NcActionButton>
+				<NcActionButton @click="downloadOas">
+					<template #icon>
+						<Download :size="20" />
+					</template>
+					{{ t('openregister', 'Download API Spec') }}
+				</NcActionButton>
+				<NcActionButton @click="viewOasDoc">
+					<template #icon>
+						<ApiIcon :size="20" />
+					</template>
+					{{ t('openregister', 'View API Docs') }}
+				</NcActionButton>
 			</template>
 
-			<div class="section">
-				<div class="sectionTitle">
-					{{ t('openregister', 'Statistics') }}
-				</div>
-				<div class="statsContainer">
-					<table class="statisticsTable">
-						<tbody>
-							<tr>
-								<td>{{ t('openregister', 'Objects') }}</td>
-								<td>{{ register.stats?.objects?.total || 0 }}</td>
-								<td>{{ formatBytes(register.stats?.objects?.size || 0) }}</td>
-							</tr>
-							<tr class="subRow">
-								<td class="indented">
-									{{ t('openregister', 'Invalid') }}
-								</td>
-								<td>{{ register.stats?.objects?.invalid || 0 }}</td>
-								<td>-</td>
-							</tr>
-							<tr class="subRow">
-								<td class="indented">
-									{{ t('openregister', 'Deleted') }}
-								</td>
-								<td>{{ register.stats?.objects?.deleted || 0 }}</td>
-								<td>-</td>
-							</tr>
-							<tr class="subRow">
-								<td class="indented">
-									{{ t('openregister', 'Locked') }}
-								</td>
-								<td>{{ register.stats?.objects?.locked || 0 }}</td>
-								<td>-</td>
-							</tr>
-							<tr class="subRow">
-								<td class="indented">
-									{{ t('openregister', 'Published') }}
-								</td>
-								<td>{{ register.stats?.objects?.published || 0 }}</td>
-								<td>-</td>
-							</tr>
-							<tr>
-								<td>{{ t('openregister', 'Logs') }}</td>
-								<td>{{ register.stats?.logs?.total || 0 }}</td>
-								<td>{{ formatBytes(register.stats?.logs?.size || 0) }}</td>
-							</tr>
-							<tr>
-								<td>{{ t('openregister', 'Files') }}</td>
-								<td>{{ register.stats?.files?.total || 0 }}</td>
-								<td>{{ formatBytes(register.stats?.files?.size || 0) }}</td>
-							</tr>
-							<tr>
-								<td>{{ t('openregister', 'Schemas') }}</td>
-								<td>{{ register.schemas?.length || 0 }}</td>
-								<td>-</td>
-							</tr>
-						</tbody>
-					</table>
-				</div>
-			</div>
-		</NcAppSidebarTab>
+			<NcAppSidebarTab id="stats-tab" name="Statistics" :order="1">
+				<template #icon>
+					<ChartBar :size="20" />
+				</template>
 
-		<NcAppSidebarTab id="schemas-tab" name="Schemas" :order="2">
-			<template #icon>
-				<FileCodeOutline :size="20" />
-			</template>
-
-			<div class="section">
-				<div class="sectionTitle">
-					{{ t('openregister', 'Schemas') }}
-				</div>
-				<div v-if="!register.schemas?.length" class="emptyContainer">
-					<NcEmptyContent
-						:title="t('openregister', 'No schemas found')"
-						icon="icon-folder">
-						<template #action>
-							<NcButton @click="navigationStore.setModal('editRegister')">
-								{{ t('openregister', 'Add Schema') }}
-							</NcButton>
-						</template>
-					</NcEmptyContent>
-				</div>
-				<div v-else class="schemaList">
-					<div v-for="schema in register.schemas" :key="schema.id" class="schemaItem">
-						<div class="schemaHeader">
-							<h3>
-								<FileCodeOutline :size="20" />
-								{{ schema.title }}
-							</h3>
-							<NcActions :primary="true" menu-name="Schema Actions">
-								<template #icon>
-									<DotsHorizontal :size="20" />
-								</template>
-								<NcActionButton close-after-click @click="editSchema(schema)">
-									<template #icon>
-										<Pencil :size="20" />
-									</template>
-									Edit Schema
-								</NcActionButton>
-							</NcActions>
-						</div>
-						<div class="schemaStats">
-							<div class="statItem">
-								<span class="statLabel">{{ t('openregister', 'Total Objects') }}</span>
-								<span class="statValue">{{ schema.stats?.objects?.total || 0 }}</span>
-							</div>
-							<div class="statItem">
-								<span class="statLabel">{{ t('openregister', 'Total Size') }}</span>
-								<span class="statValue">{{ formatBytes(schema.stats?.objects?.size || 0) }}</span>
-							</div>
-						</div>
+				<div class="section">
+					<div class="sectionTitle">
+						{{ t('openregister', 'Statistics') }}
+					</div>
+					<div class="statsStack">
+						<CnStatsBlock
+							:title="t('openregister', 'Objects')"
+							:count="register.stats?.objects?.total || 0"
+							:count-label="t('openregister', 'object{plural}', {
+								plural: register.stats?.objects?.total !== 1 ? 's' : ''
+							})"
+							:icon="PackageVariantClosed"
+							variant="primary"
+							horizontal
+							show-zero-count
+							:breakdown="objectsBreakdown" />
+						<CnStatsBlock
+							:title="t('openregister', 'Logs')"
+							:count="register.stats?.logs?.total || 0"
+							:count-label="t('openregister', 'log{plural}', {
+								plural: register.stats?.logs?.total !== 1 ? 's' : ''
+							})"
+							:icon="TextBoxOutline"
+							horizontal
+							show-zero-count
+							:breakdown="sizeBreakdown(register.stats?.logs?.size)" />
+						<CnStatsBlock
+							:title="t('openregister', 'Files')"
+							:count="register.stats?.files?.total || 0"
+							:count-label="t('openregister', 'file{plural}', {
+								plural: register.stats?.files?.total !== 1 ? 's' : ''
+							})"
+							:icon="FileDocumentOutline"
+							horizontal
+							show-zero-count
+							:breakdown="sizeBreakdown(register.stats?.files?.size)" />
+						<CnStatsBlock
+							:title="t('openregister', 'Schemas')"
+							:count="register.schemas?.length || 0"
+							:count-label="t('openregister', 'schema{plural}', {
+								plural: register.schemas?.length !== 1 ? 's' : ''
+							})"
+							:icon="FileCodeOutline"
+							horizontal
+							show-zero-count />
 					</div>
 				</div>
-			</div>
-		</NcAppSidebarTab>
-	</NcAppSidebar>
+			</NcAppSidebarTab>
+
+			<NcAppSidebarTab id="schemas-tab" name="Schemas" :order="2">
+				<template #icon>
+					<FileCodeOutline :size="20" />
+				</template>
+
+				<div class="section">
+					<div class="sectionTitle">
+						{{ t('openregister', 'Schemas') }}
+					</div>
+					<div v-if="!register.schemas?.length" class="emptyContainer">
+						<NcEmptyContent
+							:title="t('openregister', 'No schemas found')"
+							icon="icon-folder">
+							<template #action>
+								<NcButton @click="showEditDialog = true">
+									{{ t('openregister', 'Add Schema') }}
+								</NcButton>
+							</template>
+						</NcEmptyContent>
+					</div>
+					<div v-else class="schemaList">
+						<CnItemCard
+							v-for="schema in register.schemas"
+							:key="schema.id"
+							:title="schema.title"
+							:icon="FileCodeOutline">
+							<template #actions>
+								<NcActions :primary="true" menu-name="Schema Actions">
+									<template #icon>
+										<DotsHorizontal :size="20" />
+									</template>
+									<NcActionButton close-after-click @click="editSchema(schema)">
+										<template #icon>
+											<Pencil :size="20" />
+										</template>
+										Edit Schema
+									</NcActionButton>
+								</NcActions>
+							</template>
+							<CnKpiGrid :columns="2">
+								<CnStatsBlock
+									:title="t('openregister', 'Total Objects')"
+									:count="schema.stats?.objects?.total || 0"
+									show-zero-count />
+								<CnStatsBlock
+									:title="t('openregister', 'Total Size')"
+									:count="0"
+									show-zero-count
+									:breakdown="sizeBreakdown(schema.stats?.objects?.size)" />
+							</CnKpiGrid>
+						</CnItemCard>
+					</div>
+				</div>
+			</NcAppSidebarTab>
+		</NcAppSidebar>
+
+		<CnFormDialog
+			v-if="showEditDialog"
+			ref="formDialog"
+			:schema="registerSchema"
+			:item="register"
+			:dialog-title="t('openregister', 'Edit Register')"
+			@confirm="onSaveRegister"
+			@close="showEditDialog = false">
+			<template #form="{ formData, errors, updateField }">
+				<div class="formContainer">
+					<NcTextField
+						:label="t('openregister', 'Title') + ' *'"
+						:value="formData.title || ''"
+						:error="!!errors.title"
+						:helper-text="errors.title"
+						@update:value="v => updateField('title', v)" />
+					<NcTextField
+						:label="t('openregister', 'Slug') + ' *'"
+						:value="formData.slug || ''"
+						:error="!!errors.slug"
+						:helper-text="errors.slug"
+						@update:value="v => updateField('slug', v)" />
+					<NcTextArea
+						:label="t('openregister', 'Description')"
+						:value="formData.description || ''"
+						@update:value="v => updateField('description', v)" />
+					<NcSelect
+						input-label="Schemas"
+						:options="schemaSelectOptions"
+						:value="getSchemaSelectValue(formData.schemas)"
+						:multiple="true"
+						:close-on-select="false"
+						:loading="schemasLoading"
+						@input="vals => updateField('schemas', vals)" />
+				</div>
+			</template>
+		</CnFormDialog>
+	</Fragment>
 </template>
 
 <script>
-import { NcAppSidebar, NcAppSidebarTab, NcButton, NcEmptyContent, NcActions, NcActionButton } from '@nextcloud/vue'
+import { NcAppSidebar, NcAppSidebarTab, NcButton, NcEmptyContent, NcActions, NcActionButton, NcTextField, NcTextArea, NcSelect } from '@nextcloud/vue'
+import { CnStatsBlock, CnKpiGrid, CnItemCard, CnFormDialog } from '@conduction/nextcloud-vue'
 import { showError } from '@nextcloud/dialogs'
 import axios from '@nextcloud/axios'
 import ChartBar from 'vue-material-design-icons/ChartBar.vue'
@@ -174,6 +205,9 @@ import Calculator from 'vue-material-design-icons/Calculator.vue'
 import Download from 'vue-material-design-icons/Download.vue'
 import ApiIcon from 'vue-material-design-icons/Api.vue'
 import DotsHorizontal from 'vue-material-design-icons/DotsHorizontal.vue'
+import PackageVariantClosed from 'vue-material-design-icons/PackageVariantClosed.vue'
+import TextBoxOutline from 'vue-material-design-icons/TextBoxOutline.vue'
+import FileDocumentOutline from 'vue-material-design-icons/FileDocumentOutline.vue'
 import formatBytes from '../../services/formatBytes.js'
 
 export default {
@@ -185,6 +219,13 @@ export default {
 		NcEmptyContent,
 		NcActions,
 		NcActionButton,
+		NcTextField,
+		NcTextArea,
+		NcSelect,
+		CnStatsBlock,
+		CnKpiGrid,
+		CnItemCard,
+		CnFormDialog,
 		ChartBar,
 		FileCodeOutline,
 		Pencil,
@@ -192,6 +233,17 @@ export default {
 		Download,
 		ApiIcon,
 		DotsHorizontal,
+	},
+	data() {
+		return {
+			// Icon components for CnStatsBlock
+			PackageVariantClosed,
+			TextBoxOutline,
+			FileDocumentOutline,
+			showEditDialog: false,
+			schemaSelectOptions: [],
+			schemasLoading: false,
+		}
 	},
 	computed: {
 		register() {
@@ -207,8 +259,77 @@ export default {
 				registerStore.setActiveTab(value)
 			},
 		},
+		objectsBreakdown() {
+			const stats = this.register?.stats?.objects
+			const breakdown = {
+				size: formatBytes(stats.size),
+				invalid: stats.invalid || 0,
+				deleted: stats.deleted || 0,
+				locked: stats.locked || 0,
+				published: stats.published || 0,
+			}
+			return breakdown
+		},
+		registerSchema() {
+			return {
+				title: t('openregister', 'Register'),
+				properties: {
+					title: { type: 'string', title: t('openregister', 'Title'), required: true, minLength: 1, order: 1 },
+					slug: { type: 'string', title: t('openregister', 'Slug'), required: true, minLength: 1, order: 2 },
+					description: { type: 'string', title: t('openregister', 'Description'), order: 3 },
+					schemas: { type: 'array', title: t('openregister', 'Schemas'), order: 4 },
+				},
+				required: ['title', 'slug'],
+			}
+		},
+	},
+	watch: {
+		showEditDialog(val) {
+			if (val) {
+				this.loadSchemaOptions()
+			}
+		},
 	},
 	methods: {
+		sizeBreakdown(size) {
+			if (!size) return null
+			return { size: formatBytes(size) }
+		},
+
+		async loadSchemaOptions() {
+			this.schemasLoading = true
+			try {
+				await schemaStore.refreshSchemaList()
+				this.schemaSelectOptions = schemaStore.schemaList.map(s => ({ id: s.id, label: s.title }))
+			} catch (error) {
+				console.error('Failed to load schemas:', error)
+			} finally {
+				this.schemasLoading = false
+			}
+		},
+
+		getSchemaSelectValue(schemas) {
+			if (!Array.isArray(schemas)) return []
+			return schemas.map(s => {
+				const id = typeof s === 'object' ? s.id : s
+				return this.schemaSelectOptions.find(o => String(o.id) === String(id))
+					|| { id, label: String(id) }
+			})
+		},
+
+		async onSaveRegister(formData) {
+			try {
+				await registerStore.saveRegister({
+					...formData,
+					schemas: (formData.schemas || []).map(s => typeof s === 'object' ? s.id : s),
+				})
+				this.$refs.formDialog.setResult({ success: true })
+				await dashboardStore.fetchRegisters()
+			} catch (error) {
+				this.$refs.formDialog.setResult({ error: error.message })
+			}
+		},
+
 		async calculateSizes() {
 			if (!this.register) return
 
@@ -276,89 +397,15 @@ export default {
 	margin: 0 0 12px 0;
 }
 
-.statsContainer {
-	padding: 0 16px;
-}
-
-.statisticsTable {
-	width: 100%;
-	border-collapse: collapse;
-	font-size: 0.9em;
-
-	td {
-		padding: 4px 8px;
-		border-bottom: 1px solid var(--color-border);
-
-		&:nth-child(2),
-		&:nth-child(3) {
-			text-align: right;
-		}
-	}
-
-	.subRow td {
-		color: var(--color-text-maxcontrast);
-	}
-
-	.indented {
-		padding-left: 24px;
-	}
-
-	tr:last-child td {
-		border-bottom: none;
-	}
+.statsStack {
+	display: flex;
+	flex-direction: column;
+	gap: 12px;
+	padding: 0 8px;
 }
 
 .schemaList {
 	padding: 0 16px;
-}
-
-.schemaItem {
-	background: var(--color-main-background);
-	border: 1px solid var(--color-border);
-	border-radius: 8px;
-	margin-bottom: 12px;
-	padding: 12px;
-
-	&:last-child {
-		margin-bottom: 0;
-	}
-}
-
-.schemaHeader {
-	display: flex;
-	align-items: center;
-	justify-content: space-between;
-	margin-bottom: 8px;
-
-	h3 {
-		display: flex;
-		align-items: center;
-		gap: 8px;
-		margin: 0;
-		font-size: 1em;
-	}
-}
-
-.schemaStats {
-	display: grid;
-	grid-template-columns: repeat(2, 1fr);
-	gap: 8px;
-}
-
-.statItem {
-	display: flex;
-	flex-direction: column;
-	gap: 4px;
-}
-
-.statLabel {
-	color: var(--color-text-maxcontrast);
-	font-size: 0.9em;
-}
-
-.statValue {
-	font-size: 1.1em;
-	font-weight: 600;
 }
 
 .emptyContainer {

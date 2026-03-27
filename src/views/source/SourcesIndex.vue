@@ -1,4 +1,5 @@
 <script setup>
+import { translate as t, translatePlural as n } from '@nextcloud/l10n'
 import { sourceStore, navigationStore } from '../../store/store.js'
 </script>
 
@@ -330,7 +331,7 @@ export default {
 			this.pagination.page = 1
 			this.pagination.limit = pageSize
 		},
-		getSourceRegisterCount(sourceId) {
+		getSourceRegisterCount(_sourceId) {
 			// This would need to be implemented based on how registers are linked to sources
 			// For now, return a placeholder
 			return '-'

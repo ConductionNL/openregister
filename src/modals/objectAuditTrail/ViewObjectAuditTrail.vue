@@ -1,4 +1,5 @@
 <script setup>
+import { translate as t } from '@nextcloud/l10n'
 import { objectStore, navigationStore, schemaStore, registerStore } from '../../store/store.js'
 </script>
 
@@ -168,6 +169,7 @@ export default {
 	padding: 0 0 10px 0;
 	margin: 0 0 10px 0;
 }
+
 .audit-item > *:not(:last-child) {
 	margin-bottom: 1rem;
 }
@@ -210,6 +212,6 @@ export default {
 
 .audit-trail-linked-items-container p {
 	line-height: 2;
-    text-align: right;
+	text-align: right;
 }
 </style>

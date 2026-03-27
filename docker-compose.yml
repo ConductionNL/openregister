@@ -1,29 +1,119 @@
-version: "3.5"
 volumes:
   nextcloud:
   apps:
   db:
   config:
-  solr:
-  zookeeper:
   ollama:
   presidio-models:
+  n8n:
+  tgi-models:
+  openllm-models:
+  openllm-cache:
+  solr:
+  zookeeper:
+  elasticsearch:
+  open-webui:
+  harp-data:
+  openproject-pgdata:
+  openproject-assets:
+  xwiki-data:
+  exapp-n8n:
+  exapp-openwebui:
+  exapp-keycloak:
+  exapp-redis:
+  exapp-openklant:
+  exapp-openzaak:
+  exapp-opentalk:
+  exapp-valtimo:
+  exapp-livekit:
+  exapp-minio:
+  valtimo-data:
+  openzaak-data:
+  openklant-data:
+
+networks:
+  default:
+    name: openregister-network
 
 services:
+  # PostgreSQL Database (default)
+  # Start with: docker-compose up (default) OR docker-compose --profile postgres up
+  # Recommended for production use with vector search capabilities
   db:
-    image: mariadb:10.6
+    # Empty profiles means it starts by default unless another profile overrides it
+    image: pgvector/pgvector:pg16
     restart: always
-    command: --transaction-isolation=READ-COMMITTED --log-bin=binlog --binlog-format=ROW
+    container_name: openregister-postgres
+    volumes:
+      - db:/var/lib/postgresql/data
+      - ./docker/postgres/init-extensions.sql:/docker-entrypoint-initdb.d/01-init-extensions.sql:ro
+      - ./docker/postgres/init-exapps.sh:/docker-entrypoint-initdb.d/02-init-exapps.sh:ro
+    environment:
+      - POSTGRES_DB=nextcloud
+      - POSTGRES_USER=nextcloud
+      - POSTGRES_PASSWORD=!ChangeMe!
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U nextcloud -d nextcloud"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    command: >
+      postgres
+      -c shared_preload_libraries=pg_trgm,vector
+      -c max_connections=200
+      -c shared_buffers=256MB
+      -c effective_cache_size=1GB
+      -c maintenance_work_mem=64MB
+      -c checkpoint_completion_target=0.9
+      -c wal_buffers=16MB
+      -c default_statistics_target=100
+      -c random_page_cost=1.1
+      -c effective_io_concurrency=200
+      -c work_mem=4MB
+      -c min_wal_size=1GB
+      -c max_wal_size=4GB
+
+  # MariaDB Database (optional - for compatibility testing)
+  # Start with: docker-compose --profile mariadb up
+  # Note: Vector search features will not be available with MariaDB
+  db-mariadb:
+    profiles:
+      - mariadb
+    image: mariadb:11.2
+    restart: always
+    container_name: openregister-mariadb
     volumes:
       - db:/var/lib/mysql
     environment:
-      - MYSQL_ROOT_PASSWORD='!ChangeMe!'
-      - MYSQL_PASSWORD='!ChangeMe!'
+      - MYSQL_ROOT_PASSWORD=!ChangeMe!
       - MYSQL_DATABASE=nextcloud
       - MYSQL_USER=nextcloud
+      - MYSQL_PASSWORD=!ChangeMe!
+    ports:
+      - "3306:3306"
+    command: >
+      --transaction-isolation=READ-COMMITTED
+      --log-bin=binlog
+      --binlog-format=ROW
+      --innodb-file-per-table=1
+      --max-connections=200
+      --innodb-buffer-pool-size=256M
+      --innodb-log-file-size=64M
+      --character-set-server=utf8mb4
+      --collation-server=utf8mb4_unicode_ci
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
-  # ZooKeeper for SolrCloud coordination
+  # ZooKeeper for SolrCloud coordination (Optional - use --profile solr)
   zookeeper:
+    profiles:
+      - solr
+      - search
     image: zookeeper:3.8
     container_name: openregister-zookeeper
     restart: always
@@ -34,9 +124,20 @@ services:
       - zookeeper:/data
     ports:
       - "2181:2181"
+    healthcheck:
+      test: ["CMD-SHELL", "echo stat | nc localhost 2181"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
 
-  # SOLR in SolrCloud mode
+  # Solr in SolrCloud mode (Optional - use --profile solr)
+  # Traditional search engine with advanced features
+  # Access at: http://localhost:8983
+  # Note: PostgreSQL with pgvector+pg_trgm is now the recommended approach
   solr:
+    profiles:
+      - solr
+      - search
     image: solr:9-slim
     container_name: openregister-solr
     restart: always
@@ -53,12 +154,12 @@ services:
       - bash
       - -c
       - |
-        # Wait for ZooKeeper to be ready
+        # Wait for ZooKeeper to be ready.
         echo "Waiting for ZooKeeper..."
         while ! nc -z zookeeper 2181; do sleep 1; done
         echo "ZooKeeper is ready!"
-        
-        # Start SOLR in SolrCloud mode
+
+        # Start Solr in SolrCloud mode.
         solr-foreground -c -z zookeeper:2181
     healthcheck:
       test: ["CMD-SHELL", "curl -f http://localhost:8983/solr/admin/info/system || exit 1"]
@@ -66,11 +167,48 @@ services:
       timeout: 10s
       retries: 3
 
-  # Ollama for local LLM inference
-  # Provides local AI models for chat, RAG, and agent functionality
+  # Elasticsearch for alternative search backend (Optional - use --profile elasticsearch)
+  # Modern search and analytics engine
+  # Access at: http://localhost:9200
+  # Note: PostgreSQL with pgvector+pg_trgm is now the recommended approach
+  elasticsearch:
+    profiles:
+      - elasticsearch
+      - search
+    image: elasticsearch:8.11.3
+    container_name: openregister-elasticsearch
+    restart: always
+    ports:
+      - "9200:9200"
+      - "9300:9300"
+    volumes:
+      - elasticsearch:/usr/share/elasticsearch/data
+    environment:
+      - discovery.type=single-node
+      - xpack.security.enabled=false
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+      - cluster.name=openregister-cluster
+      - node.name=openregister-node-1
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+        reservations:
+          memory: 512M
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:9200/_cluster/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+  # Ollama for local LLM inference (Optional - use --profile ollama)
+  # Alternative to Hugging Face TGI for simpler model management
   # Access at: http://localhost:11434
   # Pull models: docker exec openregister-ollama ollama pull llama3.2
   ollama:
+    profiles:
+      - ollama
     image: ollama/ollama:latest
     container_name: openregister-ollama
     restart: always
@@ -105,18 +243,45 @@ services:
       retries: 3
       start_period: 60s
 
+  # OpenAnonymiser - Custom anonymisation service
+  # Built by mwest2020, provides PII detection and anonymisation
+  # Access at: http://localhost:5002
+  # Start with: docker compose --profile ai up
+  openanonymiser:
+    profiles:
+      - ai
+    image: mwest2020/openanonymiser:dev
+    container_name: openregister-openanonymiser
+    restart: always
+    ports:
+      - "5002:8080"
+    deploy:
+      resources:
+        limits:
+          memory: 2G
+        reservations:
+          memory: 512M
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8080/api/v1/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
   # Presidio Analyzer for PII detection and NER
   # Microsoft's open-source PII detection service (RECOMMENDED FOR PRODUCTION)
   # Access at: http://localhost:5001
   # Documentation: https://microsoft.github.io/presidio/
   presidio-analyzer:
+    profiles:
+      - ai
     image: mcr.microsoft.com/presidio-analyzer:latest
     container_name: openregister-presidio-analyzer
     restart: always
     ports:
-      - "5001:5001"
+      - "5001:3000"
     environment:
-      - GRPC_PORT=5001
+      - PORT=3000
       - LOG_LEVEL=INFO
       # Enable multi-language support
       - PRESIDIO_ANALYZER_LANGUAGES=en,nl,de,fr,es
@@ -127,11 +292,294 @@ services:
         reservations:
           memory: 512M
     healthcheck:
-      test: ["CMD-SHELL", "curl -f http://localhost:5001/health || exit 1"]
+      test: ["CMD-SHELL", "python3 -c \"import requests; requests.get('http://localhost:3000/health')\" || exit 1"]
       interval: 30s
       timeout: 10s
       retries: 3
       start_period: 30s
+
+  # n8n Workflow Automation (Standalone - use --profile standalone)
+  # NOTE: Use exapp-n8n instead for Nextcloud AppAPI integration
+  # Access at: http://localhost:5678
+  # Default credentials: admin / admin (change in production!)
+  # Documentation: https://docs.n8n.io
+  # MCP Integration: See website/docs/technical/n8n-mcp/setup.md
+  n8n:
+    profiles:
+      - standalone
+    image: n8nio/n8n:latest
+    container_name: openregister-n8n
+    restart: always
+    user: root
+    ports:
+      - "5678:5678"
+    volumes:
+      - n8n:/root/.n8n
+      - /var/run/docker.sock:/var/run/docker.sock
+      # Mount n8n-mcp configuration and data
+      - ./n8n-mcp:/usr/local/lib/n8n-mcp:ro
+    environment:
+      # Database configuration (PostgreSQL)
+      - DB_TYPE=postgresdb
+      - DB_POSTGRESDB_HOST=openregister-postgres
+      - DB_POSTGRESDB_PORT=5432
+      - DB_POSTGRESDB_DATABASE=n8n
+      - DB_POSTGRESDB_USER=nextcloud
+      - DB_POSTGRESDB_PASSWORD=!ChangeMe!
+      # Basic authentication
+      - N8N_BASIC_AUTH_ACTIVE=true
+      - N8N_BASIC_AUTH_USER=admin
+      - N8N_BASIC_AUTH_PASSWORD=admin
+      # Host configuration
+      - N8N_HOST=localhost
+      - N8N_PORT=5678
+      - N8N_PROTOCOL=http
+      - WEBHOOK_URL=http://localhost:5678/
+      # Timezone
+      - GENERIC_TIMEZONE=Europe/Amsterdam
+      - TZ=Europe/Amsterdam
+      # Execution configuration
+      - EXECUTIONS_PROCESS=main
+      - EXECUTIONS_DATA_SAVE_ON_ERROR=all
+      - EXECUTIONS_DATA_SAVE_ON_SUCCESS=all
+      - EXECUTIONS_DATA_SAVE_MANUAL_EXECUTIONS=true
+      # Workflow settings
+      - WORKFLOWS_DEFAULT_NAME=My Workflow
+      - N8N_DIAGNOSTICS_ENABLED=false
+      # API configuration
+      - N8N_API_KEYS_ENABLED=true
+    depends_on:
+      - db
+    healthcheck:
+      test: ["CMD-SHELL", "wget --spider -q http://localhost:5678/healthz || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+  # Hugging Face Text Generation Inference (TGI) with OpenAI-compatible API (Default)
+  # Primary LLM backend for chat, RAG, and agent functionality
+  # Access at: http://localhost:8081
+  # OpenAI-compatible API endpoint: http://localhost:8081/v1
+  # Documentation: https://huggingface.co/docs/text-generation-inference
+  tgi-llm:
+    profiles:
+      - ai
+    image: ghcr.io/huggingface/text-generation-inference:latest
+    container_name: openregister-tgi-llm
+    restart: always
+    ports:
+      - "8081:80"
+    volumes:
+      - tgi-models:/data
+    environment:
+      # Model configuration - Change to your preferred model
+      - MODEL_ID=mistralai/Mistral-7B-Instruct-v0.2
+      # Alternative models:
+      # - MODEL_ID=meta-llama/Llama-2-7b-chat-hf
+      # - MODEL_ID=codellama/CodeLlama-7b-Instruct-hf
+      # - MODEL_ID=teknium/OpenHermes-2.5-Mistral-7B
+
+      # Performance settings
+      - MAX_INPUT_LENGTH=4096
+      - MAX_TOTAL_TOKENS=8192
+      - MAX_BATCH_PREFILL_TOKENS=4096
+      - MAX_CONCURRENT_REQUESTS=128
+      - MAX_WAITING_TOKENS=20
+
+      # Quantization (reduce memory usage)
+      # - QUANTIZE=bitsandbytes-nf4
+
+      # Hugging Face token (required for gated models like Llama)
+      # Get token from: https://huggingface.co/settings/tokens
+      # - HUGGING_FACE_HUB_TOKEN=your_token_here
+
+      # Sharding for multi-GPU (if available)
+      # - NUM_SHARD=2
+    deploy:
+      resources:
+        limits:
+          memory: 16G
+        reservations:
+          memory: 8G
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+    shm_size: '2gb'
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:80/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 120s
+
+  # ByteDance Dolphin VLM for Document Parsing (Default)
+  # Vision-Language Model specialized for document text extraction, OCR, and layout analysis
+  # Access at: http://localhost:8083
+  # Endpoints: /parse (image), /parse_pdf (PDF), /info, /health
+  dolphin-vlm:
+    profiles:
+      - ai
+    build:
+      context: ./docker/dolphin
+      dockerfile: Dockerfile
+    container_name: openregister-dolphin-vlm
+    restart: always
+    ports:
+      - "8083:5000"
+    volumes:
+      - ./docker/dolphin/models:/app/models
+    environment:
+      - MODEL_PATH=/app/models
+      - LOG_LEVEL=INFO
+    deploy:
+      resources:
+        limits:
+          memory: 8G
+        reservations:
+          memory: 4G
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:5000/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 120s
+
+  # Open WebUI - Web interface for LLMs (Standalone - use --profile standalone)
+  # NOTE: Use exapp-openwebui instead for Nextcloud AppAPI integration
+  # Access at: http://localhost:3000
+  # Documentation: https://docs.openwebui.com
+  open-webui:
+    profiles:
+      - standalone
+    image: ghcr.io/open-webui/open-webui:main
+    container_name: openregister-open-webui
+    restart: always
+    ports:
+      - "3000:8080"
+    volumes:
+      - open-webui:/app/backend/data
+    environment:
+      # Connect to Hugging Face TGI (OpenAI-compatible API)
+      - OPENAI_API_BASE_URL=http://openregister-tgi-llm:80/v1
+      - OPENAI_API_KEY=not-needed
+      # Also connect to Ollama if running (optional)
+      - OLLAMA_BASE_URL=http://openregister-ollama:11434
+      # Disable signup for security (admin creates accounts)
+      - WEBUI_AUTH=true
+      - ENABLE_SIGNUP=true
+      # Default admin account (change in production!)
+      - WEBUI_SECRET_KEY=openregister-secret-key-change-me
+    depends_on:
+      - tgi-llm
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8080/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+  # Tilburg WOO UI - Public interface for WOO (Wet Open Overheid) documents
+  # Access at: http://localhost:3000
+  # Documentation: https://github.com/ConductionNL/tilburg-woo-ui
+  tilburg-woo-ui:
+    profiles:
+      - ui
+    build:
+      context: ../tilburg-woo-ui
+      dockerfile: Dockerfile.dev
+      target: development
+    container_name: openregister-tilburg-woo-ui
+    restart: always
+    ports:
+      - "3000:81"
+    volumes:
+      - ../tilburg-woo-ui/src:/app/src
+    environment:
+      - NGINX_ROOT_DIR=/app/public_html
+      - NGINX_NEXTCLOUD_UPSTREAM=http://nextcloud:80
+      - NGINX_TARGET_HOST=nextcloud
+      - SITE_TITLE=Softwarecatalogus
+    depends_on:
+      - nextcloud
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:81/ || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 120s
+    command:
+      - /bin/sh
+      - -c
+      - |
+        envsubst '$$NGINX_OPENCONNECTOR_UPSTREAM $$NGINX_NEXTCLOUD_UPSTREAM $$NGINX_NEXTCLOUD_DOMAIN $$NGINX_TARGET_HOST $$NGINX_ROOT_DIR' < /etc/nginx/nginx.conf.template > /etc/nginx/nginx.conf
+        nginx
+        node scripts/generate-runtime-config.js /app/public_html/runtime-config.js
+        NODE_ENV=development yarn build:web
+        echo "Initial build complete. Watching for changes..."
+        while true; do
+          inotifywait -r -e modify,create,delete --exclude '\.tmp' src/ public/ package.json
+          sleep 2
+          echo "Change detected, rebuilding..."
+          NODE_ENV=development yarn build:web
+          echo "Rebuild complete."
+        done
+
+  # OpenLLM Management Interface (Optional - use --profile llm-management)
+  # Web UI for managing and downloading language models
+  # Access at: http://localhost:3002
+  # Documentation: https://github.com/bentoml/OpenLLM
+  openllm:
+    profiles:
+      - llm-management
+    image: ghcr.io/bentoml/openllm:latest
+    container_name: openregister-openllm
+    restart: always
+    ports:
+      - "3002:3000"
+      - "8082:8082"
+    volumes:
+      - openllm-models:/models
+      - openllm-cache:/root/.cache
+    environment:
+      # Model configuration
+      - OPENLLM_MODEL=mistralai/Mistral-7B-Instruct-v0.2
+      - OPENLLM_BACKEND=vllm
+      - OPENLLM_PORT=3000
+      - OPENLLM_API_PORT=8082
+
+      # GPU configuration
+      - CUDA_VISIBLE_DEVICES=0
+
+      # Performance settings
+      - OPENLLM_MAX_MODEL_LEN=4096
+      - OPENLLM_GPU_MEMORY_UTILIZATION=0.9
+
+      # Hugging Face token
+      # - HUGGING_FACE_HUB_TOKEN=your_token_here
+    deploy:
+      resources:
+        limits:
+          memory: 16G
+        reservations:
+          memory: 8G
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+    shm_size: '2gb'
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:3000/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 180s
+    command: start mistralai/Mistral-7B-Instruct-v0.2 --backend vllm
 
   # init-ubuntu:
   #   image: ubuntu
@@ -140,6 +588,10 @@ services:
   #     - ./docker:/home/ubuntu/docker
   #     - .:/home/ubuntu/app
 
+  # Nextcloud Application Server (PostgreSQL - Default)
+  # Start with: docker-compose up  OR  docker-compose --profile postgres up
+  # Connects to PostgreSQL database
+  # NOTE: When using --profile mariadb, this service will NOT start (nextcloud-mariadb starts instead)
   nextcloud:
     user: root
     container_name: nextcloud
@@ -150,18 +602,34 @@ services:
       - 8080:80
     links:
       - db
-      - solr
-      - ollama
-      - presidio-analyzer
+    # Removed AI service links to avoid GPU dependency:
+    # - tgi-llm
+    # - dolphin-vlm  
+    # - presidio-analyzer
+    # - n8n
     volumes:
       - nextcloud:/var/www/html:rw
       - ./custom_apps:/var/www/html/custom_apps
       - .:/var/www/html/custom_apps/openregister
+      - ../opencatalogi:/var/www/html/custom_apps/opencatalogi
+      - ../softwarecatalog:/var/www/html/custom_apps/softwarecatalog
+      - ../nldesign:/var/www/html/custom_apps/nldesign
+      - ../mydash:/var/www/html/custom_apps/mydash
+      - ../opentalk:/var/www/html/custom_apps/opentalk
+      - ../valtimo:/var/www/html/custom_apps/valtimo
+      - ../openzaak:/var/www/html/custom_apps/openzaak
+      - ../openklant:/var/www/html/custom_apps/openklant
+      - ../docudesk:/var/www/html/custom_apps/docudesk
+      - ../procest:/var/www/html/custom_apps/procest
+      - ../pipelinq:/var/www/html/custom_apps/pipelinq
+      - ../zaakafhandelapp:/var/www/html/custom_apps/zaakafhandelapp
+      - ../larpingapp:/var/www/html/custom_apps/larpingapp
     environment:
-      - MYSQL_PASSWORD='!ChangeMe!'
-      - MYSQL_DATABASE=nextcloud
-      - MYSQL_USER=nextcloud
-      - MYSQL_HOST=db
+      # Database configuration (PostgreSQL)
+      - POSTGRES_DB=nextcloud
+      - POSTGRES_USER=nextcloud
+      - POSTGRES_PASSWORD=!ChangeMe!
+      - POSTGRES_HOST=db
       - TZ=Europe/Amsterdam
       - NEXTCLOUD_ADMIN_USER=admin
       - NEXTCLOUD_ADMIN_PASSWORD=admin
@@ -169,6 +637,757 @@ services:
       - PHP_MEMORY_LIMIT=4G
       - PHP_UPLOAD_LIMIT=2G
       - PHP_POST_MAX_SIZE=2G
-    # depends_on:
-    #   init-ubuntu:
-    #     condition: service_completed_successfully
+      # AI Service endpoints
+      - TGI_LLM_URL=http://openregister-tgi-llm:80
+      - DOLPHIN_VLM_URL=http://openregister-dolphin-vlm:5000
+      - PRESIDIO_URL=http://openregister-presidio-analyzer:5001
+      - N8N_URL=http://openregister-n8n:5678
+      # AppAPI ExApp endpoints (when using --profile exapps)
+      - EXAPP_N8N_URL=http://openregister-exapp-n8n:23000
+      - EXAPP_OPENWEBUI_URL=http://openregister-exapp-openwebui:23000
+      - EXAPP_KEYCLOAK_URL=http://openregister-exapp-keycloak:23000
+      - EXAPP_OPENKLANT_URL=http://openregister-exapp-openklant:23000
+      - EXAPP_OPENZAAK_URL=http://openregister-exapp-openzaak:23000
+      - EXAPP_OPENTALK_URL=http://openregister-exapp-opentalk:23000
+      - EXAPP_VALTIMO_URL=http://openregister-exapp-valtimo:23000
+
+  # Nextcloud Application Server (MariaDB - For Testing)
+  # Start with: docker-compose --profile mariadb up
+  # Note: Do NOT use docker-compose up when using this profile
+  # Always specify: docker-compose --profile mariadb up
+  nextcloud-mariadb:
+    profiles:
+      - mariadb
+    user: root
+    container_name: nextcloud-mariadb
+    image: nextcloud
+    restart: always
+    ports:
+      - 8080:80
+    links:
+      - db-mariadb
+      - tgi-llm
+      - dolphin-vlm
+      - presidio-analyzer
+      - n8n
+    volumes:
+      - nextcloud:/var/www/html:rw
+      - ./custom_apps:/var/www/html/custom_apps
+      - .:/var/www/html/custom_apps/openregister
+    environment:
+      # Database configuration (MariaDB)
+      - MYSQL_DATABASE=nextcloud
+      - MYSQL_USER=nextcloud
+      - MYSQL_PASSWORD=!ChangeMe!
+      - MYSQL_HOST=db-mariadb
+      - TZ=Europe/Amsterdam
+      - NEXTCLOUD_ADMIN_USER=admin
+      - NEXTCLOUD_ADMIN_PASSWORD=admin
+      # PHP Configuration - Match production settings
+      - PHP_MEMORY_LIMIT=4G
+      - PHP_UPLOAD_LIMIT=2G
+      - PHP_POST_MAX_SIZE=2G
+      # AI Service endpoints
+      - TGI_LLM_URL=http://openregister-tgi-llm:80
+      - DOLPHIN_VLM_URL=http://openregister-dolphin-vlm:5000
+      - PRESIDIO_URL=http://openregister-presidio-analyzer:5001
+      - N8N_URL=http://openregister-n8n:5678
+    depends_on:
+      db-mariadb:
+        condition: service_healthy
+
+  # =============================================================================
+  # External Service Integrations (Optional)
+  # =============================================================================
+
+  # OpenProject - Project Management
+  # Start with: docker-compose --profile openproject up
+  # Access at: http://localhost:8085
+  # NC integration: install integration_openproject app via occ app:install integration_openproject
+  # Documentation: https://www.openproject.org/docs/
+  openproject:
+    profiles:
+      - openproject
+      - integrations
+    image: openproject/openproject:15
+    container_name: openregister-openproject
+    restart: always
+    ports:
+      - "8085:80"
+    volumes:
+      - openproject-pgdata:/var/openproject/pgdata
+      - openproject-assets:/var/openproject/assets
+    environment:
+      - OPENPROJECT_SECRET_KEY_BASE=secret-change-me
+      - OPENPROJECT_HOST__NAME=localhost:8085
+      - OPENPROJECT_HTTPS=false
+      - OPENPROJECT_DEFAULT__LANGUAGE=nl
+    deploy:
+      resources:
+        limits:
+          memory: 4G
+        reservations:
+          memory: 1G
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:80/health_checks/default || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 120s
+
+  # XWiki - Wiki Platform
+  # Start with: docker-compose --profile xwiki up
+  # Access at: http://localhost:8086
+  # NC integration: install xwiki app via occ app:install xwiki
+  # Documentation: https://www.xwiki.org/xwiki/bin/view/Documentation/
+  xwiki:
+    profiles:
+      - xwiki
+      - integrations
+    image: xwiki:lts-postgres-tomcat
+    container_name: openregister-xwiki
+    restart: always
+    ports:
+      - "8086:8080"
+    volumes:
+      - xwiki-data:/usr/local/xwiki
+    environment:
+      - DB_USER=nextcloud
+      - DB_PASSWORD=!ChangeMe!
+      - DB_HOST=db
+      - DB_DATABASE=xwiki
+    depends_on:
+      - db
+    deploy:
+      resources:
+        limits:
+          memory: 4G
+        reservations:
+          memory: 1G
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8080/rest || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 120s
+
+  # Open-Xchange App Suite - Email and Groupware
+  # Start with: docker-compose --profile ox up
+  # Access at: http://localhost:8087
+  # Note: NC integration is on the OX side (not a Nextcloud app)
+  # Note: OX images require registry access from open-xchange.com
+  # Documentation: https://documentation.open-xchange.com/
+  # See: https://oxpedia.org/wiki/index.php?title=AppSuite:Open-Xchange_Installation_Guide_for_Docker
+  open-xchange:
+    profiles:
+      - ox
+      - integrations
+    image: appsuite/appsuite-core:latest
+    container_name: openregister-open-xchange
+    restart: always
+    ports:
+      - "8087:80"
+    environment:
+      - OX_CONFIG_DB_HOST=db
+      - OX_CONFIG_DB_USER=nextcloud
+      - OX_CONFIG_DB_PASSWORD=!ChangeMe!
+    depends_on:
+      - db
+    deploy:
+      resources:
+        limits:
+          memory: 4G
+        reservations:
+          memory: 1G
+
+  # Valtimo - BPM and Case Management (Common Ground)
+  # Start with: docker-compose --profile valtimo up
+  # Access at: http://localhost:8088
+  # NC integration: custom app valtimo (mounted as custom_app)
+  # Documentation: https://docs.valtimo.nl/
+  # Note: Requires Keycloak for authentication - uses simplified dev setup
+  valtimo:
+    profiles:
+      - valtimo
+      - commonground
+      - integrations
+    image: ritense/gzac-backend:latest
+    container_name: openregister-valtimo
+    restart: always
+    ports:
+      - "8088:8080"
+    volumes:
+      - valtimo-data:/data
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://db:5432/valtimo
+      - SPRING_DATASOURCE_USERNAME=nextcloud
+      - SPRING_DATASOURCE_PASSWORD=!ChangeMe!
+      - VALTIMO_APP_HOSTNAME=http://localhost:8088
+    depends_on:
+      - db
+    deploy:
+      resources:
+        limits:
+          memory: 2G
+        reservations:
+          memory: 512M
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8080/actuator/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 120s
+
+  # OpenZaak - ZGW API Case Management Backend (Common Ground)
+  # Start with: docker-compose --profile openzaak up
+  # Access at: http://localhost:8089
+  # NC integration: custom app openzaak (mounted as custom_app)
+  # Documentation: https://open-zaak.readthedocs.io/
+  # APIs: Zaken, Documenten, Catalogi, Besluiten, Autorisaties
+  openzaak:
+    profiles:
+      - openzaak
+      - commonground
+      - integrations
+    image: openzaak/open-zaak:latest
+    container_name: openregister-openzaak
+    restart: always
+    ports:
+      - "8089:8000"
+    volumes:
+      - openzaak-data:/app/private-media
+    environment:
+      - DB_HOST=db
+      - DB_NAME=openzaak
+      - DB_USER=nextcloud
+      - DB_PASSWORD=!ChangeMe!
+      - SECRET_KEY=openzaak-secret-change-me
+      - ALLOWED_HOSTS=*
+      - DJANGO_SETTINGS_MODULE=openzaak.conf.docker
+      - IS_HTTPS=no
+      - CACHE_DEFAULT=db
+      - CACHE_AXES=db
+    depends_on:
+      - db
+    deploy:
+      resources:
+        limits:
+          memory: 2G
+        reservations:
+          memory: 256M
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8000/ || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+
+  # OpenKlant - Customer Interaction Registry (Common Ground)
+  # Start with: docker-compose --profile openklant up
+  # Access at: http://localhost:8090
+  # NC integration: custom app openklant (mounted as custom_app)
+  # Documentation: https://github.com/maykinmedia/open-klant
+  # APIs: Klantinteracties, Contactmomenten, Klanten
+  openklant:
+    profiles:
+      - openklant
+      - commonground
+      - integrations
+    image: maykinmedia/open-klant:latest
+    container_name: openregister-openklant
+    restart: always
+    ports:
+      - "8090:8000"
+    volumes:
+      - openklant-data:/app/private-media
+    environment:
+      - DB_HOST=db
+      - DB_NAME=openklant
+      - DB_USER=nextcloud
+      - DB_PASSWORD=!ChangeMe!
+      - SECRET_KEY=openklant-secret-change-me
+      - ALLOWED_HOSTS=*
+      - DJANGO_SETTINGS_MODULE=openklant.conf.docker
+      - IS_HTTPS=no
+      - CACHE_DEFAULT=db
+      - CACHE_AXES=db
+    depends_on:
+      - db
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+        reservations:
+          memory: 256M
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8000/ || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+
+  # =============================================================================
+  # AppAPI External Apps (ExApps) Infrastructure
+  # =============================================================================
+
+  # HaRP - High-performance AppAPI Reverse Proxy (Recommended Deploy Daemon)
+  # Manages ExApp containers and routes requests
+  # Documentation: https://github.com/nextcloud/HaRP
+  harp:
+    profiles:
+      - exapps
+    image: ghcr.io/nextcloud/nextcloud-appapi-harp:release
+    container_name: openregister-harp
+    restart: always
+    ports:
+      - "8780:8780"   # HaRP API port
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - harp-data:/data
+    environment:
+      # HaRP configuration (required)
+      - HP_SHARED_KEY=harp-secret-change-me
+      - NC_INSTANCE_URL=http://nextcloud
+      - HP_EXAPPS_ADDRESS=0.0.0.0:8780
+      - HP_FRP_ADDRESS=0.0.0.0:8782
+      - HP_LOG_LEVEL=info
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8780/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Docker Socket Proxy - Alternative Deploy Daemon (Legacy)
+  # Use if HaRP doesn't work in your environment
+  # Documentation: https://github.com/nextcloud/docker-socket-proxy
+  docker-socket-proxy:
+    profiles:
+      - exapps-legacy
+    image: ghcr.io/nextcloud/docker-socket-proxy:latest
+    container_name: openregister-docker-socket-proxy
+    restart: always
+    ports:
+      - "2375:2375"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    environment:
+      - HAPROXY_PASSWORD=docker-proxy-secret-change-me
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:2375/_ping || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # =============================================================================
+  # ExApp Services - Nextcloud External Apps (Default)
+  # These provide workflow automation and AI capabilities
+  # =============================================================================
+
+  # n8n ExApp - Workflow Automation
+  # Access via Nextcloud: /index.php/apps/app_api/proxy/n8n
+  exapp-n8n:
+    image: ghcr.io/conductionnl/n8n-nextcloud:latest
+    container_name: openregister-exapp-n8n
+    restart: always
+    volumes:
+      - exapp-n8n:/data
+    environment:
+      - APP_ID=n8n
+      - APP_VERSION=1.0.0
+      - APP_HOST=0.0.0.0
+      - APP_PORT=23000
+      - APP_PERSISTENT_STORAGE=/data
+      - APP_SECRET=00iz5gkT+brtNwjpZR/28ttzZFdEFo9elARhgMQd0cMu7Kq6OF63KMFwFbxZTx9VbgsNBTVKhHnLUBo4RYg2pjINRluTUj0Vwb2aQDG0ffT4/8TX1UZC8tU42oi5MuV6
+      - NEXTCLOUD_URL=http://nextcloud
+      # n8n specific
+      - N8N_TIMEZONE=Europe/Amsterdam
+      - N8N_PATH_PREFIX=/index.php/apps/app_api/proxy/n8n
+    depends_on:
+      - db
+    healthcheck:
+      test: ["CMD", "python3", "-c", "import os,urllib.request,urllib.error\ntry: urllib.request.urlopen('http://127.0.0.1:'+os.environ.get('APP_PORT','23000')+'/heartbeat')\nexcept urllib.error.HTTPError: pass"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+  # Open WebUI + Ollama ExApp - AI Chat with built-in LLM inference
+  # Access via Nextcloud: /index.php/apps/app_api/proxy/open_webui
+  # Ollama API also available at: /index.php/apps/app_api/proxy/open_webui/ollama/api/*
+  exapp-openwebui:
+    profiles:
+      - ai
+    image: ghcr.io/conductionnl/open-webui-nextcloud:latest
+    container_name: openregister-exapp-openwebui
+    restart: always
+    volumes:
+      - exapp-openwebui:/data
+    environment:
+      - APP_ID=open_webui
+      - APP_VERSION=1.0.0
+      - APP_HOST=0.0.0.0
+      - APP_PORT=23000
+      - APP_PERSISTENT_STORAGE=/data
+      - APP_SECRET=${OPENWEBUI_APP_SECRET:-dev-secret}
+      - NEXTCLOUD_URL=http://nextcloud
+      # Ollama built-in - auto-pull model on first start
+      - OLLAMA_DEFAULT_MODEL=llama3.2:1b
+      - OLLAMA_NUM_PARALLEL=2
+      - OLLAMA_KEEP_ALIVE=15m
+    deploy:
+      resources:
+        limits:
+          memory: 16G
+        reservations:
+          memory: 4G
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+    shm_size: '2gb'
+    healthcheck:
+      test: ["CMD", "python3", "-c", "import os,urllib.request,urllib.error\ntry: urllib.request.urlopen('http://127.0.0.1:'+os.environ.get('APP_PORT','23000')+'/heartbeat')\nexcept urllib.error.HTTPError: pass"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 120s
+
+  # =============================================================================
+  # ExApp Shared Infrastructure
+  # Start with: docker-compose --profile commonground up
+  # =============================================================================
+
+  # Redis - Shared cache and message broker for ExApp services
+  # Used by: OpenZaak, OpenKlant, OpenTalk
+  exapp-redis:
+    profiles:
+      - commonground
+      - exapps
+    image: redis:7-alpine
+    container_name: openregister-exapp-redis
+    restart: always
+    volumes:
+      - exapp-redis:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # LiveKit - WebRTC media server for OpenTalk video conferencing
+  exapp-livekit:
+    profiles:
+      - commonground
+      - exapps
+    image: livekit/livekit-server:latest
+    container_name: openregister-exapp-livekit
+    restart: always
+    command: ["--keys", "devkey: secret", "--dev"]
+    ports:
+      - "7880:7880"
+      - "7881:7881"
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:7880/ || true"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 15s
+
+  # MinIO - Object storage for OpenTalk file uploads and assets
+  exapp-minio:
+    profiles:
+      - commonground
+      - exapps
+    image: minio/minio:latest
+    container_name: openregister-exapp-minio
+    restart: always
+    command: server /data --console-address ":9001"
+    volumes:
+      - exapp-minio:/data
+    environment:
+      - MINIO_ROOT_USER=minioadmin
+      - MINIO_ROOT_PASSWORD=minioadmin
+    healthcheck:
+      test: ["CMD", "mc", "ready", "local"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  # =============================================================================
+  # ExApp Services - Common Ground / Identity
+  # Start with: docker-compose --profile commonground up
+  # =============================================================================
+
+  # Keycloak ExApp - Identity and Access Management
+  # Access via Nextcloud: /index.php/apps/app_api/proxy/keycloak
+  # Provides OIDC authentication for OpenTalk, Valtimo, OpenZaak, OpenKlant
+  exapp-keycloak:
+    profiles:
+      - commonground
+      - exapps
+    image: ghcr.io/conductionnl/keycloak-nextcloud:latest
+    container_name: openregister-exapp-keycloak
+    restart: always
+    volumes:
+      - exapp-keycloak:/data
+    environment:
+      # AppAPI Configuration
+      - APP_ID=keycloak
+      - APP_VERSION=1.0.0
+      - APP_HOST=0.0.0.0
+      - APP_PORT=23002
+      - APP_PERSISTENT_STORAGE=/data
+      - APP_SECRET=kgPs6ikvLhHMAuC3havDYDvvWw/CYjmlfBMDpYfBY73WgRjdPL6naVC7IGV30D3/5DvNyLGPHrfrln/GYQO80CJzgexWN+1M11FsOt6cljd7EI9T0AZeShEQVt2BAzCM
+      - NEXTCLOUD_URL=http://nextcloud
+      # Keycloak Configuration
+      - KC_DB=postgres
+      - KC_DB_URL=jdbc:postgresql://openregister-postgres:5432/keycloak
+      - KC_DB_USERNAME=nextcloud
+      - KC_DB_PASSWORD=!ChangeMe!
+      - KC_BOOTSTRAP_ADMIN_USERNAME=admin
+      - KC_BOOTSTRAP_ADMIN_PASSWORD=admin
+      - KC_HEALTH_ENABLED=true
+      - KC_HTTP_ENABLED=true
+      - KC_HOSTNAME_STRICT=false
+      - KC_HOSTNAME=http://localhost:8180
+      - KC_PROXY_HEADERS=xforwarded
+      # Realm for user sync
+      - KEYCLOAK_REALM=commonground
+      # Shared secret for ExApp-to-ExApp API calls
+      - KEYCLOAK_API_SECRET=keycloak-exapp-internal-secret
+    ports:
+      - "8180:8080"
+    depends_on:
+      db:
+        condition: service_healthy
+    deploy:
+      resources:
+        limits:
+          memory: 2G
+        reservations:
+          memory: 512M
+    healthcheck:
+      test: ["CMD", "python3", "-c", "import os,urllib.request,urllib.error\ntry: urllib.request.urlopen('http://127.0.0.1:'+os.environ.get('APP_PORT','23000')+'/heartbeat')\nexcept urllib.error.HTTPError: pass"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 120s
+
+  # =============================================================================
+  # ExApp Services - Common Ground Applications
+  # Start with: docker-compose --profile commonground up
+  # =============================================================================
+
+  # OpenKlant ExApp - Customer Interaction Registry
+  # Access via Nextcloud: /index.php/apps/app_api/proxy/openklant
+  # APIs: Klantinteracties, Contactmomenten, Klanten
+  exapp-openklant:
+    profiles:
+      - commonground
+      - exapps
+    image: ghcr.io/conductionnl/openklant-exapp:latest
+    container_name: openregister-exapp-openklant
+    restart: always
+    volumes:
+      - exapp-openklant:/data
+    environment:
+      # AppAPI Configuration
+      - APP_ID=openklant
+      - APP_VERSION=1.0.0
+      - APP_HOST=0.0.0.0
+      - APP_PORT=23005
+      - APP_PERSISTENT_STORAGE=/data
+      - APP_SECRET=qM1kgYpOVLEDCILz/2v4t9eSRdt1JKZTuxFNQbyveVC3QurU6zpdOWyIgRzd0nNxba7q7al6cX9bkWNbkkEdd3uQ9uyt4pgaxjfkozaub/fphD0h2dB5RIBD6wC4C1qW
+      - NEXTCLOUD_URL=http://nextcloud
+      # OpenKlant Django Configuration
+      - DB_HOST=openregister-postgres
+      - DB_NAME=openklant
+      - DB_USER=nextcloud
+      - DB_PASSWORD=!ChangeMe!
+      - SECRET_KEY=openklant-exapp-secret-change-me
+      - ALLOWED_HOSTS=*
+      - DJANGO_SETTINGS_MODULE=openklant.conf.docker
+      - IS_HTTPS=no
+      - CACHE_DEFAULT=openregister-exapp-redis:6379/0
+      - CACHE_AXES=openregister-exapp-redis:6379/0
+      # Optional Keycloak OIDC
+      - KEYCLOAK_URL=http://openregister-exapp-keycloak:8080
+      - KEYCLOAK_REALM=commonground
+      - KEYCLOAK_CLIENT_ID=openklant
+    depends_on:
+      db:
+        condition: service_healthy
+      exapp-redis:
+        condition: service_healthy
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+        reservations:
+          memory: 256M
+    healthcheck:
+      test: ["CMD", "python3", "-c", "import os,urllib.request,urllib.error\ntry: urllib.request.urlopen('http://127.0.0.1:'+os.environ.get('APP_PORT','23000')+'/heartbeat')\nexcept urllib.error.HTTPError: pass"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 90s
+
+  # OpenZaak ExApp - ZGW API Case Management
+  # Access via Nextcloud: /index.php/apps/app_api/proxy/openzaak
+  # APIs: Zaken, Documenten, Catalogi, Besluiten, Autorisaties
+  exapp-openzaak:
+    profiles:
+      - commonground
+      - exapps
+    image: ghcr.io/conductionnl/openzaak-exapp:latest
+    container_name: openregister-exapp-openzaak
+    restart: always
+    volumes:
+      - exapp-openzaak:/data
+    environment:
+      # AppAPI Configuration
+      - APP_ID=openzaak
+      - APP_VERSION=1.0.0
+      - APP_HOST=0.0.0.0
+      - APP_PORT=23003
+      - APP_PERSISTENT_STORAGE=/data
+      - APP_SECRET=GV7aEmqVY/NXnA0adbIhQsl0QL9XoUEtr611xlwVU3G4D7t5Xv4pscZ+8sRb4k2LKCDDTrbDWowIwOkhSs5s/czEN+M2TPSPq2Y6Xgd4VSFZfi1Rdofvc1WtBlmPrQYQ
+      - NEXTCLOUD_URL=http://nextcloud
+      # OpenZaak Django Configuration
+      - DB_HOST=openregister-postgres
+      - DB_NAME=openzaak
+      - DB_USER=nextcloud
+      - DB_PASSWORD=!ChangeMe!
+      - SECRET_KEY=openzaak-exapp-secret-change-me
+      - ALLOWED_HOSTS=*
+      - DJANGO_SETTINGS_MODULE=openzaak.conf.docker
+      - IS_HTTPS=no
+      - CACHE_DEFAULT=openregister-exapp-redis:6379/1
+      - CACHE_AXES=openregister-exapp-redis:6379/1
+      # Optional Keycloak OIDC
+      - KEYCLOAK_URL=http://openregister-exapp-keycloak:8080
+      - KEYCLOAK_REALM=commonground
+      - KEYCLOAK_CLIENT_ID=openzaak
+    depends_on:
+      db:
+        condition: service_healthy
+      exapp-redis:
+        condition: service_healthy
+    deploy:
+      resources:
+        limits:
+          memory: 2G
+        reservations:
+          memory: 256M
+    healthcheck:
+      test: ["CMD", "python3", "-c", "import os,urllib.request,urllib.error\ntry: urllib.request.urlopen('http://127.0.0.1:'+os.environ.get('APP_PORT','23000')+'/heartbeat')\nexcept urllib.error.HTTPError: pass"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 90s
+
+  # Valtimo ExApp - BPM and Case Management
+  # Access via Nextcloud: /index.php/apps/app_api/proxy/valtimo
+  # Documentation: https://docs.valtimo.nl/
+  exapp-valtimo:
+    profiles:
+      - commonground
+      - exapps
+    image: ghcr.io/conductionnl/valtimo-exapp:latest
+    container_name: openregister-exapp-valtimo
+    restart: always
+    volumes:
+      - exapp-valtimo:/data
+    environment:
+      # AppAPI Configuration
+      - APP_ID=valtimo
+      - APP_VERSION=1.0.0
+      - APP_HOST=0.0.0.0
+      - APP_PORT=23004
+      - APP_PERSISTENT_STORAGE=/data
+      - APP_SECRET=piXIP+iaGAvzbULzEXtwAUZAAuybaS0tUwAe1JFxQqmhemQHbUqF7teFxsWq/ydjUXbC84ZXRfQyS3c88ObBwhALLdPoAKDBzUn1a+d2ghRoYkInoMUde1QzncFFfOWt
+      - NEXTCLOUD_URL=http://nextcloud
+      # Valtimo Spring Boot Configuration
+      - SPRING_PROFILES_ACTIVE=docker
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://openregister-postgres:5432/valtimo
+      - SPRING_DATASOURCE_USERNAME=nextcloud
+      - SPRING_DATASOURCE_PASSWORD=!ChangeMe!
+      - SERVER_PORT=8080
+      - JAVA_OPTS=-Xmx512m -Xms256m
+      # Keycloak OIDC
+      - KEYCLOAK_AUTH_SERVER_URL=http://openregister-exapp-keycloak:8080
+      - KEYCLOAK_REALM=commonground
+      - KEYCLOAK_RESOURCE=valtimo
+    depends_on:
+      db:
+        condition: service_healthy
+      exapp-keycloak:
+        condition: service_healthy
+    deploy:
+      resources:
+        limits:
+          memory: 2G
+        reservations:
+          memory: 512M
+    healthcheck:
+      test: ["CMD", "python3", "-c", "import os,urllib.request,urllib.error\ntry: urllib.request.urlopen('http://127.0.0.1:'+os.environ.get('APP_PORT','23000')+'/heartbeat')\nexcept urllib.error.HTTPError: pass"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 180s
+
+  # OpenTalk ExApp - Secure Video Conferencing
+  # Access via Nextcloud: /index.php/apps/app_api/proxy/opentalk
+  # Documentation: https://docs.opentalk.eu/
+  exapp-opentalk:
+    profiles:
+      - commonground
+      - exapps
+    image: ghcr.io/conductionnl/opentalk-exapp:latest
+    container_name: openregister-exapp-opentalk
+    restart: always
+    volumes:
+      - exapp-opentalk:/data
+    environment:
+      # AppAPI Configuration
+      - APP_ID=opentalk
+      - APP_VERSION=1.0.0
+      - APP_HOST=0.0.0.0
+      - APP_PORT=23005
+      - APP_PERSISTENT_STORAGE=/data
+      - APP_SECRET=HGF41cZ42HnNoA4eWUqhMquI9RFnk206ZVtJyT/1xK+X3u1bvSiyRdlfJlxL7YLn8uTMpKh/Bqb9VGKkRYAaoQUj6xtIcCdx4hTBJDrspEPTBgVbAF6/sg/VL6oNdhmv
+      - NEXTCLOUD_URL=http://nextcloud
+      # OpenTalk Controller config is in controller.toml
+      # Env vars with OPENTALK_CTRL_ prefix override entire TOML sections, so avoid them
+      # Keycloak OIDC Configuration
+      - KEYCLOAK_URL=http://openregister-exapp-keycloak:8080
+      - KEYCLOAK_REALM=commonground
+      - KEYCLOAK_CLIENT_ID=opentalk-controller
+      - KEYCLOAK_CLIENT_SECRET=opentalk-secret
+      # Browser-accessible Keycloak URL for OIDC flows (not docker-internal)
+      - KEYCLOAK_BROWSER_URL=http://localhost:8180
+      # Keycloak ExApp URL for server-side token acquisition
+      - KEYCLOAK_EXAPP_URL=http://openregister-exapp-keycloak:23002
+      # Shared secret for ExApp-to-ExApp API calls
+      - KEYCLOAK_API_SECRET=keycloak-exapp-internal-secret
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    depends_on:
+      db:
+        condition: service_healthy
+      exapp-redis:
+        condition: service_healthy
+      exapp-keycloak:
+        condition: service_healthy
+      exapp-livekit:
+        condition: service_healthy
+      exapp-minio:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python3", "-c", "import os,urllib.request,urllib.error\ntry: urllib.request.urlopen('http://127.0.0.1:'+os.environ.get('APP_PORT','23000')+'/heartbeat')\nexcept urllib.error.HTTPError: pass"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 120s

@@ -1,4 +1,5 @@
 <?php
+
 /**
  * OpenRegister Solr Event Listener
  *
@@ -26,7 +27,7 @@ use OCA\OpenRegister\Event\ObjectDeletedEvent;
 use OCA\OpenRegister\Event\SchemaCreatedEvent;
 use OCA\OpenRegister\Event\SchemaUpdatedEvent;
 use OCA\OpenRegister\Event\SchemaDeletedEvent;
-use OCA\OpenRegister\Service\ObjectCacheService;
+use OCA\OpenRegister\Service\Object\CacheHandler;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventListener;
 use Psr\Log\LoggerInterface;
@@ -38,22 +39,21 @@ use Psr\Log\LoggerInterface;
  * lifecycle events (create, update, delete) and triggering appropriate
  * Solr operations.
  *
- * @template T of Event
- * @implements IEventListener<T>
+ * @implements IEventListener<Event>
  */
 class SolrEventListener implements IEventListener
 {
     /**
      * Constructor for SolrEventListener
      *
-     * @param ObjectCacheService $objectCacheService Service for handling object caching and Solr operations
-     * @param LoggerInterface    $logger             Logger for debugging and monitoring
+     * @param CacheHandler    $cacheHandler Service for handling object caching and Solr operations
+     * @param LoggerInterface $logger       Logger for debugging and monitoring
      */
     public function __construct(
-        private readonly ObjectCacheService $objectCacheService,
+        private readonly CacheHandler $cacheHandler,
         private readonly LoggerInterface $logger
     ) {
-    }
+    }//end __construct()
 
     /**
      * Handle incoming events and trigger appropriate Solr operations
@@ -64,49 +64,100 @@ class SolrEventListener implements IEventListener
      */
     public function handle(Event $event): void
     {
-        // DEBUG: Check if we're getting called at all
-        $this->logger->debug('SolrEventListener handling event', ['event_type' => get_class($event)]);
-        
+        // DEBUG: Check if we're getting called at all.
+        $this->logger->debug(
+            message: '[SolrEventListener] SolrEventListener handling event',
+            context: ['file' => __FILE__, 'line' => __LINE__, 'event_type' => get_class($event)]
+        );
+
         try {
             if ($event instanceof ObjectCreatedEvent) {
-                $this->logger->debug('=== SOLR EVENT LISTENER DEBUG ===');
-                $this->logger->debug('Event: ObjectCreatedEvent');
-                $this->logger->debug('Object ID: ' . $event->getObject()->getId());
-                $this->logger->debug('Object UUID: ' . ($event->getObject()->getUuid() ?? 'null'));
-                $this->logger->debug('=== END EVENT DEBUG ===');
-                $this->logger->debug('Handling ObjectCreatedEvent', ['object_id' => $event->getObject()->getId()]);
-                $this->handleObjectCreated($event);
-            } elseif ($event instanceof ObjectUpdatedEvent) {
-                $this->logger->debug('Handling ObjectUpdatedEvent', ['object_id' => $event->getNewObject()->getId()]);
-                $this->handleObjectUpdated($event);
-            } elseif ($event instanceof ObjectDeletedEvent) {
-                $this->logger->debug('Handling ObjectDeletedEvent', ['object_id' => $event->getObject()->getId()]);
-                $this->handleObjectDeleted($event);
-            } elseif ($event instanceof SchemaCreatedEvent) {
-                $this->handleSchemaCreated($event);
-            } elseif ($event instanceof SchemaUpdatedEvent) {
-                $this->handleSchemaUpdated($event);
-            } elseif ($event instanceof SchemaDeletedEvent) {
-                $this->handleSchemaDeleted($event);
-            } else {
-                var_dump("🔥 Unhandled event: " . get_class($event));
-                // Log unhandled events for debugging
-                $this->logger->debug('SolrEventListener: Received unhandled event', [
-                    'eventClass' => get_class($event),
-                    'app' => 'openregister'
-                ]);
+                $this->logger->debug(
+                    message: '[SolrEventListener] === SOLR EVENT LISTENER DEBUG ===',
+                    context: ['file' => __FILE__, 'line' => __LINE__]
+                );
+                $this->logger->debug(
+                    message: '[SolrEventListener] Event: ObjectCreatedEvent',
+                    context: ['file' => __FILE__, 'line' => __LINE__]
+                );
+                $this->logger->debug(
+                    message: '[SolrEventListener] Object ID: '.$event->getObject()->getId(),
+                    context: ['file' => __FILE__, 'line' => __LINE__]
+                );
+                $this->logger->debug(
+                    message: '[SolrEventListener] Object UUID: '.($event->getObject()->getUuid() ?? 'null'),
+                    context: ['file' => __FILE__, 'line' => __LINE__]
+                );
+                $this->logger->debug(
+                    message: '[SolrEventListener] === END EVENT DEBUG ===',
+                    context: ['file' => __FILE__, 'line' => __LINE__]
+                );
+                $this->logger->debug(
+                    message: '[SolrEventListener] Handling ObjectCreatedEvent',
+                    context: ['file' => __FILE__, 'line' => __LINE__, 'object_id' => $event->getObject()->getId()]
+                );
+                $this->handleObjectCreated(event: $event);
+                return;
+            }//end if
+
+            if ($event instanceof ObjectUpdatedEvent) {
+                $this->logger->debug(
+                    message: '[SolrEventListener] Handling ObjectUpdatedEvent',
+                    context: ['file' => __FILE__, 'line' => __LINE__, 'object_id' => $event->getNewObject()->getId()]
+                );
+                $this->handleObjectUpdated(event: $event);
+                return;
             }
+
+            if ($event instanceof ObjectDeletedEvent) {
+                $this->logger->debug(
+                    message: '[SolrEventListener] Handling ObjectDeletedEvent',
+                    context: ['file' => __FILE__, 'line' => __LINE__, 'object_id' => $event->getObject()->getId()]
+                );
+                $this->handleObjectDeleted(event: $event);
+                return;
+            }
+
+            if ($event instanceof SchemaCreatedEvent) {
+                $this->handleSchemaCreated(event: $event);
+                return;
+            }
+
+            if ($event instanceof SchemaUpdatedEvent) {
+                $this->handleSchemaUpdated(event: $event);
+                return;
+            }
+
+            if ($event instanceof SchemaDeletedEvent) {
+                $this->handleSchemaDeleted(event: $event);
+                return;
+            }
+
+            // Log unhandled events for debugging.
+            $this->logger->debug(
+                message: '[SolrEventListener] Received unhandled event',
+                context: [
+                    'file'       => __FILE__,
+                    'line'       => __LINE__,
+                    'eventClass' => get_class($event),
+                    'app'        => 'openregister',
+                ]
+            );
         } catch (\Exception $e) {
-            var_dump("🔥 ERROR in SolrEventListener: " . $e->getMessage());
-            // Log errors but don't break the application flow
-            $this->logger->error('SolrEventListener: Error handling event', [
-                'eventClass' => get_class($event),
-                'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString(),
-                'app' => 'openregister'
-            ]);
-        }
-    }
+            // Log errors but don't break the application flow.
+            $this->logger->error(
+                message: '[SolrEventListener] Error handling event',
+                context: [
+                    'file'       => __FILE__,
+                    'line'       => __LINE__,
+                    'eventClass' => get_class($event),
+                    'error'      => $e->getMessage(),
+                    'trace'      => $e->getTraceAsString(),
+                    'app'        => 'openregister',
+                ]
+            );
+        }//end try
+    }//end handle()
 
     /**
      * Handle object creation event
@@ -118,17 +169,30 @@ class SolrEventListener implements IEventListener
     private function handleObjectCreated(ObjectCreatedEvent $event): void
     {
         $object = $event->getObject();
-        
-        $this->logger->info('SolrEventListener: Indexing newly created object', [
-            'objectId' => $object->getId(),
-            'objectUuid' => $object->getUuid(),
-            'objectName' => $object->getName(),
-            'app' => 'openregister'
-        ]);
 
-        // Trigger Solr indexing for the created object
-        $this->objectCacheService->invalidateForObjectChange($object, 'create');
-    }
+        $this->logger->info(
+            message: '[SolrEventListener] Indexing newly created object',
+            context: [
+                'file'       => __FILE__,
+                'line'       => __LINE__,
+                'objectId'   => $object->getId(),
+                'objectUuid' => $object->getUuid(),
+                'objectName' => $object->getName(),
+                'app'        => 'openregister',
+            ]
+        );
+
+        // Trigger Solr indexing for the created object only if indexing is available.
+        try {
+            $this->cacheHandler->invalidateForObjectChange(object: $object, operation: 'create');
+        } catch (\Exception $e) {
+            // If Solr/indexing is not configured, log and continue gracefully.
+            $this->logger->debug(
+                message: '[SolrEventListener] Indexing not available, skipping',
+                context: ['file' => __FILE__, 'line' => __LINE__, 'error' => $e->getMessage()]
+            );
+        }
+    }//end handleObjectCreated()
 
     /**
      * Handle object update event
@@ -141,18 +205,31 @@ class SolrEventListener implements IEventListener
     {
         $newObject = $event->getNewObject();
         $oldObject = $event->getOldObject();
-        
-        $this->logger->info('SolrEventListener: Reindexing updated object', [
-            'objectId' => $newObject->getId(),
-            'objectUuid' => $newObject->getUuid(),
-            'objectName' => $newObject->getName(),
-            'oldObjectName' => $oldObject->getName(),
-            'app' => 'openregister'
-        ]);
 
-        // Trigger Solr reindexing for the updated object
-        $this->objectCacheService->invalidateForObjectChange($newObject, 'update');
-    }
+        $this->logger->info(
+            message: '[SolrEventListener] Reindexing updated object',
+            context: [
+                'file'          => __FILE__,
+                'line'          => __LINE__,
+                'objectId'      => $newObject->getId(),
+                'objectUuid'    => $newObject->getUuid(),
+                'objectName'    => $newObject->getName(),
+                'oldObjectName' => $oldObject?->getName(),
+                'app'           => 'openregister',
+            ]
+        );
+
+        // Trigger Solr reindexing for the updated object only if indexing is available.
+        try {
+            $this->cacheHandler->invalidateForObjectChange(object: $newObject, operation: 'update');
+        } catch (\Exception $e) {
+            // If Solr/indexing is not configured, log and continue gracefully.
+            $this->logger->debug(
+                message: '[SolrEventListener] Indexing not available, skipping',
+                context: ['file' => __FILE__, 'line' => __LINE__, 'error' => $e->getMessage()]
+            );
+        }
+    }//end handleObjectUpdated()
 
     /**
      * Handle object deletion event
@@ -164,17 +241,30 @@ class SolrEventListener implements IEventListener
     private function handleObjectDeleted(ObjectDeletedEvent $event): void
     {
         $object = $event->getObject();
-        
-        $this->logger->info('SolrEventListener: Removing deleted object from index', [
-            'objectId' => $object->getId(),
-            'objectUuid' => $object->getUuid(),
-            'objectName' => $object->getName(),
-            'app' => 'openregister'
-        ]);
 
-        // Trigger Solr removal for the deleted object
-        $this->objectCacheService->invalidateForObjectChange($object, 'delete');
-    }
+        $this->logger->info(
+            message: '[SolrEventListener] Removing deleted object from index',
+            context: [
+                'file'       => __FILE__,
+                'line'       => __LINE__,
+                'objectId'   => $object->getId(),
+                'objectUuid' => $object->getUuid(),
+                'objectName' => $object->getName(),
+                'app'        => 'openregister',
+            ]
+        );
+
+        // Trigger Solr removal for the deleted object only if indexing is available.
+        try {
+            $this->cacheHandler->invalidateForObjectChange(object: $object, operation: 'delete');
+        } catch (\Exception $e) {
+            // If Solr/indexing is not configured, log and continue gracefully.
+            $this->logger->debug(
+                message: '[SolrEventListener] Indexing not available, skipping',
+                context: ['file' => __FILE__, 'line' => __LINE__, 'error' => $e->getMessage()]
+            );
+        }
+    }//end handleObjectDeleted()
 
     /**
      * Handle schema creation event
@@ -186,17 +276,22 @@ class SolrEventListener implements IEventListener
     private function handleSchemaCreated(SchemaCreatedEvent $event): void
     {
         $schema = $event->getSchema();
-        
-        $this->logger->info('SolrEventListener: Schema created, updating Solr field mappings', [
-            'schemaId' => $schema->getId(),
-            'schemaTitle' => $schema->getTitle(),
-            'app' => 'openregister'
-        ]);
 
-        // Schema creation might require Solr field mapping updates
-        // This could trigger a reindex of objects using this schema
-        $this->triggerSchemaReindex($schema->getId());
-    }
+        $this->logger->info(
+            message: '[SolrEventListener] Schema created, updating Solr field mappings',
+            context: [
+                'file'        => __FILE__,
+                'line'        => __LINE__,
+                'schemaId'    => $schema->getId(),
+                'schemaTitle' => $schema->getTitle(),
+                'app'         => 'openregister',
+            ]
+        );
+
+        // Schema creation might require Solr field mapping updates.
+        // This could trigger a reindex of objects using this schema.
+        $this->triggerSchemaReindex(schemaId: $schema->getId());
+    }//end handleSchemaCreated()
 
     /**
      * Handle schema update event
@@ -209,24 +304,35 @@ class SolrEventListener implements IEventListener
     {
         $newSchema = $event->getNewSchema();
         $oldSchema = $event->getOldSchema();
-        
-        $this->logger->info('SolrEventListener: Schema updated, checking for field mapping changes', [
-            'schemaId' => $newSchema->getId(),
-            'schemaTitle' => $newSchema->getTitle(),
-            'app' => 'openregister'
-        ]);
 
-        // Compare schema properties to see if field mappings changed
-        if ($this->schemaFieldsChanged($oldSchema, $newSchema)) {
-            $this->logger->info('SolrEventListener: Schema fields changed, triggering reindex', [
-                'schemaId' => $newSchema->getId(),
-                'app' => 'openregister'
-            ]);
-            
-            // Trigger reindex of all objects using this schema
-            $this->triggerSchemaReindex($newSchema->getId());
+        $this->logger->info(
+            message: '[SolrEventListener] Schema updated, checking for field mapping changes',
+            context: [
+                'file'        => __FILE__,
+                'line'        => __LINE__,
+                'schemaId'    => $newSchema->getId(),
+                'schemaTitle' => $newSchema->getTitle(),
+                'app'         => 'openregister',
+            ]
+        );
+
+        // Compare schema properties to see if field mappings changed.
+        if ($this->schemaFieldsChanged(oldSchema: $oldSchema, newSchema: $newSchema) === true) {
+            $this->logger->info(
+                message: '[SolrEventListener] Schema fields changed, triggering reindex',
+                context: [
+                    'file'     => __FILE__,
+                    'line'     => __LINE__,
+                    'schemaId' => $newSchema->getId(),
+                    'app'      => 'openregister',
+                ]
+            );
+
+            // Trigger reindex of all objects using this schema.
+            $this->triggerSchemaReindex(schemaId: $newSchema->getId());
+            // End if.
         }
-    }
+    }//end handleSchemaUpdated()
 
     /**
      * Handle schema deletion event
@@ -238,16 +344,21 @@ class SolrEventListener implements IEventListener
     private function handleSchemaDeleted(SchemaDeletedEvent $event): void
     {
         $schema = $event->getSchema();
-        
-        $this->logger->info('SolrEventListener: Schema deleted, cleaning up Solr entries', [
-            'schemaId' => $schema->getId(),
-            'schemaTitle' => $schema->getTitle(),
-            'app' => 'openregister'
-        ]);
 
-        // When a schema is deleted, we should remove all objects using this schema from Solr
-        // This is handled automatically when objects are deleted, but we log it for tracking
-    }
+        $this->logger->info(
+            message: '[SolrEventListener] Schema deleted, cleaning up Solr entries',
+            context: [
+                'file'        => __FILE__,
+                'line'        => __LINE__,
+                'schemaId'    => $schema->getId(),
+                'schemaTitle' => $schema->getTitle(),
+                'app'         => 'openregister',
+            ]
+        );
+
+        // When a schema is deleted, we should remove all objects using this schema from Solr.
+        // This is handled automatically when objects are deleted, but we log it for tracking.
+    }//end handleSchemaDeleted()
 
     /**
      * Check if schema fields changed between versions
@@ -259,12 +370,12 @@ class SolrEventListener implements IEventListener
      */
     private function schemaFieldsChanged($oldSchema, $newSchema): bool
     {
-        // Compare the properties JSON to detect field changes
+        // Compare the properties JSON to detect field changes.
         $oldProperties = $oldSchema->getProperties();
         $newProperties = $newSchema->getProperties();
-        
+
         return $oldProperties !== $newProperties;
-    }
+    }//end schemaFieldsChanged()
 
     /**
      * Trigger reindex of all objects using a specific schema
@@ -275,12 +386,17 @@ class SolrEventListener implements IEventListener
      */
     private function triggerSchemaReindex(int $schemaId): void
     {
-        // This could be implemented to trigger a background job
-        // for reindexing all objects with the updated schema
-        $this->logger->info('SolrEventListener: Schema reindex requested', [
-            'schemaId' => $schemaId,
-            'app' => 'openregister',
-            'note' => 'Background reindex should be implemented here'
-        ]);
-    }
-}
+        // This could be implemented to trigger a background job.
+        // For reindexing all objects with the updated schema.
+        $this->logger->info(
+            message: '[SolrEventListener] Schema reindex requested',
+            context: [
+                'file'     => __FILE__,
+                'line'     => __LINE__,
+                'schemaId' => $schemaId,
+                'app'      => 'openregister',
+                'note'     => 'Background reindex should be implemented here',
+            ]
+        );
+    }//end triggerSchemaReindex()
+}//end class

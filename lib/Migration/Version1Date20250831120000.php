@@ -9,7 +9,7 @@
  * @category Migration
  * @package  OCA\OpenRegister\Migration
  *
- * @author    Conduction Development Team <dev@conductio.nl>
+ * @author    Conduction Development Team <dev@conduction.nl>
  * @copyright 2024 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
@@ -37,46 +37,42 @@ use OCP\Migration\SimpleMigrationStep;
  */
 class Version1Date20250831120000 extends SimpleMigrationStep
 {
-
-
     /**
-     * @param IOutput $output
-     * @param Closure $schemaClosure The `\Closure` returns a `ISchemaWrapper`
-     * @param array   $options
+     * Add size column to search trails table.
      *
-     * @return null|ISchemaWrapper
+     * @param IOutput $output        Output interface for logging
+     * @param Closure $schemaClosure Schema retrieval closure
+     * @param array   $options       Migration options
+     *
+     * @return null|ISchemaWrapper Modified schema or null
+     *
+     * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      */
     public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper
     {
-        /*
-         * @var ISchemaWrapper $schema
-         */
         $schema = $schemaClosure();
 
-        // Check if the search trails table exists
+        // Check if the search trails table exists.
         if ($schema->hasTable('openregister_search_trails') === false) {
             return null;
         }
 
         $table = $schema->getTable('openregister_search_trails');
 
-        // Add size column if it doesn't exist
+        // Add size column if it doesn't exist.
         if ($table->hasColumn('size') === false) {
             $table->addColumn(
-                    'size',
-                    'bigint',
-                    [
-                        'notnull' => false,
-                        'default' => null,
-                        'comment' => 'Size of the search trail entry in bytes',
-                    ]
-                    );
-            $output->info('Added size column to openregister_search_trails table');
+                'size',
+                'bigint',
+                [
+                    'notnull' => false,
+                    'default' => null,
+                    'comment' => 'Size of the search trail entry in bytes',
+                ]
+            );
+            $output->info(message: 'Added size column to openregister_search_trails table');
         }
 
         return $schema;
-
     }//end changeSchema()
-
-
 }//end class

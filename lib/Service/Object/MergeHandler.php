@@ -1,0 +1,498 @@
+<?php
+
+/**
+ * MergeHandler
+ *
+ * This file is part of the OpenRegister app for Nextcloud.
+ *
+ * @category Service
+ * @package  OCA\OpenRegister
+ * @author   Conduction <info@conduction.nl>
+ * @license  AGPL-3.0-or-later https://www.gnu.org/licenses/agpl-3.0.html
+ * @link     https://github.com/ConductionNL/openregister
+ */
+
+namespace OCA\OpenRegister\Service\Object;
+
+use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Db\MagicMapper;
+use OCA\OpenRegister\Db\Register;
+use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Service\FileService;
+use OCP\IUserSession;
+use OCP\AppFramework\Db\DoesNotExistException as OcpDoesNotExistException;
+use InvalidArgumentException;
+use Exception;
+
+/**
+ * Handles object merging operations for ObjectService.
+ *
+ * This handler is responsible for:
+ * - Merging two objects (properties, files, relations)
+ * - Transferring files between objects
+ * - Deleting object files
+ * - Updating references to merged objects
+ *
+ * @category Service
+ * @package  OCA\OpenRegister
+ * @author   Conduction <info@conduction.nl>
+ * @license  AGPL-3.0-or-later https://www.gnu.org/licenses/agpl-3.0.html
+ * @link     https://github.com/ConductionNL/openregister
+ * @version  1.0.0
+ */
+class MergeHandler
+{
+    /**
+     * Constructor for MergeHandler.
+     *
+     * @param MagicMapper  $objectEntityMapper Mapper for object entities.
+     * @param FileService  $fileService        Service for file operations.
+     * @param IUserSession $userSession        User session for tracking deletions.
+     */
+    public function __construct(
+        private readonly MagicMapper $objectEntityMapper,
+        private readonly FileService $fileService,
+        private readonly IUserSession $userSession
+    ) {
+    }//end __construct()
+
+    /**
+     * Merge two objects together.
+     *
+     * This method merges a source object into a target object, handling:
+     * - Property merging
+     * - File transfer or deletion
+     * - Relation transfer or dropping
+     * - Reference updates in other objects
+     * - Soft deletion of source object
+     *
+     * @param string $sourceObjectId The ID of the source object to merge from.
+     * @param array  $mergeData      Merge configuration containing:
+     *                               - target: Target object ID
+     *                               - object: Properties to merge
+     *                               - fileAction: 'transfer' or 'delete'
+     *                               - relationAction: 'transfer' or 'drop'
+     *
+     * @return array Merge report with source, target, merged objects, actions, statistics, warnings, errors.
+     *
+     * @throws OcpDoesNotExistException If source or target object not found.
+     * @throws InvalidArgumentException If objects are in different register/schema.
+     *
+     * @psalm-param array<string, mixed> $mergeData
+     *
+     * @phpstan-param array<string, mixed> $mergeData
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)  Complex merge operation handling files, relations, and references
+     * @SuppressWarnings(PHPMD.NPathComplexity)       Multiple merge paths for different data types and actions
+     * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Comprehensive merge requires handling all object aspects
+     */
+    public function mergeObjects(string $sourceObjectId, array $mergeData): array
+    {
+        // Extract parameters from merge data.
+        $targetObjectId  = $mergeData['target'] ?? null;
+        $mergedData      = $mergeData['object'] ?? [];
+        $fileAction      = $mergeData['fileAction'] ?? 'transfer';
+        $relationAction  = $mergeData['relationAction'] ?? 'transfer';
+        $referenceAction = $mergeData['referenceAction'] ?? 'transfer';
+
+        if ($targetObjectId === null || $targetObjectId === '') {
+            throw new InvalidArgumentException('Target object ID is required');
+        }
+
+        // Initialize merge report.
+        $mergeReport = [
+            'success'      => false,
+            'sourceObject' => null,
+            'targetObject' => null,
+            'mergedObject' => null,
+            'actions'      => [
+                'properties' => [],
+                'files'      => [],
+                'relations'  => [],
+                'references' => [],
+            ],
+            'statistics'   => [
+                'propertiesChanged'    => 0,
+                'filesTransferred'     => 0,
+                'filesDeleted'         => 0,
+                'relationsTransferred' => 0,
+                'relationsDropped'     => 0,
+                'referencesUpdated'    => 0,
+            ],
+            'warnings'     => [],
+            'errors'       => [],
+        ];
+
+        try {
+            // Fetch both objects with context (searches across all magic tables).
+            $sourceContext = null;
+            $targetContext = null;
+
+            try {
+                $sourceContext = $this->objectEntityMapper->findAcrossAllSources(
+                    identifier: $sourceObjectId,
+                    includeDeleted: false,
+                    _rbac: false,
+                    _multitenancy: false
+                );
+            } catch (Exception $e) {
+                $sourceContext = null;
+            }
+
+            try {
+                $targetContext = $this->objectEntityMapper->findAcrossAllSources(
+                    identifier: $targetObjectId,
+                    includeDeleted: false,
+                    _rbac: false,
+                    _multitenancy: false
+                );
+            } catch (Exception $e) {
+                $targetContext = null;
+            }
+
+            if ($sourceContext === null) {
+                throw new OcpDoesNotExistException('Source object not found');
+            }
+
+            if ($targetContext === null) {
+                throw new OcpDoesNotExistException('Target object not found');
+            }
+
+            $sourceObject = $sourceContext['object'];
+            $targetObject = $targetContext['object'];
+            $register     = $targetContext['register'];
+            $schema       = $targetContext['schema'];
+
+            // Store original objects in report.
+            $mergeReport['sourceObject'] = $sourceObject->jsonSerialize();
+            $mergeReport['targetObject'] = $targetObject->jsonSerialize();
+
+            // Validate objects are in same register and schema.
+            if ($sourceObject->getRegister() !== $targetObject->getRegister()) {
+                throw new InvalidArgumentException('Objects must be in the same register');
+            }
+
+            if ($sourceObject->getSchema() !== $targetObject->getSchema()) {
+                throw new InvalidArgumentException('Objects must conform to the same schema');
+            }
+
+            // Merge properties.
+            $targetObjectData  = $targetObject->getObject();
+            $changedProperties = [];
+
+            foreach ($mergedData as $property => $value) {
+                $oldValue = $targetObjectData[$property] ?? null;
+
+                if ($oldValue !== $value) {
+                    $targetObjectData[$property] = $value;
+                    $changedProperties[]         = [
+                        'property' => $property,
+                        'oldValue' => $oldValue,
+                        'newValue' => $value,
+                    ];
+                    $mergeReport['statistics']['propertiesChanged']++;
+                }
+            }
+
+            $mergeReport['actions']['properties'] = $changedProperties;
+
+            // Handle files.
+            if ($fileAction === 'transfer' && $sourceObject->getFolder() !== null) {
+                try {
+                    $fileResult = $this->transferObjectFiles(sourceObject: $sourceObject, targetObject: $targetObject);
+                    $mergeReport['actions']['files'] = $fileResult['files'];
+                    $mergeReport['statistics']['filesTransferred'] = $fileResult['transferred'];
+
+                    if (empty($fileResult['errors']) === false) {
+                        $mergeReport['warnings'] = array_merge($mergeReport['warnings'], $fileResult['errors']);
+                    }
+                } catch (Exception $e) {
+                    $mergeReport['warnings'][] = 'Failed to transfer files: '.$e->getMessage();
+                }
+            } else if ($fileAction === 'delete' && $sourceObject->getFolder() !== null) {
+                try {
+                    $deleteResult = $this->deleteObjectFiles(sourceObject: $sourceObject);
+                    $mergeReport['actions']['files']           = $deleteResult['files'];
+                    $mergeReport['statistics']['filesDeleted'] = $deleteResult['deleted'];
+
+                    if (empty($deleteResult['errors']) === false) {
+                        $mergeReport['warnings'] = array_merge($mergeReport['warnings'], $deleteResult['errors']);
+                    }
+                } catch (Exception $e) {
+                    $mergeReport['warnings'][] = 'Failed to delete files: '.$e->getMessage();
+                }
+            }//end if
+
+            // Handle relations.
+            if ($relationAction === 'transfer') {
+                $sourceRelations = $sourceObject->getRelations();
+                $targetRelations = $targetObject->getRelations();
+
+                $transferredRelations = [];
+                foreach ($sourceRelations ?? [] as $relation) {
+                    if (in_array($relation, $targetRelations) === false) {
+                        $targetRelations[]      = $relation;
+                        $transferredRelations[] = $relation;
+                        $mergeReport['statistics']['relationsTransferred']++;
+                    }
+                }
+
+                $targetObject->setRelations($targetRelations);
+                $mergeReport['actions']['relations'] = [
+                    'action'    => 'transferred',
+                    'relations' => $transferredRelations,
+                ];
+            }
+
+            if ($relationAction !== 'transfer') {
+                $mergeReport['actions']['relations']           = [
+                    'action'    => 'dropped',
+                    'relations' => $sourceObject->getRelations(),
+                ];
+                $mergeReport['statistics']['relationsDropped'] = count($sourceObject->getRelations());
+            }
+
+            // Update target object with merged data.
+            $targetObject->setObject($targetObjectData);
+            $updatedObject = $this->objectEntityMapper->update(
+                entity: $targetObject,
+                register: $register,
+                schema: $schema
+            );
+
+            // Update references to source object (only if referenceAction is 'transfer').
+            $updatedReferences = [];
+
+            if ($referenceAction === 'transfer') {
+                $sourceUuid = $sourceObject->getUuid();
+                $targetUuid = $targetObject->getUuid();
+
+                $referencingObjects = $this->objectEntityMapper->findByRelation(
+                    uuid: $sourceUuid,
+                    _search: $sourceUuid,
+                    _partialMatch: true
+                );
+
+                foreach ($referencingObjects as $referencingObject) {
+                    // 1. Update _relations metadata.
+                    $relations        = $referencingObject->getRelations();
+                    $relationsUpdated = false;
+                    array_walk_recursive(
+                        $relations,
+                        function (&$value) use ($sourceUuid, $targetUuid, &$relationsUpdated) {
+                            if ($value === $sourceUuid) {
+                                $value            = $targetUuid;
+                                $relationsUpdated = true;
+                            }
+                        }
+                    );
+
+                    if ($relationsUpdated === true) {
+                        $referencingObject->setRelations($relations);
+                    }
+
+                    // 2. Update actual object data properties.
+                    $objectData  = $referencingObject->getObject();
+                    $dataUpdated = false;
+                    if (is_array($objectData) === true) {
+                        array_walk_recursive(
+                            $objectData,
+                            function (&$value) use ($sourceUuid, $targetUuid, &$dataUpdated) {
+                                if ($value === $sourceUuid) {
+                                    $value       = $targetUuid;
+                                    $dataUpdated = true;
+                                }
+                            }
+                        );
+
+                        if ($dataUpdated === true) {
+                            $referencingObject->setObject($objectData);
+                        }
+                    }
+
+                    // 3. Persist with proper register/schema context.
+                    if ($relationsUpdated === true || $dataUpdated === true) {
+                        $refContext = $this->objectEntityMapper->findAcrossAllSources(
+                            identifier: $referencingObject->getUuid(),
+                            includeDeleted: false,
+                            _rbac: false,
+                            _multitenancy: false
+                        );
+                        $this->objectEntityMapper->update(
+                            entity: $referencingObject,
+                            register: $refContext['register'],
+                            schema: $refContext['schema']
+                        );
+                        $mergeReport['statistics']['referencesUpdated']++;
+                        $updatedReferences[] = [
+                            'objectId' => $referencingObject->getUuid(),
+                            'title'    => $referencingObject->getName() ?? $referencingObject->getUuid(),
+                        ];
+                    }
+                }//end foreach
+            }//end if
+
+            $mergeReport['actions']['references'] = $updatedReferences;
+
+            // Soft delete source object using the entity's delete method.
+            $sourceObject->delete(
+                userSession: $this->userSession,
+                deletedReason: 'Merged into object '.$targetObject->getUuid()
+            );
+            $this->objectEntityMapper->update(
+                entity: $sourceObject,
+                register: $register,
+                schema: $schema
+            );
+
+            // Set success and add merged object to report.
+            $mergeReport['success']      = true;
+            $mergeReport['mergedObject'] = $updatedObject->jsonSerialize();
+
+            // Merge completed successfully.
+        } catch (Exception $e) {
+            // Handle merge error.
+            $mergeReport['errors'][] = "Merge failed: ".$e->getMessage();
+            $mergeReport['errors'][] = $e->getMessage();
+            throw $e;
+        }//end try
+
+        return $mergeReport;
+    }//end mergeObjects()
+
+    /**
+     * Transfer files from source object to target object.
+     *
+     * Files are copied to the target object and then deleted from the source.
+     *
+     * @param ObjectEntity $sourceObject The source object.
+     * @param ObjectEntity $targetObject The target object.
+     *
+     * @return (((bool|string)[]|string)[]|int)[]
+     *
+     * @psalm-return   array{files: list<array{action: 'transfer_failed'|'transferred',
+     *     error?: string, name: string, success: bool}>,
+     *     transferred: 0|1|2, errors: list<non-falsy-string>}
+     * @phpstan-return array{files: list<array<string, mixed>>, transferred: int,
+     *     errors: list<string>}
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity) File transfer with error handling requires multiple conditions
+     */
+    private function transferObjectFiles(ObjectEntity $sourceObject, ObjectEntity $targetObject): array
+    {
+        $result = [
+            'files'       => [],
+            'transferred' => 0,
+            'errors'      => [],
+        ];
+
+        try {
+            // Get files from source folder.
+            $sourceFiles = $this->fileService->getFiles($sourceObject);
+
+            foreach ($sourceFiles as $file) {
+                try {
+                    // Skip if not a file.
+                    if (($file instanceof \OCP\Files\File) === false) {
+                        continue;
+                    }
+
+                    // Get file content and create new file in target object.
+                    $fileContent = $file->getContent();
+                    $fileName    = $file->getName();
+
+                    // Create new file in target object folder.
+                    $this->fileService->addFile(
+                        objectEntity: $targetObject,
+                        fileName: $fileName,
+                        content: $fileContent,
+                        share: false,
+                        tags: []
+                    );
+
+                    // Delete original file from source.
+                    $this->fileService->deleteFile(file: $file, object: $sourceObject);
+
+                    $result['files'][] = [
+                        'name'    => $fileName,
+                        'action'  => 'transferred',
+                        'success' => true,
+                    ];
+                    $result['transferred']++;
+                } catch (Exception $e) {
+                    $result['files'][]  = [
+                        'name'    => $file->getName(),
+                        'action'  => 'transfer_failed',
+                        'success' => false,
+                        'error'   => $e->getMessage(),
+                    ];
+                    $result['errors'][] = 'Failed to transfer file '.$file->getName().': '.$e->getMessage();
+                }//end try
+            }//end foreach
+        } catch (Exception $e) {
+            $result['errors'][] = 'Failed to access source files: '.$e->getMessage();
+        }//end try
+
+        return $result;
+    }//end transferObjectFiles()
+
+    /**
+     * Delete all files from an object.
+     *
+     * @param ObjectEntity $sourceObject The source object.
+     *
+     * @return (((bool|string)[]|string)[]|int)[]
+     *
+     * @psalm-return   array{files: list<array{action: 'delete_failed'|'deleted',
+     *     error?: string, name: string, success: bool}>,
+     *     deleted: 0|1|2, errors: list<non-falsy-string>}
+     * @phpstan-return array{files: list<array<string, mixed>>, deleted: int,
+     *     errors: list<string>}
+     */
+    private function deleteObjectFiles(ObjectEntity $sourceObject): array
+    {
+        $result = [
+            'files'   => [],
+            'deleted' => 0,
+            'errors'  => [],
+        ];
+
+        try {
+            // Get files from source folder.
+            $sourceFiles = $this->fileService->getFiles($sourceObject);
+
+            foreach ($sourceFiles as $file) {
+                try {
+                    // Skip if not a file.
+                    if (($file instanceof \OCP\Files\File) === false) {
+                        continue;
+                    }
+
+                    $fileName = $file->getName();
+
+                    // Delete the file using FileService.
+                    $this->fileService->deleteFile(file: $file, object: $sourceObject);
+
+                    $result['files'][] = [
+                        'name'    => $fileName,
+                        'action'  => 'deleted',
+                        'success' => true,
+                    ];
+                    $result['deleted']++;
+                } catch (Exception $e) {
+                    $result['files'][]  = [
+                        'name'    => $file->getName(),
+                        'action'  => 'delete_failed',
+                        'success' => false,
+                        'error'   => $e->getMessage(),
+                    ];
+                    $result['errors'][] = 'Failed to delete file '.$file->getName().': '.$e->getMessage();
+                }//end try
+            }//end foreach
+        } catch (Exception $e) {
+            $result['errors'][] = 'Failed to access source files: '.$e->getMessage();
+        }//end try
+
+        return $result;
+    }//end deleteObjectFiles()
+}//end class

@@ -1,4 +1,5 @@
 <script setup>
+import { translate as t } from '@nextcloud/l10n'
 import { navigationStore, schemaStore, objectStore, registerStore } from '../../store/store.js'
 </script>
 
@@ -100,8 +101,8 @@ export default {
 						schema: schemaStore.schemaItem.id,
 						search: '',
 					})
-					if (objectStore.objectList?.results?.length) {
-						for (const obj of objectStore.objectList.results) {
+					if (objectStore.getCollection(objectStore.currentType).length) {
+						for (const obj of objectStore.getCollection(objectStore.currentType)) {
 							if (obj[schemaStore.schemaPropertyKey]) {
 								this.objects.push(obj)
 							}
@@ -151,17 +152,17 @@ export default {
 
 <style>
 .modal__content {
-    margin: var(--OC-margin-50);
-    text-align: center;
+	margin: var(--OC-margin-50);
+	text-align: center;
 }
 
 .schemaDetailsContainer {
-    margin-block-start: var(--OC-margin-20);
-    margin-inline-start: var(--OC-margin-20);
-    margin-inline-end: var(--OC-margin-20);
+	margin-block-start: var(--OC-margin-20);
+	margin-inline-start: var(--OC-margin-20);
+	margin-inline-end: var(--OC-margin-20);
 }
 
 .success {
-    color: green;
+	color: green;
 }
 </style>

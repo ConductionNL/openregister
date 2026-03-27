@@ -1,0 +1,622 @@
+<?php
+
+/**
+ * SolrDocumentIndexer
+ *
+ * Handles document indexing operations to Solr.
+ * Manages single and bulk indexing, deletions, and commits.
+ *
+ * @category  Service
+ * @package   OCA\OpenRegister\Service\Index\Backends\Solr
+ * @author    Conduction Development Team <dev@conduction.nl>
+ * @copyright 2024 Conduction B.V.
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ * @version   GIT: <git-id>
+ * @link      https://OpenRegister.app
+ */
+
+declare(strict_types=1);
+
+namespace OCA\OpenRegister\Service\Index\Backends\Solr;
+
+use Exception;
+use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Service\Index\DocumentBuilder;
+use Psr\Log\LoggerInterface;
+
+/**
+ * SolrDocumentIndexer
+ *
+ * Handles Solr document indexing operations.
+ *
+ * @category Service
+ * @package  OCA\OpenRegister\Service\Index\Backends\Solr
+ *
+ * HTTP response handling requires else for error paths
+ */
+class SolrDocumentIndexer
+{
+
+    /**
+     * HTTP client.
+     *
+     * @var SolrHttpClient
+     */
+    private readonly SolrHttpClient $httpClient;
+
+    /**
+     * Collection manager.
+     *
+     * @var SolrCollectionManager
+     */
+    private readonly SolrCollectionManager $collectionManager;
+
+    /**
+     * Document builder.
+     *
+     * @var DocumentBuilder
+     */
+    private readonly DocumentBuilder $documentBuilder;
+
+    /**
+     * Logger.
+     *
+     * @var LoggerInterface
+     */
+    private readonly LoggerInterface $logger;
+
+    /**
+     * Constructor
+     *
+     * @param SolrHttpClient        $httpClient        HTTP client
+     * @param SolrCollectionManager $collectionManager Collection manager
+     * @param DocumentBuilder       $documentBuilder   Document builder
+     * @param LoggerInterface       $logger            Logger
+     *
+     * @return void
+     */
+    public function __construct(
+        SolrHttpClient $httpClient,
+        SolrCollectionManager $collectionManager,
+        DocumentBuilder $documentBuilder,
+        LoggerInterface $logger
+    ) {
+        $this->httpClient        = $httpClient;
+        $this->collectionManager = $collectionManager;
+        $this->documentBuilder   = $documentBuilder;
+        $this->logger            = $logger;
+    }//end __construct()
+
+    /**
+     * Index a single object.
+     *
+     * @param ObjectEntity $object Object to index
+     * @param bool         $commit Whether to commit immediately
+     *
+     * @return bool True if successful
+     *
+     * @SuppressWarnings(PHPMD.BooleanArgumentFlag)
+     */
+    public function indexObject(ObjectEntity $object, bool $commit=false): bool
+    {
+        try {
+            $collection = $this->collectionManager->getActiveCollectionName();
+
+            if ($collection === null) {
+                $this->logger->warning(
+                    message: '[SolrDocumentIndexer] No active collection for indexing',
+                    context: ['file' => __FILE__, 'line' => __LINE__]
+                );
+                return false;
+            }
+
+            // Use DocumentBuilder to create the Solr document.
+            $document = $this->documentBuilder->createDocument($object);
+
+            // Index the document.
+            if ($commit === true) {
+                $commitValue = 'true';
+            } else {
+                $commitValue = 'false';
+            }
+
+            $url = $this->httpClient->getEndpointUrl($collection).'/update?commit='.$commitValue;
+
+            $this->httpClient->post($url, [$document]);
+
+            $this->logger->debug(
+                message: '[SolrDocumentIndexer] Object indexed',
+                context: [
+                    'file'     => __FILE__,
+                    'line'     => __LINE__,
+                    'objectId' => $object->getId(),
+                    'commit'   => $commit,
+                ]
+            );
+
+            return true;
+        } catch (Exception $e) {
+            $this->logger->error(
+                message: '[SolrDocumentIndexer] Failed to index object',
+                context: [
+                    'file'     => __FILE__,
+                    'line'     => __LINE__,
+                    'objectId' => $object->getId(),
+                    'error'    => $e->getMessage(),
+                ]
+            );
+            return false;
+        }//end try
+    }//end indexObject()
+
+    /**
+     * Index multiple objects in bulk.
+     *
+     * @param array $objects Array of ObjectEntity objects
+     * @param bool  $commit  Whether to commit immediately
+     *
+     * @return (bool|int|string)[] Result with statistics
+     *
+     * @psalm-return array{success: bool, indexed: int<0, max>, failed: int<0, max>, error?: string}
+     *
+     * @SuppressWarnings(PHPMD.BooleanArgumentFlag)
+     */
+    public function bulkIndexObjects(array $objects, bool $commit=true): array
+    {
+        $collection = $this->collectionManager->getActiveCollectionName();
+
+        if ($collection === null) {
+            return [
+                'success' => false,
+                'indexed' => 0,
+                'failed'  => count($objects),
+                'error'   => 'No active collection',
+            ];
+        }
+
+        $documents    = [];
+        $successCount = 0;
+        $failureCount = 0;
+
+        foreach ($objects as $object) {
+            try {
+                $documents[] = $this->documentBuilder->createDocument($object);
+                $successCount++;
+            } catch (Exception $e) {
+                $failureCount++;
+                $this->logger->warning(
+                    message: '[SolrDocumentIndexer] Failed to create document for object',
+                    context: [
+                        'file'     => __FILE__,
+                        'line'     => __LINE__,
+                        'objectId' => $object->getId(),
+                        'error'    => $e->getMessage(),
+                    ]
+                );
+            }//end try
+        }//end foreach
+
+        if (empty($documents) === false) {
+            try {
+                if ($commit === true) {
+                    $commitValue = 'true';
+                } else {
+                    $commitValue = 'false';
+                }
+
+                $url = $this->httpClient->getEndpointUrl($collection).'/update?commit='.$commitValue;
+                $this->httpClient->post($url, $documents);
+
+                $this->logger->info(
+                    message: '[SolrDocumentIndexer] Bulk index completed',
+                    context: [
+                        'file'    => __FILE__,
+                        'line'    => __LINE__,
+                        'indexed' => $successCount,
+                        'failed'  => $failureCount,
+                    ]
+                );
+            } catch (Exception $e) {
+                $this->logger->error(
+                    message: '[SolrDocumentIndexer] Bulk index failed',
+                    context: [
+                        'file'  => __FILE__,
+                        'line'  => __LINE__,
+                        'error' => $e->getMessage(),
+                    ]
+                );
+                return [
+                    'success' => false,
+                    'indexed' => 0,
+                    'failed'  => count($objects),
+                    'error'   => $e->getMessage(),
+                ];
+            }//end try
+        }//end if
+
+        return [
+            'success' => true,
+            'indexed' => $successCount,
+            'failed'  => $failureCount,
+        ];
+    }//end bulkIndexObjects()
+
+    /**
+     * Index raw documents (not ObjectEntity).
+     *
+     * Used by FileHandler for indexing file chunks.
+     *
+     * @param array $documents Array of documents to index
+     * @param bool  $commit    Whether to commit immediately
+     *
+     * @return bool True if successful
+     *
+     * @SuppressWarnings(PHPMD.BooleanArgumentFlag)
+     */
+    public function indexDocuments(array $documents, bool $commit=false): bool
+    {
+        $collection = $this->collectionManager->getActiveCollectionName();
+
+        if ($collection === null) {
+            $this->logger->warning(
+                message: '[SolrDocumentIndexer] No active collection for bulk index',
+                context: ['file' => __FILE__, 'line' => __LINE__]
+            );
+            return false;
+        }
+
+        try {
+            if ($commit === true) {
+                $commitValue = 'true';
+            } else {
+                $commitValue = 'false';
+            }
+
+            $url = $this->httpClient->getEndpointUrl($collection).'/update?commit='.$commitValue;
+            $this->httpClient->post($url, $documents);
+
+            $this->logger->info(
+                message: '[SolrDocumentIndexer] Documents indexed',
+                context: [
+                    'file'   => __FILE__,
+                    'line'   => __LINE__,
+                    'count'  => count($documents),
+                    'commit' => $commit,
+                ]
+            );
+
+            return true;
+        } catch (Exception $e) {
+            $this->logger->error(
+                message: '[SolrDocumentIndexer] Failed to index documents',
+                context: [
+                    'file'  => __FILE__,
+                    'line'  => __LINE__,
+                    'error' => $e->getMessage(),
+                ]
+            );
+            return false;
+        }//end try
+    }//end indexDocuments()
+
+    /**
+     * Delete an object from the index.
+     *
+     * @param string|int $objectId Object ID to delete
+     * @param bool       $commit   Whether to commit immediately
+     *
+     * @return bool True if successful
+     *
+     * @SuppressWarnings(PHPMD.BooleanArgumentFlag)
+     */
+    public function deleteObject(string|int $objectId, bool $commit=false): bool
+    {
+        $collection = $this->collectionManager->getActiveCollectionName();
+
+        if ($collection === null) {
+            $this->logger->warning(
+                message: '[SolrDocumentIndexer] No active collection for deletion',
+                context: ['file' => __FILE__, 'line' => __LINE__]
+            );
+            return false;
+        }
+
+        try {
+            if ($commit === true) {
+                $commitValue = 'true';
+            } else {
+                $commitValue = 'false';
+            }
+
+            $url = $this->httpClient->getEndpointUrl($collection).'/update?commit='.$commitValue;
+
+            $deleteCommand = [
+                'delete' => [
+                    'query' => 'id:'.$objectId,
+                ],
+            ];
+
+            $this->httpClient->post($url, $deleteCommand);
+
+            $this->logger->debug(
+                message: '[SolrDocumentIndexer] Object deleted',
+                context: [
+                    'file'     => __FILE__,
+                    'line'     => __LINE__,
+                    'objectId' => $objectId,
+                    'commit'   => $commit,
+                ]
+            );
+
+            return true;
+        } catch (Exception $e) {
+            $this->logger->error(
+                message: '[SolrDocumentIndexer] Failed to delete object',
+                context: [
+                    'file'     => __FILE__,
+                    'line'     => __LINE__,
+                    'objectId' => $objectId,
+                    'error'    => $e->getMessage(),
+                ]
+            );
+            return false;
+        }//end try
+    }//end deleteObject()
+
+    /**
+     * Delete documents by query.
+     *
+     * @param string $query         Solr query
+     * @param bool   $commit        Whether to commit immediately
+     * @param bool   $returnDetails Whether to return detailed results
+     *
+     * @return (array|bool|string)[]|bool Results or boolean
+     *
+     * @psalm-return array{success: bool, error?: string, query?: string, result?: array}|bool
+     *
+     * @SuppressWarnings(PHPMD.BooleanArgumentFlag)
+     */
+    public function deleteByQuery(string $query, bool $commit=false, bool $returnDetails=false): array|bool
+    {
+        $collection = $this->collectionManager->getActiveCollectionName();
+
+        if ($collection === null) {
+            if ($returnDetails === true) {
+                return ['success' => false, 'error' => 'No active collection'];
+            }
+
+            return false;
+        }
+
+        try {
+            if ($commit === true) {
+                $commitValue = 'true';
+            } else {
+                $commitValue = 'false';
+            }
+
+            $url = $this->httpClient->getEndpointUrl($collection).'/update?commit='.$commitValue;
+
+            $deleteCommand = [
+                'delete' => [
+                    'query' => $query,
+                ],
+            ];
+
+            $result = $this->httpClient->post($url, $deleteCommand);
+
+            $this->logger->info(
+                message: '[SolrDocumentIndexer] Deleted by query',
+                context: [
+                    'file'   => __FILE__,
+                    'line'   => __LINE__,
+                    'query'  => $query,
+                    'commit' => $commit,
+                ]
+            );
+
+            if ($returnDetails === true) {
+                return [
+                    'success' => true,
+                    'query'   => $query,
+                    'result'  => $result,
+                ];
+            }
+
+            return true;
+        } catch (Exception $e) {
+            $this->logger->error(
+                message: '[SolrDocumentIndexer] Delete by query failed',
+                context: [
+                    'file'  => __FILE__,
+                    'line'  => __LINE__,
+                    'query' => $query,
+                    'error' => $e->getMessage(),
+                ]
+            );
+
+            if ($returnDetails === true) {
+                return [
+                    'success' => false,
+                    'error'   => $e->getMessage(),
+                ];
+            }
+
+            return false;
+        }//end try
+    }//end deleteByQuery()
+
+    /**
+     * Commit changes to Solr.
+     *
+     * @return bool True if successful
+     */
+    public function commit(): bool
+    {
+        $collection = $this->collectionManager->getActiveCollectionName();
+
+        if ($collection === null) {
+            $this->logger->warning(
+                message: '[SolrDocumentIndexer] No active collection for commit',
+                context: ['file' => __FILE__, 'line' => __LINE__]
+            );
+            return false;
+        }
+
+        try {
+            $url = $this->httpClient->getEndpointUrl($collection).'/update?commit=true';
+            $this->httpClient->post($url, []);
+
+            $this->logger->debug(
+                message: '[SolrDocumentIndexer] Commit successful',
+                context: ['file' => __FILE__, 'line' => __LINE__]
+            );
+
+            return true;
+        } catch (Exception $e) {
+            $this->logger->error(
+                message: '[SolrDocumentIndexer] Commit failed',
+                context: [
+                    'file'  => __FILE__,
+                    'line'  => __LINE__,
+                    'error' => $e->getMessage(),
+                ]
+            );
+            return false;
+        }//end try
+    }//end commit()
+
+    /**
+     * Clear all documents from the index.
+     *
+     * @param string|null $collectionName Collection to clear (null = active collection)
+     *
+     * @return (bool|string)[]
+     *
+     * @psalm-return array{success: bool, message: string, collection?: string}
+     */
+    public function clearIndex(?string $collectionName=null): array
+    {
+        $collection = $collectionName ?? $this->collectionManager->getActiveCollectionName();
+
+        if ($collection === null) {
+            return [
+                'success' => false,
+                'message' => 'No collection specified',
+            ];
+        }
+
+        try {
+            $this->logger->info(
+                message: '[SolrDocumentIndexer] Clearing index',
+                context: ['file' => __FILE__, 'line' => __LINE__, 'collection' => $collection]
+            );
+
+            $url = $this->httpClient->getEndpointUrl($collection).'/update?commit=true';
+
+            $deleteCommand = [
+                'delete' => [
+                    'query' => '*:*',
+                ],
+            ];
+
+            $this->httpClient->post($url, $deleteCommand);
+
+            return [
+                'success'    => true,
+                'message'    => 'Index cleared successfully',
+                'collection' => $collection,
+            ];
+        } catch (Exception $e) {
+            $this->logger->error(
+                message: '[SolrDocumentIndexer] Failed to clear index',
+                context: [
+                    'file'  => __FILE__,
+                    'line'  => __LINE__,
+                    'error' => $e->getMessage(),
+                ]
+            );
+
+            return [
+                'success' => false,
+                'message' => 'Failed to clear index: '.$e->getMessage(),
+            ];
+        }//end try
+    }//end clearIndex()
+
+    /**
+     * Optimize the Solr index.
+     *
+     * @return bool True if successful
+     */
+    public function optimize(): bool
+    {
+        $collection = $this->collectionManager->getActiveCollectionName();
+
+        if ($collection === null) {
+            $this->logger->warning(
+                message: '[SolrDocumentIndexer] No active collection for optimization',
+                context: ['file' => __FILE__, 'line' => __LINE__]
+            );
+            return false;
+        }
+
+        try {
+            $this->logger->info(
+                message: '[SolrDocumentIndexer] Optimizing index',
+                context: ['file' => __FILE__, 'line' => __LINE__, 'collection' => $collection]
+            );
+
+            $url = $this->httpClient->getEndpointUrl($collection).'/update?optimize=true';
+            $this->httpClient->post($url, []);
+
+            $this->logger->info(
+                message: '[SolrDocumentIndexer] Optimization completed',
+                context: ['file' => __FILE__, 'line' => __LINE__]
+            );
+
+            return true;
+        } catch (Exception $e) {
+            $this->logger->error(
+                message: '[SolrDocumentIndexer] Optimization failed',
+                context: [
+                    'file'  => __FILE__,
+                    'line'  => __LINE__,
+                    'error' => $e->getMessage(),
+                ]
+            );
+            return false;
+        }//end try
+    }//end optimize()
+
+    /**
+     * Get document count in the index.
+     *
+     * @return int Document count
+     */
+    public function getDocumentCount(): int
+    {
+        $collection = $this->collectionManager->getActiveCollectionName();
+
+        if ($collection === null) {
+            return 0;
+        }
+
+        try {
+            $url  = $this->httpClient->getEndpointUrl($collection).'/select?q=*:*&rows=0&wt=json';
+            $data = $this->httpClient->get($url);
+
+            return $data['response']['numFound'] ?? 0;
+        } catch (Exception $e) {
+            $this->logger->error(
+                message: '[SolrDocumentIndexer] Failed to get document count',
+                context: [
+                    'file'  => __FILE__,
+                    'line'  => __LINE__,
+                    'error' => $e->getMessage(),
+                ]
+            );
+            return 0;
+        }//end try
+    }//end getDocumentCount()
+}//end class

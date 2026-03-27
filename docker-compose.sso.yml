@@ -1,0 +1,93 @@
+# SSO Infrastructure for ExApps
+# Use with: docker-compose -f docker-compose.yml -f docker-compose.sso.yml up
+#
+# This adds:
+# - Keycloak for centralized authentication
+# - Redis for caching
+# - Database initialization for all ExApps
+
+volumes:
+  keycloak-data:
+  redis-data:
+
+services:
+  # Override db to add ExApp database initialization
+  db:
+    volumes:
+      - db:/var/lib/postgresql/data
+      - ./docker/postgres/init-extensions.sql:/docker-entrypoint-initdb.d/01-init-extensions.sql:ro
+      - ./docker/postgres/init-exapps.sh:/docker-entrypoint-initdb.d/02-init-exapps.sh:ro
+
+  # Keycloak Identity Provider
+  # Access at: http://localhost:8081
+  # Admin console: http://localhost:8081/admin (admin/admin)
+  keycloak:
+    image: quay.io/keycloak/keycloak:24.0
+    container_name: openregister-keycloak
+    restart: always
+    ports:
+      - "8081:8080"
+    volumes:
+      - keycloak-data:/opt/keycloak/data
+      - ./docker/keycloak/commonground-realm.json:/opt/keycloak/data/import/commonground-realm.json:ro
+    environment:
+      # Admin credentials
+      - KEYCLOAK_ADMIN=admin
+      - KEYCLOAK_ADMIN_PASSWORD=admin
+      # Database configuration
+      - KC_DB=postgres
+      - KC_DB_URL=jdbc:postgresql://db:5432/keycloak
+      - KC_DB_USERNAME=nextcloud
+      - KC_DB_PASSWORD=!ChangeMe!
+      # HTTP configuration (dev mode)
+      - KC_HTTP_ENABLED=true
+      - KC_HOSTNAME_STRICT=false
+      - KC_HOSTNAME_STRICT_HTTPS=false
+      - KC_PROXY_HEADERS=xforwarded
+      # Health
+      - KC_HEALTH_ENABLED=true
+    command:
+      - start-dev
+      - --import-realm
+    depends_on:
+      db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "exec 3<>/dev/tcp/localhost/8080 && echo -e 'GET /health/ready HTTP/1.1\r\nHost: localhost\r\n\r\n' >&3 && cat <&3 | grep -q UP"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+
+  # Redis Cache
+  # Used by OpenZaak, OpenKlant for session/cache
+  redis:
+    image: redis:7-alpine
+    container_name: openregister-redis
+    restart: always
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    command: redis-server --appendonly yes
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Nextcloud with Keycloak environment variables
+  nextcloud:
+    environment:
+      # Keycloak SSO configuration
+      - KEYCLOAK_URL=http://openregister-keycloak:8080
+      - KEYCLOAK_REALM=commonground
+      - KEYCLOAK_CLIENT_ID=nextcloud
+      - KEYCLOAK_CLIENT_SECRET=nextcloud-secret-change-me
+      # Redis for session handling
+      - REDIS_HOST=openregister-redis
+    depends_on:
+      keycloak:
+        condition: service_started
+      redis:
+        condition: service_healthy

@@ -52,6 +52,11 @@ export const useSettingsStore = defineStore('settings', {
 		warmingUpCache: false,
 		showClearCacheConfirmation: false,
 		clearCacheType: 'all',
+		clearingAppStoreCache: false,
+		warmupInterval: 3600,
+		warmupLastRun: null,
+		loadingWarmupInterval: false,
+		savingWarmupInterval: false,
 
 		// Mass validation states
 		massValidating: false,
@@ -61,8 +66,10 @@ export const useSettingsStore = defineStore('settings', {
 		// Clear logs states
 		clearingAuditTrails: false,
 		clearingSearchTrails: false,
+		clearingBlobObjects: false,
 		showClearAuditTrailsConfirmation: false,
 		showClearSearchTrailsConfirmation: false,
+		showClearBlobObjectsConfirmation: false,
 
 		// Settings data
 		solrOptions: {
@@ -96,7 +103,6 @@ export const useSettingsStore = defineStore('settings', {
 			enabled: false,
 			defaultUserTenant: '',
 			defaultObjectTenant: '',
-			publishedObjectsBypassMultiTenancy: false,
 			adminOverride: true,
 		},
 
@@ -161,6 +167,11 @@ export const useSettingsStore = defineStore('settings', {
 			},
 			totals: {
 				totalObjects: 0,
+				totalBlobObjects: 0,
+				totalMagicObjects: 0,
+				totalSize: 0,
+				totalBlobSize: 0,
+				totalMagicSize: 0,
 				totalAuditTrails: 0,
 				totalSearchTrails: 0,
 				totalConfigurations: 0,
@@ -169,6 +180,7 @@ export const useSettingsStore = defineStore('settings', {
 				totalRegisters: 0,
 				totalSchemas: 0,
 				totalSources: 0,
+				totalWebhookLogs: 0,
 				deletedObjects: 0,
 			},
 			lastUpdated: null,
@@ -912,6 +924,46 @@ export const useSettingsStore = defineStore('settings', {
 		},
 
 		/**
+		 * Test Presidio API connection
+		 * @param {object} connectionData - API endpoint
+		 */
+		async testPresidioConnection(connectionData) {
+			try {
+				const response = await axios.post(
+					generateUrl('/apps/openregister/api/settings/files/test-presidio'),
+					connectionData,
+				)
+				return response.data
+			} catch (error) {
+				console.error('Failed to test Presidio connection:', error)
+				return {
+					success: false,
+					error: error.response?.data?.error || error.message,
+				}
+			}
+		},
+
+		/**
+		 * Test OpenAnonymiser API connection
+		 * @param {object} connectionData - API endpoint
+		 */
+		async testOpenAnonymiserConnection(connectionData) {
+			try {
+				const response = await axios.post(
+					generateUrl('/apps/openregister/api/settings/files/test-openanonymiser'),
+					connectionData,
+				)
+				return response.data
+			} catch (error) {
+				console.error('Failed to test OpenAnonymiser connection:', error)
+				return {
+					success: false,
+					error: error.response?.data?.error || error.message,
+				}
+			}
+		},
+
+		/**
 		 * Load version information
 		 */
 		async loadVersionInfo() {
@@ -1042,12 +1094,26 @@ export const useSettingsStore = defineStore('settings', {
 				const response = await axios.post(generateUrl('/apps/openregister/api/settings/cache/warmup-names'))
 
 				if (response.data.success) {
-					showSuccess('Names cache warmed up successfully')
+					const loadedCount = response.data.loaded_names || 0
+					const executionTime = response.data.execution_time || '0ms'
+					const oldCacheSize = response.data.old_cache?.distributed_name_cache_size || 0
+					const newCacheSize = response.data.new_cache?.distributed_name_cache_size || 0
+
+					let cacheMessage = ''
+					if (newCacheSize > oldCacheSize) {
+						cacheMessage = `Cache grew from ${oldCacheSize} to ${newCacheSize} entries.`
+					} else if (newCacheSize < oldCacheSize) {
+						cacheMessage = `Cache shrunk from ${oldCacheSize} to ${newCacheSize} entries.`
+					} else {
+						cacheMessage = `Cache stayed the same at ${newCacheSize} entries.`
+					}
+
+					showSuccess(`Names cache warmed up successfully: ${loadedCount} names loaded in ${executionTime}. ${cacheMessage}`)
 				} else {
 					showError('Failed to warmup names cache: ' + (response.data.error || 'Unknown error'))
 				}
 
-				// Reload cache stats to reflect changes
+				// Reload cache stats to reflect changes.
 				await this.loadCacheStats()
 
 				return response.data
@@ -1057,6 +1123,54 @@ export const useSettingsStore = defineStore('settings', {
 				throw error
 			} finally {
 				this.warmingUpCache = false
+			}
+		},
+
+		/**
+		 * Load cache warmup interval setting
+		 */
+		async loadWarmupInterval() {
+			this.loadingWarmupInterval = true
+			try {
+				const response = await axios.get(generateUrl('/apps/openregister/api/settings/cache/warmup-interval'))
+				if (response.data) {
+					this.warmupInterval = response.data.interval ?? 3600
+					this.warmupLastRun = response.data.last_run ?? null
+				}
+				return response.data
+			} catch (error) {
+				console.error('Failed to load warmup interval:', error)
+			} finally {
+				this.loadingWarmupInterval = false
+			}
+		},
+
+		/**
+		 * Save cache warmup interval setting
+		 * @param {number} interval - The interval in seconds (0 = disabled)
+		 */
+		async saveWarmupInterval(interval) {
+			this.savingWarmupInterval = true
+			try {
+				const response = await axios.put(
+					generateUrl('/apps/openregister/api/settings/cache/warmup-interval'),
+					{ interval },
+				)
+
+				if (response.data.success) {
+					this.warmupInterval = response.data.interval
+					showSuccess(response.data.message)
+				} else {
+					showError('Failed to save warmup interval: ' + (response.data.error || 'Unknown error'))
+				}
+
+				return response.data
+			} catch (error) {
+				console.error('Failed to save warmup interval:', error)
+				showError('Failed to save warmup interval: ' + error.message)
+				throw error
+			} finally {
+				this.savingWarmupInterval = false
 			}
 		},
 
@@ -1234,6 +1348,43 @@ export const useSettingsStore = defineStore('settings', {
 				showError('Failed to clear search trails: ' + error.message)
 			} finally {
 				this.clearingSearchTrails = false
+			}
+		},
+
+		/**
+		 * Show clear blob objects confirmation dialog
+		 */
+		showClearBlobObjectsDialog() {
+			this.showClearBlobObjectsConfirmation = true
+		},
+
+		/**
+		 * Hide clear blob objects confirmation dialog
+		 */
+		hideClearBlobObjectsDialog() {
+			this.showClearBlobObjectsConfirmation = false
+		},
+
+		/**
+		 * Clear all blob storage objects
+		 */
+		async clearAllBlobObjects() {
+			this.clearingBlobObjects = true
+
+			try {
+				const response = await axios.delete(generateUrl('/apps/openregister/api/objects/clear-blob'))
+
+				if (response.data.success) {
+					showSuccess(`Successfully cleared ${response.data.deleted || 0} blob storage objects`)
+					this.hideClearBlobObjectsDialog()
+				} else {
+					showError('Failed to clear blob objects: ' + (response.data.error || 'Unknown error'))
+				}
+			} catch (error) {
+				console.error('Failed to clear blob objects:', error)
+				showError('Failed to clear blob objects: ' + error.message)
+			} finally {
+				this.clearingBlobObjects = false
 			}
 		},
 
@@ -1495,6 +1646,42 @@ export const useSettingsStore = defineStore('settings', {
 		 */
 		retrySetup() {
 			this.setupSolr()
+		},
+
+		// ========================================
+		// App Store Cache Actions
+		// ========================================
+
+		/**
+		 * Invalidate Nextcloud app store cache
+		 * Forces Nextcloud to fetch fresh app data from apps.nextcloud.com
+		 * by setting the cache timestamp to 0 (expired)
+		 * @param {string} type - Type of cache to invalidate: 'apps', 'categories', 'discover', or 'all'
+		 * @return {Promise<object>} The API response
+		 */
+		async clearAppStoreCache(type = 'all') {
+			this.clearingAppStoreCache = true
+
+			try {
+				const response = await axios.delete(generateUrl('/apps/openregister/api/settings/cache/appstore'), {
+					data: { type },
+				})
+
+				if (response.data.success) {
+					const invalidated = response.data.invalidated?.join(', ') || 'cache'
+					showSuccess(`App store cache invalidated: ${invalidated}`)
+				} else {
+					showError('Failed to invalidate app store cache: ' + (response.data.error || 'Unknown error'))
+				}
+
+				return response.data
+			} catch (error) {
+				console.error('Failed to invalidate app store cache:', error)
+				showError('Failed to invalidate app store cache: ' + error.message)
+				throw error
+			} finally {
+				this.clearingAppStoreCache = false
+			}
 		},
 	},
 })

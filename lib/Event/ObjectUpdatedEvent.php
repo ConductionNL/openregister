@@ -1,4 +1,5 @@
 <?php
+
 /**
  * OpenRegister ObjectUpdatedEvent
  *
@@ -38,27 +39,34 @@ class ObjectUpdatedEvent extends Event
     /**
      * The previous object entity state
      *
-     * @var ObjectEntity The object entity before update
+     * @var ObjectEntity|null The object entity before update (null if not available)
      */
-    private ObjectEntity $oldObject;
-
+    private ?ObjectEntity $oldObject;
 
     /**
      * Constructor for ObjectUpdatedEvent
      *
-     * @param ObjectEntity $newObject The object entity after update
-     * @param ObjectEntity $oldObject The object entity before update
+     * @param ObjectEntity      $newObject The object entity after update
+     * @param ObjectEntity|null $oldObject The object entity before update (null if not available)
      *
      * @return void
      */
-    public function __construct(ObjectEntity $newObject, ObjectEntity $oldObject)
+    public function __construct(ObjectEntity $newObject, ?ObjectEntity $oldObject=null)
     {
         parent::__construct();
         $this->newObject = $newObject;
         $this->oldObject = $oldObject;
-
     }//end __construct()
 
+    /**
+     * Get the updated object entity
+     *
+     * @return ObjectEntity The object entity after update
+     */
+    public function getObject(): ObjectEntity
+    {
+        return $this->newObject;
+    }//end getObject()
 
     /**
      * Get the updated object entity
@@ -68,20 +76,15 @@ class ObjectUpdatedEvent extends Event
     public function getNewObject(): ObjectEntity
     {
         return $this->newObject;
-
     }//end getNewObject()
-
 
     /**
      * Get the original object entity
      *
-     * @return ObjectEntity The object entity before update
+     * @return ObjectEntity|null The object entity before update (null if not available)
      */
-    public function getOldObject(): ObjectEntity
+    public function getOldObject(): ?ObjectEntity
     {
         return $this->oldObject;
-
     }//end getOldObject()
-
-
 }//end class

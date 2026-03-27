@@ -1,14 +1,17 @@
 <script setup>
+import { translate as t } from '@nextcloud/l10n'
 import { objectStore, navigationStore } from '../../store/store.js'
 </script>
 
 <template>
 	<NcDialog v-if="navigationStore.dialog === 'deleteObject'"
-		:name="'Delete ' + (objectStore.objectItem?.['@self']?.name || objectStore.objectItem?.name || objectStore.objectItem?.['@self']?.title || objectStore.objectItem?.id || 'Object')"
+		:name="'Delete ' + (objectStore.objectItem?.['@self']?.schema?.title ? objectStore.objectItem['@self'].schema.title + ' — ' : '') + (objectStore.objectItem?.['@self']?.name || objectStore.objectItem?.name || objectStore.objectItem?.['@self']?.title || objectStore.objectItem?.id || 'Object')"
 		size="normal"
 		:can-close="false">
 		<p v-if="success === null">
-			Do you want to permanently delete <b>{{ objectStore.objectItem?.['@self']?.name || objectStore.objectItem?.name || objectStore.objectItem?.['@self']?.title || objectStore.objectItem?.id }}</b>? This action cannot be undone.
+			Do you want to permanently delete
+			<span v-if="objectStore.objectItem?.['@self']?.schema?.title">{{ objectStore.objectItem['@self'].schema.title.toLowerCase() }} </span>
+			<b>{{ objectStore.objectItem?.['@self']?.name || objectStore.objectItem?.name || objectStore.objectItem?.['@self']?.title || objectStore.objectItem?.id }}</b>? This action cannot be undone.
 		</p>
 
 		<NcNoteCard v-if="success" type="success">
@@ -82,10 +85,25 @@ export default {
 			this.loading = true
 
 			try {
-				const { response } = await objectStore.deleteObject(objectStore.objectItem['@self'].id)
-				this.success = response.ok
-				this.error = false
-				if (response.ok) {
+				const self = objectStore.objectItem?.['@self']
+				const register = self?.register
+				const schema = self?.schema
+				const id = self?.id
+
+				if (!register || !schema || !id) {
+					throw new Error('Object is missing required metadata (register, schema, or id)')
+				}
+
+				const type = objectStore.createObjectTypeSlug(register, schema)
+				if (!objectStore.objectTypes.includes(type)) {
+					objectStore.registerObjectType(type, schema, register)
+				}
+
+				const success = await objectStore.deleteObject(type, id)
+				this.success = success
+				this.error = success ? false : (objectStore.errors?.[type] || 'Failed to delete object')
+				if (success) {
+					objectStore.refetchSearchCollection()
 					this.closeModalTimeout = setTimeout(this.closeDialog, 2000)
 				}
 			} catch (error) {

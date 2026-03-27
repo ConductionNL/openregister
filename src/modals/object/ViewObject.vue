@@ -1,13 +1,5 @@
-/**
- * @file ViewObject.vue
- * @module Modals/Object
- * @author Your Name
- * @copyright 2024 Your Organization
- * @license AGPL-3.0-or-later
- * @version 1.0.0
- */
-
 <script setup>
+import { translate as t, translatePlural as n } from '@nextcloud/l10n'
 import { objectStore, navigationStore, registerStore, schemaStore } from '../../store/store.js'
 </script>
 
@@ -221,28 +213,6 @@ import { objectStore, navigationStore, registerStore, schemaStore } from '../../
 															<ContentCopy v-else :size="16" />
 														</template>
 														{{ isCopied ? 'Copied' : 'Copy' }}
-													</NcButton>
-													<NcButton
-														v-else-if="hasAction && key === 'Published'"
-														:disabled="isPublishing"
-														size="small"
-														@click="openPublishModal">
-														<template #icon>
-															<NcLoadingIcon v-if="isPublishing" :size="16" />
-															<Publish v-else :size="16" />
-														</template>
-														Change
-													</NcButton>
-													<NcButton
-														v-else-if="hasAction && key === 'Depublished'"
-														:disabled="isDepublishing"
-														size="small"
-														@click="openDepublishModal">
-														<template #icon>
-															<NcLoadingIcon v-if="isDepublishing" :size="16" />
-															<PublishOff v-else :size="16" />
-														</template>
-														Change
 													</NcButton>
 												</td>
 											</tr>
@@ -481,10 +451,32 @@ import { objectStore, navigationStore, registerStore, schemaStore } from '../../
 													{{ attachment?.type || 'No type' }}
 												</td>
 												<td class="tableColumnConstrained">
-													<div class="fileLabelsContainer">
+													<div v-if="editingLabelsFileId !== attachment.id" class="fileLabelsContainer">
 														<NcCounterBubble v-for="label of attachment.labels" :key="label">
 															{{ label }}
 														</NcCounterBubble>
+													</div>
+													<div v-else class="fileLabelsEditContainer">
+														<NcSelect
+															v-model="editingLabels"
+															:options="availableLabels"
+															:taggable="true"
+															:multiple="true"
+															:disabled="labelsLoading"
+															input-label="Labels" />
+														<div class="fileLabelsEditActions">
+															<NcButton :disabled="labelsLoading" type="primary" @click="saveFileLabels(attachment)">
+																<template #icon>
+																	<NcLoadingIcon v-if="labelsLoading" :size="20" />
+																	<Check v-else :size="20" />
+																</template>
+															</NcButton>
+															<NcButton :disabled="labelsLoading" @click="cancelFileLabels()">
+																<template #icon>
+																	<Cancel :size="20" />
+																</template>
+															</NcButton>
+														</div>
 													</div>
 												</td>
 												<td class="tableColumnActions">
@@ -588,74 +580,6 @@ import { objectStore, navigationStore, registerStore, schemaStore } from '../../
 				</NcButton>
 			</template>
 		</NcDialog>
-
-		<!-- Publish Object Modal -->
-		<NcDialog :open="showPublishModal"
-			name="Publish Object"
-			size="small"
-			:style="{ zIndex: 10001 }"
-			@update:open="showPublishModal = $event">
-			<div class="modal-content">
-				<p>Set the publication date for this object. Leave empty to NOT publish this object.</p>
-
-				<NcDateTimePickerNative
-					v-model="publishDate"
-					label="Publication Date"
-					type="datetime-local" />
-			</div>
-
-			<template #actions>
-				<NcButton @click="closePublishModal">
-					<template #icon>
-						<Cancel :size="20" />
-					</template>
-					Cancel
-				</NcButton>
-				<NcButton type="primary"
-					:disabled="isPublishing"
-					@click="publishObject">
-					<template #icon>
-						<NcLoadingIcon v-if="isPublishing" :size="20" />
-						<ContentSave v-else :size="20" />
-					</template>
-					{{ isPublishing ? 'Publishing...' : 'Save' }}
-				</NcButton>
-			</template>
-		</NcDialog>
-
-		<!-- Depublish Object Modal -->
-		<NcDialog :open="showDepublishModal"
-			name="Depublish Object"
-			size="small"
-			:style="{ zIndex: 10001 }"
-			@update:open="showDepublishModal = $event">
-			<div class="modal-content">
-				<p>Set the depublication date for this object. Leave empty to NOT depublish this object.</p>
-
-				<NcDateTimePickerNative
-					v-model="depublishDate"
-					label="Depublication Date"
-					type="datetime-local" />
-			</div>
-
-			<template #actions>
-				<NcButton @click="closeDepublishModal">
-					<template #icon>
-						<Cancel :size="20" />
-					</template>
-					Cancel
-				</NcButton>
-				<NcButton type="primary"
-					:disabled="isDepublishing"
-					@click="depublishObject">
-					<template #icon>
-						<NcLoadingIcon v-if="isDepublishing" :size="20" />
-						<ContentSave v-else :size="20" />
-					</template>
-					{{ isDepublishing ? 'Depublishing...' : 'Save' }}
-				</NcButton>
-			</template>
-		</NcDialog>
 	</div>
 </template>
 
@@ -694,8 +618,6 @@ import FormatListChecks from 'vue-material-design-icons/FormatListChecks.vue'
 import Alert from 'vue-material-design-icons/Alert.vue'
 import AlertCircle from 'vue-material-design-icons/AlertCircle.vue'
 import Plus from 'vue-material-design-icons/Plus.vue'
-import Publish from 'vue-material-design-icons/Publish.vue'
-import PublishOff from 'vue-material-design-icons/PublishOff.vue'
 import ExclamationThick from 'vue-material-design-icons/ExclamationThick.vue'
 import ArrowRight from 'vue-material-design-icons/ArrowRight.vue'
 import PaginationComponent from '../../components/PaginationComponent.vue'
@@ -733,8 +655,6 @@ export default {
 		Alert,
 		AlertCircle,
 		Plus,
-		Publish,
-		PublishOff,
 		ExclamationThick,
 		ArrowRight,
 		PaginationComponent,
@@ -759,19 +679,16 @@ export default {
 			publishLoading: [],
 			depublishLoading: [],
 			fileIdsLoading: [],
+			editingLabelsFileId: null,
+			editingLabels: [],
+			availableLabels: [],
+			labelsLoading: false,
 			// Register/Schema selection for new objects with multiple options
 			selectedRegisterForNewObject: null,
 			selectedSchemaForNewObject: null,
 			registerSchemaSelectionConfirmed: false,
 			filesCurrentPage: 1,
 			filesPerPage: 10,
-			// Object publish/depublish modal states
-			showPublishModal: false,
-			showDepublishModal: false,
-			publishDate: null,
-			depublishDate: null,
-			isPublishing: false,
-			isDepublishing: false,
 			selectedProperty: null,
 			isSaving: false,
 			propertyChangeDebounceTimers: {}, // Track debounce timers per property
@@ -1059,20 +976,6 @@ export default {
 				false,
 			])
 
-			// Published with change action
-			metadata.push([
-				'Published',
-				obj['@self']?.published ? new Date(obj['@self'].published).toLocaleString() : 'Not published',
-				true,
-			])
-
-			// Depublished with change action
-			metadata.push([
-				'Depublished',
-				obj['@self']?.depublished ? new Date(obj['@self'].depublished).toLocaleString() : 'Not depublished',
-				true,
-			])
-
 			// Validation
 			let validationText = 'Not validated'
 			if (obj['@self']?.validation !== null) {
@@ -1153,7 +1056,7 @@ export default {
 			},
 		},
 		formData: {
-			handler(newValue) {
+			handler(_newValue) {
 				if (!this.isInternalUpdate) {
 					this.updateJsonFromForm()
 				}
@@ -1182,6 +1085,22 @@ export default {
 		}
 	},
 	methods: {
+		/**
+		 * Returns { type, objectId } needed for all file store operations.
+		 * Handles both string IDs and embedded register/schema objects.
+		 */
+		_getFileParams() {
+			const rawRegister = objectStore.objectItem['@self']?.register
+			const rawSchema = objectStore.objectItem['@self']?.schema
+			const registerId = typeof rawRegister === 'object' && rawRegister !== null ? rawRegister.id : rawRegister
+			const schemaId = typeof rawSchema === 'object' && rawSchema !== null ? rawSchema.id : rawSchema
+			const objectId = objectStore.objectItem['@self']?.id || objectStore.objectItem?.id
+			const type = `${registerId}-${schemaId}`
+			if (!objectStore.objectTypes?.includes(type)) {
+				objectStore.registerObjectType(type, schemaId, registerId)
+			}
+			return { type, objectId }
+		},
 		confirmRegisterSchemaSelection() {
 			// Set the selected register and schema in the store
 			const selectedRegister = this.selectedRegisterForNewObject || this.availableRegisters[0]
@@ -1215,17 +1134,7 @@ export default {
 				|| this.currentSchema?.name
 				|| 'Unknown Schema'
 
-			// Add status icon before the title
-			let statusIcon = ''
-			if (objectStore.objectItem['@self']?.published) {
-				statusIcon = '📄 ' // Published
-			} else if (objectStore.objectItem['@self']?.depublished) {
-				statusIcon = '⚠️ ' // Depublished
-			} else {
-				statusIcon = '✏️ ' // Draft/Unpublished
-			}
-
-			return `${statusIcon}${name} (${schemaName})`
+			return `${name} (${schemaName})`
 		},
 		async loadTitles() {
 			// Only load titles if we have an existing object with @self data
@@ -1259,14 +1168,6 @@ export default {
 			this.registerSchemaSelectionConfirmed = false
 			objectStore.availableRegistersForNewObject = null
 			objectStore.availableSchemasForNewObject = null
-
-			// Clear publish/depublish modal states
-			this.showPublishModal = false
-			this.showDepublishModal = false
-			this.publishDate = null
-			this.depublishDate = null
-			this.isPublishing = false
-			this.isDepublishing = false
 
 			// Clear debounce timers
 			Object.values(this.propertyChangeDebounceTimers).forEach(timer => {
@@ -1401,6 +1302,20 @@ export default {
 			this.formData = initialData
 			this.jsonData = JSON.stringify(initialData, null, 2)
 
+			// Fetch files for the existing object
+			const rawRegister = objectStore.objectItem['@self']?.register
+			const rawSchema = objectStore.objectItem['@self']?.schema
+			const registerId = typeof rawRegister === 'object' && rawRegister !== null ? rawRegister.id : rawRegister
+			const schemaId = typeof rawSchema === 'object' && rawSchema !== null ? rawSchema.id : rawSchema
+			const objectId = objectStore.objectItem['@self']?.id || objectStore.objectItem?.id
+			if (registerId && schemaId && objectId) {
+				const type = `${registerId}-${schemaId}`
+				if (!objectStore.objectTypes?.includes(type)) {
+					objectStore.registerObjectType(type, schemaId, registerId)
+				}
+				objectStore.fetchFiles(type, objectId)
+			}
+
 		},
 
 		async saveObject() {
@@ -1427,12 +1342,14 @@ export default {
 					dataToSave = this.formData
 				}
 
-				const { response } = await objectStore.saveObject(dataToSave, {
-					register: this.currentRegister.id,
-					schema: this.currentSchema.id,
-				})
-				console.info('Save object response:', response)
-				this.success = response.ok
+				const type = `${this.currentRegister.id}-${this.currentSchema.id}`
+				objectStore.registerObjectType(type, this.currentSchema.id, this.currentRegister.id)
+				const data = await objectStore.saveObject(type, dataToSave)
+				if (data) objectStore.setObjectItem(data)
+				await objectStore.refreshObjectList({ register: this.currentRegister.id, schema: this.currentSchema.id })
+				objectStore.refetchSearchCollection()
+				console.info('Save object data:', data)
+				this.success = !!data
 				if (this.success) {
 					// Re-initialize data to refresh jsonData with the newly created object
 					this.initializeData()
@@ -1572,25 +1489,17 @@ export default {
 
 			try {
 				this.publishLoading = [...this.selectedAttachments]
+				const { type, objectId } = this._getFileParams()
 
-				// Get the selected files
 				const selectedFiles = objectStore.files.results.filter(file =>
 					this.selectedAttachments.includes(file.id),
 				)
 
-				// Publish each file individually using the store method
 				for (const file of selectedFiles) {
-					await objectStore.publishFile({
-						register: objectStore.objectItem['@self'].register,
-						schema: objectStore.objectItem['@self'].schema,
-						objectId: objectStore.objectItem.id,
-						fileId: file.id,
-					})
+					await objectStore.publishFile(type, objectId, file.id)
 				}
 
-				// Clear selection after successful operation
 				this.selectedAttachments = []
-
 			} catch (error) {
 				// eslint-disable-next-line no-console
 				console.error('Error publishing files:', error)
@@ -1603,25 +1512,17 @@ export default {
 
 			try {
 				this.depublishLoading = [...this.selectedAttachments]
+				const { type, objectId } = this._getFileParams()
 
-				// Get the selected files
 				const selectedFiles = objectStore.files.results.filter(file =>
 					this.selectedAttachments.includes(file.id),
 				)
 
-				// Depublish each file individually using the store method
 				for (const file of selectedFiles) {
-					await objectStore.unpublishFile({
-						register: objectStore.objectItem['@self'].register,
-						schema: objectStore.objectItem['@self'].schema,
-						objectId: objectStore.objectItem.id,
-						fileId: file.id,
-					})
+					await objectStore.unpublishFile(type, objectId, file.id)
 				}
 
-				// Clear selection after successful operation
 				this.selectedAttachments = []
-
 			} catch (error) {
 				// eslint-disable-next-line no-console
 				console.error('Error depublishing files:', error)
@@ -1634,23 +1535,16 @@ export default {
 
 			try {
 				this.fileIdsLoading = [...this.selectedAttachments]
+				const { type, objectId } = this._getFileParams()
 
-				// Get the selected files
 				const selectedFiles = objectStore.files.results?.filter(item =>
 					this.selectedAttachments.includes(item.id),
 				) || []
 
-				// Delete each selected file
 				for (const file of selectedFiles) {
-					await objectStore.deleteFile({
-						register: objectStore.objectItem['@self'].register,
-						schema: objectStore.objectItem['@self'].schema,
-						objectId: objectStore.objectItem.id,
-						fileId: file.id,
-					})
+					await objectStore.deleteFile(type, objectId, file.id)
 				}
 
-				// Clear selection - files list is automatically refreshed by the store methods
 				this.selectedAttachments = []
 			} catch (error) {
 				// eslint-disable-next-line no-console
@@ -1662,15 +1556,8 @@ export default {
 		async publishFile(file) {
 			try {
 				this.publishLoading.push(file.id)
-
-				await objectStore.publishFile({
-					register: objectStore.objectItem['@self'].register,
-					schema: objectStore.objectItem['@self'].schema,
-					objectId: objectStore.objectItem.id,
-					fileId: file.id,
-				})
-
-				// Files list is automatically refreshed by the store method
+				const { type, objectId } = this._getFileParams()
+				await objectStore.publishFile(type, objectId, file.id)
 			} catch (error) {
 				// eslint-disable-next-line no-console
 				console.error('Failed to publish file:', error)
@@ -1681,15 +1568,8 @@ export default {
 		async depublishFile(file) {
 			try {
 				this.depublishLoading.push(file.id)
-
-				await objectStore.unpublishFile({
-					register: objectStore.objectItem['@self'].register,
-					schema: objectStore.objectItem['@self'].schema,
-					objectId: objectStore.objectItem.id,
-					fileId: file.id,
-				})
-
-				// Files list is automatically refreshed by the store method
+				const { type, objectId } = this._getFileParams()
+				await objectStore.unpublishFile(type, objectId, file.id)
 			} catch (error) {
 				// eslint-disable-next-line no-console
 				console.error('Failed to depublish file:', error)
@@ -1700,15 +1580,8 @@ export default {
 		async deleteFile(file) {
 			try {
 				this.fileIdsLoading.push(file.id)
-
-				await objectStore.deleteFile({
-					register: objectStore.objectItem['@self'].register,
-					schema: objectStore.objectItem['@self'].schema,
-					objectId: objectStore.objectItem.id,
-					fileId: file.id,
-				})
-
-				// Files list is automatically refreshed by the store method
+				const { type, objectId } = this._getFileParams()
+				await objectStore.deleteFile(type, objectId, file.id)
 			} catch (error) {
 				// eslint-disable-next-line no-console
 				console.error('Failed to delete file:', error)
@@ -1716,12 +1589,40 @@ export default {
 				this.fileIdsLoading = this.fileIdsLoading.filter(id => id !== file.id)
 			}
 		},
-		editFileLabels(file) {
-			// You'll need to implement the labels editing functionality
-			// This could open a modal or inline editor for file labels
-			// eslint-disable-next-line no-console
-			console.info('Editing labels for file:', file.name)
-			// Placeholder for labels editing implementation
+		async editFileLabels(file) {
+			this.editingLabelsFileId = file.id
+			this.editingLabels = [...(file.labels || [])]
+			const tags = await objectStore.fetchTags()
+			this.availableLabels = Array.isArray(tags) ? tags : objectStore.getTags || []
+		},
+		cancelFileLabels() {
+			this.editingLabelsFileId = null
+			this.editingLabels = []
+		},
+		async saveFileLabels(file) {
+			const { type, objectId } = this._getFileParams()
+			const rawRegister = objectStore.objectItem['@self']?.register
+			const rawSchema = objectStore.objectItem['@self']?.schema
+			const registerId = typeof rawRegister === 'object' && rawRegister !== null ? rawRegister.id : rawRegister
+			const schemaId = typeof rawSchema === 'object' && rawSchema !== null ? rawSchema.id : rawSchema
+
+			this.labelsLoading = true
+			try {
+				const url = `/index.php/apps/openregister/api/objects/${registerId}/${schemaId}/${objectId}/files/${file.id}`
+				const response = await fetch(url, {
+					method: 'PUT',
+					headers: { 'Content-Type': 'application/json' },
+					body: JSON.stringify({ tags: this.editingLabels }),
+				})
+				if (!response.ok) throw new Error(`HTTP ${response.status}`)
+				await objectStore.fetchFiles(type, objectId)
+				this.cancelFileLabels()
+			} catch (error) {
+				// eslint-disable-next-line no-console
+				console.error('Failed to save file labels:', error)
+			} finally {
+				this.labelsLoading = false
+			}
 		},
 		getPropertyValidationClass(key, value) {
 			// Skip @self as it's metadata
@@ -1823,7 +1724,7 @@ export default {
 
 			return `Property '${key}' has an invalid value`
 		},
-		getPropertyWarningMessage(key, value) {
+		getPropertyWarningMessage(key, _value) {
 			return `Property '${key}' exists in the object but is not defined in the current schema. This might happen when property names are changed in the schema.`
 		},
 		getPropertyNewMessage(key) {
@@ -1853,117 +1754,6 @@ export default {
 				}
 			}
 			return String(value)
-		},
-		/**
-		 * Open the publish modal and pre-fill current value
-		 */
-		openPublishModal() {
-			// Pre-fill with current published date if it exists
-			if (objectStore.objectItem['@self'].published) {
-				// Convert ISO string to Date object
-				this.publishDate = new Date(objectStore.objectItem['@self'].published)
-			} else {
-				this.publishDate = null
-			}
-			this.showPublishModal = true
-		},
-		/**
-		 * Open the depublish modal and pre-fill current value
-		 */
-		openDepublishModal() {
-			// Pre-fill with current depublished date if it exists
-			if (objectStore.objectItem['@self'].depublished) {
-				// Convert ISO string to Date object
-				this.depublishDate = new Date(objectStore.objectItem['@self'].depublished)
-			} else {
-				this.depublishDate = null
-			}
-			this.showDepublishModal = true
-		},
-
-		/**
-		 * Close the publish modal and reset state
-		 */
-		closePublishModal() {
-			this.showPublishModal = false
-			this.publishDate = null
-			this.isPublishing = false
-		},
-		/**
-		 * Close the depublish modal and reset state
-		 */
-		closeDepublishModal() {
-			this.showDepublishModal = false
-			this.depublishDate = null
-			this.isDepublishing = false
-		},
-		/**
-		 * Publish the current object with optional date
-		 */
-		async publishObject() {
-			this.isPublishing = true
-			try {
-				// If no date is provided, set published to null (unpublish)
-				const publishedDate = this.publishDate ? this.publishDate.toISOString() : null
-
-				await objectStore.publishObject({
-					register: objectStore.objectItem['@self'].register,
-					schema: objectStore.objectItem['@self'].schema,
-					objectId: objectStore.objectItem['@self'].id,
-					publishedDate,
-				})
-
-				this.closePublishModal()
-
-				// Show success message
-				const message = this.publishDate ? 'Object published successfully' : 'Object unpublished successfully'
-				this.success = message
-				setTimeout(() => {
-					this.success = null
-				}, 3000)
-			} catch (error) {
-				console.error('Failed to update object publication:', error)
-				this.error = 'Failed to update object publication: ' + error.message
-				setTimeout(() => {
-					this.error = null
-				}, 5000)
-			} finally {
-				this.isPublishing = false
-			}
-		},
-		/**
-		 * Depublish the current object with optional date
-		 */
-		async depublishObject() {
-			this.isDepublishing = true
-			try {
-				// If no date is provided, set depublished to null (remove depublication)
-				const depublishedDate = this.depublishDate ? this.depublishDate.toISOString() : null
-
-				await objectStore.depublishObject({
-					register: objectStore.objectItem['@self'].register,
-					schema: objectStore.objectItem['@self'].schema,
-					objectId: objectStore.objectItem['@self'].id,
-					depublishedDate,
-				})
-
-				this.closeDepublishModal()
-
-				// Show success message
-				const message = this.depublishDate ? 'Object depublished successfully' : 'Object depublication removed successfully'
-				this.success = message
-				setTimeout(() => {
-					this.success = null
-				}, 3000)
-			} catch (error) {
-				console.error('Failed to update object depublication:', error)
-				this.error = 'Failed to update object depublication: ' + error.message
-				setTimeout(() => {
-					this.error = null
-				}, 5000)
-			} finally {
-				this.isDepublishing = false
-			}
 		},
 		handleRowClick(key, event) {
 			// Don't select if clicking on an input or button
@@ -2610,6 +2400,7 @@ export default {
 .codeMirrorContainer.light :deep(.ͼe) {
 	color: #448c27;
 }
+
 .codeMirrorContainer.dark :deep(.ͼe) {
 	color: #88c379;
 }
@@ -2618,6 +2409,7 @@ export default {
 .codeMirrorContainer.light :deep(.ͼc) {
 	color: #221199;
 }
+
 .codeMirrorContainer.dark :deep(.ͼc) {
 	color: #8d64f7;
 }
@@ -2626,6 +2418,7 @@ export default {
 .codeMirrorContainer.light :deep(.ͼb) {
 	color: #770088;
 }
+
 .codeMirrorContainer.dark :deep(.ͼb) {
 	color: #be55cd;
 }
@@ -2634,6 +2427,7 @@ export default {
 .codeMirrorContainer.light :deep(.ͼd) {
 	color: #d19a66;
 }
+
 .codeMirrorContainer.dark :deep(.ͼd) {
 	color: #9d6c3a;
 }
@@ -2649,6 +2443,7 @@ export default {
 	background-color: #d7eaff !important;
 	color: black;
 }
+
 .codeMirrorContainer.dark :deep(.cm-line)::selection,
 .codeMirrorContainer.dark :deep(.cm-line) ::selection {
 	background-color: #8fb3e6 !important;
@@ -2659,6 +2454,7 @@ export default {
 .codeMirrorContainer.light :deep(.cm-line .ͼe)::selection {
 	color: #2d770f;
 }
+
 .codeMirrorContainer.dark :deep(.cm-line .ͼe)::selection {
 	color: #104e0c;
 }
@@ -2667,6 +2463,7 @@ export default {
 .codeMirrorContainer.light :deep(.cm-line .ͼc)::selection {
 	color: #221199;
 }
+
 .codeMirrorContainer.dark :deep(.cm-line .ͼc)::selection {
 	color: #4026af;
 }
@@ -2675,6 +2472,7 @@ export default {
 .codeMirrorContainer.light :deep(.cm-line .ͼb)::selection {
 	color: #770088;
 }
+
 .codeMirrorContainer.dark :deep(.cm-line .ͼb)::selection {
 	color: #770088;
 }
@@ -2683,6 +2481,7 @@ export default {
 .codeMirrorContainer.light :deep(.cm-line .ͼd)::selection {
 	color: #8c5c2c;
 }
+
 .codeMirrorContainer.dark :deep(.cm-line .ͼd)::selection {
 	color: #623907;
 }

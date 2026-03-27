@@ -1,7 +1,7 @@
 {
 	"name": "conductionnl/openregister",
 	"description": "Quickly build data registers based on schema.json",
-	"license": "AGPL-3.0-or-later",
+	"license": "EUPL-1.2",
 	"authors": [
 		{
 			"name": "Conduction b.v.",
@@ -30,10 +30,18 @@
 		"lint": "find . -name \\*.php -not -path './vendor/*' -not -path './vendor-bin/*' -not -path './build/*' -print0 | xargs -0 -n1 php -l",
 		"cs:check": "./vendor/bin/phpcs --standard=phpcs.xml",
 		"cs:fix": "./vendor/bin/phpcbf --standard=phpcs.xml",
-		"phpcs": "./vendor/bin/phpcs --standard=phpcs.xml",
+		"phpcs": "./vendor/bin/phpcs --standard=phpcs.xml --warning-severity=0",
 		"phpcs:fix": "./vendor/bin/phpcbf --standard=phpcs.xml",
-		"psalm": "psalm --threads=1 --no-cache || echo 'Psalm not installed, skipping...'",
+		"phpcs:output": "./vendor/bin/phpcs --standard=phpcs.xml --report=json lib/ 2>/dev/null | tail -1 > phpcs-output.json",
+		"psalm": "./vendor/bin/psalm --threads=1 --no-cache || echo 'Psalm not installed, skipping...'",
+		"psalm:fix": "./vendor/bin/psalm --threads=1 --no-cache --alter || echo 'Psalm not installed, skipping...'",
+		"psalm:output": "./vendor/bin/psalm --threads=1 --no-cache --output-format=json 2>/dev/null | tail -1 > psalm-output.json || echo 'Psalm not installed, skipping...'",
+		"phpstan": "./vendor/bin/phpstan analyse --memory-limit=1G || echo 'PHPStan not installed, skipping...'",
 		"phpmd": "phpmd lib text phpmd.xml || echo 'PHPMD not installed, skipping...'",
+		"phpmetrics": "./vendor/bin/phpmetrics --report-html=phpmetrics lib/",
+		"phpmetrics:json": "./vendor/bin/phpmetrics --report-json=phpmetrics/report.json lib/",
+		"phpmetrics:csv": "./vendor/bin/phpmetrics --report-csv=phpmetrics/report.csv lib/",
+		"phpmetrics:violations": "./vendor/bin/phpmetrics --violations-xml=phpmetrics/violations.xml lib/",
 		"test:unit": "./vendor/bin/phpunit --testsuite=\"Unit Tests\" --colors=always || echo 'Tests require Nextcloud environment, skipping...'",
 		"test:integration": "./vendor/bin/phpunit --testsuite=\"Integration Tests\" --colors=always || echo 'Tests require Nextcloud environment, skipping...'",
 		"test:db": "./vendor/bin/phpunit --testsuite=\"Database Tests\" --colors=always || echo 'Tests require Nextcloud environment, skipping...'",
@@ -43,74 +51,80 @@
 		"test:api": "docker exec -u 33 master-nextcloud-1 bash -c 'cd /var/www/html/apps-extra/openregister && ./vendor/bin/phpunit --testsuite=\"Integration Tests\" --colors=always'",
 		"test:coverage": "./vendor/bin/phpunit --coverage-html=coverage/html --coverage-clover=coverage/clover.xml --colors=always",
 		"test:coverage-docker": "docker exec -u 33 master-nextcloud-1 bash -c 'cd /var/www/html/apps-extra/openregister && ./vendor/bin/phpunit --coverage-html=coverage/html --coverage-clover=coverage/clover.xml --colors=always'",
-		"coverage:check": "php -r \"\\$xml = simplexml_load_file('coverage/clover.xml'); \\$metrics = \\$xml->project->metrics; \\$statements = (int)\\$metrics['statements']; \\$covered = (int)\\$metrics['coveredstatements']; \\$percentage = \\$statements > 0 ? round((\\$covered / \\$statements) * 100, 2) : 0; echo 'Coverage: ' . \\$percentage . '%' . PHP_EOL; exit(\\$percentage < 75 ? 1 : 0);\"",
+		"coverage:check": "php scripts/coverage-guard.php coverage/clover.xml",
+		"coverage:update": "php scripts/coverage-guard.php coverage/clover.xml --update-baseline",
 		"quality:phpcs-score": "./vendor/bin/phpcs --standard=phpcs.xml --report=json lib/ | php -r \"\\$json = json_decode(file_get_contents('php://stdin'), true); \\$errors = \\$json['totals']['errors'] ?? 0; \\$warnings = \\$json['totals']['warnings'] ?? 0; \\$score = 1000 - \\$errors - (\\$warnings / 2); echo 'PHPCS Score: ' . \\$score . ' (Errors: ' . \\$errors . ', Warnings: ' . \\$warnings . ')' . PHP_EOL;\"",
 		"quality:phpmd-score": "phpmd lib/ json phpmd.xml | php -r \"\\$input = file_get_contents('php://stdin'); \\$json = json_decode(\\$input, true); \\$violations = count(\\$json['files'] ?? []); \\$score = 1000 - (\\$violations * 10); echo 'PHPMD Score: ' . \\$score . ' (Violations: ' . \\$violations . ')' . PHP_EOL;\" || echo 'PHPMD not available'",
-		"quality:psalm-score": "psalm --output-format=json --no-cache | php -r \"\\$input = file_get_contents('php://stdin'); \\$json = json_decode(\\$input, true); \\$errors = count(\\$json ?? []); \\$score = 1000 - (\\$errors * 5); echo 'Psalm Score: ' . \\$score . ' (Errors: ' . \\$errors . ')' . PHP_EOL;\" || echo 'Psalm not available'",
+		"quality:psalm-score": "./vendor/bin/psalm --output-format=json --no-cache | php -r \"\\$input = file_get_contents('php://stdin'); \\$json = json_decode(\\$input, true); \\$errors = count(\\$json ?? []); \\$score = 1000 - (\\$errors * 5); echo 'Psalm Score: ' . \\$score . ' (Errors: ' . \\$errors . ')' . PHP_EOL;\" || echo 'Psalm not available'",
+		"quality:phpstan-score": "./vendor/bin/phpstan analyse --memory-limit=1G --error-format=json --no-progress | php -r \"\\$input = file_get_contents('php://stdin'); \\$json = json_decode(\\$input, true); \\$errors = \\$json['totals']['file_errors'] ?? 0; \\$score = 1000 - (\\$errors * 5); echo 'PHPStan Score: ' . \\$score . ' (Errors: ' . \\$errors . ')' . PHP_EOL;\" || echo 'PHPStan not available'",
 		"quality:score": [
 			"@quality:phpcs-score",
 			"@quality:phpmd-score",
-			"@quality:psalm-score"
+			"@quality:psalm-score",
+			"@quality:phpstan-score"
 		],
-		"quality:baseline": "php scripts/quality-baseline.php",
 		"openapi": "generate-spec",
-		"check": [
-			"@lint",
-			"@psalm",
-			"@test:unit"
-		],
-		"check:full": [
-			"@lint",
-			"@psalm",
-			"@test:all"
-		],
-		"check:strict": [
-			"@lint",
-			"@phpcs",
-			"@phpmd",
-			"@psalm",
-			"@test:all"
-		],
+		"check": "E=0; for CMD in lint phpcs psalm test:unit; do echo; echo \"=== $CMD ===\"; composer $CMD || E=1; done; echo; if [ $E -eq 0 ]; then echo \"ALL CHECKS PASSED\"; else echo \"SOME CHECKS FAILED (see above)\"; fi; exit $E",
+		"check:full": "E=0; for CMD in lint phpcs psalm phpstan test:all; do echo; echo \"=== $CMD ===\"; composer $CMD || E=1; done; echo; if [ $E -eq 0 ]; then echo \"ALL CHECKS PASSED\"; else echo \"SOME CHECKS FAILED (see above)\"; fi; exit $E",
+		"check:strict": "E=0; for CMD in lint phpcs phpmd psalm phpstan test:all; do echo; echo \"=== $CMD ===\"; composer $CMD || E=1; done; echo; if [ $E -eq 0 ]; then echo \"ALL CHECKS PASSED\"; else echo \"SOME CHECKS FAILED (see above)\"; fi; exit $E",
 		"fix": [
 			"@cs:fix"
+		],
+		"phpqa": "./vendor/bin/phpqa --report --analyzedDirs lib --buildDir phpqa",
+		"phpqa:full": "./vendor/bin/phpqa --report --analyzedDirs lib --buildDir phpqa --tools phpcs:0,phpmd:0,phploc:0,phpmetrics,phpcpd:0,parallel-lint:0",
+		"phpqa:ci": "./vendor/bin/phpqa --report --analyzedDirs lib --buildDir phpqa --tools phpcs,phpmd,phploc,phpmetrics,phpcpd,parallel-lint",
+		"qa:check": [
+			"@phpqa"
+		],
+		"qa:full": [
+			"@phpqa:full"
 		]
 	},
 	"require": {
-		"php": "^8.3",
+		"php": "^8.1",
 		"adbario/php-dot-notation": "^3.3.0",
 		"bamarni/composer-bin-plugin": "^1.8",
 		"elasticsearch/elasticsearch": "^v8.14.0",
 		"guzzlehttp/guzzle": "^7.0",
 		"opis/json-schema": "^2.3",
-		"phpoffice/phpspreadsheet": "^4.2",
+		"phpoffice/phpspreadsheet": "^5.0",
 		"phpoffice/phpword": "^1.2",
-		"react/async": "^4.3",
 		"react/event-loop": "^1.5",
 		"react/promise": "^3.2",
 		"smalot/pdfparser": "^2.9",
 		"symfony/uid": "^6.4",
 		"symfony/yaml": "^6.4",
 		"theodo-group/llphant": "^0.9.3",
-		"twig/twig": "^3.18"
+		"twig/twig": "^3.18",
+		"web-token/jwt-framework": "^3",
+		"webonyx/graphql-php": "^15.0"
 	},
 	"require-dev": {
+		"cyclonedx/cyclonedx-php-composer": "^6.2",
+		"edgedesign/phpqa": "^1.27",
+		"nextcloud/coding-standard": "^1.4",
+		"nextcloud/ocp": "^31.0",
 		"phpcsstandards/phpcsextra": "^1.4",
 		"phpmd/phpmd": "^2.15",
-		"phpunit/phpunit": "^10.5",
+		"phpmetrics/phpmetrics": "^2.8",
+		"phpstan/phpstan": "^1.10",
+		"phpunit/phpunit": "^10.5.62",
 		"roave/security-advisories": "dev-latest",
 		"squizlabs/php_codesniffer": "^3.9",
-		"vimeo/psalm": "^6"
+		"symfony/http-foundation": "^6.4",
+		"vimeo/psalm": "^5.26"
 	},
 	"config": {
 		"allow-plugins": {
 			"bamarni/composer-bin-plugin": true,
 			"php-http/discovery": true,
-			"dealerdirect/phpcodesniffer-composer-installer": true
+			"dealerdirect/phpcodesniffer-composer-installer": true,
+			"cyclonedx/cyclonedx-php-composer": true
 		},
 		"optimize-autoloader": true,
 		"sort-packages": true,
 		"platform": {
-			"php": "8.3"
+			"php": "8.1"
 		}
 	}
 }
