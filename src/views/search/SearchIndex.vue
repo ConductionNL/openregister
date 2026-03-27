@@ -1,7 +1,10 @@
 <script>
-import { NcAppContent } from '@nextcloud/vue'
+import { NcAppContent, NcActions, NcActionButton } from '@nextcloud/vue'
 import { CnIndexPage } from '@conduction/nextcloud-vue'
 import { navigationStore, objectStore, registerStore, schemaStore } from '../../store/store.js'
+import Pencil from 'vue-material-design-icons/Pencil.vue'
+import ContentCopy from 'vue-material-design-icons/ContentCopy.vue'
+import TrashCanOutline from 'vue-material-design-icons/TrashCanOutline.vue'
 
 /**
  * Normalize list so each row has top-level id for CnIndexPage rowKey.
@@ -20,11 +23,18 @@ export default {
 	name: 'SearchIndex',
 	components: {
 		NcAppContent,
+		NcActions,
+		NcActionButton,
 		CnIndexPage,
+		Pencil,
+		ContentCopy,
+		TrashCanOutline,
 	},
 	data() {
 		return {
 			objectStore,
+			navigationStore,
+			isAddingNewObject: false,
 		}
 	},
 	computed: {
@@ -65,7 +75,26 @@ export default {
 			return { ...schema, properties }
 		},
 	},
+	watch: {
+		'navigationStore.modal'(newVal, oldVal) {
+			if (oldVal === 'viewObject' && !newVal && this.isAddingNewObject) {
+				this.isAddingNewObject = false
+			}
+		},
+	},
 	methods: {
+		handleAddObject() {
+			if (!this.hasSelectedRegisters || !this.hasSelectedSchemas) return
+			this.isAddingNewObject = true
+			objectStore.setObjectItem(null)
+			if (registerStore.registerItem) {
+				registerStore.setRegisterItem(registerStore.registerItem)
+			}
+			if (schemaStore.schemaItem) {
+				schemaStore.setSchemaItem(schemaStore.schemaItem)
+			}
+			navigationStore.setModal('viewObject')
+		},
 		handleRefresh() {
 			objectStore.refetchSearchCollection()
 		},
@@ -85,41 +114,16 @@ export default {
 			objectStore.setSelectedObjects(ids)
 		},
 		handleRowClick(row) {
-			navigationStore.setModal('viewObject')
 			objectStore.setObjectItem(row)
+			navigationStore.setModal('viewObject')
 		},
-		async handleDelete(id) {
-			const row = this.normalizedObjects.find((r) => String(r.id) === String(id))
-			if (!row) return
-
-			const self = row['@self']
-			const register = self?.register
-			const schema = self?.schema
-
-			if (!register || !schema) {
-				this.$refs.indexPage?.setSingleDeleteResult({ error: 'Object is missing register or schema metadata' })
-				return
-			}
-
-			const type = objectStore.createObjectTypeSlug(register, schema)
-			if (!objectStore.objectTypes.includes(type)) {
-				objectStore.registerObjectType(type, schema, register)
-			}
-
-			const success = await objectStore.deleteObject(type, id)
-			this.$refs.indexPage?.setSingleDeleteResult(
-				success ? { success: true } : { error: objectStore.errors?.[type] || 'Failed to delete object' },
-			)
-			if (success) {
-				objectStore.refetchSearchCollection()
-			}
+		handleCopyRow(row) {
+			objectStore.setObjectItem(row)
+			navigationStore.setDialog('copyObject')
 		},
-		handleCopy({ id, newName: _newName }) {
-			const row = this.normalizedObjects.find((r) => String(r.id) === String(id))
-			if (row) {
-				objectStore.setObjectItem(row)
-				navigationStore.setDialog('copyObject')
-			}
+		handleDeleteRow(row) {
+			objectStore.setObjectItem(row)
+			navigationStore.setDialog('deleteObject')
 		},
 		handleMassDelete(ids) {
 			const rows = this.normalizedObjects.filter((r) => ids.includes(String(r.id)))
@@ -138,9 +142,9 @@ export default {
 
 <template>
 	<NcAppContent>
-		<!-- creation logic is handled inside CnIndexPage due to store and object-type props -->
 		<CnIndexPage
 			ref="indexPage"
+			:class="{ 'add-button-disabled': !hasSelectedRegisters || !hasSelectedSchemas }"
 			:title="pageTitle"
 			:schema="normalizedSchema"
 			:register="objectStore.searchRegister"
@@ -159,19 +163,52 @@ export default {
 			:show-mass-import="false"
 			:show-mass-export="false"
 			use-advanced-form-dialog
+			:show-edit-action="false"
+			:show-copy-action="false"
+			:show-delete-action="false"
 			show-mass-copy
 			show-mass-delete
 			mass-action-name-field="title"
 			empty-text="No objects found. Select registers and schemas in the sidebar, then search."
+			@add="handleAddObject"
 			@refresh="handleRefresh"
-			@delete="handleDelete"
-			@copy="handleCopy"
 			@mass-delete="handleMassDelete"
 			@mass-copy="handleMassCopy"
 			@row-click="handleRowClick"
 			@sort="handleSort"
 			@page-changed="handlePageChanged"
 			@page-size-changed="handlePageSizeChanged"
-			@select="handleSelect" />
+			@select="handleSelect">
+			<template #row-actions="{ row }">
+				<NcActions>
+					<NcActionButton close-after-click @click="handleRowClick(row)">
+						<template #icon>
+							<Pencil :size="20" />
+						</template>
+						Edit
+					</NcActionButton>
+					<NcActionButton close-after-click @click="handleCopyRow(row)">
+						<template #icon>
+							<ContentCopy :size="20" />
+						</template>
+						Copy
+					</NcActionButton>
+					<NcActionButton close-after-click @click="handleDeleteRow(row)">
+						<template #icon>
+							<TrashCanOutline :size="20" />
+						</template>
+						Delete
+					</NcActionButton>
+				</NcActions>
+			</template>
+		</CnIndexPage>
 	</NcAppContent>
 </template>
+
+<style scoped>
+.add-button-disabled :deep(.cn-actions-bar .button-vue--vue-primary) {
+	opacity: 0.5;
+	cursor: not-allowed;
+	pointer-events: none;
+}
+</style>

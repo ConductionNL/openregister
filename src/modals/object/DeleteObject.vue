@@ -103,6 +103,7 @@ export default {
 				this.success = success
 				this.error = success ? false : (objectStore.errors?.[type] || 'Failed to delete object')
 				if (success) {
+					objectStore.refetchSearchCollection()
 					this.closeModalTimeout = setTimeout(this.closeDialog, 2000)
 				}
 			} catch (error) {
