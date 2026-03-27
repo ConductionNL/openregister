@@ -61,11 +61,9 @@ export default {
 			}
 
 			this.loading = true
-			const mailRef = `${this.accountId}/${this.messageId}`
 			try {
-				const url = generateUrl('/apps/openregister/api/linked/mail/{mailRef}', {
-					mailRef,
-				})
+				const base = generateUrl('/apps/openregister/api/linked/mail')
+				const url = `${base}/${this.accountId}/${this.messageId}`
 				const response = await axios.get(url, { timeout: 10000 })
 				this.objects = response.data?.results || []
 			} catch (err) {
@@ -80,12 +78,11 @@ export default {
 				return
 			}
 
-			const mailRef = `${this.accountId}/${this.messageId}`
 			try {
-				const url = generateUrl('/apps/openregister/api/objects/{uuid}/_linked/mail/{mailRef}', {
+				const base = generateUrl('/apps/openregister/api/objects/{uuid}/_linked/mail', {
 					uuid: obj.uuid,
-					mailRef,
 				})
+				const url = `${base}/${this.accountId}/${this.messageId}`
 				await axios.delete(url)
 				showSuccess(t('openregister', 'Link removed'))
 				this.loadObjects()
