@@ -1,41 +1,6 @@
 {
     "components": {
         "mappings": {
-            "xllnc-openwoo-app": {
-                "name": "Xllnc -> OpenWoo.app ",
-                "description": "",
-                "version": "0.0.51",
-                "reference": "https://zuiddrecht-drie.accept.commonground.nu/apps/openconnector/api/mappings/1",
-                "mapping": {
-                    "titel": "{{ instance.subject_external }}",
-                    "samenvatting": "{{ instance.attributes.woo_samenvatting[0] }}",
-                    "beschrijving": "{{ instance.attributes.woo_beschrijving[0] }}",
-                    "kenmerk": "{% if instance.number|default%}{{ instance.number }}{% endif %}",
-                    "ontvangstdatum": "{{ instance.attributes. woo_datum_ontvangs[0] }}",
-                    "besluitdatum": "{% if instance.attributes.woo_datum_besluit|default%}{{ instance.attributes.woo_datum_besluit[0] }}{% endif %}",
-                    "organisatieonderdeel": "{% if instance.attributes.woo_organisatieonderdeel|default%}{{ instance.attributes.woo_organisatieonderdeel[0] }}{% endif %}",
-                    "functiebenaming": "{{ instance.attributes.woo_functiebenaming[0] }}",
-                    "gedraging": "{% if instance.attributes.woo_gedraging|default%}{{ instance.attributes.woo_gedraging[0] }}{% endif %}",
-                    "bevindingen": "{% if instance.attributes.woo_bevindingen|default%}{{ instance.attributes.woo_bevindingen[0] }}{% endif %}",
-                    "oordeel": "{% if instance.attributes.woo_oordeel|default%}{{ instance.attributes.woo_oordeel[0] }}{% endif %}",
-                    "conclusies": "{% if instance.attributes.woo_conclusies|default%}{{ instance.attributes.woo_conclusies[0] }}{% endif %}",
-                    "opdrachtgever": "{% if instance.attributes.woo_opdrachtgever|default%}{{ instance.attributes.woo_opdrachtgever[0] }}{% endif %}",
-                    "onderdeelTaak": "{% if instance.attributes.woo_onderdeel_taak|default%}{{ instance.attributes.woo_onderdeel_taak[0] }}{% endif %}",
-                    "attachments": "[{% set fileCount = 0 %}{% for file in instance.attributes.woo_publicatie %}{% if fileCount > 0 %}, {% endif %}{{'{\\\"endpoint\\\": \\\"/api/v1/case/' ~ reference ~ '/document/' ~ file ~ '/download\\\", \\\"label\\\": \\\"bijlage\\\", \\\"published\\\": \\\"true\\\" }'}}{% set fileCount = fileCount + 1 %}{% endfor %}{% for file in instance.attributes.woo_inventarisatielijst %}{% if fileCount > 0 %}, {% endif %}{{'{\\\"endpoint\\\": \\\"/api/v1/case/' ~ reference ~ '/document/' ~ file ~ '/download\\\", \\\"label\\\": \\\"inventarisatielijst\\\", \\\"published\\\": \\\"true\\\" }'}}{% set fileCount = fileCount + 1 %}{% endfor %}{% for file in instance.attributes.woo_informatieverzoek %}{% if fileCount > 0 %}, {% endif %}{{'{\\\"endpoint\\\": \\\"/api/v1/case/' ~ reference ~ '/document/' ~ file ~ '/download\\\", \\\"label\\\": \\\"informatieverzoek\\\", \\\"published\\\": \\\"true\\\" }'}}{% set fileCount = fileCount + 1 %}{% endfor %}{% for file in instance.attributes.woo_besluit %}{% if fileCount > 0 %}, {% endif %}{{'{\\\"endpoint\\\": \\\"/api/v1/case/' ~ reference ~ '/document/' ~ file ~ '/download\\\", \\\"label\\\": \\\"besluit\\\", \\\"published\\\": \\\"true\\\" }'}}{% set fileCount = fileCount + 1 %}{% endfor %}{% for file in instance.attributes.woo_convenant %}{% if fileCount > 0 %}, {% endif %}{{'{\\\"endpoint\\\": \\\"/api/v1/case/' ~ reference ~ '/document/' ~ file ~ '/download\\\", \\\"label\\\": \\\"convenant\\\", \\\"published\\\": \\\"true\\\" }'}}{% set fileCount = fileCount + 1 %}{% endfor %}]",
-                    "@self.published": "{{ instance.attributes.woo_publicatiedatum[0] }}",
-                    "thema": "{{ instance.attributes.woo_thema[0] }}"
-                },
-                "unset": [],
-                "cast": {
-                    "attachments": "jsonToArray",
-                    "categorie": "htmlDecode"
-                },
-                "passThrough": false,
-                "configurations": [],
-                "dateCreated": "2025-05-26T19:21:18+00:00",
-                "dateModified": "2025-05-26T19:21:18+00:00",
-                "slug": "xllnc-openwoo-app"
-            },
             "openwoo-app-elastic": {
                 "name": "OpenWoo.app -> Elastic",
                 "description": "",
