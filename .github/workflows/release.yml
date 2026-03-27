@@ -34,3 +34,4 @@ jobs:
       verify-vendor-deps: true
       vendor-check-paths: 'openai-php/client/src,theodo-group/llphant/src'
     secrets: inherit
+
