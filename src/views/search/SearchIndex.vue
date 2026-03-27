@@ -88,11 +88,30 @@ export default {
 			navigationStore.setModal('viewObject')
 			objectStore.setObjectItem(row)
 		},
-		handleDelete(id) {
+		async handleDelete(id) {
 			const row = this.normalizedObjects.find((r) => String(r.id) === String(id))
-			if (row) {
-				navigationStore.setDialog('deleteObject')
-				objectStore.setObjectItem({ '@self': row['@self'] || { id: row.id } })
+			if (!row) return
+
+			const self = row['@self']
+			const register = self?.register
+			const schema = self?.schema
+
+			if (!register || !schema) {
+				this.$refs.indexPage?.setSingleDeleteResult({ error: 'Object is missing register or schema metadata' })
+				return
+			}
+
+			const type = objectStore.createObjectTypeSlug(register, schema)
+			if (!objectStore.objectTypes.includes(type)) {
+				objectStore.registerObjectType(type, schema, register)
+			}
+
+			const success = await objectStore.deleteObject(type, id)
+			this.$refs.indexPage?.setSingleDeleteResult(
+				success ? { success: true } : { error: objectStore.errors?.[type] || 'Failed to delete object' },
+			)
+			if (success) {
+				objectStore.refetchSearchCollection()
 			}
 		},
 		handleCopy({ id, newName: _newName }) {
@@ -121,6 +140,7 @@ export default {
 	<NcAppContent>
 		<!-- creation logic is handled inside CnIndexPage due to store and object-type props -->
 		<CnIndexPage
+			ref="indexPage"
 			:title="pageTitle"
 			:schema="normalizedSchema"
 			:register="objectStore.searchRegister"

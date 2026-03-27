@@ -85,10 +85,24 @@ export default {
 			this.loading = true
 
 			try {
-				const { response } = await objectStore.deleteObject(objectStore.objectItem['@self'].id)
-				this.success = response.ok
-				this.error = false
-				if (response.ok) {
+				const self = objectStore.objectItem?.['@self']
+				const register = self?.register
+				const schema = self?.schema
+				const id = self?.id
+
+				if (!register || !schema || !id) {
+					throw new Error('Object is missing required metadata (register, schema, or id)')
+				}
+
+				const type = objectStore.createObjectTypeSlug(register, schema)
+				if (!objectStore.objectTypes.includes(type)) {
+					objectStore.registerObjectType(type, schema, register)
+				}
+
+				const success = await objectStore.deleteObject(type, id)
+				this.success = success
+				this.error = success ? false : (objectStore.errors?.[type] || 'Failed to delete object')
+				if (success) {
 					this.closeModalTimeout = setTimeout(this.closeDialog, 2000)
 				}
 			} catch (error) {
