@@ -417,9 +417,9 @@ class ConfigurationsController extends Controller
             );
 
             // Link the imported registers, schemas and objects to the configuration.
-            $registerIds = array_map(static fn($r) => $r->getId(), $result['registers'] ?? []);
-            $schemaIds   = array_map(static fn($s) => $s->getId(), $result['schemas'] ?? []);
-            $objectIds   = array_map(static fn($o) => $o->getId(), $result['objects'] ?? []);
+            $registerIds = array_map(static fn($r) => $r->getId(), $result['registers']);
+            $schemaIds   = array_map(static fn($s) => $s->getId(), $result['schemas']);
+            $objectIds   = array_map(static fn($o) => $o->getId(), $result['objects']);
 
             $configuration->setRegisters(array_values(array_unique($registerIds)));
             $configuration->setSchemas(array_values(array_unique($schemaIds)));
