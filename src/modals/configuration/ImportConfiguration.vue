@@ -18,7 +18,7 @@ import { configurationStore, navigationStore, registerStore, schemaStore } from 
 		success-text="Configuration imported successfully!"
 		@confirm="performImport"
 		@close="closeModal"
-		@update:active-tab="activeTab = $event">
+		@update:activeTab="activeTab = $event">
 		<template #confirm-icon>
 			<ImportIcon :size="20" />
 		</template>
