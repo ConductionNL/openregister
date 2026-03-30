@@ -2,6 +2,7 @@
   <img src="img/app-store.svg" alt="OpenRegister logo" width="80" height="80">
 </p>
 
+
 <h1 align="center">OpenRegister</h1>
 
 <p align="center">
