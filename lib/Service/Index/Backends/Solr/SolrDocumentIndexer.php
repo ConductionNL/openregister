@@ -32,7 +32,7 @@ use Psr\Log\LoggerInterface;
  * @category Service
  * @package  OCA\OpenRegister\Service\Index\Backends\Solr
  *
- * @SuppressWarnings(PHPMD.ElseExpression) HTTP response handling requires else for error paths
+ * HTTP response handling requires else for error paths
  */
 class SolrDocumentIndexer
 {

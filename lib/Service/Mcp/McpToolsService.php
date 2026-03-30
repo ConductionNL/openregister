@@ -25,6 +25,7 @@ namespace OCA\OpenRegister\Service\Mcp;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\RegisterService;
 use OCA\OpenRegister\Service\ObjectService;
+use InvalidArgumentException;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -81,7 +82,7 @@ class McpToolsService
      *
      * @return array MCP tool result with content array
      *
-     * @throws \InvalidArgumentException If tool name is unknown
+     * @throws InvalidArgumentException If tool name is unknown
      */
     public function callTool(string $name, array $arguments): array
     {
@@ -95,7 +96,7 @@ class McpToolsService
                 'registers' => $this->executeRegisters(arguments: $arguments),
                 'schemas'   => $this->executeSchemas(arguments: $arguments),
                 'objects'   => $this->executeObjects(arguments: $arguments),
-                default     => throw new \InvalidArgumentException(
+                default     => throw new InvalidArgumentException(
                     message: 'Unknown tool: '.$name
                 ),
             };
@@ -262,7 +263,7 @@ class McpToolsService
      *
      * @return array Result data
      *
-     * @throws \InvalidArgumentException If required parameters are missing
+     * @throws InvalidArgumentException If required parameters are missing
      */
     private function executeRegisters(array $arguments): array
     {
@@ -274,7 +275,7 @@ class McpToolsService
             'create' => $this->createRegister(arguments: $arguments),
             'update' => $this->updateRegister(arguments: $arguments),
             'delete' => $this->deleteRegister(arguments: $arguments),
-            default  => throw new \InvalidArgumentException(
+            default  => throw new InvalidArgumentException(
                 message: 'Unknown action: '.$action
             ),
         };
@@ -287,7 +288,7 @@ class McpToolsService
      *
      * @return array Result data
      *
-     * @throws \InvalidArgumentException If required parameters are missing
+     * @throws InvalidArgumentException If required parameters are missing
      */
     private function executeSchemas(array $arguments): array
     {
@@ -299,7 +300,7 @@ class McpToolsService
             'create' => $this->createSchema(arguments: $arguments),
             'update' => $this->updateSchema(arguments: $arguments),
             'delete' => $this->deleteSchema(arguments: $arguments),
-            default  => throw new \InvalidArgumentException(
+            default  => throw new InvalidArgumentException(
                 message: 'Unknown action: '.$action
             ),
         };
@@ -312,7 +313,7 @@ class McpToolsService
      *
      * @return array Result data
      *
-     * @throws \InvalidArgumentException If required parameters are missing
+     * @throws InvalidArgumentException If required parameters are missing
      */
     private function executeObjects(array $arguments): array
     {
@@ -322,7 +323,7 @@ class McpToolsService
         $schemaId   = $arguments['schema'] ?? null;
 
         if ($registerId === null || $schemaId === null) {
-            throw new \InvalidArgumentException(
+            throw new InvalidArgumentException(
                 message: 'Both register and schema IDs are required for object operations'
             );
         }
@@ -336,7 +337,7 @@ class McpToolsService
             'create' => $this->createObject(arguments: $arguments),
             'update' => $this->updateObject(arguments: $arguments),
             'delete' => $this->deleteObject(arguments: $arguments),
-            default  => throw new \InvalidArgumentException(
+            default  => throw new InvalidArgumentException(
                 message: 'Unknown action: '.$action
             ),
         };
@@ -444,7 +445,7 @@ class McpToolsService
         );
 
         return array_map(
-            callback: static fn($s) => $s->jsonSerialize(),
+            callback: static fn($schema) => $schema->jsonSerialize(),
             array: $schemas
         );
     }//end listSchemas()
@@ -531,7 +532,7 @@ class McpToolsService
         $objects = $this->objectService->findAll(config: $config);
 
         return array_map(
-            callback: static fn($o) => $o->jsonSerialize(),
+            callback: static fn($obj) => $obj->jsonSerialize(),
             array: $objects
         );
     }//end listObjects()
@@ -604,12 +605,12 @@ class McpToolsService
      *
      * @return void
      *
-     * @throws \InvalidArgumentException If parameter is missing
+     * @throws InvalidArgumentException If parameter is missing
      */
     private function requireParam(array $arguments, string $param): void
     {
         if (isset($arguments[$param]) === false) {
-            throw new \InvalidArgumentException(
+            throw new InvalidArgumentException(
                 message: 'Missing required parameter: '.$param
             );
         }

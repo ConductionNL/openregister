@@ -49,6 +49,10 @@ use Psr\Log\LoggerInterface;
  * @version  2.0.0
  *
  * @SuppressWarnings(PHPMD.ExcessiveClassComplexity) Complex faceting logic with multiple strategies
+ * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+ * @SuppressWarnings(PHPMD.ExcessiveClassLength)
+ * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
+ * @SuppressWarnings(PHPMD.UnusedFormalParameter)
  */
 class FacetHandler
 {
@@ -81,11 +85,11 @@ class FacetHandler
     /**
      * Constructor for FacetHandler.
      *
-     * @param MagicMapper $unifiedObjectMapper Unified object mapper with storage routing.
-     * @param SchemaMapper        $schemaMapper        Schema database mapper.
-     * @param ICacheFactory       $cacheFactory        Cache factory for distributed caching.
-     * @param IUserSession        $userSession         User session for tenant isolation.
-     * @param LoggerInterface     $logger              Logger for debugging and monitoring.
+     * @param MagicMapper     $unifiedObjectMapper Unified object mapper with storage routing.
+     * @param SchemaMapper    $schemaMapper        Schema database mapper.
+     * @param ICacheFactory   $cacheFactory        Cache factory for distributed caching.
+     * @param IUserSession    $userSession         User session for tenant isolation.
+     * @param LoggerInterface $logger              Logger for debugging and monitoring.
      *
      * @return void
      */
@@ -529,7 +533,7 @@ class FacetHandler
                     transformed: $transformed,
                     currentOrder: $order
                 );
-            }//end if
+            }
         }//end foreach
 
         return $transformed;
@@ -667,10 +671,9 @@ class FacetHandler
         );
 
         $configOrder = $naConfig['order'] ?? null;
+        $facetOrder  = ++$order;
         if ($configOrder !== null) {
             $facetOrder = (int) $configOrder;
-        } else {
-            $facetOrder = ++$order;
         }
 
         if ($configOrder === null) {
@@ -726,15 +729,14 @@ class FacetHandler
         $fieldConfig = $aggregatedConfigs[$field] ?? null;
 
         if ($fieldConfig !== null) {
-            $configOrder = $fieldConfig['order'] ?? null;
+            $configOrder = ($fieldConfig['order'] ?? null);
         } else {
             $configOrder = null;
         }
 
+        $facetOrder = ++$order;
         if ($configOrder !== null) {
             $facetOrder = (int) $configOrder;
-        } else {
-            $facetOrder = ++$order;
         }//end if
 
         if ($configOrder === null) {
@@ -742,16 +744,14 @@ class FacetHandler
         }
 
         // Use config title/description if available, then fall back to facet data or auto-generated.
+        $title = $facetData['title'] ?? $this->formatFieldTitle(field: $field);
         if ($fieldConfig !== null && ($fieldConfig['title'] ?? null) !== null) {
             $title = $fieldConfig['title'];
-        } else {
-            $title = $facetData['title'] ?? $this->formatFieldTitle(field: $field);
         }
 
+        $description = 'object field: '.$field;
         if ($fieldConfig !== null && ($fieldConfig['description'] ?? null) !== null) {
             $description = $fieldConfig['description'];
-        } else {
-            $description = 'object field: '.$field;
         }
 
         $definition = [
@@ -1191,7 +1191,9 @@ class FacetHandler
                             'facetConfig' => $facetConfig,
                             'title'       => $property['title'] ?? null,
                         ];
-                    } else {
+                    }
+
+                    if ($facetConfig['aggregated'] !== false) {
                         // Aggregated fields: merge across schemas (existing behavior).
                         $facetableFields['object_fields'][$propertyKey] = [
                             'type'        => $facetType,

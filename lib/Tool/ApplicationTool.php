@@ -36,6 +36,8 @@ use Psr\Log\LoggerInterface;
  * All operations respect the agent's configured views, RBAC permissions, and organisation boundaries.
  *
  * @package OCA\OpenRegister\Tool
+ *
+ * @SuppressWarnings(PHPMD.UnusedFormalParameter)
  */
 class ApplicationTool extends AbstractTool implements ToolInterface
 {

@@ -39,6 +39,7 @@ function openregisterObjectPlugin() {
 		state: () => ({
 			objectItem: false,
 			filters: {},
+			auditTrailItem: false,
 		}),
 
 		getters: {
@@ -90,6 +91,10 @@ function openregisterObjectPlugin() {
 
 			setFilters(filters) {
 				this.filters = { ...this.filters, ...filters }
+			},
+
+			setAuditTrailItem(item) {
+				this.auditTrailItem = item || false
 			},
 		},
 	}

@@ -39,6 +39,7 @@ use Twig\Loader\ArrayLoader;
  * @package OCA\OpenRegister\Service
  *
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
+ * @SuppressWarnings(PHPMD.StaticAccess)
  */
 class AuthenticationService
 {
@@ -244,6 +245,7 @@ class AuthenticationService
         $tokenLocation = $configuration['tokenLocation'];
         unset($configuration['tokenUrl']);
 
+        $callConfig         = [];
         $callConfig['json'] = $configuration;
 
         $client   = new Client();
@@ -263,9 +265,9 @@ class AuthenticationService
      *
      * @param array $configuration The auth configuration with secret key.
      *
-     * @return JWK|null The JWK key.
+     * @return JWK The JWK key.
      */
-    private function getRSJWK(array $configuration): ?JWK
+    private function getRSJWK(array $configuration): JWK
     {
         $stamp    = microtime().getmypid();
         $filename = "/var/tmp/privatekey-$stamp";
@@ -409,7 +411,12 @@ class AuthenticationService
         $jwk     = $this->getJWK(configuration: $configuration);
 
         if (isset($configuration['x5t']) === true) {
-            return $this->generateJWT(payload: $payload, jwk: $jwk, algorithm: $configuration['algorithm'], x5t: $configuration['x5t']);
+            return $this->generateJWT(
+                payload: $payload,
+                jwk: $jwk,
+                algorithm: $configuration['algorithm'],
+                x5t: $configuration['x5t']
+            );
         }
 
         return $this->generateJWT(payload: $payload, jwk: $jwk, algorithm: $configuration['algorithm']);

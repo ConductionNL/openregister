@@ -155,3 +155,13 @@ The /metrics endpoint MUST be accessible without Nextcloud authentication for Pr
   - Can PHP/Nextcloud effectively expose Prometheus metrics without a sidecar exporter?
   - Should metrics be stored in APCu (fast but per-process) or a shared store?
   - How does the readiness check determine that migrations have completed?
+
+## Nextcloud Integration Analysis
+
+**Status**: Implemented
+
+**Existing Implementation**: MetricsController exposes a Prometheus-compatible /api/metrics endpoint. HealthController provides a /api/health endpoint for health checking. HeartbeatController exposes /api/heartbeat for simple liveness checks. MetricsService provides operational metrics using database queries, tracking object counts and aggregate statistics. PerformanceHandler and PerformanceOptimizationHandler track internal performance metrics. DashboardService provides register/schema aggregation and data size calculations that feed into the metrics system.
+
+**Nextcloud Core Integration**: The health and metrics endpoints are standard HTTP endpoints served through Nextcloud's controller framework. The /api/health endpoint can be used directly by container orchestrators (Kubernetes, Docker health checks) to determine application readiness. For Prometheus metric collection, the endpoint could be registered as an IProvider (OCP\Dashboard\IAPIWidget) for the Nextcloud admin dashboard, giving administrators visibility into OpenRegister's operational status alongside other Nextcloud metrics. Logging uses Nextcloud's LoggerInterface (Psr\Log\LoggerInterface via OCP), which outputs to Nextcloud's configured log backend. The MetricsService queries data through Nextcloud's database abstraction layer (IDBConnection).
+
+**Recommendation**: The standard health endpoints (/api/health, /api/heartbeat, /api/metrics) provide a solid observability foundation. For deeper Nextcloud integration, consider registering an IDashboardWidget (OCP\Dashboard\IWidget) that displays key OpenRegister metrics (total objects, recent errors, response times) on the Nextcloud dashboard home screen. The Prometheus metrics endpoint should be exposed with @PublicPage and IP-based access control for scraper compatibility. Structured JSON logging could be achieved by implementing a custom log handler that wraps Nextcloud's logger with additional context fields (register, schema, action). The existing PerformanceHandler data could feed into the Prometheus histogram metrics for request duration tracking.

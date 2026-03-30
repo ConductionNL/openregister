@@ -181,7 +181,9 @@ class UpdateFileHandler
                     throw new Exception("File with ID $filePath does not exist: ".$e->getMessage());
                 }//end try
             }//end if
-        } else {
+        }//end if
+
+        if (is_int($filePath) === false) {
             // Handle string file paths (existing logic).
             // Clean file path and extract filename using utility method.
             $pathInfo = $this->fileService->extractFileNameFromPath($filePath);
@@ -221,8 +223,9 @@ class UpdateFileHandler
                         try {
                             $folderFiles = $objectFolder->getDirectoryListing();
                             $fileNames   = array_map(fn($f) => $f->getName(), $folderFiles);
+                            $fileList    = implode(', ', $fileNames);
                             $this->logger->info(
-                                message: '[UpdateFileHandler] updateFile: Files in object folder: '.implode(', ', $fileNames),
+                                message: "[UpdateFileHandler] updateFile: Files in object folder: $fileList",
                                 context: [
                                     'file' => __FILE__,
                                     'line' => __LINE__,
@@ -300,7 +303,8 @@ class UpdateFileHandler
                     $userFolder = $this->folderMgmtHandler->getOpenRegisterUserFolder();
                     $file       = $userFolder->get(path: $filePath);
                     $fileId     = $file->getId();
-                    $msg        = "[UpdateFileHandler] updateFile: Found file in user folder at path: $filePath (ID: $fileId)";
+                    $msg        = "[UpdateFileHandler] updateFile: Found file in user folder";
+                    $msg       .= " at path: $filePath (ID: $fileId)";
                     $this->logger->info(message: $msg, context: ['file' => __FILE__, 'line' => __LINE__]);
                 } catch (NotFoundException $e) {
                     $this->logger->error(
@@ -336,8 +340,10 @@ class UpdateFileHandler
                                 );
                             }
                         } catch (Exception $e) {
+                            $eMsg   = $e->getMessage();
+                            $errMsg = "[UpdateFileHandler] updateFile: Error finding file by ID {$fileId}: {$eMsg}";
                             $this->logger->error(
-                                message: "[UpdateFileHandler] updateFile: Error finding file by ID $fileId: ".$e->getMessage(),
+                                message: $errMsg,
                                 context: ['file' => __FILE__, 'line' => __LINE__]
                             );
                         }//end try

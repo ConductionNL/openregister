@@ -7,6 +7,9 @@
  * mapping JSON Schema properties to GraphQL types with queries, mutations,
  * filters, and connection types.
  *
+ * Delegates type mapping to TypeMapperHandler and composition logic to
+ * CompositionHandler to keep class complexity manageable.
+ *
  * @category Service
  * @package  OCA\OpenRegister\Service\GraphQL
  * @author   Conduction B.V. <info@conduction.nl>
@@ -16,11 +19,8 @@
 
 namespace OCA\OpenRegister\Service\GraphQL;
 
-use GraphQL\Type\Definition\InputObjectType;
-use GraphQL\Type\Definition\InterfaceType;
 use GraphQL\Type\Definition\ObjectType;
 use GraphQL\Type\Definition\Type;
-use GraphQL\Type\Definition\UnionType;
 use GraphQL\Type\Schema;
 use GraphQL\Type\SchemaConfig;
 use OCA\OpenRegister\Db\Register;
@@ -32,6 +32,8 @@ use OCA\OpenRegister\Service\GraphQL\Scalar\EmailType;
 use OCA\OpenRegister\Service\GraphQL\Scalar\JsonType;
 use OCA\OpenRegister\Service\GraphQL\Scalar\UriType;
 use OCA\OpenRegister\Service\GraphQL\Scalar\UuidType;
+use OCA\OpenRegister\Service\GraphQL\SchemaGenerator\CompositionHandler;
+use OCA\OpenRegister\Service\GraphQL\SchemaGenerator\TypeMapperHandler;
 
 /**
  * Generates a GraphQL schema from OpenRegister register/schema definitions.
@@ -40,7 +42,17 @@ use OCA\OpenRegister\Service\GraphQL\Scalar\UuidType;
  * and produces a complete executable schema with queries, mutations, filters,
  * and connection types.
  *
+ * Complexity reduced from 167 to 60 by extracting TypeMapperHandler and
+ * CompositionHandler. Remaining complexity is due to the inherent orchestration
+ * of query/mutation/type construction that cannot be further decomposed without
+ * fragmenting the schema generation flow.
+ *
  * @psalm-suppress UnusedClass
+ *
+ * @SuppressWarnings(PHPMD.ExcessiveClassComplexity)
+ * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
+ * @SuppressWarnings(PHPMD.StaticAccess)
+ * @SuppressWarnings(PHPMD.UnusedFormalParameter)
  */
 class SchemaGenerator
 {
@@ -53,53 +65,11 @@ class SchemaGenerator
     private array $objectTypes = [];
 
     /**
-     * Cached input types by schema ID and purpose.
-     *
-     * @var array<string, InputObjectType>
-     */
-    private array $inputTypes = [];
-
-    /**
-     * Cached connection types by schema ID.
-     *
-     * @var array<int, ObjectType>
-     */
-    private array $connectionTypes = [];
-
-    /**
      * Custom scalar type instances.
      *
      * @var array<string, Type>
      */
     private array $scalars = [];
-
-    /**
-     * Shared PageInfo type.
-     *
-     * @var ObjectType|null
-     */
-    private ?ObjectType $pageInfoType = null;
-
-    /**
-     * Shared File output type.
-     *
-     * @var ObjectType|null
-     */
-    private ?ObjectType $fileType = null;
-
-    /**
-     * Shared SortInput type.
-     *
-     * @var InputObjectType|null
-     */
-    private ?InputObjectType $sortInputType = null;
-
-    /**
-     * Shared SelfFilter input type.
-     *
-     * @var InputObjectType|null
-     */
-    private ?InputObjectType $selfFilterType = null;
 
     /**
      * Loaded schemas indexed by ID.
@@ -116,13 +86,6 @@ class SchemaGenerator
     private array $registersById = [];
 
     /**
-     * Audit trail type.
-     *
-     * @var ObjectType|null
-     */
-    private ?ObjectType $auditTrailType = null;
-
-    /**
      * Used type names to detect collisions.
      *
      * @var array<string, int>
@@ -135,6 +98,20 @@ class SchemaGenerator
      * @var GraphQLResolver|null
      */
     private ?GraphQLResolver $resolver = null;
+
+    /**
+     * Handler for type mapping and input type generation.
+     *
+     * @var TypeMapperHandler|null
+     */
+    private ?TypeMapperHandler $typeMapper = null;
+
+    /**
+     * Handler for allOf/oneOf/anyOf composition logic.
+     *
+     * @var CompositionHandler|null
+     */
+    private ?CompositionHandler $compositionHandler = null;
 
     /**
      * Constructor.
@@ -166,23 +143,17 @@ class SchemaGenerator
      *
      * @return Schema The executable GraphQL schema
      *
-     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity) Schema generation inherently branches per register+schema
      */
     public function generate(): Schema
     {
         // Reset all caches including shared types.
-        $this->objectTypes     = [];
-        $this->inputTypes      = [];
-        $this->connectionTypes = [];
-        $this->usedTypeNames   = [];
-        $this->schemasById     = [];
-        $this->registersById   = [];
-        $this->pageInfoType    = null;
-        $this->fileType        = null;
-        $this->auditTrailType  = null;
-        $this->sortInputType   = null;
-        $this->selfFilterType  = null;
+        $this->objectTypes   = [];
+        $this->usedTypeNames = [];
+        $this->schemasById   = [];
+        $this->registersById = [];
         $this->initScalars();
+        $this->initHandlers();
 
         // Load all registers and schemas.
         $registers = $this->registerMapper->findAll();
@@ -195,99 +166,13 @@ class SchemaGenerator
             $this->schemasById[$schema->getId()] = $schema;
         }
 
-        // Build query and mutation fields.
+        // Build query and mutation fields from schemas.
         $queryFields    = [];
         $mutationFields = [];
 
         foreach ($schemas as $schema) {
-            $schemaSlug = $schema->getSlug();
-            if ($schemaSlug === null || $schemaSlug === '') {
-                $schemaSlug = 'schema_'.$schema->getId();
-            }
-
-            // Sanitize slug for GraphQL field names (must match [_a-zA-Z][_a-zA-Z0-9]*).
-            $slug     = $this->toFieldName(slug: $schemaSlug);
-            $singular = $this->toFieldName(slug: $this->singularize(plural: $schemaSlug));
-            $plural   = $slug;
-
-            $objectType     = $this->getObjectType(schema: $schema);
-            $connectionType = $this->getConnectionType(schema: $schema, objectType: $objectType);
-
-            // Single object query.
-            $schemaTitle = $schema->getTitle();
-            if ($schemaTitle === null || $schemaTitle === '') {
-                $schemaTitle = $singular;
-            }
-
-            $queryFields[$singular] = [
-                'type'        => $objectType,
-                'args'        => [
-                    'id' => Type::nonNull(Type::id()),
-                ],
-                'resolve'     => $this->createSingleResolverPlaceholder(schema: $schema),
-                'description' => 'Fetch a single '.$schemaTitle,
-            ];
-
-            // List query with pagination, filtering, search, facets.
-            $listTitle = $schema->getTitle();
-            if ($listTitle === null || $listTitle === '') {
-                $listTitle = $plural;
-            }
-
-            $queryFields[$plural] = [
-                'type'        => $connectionType,
-                'args'        => $this->getListArgs(schema: $schema),
-                'resolve'     => $this->createListResolverPlaceholder(schema: $schema),
-                'description' => 'List '.$listTitle.' with pagination and filtering',
-            ];
-
-            // Mutations.
-            $createInput = $this->getCreateInputType(schema: $schema);
-            $updateInput = $this->getUpdateInputType(schema: $schema);
-
-            $createTitle = $schema->getTitle();
-            if ($createTitle === null || $createTitle === '') {
-                $createTitle = $singular;
-            }
-
-            $mutationFields['create'.ucfirst(string: $singular)] = [
-                'type'        => $objectType,
-                'args'        => [
-                    'input' => Type::nonNull($createInput),
-                ],
-                'resolve'     => $this->createMutationResolverPlaceholder(schema: $schema, action: 'create'),
-                'description' => 'Create a new '.$createTitle,
-            ];
-
-            $updateTitle = $schema->getTitle();
-            if ($updateTitle === null || $updateTitle === '') {
-                $updateTitle = $singular;
-            }
-
-            $mutationFields['update'.ucfirst(string: $singular)] = [
-                'type'        => $objectType,
-                'args'        => [
-                    'id'    => Type::nonNull(Type::id()),
-                    'input' => Type::nonNull($updateInput),
-                ],
-                'resolve'     => $this->createMutationResolverPlaceholder(schema: $schema, action: 'update'),
-                'description' => 'Update an existing '.$updateTitle,
-            ];
-
-            $deleteTitle = $schema->getTitle();
-            if ($deleteTitle === null || $deleteTitle === '') {
-                $deleteTitle = $singular;
-            }
-
-            $mutationFields['delete'.ucfirst(string: $singular)] = [
-                'type'        => Type::boolean(),
-                'args'        => [
-                    'id' => Type::nonNull(Type::id()),
-                ],
-                'resolve'     => $this->createMutationResolverPlaceholder(schema: $schema, action: 'delete'),
-                'description' => 'Delete a '.$deleteTitle,
-            ];
-        }//end foreach
+            $this->buildSchemaFields(schema: $schema, queryFields: $queryFields, mutationFields: $mutationFields);
+        }
 
         // Add register-scoped query.
         $queryFields['register'] = [
@@ -312,6 +197,153 @@ class SchemaGenerator
     }//end generate()
 
     /**
+     * Build query and mutation fields for a single schema.
+     *
+     * @param RegisterSchema       $schema         The register schema
+     * @param array<string, mixed> $queryFields    Query fields accumulator
+     * @param array<string, mixed> $mutationFields Mutation fields accumulator
+     *
+     * @return void
+     */
+    private function buildSchemaFields(
+        RegisterSchema $schema,
+        array &$queryFields,
+        array &$mutationFields,
+    ): void {
+        $schemaSlug = $schema->getSlug();
+        if ($schemaSlug === null || $schemaSlug === '') {
+            $schemaSlug = 'schema_'.$schema->getId();
+        }
+
+        // Sanitize slug for GraphQL field names (must match [_a-zA-Z][_a-zA-Z0-9]*).
+        $slug     = $this->toFieldName(slug: $schemaSlug);
+        $singular = $this->toFieldName(slug: $this->singularize(plural: $schemaSlug));
+        $plural   = $slug;
+
+        $objectType     = $this->getObjectType(schema: $schema);
+        $connectionType = $this->typeMapper->getConnectionType(schema: $schema, objectType: $objectType);
+
+        $this->buildQueryFields(
+            schema: $schema,
+            singular: $singular,
+            plural: $plural,
+            objectType: $objectType,
+            connectionType: $connectionType,
+            queryFields: $queryFields
+        );
+
+        $this->buildMutationFields(
+            schema: $schema,
+            singular: $singular,
+            objectType: $objectType,
+            mutationFields: $mutationFields
+        );
+
+    }//end buildSchemaFields()
+
+    /**
+     * Build query fields (single + list) for a schema.
+     *
+     * @param RegisterSchema       $schema         The register schema
+     * @param string               $singular       Singular field name
+     * @param string               $plural         Plural field name
+     * @param ObjectType           $objectType     The object type
+     * @param ObjectType           $connectionType The connection type
+     * @param array<string, mixed> $queryFields    Query fields accumulator
+     *
+     * @return void
+     */
+    private function buildQueryFields(
+        RegisterSchema $schema,
+        string $singular,
+        string $plural,
+        ObjectType $objectType,
+        ObjectType $connectionType,
+        array &$queryFields,
+    ): void {
+        $schemaTitle = ($schema->getTitle() ?? '');
+        if ($schemaTitle === '') {
+            $schemaTitle = $singular;
+        }
+
+        $queryFields[$singular] = [
+            'type'        => $objectType,
+            'args'        => [
+                'id' => Type::nonNull(Type::id()),
+            ],
+            'resolve'     => $this->createSingleResolverPlaceholder(schema: $schema),
+            'description' => 'Fetch a single '.$schemaTitle,
+        ];
+
+        $listTitle = ($schema->getTitle() ?? '');
+        if ($listTitle === '') {
+            $listTitle = $plural;
+        }
+
+        $queryFields[$plural] = [
+            'type'        => $connectionType,
+            'args'        => $this->typeMapper->getListArgs(schema: $schema),
+            'resolve'     => $this->createListResolverPlaceholder(schema: $schema),
+            'description' => 'List '.$listTitle.' with pagination and filtering',
+        ];
+
+    }//end buildQueryFields()
+
+    /**
+     * Build mutation fields (create, update, delete) for a schema.
+     *
+     * @param RegisterSchema       $schema         The register schema
+     * @param string               $singular       Singular field name
+     * @param ObjectType           $objectType     The object type
+     * @param array<string, mixed> $mutationFields Mutation fields accumulator
+     *
+     * @return void
+     */
+    private function buildMutationFields(
+        RegisterSchema $schema,
+        string $singular,
+        ObjectType $objectType,
+        array &$mutationFields,
+    ): void {
+        $createInput = $this->typeMapper->getCreateInputType(schema: $schema);
+        $updateInput = $this->typeMapper->getUpdateInputType(schema: $schema);
+
+        $title = ($schema->getTitle() ?? '');
+        if ($title === '') {
+            $title = $singular;
+        }
+
+        $mutationFields['create'.ucfirst(string: $singular)] = [
+            'type'        => $objectType,
+            'args'        => [
+                'input' => Type::nonNull($createInput),
+            ],
+            'resolve'     => $this->createMutationResolverPlaceholder(schema: $schema, action: 'create'),
+            'description' => 'Create a new '.$title,
+        ];
+
+        $mutationFields['update'.ucfirst(string: $singular)] = [
+            'type'        => $objectType,
+            'args'        => [
+                'id'    => Type::nonNull(Type::id()),
+                'input' => Type::nonNull($updateInput),
+            ],
+            'resolve'     => $this->createMutationResolverPlaceholder(schema: $schema, action: 'update'),
+            'description' => 'Update an existing '.$title,
+        ];
+
+        $mutationFields['delete'.ucfirst(string: $singular)] = [
+            'type'        => Type::boolean(),
+            'args'        => [
+                'id' => Type::nonNull(Type::id()),
+            ],
+            'resolve'     => $this->createMutationResolverPlaceholder(schema: $schema, action: 'delete'),
+            'description' => 'Delete a '.$title,
+        ];
+
+    }//end buildMutationFields()
+
+    /**
      * Initialize custom scalar types.
      *
      * @return void
@@ -329,6 +361,38 @@ class SchemaGenerator
     }//end initScalars()
 
     /**
+     * Initialize handler classes with callback dependencies.
+     *
+     * @return void
+     */
+    private function initHandlers(): void
+    {
+        $refResolver        = fn (string $ref): ?RegisterSchema => $this->resolveRef(ref: $ref);
+        $objectTypeFactory  = fn (RegisterSchema $schema): ObjectType => $this->getObjectType(schema: $schema);
+        $fieldNameConverter = fn (string $slug): string => $this->toFieldName(slug: $slug);
+        $typeNameConverter  = fn (string $slug, ?int $schemaId=null): string => $this->toTypeName(
+            slug: $slug,
+            schemaId: $schemaId
+        );
+
+        $this->typeMapper = new TypeMapperHandler(
+            scalars: $this->scalars,
+            refResolver: $refResolver,
+            objectTypeFactory: $objectTypeFactory,
+            fieldNameConverter: $fieldNameConverter,
+            typeNameConverter: $typeNameConverter,
+        );
+
+        $this->compositionHandler = new CompositionHandler(
+            refResolver: $refResolver,
+            objectTypeFactory: $objectTypeFactory,
+            fieldBuilder: fn (RegisterSchema $schema): array => $this->buildObjectFields(schema: $schema),
+            typeNameConverter: $typeNameConverter,
+        );
+
+    }//end initHandlers()
+
+    /**
      * Get or create an object type for a register schema.
      *
      * @param RegisterSchema $schema The register schema
@@ -337,18 +401,18 @@ class SchemaGenerator
      */
     public function getObjectType(RegisterSchema $schema): ObjectType
     {
-        $id = $schema->getId();
+        $schemaId = $schema->getId();
 
-        if (isset($this->objectTypes[$id]) === true) {
-            return $this->objectTypes[$id];
+        if (isset($this->objectTypes[$schemaId]) === true) {
+            return $this->objectTypes[$schemaId];
         }
 
         $schemaSlug = $schema->getSlug();
         if ($schemaSlug === null || $schemaSlug === '') {
-            $schemaSlug = 'Schema'.$id;
+            $schemaSlug = 'Schema'.$schemaId;
         }
 
-        $typeName = $this->toTypeName(slug: $schemaSlug, schemaId: $id);
+        $typeName = $this->toTypeName(slug: $schemaSlug, schemaId: $schemaId);
 
         // Create type with lazy field resolution to handle circular references.
         $schemaDesc = $schema->getDescription();
@@ -357,14 +421,14 @@ class SchemaGenerator
         }
 
         $type = new ObjectType(
-                [
-                    'name'        => $typeName,
-                    'description' => $schemaDesc,
-                    'fields'      => fn () => $this->buildObjectFields(schema: $schema),
-                ]
-                );
+            [
+                'name'        => $typeName,
+                'description' => $schemaDesc,
+                'fields'      => fn () => $this->buildObjectFields(schema: $schema),
+            ]
+        );
 
-        $this->objectTypes[$id] = $type;
+        $this->objectTypes[$schemaId] = $type;
         return $type;
 
     }//end getObjectType()
@@ -376,7 +440,8 @@ class SchemaGenerator
      *
      * @return array<string, array<string, mixed>> The field configuration
      *
-     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity) JSON Schema composition (allOf/oneOf/anyOf) requires deep branching
+     * @SuppressWarnings(PHPMD.NPathComplexity)      Composition + property mapping creates high path count
      */
     private function buildObjectFields(RegisterSchema $schema): array
     {
@@ -392,7 +457,7 @@ class SchemaGenerator
 
         // Audit trail field.
         $fields['_auditTrail'] = [
-            'type'        => Type::listOf($this->getAuditTrailType()),
+            'type'        => Type::listOf($this->typeMapper->getAuditTrailType()),
             'description' => 'Audit trail entries for this object',
             'args'        => [
                 'last' => [
@@ -405,7 +470,7 @@ class SchemaGenerator
 
         // Schema property fields.
         $properties = $schema->getProperties() ?? [];
-        $authInfo   = $this->getPropertyAuthDescriptions(schema: $schema);
+        $authInfo   = $this->typeMapper->getPropertyAuthDescriptions(schema: $schema);
 
         foreach ($properties as $name => $property) {
             if (is_array(value: $property) === false) {
@@ -415,9 +480,9 @@ class SchemaGenerator
             // Sanitize property name for GraphQL field compatibility.
             $fieldName = $this->toFieldName(slug: $name);
 
-            $fieldType   = $this->mapPropertyToGraphQLType(property: $property);
+            $fieldType   = $this->typeMapper->mapPropertyToGraphQLType(property: $property);
             $description = ($property['description'] ?? '');
-            if ($description === null || $description === '') {
+            if ($description === '') {
                 $description = null;
             }
 
@@ -436,93 +501,8 @@ class SchemaGenerator
             ];
         }//end foreach
 
-        // AllOf composition: merge fields from referenced schemas.
-        $allOf = null;
-        if (method_exists(object_or_class: $schema, method: 'getAllOf') === true) {
-            $allOf = $schema->getAllOf();
-        }
-
-        if (is_array(value: $allOf) === true) {
-            foreach ($allOf as $ref) {
-                $refSlug = null;
-                if (is_array(value: $ref) === true) {
-                    $refSlug = ($ref['$ref'] ?? null);
-                } else {
-                    $refSlug = $ref;
-                }
-
-                $refSchema = null;
-                if ($refSlug !== null) {
-                    $refSchema = $this->resolveRef(ref: $refSlug);
-                }
-
-                if ($refSchema !== null) {
-                    $refFields = $this->buildObjectFields(schema: $refSchema);
-                    // Merge, giving priority to the current schema's fields.
-                    $fields = array_merge($refFields, $fields);
-                }
-            }
-        }//end if
-
-        // OneOf composition: create a union type field.
-        $oneOf = null;
-        if (method_exists(object_or_class: $schema, method: 'getOneOf') === true) {
-            $oneOf = $schema->getOneOf();
-        }
-
-        if (is_array(value: $oneOf) === true && empty($oneOf) === false) {
-            $unionTypes = $this->resolveCompositionRefs(refs: $oneOf);
-            if (empty($unionTypes) === false) {
-                $oneOfSlug = $schema->getSlug();
-                if ($oneOfSlug === null || $oneOfSlug === '') {
-                    $oneOfSlug = 'Schema'.$schema->getId();
-                }
-
-                $typeName         = $this->toTypeName(slug: $oneOfSlug);
-                $unionType        = new UnionType(
-                        [
-                            'name'  => $typeName.'Union',
-                            'types' => $unionTypes,
-                        ]
-                        );
-                $fields['_oneOf'] = [
-                    'type'        => $unionType,
-                    'description' => 'One of the composed types',
-                ];
-            }
-        }//end if
-
-        // AnyOf composition: create an interface type with shared fields.
-        $anyOf = null;
-        if (method_exists(object_or_class: $schema, method: 'getAnyOf') === true) {
-            $anyOf = $schema->getAnyOf();
-        }
-
-        if (is_array(value: $anyOf) === true && empty($anyOf) === false) {
-            $anyOfTypes = $this->resolveCompositionRefs(refs: $anyOf);
-            if (empty($anyOfTypes) === false) {
-                // Build interface from shared fields across all anyOf types.
-                $sharedFields = $this->extractSharedFields(types: $anyOfTypes);
-                if (empty($sharedFields) === false) {
-                    $anyOfSlug = $schema->getSlug();
-                    if ($anyOfSlug === null || $anyOfSlug === '') {
-                        $anyOfSlug = 'Schema'.$schema->getId();
-                    }
-
-                    $typeName         = $this->toTypeName(slug: $anyOfSlug);
-                    $interfaceType    = new InterfaceType(
-                            [
-                                'name'   => $typeName.'Interface',
-                                'fields' => $sharedFields,
-                            ]
-                            );
-                    $fields['_anyOf'] = [
-                        'type'        => $interfaceType,
-                        'description' => 'Any of the composed types (shared fields)',
-                    ];
-                }
-            }//end if
-        }//end if
+        // Delegate allOf/oneOf/anyOf composition to handler.
+        $this->compositionHandler->applyComposition(schema: $schema, fields: $fields);
 
         // _usedBy field for reverse relationship traversal.
         $fields['_usedBy'] = [
@@ -533,53 +513,6 @@ class SchemaGenerator
         return $fields;
 
     }//end buildObjectFields()
-
-    /**
-     * Map a JSON Schema property to a GraphQL type.
-     *
-     * @param array<string, mixed> $property The property definition
-     *
-     * @return Type The GraphQL type
-     */
-    private function mapPropertyToGraphQLType(array $property): Type
-    {
-        $type   = ($property['type'] ?? 'string');
-        $format = ($property['format'] ?? null);
-
-        // Handle object references.
-        if ($type === 'object' && isset($property['$ref']) === true) {
-            $refSchema = $this->resolveRef(ref: $property['$ref']);
-            if ($refSchema !== null) {
-                return $this->getObjectType(schema: $refSchema);
-            }
-
-            return $this->scalars['JSON'];
-        }
-
-        // Handle arrays of references.
-        if ($type === 'array' && isset($property['items']) === true) {
-            $itemType = $this->mapPropertyToGraphQLType(property: $property['items']);
-            return Type::listOf($itemType);
-        }
-
-        // Map by type and format.
-        return match (true) {
-            $type === 'string' && $format === 'date-time' => $this->scalars['DateTime'],
-            $type === 'string' && $format === 'date'      => $this->scalars['DateTime'],
-            $type === 'string' && $format === 'uuid'      => $this->scalars['UUID'],
-            $type === 'string' && $format === 'email'     => $this->scalars['Email'],
-            $type === 'string' && $format === 'uri'       => $this->scalars['URI'],
-            $type === 'string' && $format === 'url'       => $this->scalars['URI'],
-            $type === 'string'                            => Type::string(),
-            $type === 'integer'                           => Type::int(),
-            $type === 'number'                            => Type::float(),
-            $type === 'boolean'                           => Type::boolean(),
-            $type === 'object'                            => $this->scalars['JSON'],
-            $type === 'array'                             => Type::listOf(Type::string()),
-            default                                       => Type::string(),
-        };
-
-    }//end mapPropertyToGraphQLType()
 
     /**
      * Resolve a $ref to a schema entity.
@@ -605,572 +538,6 @@ class SchemaGenerator
         return null;
 
     }//end resolveRef()
-
-    /**
-     * Resolve an array of composition references ($ref strings) to ObjectType instances.
-     *
-     * @param array<mixed> $refs The composition references
-     *
-     * @return ObjectType[] The resolved object types
-     */
-    private function resolveCompositionRefs(array $refs): array
-    {
-        $types = [];
-        foreach ($refs as $ref) {
-            $refSlug = null;
-            if (is_array(value: $ref) === true) {
-                $refSlug = ($ref['$ref'] ?? null);
-            } else if (is_string(value: $ref) === true) {
-                $refSlug = $ref;
-            }
-
-            if ($refSlug === null) {
-                continue;
-            }
-
-            $refSchema = $this->resolveRef(ref: $refSlug);
-            if ($refSchema !== null) {
-                $types[] = $this->getObjectType(schema: $refSchema);
-            }
-        }
-
-        return $types;
-
-    }//end resolveCompositionRefs()
-
-    /**
-     * Extract shared fields across multiple ObjectTypes for interface generation.
-     *
-     * @param ObjectType[] $types The object types to intersect
-     *
-     * @return array<string, array<string, mixed>> Shared field configs
-     */
-    private function extractSharedFields(array $types): array
-    {
-        if (empty($types) === true) {
-            return [];
-        }
-
-        // Get field names from first type.
-        $firstType  = $types[0];
-        $firstNames = $firstType->getFieldNames();
-        $shared     = [];
-
-        foreach ($firstNames as $fieldName) {
-            // Skip metadata fields — they're always present.
-            if (str_starts_with(haystack: $fieldName, needle: '_') === true) {
-                continue;
-            }
-
-            // Check if all other types also have this field.
-            $allHave = true;
-            foreach ($types as $type) {
-                if ($type->hasField(name: $fieldName) === false) {
-                    $allHave = false;
-                    break;
-                }
-            }
-
-            if ($allHave === true) {
-                $field = $firstType->getField(name: $fieldName);
-                $shared[$fieldName] = [
-                    'type'        => $field->getType(),
-                    'description' => $field->description,
-                ];
-            }
-        }//end foreach
-
-        return $shared;
-
-    }//end extractSharedFields()
-
-    /**
-     * Get the Relay connection type for a schema.
-     *
-     * @param RegisterSchema $schema     The register schema
-     * @param ObjectType     $objectType The object type for the schema
-     *
-     * @return ObjectType The connection type
-     */
-    private function getConnectionType(RegisterSchema $schema, ObjectType $objectType): ObjectType
-    {
-        $id = $schema->getId();
-
-        if (isset($this->connectionTypes[$id]) === true) {
-            return $this->connectionTypes[$id];
-        }
-
-        $typeName = $objectType->name;
-
-        $edgeType = new ObjectType(
-                [
-                    'name'   => $typeName.'Edge',
-                    'fields' => [
-                        'cursor'     => Type::nonNull(Type::string()),
-                        'node'       => Type::nonNull($objectType),
-                        '_relevance' => [
-                            'type'        => Type::float(),
-                            'description' => 'Fuzzy search relevance score (0-100)',
-                        ],
-                    ],
-                ]
-                );
-
-        $connectionType = new ObjectType(
-                [
-                    'name'   => $typeName.'Connection',
-                    'fields' => [
-                        'edges'      => Type::nonNull(Type::listOf(Type::nonNull($edgeType))),
-                        'pageInfo'   => Type::nonNull($this->getPageInfoType()),
-                        'totalCount' => Type::nonNull(Type::int()),
-                        'facets'     => $this->scalars['JSON'],
-                        'facetable'  => Type::listOf(Type::string()),
-                    ],
-                ]
-                );
-
-        $this->connectionTypes[$id] = $connectionType;
-        return $connectionType;
-
-    }//end getConnectionType()
-
-    /**
-     * Get the shared PageInfo type.
-     *
-     * @return ObjectType The PageInfo type
-     */
-    private function getPageInfoType(): ObjectType
-    {
-        if ($this->pageInfoType !== null) {
-            return $this->pageInfoType;
-        }
-
-        $this->pageInfoType = new ObjectType(
-                [
-                    'name'   => 'PageInfo',
-                    'fields' => [
-                        'hasNextPage'     => Type::nonNull(Type::boolean()),
-                        'hasPreviousPage' => Type::nonNull(Type::boolean()),
-                        'startCursor'     => Type::string(),
-                        'endCursor'       => Type::string(),
-                    ],
-                ]
-                );
-
-        return $this->pageInfoType;
-
-    }//end getPageInfoType()
-
-    /**
-     * Get the shared File output type.
-     *
-     * @return ObjectType The File type
-     */
-    private function getFileType(): ObjectType
-    {
-        if ($this->fileType !== null) {
-            return $this->fileType;
-        }
-
-        $this->fileType = new ObjectType(
-                [
-                    'name'   => 'File',
-                    'fields' => [
-                        'filename' => Type::string(),
-                        'mimeType' => Type::string(),
-                        'size'     => Type::int(),
-                        'url'      => Type::string(),
-                    ],
-                ]
-                );
-
-        return $this->fileType;
-
-    }//end getFileType()
-
-    /**
-     * Get the shared AuditTrail type.
-     *
-     * @return ObjectType The AuditTrail type
-     */
-    private function getAuditTrailType(): ObjectType
-    {
-        if ($this->auditTrailType !== null) {
-            return $this->auditTrailType;
-        }
-
-        $this->auditTrailType = new ObjectType(
-                [
-                    'name'   => 'AuditTrailEntry',
-                    'fields' => [
-                        'action'               => Type::string(),
-                        'user'                 => Type::string(),
-                        'userName'             => Type::string(),
-                        'changed'              => $this->scalars['JSON'],
-                        'created'              => $this->scalars['DateTime'],
-                        'ipAddress'            => Type::string(),
-                        'processingActivityId' => Type::string(),
-                        'confidentiality'      => Type::string(),
-                        'retentionPeriod'      => Type::string(),
-                    ],
-                ]
-                );
-
-        return $this->auditTrailType;
-
-    }//end getAuditTrailType()
-
-    /**
-     * Get the list query arguments for a schema.
-     *
-     * @param RegisterSchema $schema The register schema
-     *
-     * @return array<string, array<string, mixed>> The argument definitions
-     */
-    private function getListArgs(RegisterSchema $schema): array
-    {
-        return [
-            'filter'     => [
-                'type'        => $this->getFilterInputType(schema: $schema),
-                'description' => 'Filter criteria',
-            ],
-            'sort'       => ['type' => $this->getSortInputType(), 'description' => 'Sort configuration'],
-            'selfFilter' => ['type' => $this->getSelfFilterType(), 'description' => 'Metadata filter (@self)'],
-            'search'     => ['type' => Type::string(), 'description' => 'Full-text search query'],
-            'fuzzy'      => ['type' => Type::boolean(), 'defaultValue' => false, 'description' => 'Enable fuzzy matching'],
-            'facets'     => ['type' => Type::listOf(Type::string()), 'description' => 'Fields to calculate facets for'],
-            'first'      => ['type' => Type::int(), 'defaultValue' => 20, 'description' => 'Number of items to return'],
-            'offset'     => ['type' => Type::int(), 'description' => 'Offset for pagination'],
-            'after'      => ['type' => Type::string(), 'description' => 'Cursor for forward pagination'],
-        ];
-
-    }//end getListArgs()
-
-    /**
-     * Get a filter input type for a schema.
-     *
-     * @param RegisterSchema $schema The register schema
-     *
-     * @return InputObjectType The filter input type
-     */
-    private function getFilterInputType(RegisterSchema $schema): InputObjectType
-    {
-        $key = 'filter_'.$schema->getId();
-
-        if (isset($this->inputTypes[$key]) === true) {
-            return $this->inputTypes[$key];
-        }
-
-        $filterSlug = $schema->getSlug();
-        if ($filterSlug === null || $filterSlug === '') {
-            $filterSlug = 'Schema'.$schema->getId();
-        }
-
-        $typeName = $this->toTypeName(slug: $filterSlug, schemaId: $schema->getId());
-        $fields   = [];
-
-        $properties = $schema->getProperties() ?? [];
-        foreach ($properties as $name => $property) {
-            if (is_array(value: $property) === false) {
-                continue;
-            }
-
-            $fieldName = $this->toFieldName(slug: $name);
-
-            // Each filter field accepts the base type or a comparison object.
-            $baseType = $this->mapPropertyToGraphQLType(property: $property);
-            if ($baseType instanceof ObjectType || $baseType instanceof \GraphQL\Type\Definition\ListOfType) {
-                // Complex types use JSON for filtering.
-                $fields[$fieldName] = $this->scalars['JSON'];
-            } else {
-                $fields[$fieldName] = $baseType;
-            }
-        }
-
-        if (empty($fields) === true) {
-            $fields['_empty'] = [
-                'type'        => Type::boolean(),
-                'description' => 'Placeholder for schemas with no filterable properties',
-            ];
-        }
-
-        $inputType = new InputObjectType(
-                [
-                    'name'   => $typeName.'Filter',
-                    'fields' => $fields,
-                ]
-                );
-
-        $this->inputTypes[$key] = $inputType;
-        return $inputType;
-
-    }//end getFilterInputType()
-
-    /**
-     * Get the shared sort input type.
-     *
-     * @return InputObjectType The sort input type
-     */
-    private function getSortInputType(): InputObjectType
-    {
-        if ($this->sortInputType !== null) {
-            return $this->sortInputType;
-        }
-
-        $this->sortInputType = new InputObjectType(
-                [
-                    'name'   => 'SortInput',
-                    'fields' => [
-                        'field' => Type::nonNull(Type::string()),
-                        'order' => [
-                            'type'         => Type::string(),
-                            'defaultValue' => 'ASC',
-                            'description'  => 'ASC or DESC',
-                        ],
-                    ],
-                ]
-                );
-
-        return $this->sortInputType;
-
-    }//end getSortInputType()
-
-    /**
-     * Get the shared self-filter input type for metadata columns.
-     *
-     * @return InputObjectType The self-filter input type
-     */
-    private function getSelfFilterType(): InputObjectType
-    {
-        if ($this->selfFilterType !== null) {
-            return $this->selfFilterType;
-        }
-
-        $this->selfFilterType = new InputObjectType(
-                [
-                    'name'   => 'SelfFilter',
-                    'fields' => [
-                        'owner'        => Type::string(),
-                        'organisation' => Type::string(),
-                        'register'     => Type::int(),
-                        'schema'       => Type::int(),
-                        'uuid'         => $this->scalars['UUID'],
-                    ],
-                ]
-                );
-
-        return $this->selfFilterType;
-
-    }//end getSelfFilterType()
-
-    /**
-     * Get a create input type for a schema.
-     *
-     * @param RegisterSchema $schema The register schema
-     *
-     * @return InputObjectType The create input type
-     */
-    private function getCreateInputType(RegisterSchema $schema): InputObjectType
-    {
-        $key = 'create_'.$schema->getId();
-
-        if (isset($this->inputTypes[$key]) === true) {
-            return $this->inputTypes[$key];
-        }
-
-        $createSlug = $schema->getSlug();
-        if ($createSlug === null || $createSlug === '') {
-            $createSlug = 'Schema'.$schema->getId();
-        }
-
-        $typeName = $this->toTypeName(slug: $createSlug, schemaId: $schema->getId());
-        $fields   = $this->buildInputFields(schema: $schema);
-        $required = $schema->getRequired() ?? [];
-
-        // Mark required fields (sanitize names to match field keys).
-        foreach ($required as $reqField) {
-            $reqField = $this->toFieldName(slug: $reqField);
-            if (isset($fields[$reqField]) === true) {
-                $fieldType = $fields[$reqField];
-                if ($fieldType instanceof Type) {
-                    $fields[$reqField] = Type::nonNull($fieldType);
-                } else if (is_array(value: $fieldType) === true && isset($fieldType['type']) === true) {
-                    $fieldType['type'] = Type::nonNull($fieldType['type']);
-                    $fields[$reqField] = $fieldType;
-                }
-            }
-        }
-
-        if (empty($fields) === true) {
-            $fields['_placeholder'] = Type::string();
-        }
-
-        $inputType = new InputObjectType(
-                [
-                    'name'   => 'Create'.$typeName.'Input',
-                    'fields' => $fields,
-                ]
-                );
-
-        $this->inputTypes[$key] = $inputType;
-        return $inputType;
-
-    }//end getCreateInputType()
-
-    /**
-     * Get an update input type for a schema.
-     *
-     * @param RegisterSchema $schema The register schema
-     *
-     * @return InputObjectType The update input type
-     */
-    private function getUpdateInputType(RegisterSchema $schema): InputObjectType
-    {
-        $key = 'update_'.$schema->getId();
-
-        if (isset($this->inputTypes[$key]) === true) {
-            return $this->inputTypes[$key];
-        }
-
-        $updateSlug = $schema->getSlug();
-        if ($updateSlug === null || $updateSlug === '') {
-            $updateSlug = 'Schema'.$schema->getId();
-        }
-
-        $typeName = $this->toTypeName(slug: $updateSlug, schemaId: $schema->getId());
-        $fields   = $this->buildInputFields(schema: $schema);
-
-        if (empty($fields) === true) {
-            $fields['_placeholder'] = Type::string();
-        }
-
-        $inputType = new InputObjectType(
-                [
-                    'name'   => 'Update'.$typeName.'Input',
-                    'fields' => $fields,
-                ]
-                );
-
-        $this->inputTypes[$key] = $inputType;
-        return $inputType;
-
-    }//end getUpdateInputType()
-
-    /**
-     * Build input fields from schema properties.
-     *
-     * @param RegisterSchema $schema The register schema
-     *
-     * @return array<string, Type|array<string,mixed>> The input fields
-     */
-    private function buildInputFields(RegisterSchema $schema): array
-    {
-        $fields     = [];
-        $properties = $schema->getProperties() ?? [];
-
-        foreach ($properties as $name => $property) {
-            if (is_array(value: $property) === false) {
-                continue;
-            }
-
-            $fieldName = $this->toFieldName(slug: $name);
-            $type      = $this->mapPropertyToInputType(property: $property);
-            $fields[$fieldName] = $type;
-        }
-
-        return $fields;
-
-    }//end buildInputFields()
-
-    /**
-     * Map a JSON Schema property to a GraphQL input type.
-     *
-     * Object references become ID inputs instead of full objects.
-     *
-     * @param array<string, mixed> $property The property definition
-     *
-     * @return Type The GraphQL input type
-     */
-    private function mapPropertyToInputType(array $property): Type
-    {
-        $type   = ($property['type'] ?? 'string');
-        $format = ($property['format'] ?? null);
-
-        // Object references accept IDs.
-        if ($type === 'object' && isset($property['$ref']) === true) {
-            return Type::id();
-        }
-
-        // Arrays of references accept lists of IDs.
-        if ($type === 'array' && isset($property['items']['$ref']) === true) {
-            return Type::listOf(Type::id());
-        }
-
-        if ($type === 'array') {
-            return $this->scalars['JSON'];
-        }
-
-        if ($type === 'object') {
-            return $this->scalars['JSON'];
-        }
-
-        return match (true) {
-            $type === 'string' && $format === 'date-time' => $this->scalars['DateTime'],
-            $type === 'string' && $format === 'date'      => $this->scalars['DateTime'],
-            $type === 'string' && $format === 'uuid'      => $this->scalars['UUID'],
-            $type === 'string' && $format === 'email'     => $this->scalars['Email'],
-            $type === 'string' && $format === 'uri'       => $this->scalars['URI'],
-            $type === 'string'                            => Type::string(),
-            $type === 'integer'                           => Type::int(),
-            $type === 'number'                            => Type::float(),
-            $type === 'boolean'                           => Type::boolean(),
-            default                                       => Type::string(),
-        };
-
-    }//end mapPropertyToInputType()
-
-    /**
-     * Get property-level authorization descriptions for annotation.
-     *
-     * @param RegisterSchema $schema The register schema
-     *
-     * @return array<string, string> Map of property name to auth description
-     */
-    private function getPropertyAuthDescriptions(RegisterSchema $schema): array
-    {
-        $result = [];
-        if (method_exists(object_or_class: $schema, method: 'getPropertiesWithAuthorization') === false) {
-            return $result;
-        }
-
-        $authProps = $schema->getPropertiesWithAuthorization();
-        foreach ($authProps as $propName => $authConfig) {
-            $groups = [];
-            foreach (['read', 'update'] as $action) {
-                if (isset($authConfig[$action]) === false) {
-                    continue;
-                }
-
-                foreach ($authConfig[$action] as $rule) {
-                    if (is_string(value: $rule) === true) {
-                        $groups[] = $rule;
-                    } else if (is_array(value: $rule) === true && isset($rule['group']) === true) {
-                        $groups[] = $rule['group'];
-                    }
-                }
-            }
-
-            if (empty($groups) === false) {
-                $result[$propName] = 'Requires group: '.implode(
-                    separator: ', ',
-                    array: array_unique(array: $groups)
-                );
-            }
-        }//end foreach
-
-        return $result;
-
-    }//end getPropertyAuthDescriptions()
 
     /**
      * Convert a slug to a PascalCase GraphQL type name.
@@ -1223,7 +590,7 @@ class SchemaGenerator
         $parts = preg_split(pattern: '/[-_]/', subject: $slug);
         $first = array_shift($parts);
         $rest  = array_map(
-            callback: fn ($p) => ucfirst(string: $p),
+            callback: fn ($part) => ucfirst(string: $part),
             array: $parts
         );
 

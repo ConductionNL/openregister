@@ -1,3 +1,7 @@
+---
+status: draft
+---
+
 # urn-resource-addressing Specification
 
 ## Purpose
@@ -120,3 +124,27 @@ The only URN-like patterns found in the codebase are unrelated (e.g., `urn:ietf:
   - Should URNs be auto-generated as a computed field or stored as a dedicated column?
   - How should URN resolution work for federated/distributed deployments?
   - Is the URN pattern `urn:{org}:{system}:{component}:{resource}:{uuid}` aligned with RFC 8141 NID requirements?
+
+## Nextcloud Integration Analysis
+
+**Status**: Not yet implemented. No URN generation, resolution endpoints, mapping tables, or URN property types exist. Objects have `uuid` fields but no `urn` field.
+
+**Nextcloud Core Interfaces**:
+- `IURLGenerator` (`OCP\IURLGenerator`): Use Nextcloud's URL generator for constructing the URL portion of URN-URL mappings. `IURLGenerator::linkToRouteAbsolute()` generates stable absolute URLs for OpenRegister API endpoints, ensuring URN resolution returns correct URLs regardless of reverse proxy configuration.
+- `ICapability` (`OCP\Capabilities\ICapability`): Expose URN resolution endpoint availability and the configured URN namespace (organisation, system) via Nextcloud capabilities. Clients can discover the resolution endpoint at `/ocs/v2.php/cloud/capabilities` and use it for URN lookups.
+- `routes.php`: Register URN resolution endpoints (`/api/urn/resolve`, `/api/urn/reverse`) as dedicated routes. These are lightweight lookup endpoints that do not require the full object retrieval pipeline.
+- `IAppConfig`: Store URN configuration (organisation identifier, system name, default component prefix) in Nextcloud app configuration at the register level.
+
+**Implementation Approach**:
+- Add a `urn` field to `ObjectEntity` (or compute it on-the-fly). The URN is constructed from the register's organisation, system name (`openregister`), register slug (component), schema slug (resource), and object UUID. Configuration is stored on the `Register` entity as metadata properties.
+- Create a `UrnService` with methods: `generateUrn(ObjectEntity)`, `resolveUrn(string)`, `reverseResolve(string)`. The service parses URN segments to identify register, schema, and UUID, then uses `ObjectService` to verify the object exists. For external URN mappings, a `UrnMapping` entity stores the URN-URL pairs.
+- Register URN resolution routes in `routes.php`. The `UrnController` handles resolve (URN to URL+metadata) and reverse (URL to URN) requests. Both endpoints support single and bulk operations.
+- For external URN mappings, create a `UrnMappingMapper` (Nextcloud Entity/Mapper pattern) with a database table storing: `urn` (indexed, unique), `url`, `label`, `source_system`, and `created_at`. Bulk import from CSV uses a `QueuedJob` to avoid timeout issues.
+- Add a `urn` property type to the schema property system, enabling schema properties to store URN references. The UI resolves URN references to display the resource name (if resolvable) with a link to the resolved URL.
+
+**Dependencies on Existing OpenRegister Features**:
+- `ObjectEntity` — object model where URN is generated/stored.
+- `ObjectService` — object retrieval for URN resolution verification.
+- `RegisterService` / `SchemaService` — register and schema metadata for URN segment construction.
+- `MagicMapper` — indexed lookup for efficient URN resolution queries.
+- Schema property type system — extension point for the `urn` property type.

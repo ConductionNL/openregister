@@ -4,7 +4,7 @@
  * OpenRegister Bulk Operations Controller
  *
  * Controller for handling bulk operations on objects in the OpenRegister app.
- * Provides endpoints for bulk delete, publish, and depublish operations.
+ * Provides endpoints for bulk delete and save operations.
  *
  * @category Controller
  * @package  OCA\OpenRegister\Controller
@@ -143,8 +143,11 @@ class BulkController extends Controller
             $this->objectService->setRegister((string) $resolved['register']);
             $this->objectService->setSchema((string) $resolved['schema']);
 
-            // Perform bulk delete operation.
-            $deletedUuids = $this->objectService->deleteObjects($uuids);
+            // Perform bulk delete operation with referential integrity enforcement per object.
+            $result       = $this->objectService->deleteObjects($uuids);
+            $deletedUuids = $result['deleted_uuids'];
+            $skippedUuids = $result['skipped_uuids'];
+            $cascadeCount = $result['cascade_count'];
 
             return new JSONResponse(
                 data: [
@@ -153,7 +156,10 @@ class BulkController extends Controller
                     'deleted_count'   => count($deletedUuids),
                     'deleted_uuids'   => $deletedUuids,
                     'requested_count' => count($uuids),
-                    'skipped_count'   => count($uuids) - count($deletedUuids),
+                    'skipped_count'   => count($skippedUuids),
+                    'skipped_uuids'   => $skippedUuids,
+                    'cascade_count'   => $cascadeCount,
+                    'total_affected'  => count($deletedUuids) + $cascadeCount,
                 ]
             );
         } catch (Exception $e) {

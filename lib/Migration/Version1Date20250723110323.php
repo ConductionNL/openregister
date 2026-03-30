@@ -29,6 +29,8 @@ use OCP\IDBConnection;
 
 /**
  * Migration to add is_default column to organisations table
+ *
+ * @SuppressWarnings(PHPMD.UnusedFormalParameter)
  */
 class Version1Date20250723110323 extends SimpleMigrationStep
 {

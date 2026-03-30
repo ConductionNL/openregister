@@ -472,7 +472,7 @@ class FacetCacheHandler
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)   Database upsert logic with conditional insert/update
      * @SuppressWarnings(PHPMD.ExcessiveParameterList) Multiple cache configuration parameters required
-     * @SuppressWarnings(PHPMD.ElseExpression)         Insert alternative when update returns zero rows
+     * Insert alternative when update returns zero rows
      */
     private function setCachedFacetData(
         int $schemaId,

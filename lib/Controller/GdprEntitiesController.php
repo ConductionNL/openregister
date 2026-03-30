@@ -47,6 +47,8 @@ use Psr\Log\LoggerInterface;
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
  * @psalm-suppress UnusedClass
+ *
+ * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
  */
 class GdprEntitiesController extends Controller
 {

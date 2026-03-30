@@ -1,4 +1,5 @@
 <script setup>
+import { translate as t } from '@nextcloud/l10n'
 import { navigationStore, schemaStore, objectStore, registerStore } from '../../store/store.js'
 </script>
 
@@ -151,17 +152,17 @@ export default {
 
 <style>
 .modal__content {
-    margin: var(--OC-margin-50);
-    text-align: center;
+	margin: var(--OC-margin-50);
+	text-align: center;
 }
 
 .schemaDetailsContainer {
-    margin-block-start: var(--OC-margin-20);
-    margin-inline-start: var(--OC-margin-20);
-    margin-inline-end: var(--OC-margin-20);
+	margin-block-start: var(--OC-margin-20);
+	margin-inline-start: var(--OC-margin-20);
+	margin-inline-end: var(--OC-margin-20);
 }
 
 .success {
-    color: green;
+	color: green;
 }
 </style>

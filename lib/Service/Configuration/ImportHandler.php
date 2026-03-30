@@ -64,6 +64,8 @@ use Symfony\Component\Yaml\Yaml;
  * @SuppressWarnings(PHPMD.UnusedPrivateField)
  * Reason: Configuration import requires comprehensive dependencies and complex validation logic.
  *         Reserved fields for future features.
+ * @SuppressWarnings(PHPMD.StaticAccess)
+ * @SuppressWarnings(PHPMD.UnusedFormalParameter)
  */
 class ImportHandler
 {
@@ -75,8 +77,6 @@ class ImportHandler
      * which could trigger another dependency check. This flag prevents infinite recursion.
      *
      * @var boolean
-     *
-     * @SuppressWarnings(PHPMD.UnusedPrivateField)
      */
     private static bool $depCheckActive = false;
 
@@ -120,7 +120,7 @@ class ImportHandler
      *
      * @var MagicMapper|null The object mapper instance (optional, set via setObjectMapper).
      */
-    private ?MagicMapper $objectMapperForRouting = null;
+    private ?MagicMapper $routingMapper = null;
 
     /**
      * Configuration mapper instance for handling configuration operations.
@@ -193,18 +193,9 @@ class ImportHandler
     private readonly MappingMapper $mappingMapper;
 
     /**
-     * Map of mappings indexed by slug during import.
-     *
-     * @var array<string, Mapping> Mappings indexed by slug.
-     */
-    private array $mappingsMap = [];
-
-    /**
      * OpenConnector configuration service for optional integration.
      *
      * @var mixed The OpenConnector configuration service or null.
-     *
-     * @SuppressWarnings(PHPMD.UnusedPrivateField)
      */
     private mixed $connectorConfigSvc = null;
 
@@ -227,7 +218,7 @@ class ImportHandler
      *
      * @param SchemaMapper        $schemaMapper        The schema mapper.
      * @param RegisterMapper      $registerMapper      The register mapper.
-     * @param MagicMapper  $objectEntityMapper  The object entity mapper.
+     * @param MagicMapper         $objectEntityMapper  The object entity mapper.
      * @param ConfigurationMapper $configurationMapper The configuration mapper.
      * @param MappingMapper       $mappingMapper       The mapping mapper.
      * @param Client              $client              The HTTP client for URL fetching.
@@ -344,7 +335,7 @@ class ImportHandler
      */
     public function setObjectMapper(MagicMapper $objectMapper): void
     {
-        $this->objectMapperForRouting = $objectMapper;
+        $this->routingMapper = $objectMapper;
     }//end setObjectMapper()
 
     /**
@@ -1297,7 +1288,6 @@ class ImportHandler
         // Reset the maps for this import.
         $this->registersMap = [];
         $this->schemasMap   = [];
-        $this->mappingsMap  = [];
 
         $result = [
             'registers'        => [],
@@ -1586,8 +1576,7 @@ class ImportHandler
                     );
 
                     if ($mapping !== null) {
-                        $this->mappingsMap[$mappingSlug] = $mapping;
-                        $result['mappings'][]            = $mapping;
+                        $result['mappings'][] = $mapping;
                     }
 
                     $mappingId = null;
@@ -1923,7 +1912,9 @@ class ImportHandler
                         'action'  => 'updated',
                     ];
                     $deployedWorkflows[$name]         = $existing;
-                } else {
+                }
+
+                if ($existing === null) {
                     $engineId = $adapter->deployWorkflow(workflowDefinition: $entry['workflow']);
                     $deployed = $this->deployedWfMapper->createFromArray(
                             [
@@ -2042,9 +2033,9 @@ class ImportHandler
             $hooks = array_values(
                 array_filter(
                     $hooks,
-                    static function (array $h) use ($hookEntry): bool {
-                        return !(($h['workflowId'] ?? '') === $hookEntry['workflowId']
-                            && ($h['event'] ?? '') === $hookEntry['event']);
+                    static function (array $hook) use ($hookEntry): bool {
+                        return !(($hook['workflowId'] ?? '') === $hookEntry['workflowId']
+                            && ($hook['event'] ?? '') === $hookEntry['event']);
                     }
                 )
             );
@@ -2582,7 +2573,9 @@ class ImportHandler
                     message: "[ImportHandler] Updated existing configuration for app {$appId} with version {$version}",
                     context: ['file' => __FILE__, 'line' => __LINE__]
                 );
-            } else {
+            }//end if
+
+            if ($existingConfig === null) {
                 // Create new configuration.
                 $configuration = new Configuration();
                 $configuration->setTitle($title);
@@ -2975,8 +2968,10 @@ class ImportHandler
                     try {
                         // Try to find existing object using MagicMapper.
                         // Disable RBAC/multitenancy to find objects from any app/tenant.
-                        if ($this->objectMapperForRouting !== null && $objectRegister !== null) {
-                            $existingObject = $this->objectMapperForRouting->find(
+                        // No MagicMapper or register context available - cannot look up.
+                        $existingObject = null;
+                        if ($this->routingMapper !== null && $objectRegister !== null) {
+                            $existingObject = $this->routingMapper->find(
                                 identifier: $lookupIdentifier,
                                 register: $objectRegister,
                                 schema: $objectSchema,
@@ -2984,9 +2979,6 @@ class ImportHandler
                                 _rbac: false,
                                 _multitenancy: false
                             );
-                        } else {
-                            // No MagicMapper or register context available - cannot look up.
-                            $existingObject = null;
                         }
                     } catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
                         // Object doesn't exist - this is expected, we'll create it.
@@ -3050,11 +3042,10 @@ class ImportHandler
                     $objectEntity->setUpdated($now);
 
                     // Insert into database using MagicMapper if available.
-                    if ($this->objectMapperForRouting !== null) {
-                        $createdObject = $this->objectMapperForRouting->insert($objectEntity);
-                    } else {
-                        // Fallback: MagicMapper not available, use objectEntityMapper.
-                        $createdObject = $this->objectEntityMapper->insert($objectEntity);
+                    // Fallback: MagicMapper not available, use objectEntityMapper.
+                    $createdObject = $this->objectEntityMapper->insert($objectEntity);
+                    if ($this->routingMapper !== null) {
+                        $createdObject = $this->routingMapper->insert($objectEntity);
                     }
 
                     $result['objects'][] = $createdObject->getId();

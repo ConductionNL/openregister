@@ -32,7 +32,7 @@ use OCP\IDBConnection;
  *
  * @SuppressWarnings(PHPMD.ExcessiveClassLength)
  * @SuppressWarnings(PHPMD.ExcessiveClassComplexity)
- * @SuppressWarnings(PHPMD.ElseExpression)
+ * @SuppressWarnings(PHPMD.StaticAccess)
  */
 class MetaDataFacetHandler
 {
@@ -122,7 +122,6 @@ class MetaDataFacetHandler
         // @self.organisation -> organisation column (stores org UUID)
         // @self.created -> created column
         // @self.updated -> updated column
-        // @self.published -> published column
         // @self.owner -> owner column
         // Add more mappings as needed for other @self metadata fields.
         $fieldMappings = [
@@ -131,7 +130,6 @@ class MetaDataFacetHandler
             'organisation' => 'organisation',
             'created'      => 'created',
             'updated'      => 'updated',
-            'published'    => 'published',
             'owner'        => 'owner',
         ];
 
@@ -168,11 +166,10 @@ class MetaDataFacetHandler
         $queryBuilder = $this->db->getQueryBuilder();
 
         // Build interval-specific grouping expression.
+        $dateFormat = $this->getDateFormatForInterval(interval: $interval);
+        $dateKeySql = "DATE_FORMAT($field, '$dateFormat')";
         if ($interval === 'quarter') {
             $dateKeySql = "CONCAT(YEAR($field), '-Q', QUARTER($field))";
-        } else {
-            $dateFormat = $this->getDateFormatForInterval(interval: $interval);
-            $dateKeySql = "DATE_FORMAT($field, '$dateFormat')";
         }
 
         $queryBuilder->selectAlias(
@@ -258,7 +255,7 @@ class MetaDataFacetHandler
 
             case 'week':
                 if (preg_match('/^(\d{4})-(\d{1,2})$/', $dateKey, $matches) === 1) {
-                    $date = new \DateTime();
+                    $date = new DateTime();
                     $date->setISODate((int) $matches[1], (int) $matches[2], 1);
                     $from = $date->format('Y-m-d');
                     $date->setISODate((int) $matches[1], (int) $matches[2], 7);
@@ -840,10 +837,9 @@ class MetaDataFacetHandler
      */
     private function applyOrMetadataOperator(IQueryBuilder $queryBuilder, string $field, mixed $operatorValue): void
     {
+        $values = $operatorValue;
         if (is_string($operatorValue) === true) {
             $values = array_map('trim', explode(',', $operatorValue));
-        } else {
-            $values = $operatorValue;
         }
 
         $orConditions = $queryBuilder->expr()->orX();
@@ -1312,20 +1308,6 @@ class MetaDataFacetHandler
             'updated'      => [
                 'type'        => 'date',
                 'description' => 'Date and time when the object was last updated',
-                'facet_types' => ['date_histogram', 'range'],
-                'intervals'   => ['day', 'week', 'month', 'year'],
-                'has_labels'  => false,
-            ],
-            'published'    => [
-                'type'        => 'date',
-                'description' => 'Date and time when the object was published',
-                'facet_types' => ['date_histogram', 'range'],
-                'intervals'   => ['day', 'week', 'month', 'year'],
-                'has_labels'  => false,
-            ],
-            'depublished'  => [
-                'type'        => 'date',
-                'description' => 'Date and time when the object was depublished',
                 'facet_types' => ['date_histogram', 'range'],
                 'intervals'   => ['day', 'week', 'month', 'year'],
                 'has_labels'  => false,

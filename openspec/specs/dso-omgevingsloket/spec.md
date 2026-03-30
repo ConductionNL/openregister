@@ -1,3 +1,7 @@
+---
+status: draft
+---
+
 # dso-omgevingsloket Specification
 
 ## Purpose
@@ -365,3 +369,28 @@ curl "http://localhost:8080/index.php/apps/openregister/api/objects/{dso_registe
 3. Should the vergunningcheck query endpoint live in OpenRegister (data query) or in a separate service that combines register data with STTR rules?
 4. What level of IMOW compliance is needed for omgevingsdocumenten — minimal metadata or full annotatie/juridische-regel support?
 5. How does the DSO register relate to the product-service-catalog spec — are omgevingsvergunningen also products in the PDC sense?
+
+## Nextcloud Integration Analysis
+
+**Status**: Not yet implemented. No DSO-specific schemas, mappings, or API endpoints exist. The core OpenRegister infrastructure (schemas, objects, mapping engine, audit trail) provides the foundation.
+
+**Nextcloud Core Interfaces**:
+- `routes.php`: Register a DSO API endpoint group (e.g., `/api/dso/`) for DSO-compatible output. Alternatively, use the generic ZGW/mapping route infrastructure once the `zgw-api-mapping` spec is implemented.
+- `IEventDispatcher`: Fire typed events (e.g., `DsoStatusChangedEvent`) when a vergunningaanvraag transitions status, enabling OpenConnector or other listeners to push updates to DSO-LV via webhooks.
+- `IJobList` / `TimedJob`: Schedule periodic STAM reference data imports and DSO-LV synchronization checks as background jobs.
+- `INotifier` / `INotification`: Send notifications to behandelaars when a new vergunningaanvraag arrives from DSO-LV or when status transitions require action.
+
+**Implementation Approach**:
+- Define DSO entity schemas (vergunningaanvraag, activiteit, locatie, omgevingsdocument, besluit) as standard OpenRegister schemas with JSON Schema validation rules. Deploy via a register template JSON file loaded through `openregister:load-register` CLI command or repair step.
+- Use `MappingService` for bidirectional property mapping between English-internal properties and Dutch DSO API output, following the same pattern as the ZGW API mapping spec.
+- Leverage OpenConnector as the external API gateway for DSO-LV communication. OpenRegister stores and validates the data; OpenConnector handles mTLS/PKIoverheid authentication and STAM koppelvlak protocol specifics.
+- Store GeoJSON geometry in object properties for locatie and werkingsgebied fields. Spatial querying depends on the `geo-metadata-kaart` spec or Solr/Elasticsearch backends with geo_shape support.
+- Use `AuditTrailMapper` for recording status transitions on vergunningaanvragen, providing the immutable audit history required for government processes.
+
+**Dependencies on Existing OpenRegister Features**:
+- `SchemaService` / `RegisterService` — schema definitions and register provisioning.
+- `MappingService` — Twig-based property/value mapping for DSO API output formatting.
+- `ObjectService` — CRUD with validation, filtering, and inter-object references (UUID-based).
+- `AuditTrailMapper` — status transition logging and change history.
+- `ImportHandler` / `ExportHandler` — register template distribution and STAM reference data import.
+- OpenConnector app — external DSO-LV connectivity (separate app, separate spec).

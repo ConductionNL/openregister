@@ -1,3 +1,7 @@
+---
+status: draft
+---
+
 # besluiten-management Specification
 
 ## Purpose
@@ -121,3 +125,27 @@ Decisions with `publicatieIndicatie: true` MUST be flagged for publication in ex
   - How does bezwaartermijn tracking integrate with notifications — should the system send reminders before deadlines?
   - Is the besluittype catalog shared across registers or per-register?
   - How does the withdrawal workflow interact with the audit trail and document dossier?
+
+## Nextcloud Integration Analysis
+
+**Status**: Not yet implemented. No dedicated besluiten management, besluittype catalog, bezwaartermijn tracking, or publication workflow exists. Objects can reference each other and files can be linked, providing partial foundations.
+
+**Nextcloud Core Interfaces**:
+- `INotifier` / `INotification`: Send notifications for bezwaartermijn expiration warnings (e.g., "5 days remaining for bezwaar on besluit X"), decision publication events, and withdrawal actions. Register a `BesluitNotifier` implementing `INotifier` for formatted notification display.
+- `IEventDispatcher`: Fire typed events (`BesluitCreatedEvent`, `BesluitPublishedEvent`, `BesluitWithdrawnEvent`) for cross-app integration. Procest and other consuming apps can listen for these events to update case status or trigger follow-up workflows.
+- `TimedJob`: Schedule a `BezwaartermijnCheckJob` that runs daily, scanning decisions with upcoming or expired `uiterlijkeReactiedatum` and triggering notifications or status updates.
+- `IActivityManager` / `IProvider`: Register decision lifecycle events (creation, publication, withdrawal) in the Nextcloud Activity stream so users see a chronological history of decision actions on their activity feed.
+
+**Implementation Approach**:
+- Model besluiten and besluittypen as OpenRegister schemas within the Procest register. A `besluit` schema stores the decision data (datum, toelichting, ingangsdatum, publicatiedatum, bezwaartermijn). A `besluittype` schema serves as the catalog defining decision types with reactietermijn and publicatieIndicatie.
+- Use schema `$ref` properties for bidirectional zaak-besluit linking. When a besluit is created, the linked zaak object is updated with the besluit reference (via `ObjectService`).
+- Implement bezwaartermijn calculation as a computed field or pre-save hook: `uiterlijkeReactiedatum = verzenddatum + besluittype.reactietermijn` (ISO 8601 duration parsing).
+- For publication, leverage OpenRegister's existing public API access control. Mark published besluiten with a publication flag that makes them accessible via unauthenticated API endpoints. Personal data redaction requires a `RedactionHandler` that strips PII fields from the public view based on schema-level configuration.
+- Use `FileService` for linking beschikking documents (PDF) to besluit objects, integrating with the document-zaakdossier spec for structured dossier views.
+
+**Dependencies on Existing OpenRegister Features**:
+- `ObjectService` — CRUD for besluit and besluittype objects with inter-object references.
+- `SchemaService` — schema definitions with `$ref` for zaak-besluit relationships.
+- `AuditTrailMapper` — immutable logging of decision creation, publication, and withdrawal actions.
+- `FileService` — document attachment for beschikking PDFs.
+- Procest app — owns the case context and decision type catalog configuration.

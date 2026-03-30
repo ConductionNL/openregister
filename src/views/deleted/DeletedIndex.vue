@@ -1,4 +1,5 @@
 <script setup>
+import { translate as t, translatePlural as n } from '@nextcloud/l10n'
 import { deletedStore, registerStore, schemaStore, navigationStore } from '../../store/store.js'
 import formatBytes from '../../services/formatBytes.js'
 </script>
@@ -519,9 +520,10 @@ export default {
 		/**
 		 * Export filtered items with specified options
 		 * @param {object} options - Export options
+		 * @param _options
 		 * @return {void}
 		 */
-		exportFilteredItems(options) {
+		exportFilteredItems(_options) {
 			// TODO: Implement export functionality for deleted items
 		},
 		/**
@@ -655,8 +657,8 @@ export default {
 
 /* Actions button styling */
 .actionsButton > div > button {
-    margin-top: 0px !important;
-    margin-right: 0px !important;
-    padding-right: 0px !important;
+	margin-top: 0px !important;
+	margin-right: 0px !important;
+	padding-right: 0px !important;
 }
 </style>

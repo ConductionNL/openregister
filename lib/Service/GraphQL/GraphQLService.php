@@ -43,15 +43,10 @@ use Psr\Log\LoggerInterface;
  *
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
  * @SuppressWarnings(PHPMD.ExcessiveClassComplexity)
+ * @SuppressWarnings(PHPMD.StaticAccess)
  */
 class GraphQLService
 {
-
-    /**
-     * APCu cache key for the GraphQL schema.
-     */
-    private const SCHEMA_CACHE_KEY = 'openregister_graphql_schema_hash';
-
     /**
      * Constructor.
      *
@@ -63,7 +58,6 @@ class GraphQLService
      * @param PermissionHandler       $permissionHandler  Permission handler
      * @param PropertyRbacHandler     $propertyRbac       Property RBAC handler
      * @param AuditTrailMapper        $auditTrailMapper   Audit trail mapper
-     * @param SecurityService         $securityService    Security service
      * @param RegisterMapper          $registerMapper     Register mapper
      * @param SchemaMapper            $schemaMapper       Schema mapper
      * @param IAppConfig              $appConfig          App configuration
@@ -82,7 +76,6 @@ class GraphQLService
         private readonly PermissionHandler $permissionHandler,
         private readonly PropertyRbacHandler $propertyRbac,
         private readonly AuditTrailMapper $auditTrailMapper,
-        private readonly SecurityService $securityService,
         private readonly RegisterMapper $registerMapper,
         private readonly SchemaMapper $schemaMapper,
         private readonly IAppConfig $appConfig,
@@ -140,20 +133,7 @@ class GraphQLService
                 'maxDepth'  => $complexity['maxDepth'],
             ];
 
-            // Format errors.
-            if (isset($output['errors']) === true) {
-                $output['errors'] = array_map(
-                    function ($error) {
-                        if ($error instanceof Error) {
-                            return $this->errorFormatter->format($error);
-                        }
-
-                        return $error;
-                    },
-                    $output['errors']
-                );
-            }
-
+            // Errors are already formatted by the GraphQL executor.
             return $output;
         } catch (Error $e) {
             return [
@@ -249,10 +229,6 @@ class GraphQLService
                 continue;
             }
 
-            if ($definition->selectionSet === null) {
-                continue;
-            }
-
             $hasIntrospection = $this->selectionSetHasIntrospection(selectionSet: $definition->selectionSet);
             if ($hasIntrospection === true) {
                 break;
@@ -343,14 +319,16 @@ class GraphQLService
         $key  = 'openregister_graphql_rate_';
         if ($user !== null) {
             $key .= 'user_'.preg_replace('/[^a-zA-Z0-9_]/', '_', $user->getUID());
-        } else {
-            $ip = $this->request->getRemoteAddress();
-            if (empty($ip) === true) {
+        }
+
+        if ($user === null) {
+            $clientIp = $this->request->getRemoteAddress();
+            if (empty($clientIp) === true) {
                 // No identifiable client (CLI/test context) — skip rate limiting.
                 return;
             }
 
-            $key .= 'ip_'.preg_replace('/[^a-zA-Z0-9_.]/', '_', $ip);
+            $key .= 'ip_'.preg_replace('/[^a-zA-Z0-9_.]/', '_', $clientIp);
         }
 
         if (function_exists('apcu_enabled') === false || apcu_enabled() === false) {

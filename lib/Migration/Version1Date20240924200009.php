@@ -32,6 +32,8 @@ use OCP\Migration\SimpleMigrationStep;
 
 /**
  * FIXME Auto-generated migration step: Please modify to your needs!
+ *
+ * @SuppressWarnings(PHPMD.UnusedFormalParameter)
  */
 class Version1Date20240924200009 extends SimpleMigrationStep
 {

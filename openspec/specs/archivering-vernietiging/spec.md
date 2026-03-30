@@ -1,3 +1,7 @@
+---
+status: draft
+---
+
 # archivering-vernietiging Specification
 
 ## Purpose
@@ -123,3 +127,27 @@ The system MUST support generating a NEN 2082 compliance report showing which re
   - Which e-Depot systems should be supported initially (Nationaal Archief, regional archives)?
   - Should the destruction approval workflow use Nextcloud's built-in approval features or a custom implementation?
   - How does this interact with the existing audit trail — should archival actions create standard AuditTrail entries or a separate archival log?
+
+## Nextcloud Integration Analysis
+
+**Status**: Not yet implemented. No archival metadata fields, selection lists, destruction workflows, or e-Depot export capabilities exist. The audit trail and object model provide partial foundations.
+
+**Nextcloud Core Interfaces**:
+- `TimedJob` (`OCP\BackgroundJob\TimedJob`): Schedule a `DestructionCheckJob` that runs daily (or weekly), scanning objects where `archiefactiedatum <= today` and `archiefnominatie = vernietigen`. The job generates destruction lists for archivist review and sends notifications.
+- `INotifier` / `INotification`: Send retention warnings to archivists when objects approach their `archiefactiedatum` (e.g., 30 days before). Notify on destruction list creation and e-Depot transfer results (success/partial failure).
+- `AuditTrail` (OpenRegister's `AuditTrailMapper`): Log destruction actions with type `archival.destroyed`, including the destruction list reference, approving archivist, and timestamp. Log e-Depot transfers with type `archival.transferred`. These entries provide the legally required evidence trail.
+- `ITrashManager` patterns: Follow Nextcloud's trash/soft-delete patterns for the destruction workflow. Objects marked for destruction enter a "pending destruction" state (similar to trash) with an approval gate before permanent deletion. This prevents accidental data loss.
+
+**Implementation Approach**:
+- Add archival metadata as schema-level configuration or dedicated properties on `ObjectEntity`. The fields `archiefnominatie`, `archiefactiedatum`, `archiefstatus`, and `classificatie` can be modeled as standard schema properties with enum validation, or as system-level fields on the object entity itself (similar to `dateCreated`/`dateModified`).
+- Model selection lists (selectielijsten) as a dedicated OpenRegister schema or admin configuration. Each entry maps a classification code to a retention period and archival action. Schema-level overrides are stored as schema metadata.
+- Implement the destruction workflow as a multi-step process: (1) `DestructionCheckJob` generates a destruction list as a register object; (2) Archivist reviews and approves/rejects items via the UI; (3) Approved items are permanently deleted via `ObjectService::deleteObject()` with audit logging.
+- For e-Depot export, create an `EDepotExportService` that generates MDTO XML metadata and packages objects with their associated Nextcloud Files into a SIP (Submission Information Package) following the OAIS model. Transmission to the e-Depot endpoint uses OpenConnector or direct HTTP.
+- Use `QueuedJob` for large-scale destruction and e-Depot transfers to avoid timeout issues.
+
+**Dependencies on Existing OpenRegister Features**:
+- `ObjectService` — CRUD and deletion of objects with audit trail logging.
+- `AuditTrailMapper` — immutable logging of archival actions (destruction, transfer).
+- `SchemaService` — schema property definitions for archival metadata fields.
+- `ExportHandler` — foundation for e-Depot SIP package generation (needs MDTO XML extension).
+- `FileService` — retrieval of associated documents for inclusion in SIP packages.

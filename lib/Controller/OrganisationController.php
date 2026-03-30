@@ -633,9 +633,8 @@ class OrganisationController extends Controller
 
             // If query is empty, return all organisations.
             // Otherwise search by name.
-            if (empty(trim($query)) === true) {
-                $organisations = $this->organisationMapper->findAll(limit: $limit, offset: $offset);
-            } else {
+            $organisations = $this->organisationMapper->findAll(limit: $limit, offset: $offset);
+            if (empty(trim($query)) === false) {
                 $organisations = $this->organisationMapper->findByName(name: trim($query), limit: $limit, offset: $offset);
             }
 

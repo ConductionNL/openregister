@@ -43,6 +43,7 @@ use Psr\Log\LoggerInterface;
  * @SuppressWarnings(PHPMD.ExcessiveClassLength)     Schema analysis requires comprehensive exploration methods
  * @SuppressWarnings(PHPMD.TooManyMethods)           Many methods required for schema analysis and property discovery
  * @SuppressWarnings(PHPMD.ExcessiveClassComplexity) Complex schema analysis and property inference logic
+ * @SuppressWarnings(PHPMD.UnusedFormalParameter)
  */
 class SchemaService
 {
@@ -71,9 +72,9 @@ class SchemaService
     /**
      * SchemaService constructor
      *
-     * @param SchemaMapper       $schemaMapper       Schema mapper for schema operations.
-     * @param MagicMapper $objectEntityMapper Object entity mapper for object queries.
-     * @param LoggerInterface    $logger             Logger for debugging and monitoring.
+     * @param SchemaMapper    $schemaMapper       Schema mapper for schema operations.
+     * @param MagicMapper     $objectEntityMapper Object entity mapper for object queries.
+     * @param LoggerInterface $logger             Logger for debugging and monitoring.
      */
     public function __construct(
         SchemaMapper $schemaMapper,
@@ -1325,7 +1326,7 @@ class SchemaService
      *
      * @return array Enum constraint comparison results
      *
-     * @SuppressWarnings(PHPMD.ElseExpression) Enum comparison requires else for value difference detection
+     * Enum comparison requires else for value difference detection
      */
     private function compareEnumConstraint(array $currentConfig, array $analysis): array
     {
@@ -1349,7 +1350,9 @@ class SchemaService
                         'recommended' => implode(', ', $enumValues),
                         'description' => "Property appears to have predefined values: ".implode(', ', $enumValues),
                     ];
-                } else {
+                }
+
+                if ($currentEnum !== null && empty($currentEnum) !== true) {
                     // Check if current enum differs from analysis.
                     $currentEnumSorted  = $currentEnum;
                     $analysisEnumSorted = $enumValues;

@@ -39,6 +39,8 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Service\Object\CacheHandler;
+use OCA\OpenRegister\Service\Object\SaveObject\ComputedFieldHandler;
+use OCA\OpenRegister\Service\Object\TranslationHandler;
 use OCA\OpenRegister\Service\PropertyRbacHandler;
 use OCP\SystemTag\ISystemTagManager;
 use OCP\SystemTag\ISystemTagObjectMapper;
@@ -62,6 +64,9 @@ use Symfony\Component\Uid\Uuid;
  * @SuppressWarnings(PHPMD.ExcessiveClassLength)     Rendering requires comprehensive transformation methods
  * @SuppressWarnings(PHPMD.ExcessiveClassComplexity) Complex rendering logic with multiple output formats
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)   Rendering requires multiple mapper and service dependencies
+ * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+ * @SuppressWarnings(PHPMD.NPathComplexity)
+ * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
  */
 class RenderObject
 {
@@ -108,17 +113,19 @@ class RenderObject
     /**
      * Constructor for RenderObject handler.
      *
-     * @param FileMapper             $fileMapper          File mapper for database operations.
-     * @param MagicMapper     $objectEntityMapper  Object entity mapper for database operations.
-     * @param RegisterMapper         $registerMapper      Register mapper for database operations.
-     * @param SchemaMapper           $schemaMapper        Schema mapper for database operations.
-     * @param ISystemTagManager      $systemTagManager    System tag manager for file tags.
-     * @param ISystemTagObjectMapper $systemTagMapper     System tag object mapper for file tags.
-     * @param CacheHandler           $cacheHandler        Cache service for performance optimization.
-     * @param CacheHandler           $objectCacheService  Object cache service for optimized loading.
-     * @param PropertyRbacHandler    $propertyRbacHandler Property-level RBAC handler.
-     * @param LoggerInterface        $logger              Logger for performance monitoring.
-     * @param FileService            $fileService         File service for file operations.
+     * @param FileMapper             $fileMapper           File mapper for database operations.
+     * @param MagicMapper            $objectEntityMapper   Object entity mapper for database operations.
+     * @param RegisterMapper         $registerMapper       Register mapper for database operations.
+     * @param SchemaMapper           $schemaMapper         Schema mapper for database operations.
+     * @param ISystemTagManager      $systemTagManager     System tag manager for file tags.
+     * @param ISystemTagObjectMapper $systemTagMapper      System tag object mapper for file tags.
+     * @param CacheHandler           $cacheHandler         Cache service for performance optimization.
+     * @param CacheHandler           $objectCacheService   Object cache service for optimized loading.
+     * @param PropertyRbacHandler    $propertyRbacHandler  Property-level RBAC handler.
+     * @param LoggerInterface        $logger               Logger for performance monitoring.
+     * @param FileService            $fileService          File service for file operations.
+     * @param ComputedFieldHandler   $computedFieldHandler Handler for computed field evaluation.
+     * @param TranslationHandler     $translationHandler   Handler for translatable property resolution.
      *
      * @SuppressWarnings(PHPMD.ExcessiveParameterList) All parameters are DI-injected dependencies
      */
@@ -133,7 +140,9 @@ class RenderObject
         private readonly CacheHandler $objectCacheService,
         private readonly PropertyRbacHandler $propertyRbacHandler,
         private readonly LoggerInterface $logger,
-        private readonly FileService $fileService
+        private readonly FileService $fileService,
+        private readonly ComputedFieldHandler $computedFieldHandler,
+        private readonly TranslationHandler $translationHandler,
     ) {
     }//end __construct()
 
@@ -595,10 +604,9 @@ class RenderObject
 
         // Determine if base64 format is requested.
         // Check both the property config and items config (for arrays).
+        $fileConfig = $propertyConfig;
         if ($isArrayProperty === true) {
             $fileConfig = ($propertyConfig['items'] ?? []);
-        } else {
-            $fileConfig = $propertyConfig;
         }
 
         $returnBase64 = ($fileConfig['format'] ?? '') === 'base64';
@@ -617,11 +625,13 @@ class RenderObject
                     if ($base64Content !== null) {
                         $hydratedFiles[] = $base64Content;
                     }
-                } else {
-                    $fileObject = $this->getFileObject(fileId: $fileId);
-                    if ($fileObject !== null) {
-                        $hydratedFiles[] = $fileObject;
-                    }
+
+                    continue;
+                }
+
+                $fileObject = $this->getFileObject(fileId: $fileId);
+                if ($fileObject !== null) {
+                    $hydratedFiles[] = $fileObject;
                 }
             }
 
@@ -1025,9 +1035,21 @@ class RenderObject
             );
         }
 
+        // Evaluate computed fields with evaluateOn: 'read'.
+        // These values are calculated at read time and NOT stored in the database.
+        $readSchema = $this->getSchema(id: $entity->getSchema());
+        if ($readSchema !== null && $this->computedFieldHandler->hasComputedProperties($readSchema) === true) {
+            $objectData = $this->computedFieldHandler->evaluateComputedFields(
+                data: $objectData,
+                schema: $readSchema,
+                evaluateOn: 'read'
+            );
+            $entity->setObject($objectData);
+        }
+
         // Apply property-level RBAC filtering.
         // This filters out properties that the current user is not authorized to read.
-        $schema = $this->getSchema(id: $entity->getSchema());
+        $schema = $readSchema ?? $this->getSchema(id: $entity->getSchema());
         if ($schema !== null && $schema->hasPropertyAuthorization() === true) {
             // Ensure @self metadata is available for property-level RBAC checks.
             // Property authorization can reference @self.organisation or _organisation,
@@ -1053,6 +1075,17 @@ class RenderObject
                 unset($objectData['@self']);
             }
         }//end if
+
+        // Resolve translatable properties to the requested language.
+        $renderSchema   = $this->getSchema(id: $entity->getSchema());
+        $renderRegister = $this->getRegister(id: $entity->getRegister());
+        if ($renderSchema !== null) {
+            $objectData = $this->translationHandler->resolveTranslationsForRender(
+                objectData: $objectData,
+                schema: $renderSchema,
+                register: $renderRegister
+            );
+        }
 
         $entity->setObject($objectData);
 
@@ -1581,7 +1614,7 @@ class RenderObject
 
         // Normalize inversedBy to an array to support multi-field inverse relations.
         // Example: "inversedBy": ["moduleA", "moduleB"] means the entity can appear in either field.
-        if (is_array(value: $inversedByField) === true) {
+        if (is_array($inversedByField) === true) {
             $inversedByFields = $inversedByField;
         } else {
             $inversedByFields = [$inversedByField];
@@ -1696,7 +1729,15 @@ class RenderObject
         int $registerId,
         array $inversedByFields
     ): array {
-        $magicMapper = \OC::$server->get(\OCA\OpenRegister\Db\MagicMapper::class);
+        // Validate inputs before accessing \OC service container.
+        if (empty($entityUuids) === true || empty($inversedByFields) === true) {
+            return [];
+        }
+
+        $schemaIdInt = (int) $targetSchemaId;
+        if ($schemaIdInt <= 0 || $registerId <= 0) {
+            return [];
+        }
 
         // Pass additional field names for multi-field inversedBy so the SQL also searches
         // columns that may store references in {"value": "uuid"} format not in _relations.
@@ -1706,9 +1747,11 @@ class RenderObject
             $additionalFields = [];
         }
 
+        $magicMapper = \OC::$server->get(\OCA\OpenRegister\Db\MagicMapper::class);
+
         return $magicMapper->findByRelationBatchInSchema(
             uuids: $entityUuids,
-            schemaId: (int) $targetSchemaId,
+            schemaId: $schemaIdInt,
             registerId: $registerId,
             fieldName: $inversedByFields[0],
             additionalFieldNames: $additionalFields
@@ -2003,7 +2046,7 @@ class RenderObject
             }
 
             // Normalize inversedBy to an array to support multi-field inverse relations.
-            if (is_array(value: $inversedByProperty) === true) {
+            if (is_array($inversedByProperty) === true) {
                 $inversedByProperties = $inversedByProperty;
             } else {
                 $inversedByProperties = [$inversedByProperty];
@@ -2140,7 +2183,13 @@ class RenderObject
                 if ($propertyConfig['type'] === 'array') {
                     $isArray = true;
                 }
-            } else {
+            }
+
+            // Skip properties without inversedBy configuration.
+            $hasItemsInverse  = ($propertyConfig['type'] ?? null) === 'array'
+                && ($propertyConfig['items']['inversedBy'] ?? null) !== null;
+            $hasDirectInverse = ($propertyConfig['inversedBy'] ?? null) !== null;
+            if ($hasItemsInverse === false && $hasDirectInverse === false) {
                 continue;
             }
 
@@ -2170,7 +2219,9 @@ class RenderObject
             // Set the target property value with full rendered objects.
             if ($isArray === true) {
                 $objectData[$targetProperty] = $renderedObjects;
-            } else {
+            }
+
+            if ($isArray === false) {
                 if (empty($renderedObjects) === false) {
                     $objectData[$targetProperty] = end($renderedObjects);
                 } else {

@@ -41,6 +41,7 @@ use OCA\OpenRegister\Service\Schemas\SchemaCacheHandler;
 use OCA\OpenRegister\Service\Schemas\FacetCacheHandler;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Service\SettingsService;
+use OCP\IDBConnection;
 use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
 
@@ -58,11 +59,21 @@ use Psr\Log\LoggerInterface;
  * @version   GIT: <git_id>
  * @copyright 2024 Conduction b.v.
  *
- * @SuppressWarnings(PHPMD.CouplingBetweenObjects) Delete operations require coordination with multiple services
+ * @SuppressWarnings(PHPMD.CouplingBetweenObjects)   Delete operations require coordination with multiple services
+ * @SuppressWarnings(PHPMD.ExcessiveClassComplexity) Complexity at threshold (50) due to integrity + cascade + audit logic
+ * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
+ * @SuppressWarnings(PHPMD.UnusedFormalParameter)
  */
-
 class DeleteObject
 {
+
+    /**
+     * Count of cascade-deleted objects from the last deleteObject() call.
+     * Reset at the start of each deleteObject() invocation.
+     *
+     * @var integer
+     */
+    private int $lastCascadeCount = 0;
 
     /**
      * Audit trail mapper
@@ -93,15 +104,23 @@ class DeleteObject
     private ReferentialIntegrityService $integrityService;
 
     /**
+     * Database connection for transaction management.
+     *
+     * @var IDBConnection
+     */
+    private IDBConnection $db;
+
+    /**
      * Constructor for DeleteObject handler.
      *
-     * @param MagicMapper         $objectEntityMapper Object entity data mapper.
+     * @param MagicMapper                 $objectEntityMapper Object entity data mapper.
      * @param CacheHandler                $cacheHandler       Object cache service for entity and query caching
      * @param IUserSession                $userSession        User session service for tracking who deletes
      * @param AuditTrailMapper            $auditTrailMapper   Audit trail mapper for logs
      * @param SettingsService             $settingsService    Settings service for accessing trail settings
      * @param LoggerInterface             $logger             Logger for error handling
      * @param ReferentialIntegrityService $integrityService   Referential integrity service
+     * @param IDBConnection               $db                 Database connection for transactions
      */
     public function __construct(
         private readonly MagicMapper $objectEntityMapper,
@@ -110,18 +129,24 @@ class DeleteObject
         AuditTrailMapper $auditTrailMapper,
         SettingsService $settingsService,
         LoggerInterface $logger,
-        ReferentialIntegrityService $integrityService
+        ReferentialIntegrityService $integrityService,
+        IDBConnection $db
     ) {
         $this->auditTrailMapper = $auditTrailMapper;
         $this->settingsService  = $settingsService;
         $this->logger           = $logger;
         $this->integrityService = $integrityService;
+        $this->db = $db;
     }//end __construct()
 
     /**
      * Deletes an object and its associated files.
      *
-     * @param array|JsonSerializable $object The object to delete.
+     * @param array|JsonSerializable $object         The object to delete.
+     * @param array|null             $cascadeContext Optional cascade context metadata for audit trail tagging.
+     *                                               When non-null, indicates this deletion was triggered by
+     *                                               referential integrity enforcement and includes keys like
+     *                                               'triggerObject', 'triggerSchema', 'action_type'.
      *
      * @return bool Whether the deletion was successful.
      *
@@ -133,33 +158,32 @@ class DeleteObject
      *
      * @psalm-suppress UndefinedInterfaceMethod Array access on JsonSerializable handled by type check
      */
-    public function delete(array | JsonSerializable $object): bool
+    public function delete(array | JsonSerializable $object, ?array $cascadeContext=null): bool
     {
         // Handle ObjectEntity passed from deleteObject() - skip redundant lookup.
+        // Handle array input - find object with context (searches across all magic tables).
+        // @psalm-suppress UndefinedInterfaceMethod.
+        if ($object instanceof ObjectEntity === true) {
+            $identifier = $object->getUuid();
+        } else {
+            $identifier = $object['id'];
+        }
+
+        $includeDeleted = ($object instanceof ObjectEntity);
+        $context        = $this->objectEntityMapper->findAcrossAllSources(
+            identifier: $identifier,
+            includeDeleted: $includeDeleted,
+            _rbac: false,
+            _multitenancy: false
+        );
         if ($object instanceof ObjectEntity === true) {
             $objectEntity = $object;
-            // Get register/schema context for this object.
-            $context        = $this->objectEntityMapper->findAcrossAllSources(
-                identifier: $objectEntity->getUuid(),
-                includeDeleted: true,
-                _rbac: false,
-                _multitenancy: false
-            );
-            $registerEntity = $context['register'];
-            $schemaEntity   = $context['schema'];
         } else {
-            // Handle array input - find object with context (searches across all magic tables).
-            // @psalm-suppress UndefinedInterfaceMethod.
-            $context        = $this->objectEntityMapper->findAcrossAllSources(
-                identifier: $object['id'],
-                includeDeleted: false,
-                _rbac: false,
-                _multitenancy: false
-            );
-            $objectEntity   = $context['object'];
-            $registerEntity = $context['register'];
-            $schemaEntity   = $context['schema'];
-        }//end if
+            $objectEntity = $context['object'];
+        }
+
+        $registerEntity = $context['register'];
+        $schemaEntity   = $context['schema'];
 
         // **SOFT DELETE**: Mark object as deleted instead of removing from database.
         // Set deletion metadata with user, timestamp, and organization information.
@@ -245,9 +269,33 @@ class DeleteObject
 
         // Create audit trail for delete if audit trails are enabled.
         if ($this->isAuditTrailsEnabled() === true) {
-            $this->auditTrailMapper->createAuditTrail(old: $objectEntity, new: null, action: 'delete');
-            // $result->setLastLog($log->jsonSerialize());
-        }
+            // Determine the audit action based on cascade context.
+            $auditAction = 'delete';
+            if ($cascadeContext !== null) {
+                $auditAction = $cascadeContext['action_type'] ?? 'referential_integrity.cascade_delete';
+            }
+
+            $auditTrail = $this->auditTrailMapper->createAuditTrail(
+                old: $objectEntity,
+                new: null,
+                action: $auditAction
+            );
+
+            // If this deletion was triggered by referential integrity, tag the audit entry
+            // with cascade context metadata so it can be distinguished from user-initiated deletes.
+            if ($cascadeContext !== null && $auditTrail !== null) {
+                $changed = $auditTrail->getChanged() ?? [];
+                $changed['triggeredBy']    = 'referential_integrity';
+                $changed['cascadeContext'] = [
+                    'triggerObject' => $cascadeContext['triggerObject'] ?? null,
+                    'triggerSchema' => $cascadeContext['triggerSchema'] ?? null,
+                    'action_type'   => $cascadeContext['action_type'] ?? 'referential_integrity.cascade_delete',
+                    'property'      => $cascadeContext['property'] ?? null,
+                ];
+                $auditTrail->setChanged($changed);
+                $this->auditTrailMapper->update($auditTrail);
+            }
+        }//end if
 
         return $result;
     }//end delete()
@@ -294,6 +342,11 @@ class DeleteObject
         bool $_rbac=true,
         bool $_multitenancy=true
     ): bool {
+        // Reset cascade count for root deletions.
+        if ($originalObjectId === null) {
+            $this->lastCascadeCount = 0;
+        }
+
         // Find object with context (searches across all magic tables).
         $context = $this->objectEntityMapper->findAcrossAllSources(
             identifier: $uuid,
@@ -303,79 +356,17 @@ class DeleteObject
         );
         $object  = $context['object'];
 
-        // Referential integrity check: only for root deletions (not cascade sub-deletions).
+        // Root deletions: check referential integrity and handle cascade.
         if ($originalObjectId === null) {
-            $schemaId = $object->getSchema();
-
-            // Only run referential integrity if this schema has incoming onDelete references.
-            if ($schemaId !== null
-                && $this->integrityService->hasIncomingOnDeleteReferences($schemaId) === true
-            ) {
-                $analysis = $this->integrityService->canDelete($object);
-
-                if ($analysis->deletable === false) {
-                    // Log RESTRICT block to audit trail before throwing exception.
-                    $blockUser    = 'system';
-                    $blockUserObj = $this->userSession->getUser();
-                    if ($blockUserObj !== null) {
-                        $blockUser = $blockUserObj->getUID();
-                    }
-
-                    $this->integrityService->logRestrictBlock(
-                        objectUuid: $uuid,
-                        schemaId: $schemaId,
-                        analysis: $analysis,
-                        userId: $blockUser
-                    );
-
-                    throw new ReferentialIntegrityException(analysis: $analysis);
-                }
-
-                // Apply referential integrity actions (SET_NULL, SET_DEFAULT, CASCADE).
-                $user   = $this->userSession->getUser();
-                $userId = 'system';
-                if ($user !== null) {
-                    $userId = $user->getUID();
-                }
-
-                $activeOrganisation = null;
-                if ($user !== null) {
-                    try {
-                        $organisationMapper = \OC::$server->get(\OCA\OpenRegister\Db\OrganisationMapper::class);
-                        $activeOrganisation = $organisationMapper->getActiveOrganisationWithFallback($user->getUID());
-                    } catch (\Exception $e) {
-                        $activeOrganisation = null;
-                    }
-                }
-
-                $triggerSchemaSlug = null;
-                $contextSchema     = $context['schema'] ?? null;
-                if ($contextSchema instanceof Schema) {
-                    $triggerSchemaSlug = $contextSchema->getSlug();
-                }
-
-                $this->integrityService->applyDeletionActions(
-                    $analysis,
-                    $userId,
-                    $uuid,
-                    $activeOrganisation,
-                    $triggerSchemaSlug
-                );
-            }//end if
-
-            // Legacy cascade: handle old-style cascade: true properties.
-            $contextRegister = $context['register'] ?? null;
-            $contextSchema   = $context['schema'] ?? null;
-
-            if ($contextRegister instanceof Register && $contextSchema instanceof Schema) {
-                $this->cascadeDeleteObjects(
-                    register: $contextRegister,
-                    schema: $contextSchema,
-                    object: $object,
-                    originalObjectId: $uuid
-                );
+            $integrityResult = $this->handleIntegrityDeletion(
+                object: $object,
+                context: $context,
+                uuid: $uuid
+            );
+            if ($integrityResult !== null) {
+                return $integrityResult;
             }
-        }//end if
+        }
 
         try {
             return $this->delete(object: $object);
@@ -391,7 +382,226 @@ class DeleteObject
             );
             return false;
         }//end try
+
     }//end deleteObject()
+
+    /**
+     * Handle referential integrity checks and cascade deletion for root deletions.
+     *
+     * Returns the deletion result if integrity processing handled the delete,
+     * or null if no integrity actions were needed (caller should do simple delete).
+     *
+     * @param ObjectEntity $object  The object being deleted
+     * @param array        $context The object context from findAcrossAllSources
+     * @param string       $uuid    The object UUID
+     *
+     * @return bool|null The result, or null if no integrity processing was needed
+     *
+     * @throws ReferentialIntegrityException If blocked by RESTRICT
+     * @throws Exception If cascade transaction fails
+     */
+    private function handleIntegrityDeletion(
+        ObjectEntity $object,
+        array $context,
+        string $uuid
+    ): ?bool {
+        $schemaId           = $object->getSchema();
+        $hasIntegrityAction = $schemaId !== null
+            && $this->integrityService->hasIncomingOnDeleteReferences($schemaId) === true;
+
+        // Run legacy cascade regardless of integrity actions.
+        if ($hasIntegrityAction === false) {
+            $this->runLegacyCascade(context: $context, object: $object, uuid: $uuid);
+            return null;
+        }
+
+        $analysis = $this->integrityService->canDelete($object);
+        if ($analysis->deletable === false) {
+            $this->logAndThrowRestrict(uuid: $uuid, schemaId: $schemaId, analysis: $analysis);
+        }
+
+        return $this->executeIntegrityTransaction(
+            object: $object,
+            context: $context,
+            uuid: $uuid,
+            analysis: $analysis
+        );
+
+    }//end handleIntegrityDeletion()
+
+    /**
+     * Log a RESTRICT block and throw the exception.
+     *
+     * @param string           $uuid     The object UUID
+     * @param string|null      $schemaId The schema ID
+     * @param DeletionAnalysis $analysis The analysis result
+     *
+     * @return void
+     *
+     * @throws ReferentialIntegrityException Always thrown
+     */
+    private function logAndThrowRestrict(string $uuid, ?string $schemaId, DeletionAnalysis $analysis): void
+    {
+        [$userId] = $this->resolveUserContext();
+
+        $this->integrityService->logRestrictBlock(
+            objectUuid: $uuid,
+            schemaId: $schemaId,
+            analysis: $analysis,
+            userId: $userId
+        );
+
+        throw new ReferentialIntegrityException(analysis: $analysis);
+
+    }//end logAndThrowRestrict()
+
+    /**
+     * Execute integrity cascade actions and root deletion within a transaction.
+     *
+     * @param ObjectEntity     $object   The object to delete
+     * @param array            $context  The object context
+     * @param string           $uuid     The object UUID
+     * @param DeletionAnalysis $analysis The deletion analysis
+     *
+     * @return bool True if deletion succeeded
+     *
+     * @throws Exception If the transaction fails
+     */
+    private function executeIntegrityTransaction(
+        ObjectEntity $object,
+        array $context,
+        string $uuid,
+        DeletionAnalysis $analysis
+    ): bool {
+        $this->db->beginTransaction();
+        try {
+            [$userId, $activeOrg] = $this->resolveUserContext();
+
+            $triggerSlug   = null;
+            $contextSchema = $context['schema'] ?? null;
+            if ($contextSchema instanceof Schema) {
+                $triggerSlug = $contextSchema->getSlug();
+            }
+
+            $this->integrityService->applyDeletionActions(
+                $analysis,
+                $userId,
+                $uuid,
+                $activeOrg,
+                $triggerSlug
+            );
+
+            $cCount = count($analysis->cascadeTargets);
+            $nCount = count($analysis->nullifyTargets);
+            $dCount = count($analysis->defaultTargets);
+            $this->lastCascadeCount = ($cCount + $nCount + $dCount);
+
+            $this->runLegacyCascade(context: $context, object: $object, uuid: $uuid);
+
+            $rootCascadeCtx = $this->buildCascadeContext(
+                uuid: $uuid,
+                triggerSlug: $triggerSlug,
+                analysis: $analysis
+            );
+
+            $result = $this->delete(object: $object, cascadeContext: $rootCascadeCtx);
+            $this->db->commit();
+            return $result;
+        } catch (Exception $e) {
+            $this->db->rollBack();
+            $this->logger->error(
+                message: '[DeleteObject] Transaction rolled back: cascade or delete failed',
+                context: [
+                    'file'  => __FILE__,
+                    'line'  => __LINE__,
+                    'uuid'  => $uuid,
+                    'error' => $e->getMessage(),
+                ]
+            );
+            throw $e;
+        }//end try
+
+    }//end executeIntegrityTransaction()
+
+    /**
+     * Run legacy cascade: true deletion if register and schema are available.
+     *
+     * @param array        $context The object context
+     * @param ObjectEntity $object  The object being deleted
+     * @param string       $uuid    The object UUID
+     *
+     * @return void
+     */
+    private function runLegacyCascade(array $context, ObjectEntity $object, string $uuid): void
+    {
+        $contextRegister = $context['register'] ?? null;
+        $contextSchema   = $context['schema'] ?? null;
+
+        if ($contextRegister instanceof Register && $contextSchema instanceof Schema) {
+            $this->cascadeDeleteObjects(
+                register: $contextRegister,
+                schema: $contextSchema,
+                object: $object,
+                originalObjectId: $uuid
+            );
+        }
+
+    }//end runLegacyCascade()
+
+    /**
+     * Build cascade context metadata for audit trail tagging.
+     *
+     * @param string           $uuid        The root object UUID
+     * @param string|null      $triggerSlug The trigger schema slug
+     * @param DeletionAnalysis $analysis    The deletion analysis
+     *
+     * @return array|null The cascade context, or null if no cascades occurred
+     */
+    private function buildCascadeContext(string $uuid, ?string $triggerSlug, DeletionAnalysis $analysis): ?array
+    {
+        $cascadeCount = count($analysis->cascadeTargets);
+        $nullifyCount = count($analysis->nullifyTargets);
+        $defaultCount = count($analysis->defaultTargets);
+
+        if ($cascadeCount === 0 && $nullifyCount === 0 && $defaultCount === 0) {
+            return null;
+        }
+
+        return [
+            'action_type'        => 'referential_integrity.root_delete',
+            'triggerObject'      => $uuid,
+            'triggerSchema'      => $triggerSlug,
+            'cascadeDeleteCount' => $cascadeCount,
+            'setNullCount'       => $nullifyCount,
+            'setDefaultCount'    => $defaultCount,
+        ];
+
+    }//end buildCascadeContext()
+
+    /**
+     * Resolve the current user ID and active organisation.
+     *
+     * @return array{0: string, 1: mixed} [userId, activeOrganisation]
+     */
+    private function resolveUserContext(): array
+    {
+        $user   = $this->userSession->getUser();
+        $userId = 'system';
+        $org    = null;
+
+        if ($user !== null) {
+            $userId = $user->getUID();
+            try {
+                $mapper = \OC::$server->get(\OCA\OpenRegister\Db\OrganisationMapper::class);
+                $org    = $mapper->getActiveOrganisationWithFallback($user->getUID());
+            } catch (\Exception $e) {
+                $org = null;
+            }
+        }
+
+        return [$userId, $org];
+
+    }//end resolveUserContext()
 
     /**
      * Handles cascading deletes for related objects (legacy cascade: true).
@@ -461,4 +671,17 @@ class DeleteObject
             return true;
         }
     }//end isAuditTrailsEnabled()
+
+    /**
+     * Get the count of cascade-deleted objects from the last deleteObject() call.
+     *
+     * This includes objects deleted via referential integrity CASCADE actions.
+     * Does not include the root object itself (which is counted separately).
+     *
+     * @return int The number of cascade-deleted objects.
+     */
+    public function getLastCascadeCount(): int
+    {
+        return $this->lastCascadeCount;
+    }//end getLastCascadeCount()
 }//end class

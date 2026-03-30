@@ -122,6 +122,8 @@ use Psr\Log\LoggerInterface;
  * @SuppressWarnings(PHPMD.ExcessivePublicCount)     Public API facade requires many public entry points
  * @SuppressWarnings(PHPMD.TooManyFields)            Settings service coordinates many specialized handlers
  * @SuppressWarnings(PHPMD.LongVariable)             Descriptive variable names improve code readability
+ * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
+ * @SuppressWarnings(PHPMD.UnusedFormalParameter)
  */
 class SettingsService
 {
@@ -942,7 +944,6 @@ class SettingsService
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)  Multiple validation paths and error handling
      * @SuppressWarnings(PHPMD.NPathComplexity)       Multiple validation paths and error handling
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag)   Boolean flag needed for error collection behavior
-     * @SuppressWarnings(PHPMD.ElseExpression)        Else needed for serial vs parallel processing
      */
     public function massValidateObjects(
         int $maxObjects=0,
@@ -1042,7 +1043,9 @@ class SettingsService
                 collectErrors: $collectErrors,
                 parallelBatches: 4
             );
-        } else {
+        }
+
+        if ($mode !== 'parallel') {
             $this->processJobsSerial(
                 batchJobs: $batchJobs,
                 objectMapper: $objectMapper,
@@ -1105,7 +1108,9 @@ class SettingsService
                     $results['stats']['total_objects'],
                     $results['stats']['successful_saves']
                 );
-            } else {
+            }
+
+            if ($collectErrors !== true) {
                 $results['success'] = false;
 
                 /*
@@ -1170,16 +1175,15 @@ class SettingsService
     /**
      * Process batch jobs in serial mode
      *
-     * @param array                                   $batchJobs     Array of batch job definitions.
+     * @param array                            $batchJobs     Array of batch job definitions.
      * @param \OCA\OpenRegister\Db\MagicMapper $objectMapper  The object entity mapper.
-     * @param ObjectService|null                      $objectService The object service instance.
-     * @param array                                   $results       Results array to update.
-     * @param bool                                    $collectErrors Whether to collect all errors.
+     * @param ObjectService|null               $objectService The object service instance.
+     * @param array                            $results       Results array to update.
+     * @param bool                             $collectErrors Whether to collect all errors.
      *
      * @return void
      *
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Batch processing requires comprehensive logic
-     * @SuppressWarnings(PHPMD.ElseExpression)        Else needed for success vs failure handling
      */
     private function processJobsSerial(
         array $batchJobs,
@@ -1226,7 +1230,9 @@ class SettingsService
                     if ($savedObject !== null) {
                         $batchSuccesses++;
                         $results['stats']['successful_saves']++;
-                    } else {
+                    }
+
+                    if ($savedObject === null) {
                         $results['stats']['failed_saves']++;
                         $batchErrors[] = [
                             'object_id'   => $object->getUuid(),
@@ -1248,8 +1254,10 @@ class SettingsService
                         'batch_mode'  => 'serial_optimized',
                     ];
 
+                    $objUuid = $object->getUuid();
+                    $errMsg  = $e->getMessage();
                     $this->logger->error(
-                        message: '[SettingsService] Mass validation failed for object '.$object->getUuid().': '.$e->getMessage(),
+                        message: "[SettingsService] Mass validation failed for object {$objUuid}: {$errMsg}",
                         context: ['file' => __FILE__, 'line' => __LINE__]
                     );
 
@@ -1309,12 +1317,12 @@ class SettingsService
     /**
      * Process batch jobs in parallel mode
      *
-     * @param array                                   $batchJobs       Array of batch job definitions.
+     * @param array                            $batchJobs       Array of batch job definitions.
      * @param \OCA\OpenRegister\Db\MagicMapper $objectMapper    The object entity mapper.
-     * @param ObjectService|null                      $objectService   The object service instance.
-     * @param array                                   $results         Results array to update.
-     * @param bool                                    $collectErrors   Whether to collect all errors.
-     * @param int                                     $parallelBatches Number of parallel batches.
+     * @param ObjectService|null               $objectService   The object service instance.
+     * @param array                            $results         Results array to update.
+     * @param bool                             $collectErrors   Whether to collect all errors.
+     * @param int                              $parallelBatches Number of parallel batches.
      *
      * @return void
      */
@@ -1386,7 +1394,7 @@ class SettingsService
     /**
      * Process a single batch directly
      *
-     * @param \OCA\OpenRegister\Db\MagicMapper $objectMapper  The object entity mapper.
+     * @param \OCA\OpenRegister\Db\MagicMapper        $objectMapper  The object entity mapper.
      * @param \OCA\OpenRegister\Service\ObjectService $objectService The object service instance.
      * @param array                                   $job           Batch job definition.
      * @param bool                                    $collectErrors Whether to collect all errors.
@@ -1397,8 +1405,6 @@ class SettingsService
      *     failed: int<0, max>, errors: list<array{batch_mode: 'parallel_optimized',
      *     error: string, object_id: null|string, object_name: null|string,
      *     register: null|string, schema: null|string}>, duration: float}
-     *
-     * @SuppressWarnings(PHPMD.ElseExpression) Else needed for success vs failure handling
      */
     private function processBatchDirectly(
         \OCA\OpenRegister\Db\MagicMapper $objectMapper,
@@ -1441,7 +1447,9 @@ class SettingsService
 
                 if ($savedObject !== null) {
                     $batchSuccesses++;
-                } else {
+                }
+
+                if ($savedObject === null) {
                     $batchErrors[] = [
                         'object_id'   => $object->getUuid(),
                         'object_name' => $object->getName() ?? $object->getUuid(),
@@ -1620,7 +1628,6 @@ class SettingsService
      * @return array Field comparison results
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Multiple field comparison paths
-     * @SuppressWarnings(PHPMD.ElseExpression)       Else needed for field comparison logic
      */
     public function compareFields(array $actualFields, array $expectedFields): array
     {
@@ -1652,9 +1659,11 @@ class SettingsService
                     'actual_type'   => $actualField['type'] ?? 'unknown',
                     'actual_config' => $actualField,
                 ];
-            } else {
-                // Check for configuration mismatches (type, multiValued, docValues).
-                $expectedConfig      = $expectedFields[$fieldName];
+                continue;
+            }
+
+            // Check for configuration mismatches (type, multiValued, docValues).
+            $expectedConfig          = $expectedFields[$fieldName];
                 $expectedType        = $expectedConfig['type'] ?? '';
                 $actualType          = $actualField['type'] ?? '';
                 $expectedMultiValued = $expectedConfig['multiValued'] ?? false;
@@ -1663,36 +1672,35 @@ class SettingsService
                 $actualDocValues     = $actualField['docValues'] ?? false;
 
                 // Check if any configuration differs.
-                if ($expectedType !== $actualType
-                    || $expectedMultiValued !== $actualMultiValued
-                    || $expectedDocValues !== $actualDocValues
-                ) {
-                    $differences = [];
-                    if ($expectedType !== $actualType) {
-                        $differences[] = 'type';
-                    }
+            if ($expectedType !== $actualType
+                || $expectedMultiValued !== $actualMultiValued
+                || $expectedDocValues !== $actualDocValues
+            ) {
+                $differences = [];
+                if ($expectedType !== $actualType) {
+                    $differences[] = 'type';
+                }
 
-                    if ($expectedMultiValued !== $actualMultiValued) {
-                        $differences[] = 'multiValued';
-                    }
+                if ($expectedMultiValued !== $actualMultiValued) {
+                    $differences[] = 'multiValued';
+                }
 
-                    if ($expectedDocValues !== $actualDocValues) {
-                        $differences[] = 'docValues';
-                    }
+                if ($expectedDocValues !== $actualDocValues) {
+                    $differences[] = 'docValues';
+                }
 
-                    $mismatched[] = [
-                        'field'                => $fieldName,
-                        'expected_type'        => $expectedType,
-                        'actual_type'          => $actualType,
-                        'expected_multiValued' => $expectedMultiValued,
-                        'actual_multiValued'   => $actualMultiValued,
-                        'expected_docValues'   => $expectedDocValues,
-                        'actual_docValues'     => $actualDocValues,
-                        'differences'          => $differences,
-                        'expected_config'      => $expectedConfig,
-                        'actual_config'        => $actualField,
-                    ];
-                }//end if
+                $mismatched[] = [
+                    'field'                => $fieldName,
+                    'expected_type'        => $expectedType,
+                    'actual_type'          => $actualType,
+                    'expected_multiValued' => $expectedMultiValued,
+                    'actual_multiValued'   => $actualMultiValued,
+                    'expected_docValues'   => $expectedDocValues,
+                    'actual_docValues'     => $actualDocValues,
+                    'differences'          => $differences,
+                    'expected_config'      => $expectedConfig,
+                    'actual_config'        => $actualField,
+                ];
             }//end if
         }//end foreach
 
@@ -1849,32 +1857,6 @@ class SettingsService
      * from the database in one roundtrip for better performance.
      *
      * @return array<string, array<string, int>> Database statistics with warnings and totals
-     *
-     * @psalm-return array{
-     *     warnings: array{
-     *         objectsWithoutOwner: int,
-     *         objectsWithoutOrganisation: int,
-     *         auditTrailsWithoutExpiry: int,
-     *         searchTrailsWithoutExpiry: int,
-     *         expiredAuditTrails: int,
-     *         expiredSearchTrails: int,
-     *         expiredObjects: int
-     *     },
-     *     totals: array{
-     *         totalObjects: int,
-     *         totalBlobObjects: int,
-     *         totalMagicObjects: int,
-     *         totalAuditTrails: int,
-     *         totalSearchTrails: int,
-     *         totalConfigurations: int,
-     *         totalOrganisations: int,
-     *         totalRegisters: int,
-     *         totalSchemas: int,
-     *         totalSources: int,
-     *         totalWebhookLogs: int,
-     *         deletedObjects: int
-     *     }
-     * }
      */
     private function getDatabaseStats(): array
     {
@@ -1894,15 +1876,13 @@ class SettingsService
             $isPostgres = stripos($platform::class, 'PostgreSQL') !== false;
 
             if ($isPostgres === true) {
-                // PostgreSQL query.
-                $tablesQuery = "SELECT tablename FROM pg_tables 
-                                WHERE schemaname = 'public' 
-                                AND tablename LIKE 'oc_openregister_table_%'";
+                $tablesQuery = "SELECT tablename FROM pg_tables
+                   WHERE schemaname = 'public'
+                   AND tablename LIKE 'oc_openregister_table_%'";
             } else {
-                // MySQL/MariaDB query.
-                $tablesQuery = "SELECT table_name as tablename FROM information_schema.tables 
-                                WHERE table_schema = DATABASE() 
-                                AND table_name LIKE 'oc_openregister_table_%'";
+                $tablesQuery = "SELECT table_name as tablename FROM information_schema.tables
+                   WHERE table_schema = DATABASE()
+                   AND table_name LIKE 'oc_openregister_table_%'";
             }
 
             $tablesResult = $this->db->executeQuery($tablesQuery);
@@ -2004,10 +1984,10 @@ class SettingsService
 
         return [
             'warnings' => [
-                'auditTrailsWithoutExpiry'   => (int) ($row['audit_trails_without_expiry'] ?? 0),
-                'searchTrailsWithoutExpiry'  => (int) ($row['search_trails_without_expiry'] ?? 0),
-                'expiredAuditTrails'         => (int) ($row['expired_audit_trails'] ?? 0),
-                'expiredSearchTrails'        => (int) ($row['expired_search_trails'] ?? 0),
+                'auditTrailsWithoutExpiry'  => (int) ($row['audit_trails_without_expiry'] ?? 0),
+                'searchTrailsWithoutExpiry' => (int) ($row['search_trails_without_expiry'] ?? 0),
+                'expiredAuditTrails'        => (int) ($row['expired_audit_trails'] ?? 0),
+                'expiredSearchTrails'       => (int) ($row['expired_search_trails'] ?? 0),
             ],
             'totals'   => [
                 'totalObjects'        => $magicCount,

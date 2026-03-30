@@ -1,5 +1,9 @@
 # MCP Discovery Specification
 
+---
+status: implemented
+---
+
 ## Purpose
 Provides AI agents with a token-efficient, tiered discovery mechanism for the OpenRegister API. Tier 1 gives a compact catalog of capabilities; Tier 2 gives detailed endpoint docs with live data for a specific capability area.
 
@@ -109,3 +113,10 @@ The Tier 1 response MUST be optimized for minimal token consumption by AI agents
 - **Highly specific and fully implemented**: The spec is clear, well-scoped, and the implementation matches all requirements.
 - **No open questions**: All scenarios are covered by the existing implementation.
 - **Potential improvement**: The spec could specify the exact structure of the `authentication` object in the Tier 1 response for completeness.
+
+## Nextcloud Integration Analysis
+
+- **Status**: Already implemented in OpenRegister
+- **Existing Implementation**: `McpDiscoveryService` provides tiered discovery (Tier 1 public catalog, Tier 2 authenticated detail). `McpController` handles HTTP routing. `McpProtocolService`, `McpResourcesService`, and `McpToolsService` implement the full MCP standard protocol (JSON-RPC 2.0) with tools and resources.
+- **Nextcloud Core Integration**: Registered via `IBootstrap` in `Application.php`. Exposes capabilities via `ICapability` interface pattern. Routes under `/api/mcp/v1/` prefix use Nextcloud's routing system. Authentication uses Nextcloud's built-in Basic Auth / session auth. CORS headers managed via Nextcloud's `PublicPage` controller annotation for the public Tier 1 endpoint.
+- **Recommendation**: Mark as implemented. The integration with Nextcloud core is solid -- discovery leverages NC's auth and routing infrastructure natively.

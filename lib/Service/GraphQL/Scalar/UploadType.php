@@ -26,6 +26,9 @@ use GraphQL\Utils\Utils;
  * accepts file upload data which is delegated to FilePropertyHandler.
  *
  * @psalm-suppress UnusedClass
+ *
+ * @SuppressWarnings(PHPMD.StaticAccess)
+ * @SuppressWarnings(PHPMD.UnusedFormalParameter)
  */
 class UploadType extends ScalarType
 {

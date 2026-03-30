@@ -3,7 +3,7 @@
     <description>The coding standard for PHP_CodeSniffer itself, for more config -> for https://github.com/squizlabs/PHP_CodeSniffer/wiki/Configuration-Options.</description>
 
     <file>lib</file>
-    
+
     <!-- Exclude external and vendor files -->
     <exclude-pattern>*/vendor/*</exclude-pattern>
     <exclude-pattern>*/node_modules/*</exclude-pattern>
@@ -49,7 +49,7 @@
     <!-- Removed the OperatorBracket rule to allow operations without brackets -->
     <rule ref="Squiz.Functions.FunctionDeclarationArgumentSpacing"/>
     <rule ref="Squiz.Operators.ComparisonOperatorUsage"/>
-    <rule ref="Squiz.PHP.DisallowInlineIf"/>
+    <!-- Removed DisallowInlineIf to allow ternary operators for ElseExpression elimination -->
     <rule ref="Squiz.Scope.MethodScope"/>
     <rule ref="Squiz.Strings.ConcatenationSpacing"/>
     <rule ref="Squiz.WhiteSpace.ControlStructureSpacing"/>
@@ -100,7 +100,7 @@
 
     <!-- We use custom indent rules for arrays -->
     <rule ref="Generic.Arrays.ArrayIndent"/>
-    
+
     <!-- Selectively include array rules, excluding alignment rules -->
     <rule ref="Squiz.Arrays.ArrayDeclaration">
         <exclude name="Squiz.Arrays.ArrayDeclaration.KeyNotAligned"/>
@@ -126,12 +126,12 @@
             <property name="requiredSpacesBeforeClose" value="0"/>
         </properties>
     </rule>
-    
+
     <!-- Disable the indentation rule for multiline function declarations -->
     <rule ref="PEAR.Functions.FunctionCallSignature.Indent">
         <severity>0</severity>
     </rule>
-    
+
     <!-- Disable the opening placement for multiline arrays -->
     <rule ref="PEAR.Functions.FunctionCallSignature.OpeningIndent">
         <severity>0</severity>
@@ -216,7 +216,7 @@
         <severity>0</severity>
     </rule>
 
-    <!-- Custom rule to enforce named parameters -->  
+    <!-- Custom rule to enforce named parameters -->
     <rule ref="./phpcs-custom-sniffs/CustomSniffs/Sniffs/Functions/NamedParametersSniff.php">
         <type>error</type>
     </rule>

@@ -133,3 +133,13 @@ Users MUST be able to apply dashboard-level filters that affect all widgets.
   - What are the performance implications of real-time aggregation queries on large datasets?
   - Should dashboard definitions be exportable/importable between environments?
   - How do aggregation queries work across MagicMapper (JSON column) vs. normal (JSONB) storage?
+
+## Nextcloud Integration Analysis
+
+**Status**: Implemented
+
+**Existing Implementation**: DashboardController provides page rendering and data retrieval endpoints with a calculate() method for generating chart data. DashboardService offers getStats() for register/schema aggregation and data size calculations. Built-in chart types include audit-trail-actions, objects-by-register, objects-by-schema, and objects-by-size. Frontend dashboard views exist at src/views/dashboard/ with a dedicated Vue component. The dashboard page route is registered as openregister.dashboard.page. SolrSettingsController provides SOLR-specific dashboard statistics.
+
+**Nextcloud Core Integration**: The dashboard is currently an internal OpenRegister page served within the app's navigation. Nextcloud provides a native Dashboard API (OCP\Dashboard\IWidget, OCP\Dashboard\IAPIWidget) that allows apps to register widgets on the Nextcloud home dashboard. Registering an IDashboardWidget would give users a quick overview of register statistics (total objects, recent changes, data sizes) directly on their Nextcloud home screen without navigating to the OpenRegister app. The existing DashboardService::getStats() data could be exposed through this widget interface. The frontend Vue component could use Nextcloud's @nextcloud/vue components for consistent styling.
+
+**Recommendation**: The current internal dashboard with statistics and chart calculations provides useful operational insights. To better integrate with Nextcloud, register one or more IDashboardWidget implementations that surface key metrics (object counts, recent activity, data growth trends) on the Nextcloud home dashboard. The full drag-and-drop dashboard builder described in the spec is an ambitious feature that should remain within the OpenRegister app context rather than trying to fit into Nextcloud's simpler widget framework. For chart rendering, Chart.js or Apache ECharts integrate well with Vue 2 and the Nextcloud frontend stack. Aggregation queries should use MagicMapper's existing query infrastructure to respect RBAC, ensuring dashboard widgets only show data the viewing user is authorized to see.

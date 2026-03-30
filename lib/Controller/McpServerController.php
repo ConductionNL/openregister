@@ -28,6 +28,9 @@ use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\AppFramework\Http\Response;
 use OCP\IRequest;
+use BadMethodCallException;
+use InvalidArgumentException;
+use Exception;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -254,25 +257,25 @@ class McpServerController extends Controller
                 'resources/list'           => $this->resourcesService->listResources(),
                 'resources/read'           => $this->handleResourceRead(params: $params),
                 'resources/templates/list' => $this->resourcesService->listTemplates(),
-                default                    => throw new \BadMethodCallException(
+                default                    => throw new BadMethodCallException(
                     message: 'Method not found: '.$method
                 ),
             };
 
             return $this->jsonRpcSuccess(id: $id, result: $result);
-        } catch (\BadMethodCallException $e) {
+        } catch (BadMethodCallException $e) {
             return $this->jsonRpcError(
                 id: $id,
                 code: self::ERR_METHOD_NOT_FOUND,
                 message: $e->getMessage()
             );
-        } catch (\InvalidArgumentException $e) {
+        } catch (InvalidArgumentException $e) {
             return $this->jsonRpcError(
                 id: $id,
                 code: self::ERR_INVALID_PARAMS,
                 message: $e->getMessage()
             );
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             $this->logger->error(
                 message: '[MCP] Method dispatch failed',
                 context: ['method' => $method, 'error' => $e->getMessage()]
@@ -293,12 +296,12 @@ class McpServerController extends Controller
      *
      * @return array Tool execution result
      *
-     * @throws \InvalidArgumentException If name is missing
+     * @throws InvalidArgumentException If name is missing
      */
     private function handleToolCall(array $params): array
     {
         if (isset($params['name']) === false) {
-            throw new \InvalidArgumentException(
+            throw new InvalidArgumentException(
                 message: 'Missing required parameter: name'
             );
         }
@@ -316,12 +319,12 @@ class McpServerController extends Controller
      *
      * @return array Resource read result
      *
-     * @throws \InvalidArgumentException If uri is missing
+     * @throws InvalidArgumentException If uri is missing
      */
     private function handleResourceRead(array $params): array
     {
         if (isset($params['uri']) === false) {
-            throw new \InvalidArgumentException(
+            throw new InvalidArgumentException(
                 message: 'Missing required parameter: uri'
             );
         }

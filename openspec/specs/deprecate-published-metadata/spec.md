@@ -1,3 +1,7 @@
+---
+status: partial
+---
+
 # Deprecate Published/Depublished Metadata
 
 Replace the dedicated `published`/`depublished` object metadata system with RBAC conditional rules using the `$now` dynamic variable.
@@ -12,22 +16,22 @@ Replace the dedicated `published`/`depublished` object metadata system with RBAC
 - [x] `MagicRbacHandler::resolveDynamicValue()` MUST support `$now` variable, resolving to `(new DateTime())->format('Y-m-d H:i:s')` (SQL datetime format) — **DONE**
 - [x] `MagicRbacHandler` MUST resolve `$now` inside operator values (e.g., `{"$lte": "$now"}`) before building SQL expressions — **DONE**
 - [x] `ObjectEntity` MUST NOT have `published` or `depublished` properties, getters, setters, or JSON serialization — **DONE**
-- [ ] `PublishHandler` class MUST be deleted (if it still exists)
+- [x] `PublishHandler` class MUST be deleted (if it still exists) — **DONE** (class not found in codebase)
 - [x] Object publish/depublish API routes MUST be removed from `routes.php` — **DONE**
-- [ ] `BulkController` publish/depublish methods MUST be removed (if they still exist)
-- [ ] `SaveObject::hydrateObjectMetadata()` MUST NOT process `objectPublishedField` or `objectDepublishedField` schema configuration
-- [ ] `SaveObject` MUST NOT process `autoPublish` schema configuration
-- [ ] `MagicSearchHandler` (`MariaDbSearchHandler`) MUST NOT list `published`/`depublished` as searchable metadata or date fields
-- [ ] `MagicOrganizationHandler` MUST NOT apply published-based visibility checks for unauthenticated users
-- [ ] `MagicMapper::getBaseMetadataColumns()` MUST NOT include `_published` or `_depublished` column definitions
-- [ ] `MagicMapper` metadata column lists (table creation, table update, insert data, row extraction) MUST NOT include `published`/`depublished`
-- [ ] Magic table index definitions MUST NOT include `_published` index
+- [x] `BulkController` publish/depublish methods MUST be removed (if they still exist) — **DONE** (no publish/depublish methods existed; docblock updated)
+- [x] `SaveObject::hydrateObjectMetadata()` MUST NOT process `objectPublishedField` or `objectDepublishedField` schema configuration — **DONE**
+- [x] `SaveObject` MUST NOT process `autoPublish` schema configuration — **DONE** (removed from SaveObject, SaveObjects, Schema.php boolFields)
+- [x] `MagicSearchHandler` (`MariaDbSearchHandler`) MUST NOT list `published`/`depublished` as searchable metadata or date fields — **DONE**
+- [x] `MagicOrganizationHandler` MUST NOT apply published-based visibility checks for unauthenticated users — **DONE** (no published references found in MagicOrganizationHandler)
+- [x] `MagicMapper::getBaseMetadataColumns()` MUST NOT include `_published` or `_depublished` column definitions — **DONE**
+- [x] `MagicMapper` metadata column lists (table creation, table update, insert data, row extraction) MUST NOT include `published`/`depublished` — **DONE**
+- [x] Magic table index definitions MUST NOT include `_published` index — **DONE**
 - [x] A database migration MUST drop `_published` and `_depublished` columns from all existing magic tables — **DONE** (`Version1Date20260313130000`)
-- [ ] `MetaDataFacetHandler` MUST NOT define `published`/`depublished` facet metadata
-- [ ] `MagicFacetHandler` MUST NOT include `published` in date field handling
-- [ ] `SearchQueryHandler` MUST NOT pass `published` parameter or list it as `@self` metadata
-- [ ] `IndexService`/`ObjectHandler` (Solr) MUST NOT accept or apply `$published` filter parameter
-- [ ] `SearchBackendInterface::searchObjects()` MUST NOT have `$published` parameter
+- [x] `MetaDataFacetHandler` MUST NOT define `published`/`depublished` facet metadata — **DONE**
+- [x] `MagicFacetHandler` MUST NOT include `published` in date field handling — **DONE**
+- [x] `SearchQueryHandler` MUST NOT pass `published` parameter or list it as `@self` metadata — **DONE**
+- [x] `IndexService`/`ObjectHandler` (Solr) MUST NOT accept or apply `$published` filter parameter — **DONE**
+- [x] `SearchBackendInterface::searchObjects()` MUST NOT have `$published` parameter — **DONE**
 - [ ] OpenCatalogi `MassPublishObjects.vue` and `MassDepublishObjects.vue` modals MUST be deleted
 - [ ] OpenCatalogi store actions `publishObject()` and `depublishObject()` MUST be removed
 - [ ] OpenCatalogi `ObjectCreatedEventListener` and `ObjectUpdatedEventListener` MUST NOT read `@self.published`/`@self.depublished`
@@ -130,3 +134,19 @@ Replace the dedicated `published`/`depublished` object metadata system with RBAC
 - **Open questions:**
   - Should a data migration convert existing `published`/`depublished` values to RBAC authorization rules on affected objects?
   - Should the `autoPublish` in Schema configuration trigger a deprecation warning or be silently ignored?
+
+## Nextcloud Integration Analysis
+
+**Status**: PARTIALLY IMPLEMENTED
+
+**What Exists**: The `$now` dynamic variable is fully implemented in both `ConditionMatcher::resolveDynamicValue()` and `MagicRbacHandler::resolveDynamicValue()`, enabling RBAC rules with date-based conditions. `ObjectEntity` no longer has `published`/`depublished` properties. Publish/depublish API routes are removed from `routes.php`. The database migration `Version1Date20260313130000` drops `_published` and `_depublished` columns from magic tables. The core replacement mechanism (RBAC with `$now`) is operational.
+
+**Gap Analysis**: Many code paths still reference the old published/depublished system. `SaveObject`/`MetadataHydrationHandler` still process `objectPublishedField`/`objectDepublishedField` schema config. `MagicSearchHandler`, `MagicOrganizationHandler`, `MagicMapper`, and facet handlers still include published metadata. Search interfaces (`SearchBackendInterface`, `IndexService`) still accept `$published` parameters. Frontend components in OpenCatalogi and Softwarecatalogus (`MassPublishObjects.vue`, `MassDepublishObjects.vue`) still exist. Schema `autoPublish` remains in `boolFields`.
+
+**Nextcloud Core Integration Points**:
+- **INotificationManager / INotifier**: Use `\OCP\Notification\IManager` to send deprecation warnings to admins when schemas with `objectPublishedField`, `objectDepublishedField`, or `autoPublish` configuration are encountered. Create notifications that guide admins to migrate to RBAC rules with `$now`.
+- **Activity app / IProvider**: Register deprecation events in the Activity stream so admins see "Schema X uses deprecated publish configuration -- migrate to RBAC" in their activity feed. Use `\OCP\Activity\IManager::publish()` with a custom event type.
+- **ILogger with deprecation context**: Log all encounters of deprecated config keys at `warning` level via `\Psr\Log\LoggerInterface::warning('Deprecated schema config: objectPublishedField', ['schema' => $id])`. This creates an audit trail of deprecated usage in the Nextcloud log.
+- **Repair steps / IRepairStep**: Implement a `\OCP\Migration\IRepairStep` that scans all schemas for deprecated publish configuration and either auto-migrates them to RBAC rules or generates a report of schemas needing manual migration.
+
+**Recommendation**: Prioritize removing published references from the data path first -- `MagicMapper::getBaseMetadataColumns()`, `MagicSearchHandler`, and `MagicOrganizationHandler` -- since these affect query correctness and performance. Use `IRepairStep` to handle schema config migration, converting `objectPublishedField`/`autoPublish` to equivalent RBAC authorization rules with `$now`. Add deprecation warnings via `INotificationManager` for schemas that still use old config, giving admins a migration window before hard removal. Frontend cleanup (deleting Vue components and store actions) can proceed in parallel since the API routes are already removed.

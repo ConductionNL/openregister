@@ -39,7 +39,9 @@ use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Object\CacheHandler;
+use OCA\OpenRegister\Service\Object\SaveObject\ComputedFieldHandler;
 use OCA\OpenRegister\Service\Object\SaveObject\FilePropertyHandler;
+use OCA\OpenRegister\Service\Object\TranslationHandler;
 use OCA\OpenRegister\Service\Object\SaveObject\MetadataHydrationHandler;
 use OCA\OpenRegister\Service\OrganisationService;
 use OCA\OpenRegister\Service\PropertyRbacHandler;
@@ -111,8 +113,12 @@ use Twig\Loader\ArrayLoader;
  * @SuppressWarnings(PHPMD.TooManyMethods)           Many methods required for full object save functionality
  * @SuppressWarnings(PHPMD.ExcessiveClassComplexity) Complex cascading and relation logic
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)   Requires many service and mapper dependencies
+ * @SuppressWarnings(PHPMD.BooleanArgumentFlag)
+ * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+ * @SuppressWarnings(PHPMD.NPathComplexity)
+ * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
+ * @SuppressWarnings(PHPMD.UnusedFormalParameter)
  */
-
 class SaveObject
 {
     private const URL_PATH_IDENTIFIER = 'openregister.objects.show';
@@ -169,7 +175,7 @@ class SaveObject
      * Constructor for SaveObject handler.
      *
      * @param MagicMapper              $objectEntityMapper   Object entity mapper
-     * @param MagicMapper      $unifiedObjectMapper  Unified object mapper for object operations
+     * @param MagicMapper              $unifiedObjectMapper  Unified object mapper for object operations
      * @param MetadataHydrationHandler $metaHydrationHandler Handler for metadata extraction
      * @param FilePropertyHandler      $filePropertyHandler  Handler for file property operations
      * @param IUserSession             $userSession          User session service
@@ -181,6 +187,8 @@ class SaveObject
      * @param CacheHandler             $cacheHandler         Object cache service for entity and query caching
      * @param SettingsService          $settingsService      Settings service for accessing trail settings
      * @param PropertyRbacHandler      $propertyRbacHandler  Property-level RBAC handler
+     * @param ComputedFieldHandler     $computedFieldHandler Handler for computed field evaluation
+     * @param TranslationHandler       $translationHandler   Handler for translation operations
      * @param LoggerInterface          $logger               Logger interface for logging operations
      * @param ArrayLoader              $arrayLoader          Twig array loader for template rendering
      *
@@ -200,6 +208,8 @@ class SaveObject
         private readonly CacheHandler $cacheHandler,
         private readonly SettingsService $settingsService,
         private readonly PropertyRbacHandler $propertyRbacHandler,
+        private readonly ComputedFieldHandler $computedFieldHandler,
+        private readonly TranslationHandler $translationHandler,
         private readonly LoggerInterface $logger,
         ArrayLoader $arrayLoader,
     ) {
@@ -886,7 +896,7 @@ class SaveObject
      * based on the object data. It supports:
      * - Simple field mapping using dot notation paths (e.g., 'contact.email', 'title')
      * - Twig-like concatenation for combining multiple fields (e.g., '{{ voornaam }} {{ tussenvoegsel }} {{ achternaam }}')
-     * - All metadata fields: name, description, summary, image, slug, published, depublished
+     * - All metadata fields: name, description, summary, image, slug
      *
      * Schema configuration example:
      * ```json
@@ -895,9 +905,7 @@ class SaveObject
      *   "objectDescriptionField": "beschrijving",
      *   "objectSummaryField": "beschrijvingKort",
      *   "objectImageField": "afbeelding",
-     *   "objectSlugField": "naam",
-     *   "objectPublishedField": "publicatieDatum",
-     *   "objectDepublishedField": "einddatum"
+     *   "objectSlugField": "naam"
      * }
      * ```
      *
@@ -1164,11 +1172,15 @@ class SaveObject
                         if (isset($twigContext[$sourceProperty]) === true) {
                             // Direct copy preserves arrays and other types.
                             $renderedDefaults[$key] = $twigContext[$sourceProperty];
-                        } else {
+                        }
+
+                        if (isset($twigContext[$sourceProperty]) === false) {
                             // Source property not found, use empty value.
                             $renderedDefaults[$key] = null;
                         }
-                    } else {
+                    }
+
+                    if (preg_match($simpleRefPattern, $defaultValue, $matches) !== 1) {
                         // Complex template, use MetadataHydrationHandler which supports
                         // pipe-based filters (| map:) and fallback syntax (| field2).
                         $rendered = $this->metaHydrationHandler->processTwigLikeTemplate(
@@ -1702,7 +1714,8 @@ class SaveObject
                             }
 
                             // Prefixed UUID (e.g., "id-uuid" with or without dashes).
-                            $prefixedPattern = '/^[a-z]+-([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}|[0-9a-f]{32})$/i';
+                            $prefixedPattern  = '/^[a-z]+-([0-9a-f]{8}-[0-9a-f]{4}';
+                            $prefixedPattern .= '-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}|[0-9a-f]{32})$/i';
                             if (preg_match($prefixedPattern, $item) === 1) {
                                 return true;
                             }
@@ -1750,7 +1763,9 @@ class SaveObject
                             );
                         }//end if
                     }//end if
-                } else {
+                }//end if
+
+                if ($isRelatedObject !== true) {
                     // Handle the result based on whether inversedBy is present.
                     $hasInversedBy      = ($definition['inversedBy'] ?? null) !== null;
                     $hasItemsInversedBy = (($definition['items']['inversedBy'] ?? null) !== null) === true;
@@ -1838,7 +1853,8 @@ class SaveObject
                     }
 
                     // Prefixed UUID (e.g., "id-uuid" with or without dashes).
-                    $prefixedPattern = '/^[a-z]+-([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}|[0-9a-f]{32})$/i';
+                    $prefixedPattern  = '/^[a-z]+-([0-9a-f]{8}-[0-9a-f]{4}';
+                    $prefixedPattern .= '-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}|[0-9a-f]{32})$/i';
                     if (preg_match($prefixedPattern, $object) === 1) {
                         return true;
                     }
@@ -2287,7 +2303,8 @@ class SaveObject
                     }
 
                     // Prefixed UUID (e.g., "id-uuid" with or without dashes).
-                    $prefixedPattern = '/^[a-z]+-([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}|[0-9a-f]{32})$/i';
+                    $prefixedPattern  = '/^[a-z]+-([0-9a-f]{8}-[0-9a-f]{4}';
+                    $prefixedPattern .= '-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}|[0-9a-f]{32})$/i';
                     if (preg_match($prefixedPattern, $uuid) === 1) {
                         return true;
                     }
@@ -2509,6 +2526,13 @@ class SaveObject
             register: $register
         );
 
+        // Normalize translatable properties (wrap simple values under default language).
+        $data = $this->translationHandler->normalizeTranslationsForSave(
+            objectData: $data,
+            schema: $schema,
+            register: $register
+        );
+
         // Check property-level authorization for incoming data.
         // This throws a ValidationException if user tries to modify unauthorized properties.
         // Skip when _rbac is false (internal/system calls should bypass all authorization).
@@ -2555,8 +2579,10 @@ class SaveObject
         // Try to update existing object if UUID provided AND it's not auto-generated.
         // Auto-generated UUIDs are for new objects, so skip the lookup.
         if ($uuid !== null && $isAutoGeneratedUuid === false) {
+            $debugMsg  = '[SaveObject] UUID provided and not auto-generated,';
+            $debugMsg .= ' checking for existing object (UPDATE operation)';
             $this->logger->debug(
-                message: '[SaveObject] UUID provided and not auto-generated, checking for existing object (UPDATE operation)',
+                message: $debugMsg,
                 context: [
                     'file'     => __FILE__,
                     'line'     => __LINE__,
@@ -3296,16 +3322,6 @@ class SaveObject
             $objectEntity->setSlug($slug);
         }
 
-        // Extract and set published property if present.
-        $this->logger->debug(
-            message: '[SaveObject] Processing published field in SaveObject',
-            context: [
-                'file'         => __FILE__,
-                'line'         => __LINE__,
-                'selfDataKeys' => array_keys($selfData),
-            ]
-        );
-
         if (array_key_exists('owner', $selfData) === true && empty($selfData['owner']) === false) {
             $objectEntity->setOwner($selfData['owner']);
         }
@@ -3375,29 +3391,25 @@ class SaveObject
             // Resolve the target register: property-level config or object's register.
             $targetRegister = $property['register'] ?? $register;
 
+            // Normalize to array for uniform validation.
             if ($isArray === true && is_array($value) === true) {
-                // Validate each UUID in the array.
-                foreach ($value as $uuid) {
-                    if (empty($uuid) === true) {
-                        continue;
-                    }
-
-                    $this->validateReferenceExists(
-                        propertyName: $propertyName,
-                        uuid: (string) $uuid,
-                        schemaRef: $ref,
-                        register: $targetRegister
-                    );
-                }
+                $uuidsToValidate = $value;
             } else {
-                // Validate single-value reference.
+                $uuidsToValidate = [$value];
+            }
+
+            foreach ($uuidsToValidate as $uuid) {
+                if (empty($uuid) === true) {
+                    continue;
+                }
+
                 $this->validateReferenceExists(
                     propertyName: $propertyName,
-                    uuid: (string) $value,
+                    uuid: (string) $uuid,
                     schemaRef: $ref,
                     register: $targetRegister
                 );
-            }//end if
+            }
         }//end foreach
     }//end validateReferences()
 
@@ -3474,8 +3486,10 @@ class SaveObject
                 _multitenancy: false
             );
         } catch (DoesNotExistException $e) {
+            // phpcs:ignore Generic.Files.LineLength.TooLong -- validation message with 3 dynamic parts cannot be shortened
+            $validMsg = "Referenced object '{$uuid}' not found in schema '{$targetSchemaSlug}' for property '{$propertyName}'";
             throw new ValidationException(
-                message: "Referenced object '{$uuid}' not found in schema '{$targetSchemaSlug}' for property '{$propertyName}'",
+                message: $validMsg,
                 code: 422
             );
         } catch (Exception $e) {
@@ -3531,6 +3545,16 @@ class SaveObject
 
         // Apply default values (including slug generation).
         $data = $this->setDefaultValues(objectEntity: $objectEntity, schema: $schema, data: $data);
+
+        // Evaluate computed fields with evaluateOn: 'save'.
+        // This computes values from Twig expressions and stores them in the object data.
+        if ($this->computedFieldHandler->hasComputedProperties($schema) === true) {
+            $data = $this->computedFieldHandler->evaluateComputedFields(
+                data: $data,
+                schema: $schema,
+                evaluateOn: 'save'
+            );
+        }
 
         return $data;
     }//end prepareObjectData()

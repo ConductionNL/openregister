@@ -33,8 +33,9 @@ use OCP\Migration\SimpleMigrationStep;
 
 /**
  * Migration step for fixing register column name in audit trails table
+ *
+ * @SuppressWarnings(PHPMD.UnusedFormalParameter)
  */
-
 class Version1Date20241022135300 extends SimpleMigrationStep
 {
     /**

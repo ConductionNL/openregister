@@ -68,11 +68,10 @@ class ObjectHandler
     /**
      * Search objects in Solr.
      *
-     * @param array $query        Search query parameters
+     * @param array $query         Search query parameters
      * @param bool  $_rbac         Apply RBAC filters
      * @param bool  $_multitenancy Apply multitenancy filters
-     * @param bool  $published    Filter published objects
-     * @param bool  $deleted      Include deleted objects
+     * @param bool  $deleted       Include deleted objects
      *
      * @return (array|int|mixed)[] Search results in OpenRegister format
      *
@@ -86,7 +85,6 @@ class ObjectHandler
         array $query=[],
         bool $_rbac=true,
         bool $_multitenancy=true,
-        bool $published=false,
         bool $deleted=false
     ): array {
         $this->logger->debug(
@@ -105,7 +103,6 @@ class ObjectHandler
             query: $query,
             _rbac: $_rbac,
             _multitenancy: $_multitenancy,
-            published: $published,
             deleted: $deleted
         );
 
@@ -119,22 +116,21 @@ class ObjectHandler
     /**
      * Build Solr query from OpenRegister query parameters.
      *
-     * @param array $query        OpenRegister query
+     * @param array $query         OpenRegister query
      * @param bool  $_rbac         Apply RBAC filters
      * @param bool  $_multitenancy Apply multitenancy filters
-     * @param bool  $published    Filter published objects
-     * @param bool  $deleted      Include deleted objects
+     * @param bool  $deleted       Include deleted objects
      *
      * @return (int|mixed|string[])[] Solr query parameters
      *
      * @psalm-return array{q: '*:*'|mixed, start: 0|mixed, rows: 10|mixed,
-     *     fq?: list{0: '-deleted:true'|'published:true', 1?: '-deleted:true'}}
+     *     fq?: list{0: '-deleted:true'}}
      *
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag)
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Query building requires handling multiple filter conditions
      * @SuppressWarnings(PHPMD.NPathComplexity)      Multiple filter combinations create many execution paths
      */
-    private function buildSolrQuery(array $query, bool $_rbac, bool $_multitenancy, bool $published, bool $deleted): array
+    private function buildSolrQuery(array $query, bool $_rbac, bool $_multitenancy, bool $deleted): array
     {
         $solrQuery = [
             'q'     => $query['q'] ?? '*:*',
@@ -151,10 +147,6 @@ class ObjectHandler
 
         if ($_multitenancy === true) {
             // TODO: Add multitenancy filters based on current organisation.
-        }
-
-        if ($published === true) {
-            $filters[] = 'published:true';
         }
 
         if ($deleted === false) {

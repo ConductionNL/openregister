@@ -44,6 +44,7 @@ use Psr\Log\LoggerInterface;
  *
  * @SuppressWarnings(PHPMD.ExcessiveClassComplexity) Complex webhook delivery with retry and interception logic
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)   Webhook delivery requires mapping, formatting, and logging dependencies
+ * @SuppressWarnings(PHPMD.UnusedFormalParameter)
  */
 class WebhookService
 {
@@ -220,7 +221,7 @@ class WebhookService
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)  Complex delivery with retry and error handling
      * @SuppressWarnings(PHPMD.NPathComplexity)       Multiple exception handling paths
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Comprehensive webhook delivery with logging
-     * @SuppressWarnings(PHPMD.ElseExpression)        Fallback for connection errors without response
+     * Fallback for connection errors without response
      */
     public function deliverWebhook(Webhook $webhook, string $eventName, array $payload, int $attempt=1): bool
     {
@@ -298,6 +299,14 @@ class WebhookService
             $errorDetails = [];
 
             // Get status code from exception if available.
+            if ($e->hasResponse() !== true) {
+                // Connection error or timeout.
+                $errorDetails['connection_error'] = true;
+                if ($e->getCode() !== 0) {
+                    $errorDetails['error_code'] = $e->getCode();
+                }
+            }
+
             if ($e->hasResponse() === true) {
                 $response   = $e->getResponse();
                 $statusCode = $response->getStatusCode();
@@ -318,12 +327,6 @@ class WebhookService
                     }
                 } catch (\Exception $bodyException) {
                     // Ignore body reading errors.
-                }
-            } else {
-                // Connection error or timeout.
-                $errorDetails['connection_error'] = true;
-                if ($e->getCode() !== 0) {
-                    $errorDetails['error_code'] = $e->getCode();
                 }
             }//end if
 
@@ -622,7 +625,7 @@ class WebhookService
      *
      * @psalm-return array{status_code: int, body: string}
      *
-     * @SuppressWarnings(PHPMD.ElseExpression) Different handling for GET vs POST/PUT/PATCH/DELETE methods
+     * Different handling for GET vs POST/PUT/PATCH/DELETE methods
      */
     private function sendRequest(Webhook $webhook, array $payload): array
     {
@@ -645,13 +648,14 @@ class WebhookService
             'timeout' => $webhook->getTimeout(),
         ];
 
-        // For GET requests, use query parameters instead of JSON body.
+        // For GET requests, use query parameters; for others, send JSON body.
         if (strtoupper($webhook->getMethod()) === 'GET') {
-            $options['query'] = $payload;
+            $payloadKey = 'query';
         } else {
-            // For POST, PUT, PATCH, DELETE, send JSON body.
-            $options['json'] = $payload;
+            $payloadKey = 'json';
         }
+
+        $options[$payloadKey] = $payload;
 
         $response = $this->client->request(
             method: $webhook->getMethod(),
@@ -777,7 +781,7 @@ class WebhookService
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Complex request interception logic
      * @SuppressWarnings(PHPMD.NPathComplexity)      Multiple webhook processing paths
-     * @SuppressWarnings(PHPMD.ElseExpression)       Fallback when formatter is unavailable
+     * Fallback when formatter is unavailable
      */
     public function interceptRequest(IRequest $request, string $eventType): array
     {
@@ -790,19 +794,18 @@ class WebhookService
         }
 
         // Format request as CloudEvent if formatter is available.
+        // Default to basic request data, override with CloudEvent format if formatter available.
+        $cloudEvent = [
+            'type'   => $eventType,
+            'method' => $request->getMethod(),
+            'path'   => $request->getPathInfo(),
+            'body'   => $request->getParams(),
+        ];
         if ($this->cloudEventFormatter !== null) {
             $cloudEvent = $this->cloudEventFormatter->formatRequestAsCloudEvent(
                 request: $request,
                 eventType: $eventType
             );
-        } else {
-            // Fallback to basic request data.
-            $cloudEvent = [
-                'type'   => $eventType,
-                'method' => $request->getMethod(),
-                'path'   => $request->getPathInfo(),
-                'body'   => $request->getParams(),
-            ];
         }
 
         // Get original request data.

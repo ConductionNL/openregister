@@ -615,7 +615,7 @@ export default {
 				this.loadingEvents = false
 			}
 		},
-		searchEvents(query) {
+		searchEvents(_query) {
 			// Filter events based on search query.
 			// The NcSelect component handles filtering internally.
 			// Empty query is handled by the component itself.

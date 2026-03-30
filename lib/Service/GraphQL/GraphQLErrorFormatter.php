@@ -24,6 +24,8 @@ use OCA\OpenRegister\Exception\NotAuthorizedException;
  * Formats GraphQL errors into a structured response with extension codes.
  *
  * @psalm-suppress UnusedClass
+ *
+ * @SuppressWarnings(PHPMD.StaticAccess)
  */
 class GraphQLErrorFormatter
 {

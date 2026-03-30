@@ -59,7 +59,6 @@ class PreparationHandler
      * @param SchemaMapper          $schemaMapper     Mapper for schema operations.
      * @param BulkValidationHandler $bulkValidHandler Handler for schema analysis.
      * @param IUserSession          $userSession      User session for owner assignment.
-     * @param LoggerInterface       $logger           Logger for logging operations.
      */
     public function __construct(
         private readonly SaveObject $saveHandler,
@@ -67,7 +66,6 @@ class PreparationHandler
         private readonly BulkValidationHandler $bulkValidHandler,
         // REMOVED: private readonly.
         private readonly IUserSession $userSession,
-        private readonly LoggerInterface $logger
     ) {
     }//end __construct()
 
@@ -162,32 +160,9 @@ class PreparationHandler
             $tempEntity = new ObjectEntity();
             $tempEntity->setObject($object);
 
-            // CRITICAL FIX: Hydrate @self data into the entity before calling hydrateObjectMetadata.
+            // Hydrate @self data into the entity before calling hydrateObjectMetadata.
             if (($object['@self'] ?? null) !== null && is_array($object['@self']) === true) {
-                $selfDataForHydration = $object['@self'];
-
-                // Convert published/depublished strings to DateTime objects.
-                if (($selfDataForHydration['published'] ?? null) !== null
-                    && is_string($selfDataForHydration['published']) === true
-                ) {
-                    try {
-                        $selfDataForHydration['published'] = new DateTime($selfDataForHydration['published']);
-                    } catch (Exception $e) {
-                        // Keep as string if conversion fails.
-                    }
-                }
-
-                if (($selfDataForHydration['depublished'] ?? null) !== null
-                    && is_string($selfDataForHydration['depublished']) === true
-                ) {
-                    try {
-                        $selfDataForHydration['depublished'] = new DateTime($selfDataForHydration['depublished']);
-                    } catch (Exception $e) {
-                        // Keep as string if conversion fails.
-                    }
-                }
-
-                $tempEntity->hydrate($selfDataForHydration);
+                $tempEntity->hydrate($object['@self']);
             }//end if
 
             $this->saveHandler->hydrateObjectMetadata(entity: $tempEntity, schema: $schema);

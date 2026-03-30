@@ -32,7 +32,8 @@ use Psr\Log\LoggerInterface;
  *
  * Controller for managing table operations including magic table synchronization.
  *
- * @psalm-suppress UnusedClass
+ * @psalm-suppress                                UnusedClass
+ * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
  */
 class TablesController extends Controller
 {
@@ -84,7 +85,9 @@ class TablesController extends Controller
             $register = null;
             if (is_numeric($registerId) === true) {
                 $register = $this->registerMapper->find((int) $registerId);
-            } else {
+            }
+
+            if (is_numeric($registerId) === false) {
                 $register = $this->registerMapper->find($registerId);
             }
 
@@ -96,7 +99,9 @@ class TablesController extends Controller
             $schema = null;
             if (is_numeric($schemaId) === true) {
                 $schema = $this->schemaMapper->find((int) $schemaId);
-            } else {
+            }
+
+            if (is_numeric($schemaId) === false) {
                 $schema = $this->schemaMapper->findBySlug($schemaId);
             }
 
@@ -216,17 +221,18 @@ class TablesController extends Controller
 
                 foreach ($schemas as $schemaRef) {
                     // Schema reference can be ID or slug.
+                    $schemaId = $schemaRef;
                     if (is_array($schemaRef) === true) {
                         $schemaId = ($schemaRef['id'] ?? $schemaRef);
-                    } else {
-                        $schemaId = $schemaRef;
                     }
 
                     try {
                         $schema = null;
                         if (is_numeric($schemaId) === true) {
                             $schema = $this->schemaMapper->find((int) $schemaId);
-                        } else {
+                        }
+
+                        if (is_numeric($schemaId) === false) {
                             $schema = $this->schemaMapper->findBySlug((string) $schemaId);
                         }
 

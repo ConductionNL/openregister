@@ -162,3 +162,13 @@ All access decisions (grant/deny) based on RLS/FLS MUST be loggable for complian
   - Should RLS rules be evaluated in SQL (MagicMapper) or in PHP (post-fetch filtering)?
   - How should FLS interact with GraphQL field selection?
   - Should `clearanceLevel` be a Nextcloud user attribute or an OpenRegister user profile property?
+
+## Nextcloud Integration Analysis
+
+**Status**: Implemented
+
+**Existing Implementation**: PropertyRbacHandler provides field-level security by controlling property visibility based on user group membership. MagicRbacHandler enforces row-level security at the SQL query level, applying authorization rules as WHERE clauses in MagicMapper queries. DataAccessProfile entity defines access profiles that combine property visibility rules with org-scoped access. Schema entities support authorization JSON with per-action rules (read, create, update, delete), and ObjectEntity supports per-object authorization overrides. Condition matching with operators ($lte, $gte, $in, etc.) enables sophisticated field-value comparisons. MagicOrganizationHandler provides organisation-based row filtering for multi-tenancy.
+
+**Nextcloud Core Integration**: The RBAC system is deeply integrated with Nextcloud's group system. User group memberships (managed via OCP\IGroupManager) are the primary mechanism for role mapping. When a user belongs to Nextcloud group "sociale-zaken", the MagicRbacHandler automatically filters query results to only show objects where the authorization rules permit that group. This happens at the database query level, not post-fetch, ensuring performance at scale. The PropertyRbacHandler uses the same group system to determine which fields a user can see, omitting restricted properties from API responses. The admin group receives automatic bypass, consistent with Nextcloud's admin privilege model.
+
+**Recommendation**: The row-level and field-level security implementation is well-integrated with Nextcloud's group infrastructure and enforced at the query level in MagicMapper for performance. The enforcement in MagicRbacHandler ensures that all access methods (REST, GraphQL, search, export) consistently apply the same security rules. To strengthen the integration, ensure that RLS rules support $CURRENT_USER context resolution using IUserSession::getUser() for dynamic user property access beyond group membership. Consider logging access decisions (grant/deny) to Nextcloud's audit log (OCP\Log\ILogFactory) for compliance visibility. The DataAccessProfile entity could be exposed in the Nextcloud admin settings for easier management alongside Nextcloud's native group administration.

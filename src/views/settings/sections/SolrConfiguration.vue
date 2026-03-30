@@ -1724,7 +1724,7 @@ export default {
 			this.showDeleteCollectionDialog = false
 		},
 
-		async handleCollectionDeleted(result) {
+		async handleCollectionDeleted(_result) {
 			// Close the modal
 			this.closeDeleteCollectionModal()
 
@@ -3188,13 +3188,21 @@ export default {
 }
 
 .type-string { background: #2196F3; }
+
 .type-text { background: #4CAF50; }
+
 .type-integer { background: #FF9800; }
+
 .type-float { background: #FF5722; }
+
 .type-date { background: #9C27B0; }
+
 .type-boolean { background: #607D8B; }
+
 .type-long { background: #FF9800; }
+
 .type-double { background: #FF5722; }
+
 .type-unknown { background: #9E9E9E; }
 
 .boolean-indicator {

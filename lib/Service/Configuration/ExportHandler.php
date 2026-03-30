@@ -122,7 +122,7 @@ class ExportHandler
      *
      * @param SchemaMapper        $schemaMapper        The schema mapper.
      * @param RegisterMapper      $registerMapper      The register mapper.
-     * @param MagicMapper  $objectEntityMapper  The object entity mapper.
+     * @param MagicMapper         $objectEntityMapper  The object entity mapper.
      * @param ConfigurationMapper $configurationMapper The configuration mapper.
      * @param MappingMapper       $mappingMapper       The mapping mapper.
      * @param LoggerInterface     $logger              The logger interface.

@@ -78,10 +78,15 @@ class HealthController extends Controller
         // Check filesystem.
         $checks['filesystem'] = $this->checkFilesystem();
         if ($checks['filesystem'] !== 'ok') {
-            $status = ($status === 'error') ? 'error' : 'degraded';
+            if ($status !== 'error') {
+                $status = 'degraded';
+            }
         }
 
-        $httpStatus = ($status === 'ok') ? Http::STATUS_OK : Http::STATUS_SERVICE_UNAVAILABLE;
+        $httpStatus = Http::STATUS_SERVICE_UNAVAILABLE;
+        if ($status === 'ok') {
+            $httpStatus = Http::STATUS_OK;
+        }
 
         return new JSONResponse(
             [
@@ -109,7 +114,7 @@ class HealthController extends Controller
             return 'ok';
         } catch (\Exception $e) {
             $this->logger->error('[HealthController] Database check failed', ['error' => $e->getMessage()]);
-            return 'failed: ' . $e->getMessage();
+            return 'failed: '.$e->getMessage();
         }
     }//end checkDatabase()
 
@@ -121,7 +126,7 @@ class HealthController extends Controller
     private function checkFilesystem(): string
     {
         try {
-            $tmpFile = sys_get_temp_dir() . '/openregister_health_' . getmypid();
+            $tmpFile = sys_get_temp_dir().'/openregister_health_'.getmypid();
             $written = file_put_contents($tmpFile, 'health');
             if ($written === false) {
                 return 'failed: cannot write to temp directory';
@@ -131,7 +136,7 @@ class HealthController extends Controller
 
             return 'ok';
         } catch (\Exception $e) {
-            return 'failed: ' . $e->getMessage();
+            return 'failed: '.$e->getMessage();
         }
     }//end checkFilesystem()
 

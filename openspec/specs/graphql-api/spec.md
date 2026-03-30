@@ -1,5 +1,9 @@
 # graphql-api Specification
 
+---
+status: implemented
+---
+
 ## Purpose
 Provide an auto-generated GraphQL API alongside the existing REST API for register data. The GraphQL schema MUST be derived from register schema definitions, support queries with nested object resolution, mutations for CRUD operations, and subscriptions for real-time updates. This improves developer experience by reducing over-fetching and enabling efficient nested data retrieval.
 
@@ -740,3 +744,10 @@ All errors MUST follow a consistent format with machine-readable extension codes
 #### Scenario: Validation errors from SaveObject
 - **WHEN** a mutation violates JSON Schema validation (e.g., `minLength`)
 - **THEN** `extensions.code` MUST be `VALIDATION_ERROR` with `extensions.details.field` and `extensions.details.constraint`
+
+## Nextcloud Integration Analysis
+
+- **Status**: Already implemented in OpenRegister
+- **Existing Implementation**: Full GraphQL stack including `GraphQLController`, `GraphQLService`, `SchemaGenerator` (auto-generates types from register schemas), `QueryComplexityAnalyzer` (depth/cost budgeting), `GraphQLErrorFormatter`, `SubscriptionService` (SSE-based real-time updates), and `GraphQLSubscriptionListener`. Six custom scalar types (DateTime, UUID, URI, Email, JSON, Upload) are implemented. RBAC enforced via `PermissionHandler` and `PropertyRbacHandler`.
+- **Nextcloud Core Integration**: Uses `IBootstrap` for service registration in the DI container. Routes registered via `appinfo/routes.php`. The `GraphQLSubscriptionListener` listens for typed events extending the `OCP\EventDispatcher\Event` base class. Rate limiting integrates with APCu via `SecurityService`. Consider implementing `IWebhookCompatibleEvent` on GraphQL mutation events to enable native Nextcloud webhook forwarding.
+- **Recommendation**: Mark as implemented. Consider adding `IWebhookCompatibleEvent` support on mutation events for deeper NC webhook integration, and verify multi-tenancy enforcement via `MultiTenancyTrait` at the resolver level.

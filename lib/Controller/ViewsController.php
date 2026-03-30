@@ -38,6 +38,7 @@ use OCP\AppFramework\Db\DoesNotExistException;
  * @psalm-suppress UnusedClass
  *
  * @suppressWarnings(PHPMD.ExcessiveClassComplexity)
+ * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
  */
 class ViewsController extends Controller
 {
@@ -290,8 +291,20 @@ class ViewsController extends Controller
 
             $query = [];
 
+            // Validate that query or configuration is provided.
+            $hasConfig = ($data['configuration'] ?? null) !== null && is_array($data['configuration']) === true;
+            $hasQuery  = ($data['query'] ?? null) !== null && is_array($data['query']) === true;
+            if ($hasConfig === false && $hasQuery === false) {
+                return new JSONResponse(
+                    data: [
+                        'error' => 'View query or configuration is required',
+                    ],
+                    statusCode: 400
+                );
+            }
+
             // Extract query parameters from configuration or query.
-            if (($data['configuration'] ?? null) !== null && is_array($data['configuration']) === true) {
+            if ($hasConfig === true) {
                 // Frontend still sends 'configuration', extract only query params.
                 $config = $data['configuration'];
                 $query  = [
@@ -302,17 +315,10 @@ class ViewsController extends Controller
                     'facetFilters'  => $config['facetFilters'] ?? [],
                     'enabledFacets' => $config['enabledFacets'] ?? [],
                 ];
-            } else if (($data['query'] ?? null) !== null && is_array($data['query']) === true) {
+            } else if ($hasQuery === true) {
                 // Direct query parameter.
                 $query = $data['query'];
-            } else {
-                return new JSONResponse(
-                    data: [
-                        'error' => 'View query or configuration is required',
-                    ],
-                    statusCode: 400
-                );
-            }//end if
+            }
 
             $view = $this->viewService->create(
                 name: $data['name'],
@@ -399,8 +405,20 @@ class ViewsController extends Controller
 
             $query = [];
 
+            // Validate that query or configuration is provided.
+            $hasConfig = ($data['configuration'] ?? null) !== null && is_array($data['configuration']) === true;
+            $hasQuery  = ($data['query'] ?? null) !== null && is_array($data['query']) === true;
+            if ($hasConfig === false && $hasQuery === false) {
+                return new JSONResponse(
+                    data: [
+                        'error' => 'View query or configuration is required',
+                    ],
+                    statusCode: 400
+                );
+            }
+
             // Extract query parameters from configuration or query.
-            if (($data['configuration'] ?? null) !== null && is_array($data['configuration']) === true) {
+            if ($hasConfig === true) {
                 // Frontend still sends 'configuration', extract only query params.
                 $config = $data['configuration'];
                 $query  = [
@@ -411,17 +429,10 @@ class ViewsController extends Controller
                     'facetFilters'  => $config['facetFilters'] ?? [],
                     'enabledFacets' => $config['enabledFacets'] ?? [],
                 ];
-            } else if (($data['query'] ?? null) !== null && is_array($data['query']) === true) {
+            } else if ($hasQuery === true) {
                 // Direct query parameter.
                 $query = $data['query'];
-            } else {
-                return new JSONResponse(
-                    data: [
-                        'error' => 'View query or configuration is required',
-                    ],
-                    statusCode: 400
-                );
-            }//end if
+            }
 
             $view = $this->viewService->update(
                 id: $id,

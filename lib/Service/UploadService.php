@@ -59,6 +59,8 @@ use Symfony\Component\Yaml\Yaml;
  * @version GIT: <git_id>
  *
  * @link https://www.OpenRegister.app
+ *
+ * @SuppressWarnings(PHPMD.UnusedFormalParameter)
  */
 class UploadService
 {

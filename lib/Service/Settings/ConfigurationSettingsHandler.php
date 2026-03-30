@@ -247,20 +247,20 @@ class ConfigurationSettingsHandler
             $multitenancyConfig = $this->appConfig->getValueString($this->appName, 'multitenancy', '');
             if (empty($multitenancyConfig) === true) {
                 $data['multitenancy'] = [
-                    'enabled'                            => true,
-                    'defaultUserTenant'                  => '',
-                    'defaultObjectTenant'                => '',
-                    'adminOverride' => true,
+                    'enabled'             => true,
+                    'defaultUserTenant'   => '',
+                    'defaultObjectTenant' => '',
+                    'adminOverride'       => true,
                 ];
             }
 
             if (empty($multitenancyConfig) === false) {
                 $multitenancyData     = json_decode($multitenancyConfig, true);
                 $data['multitenancy'] = [
-                    'enabled'                            => $multitenancyData['enabled'] ?? true,
-                    'defaultUserTenant'                  => $multitenancyData['defaultUserTenant'] ?? '',
-                    'defaultObjectTenant'                => $multitenancyData['defaultObjectTenant'] ?? '',
-                    'adminOverride' => $multitenancyData['adminOverride'] ?? true,
+                    'enabled'             => $multitenancyData['enabled'] ?? true,
+                    'defaultUserTenant'   => $multitenancyData['defaultUserTenant'] ?? '',
+                    'defaultObjectTenant' => $multitenancyData['defaultObjectTenant'] ?? '',
+                    'adminOverride'       => $multitenancyData['adminOverride'] ?? true,
                 ];
             }
 
@@ -317,7 +317,11 @@ class ConfigurationSettingsHandler
             $data['blobMigration'] = [
                 'processed' => (int) $this->appConfig->getValueString($this->appName, 'blob_migration_processed', '0'),
                 'remaining' => (int) $this->appConfig->getValueString($this->appName, 'blob_migration_remaining', '0'),
-                'complete'  => $this->appConfig->getValueString($this->appName, 'blob_migration_complete', 'false') === 'true',
+                'complete'  => $this->appConfig->getValueString(
+                    $this->appName,
+                        'blob_migration_complete',
+                        'false'
+                ) === 'true',
                 'lastRun'   => $this->appConfig->getValueString($this->appName, 'blob_migration_last_run', ''),
             ];
 
@@ -542,10 +546,10 @@ class ConfigurationSettingsHandler
                 $multitenancyData = $data['multitenancy'];
                 // Always store Multitenancy config with enabled state (default: true).
                 $multitenancyConfig = [
-                    'enabled'                            => $multitenancyData['enabled'] ?? true,
-                    'defaultUserTenant'                  => $multitenancyData['defaultUserTenant'] ?? '',
-                    'defaultObjectTenant'                => $multitenancyData['defaultObjectTenant'] ?? '',
-                    'adminOverride' => $multitenancyData['adminOverride'] ?? true,
+                    'enabled'             => $multitenancyData['enabled'] ?? true,
+                    'defaultUserTenant'   => $multitenancyData['defaultUserTenant'] ?? '',
+                    'defaultObjectTenant' => $multitenancyData['defaultObjectTenant'] ?? '',
+                    'adminOverride'       => $multitenancyData['adminOverride'] ?? true,
                 ];
                 $this->appConfig->setValueString($this->appName, 'multitenancy', json_encode($multitenancyConfig));
             }
@@ -907,20 +911,20 @@ class ConfigurationSettingsHandler
             if (empty($multitenancyConfig) === true) {
                 // Default: multitenancy enabled for proper data isolation.
                 $multitenancyData = [
-                    'enabled'                            => true,
-                    'defaultUserTenant'                  => '',
-                    'defaultObjectTenant'                => '',
-                    'adminOverride' => true,
+                    'enabled'             => true,
+                    'defaultUserTenant'   => '',
+                    'defaultObjectTenant' => '',
+                    'adminOverride'       => true,
                 ];
             }
 
             if (empty($multitenancyConfig) === false) {
                 $storedData       = json_decode($multitenancyConfig, true);
                 $multitenancyData = [
-                    'enabled'                            => $storedData['enabled'] ?? true,
-                    'defaultUserTenant'                  => $storedData['defaultUserTenant'] ?? '',
-                    'defaultObjectTenant'                => $storedData['defaultObjectTenant'] ?? '',
-                    'adminOverride' => $storedData['adminOverride'] ?? true,
+                    'enabled'             => $storedData['enabled'] ?? true,
+                    'defaultUserTenant'   => $storedData['defaultUserTenant'] ?? '',
+                    'defaultObjectTenant' => $storedData['defaultObjectTenant'] ?? '',
+                    'adminOverride'       => $storedData['adminOverride'] ?? true,
                 ];
             }
 
@@ -947,10 +951,10 @@ class ConfigurationSettingsHandler
         try {
             // Default: enabled=true for proper data isolation.
             $multitenancyConfig = [
-                'enabled'                            => $multitenancyData['enabled'] ?? true,
-                'defaultUserTenant'                  => $multitenancyData['defaultUserTenant'] ?? '',
-                'defaultObjectTenant'                => $multitenancyData['defaultObjectTenant'] ?? '',
-                'adminOverride' => $multitenancyData['adminOverride'] ?? true,
+                'enabled'             => $multitenancyData['enabled'] ?? true,
+                'defaultUserTenant'   => $multitenancyData['defaultUserTenant'] ?? '',
+                'defaultObjectTenant' => $multitenancyData['defaultObjectTenant'] ?? '',
+                'adminOverride'       => $multitenancyData['adminOverride'] ?? true,
             ];
 
             $this->appConfig->setValueString($this->appName, 'multitenancy', json_encode($multitenancyConfig));
@@ -975,7 +979,6 @@ class ConfigurationSettingsHandler
      *     Backward compatibility requires multiple field existence checks
      * @SuppressWarnings(PHPMD.NPathComplexity)
      *     Default configuration structure requires comprehensive initialization
-     * @SuppressWarnings(PHPMD.ElseExpression)
      *     Nested else branches handle optional vector config backward compatibility
      */
     public function getLLMSettingsOnly(): array
@@ -1026,7 +1029,9 @@ class ConfigurationSettingsHandler
                     'backend'   => 'php',
                     'solrField' => '_embedding_',
                 ];
-            } else {
+            }
+
+            if (isset($decoded['vectorConfig']) === true) {
                 // Ensure all vector config fields exist.
                 if (isset($decoded['vectorConfig']['backend']) === false) {
                     $decoded['vectorConfig']['backend'] = 'php';

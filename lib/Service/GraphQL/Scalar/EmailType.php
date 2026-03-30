@@ -24,6 +24,9 @@ use GraphQL\Utils\Utils;
  * Email scalar type validating RFC 5321 email format.
  *
  * @psalm-suppress UnusedClass
+ *
+ * @SuppressWarnings(PHPMD.StaticAccess)
+ * @SuppressWarnings(PHPMD.UnusedFormalParameter)
  */
 class EmailType extends ScalarType
 {

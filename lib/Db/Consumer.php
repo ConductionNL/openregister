@@ -25,6 +25,23 @@ use OCP\AppFramework\Db\Entity;
  * supporting JWT, Basic Auth, OAuth2, and API Key methods.
  *
  * @package OCA\OpenRegister\Db
+ *
+ * @method string|null getUuid()
+ * @method void setUuid(?string $uuid)
+ * @method string|null getName()
+ * @method void setName(?string $name)
+ * @method string|null getDescription()
+ * @method void setDescription(?string $description)
+ * @method array|null getDomains()
+ * @method void setDomains(?array $domains)
+ * @method array|null getIps()
+ * @method void setIps(?array $ips)
+ * @method string|null getAuthorizationType()
+ * @method void setAuthorizationType(?string $authorizationType)
+ * @method array|null getAuthorizationConfiguration()
+ * @method void setAuthorizationConfiguration(?array $authorizationConfiguration)
+ * @method string|null getUserId()
+ * @method void setUserId(?string $userId)
  */
 class Consumer extends Entity implements JsonSerializable
 {

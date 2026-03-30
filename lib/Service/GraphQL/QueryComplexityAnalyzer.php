@@ -39,7 +39,6 @@ class QueryComplexityAnalyzer
     private const DEFAULT_MAX_COST  = 10000;
     private const FIELD_COST        = 1;
     private const RESOLVER_COST     = 10;
-    private const DEFAULT_LIST_SIZE = 20;
 
     /**
      * Per-schema cost overrides.
@@ -99,10 +98,6 @@ class QueryComplexityAnalyzer
 
         foreach ($document->definitions as $definition) {
             if ($definition instanceof OperationDefinitionNode === false) {
-                continue;
-            }
-
-            if ($definition->selectionSet === null) {
                 continue;
             }
 
@@ -227,10 +222,6 @@ class QueryComplexityAnalyzer
      */
     private function getListMultiplier(FieldNode $field, ?array $variables): int
     {
-        if ($field->arguments === null) {
-            return 1;
-        }
-
         foreach ($field->arguments as $arg) {
             if ($arg->name->value !== 'first') {
                 continue;

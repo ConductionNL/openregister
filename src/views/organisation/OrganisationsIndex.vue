@@ -1,4 +1,5 @@
 <script setup>
+import { translate as t } from '@nextcloud/l10n'
 import { organisationStore, navigationStore } from '../../store/store.js'
 </script>
 
@@ -336,6 +337,14 @@ export default {
 				}
 				window.open(websiteUrl, '_blank')
 			}
+		},
+		showSuccessMessage(_message) {
+			// Implementation would depend on your notification system
+			// TODO: Integrate with Nextcloud notification system
+		},
+		showErrorMessage(_message) {
+			// Implementation would depend on your notification system
+			// TODO: Integrate with Nextcloud notification system
 		},
 	},
 }

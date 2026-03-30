@@ -46,6 +46,7 @@ use Psr\Log\LoggerInterface;
  * @SuppressWarnings(PHPMD.ExcessiveClassComplexity)
  * @SuppressWarnings(PHPMD.NPathComplexity)
  * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+ * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
  */
 class UserService
 {
@@ -187,9 +188,8 @@ class UserService
         // Add organization information in the format expected by the frontend.
         // Frontend expects: { active: { uuid, naam, id, slug }, all: [...] }
         // Use cached result if available (avoids ~20-30 redundant queries when called twice in updateMe).
-        if ($this->cachedOrgStats !== null) {
-            $organisationStats = $this->cachedOrgStats;
-        } else {
+        $organisationStats = $this->cachedOrgStats;
+        if ($this->cachedOrgStats === null) {
             try {
                 $organisationStats = $this->organisationService->getUserOrganisationStats();
             } catch (\Exception $e) {

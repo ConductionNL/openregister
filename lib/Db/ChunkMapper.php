@@ -287,11 +287,10 @@ class ChunkMapper extends QBMapper
             'chunkCount'  => 'chunk_count',
         ];
 
-        $sqlSort = $sortMap[$sort] ?? 'last_extracted';
+        $sqlSort  = $sortMap[$sort] ?? 'last_extracted';
+        $sqlOrder = 'DESC';
         if (strtoupper($order) === 'ASC') {
             $sqlOrder = 'ASC';
-        } else {
-            $sqlOrder = 'DESC';
         }
 
         $qb = $this->db->getQueryBuilder();

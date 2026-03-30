@@ -1,4 +1,5 @@
 <script setup>
+import { translate as t, translatePlural as n } from '@nextcloud/l10n'
 import { registerStore, dashboardStore, navigationStore, schemaStore } from '../../store/store.js'
 </script>
 
@@ -160,7 +161,7 @@ import { registerStore, dashboardStore, navigationStore, schemaStore } from '../
 			:dialog-title="t('openregister', 'Edit Register')"
 			@confirm="onSaveRegister"
 			@close="showEditDialog = false">
-			<template #form-fields="{ formData, errors, updateField }">
+			<template #form="{ formData, errors, updateField }">
 				<div class="formContainer">
 					<NcTextField
 						:label="t('openregister', 'Title') + ' *'"

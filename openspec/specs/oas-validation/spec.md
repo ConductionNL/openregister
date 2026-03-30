@@ -111,3 +111,13 @@ Every tag referenced in path operations MUST be defined in the top-level `tags` 
 - **Well-scoped**: Focuses exclusively on OAS output correctness, not on new features.
 - **Testable**: Each scenario can be validated by running `redocly lint` on the generated output.
 - **No ambiguity**: Requirements are precise with concrete examples of valid/invalid output.
+
+## Nextcloud Integration Analysis
+
+**Status**: Implemented
+
+**Existing Implementation**: OasService implements createOas() which generates OpenAPI specifications from register and schema definitions. OasController exposes endpoints for single-register (/api/registers/{id}/oas) and all-registers OAS generation. RegistersController also provides OAS access. The service reads from a BaseOas.json template and dynamically populates paths, schema components, and security definitions. RBAC groups are extracted from schema authorization blocks and mapped to OAuth2 scopes.
+
+**Nextcloud Core Integration**: The OpenAPI 3.0 generation integrates with Nextcloud's own OpenAPI tooling direction. Nextcloud has been moving toward standardized OpenAPI documentation for its core and app APIs. The generated OAS is served at /api/oas endpoints using standard Nextcloud controller routing with @PublicPage annotation for unauthenticated access (useful for developer portals). Server URLs are derived from Nextcloud's IURLGenerator to produce absolute URLs pointing to the actual instance. The security schemes include Basic Auth (native Nextcloud authentication) and OAuth2 with dynamically generated scopes from the RBAC configuration.
+
+**Recommendation**: The OAS generation is solid and well-integrated with Nextcloud's routing and authentication infrastructure. To enhance compliance with Nextcloud's OpenAPI standards, ensure the generated output follows Nextcloud's own OpenAPI conventions (attribute annotations on controllers, typed responses). The validation focus of this spec (passing redocly lint with zero errors) is the right approach for ensuring interoperability with API tooling. Consider registering the OAS endpoints in Nextcloud's capabilities API so that other apps can discover available OpenAPI specs programmatically.

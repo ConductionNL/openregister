@@ -44,6 +44,8 @@ use Twig\Extension\RuntimeExtensionInterface;
  * @package  OCA\OpenRegister\Twig
  *
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
+ * @SuppressWarnings(PHPMD.BooleanArgumentFlag)
+ * @SuppressWarnings(PHPMD.StaticAccess)
  */
 class MappingRuntime implements RuntimeExtensionInterface
 {
@@ -107,8 +109,6 @@ class MappingRuntime implements RuntimeExtensionInterface
      * @param bool                     $list    Whether the mapping runs on multiple instances
      *
      * @return array The mapped output
-     *
-     * @SuppressWarnings(PHPMD.ElseExpression)
      */
     public function executeMapping(Mapping|array|string|int $mapping, array $input, bool $list=false): array
     {
@@ -117,11 +117,13 @@ class MappingRuntime implements RuntimeExtensionInterface
             $mappingObject->hydrate($mapping);
             $mapping = $mappingObject;
         } else if (is_string($mapping) === true || is_int($mapping) === true) {
+            if (is_string($mapping) !== true || str_starts_with($mapping, 'http') !== true) {
+                $mapping = $this->mappingMapper->find($mapping);
+            }
+
             if (is_string($mapping) === true && str_starts_with($mapping, 'http') === true) {
                 $results = $this->mappingMapper->findByRef($mapping);
                 $mapping = $results[0];
-            } else {
-                $mapping = $this->mappingMapper->find($mapping);
             }
         }
 

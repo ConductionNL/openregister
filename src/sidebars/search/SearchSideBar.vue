@@ -155,16 +155,6 @@
 							{{ selectedSchemas.length }} {{ t('openregister', 'schema(s) selected') }}
 						</p>
 					</div>
-					<div class="filterGroup">
-						<label for="sourceSelect">{{ t('openregister', 'Data Source') }}</label>
-						<NcSelect
-							id="sourceSelect"
-							:model-value="selectedSourceValue"
-							:options="sourceOptions"
-							:input-label="t('openregister', 'Data Source')"
-							placeholder="Select data source"
-							@update:model-value="handleSourceChange" />
-					</div>
 				</div>
 
 				<!-- Unified Faceting Section -->
@@ -174,7 +164,7 @@
 					</h3>
 
 					<!-- Stage 1: Facet Discovery -->
-					<div v-if="!facetableFields && canSearch && !isDatabaseSource" class="facets-discovery-container">
+					<div v-if="!facetableFields && canSearch" class="facets-discovery-container">
 						<NcButton
 							type="secondary"
 							:disabled="facetsLoading"
@@ -190,13 +180,6 @@
 						</p>
 					</div>
 
-					<!-- Database Source Notice -->
-					<div v-if="isDatabaseSource && canSearch" class="database-source-notice">
-						<p class="database-notice-text">
-							{{ t('openregister', 'Advanced filters are not available when using database source. Switch to Auto or SOLR Index for filtering options.') }}
-						</p>
-					</div>
-
 					<!-- Loading -->
 					<div v-if="facetsLoading && !facetableFields" class="loading-container">
 						<NcLoadingIcon :size="20" />
@@ -204,7 +187,7 @@
 					</div>
 
 					<!-- Available Facets (Stage 1 Complete) -->
-					<div v-else-if="facetableFields && !isDatabaseSource" class="available-facets-container">
+					<div v-else-if="facetableFields" class="available-facets-container">
 						<h4 class="available-facets-title">
 							{{ t('openregister', 'Available Filters') }}
 						</h4>
@@ -264,7 +247,7 @@
 					</div>
 
 					<!-- Stage 2: Facet Data (Active Filters) -->
-					<div v-else-if="facetData && Object.keys(facetData).length > 0 && !isDatabaseSource" class="active-facets-container">
+					<div v-else-if="facetData && Object.keys(facetData).length > 0" class="active-facets-container">
 						<h4 class="active-facets-title">
 							{{ t('openregister', 'Active Filters') }}
 						</h4>
@@ -495,7 +478,6 @@ export default {
 			enabledFacets: {}, // Which facets user has enabled
 			facetsLoading: false, // Stage 1 loading
 			facetDataLoading: false, // Stage 2 loading
-			selectedSource: 'auto', // 'auto', 'database', 'index'
 			// View management
 			viewSearchQuery: '', // Search query for filtering views
 			showSaveForm: false, // Show inline save form
@@ -618,32 +600,6 @@ export default {
 		},
 		searchPlaceholder() {
 			return this.searchTerms.length > 0 ? 'Add more search terms...' : 'Type to search...'
-		},
-		sourceOptions() {
-			return [
-				{
-					value: 'auto',
-					label: '🤖 Auto (Intelligent)',
-					description: 'Automatically chooses the best data source',
-				},
-				{
-					value: 'index',
-					label: '🔍 SOLR Index',
-					description: 'Fast search with advanced features, field weighting, and faceting',
-				},
-				{
-					value: 'database',
-					label: '💾 Database',
-					description: 'Direct database queries (slower but always available)',
-				},
-			]
-		},
-		selectedSourceValue() {
-			const source = this.sourceOptions.find(option => option.value === this.selectedSource)
-			return source || this.sourceOptions[0]
-		},
-		isDatabaseSource() {
-			return this.selectedSource === 'database'
 		},
 		hasEnabledFacets() {
 			return Object.values(this.enabledFacets).some(enabled => enabled)
@@ -816,9 +772,6 @@ export default {
 			if (this.searchTerms && this.searchTerms.length > 0) {
 				query.q = this.searchTerms.join(',')
 			}
-			if (this.selectedSource && this.selectedSource !== 'auto') {
-				query.source = this.selectedSource
-			}
 			return query
 		},
 		// Compare two query objects for equality (shallow, keys/values as strings)
@@ -845,14 +798,10 @@ export default {
 		// Apply URL query params into component/store state
 		applyQueryParamsFromRoute() {
 			if (this.$route.path !== '/tables') return
-			const { register, schema, q, source } = this.$route.query || {}
+			const { register, schema, q } = this.$route.query || {}
 			// Clear selection when params absent so table empties
 			if (!register) this.selectedRegisters = []
 			if (!schema) this.selectedSchemas = []
-			// Source
-			if (source) {
-				this.selectedSource = String(source)
-			}
 			// Search terms
 			if (typeof q === 'string') {
 				const terms = q.split(',').map(s => s.trim()).filter(Boolean)
@@ -943,11 +892,6 @@ export default {
 			// Only update URL; route watcher will trigger applyQueryParamsFromRoute -> performSearchWithFacets once
 			this.updateRouteQueryFromState()
 		},
-		handleSourceChange(option) {
-			this.selectedSource = option.value
-			// Only update URL; route watcher triggers applyQueryParamsFromRoute -> performSearchWithFacets once
-			this.updateRouteQueryFromState()
-		},
 		/** Push sidebar state into objectStore.searchParams and refetch type 'search'. Sets register/schema context for dialogs and discoverFacets. */
 		syncSearchParamsAndRefetch() {
 			const registerId = this.selectedRegisters.length > 0 ? this.selectedRegisters[0] : null
@@ -971,7 +915,6 @@ export default {
 				schema: schemaId,
 				search,
 				filters,
-				source: this.selectedSource || 'auto',
 			})
 			objectStore.refetchSearchCollection()
 		},
@@ -1074,7 +1017,7 @@ export default {
 		},
 
 		// Toggle individual facet on/off
-		toggleFacet(fieldName, fieldInfo) {
+		toggleFacet(fieldName, _fieldInfo) {
 			// When toggling facet, clear any existing data for that field
 			if (this.enabledFacets[fieldName]) {
 				// Facet was enabled, now being disabled
@@ -1277,11 +1220,6 @@ export default {
 				this.selectedSchemas = config.schemas
 			}
 
-			// Apply source (database/index/auto)
-			if (config.source) {
-				this.selectedSource = config.source
-			}
-
 			// Apply search terms (default filters)
 			if (config.searchTerms && Array.isArray(config.searchTerms)) {
 				this.searchTerms = config.searchTerms
@@ -1320,7 +1258,6 @@ export default {
 						// Query parameters only
 						registers: this.selectedRegisters,
 						schemas: this.selectedSchemas,
-						source: this.selectedSource,
 						searchTerms: this.searchTerms,
 						facetFilters: this.facetFilters,
 						enabledFacets: this.enabledFacets,
@@ -1374,7 +1311,6 @@ export default {
 						// Query parameters only
 						registers: this.selectedRegisters,
 						schemas: this.selectedSchemas,
-						source: this.selectedSource,
 						searchTerms: this.searchTerms,
 						facetFilters: this.facetFilters,
 						enabledFacets: this.enabledFacets,
@@ -1547,7 +1483,6 @@ export default {
 			objectStore.updateSearchParams({
 				search: this.searchTerms.length > 0 ? this.searchTerms.join(' ') : '',
 				filters: activeFilters,
-				source: this.selectedSource || 'auto',
 			})
 		},
 
@@ -1569,7 +1504,7 @@ export default {
 <style lang="scss" scoped>
 .section {
 	padding: 16px;
-    margin-bottom: 0;
+	margin-bottom: 0;
 }
 
 .sectionTitle {
@@ -2018,7 +1953,7 @@ export default {
 	gap: 8px;
 }
 
-.facet-checkbox input[type="checkbox"] {
+.facet-checkbox input[type='checkbox'] {
 	margin-top: 2px;
 	flex-shrink: 0;
 }

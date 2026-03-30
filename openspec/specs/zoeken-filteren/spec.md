@@ -1,5 +1,9 @@
 # zoeken-filteren Specification
 
+---
+status: implemented
+---
+
 ## Purpose
 Implement full-text search with faceted filtering, result highlighting, and saved search functionality for register objects. The search system MUST support searching across multiple schemas and registers, provide instant results with relevance ranking, and offer configurable facets for drill-down navigation.
 
@@ -169,3 +173,10 @@ The search system MUST work with the built-in database and optionally with Elast
   - Should Elasticsearch be supported alongside Solr, or is Solr the sole external backend?
   - How should search highlighting be rendered in the Vue frontend?
   - Should saved searches support notification on new matches (saved search alerts)?
+
+## Nextcloud Integration Analysis
+
+- **Status**: Already implemented in OpenRegister
+- **Existing Implementation**: Full-text search via `MagicSearchHandler` (SQL LIKE) and `SolrBackend` (Apache Solr with relevance ranking). `ObjectsProvider` implements NC unified search. Multiple facet handlers (`MagicFacetHandler`, `SolrFacetProcessor`, `OptimizedFacetHandler`, `HyperFacetHandler`, `MariaDbFacetHandler`). `SearchTrail` entity for saved searches. `IndexService` orchestrates cross-backend search. Solr warmup jobs for performance.
+- **Nextcloud Core Integration**: Implements `IFilteringProvider` (NC unified search provider) via `ObjectsProvider`, enabling OpenRegister objects to appear in NC's global search bar. Uses `ISearchQuery` for pagination parameters. APCu caching for facet results via NC's cache infrastructure. Background jobs (`SolrWarmupJob`, `SolrNightlyWarmupJob`) use NC's `TimedJob`. CLI commands extend NC's `Command` base class.
+- **Recommendation**: Mark as implemented. The `IFilteringProvider` integration is the key NC-native touchpoint. Consider exposing search highlighting in API responses and adding Dutch language stemming for the SQL backend.

@@ -1,5 +1,9 @@
 # webhook-payload-mapping Specification
 
+---
+status: implemented
+---
+
 ## Purpose
 Allow webhooks to reference an OpenRegister Mapping entity so that event payloads are transformed via `MappingService.executeMapping()` before delivery. This is a fully generic capability — any app can configure any Twig-based mapping to transform webhook payloads into whatever format their subscribers expect (ZGW notifications, FHIR events, custom formats, etc.). No format-specific code in OpenRegister.
 
@@ -172,3 +176,10 @@ The `mapping` column MUST be added to the `oc_openregister_webhooks` table.
 - **Specific enough to implement?** Yes -- the spec is detailed with clear scenarios covering all edge cases.
 - **Missing/ambiguous:** Nothing significant -- well-specified.
 - **Open questions:** None -- this spec appears complete and implemented.
+
+## Nextcloud Integration Analysis
+
+- **Status**: Already implemented in OpenRegister
+- **Existing Implementation**: `Webhook` entity has optional `mapping` field referencing a Mapping entity. `WebhookService::deliverWebhook()` applies mapping transformation via `MappingService.executeMapping()` before delivery. `CloudEventFormatter` handles CloudEvents formatting (mapping takes precedence). `WebhookEventListener` triggers delivery. `WebhookDeliveryJob` handles async delivery. `WebhookRetryJob` provides retry logic.
+- **Nextcloud Core Integration**: Webhook events implement `IWebhookCompatibleEvent` for native NC webhook support, enabling NC's built-in webhook system to forward OpenRegister events. `WebhookDeliveryJob` and `WebhookRetryJob` use NC's `QueuedJob` background job system. `MappingService` uses Twig templating via `MappingExtension`/`MappingRuntime`. Events fired via `IEventDispatcher`.
+- **Recommendation**: Mark as implemented. The `IWebhookCompatibleEvent` integration enables NC-native webhook forwarding alongside OpenRegister's own webhook system, providing dual delivery paths.

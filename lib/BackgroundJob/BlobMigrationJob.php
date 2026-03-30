@@ -30,6 +30,7 @@ use OCA\OpenRegister\Db\SchemaMapper;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\BackgroundJob\TimedJob;
 use OCP\IAppConfig;
+use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\IDBConnection;
 use Psr\Log\LoggerInterface;
 
@@ -279,12 +280,11 @@ class BlobMigrationJob extends TimedJob
             $platform   = $db->getDatabasePlatform();
             $isPostgres = stripos($platform::class, 'PostgreSQL') !== false;
 
+            // phpcs:ignore Generic.Files.LineLength.TooLong -- SQL query.
+            $sql = "SELECT 1 FROM information_schema.tables WHERE table_name = 'oc_openregister_objects' AND table_schema = DATABASE() LIMIT 1";
             if ($isPostgres === true) {
                 // phpcs:ignore Generic.Files.LineLength.MaxExceeded
                 $sql = "SELECT 1 FROM information_schema.tables WHERE table_name = 'oc_openregister_objects' AND table_schema = current_schema() LIMIT 1";
-            } else {
-                // phpcs:ignore Generic.Files.LineLength.TooLong -- SQL query.
-                $sql = "SELECT 1 FROM information_schema.tables WHERE table_name = 'oc_openregister_objects' AND table_schema = DATABASE() LIMIT 1";
             }
 
             $stmt = $db->prepare($sql);
@@ -313,7 +313,7 @@ class BlobMigrationJob extends TimedJob
 
         $result = $qb->executeQuery();
         $rows   = $result->fetchAll();
-        $result->free();
+        $result->closeCursor();
 
         return $rows;
     }//end fetchBlobObjects()
@@ -333,7 +333,7 @@ class BlobMigrationJob extends TimedJob
 
         $result = $qb->executeQuery();
         $row    = $result->fetch();
-        $result->free();
+        $result->closeCursor();
 
         return (int) ($row['count'] ?? 0);
     }//end countBlobRows()
@@ -462,7 +462,7 @@ class BlobMigrationJob extends TimedJob
 
         $qb = $db->getQueryBuilder();
         $qb->delete('openregister_objects')
-            ->where($qb->expr()->in('id', $qb->createNamedParameter($ids, IDBConnection::PARAM_INT_ARRAY)));
+            ->where($qb->expr()->in('id', $qb->createNamedParameter($ids, IQueryBuilder::PARAM_INT_ARRAY)));
 
         $qb->executeStatement();
     }//end deleteBlobRows()

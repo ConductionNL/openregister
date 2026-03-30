@@ -578,7 +578,7 @@ class SchemaCacheHandler
      * @throws \OCP\DB\Exception If a database error occurs
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Database upsert logic with conditional insert/update
-     * @SuppressWarnings(PHPMD.ElseExpression)       Insert alternative when update returns zero rows
+     * Insert alternative when update returns zero rows
      */
     private function setCachedData(int $schemaId, string $cacheKey, mixed $data, int $ttl): void
     {

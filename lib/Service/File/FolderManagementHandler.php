@@ -76,14 +76,14 @@ class FolderManagementHandler
     /**
      * Constructor for FolderManagementHandler.
      *
-     * @param IRootFolder        $rootFolder         Root folder for file operations.
-     * @param MagicMapper $objectEntityMapper Mapper for object entities.
-     * @param RegisterMapper     $registerMapper     Mapper for registers.
-     * @param IUserSession       $userSession        User session for user context.
-     * @param IGroupManager      $groupManager       Group manager for group operations.
-     * @param LoggerInterface    $logger             Logger for logging operations.
-     * @param FileService|null   $fileService        File service facade for cross-handler coordination
-     *                                               (injected lazily to avoid circular dependency).
+     * @param IRootFolder      $rootFolder         Root folder for file operations.
+     * @param MagicMapper      $objectEntityMapper Mapper for object entities.
+     * @param RegisterMapper   $registerMapper     Mapper for registers.
+     * @param IUserSession     $userSession        User session for user context.
+     * @param IGroupManager    $groupManager       Group manager for group operations.
+     * @param LoggerInterface  $logger             Logger for logging operations.
+     * @param FileService|null $fileService        File service facade for cross-handler coordination
+     *                                             (injected lazily to avoid circular dependency).
      */
     public function __construct(
         private readonly IRootFolder $rootFolder,
@@ -312,8 +312,9 @@ class FolderManagementHandler
         // At this point $folderProperty is a non-empty string.
         // Check if it's a numeric string (folder ID) or a legacy path.
         if (is_numeric($folderProperty) === false) {
+            $registerId = $register->getId();
             $this->logger->warning(
-                message: '[FolderManagementHandler] Invalid folder ID type for register '.$register->getId().', creating new folder',
+                message: "[FolderManagementHandler] Invalid folder ID type for register {$registerId}, creating new folder",
                 context: ['file' => __FILE__, 'line' => __LINE__]
             );
             return $this->createRegisterFolderById(register: $register);

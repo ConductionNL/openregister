@@ -28,17 +28,19 @@ use Psr\Log\LoggerInterface;
 
 /**
  * Handler for extracting text from OpenRegister objects.
+ *
+ * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
  */
 class ObjectHandler implements TextExtractionHandlerInterface
 {
     /**
      * Constructor.
      *
-     * @param MagicMapper $objectMapper   Object mapper.
-     * @param ChunkMapper        $chunkMapper    Chunk mapper.
-     * @param SchemaMapper       $schemaMapper   Schema mapper.
-     * @param RegisterMapper     $registerMapper Register mapper.
-     * @param LoggerInterface    $logger         Logger.
+     * @param MagicMapper     $objectMapper   Object mapper.
+     * @param ChunkMapper     $chunkMapper    Chunk mapper.
+     * @param SchemaMapper    $schemaMapper   Schema mapper.
+     * @param RegisterMapper  $registerMapper Register mapper.
+     * @param LoggerInterface $logger         Logger.
      */
     public function __construct(
         private readonly MagicMapper $objectMapper,
@@ -285,7 +287,7 @@ class ObjectHandler implements TextExtractionHandlerInterface
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Recursive extraction requires multiple type checks
      * @SuppressWarnings(PHPMD.NPathComplexity)      Multiple value type handling paths
-     * @SuppressWarnings(PHPMD.ElseExpression)       Multiple conditions for different type handling
+     * Multiple conditions for different type handling
      */
     private function extractTextFromArray(array $data, string $prefix='', int $depth=0): string
     {
@@ -298,7 +300,7 @@ class ObjectHandler implements TextExtractionHandlerInterface
 
         foreach ($data as $key => $value) {
             // Build context path.
-            if ($prefix !== null && $prefix !== '') {
+            if (($prefix !== null && $prefix !== '')) {
                 $contextKey = "{$prefix}.{$key}";
             } else {
                 $contextKey = (string) $key;

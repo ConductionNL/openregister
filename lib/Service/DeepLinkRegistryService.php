@@ -36,6 +36,8 @@ use Psr\Log\LoggerInterface;
  *
  * Registrations are in-memory only (static array) and populated fresh
  * on each request via app boot cycles.
+ *
+ * @SuppressWarnings(PHPMD.CyclomaticComplexity)
  */
 class DeepLinkRegistryService
 {

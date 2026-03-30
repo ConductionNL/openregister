@@ -1,4 +1,5 @@
 <script setup>
+import { translate as t } from '@nextcloud/l10n'
 import { objectStore, navigationStore, registerStore, schemaStore } from '../../store/store.js'
 </script>
 
@@ -1161,6 +1162,7 @@ export default {
 .codeMirrorContainer.light :deep(.ͼd) {
 	color: #d19a66;
 }
+
 .codeMirrorContainer.dark :deep(.ͼd) {
 	color: #9d6c3a;
 }
@@ -1174,26 +1176,29 @@ export default {
 .codeMirrorContainer.light :deep(.cm-line)::selection,
 .codeMirrorContainer.light :deep(.cm-line) ::selection {
 	background-color: #d7eaff !important;
-    color: black;
+	color: black;
 }
+
 .codeMirrorContainer.dark :deep(.cm-line)::selection,
 .codeMirrorContainer.dark :deep(.cm-line) ::selection {
 	background-color: #8fb3e6 !important;
-    color: black;
+	color: black;
 }
 
 /* string */
 .codeMirrorContainer.light :deep(.cm-line .ͼe)::selection {
-    color: #2d770f;
+	color: #2d770f;
 }
+
 .codeMirrorContainer.dark :deep(.cm-line .ͼe)::selection {
-    color: #104e0c;
+	color: #104e0c;
 }
 
 /* boolean */
 .codeMirrorContainer.light :deep(.cm-line .ͼc)::selection {
 	color: #221199;
 }
+
 .codeMirrorContainer.dark :deep(.cm-line .ͼc)::selection {
 	color: #4026af;
 }
@@ -1202,6 +1207,7 @@ export default {
 .codeMirrorContainer.light :deep(.cm-line .ͼb)::selection {
 	color: #770088;
 }
+
 .codeMirrorContainer.dark :deep(.cm-line .ͼb)::selection {
 	color: #770088;
 }
@@ -1210,6 +1216,7 @@ export default {
 .codeMirrorContainer.light :deep(.cm-line .ͼd)::selection {
 	color: #8c5c2c;
 }
+
 .codeMirrorContainer.dark :deep(.cm-line .ͼd)::selection {
 	color: #623907;
 }

@@ -45,16 +45,17 @@ use Symfony\Component\Uid\Uuid;
  * @package  OCA\OpenRegister\Service\Objects\SaveObject
  *
  * @SuppressWarnings(PHPMD.ExcessiveClassComplexity) Complex cascading logic with many relation scenarios
+ * @SuppressWarnings(PHPMD.UnusedFormalParameter)
  */
 class RelationCascadeHandler
 {
     /**
      * Constructor for RelationCascadeHandler.
      *
-     * @param MagicMapper $objectEntityMapper Object entity data mapper.
-     * @param SchemaMapper       $schemaMapper       Schema mapper for schema operations.
-     * @param RegisterMapper     $registerMapper     Register mapper for register operations.
-     * @param LoggerInterface    $logger             Logger interface for logging operations.
+     * @param MagicMapper     $objectEntityMapper Object entity data mapper.
+     * @param SchemaMapper    $schemaMapper       Schema mapper for schema operations.
+     * @param RegisterMapper  $registerMapper     Register mapper for register operations.
+     * @param LoggerInterface $logger             Logger interface for logging operations.
      */
     public function __construct(
         private readonly MagicMapper $objectEntityMapper,

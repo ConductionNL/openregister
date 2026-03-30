@@ -1,3 +1,7 @@
+---
+status: draft
+---
+
 # rapportage-bi-export Specification
 
 ## Purpose
@@ -127,3 +131,26 @@ Data exports MUST only include objects and fields the requesting user is authori
   - How should scheduled reports be configured — admin UI, API, or both?
   - Should PDF reports use a template system for custom branding?
   - How large can exports get before they need async processing?
+
+## Nextcloud Integration Analysis
+
+**Status**: Partially implemented. CSV and Excel export work via `ExportHandler` and `ExportService` (PhpSpreadsheet). PDF export, aggregation API, OData endpoints, and scheduled report generation are not built.
+
+**Nextcloud Core Interfaces**:
+- `QueuedJob` (`OCP\BackgroundJob\QueuedJob`): Use for async report generation. When a user requests a large export or a scheduled report triggers, enqueue a `ReportGenerationJob` that generates the file and stores it in Nextcloud Files or sends it via email. This avoids HTTP timeout issues for large datasets.
+- `IDashboardWidget` / `IAPIWidgetV2`: Register report summary widgets on the Nextcloud dashboard. Widgets display key metrics (e.g., total cases, open cases, monthly trends) fetched from the aggregation API, providing at-a-glance management reporting.
+- `IMailer` (`OCP\Mail\IMailer`): Deliver scheduled report attachments via email. The `ReportGenerationJob` generates the PDF/Excel file and uses `IMailer` to send it to configured recipients.
+- `IUserSession` / `PermissionHandler`: Enforce RBAC on all export operations. The export pipeline passes through the same permission checks as the standard object retrieval, ensuring users only export data they are authorized to see.
+
+**Implementation Approach**:
+- For PDF export, integrate a PHP PDF library (Dompdf or TCPDF) into `ExportService`. Create report templates that include: title, generation timestamp, summary statistics (count, status breakdown), and a paginated data table. Alternatively, use Docudesk's PDF generation capabilities if available.
+- Implement aggregation API endpoints as a new route group (e.g., `/api/objects/{register}/{schema}/aggregate`). The controller parses `groupBy`, `metric` (count/sum/avg), `field`, and `interval` parameters. For database-level aggregation, extend `MagicMapper` with GROUP BY query support. For large datasets, offload to Solr/Elasticsearch aggregation facets.
+- For OData v4 support, create an `ODataController` that translates OData query parameters (`$filter`, `$select`, `$orderby`, `$top`, `$skip`, `$count`) to OpenRegister's internal query format. Use `MagicSearchHandler` as the backend. The OData service document is auto-generated from register/schema definitions.
+- Scheduled reports: Create a `ScheduledReportEntity` that stores report definitions (schema, filters, format, schedule cron expression, delivery target). A `ScheduledReportJob` (extending `TimedJob`) runs hourly, checks for due reports, generates them, and delivers via email or Nextcloud Files.
+
+**Dependencies on Existing OpenRegister Features**:
+- `ExportHandler` / `ExportService` — existing CSV/Excel export (PhpSpreadsheet), to be extended with PDF.
+- `ObjectService` — data retrieval with filtering for export pipelines.
+- `MagicSearchHandler` / `MagicMapper` — query infrastructure, to be extended with aggregation support.
+- `PermissionHandler` / `MagicRbacHandler` — RBAC enforcement on exports.
+- `DashboardService` / `DashboardController` — existing aggregate metrics, foundation for dashboard widgets.
