@@ -86,7 +86,7 @@ import { deletedStore, navigationStore, registerStore, schemaStore } from '../..
 			<CnStatsPanel
 				:sections="deletionStatsSections"
 				:loading="deletedStore.statisticsLoading">
-				<template #item-icon-topDeleters="{ item }">
+				<template #item-icon-topDeleters>
 					<AccountCircle :size="32" />
 				</template>
 			</CnStatsPanel>
