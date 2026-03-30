@@ -83,76 +83,13 @@ import { deletedStore, navigationStore, registerStore, schemaStore } from '../..
 				<ChartLine :size="20" />
 			</template>
 
-			<!-- Statistics Section -->
-			<div class="statsSection">
-				<h3>{{ t('openregister', 'Deletion Statistics') }}</h3>
-
-				<div v-if="deletedStore.statisticsLoading" class="loading-stats">
-					<NcLoadingIcon :size="32" />
-					<p>{{ t('openregister', 'Loading statistics...') }}</p>
-				</div>
-
-				<div v-else>
-					<div class="statCard">
-						<div class="statNumber">
-							{{ deletedStore.statistics.totalDeleted }}
-						</div>
-						<div class="statLabel">
-							{{ t('openregister', 'Total Deleted Items') }}
-						</div>
-					</div>
-					<div class="statCard">
-						<div class="statNumber">
-							{{ deletedStore.statistics.deletedToday }}
-						</div>
-						<div class="statLabel">
-							{{ t('openregister', 'Deleted Today') }}
-						</div>
-					</div>
-					<div class="statCard">
-						<div class="statNumber">
-							{{ deletedStore.statistics.deletedThisWeek }}
-						</div>
-						<div class="statLabel">
-							{{ t('openregister', 'Deleted This Week') }}
-						</div>
-					</div>
-					<div class="statCard">
-						<div class="statNumber">
-							{{ deletedStore.statistics.oldestDays }}
-						</div>
-						<div class="statLabel">
-							{{ t('openregister', 'Oldest Item (days)') }}
-						</div>
-					</div>
-				</div>
-			</div>
-
-			<!-- Top Deleters -->
-			<div class="topDeleters">
-				<h4>{{ t('openregister', 'Top Deleters') }}</h4>
-
-				<div v-if="deletedStore.topDeletersLoading" class="loading-stats">
-					<NcLoadingIcon :size="24" />
-				</div>
-
-				<div v-else-if="deletedStore.topDeleters.length === 0" class="no-data">
-					<p>{{ t('openregister', 'No deletion data available') }}</p>
-				</div>
-
-				<NcListItem v-for="(deleter, index) in deletedStore.topDeleters"
-					v-else
-					:key="index"
-					:name="deleter.user"
-					:bold="false">
-					<template #icon>
-						<AccountCircle :size="32" />
-					</template>
-					<template #subname>
-						{{ t('openregister', '{count} deletions', { count: deleter.count }) }}
-					</template>
-				</NcListItem>
-			</div>
+			<CnStatsPanel
+				:sections="deletionStatsSections"
+				:loading="deletedStore.statisticsLoading">
+				<template #item-icon-topDeleters="{ item }">
+					<AccountCircle :size="32" />
+				</template>
+			</CnStatsPanel>
 		</NcAppSidebarTab>
 	</NcAppSidebar>
 </template>
@@ -163,13 +100,16 @@ import {
 	NcAppSidebarTab,
 	NcSelect,
 	NcNoteCard,
-	NcListItem,
 	NcDateTimePickerNative,
-	NcLoadingIcon,
 } from '@nextcloud/vue'
+import { CnStatsPanel } from '@conduction/nextcloud-vue'
 import FilterOutline from 'vue-material-design-icons/FilterOutline.vue'
 import ChartLine from 'vue-material-design-icons/ChartLine.vue'
 import AccountCircle from 'vue-material-design-icons/AccountCircle.vue'
+import DeleteEmpty from 'vue-material-design-icons/DeleteEmpty.vue'
+import CalendarToday from 'vue-material-design-icons/CalendarToday.vue'
+import CalendarWeek from 'vue-material-design-icons/CalendarWeek.vue'
+import ClockOutline from 'vue-material-design-icons/ClockOutline.vue'
 
 export default {
 	name: 'DeletedSideBar',
@@ -178,9 +118,8 @@ export default {
 		NcAppSidebarTab,
 		NcSelect,
 		NcNoteCard,
-		NcListItem,
 		NcDateTimePickerNative,
-		NcLoadingIcon,
+		CnStatsPanel,
 		FilterOutline,
 		ChartLine,
 		AccountCircle,
@@ -248,6 +187,57 @@ export default {
 				title: schema.title,
 				schema,
 			}
+		},
+		deletionStatsSections() {
+			return [
+				{
+					type: 'stats',
+					id: 'overview',
+					title: t('openregister', 'Deletion Statistics'),
+					layout: 'grid',
+					columns: 2,
+					items: [
+						{
+							title: t('openregister', 'Total Deleted Items'),
+							count: deletedStore.statistics.totalDeleted,
+							countLabel: t('openregister', 'items'),
+							variant: 'primary',
+							icon: DeleteEmpty,
+						},
+						{
+							title: t('openregister', 'Deleted Today'),
+							count: deletedStore.statistics.deletedToday,
+							countLabel: t('openregister', 'items'),
+							variant: 'warning',
+							icon: CalendarToday,
+						},
+						{
+							title: t('openregister', 'Deleted This Week'),
+							count: deletedStore.statistics.deletedThisWeek,
+							countLabel: t('openregister', 'items'),
+							icon: CalendarWeek,
+						},
+						{
+							title: t('openregister', 'Oldest Item'),
+							count: deletedStore.statistics.oldestDays,
+							countLabel: t('openregister', 'days'),
+							icon: ClockOutline,
+						},
+					],
+				},
+				{
+					type: 'list',
+					id: 'topDeleters',
+					title: t('openregister', 'Top Deleters'),
+					loading: deletedStore.topDeletersLoading,
+					emptyLabel: t('openregister', 'No deletion data available'),
+					items: deletedStore.topDeleters.map((deleter, index) => ({
+						key: deleter.user || String(index),
+						name: deleter.user,
+						subname: t('openregister', '{count} deletions', { count: deleter.count }),
+					})),
+				},
+			]
 		},
 		userOptions() {
 			// Get unique users from deleted items or provide default options
@@ -482,19 +472,16 @@ export default {
 </script>
 
 <style scoped>
-.filterSection,
-.statsSection {
+.filterSection {
 	padding: 12px 0;
 	border-bottom: 1px solid var(--color-border);
 }
 
-.filterSection:last-child,
-.statsSection:last-child {
+.filterSection:last-child {
 	border-bottom: none;
 }
 
-.filterSection h3,
-.statsSection h3 {
+.filterSection h3 {
 	color: var(--color-text-maxcontrast);
 	font-size: 14px;
 	font-weight: bold;
@@ -517,57 +504,6 @@ export default {
 
 .filter-hint {
 	margin: 8px 16px;
-}
-
-.statsSection {
-	padding: 16px;
-}
-
-.loading-stats {
-	display: flex;
-	flex-direction: column;
-	align-items: center;
-	gap: 8px;
-	color: var(--color-text-maxcontrast);
-	font-size: 0.9rem;
-}
-
-.statCard {
-	background: var(--color-background-hover);
-	border-radius: var(--border-radius);
-	padding: 16px;
-	margin-bottom: 12px;
-	text-align: center;
-}
-
-.statNumber {
-	font-size: 2rem;
-	font-weight: bold;
-	color: var(--color-primary);
-	margin-bottom: 4px;
-}
-
-.statLabel {
-	font-size: 0.9rem;
-	color: var(--color-text-maxcontrast);
-}
-
-.topDeleters {
-	margin-top: 20px;
-}
-
-.topDeleters h4 {
-	margin: 0 0 12px 0;
-	font-size: 1rem;
-	font-weight: 500;
-	color: var(--color-main-text);
-}
-
-.no-data {
-	text-align: center;
-	color: var(--color-text-maxcontrast);
-	font-size: 0.9rem;
-	padding: 20px;
 }
 
 /* Add some spacing between select inputs */
