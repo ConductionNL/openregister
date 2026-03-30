@@ -48,8 +48,6 @@ import { navigationStore } from '../store/store.js'
 		<DeleteAgent />
 		<EditWebhook v-if="navigationStore.modal === 'editWebhook'" />
 		<ViewWebhookLog v-if="navigationStore.modal === 'viewWebhookLog'" />
-		<EditEndpoint v-if="navigationStore.modal === 'editEndpoint'" />
-		<DeleteEndpoint v-if="navigationStore.dialog === 'deleteEndpoint'" />
 	</Fragment>
 </template>
 
@@ -95,8 +93,6 @@ import EditAgent from './agent/EditAgent.vue'
 import DeleteAgent from './agent/DeleteAgent.vue'
 import EditWebhook from './webhook/EditWebhook.vue'
 import ViewWebhookLog from './webhook/ViewWebhookLog.vue'
-import EditEndpoint from './endpoint/EditEndpoint.vue'
-import DeleteEndpoint from './endpoint/DeleteEndpoint.vue'
 export default {
 	name: 'Modals',
 	components: {
@@ -141,8 +137,6 @@ export default {
 		DeleteAgent,
 		EditWebhook,
 		ViewWebhookLog,
-		EditEndpoint,
-		DeleteEndpoint,
 	},
 }
 </script>

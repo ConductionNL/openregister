@@ -81,7 +81,7 @@ export const useEndpointStore = defineStore('endpoint', () => {
 	const refreshEndpointList = () => {
 		console.info('Refreshing endpoint list')
 
-		fetch(apiEndpoint, {
+		return fetch(apiEndpoint, {
 			method: 'GET',
 		})
 			.then((response) => {
