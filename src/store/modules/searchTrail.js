@@ -447,6 +447,40 @@ export const useSearchTrailStore = defineStore('searchTrail', {
 		},
 
 		/**
+		 * Delete multiple search trails by IDs
+		 * @param {Array} ids - Array of search trail IDs to delete
+		 * @return {Promise<object>} The response data
+		 */
+		async deleteMultipleSearchTrails(ids) {
+			if (!ids?.length) return { success: true }
+
+			try {
+				console.info('Deleting search trails:', ids)
+
+				const response = await fetch(`${apiUrl}/search-trails/bulk-delete`, {
+					method: 'DELETE',
+					headers: {
+						'Content-Type': 'application/json',
+						requesttoken: OC.requestToken,
+					},
+					body: JSON.stringify({ ids }),
+				})
+
+				const data = await response.json()
+				console.info('Bulk delete response:', data)
+
+				if (!response.ok || !data.success) {
+					throw new Error(data.error || 'Deletion failed')
+				}
+
+				return data
+			} catch (error) {
+				console.error('Error deleting search trails:', error)
+				throw error
+			}
+		},
+
+		/**
 		 * Delete search trail logs older than specified days
 		 * @param {number} days - Number of days to keep
 		 * @return {Promise<object>} The response data

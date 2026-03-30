@@ -157,158 +157,12 @@ import { searchTrailStore, navigationStore, registerStore, schemaStore } from '.
 				<ChartLine :size="20" />
 			</template>
 
-			<!-- Statistics Section -->
-			<div class="statsSection">
-				<h3>{{ t('openregister', 'Search Trail Statistics') }}</h3>
-				<div class="statGrid">
-					<div class="statCard">
-						<div class="statNumber">
-							{{ totalSearchTrails }}
-						</div>
-						<div class="statLabel">
-							{{ t('openregister', 'Total Searches') }}
-						</div>
-					</div>
-					<div class="statCard">
-						<div class="statNumber">
-							{{ totalResults }}
-						</div>
-						<div class="statLabel">
-							{{ t('openregister', 'Total Results') }}
-						</div>
-					</div>
-					<div class="statCard">
-						<div class="statNumber">
-							{{ averageResultsPerSearch }}
-						</div>
-						<div class="statLabel">
-							{{ t('openregister', 'Avg Results/Search') }}
-						</div>
-					</div>
-					<div class="statCard">
-						<div class="statNumber">
-							{{ averageExecutionTime }}ms
-						</div>
-						<div class="statLabel">
-							{{ t('openregister', 'Avg Execution Time') }}
-						</div>
-					</div>
-					<div class="statCard">
-						<div class="statNumber">
-							{{ (successRate * 100).toFixed(1) }}%
-						</div>
-						<div class="statLabel">
-							{{ t('openregister', 'Success Rate') }}
-						</div>
-					</div>
-					<div class="statCard">
-						<div class="statNumber">
-							{{ uniqueSearchTerms }}
-						</div>
-						<div class="statLabel">
-							{{ t('openregister', 'Unique Search Terms') }}
-						</div>
-					</div>
-					<div class="statCard">
-						<div class="statNumber">
-							{{ avgSearchesPerSession }}
-						</div>
-						<div class="statLabel">
-							{{ t('openregister', 'Avg Searches/Session') }}
-						</div>
-					</div>
-					<div class="statCard">
-						<div class="statNumber">
-							{{ avgObjectViewsPerSession }}
-						</div>
-						<div class="statLabel">
-							{{ t('openregister', 'Avg Object Views/Session') }}
-						</div>
-					</div>
-				</div>
-			</div>
-
-			<!-- Query Complexity Distribution -->
-			<div class="complexitySection">
-				<h4>{{ t('openregister', 'Query Complexity Distribution') }}</h4>
-				<div class="complexityBars">
-					<div class="complexityBar">
-						<div class="complexityLabel">
-							<span
-								:title="t('openregister', 'Simple queries: Basic text searches with minimal parameters (e.g., single search term, no advanced filters)')"
-								class="complexity-label-with-tooltip">
-								{{ t('openregister', 'Simple') }}
-							</span>
-							<span>{{ queryComplexity.simple }}</span>
-						</div>
-						<div class="complexityProgress">
-							<div class="complexityProgressBar simple" :style="{ width: getComplexityPercentage('simple') + '%' }" />
-						</div>
-					</div>
-					<div class="complexityBar">
-						<div class="complexityLabel">
-							<span
-								:title="t('openregister', 'Medium queries: Searches with some filtering or multiple parameters (e.g., date ranges, specific registers/schemas)')"
-								class="complexity-label-with-tooltip">
-								{{ t('openregister', 'Medium') }}
-							</span>
-							<span>{{ queryComplexity.medium }}</span>
-						</div>
-						<div class="complexityProgress">
-							<div class="complexityProgressBar medium" :style="{ width: getComplexityPercentage('medium') + '%' }" />
-						</div>
-					</div>
-					<div class="complexityBar">
-						<div class="complexityLabel">
-							<span
-								:title="t('openregister', 'Complex queries: Advanced searches with multiple filters, operators, and complex parameter combinations')"
-								class="complexity-label-with-tooltip">
-								{{ t('openregister', 'Complex') }}
-							</span>
-							<span>{{ queryComplexity.complex }}</span>
-						</div>
-						<div class="complexityProgress">
-							<div class="complexityProgressBar complex" :style="{ width: getComplexityPercentage('complex') + '%' }" />
-						</div>
-					</div>
-				</div>
-			</div>
-
-			<!-- Popular Search Terms -->
-			<div class="popularTermsSection">
-				<h4>{{ t('openregister', 'Popular Search Terms') }}</h4>
-				<div class="popularTermsList">
-					<NcListItem v-for="(term, index) in popularTerms"
-						:key="index"
-						:name="term.term"
-						:bold="false">
-						<template #icon>
-							<MagnifyPlus :size="32" />
-						</template>
-						<template #subname>
-							{{ t('openregister', '{count} searches', { count: term.count }) }}
-						</template>
-					</NcListItem>
-				</div>
-			</div>
-
-			<!-- Register/Schema Usage -->
-			<div class="registerSchemaSection">
-				<h4>{{ t('openregister', 'Register/Schema Usage') }}</h4>
-				<div class="registerSchemaList">
-					<NcListItem v-for="(stat, index) in registerSchemaStats"
-						:key="index"
-						:name="getRegisterSchemaName(stat)"
-						:bold="false">
-						<template #icon>
-							<DatabaseOutline :size="32" />
-						</template>
-						<template #subname>
-							{{ t('openregister', '{count} searches', { count: stat.count }) }}
-						</template>
-					</NcListItem>
-				</div>
-			</div>
+			<CnStatsPanel :sections="searchStatsSections">
+				<!-- Custom icon for popular terms -->
+				<template #item-icon-popularTerms>
+					<MagnifyPlus :size="32" />
+				</template>
+			</CnStatsPanel>
 		</NcAppSidebarTab>
 
 		<NcAppSidebarTab id="analytics-tab" :name="t('openregister', 'Analytics')" :order="3">
@@ -316,62 +170,28 @@ import { searchTrailStore, navigationStore, registerStore, schemaStore } from '.
 				<TrendingUp :size="20" />
 			</template>
 
-			<!-- Analytics Section -->
-			<div class="analyticsSection">
-				<h3>{{ t('openregister', 'Search Analytics') }}</h3>
-
-				<!-- Activity Period Selector -->
-				<div class="filterGroup">
-					<label for="activityPeriodSelect">{{ t('openregister', 'Activity Period') }}</label>
-					<NcSelect
-						id="activityPeriodSelect"
-						v-model="selectedActivityPeriod"
-						:options="activityPeriodOptions"
-						:placeholder="t('openregister', 'Select period')"
-						@input="loadActivityData">
-						<template #option="{ label }">
-							{{ label }}
-						</template>
-					</NcSelect>
-				</div>
-
-				<!-- Activity Chart/Data -->
-				<div class="activityData">
-					<h4>{{ t('openregister', 'Search Activity') }}</h4>
-					<div v-if="searchTrailStore.activityLoading" class="loadingSpinner">
-						<NcLoadingIcon :size="32" />
-					</div>
-					<div v-else-if="currentActivityData.length > 0" class="activityList">
-						<div v-for="(activity, index) in currentActivityData"
-							:key="index"
-							class="activityItem">
-							<span class="activityPeriod">{{ formatActivityPeriod(activity.period) }}</span>
-							<span class="activityCount">{{ activity.searches }} searches</span>
-						</div>
-					</div>
-					<div v-else class="noActivityData">
-						{{ t('openregister', 'No activity data available') }}
-					</div>
-				</div>
-
-				<!-- User Agent Statistics -->
-				<div class="userAgentSection">
-					<h4>{{ t('openregister', 'User Agent Statistics') }}</h4>
-					<div class="userAgentList">
-						<NcListItem v-for="(agent, index) in userAgentStats"
-							:key="index"
-							:name="getBrowserName(agent)"
-							:bold="false">
-							<template #icon>
-								<Monitor :size="32" />
+			<CnStatsPanel :sections="analyticsSections">
+				<template #header>
+					<div class="filterGroup">
+						<label for="activityPeriodSelect">{{ t('openregister', 'Activity Period') }}</label>
+						<NcSelect
+							id="activityPeriodSelect"
+							v-model="selectedActivityPeriod"
+							:options="activityPeriodOptions"
+							:placeholder="t('openregister', 'Select period')"
+							@input="loadActivityData">
+							<template #option="{ label }">
+								{{ label }}
 							</template>
-							<template #subname>
-								{{ t('openregister', '{count} searches', { count: agent.count }) }}
-							</template>
-						</NcListItem>
+						</NcSelect>
 					</div>
-				</div>
-			</div>
+				</template>
+
+				<!-- Custom icon for user agent stats -->
+				<template #item-icon-userAgentStats>
+					<Monitor :size="32" />
+				</template>
+			</CnStatsPanel>
 		</NcAppSidebarTab>
 	</NcAppSidebar>
 </template>
@@ -383,11 +203,10 @@ import {
 	NcSelect,
 	NcNoteCard,
 	NcButton,
-	NcListItem,
 	NcDateTimePickerNative,
 	NcTextField,
-	NcLoadingIcon,
 } from '@nextcloud/vue'
+import { CnStatsPanel } from '@conduction/nextcloud-vue'
 import FilterOutline from 'vue-material-design-icons/FilterOutline.vue'
 import ChartLine from 'vue-material-design-icons/ChartLine.vue'
 import TrendingUp from 'vue-material-design-icons/TrendingUp.vue'
@@ -395,6 +214,12 @@ import MagnifyPlus from 'vue-material-design-icons/MagnifyPlus.vue'
 import DatabaseOutline from 'vue-material-design-icons/DatabaseOutline.vue'
 import Monitor from 'vue-material-design-icons/Monitor.vue'
 import FilterOffOutline from 'vue-material-design-icons/FilterOffOutline.vue'
+import Counter from 'vue-material-design-icons/Counter.vue'
+import TimerOutline from 'vue-material-design-icons/TimerOutline.vue'
+import CheckCircleOutline from 'vue-material-design-icons/CheckCircleOutline.vue'
+import TagOutline from 'vue-material-design-icons/TagOutline.vue'
+import AccountGroupOutline from 'vue-material-design-icons/AccountGroupOutline.vue'
+import EyeOutline from 'vue-material-design-icons/EyeOutline.vue'
 
 export default {
 	name: 'SearchTrailSideBar',
@@ -404,15 +229,13 @@ export default {
 		NcSelect,
 		NcNoteCard,
 		NcButton,
-		NcListItem,
 		NcDateTimePickerNative,
 		NcTextField,
-		NcLoadingIcon,
+		CnStatsPanel,
 		FilterOutline,
 		ChartLine,
 		TrendingUp,
 		MagnifyPlus,
-		DatabaseOutline,
 		Monitor,
 		FilterOffOutline,
 	},
@@ -543,16 +366,157 @@ export default {
 			if (!searchTrailStore.searchTrailList || !searchTrailStore.searchTrailList.length) {
 				return []
 			}
-			// Get unique users from search trail list
 			const users = [...new Set(searchTrailStore.searchTrailList.map(trail => trail.userName || trail.user).filter(Boolean))]
 			return users.map(user => ({
 				label: user,
 				value: user,
 			}))
 		},
+		searchStatsSections() {
+			return [
+				{
+					type: 'stats',
+					id: 'total',
+					title: t('openregister', 'Search Trail Statistics'),
+					layout: 'stack',
+					items: [{
+						title: t('openregister', 'Total Searches'),
+						count: this.totalSearchTrails,
+						countLabel: t('openregister', 'searches'),
+						variant: 'primary',
+						icon: MagnifyPlus,
+					}],
+				},
+				{
+					type: 'stats',
+					id: 'metrics',
+					layout: 'grid',
+					columns: 2,
+					items: [
+						{
+							title: t('openregister', 'Total Results'),
+							count: this.totalResults,
+							countLabel: t('openregister', 'results'),
+							icon: Counter,
+						},
+						{
+							title: t('openregister', 'Avg Results/Search'),
+							count: this.averageResultsPerSearch,
+							countLabel: t('openregister', 'results'),
+							icon: ChartLine,
+						},
+						{
+							title: t('openregister', 'Avg Execution Time'),
+							count: this.averageExecutionTime,
+							countLabel: 'ms',
+							icon: TimerOutline,
+						},
+						{
+							title: t('openregister', 'Success Rate'),
+							count: parseFloat((this.successRate * 100).toFixed(1)),
+							countLabel: '%',
+							variant: 'success',
+							icon: CheckCircleOutline,
+						},
+						{
+							title: t('openregister', 'Unique Search Terms'),
+							count: this.uniqueSearchTerms,
+							countLabel: t('openregister', 'terms'),
+							icon: TagOutline,
+						},
+						{
+							title: t('openregister', 'Avg Searches/Session'),
+							count: this.avgSearchesPerSession,
+							countLabel: t('openregister', 'searches'),
+							icon: AccountGroupOutline,
+						},
+						{
+							title: t('openregister', 'Avg Object Views/Session'),
+							count: this.avgObjectViewsPerSession,
+							countLabel: t('openregister', 'views'),
+							icon: EyeOutline,
+						},
+					],
+				},
+				{
+					type: 'progress',
+					id: 'queryComplexity',
+					title: t('openregister', 'Query Complexity Distribution'),
+					items: [
+						{
+							key: 'simple',
+							label: t('openregister', 'Simple'),
+							count: this.queryComplexity.simple,
+							variant: 'success',
+							tooltip: t('openregister', 'Simple queries: Basic text searches with minimal parameters (e.g., single search term, no advanced filters)'),
+						},
+						{
+							key: 'medium',
+							label: t('openregister', 'Medium'),
+							count: this.queryComplexity.medium,
+							variant: 'warning',
+							tooltip: t('openregister', 'Medium queries: Searches with some filtering or multiple parameters (e.g., date ranges, specific registers/schemas)'),
+						},
+						{
+							key: 'complex',
+							label: t('openregister', 'Complex'),
+							count: this.queryComplexity.complex,
+							variant: 'error',
+							tooltip: t('openregister', 'Complex queries: Advanced searches with multiple filters, operators, and complex parameter combinations'),
+						},
+					],
+				},
+				{
+					type: 'list',
+					id: 'popularTerms',
+					title: t('openregister', 'Popular Search Terms'),
+					items: this.popularTerms.map(term => ({
+						key: term.term,
+						name: term.term,
+						subname: t('openregister', '{count} searches', { count: term.count }),
+					})),
+				},
+				{
+					type: 'list',
+					id: 'registerSchemaUsage',
+					title: t('openregister', 'Register/Schema Usage'),
+					items: this.registerSchemaStats.map(stat => ({
+						key: `${stat.register}-${stat.schema}`,
+						name: this.getRegisterSchemaName(stat),
+						subname: t('openregister', '{count} searches', { count: stat.count }),
+						icon: DatabaseOutline,
+					})),
+				},
+			]
+		},
+		analyticsSections() {
+			return [
+				{
+					type: 'list',
+					id: 'activityData',
+					title: t('openregister', 'Search Activity'),
+					loading: searchTrailStore.activityLoading,
+					emptyLabel: t('openregister', 'No activity data available'),
+					items: this.currentActivityData.map(activity => ({
+						key: activity.period,
+						name: this.formatActivityPeriod(activity.period),
+						subname: t('openregister', '{count} searches', { count: activity.searches }),
+					})),
+				},
+				{
+					type: 'list',
+					id: 'userAgentStats',
+					title: t('openregister', 'User Agent Statistics'),
+					items: this.userAgentStats.map(agent => ({
+						key: agent.user_agent || 'unknown',
+						name: this.getBrowserName(agent),
+						subname: t('openregister', '{count} searches', { count: agent.count }),
+					})),
+				},
+			]
+		},
 	},
 	watch: {
-		// Keep component/store in sync with URL query params (single source of truth)
 		'$route.query': {
 			handler() {
 				if (this.$route.path !== '/search-trails') return
@@ -563,7 +527,6 @@ export default {
 		'searchTrailStore.searchTrailList'() {
 			this.updateFilteredCount()
 		},
-		// Watch for changes in the global stores
 		'registerStore.registerItem'() {
 			this.applyFilters()
 		},
@@ -572,7 +535,6 @@ export default {
 		},
 	},
 	mounted() {
-		// Load required data
 		if (!registerStore.registerList.length) {
 			registerStore.refreshRegisterList()
 		}
@@ -581,7 +543,6 @@ export default {
 			schemaStore.refreshSchemaList()
 		}
 
-		// Load initial search trail data
 		this.loadSearchTrailData()
 		this.loadStatistics()
 		this.loadPopularTerms()
@@ -589,15 +550,11 @@ export default {
 		this.loadUserAgentStats()
 		this.loadActivityData()
 
-		// Listen for filtered count updates
 		this.$root.$on('search-trail-filtered-count', (count) => {
 			this.filteredCount = count
 		})
 
-		// Watch store changes and update count
 		this.updateFilteredCount()
-
-		// Initialize from current URL query params
 		this.applyQueryParamsFromRoute()
 	},
 	beforeDestroy() {
@@ -621,7 +578,6 @@ export default {
 		 * @return {void}
 		 */
 		clearAllFilters() {
-			// Clear component state
 			this.selectedSuccessStatus = null
 			this.selectedUsers = []
 			this.dateFrom = null
@@ -632,17 +588,12 @@ export default {
 			this.resultCountFrom = ''
 			this.resultCountTo = ''
 
-			// Clear global stores
 			registerStore.setRegisterItem(null)
 			schemaStore.setSchemaItem(null)
 
-			// Clear store filters
 			searchTrailStore.setSearchTrailFilters({})
-
-			// Refresh without applying filters
 			searchTrailStore.refreshSearchTrailList()
 
-			// Reflect cleared filters in URL
 			this.updateRouteQueryFromState()
 		},
 		/**
@@ -682,22 +633,18 @@ export default {
 		applyFilters() {
 			const filters = {}
 
-			// Build success filter
 			if (this.selectedSuccessStatus) {
 				filters.success = this.selectedSuccessStatus.value
 			}
 
-			// Build register filter
 			if (registerStore.registerItem) {
 				filters.register = registerStore.registerItem.id.toString()
 			}
 
-			// Build schema filter
 			if (schemaStore.schemaItem) {
 				filters.schema = schemaStore.schemaItem.id.toString()
 			}
 
-			// Build user filter
 			if (Array.isArray(this.selectedUsers) && this.selectedUsers.length > 0) {
 				const users = this.selectedUsers.slice()
 				if (users.length > 0) {
@@ -705,7 +652,6 @@ export default {
 				}
 			}
 
-			// Date filters
 			if (this.dateFrom) {
 				filters.dateFrom = this.dateFrom
 			}
@@ -713,12 +659,10 @@ export default {
 				filters.dateTo = this.dateTo
 			}
 
-			// Search term filter
 			if (this.searchTermFilter) {
 				filters.searchTerm = this.searchTermFilter
 			}
 
-			// Execution time filters
 			if (this.executionTimeFrom) {
 				filters.executionTimeFrom = this.executionTimeFrom
 			}
@@ -726,7 +670,6 @@ export default {
 				filters.executionTimeTo = this.executionTimeTo
 			}
 
-			// Result count filters
 			if (this.resultCountFrom) {
 				filters.resultCountFrom = this.resultCountFrom
 			}
@@ -734,14 +677,11 @@ export default {
 				filters.resultCountTo = this.resultCountTo
 			}
 
-			// Set filters in store and refresh data
 			searchTrailStore.setSearchTrailFilters(filters)
 			searchTrailStore.refreshSearchTrailList()
 
-			// Also emit for legacy compatibility
 			this.$root.$emit('search-trail-filters-changed', filters)
 
-			// Reflect filters in URL
 			this.updateRouteQueryFromState()
 		},
 		/**
@@ -781,7 +721,6 @@ export default {
 				this.queryComplexity = stats.queryComplexity || { simple: 0, medium: 0, complex: 0 }
 			} catch (error) {
 				console.error('Error loading statistics:', error)
-				// Set default values on error
 				this.totalSearchTrails = 0
 				this.totalResults = 0
 				this.averageResultsPerSearch = 0
@@ -847,18 +786,7 @@ export default {
 				console.error('Error loading activity data:', error)
 				this.currentActivityData = []
 			}
-			// Reflect activity period in URL
 			this.updateRouteQueryFromState()
-		},
-		/**
-		 * Get complexity percentage for progress bar
-		 * @param {string} type - The complexity type
-		 * @return {number} The percentage
-		 */
-		getComplexityPercentage(type) {
-			const total = this.queryComplexity.simple + this.queryComplexity.medium + this.queryComplexity.complex
-			if (total === 0) return 0
-			return Math.round((this.queryComplexity[type] / total) * 100)
 		},
 		/**
 		 * Format activity period for display
@@ -866,7 +794,6 @@ export default {
 		 * @return {string} Formatted period
 		 */
 		formatActivityPeriod(period) {
-			// Format based on the selected period type
 			const periodType = this.selectedActivityPeriod.value
 
 			switch (periodType) {
@@ -889,7 +816,7 @@ export default {
 		 */
 		handleRegisterChange(register) {
 			registerStore.setRegisterItem(register)
-			schemaStore.setSchemaItem(null) // Clear schema when register changes
+			schemaStore.setSchemaItem(null)
 			this.applyFilters()
 		},
 		/**
@@ -928,10 +855,8 @@ export default {
 			}
 			return agent.user_agent || 'Unknown Browser'
 		},
-		// Build URL query from current component/store state
 		buildQueryFromState() {
 			const query = {}
-			// Filters
 			if (registerStore.registerItem) query.register = String(registerStore.registerItem.id)
 			if (schemaStore.schemaItem) query.schema = String(schemaStore.schemaItem.id)
 			if (this.selectedSuccessStatus && this.selectedSuccessStatus.value) query.success = String(this.selectedSuccessStatus.value)
@@ -946,7 +871,6 @@ export default {
 			if (this.resultCountTo) query.resultCountTo = String(this.resultCountTo)
 			return query
 		},
-		// Shallow compare queries
 		queriesEqual(a, b) {
 			const ka = Object.keys(a).sort()
 			const kb = Object.keys(b || {}).sort()
@@ -958,29 +882,24 @@ export default {
 			}
 			return true
 		},
-		// Write current state into URL
 		updateRouteQueryFromState() {
 			if (this.$route.path !== '/search-trails') return
 			const nextQuery = this.buildQueryFromState()
 			if (this.queriesEqual(nextQuery, this.$route.query)) return
 			this.$router.replace({ path: this.$route.path, query: nextQuery })
 		},
-		// Read URL query and apply to component/store
 		applyQueryParamsFromRoute() {
 			if (this.$route.path !== '/search-trails') return
 			const q = this.$route.query || {}
-			// Success status
 			if (typeof q.success !== 'undefined') {
 				const val = String(q.success)
 				const opt = this.successOptions.find(o => String(o.value) === val)
 				this.selectedSuccessStatus = opt || null
 			}
-			// Users
 			if (typeof q.user === 'string') {
 				const users = q.user.split(',').map(s => s.trim()).filter(Boolean)
 				this.selectedUsers = users.map(u => ({ label: u, value: u }))
 			}
-			// Dates and fields
 			// JS dates are awful, so we first check if its a valid date and then create the date. (q.dateFrom is a ISO string)
 			this.dateFrom = q.dateFrom && new Date(q.dateFrom).getDate() ? new Date(q.dateFrom) : null
 			this.dateTo = q.dateTo && new Date(q.dateTo).getDate() ? new Date(q.dateTo) : null
@@ -989,7 +908,6 @@ export default {
 			this.executionTimeTo = q.executionTimeTo || ''
 			this.resultCountFrom = q.resultCountFrom || ''
 			this.resultCountTo = q.resultCountTo || ''
-			// Registers & schemas depend on lists
 			const applyRegister = () => {
 				if (!q.register) return true
 				if (!registerStore.registerList.length) return false
@@ -1007,7 +925,6 @@ export default {
 			const tryApply = (attempt = 0) => {
 				const rOk = applyRegister()
 				const sOk = applySchema()
-				// Apply store filters once selection ready
 				if (rOk && sOk) {
 					this.applyFilters()
 					this.loadActivityData()
@@ -1022,22 +939,16 @@ export default {
 </script>
 
 <style scoped>
-.filterSection,
-.statsSection,
-.analyticsSection {
+.filterSection {
 	padding: 12px 0;
 	border-bottom: 1px solid var(--color-border);
 }
 
-.filterSection:last-child,
-.statsSection:last-child,
-.analyticsSection:last-child {
+.filterSection:last-child {
 	border-bottom: none;
 }
 
-.filterSection h3,
-.statsSection h3,
-.analyticsSection h3 {
+.filterSection h3 {
 	color: var(--color-text-maxcontrast);
 	font-size: 14px;
 	font-weight: bold;
@@ -1082,155 +993,6 @@ export default {
 
 .filter-hint {
 	margin: 8px 16px;
-}
-
-.statsSection {
-	padding: 16px;
-}
-
-.statGrid {
-	display: grid;
-	grid-template-columns: 1fr 1fr;
-	gap: 12px;
-	margin-bottom: 16px;
-}
-
-.statCard {
-	background: var(--color-background-hover);
-	border-radius: var(--border-radius);
-	padding: 12px;
-	text-align: center;
-}
-
-.statNumber {
-	font-size: 1.5rem;
-	font-weight: bold;
-	color: var(--color-primary);
-	margin-bottom: 4px;
-}
-
-.statLabel {
-	font-size: 0.8rem;
-	color: var(--color-text-maxcontrast);
-}
-
-.complexitySection,
-.popularTermsSection,
-.registerSchemaSection,
-.userAgentSection {
-	margin-top: 20px;
-}
-
-.complexitySection h4,
-.popularTermsSection h4,
-.registerSchemaSection h4,
-.userAgentSection h4 {
-	margin: 0 0 12px 0;
-	font-size: 1rem;
-	font-weight: 500;
-	color: var(--color-main-text);
-}
-
-.complexityBars {
-	display: flex;
-	flex-direction: column;
-	gap: 8px;
-}
-
-.complexityBar {
-	display: flex;
-	flex-direction: column;
-	gap: 4px;
-}
-
-.complexityLabel {
-	display: flex;
-	justify-content: space-between;
-	align-items: center;
-	font-size: 0.9rem;
-}
-
-.complexityProgress {
-	background: var(--color-background-darker);
-	border-radius: 4px;
-	height: 8px;
-	overflow: hidden;
-}
-
-.complexityProgressBar {
-	height: 100%;
-	transition: width 0.3s ease;
-}
-
-.complexityProgressBar.simple {
-	background: var(--color-success);
-}
-
-.complexityProgressBar.medium {
-	background: var(--color-warning);
-}
-
-.complexityProgressBar.complex {
-	background: var(--color-error);
-}
-
-.complexity-label-with-tooltip {
-	cursor: help;
-	text-decoration: underline;
-	text-decoration-style: dotted;
-	text-underline-offset: 2px;
-}
-
-.complexity-label-with-tooltip:hover {
-	text-decoration-style: solid;
-}
-
-.activityData {
-	margin-top: 16px;
-}
-
-.loadingSpinner {
-	display: flex;
-	justify-content: center;
-	align-items: center;
-	height: 60px;
-}
-
-.activityList {
-	display: flex;
-	flex-direction: column;
-	gap: 8px;
-}
-
-.activityItem {
-	display: flex;
-	justify-content: space-between;
-	align-items: center;
-	padding: 8px;
-	background: var(--color-background-hover);
-	border-radius: var(--border-radius);
-	font-size: 0.9rem;
-}
-
-.activityPeriod {
-	font-weight: 500;
-}
-
-.activityCount {
-	color: var(--color-text-maxcontrast);
-}
-
-.noActivityData {
-	text-align: center;
-	color: var(--color-text-maxcontrast);
-	padding: 20px;
-}
-
-.popularTermsList,
-.registerSchemaList,
-.userAgentList {
-	max-height: 200px;
-	overflow-y: auto;
 }
 
 /* Add some spacing between select inputs */
