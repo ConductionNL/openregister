@@ -102,7 +102,7 @@ export default {
 		displayFilters() {
 			if (!objectStore.auditTrailFilters) return {}
 			return Object.fromEntries(
-				Object.entries(objectStore.auditTrailFilters).filter(([key, value]) =>
+				Object.entries(objectStore.auditTrailFilters).filter(([, value]) =>
 					value !== null && value !== undefined && value !== '',
 				),
 			)
