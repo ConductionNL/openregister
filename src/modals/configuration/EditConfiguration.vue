@@ -1042,7 +1042,14 @@ export default {
 </script>
 
 <style scoped>
-.selectField {
+.field-hint {
+	font-size: 0.875rem;
+	color: var(--color-text-maxcontrast);
+	margin: 0;
+}
+
+.selectField,
+.checkboxField {
 	display: flex;
 	flex-direction: column;
 	gap: 0.5rem;
@@ -1053,18 +1060,7 @@ export default {
 	color: var(--color-text-maxcontrast);
 }
 
-.checkboxField {
-	display: flex;
-	flex-direction: column;
-	gap: 0.5rem;
-}
-
-.field-hint {
-	font-size: 0.875rem;
-	color: var(--color-text-maxcontrast);
-	margin: 0;
-}
-
+/* Dropdown option styles */
 .option-content {
 	display: flex;
 	flex-direction: column;
@@ -1081,5 +1077,11 @@ export default {
 	max-width: 100%;
 	white-space: normal;
 	word-break: break-word;
+}
+
+.option-meta {
+	font-size: 0.75rem;
+	color: var(--color-text-maxcontrast);
+	font-style: italic;
 }
 </style>

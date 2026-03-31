@@ -1,155 +1,102 @@
 <template>
 	<NcAppContent>
-		<div class="viewContainer">
-			<!-- Header -->
-			<div class="viewHeader">
-				<div class="viewHeaderTitle">
-					<h1 class="viewHeaderTitleIndented">
-						{{ t('openregister', 'Webhook Logs') }}
-					</h1>
-					<NcButton
-						type="tertiary"
-						@click="goBack">
-						<template #icon>
-							<ArrowLeft :size="20" />
-						</template>
-						{{ t('openregister', 'Back to Webhooks') }}
-					</NcButton>
-				</div>
-				<p>
-					{{ t('openregister', 'View webhook delivery logs and filter by webhook') }}
-				</p>
-			</div>
-
-			<!-- Filters -->
-			<div class="viewActionsBar">
-				<div class="viewInfo">
-					<span class="viewTotalCount">
-						{{ t('openregister', 'Showing {showing} of {total} log entries', {
-							showing: logsList.length,
-							total: totalLogs
-						}) }}
-					</span>
-				</div>
-				<div class="viewActions">
-					<NcSelect
-						v-model="selectedWebhookId"
-						:options="webhookOptions"
-						:placeholder="t('openregister', 'Filter by webhook')"
-						:clearable="true"
-						:label-outside="true"
-						:input-label="t('openregister', 'Filter by webhook')"
-						@update:value="handleWebhookFilterChange">
-						<template #option="{ option }">
-							{{ option.label }}
-						</template>
-					</NcSelect>
-					<NcButton
-						type="secondary"
-						@click="refreshLogs">
-						<template #icon>
-							<Refresh :size="20" />
-						</template>
-						{{ t('openregister', 'Refresh') }}
-					</NcButton>
-				</div>
-			</div>
-
-			<!-- Logs Table -->
-			<div class="tableContainer" :class="{ 'is-loading': loading }">
-				<div v-if="loading" class="loadingWrapper">
-					<NcLoadingIcon :size="64" />
-				</div>
-
-				<NcEmptyContent
-					v-else-if="!logsList.length"
-					:name="t('openregister', 'No log entries found')"
-					:description="t('openregister', 'There are no webhook log entries matching your filters.')">
+		<CnIndexPage
+			ref="indexPage"
+			title="Webhook Logs"
+			description="View webhook delivery logs and filter by webhook"
+			:show-title="true"
+			:show-add="false"
+			:objects="logsList"
+			:columns="tableColumns"
+			:pagination="paginationData"
+			:selectable="false"
+			:show-edit-action="false"
+			:show-copy-action="false"
+			:show-delete-action="false"
+			:show-form-dialog="false"
+			:show-mass-import="false"
+			:show-mass-export="false"
+			:show-mass-copy="false"
+			:show-mass-delete="false"
+			:show-view-toggle="false"
+			:loading="loading"
+			:refreshing="isRefreshing"
+			empty-text="No log entries found"
+			@refresh="handleRefresh"
+			@page-changed="onPageChanged"
+			@page-size-changed="onPageSizeChanged">
+			<!-- Header actions: back button + webhook filter -->
+			<template #header-actions>
+				<NcButton
+					type="tertiary"
+					@click="goBack">
 					<template #icon>
-						<FileDocumentOutline :size="64" />
+						<ArrowLeft :size="20" />
 					</template>
-				</NcEmptyContent>
+					{{ t('openregister', 'Back to Webhooks') }}
+				</NcButton>
+				<NcSelect
+					v-model="selectedWebhookId"
+					:options="webhookOptions"
+					:placeholder="t('openregister', 'Filter by webhook')"
+					:clearable="true"
+					:label-outside="true"
+					:input-label="t('openregister', 'Filter by webhook')"
+					label="label"
+					:reduce="option => option.value"
+					@input="handleWebhookFilterChange" />
+			</template>
 
-				<table v-else class="webhooksTable">
-					<thead>
-						<tr>
-							<th>{{ t('openregister', 'Webhook') }}</th>
-							<th>{{ t('openregister', 'Event') }}</th>
-							<th>{{ t('openregister', 'Status') }}</th>
-							<th>{{ t('openregister', 'Status Code') }}</th>
-							<th>{{ t('openregister', 'Attempt') }}</th>
-							<th>{{ t('openregister', 'Created') }}</th>
-							<th>{{ t('openregister', 'Error') }}</th>
-							<th class="column-actions">
-								{{ t('openregister', 'Actions') }}
-							</th>
-						</tr>
-					</thead>
-					<tbody>
-						<tr v-for="log in logsList" :key="log.id">
-							<td>
-								{{ getWebhookName(log.webhookId) }}
-							</td>
-							<td>
-								<span class="event-class">{{ truncateEventClass(log.eventClass) }}</span>
-							</td>
-							<td>
-								<span :class="log.success ? 'status-success' : 'status-failed'">
-									{{ log.success ? t('openregister', 'Success') : t('openregister', 'Failed') }}
-								</span>
-							</td>
-							<td>
-								{{ log.statusCode || '-' }}
-							</td>
-							<td>
-								{{ log.attempt }}
-							</td>
-							<td>
-								{{ formatDate(log.created) }}
-							</td>
-							<td>
-								<span v-if="log.errorMessage" class="error-message" :title="log.errorMessage">
-									{{ truncateText(log.errorMessage, 50) }}
-								</span>
-								<span v-else>-</span>
-							</td>
-							<td class="column-actions">
-								<NcActions>
-									<NcActionButton
-										close-after-click
-										@click="viewLogDetails(log)">
-										<template #icon>
-											<Eye :size="20" />
-										</template>
-										{{ t('openregister', 'View Details') }}
-									</NcActionButton>
-								</NcActions>
-							</td>
-						</tr>
-					</tbody>
-				</table>
+			<!-- Custom column: webhook name lookup -->
+			<template #column-webhook="{ row }">
+				{{ getWebhookName(row.webhook) }}
+			</template>
 
-				<!-- Pagination -->
-				<div v-if="totalLogs > limit" class="pagination">
-					<NcButton
-						:disabled="offset === 0"
-						@click="previousPage">
-						{{ t('openregister', 'Previous') }}
-					</NcButton>
-					<span class="pagination-info">
-						{{ t('openregister', 'Page {current} of {total}', {
-							current: currentPage,
-							total: totalPages
-						}) }}
-					</span>
-					<NcButton
-						:disabled="offset + limit >= totalLogs"
-						@click="nextPage">
-						{{ t('openregister', 'Next') }}
-					</NcButton>
-				</div>
-			</div>
-		</div>
+			<!-- Custom column: truncated event class -->
+			<template #column-eventClass="{ row }">
+				<span class="event-class">{{ truncateEventClass(row.eventClass) }}</span>
+			</template>
+
+			<!-- Custom column: success/failed badge -->
+			<template #column-success="{ row }">
+				<CnStatusBadge
+					:label="row.success ? t('openregister', 'Success') : t('openregister', 'Failed')"
+					:variant="row.success ? 'success' : 'error'"
+					:solid="true" />
+			</template>
+
+			<!-- Custom column: status code -->
+			<template #column-statusCode="{ row }">
+				{{ row.statusCode || '-' }}
+			</template>
+
+			<!-- Custom column: created date -->
+			<template #column-created="{ row }">
+				{{ formatDate(row.created) }}
+			</template>
+
+			<!-- Custom column: error message -->
+			<template #column-errorMessage="{ row }">
+				<span v-if="row.errorMessage" class="error-message" :title="row.errorMessage">
+					{{ truncateText(row.errorMessage, 50) }}
+				</span>
+				<span v-else>-</span>
+			</template>
+
+			<!-- Row actions -->
+			<template #row-actions="{ row }">
+				<NcActions>
+					<NcActionButton
+						close-after-click
+						@click="viewLogDetails(row)">
+						<template #icon>
+							<Eye :size="20" />
+						</template>
+						{{ t('openregister', 'View Details') }}
+					</NcActionButton>
+				</NcActions>
+			</template>
+		</CnIndexPage>
 	</NcAppContent>
 </template>
 
@@ -164,14 +111,12 @@ import {
 	NcActions,
 	NcActionButton,
 	NcButton,
-	NcLoadingIcon,
-	NcEmptyContent,
 	NcSelect,
 } from '@nextcloud/vue'
 
+import { CnIndexPage, CnStatusBadge } from '@conduction/nextcloud-vue'
+
 import ArrowLeft from 'vue-material-design-icons/ArrowLeft.vue'
-import Refresh from 'vue-material-design-icons/Refresh.vue'
-import FileDocumentOutline from 'vue-material-design-icons/FileDocumentOutline.vue'
 import Eye from 'vue-material-design-icons/Eye.vue'
 
 /**
@@ -184,12 +129,10 @@ export default {
 		NcActions,
 		NcActionButton,
 		NcButton,
-		NcLoadingIcon,
-		NcEmptyContent,
 		NcSelect,
+		CnIndexPage,
+		CnStatusBadge,
 		ArrowLeft,
-		Refresh,
-		FileDocumentOutline,
 		Eye,
 	},
 	data() {
@@ -197,29 +140,35 @@ export default {
 			logsList: [],
 			webhooksList: [],
 			loading: false,
+			isRefreshing: false,
 			totalLogs: 0,
-			limit: 50,
-			offset: 0,
 			selectedWebhookId: null,
+			pagination: {
+				page: 1,
+				limit: 50,
+			},
 		}
 	},
 	computed: {
-		/**
-		 * Get current page number
-		 *
-		 * @return {number} Current page
-		 */
-		currentPage() {
-			return Math.floor(this.offset / this.limit) + 1
+		tableColumns() {
+			return [
+				{ key: 'webhook', label: t('openregister', 'Webhook') },
+				{ key: 'eventClass', label: t('openregister', 'Event') },
+				{ key: 'success', label: t('openregister', 'Status') },
+				{ key: 'statusCode', label: t('openregister', 'Status Code') },
+				{ key: 'attempt', label: t('openregister', 'Attempt') },
+				{ key: 'created', label: t('openregister', 'Created') },
+				{ key: 'errorMessage', label: t('openregister', 'Error') },
+			]
 		},
 
-		/**
-		 * Get total number of pages
-		 *
-		 * @return {number} Total pages
-		 */
-		totalPages() {
-			return Math.ceil(this.totalLogs / this.limit)
+		paginationData() {
+			return {
+				page: this.pagination.page,
+				pages: Math.ceil(this.totalLogs / this.pagination.limit),
+				total: this.totalLogs,
+				limit: this.pagination.limit,
+			}
 		},
 
 		/**
@@ -240,10 +189,9 @@ export default {
 		},
 	},
 	mounted() {
-		// Get webhook ID from transfer data if available.
-		const transferData = navigationStore.getTransferData()
-		if (transferData && transferData.webhookId) {
-			this.selectedWebhookId = transferData.webhookId
+		// Get webhook ID from route params if available.
+		if (this.$route.params.id) {
+			this.selectedWebhookId = Number(this.$route.params.id)
 		}
 		this.loadWebhooks()
 		this.loadLogs()
@@ -256,6 +204,8 @@ export default {
 		window.removeEventListener('webhook-log-retried', this.loadLogs)
 	},
 	methods: {
+		t,
+
 		/**
 		 * Load webhooks list
 		 *
@@ -281,11 +231,11 @@ export default {
 			this.loading = true
 			try {
 				const params = {
-					limit: this.limit,
-					offset: this.offset,
+					limit: this.pagination.limit,
+					offset: (this.pagination.page - 1) * this.pagination.limit,
 				}
 				if (this.selectedWebhookId) {
-					params.webhook_id = this.selectedWebhookId
+					params.webhook = this.selectedWebhookId
 				}
 
 				const response = await axios.get(
@@ -302,6 +252,20 @@ export default {
 		},
 
 		/**
+		 * Handle refresh
+		 *
+		 * @return {Promise<void>}
+		 */
+		async handleRefresh() {
+			this.isRefreshing = true
+			try {
+				await this.loadLogs()
+			} finally {
+				this.isRefreshing = false
+			}
+		},
+
+		/**
 		 * Handle webhook filter change
 		 *
 		 * @param {number|null} webhookId - Selected webhook ID
@@ -309,41 +273,38 @@ export default {
 		 */
 		handleWebhookFilterChange(webhookId) {
 			this.selectedWebhookId = webhookId
-			this.offset = 0
+			this.pagination.page = 1
+
+			// Update URL to reflect the filter
+			const path = webhookId ? `/webhooks/logs/${webhookId}` : '/webhooks/logs'
+			if (this.$route.path !== path) {
+				this.$router.replace(path)
+			}
+
 			this.loadLogs()
 		},
 
 		/**
-		 * Refresh logs
+		 * Handle page change
 		 *
+		 * @param {number} page - New page number
 		 * @return {void}
 		 */
-		refreshLogs() {
+		onPageChanged(page) {
+			this.pagination.page = page
 			this.loadLogs()
 		},
 
 		/**
-		 * Go to previous page
+		 * Handle page size change
 		 *
+		 * @param {number} pageSize - New page size
 		 * @return {void}
 		 */
-		previousPage() {
-			if (this.offset > 0) {
-				this.offset -= this.limit
-				this.loadLogs()
-			}
-		},
-
-		/**
-		 * Go to next page
-		 *
-		 * @return {void}
-		 */
-		nextPage() {
-			if (this.offset + this.limit < this.totalLogs) {
-				this.offset += this.limit
-				this.loadLogs()
-			}
+		onPageSizeChanged(pageSize) {
+			this.pagination.page = 1
+			this.pagination.limit = pageSize
+			this.loadLogs()
 		},
 
 		/**
@@ -418,151 +379,6 @@ export default {
 </script>
 
 <style scoped>
-.viewContainer {
-	padding: 20px;
-	max-width: 100%;
-}
-
-.viewHeader {
-	margin-bottom: 20px;
-}
-
-.viewHeaderTitle {
-	display: flex;
-	align-items: center;
-	gap: 16px;
-	margin-bottom: 8px;
-}
-
-.viewHeaderTitleIndented {
-	margin: 0;
-	font-size: 28px;
-	font-weight: 600;
-}
-
-.viewHeader p {
-	color: var(--color-text-maxcontrast);
-	margin: 0;
-}
-
-.viewActionsBar {
-	display: flex;
-	justify-content: space-between;
-	align-items: center;
-	margin-bottom: 20px;
-	padding: 12px;
-	background: var(--color-background-hover);
-	border-radius: var(--border-radius-large);
-}
-
-.viewInfo {
-	display: flex;
-	gap: 12px;
-	align-items: center;
-}
-
-.viewTotalCount {
-	font-weight: 600;
-}
-
-.viewActions {
-	display: flex;
-	gap: 8px;
-	align-items: center;
-}
-
-.tableContainer {
-	background: var(--color-main-background);
-	border-radius: var(--border-radius-large);
-	overflow-x: auto;
-	overflow-y: visible;
-	min-height: 200px;
-}
-
-.tableContainer.is-loading {
-	overflow: hidden;
-	display: flex;
-	align-items: center;
-	justify-content: center;
-}
-
-.loadingWrapper {
-	display: flex;
-	align-items: center;
-	justify-content: center;
-	width: 100%;
-	padding: 40px;
-}
-
-.webhooksTable {
-	width: 100%;
-	border-collapse: collapse;
-	min-width: 100%;
-}
-
-.webhooksTable thead {
-	background: var(--color-background-hover);
-	border-bottom: 2px solid var(--color-border);
-}
-
-.webhooksTable th {
-	padding: 12px 16px;
-	text-align: left;
-	font-weight: 600;
-	white-space: nowrap;
-}
-
-.webhooksTable td {
-	padding: 12px 16px;
-	border-bottom: 1px solid var(--color-border);
-}
-
-.webhooksTable tbody tr:hover {
-	background: var(--color-background-hover);
-}
-
-.column-actions {
-	position: sticky;
-	right: 0;
-	background: var(--color-main-background);
-	z-index: 5;
-	min-width: 80px;
-	width: 80px;
-	text-align: right;
-}
-
-.webhooksTable thead .column-actions {
-	position: sticky;
-	right: 0;
-	background: var(--color-background-hover);
-	z-index: 10;
-	min-width: 80px;
-	width: 80px;
-	text-align: right;
-}
-
-.webhooksTable tbody tr:hover .column-actions {
-	background: var(--color-background-hover);
-}
-
-.webhooksTable thead .column-actions {
-	z-index: 10;
-}
-
-.webhooksTable tbody tr:hover .column-actions {
-	background: var(--color-background-hover);
-}
-
-.status-success {
-	color: var(--color-success);
-	font-weight: 600;
-}
-
-.status-failed {
-	color: var(--color-error);
-	font-weight: 600;
-}
-
 .event-class {
 	font-family: monospace;
 	font-size: 0.9em;
@@ -573,15 +389,4 @@ export default {
 	font-size: 0.9em;
 }
 
-.pagination {
-	display: flex;
-	justify-content: center;
-	align-items: center;
-	gap: 16px;
-	padding: 20px;
-}
-
-.pagination-info {
-	font-weight: 600;
-}
 </style>

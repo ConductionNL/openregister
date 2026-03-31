@@ -390,6 +390,24 @@ class UiController extends Controller
     }//end webhooksLogs()
 
     /**
+     * Returns the webhook logs details page template.
+     *
+     * @NoAdminRequired
+     *
+     * @NoCSRFRequired
+     *
+     * @phpstan-return TemplateResponse
+     *
+     * @psalm-return TemplateResponse<200|500, array<string, mixed>>
+     *
+     * @return TemplateResponse The SPA template response
+     */
+    public function webhooksLogsDetails(): TemplateResponse
+    {
+        return $this->makeSpaResponse();
+    }//end webhooksLogsDetails()
+
+    /**
      * Returns the entities page template.
      *
      * @NoAdminRequired

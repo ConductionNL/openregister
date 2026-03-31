@@ -468,6 +468,7 @@ return [
 		['name' => 'ui#searchTrail', 'url' => '/search-trails', 'verb' => 'GET'],
 		['name' => 'ui#webhooks', 'url' => '/webhooks', 'verb' => 'GET'],
 		['name' => 'ui#webhooksLogs', 'url' => '/webhooks/logs', 'verb' => 'GET'],
+		['name' => 'ui#webhooksLogsDetails', 'url' => '/webhooks/logs/{id}', 'verb' => 'GET', 'requirements' => ['id' => '\d+']],
 		['name' => 'ui#endpoints', 'url' => '/endpoints', 'verb' => 'GET'],
 		['name' => 'ui#endpointLogs', 'url' => '/endpoints/logs', 'verb' => 'GET'],
 		['name' => 'ui#entities', 'url' => '/entities', 'verb' => 'GET'],

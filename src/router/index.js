@@ -72,7 +72,7 @@ const router = new Router({
 		{ path: '/audit-trails', component: AuditTrailIndex },
 		{ path: '/search-trails', component: SearchTrailIndex },
 		{ path: '/webhooks', component: WebhooksIndex },
-		{ path: '/webhooks/logs', component: WebhookLogsIndex },
+		{ path: '/webhooks/logs/:id?', name: 'webhookLogs', component: WebhookLogsIndex },
 		{ path: '/endpoints', component: EndpointsIndex },
 		{ path: '/entities', component: EntitiesIndex },
 		{ path: '/entities/:id', name: 'entityDetails', component: EntityDetail },
