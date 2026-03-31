@@ -504,9 +504,9 @@ export default {
 
 				// Refresh all lists to show newly imported entities
 				await Promise.all([
-					configurationStore.refreshConfigurationList(),
-					registerStore.refreshRegisterList(),
-					schemaStore.refreshSchemaList(),
+					configurationStore.refreshList(),
+					registerStore.refreshList(),
+					schemaStore.refreshList(),
 				])
 				this.$refs.dialog.setResult({ success: true })
 			} catch (error) {
@@ -516,9 +516,9 @@ export default {
 				}
 				// Always refresh all lists to update UI
 				await Promise.all([
-					configurationStore.refreshConfigurationList(),
-					registerStore.refreshRegisterList(),
-					schemaStore.refreshSchemaList(),
+					configurationStore.refreshList(),
+					registerStore.refreshList(),
+					schemaStore.refreshList(),
 				])
 			}
 		},
@@ -618,9 +618,9 @@ export default {
 
 				// Refresh all lists to show newly imported entities
 				await Promise.all([
-					configurationStore.refreshConfigurationList(),
-					registerStore.refreshRegisterList(),
-					schemaStore.refreshSchemaList(),
+					configurationStore.refreshList(),
+					registerStore.refreshList(),
+					schemaStore.refreshList(),
 				])
 				this.$refs.dialog.setResult({ success: true })
 			} catch (error) {
@@ -705,7 +705,7 @@ export default {
 					showSuccess('Configuration is up to date')
 				}
 
-				await configurationStore.refreshConfigurationList()
+				await configurationStore.refreshList()
 			} catch (error) {
 				console.error('Failed to check version:', error)
 				showError('Failed to check version: ' + (error.response?.data?.error || error.message))

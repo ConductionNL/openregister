@@ -11,7 +11,7 @@ import { sourceStore, navigationStore } from '../../store/store.js'
 			description="Manage your data sources and their configurations"
 			:show-title="true"
 			:schema="sourceSchema"
-			:objects="sourceStore.sourceList"
+			:objects="sourceStore.list"
 			:columns="tableColumns"
 			:pagination="paginationData"
 			:view-mode="viewMode"
@@ -192,17 +192,17 @@ export default {
 		paginationData() {
 			const page = this.pagination.page
 			const limit = this.pagination.limit
-			const total = sourceStore.sourceList.length
+			const total = sourceStore.list.length
 			const pages = Math.ceil(total / limit)
 			return { page, pages, total, limit }
 		},
 	},
 	mounted() {
-		sourceStore.refreshSourceList(null, true)
+		sourceStore.refreshList(null, true)
 	},
 	methods: {
 		openViewModal(row) {
-			sourceStore.setSourceItem(row)
+			sourceStore.setItem(row)
 			navigationStore.setModal('viewSource')
 		},
 		openEditDialog(row) {
@@ -212,10 +212,10 @@ export default {
 			this.$refs.indexPage.openDeleteDialog(row)
 		},
 		async onDeleteSource(id) {
-			const source = sourceStore.sourceList.find(s => s.id === id)
+			const source = sourceStore.list.find(s => s.id === id)
 			if (!source) return
 			try {
-				await sourceStore.deleteSource(source)
+				await sourceStore.deleteOne(source)
 				this.$refs.indexPage.setSingleDeleteResult({ success: true })
 			} catch (error) {
 				this.$refs.indexPage.setSingleDeleteResult({ error: error.message || 'An error occurred while deleting the source' })
@@ -223,12 +223,12 @@ export default {
 		},
 		async onSaveSource(formData) {
 			try {
-				await sourceStore.saveSource({
+				await sourceStore.save({
 					...formData,
 					type: formData.type || 'internal',
 				})
 				this.$refs.indexPage.setFormResult({ success: true })
-				sourceStore.refreshSourceList()
+				sourceStore.refreshList()
 			} catch (error) {
 				this.$refs.indexPage.setFormResult({ error: error.message || 'An error occurred while saving the source' })
 			}
@@ -236,7 +236,7 @@ export default {
 		async handleRefresh() {
 			this.isRefreshing = true
 			try {
-				await sourceStore.refreshSourceList()
+				await sourceStore.refreshList()
 			} finally {
 				this.isRefreshing = false
 			}

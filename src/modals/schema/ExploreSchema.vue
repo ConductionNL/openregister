@@ -108,7 +108,7 @@ import SchemaStatsBlock from '../../components/SchemaStatsBlock.vue'
 				<NcButton
 					v-if="!explorationData && !loading"
 					type="primary"
-					:disabled="!schemaStore.schemaItem"
+					:disabled="!schemaStore.item"
 					@click="startAnalysis">
 					<template #icon>
 						<DatabaseSearch :size="20" />
@@ -667,7 +667,7 @@ export default {
 	},
 	mounted() {
 		// Initialize if we don't have schema item
-		if (!schemaStore.schemaItem) {
+		if (!schemaStore.item) {
 			this.error = this.t('openregister', 'No schema selected for exploration')
 		} else {
 			// Count objects for this schema
@@ -698,9 +698,9 @@ export default {
 		},
 		async countObjects() {
 			try {
-				if (schemaStore.schemaItem?.id) {
+				if (schemaStore.item?.id) {
 					// Use the upgraded stats endpoint to get detailed object counts
-					const stats = await schemaStore.getSchemaStats(schemaStore.schemaItem.id)
+					const stats = await schemaStore.getSchemaStats(schemaStore.item.id)
 					this.objectStats = stats.objects
 					this.objectCount = stats.objects?.total || 0
 					console.info('Loaded detailed schema stats for exploration:', stats)
@@ -717,7 +717,7 @@ export default {
 			this.error = null
 
 			try {
-				const endpoint = `/index.php/apps/openregister/api/schemas/${schemaStore.schemaItem.id}/explore`
+				const endpoint = `/index.php/apps/openregister/api/schemas/${schemaStore.item.id}/explore`
 
 				const response = await fetch(endpoint, {
 					method: 'GET',
@@ -859,7 +859,7 @@ export default {
 					}
 				})
 
-				const endpoint = `/index.php/apps/openregister/api/schemas/${schemaStore.schemaItem.id}/update-from-exploration`
+				const endpoint = `/index.php/apps/openregister/api/schemas/${schemaStore.item.id}/update-from-exploration`
 
 				const response = await fetch(endpoint, {
 					method: 'POST',
@@ -885,11 +885,11 @@ export default {
 
 				// Update schema in store
 				if (data.schema) {
-					schemaStore.setSchemaItem(data.schema)
+					schemaStore.setItem(data.schema)
 				}
 
 				// Refresh schema list to reflect changes
-				schemaStore.refreshSchemaList()
+				schemaStore.refreshList()
 
 				// Auto-close modal after success
 				setTimeout(() => {

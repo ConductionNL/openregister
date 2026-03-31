@@ -8,7 +8,7 @@
 		</NcNoteCard>
 
 		<div class="formContainer">
-			<p>Are you sure you want to delete the configuration "{{ configurationStore.configurationItem?.title }}"?</p>
+			<p>Are you sure you want to delete the configuration "{{ configurationStore.item?.title }}"?</p>
 			<p>This action cannot be undone.</p>
 		</div>
 
@@ -77,7 +77,7 @@ export default {
 			this.error = null
 
 			try {
-				await configurationStore.deleteConfiguration(configurationStore.configurationItem)
+				await configurationStore.deleteOne(configurationStore.item)
 				this.closeModal()
 			} catch (error) {
 				this.error = error.message || 'Failed to delete configuration'

@@ -11,11 +11,11 @@ import { objectStore, navigationStore, registerStore, schemaStore } from '../../
 		<div class="detail-grid">
 			<div class="detail-item">
 				<span class="detail-label">Register:</span>
-				<span class="detail-value">{{ registerStore.registerItem?.title || registerStore.registerItem?.id }}</span>
+				<span class="detail-value">{{ registerStore.item?.title || registerStore.item?.id }}</span>
 			</div>
 			<div class="detail-item">
 				<span class="detail-label">Schema:</span>
-				<span class="detail-value">{{ schemaStore.schemaItem?.title || schemaStore.schemaItem?.id }}</span>
+				<span class="detail-value">{{ schemaStore.item?.title || schemaStore.item?.id }}</span>
 			</div>
 		</div>
 
@@ -542,13 +542,13 @@ export default {
 			this.searchObjects()
 		},
 		async searchObjects() {
-			if (!registerStore.registerItem || !schemaStore.schemaItem) {
+			if (!registerStore.item || !schemaStore.item) {
 				return
 			}
 
 			this.loading = true
 			try {
-				const response = await fetch(`/index.php/apps/openregister/api/objects/${registerStore.registerItem.id}/${schemaStore.schemaItem.id}?_search=${this.searchTerm}`)
+				const response = await fetch(`/index.php/apps/openregister/api/objects/${registerStore.item.id}/${schemaStore.item.id}?_search=${this.searchTerm}`)
 				const data = await response.json()
 
 				// Filter out the source object
@@ -720,8 +720,8 @@ export default {
 
 				// Use the object store method for consistent API handling
 				const result = await objectStore.mergeObjects({
-					register: registerStore.registerItem.id,
-					schema: schemaStore.schemaItem.id,
+					register: registerStore.item.id,
+					schema: schemaStore.item.id,
 					sourceObjectId: this.sourceObject['@self'].id,
 					target: this.selectedTargetObject['@self'].id,
 					object: finalMergedData,
@@ -808,8 +808,8 @@ export default {
 				}))
 
 				// Load incoming references via the /used endpoint
-				const register = registerStore.registerItem?.id
-				const schema = schemaStore.schemaItem?.id
+				const register = registerStore.item?.id
+				const schema = schemaStore.item?.id
 				const objectId = this.sourceObject?.['@self']?.id
 				if (register && schema && objectId) {
 					try {

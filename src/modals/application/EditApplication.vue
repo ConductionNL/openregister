@@ -7,7 +7,7 @@ import { applicationStore, organisationStore, navigationStore } from '../../stor
 	<CnTabbedFormDialog
 		ref="dialog"
 		:tabs="dialogTabs"
-		:item="applicationStore.applicationItem?.uuid ? applicationStore.applicationItem : null"
+		:item="applicationStore.item?.uuid ? applicationStore.item : null"
 		entity-name="Application"
 		:show-create-another="true"
 		:disable-save="!applicationItem.name.trim()"
@@ -216,7 +216,7 @@ export default {
 		 * @return {Promise<void>}
 		 */
 		async fetchOrganisations() {
-			await organisationStore.refreshOrganisationList()
+			await organisationStore.refreshList()
 		},
 
 		/**
@@ -313,10 +313,10 @@ export default {
 		 * @return {void}
 		 */
 		initializeApplicationItem() {
-			if (applicationStore.applicationItem?.uuid) {
+			if (applicationStore.item?.uuid) {
 				this.applicationItem = {
 					...this.applicationItem, // Keep default structure
-					...applicationStore.applicationItem,
+					...applicationStore.item,
 				}
 
 				// Organisation is automatically set by backend based on active organisation
@@ -520,7 +520,7 @@ export default {
 			}
 
 			try {
-				const { response } = await applicationStore.saveApplication({
+				const { response } = await applicationStore.save({
 					...this.applicationItem,
 				})
 

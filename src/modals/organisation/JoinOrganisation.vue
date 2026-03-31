@@ -105,7 +105,7 @@ export default {
 		if (transferData?.organisationUuid) {
 			navigationStore.clearTransferData()
 			try {
-				const organisation = await organisationStore.getOrganisation(transferData.organisationUuid)
+				const organisation = await organisationStore.getOne(transferData.organisationUuid)
 				if (organisation) {
 					this.$refs.formDialog.updateField('organisation', {
 						label: organisation.name,

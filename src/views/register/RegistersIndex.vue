@@ -71,7 +71,7 @@ import { registerStore, navigationStore, configurationStore, schemaStore } from 
 
 			<!-- Custom action items in actions bar -->
 			<template #action-items>
-				<NcActionButton close-after-click @click="registerStore.setRegisterItem(null); navigationStore.setModal('importRegister')">
+				<NcActionButton close-after-click @click="registerStore.setItem(null); navigationStore.setModal('importRegister')">
 					<template #icon>
 						<Upload :size="20" />
 					</template>
@@ -165,25 +165,25 @@ import { registerStore, navigationStore, configurationStore, schemaStore } from 
 						</template>
 						Depublish
 					</NcActionButton>
-					<NcActionButton close-after-click @click="registerStore.setRegisterItem(row); navigationStore.setModal('publishRegister')">
+					<NcActionButton close-after-click @click="registerStore.setItem(row); navigationStore.setModal('publishRegister')">
 						<template #icon>
 							<CloudUploadOutline :size="20" />
 						</template>
 						Publish OAS
 					</NcActionButton>
-					<NcActionButton close-after-click @click="registerStore.setRegisterItem(row); navigationStore.setModal('importRegister')">
+					<NcActionButton close-after-click @click="registerStore.setItem(row); navigationStore.setModal('importRegister')">
 						<template #icon>
 							<Upload :size="20" />
 						</template>
 						Import
 					</NcActionButton>
-					<NcActionButton close-after-click @click="registerStore.setRegisterItem(row); viewOasDoc(row)">
+					<NcActionButton close-after-click @click="registerStore.setItem(row); viewOasDoc(row)">
 						<template #icon>
 							<ApiIcon :size="20" />
 						</template>
 						View API Documentation
 					</NcActionButton>
-					<NcActionButton close-after-click @click="registerStore.setRegisterItem(row); downloadOas(row)">
+					<NcActionButton close-after-click @click="registerStore.setItem(row); downloadOas(row)">
 						<template #icon>
 							<Download :size="20" />
 						</template>
@@ -192,7 +192,7 @@ import { registerStore, navigationStore, configurationStore, schemaStore } from 
 					<NcActionButton v-tooltip="row.stats?.total > 0 ? 'Cannot delete: objects are still attached' : ''"
 						close-after-click
 						:disabled="row.stats?.total > 0"
-						@click="registerStore.setRegisterItem(row); navigationStore.setDialog('deleteRegister')">
+						@click="registerStore.setItem(row); navigationStore.setDialog('deleteRegister')">
 						<template #icon>
 							<TrashCanOutline :size="20" />
 						</template>
@@ -276,7 +276,7 @@ export default {
 			}
 		},
 		filteredRegisters() {
-			return registerStore.registerList.filter(register =>
+			return registerStore.list.filter(register =>
 				register.title !== 'System Totals'
 				&& register.title !== 'Orphaned Items',
 			)
@@ -309,11 +309,11 @@ export default {
 		try {
 			this.schemasLoading = true
 			await Promise.all([
-				registerStore.refreshRegisterList(),
-				configurationStore.refreshConfigurationList(),
-				schemaStore.refreshSchemaList(),
+				registerStore.refreshList(),
+				configurationStore.refreshList(),
+				schemaStore.refreshList(),
 			])
-			this.schemaSelectOptions = schemaStore.schemaList.map(s => ({ id: s.id, label: s.title }))
+			this.schemaSelectOptions = schemaStore.list.map(s => ({ id: s.id, label: s.title }))
 		} catch (error) {
 			console.error('Failed to load data:', error)
 		} finally {
@@ -324,7 +324,7 @@ export default {
 		async handleRefresh() {
 			this.isRefreshing = true
 			try {
-				await registerStore.refreshRegisterList()
+				await registerStore.refreshList()
 			} finally {
 				this.isRefreshing = false
 			}
@@ -350,7 +350,7 @@ export default {
 
 		getManagingConfiguration(register) {
 			if (!register || !register.id) return null
-			return configurationStore.configurationList.find(
+			return configurationStore.list.find(
 				config => config.registers && config.registers.includes(register.id),
 			) || null
 		},
@@ -378,7 +378,7 @@ export default {
 
 		async onSaveRegister(formData) {
 			try {
-				await registerStore.saveRegister({
+				await registerStore.save({
 					...formData,
 					schemas: (formData.schemas || []).map(s => typeof s === 'object' ? s.id : s),
 				})
@@ -409,7 +409,7 @@ export default {
 		},
 
 		viewRegisterDetails(register) {
-			registerStore.setRegisterItem({ id: register.id })
+			registerStore.setItem({ id: register.id })
 			this.$router.push(`/registers/${register.id}`)
 		},
 

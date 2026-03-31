@@ -505,7 +505,7 @@ export default {
 		},
 		registerOptions() {
 			return {
-				options: registerStore.registerList.map(register => ({
+				options: registerStore.list.map(register => ({
 					value: register.id,
 					label: register.title,
 					title: register.title,
@@ -525,14 +525,14 @@ export default {
 
 			const schemaIds = new Set()
 			this.selectedRegisters.forEach(registerId => {
-				const register = registerStore.registerList.find(r => r.id === registerId)
+				const register = registerStore.list.find(r => r.id === registerId)
 				if (register && register.schemas) {
 					register.schemas.forEach(schema => schemaIds.add(schema.id))
 				}
 			})
 
 			return {
-				options: schemaStore.schemaList
+				options: schemaStore.list
 					.filter(schema => schemaIds.has(schema.id))
 					.map(schema => ({
 						value: schema.id,
@@ -624,7 +624,7 @@ export default {
 
 			return this.selectedSchemas
 				.map(schemaId => {
-					const schema = schemaStore.schemaList.find(s => s.id === schemaId)
+					const schema = schemaStore.list.find(s => s.id === schemaId)
 					if (!schema || !schema.properties) {
 						return null
 					}
@@ -650,7 +650,7 @@ export default {
 		// Watch for schema changes to initialize properties
 		// Use immediate: true equivalent in mounted
 		// This watcher will update properties when schema changes
-		'$root.schemaStore.schemaItem': {
+		'$root.schemaStore.item': {
 			handler(newSchema) {
 				if (newSchema) {
 					objectStore.initializeProperties(newSchema)
@@ -701,20 +701,20 @@ export default {
 		}
 
 		// Load views
-		viewsStore.fetchViews().catch(error => {
+		viewsStore.refreshList().catch(error => {
 			console.error('Error loading views:', error)
 		})
 
 		// Only load lists if they're empty
-		if (!registerStore.registerList.length) {
-			registerStore.refreshRegisterList()
+		if (!registerStore.list.length) {
+			registerStore.refreshList()
 				.finally(() => (this.registerLoading = false))
 		} else {
 			this.registerLoading = false
 		}
 
-		if (!schemaStore.schemaList.length) {
-			schemaStore.refreshSchemaList()
+		if (!schemaStore.list.length) {
+			schemaStore.refreshList()
 				.finally(() => (this.schemaLoading = false))
 		} else {
 			this.schemaLoading = false
@@ -810,16 +810,16 @@ export default {
 			// Registers and schemas depend on lists being loaded
 			const applyRegisters = () => {
 				if (!register) return true
-				if (!registerStore.registerList.length) return false
+				if (!registerStore.list.length) return false
 				const registerIds = String(register).split(',').map(id => parseInt(id, 10)).filter(Boolean)
-				this.selectedRegisters = registerIds.filter(id => registerStore.registerList.some(r => r.id === id))
+				this.selectedRegisters = registerIds.filter(id => registerStore.list.some(r => r.id === id))
 				return true
 			}
 			const applySchemas = () => {
 				if (!schema) return true
-				if (!schemaStore.schemaList.length) return false
+				if (!schemaStore.list.length) return false
 				const schemaIds = String(schema).split(',').map(id => parseInt(id, 10)).filter(Boolean)
-				this.selectedSchemas = schemaIds.filter(id => schemaStore.schemaList.some(s => s.id === id))
+				this.selectedSchemas = schemaIds.filter(id => schemaStore.list.some(s => s.id === id))
 				return true
 			}
 			// Try apply now, or retry shortly if lists not yet loaded
@@ -861,7 +861,7 @@ export default {
 			// Clear schemas that are no longer valid for selected registers
 			const validSchemaIds = new Set()
 			this.selectedRegisters.forEach(registerId => {
-				const register = registerStore.registerList.find(r => r.id === registerId)
+				const register = registerStore.list.find(r => r.id === registerId)
 				if (register && register.schemas) {
 					register.schemas.forEach(schemaId => validSchemaIds.add(schemaId))
 				}
@@ -899,16 +899,16 @@ export default {
 			const search = this.searchTerms.length > 0 ? this.searchTerms.join(' ') : ''
 			const filters = { ...this.facetFilters }
 			if (registerId) {
-				const reg = registerStore.registerList.find((r) => r.id === registerId)
-				if (reg) registerStore.setRegisterItem(reg)
+				const reg = registerStore.list.find((r) => r.id === registerId)
+				if (reg) registerStore.setItem(reg)
 			} else {
-				registerStore.setRegisterItem(null)
+				registerStore.setItem(null)
 			}
 			if (schemaId) {
-				const schema = schemaStore.schemaList.find((s) => s.id === schemaId)
-				if (schema) schemaStore.setSchemaItem(schema)
+				const schema = schemaStore.list.find((s) => s.id === schemaId)
+				if (schema) schemaStore.setItem(schema)
 			} else {
-				schemaStore.setSchemaItem(null)
+				schemaStore.setItem(null)
 			}
 			objectStore.setSearchParams({
 				register: registerId,
@@ -1194,7 +1194,7 @@ export default {
 
 			try {
 				// Fetch the full view details
-				const view = await viewsStore.fetchView(option.value)
+				const view = await viewsStore.getOne(option.value)
 
 				// Apply the view configuration to current search state
 				this.applyViewConfiguration(view)
@@ -1264,10 +1264,10 @@ export default {
 					},
 				}
 
-				const newView = await viewsStore.createView(viewData)
+				const newView = await viewsStore.save(viewData)
 
 				// Refresh the view list to show the newly created view
-				await viewsStore.fetchViews()
+				await viewsStore.refreshList()
 
 				// Set the newly created view as active
 				viewsStore.activeView = newView
@@ -1317,10 +1317,10 @@ export default {
 					},
 				}
 
-				const updatedView = await viewsStore.updateView(viewsStore.activeView.id || viewsStore.activeView.uuid, viewData)
+				const updatedView = await viewsStore.save({ id: viewsStore.activeView.id || viewsStore.activeView.uuid, ...viewData })
 
 				// Refresh the view list to show the updated view
-				await viewsStore.fetchViews()
+				await viewsStore.refreshList()
 
 				// Update the active view with the latest data
 				viewsStore.activeView = updatedView
@@ -1347,7 +1347,7 @@ export default {
 		async loadView(view) {
 			try {
 				// Fetch the full view details
-				const fullView = await viewsStore.fetchView(view.id || view.uuid)
+				const fullView = await viewsStore.getOne(view.id || view.uuid)
 
 				// Set as active view
 				viewsStore.activeView = fullView
@@ -1420,7 +1420,7 @@ export default {
 				}
 
 				// Refresh views list to get updated favoredBy
-				await viewsStore.fetchViews()
+				await viewsStore.refreshList()
 
 				OC.Notification.showTemporary(
 					!isFavorited
@@ -1451,7 +1451,7 @@ export default {
 			this.viewToDelete = null
 
 			// Refresh the view list
-			await viewsStore.fetchViews()
+			await viewsStore.refreshList()
 
 			// If the deleted view was the active view, clear it
 			if (wasActiveView) {

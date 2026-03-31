@@ -248,7 +248,7 @@ export default {
 	computed: {
 		register() {
 			// Find the register in the dashboard store using the ID from register store
-			const registerId = registerStore.getRegisterItem?.id
+			const registerId = registerStore.item?.id
 			return dashboardStore.registers.find(r => r.id === registerId)
 		},
 		activeTab: {
@@ -299,8 +299,8 @@ export default {
 		async loadSchemaOptions() {
 			this.schemasLoading = true
 			try {
-				await schemaStore.refreshSchemaList()
-				this.schemaSelectOptions = schemaStore.schemaList.map(s => ({ id: s.id, label: s.title }))
+				await schemaStore.refreshList()
+				this.schemaSelectOptions = schemaStore.list.map(s => ({ id: s.id, label: s.title }))
 			} catch (error) {
 				console.error('Failed to load schemas:', error)
 			} finally {
@@ -319,7 +319,7 @@ export default {
 
 		async onSaveRegister(formData) {
 			try {
-				await registerStore.saveRegister({
+				await registerStore.save({
 					...formData,
 					schemas: (formData.schemas || []).map(s => typeof s === 'object' ? s.id : s),
 				})
@@ -372,7 +372,7 @@ export default {
 		},
 
 		editSchema(schema) {
-			registerStore.setSchemaItem(schema)
+			schemaStore.setItem(schema)
 			navigationStore.setModal('editSchema')
 		},
 	},

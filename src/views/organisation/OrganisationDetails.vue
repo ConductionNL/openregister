@@ -5,7 +5,7 @@ import { organisationStore, navigationStore } from '../../store/store.js'
 
 <template>
 	<NcAppContent>
-		<div v-if="!organisationStore.organisationItem">
+		<div v-if="!organisationStore.item">
 			<NcEmptyContent name="Loading" description="Loading organisation details...">
 				<template #icon>
 					<NcLoadingIcon :size="64" />
@@ -16,8 +16,8 @@ import { organisationStore, navigationStore } from '../../store/store.js'
 			<span class="pageHeaderContainer">
 				<h2 class="pageHeader">
 					<OfficeBuilding :size="24" />
-					{{ organisationStore.organisationItem.name }}
-					<span v-if="organisationStore.organisationItem.isDefault" class="defaultBadge">Default</span>
+					{{ organisationStore.item.name }}
+					<span v-if="organisationStore.item.isDefault" class="defaultBadge">Default</span>
 					<span v-if="isActiveOrganisation" class="activeBadge">Active</span>
 				</h2>
 				<div class="headerActionsContainer">
@@ -47,7 +47,7 @@ import { organisationStore, navigationStore } from '../../store/store.js'
 							</template>
 							Copy
 						</NcActionButton>
-						<NcActionButton v-if="organisationStore.organisationItem?.website"
+						<NcActionButton v-if="organisationStore.item?.website"
 							close-after-click
 							@click="goToOrganisation">
 							<template #icon>
@@ -85,15 +85,15 @@ import { organisationStore, navigationStore } from '../../store/store.js'
 
 			<div class="organisationContent">
 				<div class="organisationOverview">
-					<p v-if="organisationStore.organisationItem.description" class="description">
-						{{ organisationStore.organisationItem.description }}
+					<p v-if="organisationStore.item.description" class="description">
+						{{ organisationStore.item.description }}
 					</p>
 
 					<div class="organisationMeta">
 						<div class="metaRow">
 							<strong>{{ t('openregister', 'UUID:') }}</strong>
-							<span class="uuid">{{ organisationStore.organisationItem.uuid }}</span>
-							<NcButton class="copy-button" @click="copyToClipboard(organisationStore.organisationItem.uuid)">
+							<span class="uuid">{{ organisationStore.item.uuid }}</span>
+							<NcButton class="copy-button" @click="copyToClipboard(organisationStore.item.uuid)">
 								<template #icon>
 									<ContentCopy :size="16" />
 								</template>
@@ -101,19 +101,19 @@ import { organisationStore, navigationStore } from '../../store/store.js'
 						</div>
 						<div class="metaRow">
 							<strong>{{ t('openregister', 'Owner:') }}</strong>
-							<span>{{ organisationStore.organisationItem.owner || 'System' }}</span>
+							<span>{{ organisationStore.item.owner || 'System' }}</span>
 						</div>
 						<div class="metaRow">
 							<strong>{{ t('openregister', 'Members:') }}</strong>
-							<span>{{ organisationStore.organisationItem.users?.length || 0 }}</span>
+							<span>{{ organisationStore.item.users?.length || 0 }}</span>
 						</div>
-						<div v-if="organisationStore.organisationItem.created" class="metaRow">
+						<div v-if="organisationStore.item.created" class="metaRow">
 							<strong>{{ t('openregister', 'Created:') }}</strong>
-							<span>{{ formatDate(organisationStore.organisationItem.created) }}</span>
+							<span>{{ formatDate(organisationStore.item.created) }}</span>
 						</div>
-						<div v-if="organisationStore.organisationItem.updated" class="metaRow">
+						<div v-if="organisationStore.item.updated" class="metaRow">
 							<strong>{{ t('openregister', 'Updated:') }}</strong>
-							<span>{{ formatDate(organisationStore.organisationItem.updated) }}</span>
+							<span>{{ formatDate(organisationStore.item.updated) }}</span>
 						</div>
 					</div>
 				</div>
@@ -121,17 +121,17 @@ import { organisationStore, navigationStore } from '../../store/store.js'
 				<!-- Members List -->
 				<div class="membersSection">
 					<h3>{{ t('openregister', 'Organisation Members') }}</h3>
-					<div v-if="organisationStore.organisationItem.users && organisationStore.organisationItem.users.length"
+					<div v-if="organisationStore.item.users && organisationStore.item.users.length"
 						class="membersList">
-						<div v-for="userId in organisationStore.organisationItem.users"
+						<div v-for="userId in organisationStore.item.users"
 							:key="userId"
 							class="memberItem">
 							<div class="memberInfo">
 								<Account :size="20" />
 								<span class="memberName">{{ userId }}</span>
-								<span v-if="userId === organisationStore.organisationItem.owner" class="ownerBadge">Owner</span>
+								<span v-if="userId === organisationStore.item.owner" class="ownerBadge">Owner</span>
 							</div>
-							<NcActions v-if="canManageMembers && userId !== organisationStore.organisationItem.owner">
+							<NcActions v-if="canManageMembers && userId !== organisationStore.item.owner">
 								<NcActionButton close-after-click @click="removeMember(userId)">
 									<template #icon>
 										<AccountMinus :size="16" />
@@ -237,27 +237,27 @@ export default {
 	computed: {
 		isActiveOrganisation() {
 			return organisationStore.userStats.active
-				   && organisationStore.userStats.active.uuid === organisationStore.organisationItem?.uuid
+				   && organisationStore.userStats.active.uuid === organisationStore.item?.uuid
 		},
 		canEdit() {
 			// Only owner can edit (or system for default org)
-			return organisationStore.organisationItem?.owner === 'system'
-				   || organisationStore.organisationItem?.owner === this.getCurrentUser()
+			return organisationStore.item?.owner === 'system'
+				   || organisationStore.item?.owner === this.getCurrentUser()
 		},
 		canLeave() {
 			// Can't leave if it's your only organisation, you're the owner, or it's default
 			return organisationStore.userStats.total > 1
-				   && !organisationStore.organisationItem?.isDefault
-				   && organisationStore.organisationItem?.owner !== this.getCurrentUser()
+				   && !organisationStore.item?.isDefault
+				   && organisationStore.item?.owner !== this.getCurrentUser()
 		},
 		canDelete() {
 			// Only owners can delete, and can't delete default organisation
-			return !organisationStore.organisationItem?.isDefault
-				   && organisationStore.organisationItem?.owner === this.getCurrentUser()
+			return !organisationStore.item?.isDefault
+				   && organisationStore.item?.owner === this.getCurrentUser()
 		},
 		canManageMembers() {
 			// Only owners can manage members
-			return organisationStore.organisationItem?.owner === this.getCurrentUser()
+			return organisationStore.item?.owner === this.getCurrentUser()
 		},
 	},
 	async mounted() {
@@ -271,19 +271,19 @@ export default {
 		},
 		async setActiveOrganisation() {
 			try {
-				await organisationStore.setActiveOrganisationById(organisationStore.organisationItem.uuid)
+				await organisationStore.setActiveOrganisationById(organisationStore.item.uuid)
 				this.showSuccessMessage('Set as active organisation')
 			} catch (error) {
 				this.showErrorMessage('Failed to set active organisation: ' + error.message)
 			}
 		},
 		async leaveOrganisation() {
-			if (!confirm(`Are you sure you want to leave '${organisationStore.organisationItem.name}'?`)) {
+			if (!confirm(`Are you sure you want to leave '${organisationStore.item.name}'?`)) {
 				return
 			}
 
 			try {
-				await organisationStore.leaveOrganisation(organisationStore.organisationItem.uuid)
+				await organisationStore.leaveOrganisation(organisationStore.item.uuid)
 				this.showSuccessMessage('Left organisation successfully')
 				// Navigate back to organisations list
 				this.$router.push('/organisation')
@@ -344,17 +344,17 @@ export default {
 		},
 		// Organisation Action Methods
 		viewOrganisation() {
-			const publicationUrl = `https://www.softwarecatalogus.nl/publicatie/${organisationStore.organisationItem.uuid}`
+			const publicationUrl = `https://www.softwarecatalogus.nl/publicatie/${organisationStore.item.uuid}`
 			window.open(publicationUrl, '_blank')
 		},
 		editOrganisation() {
-			// organisationStore.organisationItem is already set by the page
+			// organisationStore.item is already set by the page
 			navigationStore.setModal('editOrganisation')
 		},
 		openJoinModal() {
 			// Set the transfer data with the current organisation UUID
 			navigationStore.setTransferData({
-				organisationUuid: organisationStore.organisationItem?.uuid,
+				organisationUuid: organisationStore.item?.uuid,
 			})
 			// Open the join organisation modal
 			navigationStore.setModal('joinOrganisation')
@@ -364,8 +364,8 @@ export default {
 			navigationStore.setModal('manageOrganisationRoles')
 		},
 		goToOrganisation() {
-			if (organisationStore.organisationItem?.website) {
-				let websiteUrl = organisationStore.organisationItem.website
+			if (organisationStore.item?.website) {
+				let websiteUrl = organisationStore.item.website
 				// Add https:// if no protocol is specified
 				if (!websiteUrl.startsWith('http://') && !websiteUrl.startsWith('https://')) {
 					websiteUrl = 'https://' + websiteUrl

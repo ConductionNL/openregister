@@ -21,7 +21,7 @@ import { navigationStore, schemaStore, objectStore, registerStore } from '../../
 		</div>
 
 		<p v-if="success === null">
-			Weet u zeker dat u <b>{{ schemaStore.schemaItem.properties[schemaStore.schemaPropertyKey]?.title }}</b> permanent wilt verwijderen? Deze actie kan niet ongedaan worden gemaakt.
+			Weet u zeker dat u <b>{{ schemaStore.item.properties[schemaStore.schemaPropertyKey]?.title }}</b> permanent wilt verwijderen? Deze actie kan niet ongedaan worden gemaakt.
 		</p>
 		<NcNoteCard v-if="!canDelete" type="warning">
 			<p>Meerdere objecten zullen niet beschikbaar zijn, omdat ze deze eigenschap gebruiken.</p>
@@ -89,16 +89,16 @@ export default {
 	},
 	methods: {
 		async initDialog() {
-			await registerStore.refreshRegisterList()
-			if (registerStore.registerList.length === 0) {
+			await registerStore.refreshList()
+			if (registerStore.list.length === 0) {
 				return
 			}
 
-			for (const reg of registerStore.registerList) {
-				if (reg.schemas.some(regSchema => regSchema.id === schemaStore.schemaItem.id)) {
+			for (const reg of registerStore.list) {
+				if (reg.schemas.some(regSchema => regSchema.id === schemaStore.item.id)) {
 					await objectStore.refreshObjectList({
 						register: reg.id,
-						schema: schemaStore.schemaItem.id,
+						schema: schemaStore.item.id,
 						search: '',
 					})
 					if (objectStore.getCollection(objectStore.currentType).length) {
@@ -123,7 +123,7 @@ export default {
 		deleteProperty() {
 			this.loading = true
 
-			const schemaItemClone = { ...schemaStore.schemaItem }
+			const schemaItemClone = { ...schemaStore.item }
 
 			delete schemaItemClone.properties[schemaStore.schemaPropertyKey]
 
@@ -134,7 +134,7 @@ export default {
 				),
 			}
 
-			schemaStore.saveSchema(newSchemaItem)
+			schemaStore.save(newSchemaItem)
 				.then(({ response }) => {
 					this.loading = false
 					this.success = response.ok

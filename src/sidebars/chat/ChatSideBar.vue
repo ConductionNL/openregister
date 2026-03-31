@@ -42,7 +42,7 @@ import { navigationStore, conversationStore } from '../../store/store.js'
 					</div>
 
 					<!-- Empty State -->
-					<div v-else-if="!conversationStore.conversationList || conversationStore.conversationList.length === 0" class="noConversations">
+					<div v-else-if="!conversationStore.list || conversationStore.list.length === 0" class="noConversations">
 						<NcNoteCard type="info">
 							{{ t('openregister', 'No conversations yet. Create a new one to get started!') }}
 						</NcNoteCard>
@@ -51,7 +51,7 @@ import { navigationStore, conversationStore } from '../../store/store.js'
 					<!-- Conversation List -->
 					<div v-else class="conversationsTable">
 						<div
-							v-for="conversation in conversationStore.conversationList"
+							v-for="conversation in conversationStore.list"
 							:key="conversation.uuid"
 							class="conversationRow"
 							:class="{ 'conversationRow--active': isActive(conversation) }">
@@ -185,7 +185,7 @@ export default {
 	methods: {
 		t,
 		isActive(conversation) {
-			return conversationStore.activeConversation?.uuid === conversation.uuid
+			return conversationStore.item?.uuid === conversation.uuid
 		},
 		formatDate(dateString) {
 			if (!dateString) return ''
@@ -204,12 +204,12 @@ export default {
 		},
 		handleNewConversation() {
 			// Clear active conversation to show the agent selector
-			conversationStore.setActiveConversation(null)
+			conversationStore.setItem(null)
 			conversationStore.setActiveMessages([])
 		},
 		async handleSelectConversation(conversation) {
 			try {
-				await conversationStore.loadConversation(conversation.uuid)
+				await conversationStore.getOne(conversation.uuid)
 			} catch (error) {
 				console.error('Failed to load conversation:', error)
 				showError(this.t('openregister', 'Failed to load conversation'))
@@ -226,7 +226,7 @@ export default {
 		},
 		async handleDeleteConversation(conversation) {
 			try {
-				await conversationStore.deleteConversation(conversation.uuid)
+				await conversationStore.deleteOne(conversation.uuid)
 				showSuccess(this.t('openregister', 'Conversation deleted'))
 			} catch (error) {
 				console.error('Failed to delete conversation:', error)

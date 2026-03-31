@@ -20,7 +20,7 @@ import { configurationStore, navigationStore } from '../../store/store.js'
 			<!-- Summary -->
 			<NcNoteCard type="info">
 				<p>
-					<strong>Configuration:</strong> {{ configurationStore.configurationItem?.title }}<br>
+					<strong>Configuration:</strong> {{ configurationStore.item?.title }}<br>
 					<strong>Remote Version:</strong> {{ preview.metadata?.remoteVersion || '-' }}<br>
 					<strong>Local Version:</strong> {{ preview.metadata?.localVersion || '-' }}<br>
 					<strong>Total Changes:</strong> {{ preview.metadata?.totalChanges || 0 }}
@@ -299,7 +299,7 @@ export default {
 	},
 	methods: {
 		async loadPreview() {
-			const configuration = configurationStore.configurationItem
+			const configuration = configurationStore.item
 			if (!configuration || !configuration.id) {
 				this.error = 'No configuration selected'
 				return
@@ -393,7 +393,7 @@ export default {
 			return String(value).substring(0, 50)
 		},
 		async importSelected() {
-			const configuration = configurationStore.configurationItem
+			const configuration = configurationStore.item
 			if (!configuration || !configuration.id) {
 				showError('No configuration selected')
 				return
@@ -425,7 +425,7 @@ export default {
 				)
 
 				// Refresh the configuration list
-				await configurationStore.refreshConfigurationList()
+				await configurationStore.refreshList()
 
 				this.closeModal()
 			} catch (error) {

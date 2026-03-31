@@ -129,7 +129,7 @@ export default {
 		},
 		fetchSchema() {
 			this.schemaLoading = true
-			schemaStore.getSchema(this.auditTrail.schema)
+			schemaStore.getOne(this.auditTrail.schema)
 				.then((schema) => {
 					this.schemaItem = schema
 					this.schemaLoading = false
@@ -137,7 +137,7 @@ export default {
 		},
 		fetchRegister() {
 			this.registerLoading = true
-			registerStore.getRegister(this.auditTrail.register)
+			registerStore.getOne(this.auditTrail.register)
 				.then((register) => {
 					this.registerItem = register
 					this.registerLoading = false
@@ -147,13 +147,13 @@ export default {
 			navigationStore.setModal(null)
 			objectStore.setAuditTrailItem(null)
 			this.$router.push('/schemas')
-			schemaStore.setSchemaItem(this.schemaItem)
+			schemaStore.setItem(this.schemaItem)
 		},
 		goToRegister() {
 			navigationStore.setModal(null)
 			objectStore.setAuditTrailItem(null)
 			this.$router.push('/registers')
-			registerStore.setRegisterItem(this.registerItem)
+			registerStore.setItem(this.registerItem)
 		},
 	},
 }

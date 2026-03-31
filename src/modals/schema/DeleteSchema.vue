@@ -9,7 +9,7 @@ import { schemaStore, navigationStore, objectStore, registerStore } from '../../
 		size="normal"
 		:can-close="false">
 		<p v-if="!success && canDelete">
-			Wil je <b>{{ schemaStore.schemaItem?.title }}</b> permanent verwijderen? Deze actie kan niet ongedaan worden gemaakt.
+			Wil je <b>{{ schemaStore.item?.title }}</b> permanent verwijderen? Deze actie kan niet ongedaan worden gemaakt.
 		</p>
 		<p v-if="!success && !canDelete">
 			Er {{ objects.length > 1 ? 'zijn' : 'is' }} {{ objects.length }} {{ objects.length > 1 ? 'objecten' : 'object' }} in dit schema in het register <b>{{ registerName }}</b>. Je moet {{ objects.length > 1 ? 'deze' : 'dit' }} eerst verwijderen.
@@ -86,20 +86,20 @@ export default {
 	},
 	methods: {
 		async initDialog() {
-			await registerStore.refreshRegisterList()
-			if (!registerStore.registerList.length) {
+			await registerStore.refreshList()
+			if (!registerStore.list.length) {
 				return
 			}
 
 			// Use the upgraded stats endpoint to get object count efficiently
 			try {
-				const stats = await schemaStore.getSchemaStats(schemaStore.schemaItem.id)
+				const stats = await schemaStore.getSchemaStats(schemaStore.item.id)
 				const totalObjects = stats.objects?.total || 0
 
 				if (totalObjects > 0) {
 					// Find the first register that contains this schema for display purposes
-					const register = registerStore.registerList.find(reg =>
-						reg.schemas.includes(schemaStore.schemaItem.id),
+					const register = registerStore.list.find(reg =>
+						reg.schemas.includes(schemaStore.item.id),
 					)
 					if (register) {
 						this.registerName = register.title
@@ -110,14 +110,14 @@ export default {
 			} catch (err) {
 				console.warn('Could not load schema stats, falling back to individual register checks:', err)
 				// Fallback to the original method if stats endpoint fails
-				for (const reg of registerStore.registerList) {
-					if (!reg.schemas.includes(schemaStore.schemaItem.id)) {
+				for (const reg of registerStore.list) {
+					if (!reg.schemas.includes(schemaStore.item.id)) {
 						continue
 					}
 
 					await objectStore.refreshObjectList({
 						register: reg.id,
-						schema: schemaStore.schemaItem.id,
+						schema: schemaStore.item.id,
 						search: '',
 					})
 
@@ -141,8 +141,8 @@ export default {
 		async deleteSchema() {
 			this.loading = true
 
-			schemaStore.deleteSchema({
-				...schemaStore.schemaItem,
+			schemaStore.deleteOne({
+				...schemaStore.item,
 			}).then(({ response }) => {
 				this.success = response.ok
 				this.error = false

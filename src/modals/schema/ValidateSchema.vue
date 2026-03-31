@@ -12,7 +12,7 @@ import SchemaStatsBlock from '../../components/SchemaStatsBlock.vue'
 		<!-- Loading State -->
 		<div v-if="loading" class="loading-container">
 			<NcLoadingIcon :size="40" />
-			<p>Validating objects against schema '{{ schemaStore.schemaItem?.title }}'...</p>
+			<p>Validating objects against schema '{{ schemaStore.item?.title }}'...</p>
 			<p class="loading-subtitle">
 				This may take a moment for large datasets.
 			</p>
@@ -227,7 +227,7 @@ export default {
 	},
 	watch: {
 		// Watch for changes in schemaItem and reload count if needed
-		'schemaStore.schemaItem': {
+		'schemaStore.item': {
 			handler(newSchemaItem) {
 				console.info('Schema item changed in ValidateSchema:', newSchemaItem)
 				if (newSchemaItem?.id && this.objectCount === 0) {
@@ -240,7 +240,7 @@ export default {
 		'navigationStore.dialog': {
 			handler(newDialog) {
 				console.info('Dialog changed to:', newDialog)
-				if (newDialog === 'validateSchema' && schemaStore.schemaItem?.id) {
+				if (newDialog === 'validateSchema' && schemaStore.item?.id) {
 					console.info('ValidateSchema dialog opened, loading object count')
 					this.loadObjectCount()
 				}
@@ -249,17 +249,17 @@ export default {
 		},
 	},
 	async mounted() {
-		console.info('ValidateSchema dialog mounted, schemaItem:', schemaStore.schemaItem)
+		console.info('ValidateSchema dialog mounted, schemaItem:', schemaStore.item)
 		await this.loadObjectCount()
 	},
 	methods: {
 		async loadObjectCount() {
-			console.info('loadObjectCount called, schemaItem:', schemaStore.schemaItem)
+			console.info('loadObjectCount called, schemaItem:', schemaStore.item)
 			try {
-				if (schemaStore.schemaItem?.id) {
-					console.info('Calling getSchemaStats for schema ID:', schemaStore.schemaItem.id)
+				if (schemaStore.item?.id) {
+					console.info('Calling getSchemaStats for schema ID:', schemaStore.item.id)
 					// Use the upgraded stats endpoint to get detailed object counts
-					const stats = await schemaStore.getSchemaStats(schemaStore.schemaItem.id)
+					const stats = await schemaStore.getSchemaStats(schemaStore.item.id)
 					console.info('Received stats:', stats)
 					this.objectStats = stats.objects
 					this.objectCount = stats.objects?.total || 0
@@ -283,7 +283,7 @@ export default {
 			try {
 				// Call the new direct validation API
 				const response = await fetch(
-					`/index.php/apps/openregister/api/bulk/schema/${schemaStore.schemaItem.id}/validate`,
+					`/index.php/apps/openregister/api/bulk/schema/${schemaStore.item.id}/validate`,
 					{
 						method: 'POST',
 						headers: {

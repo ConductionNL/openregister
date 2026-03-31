@@ -49,10 +49,10 @@ export default {
 		},
 		pageTitle() {
 			if (!this.hasSelectedRegisters) return 'No register selected'
-			const reg = registerStore.registerList.find((r) => r.id === objectStore.searchParams.register)
+			const reg = registerStore.list.find((r) => r.id === objectStore.searchParams.register)
 			const regTitle = reg ? (reg.label || reg.title) : 'Register'
 			if (!this.hasSelectedSchemas) return `${regTitle} / No schema selected`
-			const schema = schemaStore.schemaList.find((s) => s.id === objectStore.searchParams.schema)
+			const schema = schemaStore.list.find((s) => s.id === objectStore.searchParams.schema)
 			const schemaTitle = schema ? (schema.label || schema.title) : 'Schema'
 			return `${regTitle} / ${schemaTitle}`
 		},
@@ -87,11 +87,11 @@ export default {
 			if (!this.hasSelectedRegisters || !this.hasSelectedSchemas) return
 			this.isAddingNewObject = true
 			objectStore.setObjectItem(null)
-			if (registerStore.registerItem) {
-				registerStore.setRegisterItem(registerStore.registerItem)
+			if (registerStore.item) {
+				registerStore.setItem(registerStore.item)
 			}
-			if (schemaStore.schemaItem) {
-				schemaStore.setSchemaItem(schemaStore.schemaItem)
+			if (schemaStore.item) {
+				schemaStore.setItem(schemaStore.item)
 			}
 			navigationStore.setModal('viewObject')
 		},

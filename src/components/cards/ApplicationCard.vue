@@ -14,14 +14,14 @@
 					<DotsHorizontal :size="20" />
 				</template>
 				<NcActionButton close-after-click
-					@click="applicationStore.setApplicationItem(item); navigationStore.setModal('editApplication')">
+					@click="applicationStore.setItem(item); navigationStore.setModal('editApplication')">
 					<template #icon>
 						<Pencil :size="20" />
 					</template>
 					Edit
 				</NcActionButton>
 				<NcActionButton close-after-click
-					@click="applicationStore.setApplicationItem(item); navigationStore.setDialog('deleteApplication')">
+					@click="applicationStore.setItem(item); navigationStore.setDialog('deleteApplication')">
 					<template #icon>
 						<TrashCanOutline :size="20" />
 					</template>

@@ -5,35 +5,35 @@ import { configurationStore, navigationStore } from '../../store/store.js'
 
 <template>
 	<NcDialog v-if="navigationStore.modal === 'viewConfiguration'"
-		:name="`View Configuration: ${configurationStore.configurationItem?.title || 'Unknown'}`"
+		:name="`View Configuration: ${configurationStore.item?.title || 'Unknown'}`"
 		size="large"
 		:can-close="false">
 		<div class="formContainer viewConfigurationDialog">
 			<!-- Configuration Details -->
 			<div class="configurationDetailsGrid">
 				<div class="configurationMainInfo">
-					<h2>{{ configurationStore.configurationItem?.title }}</h2>
-					<p v-if="configurationStore.configurationItem?.description" class="configurationDescription">
-						{{ configurationStore.configurationItem.description }}
+					<h2>{{ configurationStore.item?.title }}</h2>
+					<p v-if="configurationStore.item?.description" class="configurationDescription">
+						{{ configurationStore.item.description }}
 					</p>
 				</div>
 
 				<div class="configurationProperties">
 					<div class="propertyItem">
 						<strong>{{ t('openregister', 'Type') }}:</strong>
-						<span>{{ configurationStore.configurationItem?.type || 'Unknown' }}</span>
+						<span>{{ configurationStore.item?.type || 'Unknown' }}</span>
 					</div>
-					<div v-if="configurationStore.configurationItem?.owner" class="propertyItem">
+					<div v-if="configurationStore.item?.owner" class="propertyItem">
 						<strong>{{ t('openregister', 'Owner') }}:</strong>
-						<span>{{ configurationStore.configurationItem.owner }}</span>
+						<span>{{ configurationStore.item.owner }}</span>
 					</div>
-					<div v-if="configurationStore.configurationItem?.created" class="propertyItem">
+					<div v-if="configurationStore.item?.created" class="propertyItem">
 						<strong>{{ t('openregister', 'Created') }}:</strong>
-						<span>{{ new Date(configurationStore.configurationItem.created).toLocaleString() }}</span>
+						<span>{{ new Date(configurationStore.item.created).toLocaleString() }}</span>
 					</div>
-					<div v-if="configurationStore.configurationItem?.updated" class="propertyItem">
+					<div v-if="configurationStore.item?.updated" class="propertyItem">
 						<strong>{{ t('openregister', 'Updated') }}:</strong>
-						<span>{{ new Date(configurationStore.configurationItem.updated).toLocaleString() }}</span>
+						<span>{{ new Date(configurationStore.item.updated).toLocaleString() }}</span>
 					</div>
 				</div>
 			</div>
@@ -54,10 +54,10 @@ import { configurationStore, navigationStore } from '../../store/store.js'
 				<div class="tabContent">
 					<!-- Configuration Tab -->
 					<div v-if="activeTab === 0" class="tabPanel">
-						<div v-if="configurationStore.configurationItem?.configuration" class="configurationJsonContainer">
+						<div v-if="configurationStore.item?.configuration" class="configurationJsonContainer">
 							<h3>{{ t('openregister', 'Configuration Data') }}</h3>
 							<div class="jsonViewer">
-								<pre>{{ JSON.stringify(configurationStore.configurationItem.configuration, null, 2) }}</pre>
+								<pre>{{ JSON.stringify(configurationStore.item.configuration, null, 2) }}</pre>
 							</div>
 						</div>
 						<div v-else class="emptyTabContent">

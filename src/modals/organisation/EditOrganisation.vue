@@ -8,7 +8,7 @@ import { organisationStore, navigationStore } from '../../store/store.js'
 		<CnTabbedFormDialog
 			ref="dialog"
 			:tabs="dialogTabs"
-			:item="organisationStore.organisationItem?.uuid ? organisationStore.organisationItem : null"
+			:item="organisationStore.item?.uuid ? organisationStore.item : null"
 			entity-name="Organisation"
 			:show-create-another="true"
 			:disable-save="!organisationItem.name.trim()"
@@ -478,7 +478,7 @@ export default {
 	},
 	watch: {
 		// Watch for changes in the store's organisationItem (e.g., when clicking edit on different organisations)
-		'organisationStore.organisationItem': {
+		'organisationStore.item': {
 			handler(newVal, oldVal) {
 				// Only reinitialize if the UUID changed (different organisation) or went from null to something
 				if (newVal && (!oldVal || newVal.uuid !== oldVal?.uuid)) {
@@ -591,11 +591,11 @@ export default {
 		 * @return {void}
 		 */
 		initializeOrganisationItem() {
-			if (organisationStore.organisationItem?.uuid) {
+			if (organisationStore.item?.uuid) {
 				this.organisationItem = {
 					...this.organisationItem, // Keep default structure
-					...organisationStore.organisationItem,
-					active: organisationStore.organisationItem.active ?? true,
+					...organisationStore.item,
+					active: organisationStore.item.active ?? true,
 				}
 
 				// Load existing groups selection
@@ -836,13 +836,13 @@ export default {
 			}
 
 			try {
-				const { response } = await organisationStore.saveOrganisation({
+				const { response } = await organisationStore.save({
 					...this.organisationItem,
 				})
 
 				if (response.ok) {
 					// Explicitly refresh the organisation list to ensure UI is updated
-					await organisationStore.refreshOrganisationList()
+					await organisationStore.refreshList()
 
 					// Also refresh active organisation in case it was just created
 					if (!this.organisationItem.uuid) {

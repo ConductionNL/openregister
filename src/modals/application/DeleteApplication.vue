@@ -43,14 +43,14 @@ export default {
 	computed: {
 		deleteMessage() {
 			return t('openregister', 'Are you sure you want to delete the application "{name}"? This action cannot be undone.', {
-				name: applicationStore.applicationItem?.name || t('openregister', 'this application'),
+				name: applicationStore.item?.name || t('openregister', 'this application'),
 			})
 		},
 	},
 	methods: {
 		async deleteApplication() {
 			try {
-				await applicationStore.deleteApplication(applicationStore.applicationItem)
+				await applicationStore.deleteOne(applicationStore.item)
 				navigationStore.setDialog(false)
 			} catch (error) {
 				console.error('Error deleting application:', error)

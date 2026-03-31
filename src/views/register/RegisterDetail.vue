@@ -272,7 +272,7 @@ export default {
 		},
 		register() {
 			// Find the register in the dashboard store using the ID from register store
-			const registerId = registerStore.getRegisterItem?.id
+			const registerId = registerStore.item?.id
 			return dashboardStore.registers.find(r => r.id === registerId)
 		},
 		auditTrailChartOptions() {
@@ -378,7 +378,7 @@ export default {
 	},
 	async mounted() {
 		// If we have a register ID but no data, fetch dashboard data
-		if (registerStore.getRegisterItem?.id && !this.register) {
+		if (registerStore.item?.id && !this.register) {
 			try {
 				await dashboardStore.fetchRegisters()
 				await dashboardStore.fetchAllChartData()
@@ -386,13 +386,13 @@ export default {
 				console.error('Failed to fetch register details:', error)
 				this.$router.push('/registers')
 			}
-		} else if (!registerStore.getRegisterItem?.id) {
+		} else if (!registerStore.item?.id) {
 			// If no register ID at all, go back to list
 			this.$router.push('/registers')
 		}
 
 		// Load register stats if register is available
-		if (registerStore.getRegisterItem?.id) {
+		if (registerStore.item?.id) {
 			await this.loadRegisterStats()
 		}
 
@@ -406,7 +406,7 @@ export default {
 		 * @return {Promise<void>}
 		 */
 		async loadRegisterStats() {
-			if (!registerStore.getRegisterItem?.id) {
+			if (!registerStore.item?.id) {
 				return
 			}
 
@@ -414,7 +414,7 @@ export default {
 			this.statsError = null
 
 			try {
-				this.registerStats = await registerStore.getRegisterStats(registerStore.getRegisterItem.id)
+				this.registerStats = await registerStore.getRegisterStats(registerStore.item.id)
 			} catch (error) {
 				console.error('Error loading register stats:', error)
 				this.statsError = error.message
@@ -446,8 +446,8 @@ export default {
 		async loadSchemaOptions() {
 			this.schemasLoading = true
 			try {
-				await schemaStore.refreshSchemaList()
-				this.schemaSelectOptions = schemaStore.schemaList.map(s => ({ id: s.id, label: s.title }))
+				await schemaStore.refreshList()
+				this.schemaSelectOptions = schemaStore.list.map(s => ({ id: s.id, label: s.title }))
 			} catch (error) {
 				console.error('Failed to load schemas:', error)
 			} finally {
@@ -464,7 +464,7 @@ export default {
 		},
 		async onSaveRegister(formData) {
 			try {
-				await registerStore.saveRegister({
+				await registerStore.save({
 					...formData,
 					schemas: (formData.schemas || []).map(s => typeof s === 'object' ? s.id : s),
 				})
@@ -475,7 +475,7 @@ export default {
 			}
 		},
 		editSchema(schema) {
-			registerStore.setSchemaItem(schema)
+			schemaStore.setItem(schema)
 			navigationStore.setModal('editSchema')
 		},
 		/**
@@ -530,7 +530,7 @@ export default {
 
 			try {
 				// Check all configurations to see if any manages this register
-				const configurations = configurationStore.configurationList || []
+				const configurations = configurationStore.list || []
 				for (const config of configurations) {
 					if (config.registers && Array.isArray(config.registers) && config.registers.includes(this.register.id)) {
 						this.managingConfiguration = config

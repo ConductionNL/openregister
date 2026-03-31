@@ -86,11 +86,11 @@ export default {
 	},
 	computed: {
 		registerTitle() {
-			const item = registerStore.registerItem
+			const item = registerStore.item
 			return item?.title || 'Unknown'
 		},
 		schemaTitle() {
-			const item = schemaStore.schemaItem
+			const item = schemaStore.item
 			return item?.title || 'Unknown'
 		},
 	},
@@ -102,8 +102,8 @@ export default {
 			this.exportFormat = 'excel'
 		},
 		async exportObjects() {
-			const register = registerStore.registerItem
-			const schema = schemaStore.schemaItem
+			const register = registerStore.item
+			const schema = schemaStore.item
 
 			if (!register?.id || !schema?.id) {
 				this.error = 'Register and schema are required'

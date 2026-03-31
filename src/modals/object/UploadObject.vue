@@ -183,12 +183,12 @@ export default {
 		initializeSchemas() {
 			this.schemasLoading = true
 
-			schemaStore.refreshSchemaList()
+			schemaStore.refreshList()
 				.then(() => {
 					this.schemas = {
 						multiple: false,
 						closeOnSelect: true,
-						options: schemaStore.schemaList.map((schema) => ({
+						options: schemaStore.list.map((schema) => ({
 							id: schema.id,
 							label: schema.title,
 						})),
@@ -202,12 +202,12 @@ export default {
 		initializeRegisters() {
 			this.registersLoading = true
 
-			registerStore.refreshRegisterList()
+			registerStore.refreshList()
 				.then(() => {
 					this.registers = {
 						multiple: false,
 						closeOnSelect: true,
-						options: registerStore.registerList.map((register) => ({
+						options: registerStore.list.map((register) => ({
 							id: register.id,
 							label: register.title,
 						})),

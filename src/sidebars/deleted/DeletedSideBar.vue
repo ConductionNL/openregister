@@ -39,7 +39,7 @@ import { deletedStore, navigationStore, registerStore, schemaStore } from '../..
 						:model-value="selectedSchemaValue"
 						:placeholder="t('openregister', 'All schemas')"
 						:input-label="t('openregister', 'Schema')"
-						:disabled="!registerStore.registerItem"
+						:disabled="!registerStore.item"
 						:clearable="true"
 						@update:model-value="handleSchemaChange" />
 				</div>
@@ -136,7 +136,7 @@ export default {
 	computed: {
 		registerOptions() {
 			return {
-				options: registerStore.registerList.map(register => ({
+				options: registerStore.list.map(register => ({
 					value: register.id,
 					label: register.title,
 					title: register.title,
@@ -150,11 +150,11 @@ export default {
 			}
 		},
 		schemaOptions() {
-			if (!registerStore.registerItem) return { options: [] }
+			if (!registerStore.item) return { options: [] }
 
 			return {
-				options: schemaStore.schemaList
-					.filter(schema => registerStore.registerItem.schemas.some(registerSchema => registerSchema.id === schema.id))
+				options: schemaStore.list
+					.filter(schema => registerStore.item.schemas.some(registerSchema => registerSchema.id === schema.id))
 					.map(schema => ({
 						value: schema.id,
 						label: schema.title,
@@ -169,8 +169,8 @@ export default {
 			}
 		},
 		selectedRegisterValue() {
-			if (!registerStore.registerItem) return null
-			const register = registerStore.registerItem
+			if (!registerStore.item) return null
+			const register = registerStore.item
 			return {
 				value: register.id,
 				label: register.title,
@@ -179,8 +179,8 @@ export default {
 			}
 		},
 		selectedSchemaValue() {
-			if (!schemaStore.schemaItem) return null
-			const schema = schemaStore.schemaItem
+			if (!schemaStore.item) return null
+			const schema = schemaStore.item
 			return {
 				value: schema.id,
 				label: schema.title,
@@ -274,21 +274,21 @@ export default {
 			deep: true,
 		},
 		// Watch for changes in the global stores
-		'registerStore.registerItem'() {
+		'registerStore.item'() {
 			this.applyFilters()
 		},
-		'schemaStore.schemaItem'() {
+		'schemaStore.item'() {
 			this.applyFilters()
 		},
 	},
 	async mounted() {
 		// Load required data
-		if (!registerStore.registerList.length) {
-			await registerStore.refreshRegisterList()
+		if (!registerStore.list.length) {
+			await registerStore.refreshList()
 		}
 
-		if (!schemaStore.schemaList.length) {
-			await schemaStore.refreshSchemaList()
+		if (!schemaStore.list.length) {
+			await schemaStore.refreshList()
 		}
 
 		// Load statistics and top deleters
@@ -342,8 +342,8 @@ export default {
 		 * @return {void}
 		 */
 		handleRegisterChange(register) {
-			registerStore.setRegisterItem(register)
-			schemaStore.setSchemaItem(null) // Clear schema when register changes
+			registerStore.setItem(register)
+			schemaStore.setItem(null) // Clear schema when register changes
 			this.applyFilters()
 		},
 		/**
@@ -352,7 +352,7 @@ export default {
 		 * @return {void}
 		 */
 		handleSchemaChange(schema) {
-			schemaStore.setSchemaItem(schema)
+			schemaStore.setItem(schema)
 			this.applyFilters()
 		},
 		/**
@@ -361,11 +361,11 @@ export default {
 		 */
 		buildQueryFromState() {
 			const query = {}
-			if (registerStore.registerItem && registerStore.registerItem.id) {
-				query.register = String(registerStore.registerItem.id)
+			if (registerStore.item && registerStore.item.id) {
+				query.register = String(registerStore.item.id)
 			}
-			if (schemaStore.schemaItem && schemaStore.schemaItem.id) {
-				query.schema = String(schemaStore.schemaItem.id)
+			if (schemaStore.item && schemaStore.item.id) {
+				query.schema = String(schemaStore.item.id)
 			}
 			if (this.selectedDeletedBy && this.selectedDeletedBy.value) {
 				query.deletedBy = String(this.selectedDeletedBy.value)
@@ -426,16 +426,16 @@ export default {
 			// Registers and schemas depend on lists being loaded
 			const applyRegister = () => {
 				if (!register) return true
-				if (!registerStore.registerList.length) return false
-				const reg = registerStore.registerList.find(r => String(r.id) === String(register))
-				if (reg) registerStore.setRegisterItem(reg)
+				if (!registerStore.list.length) return false
+				const reg = registerStore.list.find(r => String(r.id) === String(register))
+				if (reg) registerStore.setItem(reg)
 				return true
 			}
 			const applySchema = () => {
 				if (!schema) return true
-				if (!schemaStore.schemaList.length) return false
-				const sch = schemaStore.schemaList.find(s => String(s.id) === String(schema))
-				if (sch) schemaStore.setSchemaItem(sch)
+				if (!schemaStore.list.length) return false
+				const sch = schemaStore.list.find(s => String(s.id) === String(schema))
+				if (sch) schemaStore.setItem(sch)
 				return true
 			}
 
@@ -459,8 +459,8 @@ export default {
 		 */
 		applyFiltersToStore() {
 			const filters = {
-				register: registerStore.registerItem?.id || null,
-				schema: schemaStore.schemaItem?.id || null,
+				register: registerStore.item?.id || null,
+				schema: schemaStore.item?.id || null,
 				deletedBy: this.selectedDeletedBy?.value || null,
 				dateFrom: this.dateFrom || null,
 				dateTo: this.dateTo || null,

@@ -55,13 +55,13 @@ import { dashboardStore, registerStore, schemaStore, navigationStore, configurat
 					</NcActionButton>
 					<!-- Register-only actions -->
 					<template v-if="type === 'register'">
-						<NcActionButton close-after-click @click="registerStore.setRegisterItem(item); navigationStore.setModal('publishRegister')">
+						<NcActionButton close-after-click @click="registerStore.setItem(item); navigationStore.setModal('publishRegister')">
 							<template #icon>
 								<CloudUploadOutline :size="20" />
 							</template>
 							Publish OAS
 						</NcActionButton>
-						<NcActionButton close-after-click @click="registerStore.setRegisterItem(item); navigationStore.setModal('importRegister')">
+						<NcActionButton close-after-click @click="registerStore.setItem(item); navigationStore.setModal('importRegister')">
 							<template #icon>
 								<Upload :size="20" />
 							</template>
@@ -195,7 +195,7 @@ import { dashboardStore, registerStore, schemaStore, navigationStore, configurat
 									</NcActionButton>
 									<NcActionButton
 										close-after-click
-										@click="registerStore.setRegisterItem(item); schemaStore.setSchemaItem(schema); navigationStore.setModal('exportRegister')">
+										@click="registerStore.setItem(item); schemaStore.setItem(schema); navigationStore.setModal('exportRegister')">
 										<template #icon>
 											<Export :size="20" />
 										</template>
@@ -203,7 +203,7 @@ import { dashboardStore, registerStore, schemaStore, navigationStore, configurat
 									</NcActionButton>
 									<NcActionButton
 										close-after-click
-										@click="registerStore.setRegisterItem(item); schemaStore.setSchemaItem(schema); navigationStore.setModal('importRegister')">
+										@click="registerStore.setItem(item); schemaStore.setItem(schema); navigationStore.setModal('importRegister')">
 										<template #icon>
 											<Upload :size="20" />
 										</template>
@@ -418,12 +418,12 @@ export default {
 		managingConfiguration() {
 			if (!this.item || !this.item.id) return null
 			if (this.type === 'register') {
-				return configurationStore.configurationList.find(
+				return configurationStore.list.find(
 					config => config.registers && config.registers.includes(this.item.id),
 				) || null
 			}
 			// Schema: config.schemas is an array of objects with .id
-			return configurationStore.configurationList.find(
+			return configurationStore.list.find(
 				config => config.schemas && config.schemas.some(s => s.id === this.item.id),
 			) || null
 		},
@@ -516,7 +516,7 @@ export default {
 			if (this.type === 'register') {
 				this.showEditRegisterDialog = true
 			} else {
-				schemaStore.setSchemaItem(this.item)
+				schemaStore.setItem(this.item)
 				navigationStore.setModal('editSchema')
 			}
 		},
@@ -551,8 +551,8 @@ export default {
 		async loadSchemaOptions() {
 			this.schemasLoading = true
 			try {
-				await schemaStore.refreshSchemaList()
-				this.schemaSelectOptions = schemaStore.schemaList.map(s => ({ id: s.id, label: s.title }))
+				await schemaStore.refreshList()
+				this.schemaSelectOptions = schemaStore.list.map(s => ({ id: s.id, label: s.title }))
 			} catch (error) {
 				console.error('Failed to load schemas:', error)
 			} finally {
@@ -569,7 +569,7 @@ export default {
 		},
 		async onSaveRegister(formData) {
 			try {
-				await registerStore.saveRegister({
+				await registerStore.save({
 					...formData,
 					schemas: (formData.schemas || []).map(s => typeof s === 'object' ? s.id : s),
 				})
@@ -581,10 +581,10 @@ export default {
 		},
 		openDelete() {
 			if (this.type === 'register') {
-				registerStore.setRegisterItem(this.item)
+				registerStore.setItem(this.item)
 				navigationStore.setDialog('deleteRegister')
 			} else {
-				schemaStore.setSchemaItem(this.item)
+				schemaStore.setItem(this.item)
 				navigationStore.setDialog('deleteSchema')
 			}
 		},
@@ -596,7 +596,7 @@ export default {
 
 		// Register-only methods
 		viewRegisterDetails() {
-			registerStore.setRegisterItem({ id: this.item.id })
+			registerStore.setItem({ id: this.item.id })
 			this.$router.push(`/registers/${this.item.id}`)
 		},
 
@@ -888,7 +888,7 @@ export default {
 				}
 
 				await Promise.all([
-					registerStore.refreshRegisterList(),
+					registerStore.refreshList(),
 					dashboardStore.fetchRegisters(),
 				])
 			} catch (error) {

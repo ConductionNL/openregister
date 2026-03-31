@@ -182,10 +182,10 @@ export default {
 		 * @return {void}
 		 */
 		initializeOrganisationItem() {
-			if (organisationStore.organisationItem?.uuid) {
+			if (organisationStore.item?.uuid) {
 				this.organisationItem = {
 					...this.organisationItem,
-					...organisationStore.organisationItem,
+					...organisationStore.item,
 				}
 
 				// Initialize selected roles from organisation
@@ -268,7 +268,7 @@ export default {
 			this.error = null
 
 			try {
-				await organisationStore.saveOrganisation({
+				await organisationStore.save({
 					...this.organisationItem,
 					roles: this.selectedRoles,
 				})

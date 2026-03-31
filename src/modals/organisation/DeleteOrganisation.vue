@@ -9,13 +9,13 @@ import { organisationStore, navigationStore } from '../../store/store.js'
 		size="normal"
 		:can-close="false">
 		<p v-if="!success && canDelete">
-			Are you sure you want to permanently delete <b>{{ organisationStore.organisationItem?.name }}</b>? This action cannot be undone.
+			Are you sure you want to permanently delete <b>{{ organisationStore.item?.name }}</b>? This action cannot be undone.
 		</p>
-		<p v-if="!success && !canDelete && organisationStore.organisationItem?.isDefault">
+		<p v-if="!success && !canDelete && organisationStore.item?.isDefault">
 			Cannot delete the default organisation. The default organisation is required for the system to function properly.
 		</p>
 		<p v-if="!success && !canDelete && !isOwner">
-			You can only delete organisations that you own. You are not the owner of <b>{{ organisationStore.organisationItem?.name }}</b>.
+			You can only delete organisations that you own. You are not the owner of <b>{{ organisationStore.item?.name }}</b>.
 		</p>
 		<p v-if="!success && !canDelete && hasMembers">
 			This organisation has {{ memberCount }} members. Please remove all members before deleting the organisation.
@@ -97,19 +97,19 @@ export default {
 		isOwner() {
 			// Check if current user is the owner of the organisation
 			const currentUser = this.getCurrentUser()
-			return organisationStore.organisationItem?.owner === currentUser
+			return organisationStore.item?.owner === currentUser
 		},
 		hasMembers() {
 		// Check if organisation has members (excluding the owner)
-			return (organisationStore.organisationItem?.users?.length || 0) > 1
+			return (organisationStore.item?.users?.length || 0) > 1
 		},
 		memberCount() {
-			return organisationStore.organisationItem?.users?.length || 0
+			return organisationStore.item?.users?.length || 0
 		},
 		isActiveOrganisation() {
 			// Check if this is the currently active organisation
 			return organisationStore.userStats.active
-				   && organisationStore.userStats.active.uuid === organisationStore.organisationItem?.uuid
+				   && organisationStore.userStats.active.uuid === organisationStore.item?.uuid
 		},
 		canDelete() {
 			// Can only delete if:
@@ -117,7 +117,7 @@ export default {
 			// 2. User is the owner
 			// 3. No other members (or only the owner)
 			// 4. Not the currently active organisation
-			return !organisationStore.organisationItem?.isDefault
+			return !organisationStore.item?.isDefault
 				   && this.isOwner
 				   && !this.hasMembers
 				   && !this.isActiveOrganisation
@@ -140,8 +140,8 @@ export default {
 			this.error = null
 
 			try {
-				const { response } = await organisationStore.deleteOrganisation({
-					...organisationStore.organisationItem,
+				const { response } = await organisationStore.deleteOne({
+					...organisationStore.item,
 				})
 
 				this.success = response.ok

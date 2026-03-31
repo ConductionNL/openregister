@@ -232,7 +232,7 @@ export default {
 	async mounted() {
 		try {
 			await organisationStore.loadNextcloudGroups()
-			await organisationStore.refreshOrganisationList()
+			await organisationStore.refreshList()
 			await organisationStore.getActiveOrganisation()
 		} catch (error) {
 			console.error('Error loading organisation data:', error)
@@ -262,7 +262,7 @@ export default {
 				return
 			}
 			try {
-				const { response } = await organisationStore.deleteOrganisation(organisation)
+				const { response } = await organisationStore.deleteOne(organisation)
 				this.$refs.indexPage.setSingleDeleteResult({ success: response.ok })
 			} catch (error) {
 				this.$refs.indexPage.setSingleDeleteResult({
@@ -290,7 +290,7 @@ export default {
 		async handleRefresh() {
 			this.isRefreshing = true
 			try {
-				await organisationStore.refreshOrganisationList()
+				await organisationStore.refreshList()
 			} finally {
 				this.isRefreshing = false
 			}
@@ -312,11 +312,11 @@ export default {
 			})
 		},
 		createOrganisation() {
-			organisationStore.setOrganisationItem(null)
+			organisationStore.setItem(null)
 			navigationStore.setModal('editOrganisation')
 		},
 		editOrganisation(organisation) {
-			organisationStore.setOrganisationItem(organisation)
+			organisationStore.setItem(organisation)
 			navigationStore.setModal('editOrganisation')
 		},
 		openJoinModal(organisation) {

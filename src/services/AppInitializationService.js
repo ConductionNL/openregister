@@ -96,12 +96,12 @@ export async function reloadAppData() {
  * @return {Promise<void>}
  */
 async function loadRegisters() {
-	if (registerStore.registerList.length === 0) {
+	if (registerStore.list.length === 0) {
 		console.info('[AppInit] Loading registers...')
-		await registerStore.refreshRegisterList()
-		console.info(`[AppInit] ✓ Loaded ${registerStore.registerList.length} registers`)
+		await registerStore.refreshList()
+		console.info(`[AppInit] ✓ Loaded ${registerStore.list.length} registers`)
 	} else {
-		console.info(`[AppInit] ↷ Registers already loaded (${registerStore.registerList.length})`)
+		console.info(`[AppInit] ↷ Registers already loaded (${registerStore.list.length})`)
 	}
 }
 
@@ -112,8 +112,8 @@ async function loadRegisters() {
  */
 async function forceLoadRegisters() {
 	console.info('[AppInit] Reloading registers...')
-	await registerStore.refreshRegisterList()
-	console.info(`[AppInit] ✓ Reloaded ${registerStore.registerList.length} registers`)
+	await registerStore.refreshList()
+	console.info(`[AppInit] ✓ Reloaded ${registerStore.list.length} registers`)
 }
 
 /**
@@ -122,12 +122,12 @@ async function forceLoadRegisters() {
  * @return {Promise<void>}
  */
 async function loadSchemas() {
-	if (schemaStore.schemaList.length === 0) {
+	if (schemaStore.list.length === 0) {
 		console.info('[AppInit] Loading schemas...')
-		await schemaStore.refreshSchemaList()
-		console.info(`[AppInit] ✓ Loaded ${schemaStore.schemaList.length} schemas`)
+		await schemaStore.refreshList()
+		console.info(`[AppInit] ✓ Loaded ${schemaStore.list.length} schemas`)
 	} else {
-		console.info(`[AppInit] ↷ Schemas already loaded (${schemaStore.schemaList.length})`)
+		console.info(`[AppInit] ↷ Schemas already loaded (${schemaStore.list.length})`)
 	}
 }
 
@@ -138,8 +138,8 @@ async function loadSchemas() {
  */
 async function forceLoadSchemas() {
 	console.info('[AppInit] Reloading schemas...')
-	await schemaStore.refreshSchemaList()
-	console.info(`[AppInit] ✓ Reloaded ${schemaStore.schemaList.length} schemas`)
+	await schemaStore.refreshList()
+	console.info(`[AppInit] ✓ Reloaded ${schemaStore.list.length} schemas`)
 }
 
 /**
@@ -149,12 +149,12 @@ async function forceLoadSchemas() {
  * @return {Promise<void>}
  */
 async function loadOrganisations() {
-	if (!organisationStore.organisationList || organisationStore.organisationList.length === 0) {
+	if (!organisationStore.list || organisationStore.list.length === 0) {
 		console.info('[AppInit] Loading organisations...')
-		await organisationStore.refreshOrganisationList()
-		console.info(`[AppInit] ✓ Loaded ${organisationStore.organisationList?.length || 0} organisations`)
+		await organisationStore.refreshList()
+		console.info(`[AppInit] ✓ Loaded ${organisationStore.list?.length || 0} organisations`)
 	} else {
-		console.info(`[AppInit] ↷ Organisations already loaded (${organisationStore.organisationList.length})`)
+		console.info(`[AppInit] ↷ Organisations already loaded (${organisationStore.list.length})`)
 	}
 
 	// Always fetch the active organisation from session
@@ -175,8 +175,8 @@ async function loadOrganisations() {
  */
 async function forceLoadOrganisations() {
 	console.info('[AppInit] Reloading organisations...')
-	await organisationStore.refreshOrganisationList()
-	console.info(`[AppInit] ✓ Reloaded ${organisationStore.organisationList?.length || 0} organisations`)
+	await organisationStore.refreshList()
+	console.info(`[AppInit] ✓ Reloaded ${organisationStore.list?.length || 0} organisations`)
 
 	// Always refetch the active organisation from session
 	console.info('[AppInit] Refetching active organisation from session...')
@@ -190,12 +190,12 @@ async function forceLoadOrganisations() {
  * @return {Promise<void>}
  */
 async function loadApplications() {
-	if (!applicationStore.applicationList || applicationStore.applicationList.length === 0) {
+	if (!applicationStore.list || applicationStore.list.length === 0) {
 		console.info('[AppInit] Loading applications...')
-		await applicationStore.refreshApplicationList()
-		console.info(`[AppInit] ✓ Loaded ${applicationStore.applicationList?.length || 0} applications`)
+		await applicationStore.refreshList()
+		console.info(`[AppInit] ✓ Loaded ${applicationStore.list?.length || 0} applications`)
 	} else {
-		console.info(`[AppInit] ↷ Applications already loaded (${applicationStore.applicationList.length})`)
+		console.info(`[AppInit] ↷ Applications already loaded (${applicationStore.list.length})`)
 	}
 }
 
@@ -206,8 +206,8 @@ async function loadApplications() {
  */
 async function forceLoadApplications() {
 	console.info('[AppInit] Reloading applications...')
-	await applicationStore.refreshApplicationList()
-	console.info(`[AppInit] ✓ Reloaded ${applicationStore.applicationList?.length || 0} applications`)
+	await applicationStore.refreshList()
+	console.info(`[AppInit] ✓ Reloaded ${applicationStore.list?.length || 0} applications`)
 }
 
 /**
@@ -219,7 +219,7 @@ async function loadViews() {
 	// Views store may not have a list property, check the store structure
 	try {
 		console.info('[AppInit] Loading views...')
-		await viewsStore.fetchViews()
+		await viewsStore.refreshList()
 		console.info('[AppInit] ✓ Views loaded')
 	} catch (error) {
 		console.warn('[AppInit] ⚠ Could not load views:', error.message)
@@ -234,7 +234,7 @@ async function loadViews() {
 async function forceLoadViews() {
 	try {
 		console.info('[AppInit] Reloading views...')
-		await viewsStore.fetchViews()
+		await viewsStore.refreshList()
 		console.info('[AppInit] ✓ Views reloaded')
 	} catch (error) {
 		console.warn('[AppInit] ⚠ Could not reload views:', error.message)
@@ -247,12 +247,12 @@ async function forceLoadViews() {
  * @return {Promise<void>}
  */
 async function loadAgents() {
-	if (!agentStore.agentList || agentStore.agentList.length === 0) {
+	if (!agentStore.list || agentStore.list.length === 0) {
 		console.info('[AppInit] Loading agents...')
-		await agentStore.refreshAgentList()
-		console.info(`[AppInit] ✓ Loaded ${agentStore.agentList?.length || 0} agents`)
+		await agentStore.refreshList()
+		console.info(`[AppInit] ✓ Loaded ${agentStore.list?.length || 0} agents`)
 	} else {
-		console.info(`[AppInit] ↷ Agents already loaded (${agentStore.agentList.length})`)
+		console.info(`[AppInit] ↷ Agents already loaded (${agentStore.list.length})`)
 	}
 }
 
@@ -263,8 +263,8 @@ async function loadAgents() {
  */
 async function forceLoadAgents() {
 	console.info('[AppInit] Reloading agents...')
-	await agentStore.refreshAgentList()
-	console.info(`[AppInit] ✓ Reloaded ${agentStore.agentList?.length || 0} agents`)
+	await agentStore.refreshList()
+	console.info(`[AppInit] ✓ Reloaded ${agentStore.list?.length || 0} agents`)
 }
 
 /**
@@ -273,12 +273,12 @@ async function forceLoadAgents() {
  * @return {Promise<void>}
  */
 async function loadSources() {
-	if (!sourceStore.sourceList || sourceStore.sourceList.length === 0) {
+	if (!sourceStore.list || sourceStore.list.length === 0) {
 		console.info('[AppInit] Loading sources...')
-		await sourceStore.refreshSourceList()
-		console.info(`[AppInit] ✓ Loaded ${sourceStore.sourceList?.length || 0} sources`)
+		await sourceStore.refreshList()
+		console.info(`[AppInit] ✓ Loaded ${sourceStore.list?.length || 0} sources`)
 	} else {
-		console.info(`[AppInit] ↷ Sources already loaded (${sourceStore.sourceList.length})`)
+		console.info(`[AppInit] ↷ Sources already loaded (${sourceStore.list.length})`)
 	}
 }
 
@@ -289,8 +289,8 @@ async function loadSources() {
  */
 async function forceLoadSources() {
 	console.info('[AppInit] Reloading sources...')
-	await sourceStore.refreshSourceList()
-	console.info(`[AppInit] ✓ Reloaded ${sourceStore.sourceList?.length || 0} sources`)
+	await sourceStore.refreshList()
+	console.info(`[AppInit] ✓ Reloaded ${sourceStore.list?.length || 0} sources`)
 }
 
 /**
@@ -299,12 +299,12 @@ async function forceLoadSources() {
  * @return {Promise<void>}
  */
 async function loadConversations() {
-	if (!conversationStore.conversationList || conversationStore.conversationList.length === 0) {
+	if (!conversationStore.list || conversationStore.list.length === 0) {
 		console.info('[AppInit] Loading conversations...')
-		await conversationStore.refreshConversationList()
-		console.info(`[AppInit] ✓ Loaded ${conversationStore.conversationList?.length || 0} conversations`)
+		await conversationStore.refreshList()
+		console.info(`[AppInit] ✓ Loaded ${conversationStore.list?.length || 0} conversations`)
 	} else {
-		console.info(`[AppInit] ↷ Conversations already loaded (${conversationStore.conversationList.length})`)
+		console.info(`[AppInit] ↷ Conversations already loaded (${conversationStore.list.length})`)
 	}
 }
 
@@ -315,8 +315,8 @@ async function loadConversations() {
  */
 async function forceLoadConversations() {
 	console.info('[AppInit] Reloading conversations...')
-	await conversationStore.refreshConversationList()
-	console.info(`[AppInit] ✓ Reloaded ${conversationStore.conversationList?.length || 0} conversations`)
+	await conversationStore.refreshList()
+	console.info(`[AppInit] ✓ Reloaded ${conversationStore.list?.length || 0} conversations`)
 }
 
 /**
@@ -326,10 +326,10 @@ async function forceLoadConversations() {
  */
 export function isAppDataLoaded() {
 	return Boolean(
-		registerStore.registerList.length > 0
-		&& schemaStore.schemaList.length > 0
-		&& organisationStore.organisationList?.length >= 0 // Allow 0 organisations
-		&& applicationStore.applicationList?.length >= 0 // Allow 0 applications
+		registerStore.list.length > 0
+		&& schemaStore.list.length > 0
+		&& organisationStore.list?.length >= 0 // Allow 0 organisations
+		&& applicationStore.list?.length >= 0 // Allow 0 applications
 	)
 }
 

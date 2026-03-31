@@ -814,10 +814,10 @@ export default {
 			return JSON.stringify(objectStore.objectItem, null, 2)
 		},
 		currentRegister() {
-			return registerStore.registerItem
+			return registerStore.item
 		},
 		currentSchema() {
-			return schemaStore.schemaItem
+			return schemaStore.item
 		},
 		selectedPublishedCount() {
 			return this.selectedAttachments.filter((a) => {
@@ -1068,8 +1068,8 @@ export default {
 		// Debug: Log current state when modal opens
 		console.info('ViewObject mounted:', {
 			objectItem: objectStore.objectItem,
-			schemaItem: schemaStore.schemaItem,
-			registerItem: registerStore.registerItem,
+			schemaItem: schemaStore.item,
+			registerItem: registerStore.item,
 			isNewObject: this.isNewObject,
 		})
 
@@ -1106,8 +1106,8 @@ export default {
 			const selectedRegister = this.selectedRegisterForNewObject || this.availableRegisters[0]
 			const selectedSchema = this.selectedSchemaForNewObject || this.availableSchemas[0]
 
-			registerStore.setRegisterItem(selectedRegister)
-			schemaStore.setSchemaItem(selectedSchema)
+			registerStore.setItem(selectedRegister)
+			schemaStore.setItem(selectedSchema)
 
 			console.info('Register and schema selected:', {
 				register: selectedRegister?.title,
@@ -1144,8 +1144,8 @@ export default {
 				return
 			}
 
-			const register = await registerStore.getRegister(objectStore.objectItem['@self'].register)
-			const schema = await schemaStore.getSchema(objectStore.objectItem['@self'].schema)
+			const register = await registerStore.getOne(objectStore.objectItem['@self'].register)
+			const schema = await schemaStore.getOne(objectStore.objectItem['@self'].schema)
 
 			this.registerTitle = register?.title || 'Not set'
 			this.schemaTitle = schema?.title || 'Not set'

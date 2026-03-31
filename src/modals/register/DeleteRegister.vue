@@ -8,12 +8,12 @@ import { registerStore, navigationStore } from '../../store/store.js'
 		name="Register verwijderen"
 		size="normal"
 		:can-close="false">
-		<p v-if="!success && registerStore.registerItem?.schemas.length === 0">
-			Wil je <b>{{ registerStore.registerItem?.title }}</b> definitief verwijderen? Deze actie kan niet ongedaan worden gemaakt.
+		<p v-if="!success && registerStore.item?.schemas.length === 0">
+			Wil je <b>{{ registerStore.item?.title }}</b> definitief verwijderen? Deze actie kan niet ongedaan worden gemaakt.
 		</p>
-		<p v-if="!success && registerStore.registerItem?.schemas.length > 0">
+		<p v-if="!success && registerStore.item?.schemas.length > 0">
 			Het register kan niet worden verwijderd omdat het nog schema's bevat. Verwijder eerst alle schema's voordat u het register verwijdert.
-			Er {{ registerStore.registerItem?.schemas.length > 1 ? 'zijn' : 'is' }} nog <b>{{ registerStore.registerItem?.schemas.length }}</b> schema{{ registerStore.registerItem?.schemas.length > 1 ? "'s" : '' }} in het register.
+			Er {{ registerStore.item?.schemas.length > 1 ? 'zijn' : 'is' }} nog <b>{{ registerStore.item?.schemas.length }}</b> schema{{ registerStore.item?.schemas.length > 1 ? "'s" : '' }} in het register.
 		</p>
 		<NcNoteCard v-if="success" type="success">
 			<p>Register succesvol verwijderd</p>
@@ -21,7 +21,7 @@ import { registerStore, navigationStore } from '../../store/store.js'
 		<NcNoteCard v-if="error" type="error">
 			<p>{{ error }}</p>
 		</NcNoteCard>
-		<template v-if="registerStore.registerItem?.schemas.length === 0" #actions>
+		<template v-if="registerStore.item?.schemas.length === 0" #actions>
 			<NcButton @click="closeDialog">
 				<template #icon>
 					<Cancel :size="20" />
@@ -90,12 +90,12 @@ export default {
 			this.error = false
 		},
 		async deleteRegister() {
-			if (registerStore.registerItem?.schemas.length > 0) {
+			if (registerStore.item?.schemas.length > 0) {
 				return
 			}
 			this.loading = true
-			registerStore.deleteRegister({
-				...registerStore.registerItem,
+			registerStore.deleteOne({
+				...registerStore.item,
 			}).then(({ response }) => {
 				this.success = response.ok
 				this.error = false

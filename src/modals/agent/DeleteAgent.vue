@@ -9,7 +9,7 @@ import { agentStore, navigationStore } from '../../store/store.js'
 		:can-close="true"
 		@update:open="closeDialog">
 		<div class="dialog-content">
-			<p>Are you sure you want to delete the agent <strong>{{ agentStore.agentItem?.name }}</strong>?</p>
+			<p>Are you sure you want to delete the agent <strong>{{ agentStore.item?.name }}</strong>?</p>
 			<p class="warning-text">
 				This action cannot be undone.
 			</p>
@@ -60,7 +60,7 @@ export default {
 			this.loading = true
 
 			try {
-				await agentStore.deleteAgent(agentStore.agentItem)
+				await agentStore.deleteOne(agentStore.item)
 				this.closeDialog()
 			} catch (error) {
 				console.error('Error deleting agent:', error)
