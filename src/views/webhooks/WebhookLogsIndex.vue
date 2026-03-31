@@ -42,16 +42,14 @@
 					:clearable="true"
 					:label-outside="true"
 					:input-label="t('openregister', 'Filter by webhook')"
-					@update:value="handleWebhookFilterChange">
-					<template #option="{ option }">
-						{{ option.label }}
-					</template>
-				</NcSelect>
+					label="label"
+					:reduce="option => option.value"
+					@input="handleWebhookFilterChange" />
 			</template>
 
 			<!-- Custom column: webhook name lookup -->
 			<template #column-webhook="{ row }">
-				{{ getWebhookName(row.webhookId) }}
+				{{ getWebhookName(row.webhook) }}
 			</template>
 
 			<!-- Custom column: truncated event class -->
@@ -191,10 +189,9 @@ export default {
 		},
 	},
 	mounted() {
-		// Get webhook ID from transfer data if available.
-		const transferData = navigationStore.getTransferData()
-		if (transferData && transferData.webhookId) {
-			this.selectedWebhookId = transferData.webhookId
+		// Get webhook ID from route params if available.
+		if (this.$route.params.id) {
+			this.selectedWebhookId = Number(this.$route.params.id)
 		}
 		this.loadWebhooks()
 		this.loadLogs()
@@ -238,7 +235,7 @@ export default {
 					offset: (this.pagination.page - 1) * this.pagination.limit,
 				}
 				if (this.selectedWebhookId) {
-					params.webhook_id = this.selectedWebhookId
+					params.webhook = this.selectedWebhookId
 				}
 
 				const response = await axios.get(
@@ -277,6 +274,13 @@ export default {
 		handleWebhookFilterChange(webhookId) {
 			this.selectedWebhookId = webhookId
 			this.pagination.page = 1
+
+			// Update URL to reflect the filter
+			const path = webhookId ? `/webhooks/logs/${webhookId}` : '/webhooks/logs'
+			if (this.$route.path !== path) {
+				this.$router.replace(path)
+			}
+
 			this.loadLogs()
 		},
 

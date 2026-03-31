@@ -397,8 +397,7 @@ export default {
 		 * @return {void}
 		 */
 		viewLogs(webhookId) {
-			navigationStore.setTransferData({ webhookId })
-			this.$router.push('/webhooks/logs')
+			this.$router.push(`/webhooks/logs/${webhookId}`)
 		},
 
 		/**
