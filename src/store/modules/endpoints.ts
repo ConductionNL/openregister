@@ -1,5 +1,5 @@
 /* eslint-disable no-console */
-// @ts-nocheck — createCrudStore is JS-only; types will follow later
+// @ts-expect-error — createCrudStore is JS-only; types will follow later
 import { createCrudStore } from '@conduction/nextcloud-vue'
 
 export const useEndpointStore = createCrudStore('endpoint', {
