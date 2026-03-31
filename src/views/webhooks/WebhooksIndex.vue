@@ -244,6 +244,10 @@ export default {
 	},
 	mounted() {
 		this.loadWebhooks()
+		this.$root.$on('webhooks-updated', this.loadWebhooks)
+	},
+	beforeDestroy() {
+		this.$root.$off('webhooks-updated', this.loadWebhooks)
 	},
 	methods: {
 		t,

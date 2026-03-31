@@ -555,9 +555,46 @@ export default {
 }
 
 .field-hint {
-	font-size: 12px;
-	color: var(--color-text-lighter);
+	font-size: 0.875rem;
+	color: var(--color-text-maxcontrast);
 	margin: 0;
+}
+
+.selectField,
+.checkboxField {
+	display: flex;
+	flex-direction: column;
+	gap: 0.5rem;
+}
+
+.selectField label {
+	font-weight: 500;
+	color: var(--color-text-maxcontrast);
+}
+
+/* Dropdown option styles */
+.option-content {
+	display: flex;
+	flex-direction: column;
+	gap: 0.25rem;
+}
+
+.option-title {
+	font-weight: 500;
+}
+
+.option-description {
+	font-size: 0.875rem;
+	color: var(--color-text-maxcontrast);
+	max-width: 100%;
+	white-space: normal;
+	word-break: break-word;
+}
+
+.option-meta {
+	font-size: 0.75rem;
+	color: var(--color-text-maxcontrast);
+	font-style: italic;
 }
 
 .group-option {
