@@ -60,7 +60,7 @@ import { registerStore, dashboardStore, navigationStore, schemaStore } from '../
 					<div class="sectionTitle">
 						{{ t('openregister', 'Schemas') }}
 					</div>
-					<div v-if="!register.schemas?.length" class="emptyContainer">
+					<div v-if="!registerSchemas.length" class="emptyContainer">
 						<NcEmptyContent
 							:title="t('openregister', 'No schemas found')"
 							icon="icon-folder">
@@ -73,7 +73,7 @@ import { registerStore, dashboardStore, navigationStore, schemaStore } from '../
 					</div>
 					<div v-else class="schemaList">
 						<CnItemCard
-							v-for="schema in register.schemas"
+							v-for="schema in registerSchemas"
 							:key="schema.id"
 							:title="schema.title"
 							:icon="FileCodeOutline">
@@ -205,6 +205,13 @@ export default {
 			// Find the register in the dashboard store using the ID from register store
 			const registerId = registerStore.item?.id
 			return dashboardStore.registers.find(r => r.id === registerId)
+		},
+		registerSchemas() {
+			// Use registerStore instead of dashboardStore for schemas to avoid
+			// the dashboard watcher filtering schemas when schemaStore.item changes
+			const registerId = registerStore.item?.id
+			const register = registerStore.list.find(r => r.id === registerId)
+			return register?.schemas || []
 		},
 		activeTab: {
 			get() {

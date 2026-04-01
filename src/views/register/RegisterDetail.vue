@@ -491,7 +491,8 @@ export default {
 			this.loadingSchemas = true
 			try {
 				// Fetch all schemas in parallel
-				const promises = this.register.schemas.map(async schemaId => {
+				const promises = this.register.schemas.map(async (schema) => {
+					const schemaId = typeof schema === 'object' ? schema.id : schema
 					try {
 						const response = await fetch(`/index.php/apps/openregister/api/schemas/${schemaId}`)
 						if (response.ok) {
