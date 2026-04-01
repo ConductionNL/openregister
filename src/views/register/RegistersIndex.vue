@@ -445,14 +445,14 @@ export default {
 </script>
 
 <style lang="scss" scoped>
-/* Table row borders for managed registers (external - green) */
-:deep(.viewTableRow--managed) {
-	border-left: 4px solid var(--color-success);
+/* Row side color for managed registers (external - green) — selected state takes priority */
+:deep(.viewTableRow--managed:not(.cn-table-row--selected)) {
+	box-shadow: inset 3px 0 0 0 var(--color-success);
 }
 
-/* Table row borders for local configurations (orange) */
-:deep(.viewTableRow--local) {
-	border-left: 4px solid var(--color-warning);
+/* Row side color for local configurations (orange) — selected state takes priority */
+:deep(.viewTableRow--local:not(.cn-table-row--selected)) {
+	box-shadow: inset 3px 0 0 0 var(--color-warning);
 }
 
 /* Managed by Configuration badge */
