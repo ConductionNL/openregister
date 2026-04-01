@@ -81,16 +81,16 @@ export default {
 	},
 	computed: {
 		configTitle() {
-			const item = configurationStore.configurationItem
+			const item = configurationStore.item
 			return item?.title || ''
 		},
 		isValid() {
-			const item = configurationStore.configurationItem
+			const item = configurationStore.item
 			return Boolean(item?.id)
 		},
 		errorMessage() {
 			// Computed error message that updates reactively
-			if (!configurationStore.configurationItem?.id) {
+			if (!configurationStore.item?.id) {
 				return 'No configuration selected for export'
 			}
 			return this.error
@@ -104,7 +104,7 @@ export default {
 			this.includeObjects = false
 		},
 		async exportConfiguration() {
-			const item = configurationStore.configurationItem
+			const item = configurationStore.item
 			if (!item?.id) {
 				this.error = 'Invalid configuration selected'
 				return

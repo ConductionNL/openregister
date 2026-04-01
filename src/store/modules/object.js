@@ -27,8 +27,8 @@ function getCurrentType(pinia) {
 	if (!pinia) return ''
 	const registerStore = useRegisterStore(pinia)
 	const schemaStore = useSchemaStore(pinia)
-	const registerId = registerStore.registerItem?.id ?? ''
-	const schemaId = schemaStore.schemaItem?.id ?? ''
+	const registerId = registerStore.item?.id ?? ''
+	const schemaId = schemaStore.item?.id ?? ''
 	return `${registerId}-${schemaId}`.replace(/^-|-$/g, '') || ''
 }
 
@@ -64,8 +64,8 @@ function openregisterObjectPlugin() {
 				if (!pinia) return { response: null, data: {} }
 				const registerStore = useRegisterStore(pinia)
 				const schemaStore = useSchemaStore(pinia)
-				const registerId = options.register ?? registerStore.registerItem?.id
-				const schemaId = options.schema ?? schemaStore.schemaItem?.id
+				const registerId = options.register ?? registerStore.item?.id
+				const schemaId = options.schema ?? schemaStore.item?.id
 				if (!registerId || !schemaId) {
 					throw new Error('Register and schema are required.')
 				}

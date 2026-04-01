@@ -39,7 +39,7 @@ import { searchTrailStore, navigationStore, registerStore, schemaStore } from '.
 						:model-value="selectedSchemaValue"
 						:placeholder="t('openregister', 'All schemas')"
 						:input-label="t('openregister', 'Schema')"
-						:disabled="!registerStore.registerItem"
+						:disabled="!registerStore.item"
 						:clearable="true"
 						@update:model-value="handleSchemaChange" />
 				</div>
@@ -310,7 +310,7 @@ export default {
 	computed: {
 		registerOptions() {
 			return {
-				options: registerStore.registerList.map(register => ({
+				options: registerStore.list.map(register => ({
 					value: register.id,
 					label: register.title,
 					title: register.title,
@@ -324,11 +324,11 @@ export default {
 			}
 		},
 		schemaOptions() {
-			if (!registerStore.registerItem) return { options: [] }
+			if (!registerStore.item) return { options: [] }
 
 			return {
-				options: schemaStore.schemaList
-					.filter(schema => registerStore.registerItem.schemas.some(registerSchema => registerSchema.id === schema.id))
+				options: schemaStore.list
+					.filter(schema => registerStore.item.schemas.some(registerSchema => registerSchema.id === schema.id))
 					.map(schema => ({
 						value: schema.id,
 						label: schema.title,
@@ -343,8 +343,8 @@ export default {
 			}
 		},
 		selectedRegisterValue() {
-			if (!registerStore.registerItem) return null
-			const register = registerStore.registerItem
+			if (!registerStore.item) return null
+			const register = registerStore.item
 			return {
 				value: register.id,
 				label: register.title,
@@ -353,8 +353,8 @@ export default {
 			}
 		},
 		selectedSchemaValue() {
-			if (!schemaStore.schemaItem) return null
-			const schema = schemaStore.schemaItem
+			if (!schemaStore.item) return null
+			const schema = schemaStore.item
 			return {
 				value: schema.id,
 				label: schema.title,
@@ -527,20 +527,20 @@ export default {
 		'searchTrailStore.searchTrailList'() {
 			this.updateFilteredCount()
 		},
-		'registerStore.registerItem'() {
+		'registerStore.item'() {
 			this.applyFilters()
 		},
-		'schemaStore.schemaItem'() {
+		'schemaStore.item'() {
 			this.applyFilters()
 		},
 	},
 	mounted() {
-		if (!registerStore.registerList.length) {
-			registerStore.refreshRegisterList()
+		if (!registerStore.list.length) {
+			registerStore.refreshList()
 		}
 
-		if (!schemaStore.schemaList.length) {
-			schemaStore.refreshSchemaList()
+		if (!schemaStore.list.length) {
+			schemaStore.refreshList()
 		}
 
 		this.loadSearchTrailData()
@@ -588,8 +588,8 @@ export default {
 			this.resultCountFrom = ''
 			this.resultCountTo = ''
 
-			registerStore.setRegisterItem(null)
-			schemaStore.setSchemaItem(null)
+			registerStore.setItem(null)
+			schemaStore.setItem(null)
 
 			searchTrailStore.setSearchTrailFilters({})
 			searchTrailStore.refreshSearchTrailList()
@@ -637,12 +637,12 @@ export default {
 				filters.success = this.selectedSuccessStatus.value
 			}
 
-			if (registerStore.registerItem) {
-				filters.register = registerStore.registerItem.id.toString()
+			if (registerStore.item) {
+				filters.register = registerStore.item.id.toString()
 			}
 
-			if (schemaStore.schemaItem) {
-				filters.schema = schemaStore.schemaItem.id.toString()
+			if (schemaStore.item) {
+				filters.schema = schemaStore.item.id.toString()
 			}
 
 			if (Array.isArray(this.selectedUsers) && this.selectedUsers.length > 0) {
@@ -815,8 +815,8 @@ export default {
 		 * @return {void}
 		 */
 		handleRegisterChange(register) {
-			registerStore.setRegisterItem(register)
-			schemaStore.setSchemaItem(null)
+			registerStore.setItem(register)
+			schemaStore.setItem(null)
 			this.applyFilters()
 		},
 		/**
@@ -825,7 +825,7 @@ export default {
 		 * @return {void}
 		 */
 		handleSchemaChange(schema) {
-			schemaStore.setSchemaItem(schema)
+			schemaStore.setItem(schema)
 			this.applyFilters()
 		},
 		/**
@@ -834,8 +834,8 @@ export default {
 		 * @return {string} The display name
 		 */
 		getRegisterSchemaName(stat) {
-			const register = registerStore.registerList.find(r => r.id === stat.register)
-			const schema = schemaStore.schemaList.find(s => s.id === stat.schema)
+			const register = registerStore.list.find(r => r.id === stat.register)
+			const schema = schemaStore.list.find(s => s.id === stat.schema)
 
 			const registerName = register?.title || `Register ${stat.register}`
 			const schemaName = schema?.title || `Schema ${stat.schema}`
@@ -857,8 +857,8 @@ export default {
 		},
 		buildQueryFromState() {
 			const query = {}
-			if (registerStore.registerItem) query.register = String(registerStore.registerItem.id)
-			if (schemaStore.schemaItem) query.schema = String(schemaStore.schemaItem.id)
+			if (registerStore.item) query.register = String(registerStore.item.id)
+			if (schemaStore.item) query.schema = String(schemaStore.item.id)
 			if (this.selectedSuccessStatus && this.selectedSuccessStatus.value) query.success = String(this.selectedSuccessStatus.value)
 			if (Array.isArray(this.selectedUsers) && this.selectedUsers.length > 0) query.user = this.selectedUsers.map(u => u.value || u).join(',')
 			// JS dates are awful, so we first check if its a valid date and then get the ISO string.
@@ -910,16 +910,16 @@ export default {
 			this.resultCountTo = q.resultCountTo || ''
 			const applyRegister = () => {
 				if (!q.register) return true
-				if (!registerStore.registerList.length) return false
-				const reg = registerStore.registerList.find(r => String(r.id) === String(q.register))
-				if (reg) registerStore.setRegisterItem(reg)
+				if (!registerStore.list.length) return false
+				const reg = registerStore.list.find(r => String(r.id) === String(q.register))
+				if (reg) registerStore.setItem(reg)
 				return true
 			}
 			const applySchema = () => {
 				if (!q.schema) return true
-				if (!schemaStore.schemaList.length) return false
-				const sch = schemaStore.schemaList.find(s => String(s.id) === String(q.schema))
-				if (sch) schemaStore.setSchemaItem(sch)
+				if (!schemaStore.list.length) return false
+				const sch = schemaStore.list.find(s => String(s.id) === String(q.schema))
+				if (sch) schemaStore.setItem(sch)
 				return true
 			}
 			const tryApply = (attempt = 0) => {

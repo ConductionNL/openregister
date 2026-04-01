@@ -24,7 +24,7 @@ import formatBytes from '../../services/formatBytes.js'
 		<div v-else>
 			<span class="pageHeaderContainer">
 				<h2 class="pageHeader">
-					{{ schemaStore.schemaItem.title }}
+					{{ schemaStore.item.title }}
 				</h2>
 				<div class="headerActionsContainer">
 					<NcActions :primary="true" menu-name="Actions">
@@ -49,7 +49,7 @@ import formatBytes from '../../services/formatBytes.js'
 							</template>
 							Upload
 						</NcActionButton>
-						<NcActionButton close-after-click @click="schemaStore.downloadSchema(schemaStore.schemaItem)">
+						<NcActionButton close-after-click @click="schemaStore.downloadSchema(schemaStore.item)">
 							<template #icon>
 								<Download :size="20" />
 							</template>
@@ -65,7 +65,7 @@ import formatBytes from '../../services/formatBytes.js'
 				</div>
 			</span>
 			<div class="dashboardContent">
-				<span>{{ schemaStore.schemaItem.description }}</span>
+				<span>{{ schemaStore.item.description }}</span>
 
 				<!-- Schema Statistics -->
 				<div v-if="schemaStats" class="statsContainer">
@@ -267,7 +267,7 @@ export default {
 		}
 
 		// Fetch schema stats if schema is available
-		if (schemaStore.schemaItem?.id) {
+		if (schemaStore.item?.id) {
 			await this.loadSchemaStats()
 		}
 	},
@@ -277,7 +277,7 @@ export default {
 		 * @return {Promise<void>}
 		 */
 		async loadSchemaStats() {
-			if (!schemaStore.schemaItem?.id) {
+			if (!schemaStore.item?.id) {
 				return
 			}
 
@@ -285,7 +285,7 @@ export default {
 			this.statsError = null
 
 			try {
-				this.schemaStats = await schemaStore.getSchemaStats(schemaStore.schemaItem.id)
+				this.schemaStats = await schemaStore.getSchemaStats(schemaStore.item.id)
 			} catch (error) {
 				console.error('Error loading schema stats:', error)
 				this.statsError = error.message

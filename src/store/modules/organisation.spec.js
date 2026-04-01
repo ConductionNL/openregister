@@ -9,15 +9,15 @@ describe('Organisation Store', () => {
 		setActivePinia(createPinia())
 	})
 
-	it('sets organisation item correctly', () => {
+	it('sets item correctly', () => {
 		const store = useOrganisationStore()
+		const mockData = mockOrganisation()
 
-		store.setOrganisationItem(mockOrganisation()[0])
+		store.setItem(mockData[0])
 
-		expect(store.organisationItem).toBeInstanceOf(Organisation)
-		expect(store.organisationItem).toEqual(mockOrganisation()[0])
-
-		expect(store.organisationItem.validate().success).toBe(true)
+		expect(store.item).toBeInstanceOf(Organisation)
+		expect(store.item).toEqual(mockData[0])
+		expect(store.item.validate().success).toBe(true)
 	})
 
 	it('sets active organisation correctly', () => {
@@ -31,15 +31,15 @@ describe('Organisation Store', () => {
 		expect(store.activeOrganisation.uuid).toBe(testOrg.uuid)
 	})
 
-	it('sets organisation list correctly', () => {
+	it('sets list correctly', () => {
 		const store = useOrganisationStore()
 		const mockData = mockOrganisation()
 
-		store.setOrganisationList(mockData)
+		store.setList(mockData)
 
-		expect(store.organisationList).toHaveLength(mockData.length)
+		expect(store.list).toHaveLength(mockData.length)
 
-		store.organisationList.forEach((item, index) => {
+		store.list.forEach((item, index) => {
 			expect(item).toBeInstanceOf(Organisation)
 			expect(item).toEqual(mockData[index])
 			expect(item.validate().success).toBe(true)
@@ -48,18 +48,19 @@ describe('Organisation Store', () => {
 
 	it('sets user stats correctly', () => {
 		const store = useOrganisationStore()
+		const mockData = mockOrganisation()
 		const mockStats = {
 			total: 3,
-			active: mockOrganisation()[0],
-			list: mockOrganisation(),
+			active: mockData[0],
+			results: mockData,
 		}
 
 		store.setUserStats(mockStats)
 
 		expect(store.userStats.total).toBe(3)
 		expect(store.userStats.active).toBeInstanceOf(Organisation)
-		expect(store.userStats.active.name).toBe(mockStats.active.name)
-		expect(store.userStats.list).toHaveLength(3)
+		expect(store.userStats.active.name).toBe(mockData[0].name)
+		expect(store.userStats.list).toHaveLength(mockData.length)
 
 		store.userStats.list.forEach((item) => {
 			expect(item).toBeInstanceOf(Organisation)
@@ -67,7 +68,7 @@ describe('Organisation Store', () => {
 		})
 	})
 
-	it('cleans organisation data for save correctly', () => {
+	it('cleanForSave strips configured fields', () => {
 		const store = useOrganisationStore()
 		const testOrg = {
 			id: 1,
@@ -80,7 +81,7 @@ describe('Organisation Store', () => {
 			updated: '2023-01-02',
 		}
 
-		const cleaned = store.cleanOrganisationForSave(testOrg)
+		const cleaned = store.cleanForSave(testOrg)
 
 		expect(cleaned.name).toBe('Test Org')
 		expect(cleaned.description).toBe('Test Description')
@@ -94,5 +95,40 @@ describe('Organisation Store', () => {
 		expect(cleaned.updated).toBeUndefined()
 	})
 
-	// ... other tests ...
+	it('cleanForSave handles boolean coercion for active field', () => {
+		const store = useOrganisationStore()
+		const testOrg = { name: 'Test', active: '' }
+
+		const cleaned = store.cleanForSave(testOrg)
+
+		expect(cleaned.active).toBe(true)
+	})
+
+	it('cleanForSave removes empty slug', () => {
+		const store = useOrganisationStore()
+		const testOrg = { name: 'Test', slug: '' }
+
+		const cleaned = store.cleanForSave(testOrg)
+
+		expect(cleaned.slug).toBeUndefined()
+	})
+
+	it('has correct initial state', () => {
+		const store = useOrganisationStore()
+
+		expect(store.item).toBeNull()
+		expect(store.list).toEqual([])
+		expect(store.activeOrganisation).toBeNull()
+		expect(store.userStats).toEqual({ total: 0, active: null, list: [] })
+	})
+
+	it('has viewMode feature', () => {
+		const store = useOrganisationStore()
+
+		expect(store.viewMode).toBe('cards')
+		expect(store.getViewMode).toBe('cards')
+
+		store.setViewMode('table')
+		expect(store.viewMode).toBe('table')
+	})
 })

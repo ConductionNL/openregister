@@ -13,7 +13,7 @@ import SchemaStatsBlock from '../../components/SchemaStatsBlock.vue'
 		<div v-if="!success && !loading">
 			<p>
 				Are you sure you want to delete <strong>all objects</strong> in the schema
-				<strong>{{ schemaStore.schemaItem?.title }}</strong>?
+				<strong>{{ schemaStore.item?.title }}</strong>?
 			</p>
 
 			<!-- Dynamic Warning/Danger Messages -->
@@ -74,7 +74,7 @@ import SchemaStatsBlock from '../../components/SchemaStatsBlock.vue'
 		<!-- Loading State -->
 		<div v-if="loading" class="loading-container">
 			<NcLoadingIcon :size="40" />
-			<p>Deleting objects from schema '{{ schemaStore.schemaItem?.title }}'...</p>
+			<p>Deleting objects from schema '{{ schemaStore.item?.title }}'...</p>
 			<p class="loading-subtitle">
 				This may take a moment for large datasets.
 			</p>
@@ -85,7 +85,7 @@ import SchemaStatsBlock from '../../components/SchemaStatsBlock.vue'
 			<NcNoteCard type="success">
 				<h3>Deletion Completed Successfully</h3>
 				<p><strong>Objects deleted:</strong> {{ deletionResult?.deleted_count || 0 }}</p>
-				<p><strong>Schema:</strong> {{ schemaStore.schemaItem?.title }}</p>
+				<p><strong>Schema:</strong> {{ schemaStore.item?.title }}</p>
 			</NcNoteCard>
 		</div>
 
@@ -155,7 +155,7 @@ export default {
 	},
 	watch: {
 		// Watch for changes in schemaItem and reload count if needed
-		'schemaStore.schemaItem': {
+		'schemaStore.item': {
 			handler(newSchemaItem) {
 				console.info('Schema item changed in DeleteSchemaObjects:', newSchemaItem)
 				if (newSchemaItem?.id && this.objectCount === 0) {
@@ -168,7 +168,7 @@ export default {
 		'navigationStore.dialog': {
 			handler(newDialog) {
 				console.info('Dialog changed to:', newDialog)
-				if (newDialog === 'deleteSchemaObjects' && schemaStore.schemaItem?.id) {
+				if (newDialog === 'deleteSchemaObjects' && schemaStore.item?.id) {
 					console.info('DeleteSchemaObjects dialog opened, loading object count')
 					this.loadObjectCount()
 				}
@@ -177,17 +177,17 @@ export default {
 		},
 	},
 	async mounted() {
-		console.info('DeleteSchemaObjects dialog mounted, schemaItem:', schemaStore.schemaItem)
+		console.info('DeleteSchemaObjects dialog mounted, schemaItem:', schemaStore.item)
 		await this.loadObjectCount()
 	},
 	methods: {
 		async loadObjectCount() {
-			console.info('DeleteSchemaObjects loadObjectCount called, schemaItem:', schemaStore.schemaItem)
+			console.info('DeleteSchemaObjects loadObjectCount called, schemaItem:', schemaStore.item)
 			try {
-				if (schemaStore.schemaItem?.id) {
-					console.info('Calling getSchemaStats for schema ID:', schemaStore.schemaItem.id)
+				if (schemaStore.item?.id) {
+					console.info('Calling getSchemaStats for schema ID:', schemaStore.item.id)
 					// Use the upgraded stats endpoint to get detailed object counts
-					const stats = await schemaStore.getSchemaStats(schemaStore.schemaItem.id)
+					const stats = await schemaStore.getSchemaStats(schemaStore.item.id)
 					console.info('DeleteSchemaObjects received stats:', stats)
 					this.objectStats = stats.objects
 					this.objectCount = stats.objects?.total || 0
@@ -209,9 +209,9 @@ export default {
 
 			try {
 				// Find the register that contains this schema
-				await registerStore.refreshRegisterList()
-				const register = registerStore.registerList.find(reg =>
-					reg.schemas.some(regSchema => regSchema.id === schemaStore.schemaItem.id),
+				await registerStore.refreshList()
+				const register = registerStore.list.find(reg =>
+					reg.schemas.some(regSchema => regSchema.id === schemaStore.item.id),
 				)
 
 				if (!register) {
@@ -220,7 +220,7 @@ export default {
 
 				// Call the deletion API
 				const response = await fetch(
-					`/index.php/apps/openregister/api/bulk/${register.id}/${schemaStore.schemaItem.id}/delete-schema`,
+					`/index.php/apps/openregister/api/bulk/${register.id}/${schemaStore.item.id}/delete-schema`,
 					{
 						method: 'POST',
 						headers: {
@@ -246,7 +246,7 @@ export default {
 				this.success = true
 
 				// Refresh schema stats after successful deletion
-				await schemaStore.getSchemaStats(schemaStore.schemaItem.id)
+				await schemaStore.getSchemaStats(schemaStore.item.id)
 
 			} catch (err) {
 				this.error = err.message || 'An error occurred during deletion'

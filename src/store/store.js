@@ -2,7 +2,7 @@
 // The store script handles app wide variables (or state), for the use of these variables and there governing concepts read the design.md
 import pinia from '../pinia.js'
 import { useNavigationStore } from './modules/navigation.js'
-import { useSearchStore } from './modules/search.ts'
+import { useSearchStore } from './modules/search.js'
 import { useRegisterStore } from './modules/register.js'
 import { useSourceStore } from './modules/source.js'
 import { useSchemaStore } from './modules/schema.js'
@@ -15,8 +15,8 @@ import { useOrganisationStore } from './modules/organisation.js'
 import { useApplicationStore } from './modules/application.js'
 import { useViewsStore } from './modules/views.js'
 import { useAgentStore } from './modules/agent.js'
-import { useConversationStore } from './modules/conversation.ts'
-import { useEndpointStore } from './modules/endpoints.ts'
+import { useConversationStore } from './modules/conversation.js'
+import { useEndpointStore } from './modules/endpoints.js'
 
 const navigationStore = useNavigationStore(pinia)
 const searchStore = useSearchStore(pinia)

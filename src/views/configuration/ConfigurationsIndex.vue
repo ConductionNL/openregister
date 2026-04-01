@@ -11,7 +11,7 @@ import { configurationStore, navigationStore } from '../../store/store.js'
 			description="Manage your system configurations and settings"
 			:show-title="true"
 			:schema="configurationSchema"
-			:objects="configurationStore.configurationList"
+			:objects="configurationStore.list"
 			:columns="tableColumns"
 			:pagination="paginationData"
 			:view-mode="viewMode"
@@ -30,7 +30,7 @@ import { configurationStore, navigationStore } from '../../store/store.js'
 			empty-text="No configurations found"
 			:loading="configurationStore.loading"
 			:refreshing="isRefreshing"
-			@add="configurationStore.setConfigurationItem(null); navigationStore.setModal('editConfiguration')"
+			@add="configurationStore.setItem(null); navigationStore.setModal('editConfiguration')"
 			@refresh="handleRefresh"
 			@page-changed="onPageChanged"
 			@page-size-changed="onPageSizeChanged"
@@ -278,14 +278,14 @@ export default {
 		paginationData() {
 			const page = this.pagination.page
 			const limit = this.pagination.limit
-			const total = configurationStore.configurationList.length
+			const total = configurationStore.list.length
 			const pages = Math.ceil(total / limit)
 			return { page, pages, total, limit }
 		},
 	},
 	mounted() {
 		// Use soft reload (no loading spinner) since data is hot-loaded at app startup
-		configurationStore.refreshConfigurationList(null, true)
+		configurationStore.refreshList(null, true)
 	},
 	methods: {
 		hasUpdateAvailable(configuration) {
@@ -348,29 +348,29 @@ export default {
 					showSuccess('Configuration is up to date')
 				}
 
-				await configurationStore.refreshConfigurationList()
+				await configurationStore.refreshList()
 			} catch (error) {
 				console.error('Failed to check version:', error)
 				showError('Failed to check version: ' + (error.response?.data?.error || error.message))
 			}
 		},
 		handleView(configuration) {
-			configurationStore.setConfigurationItem(configuration)
+			configurationStore.setItem(configuration)
 			navigationStore.setModal('viewConfiguration')
 		},
 		handleEdit(configuration) {
-			configurationStore.setConfigurationItem(configuration)
+			configurationStore.setItem(configuration)
 			navigationStore.setModal('editConfiguration')
 		},
 		handleExport(configuration) {
-			configurationStore.setConfigurationItem(configuration)
+			configurationStore.setItem(configuration)
 			navigationStore.setModal('exportConfiguration')
 		},
 		async onDeleteConfiguration(id) {
-			const configuration = configurationStore.configurationList.find(c => c.id === id)
+			const configuration = configurationStore.list.find(c => c.id === id)
 			if (!configuration) return
 			try {
-				await configurationStore.deleteConfiguration(configuration)
+				await configurationStore.deleteOne(configuration)
 				this.$refs.indexPage.setSingleDeleteResult({ success: true })
 			} catch (error) {
 				this.$refs.indexPage.setSingleDeleteResult({
@@ -379,13 +379,13 @@ export default {
 			}
 		},
 		previewUpdate(configuration) {
-			configurationStore.setConfigurationItem(configuration)
+			configurationStore.setItem(configuration)
 			navigationStore.setModal('previewConfiguration')
 		},
 		async handleRefresh() {
 			this.isRefreshing = true
 			try {
-				await configurationStore.refreshConfigurationList()
+				await configurationStore.refreshList()
 			} finally {
 				this.isRefreshing = false
 			}

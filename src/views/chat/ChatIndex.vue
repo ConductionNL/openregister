@@ -429,7 +429,7 @@ export default {
 
 	computed: {
 		conversationList() {
-			return conversationStore.conversationList || []
+			return conversationStore.list || []
 		},
 
 		archivedConversations() {
@@ -437,11 +437,11 @@ export default {
 		},
 
 		activeConversation() {
-			return conversationStore.activeConversation || null
+			return conversationStore.item || null
 		},
 
 		activeMessages() {
-			return conversationStore.activeConversationMessages || []
+			return conversationStore.itemMessages || []
 		},
 
 		conversationLoading() {
@@ -459,9 +459,9 @@ export default {
 		this.loadAgentsFromStore()
 
 		// Just ensure we have the latest conversation list (should already be loaded)
-		if (!conversationStore.conversationList || conversationStore.conversationList.length === 0) {
+		if (!conversationStore.list || conversationStore.list.length === 0) {
 			console.info('Conversations not preloaded, loading now...')
-			conversationStore.refreshConversationList()
+			conversationStore.refreshList()
 		}
 	},
 
@@ -485,9 +485,9 @@ export default {
 			// Just use them from the store
 			console.info('[ChatIndex] loadAgentsFromStore called')
 			console.info('[ChatIndex] agentStore:', agentStore)
-			console.info('[ChatIndex] agentStore.agentList:', agentStore.agentList)
+			console.info('[ChatIndex] agentStore.list:', agentStore.list)
 
-			this.availableAgents = agentStore.agentList || []
+			this.availableAgents = agentStore.list || []
 
 			console.info('[ChatIndex] availableAgents set to:', this.availableAgents)
 
@@ -495,9 +495,9 @@ export default {
 				console.warn('[ChatIndex] ⚠ No agents available in store')
 				console.warn('[ChatIndex] Trying to refresh agent list...')
 				// If no agents, try to refresh the list
-				agentStore.refreshAgentList().then(() => {
-					console.info('[ChatIndex] After refresh, agentList:', agentStore.agentList)
-					this.availableAgents = agentStore.agentList || []
+				agentStore.refreshList().then(() => {
+					console.info('[ChatIndex] After refresh, agentList:', agentStore.list)
+					this.availableAgents = agentStore.list || []
 					console.info('[ChatIndex] availableAgents now:', this.availableAgents)
 				}).catch(err => {
 					console.error('[ChatIndex] Failed to refresh agents:', err)
@@ -520,7 +520,7 @@ export default {
 			this.startingConversation = true
 
 			try {
-				const conversation = await conversationStore.createConversation(this.selectedAgent.uuid)
+				const conversation = await conversationStore.save(this.selectedAgent.uuid)
 				this.currentAgent = this.selectedAgent
 
 				// Load agent capabilities (views and tools) and select all by default
@@ -547,7 +547,7 @@ export default {
 
 		async selectConversation(conversation) {
 			try {
-				await conversationStore.loadConversation(conversation.uuid)
+				await conversationStore.getOne(conversation.uuid)
 
 				// Load agent details
 				if (conversation.agentId) {
@@ -577,7 +577,7 @@ export default {
 				if (this.showArchive) {
 					await conversationStore.deleteConversationPermanent(conversation.uuid)
 				} else {
-					await conversationStore.deleteConversation(conversation.uuid)
+					await conversationStore.deleteOne(conversation.uuid)
 				}
 				showSuccess(this.t('openregister', 'Conversation deleted'))
 			} catch (error) {

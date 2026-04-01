@@ -99,7 +99,7 @@ export default {
 			this.error = null
 
 			try {
-				await viewsStore.deleteView(this.view.id || this.view.uuid)
+				await viewsStore.deleteOne(this.view.id || this.view.uuid)
 				this.success = true
 
 				// Auto-close after 2 seconds

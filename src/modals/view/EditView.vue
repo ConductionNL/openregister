@@ -363,12 +363,12 @@ export default {
 					sharedUsers: this.selectedUsers.map(u => u.id),
 				}
 
-				await viewsStore.updateView(this.view.id || this.view.uuid, updateData)
+				await viewsStore.save({ id: this.view.id || this.view.uuid, ...updateData })
 
 				this.success = true
 
 				// Refresh views list
-				await viewsStore.fetchViews()
+				await viewsStore.refreshList()
 
 				// Close after a brief delay to show success message
 				setTimeout(() => {

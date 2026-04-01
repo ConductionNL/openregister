@@ -18,7 +18,7 @@ import { agentStore, navigationStore } from '../../store/store.js'
 			<div class="viewActionsBar">
 				<div class="viewInfo">
 					<span class="viewTotalCount">
-						{{ t('openregister', 'Showing {showing} of {total} agents', { showing: paginatedAgents.length, total: agentStore.agentList.length }) }}
+						{{ t('openregister', 'Showing {showing} of {total} agents', { showing: paginatedAgents.length, total: agentStore.list.length }) }}
 					</span>
 					<span v-if="selectedAgents.length > 0" class="viewIndicator">
 						({{ t('openregister', '{count} selected', { count: selectedAgents.length }) }})
@@ -55,7 +55,7 @@ import { agentStore, navigationStore } from '../../store/store.js'
 						<NcActionButton
 							:primary="true"
 							close-after-click
-							@click="agentStore.setAgentItem(null); navigationStore.setModal('editAgent')">
+							@click="agentStore.setItem(null); navigationStore.setModal('editAgent')">
 							<template #icon>
 								<Plus :size="20" />
 							</template>
@@ -63,7 +63,7 @@ import { agentStore, navigationStore } from '../../store/store.js'
 						</NcActionButton>
 						<NcActionButton
 							close-after-click
-							@click="agentStore.refreshAgentList()">
+							@click="agentStore.refreshList()">
 							<template #icon>
 								<Refresh :size="20" />
 							</template>
@@ -74,7 +74,7 @@ import { agentStore, navigationStore } from '../../store/store.js'
 			</div>
 
 			<!-- Loading, Error, and Empty States -->
-			<NcEmptyContent v-if="agentStore.loading || agentStore.error || !agentStore.agentList.length"
+			<NcEmptyContent v-if="agentStore.loading || agentStore.error || !agentStore.list.length"
 				:name="emptyContentName"
 				:description="emptyContentDescription">
 				<template #icon>
@@ -97,13 +97,13 @@ import { agentStore, navigationStore } from '../../store/store.js'
 									<template #icon>
 										<DotsHorizontal :size="20" />
 									</template>
-									<NcActionButton close-after-click @click="agentStore.setAgentItem(agent); navigationStore.setModal('editAgent')">
+									<NcActionButton close-after-click @click="agentStore.setItem(agent); navigationStore.setModal('editAgent')">
 										<template #icon>
 											<Pencil :size="20" />
 										</template>
 										Edit
 									</NcActionButton>
-									<NcActionButton close-after-click @click="agentStore.setAgentItem(agent); navigationStore.setDialog('deleteAgent')">
+									<NcActionButton close-after-click @click="agentStore.setItem(agent); navigationStore.setDialog('deleteAgent')">
 										<template #icon>
 											<TrashCanOutline :size="20" />
 										</template>
@@ -207,13 +207,13 @@ import { agentStore, navigationStore } from '../../store/store.js'
 											<template #icon>
 												<DotsHorizontal :size="20" />
 											</template>
-											<NcActionButton close-after-click @click="agentStore.setAgentItem(agent); navigationStore.setModal('editAgent')">
+											<NcActionButton close-after-click @click="agentStore.setItem(agent); navigationStore.setModal('editAgent')">
 												<template #icon>
 													<Pencil :size="20" />
 												</template>
 												Edit
 											</NcActionButton>
-											<NcActionButton close-after-click @click="agentStore.setAgentItem(agent); navigationStore.setDialog('deleteAgent')">
+											<NcActionButton close-after-click @click="agentStore.setItem(agent); navigationStore.setDialog('deleteAgent')">
 												<template #icon>
 													<TrashCanOutline :size="20" />
 												</template>
@@ -230,10 +230,10 @@ import { agentStore, navigationStore } from '../../store/store.js'
 
 			<!-- Pagination -->
 			<PaginationComponent
-				v-if="agentStore.agentList.length > 0"
+				v-if="agentStore.list.length > 0"
 				:current-page="pagination.page || 1"
-				:total-pages="Math.ceil(agentStore.agentList.length / (pagination.limit || 20))"
-				:total-items="agentStore.agentList.length"
+				:total-pages="Math.ceil(agentStore.list.length / (pagination.limit || 20))"
+				:total-items="agentStore.list.length"
 				:current-page-size="pagination.limit || 20"
 				:min-items-to-show="10"
 				@page-changed="onPageChanged"
@@ -286,10 +286,10 @@ export default {
 		paginatedAgents() {
 			const start = ((this.pagination.page || 1) - 1) * (this.pagination.limit || 20)
 			const end = start + (this.pagination.limit || 20)
-			return agentStore.agentList.slice(start, end)
+			return agentStore.list.slice(start, end)
 		},
 		allSelected() {
-			return agentStore.agentList.length > 0 && agentStore.agentList.every(agent => this.selectedAgents.includes(agent.id))
+			return agentStore.list.length > 0 && agentStore.list.every(agent => this.selectedAgents.includes(agent.id))
 		},
 		someSelected() {
 			return this.selectedAgents.length > 0 && !this.allSelected
@@ -299,7 +299,7 @@ export default {
 				return t('openregister', 'Loading agents...')
 			} else if (agentStore.error) {
 				return agentStore.error
-			} else if (!agentStore.agentList.length) {
+			} else if (!agentStore.list.length) {
 				return t('openregister', 'No agents found')
 			}
 			return ''
@@ -309,7 +309,7 @@ export default {
 				return t('openregister', 'Please wait while we fetch your agents.')
 			} else if (agentStore.error) {
 				return t('openregister', 'Please try again later.')
-			} else if (!agentStore.agentList.length) {
+			} else if (!agentStore.list.length) {
 				return t('openregister', 'Create your first AI agent to get started.')
 			}
 			return ''
@@ -317,12 +317,12 @@ export default {
 	},
 	mounted() {
 		// Use soft reload (no loading spinner) since data is hot-loaded at app startup
-		agentStore.refreshAgentList(null, true)
+		agentStore.refreshList(null, true)
 	},
 	methods: {
 		toggleSelectAll(checked) {
 			if (checked) {
-				this.selectedAgents = agentStore.agentList.map(agent => agent.id)
+				this.selectedAgents = agentStore.list.map(agent => agent.id)
 			} else {
 				this.selectedAgents = []
 			}

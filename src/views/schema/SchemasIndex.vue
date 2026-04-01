@@ -10,7 +10,7 @@ import { schemaStore, navigationStore, configurationStore } from '../../store/st
 			:title="t('openregister', 'Schemas')"
 			:description="t('openregister', 'Manage your data schemas and their properties')"
 			:show-title="true"
-			:objects="schemaStore.schemaList"
+			:objects="schemaStore.list"
 			:columns="tableColumns"
 			:pagination="paginationData"
 			:view-mode="schemaStore.viewMode"
@@ -29,7 +29,7 @@ import { schemaStore, navigationStore, configurationStore } from '../../store/st
 			:empty-text="emptyContentName"
 			:row-class="getRowClass"
 			:refreshing="isRefreshing"
-			@add="schemaStore.setSchemaItem(null); navigationStore.setModal('editSchema')"
+			@add="schemaStore.setItem(null); navigationStore.setModal('editSchema')"
 			@refresh="handleRefresh"
 			@page-changed="onPageChanged"
 			@page-size-changed="onPageSizeChanged"
@@ -91,7 +91,7 @@ import { schemaStore, navigationStore, configurationStore } from '../../store/st
 						v-tooltip="isManagedByExternalConfig(row) ? 'Cannot edit: This schema is managed by external configuration ' + (getManagingConfiguration(row)?.title || '') : ''"
 						close-after-click
 						:disabled="isManagedByExternalConfig(row)"
-						@click="schemaStore.setSchemaItem(row); navigationStore.setModal('editSchema')">
+						@click="schemaStore.setItem(row); navigationStore.setModal('editSchema')">
 						<template #icon>
 							<Pencil :size="20" />
 						</template>
@@ -118,7 +118,7 @@ import { schemaStore, navigationStore, configurationStore } from '../../store/st
 					<NcActionButton v-tooltip="row.stats?.objects?.total > 0 ? 'Cannot delete: objects are still attached' : ''"
 						close-after-click
 						:disabled="row.stats?.objects?.total > 0"
-						@click="schemaStore.setSchemaItem(row); navigationStore.setDialog('deleteSchema')">
+						@click="schemaStore.setItem(row); navigationStore.setDialog('deleteSchema')">
 						<template #icon>
 							<TrashCanOutline :size="20" />
 						</template>
@@ -175,12 +175,12 @@ export default {
 		paginationData() {
 			const page = schemaStore.pagination.page || 1
 			const limit = schemaStore.pagination.limit || 20
-			const total = schemaStore.schemaList.length
+			const total = schemaStore.list.length
 			const pages = Math.ceil(total / limit)
 			return { page, pages, total, limit }
 		},
 		emptyContentName() {
-			if (!schemaStore.schemaList.length) {
+			if (!schemaStore.list.length) {
 				return t('openregister', 'No schemas found')
 			}
 			return t('openregister', 'Loading schemas...')
@@ -189,8 +189,8 @@ export default {
 	async mounted() {
 		try {
 			await Promise.all([
-				schemaStore.refreshSchemaList(),
-				configurationStore.refreshConfigurationList(),
+				schemaStore.refreshList(),
+				configurationStore.refreshList(),
 			])
 		} catch (error) {
 			console.error('Failed to load data:', error)
@@ -200,7 +200,7 @@ export default {
 		async handleRefresh() {
 			this.isRefreshing = true
 			try {
-				await schemaStore.refreshSchemaList()
+				await schemaStore.refreshList()
 			} finally {
 				this.isRefreshing = false
 			}
@@ -231,7 +231,7 @@ export default {
 
 		getManagingConfiguration(schema) {
 			if (!schema || !schema.id) return null
-			return configurationStore.configurationList.find(
+			return configurationStore.list.find(
 				config => config.schemas && config.schemas.some(s => s.id === schema.id),
 			) || null
 		},

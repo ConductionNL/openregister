@@ -7,7 +7,7 @@ import { configurationStore, navigationStore, organisationStore, applicationStor
 	<CnTabbedFormDialog
 		ref="dialog"
 		:tabs="dialogTabs"
-		:item="configurationStore.configurationItem?.id ? configurationStore.configurationItem : null"
+		:item="configurationStore.item?.id ? configurationStore.item : null"
 		entity-name="Configuration"
 		:show-create-another="true"
 		:disable-save="!configurationItem.title.trim()"
@@ -590,11 +590,11 @@ export default {
 	},
 	mounted() {
 		// Refresh stores if empty
-		if (!organisationStore.organisationList || organisationStore.organisationList.length === 0) {
-			organisationStore.refreshOrganisationList()
+		if (!organisationStore.list || organisationStore.list.length === 0) {
+			organisationStore.refreshList()
 		}
-		if (!applicationStore.applicationList || applicationStore.applicationList.length === 0) {
-			applicationStore.refreshApplicationList()
+		if (!applicationStore.list || applicationStore.list.length === 0) {
+			applicationStore.refreshList()
 		}
 
 		// Perform initial searches for Configuration tab entities
@@ -610,10 +610,10 @@ export default {
 	},
 	methods: {
 		initializeConfigurationItem() {
-			if (configurationStore.configurationItem?.id) {
+			if (configurationStore.item?.id) {
 				this.configurationItem = {
 					...this.configurationItem,
-					...configurationStore.configurationItem,
+					...configurationStore.item,
 				}
 
 				// Load Settings tab selections
@@ -639,7 +639,7 @@ export default {
 
 				// Load selected application
 				if (this.configurationItem.application) {
-					this.selectedApplication = applicationStore.applicationList.find(
+					this.selectedApplication = applicationStore.list.find(
 						a => a.uuid === this.configurationItem.application,
 					) || null
 				}
@@ -1023,7 +1023,7 @@ export default {
 			}
 
 			try {
-				const { response } = await configurationStore.saveConfiguration({
+				const { response } = await configurationStore.save({
 					...this.configurationItem,
 				})
 

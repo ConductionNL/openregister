@@ -359,7 +359,7 @@ export default {
 			if (!this.importedConfigId) return null
 
 			// Try to find in store first (fast)
-			const found = configurationStore.configurationList.find(
+			const found = configurationStore.list.find(
 				config => config.id === this.importedConfigId,
 			)
 
@@ -627,11 +627,11 @@ export default {
 						this.importedConfigId = importedConfig.id
 
 						// Add to store if not already there (for pagination support)
-						const existsInStore = configurationStore.configurationList.find(
+						const existsInStore = configurationStore.list.find(
 							c => c.id === importedConfig.id,
 						)
 						if (!existsInStore) {
-							configurationStore.configurationList.push(importedConfig)
+							configurationStore.list.push(importedConfig)
 						}
 					} else {
 						// Not imported
@@ -702,7 +702,7 @@ export default {
 		handleView() {
 			if (this.isDiscovered && this.existingConfiguration) {
 				// For discovered configs that are imported, open the local one
-				configurationStore.setConfigurationItem(this.existingConfiguration)
+				configurationStore.setItem(this.existingConfiguration)
 				navigationStore.setModal('viewConfiguration')
 			} else {
 				this.$emit('view', this.existingConfiguration || this.displayConfiguration)
@@ -713,7 +713,7 @@ export default {
 		 */
 		handleEdit() {
 			if (this.isDiscovered && this.existingConfiguration) {
-				configurationStore.setConfigurationItem(this.existingConfiguration)
+				configurationStore.setItem(this.existingConfiguration)
 				navigationStore.setModal('editConfiguration')
 			} else {
 				this.$emit('edit', this.existingConfiguration || this.displayConfiguration)
@@ -724,7 +724,7 @@ export default {
 		 */
 		handleExport() {
 			if (this.isDiscovered && this.existingConfiguration) {
-				configurationStore.setConfigurationItem(this.existingConfiguration)
+				configurationStore.setItem(this.existingConfiguration)
 				navigationStore.setModal('exportConfiguration')
 			} else {
 				this.$emit('export', this.existingConfiguration || this.displayConfiguration)
@@ -735,7 +735,7 @@ export default {
 		 */
 		handlePublish() {
 			const config = this.existingConfiguration || this.displayConfiguration
-			configurationStore.setConfigurationItem(config)
+			configurationStore.setItem(config)
 			navigationStore.setModal('publishConfiguration')
 		},
 		/**
@@ -755,7 +755,7 @@ export default {
 		 */
 		handlePreviewUpdate() {
 			if (this.isDiscovered && this.existingConfiguration) {
-				configurationStore.setConfigurationItem(this.existingConfiguration)
+				configurationStore.setItem(this.existingConfiguration)
 				navigationStore.setModal('previewConfiguration')
 			} else {
 				this.$emit('preview-update', this.existingConfiguration || this.displayConfiguration)

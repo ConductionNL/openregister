@@ -1,5 +1,4 @@
-/* eslint-disable no-console */
-import { Ref, ref } from 'vue'
+import { ref } from 'vue'
 import { defineStore } from 'pinia'
 
 export const useSearchStore = defineStore('search', () => {
@@ -14,11 +13,11 @@ export const useSearchStore = defineStore('search', () => {
 	const searchResults = ref<any>('')
 	const searchError = ref<any>('')
 
-	function setSearch(_search: string) {
+	function setSearch(_search) {
 		search.value = _search
 		console.info('Active search set to ' + search.value)
 	}
-	function setSearchResults(_searchResults: string) {
+	function setSearchResults(_searchResults) {
 		searchResults.value = _searchResults
 		console.info('Active search set to ' + searchResults.value)
 	}
@@ -60,18 +59,18 @@ export const useSearchStore = defineStore('search', () => {
 
 	// new, used by search page
 	// search data
-	const searchObjectsDataRegister = ref<{ label: string, id: string } | null>(null)
-	const searchObjectsDataSchema = ref<{ label: string, id: string } | null>(null)
+	const searchObjectsDataRegister = ref(null)
+	const searchObjectsDataSchema = ref(null)
 	const searchObjectsDataPagination = ref<number>(1)
 	const searchObjectsDataPaginationLimit = ref<number>(14)
 
 	// search objects
 	const searchObjectsSuccess = ref(false)
 	const searchObjectsLoading = ref(false)
-	const searchObjectsResult = ref<Record<string, any>[]>([])
+	const searchObjectsResult = ref([])
 	const searchObjectsError = ref('')
 
-	const oldSearchQuery = ref<Record<string, any>>({})
+	const oldSearchQuery = ref({})
 
 	/**
 	 * Search for objects in the database.
@@ -80,7 +79,7 @@ export const useSearchStore = defineStore('search', () => {
 	 * @param {Record<string, string>} searchQuery - Key-value pairs of search parameters
 	 * @return {object} Object containing refs that will be updated with search results
 	 */
-	function searchObjects(searchQuery: Record<string, string> = {}): {success: Ref<boolean>, loading: Ref<boolean>, result: Ref<Record<string, any>[]>, error: Ref<string>} {
+	function searchObjects(searchQuery = {}) {
 		const searchQueryString = new URLSearchParams(searchQuery).toString()
 		const queryPart = searchQueryString ? `?${searchQueryString}` : ''
 

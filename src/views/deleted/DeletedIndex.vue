@@ -189,11 +189,11 @@ export default {
 			try {
 				await deletedStore.fetchDeleted()
 
-				if (!registerStore.registerList.length) {
-					await registerStore.refreshRegisterList()
+				if (!registerStore.list.length) {
+					await registerStore.refreshList()
 				}
-				if (!schemaStore.schemaList.length) {
-					await schemaStore.refreshSchemaList()
+				if (!schemaStore.list.length) {
+					await schemaStore.refreshList()
 				}
 			} catch (error) {
 				console.error('Error loading deleted items:', error)
@@ -249,13 +249,13 @@ export default {
 		getRegisterName(registerId) {
 			if (!registerId) return t('openregister', 'Unknown Register')
 
-			const register = registerStore.registerList.find(r => r.id === parseInt(registerId))
+			const register = registerStore.list.find(r => r.id === parseInt(registerId))
 			return register?.title || `Register ${registerId}`
 		},
 		getSchemaName(schemaId) {
 			if (!schemaId) return t('openregister', 'Unknown Schema')
 
-			const schema = schemaStore.schemaList.find(s => s.id === parseInt(schemaId))
+			const schema = schemaStore.list.find(s => s.id === parseInt(schemaId))
 			return schema?.title || `Schema ${schemaId}`
 		},
 		bulkRestore() {

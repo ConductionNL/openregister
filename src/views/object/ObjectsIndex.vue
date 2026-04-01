@@ -48,11 +48,11 @@ export default {
 			// Clear any existing object and open the add object modal
 			objectStore.setObjectItem(null)
 			// Ensure register and schema are set for new object creation
-			if (registerStore.registerItem) {
-				registerStore.setRegisterItem(registerStore.registerItem)
+			if (registerStore.item) {
+				registerStore.setItem(registerStore.item)
 			}
-			if (schemaStore.schemaItem) {
-				schemaStore.setSchemaItem(schemaStore.schemaItem)
+			if (schemaStore.item) {
+				schemaStore.setItem(schemaStore.item)
 			}
 			navigationStore.setModal('viewObject')
 		},

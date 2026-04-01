@@ -9,7 +9,7 @@ import { sourceStore, navigationStore } from '../../store/store.js'
 		size="normal"
 		:can-close="false">
 		<p v-if="!success">
-			Do you want to permanently delete <b>{{ sourceStore.sourceItem?.title }}</b>? This action cannot be undone.
+			Do you want to permanently delete <b>{{ sourceStore.item?.title }}</b>? This action cannot be undone.
 		</p>
 
 		<NcNoteCard v-if="success" type="success">
@@ -82,8 +82,8 @@ export default {
 		async deleteSource() {
 			this.loading = true
 
-			sourceStore.deleteSource({
-				...sourceStore.sourceItem,
+			sourceStore.deleteOne({
+				...sourceStore.item,
 			}).then(({ response }) => {
 				this.success = response.ok
 				this.error = false

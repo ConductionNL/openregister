@@ -11,7 +11,7 @@ import { endpointStore } from '../../store/store.js'
 			description="Manage API endpoints"
 			:show-title="true"
 			:schema="endpointSchema"
-			:objects="endpointStore.endpointList"
+			:objects="endpointStore.list"
 			:columns="tableColumns"
 			:view-mode="viewMode"
 			:show-form-dialog="true"
@@ -149,12 +149,12 @@ export default {
 		},
 	},
 	mounted() {
-		endpointStore.refreshEndpointList()
+		endpointStore.refreshList()
 	},
 	methods: {
 		async onCreateEndpoint(formData) {
 			try {
-				await endpointStore.createEndpoint(formData)
+				await endpointStore.save(formData)
 				this.$refs.indexPage.setFormResult({ success: true })
 			} catch (error) {
 				this.$refs.indexPage.setFormResult({
@@ -164,7 +164,7 @@ export default {
 		},
 		async onEditEndpoint(formData) {
 			try {
-				await endpointStore.updateEndpoint(formData)
+				await endpointStore.save(formData)
 				this.$refs.indexPage.setFormResult({ success: true })
 			} catch (error) {
 				this.$refs.indexPage.setFormResult({
@@ -173,10 +173,10 @@ export default {
 			}
 		},
 		async onDeleteEndpoint(id) {
-			const endpoint = endpointStore.endpointList.find(e => e.id === id)
+			const endpoint = endpointStore.list.find(e => e.id === id)
 			if (!endpoint) return
 			try {
-				await endpointStore.deleteEndpoint(endpoint)
+				await endpointStore.deleteOne(endpoint)
 				this.$refs.indexPage.setSingleDeleteResult({ success: true })
 			} catch (error) {
 				this.$refs.indexPage.setSingleDeleteResult({
@@ -200,7 +200,7 @@ export default {
 		async handleRefresh() {
 			this.isRefreshing = true
 			try {
-				await endpointStore.refreshEndpointList()
+				await endpointStore.refreshList()
 			} finally {
 				this.isRefreshing = false
 			}

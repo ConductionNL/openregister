@@ -145,7 +145,7 @@ export default {
 	},
 	computed: {
 		register() {
-			return registerStore.registerItem
+			return registerStore.item
 		},
 		canPublish() {
 			return this.selectedRepository && this.selectedBranch && this.filePath.trim() !== ''
@@ -337,7 +337,7 @@ export default {
 				this.successMessage = message
 
 				// Refresh register list
-				await registerStore.refreshRegisterList()
+				await registerStore.refreshList()
 
 				// Close modal after 4 seconds (longer to read the indexing note)
 				setTimeout(() => {

@@ -37,7 +37,7 @@ import { objectStore, registerStore, schemaStore, dashboardStore } from '../../s
 						id="schemaSelect"
 						:model-value="selectedSchemaValue"
 						:loading="schemaLoading"
-						:disabled="!registerStore.registerItem || schemaLoading"
+						:disabled="!registerStore.item || schemaLoading"
 						:input-label="t('openregister', 'Schema')"
 						placeholder="Select a schema"
 						@update:model-value="handleSchemaChange" />
@@ -205,7 +205,7 @@ export default {
 	computed: {
 		registerOptions() {
 			return {
-				options: registerStore.registerList.map(register => ({
+				options: registerStore.list.map(register => ({
 					value: register.id,
 					label: register.title,
 					title: register.title,
@@ -219,11 +219,11 @@ export default {
 			}
 		},
 		schemaOptions() {
-			if (!registerStore.registerItem) return { options: [] }
+			if (!registerStore.item) return { options: [] }
 
 			return {
-				options: schemaStore.schemaList
-					.filter(schema => registerStore.registerItem.schemas.some(registerSchema => registerSchema.id === schema.id))
+				options: schemaStore.list
+					.filter(schema => registerStore.item.schemas.some(registerSchema => registerSchema.id === schema.id))
 					.map(schema => ({
 						value: schema.id,
 						label: schema.title,
@@ -238,8 +238,8 @@ export default {
 			}
 		},
 		selectedRegisterValue() {
-			if (!registerStore.registerItem) return null
-			const register = registerStore.registerItem
+			if (!registerStore.item) return null
+			const register = registerStore.item
 			return {
 				value: register.id,
 				label: register.title,
@@ -248,8 +248,8 @@ export default {
 			}
 		},
 		selectedSchemaValue() {
-			if (!schemaStore.schemaItem) return null
-			const schema = schemaStore.schemaItem
+			if (!schemaStore.item) return null
+			const schema = schemaStore.item
 			return {
 				value: schema.id,
 				label: schema.title,
@@ -306,10 +306,10 @@ export default {
 				objectStore.setFilters({
 					_search: value || '',
 				})
-				if (registerStore.registerItem && schemaStore.schemaItem) {
+				if (registerStore.item && schemaStore.item) {
 					objectStore.refreshObjectList({
-						register: registerStore.registerItem.id,
-						schema: schemaStore.schemaItem.id,
+						register: registerStore.item.id,
+						schema: schemaStore.item.id,
 					})
 				}
 			}, 1000)
@@ -317,7 +317,7 @@ export default {
 		// Watch for schema changes to initialize properties
 		// Use immediate: true equivalent in mounted
 		// This watcher will update properties when schema changes
-		'$root.schemaStore.schemaItem': {
+		'$root.schemaStore.item': {
 			handler(newSchema) {
 				if (newSchema) {
 					objectStore.initializeProperties(newSchema)
@@ -335,42 +335,42 @@ export default {
 		this.schemaLoading = true
 
 		// Only load lists if they're empty
-		if (!registerStore.registerList.length) {
-			registerStore.refreshRegisterList()
+		if (!registerStore.list.length) {
+			registerStore.refreshList()
 				.finally(() => (this.registerLoading = false))
 		} else {
 			this.registerLoading = false
 		}
 
-		if (!schemaStore.schemaList.length) {
-			schemaStore.refreshSchemaList()
+		if (!schemaStore.list.length) {
+			schemaStore.refreshList()
 				.finally(() => (this.schemaLoading = false))
 		} else {
 			this.schemaLoading = false
 		}
 
 		// Load objects if register and schema are already selected
-		if (registerStore.registerItem && schemaStore.schemaItem) {
+		if (registerStore.item && schemaStore.item) {
 			objectStore.refreshObjectList()
 		}
 	},
 	methods: {
 		handleRegisterChange(option) {
-			registerStore.setRegisterItem(option)
-			schemaStore.setSchemaItem(null)
+			registerStore.setItem(option)
+			schemaStore.setItem(null)
 		},
 		async handleSchemaChange(option) {
-			schemaStore.setSchemaItem(option)
+			schemaStore.setItem(option)
 			if (option) {
 				objectStore.initializeProperties(option)
 				objectStore.refreshObjectList()
 			}
 		},
 		handleSearch() {
-			if (registerStore.registerItem && schemaStore.schemaItem) {
+			if (registerStore.item && schemaStore.item) {
 				objectStore.refreshObjectList({
-					register: registerStore.registerItem.id,
-					schema: schemaStore.schemaItem.id,
+					register: registerStore.item.id,
+					schema: schemaStore.item.id,
 					search: this.searchQuery,
 				})
 			}

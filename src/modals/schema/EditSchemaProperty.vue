@@ -4,8 +4,8 @@ import { navigationStore, schemaStore, registerStore } from '../../store/store.j
 </script>
 <template>
 	<NcDialog :name="schemaStore.schemaPropertyKey
-			? `Edit Property '${schemaStore.schemaPropertyKey}' of '${schemaStore.schemaItem.title}'`
-			: `Add Property to '${schemaStore.schemaItem?.title}'`"
+			? `Edit Property '${schemaStore.schemaPropertyKey}' of '${schemaStore.item.title}'`
+			: `Add Property to '${schemaStore.item?.title}'`"
 		size="normal"
 		:can-close="false">
 		<div v-if="success !== null" class="form-group">
@@ -785,13 +785,13 @@ export default {
 			}
 		},
 		availableSchemas() {
-			return schemaStore.schemaList.map(schema => ({
+			return schemaStore.list.map(schema => ({
 				id: schema.id,
 				label: schema.title || schema.name || schema.id,
 			}))
 		},
 		availableRegisters() {
-			return registerStore.registerList.map(register => ({
+			return registerStore.list.map(register => ({
 				id: register.id,
 				label: register.title || register.name || register.id,
 			}))
@@ -880,7 +880,7 @@ export default {
 		},
 		initializeSchemaItem() {
 			if (schemaStore.schemaPropertyKey) {
-				const schemaProperty = schemaStore.schemaItem.properties[schemaStore.schemaPropertyKey]
+				const schemaProperty = schemaStore.item.properties[schemaStore.schemaPropertyKey]
 
 				// Initialize facetable state from property value.
 				const facetableValue = schemaProperty.facetable
@@ -960,7 +960,7 @@ export default {
 		 */
 		keyExists() {
 			if (this.propertyTitle === schemaStore.schemaPropertyKey) return false
-			return Object.keys(schemaStore.schemaItem.properties).includes(this.propertyTitle)
+			return Object.keys(schemaStore.item.properties).includes(this.propertyTitle)
 		},
 		closeModal() {
 			navigationStore.setModal(null)
@@ -973,7 +973,7 @@ export default {
 			// delete the key when its an edit modal (the item will be re-created later, so don't worry about it)
 			// this is done incase you are also editing the title which acts as a key
 			if (schemaStore.schemaPropertyKey) {
-				delete schemaStore.schemaItem.properties[schemaStore.schemaPropertyKey]
+				delete schemaStore.item.properties[schemaStore.schemaPropertyKey]
 			}
 
 			// Compute facetable value: boolean true for defaults, config object otherwise.
@@ -1027,9 +1027,9 @@ export default {
 			}
 
 			const newSchemaItem = {
-				...schemaStore.schemaItem,
+				...schemaStore.item,
 				properties: {
-					...schemaStore.schemaItem.properties,
+					...schemaStore.item.properties,
 					[this.propertyTitle]: { // create the new property with title as key
 						...this.properties,
 						facetable: facetableValue,
@@ -1066,7 +1066,7 @@ export default {
 				return
 			}
 
-			schemaStore.saveSchema(newSchemaItem)
+			schemaStore.save(newSchemaItem)
 				.then(({ response }) => {
 					this.success = response.ok
 
@@ -1093,13 +1093,13 @@ export default {
 
 			try {
 				// Load registers if not already loaded
-				if (!registerStore.registerList.length) {
-					await registerStore.refreshRegisterList()
+				if (!registerStore.list.length) {
+					await registerStore.refreshList()
 				}
 
 				// Load schemas if not already loaded
-				if (!schemaStore.schemaList.length) {
-					await schemaStore.refreshSchemaList()
+				if (!schemaStore.list.length) {
+					await schemaStore.refreshList()
 				}
 			} catch (error) {
 				console.error('Error loading registers and schemas:', error)
@@ -1116,7 +1116,7 @@ export default {
 			const schemaId = ref.includes('/') ? ref.split('/').pop() : ref
 
 			// Find schema in store
-			return schemaStore.schemaList.find(schema =>
+			return schemaStore.list.find(schema =>
 				schema.id === schemaId || schema.title === schemaId || schema.slug === schemaId,
 			)
 		},

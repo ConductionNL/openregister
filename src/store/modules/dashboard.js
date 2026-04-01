@@ -75,8 +75,8 @@ export const useDashboardStore = defineStore('dashboard', {
 
 			// Watch for changes in the active register or schema and refresh dashboard data
 			watch([
-				() => registerStore.registerItem?.id,
-				() => schemaStore.schemaItem?.id,
+				() => registerStore.item?.id,
+				() => schemaStore.item?.id,
 			], async () => {
 				// Fetch registers to update sidebar tables
 				await this.fetchRegisters()
@@ -103,8 +103,8 @@ export const useDashboardStore = defineStore('dashboard', {
 					params: {
 						from: this.dateRange.from,
 						till: this.dateRange.till,
-						registerId: registerStore.registerItem?.id,
-						schemaId: schemaStore.schemaItem?.id,
+						registerId: registerStore.item?.id,
+						schemaId: schemaStore.item?.id,
 					},
 				})
 				this.chartData.auditTrailActions = response.data
@@ -130,8 +130,8 @@ export const useDashboardStore = defineStore('dashboard', {
 				this.chartLoading.objectsByRegister = true
 				const response = await axios.get(generateUrl('/apps/openregister/api/dashboard/charts/objects-by-register'), {
 					params: {
-						registerId: registerStore.registerItem?.id,
-						schemaId: schemaStore.schemaItem?.id,
+						registerId: registerStore.item?.id,
+						schemaId: schemaStore.item?.id,
 					},
 				})
 				this.chartData.objectsByRegister = response.data
@@ -157,8 +157,8 @@ export const useDashboardStore = defineStore('dashboard', {
 				this.chartLoading.objectsBySchema = true
 				const response = await axios.get(generateUrl('/apps/openregister/api/dashboard/charts/objects-by-schema'), {
 					params: {
-						registerId: registerStore.registerItem?.id,
-						schemaId: schemaStore.schemaItem?.id,
+						registerId: registerStore.item?.id,
+						schemaId: schemaStore.item?.id,
 					},
 				})
 				this.chartData.objectsBySchema = response.data
@@ -184,8 +184,8 @@ export const useDashboardStore = defineStore('dashboard', {
 				this.chartLoading.objectsBySize = true
 				const response = await axios.get(generateUrl('/apps/openregister/api/dashboard/charts/objects-by-size'), {
 					params: {
-						registerId: registerStore.registerItem?.id,
-						schemaId: schemaStore.schemaItem?.id,
+						registerId: registerStore.item?.id,
+						schemaId: schemaStore.item?.id,
 					},
 				})
 				this.chartData.objectsBySize = response.data
@@ -225,8 +225,8 @@ export const useDashboardStore = defineStore('dashboard', {
 				this.statisticsLoading.auditTrailStats = true
 				const response = await axios.get(generateUrl('/apps/openregister/api/dashboard/statistics/audit-trail'), {
 					params: {
-						registerId: registerStore.registerItem?.id,
-						schemaId: schemaStore.schemaItem?.id,
+						registerId: registerStore.item?.id,
+						schemaId: schemaStore.item?.id,
 						hours,
 					},
 				})
@@ -254,8 +254,8 @@ export const useDashboardStore = defineStore('dashboard', {
 				this.statisticsLoading.actionDistribution = true
 				const response = await axios.get(generateUrl('/apps/openregister/api/dashboard/statistics/audit-trail-distribution'), {
 					params: {
-						registerId: registerStore.registerItem?.id,
-						schemaId: schemaStore.schemaItem?.id,
+						registerId: registerStore.item?.id,
+						schemaId: schemaStore.item?.id,
 						hours,
 					},
 				})
@@ -284,8 +284,8 @@ export const useDashboardStore = defineStore('dashboard', {
 				this.statisticsLoading.mostActiveObjects = true
 				const response = await axios.get(generateUrl('/apps/openregister/api/dashboard/statistics/most-active-objects'), {
 					params: {
-						registerId: registerStore.registerItem?.id,
-						schemaId: schemaStore.schemaItem?.id,
+						registerId: registerStore.item?.id,
+						schemaId: schemaStore.item?.id,
 						limit,
 						hours,
 					},
@@ -338,8 +338,8 @@ export const useDashboardStore = defineStore('dashboard', {
 				this.loading = true
 				this.error = null
 				const params = {}
-				if (registerStore.registerItem?.id) params.registerId = registerStore.registerItem.id
-				if (schemaStore.schemaItem?.id) params.schemaId = schemaStore.schemaItem.id
+				if (registerStore.item?.id) params.registerId = registerStore.item.id
+				if (schemaStore.item?.id) params.schemaId = schemaStore.item.id
 				const response = await axios.get(generateUrl('/apps/openregister/api/dashboard'), { params })
 				this.registers = response.data.registers
 				return this.registers
@@ -417,8 +417,8 @@ export function setupDashboardStoreWatchers() {
 
 	// Watch for changes in the active register or schema and refresh dashboard data
 	watch([
-		() => registerStore.registerItem?.id,
-		() => schemaStore.schemaItem?.id,
+		() => registerStore.item?.id,
+		() => schemaStore.item?.id,
 	], () => {
 		// Fetch registers to update sidebar tables, using current store state
 		dashboardStore.fetchRegisters()

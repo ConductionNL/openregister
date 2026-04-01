@@ -145,7 +145,7 @@ export default {
 	},
 	computed: {
 		configuration() {
-			return configurationStore.configurationItem
+			return configurationStore.item
 		},
 		canPublish() {
 			return this.selectedRepository && this.selectedBranch && this.filePath.trim() !== ''
@@ -351,7 +351,7 @@ export default {
 				this.successMessage = message
 
 				// Refresh configuration list
-				await configurationStore.refreshConfigurationList()
+				await configurationStore.refreshList()
 
 				// Close modal after 4 seconds (longer to read the indexing note)
 				setTimeout(() => {

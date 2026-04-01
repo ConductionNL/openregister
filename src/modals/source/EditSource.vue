@@ -5,7 +5,7 @@ import { sourceStore, navigationStore } from '../../store/store.js'
 
 <template>
 	<NcDialog v-if="navigationStore.modal === 'editSource'"
-		:name="sourceStore.sourceItem?.id ? 'Edit Source' : 'Add Source'"
+		:name="sourceStore.item?.id ? 'Edit Source' : 'Add Source'"
 		size="normal"
 		:can-close="false">
 		<NcNoteCard v-if="success" type="success">
@@ -44,10 +44,10 @@ import { sourceStore, navigationStore } from '../../store/store.js'
 				@click="editSource()">
 				<template #icon>
 					<NcLoadingIcon v-if="loading" :size="20" />
-					<ContentSaveOutline v-if="!loading && sourceStore.sourceItem?.id" :size="20" />
-					<Plus v-if="!loading && !sourceStore.sourceItem?.id" :size="20" />
+					<ContentSaveOutline v-if="!loading && sourceStore.item?.id" :size="20" />
+					<Plus v-if="!loading && !sourceStore.item?.id" :size="20" />
 				</template>
-				{{ sourceStore.sourceItem?.id ? 'Save' : 'Create' }}
+				{{ sourceStore.item?.id ? 'Save' : 'Create' }}
 			</NcButton>
 		</template>
 	</NcDialog>
@@ -116,9 +116,9 @@ export default {
 	},
 	methods: {
 		initializeSourceItem() {
-			if (sourceStore.sourceItem?.id) {
+			if (sourceStore.item?.id) {
 				this.sourceItem = {
-					...sourceStore.sourceItem,
+					...sourceStore.item,
 				}
 
 				// set typeOptions to the sourceItem type
@@ -144,7 +144,7 @@ export default {
 		async editSource() {
 			this.loading = true
 
-			sourceStore.saveSource({
+			sourceStore.save({
 				...this.sourceItem,
 				type: this.typeOptions.value.id,
 			}).then(({ response }) => {

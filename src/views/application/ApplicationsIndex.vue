@@ -10,7 +10,7 @@ import { applicationStore, navigationStore } from '../../store/store.js'
 			title="Applications"
 			description="Manage your applications and modules"
 			:show-title="true"
-			:objects="applicationStore.applicationList"
+			:objects="applicationStore.list"
 			:columns="tableColumns"
 			:pagination="paginationData"
 			:view-mode="viewMode"
@@ -80,14 +80,14 @@ import { applicationStore, navigationStore } from '../../store/store.js'
 						<DotsHorizontal :size="20" />
 					</template>
 					<NcActionButton close-after-click
-						@click="applicationStore.setApplicationItem(row); navigationStore.setModal('editApplication')">
+						@click="applicationStore.setItem(row); navigationStore.setModal('editApplication')">
 						<template #icon>
 							<Pencil :size="20" />
 						</template>
 						Edit
 					</NcActionButton>
 					<NcActionButton close-after-click
-						@click="applicationStore.setApplicationItem(row); navigationStore.setDialog('deleteApplication')">
+						@click="applicationStore.setItem(row); navigationStore.setDialog('deleteApplication')">
 						<template #icon>
 							<TrashCanOutline :size="20" />
 						</template>
@@ -142,24 +142,24 @@ export default {
 		paginationData() {
 			const page = applicationStore.pagination.page || 1
 			const limit = applicationStore.pagination.limit || 20
-			const total = applicationStore.applicationList.length
+			const total = applicationStore.list.length
 			const pages = Math.ceil(total / limit)
 			return { page, pages, total, limit }
 		},
 	},
 	async mounted() {
 		await applicationStore.loadNextcloudGroups()
-		applicationStore.refreshApplicationList(null, true)
+		applicationStore.refreshList(null, true)
 	},
 	methods: {
 		createApplication() {
-			applicationStore.setApplicationItem(null)
+			applicationStore.setItem(null)
 			navigationStore.setModal('editApplication')
 		},
 		async handleRefresh() {
 			this.isRefreshing = true
 			try {
-				await applicationStore.refreshApplicationList()
+				await applicationStore.refreshList()
 			} finally {
 				this.isRefreshing = false
 			}

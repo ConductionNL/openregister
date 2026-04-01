@@ -39,7 +39,7 @@ import { objectStore, registerStore, schemaStore, dashboardStore, navigationStor
 						id="schemaSelect"
 						:model-value="selectedSchemaValue"
 						:loading="schemaLoading"
-						:disabled="!registerStore.registerItem || schemaLoading"
+						:disabled="!registerStore.item || schemaLoading"
 						aria-label-combobox="Select a schema"
 						placeholder="Select a schema"
 						@update:model-value="handleSchemaChange" />
@@ -223,7 +223,7 @@ export default {
 		},
 		registerOptions() {
 			return {
-				options: registerStore.registerList.map(register => ({
+				options: registerStore.list.map(register => ({
 					value: register.id,
 					label: register.title,
 					title: register.title,
@@ -237,11 +237,11 @@ export default {
 			}
 		},
 		schemaOptions() {
-			if (!registerStore.registerItem) return { options: [] }
+			if (!registerStore.item) return { options: [] }
 
 			return {
-				options: schemaStore.schemaList
-					.filter(schema => registerStore.registerItem.schemas.some(registerSchema => registerSchema.id === schema.id))
+				options: schemaStore.list
+					.filter(schema => registerStore.item.schemas.some(registerSchema => registerSchema.id === schema.id))
 					.map(schema => ({
 						value: schema.id,
 						label: schema.title,
@@ -256,8 +256,8 @@ export default {
 			}
 		},
 		selectedRegisterValue() {
-			if (!registerStore.registerItem) return null
-			const register = registerStore.registerItem
+			if (!registerStore.item) return null
+			const register = registerStore.item
 			return {
 				value: register.id,
 				label: register.title,
@@ -266,8 +266,8 @@ export default {
 			}
 		},
 		selectedSchemaValue() {
-			if (!schemaStore.schemaItem) return null
-			const schema = schemaStore.schemaItem
+			if (!schemaStore.item) return null
+			const schema = schemaStore.item
 			return {
 				value: schema.id,
 				label: schema.title,
@@ -278,11 +278,11 @@ export default {
 	},
 	methods: {
 		handleRegisterChange(option) {
-			registerStore.setRegisterItem(option)
-			schemaStore.setSchemaItem(null)
+			registerStore.setItem(option)
+			schemaStore.setItem(null)
 		},
 		handleSchemaChange(option) {
-			schemaStore.setSchemaItem(option)
+			schemaStore.setItem(option)
 			if (option) {
 				objectStore.initializeProperties(option)
 				objectStore.refreshObjectList()

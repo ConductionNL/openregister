@@ -41,5 +41,6 @@ module.exports = defineConfig([{
 		'import/default': 'off', // disable default import checking to avoid parser requirement
 		'import/no-named-as-default': 'off', // disable named-as-default checking to avoid parser requirement
 		'import/no-named-as-default-member': 'off', // disable named-as-default-member checking to avoid parser requirement
+		'no-console': ['error', { allow: ['warn', 'error', 'info', 'debug', 'trace', 'group', 'groupEnd'] }],
 	},
 }])

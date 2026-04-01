@@ -217,7 +217,7 @@ import { registerStore, schemaStore, navigationStore, objectStore, dashboardStor
 				v-bind="schemaOptions"
 				:model-value="selectedSchemaValue"
 				:loading="schemaLoading"
-				:disabled="!registerStore.registerItem || schemaLoading"
+				:disabled="!registerStore.item || schemaLoading"
 				aria-label-combobox="Select a schema"
 				placeholder="Select a schema"
 				@update:model-value="handleSchemaChange" />
@@ -407,7 +407,7 @@ export default {
 		},
 		registerOptions() {
 			return {
-				options: registerStore.registerList.map(register => ({
+				options: registerStore.list.map(register => ({
 					value: register.id,
 					label: register.title,
 					title: register.title,
@@ -421,18 +421,18 @@ export default {
 			}
 		},
 		schemaOptions() {
-			if (!registerStore.registerItem) return { options: [] }
+			if (!registerStore.item) return { options: [] }
 
 			// Convert register schemas to strings for comparison.
 			// Schema IDs can be either numbers or objects with an id property.
-			const registerSchemaIds = (registerStore.registerItem.schemas || []).map(schema => {
+			const registerSchemaIds = (registerStore.item.schemas || []).map(schema => {
 				// If schema is an object with an id property, extract it; otherwise use the value directly.
 				const schemaId = typeof schema === 'object' && schema !== null ? schema.id : schema
 				return String(schemaId)
 			})
 
 			return {
-				options: schemaStore.schemaList
+				options: schemaStore.list
 					.filter(schema => {
 						// Convert schema ID to string for comparison.
 						const schemaId = String(schema.id)
@@ -452,8 +452,8 @@ export default {
 			}
 		},
 		selectedRegisterValue() {
-			if (!registerStore.registerItem) return null
-			const register = registerStore.registerItem
+			if (!registerStore.item) return null
+			const register = registerStore.item
 			return {
 				value: register.id,
 				label: register.title,
@@ -462,8 +462,8 @@ export default {
 			}
 		},
 		selectedSchemaValue() {
-			if (!schemaStore.schemaItem) return null
-			const schema = schemaStore.schemaItem
+			if (!schemaStore.item) return null
+			const schema = schemaStore.item
 			return {
 				value: schema.id,
 				label: schema.title,
@@ -490,14 +490,14 @@ export default {
 		this.schemaLoading = true
 
 		// Always load lists to ensure fresh data.
-		registerStore.refreshRegisterList()
+		registerStore.refreshList()
 			.finally(() => (this.registerLoading = false))
 
-		schemaStore.refreshSchemaList()
+		schemaStore.refreshList()
 			.finally(() => (this.schemaLoading = false))
 
 		// Load objects if register and schema are already selected.
-		if (registerStore.registerItem && schemaStore.schemaItem) {
+		if (registerStore.item && schemaStore.item) {
 			objectStore.refreshObjectList()
 		}
 	},
@@ -652,13 +652,13 @@ export default {
 		},
 		async handleRegisterChange(option) {
 			if (!option) {
-				registerStore.setRegisterItem(null)
-				schemaStore.setSchemaItem(null)
+				registerStore.setItem(null)
+				schemaStore.setItem(null)
 				return
 			}
 
-			registerStore.setRegisterItem(option)
-			schemaStore.setSchemaItem(null)
+			registerStore.setItem(option)
+			schemaStore.setItem(null)
 
 			// Always refresh schema list when register changes to ensure we have all schemas.
 			// This is important because schemas might not be loaded yet or might have changed.
@@ -667,7 +667,7 @@ export default {
 				this.schemaLoading = true
 				try {
 					// Load all schemas to ensure we have the ones for this register.
-					await schemaStore.refreshSchemaList()
+					await schemaStore.refreshList()
 				} catch (error) {
 					console.error('Error loading schemas:', error)
 				} finally {
@@ -676,7 +676,7 @@ export default {
 			}
 		},
 		async handleSchemaChange(option) {
-			schemaStore.setSchemaItem(option)
+			schemaStore.setItem(option)
 			if (option) {
 				objectStore.initializeProperties(option)
 				objectStore.refreshObjectList()

@@ -6,14 +6,14 @@ import { schemaStore, navigationStore, registerStore } from '../../store/store.j
 <template>
 	<CnSchemaFormDialog
 		ref="schemaFormDialog"
-		:item="schemaStore.schemaItem"
-		:dialog-title="schemaStore.schemaItem?.id ? t('openregister', 'Edit Schema') : t('openregister', 'Add Schema')"
+		:item="schemaStore.item"
+		:dialog-title="schemaStore.item?.id ? t('openregister', 'Edit Schema') : t('openregister', 'Add Schema')"
 		:available-schemas="computedAvailableSchemas"
 		:available-registers="computedAvailableRegisters"
 		:user-groups="userGroups"
 		:loading-groups="loadingGroups"
 		:available-tags="availableTags"
-		:object-count="schemaStore.schemaItem?.stats?.objects?.total || 0"
+		:object-count="schemaStore.item?.stats?.objects?.total || 0"
 		show-extend-schema
 		show-analyze-properties
 		show-validate-objects
@@ -22,8 +22,8 @@ import { schemaStore, navigationStore, registerStore } from '../../store/store.j
 		show-delete
 		:cancel-label="t('openregister', 'Cancel')"
 		:close-label="t('openregister', 'Close')"
-		:confirm-label="schemaStore.schemaItem?.id ? t('openregister', 'Save') : t('openregister', 'Create')"
-		:success-text="schemaStore.schemaItem?.id
+		:confirm-label="schemaStore.item?.id ? t('openregister', 'Save') : t('openregister', 'Create')"
+		:success-text="schemaStore.item?.id
 			? t('openregister', 'Schema successfully updated')
 			: t('openregister', 'Schema successfully created')"
 		:extend-schema-label="t('openregister', 'Extend Schema')"
@@ -63,11 +63,11 @@ export default {
 	},
 	computed: {
 		computedAvailableSchemas() {
-			const currentId = schemaStore.schemaItem?.id
-			const currentUuid = schemaStore.schemaItem?.uuid
-			const currentSlug = schemaStore.schemaItem?.slug
+			const currentId = schemaStore.item?.id
+			const currentUuid = schemaStore.item?.uuid
+			const currentSlug = schemaStore.item?.slug
 
-			return schemaStore.schemaList
+			return schemaStore.list
 				.filter(schema =>
 					schema.id !== currentId
 					&& schema.uuid !== currentUuid
@@ -81,7 +81,7 @@ export default {
 				}))
 		},
 		computedAvailableRegisters() {
-			return registerStore.registerList.map(register => ({
+			return registerStore.list.map(register => ({
 				id: register.id,
 				label: register.title || register.name || register.id,
 			}))
@@ -95,11 +95,11 @@ export default {
 	methods: {
 		async loadRegistersAndSchemas() {
 			try {
-				if (!registerStore.registerList.length) {
-					await registerStore.refreshRegisterList()
+				if (!registerStore.list.length) {
+					await registerStore.refreshList()
 				}
-				if (!schemaStore.schemaList.length) {
-					await schemaStore.refreshSchemaList()
+				if (!schemaStore.list.length) {
+					await schemaStore.refreshList()
 				}
 			} catch (error) {
 				console.error('Error loading registers and schemas:', error)
@@ -156,7 +156,7 @@ export default {
 		},
 		async onConfirm(schemaData) {
 			try {
-				const { response } = await schemaStore.saveSchema(schemaData)
+				const { response } = await schemaStore.save(schemaData)
 				this.$refs.schemaFormDialog.setResult({
 					success: response.ok,
 					error: response.ok ? undefined : 'Failed to save schema',
@@ -172,7 +172,7 @@ export default {
 			navigationStore.setDialog(false)
 		},
 		extendSchema() {
-			const currentItem = schemaStore.schemaItem
+			const currentItem = schemaStore.item
 			const newSchema = {
 				title: `Extended ${currentItem.title}`,
 				description: `Schema extending ${currentItem.title}`,
@@ -180,7 +180,7 @@ export default {
 				properties: {},
 				required: [],
 			}
-			schemaStore.setSchemaItem(newSchema)
+			schemaStore.setItem(newSchema)
 		},
 		analyzeProperties() {
 			navigationStore.setDialog('exploreSchema')

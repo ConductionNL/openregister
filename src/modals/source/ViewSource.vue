@@ -6,35 +6,35 @@ import { sourceStore, navigationStore, registerStore, schemaStore } from '../../
 <template>
 	<Fragment>
 		<NcDialog v-if="navigationStore.modal === 'viewSource'"
-			:name="`View Source: ${sourceStore.sourceItem?.title || 'Unknown'}`"
+			:name="`View Source: ${sourceStore.item?.title || 'Unknown'}`"
 			size="large"
 			:can-close="false">
 			<div class="formContainer viewSourceDialog">
 				<!-- Source Details -->
 				<div class="sourceDetailsGrid">
 					<div class="sourceMainInfo">
-						<h2>{{ sourceStore.sourceItem?.title }}</h2>
-						<p v-if="sourceStore.sourceItem?.description" class="sourceDescription">
-							{{ sourceStore.sourceItem.description }}
+						<h2>{{ sourceStore.item?.title }}</h2>
+						<p v-if="sourceStore.item?.description" class="sourceDescription">
+							{{ sourceStore.item.description }}
 						</p>
 					</div>
 
 					<div class="sourceProperties">
 						<div class="propertyItem">
 							<strong>{{ t('openregister', 'Type') }}:</strong>
-							<span>{{ sourceStore.sourceItem?.type || 'Unknown' }}</span>
+							<span>{{ sourceStore.item?.type || 'Unknown' }}</span>
 						</div>
-						<div v-if="sourceStore.sourceItem?.databaseUrl" class="propertyItem">
+						<div v-if="sourceStore.item?.databaseUrl" class="propertyItem">
 							<strong>{{ t('openregister', 'Database URL') }}:</strong>
-							<span class="urlValue">{{ sourceStore.sourceItem.databaseUrl }}</span>
+							<span class="urlValue">{{ sourceStore.item.databaseUrl }}</span>
 						</div>
-						<div v-if="sourceStore.sourceItem?.created" class="propertyItem">
+						<div v-if="sourceStore.item?.created" class="propertyItem">
 							<strong>{{ t('openregister', 'Created') }}:</strong>
-							<span>{{ new Date(sourceStore.sourceItem.created).toLocaleString() }}</span>
+							<span>{{ new Date(sourceStore.item.created).toLocaleString() }}</span>
 						</div>
-						<div v-if="sourceStore.sourceItem?.updated" class="propertyItem">
+						<div v-if="sourceStore.item?.updated" class="propertyItem">
 							<strong>{{ t('openregister', 'Updated') }}:</strong>
-							<span>{{ new Date(sourceStore.sourceItem.updated).toLocaleString() }}</span>
+							<span>{{ new Date(sourceStore.item.updated).toLocaleString() }}</span>
 						</div>
 					</div>
 				</div>
@@ -239,11 +239,11 @@ export default {
 			}
 		},
 		filterRegisters() {
-			if (!registerStore.registerList || !sourceStore.sourceItem?.id) {
+			if (!registerStore.list || !sourceStore.item?.id) {
 				return []
 			}
-			return registerStore.registerList.filter((register) => {
-				return register.source && register.source.toString() === sourceStore.sourceItem.id.toString()
+			return registerStore.list.filter((register) => {
+				return register.source && register.source.toString() === sourceStore.item.id.toString()
 			})
 		},
 	},
@@ -262,7 +262,7 @@ export default {
 			navigationStore.setDialog('deleteSource')
 		},
 		viewRegister(register) {
-			registerStore.setRegisterItem(register)
+			registerStore.setItem(register)
 			navigationStore.setModal(false)
 			this.$router.push('/registers')
 		},
@@ -274,8 +274,8 @@ export default {
 		async loadSchemaOptions() {
 			this.schemasLoading = true
 			try {
-				await schemaStore.refreshSchemaList()
-				this.schemaSelectOptions = schemaStore.schemaList.map(s => ({ id: s.id, label: s.title }))
+				await schemaStore.refreshList()
+				this.schemaSelectOptions = schemaStore.list.map(s => ({ id: s.id, label: s.title }))
 			} catch (error) {
 				console.error('Failed to load schemas:', error)
 			} finally {
@@ -292,7 +292,7 @@ export default {
 		},
 		async onSaveRegister(formData) {
 			try {
-				await registerStore.saveRegister({
+				await registerStore.save({
 					...formData,
 					schemas: (formData.schemas || []).map(s => typeof s === 'object' ? s.id : s),
 				})
@@ -304,7 +304,7 @@ export default {
 		},
 		fetchRegisters() {
 			this.registersLoading = true
-			registerStore.refreshRegisterList()
+			registerStore.refreshList()
 				.then(() => {
 					this.registersLoading = false
 				})

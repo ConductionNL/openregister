@@ -4,12 +4,12 @@ import { agentStore, navigationStore } from '../../store/store.js'
 </script>
 
 <template>
-	<NcDialog :name="agentStore.agentItem?.uuid ? 'Edit Agent' : 'Create Agent'"
+	<NcDialog :name="agentStore.item?.uuid ? 'Edit Agent' : 'Create Agent'"
 		size="large"
 		:can-close="true"
 		@update:open="handleDialogClose">
 		<NcNoteCard v-if="success" type="success">
-			<p>Agent successfully {{ agentStore.agentItem?.uuid ? 'updated' : 'created' }}</p>
+			<p>Agent successfully {{ agentStore.item?.uuid ? 'updated' : 'created' }}</p>
 		</NcNoteCard>
 		<NcNoteCard v-if="error" type="error">
 			<p>{{ error }}</p>
@@ -360,7 +360,7 @@ import { agentStore, navigationStore } from '../../store/store.js'
 					<NcLoadingIcon v-if="loading" :size="20" />
 					<ContentSaveOutline v-else :size="20" />
 				</template>
-				{{ agentStore.agentItem?.uuid ? 'Update' : 'Create' }}
+				{{ agentStore.item?.uuid ? 'Update' : 'Create' }}
 			</NcButton>
 		</template>
 	</NcDialog>
@@ -477,12 +477,12 @@ export default {
 	},
 	methods: {
 		initializeAgent() {
-			if (agentStore.agentItem) {
+			if (agentStore.item) {
 				// Deep copy to avoid reactivity issues
-				const sourceTools = agentStore.agentItem.tools || []
+				const sourceTools = agentStore.item.tools || []
 				const toolsArray = Array.isArray(sourceTools) ? [...sourceTools] : []
 
-				this.agentItem = { ...agentStore.agentItem }
+				this.agentItem = { ...agentStore.item }
 				// Force set the tools array to ensure reactivity
 				this.$set(this.agentItem, 'tools', toolsArray)
 				this.selectedType = this.agentTypes.find(t => t.value === this.agentItem.type)
@@ -757,7 +757,7 @@ export default {
 			this.error = null
 
 			try {
-				await agentStore.saveAgent(this.agentItem)
+				await agentStore.save(this.agentItem)
 				this.success = true
 				setTimeout(() => {
 					this.closeModal()
