@@ -3,72 +3,94 @@ import { setActivePinia, createPinia } from 'pinia'
 
 import { useNavigationStore } from './navigation.js'
 
-describe(
-	'Navigation Store', () => {
-		beforeEach(
-			() => {
-				setActivePinia(createPinia())
-			},
-		)
+describe('Navigation Store', () => {
+	beforeEach(() => {
+		setActivePinia(createPinia())
+	})
 
-		it(
-			'set current selected view correctly', () => {
-				const store = useNavigationStore()
+	it('has correct initial state', () => {
+		const store = useNavigationStore()
 
-				store.setSelected('publication')
-				expect(store.selected).toBe('publication')
+		expect(store.selected).toBe('dashboard')
+		expect(store.modal).toBe(false)
+		expect(store.dialog).toBe(false)
+		expect(store.transferData).toBeNull()
+	})
 
-				store.setSelected('catalogi')
-				expect(store.selected).toBe('catalogi')
+	it('sets current selected view correctly', () => {
+		const store = useNavigationStore()
 
-				store.setSelected('metadata')
-				expect(store.selected).toBe('metadata')
-			},
-		)
+		store.setSelected('publication')
+		expect(store.selected).toBe('publication')
 
-		it(
-			'set current selected publication catalogi correctly', () => {
-				const store = useNavigationStore()
+		store.setSelected('catalogi')
+		expect(store.selected).toBe('catalogi')
 
-				store.setSelectedCatalogus('7a048bfd-210f-4e93-a1e8-5aa9261740b7')
-				expect(store.selectedCatalogus).toBe('7a048bfd-210f-4e93-a1e8-5aa9261740b7')
+		store.setSelected('metadata')
+		expect(store.selected).toBe('metadata')
+	})
 
-				store.setSelectedCatalogus('dd133c51-89bc-4b06-bdbb-41f4dc07c4f1')
-				expect(store.selectedCatalogus).toBe('dd133c51-89bc-4b06-bdbb-41f4dc07c4f1')
+	it('sets modal correctly', () => {
+		const store = useNavigationStore()
 
-				store.setSelectedCatalogus('3b1cbee2-756e-4904-a157-29fb0cbe01d3')
-				expect(store.selectedCatalogus).toBe('3b1cbee2-756e-4904-a157-29fb0cbe01d3')
-			},
-		)
+		store.setModal('editPublication')
+		expect(store.modal).toBe('editPublication')
 
-		it(
-			'set modal correctly', () => {
-				const store = useNavigationStore()
+		store.setModal('editCatalogi')
+		expect(store.modal).toBe('editCatalogi')
 
-				store.setModal('editPublication')
-				expect(store.modal).toBe('editPublication')
+		store.setModal('editMetadata')
+		expect(store.modal).toBe('editMetadata')
+	})
 
-				store.setModal('editCatalogi')
-				expect(store.modal).toBe('editCatalogi')
+	it('sets dialog correctly', () => {
+		const store = useNavigationStore()
 
-				store.setModal('editMetadata')
-				expect(store.modal).toBe('editMetadata')
-			},
-		)
+		store.setDialog('deletePublication')
+		expect(store.dialog).toBe('deletePublication')
 
-		it(
-			'set modal correctly', () => {
-				const store = useNavigationStore()
+		store.setDialog('deleteCatalogi')
+		expect(store.dialog).toBe('deleteCatalogi')
 
-				store.setDialog('deletePublication')
-				expect(store.dialog).toBe('deletePublication')
+		store.setDialog('deleteMetadata')
+		expect(store.dialog).toBe('deleteMetadata')
+	})
 
-				store.setDialog('deleteCatalogi')
-				expect(store.dialog).toBe('deleteCatalogi')
+	it('sets and clears transfer data', () => {
+		const store = useNavigationStore()
+		const data = { id: 1, name: 'Test' }
 
-				store.setDialog('deleteMetadata')
-				expect(store.dialog).toBe('deleteMetadata')
-			},
-		)
-	},
-)
+		store.setTransferData(data)
+		expect(store.transferData).toEqual(data)
+
+		expect(store.getTransferData()).toEqual(data)
+
+		store.clearTransferData()
+		expect(store.transferData).toBeNull()
+	})
+
+	it('sets sidebar state', () => {
+		const store = useNavigationStore()
+
+		expect(store.sidebarState.registers).toBe(true)
+
+		store.setSidebarState('registers', false)
+		expect(store.sidebarState.registers).toBe(false)
+
+		store.setSidebarState('registers', true)
+		expect(store.sidebarState.registers).toBe(true)
+	})
+
+	it('has all sidebar sections in initial state', () => {
+		const store = useNavigationStore()
+
+		const expectedSections = [
+			'registers', 'register', 'organisations', 'search',
+			'deleted', 'logs', 'searchTrail', 'auditTrail', 'chat',
+		]
+
+		expectedSections.forEach((section) => {
+			expect(store.sidebarState[section]).toBe(true)
+		})
+	})
+})

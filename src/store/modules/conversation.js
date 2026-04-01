@@ -1,8 +1,6 @@
-/* eslint-disable no-console */
-// @ts-expect-error — createCrudStore is JS-only; full TS types will be added to the package later
 import { createCrudStore } from '@conduction/nextcloud-vue'
-import { Conversation } from '../../entities/conversation/index'
-import { Message } from '../../entities/message/index'
+import { Conversation } from '../../entities/conversation/index.ts'
+import { Message } from '../../entities/message/index.ts'
 
 export const useConversationStore = createCrudStore('conversation', {
 	endpoint: 'conversations',

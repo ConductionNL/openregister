@@ -49,6 +49,8 @@ describe('SearchTrail Store', () => {
 				weekly: [],
 				monthly: [],
 			})
+			expect(store.registerSchemaStats).toEqual([])
+			expect(store.userAgentStats).toEqual([])
 		})
 	})
 
@@ -128,38 +130,49 @@ describe('SearchTrail Store', () => {
 				}
 				store.setSearchTrailPagination(pagination)
 				expect(store.searchTrailPagination).toEqual(pagination)
-				expect(consoleSpy).toHaveBeenCalledWith('Search trail pagination set to:', pagination)
+				expect(consoleSpy).toHaveBeenCalledWith('Search trail pagination set to:', store.searchTrailPagination)
 				consoleSpy.mockRestore()
 			})
 		})
 
 		describe('setStatistics', () => {
-			it('should set statistics correctly', () => {
+			it('should map snake_case API response to camelCase state', () => {
 				const consoleSpy = jest.spyOn(console, 'info').mockImplementation(() => {})
-				const stats = {
-					total: 1000,
-					totalResults: 15000,
-					averageResultsPerSearch: 15,
-					averageExecutionTime: 180,
-					successRate: 0.95,
-					uniqueSearchTerms: 250,
-					uniqueUsers: 50,
-					uniqueOrganizations: 10,
-					queryComplexity: {
+				const apiStats = {
+					total_searches: 1000,
+					total_results: 15000,
+					avg_results_per_search: 15,
+					avg_response_time: 180,
+					success_rate: 95,
+					unique_search_terms: 250,
+					unique_users: 50,
+					unique_organizations: 10,
+					query_complexity: {
 						simple: 600,
 						medium: 300,
 						complex: 100,
 					},
 				}
-				store.setStatistics(stats)
-				expect(store.statistics).toEqual(stats)
-				expect(consoleSpy).toHaveBeenCalledWith('Search trail statistics set to:', stats)
+				store.setStatistics(apiStats)
+				expect(store.statistics.total).toBe(1000)
+				expect(store.statistics.totalResults).toBe(15000)
+				expect(store.statistics.averageResultsPerSearch).toBe(15)
+				expect(store.statistics.averageExecutionTime).toBe(180)
+				expect(store.statistics.successRate).toBe(0.95)
+				expect(store.statistics.uniqueSearchTerms).toBe(250)
+				expect(store.statistics.uniqueUsers).toBe(50)
+				expect(store.statistics.uniqueOrganizations).toBe(10)
+				expect(store.statistics.queryComplexity).toEqual({
+					simple: 600,
+					medium: 300,
+					complex: 100,
+				})
 				consoleSpy.mockRestore()
 			})
 		})
 
 		describe('setPopularTerms', () => {
-			it('should set popular terms correctly', () => {
+			it('should handle array response', () => {
 				const consoleSpy = jest.spyOn(console, 'info').mockImplementation(() => {})
 				const terms = [
 					{ term: 'user', count: 100 },
@@ -169,6 +182,13 @@ describe('SearchTrail Store', () => {
 				store.setPopularTerms(terms)
 				expect(store.popularTerms).toEqual(terms)
 				expect(consoleSpy).toHaveBeenCalledWith('Popular terms set to:', 3, 'items')
+				consoleSpy.mockRestore()
+			})
+
+			it('should handle { results: [] } response', () => {
+				const consoleSpy = jest.spyOn(console, 'info').mockImplementation(() => {})
+				store.setPopularTerms({ results: [{ term: 'test', count: 5 }] })
+				expect(store.popularTerms).toHaveLength(1)
 				consoleSpy.mockRestore()
 			})
 		})
@@ -277,16 +297,16 @@ describe('SearchTrail Store', () => {
 
 		describe('fetchStatistics', () => {
 			it('should fetch statistics successfully', async () => {
-				const mockStats = {
-					total: 1000,
-					totalResults: 15000,
-					averageResultsPerSearch: 15,
-					averageExecutionTime: 180,
-					successRate: 0.95,
-					uniqueSearchTerms: 250,
-					uniqueUsers: 50,
-					uniqueOrganizations: 10,
-					queryComplexity: {
+				const mockApiStats = {
+					total_searches: 1000,
+					total_results: 15000,
+					avg_results_per_search: 15,
+					avg_response_time: 180,
+					success_rate: 95,
+					unique_search_terms: 250,
+					unique_users: 50,
+					unique_organizations: 10,
+					query_complexity: {
 						simple: 600,
 						medium: 300,
 						complex: 100,
@@ -295,7 +315,7 @@ describe('SearchTrail Store', () => {
 
 				fetch.mockResolvedValueOnce({
 					ok: true,
-					json: async () => mockStats,
+					json: async () => mockApiStats,
 				})
 
 				const result = await store.fetchStatistics()
@@ -310,8 +330,9 @@ describe('SearchTrail Store', () => {
 						},
 					},
 				)
-				expect(store.statistics).toEqual(mockStats)
-				expect(result).toEqual(mockStats)
+				expect(store.statistics.total).toBe(1000)
+				expect(store.statistics.successRate).toBe(0.95)
+				expect(result).toEqual(mockApiStats)
 				expect(store.statisticsLoading).toBe(false)
 			})
 
@@ -359,10 +380,12 @@ describe('SearchTrail Store', () => {
 
 		describe('fetchActivity', () => {
 			it('should fetch activity data successfully', async () => {
-				const mockActivity = [
-					{ period: '2023-01-01', searches: 50, results: 750 },
-					{ period: '2023-01-02', searches: 75, results: 1125 },
-				]
+				const mockActivity = {
+					activity: [
+						{ period: '2023-01-01', count: 50, avg_results: 15, avg_response_time: 100 },
+						{ period: '2023-01-02', count: 75, avg_results: 20, avg_response_time: 120 },
+					],
+				}
 
 				fetch.mockResolvedValueOnce({
 					ok: true,
@@ -372,7 +395,7 @@ describe('SearchTrail Store', () => {
 				const result = await store.fetchActivity('daily')
 
 				expect(fetch).toHaveBeenCalledWith(
-					'/index.php/apps/openregister/api/search-trails/activity?period=daily',
+					'/index.php/apps/openregister/api/search-trails/activity?interval=daily',
 					{
 						method: 'GET',
 						headers: {
@@ -381,7 +404,9 @@ describe('SearchTrail Store', () => {
 						},
 					},
 				)
-				expect(store.activity.daily).toEqual(mockActivity)
+				expect(store.activity.daily).toHaveLength(2)
+				expect(store.activity.daily[0].period).toBe('2023-01-01')
+				expect(store.activity.daily[0].searches).toBe(50)
 				expect(result).toEqual(mockActivity)
 				expect(store.activityLoading).toBe(false)
 			})
@@ -505,6 +530,8 @@ describe('SearchTrail Store', () => {
 						complex: 0,
 					},
 				})
+				expect(store.registerSchemaStats).toEqual([])
+				expect(store.userAgentStats).toEqual([])
 				expect(consoleSpy).toHaveBeenCalledWith('Search trail store cleared')
 				consoleSpy.mockRestore()
 			})
