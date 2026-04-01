@@ -1379,7 +1379,6 @@ export default {
 		isFavorited(view) {
 			// Check if current user has favorited this view
 			// TODO: Remove this once we have a proper user store
-			// eslint-disable-next-line @nextcloud/no-deprecations
 			const currentUser = OC.getCurrentUser()?.uid
 			if (!currentUser || !view || !view.favoredBy) return false
 			return view.favoredBy.includes(currentUser)
@@ -1388,7 +1387,6 @@ export default {
 		async toggleFavorite(view) {
 			try {
 				// TODO: Remove this once we have a proper user store
-				// eslint-disable-next-line @nextcloud/no-deprecations
 				const currentUser = OC.getCurrentUser()?.uid
 				if (!currentUser) {
 					OC.Notification.showTemporary(this.t('openregister', 'You must be logged in to favorite views'))
