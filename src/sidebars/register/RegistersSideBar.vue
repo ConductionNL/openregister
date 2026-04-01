@@ -46,122 +46,18 @@ import { objectStore, registerStore, schemaStore, dashboardStore, navigationStor
 				</div>
 			</div>
 
-			<!-- System Totals Section -->
-			<div class="section">
-				<h3 class="sectionTitle">
-					{{ t('openregister', 'Register Totals') }}
-				</h3>
-				<div v-if="dashboardStore.loading" class="loadingContainer">
-					<NcLoadingIcon :size="20" />
-					<span>{{ t('openregister', 'Loading statistics...') }}</span>
-				</div>
-				<div v-else-if="systemTotals" class="statsStack">
-					<CnStatsBlock
-						:title="t('openregister', 'Registers')"
-						:count="filteredRegisters.length"
-						:count-label="t('openregister', 'register{plural}', {
-							plural: filteredRegisters.length !== 1 ? 's' : ''
-						})"
-						:icon="DatabaseOutline"
-						variant="primary"
-						horizontal
-						show-zero-count />
-					<CnStatsBlock
-						:title="t('openregister', 'Schemas')"
-						:count="totalSchemas"
-						:count-label="t('openregister', 'schema{plural}', {
-							plural: totalSchemas !== 1 ? 's' : ''
-						})"
-						:icon="TableIcon"
-						variant="primary"
-						horizontal
-						show-zero-count />
-					<CnStatsBlock
-						:title="t('openregister', 'Objects')"
-						:count="systemTotals.stats?.objects?.total || 0"
-						:count-label="t('openregister', 'object{plural}', {
-							plural: systemTotals.stats?.objects?.total !== 1 ? 's' : ''
-						})"
-						:icon="PackageVariantClosed"
-						variant="primary"
-						horizontal
-						show-zero-count
-						:breakdown="objectsBreakdown(systemTotals)" />
-					<CnStatsBlock
-						:title="t('openregister', 'Logs')"
-						:count="systemTotals.stats?.logs?.total || 0"
-						:count-label="t('openregister', 'log{plural}', {
-							plural: systemTotals.stats?.logs?.total !== 1 ? 's' : ''
-						})"
-						:icon="TextBoxOutline"
-						horizontal
-						show-zero-count
-						:breakdown="sizeBreakdown(systemTotals.stats?.logs?.size)" />
-					<CnStatsBlock
-						:title="t('openregister', 'Files')"
-						:count="systemTotals.stats?.files?.total || 0"
-						:count-label="t('openregister', 'file{plural}', {
-							plural: systemTotals.stats?.files?.total !== 1 ? 's' : ''
-						})"
-						:icon="FileDocumentOutline"
-						horizontal
-						show-zero-count
-						:breakdown="sizeBreakdown(systemTotals.stats?.files?.size)" />
-				</div>
+			<div v-if="dashboardStore.loading" class="loadingContainer">
+				<NcLoadingIcon :size="20" />
+				<span>{{ t('openregister', 'Loading statistics...') }}</span>
 			</div>
-
-			<!-- Orphaned Items Section -->
-			<div class="section">
-				<h3 class="sectionTitle">
-					{{ t('openregister', 'Orphaned Items') }}
-				</h3>
-				<div v-if="dashboardStore.loading" class="loadingContainer">
-					<NcLoadingIcon :size="20" />
-					<span>{{ t('openregister', 'Loading statistics...') }}</span>
-				</div>
-				<div v-else-if="orphanedItems" class="statsStack">
-					<CnStatsBlock
-						:title="t('openregister', 'Objects')"
-						:count="orphanedItems.stats?.objects?.total || 0"
-						:count-label="t('openregister', 'object{plural}', {
-							plural: systemTotals.stats?.objects?.total !== 1 ? 's' : ''
-						})"
-						:icon="PackageVariantClosed"
-						variant="warning"
-						horizontal
-						show-zero-count
-						:breakdown="objectsBreakdown(orphanedItems)" />
-					<CnStatsBlock
-						:title="t('openregister', 'Logs')"
-						:count="orphanedItems.stats?.logs?.total || 0"
-						:count-label="t('openregister', 'log{plural}', {
-							plural: systemTotals.stats?.logs?.total !== 1 ? 's' : ''
-						})"
-						:icon="TextBoxOutline"
-						variant="warning"
-						horizontal
-						show-zero-count
-						:breakdown="sizeBreakdown(orphanedItems.stats?.logs?.size)" />
-					<CnStatsBlock
-						:title="t('openregister', 'Files')"
-						:count="orphanedItems.stats?.files?.total || 0"
-						:count-label="t('openregister', 'file{plural}', {
-							plural: systemTotals.stats?.files?.total !== 1 ? 's' : ''
-						})"
-						:icon="FileDocumentOutline"
-						variant="warning"
-						horizontal
-						show-zero-count
-						:breakdown="sizeBreakdown(orphanedItems.stats?.files?.size)" />
-				</div>
-			</div>
+			<CnStatsPanel v-else :sections="registerStatsSections" />
 		</NcAppSidebarTab>
 	</NcAppSidebar>
 </template>
 
 <script>
 import { NcAppSidebar, NcAppSidebarTab, NcLoadingIcon, NcSelect } from '@nextcloud/vue'
-import { CnStatsBlock } from '@conduction/nextcloud-vue'
+import { CnStatsPanel } from '@conduction/nextcloud-vue'
 import ChartBar from 'vue-material-design-icons/ChartBar.vue'
 import DatabaseOutline from 'vue-material-design-icons/DatabaseOutline.vue'
 import TableIcon from 'vue-material-design-icons/Table.vue'
@@ -179,7 +75,7 @@ export default {
 		NcAppSidebarTab,
 		NcLoadingIcon,
 		NcSelect,
-		CnStatsBlock,
+		CnStatsPanel,
 		ChartBar,
 	},
 	data() {
@@ -220,6 +116,109 @@ export default {
 			return this.filteredRegisters.reduce((total, register) => {
 				return total + (register.schemas?.length || 0)
 			}, 0)
+		},
+		registerStatsSections() {
+			const sections = []
+
+			if (this.systemTotals) {
+				sections.push({
+					type: 'stats',
+					id: 'registerTotals',
+					title: t('openregister', 'Register Totals'),
+					layout: 'stack',
+					items: [
+						{
+							title: t('openregister', 'Registers'),
+							count: this.filteredRegisters.length,
+							countLabel: t('openregister', 'register{plural}', {
+								plural: this.filteredRegisters.length !== 1 ? 's' : '',
+							}),
+							icon: DatabaseOutline,
+							variant: 'primary',
+						},
+						{
+							title: t('openregister', 'Schemas'),
+							count: this.totalSchemas,
+							countLabel: t('openregister', 'schema{plural}', {
+								plural: this.totalSchemas !== 1 ? 's' : '',
+							}),
+							icon: TableIcon,
+							variant: 'primary',
+						},
+						{
+							title: t('openregister', 'Objects'),
+							count: this.systemTotals.stats?.objects?.total || 0,
+							countLabel: t('openregister', 'object{plural}', {
+								plural: this.systemTotals.stats?.objects?.total !== 1 ? 's' : '',
+							}),
+							icon: PackageVariantClosed,
+							variant: 'primary',
+							breakdown: this.objectsBreakdown(this.systemTotals),
+						},
+						{
+							title: t('openregister', 'Logs'),
+							count: this.systemTotals.stats?.logs?.total || 0,
+							countLabel: t('openregister', 'log{plural}', {
+								plural: this.systemTotals.stats?.logs?.total !== 1 ? 's' : '',
+							}),
+							icon: TextBoxOutline,
+							breakdown: this.sizeBreakdown(this.systemTotals.stats?.logs?.size),
+						},
+						{
+							title: t('openregister', 'Files'),
+							count: this.systemTotals.stats?.files?.total || 0,
+							countLabel: t('openregister', 'file{plural}', {
+								plural: this.systemTotals.stats?.files?.total !== 1 ? 's' : '',
+							}),
+							icon: FileDocumentOutline,
+							breakdown: this.sizeBreakdown(this.systemTotals.stats?.files?.size),
+						},
+					],
+				})
+			}
+
+			if (this.orphanedItems) {
+				sections.push({
+					type: 'stats',
+					id: 'orphanedItems',
+					title: t('openregister', 'Orphaned Items'),
+					layout: 'stack',
+					items: [
+						{
+							title: t('openregister', 'Objects'),
+							count: this.orphanedItems.stats?.objects?.total || 0,
+							countLabel: t('openregister', 'object{plural}', {
+								plural: this.orphanedItems.stats?.objects?.total !== 1 ? 's' : '',
+							}),
+							icon: PackageVariantClosed,
+							variant: 'warning',
+							breakdown: this.objectsBreakdown(this.orphanedItems),
+						},
+						{
+							title: t('openregister', 'Logs'),
+							count: this.orphanedItems.stats?.logs?.total || 0,
+							countLabel: t('openregister', 'log{plural}', {
+								plural: this.orphanedItems.stats?.logs?.total !== 1 ? 's' : '',
+							}),
+							icon: TextBoxOutline,
+							variant: 'warning',
+							breakdown: this.sizeBreakdown(this.orphanedItems.stats?.logs?.size),
+						},
+						{
+							title: t('openregister', 'Files'),
+							count: this.orphanedItems.stats?.files?.total || 0,
+							countLabel: t('openregister', 'file{plural}', {
+								plural: this.orphanedItems.stats?.files?.total !== 1 ? 's' : '',
+							}),
+							icon: FileDocumentOutline,
+							variant: 'warning',
+							breakdown: this.sizeBreakdown(this.orphanedItems.stats?.files?.size),
+						},
+					],
+				})
+			}
+
+			return sections
 		},
 		registerOptions() {
 			return {
@@ -311,36 +310,12 @@ export default {
 </script>
 
 <style lang="scss" scoped>
-.section {
-	padding: 12px 0;
-	border-bottom: 1px solid var(--color-border);
-}
-
-.section:last-child {
-	border-bottom: none;
-}
-
-.sectionTitle {
-	color: var(--color-text-maxcontrast);
-	font-size: 14px;
-	font-weight: bold;
-	padding: 0 16px;
-	margin: 0 0 12px 0;
-}
-
 .loadingContainer {
 	display: flex;
 	align-items: center;
 	gap: 8px;
 	padding: 0 16px;
 	color: var(--color-text-maxcontrast);
-}
-
-.statsStack {
-	display: flex;
-	flex-direction: column;
-	gap: 12px;
-	padding: 0 8px;
 }
 
 .filterSection {

@@ -48,53 +48,7 @@ import { registerStore, dashboardStore, navigationStore, schemaStore } from '../
 					<ChartBar :size="20" />
 				</template>
 
-				<div class="section">
-					<div class="sectionTitle">
-						{{ t('openregister', 'Statistics') }}
-					</div>
-					<div class="statsStack">
-						<CnStatsBlock
-							:title="t('openregister', 'Objects')"
-							:count="register.stats?.objects?.total || 0"
-							:count-label="t('openregister', 'object{plural}', {
-								plural: register.stats?.objects?.total !== 1 ? 's' : ''
-							})"
-							:icon="PackageVariantClosed"
-							variant="primary"
-							horizontal
-							show-zero-count
-							:breakdown="objectsBreakdown" />
-						<CnStatsBlock
-							:title="t('openregister', 'Logs')"
-							:count="register.stats?.logs?.total || 0"
-							:count-label="t('openregister', 'log{plural}', {
-								plural: register.stats?.logs?.total !== 1 ? 's' : ''
-							})"
-							:icon="TextBoxOutline"
-							horizontal
-							show-zero-count
-							:breakdown="sizeBreakdown(register.stats?.logs?.size)" />
-						<CnStatsBlock
-							:title="t('openregister', 'Files')"
-							:count="register.stats?.files?.total || 0"
-							:count-label="t('openregister', 'file{plural}', {
-								plural: register.stats?.files?.total !== 1 ? 's' : ''
-							})"
-							:icon="FileDocumentOutline"
-							horizontal
-							show-zero-count
-							:breakdown="sizeBreakdown(register.stats?.files?.size)" />
-						<CnStatsBlock
-							:title="t('openregister', 'Schemas')"
-							:count="register.schemas?.length || 0"
-							:count-label="t('openregister', 'schema{plural}', {
-								plural: register.schemas?.length !== 1 ? 's' : ''
-							})"
-							:icon="FileCodeOutline"
-							horizontal
-							show-zero-count />
-					</div>
-				</div>
+				<CnStatsPanel :sections="registerStatsSections" />
 			</NcAppSidebarTab>
 
 			<NcAppSidebarTab id="schemas-tab" name="Schemas" :order="2">
@@ -195,7 +149,7 @@ import { registerStore, dashboardStore, navigationStore, schemaStore } from '../
 
 <script>
 import { NcAppSidebar, NcAppSidebarTab, NcButton, NcEmptyContent, NcActions, NcActionButton, NcTextField, NcTextArea, NcSelect } from '@nextcloud/vue'
-import { CnStatsBlock, CnKpiGrid, CnItemCard, CnFormDialog } from '@conduction/nextcloud-vue'
+import { CnStatsPanel, CnStatsBlock, CnKpiGrid, CnItemCard, CnFormDialog } from '@conduction/nextcloud-vue'
 import { showError } from '@nextcloud/dialogs'
 import axios from '@nextcloud/axios'
 import ChartBar from 'vue-material-design-icons/ChartBar.vue'
@@ -222,6 +176,7 @@ export default {
 		NcTextField,
 		NcTextArea,
 		NcSelect,
+		CnStatsPanel,
 		CnStatsBlock,
 		CnKpiGrid,
 		CnItemCard,
@@ -269,6 +224,54 @@ export default {
 				published: stats.published || 0,
 			}
 			return breakdown
+		},
+		registerStatsSections() {
+			if (!this.register) return []
+
+			return [{
+				type: 'stats',
+				id: 'statistics',
+				title: t('openregister', 'Statistics'),
+				layout: 'stack',
+				items: [
+					{
+						title: t('openregister', 'Objects'),
+						count: this.register.stats?.objects?.total || 0,
+						countLabel: t('openregister', 'object{plural}', {
+							plural: this.register.stats?.objects?.total !== 1 ? 's' : '',
+						}),
+						icon: PackageVariantClosed,
+						variant: 'primary',
+						breakdown: this.objectsBreakdown,
+					},
+					{
+						title: t('openregister', 'Logs'),
+						count: this.register.stats?.logs?.total || 0,
+						countLabel: t('openregister', 'log{plural}', {
+							plural: this.register.stats?.logs?.total !== 1 ? 's' : '',
+						}),
+						icon: TextBoxOutline,
+						breakdown: this.sizeBreakdown(this.register.stats?.logs?.size),
+					},
+					{
+						title: t('openregister', 'Files'),
+						count: this.register.stats?.files?.total || 0,
+						countLabel: t('openregister', 'file{plural}', {
+							plural: this.register.stats?.files?.total !== 1 ? 's' : '',
+						}),
+						icon: FileDocumentOutline,
+						breakdown: this.sizeBreakdown(this.register.stats?.files?.size),
+					},
+					{
+						title: t('openregister', 'Schemas'),
+						count: this.register.schemas?.length || 0,
+						countLabel: t('openregister', 'schema{plural}', {
+							plural: this.register.schemas?.length !== 1 ? 's' : '',
+						}),
+						icon: FileCodeOutline,
+					},
+				],
+			}]
 		},
 		registerSchema() {
 			return {
@@ -395,13 +398,6 @@ export default {
 	font-weight: bold;
 	padding: 0 16px;
 	margin: 0 0 12px 0;
-}
-
-.statsStack {
-	display: flex;
-	flex-direction: column;
-	gap: 12px;
-	padding: 0 8px;
 }
 
 .schemaList {
