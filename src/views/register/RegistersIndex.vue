@@ -18,6 +18,8 @@ import { registerStore, navigationStore, configurationStore, schemaStore } from 
 			:selectable="true"
 			:selected-ids="selectedRegisters"
 			:schema="registerSchema"
+			:actions="registerActions"
+			:field-overrides="schemaFieldOverrides"
 			:show-edit-action="false"
 			:show-copy-action="false"
 			:show-delete-action="false"
@@ -39,36 +41,6 @@ import { registerStore, navigationStore, configurationStore, schemaStore } from 
 			@view-mode-change="registerStore.setViewMode($event)"
 			@select="onSelect"
 			@row-click="viewRegisterDetails">
-			<!-- Custom form fields for the built-in CnFormDialog -->
-			<template #form-fields="{ formData, errors, updateField }">
-				<div class="formContainer">
-					<NcTextField
-						:label="t('openregister', 'Title') + ' *'"
-						:value="formData.title || ''"
-						:error="!!errors.title"
-						:helper-text="errors.title"
-						@update:value="v => updateField('title', v)" />
-					<NcTextField
-						:label="t('openregister', 'Slug') + ' *'"
-						:value="formData.slug || ''"
-						:error="!!errors.slug"
-						:helper-text="errors.slug"
-						@update:value="v => updateField('slug', v)" />
-					<NcTextArea
-						:label="t('openregister', 'Description')"
-						:value="formData.description || ''"
-						@update:value="v => updateField('description', v)" />
-					<NcSelect
-						input-label="Schemas"
-						:options="schemaSelectOptions"
-						:value="getSchemaSelectValue(formData.schemas)"
-						:multiple="true"
-						:close-on-select="false"
-						:loading="schemasLoading"
-						@input="vals => updateField('schemas', vals)" />
-				</div>
-			</template>
-
 			<!-- Custom action items in actions bar -->
 			<template #action-items>
 				<NcActionButton close-after-click @click="registerStore.setItem(null); navigationStore.setModal('importRegister')">
@@ -130,90 +102,13 @@ import { registerStore, navigationStore, configurationStore, schemaStore } from 
 			<template #column-updated="{ row }">
 				{{ row.updated ? new Date(row.updated).toLocaleDateString({day: '2-digit', month: '2-digit', year: 'numeric'}) + ', ' + new Date(row.updated).toLocaleTimeString({hour: '2-digit', minute: '2-digit', second: '2-digit'}) : '-' }}
 			</template>
-
-			<!-- Custom row actions for table view -->
-			<template #row-actions="{ row }">
-				<NcActions :primary="false">
-					<template #icon>
-						<DotsHorizontal :size="20" />
-					</template>
-					<NcActionButton
-						v-tooltip="isManagedByExternalConfig(row) ? 'Cannot edit: This register is managed by external configuration ' + getManagingConfiguration(row)?.title : ''"
-						close-after-click
-						:disabled="isManagedByExternalConfig(row)"
-						@click="$refs.indexPage.openFormDialog(row)">
-						<template #icon>
-							<Pencil :size="20" />
-						</template>
-						Edit
-					</NcActionButton>
-					<NcActionButton
-						v-if="!row.published || (row.depublished && new Date(row.depublished) <= new Date())"
-						close-after-click
-						@click="publishRegister(row)">
-						<template #icon>
-							<Publish :size="20" />
-						</template>
-						Publish
-					</NcActionButton>
-					<NcActionButton
-						v-if="row.published && (!row.depublished || new Date(row.depublished) > new Date())"
-						close-after-click
-						@click="depublishRegister(row)">
-						<template #icon>
-							<PublishOff :size="20" />
-						</template>
-						Depublish
-					</NcActionButton>
-					<NcActionButton close-after-click @click="registerStore.setItem(row); navigationStore.setModal('publishRegister')">
-						<template #icon>
-							<CloudUploadOutline :size="20" />
-						</template>
-						Publish OAS
-					</NcActionButton>
-					<NcActionButton close-after-click @click="registerStore.setItem(row); navigationStore.setModal('importRegister')">
-						<template #icon>
-							<Upload :size="20" />
-						</template>
-						Import
-					</NcActionButton>
-					<NcActionButton close-after-click @click="registerStore.setItem(row); viewOasDoc(row)">
-						<template #icon>
-							<ApiIcon :size="20" />
-						</template>
-						View API Documentation
-					</NcActionButton>
-					<NcActionButton close-after-click @click="registerStore.setItem(row); downloadOas(row)">
-						<template #icon>
-							<Download :size="20" />
-						</template>
-						Download API Specification
-					</NcActionButton>
-					<NcActionButton v-tooltip="row.stats?.total > 0 ? 'Cannot delete: objects are still attached' : ''"
-						close-after-click
-						:disabled="row.stats?.total > 0"
-						@click="registerStore.setItem(row); navigationStore.setDialog('deleteRegister')">
-						<template #icon>
-							<TrashCanOutline :size="20" />
-						</template>
-						Delete
-					</NcActionButton>
-					<NcActionButton close-after-click @click="viewRegisterDetails(row)">
-						<template #icon>
-							<InformationOutline :size="20" />
-						</template>
-						View Details
-					</NcActionButton>
-				</NcActions>
-			</template>
 		</CnIndexPage>
 	</NcAppContent>
 </template>
 
 <script>
-import { NcAppContent, NcActions, NcActionButton, NcTextField, NcTextArea, NcSelect } from '@nextcloud/vue'
+import { NcAppContent, NcActionButton } from '@nextcloud/vue'
 import { CnIndexPage } from '@conduction/nextcloud-vue'
-import DotsHorizontal from 'vue-material-design-icons/DotsHorizontal.vue'
 import Pencil from 'vue-material-design-icons/Pencil.vue'
 import TrashCanOutline from 'vue-material-design-icons/TrashCanOutline.vue'
 import Upload from 'vue-material-design-icons/Upload.vue'
@@ -233,30 +128,17 @@ export default {
 	components: {
 		NcAppContent,
 		CnIndexPage,
-		NcActions,
 		NcActionButton,
-		NcTextField,
-		NcTextArea,
-		NcSelect,
-		DotsHorizontal,
-		Pencil,
-		TrashCanOutline,
 		Upload,
 		ApiIcon,
-		Download,
-		InformationOutline,
 		CogOutline,
 		CloudUploadOutline,
-		Publish,
-		PublishOff,
 		RegisterSchemaCard,
 	},
 	data() {
 		return {
 			selectedRegisters: [],
 			isRefreshing: false,
-			schemaSelectOptions: [],
-			schemasLoading: false,
 		}
 	},
 	computed: {
@@ -269,11 +151,85 @@ export default {
 				properties: {
 					title: { type: 'string', title: t('openregister', 'Title'), required: true, minLength: 1, order: 1 },
 					slug: { type: 'string', title: t('openregister', 'Slug'), required: true, minLength: 1, order: 2 },
-					description: { type: 'string', title: t('openregister', 'Description'), order: 3 },
+					description: { type: 'string', title: t('openregister', 'Description'), widget: 'textarea', order: 3 },
 					schemas: { type: 'array', title: t('openregister', 'Schemas'), order: 4 },
 				},
 				required: ['title', 'slug'],
 			}
+		},
+		schemaFieldOverrides() {
+			return {
+				schemas: {
+					widget: 'multiselect',
+					items: {
+						enum: async () => schemaStore.list.map(s => ({ id: s.id, label: s.title })),
+					},
+				},
+			}
+		},
+		registerActions() {
+			return [
+				{
+					label: t('openregister', 'Edit'),
+					icon: Pencil,
+					handler: (row) => {
+						const editRow = {
+							...row,
+							schemas: (row.schemas || []).map(s => {
+								const id = typeof s === 'object' ? s.id : s
+								const schema = schemaStore.list.find(sc => String(sc.id) === String(id))
+								return { id, label: schema ? schema.title : String(id) }
+							}),
+						}
+						this.$refs.indexPage.openFormDialog(editRow)
+					},
+					disabled: (row) => this.isManagedByExternalConfig(row),
+				},
+				{
+					label: t('openregister', 'Publish'),
+					icon: Publish,
+					handler: (row) => this.publishRegister(row),
+					disabled: (row) => !(!row.published || (row.depublished && new Date(row.depublished) <= new Date())),
+				},
+				{
+					label: t('openregister', 'Depublish'),
+					icon: PublishOff,
+					handler: (row) => this.depublishRegister(row),
+					disabled: (row) => !(row.published && (!row.depublished || new Date(row.depublished) > new Date())),
+				},
+				{
+					label: t('openregister', 'Publish OAS'),
+					icon: CloudUploadOutline,
+					handler: (row) => { registerStore.setItem(row); navigationStore.setModal('publishRegister') },
+				},
+				{
+					label: t('openregister', 'Import'),
+					icon: Upload,
+					handler: (row) => { registerStore.setItem(row); navigationStore.setModal('importRegister') },
+				},
+				{
+					label: t('openregister', 'View API Documentation'),
+					icon: ApiIcon,
+					handler: (row) => { registerStore.setItem(row); this.viewOasDoc(row) },
+				},
+				{
+					label: t('openregister', 'Download API Specification'),
+					icon: Download,
+					handler: (row) => { registerStore.setItem(row); this.downloadOas(row) },
+				},
+				{
+					label: t('openregister', 'Delete'),
+					icon: TrashCanOutline,
+					handler: (row) => { registerStore.setItem(row); navigationStore.setDialog('deleteRegister') },
+					disabled: (row) => row.stats?.total > 0,
+					destructive: true,
+				},
+				{
+					label: t('openregister', 'View Details'),
+					icon: InformationOutline,
+					handler: (row) => this.viewRegisterDetails(row),
+				},
+			]
 		},
 		filteredRegisters() {
 			return registerStore.list.filter(register =>
@@ -307,17 +263,13 @@ export default {
 	},
 	async mounted() {
 		try {
-			this.schemasLoading = true
 			await Promise.all([
 				registerStore.refreshList(),
 				configurationStore.refreshList(),
 				schemaStore.refreshList(),
 			])
-			this.schemaSelectOptions = schemaStore.list.map(s => ({ id: s.id, label: s.title }))
 		} catch (error) {
 			console.error('Failed to load data:', error)
-		} finally {
-			this.schemasLoading = false
 		}
 	},
 	methods: {
@@ -365,15 +317,6 @@ export default {
 			const config = this.getManagingConfiguration(register)
 			if (!config) return false
 			return config.sourceType === 'local' || config.sourceType === 'manual' || config.isLocal === true
-		},
-
-		getSchemaSelectValue(schemas) {
-			if (!Array.isArray(schemas)) return []
-			return schemas.map(s => {
-				const id = typeof s === 'object' ? s.id : s
-				return this.schemaSelectOptions.find(o => String(o.id) === String(id))
-					|| { id, label: String(id) }
-			})
 		},
 
 		async onSaveRegister(formData) {
