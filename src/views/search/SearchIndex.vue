@@ -96,6 +96,7 @@ export default {
 			navigationStore.setModal('viewObject')
 		},
 		handleRefresh() {
+			if (!this.hasSelectedRegisters || !this.hasSelectedSchemas) return
 			objectStore.refetchSearchCollection()
 		},
 		handleSort({ key, order }) {
@@ -144,7 +145,6 @@ export default {
 	<NcAppContent>
 		<CnIndexPage
 			ref="indexPage"
-			:class="{ 'add-button-disabled': !hasSelectedRegisters || !hasSelectedSchemas }"
 			:title="pageTitle"
 			:schema="normalizedSchema"
 			:register="objectStore.searchRegister"
@@ -162,6 +162,8 @@ export default {
 			:show-title="false"
 			:show-mass-import="false"
 			:show-mass-export="false"
+			:add-disabled="!hasSelectedRegisters || !hasSelectedSchemas"
+			:refresh-disabled="!hasSelectedRegisters || !hasSelectedSchemas"
 			use-advanced-form-dialog
 			:show-edit-action="false"
 			:show-copy-action="false"
@@ -204,11 +206,3 @@ export default {
 		</CnIndexPage>
 	</NcAppContent>
 </template>
-
-<style scoped>
-.add-button-disabled :deep(.cn-actions-bar .button-vue--vue-primary) {
-	opacity: 0.5;
-	cursor: not-allowed;
-	pointer-events: none;
-}
-</style>

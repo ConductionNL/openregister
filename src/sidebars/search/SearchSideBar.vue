@@ -830,6 +830,7 @@ export default {
 					if (this.selectedRegisters.length > 0 && this.selectedSchemas.length > 0) {
 						this.performSearchWithFacets()
 					} else {
+						objectStore.updateSearchParams({ register: null, schema: null })
 						objectStore.clearSearchCollection()
 					}
 					return
