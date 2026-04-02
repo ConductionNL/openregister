@@ -128,10 +128,16 @@ import formatBytes from '../../services/formatBytes.js'
 						<h3>
 							<FileCodeOutline :size="20" />
 							{{ schema.title }}
-							<span v-if="managingConfiguration" v-tooltip.bottom="'Managed by configuration: ' + managingConfiguration.title" class="managedBadge">
-								<Database :size="16" />
-								Managed
-							</span>
+							<CnStatusBadge
+								v-if="managingConfiguration"
+								v-tooltip.bottom="'Managed by configuration: ' + managingConfiguration.title"
+								label="Managed"
+								variant="primary"
+								size="small">
+								<template #icon>
+									<Database :size="16" />
+								</template>
+							</CnStatusBadge>
 						</h3>
 						<NcActions v-if="!managingConfiguration" :primary="true" menu-name="Schema Actions">
 							<template #icon>
@@ -214,7 +220,7 @@ import formatBytes from '../../services/formatBytes.js'
 
 <script>
 import { NcAppContent, NcEmptyContent, NcLoadingIcon, NcActions, NcActionButton, NcButton, NcTextField, NcTextArea, NcSelect } from '@nextcloud/vue'
-import { CnDetailPage, CnFormDialog } from '@conduction/nextcloud-vue'
+import { CnDetailPage, CnFormDialog, CnStatusBadge } from '@conduction/nextcloud-vue'
 import VueApexCharts from 'vue-apexcharts'
 import FileCodeOutline from 'vue-material-design-icons/FileCodeOutline.vue'
 import FolderOutline from 'vue-material-design-icons/FolderOutline.vue'
@@ -237,6 +243,7 @@ export default {
 		NcSelect,
 		CnDetailPage,
 		CnFormDialog,
+		CnStatusBadge,
 		apexchart: VueApexCharts,
 		FileCodeOutline,
 		FolderOutline,
@@ -591,20 +598,6 @@ export default {
 	padding: 20px;
 	box-shadow: 0 2px 8px var(--color-box-shadow);
 	border: 1px solid var(--color-border);
-}
-
-.managedBadge {
-	display: inline-flex;
-	align-items: center;
-	gap: 4px;
-	padding: 4px 8px;
-	background: var(--color-primary-element-light);
-	color: var(--color-primary-element-text);
-	border-radius: 12px;
-	font-size: 0.75rem;
-	font-weight: 600;
-	margin-left: 8px;
-	vertical-align: middle;
 }
 
 .cardHeader {

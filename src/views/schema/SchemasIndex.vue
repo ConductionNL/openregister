@@ -47,20 +47,38 @@ import { schemaStore, navigationStore, configurationStore } from '../../store/st
 				<div class="titleContent">
 					<div class="titleWithBadges">
 						<strong>{{ row.title }}</strong>
-						<span v-if="row.extend" class="statusPill statusPill--alert">
-							{{ t('openregister', 'Extended') }}
-						</span>
-						<span v-if="hasObjects(row)" class="statusPill statusPill--success">
-							{{ t('openregister', 'In use') }}
-						</span>
-						<span v-if="isManagedByExternalConfig(row)" class="managedBadge managedBadge--external">
-							<CogOutline :size="16" />
-							{{ t('openregister', 'Managed') }}
-						</span>
-						<span v-else-if="isManagedByLocalConfig(row)" class="managedBadge managedBadge--local">
-							<CogOutline :size="16" />
-							{{ t('openregister', 'Local') }}
-						</span>
+						<CnStatusBadge
+							v-if="row.extend"
+							:label="t('openregister', 'Extended')"
+							variant="warning"
+							:solid="true"
+							size="small" />
+						<CnStatusBadge
+							v-if="hasObjects(row)"
+							:label="t('openregister', 'In use')"
+							variant="success"
+							:solid="true"
+							size="small" />
+						<CnStatusBadge
+							v-if="isManagedByExternalConfig(row)"
+							:label="t('openregister', 'Managed')"
+							variant="success"
+							:solid="true"
+							size="small">
+							<template #icon>
+								<CogOutline :size="16" />
+							</template>
+						</CnStatusBadge>
+						<CnStatusBadge
+							v-else-if="isManagedByLocalConfig(row)"
+							:label="t('openregister', 'Local')"
+							variant="warning"
+							:solid="true"
+							size="small">
+							<template #icon>
+								<CogOutline :size="16" />
+							</template>
+						</CnStatusBadge>
 					</div>
 					<span v-if="row.description" class="textDescription textEllipsis">{{ row.description }}</span>
 				</div>
@@ -132,7 +150,7 @@ import { schemaStore, navigationStore, configurationStore } from '../../store/st
 
 <script>
 import { NcAppContent, NcActions, NcActionButton } from '@nextcloud/vue'
-import { CnIndexPage } from '@conduction/nextcloud-vue'
+import { CnIndexPage, CnStatusBadge } from '@conduction/nextcloud-vue'
 import DotsHorizontal from 'vue-material-design-icons/DotsHorizontal.vue'
 import Pencil from 'vue-material-design-icons/Pencil.vue'
 import TrashCanOutline from 'vue-material-design-icons/TrashCanOutline.vue'
@@ -147,6 +165,7 @@ export default {
 	components: {
 		NcAppContent,
 		CnIndexPage,
+		CnStatusBadge,
 		NcActions,
 		NcActionButton,
 		DotsHorizontal,
@@ -287,28 +306,6 @@ export default {
 	border-left: 4px solid var(--color-success);
 }
 
-/* Status Pills */
-.statusPill {
-	display: inline-block;
-	padding: 2px 8px;
-	border-radius: 12px;
-	font-size: 0.75em;
-	font-weight: 600;
-	text-transform: uppercase;
-	margin-left: 8px;
-	white-space: nowrap;
-}
-
-.statusPill--alert {
-	background-color: var(--color-warning);
-	color: var(--color-main-background);
-}
-
-.statusPill--success {
-	background-color: var(--color-success);
-	color: white;
-}
-
 /* Title with badges layout */
 .titleWithBadges {
 	display: flex;
@@ -328,28 +325,4 @@ export default {
 	font-size: 0.9em;
 }
 
-/* Managed by Configuration badge */
-.managedBadge {
-	display: inline-flex;
-	align-items: center;
-	gap: 4px;
-	padding: 4px 8px;
-	border-radius: 12px;
-	font-size: 0.75rem;
-	font-weight: 600;
-	margin-left: 8px;
-	vertical-align: middle;
-}
-
-/* External (managed) badge - green */
-.managedBadge--external {
-	background: var(--color-success);
-	color: white;
-}
-
-/* Local configuration badge - orange */
-.managedBadge--local {
-	background: var(--color-warning);
-	color: var(--color-main-background);
-}
 </style>

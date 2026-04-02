@@ -29,7 +29,7 @@
 			@page-size-changed="onPageSizeChanged"
 			@view-mode-change="viewMode = $event">
 			<template #column-type="{ row }">
-				<span class="badge badgeType">{{ row.type }}</span>
+				<CnStatusBadge :label="row.type" variant="primary" size="small" />
 			</template>
 
 			<template #column-updatedAt="{ row }">
@@ -55,7 +55,7 @@
 import { t } from '@nextcloud/l10n'
 
 import { NcAppContent, NcButton } from '@nextcloud/vue'
-import { CnIndexPage } from '@conduction/nextcloud-vue'
+import { CnIndexPage, CnStatusBadge } from '@conduction/nextcloud-vue'
 
 import FilterVariant from 'vue-material-design-icons/FilterVariant.vue'
 
@@ -65,6 +65,7 @@ export default {
 		NcAppContent,
 		NcButton,
 		CnIndexPage,
+		CnStatusBadge,
 		FilterVariant,
 	},
 	data() {
@@ -171,19 +172,3 @@ export default {
 	},
 }
 </script>
-
-<style scoped>
-.badge {
-	display: inline-block;
-	padding: 4px 8px;
-	border-radius: 12px;
-	font-size: 12px;
-	font-weight: 600;
-	text-transform: uppercase;
-}
-
-.badgeType {
-	background: var(--color-primary-light);
-	color: var(--color-primary-element);
-}
-</style>

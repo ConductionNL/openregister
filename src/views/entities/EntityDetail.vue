@@ -36,7 +36,7 @@
 							<AccountOutline :size="28" />
 							{{ entity.value }}
 						</h1>
-						<span class="badge badge-type">{{ entity.type }}</span>
+						<CnStatusBadge :label="entity.type" variant="primary" size="small" />
 					</div>
 					<p>
 						{{ t('openregister', 'View entity details and manage relations') }}
@@ -81,11 +81,11 @@
 							</tr>
 							<tr>
 								<td><strong>{{ t('openregister', 'Type') }}</strong></td>
-								<td><span class="badge badge-type">{{ entity.type }}</span></td>
+								<td><CnStatusBadge :label="entity.type" variant="primary" size="small" /></td>
 							</tr>
 							<tr>
 								<td><strong>{{ t('openregister', 'Category') }}</strong></td>
-								<td><span class="badge badge-category">{{ entity.category }}</span></td>
+								<td><CnStatusBadge :label="entity.category" variant="default" size="small" /></td>
 							</tr>
 							<tr>
 								<td><strong>{{ t('openregister', 'Detected At') }}</strong></td>
@@ -108,7 +108,10 @@
 					<div class="cardHeader">
 						<h2>
 							{{ t('openregister', 'Relations') }}
-							<span class="badge badge-count">{{ relations.length }}</span>
+							<CnStatusBadge :label="String(relations.length)"
+								variant="primary"
+								:solid="true"
+								size="small" />
 						</h2>
 					</div>
 
@@ -195,6 +198,7 @@ import {
 	NcActionButton,
 } from '@nextcloud/vue'
 
+import { CnStatusBadge } from '@conduction/nextcloud-vue'
 import AccountOutline from 'vue-material-design-icons/AccountOutline.vue'
 import ArrowLeft from 'vue-material-design-icons/ArrowLeft.vue'
 import Refresh from 'vue-material-design-icons/Refresh.vue'
@@ -225,6 +229,7 @@ export default {
 		NcEmptyContent,
 		NcActions,
 		NcActionButton,
+		CnStatusBadge,
 		AccountOutline,
 		ArrowLeft,
 		Refresh,
@@ -470,31 +475,6 @@ export default {
 .entityInfoTable td:first-child {
 	width: 30%;
 	color: var(--color-text-maxcontrast);
-}
-
-.badge {
-	display: inline-block;
-	padding: 4px 8px;
-	border-radius: 12px;
-	font-size: 12px;
-	font-weight: 600;
-	text-transform: uppercase;
-}
-
-.badge-type {
-	background: var(--color-primary-light);
-	color: var(--color-primary-element);
-}
-
-.badge-category {
-	background: var(--color-background-dark);
-	color: var(--color-text-maxcontrast);
-}
-
-.badge-count {
-	background: var(--color-primary-element);
-	color: white;
-	margin-left: 8px;
 }
 
 .relationLoading {

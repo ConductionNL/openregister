@@ -307,9 +307,12 @@
 							<div class="backend-option" :class="{'backend-disabled': !available}">
 								<div class="backend-header">
 									<strong>{{ name }}</strong>
-									<span v-if="performance" :class="'badge badge-' + performance">
-										{{ performance === 'slow' ? '🐌 Slow' : performance === 'fast' ? '⚡ Fast' : '🚀 Very Fast' }}
-									</span>
+									<CnStatusBadge
+										v-if="performance"
+										:label="performance === 'slow' ? '🐌 Slow' : performance === 'fast' ? '⚡ Fast' : '🚀 Very Fast'"
+										:variant="performance === 'slow' ? 'warning' : performance === 'fast' ? 'success' : 'primary'"
+										:solid="true"
+										size="small" />
 								</div>
 								<small>{{ description }}</small>
 								<small v-if="!available" class="warning-text">⚠️ Not available</small>
@@ -419,6 +422,7 @@
 
 <script>
 import { NcDialog, NcButton, NcLoadingIcon, NcSelect, NcCheckboxRadioSwitch } from '@nextcloud/vue'
+import { CnStatusBadge } from '@conduction/nextcloud-vue'
 import InformationOutline from 'vue-material-design-icons/InformationOutline.vue'
 import TestTube from 'vue-material-design-icons/TestTube.vue'
 import ContentSave from 'vue-material-design-icons/ContentSave.vue'
@@ -436,6 +440,7 @@ export default {
 		NcLoadingIcon,
 		NcSelect,
 		NcCheckboxRadioSwitch,
+		CnStatusBadge,
 		InformationOutline,
 		TestTube,
 		ContentSave,
@@ -1127,28 +1132,6 @@ export default {
 		display: flex;
 		align-items: center;
 		gap: 8px;
-	}
-
-	.badge {
-		padding: 2px 8px;
-		border-radius: 12px;
-		font-size: 11px;
-		font-weight: 500;
-
-		&.badge-slow {
-			background: var(--color-warning);
-			color: white;
-		}
-
-		&.badge-fast {
-			background: var(--color-success);
-			color: white;
-		}
-
-		&.badge-very_fast {
-			background: var(--color-primary-element);
-			color: white;
-		}
 	}
 
 	small {

@@ -113,12 +113,17 @@
 									<div class="name-container" :title="collection.name">
 										<strong class="name-text">{{ truncateName(collection.name, 25) }}</strong>
 										<div class="collection-badges">
-											<span v-if="collection.name === selectedObjectCollection" class="badge object-badge">
-												{{ t('openregister', 'Objects') }}
-											</span>
-											<span v-if="collection.name === selectedFileCollection" class="badge file-badge">
-												{{ t('openregister', 'Files') }}
-											</span>
+											<CnStatusBadge
+												v-if="collection.name === selectedObjectCollection"
+												:label="t('openregister', 'Objects')"
+												variant="primary"
+												size="small" />
+											<CnStatusBadge
+												v-if="collection.name === selectedFileCollection"
+												:label="t('openregister', 'Files')"
+												variant="warning"
+												:solid="true"
+												size="small" />
 										</div>
 									</div>
 								</td>
@@ -298,6 +303,7 @@
 
 <script>
 import { NcDialog, NcButton, NcLoadingIcon, NcSelect, NcActions, NcActionButton } from '@nextcloud/vue'
+import { CnStatusBadge } from '@conduction/nextcloud-vue'
 import Refresh from 'vue-material-design-icons/Refresh.vue'
 import Database from 'vue-material-design-icons/Database.vue'
 import FileDocument from 'vue-material-design-icons/FileDocument.vue'
@@ -321,6 +327,7 @@ export default {
 		NcSelect,
 		NcActions,
 		NcActionButton,
+		CnStatusBadge,
 		Refresh,
 		Database,
 		FileDocument,
@@ -844,24 +851,6 @@ export default {
 .collection-badges {
 	display: flex;
 	gap: 5px;
-}
-
-.badge {
-	font-size: 10px;
-	padding: 2px 6px;
-	border-radius: var(--border-radius-small);
-	font-weight: 600;
-	text-transform: uppercase;
-}
-
-.object-badge {
-	background: var(--color-primary-element-light);
-	color: var(--color-primary-element-text);
-}
-
-.file-badge {
-	background: var(--color-warning);
-	color: var(--color-main-background);
 }
 
 .number-cell {

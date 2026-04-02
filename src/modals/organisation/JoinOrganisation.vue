@@ -16,7 +16,12 @@ import { organisationStore, navigationStore } from '../../store/store.js'
 			<div class="organisation-option">
 				<div class="organisation-header">
 					<span class="organisation-name">{{ name }}</span>
-					<span v-if="isDefault" class="badge badge-default">Default</span>
+					<CnStatusBadge
+						v-if="isDefault"
+						label="Default"
+						variant="warning"
+						:solid="true"
+						size="small" />
 				</div>
 				<p v-if="description" class="organisation-description">
 					{{ description }}
@@ -50,12 +55,13 @@ import { organisationStore, navigationStore } from '../../store/store.js'
 
 <script>
 import { NcNoteCard } from '@nextcloud/vue'
-import { CnFormDialog } from '@conduction/nextcloud-vue'
+import { CnFormDialog, CnStatusBadge } from '@conduction/nextcloud-vue'
 
 export default {
 	name: 'JoinOrganisation',
 	components: {
 		CnFormDialog,
+		CnStatusBadge,
 		NcNoteCard,
 	},
 	data() {
@@ -212,20 +218,6 @@ export default {
 .organisation-name {
 	font-weight: 600;
 	color: var(--color-text-dark);
-}
-
-.badge {
-	display: inline-block;
-	padding: 2px 8px;
-	border-radius: 12px;
-	font-size: 11px;
-	font-weight: 600;
-	text-transform: uppercase;
-}
-
-.badge-default {
-	background: var(--color-warning);
-	color: var(--color-primary-text);
 }
 
 .organisation-description {
