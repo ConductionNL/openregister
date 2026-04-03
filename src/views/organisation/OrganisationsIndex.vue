@@ -44,9 +44,12 @@ import { organisationStore, navigationStore } from '../../store/store.js'
 					<div class="activeOrgInfo">
 						<span class="activeOrgLabel">Actieve Organisatie:</span>
 						<span class="activeOrgName">{{ organisationStore.userStats.active.name }}</span>
-						<span v-if="organisationStore.userStats.active.isDefault" class="defaultBadge">
-							Standaard
-						</span>
+						<CnStatusBadge
+							v-if="organisationStore.userStats.active.isDefault"
+							label="Standaard"
+							variant="warning"
+							:solid="true"
+							size="small" />
 					</div>
 					<NcButton v-if="organisationStore.userStats.total > 1"
 						type="secondary"
@@ -84,8 +87,16 @@ import { organisationStore, navigationStore } from '../../store/store.js'
 				<div class="titleContent">
 					<strong>{{ row.name }}</strong>
 					<div class="badges">
-						<span v-if="row.isDefault" class="defaultBadge">Standaard</span>
-						<span v-if="isActiveOrganisation(row)" class="activeBadge">Actief</span>
+						<CnStatusBadge v-if="row.isDefault"
+							label="Standaard"
+							variant="warning"
+							:solid="true"
+							size="small" />
+						<CnStatusBadge v-if="isActiveOrganisation(row)"
+							label="Actief"
+							variant="success"
+							:solid="true"
+							size="small" />
 					</div>
 					<span v-if="row.description" class="textDescription textEllipsis">{{ row.description }}</span>
 				</div>
@@ -127,8 +138,16 @@ import { organisationStore, navigationStore } from '../../store/store.js'
 						@click="switchToOrganisation(org)">
 						<div class="organisationOptionContent">
 							<span class="organisationOptionName">{{ org.name }}</span>
-							<span v-if="org.isDefault" class="defaultBadge">Default</span>
-							<span v-if="isActiveOrganisation(org)" class="activeBadge">Huidig</span>
+							<CnStatusBadge v-if="org.isDefault"
+								label="Default"
+								variant="warning"
+								:solid="true"
+								size="small" />
+							<CnStatusBadge v-if="isActiveOrganisation(org)"
+								label="Huidig"
+								variant="success"
+								:solid="true"
+								size="small" />
 						</div>
 						<span v-if="org.description" class="organisationOptionDescription">{{ org.description }}</span>
 					</div>
@@ -140,7 +159,7 @@ import { organisationStore, navigationStore } from '../../store/store.js'
 
 <script>
 import { NcAppContent, NcButton, NcModal } from '@nextcloud/vue'
-import { CnIndexPage } from '@conduction/nextcloud-vue'
+import { CnIndexPage, CnStatusBadge } from '@conduction/nextcloud-vue'
 import Pencil from 'vue-material-design-icons/Pencil.vue'
 import TrashCanOutline from 'vue-material-design-icons/TrashCanOutline.vue'
 import AccountPlus from 'vue-material-design-icons/AccountPlus.vue'
@@ -158,6 +177,7 @@ export default {
 	components: {
 		NcAppContent,
 		CnIndexPage,
+		CnStatusBadge,
 		NcButton,
 		NcModal,
 		OrganisationCard,
@@ -377,25 +397,6 @@ export default {
 .activeOrgName {
 	font-weight: 700;
 	color: var(--color-primary-text);
-}
-
-.defaultBadge, .activeBadge {
-	display: inline-block;
-	padding: 2px 8px;
-	border-radius: 12px;
-	font-size: 11px;
-	font-weight: 600;
-	text-transform: uppercase;
-}
-
-.defaultBadge {
-	background: var(--color-warning);
-	color: var(--color-primary-text);
-}
-
-.activeBadge {
-	background: var(--color-success);
-	color: white;
 }
 
 /* Table styling */

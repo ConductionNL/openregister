@@ -119,7 +119,7 @@ import { agentStore, navigationStore } from '../../store/store.js'
 								<div class="agentInfo">
 									<div v-if="agent.type" class="agentInfoItem">
 										<strong>{{ t('openregister', 'Type') }}:</strong>
-										<span class="agentTypeBadge">{{ agent.type }}</span>
+										<CnStatusBadge :label="agent.type" variant="primary" size="small" />
 									</div>
 									<div v-if="agent.provider" class="agentInfoItem">
 										<strong>{{ t('openregister', 'Provider') }}:</strong>
@@ -137,10 +137,14 @@ import { agentStore, navigationStore } from '../../store/store.js'
 									</div>
 									<div v-if="agent.enableRag" class="agentInfoItem">
 										<strong>{{ t('openregister', 'RAG') }}:</strong>
-										<span class="ragBadge">
-											<Brain :size="16" />
-											Enabled
-										</span>
+										<CnStatusBadge
+											label="Enabled"
+											variant="success"
+											size="small">
+											<template #icon>
+												<Brain :size="16" />
+											</template>
+										</CnStatusBadge>
 									</div>
 								</div>
 							</div>
@@ -186,7 +190,7 @@ import { agentStore, navigationStore } from '../../store/store.js'
 											<span v-if="agent.description" class="textDescription textEllipsis">{{ agent.description }}</span>
 										</div>
 									</td>
-									<td><span class="agentTypeBadge">{{ agent.type || '-' }}</span></td>
+									<td><CnStatusBadge :label="agent.type || '-'" variant="primary" size="small" /></td>
 									<td>{{ agent.provider || '-' }}</td>
 									<td>{{ agent.model || '-' }}</td>
 									<td>
@@ -195,10 +199,15 @@ import { agentStore, navigationStore } from '../../store/store.js'
 										</span>
 									</td>
 									<td>
-										<span v-if="agent.enableRag" class="ragBadge">
-											<Brain :size="16" />
-											Enabled
-										</span>
+										<CnStatusBadge
+											v-if="agent.enableRag"
+											label="Enabled"
+											variant="success"
+											size="small">
+											<template #icon>
+												<Brain :size="16" />
+											</template>
+										</CnStatusBadge>
 										<span v-else>-</span>
 									</td>
 									<td>{{ agent.created ? new Date(agent.created).toLocaleDateString() : '-' }}</td>
@@ -244,6 +253,7 @@ import { agentStore, navigationStore } from '../../store/store.js'
 
 <script>
 import { NcAppContent, NcEmptyContent, NcLoadingIcon, NcActions, NcActionButton, NcCheckboxRadioSwitch } from '@nextcloud/vue'
+import { CnStatusBadge } from '@conduction/nextcloud-vue'
 import RobotOutline from 'vue-material-design-icons/RobotOutline.vue'
 import DotsHorizontal from 'vue-material-design-icons/DotsHorizontal.vue'
 import Pencil from 'vue-material-design-icons/Pencil.vue'
@@ -263,6 +273,7 @@ export default {
 		NcActions,
 		NcActionButton,
 		NcCheckboxRadioSwitch,
+		CnStatusBadge,
 		RobotOutline,
 		DotsHorizontal,
 		Pencil,
@@ -380,26 +391,4 @@ export default {
 	color: var(--color-text-lighter);
 }
 
-.agentTypeBadge {
-	display: inline-block;
-	padding: 2px 8px;
-	border-radius: 12px;
-	background-color: var(--color-primary-element-light);
-	color: var(--color-primary-element-text);
-	font-size: 0.85em;
-	font-weight: 600;
-	text-transform: capitalize;
-}
-
-.ragBadge {
-	display: inline-flex;
-	align-items: center;
-	gap: 4px;
-	padding: 2px 8px;
-	border-radius: 12px;
-	background-color: var(--color-success-light);
-	color: var(--color-success-dark);
-	font-size: 0.85em;
-	font-weight: 600;
-}
 </style>

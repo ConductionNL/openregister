@@ -51,12 +51,12 @@
 
 			<!-- Custom column: type badge -->
 			<template #column-type="{ row }">
-				<span class="badge badgeType">{{ row.type }}</span>
+				<CnStatusBadge :label="row.type" variant="primary" size="small" />
 			</template>
 
 			<!-- Custom column: category badge -->
 			<template #column-category="{ row }">
-				<span class="badge badgeCategory">{{ row.category }}</span>
+				<CnStatusBadge :label="row.category" variant="default" size="small" />
 			</template>
 
 			<!-- Custom column: detected at -->
@@ -98,7 +98,7 @@ import { showError } from '@nextcloud/dialogs'
 import axios from '@nextcloud/axios'
 
 import { NcAppContent, NcButton } from '@nextcloud/vue'
-import { CnIndexPage, CnCard } from '@conduction/nextcloud-vue'
+import { CnIndexPage, CnCard, CnStatusBadge } from '@conduction/nextcloud-vue'
 
 import AccountOutline from 'vue-material-design-icons/AccountOutline.vue'
 import Eye from 'vue-material-design-icons/Eye.vue'
@@ -113,6 +113,7 @@ export default {
 		NcButton,
 		CnIndexPage,
 		CnCard,
+		CnStatusBadge,
 		AccountOutline,
 		FilterVariant,
 		EntitiesSidebar,
@@ -288,22 +289,4 @@ export default {
 	flex-shrink: 0;
 }
 
-.badge {
-	display: inline-block;
-	padding: 4px 8px;
-	border-radius: 12px;
-	font-size: 12px;
-	font-weight: 600;
-	text-transform: uppercase;
-}
-
-.badgeType {
-	background: var(--color-primary-light);
-	color: var(--color-primary-element);
-}
-
-.badgeCategory {
-	background: var(--color-background-dark);
-	color: var(--color-text-maxcontrast);
-}
 </style>

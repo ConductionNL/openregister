@@ -30,7 +30,7 @@
 			@sort="onSort"
 			@view-mode-change="viewMode = $event">
 			<template #column-mimeType="{ row }">
-				<span class="badge badge-mimetype">{{ formatMimeType(row.mimeType) }}</span>
+				<CnStatusBadge :label="formatMimeType(row.mimeType)" size="small" />
 			</template>
 
 			<template #column-fileSize="{ row }">
@@ -38,9 +38,11 @@
 			</template>
 
 			<template #column-riskLevel="{ row }">
-				<span class="badge" :class="'badge-risk-' + row.riskLevel">
-					{{ formatRiskLevel(row.riskLevel) }}
-				</span>
+				<CnStatusBadge
+					:label="formatRiskLevel(row.riskLevel)"
+					:variant="riskVariant(row.riskLevel)"
+					:solid="row.riskLevel === 'very_high'"
+					size="small" />
 			</template>
 
 			<template #column-extractedAt="{ row }">
@@ -109,7 +111,7 @@ import {
 	NcButton,
 } from '@nextcloud/vue'
 
-import { CnIndexPage } from '@conduction/nextcloud-vue'
+import { CnIndexPage, CnStatusBadge } from '@conduction/nextcloud-vue'
 
 import Refresh from 'vue-material-design-icons/Refresh.vue'
 import AlertCircleOutline from 'vue-material-design-icons/AlertCircleOutline.vue'
@@ -125,6 +127,7 @@ export default {
 		NcActionButton,
 		NcButton,
 		CnIndexPage,
+		CnStatusBadge,
 		Refresh,
 		AlertCircleOutline,
 		FilterVariant,
@@ -305,6 +308,17 @@ export default {
 			return category.charAt(0).toUpperCase() + category.slice(1)
 		},
 
+		riskVariant(level) {
+			const map = {
+				none: 'default',
+				low: 'success',
+				medium: 'warning',
+				high: 'error',
+				very_high: 'error',
+			}
+			return map[level] || 'default'
+		},
+
 		formatRiskLevel(level) {
 			const labels = {
 				none: t('openregister', 'None'),
@@ -323,44 +337,3 @@ export default {
 	},
 }
 </script>
-
-<style scoped>
-.badge {
-	display: inline-block;
-	padding: 4px 8px;
-	border-radius: 12px;
-	font-size: 12px;
-	font-weight: 600;
-	text-transform: uppercase;
-}
-
-.badge-mimetype {
-	background: var(--color-background-dark);
-	color: var(--color-text-maxcontrast);
-}
-
-.badge-risk-none {
-	background: var(--color-background-dark);
-	color: var(--color-text-maxcontrast);
-}
-
-.badge-risk-low {
-	background: var(--color-success-light);
-	color: var(--color-success);
-}
-
-.badge-risk-medium {
-	background: var(--color-warning-light);
-	color: var(--color-warning);
-}
-
-.badge-risk-high {
-	background: var(--color-error-light);
-	color: var(--color-error);
-}
-
-.badge-risk-very_high {
-	background: var(--color-error);
-	color: var(--color-main-background);
-}
-</style>

@@ -73,14 +73,26 @@ import { registerStore, navigationStore, configurationStore, schemaStore } from 
 				<div class="titleContent">
 					<strong>
 						{{ row.title }}
-						<span v-if="isManagedByExternalConfig(row)" class="managedBadge managedBadge--external">
-							<CogOutline :size="16" />
-							{{ t('openregister', 'Managed') }}
-						</span>
-						<span v-else-if="isManagedByLocalConfig(row)" class="managedBadge managedBadge--local">
-							<CogOutline :size="16" />
-							{{ t('openregister', 'Local') }}
-						</span>
+						<CnStatusBadge
+							v-if="isManagedByExternalConfig(row)"
+							:label="t('openregister', 'Managed')"
+							variant="success"
+							:solid="true"
+							size="small">
+							<template #icon>
+								<CogOutline :size="16" />
+							</template>
+						</CnStatusBadge>
+						<CnStatusBadge
+							v-else-if="isManagedByLocalConfig(row)"
+							:label="t('openregister', 'Local')"
+							variant="warning"
+							:solid="true"
+							size="small">
+							<template #icon>
+								<CogOutline :size="16" />
+							</template>
+						</CnStatusBadge>
 					</strong>
 					<span v-if="row.description" class="textDescription textEllipsis">{{ row.description }}</span>
 				</div>
@@ -108,7 +120,7 @@ import { registerStore, navigationStore, configurationStore, schemaStore } from 
 
 <script>
 import { NcAppContent, NcActionButton } from '@nextcloud/vue'
-import { CnIndexPage } from '@conduction/nextcloud-vue'
+import { CnIndexPage, CnStatusBadge } from '@conduction/nextcloud-vue'
 import Pencil from 'vue-material-design-icons/Pencil.vue'
 import TrashCanOutline from 'vue-material-design-icons/TrashCanOutline.vue'
 import Upload from 'vue-material-design-icons/Upload.vue'
@@ -128,6 +140,7 @@ export default {
 	components: {
 		NcAppContent,
 		CnIndexPage,
+		CnStatusBadge,
 		NcActionButton,
 		Upload,
 		ApiIcon,
@@ -455,28 +468,4 @@ export default {
 	box-shadow: inset 3px 0 0 0 var(--color-warning);
 }
 
-/* Managed by Configuration badge */
-.managedBadge {
-	display: inline-flex;
-	align-items: center;
-	gap: 4px;
-	padding: 4px 8px;
-	border-radius: 12px;
-	font-size: 0.75rem;
-	font-weight: 600;
-	margin-left: 8px;
-	vertical-align: middle;
-}
-
-/* External (managed) badge - green */
-.managedBadge--external {
-	background: var(--color-success);
-	color: white;
-}
-
-/* Local configuration badge - orange */
-.managedBadge--local {
-	background: var(--color-warning);
-	color: var(--color-main-background);
-}
 </style>

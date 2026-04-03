@@ -17,8 +17,16 @@ import { organisationStore, navigationStore } from '../../store/store.js'
 				<h2 class="pageHeader">
 					<OfficeBuilding :size="24" />
 					{{ organisationStore.item.name }}
-					<span v-if="organisationStore.item.isDefault" class="defaultBadge">Default</span>
-					<span v-if="isActiveOrganisation" class="activeBadge">Active</span>
+					<CnStatusBadge v-if="organisationStore.item.isDefault"
+						label="Default"
+						variant="warning"
+						:solid="true"
+						size="small" />
+					<CnStatusBadge v-if="isActiveOrganisation"
+						label="Active"
+						variant="success"
+						:solid="true"
+						size="small" />
 				</h2>
 				<div class="headerActionsContainer">
 					<NcActions :primary="true" menu-name="Actions">
@@ -129,7 +137,12 @@ import { organisationStore, navigationStore } from '../../store/store.js'
 							<div class="memberInfo">
 								<Account :size="20" />
 								<span class="memberName">{{ userId }}</span>
-								<span v-if="userId === organisationStore.item.owner" class="ownerBadge">Owner</span>
+								<CnStatusBadge
+									v-if="userId === organisationStore.item.owner"
+									label="Owner"
+									variant="primary"
+									:solid="true"
+									size="small" />
 							</div>
 							<NcActions v-if="canManageMembers && userId !== organisationStore.item.owner">
 								<NcActionButton close-after-click @click="removeMember(userId)">
@@ -189,6 +202,7 @@ import { organisationStore, navigationStore } from '../../store/store.js'
 
 <script>
 import { NcActions, NcActionButton, NcAppContent, NcEmptyContent, NcLoadingIcon, NcButton } from '@nextcloud/vue'
+import { CnStatusBadge } from '@conduction/nextcloud-vue'
 import OfficeBuilding from 'vue-material-design-icons/OfficeBuilding.vue'
 import DotsHorizontal from 'vue-material-design-icons/DotsHorizontal.vue'
 import Pencil from 'vue-material-design-icons/Pencil.vue'
@@ -211,6 +225,7 @@ export default {
 		NcEmptyContent,
 		NcLoadingIcon,
 		NcButton,
+		CnStatusBadge,
 		OfficeBuilding,
 		DotsHorizontal,
 		Pencil,
@@ -399,31 +414,6 @@ export default {
 	align-items: center;
 	gap: 8px;
 	margin: 0;
-}
-
-.defaultBadge, .activeBadge, .ownerBadge {
-	display: inline-block;
-	padding: 2px 8px;
-	border-radius: 12px;
-	font-size: 11px;
-	font-weight: 600;
-	text-transform: uppercase;
-	margin-left: 8px;
-}
-
-.defaultBadge {
-	background: var(--color-warning);
-	color: var(--color-primary-text);
-}
-
-.activeBadge {
-	background: var(--color-success);
-	color: white;
-}
-
-.ownerBadge {
-	background: var(--color-primary);
-	color: white;
 }
 
 .organisationContent {
