@@ -7095,7 +7095,6 @@ class MagicMapper extends AbstractObjectMapper
      *
      * @return list<ObjectEntity>|int
      *
-     * @psalm-suppress LessSpecificImplementedReturnType
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Flags control security filtering behavior
      */
     public function searchObjects(
