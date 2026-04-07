@@ -9,7 +9,7 @@
       "id": 1,
       "title": "Update getExistingTableColumns() in lib/Db/MagicMapper.php to use platform-aware table_schema filter",
       "description": "Detect the database platform via getDatabasePlatform() and use DATABASE() for MySQL/MariaDB and 'public' for PostgreSQL, following the same pattern as tableExists() (~line 1599).",
-      "status": "pending",
+      "status": "done",
       "spec_ref": "mariadb-column-query",
       "acceptance_criteria": [
         "On MariaDB/MySQL, getExistingTableColumns() returns the correct column list",

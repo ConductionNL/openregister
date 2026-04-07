@@ -1,10 +1,9 @@
 # Changelog
 
-## [0.2.13-unstable.78] - 2026-04-03
+## 0.2.13-unstable.78 – 2026-04-03
 
 ### Fixed
-- Fix `MagicMapper::getExistingTableColumns()` to use platform-aware `table_schema` filter (`DATABASE()` for MySQL/MariaDB, `'public'` for PostgreSQL), preventing `Duplicate column name '_id'` errors on MariaDB writes
-
+- Fix `MagicMapper::getExistingTableColumns()` to use platform-aware `table_schema` filter (`DATABASE()` for MySQL/MariaDB, `current_schema()` for PostgreSQL), preventing `Duplicate column name '_id'` errors on MariaDB writes
 
 
 ## 0.2.9-beta.36 – 2026-01-12

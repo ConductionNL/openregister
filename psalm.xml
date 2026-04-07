@@ -105,7 +105,6 @@
         <StringIncrement errorLevel="suppress"/>
         <InvalidDocblock errorLevel="suppress"/>
         <MoreSpecificImplementedParamType errorLevel="suppress"/>
-        <LessSpecificImplementedReturnType errorLevel="suppress"/>
         <MissingDependency errorLevel="suppress"/>
         <UnevaluatedCode errorLevel="suppress"/>
         <!-- Suppress external library/interface method issues -->
