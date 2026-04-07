@@ -7093,7 +7093,7 @@ class MagicMapper extends AbstractObjectMapper
      * @param array|null  $ids            Specific IDs
      * @param string|null $uses           Uses filter
      *
-     * @return array<int, ObjectEntity>|int
+     * @return list<ObjectEntity>|int
      *
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Flags control security filtering behavior
      */
