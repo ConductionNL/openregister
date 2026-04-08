@@ -36,12 +36,15 @@ class SourcesControllerTest extends TestCase
         $this->config = $this->createMock(IAppConfig::class);
         $this->sourceMapper = $this->createMock(SourceMapper::class);
 
+        $l10n = $this->createMock(IL10N::class);
+        $l10n->method('t')->willReturnArgument(0);
+
         $this->controller = new SourcesController(
             'openregister',
             $this->request,
             $this->config,
             $this->sourceMapper,
-            $this->createMock(IL10N::class)
+            $l10n
         );
     }
 

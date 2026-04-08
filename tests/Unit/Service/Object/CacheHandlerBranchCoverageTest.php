@@ -52,7 +52,6 @@ class CacheHandlerBranchCoverageTest extends TestCase
             });
 
         $this->handler = new CacheHandler(
-            $this->objectMapper,
             $this->organisationMapper,
             $this->logger,
             $this->cacheFactory,
@@ -312,7 +311,6 @@ class CacheHandlerBranchCoverageTest extends TestCase
             ->willThrowException(new \Exception('Cache init failed'));
 
         $handler = new CacheHandler(
-            $this->objectMapper,
             $this->organisationMapper,
             $this->logger,
             $cacheFactory,

@@ -148,7 +148,7 @@ class RelationsController extends Controller
     public function index(string $register, string $schema, string $id): JSONResponse
     {
         try {
-            $object = $this->validateObject(object: $register, schema: $schema, schemaObject: $id);
+            $object = $this->validateObject(register: $register, schema: $schema, id: $id);
             if ($object === null) {
                 return new JSONResponse(['error' => 'Object not found'], 404);
             }

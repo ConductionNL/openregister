@@ -104,13 +104,8 @@ class SaveObjectsTest extends TestCase
             $this->schemaMapper,
             $this->registerMapper,
             $this->saveHandler,
-            $this->bulkValidHandler,
-            $this->bulkRelationHandler,
-            $this->transformHandler,
-            $this->preparationHandler,
-            $this->chunkProcHandler,
-            $this->organisationService,
             $this->userSession,
+            $this->organisationService,
             $this->logger
         );
 

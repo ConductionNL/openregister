@@ -129,7 +129,6 @@ class CacheHandlerCoverageTest extends TestCase
         }
 
         return new CacheHandler(
-            $this->objectMapper,
             $this->organisationMapper,
             $this->logger,
             $withDistributedCache ? $this->cacheFactory : null,
@@ -211,7 +210,6 @@ class CacheHandlerCoverageTest extends TestCase
             ->willThrowException(new \Exception('Redis unavailable'));
 
         $handler = new CacheHandler(
-            $this->objectMapper,
             $this->organisationMapper,
             $this->logger,
             $cacheFactory,

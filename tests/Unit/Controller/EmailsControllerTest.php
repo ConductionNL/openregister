@@ -5,7 +5,10 @@ declare(strict_types=1);
 namespace Unit\Controller;
 
 use OCA\OpenRegister\Controller\EmailsController;
+use OCA\OpenRegister\Db\EmailLink;
+use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\EmailService;
+use OCA\OpenRegister\Service\ObjectService;
 use OCP\AppFramework\Http;
 use OCP\IRequest;
 use OCP\IUser;
@@ -21,6 +24,7 @@ class EmailsControllerTest extends TestCase
 {
     private IRequest&MockObject $request;
     private EmailService&MockObject $emailService;
+    private ObjectService&MockObject $objectService;
     private IUserSession&MockObject $userSession;
     private LoggerInterface&MockObject $logger;
     private EmailsController $controller;
@@ -29,6 +33,7 @@ class EmailsControllerTest extends TestCase
     {
         $this->request = $this->createMock(IRequest::class);
         $this->emailService = $this->createMock(EmailService::class);
+        $this->objectService = $this->createMock(ObjectService::class);
         $this->userSession = $this->createMock(IUserSession::class);
         $this->logger = $this->createMock(LoggerInterface::class);
 
@@ -36,61 +41,139 @@ class EmailsControllerTest extends TestCase
             'openregister',
             $this->request,
             $this->emailService,
+            $this->objectService,
             $this->userSession,
             $this->logger
         );
     }
 
-    public function testByMessageReturnsLinkedObjects(): void
+    private function setupObjectService(string $uuid = 'abc-123'): ObjectEntity
     {
-        $expected = [
-            'results' => [
-                ['linkId' => 1, 'objectUuid' => 'abc-123', 'registerTitle' => 'Vergunningen'],
-            ],
-            'total' => 1,
-        ];
+        $object = new ObjectEntity();
+        $object->setUuid($uuid);
+        $object->setRegister(1);
+        $this->objectService->method('setSchema')->willReturnSelf();
+        $this->objectService->method('setRegister')->willReturnSelf();
+        $this->objectService->method('setObject')->willReturnSelf();
+        $this->objectService->method('getObject')->willReturn($object);
+        return $object;
+    }
 
-        $this->emailService->expects($this->once())
-            ->method('findByMessageId')
-            ->with(1, 42)
+    // ── index() ──
+
+    public function testIndexReturnsEmailLinks(): void
+    {
+        $this->setupObjectService();
+        $this->emailService->method('isMailAvailable')->willReturn(true);
+        $this->request->method('getParams')->willReturn([]);
+
+        $expected = ['results' => [['linkId' => 1]], 'total' => 1];
+        $this->emailService->method('getEmailsForObject')
+            ->with('abc-123', null, null)
             ->willReturn($expected);
 
-        $response = $this->controller->byMessage(1, 42);
-
+        $response = $this->controller->index('reg', 'sch', 'abc-123');
         $this->assertSame(Http::STATUS_OK, $response->getStatus());
         $this->assertSame($expected, $response->getData());
     }
 
-    public function testByMessageReturnsBadRequestForInvalidIds(): void
+    public function testIndexReturns501WhenMailNotAvailable(): void
     {
-        $response = $this->controller->byMessage(0, 42);
+        $this->emailService->method('isMailAvailable')->willReturn(false);
 
-        $this->assertSame(Http::STATUS_BAD_REQUEST, $response->getStatus());
-        $this->assertSame('Invalid account ID or message ID', $response->getData()['error']);
+        $response = $this->controller->index('reg', 'sch', 'abc-123');
+        $this->assertSame(501, $response->getStatus());
+        $this->assertSame('APP_NOT_AVAILABLE', $response->getData()['code']);
     }
 
-    public function testByMessageReturnsBadRequestForNegativeId(): void
+    public function testIndexReturns404WhenObjectNotFound(): void
     {
-        $response = $this->controller->byMessage(-1, 42);
+        $this->emailService->method('isMailAvailable')->willReturn(true);
+        $this->objectService->method('setSchema')->willReturnSelf();
+        $this->objectService->method('setRegister')->willReturnSelf();
+        $this->objectService->method('setObject')->willReturnSelf();
+        $this->objectService->method('getObject')->willReturn(null);
 
+        $response = $this->controller->index('reg', 'sch', 'nonexistent');
+        $this->assertSame(Http::STATUS_NOT_FOUND, $response->getStatus());
+    }
+
+    // ── create() ──
+
+    public function testCreateReturns201OnSuccess(): void
+    {
+        $this->setupObjectService();
+        $this->emailService->method('isMailAvailable')->willReturn(true);
+        $this->request->method('getParams')->willReturn([
+            'mailAccountId' => 1,
+            'mailMessageId' => 42,
+        ]);
+
+        $emailLink = new EmailLink();
+        $this->emailService->method('linkEmail')->willReturn($emailLink);
+
+        $response = $this->controller->create('reg', 'sch', 'abc-123');
+        $this->assertSame(Http::STATUS_CREATED, $response->getStatus());
+    }
+
+    public function testCreateReturnsBadRequestWhenMissingFields(): void
+    {
+        $this->setupObjectService();
+        $this->emailService->method('isMailAvailable')->willReturn(true);
+        $this->request->method('getParams')->willReturn([]);
+
+        $response = $this->controller->create('reg', 'sch', 'abc-123');
         $this->assertSame(Http::STATUS_BAD_REQUEST, $response->getStatus());
     }
+
+    // ── destroy() ──
+
+    public function testDestroyReturnsSuccess(): void
+    {
+        $this->setupObjectService();
+        $this->emailService->method('isMailAvailable')->willReturn(true);
+
+        $response = $this->controller->destroy('reg', 'sch', 'abc-123', '7');
+        $this->assertSame(Http::STATUS_OK, $response->getStatus());
+        $this->assertTrue($response->getData()['success']);
+    }
+
+    // ── search() ──
+
+    public function testSearchReturnsBadRequestWithoutSender(): void
+    {
+        $this->emailService->method('isMailAvailable')->willReturn(true);
+        $this->request->method('getParams')->willReturn([]);
+
+        $response = $this->controller->search();
+        $this->assertSame(Http::STATUS_BAD_REQUEST, $response->getStatus());
+    }
+
+    public function testSearchReturnsResults(): void
+    {
+        $this->emailService->method('isMailAvailable')->willReturn(true);
+        $this->request->method('getParams')->willReturn(['sender' => 'test@example.nl']);
+        $this->emailService->method('searchBySender')
+            ->with('test@example.nl')
+            ->willReturn([['id' => 1]]);
+
+        $response = $this->controller->search();
+        $this->assertSame(Http::STATUS_OK, $response->getStatus());
+        $this->assertSame(1, $response->getData()['total']);
+    }
+
+    // ── bySender() ──
 
     public function testBySenderReturnsDiscoveredObjects(): void
     {
-        $expected = [
-            'results' => [
-                ['objectUuid' => 'abc-123', 'linkedEmailCount' => 2],
-            ],
-            'total' => 1,
-        ];
+        $expected = ['objectUuid' => 'abc-123'];
 
         $this->request->method('getParam')
             ->with('sender')
             ->willReturn('burger@test.local');
 
         $this->emailService->expects($this->once())
-            ->method('findObjectsBySender')
+            ->method('searchBySender')
             ->with('burger@test.local')
             ->willReturn($expected);
 
@@ -112,107 +195,17 @@ class EmailsControllerTest extends TestCase
         $this->assertSame('The sender parameter is required', $response->getData()['error']);
     }
 
-    public function testBySenderReturnsBadRequestForInvalidEmail(): void
+    public function testBySenderReturns500OnException(): void
     {
         $this->request->method('getParam')
             ->with('sender')
-            ->willReturn('not-an-email');
+            ->willReturn('test@example.nl');
+
+        $this->emailService->method('searchBySender')
+            ->willThrowException(new \Exception('DB error'));
 
         $response = $this->controller->bySender();
 
-        $this->assertSame(Http::STATUS_BAD_REQUEST, $response->getStatus());
-        $this->assertSame('Invalid email address format', $response->getData()['error']);
-    }
-
-    public function testQuickLinkCreatesLink(): void
-    {
-        $params = [
-            'mailAccountId' => 1,
-            'mailMessageId' => 42,
-            'objectUuid' => 'abc-123',
-            'registerId' => 1,
-        ];
-
-        $this->request->method('getParams')
-            ->willReturn($params);
-
-        $user = $this->createMock(IUser::class);
-        $user->method('getUID')->willReturn('admin');
-        $this->userSession->method('getUser')->willReturn($user);
-
-        $this->emailService->expects($this->once())
-            ->method('quickLink')
-            ->willReturn(['linkId' => 1, 'objectUuid' => 'abc-123']);
-
-        $response = $this->controller->quickLink();
-
-        $this->assertSame(Http::STATUS_CREATED, $response->getStatus());
-    }
-
-    public function testQuickLinkReturnsBadRequestForMissingField(): void
-    {
-        $this->request->method('getParams')
-            ->willReturn([
-                'mailAccountId' => 1,
-                'mailMessageId' => 42,
-                // missing objectUuid and registerId
-            ]);
-
-        $response = $this->controller->quickLink();
-
-        $this->assertSame(Http::STATUS_BAD_REQUEST, $response->getStatus());
-    }
-
-    public function testQuickLinkReturnsConflictOnDuplicate(): void
-    {
-        $params = [
-            'mailAccountId' => 1,
-            'mailMessageId' => 42,
-            'objectUuid' => 'abc-123',
-            'registerId' => 1,
-        ];
-
-        $this->request->method('getParams')
-            ->willReturn($params);
-
-        $user = $this->createMock(IUser::class);
-        $user->method('getUID')->willReturn('admin');
-        $this->userSession->method('getUser')->willReturn($user);
-
-        $this->emailService->method('quickLink')
-            ->willThrowException(new \RuntimeException('Email already linked to this object', 409));
-
-        $response = $this->controller->quickLink();
-
-        $this->assertSame(Http::STATUS_CONFLICT, $response->getStatus());
-    }
-
-    public function testDeleteLinkSuccess(): void
-    {
-        $this->emailService->expects($this->once())
-            ->method('deleteLink')
-            ->with(7);
-
-        $response = $this->controller->deleteLink(7);
-
-        $this->assertSame(Http::STATUS_OK, $response->getStatus());
-        $this->assertSame('deleted', $response->getData()['status']);
-    }
-
-    public function testDeleteLinkReturnsNotFound(): void
-    {
-        $this->emailService->method('deleteLink')
-            ->willThrowException(new \OCP\AppFramework\Db\DoesNotExistException(''));
-
-        $response = $this->controller->deleteLink(999);
-
-        $this->assertSame(Http::STATUS_NOT_FOUND, $response->getStatus());
-    }
-
-    public function testDeleteLinkReturnsBadRequestForInvalidId(): void
-    {
-        $response = $this->controller->deleteLink(0);
-
-        $this->assertSame(Http::STATUS_BAD_REQUEST, $response->getStatus());
+        $this->assertSame(Http::STATUS_INTERNAL_SERVER_ERROR, $response->getStatus());
     }
 }

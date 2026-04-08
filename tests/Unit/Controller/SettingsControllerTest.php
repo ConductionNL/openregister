@@ -67,7 +67,11 @@ class SettingsControllerTest extends TestCase
         $this->vectorizationService = $this->createMock(VectorizationService::class);
         $this->logger = $this->createMock(LoggerInterface::class);
         $this->l10n = $this->createMock(IL10N::class);
-        $this->l10n->method('t')->willReturnArgument(0);
+        $this->l10n->method('t')->willReturnCallback(
+            static function (string $text, $parameters = []): string {
+                return vsprintf($text, $parameters);
+            }
+        );
 
         $this->controller = new SettingsController(
             'openregister',
@@ -2604,7 +2608,8 @@ class SettingsControllerTest extends TestCase
             $this->appManager,
             $this->settingsService,
             $this->vectorizationService,
-            $this->logger
+            $this->logger,
+            $this->l10n
         );
 
         $response = $controller->updateSearchBackend();

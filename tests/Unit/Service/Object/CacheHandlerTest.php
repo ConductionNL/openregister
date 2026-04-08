@@ -102,7 +102,6 @@ class CacheHandlerTest extends TestCase
             ->willReturn(null);
 
         $this->handler = new CacheHandler(
-            $this->objectMapper,
             $this->organisationMapper,
             $this->logger,
             $this->cacheFactory,
@@ -201,7 +200,6 @@ class CacheHandlerTest extends TestCase
             ->willReturn($indexService);
 
         return new CacheHandler(
-            $this->objectMapper,
             $this->organisationMapper,
             $this->logger,
             $this->cacheFactory,
@@ -227,7 +225,6 @@ class CacheHandlerTest extends TestCase
         IDBConnection $db
     ): CacheHandler {
         return new CacheHandler(
-            $this->objectMapper,
             $this->organisationMapper,
             $this->logger,
             $this->cacheFactory,
@@ -668,7 +665,6 @@ class CacheHandlerTest extends TestCase
     public function testClearSearchCacheWithoutDistributedCache(): void
     {
         $handler = new CacheHandler(
-            $this->objectMapper,
             $this->organisationMapper,
             $this->logger,
             null,
@@ -2182,7 +2178,6 @@ class CacheHandlerTest extends TestCase
     public function testConstructorWithoutCacheFactory(): void
     {
         $handler = new CacheHandler(
-            $this->objectMapper,
             $this->organisationMapper,
             $this->logger,
             null,
@@ -2209,7 +2204,6 @@ class CacheHandlerTest extends TestCase
             ->method('warning');
 
         $handler = new CacheHandler(
-            $this->objectMapper,
             $this->organisationMapper,
             $this->logger,
             $failingCacheFactory,
@@ -2228,7 +2222,6 @@ class CacheHandlerTest extends TestCase
     public function testConstructorWithNullCacheFactoryAndUserSession(): void
     {
         $handler = new CacheHandler(
-            $this->objectMapper,
             $this->organisationMapper,
             $this->logger,
             null,
@@ -2299,7 +2292,6 @@ class CacheHandlerTest extends TestCase
     public function testGetDistributedNameCacheCountWithoutDistributedCache(): void
     {
         $handler = new CacheHandler(
-            $this->objectMapper,
             $this->organisationMapper,
             $this->logger,
             null,
@@ -2571,7 +2563,6 @@ class CacheHandlerTest extends TestCase
             ->willThrowException(new Exception('Service not found'));
 
         $handler = new CacheHandler(
-            $this->objectMapper,
             $this->organisationMapper,
             $this->logger,
             $this->cacheFactory,
@@ -2685,7 +2676,6 @@ class CacheHandlerTest extends TestCase
     public function testPersistNameCacheToDistributedWithoutCache(): void
     {
         $handler = new CacheHandler(
-            $this->objectMapper,
             $this->organisationMapper,
             $this->logger,
             null,
@@ -3593,7 +3583,6 @@ class CacheHandlerTest extends TestCase
             });
 
         $handler = new CacheHandler(
-            $this->objectMapper,
             $this->organisationMapper,
             $this->logger,
             $this->cacheFactory,
@@ -3641,7 +3630,6 @@ class CacheHandlerTest extends TestCase
             ->willReturn($stmt);
 
         $handler = new CacheHandler(
-            $this->objectMapper,
             $this->organisationMapper,
             $this->logger,
             $this->cacheFactory,

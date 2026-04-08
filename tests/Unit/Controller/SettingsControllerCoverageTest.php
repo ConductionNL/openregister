@@ -50,7 +50,11 @@ class SettingsControllerCoverageTest extends TestCase
         $this->vectorizationService = $this->createMock(VectorizationService::class);
         $this->logger = $this->createMock(LoggerInterface::class);
         $l10n = $this->createMock(IL10N::class);
-        $l10n->method('t')->willReturnArgument(0);
+        $l10n->method('t')->willReturnCallback(
+            static function (string $text, $parameters = []): string {
+                return vsprintf($text, $parameters);
+            }
+        );
 
         $this->controller = new SettingsController(
             'openregister',

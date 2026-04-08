@@ -64,8 +64,8 @@ class FilesControllerFileActionsTest extends TestCase
 
     private function createObjectMock(): ObjectEntity
     {
-        $object = $this->createMock(ObjectEntity::class);
-        $object->method('getUuid')->willReturn('abc-123');
+        $object = new ObjectEntity();
+        $object->setUuid('abc-123');
         return $object;
     }
 
