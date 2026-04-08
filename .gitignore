@@ -16,6 +16,7 @@
 /docs/build/
 /docs/.docusaurus/
 /website/node_modules/
+/docs/node_modules/
 /website/.docusaurus/
 /js/
 /custom_apps/
