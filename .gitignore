@@ -15,6 +15,8 @@
 /website/node_modules/
 /docs/node_modules/
 /website/.docusaurus/
+/docs/build/
+/docs/.docusaurus/
 /js/
 /custom_apps/
 /config/
@@ -65,8 +67,6 @@ test-solr-connection.php
 **/adds *
 **/implements *
 
-website/.docusaurus/
-
 phpqa/
 
 # Docker AI models (too large for git)
@@ -76,8 +76,3 @@ docker/dolphin/models/
 !issues/
 !issues/**
 
-# TODO: fix whatever is wrong with these files that causes them to always end up in git changes
-website/docs/Features/img_4.png
-website/docs/Features/img_5.png
-website/docs/features/img_4.png
-website/docs/features/img_5.png

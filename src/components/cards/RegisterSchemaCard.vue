@@ -293,11 +293,51 @@ import { dashboardStore, registerStore, schemaStore, navigationStore, configurat
 				}}
 			</NcButton>
 		</div>
+
+		<!-- Edit Register Dialog (register type only) -->
+		<CnFormDialog
+			v-if="type === 'register' && showEditRegisterDialog"
+			ref="editRegisterDialog"
+			:schema="registerSchema"
+			:item="item"
+			:dialog-title="t('openregister', 'Edit Register')"
+			@confirm="onSaveRegister"
+			@close="showEditRegisterDialog = false">
+			<template #form="{ formData, errors, updateField }">
+				<div class="formContainer">
+					<NcTextField
+						:label="t('openregister', 'Title') + ' *'"
+						:value="formData.title || ''"
+						:error="!!errors.title"
+						:helper-text="errors.title"
+						@update:value="v => updateField('title', v)" />
+					<NcTextField
+						:label="t('openregister', 'Slug') + ' *'"
+						:value="formData.slug || ''"
+						:error="!!errors.slug"
+						:helper-text="errors.slug"
+						@update:value="v => updateField('slug', v)" />
+					<NcTextArea
+						:label="t('openregister', 'Description')"
+						:value="formData.description || ''"
+						@update:value="v => updateField('description', v)" />
+					<NcSelect
+						input-label="Schemas"
+						:options="schemaSelectOptions"
+						:value="getSchemaSelectValue(formData.schemas)"
+						:multiple="true"
+						:close-on-select="false"
+						:loading="schemasLoading"
+						@input="vals => updateField('schemas', vals)" />
+				</div>
+			</template>
+		</CnFormDialog>
 	</div>
 </template>
 
 <script>
-import { NcActions, NcActionButton, NcButton } from '@nextcloud/vue'
+import { NcActions, NcActionButton, NcButton, NcTextField, NcTextArea, NcSelect } from '@nextcloud/vue'
+import { CnFormDialog } from '@conduction/nextcloud-vue'
 import DatabaseOutline from 'vue-material-design-icons/DatabaseOutline.vue'
 import FileTreeOutline from 'vue-material-design-icons/FileTreeOutline.vue'
 import DotsHorizontal from 'vue-material-design-icons/DotsHorizontal.vue'
@@ -327,6 +367,10 @@ export default {
 		NcActions,
 		NcActionButton,
 		NcButton,
+		NcTextField,
+		NcTextArea,
+		NcSelect,
+		CnFormDialog,
 		DatabaseOutline,
 		FileTreeOutline,
 		DotsHorizontal,
@@ -365,6 +409,9 @@ export default {
 		return {
 			itemsExpanded: false,
 			descriptionExpanded: false,
+			showEditRegisterDialog: false,
+			schemaSelectOptions: [],
+			schemasLoading: false,
 		}
 	},
 	computed: {
@@ -425,6 +472,18 @@ export default {
 			const total = Object.keys(this.item.properties || {}).length
 			return Math.max(0, total - 5)
 		},
+		registerSchema() {
+			return {
+				title: t('openregister', 'Register'),
+				properties: {
+					title: { type: 'string', title: t('openregister', 'Title'), required: true, minLength: 1, order: 1 },
+					slug: { type: 'string', title: t('openregister', 'Slug'), required: true, minLength: 1, order: 2 },
+					description: { type: 'string', title: t('openregister', 'Description'), order: 3 },
+					schemas: { type: 'array', title: t('openregister', 'Schemas'), order: 4 },
+				},
+				required: ['title', 'slug'],
+			}
+		},
 		sortedProperties() {
 			const properties = this.item.properties || {}
 			return Object.entries(properties)
@@ -444,17 +503,18 @@ export default {
 				}, {})
 		},
 	},
+	watch: {
+		showEditRegisterDialog(val) {
+			if (val) {
+				this.loadSchemaOptions()
+			}
+		},
+	},
 	methods: {
 		// Common methods
 		openEdit() {
 			if (this.type === 'register') {
-				registerStore.setRegisterItem({
-					...this.item,
-					schemas: Array.isArray(this.item.schemas)
-						? this.item.schemas.map(schema => typeof schema === 'object' ? schema.id : schema)
-						: [],
-				})
-				navigationStore.setModal('editRegister')
+				this.showEditRegisterDialog = true
 			} else {
 				schemaStore.setSchemaItem(this.item)
 				navigationStore.setModal('editSchema')
@@ -486,6 +546,37 @@ export default {
 			} catch (error) {
 				console.error('Error depublishing:', error)
 				showError(t('openregister', 'Failed to depublish: {error}', { error: error.message }))
+			}
+		},
+		async loadSchemaOptions() {
+			this.schemasLoading = true
+			try {
+				await schemaStore.refreshSchemaList()
+				this.schemaSelectOptions = schemaStore.schemaList.map(s => ({ id: s.id, label: s.title }))
+			} catch (error) {
+				console.error('Failed to load schemas:', error)
+			} finally {
+				this.schemasLoading = false
+			}
+		},
+		getSchemaSelectValue(schemas) {
+			if (!Array.isArray(schemas)) return []
+			return schemas.map(s => {
+				const id = typeof s === 'object' ? s.id : s
+				return this.schemaSelectOptions.find(o => String(o.id) === String(id))
+					|| { id, label: String(id) }
+			})
+		},
+		async onSaveRegister(formData) {
+			try {
+				await registerStore.saveRegister({
+					...formData,
+					schemas: (formData.schemas || []).map(s => typeof s === 'object' ? s.id : s),
+				})
+				this.$refs.editRegisterDialog.setResult({ success: true })
+				this.$emit('refresh')
+			} catch (error) {
+				this.$refs.editRegisterDialog.setResult({ error: error.message })
 			}
 		},
 		openDelete() {
