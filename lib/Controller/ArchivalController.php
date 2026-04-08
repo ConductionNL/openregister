@@ -31,6 +31,8 @@ use OCA\OpenRegister\Service\ObjectService;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http;
+use OCP\AppFramework\Http\Attribute\NoAdminRequired;
+use OCP\AppFramework\Http\Attribute\NoCSRFRequired;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
 use OCP\IUserSession;
@@ -75,7 +77,12 @@ class ArchivalController extends Controller
      * List all selection list entries.
      *
      * @return JSONResponse
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
      */
+    #[NoAdminRequired]
+    #[NoCSRFRequired]
     public function listSelectionLists(): JSONResponse
     {
         try {
@@ -99,7 +106,12 @@ class ArchivalController extends Controller
      * @param string $id The UUID of the selection list entry
      *
      * @return JSONResponse
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
      */
+    #[NoAdminRequired]
+    #[NoCSRFRequired]
     public function getSelectionList(string $id): JSONResponse
     {
         try {
@@ -118,7 +130,12 @@ class ArchivalController extends Controller
      * Create a new selection list entry.
      *
      * @return JSONResponse
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
      */
+    #[NoAdminRequired]
+    #[NoCSRFRequired]
     public function createSelectionList(): JSONResponse
     {
         try {
@@ -162,7 +179,12 @@ class ArchivalController extends Controller
      * @param string $id The UUID of the selection list entry
      *
      * @return JSONResponse
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
      */
+    #[NoAdminRequired]
+    #[NoCSRFRequired]
     public function updateSelectionList(string $id): JSONResponse
     {
         try {
@@ -193,7 +215,12 @@ class ArchivalController extends Controller
      * @param string $id The UUID of the selection list entry
      *
      * @return JSONResponse
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
      */
+    #[NoAdminRequired]
+    #[NoCSRFRequired]
     public function deleteSelectionList(string $id): JSONResponse
     {
         try {
@@ -219,7 +246,12 @@ class ArchivalController extends Controller
      * @param string $id The UUID of the object
      *
      * @return JSONResponse
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
      */
+    #[NoAdminRequired]
+    #[NoCSRFRequired]
     public function getRetention(string $id): JSONResponse
     {
         try {
@@ -243,7 +275,12 @@ class ArchivalController extends Controller
      * @param string $id The UUID of the object
      *
      * @return JSONResponse
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
      */
+    #[NoAdminRequired]
+    #[NoCSRFRequired]
     public function setRetention(string $id): JSONResponse
     {
         try {
@@ -287,7 +324,12 @@ class ArchivalController extends Controller
      * List all destruction lists.
      *
      * @return JSONResponse
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
      */
+    #[NoAdminRequired]
+    #[NoCSRFRequired]
     public function listDestructionLists(): JSONResponse
     {
         try {
@@ -313,7 +355,12 @@ class ArchivalController extends Controller
      * @param string $id The UUID of the destruction list
      *
      * @return JSONResponse
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
      */
+    #[NoAdminRequired]
+    #[NoCSRFRequired]
     public function getDestructionList(string $id): JSONResponse
     {
         try {
@@ -332,7 +379,12 @@ class ArchivalController extends Controller
      * Generate a new destruction list from objects due for destruction.
      *
      * @return JSONResponse
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
      */
+    #[NoAdminRequired]
+    #[NoCSRFRequired]
     public function generateDestructionList(): JSONResponse
     {
         try {
@@ -360,7 +412,12 @@ class ArchivalController extends Controller
      * @param string $id The UUID of the destruction list
      *
      * @return JSONResponse
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
      */
+    #[NoAdminRequired]
+    #[NoCSRFRequired]
     public function approveDestructionList(string $id): JSONResponse
     {
         try {
@@ -403,7 +460,12 @@ class ArchivalController extends Controller
      * @param string $id The UUID of the destruction list
      *
      * @return JSONResponse
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
      */
+    #[NoAdminRequired]
+    #[NoCSRFRequired]
     public function rejectFromDestructionList(string $id): JSONResponse
     {
         try {

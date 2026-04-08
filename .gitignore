@@ -77,3 +77,6 @@ docker/dolphin/models/
 !issues/
 !issues/**
 
+# Review artifacts
+REVIEW.md
+

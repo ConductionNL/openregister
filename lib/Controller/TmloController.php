@@ -30,6 +30,8 @@ use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\TmloService;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
+use OCP\AppFramework\Http\Attribute\NoAdminRequired;
+use OCP\AppFramework\Http\Attribute\NoCSRFRequired;
 use OCP\AppFramework\Http\DataResponse;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\AppFramework\Http\Response;
@@ -78,7 +80,10 @@ class TmloController extends Controller
      * @return Response The MDTO XML response
      *
      * @NoAdminRequired
+     * @NoCSRFRequired
      */
+    #[NoAdminRequired]
+    #[NoCSRFRequired]
     public function exportSingle(string $register, string $schema, string $id): Response
     {
         try {
@@ -119,7 +124,10 @@ class TmloController extends Controller
      * @return Response The MDTO XML response
      *
      * @NoAdminRequired
+     * @NoCSRFRequired
      */
+    #[NoAdminRequired]
+    #[NoCSRFRequired]
     public function exportBatch(string $register, string $schema): Response
     {
         try {
@@ -168,7 +176,10 @@ class TmloController extends Controller
      * @return JSONResponse The summary response
      *
      * @NoAdminRequired
+     * @NoCSRFRequired
      */
+    #[NoAdminRequired]
+    #[NoCSRFRequired]
     public function summary(string $register, string $schema): JSONResponse
     {
         try {
