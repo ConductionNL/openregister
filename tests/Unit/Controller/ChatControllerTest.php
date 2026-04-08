@@ -63,6 +63,7 @@ class ChatControllerTest extends TestCase
             $this->organisationService,
             $this->db,
             $this->logger,
+            $this->createMock(\OCP\IL10N::class),
             'testuser'
         );
     }

@@ -100,7 +100,6 @@ class ObjectsControllerTest extends TestCase
             $this->config,
             $this->appManager,
             $this->container,
-            $this->objectMapper,
             $this->registerMapper,
             $this->schemaMapper,
             $this->auditTrailMapper,
