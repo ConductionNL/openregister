@@ -143,7 +143,7 @@ class DeckController extends Controller
                 $data
             );
 
-            return new JSONResponse($link->jsonSerialize(), 201);
+            return new JSONResponse($link, 201);
         } catch (DoesNotExistException $e) {
             return new JSONResponse(['error' => 'Object not found'], 404);
         } catch (Exception $e) {
@@ -173,7 +173,7 @@ class DeckController extends Controller
      * @NoAdminRequired
      * @NoCSRFRequired
      */
-    public function destroy(string $register, string $schema, string $id, string $deckId): JSONResponse
+    public function destroy(string $register, string $schema, string $id, string $deckRef): JSONResponse
     {
         if ($this->deckCardService->isDeckAvailable() === false) {
             return new JSONResponse(
@@ -188,7 +188,7 @@ class DeckController extends Controller
                 return new JSONResponse(['error' => 'Object not found'], 404);
             }
 
-            $this->deckCardService->unlinkCard((int) $deckId);
+            $this->deckCardService->unlinkCard($object->getUuid(), $deckRef);
 
             return new JSONResponse(['success' => true]);
         } catch (DoesNotExistException $e) {
