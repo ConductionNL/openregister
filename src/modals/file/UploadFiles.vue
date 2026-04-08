@@ -322,13 +322,15 @@ export default {
 			return objectStore.objectItem
 		},
 		registerId() {
-			return this.objectItem?.['@self']?.register
+			const register = this.objectItem?.['@self']?.register
+			return typeof register === 'object' && register !== null ? register.id : register
 		},
 		schemaId() {
-			return this.objectItem?.['@self']?.schema
+			const schema = this.objectItem?.['@self']?.schema
+			return typeof schema === 'object' && schema !== null ? schema.id : schema
 		},
 		objectId() {
-			return this.objectItem?.['@self']?.id
+			return this.objectItem?.['@self']?.id || this.objectItem?.id
 		},
 		filesComputed() {
 			return files.value
@@ -500,19 +502,27 @@ export default {
 					return
 				}
 
+				// Build and register the type
+				const type = `${this.registerId}-${this.schemaId}`
+				if (!objectStore.objectTypes?.includes(type)) {
+					objectStore.registerObjectType(type, this.schemaId, this.registerId)
+				}
+
 				// file calls
 				const calls = await Promise.all(filesToUpload.map(async (file) => {
 					file.status = 'uploading'
 
 					try {
-						const responseJson = await objectStore.uploadFiles({
-							register: this.registerId,
-							schema: this.schemaId,
-							objectId: this.objectId,
-							files: [file],
-							labels: this.labelOptions.value || [],
-							share: this.share,
-						})
+						const formData = new FormData()
+						formData.append('files[]', file)
+						if (Array.isArray(file.tags)) {
+							file.tags.forEach(tag => formData.append('tags[]', tag))
+						}
+						if (this.share) {
+							formData.append('share', '1')
+						}
+
+						const responseJson = await objectStore.uploadFiles(type, this.objectId, formData)
 
 						file.status = 'uploaded'
 
@@ -526,11 +536,7 @@ export default {
 				this.getAllTags()
 
 				// Refresh files for the object
-				await objectStore.getFiles({
-					id: this.objectId,
-					register: this.registerId,
-					schema: this.schemaId,
-				})
+				await objectStore.fetchFiles(type, this.objectId)
 
 				const failed = calls.filter(result => result[0] === false)
 
