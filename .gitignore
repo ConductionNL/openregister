@@ -11,9 +11,7 @@
 /.phpunit.cache
 .phpunit.cache/
 
-/node_modules/
-/website/node_modules/
-/docs/node_modules/
+node_modules/
 /website/.docusaurus/
 /js/
 /custom_apps/
