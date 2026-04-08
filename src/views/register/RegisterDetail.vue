@@ -1,6 +1,6 @@
 <script setup>
 import { translate as t, translatePlural as n } from '@nextcloud/l10n'
-import { dashboardStore, registerStore, navigationStore, configurationStore } from '../../store/store.js'
+import { dashboardStore, registerStore, navigationStore, configurationStore, schemaStore } from '../../store/store.js'
 import formatBytes from '../../services/formatBytes.js'
 </script>
 
@@ -109,7 +109,7 @@ import formatBytes from '../../services/formatBytes.js'
 						<FolderOutline :size="48" />
 					</template>
 					<template #action>
-						<NcButton v-if="!managingConfiguration" @click="navigationStore.setModal('editRegister')">
+						<NcButton v-if="!managingConfiguration" @click="showEditDialog = true">
 							{{ t('openregister', 'Add Schema') }}
 						</NcButton>
 					</template>
@@ -163,12 +163,50 @@ import formatBytes from '../../services/formatBytes.js'
 				</div>
 			</div>
 		</CnDetailPage>
+
+		<CnFormDialog
+			v-if="showEditDialog"
+			ref="editRegisterDialog"
+			:schema="registerSchema"
+			:item="register"
+			:dialog-title="t('openregister', 'Edit Register')"
+			@confirm="onSaveRegister"
+			@close="showEditDialog = false">
+			<template #form="{ formData, errors, updateField }">
+				<div class="formContainer">
+					<NcTextField
+						:label="t('openregister', 'Title') + ' *'"
+						:value="formData.title || ''"
+						:error="!!errors.title"
+						:helper-text="errors.title"
+						@update:value="v => updateField('title', v)" />
+					<NcTextField
+						:label="t('openregister', 'Slug') + ' *'"
+						:value="formData.slug || ''"
+						:error="!!errors.slug"
+						:helper-text="errors.slug"
+						@update:value="v => updateField('slug', v)" />
+					<NcTextArea
+						:label="t('openregister', 'Description')"
+						:value="formData.description || ''"
+						@update:value="v => updateField('description', v)" />
+					<NcSelect
+						input-label="Schemas"
+						:options="schemaSelectOptions"
+						:value="getSchemaSelectValue(formData.schemas)"
+						:multiple="true"
+						:close-on-select="false"
+						:loading="schemasLoading"
+						@input="vals => updateField('schemas', vals)" />
+				</div>
+			</template>
+		</CnFormDialog>
 	</NcAppContent>
 </template>
 
 <script>
-import { NcAppContent, NcEmptyContent, NcLoadingIcon, NcActions, NcActionButton, NcButton } from '@nextcloud/vue'
-import { CnDetailPage } from '@conduction/nextcloud-vue'
+import { NcAppContent, NcEmptyContent, NcLoadingIcon, NcActions, NcActionButton, NcButton, NcTextField, NcTextArea, NcSelect } from '@nextcloud/vue'
+import { CnDetailPage, CnFormDialog } from '@conduction/nextcloud-vue'
 import VueApexCharts from 'vue-apexcharts'
 import FileCodeOutline from 'vue-material-design-icons/FileCodeOutline.vue'
 import FolderOutline from 'vue-material-design-icons/FolderOutline.vue'
@@ -186,7 +224,11 @@ export default {
 		NcActions,
 		NcActionButton,
 		NcButton,
+		NcTextField,
+		NcTextArea,
+		NcSelect,
 		CnDetailPage,
+		CnFormDialog,
 		apexchart: VueApexCharts,
 		FileCodeOutline,
 		FolderOutline,
@@ -202,9 +244,24 @@ export default {
 			loadedSchemas: [],
 			loadingSchemas: false,
 			managingConfiguration: null,
+			showEditDialog: false,
+			schemaSelectOptions: [],
+			schemasLoading: false,
 		}
 	},
 	computed: {
+		registerSchema() {
+			return {
+				title: t('openregister', 'Register'),
+				properties: {
+					title: { type: 'string', title: t('openregister', 'Title'), required: true, minLength: 1, order: 1 },
+					slug: { type: 'string', title: t('openregister', 'Slug'), required: true, minLength: 1, order: 2 },
+					description: { type: 'string', title: t('openregister', 'Description'), order: 3 },
+					schemas: { type: 'array', title: t('openregister', 'Schemas'), order: 4 },
+				},
+				required: ['title', 'slug'],
+			}
+		},
 		register() {
 			// Find the register in the dashboard store using the ID from register store
 			const registerId = registerStore.getRegisterItem?.id
@@ -305,6 +362,11 @@ export default {
 			},
 			deep: true,
 		},
+		showEditDialog(val) {
+			if (val) {
+				this.loadSchemaOptions()
+			}
+		},
 	},
 	async mounted() {
 		// If we have a register ID but no data, fetch dashboard data
@@ -373,6 +435,37 @@ export default {
 			}
 		},
 
+		async loadSchemaOptions() {
+			this.schemasLoading = true
+			try {
+				await schemaStore.refreshSchemaList()
+				this.schemaSelectOptions = schemaStore.schemaList.map(s => ({ id: s.id, label: s.title }))
+			} catch (error) {
+				console.error('Failed to load schemas:', error)
+			} finally {
+				this.schemasLoading = false
+			}
+		},
+		getSchemaSelectValue(schemas) {
+			if (!Array.isArray(schemas)) return []
+			return schemas.map(s => {
+				const id = typeof s === 'object' ? s.id : s
+				return this.schemaSelectOptions.find(o => String(o.id) === String(id))
+					|| { id, label: String(id) }
+			})
+		},
+		async onSaveRegister(formData) {
+			try {
+				await registerStore.saveRegister({
+					...formData,
+					schemas: (formData.schemas || []).map(s => typeof s === 'object' ? s.id : s),
+				})
+				this.$refs.editRegisterDialog.setResult({ success: true })
+				await dashboardStore.fetchRegisters()
+			} catch (error) {
+				this.$refs.editRegisterDialog.setResult({ error: error.message })
+			}
+		},
 		editSchema(schema) {
 			registerStore.setSchemaItem(schema)
 			navigationStore.setModal('editSchema')

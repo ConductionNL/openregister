@@ -98,16 +98,10 @@ export const useConfigurationStore = defineStore('configuration', {
 					throw new Error(`HTTP error! status: ${response.status}`)
 				}
 
-				const responseData = await response.json()
-
-				if (!responseData || typeof responseData !== 'object') {
-					throw new Error('Invalid response data')
-				}
-
 				this.refreshConfigurationList()
 				this.setConfigurationItem(null)
 
-				return { response, data: responseData }
+				return { response }
 			} catch (error) {
 				console.error('Error deleting configuration:', error)
 				throw new Error(`Failed to delete configuration: ${error.message}`)
