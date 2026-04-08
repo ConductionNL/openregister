@@ -6,7 +6,7 @@
  * @category Controller
  * @package  OCA\OpenRegister
  * @author   Conduction <info@conduction.nl>
- * @license  EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12 https://www.gnu.org/licenses/agpl-3.0.html
+ * @license  EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  * @link     https://github.com/ConductionNL/openregister
  */
 
@@ -15,6 +15,8 @@ namespace OCA\OpenRegister\Controller;
 use Exception;
 use OCA\OpenRegister\Service\LinkedEntityService;
 use OCP\AppFramework\Controller;
+use OCP\AppFramework\Http\Attribute\NoAdminRequired;
+use OCP\AppFramework\Http\Attribute\NoCSRFRequired;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
 use Psr\Log\LoggerInterface;
@@ -27,7 +29,7 @@ use Psr\Log\LoggerInterface;
  * @category Controller
  * @package  OCA\OpenRegister
  * @author   Conduction <info@conduction.nl>
- * @license  EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12 https://www.gnu.org/licenses/agpl-3.0.html
+ * @license  EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  * @link     https://github.com/ConductionNL/openregister
  */
 class LinkedEntityController extends Controller
@@ -62,6 +64,8 @@ class LinkedEntityController extends Controller
      * @NoAdminRequired
      * @NoCSRFRequired
      */
+    #[NoAdminRequired]
+    #[NoCSRFRequired]
     public function addObjectLink(string $uuid, string $type): JSONResponse
     {
         try {
@@ -99,6 +103,8 @@ class LinkedEntityController extends Controller
      * @NoAdminRequired
      * @NoCSRFRequired
      */
+    #[NoAdminRequired]
+    #[NoCSRFRequired]
     public function removeObjectLink(string $uuid, string $type, string $entityId): JSONResponse
     {
         try {
@@ -128,6 +134,8 @@ class LinkedEntityController extends Controller
      * @NoAdminRequired
      * @NoCSRFRequired
      */
+    #[NoAdminRequired]
+    #[NoCSRFRequired]
     public function addRegisterLink(string $uuid, string $type): JSONResponse
     {
         try {
@@ -159,6 +167,8 @@ class LinkedEntityController extends Controller
      * @NoAdminRequired
      * @NoCSRFRequired
      */
+    #[NoAdminRequired]
+    #[NoCSRFRequired]
     public function addSchemaLink(string $uuid, string $type): JSONResponse
     {
         try {
@@ -190,6 +200,8 @@ class LinkedEntityController extends Controller
      * @NoAdminRequired
      * @NoCSRFRequired
      */
+    #[NoAdminRequired]
+    #[NoCSRFRequired]
     public function reverseLookup(string $type, string $entityId): JSONResponse
     {
         try {
