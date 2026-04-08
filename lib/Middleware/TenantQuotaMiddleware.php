@@ -161,7 +161,7 @@ class TenantQuotaMiddleware extends Middleware
         // Track bandwidth from response content length.
         if ($response instanceof JSONResponse) {
             $encoded       = json_encode($response->getData());
-            $content       = ($encoded !== false ? $encoded : '');
+            $content       = ($encoded !== false) ? $encoded : '';
             $contentLength = strlen($content);
         } else {
             // Estimate from headers or use 0.
