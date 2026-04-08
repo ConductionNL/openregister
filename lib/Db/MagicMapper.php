@@ -1775,7 +1775,7 @@ class MagicMapper extends AbstractObjectMapper
         $columns = array_merge($columns, $this->getMetadataColumns());
 
         // Add linked entity type columns based on schema's linkedTypes configuration.
-        $columns = array_merge($columns, $this->getLinkedTypeColumns($schema));
+        $columns = array_merge($columns, $this->getLinkedTypeColumns(schema: $schema));
 
         // Get schema properties and convert to SQL columns.
         $schemaProperties = $schema->getProperties();
@@ -3010,6 +3010,7 @@ class MagicMapper extends AbstractObjectMapper
                     $jsonFields[] = $linkedType;
                 }
             }
+
             if (in_array($field, $jsonFields) === true) {
                 // Convert to JSON if not already a string.
                 // Note: Empty string → NULL conversion is handled at final insert/update stage.
@@ -5749,13 +5750,13 @@ class MagicMapper extends AbstractObjectMapper
     public function findByLinkedEntity(Schema $schema, string $columnName, string $entityId): array
     {
         $results   = [];
-        $tableName = $this->getTableName($schema);
+        $tableName = $this->getTableName(schema: $schema);
 
         if ($tableName === null) {
             return [];
         }
 
-        $fullTableName = 'oc_' . $tableName;
+        $fullTableName = 'oc_'.$tableName;
         $platform      = $this->db->getDatabasePlatform();
         $isPostgres    = stripos($platform::class, 'PostgreSQL') !== false;
 
@@ -5782,7 +5783,7 @@ class MagicMapper extends AbstractObjectMapper
 
             foreach ($rows as $row) {
                 try {
-                    $entity = $this->rowToObjectEntity($row);
+                    $entity = $this->rowToObjectEntity(row: $row);
                     if ($entity !== null) {
                         $results[] = $entity;
                     }
@@ -5820,7 +5821,7 @@ class MagicMapper extends AbstractObjectMapper
 
         $schemaId = (string) $schema->getId();
         foreach ($tables as $tableName) {
-            if (str_ends_with($tableName, '_' . $schemaId) === true) {
+            if (str_ends_with($tableName, '_'.$schemaId) === true) {
                 return $tableName;
             }
         }

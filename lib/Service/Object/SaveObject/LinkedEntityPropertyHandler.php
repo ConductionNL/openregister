@@ -100,16 +100,16 @@ class LinkedEntityPropertyHandler
             }
 
             $this->extractFromProperty(
-                $propertyName,
-                $propertyConfig,
-                $data,
-                $extractedIds
+                propertyName: $propertyName,
+                propertyConfig: $propertyConfig,
+                data: $data,
+                extractedIds: $extractedIds
             );
         }
 
         // Merge extracted IDs into metadata columns, preserving ad-hoc links.
         foreach ($extractedIds as $ncType => $ids) {
-            $this->mergeIntoMetadataColumn($object, $ncType, $ids);
+            $this->mergeIntoMetadataColumn(object: $object, ncType: $ncType, newIds: $ids);
         }
 
         return $object;
@@ -136,7 +136,7 @@ class LinkedEntityPropertyHandler
         // Direct Nc* type property.
         if ($type !== null && isset(self::NC_TYPE_TO_SETTER[$type]) === true) {
             $value = $data[$propertyName] ?? null;
-            $id    = $this->extractIdFromEnvelope($value);
+            $id    = $this->extractIdFromEnvelope(value: $value);
             if ($id !== null) {
                 $extractedIds[$type][] = $id;
             }
@@ -151,7 +151,7 @@ class LinkedEntityPropertyHandler
                 $values = $data[$propertyName] ?? [];
                 if (is_array($values) === true) {
                     foreach ($values as $value) {
-                        $id = $this->extractIdFromEnvelope($value);
+                        $id = $this->extractIdFromEnvelope(value: $value);
                         if ($id !== null) {
                             $extractedIds[$itemsType][] = $id;
                         }
@@ -177,7 +177,7 @@ class LinkedEntityPropertyHandler
             return null;
         }
 
-        // Full envelope: { "type": "NcMail", "id": "1/6", "label": "..." }
+        // Full envelope: { "type": "NcMail", "id": "1/6", "label": "..." }.
         if (is_array($value) === true && isset($value['id']) === true) {
             return (string) $value['id'];
         }

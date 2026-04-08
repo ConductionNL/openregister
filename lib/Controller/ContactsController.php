@@ -209,10 +209,10 @@ class ContactsController extends Controller
     /**
      * Update a contact link (role change).
      *
-     * @param string $register  The register slug
-     * @param string $schema    The schema slug
-     * @param string $id        The object ID
-     * @param string $contactId The contact link ID
+     * @param string $register   The register slug
+     * @param string $schema     The schema slug
+     * @param string $id         The object ID
+     * @param string $contactUid The contact UID
      *
      * @return JSONResponse
      *
@@ -245,10 +245,10 @@ class ContactsController extends Controller
     /**
      * Remove a contact link.
      *
-     * @param string $register  The register slug
-     * @param string $schema    The schema slug
-     * @param string $id        The object ID
-     * @param string $contactId The contact link ID
+     * @param string $register   The register slug
+     * @param string $schema     The schema slug
+     * @param string $id         The object ID
+     * @param string $contactUid The contact UID
      *
      * @return JSONResponse
      *

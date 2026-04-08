@@ -166,7 +166,7 @@ class DeckController extends Controller
      * @param string $register The register slug
      * @param string $schema   The schema slug
      * @param string $id       The object ID
-     * @param string $deckId   The deck link ID
+     * @param string $deckRef  The deck reference
      *
      * @return JSONResponse
      *

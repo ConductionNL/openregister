@@ -323,5 +323,4 @@ class EmailsController extends Controller
             return new JSONResponse(['error' => 'Internal server error'], 500);
         }
     }//end bySender()
-
 }//end class

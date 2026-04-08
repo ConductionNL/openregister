@@ -279,25 +279,53 @@ class Register extends Entity implements JsonSerializable
      */
     protected ?array $configuration = [];
 
-    /** @var array|null Linked mail entity IDs */
+    /**
+     * Linked mail entity IDs for this register.
+     *
+     * @var array|null Linked mail entity IDs
+     */
     protected ?array $mail = null;
 
-    /** @var array|null Linked contact entity IDs */
+    /**
+     * Linked contact entity IDs for this register.
+     *
+     * @var array|null Linked contact entity IDs
+     */
     protected ?array $contacts = null;
 
-    /** @var array|null Linked note entity IDs */
+    /**
+     * Linked note entity IDs for this register.
+     *
+     * @var array|null Linked note entity IDs
+     */
     protected ?array $notes = null;
 
-    /** @var array|null Linked todo entity IDs */
+    /**
+     * Linked todo entity IDs for this register.
+     *
+     * @var array|null Linked todo entity IDs
+     */
     protected ?array $todos = null;
 
-    /** @var array|null Linked calendar event entity IDs */
+    /**
+     * Linked calendar event entity IDs for this register.
+     *
+     * @var array|null Linked calendar event entity IDs
+     */
     protected ?array $calendar = null;
 
-    /** @var array|null Linked Talk conversation IDs */
+    /**
+     * Linked Talk conversation IDs for this register.
+     *
+     * @var array|null Linked Talk conversation IDs
+     */
     protected ?array $talk = null;
 
-    /** @var array|null Linked Deck card IDs */
+    /**
+     * Linked Deck card IDs for this register.
+     *
+     * @var array|null Linked Deck card IDs
+     */
     protected ?array $deck = null;
 
     /**

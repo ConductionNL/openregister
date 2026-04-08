@@ -127,6 +127,7 @@ class RenderObject
      * @param FileService            $fileService          File service for file operations.
      * @param ComputedFieldHandler   $computedFieldHandler Handler for computed field evaluation.
      * @param TranslationHandler     $translationHandler   Handler for translatable property resolution.
+     * @param LinkedEntityEnricher   $linkedEntityEnricher Enricher for linked entity metadata.
      *
      * @SuppressWarnings(PHPMD.ExcessiveParameterList) All parameters are DI-injected dependencies
      */
@@ -1047,9 +1048,9 @@ class RenderObject
                 $serialized = $entity->jsonSerialize();
                 $enriched   = $this->linkedEntityEnricher->enrich($serialized, $linkedExtend);
                 // Update the linked type values on the entity.
-                foreach ($linkedExtend as $key => $_) {
+                foreach ($linkedExtend as $key => $unused) {
                     if (isset($enriched[$key]) === true) {
-                        $setter = 'set' . ucfirst(ltrim($key, '_'));
+                        $setter = 'set'.ucfirst(ltrim($key, '_'));
                         $entity->$setter($enriched[$key]);
                     }
                 }

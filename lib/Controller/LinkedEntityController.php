@@ -46,7 +46,7 @@ class LinkedEntityController extends Controller
         private readonly LinkedEntityService $linkedEntityService,
         private readonly LoggerInterface $logger,
     ) {
-        parent::__construct($appName, $request);
+        parent::__construct(appName: $appName, request: $request);
     }//end __construct()
 
     /**
@@ -74,7 +74,7 @@ class LinkedEntityController extends Controller
 
             $result = $this->linkedEntityService->addLink($uuid, $type, (string) $entityId);
 
-            return new JSONResponse(['_' . $type => $result]);
+            return new JSONResponse(['_'.$type => $result]);
         } catch (Exception $e) {
             $this->logger->error(
                 '[LinkedEntityController] addObjectLink failed',
@@ -104,7 +104,7 @@ class LinkedEntityController extends Controller
         try {
             $result = $this->linkedEntityService->removeLink($uuid, $type, $entityId);
 
-            return new JSONResponse(['_' . $type => $result]);
+            return new JSONResponse(['_'.$type => $result]);
         } catch (Exception $e) {
             $this->logger->error(
                 '[LinkedEntityController] removeObjectLink failed',
@@ -140,7 +140,7 @@ class LinkedEntityController extends Controller
 
             $result = $this->linkedEntityService->addLinkToRegister($uuid, $type, (string) $entityId);
 
-            return new JSONResponse(['_' . $type => $result]);
+            return new JSONResponse(['_'.$type => $result]);
         } catch (Exception $e) {
             return new JSONResponse(['error' => $e->getMessage()], 400);
         }
@@ -171,7 +171,7 @@ class LinkedEntityController extends Controller
 
             $result = $this->linkedEntityService->addLinkToSchema($uuid, $type, (string) $entityId);
 
-            return new JSONResponse(['_' . $type => $result]);
+            return new JSONResponse(['_'.$type => $result]);
         } catch (Exception $e) {
             return new JSONResponse(['error' => $e->getMessage()], 400);
         }
@@ -195,10 +195,12 @@ class LinkedEntityController extends Controller
         try {
             $results = $this->linkedEntityService->reverseLookup($type, $entityId);
 
-            return new JSONResponse([
-                'results' => $results,
-                'total'   => count($results),
-            ]);
+            return new JSONResponse(
+                    [
+                        'results' => $results,
+                        'total'   => count($results),
+                    ]
+                    );
         } catch (Exception $e) {
             $this->logger->error(
                 '[LinkedEntityController] reverseLookup failed',
