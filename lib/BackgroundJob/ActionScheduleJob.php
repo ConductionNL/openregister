@@ -56,7 +56,7 @@ class ActionScheduleJob extends TimedJob
         private readonly LoggerInterface $logger
     ) {
         parent::__construct(time: $time);
-        $this->setInterval(interval: 60);
+        $this->setInterval(seconds: 60);
     }//end __construct()
 
     /**

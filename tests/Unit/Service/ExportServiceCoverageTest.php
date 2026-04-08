@@ -23,7 +23,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service;
 
 use DateTime;
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Db\UnifiedObjectMapper;
+use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\ExportService;
@@ -41,7 +41,7 @@ use ReflectionClass;
 class ExportServiceCoverageTest extends TestCase
 {
     private ExportService $service;
-    private UnifiedObjectMapper|MockObject $objectMapper;
+    private MagicMapper|MockObject $objectMapper;
     private RegisterMapper|MockObject $registerMapper;
     private IUserManager|MockObject $userManager;
     private IGroupManager|MockObject $groupManager;
@@ -51,7 +51,7 @@ class ExportServiceCoverageTest extends TestCase
 
     protected function setUp(): void
     {
-        $this->objectMapper = $this->createMock(UnifiedObjectMapper::class);
+        $this->objectMapper = $this->createMock(MagicMapper::class);
         $this->registerMapper = $this->createMock(RegisterMapper::class);
         $this->userManager = $this->createMock(IUserManager::class);
         $this->groupManager = $this->createMock(IGroupManager::class);

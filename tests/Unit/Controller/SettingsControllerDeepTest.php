@@ -11,6 +11,7 @@ use OCA\OpenRegister\Service\VectorizationService;
 use OCP\App\IAppManager;
 use OCP\IAppConfig;
 use OCP\IDBConnection;
+use OCP\IL10N;
 use OCP\IRequest;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
@@ -41,6 +42,8 @@ class SettingsControllerDeepTest extends TestCase
         $this->settingsService = $this->createMock(SettingsService::class);
         $this->vectorizationService = $this->createMock(VectorizationService::class);
         $this->logger = $this->createMock(LoggerInterface::class);
+        $l10n = $this->createMock(IL10N::class);
+        $l10n->method('t')->willReturnArgument(0);
 
         $this->controller = new SettingsController(
             'openregister',
@@ -51,7 +54,8 @@ class SettingsControllerDeepTest extends TestCase
             $this->appManager,
             $this->settingsService,
             $this->vectorizationService,
-            $this->logger
+            $this->logger,
+            $l10n
         );
     }
 

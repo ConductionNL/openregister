@@ -8,6 +8,7 @@ use Exception;
 use OCA\OpenRegister\Controller\UserController;
 use OCA\OpenRegister\Service\SecurityService;
 use OCA\OpenRegister\Service\UserService;
+use OCP\IL10N;
 use OCP\IRequest;
 use OCP\IUser;
 use OCP\IUserManager;
@@ -45,7 +46,8 @@ class UserControllerDeepTest extends TestCase
             $this->securityService,
             $this->userManager,
             $this->userSession,
-            $this->logger
+            $this->logger,
+            $this->createMock(IL10N::class)
         );
     }
 

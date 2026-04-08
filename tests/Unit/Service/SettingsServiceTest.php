@@ -2820,11 +2820,11 @@ class SettingsServiceTest extends TestCase
     public function testMassValidateObjectsSerialZeroObjects(): void
     {
         $container = $this->createMock(IAppContainer::class);
-        $objectMapper = $this->createMock(\OCA\OpenRegister\Db\UnifiedObjectMapper::class);
+        $objectMapper = $this->createMock(\OCA\OpenRegister\Db\MagicMapper::class);
 
         $container->method('get')
             ->willReturnCallback(function (string $class) use ($objectMapper) {
-                if ($class === \OCA\OpenRegister\Db\UnifiedObjectMapper::class) {
+                if ($class === \OCA\OpenRegister\Db\MagicMapper::class) {
                     return $objectMapper;
                 }
                 return null;
@@ -2852,11 +2852,11 @@ class SettingsServiceTest extends TestCase
     public function testMassValidateObjectsParallelZeroObjects(): void
     {
         $container = $this->createMock(IAppContainer::class);
-        $objectMapper = $this->createMock(\OCA\OpenRegister\Db\UnifiedObjectMapper::class);
+        $objectMapper = $this->createMock(\OCA\OpenRegister\Db\MagicMapper::class);
 
         $container->method('get')
             ->willReturnCallback(function (string $class) use ($objectMapper) {
-                if ($class === \OCA\OpenRegister\Db\UnifiedObjectMapper::class) {
+                if ($class === \OCA\OpenRegister\Db\MagicMapper::class) {
                     return $objectMapper;
                 }
                 return null;
@@ -2879,11 +2879,11 @@ class SettingsServiceTest extends TestCase
     public function testMassValidateObjectsWithMaxObjectsLimit(): void
     {
         $container = $this->createMock(IAppContainer::class);
-        $objectMapper = $this->createMock(\OCA\OpenRegister\Db\UnifiedObjectMapper::class);
+        $objectMapper = $this->createMock(\OCA\OpenRegister\Db\MagicMapper::class);
 
         $container->method('get')
             ->willReturnCallback(function (string $class) use ($objectMapper) {
-                if ($class === \OCA\OpenRegister\Db\UnifiedObjectMapper::class) {
+                if ($class === \OCA\OpenRegister\Db\MagicMapper::class) {
                     return $objectMapper;
                 }
                 return null;
@@ -2913,11 +2913,11 @@ class SettingsServiceTest extends TestCase
     public function testMassValidateObjectsSerialWithObjectsThrowsError(): void
     {
         $container = $this->createMock(IAppContainer::class);
-        $objectMapper = $this->createMock(\OCA\OpenRegister\Db\UnifiedObjectMapper::class);
+        $objectMapper = $this->createMock(\OCA\OpenRegister\Db\MagicMapper::class);
 
         $container->method('get')
             ->willReturnCallback(function (string $class) use ($objectMapper) {
-                if ($class === \OCA\OpenRegister\Db\UnifiedObjectMapper::class) {
+                if ($class === \OCA\OpenRegister\Db\MagicMapper::class) {
                     return $objectMapper;
                 }
                 return null;
@@ -2950,11 +2950,11 @@ class SettingsServiceTest extends TestCase
     public function testMassValidateObjectsParallelWithObjectsThrowsTypeError(): void
     {
         $container = $this->createMock(IAppContainer::class);
-        $objectMapper = $this->createMock(\OCA\OpenRegister\Db\UnifiedObjectMapper::class);
+        $objectMapper = $this->createMock(\OCA\OpenRegister\Db\MagicMapper::class);
 
         $container->method('get')
             ->willReturnCallback(function (string $class) use ($objectMapper) {
-                if ($class === \OCA\OpenRegister\Db\UnifiedObjectMapper::class) {
+                if ($class === \OCA\OpenRegister\Db\MagicMapper::class) {
                     return $objectMapper;
                 }
                 return null;
@@ -2983,11 +2983,11 @@ class SettingsServiceTest extends TestCase
     public function testMassValidateObjectsBatchSizeOne(): void
     {
         $container = $this->createMock(IAppContainer::class);
-        $objectMapper = $this->createMock(\OCA\OpenRegister\Db\UnifiedObjectMapper::class);
+        $objectMapper = $this->createMock(\OCA\OpenRegister\Db\MagicMapper::class);
 
         $container->method('get')
             ->willReturnCallback(function (string $class) use ($objectMapper) {
-                if ($class === \OCA\OpenRegister\Db\UnifiedObjectMapper::class) {
+                if ($class === \OCA\OpenRegister\Db\MagicMapper::class) {
                     return $objectMapper;
                 }
                 return null;
@@ -3009,11 +3009,11 @@ class SettingsServiceTest extends TestCase
     public function testMassValidateObjectsBatchSizeFiveThousand(): void
     {
         $container = $this->createMock(IAppContainer::class);
-        $objectMapper = $this->createMock(\OCA\OpenRegister\Db\UnifiedObjectMapper::class);
+        $objectMapper = $this->createMock(\OCA\OpenRegister\Db\MagicMapper::class);
 
         $container->method('get')
             ->willReturnCallback(function (string $class) use ($objectMapper) {
-                if ($class === \OCA\OpenRegister\Db\UnifiedObjectMapper::class) {
+                if ($class === \OCA\OpenRegister\Db\MagicMapper::class) {
                     return $objectMapper;
                 }
                 return null;
@@ -3035,11 +3035,11 @@ class SettingsServiceTest extends TestCase
     public function testMassValidateObjectsConfigUsed(): void
     {
         $container = $this->createMock(IAppContainer::class);
-        $objectMapper = $this->createMock(\OCA\OpenRegister\Db\UnifiedObjectMapper::class);
+        $objectMapper = $this->createMock(\OCA\OpenRegister\Db\MagicMapper::class);
 
         $container->method('get')
             ->willReturnCallback(function (string $class) use ($objectMapper) {
-                if ($class === \OCA\OpenRegister\Db\UnifiedObjectMapper::class) {
+                if ($class === \OCA\OpenRegister\Db\MagicMapper::class) {
                     return $objectMapper;
                 }
                 return null;
@@ -3064,11 +3064,11 @@ class SettingsServiceTest extends TestCase
     public function testMassValidateObjectsDurationAndMemory(): void
     {
         $container = $this->createMock(IAppContainer::class);
-        $objectMapper = $this->createMock(\OCA\OpenRegister\Db\UnifiedObjectMapper::class);
+        $objectMapper = $this->createMock(\OCA\OpenRegister\Db\MagicMapper::class);
 
         $container->method('get')
             ->willReturnCallback(function (string $class) use ($objectMapper) {
-                if ($class === \OCA\OpenRegister\Db\UnifiedObjectMapper::class) {
+                if ($class === \OCA\OpenRegister\Db\MagicMapper::class) {
                     return $objectMapper;
                 }
                 return null;
@@ -3571,11 +3571,11 @@ class SettingsServiceTest extends TestCase
     public function testMassValidateObjectsMaxObjectsEqualsTotal(): void
     {
         $container = $this->createMock(IAppContainer::class);
-        $objectMapper = $this->createMock(\OCA\OpenRegister\Db\UnifiedObjectMapper::class);
+        $objectMapper = $this->createMock(\OCA\OpenRegister\Db\MagicMapper::class);
 
         $container->method('get')
             ->willReturnCallback(function (string $class) use ($objectMapper) {
-                if ($class === \OCA\OpenRegister\Db\UnifiedObjectMapper::class) {
+                if ($class === \OCA\OpenRegister\Db\MagicMapper::class) {
                     return $objectMapper;
                 }
                 return null;
@@ -3600,11 +3600,11 @@ class SettingsServiceTest extends TestCase
     public function testMassValidateObjectsMaxObjectsGreaterThanTotal(): void
     {
         $container = $this->createMock(IAppContainer::class);
-        $objectMapper = $this->createMock(\OCA\OpenRegister\Db\UnifiedObjectMapper::class);
+        $objectMapper = $this->createMock(\OCA\OpenRegister\Db\MagicMapper::class);
 
         $container->method('get')
             ->willReturnCallback(function (string $class) use ($objectMapper) {
-                if ($class === \OCA\OpenRegister\Db\UnifiedObjectMapper::class) {
+                if ($class === \OCA\OpenRegister\Db\MagicMapper::class) {
                     return $objectMapper;
                 }
                 return null;
@@ -3762,11 +3762,11 @@ class SettingsServiceTest extends TestCase
     public function testMassValidateObjectsSerialWithObjectsAndNullServiceThrowsTypeError(): void
     {
         $container    = $this->createMock(IAppContainer::class);
-        $objectMapper = $this->createMock(\OCA\OpenRegister\Db\UnifiedObjectMapper::class);
+        $objectMapper = $this->createMock(\OCA\OpenRegister\Db\MagicMapper::class);
 
         $container->method('get')
             ->willReturnCallback(function (string $class) use ($objectMapper) {
-                if ($class === \OCA\OpenRegister\Db\UnifiedObjectMapper::class) {
+                if ($class === \OCA\OpenRegister\Db\MagicMapper::class) {
                     return $objectMapper;
                 }
 
@@ -3795,11 +3795,11 @@ class SettingsServiceTest extends TestCase
     public function testMassValidateObjectsParallelModeWithObjectsThrowsTypeErrorForNullService(): void
     {
         $container    = $this->createMock(IAppContainer::class);
-        $objectMapper = $this->createMock(\OCA\OpenRegister\Db\UnifiedObjectMapper::class);
+        $objectMapper = $this->createMock(\OCA\OpenRegister\Db\MagicMapper::class);
 
         $container->method('get')
             ->willReturnCallback(function (string $class) use ($objectMapper) {
-                if ($class === \OCA\OpenRegister\Db\UnifiedObjectMapper::class) {
+                if ($class === \OCA\OpenRegister\Db\MagicMapper::class) {
                     return $objectMapper;
                 }
 
@@ -3827,11 +3827,11 @@ class SettingsServiceTest extends TestCase
     public function testMassValidateObjectsSerialCollectErrorsFalseThrowsError(): void
     {
         $container    = $this->createMock(IAppContainer::class);
-        $objectMapper = $this->createMock(\OCA\OpenRegister\Db\UnifiedObjectMapper::class);
+        $objectMapper = $this->createMock(\OCA\OpenRegister\Db\MagicMapper::class);
 
         $container->method('get')
             ->willReturnCallback(function (string $class) use ($objectMapper) {
-                if ($class === \OCA\OpenRegister\Db\UnifiedObjectMapper::class) {
+                if ($class === \OCA\OpenRegister\Db\MagicMapper::class) {
                     return $objectMapper;
                 }
 

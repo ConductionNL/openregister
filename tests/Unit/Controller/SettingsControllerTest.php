@@ -18,6 +18,7 @@ use OCP\AppFramework\Http\JSONResponse;
 use OCP\IAppConfig;
 use OCP\IDBConnection;
 use OCP\IRequest;
+use OCP\IL10N;
 use Psr\Container\ContainerInterface;
 use Doctrine\DBAL\Platforms\AbstractPlatform;
 use Psr\Log\LoggerInterface;
@@ -46,6 +47,7 @@ class SettingsControllerTest extends TestCase
     private VectorizationService $vectorizationService;
     private IRequest $request;
     private LoggerInterface $logger;
+    private IL10N $l10n;
 
     /**
      * Set up test dependencies
@@ -64,6 +66,8 @@ class SettingsControllerTest extends TestCase
         $this->settingsService = $this->createMock(SettingsService::class);
         $this->vectorizationService = $this->createMock(VectorizationService::class);
         $this->logger = $this->createMock(LoggerInterface::class);
+        $this->l10n = $this->createMock(IL10N::class);
+        $this->l10n->method('t')->willReturnArgument(0);
 
         $this->controller = new SettingsController(
             'openregister',
@@ -74,7 +78,8 @@ class SettingsControllerTest extends TestCase
             $this->appManager,
             $this->settingsService,
             $this->vectorizationService,
-            $this->logger
+            $this->logger,
+            $this->l10n
         );
     }
 
@@ -2018,7 +2023,7 @@ class SettingsControllerTest extends TestCase
             }
         };
 
-        $mockObjectMapper = $this->createMock(\OCA\OpenRegister\Db\UnifiedObjectMapper::class);
+        $mockObjectMapper = $this->createMock(\OCA\OpenRegister\Db\MagicMapper::class);
         $mockSchemaMapper = $this->createMock(\OCA\OpenRegister\Db\SchemaMapper::class);
 
         $this->container->method('get')
@@ -2028,7 +2033,7 @@ class SettingsControllerTest extends TestCase
                         return $mockIndexService;
                     }
 
-                    if ($id === \OCA\OpenRegister\Db\UnifiedObjectMapper::class) {
+                    if ($id === \OCA\OpenRegister\Db\MagicMapper::class) {
                         return $mockObjectMapper;
                     }
 
@@ -2085,7 +2090,7 @@ class SettingsControllerTest extends TestCase
             }
         };
 
-        $mockObjectMapper = $this->createMock(\OCA\OpenRegister\Db\UnifiedObjectMapper::class);
+        $mockObjectMapper = $this->createMock(\OCA\OpenRegister\Db\MagicMapper::class);
         $mockSchemaMapper = $this->createMock(\OCA\OpenRegister\Db\SchemaMapper::class);
 
         $this->container->method('get')
@@ -2095,7 +2100,7 @@ class SettingsControllerTest extends TestCase
                         return $mockIndexService;
                     }
 
-                    if ($id === \OCA\OpenRegister\Db\UnifiedObjectMapper::class) {
+                    if ($id === \OCA\OpenRegister\Db\MagicMapper::class) {
                         return $mockObjectMapper;
                     }
 
@@ -2131,7 +2136,7 @@ class SettingsControllerTest extends TestCase
                     return $mockIndexService;
                 }
 
-                throw new \Exception('UnifiedObjectMapper not available');
+                throw new \Exception('MagicMapper not available');
             });
 
         $response = $this->controller->testSchemaMapping();

@@ -11,6 +11,7 @@ use OCA\OpenRegister\Service\VectorizationService;
 use OCP\App\IAppManager;
 use OCP\IAppConfig;
 use OCP\IDBConnection;
+use OCP\IL10N;
 use OCP\IRequest;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
@@ -48,6 +49,8 @@ class SettingsControllerCoverageTest extends TestCase
             ->getMock();
         $this->vectorizationService = $this->createMock(VectorizationService::class);
         $this->logger = $this->createMock(LoggerInterface::class);
+        $l10n = $this->createMock(IL10N::class);
+        $l10n->method('t')->willReturnArgument(0);
 
         $this->controller = new SettingsController(
             'openregister',
@@ -58,7 +61,8 @@ class SettingsControllerCoverageTest extends TestCase
             $this->appManager,
             $this->settingsService,
             $this->vectorizationService,
-            $this->logger
+            $this->logger,
+            $l10n
         );
     }
 

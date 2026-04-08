@@ -23,7 +23,7 @@ use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Controller\SearchController;
 use OCA\OpenRegister\Service\IndexService;
 use OCA\OpenRegister\Db\OrganisationMapper;
-use OCA\OpenRegister\Db\UnifiedObjectMapper;
+use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\Organisation;
@@ -47,7 +47,7 @@ class IntegrationTest extends TestCase
     private ObjectService|MockObject $objectService;
     private SearchController $searchController;
     private OrganisationMapper|MockObject $organisationMapper;
-    private UnifiedObjectMapper|MockObject $objectMapper;
+    private MagicMapper|MockObject $objectMapper;
     private SchemaMapper|MockObject $schemaMapper;
     private AuditTrailMapper|MockObject $auditTrailMapper;
     private IUserSession|MockObject $userSession;
@@ -64,7 +64,7 @@ class IntegrationTest extends TestCase
         parent::setUp();
         
         $this->organisationMapper = $this->createMock(OrganisationMapper::class);
-        $this->objectMapper = $this->createMock(UnifiedObjectMapper::class);
+        $this->objectMapper = $this->createMock(MagicMapper::class);
         $this->schemaMapper = $this->createMock(SchemaMapper::class);
         $this->auditTrailMapper = $this->createMock(AuditTrailMapper::class);
         $this->userSession = $this->createMock(IUserSession::class);
@@ -156,7 +156,7 @@ class IntegrationTest extends TestCase
     /**
      * Test 10.2: Search Filtering by Organisation
      *
-     * Note: SearchController::search() delegates to IndexService, not UnifiedObjectMapper directly.
+     * Note: SearchController::search() delegates to IndexService, not MagicMapper directly.
      * The IndexService mock returns results. This test verifies the search endpoint response format.
      */
     public function testSearchFilteringByOrganisation(): void
