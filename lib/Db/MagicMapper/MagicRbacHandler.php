@@ -38,7 +38,9 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Db\MagicMapper;
 
 use DateTime;
+use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\IUserSession;
 use OCP\IGroupManager;
@@ -131,8 +133,8 @@ class MagicRbacHandler
             return;
         }
 
-        // Get schema authorization configuration.
-        $authorization = $schema->getAuthorization();
+        // Get effective authorization (schema-level, or register cascade).
+        $authorization = $this->resolveSchemaAuthorization(schema: $schema);
 
         // If no authorization is configured, schema is open to all.
         if (empty($authorization) === true) {
@@ -973,8 +975,8 @@ class MagicRbacHandler
             return ['bypass' => true, 'conditions' => []];
         }
 
-        // Get schema authorization configuration.
-        $authorization = $schema->getAuthorization();
+        // Get effective authorization (schema-level, or register cascade).
+        $authorization = $this->resolveSchemaAuthorization(schema: $schema);
 
         // If no authorization is configured, schema is open to all.
         if (empty($authorization) === true) {
@@ -1497,4 +1499,30 @@ class MagicRbacHandler
 
         return false;
     }//end matchHasNonOrganisationFields()
+
+    /**
+     * Resolve the effective authorization for a schema.
+     *
+     * Delegates to PermissionHandler::resolveAuthorization() which handles
+     * register cascade and role expansion. Falls back to schema-only
+     * authorization if PermissionHandler is not available.
+     *
+     * @param Schema $schema The schema to resolve authorization for.
+     *
+     * @return array|null The effective authorization array.
+     */
+    private function resolveSchemaAuthorization(Schema $schema): ?array
+    {
+        try {
+            $permissionHandler = $this->container->get(PermissionHandler::class);
+            return $permissionHandler->resolveAuthorization($schema);
+        } catch (\Throwable $e) {
+            // Fallback to direct schema authorization if PermissionHandler unavailable.
+            $this->logger->debug(
+                message: '[MagicRbacHandler] PermissionHandler unavailable, using schema auth directly',
+                context: ['file' => __FILE__, 'line' => __LINE__, 'error' => $e->getMessage()]
+            );
+            return $schema->getAuthorization();
+        }
+    }//end resolveSchemaAuthorization()
 }//end class
