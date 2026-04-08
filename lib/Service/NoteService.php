@@ -154,6 +154,39 @@ class NoteService
     }//end createNote()
 
     /**
+     * Update an existing note's message.
+     *
+     * @param int    $noteId  The ID of the note to update
+     * @param string $message The new message content
+     *
+     * @return array The updated note in JSON-friendly format
+     *
+     * @throws Exception If the note is not found or user is not the author
+     */
+    public function updateNote(int $noteId, string $message): array
+    {
+        $user = $this->userSession->getUser();
+        if ($user === null) {
+            throw new Exception('No user logged in');
+        }
+
+        try {
+            $comment = $this->commentsManager->get((string) $noteId);
+        } catch (CommentsNotFoundException $e) {
+            throw new Exception('Note not found');
+        }
+
+        if ($comment->getActorId() !== $user->getUID()) {
+            throw new Exception('You can only edit your own notes');
+        }
+
+        $comment->setMessage($message);
+        $this->commentsManager->save($comment);
+
+        return $this->commentToArray(comment: $comment);
+    }//end updateNote()
+
+    /**
      * Delete a note by its ID.
      *
      * @param int $noteId The ID of the note to delete

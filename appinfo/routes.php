@@ -555,5 +555,9 @@ return [
 		['name' => 'transfer#index', 'url' => '/api/transfers', 'verb' => 'GET'],
 		['name' => 'transfer#show', 'url' => '/api/transfers/{id}', 'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
 		['name' => 'transfer#create', 'url' => '/api/transfers', 'verb' => 'POST'],
+
+		// Files sidebar tab endpoints.
+		['name' => 'fileSidebar#getObjectsForFile', 'url' => '/api/files/{fileId}/objects', 'verb' => 'GET', 'requirements' => ['fileId' => '\\d+']],
+		['name' => 'fileSidebar#getExtractionStatus', 'url' => '/api/files/{fileId}/extraction-status', 'verb' => 'GET', 'requirements' => ['fileId' => '\\d+']],
     ],
 ];

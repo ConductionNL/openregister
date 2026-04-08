@@ -92,13 +92,6 @@ import { objectStore, registerStore, schemaStore, dashboardStore } from '../../s
 								<td>{{ systemTotals.stats?.objects?.locked || 0 }}</td>
 								<td>-</td>
 							</tr>
-							<tr class="subRow">
-								<td class="indented">
-									{{ t('openregister', 'Published') }}
-								</td>
-								<td>{{ systemTotals.stats?.objects?.published || 0 }}</td>
-								<td>-</td>
-							</tr>
 							<tr>
 								<td>{{ t('openregister', 'Logs') }}</td>
 								<td>{{ systemTotals.stats?.logs?.total || 0 }}</td>
@@ -150,13 +143,6 @@ import { objectStore, registerStore, schemaStore, dashboardStore } from '../../s
 									{{ t('openregister', 'Locked') }}
 								</td>
 								<td>{{ orphanedItems.stats?.objects?.locked || 0 }}</td>
-								<td>-</td>
-							</tr>
-							<tr class="subRow">
-								<td class="indented">
-									{{ t('openregister', 'Published') }}
-								</td>
-								<td>{{ orphanedItems.stats?.objects?.published || 0 }}</td>
 								<td>-</td>
 							</tr>
 							<tr>

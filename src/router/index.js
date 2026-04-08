@@ -26,6 +26,7 @@ import EndpointsIndex from '../views/Endpoint/EndpointsIndex.vue'
 import EntitiesIndex from '../views/entities/EntitiesIndex.vue'
 import EntityDetail from '../views/entities/EntityDetail.vue'
 import TemplatesIndex from '../views/templates/TemplatesIndex.vue'
+import MyAccount from '../views/account/MyAccount.vue'
 
 Vue.use(Router)
 
@@ -47,6 +48,7 @@ export const routeKeyByPath = {
 	'/audit-trails': 'auditTrails',
 	'/search-trails': 'searchTrails',
 	'/endpoints': 'endpoints',
+	'/mijn-account': 'myAccount',
 }
 
 const router = new Router({
@@ -77,6 +79,7 @@ const router = new Router({
 		{ path: '/entities', component: EntitiesIndex },
 		{ path: '/entities/:id', name: 'entityDetails', component: EntityDetail },
 		{ path: '/templates', component: TemplatesIndex },
+		{ path: '/mijn-account', name: 'myAccount', component: MyAccount },
 		{ path: '*', redirect: '/' },
 	],
 })
