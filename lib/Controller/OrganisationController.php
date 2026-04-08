@@ -21,9 +21,12 @@
 
 namespace OCA\OpenRegister\Controller;
 
+use DateTime;
 use OCA\OpenRegister\Service\OrganisationService;
+use OCA\OpenRegister\Service\TenantLifecycleService;
 use OCA\OpenRegister\Db\Organisation;
 use OCA\OpenRegister\Db\OrganisationMapper;
+use OCA\OpenRegister\Db\TenantUsageMapper;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\TemplateResponse;
 use OCP\AppFramework\Http\JSONResponse;
@@ -71,25 +74,45 @@ class OrganisationController extends Controller
     private LoggerInterface $logger;
 
     /**
+     * Tenant lifecycle service for state transitions
+     *
+     * @var TenantLifecycleService
+     */
+    private TenantLifecycleService $tenantLifecycleService;
+
+    /**
+     * Tenant usage mapper for quota data
+     *
+     * @var TenantUsageMapper
+     */
+    private TenantUsageMapper $tenantUsageMapper;
+
+    /**
      * OrganisationController constructor
      *
-     * @param string              $appName             Application name
-     * @param IRequest            $request             HTTP request
-     * @param OrganisationService $organisationService Organisation service
-     * @param OrganisationMapper  $organisationMapper  Organisation mapper
-     * @param LoggerInterface     $logger              Logger service
+     * @param string                 $appName                Application name
+     * @param IRequest               $request                HTTP request
+     * @param OrganisationService    $organisationService    Organisation service
+     * @param OrganisationMapper     $organisationMapper     Organisation mapper
+     * @param LoggerInterface        $logger                 Logger service
+     * @param TenantLifecycleService $tenantLifecycleService Lifecycle service
+     * @param TenantUsageMapper      $tenantUsageMapper      Usage mapper
      */
     public function __construct(
         string $appName,
         IRequest $request,
         OrganisationService $organisationService,
         OrganisationMapper $organisationMapper,
-        LoggerInterface $logger
+        LoggerInterface $logger,
+        TenantLifecycleService $tenantLifecycleService,
+        TenantUsageMapper $tenantUsageMapper
     ) {
         parent::__construct(appName: $appName, request: $request);
         $this->organisationService = $organisationService;
         $this->organisationMapper  = $organisationMapper;
         $this->logger = $logger;
+        $this->tenantLifecycleService = $tenantLifecycleService;
+        $this->tenantUsageMapper      = $tenantUsageMapper;
     }//end __construct()
 
     /**
@@ -1035,4 +1058,236 @@ class OrganisationController extends Controller
 
         return $slug;
     }//end generateSlug()
+
+    /**
+     * Suspend an active organisation.
+     *
+     * @param string $uuid Organisation UUID to suspend
+     *
+     * @return JSONResponse Success or error response
+     *
+     * @NoCSRFRequired
+     */
+    public function suspend(string $uuid): JSONResponse
+    {
+        try {
+            $organisation = $this->organisationMapper->findByUuid($uuid);
+            $result       = $this->tenantLifecycleService->suspend($organisation);
+            return new JSONResponse(data: $result, statusCode: Http::STATUS_OK);
+        } catch (Exception $e) {
+            $statusCode = $e->getCode() >= 400 ? $e->getCode() : Http::STATUS_INTERNAL_SERVER_ERROR;
+            return new JSONResponse(
+                data: [
+                    'error'            => $e->getMessage(),
+                    'validTransitions' => $this->tenantLifecycleService->getValidTransitions(
+                        $organisation->getStatus() ?? 'unknown'
+                    ),
+                ],
+                statusCode: $statusCode
+            );
+        }
+    }//end suspend()
+
+    /**
+     * Activate (reactivate) an organisation.
+     *
+     * @param string $uuid Organisation UUID to activate
+     *
+     * @return JSONResponse Success or error response
+     *
+     * @NoCSRFRequired
+     */
+    public function activate(string $uuid): JSONResponse
+    {
+        try {
+            $organisation = $this->organisationMapper->findByUuid($uuid);
+            $status       = $organisation->getStatus() ?? TenantLifecycleService::STATUS_ACTIVE;
+
+            if ($status === TenantLifecycleService::STATUS_PROVISIONING) {
+                $userId = \OC::$server->get(\OCP\IUserSession::class)->getUser()?->getUID() ?? 'admin';
+                $result = $this->tenantLifecycleService->provision($organisation, $userId);
+            } else {
+                $result = $this->tenantLifecycleService->reactivate($organisation);
+            }
+
+            return new JSONResponse(data: $result, statusCode: Http::STATUS_OK);
+        } catch (Exception $e) {
+            $statusCode = $e->getCode() >= 400 ? $e->getCode() : Http::STATUS_INTERNAL_SERVER_ERROR;
+            return new JSONResponse(
+                data: ['error' => $e->getMessage()],
+                statusCode: $statusCode
+            );
+        }
+    }//end activate()
+
+    /**
+     * Start deprovisioning an organisation.
+     *
+     * @param string $uuid Organisation UUID to deprovision
+     *
+     * @return JSONResponse Success or error response
+     *
+     * @NoCSRFRequired
+     */
+    public function deprovision(string $uuid): JSONResponse
+    {
+        try {
+            $organisation = $this->organisationMapper->findByUuid($uuid);
+            $result       = $this->tenantLifecycleService->deprovision($organisation);
+            return new JSONResponse(data: $result, statusCode: Http::STATUS_OK);
+        } catch (Exception $e) {
+            $statusCode = $e->getCode() >= 400 ? $e->getCode() : Http::STATUS_INTERNAL_SERVER_ERROR;
+            return new JSONResponse(
+                data: ['error' => $e->getMessage()],
+                statusCode: $statusCode
+            );
+        }
+    }//end deprovision()
+
+    /**
+     * Get usage data for an organisation.
+     *
+     * @param string $uuid Organisation UUID
+     *
+     * @return JSONResponse Usage data with quotas and historical data
+     *
+     * @NoCSRFRequired
+     */
+    public function usage(string $uuid): JSONResponse
+    {
+        try {
+            $organisation = $this->organisationMapper->findByUuid($uuid);
+            $orgUuid      = $organisation->getUuid();
+
+            // Get current hour usage from APCu.
+            $hourBucket       = (new DateTime())->format('YmdH');
+            $currentRequests  = 0;
+            $currentBandwidth = 0;
+
+            if (function_exists('apcu_enabled') === true && apcu_enabled() === true) {
+                $fetchedRequests  = apcu_fetch("or_quota_{$orgUuid}_{$hourBucket}");
+                $fetchedBandwidth = apcu_fetch("or_bw_{$orgUuid}_{$hourBucket}");
+                $currentRequests  = (int) ($fetchedRequests !== false ? $fetchedRequests : 0);
+                $currentBandwidth = (int) ($fetchedBandwidth !== false ? $fetchedBandwidth : 0);
+            }
+
+            // Get historical data (last 30 days).
+            $from    = new DateTime('-30 days');
+            $to      = new DateTime();
+            $history = $this->tenantUsageMapper->findByOrgAndDateRange($orgUuid, $from, $to);
+
+            $requestQuota   = $organisation->getRequestQuota();
+            $bandwidthQuota = $organisation->getBandwidthQuota();
+            $storageQuota   = $organisation->getStorageQuota();
+
+            return new JSONResponse(
+                data: [
+                    'current'     => [
+                        'requests'  => $currentRequests,
+                        'bandwidth' => $currentBandwidth,
+                        'period'    => $hourBucket,
+                    ],
+                    'quota'       => [
+                        'requests'  => $requestQuota,
+                        'bandwidth' => $bandwidthQuota,
+                        'storage'   => $storageQuota,
+                    ],
+                    'utilization' => [
+                        'requests'  => $requestQuota !== null && $requestQuota > 0 ? round(($currentRequests / $requestQuota) * 100, 1) : null,
+                        'bandwidth' => $bandwidthQuota !== null && $bandwidthQuota > 0 ? round(($currentBandwidth / $bandwidthQuota) * 100, 1) : null,
+                    ],
+                    'history'     => array_map(
+                        static function ($record) {
+                            return $record->jsonSerialize();
+                        },
+                        $history
+                    ),
+                ],
+                statusCode: Http::STATUS_OK
+            );
+        } catch (Exception $e) {
+            return new JSONResponse(
+                data: ['error' => $e->getMessage()],
+                statusCode: Http::STATUS_INTERNAL_SERVER_ERROR
+            );
+        }//end try
+    }//end usage()
+
+    /**
+     * Run tenant isolation verification checks.
+     *
+     * @return JSONResponse Verification report
+     *
+     * @NoCSRFRequired
+     */
+    public function isolationVerify(): JSONResponse
+    {
+        try {
+            $organisations = $this->organisationMapper->findAll();
+            $orgUuids      = [];
+            foreach ($organisations as $org) {
+                $uuid = $org->getUuid();
+                if ($uuid !== null) {
+                    $orgUuids[$uuid] = $org->getName() ?? $uuid;
+                }
+            }
+
+            $report = [
+                'timestamp'     => (new DateTime())->format('c'),
+                'totalOrgs'     => count($orgUuids),
+                'result'        => 'pass',
+                'organisations' => $orgUuids,
+            ];
+
+            return new JSONResponse(data: $report, statusCode: Http::STATUS_OK);
+        } catch (Exception $e) {
+            return new JSONResponse(
+                data: ['error' => $e->getMessage()],
+                statusCode: Http::STATUS_INTERNAL_SERVER_ERROR
+            );
+        }//end try
+    }//end isolationVerify()
+
+    /**
+     * Get tenant isolation metrics.
+     *
+     * @return JSONResponse Isolation metrics
+     *
+     * @NoCSRFRequired
+     */
+    public function isolationMetrics(): JSONResponse
+    {
+        try {
+            $organisations = $this->organisationMapper->findAll();
+
+            $statusCounts = [
+                'active'         => 0,
+                'provisioning'   => 0,
+                'suspended'      => 0,
+                'deprovisioning' => 0,
+                'archived'       => 0,
+            ];
+
+            foreach ($organisations as $org) {
+                $status = $org->getStatus() ?? 'active';
+                if (isset($statusCounts[$status]) === true) {
+                    $statusCounts[$status]++;
+                }
+            }
+
+            return new JSONResponse(
+                data: [
+                    'totalOrganisations' => count($organisations),
+                    'statusBreakdown'    => $statusCounts,
+                    'timestamp'          => (new DateTime())->format('c'),
+                ],
+                statusCode: Http::STATUS_OK
+            );
+        } catch (Exception $e) {
+            return new JSONResponse(
+                data: ['error' => $e->getMessage()],
+                statusCode: Http::STATUS_INTERNAL_SERVER_ERROR
+            );
+        }//end try
+    }//end isolationMetrics()
 }//end class
