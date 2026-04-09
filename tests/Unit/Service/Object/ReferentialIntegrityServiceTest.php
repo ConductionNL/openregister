@@ -1615,9 +1615,7 @@ class ReferentialIntegrityServiceTest extends TestCase
             ->method('deleteObjects')
             ->with(
                 $this->equalTo(['cascade-uuid']),
-                $this->equalTo(false),
-                $this->isInstanceOf(Register::class),
-                $this->isInstanceOf(Schema::class)
+                $this->equalTo(false)
             );
 
         $analysis = new DeletionAnalysis(
@@ -1649,9 +1647,7 @@ class ReferentialIntegrityServiceTest extends TestCase
             ->with(
                 // Reversed order because applyDeletionActions reverses cascadeTargets.
                 $this->equalTo(['cascade-uuid-2', 'cascade-uuid-1']),
-                $this->equalTo(false),
-                $this->isInstanceOf(Register::class),
-                $this->isInstanceOf(Schema::class)
+                $this->equalTo(false)
             );
 
         $analysis = new DeletionAnalysis(
@@ -1682,9 +1678,7 @@ class ReferentialIntegrityServiceTest extends TestCase
             ->method('deleteObjects')
             ->with(
                 $this->equalTo(['cascade-uuid']),
-                $this->equalTo(false),
-                $this->isNull(),
-                $this->isNull()
+                $this->equalTo(false)
             );
 
         $analysis = new DeletionAnalysis(
@@ -1702,8 +1696,8 @@ class ReferentialIntegrityServiceTest extends TestCase
 
     public function testApplyDeletionActionsCascadeHandlesDeleteException(): void
     {
-        $this->registerMapper->method('find')
-            ->willThrowException(new \Exception('Register not found'));
+        $this->objectMapper->method('deleteObjects')
+            ->willThrowException(new \Exception('Batch delete failed'));
 
         $this->logger->expects($this->atLeastOnce())
             ->method('warning');

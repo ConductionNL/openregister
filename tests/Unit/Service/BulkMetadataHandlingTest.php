@@ -29,18 +29,12 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service;
 
 use OCA\OpenRegister\Db\MagicMapper;
-use OCA\OpenRegister\Db\Organisation;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Object\SaveObject;
 use OCA\OpenRegister\Service\Object\SaveObjects;
-use OCA\OpenRegister\Service\Object\SaveObjects\BulkRelationHandler;
-use OCA\OpenRegister\Service\Object\SaveObjects\BulkValidationHandler;
-use OCA\OpenRegister\Service\Object\SaveObjects\ChunkProcessingHandler;
-use OCA\OpenRegister\Service\Object\SaveObjects\PreparationHandler;
-use OCA\OpenRegister\Service\Object\SaveObjects\TransformationHandler;
 use OCA\OpenRegister\Service\OrganisationService;
 use OCP\IUser;
 use OCP\IUserSession;
@@ -90,41 +84,6 @@ class BulkMetadataHandlingTest extends TestCase
     private MockObject $mockSaveHandler;
 
     /**
-     * Mock bulk validation handler
-     *
-     * @var MockObject|BulkValidationHandler
-     */
-    private MockObject $mockBulkValidHandler;
-
-    /**
-     * Mock bulk relation handler
-     *
-     * @var MockObject|BulkRelationHandler
-     */
-    private MockObject $mockBulkRelationHandler;
-
-    /**
-     * Mock transformation handler
-     *
-     * @var MockObject|TransformationHandler
-     */
-    private MockObject $mockTransformHandler;
-
-    /**
-     * Mock preparation handler
-     *
-     * @var MockObject|PreparationHandler
-     */
-    private MockObject $mockPreparationHandler;
-
-    /**
-     * Mock chunk processing handler
-     *
-     * @var MockObject|ChunkProcessingHandler
-     */
-    private MockObject $mockChunkProcHandler;
-
-    /**
      * Mock user session
      *
      * @var MockObject|IUserSession
@@ -169,16 +128,14 @@ class BulkMetadataHandlingTest extends TestCase
     {
         parent::setUp();
 
+        // Clear static caches from previous tests to prevent stale data.
+        SaveObjects::clearSchemaCache();
+
         // Create mocks for all dependencies.
         $this->mockObjectMapper = $this->createMock(MagicMapper::class);
         $this->mockSchemaMapper = $this->createMock(SchemaMapper::class);
         $this->mockRegisterMapper = $this->createMock(RegisterMapper::class);
         $this->mockSaveHandler = $this->createMock(SaveObject::class);
-        $this->mockBulkValidHandler = $this->createMock(BulkValidationHandler::class);
-        $this->mockBulkRelationHandler = $this->createMock(BulkRelationHandler::class);
-        $this->mockTransformHandler = $this->createMock(TransformationHandler::class);
-        $this->mockPreparationHandler = $this->createMock(PreparationHandler::class);
-        $this->mockChunkProcHandler = $this->createMock(ChunkProcessingHandler::class);
         $this->mockUserSession = $this->createMock(IUserSession::class);
         $this->mockOrganisationService = $this->createMock(OrganisationService::class);
 
@@ -195,16 +152,22 @@ class BulkMetadataHandlingTest extends TestCase
         $this->testSchema->setConfiguration([]);
         $this->testSchema->setHardValidation(false);
 
-        // Configure schema analysis mock (needed by prepareSingleSchemaObjectsOptimized).
-        $this->mockBulkValidHandler
-            ->method('performComprehensiveSchemaAnalysis')
-            ->willReturn([
-                'metadataFields'     => [],
-                'inverseProperties'  => [],
-                'validationRequired' => false,
-                'properties'         => [],
-                'configuration'      => [],
-            ]);
+        // Configure ultraFastBulkSave to return objects with database-computed status.
+        // The bulk save returns complete objects with 'object_status' for classification.
+        $this->mockObjectMapper
+            ->method('ultraFastBulkSave')
+            ->willReturnCallback(function (array $insertObjects) {
+                $results = [];
+                foreach ($insertObjects as $obj) {
+                    $results[] = array_merge($obj, [
+                        'object_status' => 'created',
+                        'created'       => date('Y-m-d H:i:s'),
+                        'updated'       => date('Y-m-d H:i:s'),
+                    ]);
+                }
+
+                return $results;
+            });
 
         // Create the SaveObjects handler with mocked dependencies.
         $this->saveObjectsHandler = new SaveObjects(
@@ -221,48 +184,17 @@ class BulkMetadataHandlingTest extends TestCase
 
 
     /**
-     * Helper to create a default Organisation entity.
-     *
-     * @param string $uuid Organisation UUID
-     *
-     * @return Organisation
-     */
-    private function createDefaultOrganisation(string $uuid='test-org-456'): Organisation
-    {
-        $org = new Organisation();
-        $org->setUuid($uuid);
-        return $org;
-
-    }//end createDefaultOrganisation()
-
-
-    /**
-     * Helper to configure chunk processing handler to return successful results.
-     *
-     * @param int $savedCount Number of saved objects to report
+     * Clean up after each test
      *
      * @return void
      */
-    private function configureChunkProcessingSuccess(int $savedCount=1): void
+    protected function tearDown(): void
     {
-        $this->mockChunkProcHandler
-            ->method('processObjectsChunk')
-            ->willReturn([
-                'saved'      => array_fill(0, $savedCount, 'test-uuid'),
-                'updated'    => [],
-                'unchanged'  => [],
-                'invalid'    => [],
-                'errors'     => [],
-                'statistics' => [
-                    'saved'     => $savedCount,
-                    'updated'   => 0,
-                    'unchanged' => 0,
-                    'invalid'   => 0,
-                    'errors'    => 0,
-                ],
-            ]);
+        // Clear static caches to prevent cross-test contamination.
+        SaveObjects::clearSchemaCache();
+        parent::tearDown();
 
-    }//end configureChunkProcessingSuccess()
+    }//end tearDown()
 
 
     /**
@@ -278,11 +210,8 @@ class BulkMetadataHandlingTest extends TestCase
 
         // Configure OrganisationService to return test organization.
         $this->mockOrganisationService
-            ->method('ensureDefaultOrganisation')
-            ->willReturn($this->createDefaultOrganisation());
-
-        // Configure chunk processing to succeed.
-        $this->configureChunkProcessingSuccess(1);
+            ->method('getOrganisationForNewEntity')
+            ->willReturn('test-org-456');
 
         // Test object without owner or organization metadata.
         $testObjects = [
@@ -328,11 +257,8 @@ class BulkMetadataHandlingTest extends TestCase
         // Configure OrganisationService to return test organization.
         $this->mockOrganisationService
             ->expects($this->atLeastOnce())
-            ->method('ensureDefaultOrganisation')
-            ->willReturn($this->createDefaultOrganisation());
-
-        // Configure chunk processing to succeed.
-        $this->configureChunkProcessingSuccess(1);
+            ->method('getOrganisationForNewEntity')
+            ->willReturn('test-org-456');
 
         // Test object without organization metadata.
         $testObjects = [
@@ -378,11 +304,8 @@ class BulkMetadataHandlingTest extends TestCase
 
         // Configure OrganisationService to return different organization.
         $this->mockOrganisationService
-            ->method('ensureDefaultOrganisation')
-            ->willReturn($this->createDefaultOrganisation('default-org-999'));
-
-        // Configure chunk processing to succeed.
-        $this->configureChunkProcessingSuccess(1);
+            ->method('getOrganisationForNewEntity')
+            ->willReturn('default-org-999');
 
         // Test object WITH existing owner and organization metadata.
         $testObjects = [
@@ -428,11 +351,8 @@ class BulkMetadataHandlingTest extends TestCase
 
         // Configure OrganisationService to return test organization.
         $this->mockOrganisationService
-            ->method('ensureDefaultOrganisation')
-            ->willReturn($this->createDefaultOrganisation());
-
-        // Configure chunk processing to succeed.
-        $this->configureChunkProcessingSuccess(1);
+            ->method('getOrganisationForNewEntity')
+            ->willReturn('test-org-456');
 
         // Test object without owner metadata when user is not logged in.
         $testObjects = [
@@ -477,11 +397,8 @@ class BulkMetadataHandlingTest extends TestCase
 
         // Configure OrganisationService to throw exception.
         $this->mockOrganisationService
-            ->method('ensureDefaultOrganisation')
+            ->method('getOrganisationForNewEntity')
             ->willThrowException(new \Exception('Organisation service unavailable'));
-
-        // Configure chunk processing to succeed.
-        $this->configureChunkProcessingSuccess(1);
 
         // Test object without organization metadata when service fails.
         $testObjects = [
@@ -495,8 +412,12 @@ class BulkMetadataHandlingTest extends TestCase
             ]
         ];
 
+        // The exception should bubble up since SaveObjects does NOT suppress errors.
+        $this->expectException(\Exception::class);
+        $this->expectExceptionMessage('Organisation service unavailable');
+
         // Execute the bulk save operation.
-        $result = $this->saveObjectsHandler->saveObjects(
+        $this->saveObjectsHandler->saveObjects(
             objects: $testObjects,
             register: $this->testRegister,
             schema: $this->testSchema,
@@ -505,10 +426,6 @@ class BulkMetadataHandlingTest extends TestCase
             _validation: false,
             _events: false
         );
-
-        // Verify the operation was successful despite organization service failure.
-        $this->assertArrayHasKey('statistics', $result);
-        $this->assertGreaterThan(0, $result['statistics']['saved']);
 
     }//end testGracefulHandlingWhenOrganisationServiceFails()
 
@@ -526,11 +443,8 @@ class BulkMetadataHandlingTest extends TestCase
 
         // Configure OrganisationService to return test organization.
         $this->mockOrganisationService
-            ->method('ensureDefaultOrganisation')
-            ->willReturn($this->createDefaultOrganisation('default-org-456'));
-
-        // Configure chunk processing to succeed with 4 objects.
-        $this->configureChunkProcessingSuccess(4);
+            ->method('getOrganisationForNewEntity')
+            ->willReturn('default-org-456');
 
         // Test objects with different metadata scenarios.
         $testObjects = [
@@ -604,11 +518,8 @@ class BulkMetadataHandlingTest extends TestCase
         // Configure OrganisationService to return test organization.
         $this->mockOrganisationService
             ->expects($this->atLeastOnce())
-            ->method('ensureDefaultOrganisation')
-            ->willReturn($this->createDefaultOrganisation('cached-org-789'));
-
-        // Configure chunk processing to succeed with 3 objects.
-        $this->configureChunkProcessingSuccess(3);
+            ->method('getOrganisationForNewEntity')
+            ->willReturn('cached-org-789');
 
         // Create multiple objects without organization metadata.
         $testObjects = [

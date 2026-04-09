@@ -211,6 +211,8 @@ class IntegratedFileUploadTest extends TestCase
         $linkedEntityHandler = $this->createMock(\OCA\OpenRegister\Service\Object\SaveObject\LinkedEntityPropertyHandler::class);
         $computedFieldHandler = $this->createMock(\OCA\OpenRegister\Service\Object\SaveObject\ComputedFieldHandler::class);
         $translationHandler = $this->createMock(\OCA\OpenRegister\Service\Object\TranslationHandler::class);
+        $translationHandler->method('normalizeTranslationsForSave')
+            ->willReturnArgument(0);
         $tmloService = $this->createMock(\OCA\OpenRegister\Service\TmloService::class);
 
         // Create SaveObject instance with correct constructor params.

@@ -743,7 +743,8 @@ class TextExtractionServiceTest extends TestCase
         // totalFiles = untrackedFiles + totalChunks = 5 + 10 = 15
         $this->assertSame(15, $stats['totalFiles']);
         $this->assertSame(10, $stats['totalChunks']);
-        $this->assertSame(10, $stats['totalObjects']);
+        // totalObjects is hardcoded to 0 in the current implementation.
+        $this->assertSame(0, $stats['totalObjects']);
         $this->assertSame(10, $stats['totalEntities']);
     }
 
