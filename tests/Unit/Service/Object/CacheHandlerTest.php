@@ -101,11 +101,21 @@ class CacheHandlerTest extends TestCase
         $this->userSession->method('getUser')
             ->willReturn(null);
 
+        $container = $this->createMock(\OCP\AppFramework\IAppContainer::class);
+        $container->method('get')
+            ->willReturnCallback(function (string $class) {
+                if ($class === MagicMapper::class) {
+                    return $this->objectMapper;
+                }
+                return $this->createMock($class);
+            });
+
         $this->handler = new CacheHandler(
             $this->organisationMapper,
             $this->logger,
             $this->cacheFactory,
-            $this->userSession
+            $this->userSession,
+            $container
         );
     }
 
@@ -224,6 +234,18 @@ class CacheHandlerTest extends TestCase
         SchemaMapper $schemaMapper,
         IDBConnection $db
     ): CacheHandler {
+        // Provide a default container with mock MagicMapper when none is given.
+        if ($container === null) {
+            $container = $this->createMock(\OCP\AppFramework\IAppContainer::class);
+            $container->method('get')
+                ->willReturnCallback(function (string $class) {
+                    if ($class === MagicMapper::class) {
+                        return $this->objectMapper;
+                    }
+                    return $this->createMock($class);
+                });
+        }
+
         return new CacheHandler(
             $this->organisationMapper,
             $this->logger,
@@ -2313,10 +2335,17 @@ class CacheHandlerTest extends TestCase
      */
     public function testGetSolrDashboardStatsThrowsWithoutContainer(): void
     {
+        $handlerNoContainer = new CacheHandler(
+            $this->organisationMapper,
+            $this->logger,
+            $this->cacheFactory,
+            $this->userSession
+        );
+
         $this->expectException(RuntimeException::class);
         $this->expectExceptionMessage('Index service is not available');
 
-        $this->handler->getSolrDashboardStats();
+        $handlerNoContainer->getSolrDashboardStats();
     }
 
     /**
@@ -2326,7 +2355,10 @@ class CacheHandlerTest extends TestCase
      */
     public function testCommitSolrReturnsErrorWithoutContainer(): void
     {
-        $result = $this->handler->commitSolr();
+        $handlerNoContainer = new CacheHandler(
+            $this->organisationMapper, $this->logger, $this->cacheFactory, $this->userSession
+        );
+        $result = $handlerNoContainer->commitSolr();
         $this->assertFalse($result['success']);
         $this->assertSame('Index service is not available', $result['error']);
     }
@@ -2338,7 +2370,10 @@ class CacheHandlerTest extends TestCase
      */
     public function testOptimizeSolrReturnsErrorWithoutContainer(): void
     {
-        $result = $this->handler->optimizeSolr();
+        $handlerNoContainer = new CacheHandler(
+            $this->organisationMapper, $this->logger, $this->cacheFactory, $this->userSession
+        );
+        $result = $handlerNoContainer->optimizeSolr();
         $this->assertFalse($result['success']);
         $this->assertSame('Index service is not available', $result['error']);
     }
@@ -2350,7 +2385,10 @@ class CacheHandlerTest extends TestCase
      */
     public function testClearSolrIndexForDashboardReturnsErrorWithoutContainer(): void
     {
-        $result = $this->handler->clearSolrIndexForDashboard();
+        $handlerNoContainer = new CacheHandler(
+            $this->organisationMapper, $this->logger, $this->cacheFactory, $this->userSession
+        );
+        $result = $handlerNoContainer->clearSolrIndexForDashboard();
         $this->assertFalse($result['success']);
         $this->assertSame('Index service is not available', $result['error']);
     }
@@ -2675,11 +2713,21 @@ class CacheHandlerTest extends TestCase
      */
     public function testPersistNameCacheToDistributedWithoutCache(): void
     {
+        $container = $this->createMock(\OCP\AppFramework\IAppContainer::class);
+        $container->method('get')
+            ->willReturnCallback(function (string $class) {
+                if ($class === MagicMapper::class) {
+                    return $this->objectMapper;
+                }
+                return $this->createMock($class);
+            });
+
         $handler = new CacheHandler(
             $this->organisationMapper,
             $this->logger,
             null,
-            $this->userSession
+            $this->userSession,
+            $container
         );
 
         $handler->setObjectName('uuid-a', 'Name A');
@@ -2689,7 +2737,7 @@ class CacheHandlerTest extends TestCase
         $this->objectMapper->method('findAll')
             ->willReturn([]);
 
-        // Should not throw, returns 0.
+        // Should not throw, returns 1 (the pre-set name).
         $count = $handler->warmupNameCache();
         $this->assertSame(1, $count);
     }

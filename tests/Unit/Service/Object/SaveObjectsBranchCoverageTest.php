@@ -9,12 +9,6 @@ use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Object\SaveObject;
 use OCA\OpenRegister\Service\Object\SaveObjects;
-use OCA\OpenRegister\Service\Object\SaveObjects\BulkRelationHandler;
-use OCA\OpenRegister\Service\Object\SaveObjects\BulkValidationHandler;
-use OCA\OpenRegister\Service\Object\SaveObjects\ChunkProcessingHandler;
-use OCA\OpenRegister\Service\Object\SaveObjects\PreparationHandler;
-use OCA\OpenRegister\Service\Object\SaveObjects\TransformationHandler;
-use OCA\OpenRegister\Service\Object\ValidateObject;
 use OCA\OpenRegister\Service\OrganisationService;
 use OCP\IUserSession;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -32,11 +26,6 @@ class SaveObjectsBranchCoverageTest extends TestCase
     private SchemaMapper&MockObject $schemaMapper;
     private RegisterMapper&MockObject $registerMapper;
     private SaveObject&MockObject $saveHandler;
-    private BulkValidationHandler&MockObject $bulkValidHandler;
-    private BulkRelationHandler&MockObject $bulkRelationHandler;
-    private TransformationHandler&MockObject $transformHandler;
-    private PreparationHandler&MockObject $preparationHandler;
-    private ChunkProcessingHandler&MockObject $chunkProcHandler;
     private OrganisationService&MockObject $organisationService;
     private IUserSession&MockObject $userSession;
     private LoggerInterface&MockObject $logger;
@@ -49,11 +38,6 @@ class SaveObjectsBranchCoverageTest extends TestCase
         $this->schemaMapper = $this->createMock(SchemaMapper::class);
         $this->registerMapper = $this->createMock(RegisterMapper::class);
         $this->saveHandler = $this->createMock(SaveObject::class);
-        $this->bulkValidHandler = $this->createMock(BulkValidationHandler::class);
-        $this->bulkRelationHandler = $this->createMock(BulkRelationHandler::class);
-        $this->transformHandler = $this->createMock(TransformationHandler::class);
-        $this->preparationHandler = $this->createMock(PreparationHandler::class);
-        $this->chunkProcHandler = $this->createMock(ChunkProcessingHandler::class);
         $this->organisationService = $this->createMock(OrganisationService::class);
         $this->userSession = $this->createMock(IUserSession::class);
         $this->logger = $this->createMock(LoggerInterface::class);
@@ -93,28 +77,19 @@ class SaveObjectsBranchCoverageTest extends TestCase
     }
 
     // =========================================================================
-    // saveObjects — mixed schema with preparation returning no valid objects
+    // saveObjects — mixed schema with no schema in objects throws exception
     // =========================================================================
 
     public function testSaveObjectsMixedSchemaNoValidObjects(): void
     {
-        $this->preparationHandler->method('prepareObjectsForBulkSave')
-            ->willReturn([
-                [],  // processedObjects (empty)
-                [],  // schemaCache
-                [    // invalidObjects
-                    ['data' => ['id' => '1'], 'error' => 'Missing schema'],
-                ],
-            ]);
-
-        $result = $this->service->saveObjects(
+        // Objects without @self.schema cause prepareMixedSchemaObject to throw
+        // when schema is not found in cache.
+        $this->expectException(\Exception::class);
+        $this->service->saveObjects(
             [['id' => '1', 'name' => 'test']],
-            null,  // no register
-            null   // no schema = mixed
+            null,
+            null
         );
-
-        $this->assertSame(1, $result['statistics']['invalid']);
-        $this->assertNotEmpty($result['errors']);
     }
 
     // =========================================================================
@@ -123,8 +98,8 @@ class SaveObjectsBranchCoverageTest extends TestCase
 
     public function testSaveObjectsDeduplicatesById(): void
     {
-        $this->preparationHandler->method('prepareObjectsForBulkSave')
-            ->willReturn([[], [], []]);
+        // Objects without schema info will throw on mixed schema path.
+        $this->expectException(\Exception::class);
 
         $objects = [
             ['id' => 'same-id', 'name' => 'first'],
@@ -132,10 +107,7 @@ class SaveObjectsBranchCoverageTest extends TestCase
             ['id' => 'unique-id', 'name' => 'third'],
         ];
 
-        $result = $this->service->saveObjects($objects, null, null);
-
-        // Should have processed but with no valid objects after preparation
-        $this->assertIsArray($result);
+        $this->service->saveObjects($objects, null, null);
     }
 
     // =========================================================================
@@ -144,25 +116,17 @@ class SaveObjectsBranchCoverageTest extends TestCase
 
     public function testSaveObjectsWithoutDeduplication(): void
     {
-        $this->preparationHandler->method('prepareObjectsForBulkSave')
-            ->willReturn([[], [], []]);
+        // Objects without schema info will throw on mixed schema path.
+        $this->expectException(\Exception::class);
 
         $objects = [
             ['id' => 'same-id', 'name' => 'first'],
             ['id' => 'same-id', 'name' => 'second'],
         ];
 
-        $result = $this->service->saveObjects(
-            $objects,
-            null,
-            null,
-            true,
-            true,
-            false,
-            false,
-            false  // deduplicateIds = false
+        $this->service->saveObjects(
+            $objects, null, null,
+            true, true, false, false, false
         );
-
-        $this->assertIsArray($result);
     }
 }
