@@ -22,7 +22,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Object;
 use Exception;
 use RuntimeException;
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Db\UnifiedObjectMapper;
+use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\Organisation;
 use OCA\OpenRegister\Db\OrganisationMapper;
 use OCA\OpenRegister\Db\Register;
@@ -52,8 +52,8 @@ class CacheHandlerTest extends TestCase
     /** @var CacheHandler */
     private CacheHandler $handler;
 
-    /** @var UnifiedObjectMapper&MockObject */
-    private UnifiedObjectMapper $objectMapper;
+    /** @var MagicMapper&MockObject */
+    private MagicMapper $objectMapper;
 
     /** @var OrganisationMapper&MockObject */
     private OrganisationMapper $organisationMapper;
@@ -82,7 +82,7 @@ class CacheHandlerTest extends TestCase
     {
         parent::setUp();
 
-        $this->objectMapper = $this->createMock(UnifiedObjectMapper::class);
+        $this->objectMapper = $this->createMock(MagicMapper::class);
         $this->organisationMapper = $this->createMock(OrganisationMapper::class);
         $this->logger = $this->createMock(LoggerInterface::class);
         $this->cacheFactory = $this->createMock(ICacheFactory::class);

@@ -16,7 +16,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Object;
 
-use OCA\OpenRegister\Db\UnifiedObjectMapper;
+use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Exception\CustomValidationException;
@@ -63,8 +63,8 @@ class ValidateObjectCoverageTest extends TestCase
     /** @var IAppConfig&MockObject */
     private IAppConfig $config;
 
-    /** @var UnifiedObjectMapper&MockObject */
-    private UnifiedObjectMapper $objectMapper;
+    /** @var MagicMapper&MockObject */
+    private MagicMapper $objectMapper;
 
     /** @var SchemaMapper&MockObject */
     private SchemaMapper $schemaMapper;
@@ -80,7 +80,7 @@ class ValidateObjectCoverageTest extends TestCase
         parent::setUp();
 
         $this->config = $this->createMock(IAppConfig::class);
-        $this->objectMapper = $this->createMock(UnifiedObjectMapper::class);
+        $this->objectMapper = $this->createMock(MagicMapper::class);
         $this->schemaMapper = $this->createMock(SchemaMapper::class);
         $this->urlGenerator = $this->createMock(IURLGenerator::class);
         $this->logger = $this->createMock(LoggerInterface::class);
