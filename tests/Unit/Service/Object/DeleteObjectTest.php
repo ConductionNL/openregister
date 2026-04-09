@@ -21,7 +21,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Object;
 use Exception;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Db\UnifiedObjectMapper;
+use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Dto\DeletionAnalysis;
@@ -59,8 +59,8 @@ class DeleteObjectTest extends TestCase
     /** @var DeleteObject */
     private DeleteObject $handler;
 
-    /** @var UnifiedObjectMapper&MockObject */
-    private UnifiedObjectMapper $objectMapper;
+    /** @var MagicMapper&MockObject */
+    private MagicMapper $objectMapper;
 
     /** @var CacheHandler&MockObject */
     private CacheHandler $cacheHandler;
@@ -88,7 +88,7 @@ class DeleteObjectTest extends TestCase
     {
         parent::setUp();
 
-        $this->objectMapper = $this->createMock(UnifiedObjectMapper::class);
+        $this->objectMapper = $this->createMock(MagicMapper::class);
         $this->cacheHandler       = $this->createMock(CacheHandler::class);
         $this->userSession        = $this->createMock(IUserSession::class);
         $this->auditTrailMapper   = $this->createMock(AuditTrailMapper::class);

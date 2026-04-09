@@ -2,14 +2,11 @@ name: Release
 
 on:
   push:
-    branches: [development]
-  pull_request:
-    branches: [beta, main]
-    types: [closed]
+    branches: [main, beta, development]
 
 jobs:
   unstable:
-    if: github.event_name == 'push' && github.ref == 'refs/heads/development'
+    if: false # unstable builds are disabled
     uses: ConductionNL/.github/.github/workflows/release.yml@main
     with:
       release-type: unstable
@@ -19,7 +16,7 @@ jobs:
     secrets: inherit
 
   beta:
-    if: github.event.pull_request.merged == true && github.base_ref == 'beta'
+    if: github.ref == 'refs/heads/beta'
     uses: ConductionNL/.github/.github/workflows/release.yml@main
     with:
       release-type: beta
@@ -29,7 +26,7 @@ jobs:
     secrets: inherit
 
   stable:
-    if: github.event.pull_request.merged == true && github.base_ref == 'main'
+    if: github.ref == 'refs/heads/main'
     uses: ConductionNL/.github/.github/workflows/release.yml@main
     with:
       release-type: stable

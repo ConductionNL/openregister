@@ -19,7 +19,7 @@ use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
-use OCA\OpenRegister\Db\UnifiedObjectMapper;
+use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Service\ImportService;
 use OCA\OpenRegister\Service\ObjectService;
 use OCP\IDBConnection;
@@ -72,9 +72,9 @@ class ImportServiceIntegrationTest extends TestCase
     /**
      * Object entity mapper for direct DB cleanup
      *
-     * @var UnifiedObjectMapper
+     * @var MagicMapper
      */
-    private UnifiedObjectMapper $objectMapper;
+    private MagicMapper $objectMapper;
 
     /**
      * Test register
@@ -116,7 +116,7 @@ class ImportServiceIntegrationTest extends TestCase
         $this->objectService = \OC::$server->get(ObjectService::class);
         $this->registerMapper = \OC::$server->get(RegisterMapper::class);
         $this->schemaMapper = \OC::$server->get(SchemaMapper::class);
-        $this->objectMapper = \OC::$server->get(UnifiedObjectMapper::class);
+        $this->objectMapper = \OC::$server->get(MagicMapper::class);
 
         $this->createTestRegisterAndSchema();
     }

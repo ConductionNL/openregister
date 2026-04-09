@@ -32,7 +32,6 @@ use OCA\OpenRegister\Db\Mapping;
 use OCA\OpenRegister\Db\MappingMapper;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Db\ObjectEntityMapper;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
@@ -66,8 +65,8 @@ class ImportHandlerCoverageTest extends TestCase
     /** @var RegisterMapper&MockObject */
     private RegisterMapper $registerMapper;
 
-    /** @var ObjectEntityMapper&MockObject */
-    private ObjectEntityMapper $objectEntityMapper;
+    /** @var MagicMapper&MockObject */
+    private MagicMapper $objectEntityMapper;
 
     /** @var ConfigurationMapper&MockObject */
     private ConfigurationMapper $configurationMapper;
@@ -102,7 +101,7 @@ class ImportHandlerCoverageTest extends TestCase
 
         $this->schemaMapper        = $this->createMock(SchemaMapper::class);
         $this->registerMapper      = $this->createMock(RegisterMapper::class);
-        $this->objectEntityMapper  = $this->createMock(ObjectEntityMapper::class);
+        $this->objectEntityMapper  = $this->createMock(MagicMapper::class);
         $this->configurationMapper = $this->createMock(ConfigurationMapper::class);
         $this->mappingMapper       = $this->createMock(MappingMapper::class);
         $this->client              = $this->createMock(Client::class);

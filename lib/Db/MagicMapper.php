@@ -3365,9 +3365,21 @@ class MagicMapper extends AbstractObjectMapper
             // Nextcloud default prefix.
             $fullTableName = $prefix.$tableName;
 
+            // Get database platform to use correct schema check.
+            // MySQL/MariaDB: table_schema = DATABASE().
+            // PostgreSQL: table_schema = 'public'.
+            $platform   = $this->db->getDatabasePlatform();
+            $isPostgres = stripos($platform::class, 'PostgreSQL') !== false;
+
+            // MySQL/MariaDB.
             $sql = "SELECT column_name, data_type, character_maximum_length, is_nullable, column_default
                     FROM information_schema.columns
-                    WHERE table_name = ? AND table_schema = 'public'";
+                    WHERE table_name = ? AND table_schema = DATABASE()";
+            if ($isPostgres === true) {
+                $sql = "SELECT column_name, data_type, character_maximum_length, is_nullable, column_default
+                        FROM information_schema.columns
+                        WHERE table_name = ? AND table_schema = current_schema()";
+            }
 
             $stmt = $this->db->prepare($sql);
             $stmt->execute([$fullTableName]);
@@ -7081,8 +7093,9 @@ class MagicMapper extends AbstractObjectMapper
      * @param array|null  $ids            Specific IDs
      * @param string|null $uses           Uses filter
      *
-     * @return array<int, ObjectEntity>|int
+     * @return list<ObjectEntity>|int
      *
+     * @psalm-suppress                              LessSpecificImplementedReturnType
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Flags control security filtering behavior
      */
     public function searchObjects(

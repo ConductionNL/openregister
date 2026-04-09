@@ -451,10 +451,32 @@ import { objectStore, navigationStore, registerStore, schemaStore } from '../../
 													{{ attachment?.type || 'No type' }}
 												</td>
 												<td class="tableColumnConstrained">
-													<div class="fileLabelsContainer">
+													<div v-if="editingLabelsFileId !== attachment.id" class="fileLabelsContainer">
 														<NcCounterBubble v-for="label of attachment.labels" :key="label">
 															{{ label }}
 														</NcCounterBubble>
+													</div>
+													<div v-else class="fileLabelsEditContainer">
+														<NcSelect
+															v-model="editingLabels"
+															:options="availableLabels"
+															:taggable="true"
+															:multiple="true"
+															:disabled="labelsLoading"
+															input-label="Labels" />
+														<div class="fileLabelsEditActions">
+															<NcButton :disabled="labelsLoading" type="primary" @click="saveFileLabels(attachment)">
+																<template #icon>
+																	<NcLoadingIcon v-if="labelsLoading" :size="20" />
+																	<Check v-else :size="20" />
+																</template>
+															</NcButton>
+															<NcButton :disabled="labelsLoading" @click="cancelFileLabels()">
+																<template #icon>
+																	<Cancel :size="20" />
+																</template>
+															</NcButton>
+														</div>
 													</div>
 												</td>
 												<td class="tableColumnActions">
@@ -558,7 +580,6 @@ import { objectStore, navigationStore, registerStore, schemaStore } from '../../
 				</NcButton>
 			</template>
 		</NcDialog>
-
 	</div>
 </template>
 
@@ -658,6 +679,10 @@ export default {
 			publishLoading: [],
 			depublishLoading: [],
 			fileIdsLoading: [],
+			editingLabelsFileId: null,
+			editingLabels: [],
+			availableLabels: [],
+			labelsLoading: false,
 			// Register/Schema selection for new objects with multiple options
 			selectedRegisterForNewObject: null,
 			selectedSchemaForNewObject: null,
@@ -1060,6 +1085,22 @@ export default {
 		}
 	},
 	methods: {
+		/**
+		 * Returns { type, objectId } needed for all file store operations.
+		 * Handles both string IDs and embedded register/schema objects.
+		 */
+		_getFileParams() {
+			const rawRegister = objectStore.objectItem['@self']?.register
+			const rawSchema = objectStore.objectItem['@self']?.schema
+			const registerId = typeof rawRegister === 'object' && rawRegister !== null ? rawRegister.id : rawRegister
+			const schemaId = typeof rawSchema === 'object' && rawSchema !== null ? rawSchema.id : rawSchema
+			const objectId = objectStore.objectItem['@self']?.id || objectStore.objectItem?.id
+			const type = `${registerId}-${schemaId}`
+			if (!objectStore.objectTypes?.includes(type)) {
+				objectStore.registerObjectType(type, schemaId, registerId)
+			}
+			return { type, objectId }
+		},
 		confirmRegisterSchemaSelection() {
 			// Set the selected register and schema in the store
 			const selectedRegister = this.selectedRegisterForNewObject || this.availableRegisters[0]
@@ -1261,6 +1302,20 @@ export default {
 			this.formData = initialData
 			this.jsonData = JSON.stringify(initialData, null, 2)
 
+			// Fetch files for the existing object
+			const rawRegister = objectStore.objectItem['@self']?.register
+			const rawSchema = objectStore.objectItem['@self']?.schema
+			const registerId = typeof rawRegister === 'object' && rawRegister !== null ? rawRegister.id : rawRegister
+			const schemaId = typeof rawSchema === 'object' && rawSchema !== null ? rawSchema.id : rawSchema
+			const objectId = objectStore.objectItem['@self']?.id || objectStore.objectItem?.id
+			if (registerId && schemaId && objectId) {
+				const type = `${registerId}-${schemaId}`
+				if (!objectStore.objectTypes?.includes(type)) {
+					objectStore.registerObjectType(type, schemaId, registerId)
+				}
+				objectStore.fetchFiles(type, objectId)
+			}
+
 		},
 
 		async saveObject() {
@@ -1292,6 +1347,7 @@ export default {
 				const data = await objectStore.saveObject(type, dataToSave)
 				if (data) objectStore.setObjectItem(data)
 				await objectStore.refreshObjectList({ register: this.currentRegister.id, schema: this.currentSchema.id })
+				objectStore.refetchSearchCollection()
 				console.info('Save object data:', data)
 				this.success = !!data
 				if (this.success) {
@@ -1433,25 +1489,17 @@ export default {
 
 			try {
 				this.publishLoading = [...this.selectedAttachments]
+				const { type, objectId } = this._getFileParams()
 
-				// Get the selected files
 				const selectedFiles = objectStore.files.results.filter(file =>
 					this.selectedAttachments.includes(file.id),
 				)
 
-				// Publish each file individually using the store method
 				for (const file of selectedFiles) {
-					await objectStore.publishFile({
-						register: objectStore.objectItem['@self'].register,
-						schema: objectStore.objectItem['@self'].schema,
-						objectId: objectStore.objectItem.id,
-						fileId: file.id,
-					})
+					await objectStore.publishFile(type, objectId, file.id)
 				}
 
-				// Clear selection after successful operation
 				this.selectedAttachments = []
-
 			} catch (error) {
 				// eslint-disable-next-line no-console
 				console.error('Error publishing files:', error)
@@ -1464,25 +1512,17 @@ export default {
 
 			try {
 				this.depublishLoading = [...this.selectedAttachments]
+				const { type, objectId } = this._getFileParams()
 
-				// Get the selected files
 				const selectedFiles = objectStore.files.results.filter(file =>
 					this.selectedAttachments.includes(file.id),
 				)
 
-				// Depublish each file individually using the store method
 				for (const file of selectedFiles) {
-					await objectStore.unpublishFile({
-						register: objectStore.objectItem['@self'].register,
-						schema: objectStore.objectItem['@self'].schema,
-						objectId: objectStore.objectItem.id,
-						fileId: file.id,
-					})
+					await objectStore.unpublishFile(type, objectId, file.id)
 				}
 
-				// Clear selection after successful operation
 				this.selectedAttachments = []
-
 			} catch (error) {
 				// eslint-disable-next-line no-console
 				console.error('Error depublishing files:', error)
@@ -1495,23 +1535,16 @@ export default {
 
 			try {
 				this.fileIdsLoading = [...this.selectedAttachments]
+				const { type, objectId } = this._getFileParams()
 
-				// Get the selected files
 				const selectedFiles = objectStore.files.results?.filter(item =>
 					this.selectedAttachments.includes(item.id),
 				) || []
 
-				// Delete each selected file
 				for (const file of selectedFiles) {
-					await objectStore.deleteFile({
-						register: objectStore.objectItem['@self'].register,
-						schema: objectStore.objectItem['@self'].schema,
-						objectId: objectStore.objectItem.id,
-						fileId: file.id,
-					})
+					await objectStore.deleteFile(type, objectId, file.id)
 				}
 
-				// Clear selection - files list is automatically refreshed by the store methods
 				this.selectedAttachments = []
 			} catch (error) {
 				// eslint-disable-next-line no-console
@@ -1523,15 +1556,8 @@ export default {
 		async publishFile(file) {
 			try {
 				this.publishLoading.push(file.id)
-
-				await objectStore.publishFile({
-					register: objectStore.objectItem['@self'].register,
-					schema: objectStore.objectItem['@self'].schema,
-					objectId: objectStore.objectItem.id,
-					fileId: file.id,
-				})
-
-				// Files list is automatically refreshed by the store method
+				const { type, objectId } = this._getFileParams()
+				await objectStore.publishFile(type, objectId, file.id)
 			} catch (error) {
 				// eslint-disable-next-line no-console
 				console.error('Failed to publish file:', error)
@@ -1542,15 +1568,8 @@ export default {
 		async depublishFile(file) {
 			try {
 				this.depublishLoading.push(file.id)
-
-				await objectStore.unpublishFile({
-					register: objectStore.objectItem['@self'].register,
-					schema: objectStore.objectItem['@self'].schema,
-					objectId: objectStore.objectItem.id,
-					fileId: file.id,
-				})
-
-				// Files list is automatically refreshed by the store method
+				const { type, objectId } = this._getFileParams()
+				await objectStore.unpublishFile(type, objectId, file.id)
 			} catch (error) {
 				// eslint-disable-next-line no-console
 				console.error('Failed to depublish file:', error)
@@ -1561,15 +1580,8 @@ export default {
 		async deleteFile(file) {
 			try {
 				this.fileIdsLoading.push(file.id)
-
-				await objectStore.deleteFile({
-					register: objectStore.objectItem['@self'].register,
-					schema: objectStore.objectItem['@self'].schema,
-					objectId: objectStore.objectItem.id,
-					fileId: file.id,
-				})
-
-				// Files list is automatically refreshed by the store method
+				const { type, objectId } = this._getFileParams()
+				await objectStore.deleteFile(type, objectId, file.id)
 			} catch (error) {
 				// eslint-disable-next-line no-console
 				console.error('Failed to delete file:', error)
@@ -1577,12 +1589,40 @@ export default {
 				this.fileIdsLoading = this.fileIdsLoading.filter(id => id !== file.id)
 			}
 		},
-		editFileLabels(file) {
-			// You'll need to implement the labels editing functionality
-			// This could open a modal or inline editor for file labels
-			// eslint-disable-next-line no-console
-			console.info('Editing labels for file:', file.name)
-			// Placeholder for labels editing implementation
+		async editFileLabels(file) {
+			this.editingLabelsFileId = file.id
+			this.editingLabels = [...(file.labels || [])]
+			const tags = await objectStore.fetchTags()
+			this.availableLabels = Array.isArray(tags) ? tags : objectStore.getTags || []
+		},
+		cancelFileLabels() {
+			this.editingLabelsFileId = null
+			this.editingLabels = []
+		},
+		async saveFileLabels(file) {
+			const { type, objectId } = this._getFileParams()
+			const rawRegister = objectStore.objectItem['@self']?.register
+			const rawSchema = objectStore.objectItem['@self']?.schema
+			const registerId = typeof rawRegister === 'object' && rawRegister !== null ? rawRegister.id : rawRegister
+			const schemaId = typeof rawSchema === 'object' && rawSchema !== null ? rawSchema.id : rawSchema
+
+			this.labelsLoading = true
+			try {
+				const url = `/index.php/apps/openregister/api/objects/${registerId}/${schemaId}/${objectId}/files/${file.id}`
+				const response = await fetch(url, {
+					method: 'PUT',
+					headers: { 'Content-Type': 'application/json' },
+					body: JSON.stringify({ tags: this.editingLabels }),
+				})
+				if (!response.ok) throw new Error(`HTTP ${response.status}`)
+				await objectStore.fetchFiles(type, objectId)
+				this.cancelFileLabels()
+			} catch (error) {
+				// eslint-disable-next-line no-console
+				console.error('Failed to save file labels:', error)
+			} finally {
+				this.labelsLoading = false
+			}
 		},
 		getPropertyValidationClass(key, value) {
 			// Skip @self as it's metadata
@@ -2360,6 +2400,7 @@ export default {
 .codeMirrorContainer.light :deep(.ͼe) {
 	color: #448c27;
 }
+
 .codeMirrorContainer.dark :deep(.ͼe) {
 	color: #88c379;
 }
@@ -2368,6 +2409,7 @@ export default {
 .codeMirrorContainer.light :deep(.ͼc) {
 	color: #221199;
 }
+
 .codeMirrorContainer.dark :deep(.ͼc) {
 	color: #8d64f7;
 }
@@ -2376,6 +2418,7 @@ export default {
 .codeMirrorContainer.light :deep(.ͼb) {
 	color: #770088;
 }
+
 .codeMirrorContainer.dark :deep(.ͼb) {
 	color: #be55cd;
 }
@@ -2384,6 +2427,7 @@ export default {
 .codeMirrorContainer.light :deep(.ͼd) {
 	color: #d19a66;
 }
+
 .codeMirrorContainer.dark :deep(.ͼd) {
 	color: #9d6c3a;
 }
@@ -2399,6 +2443,7 @@ export default {
 	background-color: #d7eaff !important;
 	color: black;
 }
+
 .codeMirrorContainer.dark :deep(.cm-line)::selection,
 .codeMirrorContainer.dark :deep(.cm-line) ::selection {
 	background-color: #8fb3e6 !important;
@@ -2409,6 +2454,7 @@ export default {
 .codeMirrorContainer.light :deep(.cm-line .ͼe)::selection {
 	color: #2d770f;
 }
+
 .codeMirrorContainer.dark :deep(.cm-line .ͼe)::selection {
 	color: #104e0c;
 }
@@ -2417,6 +2463,7 @@ export default {
 .codeMirrorContainer.light :deep(.cm-line .ͼc)::selection {
 	color: #221199;
 }
+
 .codeMirrorContainer.dark :deep(.cm-line .ͼc)::selection {
 	color: #4026af;
 }
@@ -2425,6 +2472,7 @@ export default {
 .codeMirrorContainer.light :deep(.cm-line .ͼb)::selection {
 	color: #770088;
 }
+
 .codeMirrorContainer.dark :deep(.cm-line .ͼb)::selection {
 	color: #770088;
 }
@@ -2433,6 +2481,7 @@ export default {
 .codeMirrorContainer.light :deep(.cm-line .ͼd)::selection {
 	color: #8c5c2c;
 }
+
 .codeMirrorContainer.dark :deep(.cm-line .ͼd)::selection {
 	color: #623907;
 }

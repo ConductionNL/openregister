@@ -2812,7 +2812,7 @@ parameters:
 
 		-
 			message: "#^Access to constant class on an unknown class Doctrine\\\\DBAL\\\\Platforms\\\\AbstractPlatform\\.$#"
-			count: 8
+			count: 9
 			path: lib/Db/MagicMapper.php
 
 		-

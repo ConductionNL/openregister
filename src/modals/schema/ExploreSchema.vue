@@ -1033,54 +1033,54 @@ export default {
 		border-radius: var(--border-radius);
 		padding: 1.5rem;
 
-	.stats-container {
-		display: grid;
-		grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-		gap: 1rem;
-		margin-bottom: 1.5rem;
-	}
+		.stats-container {
+			display: grid;
+			grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+			gap: 1rem;
+			margin-bottom: 1.5rem;
+		}
 
-	.stat-box {
-		background: white;
-		border: 2px solid #e1e5e9;
-		border-radius: 8px;
-		padding: 1rem;
-		text-align: center;
-		box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-		transition: all 0.3s ease;
-	}
+		.stat-box {
+			background: white;
+			border: 2px solid #e1e5e9;
+			border-radius: 8px;
+			padding: 1rem;
+			text-align: center;
+			box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+			transition: all 0.3s ease;
+		}
 
-	.stat-box:hover {
-		border-color: #0066cc;
-		box-shadow: 0 4px 8px rgba(0, 102, 204, 0.2);
-		transform: translateY(-2px);
-	}
+		.stat-box:hover {
+			border-color: #0066cc;
+			box-shadow: 0 4px 8px rgba(0, 102, 204, 0.2);
+			transform: translateY(-2px);
+		}
 
-	.stat-number {
-		font-size: 2rem;
-		font-weight: bold;
-		color: #0066cc;
-		margin-bottom: 0.5rem;
-		display: block;
-	}
+		.stat-number {
+			font-size: 2rem;
+			font-weight: bold;
+			color: #0066cc;
+			margin-bottom: 0.5rem;
+			display: block;
+		}
 
-	.stat-title {
-		font-size: 0.9rem;
-		color: #666;
-		text-transform: uppercase;
-		letter-spacing: 0.5px;
-		font-weight: 600;
-	}
+		.stat-title {
+			font-size: 0.9rem;
+			color: #666;
+			text-transform: uppercase;
+			letter-spacing: 0.5px;
+			font-weight: 600;
+		}
 
-	.analysis-timestamp {
-		text-align: center;
-		padding: 0.75rem;
-		background: #f8f9fa;
-		border-radius: 6px;
-		border: 1px solid #e1e5e9;
-		color: #495057;
-		font-size: 0.9rem;
-	}
+		.analysis-timestamp {
+			text-align: center;
+			padding: 0.75rem;
+			background: #f8f9fa;
+			border-radius: 6px;
+			border: 1px solid #e1e5e9;
+			color: #495057;
+			font-size: 0.9rem;
+		}
 	}
 }
 
