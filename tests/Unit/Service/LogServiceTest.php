@@ -20,7 +20,6 @@ class LogServiceTest extends TestCase
 {
     private AuditTrailMapper&MockObject $auditTrailMapper;
     private MagicMapper&MockObject $objectEntityMapper;
-    private MagicMapper&MockObject $unifiedObjectMapper;
     private RegisterMapper&MockObject $registerMapper;
     private SchemaMapper&MockObject $schemaMapper;
     private LogService $service;
@@ -29,14 +28,12 @@ class LogServiceTest extends TestCase
     {
         $this->auditTrailMapper = $this->createMock(AuditTrailMapper::class);
         $this->objectEntityMapper = $this->createMock(MagicMapper::class);
-        $this->unifiedObjectMapper = $this->createMock(MagicMapper::class);
         $this->registerMapper = $this->createMock(RegisterMapper::class);
         $this->schemaMapper = $this->createMock(SchemaMapper::class);
 
         $this->service = new LogService(
             $this->auditTrailMapper,
             $this->objectEntityMapper,
-            $this->unifiedObjectMapper,
             $this->registerMapper,
             $this->schemaMapper
         );
@@ -80,7 +77,7 @@ class LogServiceTest extends TestCase
         $register = $this->createRegister(1);
         $schema = $this->createSchema(2);
 
-        $this->unifiedObjectMapper->method('findAcrossAllSources')->willReturn(['object' => $object]);
+        $this->objectEntityMapper->method('findAcrossAllSources')->willReturn(['object' => $object]);
         $this->registerMapper->method('find')->willReturn($register);
         $this->schemaMapper->method('find')->willReturn($schema);
         $this->auditTrailMapper->method('findAll')->willReturn(['log1', 'log2']);
@@ -96,7 +93,7 @@ class LogServiceTest extends TestCase
         $register = $this->createRegister(1);
         $schema = $this->createSchema(2);
 
-        $this->unifiedObjectMapper->method('findAcrossAllSources')->willReturn(['object' => $object]);
+        $this->objectEntityMapper->method('findAcrossAllSources')->willReturn(['object' => $object]);
         $this->registerMapper->method('find')->willReturn($register);
         $this->schemaMapper->method('find')->willReturn($schema);
 
@@ -118,7 +115,7 @@ class LogServiceTest extends TestCase
     {
         $object = $this->createObjectEntity(42, '1', '2');
 
-        $this->unifiedObjectMapper->method('findAcrossAllSources')->willReturn(['object' => $object]);
+        $this->objectEntityMapper->method('findAcrossAllSources')->willReturn(['object' => $object]);
         $this->registerMapper->method('find')->willThrowException(new \Exception('Not found'));
 
         $this->auditTrailMapper->expects($this->once())
@@ -136,7 +133,7 @@ class LogServiceTest extends TestCase
         $register = $this->createRegister(1);
         $schema = $this->createSchema(2);
 
-        $this->unifiedObjectMapper->method('findAcrossAllSources')->willReturn(['object' => $object]);
+        $this->objectEntityMapper->method('findAcrossAllSources')->willReturn(['object' => $object]);
         $this->registerMapper->method('find')->willReturn($register);
         $this->schemaMapper->method('find')->willReturn($schema);
         $this->auditTrailMapper->method('findAll')->willReturn(['a', 'b', 'c']);
@@ -152,7 +149,7 @@ class LogServiceTest extends TestCase
         $register = $this->createRegister(1);
         $schema = $this->createSchema(2);
 
-        $this->unifiedObjectMapper->method('findAcrossAllSources')->willReturn(['object' => $object]);
+        $this->objectEntityMapper->method('findAcrossAllSources')->willReturn(['object' => $object]);
         $this->registerMapper->method('find')->willReturn($register);
         $this->schemaMapper->method('find')->willReturn($schema);
         $this->auditTrailMapper->method('findAll')->willReturn([]);

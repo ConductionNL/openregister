@@ -212,13 +212,8 @@ class BulkMetadataHandlingTest extends TestCase
             $this->mockSchemaMapper,
             $this->mockRegisterMapper,
             $this->mockSaveHandler,
-            $this->mockBulkValidHandler,
-            $this->mockBulkRelationHandler,
-            $this->mockTransformHandler,
-            $this->mockPreparationHandler,
-            $this->mockChunkProcHandler,
-            $this->mockOrganisationService,
             $this->mockUserSession,
+            $this->mockOrganisationService,
             $this->createMock(LoggerInterface::class)
         );
 
@@ -308,8 +303,8 @@ class BulkMetadataHandlingTest extends TestCase
             schema: $this->testSchema,
             _rbac: false,
             _multitenancy: false,
-            validation: false,
-            events: false
+            _validation: false,
+            _events: false
         );
 
         // Verify the operation was successful.
@@ -359,8 +354,8 @@ class BulkMetadataHandlingTest extends TestCase
             schema: $this->testSchema,
             _rbac: false,
             _multitenancy: false,
-            validation: false,
-            events: false
+            _validation: false,
+            _events: false
         );
 
         // Verify the operation was successful.
@@ -410,8 +405,8 @@ class BulkMetadataHandlingTest extends TestCase
             schema: $this->testSchema,
             _rbac: false,
             _multitenancy: false,
-            validation: false,
-            events: false
+            _validation: false,
+            _events: false
         );
 
         // Verify the operation was successful.
@@ -458,8 +453,8 @@ class BulkMetadataHandlingTest extends TestCase
             schema: $this->testSchema,
             _rbac: false,
             _multitenancy: false,
-            validation: false,
-            events: false
+            _validation: false,
+            _events: false
         );
 
         // Verify the operation was successful despite null user.
@@ -507,8 +502,8 @@ class BulkMetadataHandlingTest extends TestCase
             schema: $this->testSchema,
             _rbac: false,
             _multitenancy: false,
-            validation: false,
-            events: false
+            _validation: false,
+            _events: false
         );
 
         // Verify the operation was successful despite organization service failure.
@@ -584,8 +579,8 @@ class BulkMetadataHandlingTest extends TestCase
             schema: $this->testSchema,
             _rbac: false,
             _multitenancy: false,
-            validation: false,
-            events: false
+            _validation: false,
+            _events: false
         );
 
         // Verify the operation was successful for all objects.
@@ -647,8 +642,8 @@ class BulkMetadataHandlingTest extends TestCase
             schema: $this->testSchema,
             _rbac: false,
             _multitenancy: false,
-            validation: false,
-            events: false
+            _validation: false,
+            _events: false
         );
 
         // Verify the operation was successful for all objects.

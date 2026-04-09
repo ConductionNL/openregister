@@ -60,7 +60,6 @@ class ExportServiceCoverageTest extends TestCase
         $this->propertyRbacHandler = $this->createMock(PropertyRbacHandler::class);
 
         $this->service = new ExportService(
-            $this->objectMapper,
             $this->registerMapper,
             $this->userManager,
             $this->groupManager,

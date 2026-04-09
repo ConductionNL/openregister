@@ -45,6 +45,7 @@ class HookExecutorTest extends TestCase
             $this->cloudEventFormatter,
             $this->schemaMapper,
             $this->jobList,
+            $this->createMock(\OCA\OpenRegister\Db\WorkflowExecutionMapper::class),
             $this->logger
         );
     }

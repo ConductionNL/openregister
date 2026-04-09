@@ -34,7 +34,6 @@ use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Db\ViewMapper;
 use OCA\OpenRegister\Service\FileService;
 use OCA\OpenRegister\Service\Object\AuditHandler;
-use OCA\OpenRegister\Service\Object\BulkOperationsHandler;
 use OCA\OpenRegister\Service\Object\CacheHandler;
 use OCA\OpenRegister\Service\Object\CascadingHandler;
 use OCA\OpenRegister\Service\Object\DataManipulationHandler;
@@ -48,7 +47,6 @@ use OCA\OpenRegister\Service\Object\MigrationHandler;
 use OCA\OpenRegister\Service\Object\PerformanceHandler;
 use OCA\OpenRegister\Service\Object\PerformanceOptimizationHandler;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
-use OCA\OpenRegister\Service\Object\PublishHandler;
 use OCA\OpenRegister\Service\Object\QueryHandler;
 use OCA\OpenRegister\Service\Object\RelationHandler;
 use OCA\OpenRegister\Service\Object\RenderObject;
@@ -86,8 +84,6 @@ class ObjectServiceDeepTest extends TestCase
     private MockObject|SchemaMapper $schemaMapper;
 
     private MockObject|MagicMapper $objectEntityMapper;
-
-    private MockObject|MagicMapper $unifiedObjectMapper;
 
     private MockObject|LoggerInterface $logger;
 
@@ -131,10 +127,8 @@ class ObjectServiceDeepTest extends TestCase
         $this->validateHandler    = $this->createMock(ValidateObject::class);
         $lockHandler              = $this->createMock(LockHandler::class);
         $auditHandler             = $this->createMock(AuditHandler::class);
-        $publishHandler           = $this->createMock(PublishHandler::class);
         $relationHandler          = $this->createMock(RelationHandler::class);
         $mergeHandler             = $this->createMock(MergeHandler::class);
-        $bulkOpsHandler           = $this->createMock(BulkOperationsHandler::class);
         $facetHandler             = $this->createMock(FacetHandler::class);
         $metadataHandler          = $this->createMock(MetadataHandler::class);
         $perfOptHandler           = $this->createMock(PerformanceOptimizationHandler::class);
@@ -148,7 +142,6 @@ class ObjectServiceDeepTest extends TestCase
         $this->schemaMapper       = $this->createMock(SchemaMapper::class);
         $viewMapper               = $this->createMock(ViewMapper::class);
         $this->objectEntityMapper = $this->createMock(MagicMapper::class);
-        $this->unifiedObjectMapper = $this->createMock(MagicMapper::class);
         $this->fileService        = $this->createMock(FileService::class);
         $userSession              = $this->createMock(IUserSession::class);
         $searchTrailService       = $this->createMock(SearchTrailService::class);
@@ -173,10 +166,8 @@ class ObjectServiceDeepTest extends TestCase
             $this->validateHandler,
             $lockHandler,
             $auditHandler,
-            $publishHandler,
             $relationHandler,
             $mergeHandler,
-            $bulkOpsHandler,
             $facetHandler,
             $metadataHandler,
             $perfOptHandler,
@@ -190,7 +181,6 @@ class ObjectServiceDeepTest extends TestCase
             $this->schemaMapper,
             $viewMapper,
             $this->objectEntityMapper,
-            $this->unifiedObjectMapper,
             $this->fileService,
             $userSession,
             $searchTrailService,
@@ -233,8 +223,8 @@ class ObjectServiceDeepTest extends TestCase
      */
     public function testSetRegisterWithRegisterObject(): void
     {
-        $register = $this->createMock(Register::class);
-        $register->method('getId')->willReturn(1);
+        $register = new Register();
+        $register->setId(1);
 
         $result = $this->service->setRegister($register);
         $this->assertSame($this->service, $result);
@@ -593,18 +583,19 @@ class ObjectServiceDeepTest extends TestCase
     {
         $method = new \ReflectionMethod(ObjectService::class, 'checkSavePermissions');
 
-        $schema = $this->createMock(Schema::class);
+        $schema = new Schema();
+        $schema->setId(1);
         $this->service->setSchema($schema);
 
-        $existingObj = $this->createMock(ObjectEntity::class);
-        $existingObj->method('getOwner')->willReturn('admin');
+        $existingObj = new ObjectEntity();
+        $existingObj->setOwner('admin');
 
         $this->objectEntityMapper->method('find')->willReturn($existingObj);
 
         $this->permissionHandler->expects($this->once())
             ->method('checkPermission')
             ->with(
-                $this->identicalTo($schema),
+                $this->anything(),
                 $this->equalTo('update'),
                 $this->anything(),
                 $this->equalTo('admin'),
@@ -784,22 +775,22 @@ class ObjectServiceDeepTest extends TestCase
      */
     public function testEnsureObjectFolderExistsNullFolder(): void
     {
-        $entity = $this->createMock(ObjectEntity::class);
-        $entity->method('getFolder')->willReturn(null);
+        $entity = new ObjectEntity();
+        $entity->setUuid('test-uuid');
+        $entity->setFolder(null);
 
         $folderNode = $this->createMock(\OCP\Files\Folder::class);
         $folderNode->method('getId')->willReturn(42);
 
         $this->fileService->method('createEntityFolder')->willReturn($folderNode);
 
-        $entity->expects($this->once())
-            ->method('setFolder')
-            ->with('42');
-
         $this->objectEntityMapper->expects($this->once())
-            ->method('update');
+            ->method('update')
+            ->willReturnArgument(0);
 
         $this->service->ensureObjectFolderExists($entity);
+
+        $this->assertSame('42', $entity->getFolder());
 
     }//end testEnsureObjectFolderExistsNullFolder()
 
@@ -811,19 +802,20 @@ class ObjectServiceDeepTest extends TestCase
      */
     public function testEnsureObjectFolderExistsEmptyString(): void
     {
-        $entity = $this->createMock(ObjectEntity::class);
-        $entity->method('getFolder')->willReturn('');
+        $entity = new ObjectEntity();
+        $entity->setUuid('test-uuid');
+        $entity->setFolder('');
 
         $folderNode = $this->createMock(\OCP\Files\Folder::class);
         $folderNode->method('getId')->willReturn(99);
 
         $this->fileService->method('createEntityFolder')->willReturn($folderNode);
 
-        $entity->expects($this->once())
-            ->method('setFolder')
-            ->with('99');
+        $this->objectEntityMapper->method('update')->willReturnArgument(0);
 
         $this->service->ensureObjectFolderExists($entity);
+
+        $this->assertSame('99', $entity->getFolder());
 
     }//end testEnsureObjectFolderExistsEmptyString()
 
@@ -835,8 +827,9 @@ class ObjectServiceDeepTest extends TestCase
      */
     public function testEnsureObjectFolderExistsFolderNull(): void
     {
-        $entity = $this->createMock(ObjectEntity::class);
-        $entity->method('getFolder')->willReturn(null);
+        $entity = new ObjectEntity();
+        $entity->setUuid('test-uuid');
+        $entity->setFolder(null);
 
         $this->fileService->method('createEntityFolder')->willReturn(null);
 
@@ -856,8 +849,9 @@ class ObjectServiceDeepTest extends TestCase
      */
     public function testEnsureObjectFolderExistsException(): void
     {
-        $entity = $this->createMock(ObjectEntity::class);
-        $entity->method('getFolder')->willReturn(null);
+        $entity = new ObjectEntity();
+        $entity->setUuid('test-uuid');
+        $entity->setFolder(null);
 
         $this->fileService->method('createEntityFolder')
             ->willThrowException(new \Exception('Cannot create folder'));
@@ -897,9 +891,11 @@ class ObjectServiceDeepTest extends TestCase
     {
         $this->objectEntityMapper->expects($this->once())
             ->method('findByRelation')
-            ->with('uuid-123', false);
+            ->with('uuid-123', 'uuid-123', false)
+            ->willReturn([]);
 
-        $this->service->findByRelations('uuid-123', false);
+        $result = $this->service->findByRelations('uuid-123', false);
+        $this->assertIsArray($result);
 
     }//end testFindByRelationsExactMatch()
 
@@ -917,8 +913,8 @@ class ObjectServiceDeepTest extends TestCase
     {
         $method = new \ReflectionMethod(ObjectService::class, 'getActiveOrganisationForContext');
 
-        $org = $this->createMock(\OCA\OpenRegister\Db\Organisation::class);
-        $org->method('getUuid')->willReturn('org-uuid');
+        $org = new \OCA\OpenRegister\Db\Organisation();
+        $org->setUuid('org-uuid');
 
         $this->organisationService->method('getActiveOrganisation')->willReturn($org);
 

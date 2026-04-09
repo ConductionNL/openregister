@@ -10,10 +10,16 @@ use OCA\OpenRegister\Dto\DeepLinkRegistration;
 use OCA\OpenRegister\Service\DeepLinkRegistryService;
 use PHPUnit\Framework\TestCase;
 use PHPUnit\Framework\MockObject\MockObject;
+use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
 
 class DeepLinkRegistryServiceTest extends TestCase
 {
+
+    /**
+     * @var ContainerInterface&MockObject
+     */
+    private ContainerInterface $container;
 
     /**
      * @var RegisterMapper&MockObject
@@ -41,9 +47,19 @@ class DeepLinkRegistryServiceTest extends TestCase
         $this->schemaMapper = $this->createMock(SchemaMapper::class);
         $this->logger = $this->createMock(LoggerInterface::class);
 
+        $this->container = $this->createMock(ContainerInterface::class);
+        $this->container->method('get')->willReturnCallback(function (string $class) {
+            if ($class === RegisterMapper::class) {
+                return $this->registerMapper;
+            }
+            if ($class === SchemaMapper::class) {
+                return $this->schemaMapper;
+            }
+            return null;
+        });
+
         $this->service = new DeepLinkRegistryService(
-            $this->registerMapper,
-            $this->schemaMapper,
+            $this->container,
             $this->logger
         );
     }

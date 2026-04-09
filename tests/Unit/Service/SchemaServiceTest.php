@@ -95,9 +95,9 @@ class SchemaServiceTest extends TestCase
         $this->logger             = $this->createMock(LoggerInterface::class);
 
         $this->service = new SchemaService(
-            schemaMapper: $this->schemaMapper,
-            objectMapper: $this->objectMapper,
-            logger: $this->logger
+            $this->schemaMapper,
+            $this->objectMapper,
+            $this->logger
         );
     }
 
