@@ -147,6 +147,7 @@ class NoteService
         );
 
         $comment->setMessage($message);
+        $comment->setVerb('comment');
         $this->commentsManager->save($comment);
 
         return $this->commentToArray(comment: $comment);

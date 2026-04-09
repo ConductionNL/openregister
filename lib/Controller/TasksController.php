@@ -20,6 +20,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Controller;
 
 use Exception;
+use OCA\OpenRegister\Exception\NoVtodoCalendarException;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\TaskService;
 use OCP\AppFramework\Controller;
@@ -106,9 +107,12 @@ class TasksController extends Controller
             return new JSONResponse(data: ['results' => $tasks, 'total' => count($tasks)]);
         } catch (DoesNotExistException $e) {
             return new JSONResponse(data: ['error' => 'Object not found'], statusCode: 404);
+        } catch (NoVtodoCalendarException $e) {
+            // No VTODO calendar = no tasks; return empty for listing.
+            return new JSONResponse(data: ['results' => [], 'total' => 0]);
         } catch (Exception $e) {
             return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 500);
-        }
+        }//end try
     }//end index()
 
     /**

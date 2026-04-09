@@ -1,0 +1,22 @@
+{
+  "title": {
+    "message": "Open Register",
+    "description": "The title in the navbar"
+  },
+  "logo.alt": {
+    "message": "Open Register Logo",
+    "description": "The alt text of navbar logo"
+  },
+  "item.label.Documentation": {
+    "message": "Documentatie",
+    "description": "Navbar item with label Documentation"
+  },
+  "item.label.API Documentation": {
+    "message": "API Documentatie",
+    "description": "Navbar item with label API Documentation"
+  },
+  "item.label.GitHub": {
+    "message": "GitHub",
+    "description": "Navbar item with label GitHub"
+  }
+}

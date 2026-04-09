@@ -4,7 +4,7 @@ namespace Unit\Service;
 
 use InvalidArgumentException;
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Db\UnifiedObjectMapper;
+use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
@@ -23,9 +23,9 @@ class ExportServiceTest extends TestCase
 {
 
     /**
-     * @var UnifiedObjectMapper&MockObject
+     * @var MagicMapper&MockObject
      */
-    private UnifiedObjectMapper $objectMapper;
+    private MagicMapper $objectMapper;
 
     /**
      * @var RegisterMapper&MockObject
@@ -61,7 +61,7 @@ class ExportServiceTest extends TestCase
 
     protected function setUp(): void
     {
-        $this->objectMapper = $this->createMock(UnifiedObjectMapper::class);
+        $this->objectMapper = $this->createMock(MagicMapper::class);
         $this->registerMapper = $this->createMock(RegisterMapper::class);
         $this->userManager = $this->createMock(IUserManager::class);
         $this->groupManager = $this->createMock(IGroupManager::class);

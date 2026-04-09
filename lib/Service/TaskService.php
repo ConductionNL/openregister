@@ -371,7 +371,7 @@ class TaskService
             }//end if
         }//end foreach
 
-        throw new Exception('No VTODO-supporting calendar found for user '.$user->getUID());
+        throw new \OCA\OpenRegister\Exception\NoVtodoCalendarException($user->getUID());
     }//end findUserCalendar()
 
     /**

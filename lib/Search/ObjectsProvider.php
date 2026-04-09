@@ -21,6 +21,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Search;
 
+use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\DeepLinkRegistryService;
 use OCA\OpenRegister\Service\ObjectService;
 use OCP\IL10N;
@@ -79,6 +81,27 @@ class ObjectsProvider implements IFilteringProvider
     private readonly DeepLinkRegistryService $deepLinkRegistry;
 
     /**
+     * Schema mapper for resolving schema names
+     *
+     * @var SchemaMapper
+     */
+    private readonly SchemaMapper $schemaMapper;
+
+    /**
+     * Register mapper for resolving register names
+     *
+     * @var RegisterMapper
+     */
+    private readonly RegisterMapper $registerMapper;
+
+    /**
+     * Cache for schema/register names to avoid repeated lookups
+     *
+     * @var array<string, string>
+     */
+    private array $nameCache = [];
+
+    /**
      * Constructor for the ObjectsProvider class
      *
      * @param IL10N                   $l10n             The localization service
@@ -86,6 +109,8 @@ class ObjectsProvider implements IFilteringProvider
      * @param ObjectService           $objectService    The object service for search operations
      * @param LoggerInterface         $logger           Logger for debugging search operations
      * @param DeepLinkRegistryService $deepLinkRegistry Deep link registry for URL resolution
+     * @param SchemaMapper            $schemaMapper     Schema mapper for resolving schema names
+     * @param RegisterMapper          $registerMapper   Register mapper for resolving register names
      *
      * @return void
      */
@@ -94,13 +119,17 @@ class ObjectsProvider implements IFilteringProvider
         IURLGenerator $urlGenerator,
         ObjectService $objectService,
         LoggerInterface $logger,
-        DeepLinkRegistryService $deepLinkRegistry
+        DeepLinkRegistryService $deepLinkRegistry,
+        SchemaMapper $schemaMapper,
+        RegisterMapper $registerMapper
     ) {
         $this->l10n          = $l10n;
         $this->urlGenerator  = $urlGenerator;
         $this->objectService = $objectService;
         $this->logger        = $logger;
         $this->deepLinkRegistry = $deepLinkRegistry;
+        $this->schemaMapper     = $schemaMapper;
+        $this->registerMapper   = $registerMapper;
     }//end __construct()
 
     /**
@@ -397,6 +426,52 @@ class ObjectsProvider implements IFilteringProvider
     }//end search()
 
     /**
+     * Resolve a schema ID to its human-readable title.
+     *
+     * @param int $schemaId The schema ID
+     *
+     * @return string The schema title or the ID as fallback
+     */
+    private function resolveSchemaName(int $schemaId): string
+    {
+        $key = 'schema_'.$schemaId;
+        if (isset($this->nameCache[$key]) === false) {
+            try {
+                $schema = $this->schemaMapper->find($schemaId);
+                $title  = $schema->getTitle();
+                $this->nameCache[$key] = ($title !== null && $title !== '' ? $title : (string) $schemaId);
+            } catch (\Exception $e) {
+                $this->nameCache[$key] = (string) $schemaId;
+            }
+        }
+
+        return $this->nameCache[$key];
+    }//end resolveSchemaName()
+
+    /**
+     * Resolve a register ID to its human-readable title.
+     *
+     * @param int $registerId The register ID
+     *
+     * @return string The register title or the ID as fallback
+     */
+    private function resolveRegisterName(int $registerId): string
+    {
+        $key = 'register_'.$registerId;
+        if (isset($this->nameCache[$key]) === false) {
+            try {
+                $register = $this->registerMapper->find($registerId);
+                $title    = $register->getTitle();
+                $this->nameCache[$key] = ($title !== null && $title !== '' ? $title : (string) $registerId);
+            } catch (\Exception $e) {
+                $this->nameCache[$key] = (string) $registerId;
+            }
+        }
+
+        return $this->nameCache[$key];
+    }//end resolveRegisterName()
+
+    /**
      * Build a descriptive text for search results
      *
      * @param array $object Object data from searchObjectsPaginated
@@ -410,13 +485,13 @@ class ObjectsProvider implements IFilteringProvider
     {
         $parts = [];
 
-        // Add schema/register information if available.
+        // Add schema/register names (resolved from IDs) if available.
         if (empty($object['schema']) === false) {
-            $parts[] = $this->l10n->t('Schema: %s', $object['schema']);
+            $parts[] = $this->resolveSchemaName(schemaId: (int) $object['schema']);
         }
 
         if (empty($object['register']) === false) {
-            $parts[] = $this->l10n->t('Register: %s', $object['register']);
+            $parts[] = $this->resolveRegisterName(registerId: (int) $object['register']);
         }
 
         // Add summary/description if available.

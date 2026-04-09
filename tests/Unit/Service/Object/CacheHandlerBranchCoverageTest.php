@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service\Object;
 
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Db\UnifiedObjectMapper;
+use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\OrganisationMapper;
 use OCA\OpenRegister\Service\Object\CacheHandler;
 use OCP\ICacheFactory;
@@ -23,7 +23,7 @@ use Psr\Log\LoggerInterface;
 class CacheHandlerBranchCoverageTest extends TestCase
 {
     private CacheHandler $handler;
-    private UnifiedObjectMapper&MockObject $objectMapper;
+    private MagicMapper&MockObject $objectMapper;
     private OrganisationMapper&MockObject $organisationMapper;
     private LoggerInterface&MockObject $logger;
     private ICacheFactory&MockObject $cacheFactory;
@@ -35,7 +35,7 @@ class CacheHandlerBranchCoverageTest extends TestCase
     {
         parent::setUp();
 
-        $this->objectMapper = $this->createMock(UnifiedObjectMapper::class);
+        $this->objectMapper = $this->createMock(MagicMapper::class);
         $this->organisationMapper = $this->createMock(OrganisationMapper::class);
         $this->logger = $this->createMock(LoggerInterface::class);
         $this->cacheFactory = $this->createMock(ICacheFactory::class);

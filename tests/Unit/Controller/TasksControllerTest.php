@@ -6,6 +6,7 @@ namespace OCA\OpenRegister\Tests\Unit\Controller;
 
 use OCA\OpenRegister\Controller\TasksController;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Exception\NoVtodoCalendarException;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\TaskService;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -103,6 +104,24 @@ class TasksControllerTest extends TestCase
         $result = $this->controller->index('reg', 'schema', '1');
 
         $this->assertEquals(404, $result->getStatus());
+    }
+
+    public function testIndexReturnsEmptyWhenNoVtodoCalendar(): void
+    {
+        $object = $this->createObjectEntity();
+        $this->setupObjectValidation($object);
+
+        $this->taskService
+            ->expects($this->once())
+            ->method('getTasksForObject')
+            ->willThrowException(new NoVtodoCalendarException('admin'));
+
+        $result = $this->controller->index('reg', 'schema', '1');
+
+        $this->assertInstanceOf(JSONResponse::class, $result);
+        $this->assertEquals(200, $result->getStatus());
+        $this->assertEquals([], $result->getData()['results']);
+        $this->assertEquals(0, $result->getData()['total']);
     }
 
     public function testIndexGeneralException(): void
