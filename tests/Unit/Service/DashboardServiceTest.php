@@ -1202,7 +1202,7 @@ class DashboardServiceTest extends TestCase
         $this->assertSame(0, $stats['objects']['invalid']);
         $this->assertSame(0, $stats['objects']['deleted']);
         $this->assertSame(0, $stats['objects']['locked']);
-        $this->assertSame(0, $stats['objects']['published']);
+        // 'published' key was removed from getStats - only check existing keys.
         $this->assertSame(0, $stats['logs']['total']);
         $this->assertSame(0, $stats['logs']['size']);
         $this->assertSame(0, $stats['webhookLogs']['total']);

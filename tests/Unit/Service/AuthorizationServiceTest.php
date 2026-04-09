@@ -13,6 +13,7 @@ use Jose\Component\Signature\Serializer\CompactSerializer;
 use OC\AppFramework\Middleware\Security\Exceptions\SecurityException;
 use OCA\OpenRegister\Db\Consumer;
 use OCA\OpenRegister\Db\ConsumerMapper;
+// Consumer entity is used directly in JWT algorithm tests.
 use OCA\OpenRegister\Exception\AuthenticationException;
 use OCA\OpenRegister\Service\AuthorizationService;
 use OCP\AppFramework\Http\Response;
@@ -647,15 +648,21 @@ class AuthorizationServiceTest extends TestCase
 
     public function testAuthorizeJwtThrowsWhenInvalidAlgorithmHeader(): void
     {
-        // Craft a JWT with an unsupported algorithm in the header to trigger
-        // the InvalidHeaderException catch block in authorizeJwt.
+        // Craft a JWT with an unsupported algorithm ('none') to trigger
+        // the 'algorithm is not supported' branch after issuer lookup.
         $header = rtrim(strtr(base64_encode(json_encode(['alg' => 'none', 'typ' => 'JWT'])), '+/', '-_'), '=');
         $payload = rtrim(strtr(base64_encode(json_encode(['iss' => 'test', 'iat' => time()])), '+/', '-_'), '=');
         $signature = rtrim(strtr(base64_encode('fake-signature'), '+/', '-_'), '=');
         $token = "$header.$payload.$signature";
 
+        // Consumer must exist so findIssuer succeeds; algorithm check happens after.
+        $consumer = new Consumer();
+        $consumer->setName('test');
+        $consumer->setAuthorizationConfiguration(['publicKey' => 'secret', 'algorithm' => 'none']);
+        $this->consumerMapper->method('findAll')->willReturn([$consumer]);
+
         $this->expectException(AuthenticationException::class);
-        $this->expectExceptionMessage('could not be validated');
+        $this->expectExceptionMessage('not supported');
 
         $this->service->authorizeJwt('Bearer ' . $token);
     }
@@ -667,11 +674,16 @@ class AuthorizationServiceTest extends TestCase
         $signature = rtrim(strtr(base64_encode('fake'), '+/', '-_'), '=');
         $token = "$header.$payload.$signature";
 
+        $consumer = new Consumer();
+        $consumer->setName('test');
+        $consumer->setAuthorizationConfiguration(['publicKey' => 'secret', 'algorithm' => 'none']);
+        $this->consumerMapper->method('findAll')->willReturn([$consumer]);
+
         try {
             $this->service->authorizeJwt('Bearer ' . $token);
             $this->fail('Expected AuthenticationException');
         } catch (AuthenticationException $e) {
-            $this->assertArrayHasKey('reason', $e->getDetails());
+            $this->assertArrayHasKey('algorithm', $e->getDetails());
         }
     }
 
@@ -1059,45 +1071,7 @@ class AuthorizationServiceTest extends TestCase
     // checkHeaders (private, via reflection)
     // ==========================================
 
-    public function testCheckHeadersWithValidHs256Token(): void
-    {
-        $secret = 'test-secret-for-headers';
-        $payload = ['iss' => 'test', 'iat' => time()];
-        $tokenString = $this->buildHmacJwt($payload, $secret, 'HS256');
-
-        $serializer = new CompactSerializer();
-        $jws = $serializer->unserialize($tokenString);
-
-        // Should not throw.
-        $this->invokePrivateMethod($this->service, 'checkHeaders', [$jws]);
-        $this->assertTrue(true);
-    }
-
-    public function testCheckHeadersWithValidHs384Token(): void
-    {
-        $secret = 'test-secret-for-headers-384';
-        $payload = ['iss' => 'test', 'iat' => time()];
-        $tokenString = $this->buildHmacJwt($payload, $secret, 'HS384');
-
-        $serializer = new CompactSerializer();
-        $jws = $serializer->unserialize($tokenString);
-
-        $this->invokePrivateMethod($this->service, 'checkHeaders', [$jws]);
-        $this->assertTrue(true);
-    }
-
-    public function testCheckHeadersWithValidHs512Token(): void
-    {
-        $secret = 'test-secret-for-headers-512';
-        $payload = ['iss' => 'test', 'iat' => time()];
-        $tokenString = $this->buildHmacJwt($payload, $secret, 'HS512');
-
-        $serializer = new CompactSerializer();
-        $jws = $serializer->unserialize($tokenString);
-
-        $this->invokePrivateMethod($this->service, 'checkHeaders', [$jws]);
-        $this->assertTrue(true);
-    }
+    // checkHeaders — removed: method no longer exists in AuthorizationService
 
     // ==========================================
     // corsAfterController

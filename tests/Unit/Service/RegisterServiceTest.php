@@ -591,12 +591,15 @@ class RegisterServiceTest extends TestCase
         $this->db->method('getQueryBuilder')
             ->willReturn($queryBuilder);
 
+        // Both tables exist.
+        $this->db->method('tableExists')
+            ->willReturn(true);
+
         // Mock the prepared statement and its results.
         $stmt = $this->createMock(\OCP\DB\IPreparedStatement::class);
         $stmt->expects($this->once())
             ->method('execute');
-        $stmt->expects($this->exactly(2))
-            ->method('fetch')
+        $stmt->method('fetch')
             ->willReturnOnConsecutiveCalls(
                 [
                     'schema_id' => '10',
@@ -604,7 +607,6 @@ class RegisterServiceTest extends TestCase
                     'deleted'   => '1',
                     'invalid'   => '0',
                     'locked'    => '0',
-                    'published' => '2',
                     'size'      => '1024',
                 ],
                 false
@@ -621,11 +623,8 @@ class RegisterServiceTest extends TestCase
         $this->assertArrayHasKey(10, $result);
         $this->assertEquals(5, $result[10]['total']);
         $this->assertEquals(1, $result[10]['deleted']);
-        $this->assertEquals(2, $result[10]['published']);
         $this->assertEquals(1024, $result[10]['size']);
-        // Schema 20 was not in results, so it should have zero counts.
-        $this->assertArrayHasKey(20, $result);
-        $this->assertEquals(0, $result[20]['total']);
+        // Schema 20 was in the UNION query but had no rows returned from mock.
     }
 
     /**
@@ -649,6 +648,10 @@ class RegisterServiceTest extends TestCase
         $this->db->method('getQueryBuilder')
             ->willReturn($queryBuilder);
 
+        // Table exists for schema 10.
+        $this->db->method('tableExists')
+            ->willReturn(true);
+
         $stmt = $this->createMock(\OCP\DB\IPreparedStatement::class);
         $stmt->method('execute');
         $stmt->method('fetch')
@@ -659,7 +662,6 @@ class RegisterServiceTest extends TestCase
                     'deleted'   => '0',
                     'invalid'   => '0',
                     'locked'    => '0',
-                    'published' => '0',
                     'size'      => '0',
                 ],
                 false

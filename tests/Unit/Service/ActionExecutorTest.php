@@ -115,7 +115,7 @@ class ActionExecutorTest extends TestCase
         $action->setId(1);
         $action->setUuid('uuid-1');
         $action->setName('Action 1');
-        $action->setEngine('nonexistent');
+        $action->setEngine('999');
         $action->setWorkflowId('wf-1');
         $action->setMode('sync');
         $action->setOnFailure('allow');
@@ -123,7 +123,7 @@ class ActionExecutorTest extends TestCase
 
         $this->engineRegistry
             ->method('getEngine')
-            ->willReturn(null);
+            ->willThrowException(new \OCP\AppFramework\Db\DoesNotExistException('Engine not found'));
 
         // Log entry should be created with failure status.
         $this->actionLogMapper

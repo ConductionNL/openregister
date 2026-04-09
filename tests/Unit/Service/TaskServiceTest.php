@@ -95,7 +95,7 @@ class TaskServiceTest extends TestCase
         $calDavBackend->method('getCalendarsForUser')->willReturn([]);
 
         $this->expectException(Exception::class);
-        $this->expectExceptionMessage('No VTODO-supporting calendar found');
+        $this->expectExceptionMessage('Failed to create tasks calendar for user testuser');
 
         $service->getTasksForObject('some-uuid');
     }

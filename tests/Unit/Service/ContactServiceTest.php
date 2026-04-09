@@ -24,7 +24,11 @@ class ContactServiceTest extends TestCase
 
     protected function setUp(): void
     {
-        $this->contactLinkMapper = $this->createMock(ContactLinkMapper::class);
+        $this->contactLinkMapper = $this->getMockBuilder(ContactLinkMapper::class)
+            ->disableOriginalConstructor()
+            ->onlyMethods(['findByObjectUuid', 'findByContactUid', 'countByObjectUuid', 'deleteByObjectUuid', 'insert', 'delete'])
+            ->addMethods(['find'])
+            ->getMock();
         $this->cardDavBackend = $this->createMock(CardDavBackend::class);
         $this->userSession = $this->createMock(IUserSession::class);
         $this->logger = $this->createMock(LoggerInterface::class);

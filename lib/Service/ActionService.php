@@ -222,7 +222,7 @@ class ActionService
         $conditions    = $action->getFilterConditionArray();
         if (empty($conditions) === false) {
             foreach ($conditions as $key => $expected) {
-                $actual = $this->getNestedValue(array: $samplePayload, key: $key);
+                $actual = $this->getNestedValue(data: $samplePayload, key: $key);
                 if (is_array($expected) === true) {
                     if (in_array($actual, $expected) === false) {
                         $filterMatch     = false;
