@@ -18,12 +18,11 @@ use DateTime;
 use Exception;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Db\ObjectEntityMapper;
+use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
-use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Service\Object\CacheHandler;
 use OCA\OpenRegister\Service\Object\SaveObject;
 use OCA\OpenRegister\Service\Object\SaveObject\FilePropertyHandler;
@@ -54,8 +53,8 @@ class SaveObjectTest extends TestCase
     /** @var SaveObject */
     private SaveObject $handler;
 
-    /** @var ObjectEntityMapper&MockObject */
-    private ObjectEntityMapper $objectEntityMapper;
+    /** @var MagicMapper&MockObject */
+    private MagicMapper $objectEntityMapper;
 
     /** @var MagicMapper&MockObject */
     private MagicMapper $unifiedObjectMapper;
@@ -100,7 +99,7 @@ class SaveObjectTest extends TestCase
     {
         parent::setUp();
 
-        $this->objectEntityMapper = $this->createMock(ObjectEntityMapper::class);
+        $this->objectEntityMapper = $this->createMock(MagicMapper::class);
         $this->unifiedObjectMapper = $this->createMock(MagicMapper::class);
         $this->metaHydrationHandler = $this->createMock(MetadataHydrationHandler::class);
         $this->filePropertyHandler = $this->createMock(FilePropertyHandler::class);
@@ -122,6 +121,7 @@ class SaveObjectTest extends TestCase
             $this->unifiedObjectMapper,
             $this->metaHydrationHandler,
             $this->filePropertyHandler,
+            $this->createMock(\OCA\OpenRegister\Service\Object\SaveObject\LinkedEntityPropertyHandler::class),
             $this->userSession,
             $this->auditTrailMapper,
             $this->schemaMapper,
@@ -131,7 +131,10 @@ class SaveObjectTest extends TestCase
             $this->cacheHandler,
             $this->settingsService,
             $this->propertyRbacHandler,
+            $this->createMock(\OCA\OpenRegister\Service\Object\SaveObject\ComputedFieldHandler::class),
+            $this->createMock(\OCA\OpenRegister\Service\Object\TranslationHandler::class),
             $this->logger,
+            $this->createMock(\OCA\OpenRegister\Service\TmloService::class),
             $arrayLoader
         );
     }

@@ -30,21 +30,24 @@ namespace OCA\OpenRegister\Tests\Unit\Service\ObjectHandlers;
 use DateTime;
 use Exception;
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Db\ObjectEntityMapper;
+use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Db\AuditTrailMapper;
-use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Exception\ValidationException;
 use OCA\OpenRegister\Service\Object\SaveObject;
-use OCA\OpenRegister\Service\Object\SaveObject\MetadataHydrationHandler;
+use OCA\OpenRegister\Service\Object\SaveObject\ComputedFieldHandler;
 use OCA\OpenRegister\Service\Object\SaveObject\FilePropertyHandler;
+use OCA\OpenRegister\Service\Object\SaveObject\LinkedEntityPropertyHandler;
+use OCA\OpenRegister\Service\Object\SaveObject\MetadataHydrationHandler;
+use OCA\OpenRegister\Service\Object\TranslationHandler;
 use OCA\OpenRegister\Service\Object\CacheHandler;
 use OCA\OpenRegister\Service\OrganisationService;
 use OCA\OpenRegister\Service\PropertyRbacHandler;
 use OCA\OpenRegister\Service\SettingsService;
+use OCA\OpenRegister\Service\TmloService;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\IURLGenerator;
 use OCP\IUserSession;
@@ -125,7 +128,7 @@ class SaveObjectCoverageTest extends TestCase
     private SaveObject $saveObject;
     private ReflectionClass $reflection;
 
-    /** @var MockObject&ObjectEntityMapper */
+    /** @var MockObject&MagicMapper */
     private $objectEntityMapper;
 
     /** @var MockObject&MagicMapper */
@@ -176,7 +179,7 @@ class SaveObjectCoverageTest extends TestCase
     {
         parent::setUp();
 
-        $this->objectEntityMapper = $this->createMock(ObjectEntityMapper::class);
+        $this->objectEntityMapper = $this->createMock(MagicMapper::class);
         $this->unifiedObjectMapper = $this->createMock(MagicMapper::class);
         $this->metaHydrationHandler = $this->createMock(MetadataHydrationHandler::class);
         $this->filePropertyHandler = $this->createMock(FilePropertyHandler::class);
@@ -196,6 +199,7 @@ class SaveObjectCoverageTest extends TestCase
             $this->unifiedObjectMapper,
             $this->metaHydrationHandler,
             $this->filePropertyHandler,
+            $this->createMock(LinkedEntityPropertyHandler::class),
             $this->userSession,
             $this->auditTrailMapper,
             $this->schemaMapper,
@@ -205,7 +209,10 @@ class SaveObjectCoverageTest extends TestCase
             $this->cacheHandler,
             $this->settingsService,
             $this->propertyRbacHandler,
+            $this->createMock(ComputedFieldHandler::class),
+            $this->createMock(TranslationHandler::class),
             $this->logger,
+            $this->createMock(TmloService::class),
             new ArrayLoader()
         );
 

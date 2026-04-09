@@ -22,20 +22,23 @@ namespace OCA\OpenRegister\Tests\Unit\Service\ObjectHandlers;
 
 use Exception;
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Db\ObjectEntityMapper;
+use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Service\Object\SaveObject;
+use OCA\OpenRegister\Service\Object\SaveObject\ComputedFieldHandler;
 use OCA\OpenRegister\Service\Object\SaveObject\FilePropertyHandler;
+use OCA\OpenRegister\Service\Object\SaveObject\LinkedEntityPropertyHandler;
 use OCA\OpenRegister\Service\Object\SaveObject\MetadataHydrationHandler;
+use OCA\OpenRegister\Service\Object\TranslationHandler;
 use OCA\OpenRegister\Service\Object\CacheHandler;
 use OCA\OpenRegister\Service\OrganisationService;
 use OCA\OpenRegister\Service\PropertyRbacHandler;
 use OCA\OpenRegister\Service\SettingsService;
-use OCA\OpenRegister\Db\MagicMapper;
+use OCA\OpenRegister\Service\TmloService;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\IURLGenerator;
 use OCP\IUserSession;
@@ -60,7 +63,7 @@ class SaveObjectTest extends TestCase
     /** @var SaveObject */
     private SaveObject $saveObject;
 
-    /** @var MockObject|ObjectEntityMapper */
+    /** @var MockObject|MagicMapper */
     private $objectEntityMapper;
 
     /** @var MockObject|IUserSession */
@@ -121,7 +124,7 @@ class SaveObjectTest extends TestCase
         parent::setUp();
 
         // Create mocks for all dependencies.
-        $this->objectEntityMapper = $this->createMock(ObjectEntityMapper::class);
+        $this->objectEntityMapper = $this->createMock(MagicMapper::class);
         $this->unifiedObjectMapper = $this->createMock(MagicMapper::class);
         $this->metaHydrationHandler = $this->createMock(MetadataHydrationHandler::class);
         $this->filePropertyHandler = $this->createMock(FilePropertyHandler::class);
@@ -160,7 +163,7 @@ class SaveObjectTest extends TestCase
                 return $entity;
             });
 
-        // ObjectEntityMapper update returns its first argument (pass-through).
+        // MagicMapper update returns its first argument (pass-through).
         $this->objectEntityMapper->method('update')
             ->willReturnCallback(function ($entity) {
                 return $entity;
@@ -176,6 +179,7 @@ class SaveObjectTest extends TestCase
             unifiedObjectMapper: $this->unifiedObjectMapper,
             metaHydrationHandler: $this->metaHydrationHandler,
             filePropertyHandler: $this->filePropertyHandler,
+            linkedEntityHandler: $this->createMock(LinkedEntityPropertyHandler::class),
             userSession: $this->userSession,
             auditTrailMapper: $this->auditTrailMapper,
             schemaMapper: $this->schemaMapper,
@@ -185,7 +189,10 @@ class SaveObjectTest extends TestCase
             cacheHandler: $this->cacheHandler,
             settingsService: $this->settingsService,
             propertyRbacHandler: $this->propertyRbacHandler,
+            computedFieldHandler: $this->createMock(ComputedFieldHandler::class),
+            translationHandler: $this->createMock(TranslationHandler::class),
             logger: $this->logger,
+            tmloService: $this->createMock(TmloService::class),
             arrayLoader: new ArrayLoader(),
         );
     }
