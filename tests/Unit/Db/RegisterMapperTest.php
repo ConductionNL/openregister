@@ -2,7 +2,6 @@
 
 namespace OCA\OpenRegister\Tests\Unit\Db;
 
-use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\OrganisationMapper;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
@@ -13,6 +12,7 @@ use OCP\IGroupManager;
 use OCP\IUserSession;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
+use Psr\Container\ContainerInterface;
 
 /**
  * Unit tests for RegisterMapper
@@ -27,7 +27,7 @@ class RegisterMapperTest extends TestCase
     private IDBConnection&MockObject $db;
     private SchemaMapper&MockObject $schemaMapper;
     private IEventDispatcher&MockObject $eventDispatcher;
-    private MagicMapper&MockObject $objectMapper;
+    private ContainerInterface&MockObject $container;
     private OrganisationMapper&MockObject $organisationMapper;
     private IUserSession&MockObject $userSession;
     private IGroupManager&MockObject $groupManager;
@@ -39,7 +39,7 @@ class RegisterMapperTest extends TestCase
         $this->db = $this->createMock(IDBConnection::class);
         $this->schemaMapper = $this->createMock(SchemaMapper::class);
         $this->eventDispatcher = $this->createMock(IEventDispatcher::class);
-        $this->objectMapper = $this->createMock(MagicMapper::class);
+        $this->container = $this->createMock(ContainerInterface::class);
         $this->organisationMapper = $this->createMock(OrganisationMapper::class);
         $this->userSession = $this->createMock(IUserSession::class);
         $this->groupManager = $this->createMock(IGroupManager::class);
@@ -49,7 +49,7 @@ class RegisterMapperTest extends TestCase
             $this->db,
             $this->schemaMapper,
             $this->eventDispatcher,
-            $this->objectMapper,
+            $this->container,
             $this->organisationMapper,
             $this->userSession,
             $this->groupManager,

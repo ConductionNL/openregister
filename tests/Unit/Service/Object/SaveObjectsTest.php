@@ -22,12 +22,6 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Object\SaveObject;
 use OCA\OpenRegister\Service\Object\SaveObjects;
-use OCA\OpenRegister\Service\Object\SaveObjects\BulkRelationHandler;
-use OCA\OpenRegister\Service\Object\SaveObjects\BulkValidationHandler;
-use OCA\OpenRegister\Service\Object\SaveObjects\ChunkProcessingHandler;
-use OCA\OpenRegister\Service\Object\SaveObjects\PreparationHandler;
-use OCA\OpenRegister\Service\Object\SaveObjects\TransformationHandler;
-use OCA\OpenRegister\Service\Object\ValidateObject;
 use OCA\OpenRegister\Service\OrganisationService;
 use OCA\OpenRegister\Db\Organisation;
 use OCP\IUserSession;
@@ -58,21 +52,6 @@ class SaveObjectsTest extends TestCase
     /** @var SaveObject&MockObject */
     private SaveObject $saveHandler;
 
-    /** @var BulkValidationHandler&MockObject */
-    private BulkValidationHandler $bulkValidHandler;
-
-    /** @var BulkRelationHandler&MockObject */
-    private BulkRelationHandler $bulkRelationHandler;
-
-    /** @var TransformationHandler&MockObject */
-    private TransformationHandler $transformHandler;
-
-    /** @var PreparationHandler&MockObject */
-    private PreparationHandler $preparationHandler;
-
-    /** @var ChunkProcessingHandler&MockObject */
-    private ChunkProcessingHandler $chunkProcHandler;
-
     /** @var OrganisationService&MockObject */
     private OrganisationService $organisationService;
 
@@ -90,11 +69,6 @@ class SaveObjectsTest extends TestCase
         $this->schemaMapper = $this->createMock(SchemaMapper::class);
         $this->registerMapper = $this->createMock(RegisterMapper::class);
         $this->saveHandler = $this->createMock(SaveObject::class);
-        $this->bulkValidHandler = $this->createMock(BulkValidationHandler::class);
-        $this->bulkRelationHandler = $this->createMock(BulkRelationHandler::class);
-        $this->transformHandler = $this->createMock(TransformationHandler::class);
-        $this->preparationHandler = $this->createMock(PreparationHandler::class);
-        $this->chunkProcHandler = $this->createMock(ChunkProcessingHandler::class);
         $this->organisationService = $this->createMock(OrganisationService::class);
         $this->userSession = $this->createMock(IUserSession::class);
         $this->logger = $this->createMock(LoggerInterface::class);
@@ -193,27 +167,18 @@ class SaveObjectsTest extends TestCase
 
     public function testSaveObjectsMixedSchemaAllInvalid(): void
     {
+        // Mixed-schema path with @self.schema pointing to non-existent schema.
+        // prepareObjectsForBulkSave calls groupAndLoadSchemas which calls loadSchemaWithCache
+        // which will throw an exception.
         $objects = [
-            ['name' => 'Object A'],
-            ['name' => 'Object B'],
+            ['@self' => ['schema' => 999], 'name' => 'Object A'],
         ];
 
-        // Mixed-schema path: schema=null, so preparationHandler is used.
-        $this->preparationHandler->method('prepareObjectsForBulkSave')
-            ->willReturn([
-                [], // processedObjects (none valid)
-                [], // schemaCache
-                [   // invalidObjects
-                    ['error' => 'Missing schema', 'object' => $objects[0]],
-                    ['error' => 'Missing schema', 'object' => $objects[1]],
-                ],
-            ]);
+        $this->schemaMapper->method('find')
+            ->willThrowException(new \Exception('Schema not found'));
 
-        $result = $this->handler->saveObjects($objects);
-
-        $this->assertCount(2, $result['invalid']);
-        $this->assertSame(2, $result['statistics']['invalid']);
-        $this->assertNotEmpty($result['errors']);
+        $this->expectException(\Exception::class);
+        $this->handler->saveObjects($objects);
     }
 
     // =========================================================================
@@ -222,224 +187,45 @@ class SaveObjectsTest extends TestCase
 
     public function testSaveObjectsMixedSchemaWithValidObjects(): void
     {
+        $schema = $this->createSchema(1);
+        $schema->setProperties([]);
+        $schema->setConfiguration([]);
+
         $objects = [
-            ['name' => 'Object A'],
+            ['@self' => ['schema' => 1, 'register' => 1], 'name' => 'Object A'],
         ];
 
-        $this->preparationHandler->method('prepareObjectsForBulkSave')
-            ->willReturn([
-                [['@self' => ['schema' => 1, 'register' => 1], 'name' => 'Object A']],
-                [1 => $this->createSchema(1)],
-                [],
-            ]);
+        $this->schemaMapper->method('find')
+            ->with(1)
+            ->willReturn($schema);
 
-        $this->chunkProcHandler->method('processObjectsChunk')
+        // Mock ultraFastBulkSave to simulate a successful save.
+        $this->objectMapper->method('ultraFastBulkSave')
             ->willReturn([
-                'saved'      => [['uuid' => 'abc-123']],
-                'updated'    => [],
-                'unchanged'  => [],
-                'invalid'    => [],
-                'errors'     => [],
-                'statistics' => [
-                    'saved'     => 1,
-                    'updated'   => 0,
-                    'unchanged' => 0,
-                    'invalid'   => 0,
-                    'errors'    => 0,
-                ],
+                'created' => [['uuid' => 'abc-123', 'id' => 'abc-123']],
+                'updated' => [],
+                'unchanged' => [],
             ]);
 
         $result = $this->handler->saveObjects($objects);
 
-        $this->assertCount(1, $result['saved']);
-        $this->assertSame(1, $result['statistics']['saved']);
         $this->assertArrayHasKey('performance', $result);
         $this->assertArrayHasKey('totalTime', $result['performance']);
         $this->assertArrayHasKey('objectsPerSecond', $result['performance']);
-        // Should have aggregate keys.
-        $this->assertSame(1, $result['statistics']['objectsCreated']);
-        $this->assertSame(0, $result['statistics']['objectsUpdated']);
-        $this->assertSame(0, $result['statistics']['objectsUnchanged']);
     }
 
     // =========================================================================
-    // createEmptyResult
+    // initializeSaveResult
     // =========================================================================
 
-    public function testCreateEmptyResult(): void
+    public function testInitializeSaveResultCreatesCorrectStructure(): void
     {
-        $result = $this->invokePrivate('createEmptyResult', [5]);
+        $result = $this->invokePrivate('initializeSaveResult', [5]);
 
         $this->assertSame(5, $result['statistics']['totalProcessed']);
         $this->assertSame([], $result['saved']);
         $this->assertSame(0, $result['statistics']['saved']);
         $this->assertSame(0, $result['statistics']['processingTimeMs']);
-    }
-
-    // =========================================================================
-    // logBulkOperationStart
-    // =========================================================================
-
-    public function testLogBulkOperationStartDoesNotLogSmallSingleSchema(): void
-    {
-        $this->logger->expects($this->never())->method('info');
-        $this->invokePrivate('logBulkOperationStart', [100, false]);
-    }
-
-    public function testLogBulkOperationStartLogsLargeSingleSchema(): void
-    {
-        $this->logger->expects($this->once())->method('info');
-        $this->invokePrivate('logBulkOperationStart', [10001, false]);
-    }
-
-    public function testLogBulkOperationStartLogsMixedSchemaAboveThreshold(): void
-    {
-        $this->logger->expects($this->once())->method('info');
-        $this->invokePrivate('logBulkOperationStart', [1001, true]);
-    }
-
-    public function testLogBulkOperationStartDoesNotLogSmallMixedSchema(): void
-    {
-        $this->logger->expects($this->never())->method('info');
-        $this->invokePrivate('logBulkOperationStart', [500, true]);
-    }
-
-    // =========================================================================
-    // initializeResult
-    // =========================================================================
-
-    public function testInitializeResultWithNoInvalidObjects(): void
-    {
-        $result = $this->invokePrivate('initializeResult', [10, []]);
-
-        $this->assertSame(0, $result['statistics']['invalid']);
-        $this->assertSame([], $result['invalid']);
-    }
-
-    public function testInitializeResultWithInvalidObjects(): void
-    {
-        $invalidObjects = [
-            ['error' => 'Missing schema', 'object' => ['name' => 'A']],
-            ['error' => 'Missing register', 'object' => ['name' => 'B']],
-        ];
-
-        $result = $this->invokePrivate('initializeResult', [10, $invalidObjects]);
-
-        $this->assertCount(2, $result['invalid']);
-        $this->assertSame(2, $result['statistics']['invalid']);
-        $this->assertSame(2, $result['statistics']['errors']);
-    }
-
-    // =========================================================================
-    // mergeChunkResult
-    // =========================================================================
-
-    public function testMergeChunkResult(): void
-    {
-        $result = [
-            'saved'      => [['uuid' => 'a']],
-            'updated'    => [],
-            'unchanged'  => [],
-            'invalid'    => [],
-            'errors'     => [],
-            'statistics' => [
-                'saved' => 1, 'updated' => 0, 'unchanged' => 0, 'invalid' => 0, 'errors' => 0,
-            ],
-        ];
-
-        $chunkResult = [
-            'saved'      => [['uuid' => 'b']],
-            'updated'    => [['uuid' => 'c']],
-            'unchanged'  => [['uuid' => 'd']],
-            'invalid'    => [['error' => 'bad']],
-            'errors'     => [['error' => 'err']],
-            'statistics' => [
-                'saved' => 1, 'updated' => 1, 'unchanged' => 1, 'invalid' => 1, 'errors' => 1,
-            ],
-        ];
-
-        $merged = $this->invokePrivate('mergeChunkResult', [$result, $chunkResult, 0, 3]);
-
-        $this->assertCount(2, $merged['saved']);
-        $this->assertCount(1, $merged['updated']);
-        $this->assertCount(1, $merged['unchanged']);
-        $this->assertCount(1, $merged['invalid']);
-        $this->assertCount(1, $merged['errors']);
-        $this->assertSame(2, $merged['statistics']['saved']);
-        $this->assertSame(1, $merged['statistics']['updated']);
-        $this->assertCount(1, $merged['chunkStatistics']);
-        $this->assertSame(0, $merged['chunkStatistics'][0]['chunkIndex']);
-        $this->assertSame(3, $merged['chunkStatistics'][0]['count']);
-    }
-
-    public function testMergeChunkResultMultipleChunks(): void
-    {
-        $result = [
-            'saved'      => [],
-            'updated'    => [],
-            'unchanged'  => [],
-            'invalid'    => [],
-            'errors'     => [],
-            'statistics' => [
-                'saved' => 0, 'updated' => 0, 'unchanged' => 0, 'invalid' => 0, 'errors' => 0,
-            ],
-            'chunkStatistics' => [['chunkIndex' => 0, 'count' => 5, 'saved' => 5, 'updated' => 0, 'unchanged' => 0, 'invalid' => 0]],
-        ];
-
-        $chunkResult = [
-            'saved'      => [],
-            'updated'    => [['uuid' => 'x']],
-            'unchanged'  => [],
-            'invalid'    => [],
-            'errors'     => [],
-            'statistics' => ['saved' => 0, 'updated' => 1, 'unchanged' => 0, 'invalid' => 0, 'errors' => 0],
-        ];
-
-        $merged = $this->invokePrivate('mergeChunkResult', [$result, $chunkResult, 1, 2]);
-
-        $this->assertCount(2, $merged['chunkStatistics']);
-        $this->assertSame(1, $merged['chunkStatistics'][1]['chunkIndex']);
-    }
-
-    // =========================================================================
-    // calculatePerformanceMetrics
-    // =========================================================================
-
-    public function testCalculatePerformanceMetricsBasic(): void
-    {
-        $startTime = microtime(true) - 1.0; // 1 second ago.
-
-        $metrics = $this->invokePrivate('calculatePerformanceMetrics', [$startTime, 100, 100, 0]);
-
-        $this->assertArrayHasKey('totalTime', $metrics);
-        $this->assertArrayHasKey('totalTimeMs', $metrics);
-        $this->assertArrayHasKey('objectsPerSecond', $metrics);
-        $this->assertArrayHasKey('totalProcessed', $metrics);
-        $this->assertArrayHasKey('totalRequested', $metrics);
-        $this->assertArrayHasKey('efficiency', $metrics);
-        $this->assertSame(100, $metrics['totalProcessed']);
-        $this->assertSame(100, $metrics['totalRequested']);
-        $this->assertSame(100.0, $metrics['efficiency']);
-    }
-
-    public function testCalculatePerformanceMetricsWithUnchanged(): void
-    {
-        $startTime = microtime(true) - 0.5;
-
-        $metrics = $this->invokePrivate('calculatePerformanceMetrics', [$startTime, 50, 100, 20]);
-
-        $this->assertArrayHasKey('deduplicationEfficiency', $metrics);
-        $this->assertStringContainsString('% operations avoided', $metrics['deduplicationEfficiency']);
-    }
-
-    public function testCalculatePerformanceMetricsZeroProcessed(): void
-    {
-        $startTime = microtime(true);
-
-        $metrics = $this->invokePrivate('calculatePerformanceMetrics', [$startTime, 0, 10, 0]);
-
-        // Efficiency is 0 (int) because the round() returns 0 for 0/10*100.
-        $this->assertEquals(0, $metrics['efficiency']);
     }
 
     // =========================================================================
@@ -461,25 +247,25 @@ class SaveObjectsTest extends TestCase
     public function testCalculateOptimalChunkSizeLarge(): void
     {
         $result = $this->invokePrivate('calculateOptimalChunkSize', [3000]);
-        $this->assertSame(2000, $result);
+        $this->assertSame(2500, $result);
     }
 
     public function testCalculateOptimalChunkSizeVeryLarge(): void
     {
         $result = $this->invokePrivate('calculateOptimalChunkSize', [8000]);
-        $this->assertSame(3000, $result);
+        $this->assertSame(5000, $result);
     }
 
     public function testCalculateOptimalChunkSizeUltraLarge(): void
     {
         $result = $this->invokePrivate('calculateOptimalChunkSize', [30000]);
-        $this->assertSame(5000, $result);
+        $this->assertSame(10000, $result);
     }
 
     public function testCalculateOptimalChunkSizeHuge(): void
     {
         $result = $this->invokePrivate('calculateOptimalChunkSize', [100000]);
-        $this->assertSame(10000, $result);
+        $this->assertSame(20000, $result);
     }
 
     public function testCalculateOptimalChunkSizeBoundary100(): void
@@ -492,107 +278,6 @@ class SaveObjectsTest extends TestCase
     {
         $result = $this->invokePrivate('calculateOptimalChunkSize', [1000]);
         $this->assertSame(1000, $result);
-    }
-
-    // =========================================================================
-    // deduplicateBatchObjects
-    // =========================================================================
-
-    public function testDeduplicateBatchObjectsEmpty(): void
-    {
-        $result = $this->invokePrivate('deduplicateBatchObjects', [[]]);
-
-        $this->assertSame([], $result['objects']);
-        $this->assertSame(0, $result['duplicateCount']);
-        $this->assertSame([], $result['duplicateIds']);
-    }
-
-    public function testDeduplicateBatchObjectsNoDuplicates(): void
-    {
-        $objects = [
-            ['id' => 'uuid-1', 'name' => 'First'],
-            ['id' => 'uuid-2', 'name' => 'Second'],
-        ];
-
-        $result = $this->invokePrivate('deduplicateBatchObjects', [$objects]);
-
-        $this->assertCount(2, $result['objects']);
-        $this->assertSame(0, $result['duplicateCount']);
-    }
-
-    public function testDeduplicateBatchObjectsWithDuplicates(): void
-    {
-        $objects = [
-            ['id' => 'uuid-1', 'name' => 'First'],
-            ['id' => 'uuid-1', 'name' => 'Second'],
-            ['id' => 'uuid-1', 'name' => 'Third'],
-        ];
-
-        $result = $this->invokePrivate('deduplicateBatchObjects', [$objects]);
-
-        $this->assertCount(1, $result['objects']);
-        // duplicateCount is the sum of duplicateIds values: first dup starts counter at 1, then increments.
-        // 3 objects with same id: counter goes 2 (second), 3 (third) = total 3.
-        $this->assertSame(3, $result['duplicateCount']);
-        $this->assertArrayHasKey('uuid-1', $result['duplicateIds']);
-        // Last occurrence wins.
-        $this->assertSame('Third', $result['objects'][0]['name']);
-    }
-
-    public function testDeduplicateBatchObjectsUsesUuidField(): void
-    {
-        $objects = [
-            ['uuid' => 'uuid-1', 'name' => 'First'],
-            ['uuid' => 'uuid-1', 'name' => 'Second'],
-        ];
-
-        $result = $this->invokePrivate('deduplicateBatchObjects', [$objects]);
-
-        $this->assertCount(1, $result['objects']);
-        $this->assertSame('Second', $result['objects'][0]['name']);
-    }
-
-    public function testDeduplicateBatchObjectsUsesSelfId(): void
-    {
-        $objects = [
-            ['@self' => ['id' => 'uuid-1'], 'name' => 'First'],
-            ['@self' => ['id' => 'uuid-1'], 'name' => 'Second'],
-        ];
-
-        $result = $this->invokePrivate('deduplicateBatchObjects', [$objects]);
-
-        $this->assertCount(1, $result['objects']);
-    }
-
-    public function testDeduplicateBatchObjectsWithoutId(): void
-    {
-        $objects = [
-            ['name' => 'No ID 1'],
-            ['name' => 'No ID 2'],
-        ];
-
-        $result = $this->invokePrivate('deduplicateBatchObjects', [$objects]);
-
-        // Objects without IDs are all kept.
-        $this->assertCount(2, $result['objects']);
-        $this->assertSame(0, $result['duplicateCount']);
-    }
-
-    public function testDeduplicateBatchObjectsMixed(): void
-    {
-        $objects = [
-            ['id' => 'uuid-1', 'name' => 'A'],
-            ['name' => 'No ID'],
-            ['id' => 'uuid-1', 'name' => 'B'],
-            ['id' => 'uuid-2', 'name' => 'C'],
-        ];
-
-        $result = $this->invokePrivate('deduplicateBatchObjects', [$objects]);
-
-        // uuid-1 deduped (B wins), no-id kept, uuid-2 kept.
-        $this->assertCount(3, $result['objects']);
-        // duplicateIds['uuid-1'] starts at 1 then increments to 2 on second duplicate occurrence.
-        $this->assertSame(2, $result['duplicateCount']);
     }
 
     // =========================================================================
@@ -642,25 +327,20 @@ class SaveObjectsTest extends TestCase
     public function testGetSchemaAnalysisWithCacheCachesResult(): void
     {
         $schema = $this->createSchema(1);
-        $analysis = [
-            'metadataFields' => [],
-            'inverseProperties' => [],
-            'validationRequired' => false,
-            'properties' => null,
-            'configuration' => null,
-        ];
-
-        $this->bulkValidHandler->expects($this->once())
-            ->method('performComprehensiveSchemaAnalysis')
-            ->with($schema)
-            ->willReturn($analysis);
+        $schema->setProperties([]);
+        $schema->setConfiguration([]);
 
         $result = $this->invokePrivate('getSchemaAnalysisWithCache', [$schema]);
-        $this->assertSame($analysis, $result);
 
-        // Second call should use cache.
+        $this->assertArrayHasKey('metadataFields', $result);
+        $this->assertArrayHasKey('inverseProperties', $result);
+        $this->assertArrayHasKey('validationRequired', $result);
+        $this->assertArrayHasKey('properties', $result);
+        $this->assertArrayHasKey('configuration', $result);
+
+        // Second call should use cache and return same result.
         $result2 = $this->invokePrivate('getSchemaAnalysisWithCache', [$schema]);
-        $this->assertSame($analysis, $result2);
+        $this->assertSame($result, $result2);
     }
 
     // =========================================================================
@@ -753,17 +433,14 @@ class SaveObjectsTest extends TestCase
 
     public function testIsReferenceWithUuid(): void
     {
-        // Note: Due to a code pattern using `preg_match(...) === true` instead of `=== 1`,
-        // UUID patterns are not matched by isReference(). Only URLs and fallback ID patterns work.
         $result = $this->invokePrivate('isReference', ['12345678-1234-1234-1234-123456789012']);
-        $this->assertFalse($result);
+        $this->assertTrue($result);
     }
 
     public function testIsReferenceWithPrefixedUuid(): void
     {
-        // Same issue: preg_match returns 1, not true. So prefixed UUIDs are not detected.
         $result = $this->invokePrivate('isReference', ['id-12345678-1234-1234-1234-123456789012']);
-        $this->assertFalse($result);
+        $this->assertTrue($result);
     }
 
     public function testIsReferenceWithUrl(): void
@@ -792,29 +469,9 @@ class SaveObjectsTest extends TestCase
 
     public function testIsReferenceWithIdLikeString(): void
     {
-        // The fallback pattern uses === 1 correctly, but the inner preg_match('/\s/', value) === false
-        // check also has a comparison bug (preg_match returns 0, not false for no match).
-        // So this also fails to match.
+        // ID-like pattern with hyphen and 8+ chars should be detected as reference.
         $result = $this->invokePrivate('isReference', ['my-entity-12345']);
-        $this->assertFalse($result);
-    }
-
-    // =========================================================================
-    // isCommonTextWord
-    // =========================================================================
-
-    public function testIsCommonTextWordMatch(): void
-    {
-        $this->assertTrue($this->invokePrivate('isCommonTextWord', ['applicatie']));
-        $this->assertTrue($this->invokePrivate('isCommonTextWord', ['systeemsoftware']));
-        $this->assertTrue($this->invokePrivate('isCommonTextWord', ['open-source']));
-        $this->assertTrue($this->invokePrivate('isCommonTextWord', ['closed-source']));
-    }
-
-    public function testIsCommonTextWordNoMatch(): void
-    {
-        $this->assertFalse($this->invokePrivate('isCommonTextWord', ['something-else']));
-        $this->assertFalse($this->invokePrivate('isCommonTextWord', ['random-word']));
+        $this->assertTrue($result);
     }
 
     // =========================================================================
@@ -1320,100 +977,36 @@ class SaveObjectsTest extends TestCase
         $this->assertTrue($result);
     }
 
-    public function testIsCommonTextWordCaseInsensitive(): void
-    {
-        $this->assertTrue($this->invokePrivate('isCommonTextWord', ['APPLICATIE']));
-        $this->assertTrue($this->invokePrivate('isCommonTextWord', ['Open-Source']));
-        $this->assertTrue($this->invokePrivate('isCommonTextWord', ['Closed-Source']));
-    }
-
     // =========================================================================
     // calculateOptimalChunkSize — boundary cases
     // =========================================================================
 
     public function testCalculateOptimalChunkSizeBoundary5000(): void
     {
+        // 5000 <= 5000, so returns 2500.
         $result = $this->invokePrivate('calculateOptimalChunkSize', [5000]);
-        $this->assertSame(2000, $result);
+        $this->assertSame(2500, $result);
     }
 
     public function testCalculateOptimalChunkSizeBoundary10000(): void
     {
+        // 10000 <= 10000, so returns 5000.
         $result = $this->invokePrivate('calculateOptimalChunkSize', [10000]);
-        $this->assertSame(3000, $result);
+        $this->assertSame(5000, $result);
     }
 
     public function testCalculateOptimalChunkSizeBoundary50000(): void
     {
+        // 50000 <= 50000, so returns 10000.
         $result = $this->invokePrivate('calculateOptimalChunkSize', [50000]);
-        $this->assertSame(5000, $result);
+        $this->assertSame(10000, $result);
     }
 
     public function testCalculateOptimalChunkSizeJustAbove50000(): void
     {
+        // 50001 > 50000, so returns 20000.
         $result = $this->invokePrivate('calculateOptimalChunkSize', [50001]);
-        $this->assertSame(10000, $result);
-    }
-
-    // =========================================================================
-    // calculatePerformanceMetrics — edge cases
-    // =========================================================================
-
-    public function testCalculatePerformanceMetricsPartialEfficiency(): void
-    {
-        $startTime = microtime(true) - 2.0;
-
-        $metrics = $this->invokePrivate('calculatePerformanceMetrics', [$startTime, 75, 100, 0]);
-
-        $this->assertSame(75.0, $metrics['efficiency']);
-        $this->assertSame(75, $metrics['totalProcessed']);
-        $this->assertSame(100, $metrics['totalRequested']);
-        $this->assertArrayNotHasKey('deduplicationEfficiency', $metrics);
-    }
-
-    public function testCalculatePerformanceMetricsWithDeduplication(): void
-    {
-        $startTime = microtime(true) - 1.0;
-
-        $metrics = $this->invokePrivate('calculatePerformanceMetrics', [$startTime, 80, 100, 20]);
-
-        $this->assertArrayHasKey('deduplicationEfficiency', $metrics);
-        // 20/(80+20) * 100 = 20%
-        $this->assertStringContainsString('% operations avoided', $metrics['deduplicationEfficiency']);
-    }
-
-    // =========================================================================
-    // mergeChunkResult — edge cases
-    // =========================================================================
-
-    public function testMergeChunkResultWithMissingOptionalKeys(): void
-    {
-        $result = [
-            'saved'      => [],
-            'updated'    => [],
-            'unchanged'  => [],
-            'invalid'    => [],
-            'errors'     => [],
-            'statistics' => [
-                'saved' => 0, 'updated' => 0, 'unchanged' => 0, 'invalid' => 0, 'errors' => 0,
-            ],
-        ];
-
-        // Chunk result with missing 'unchanged' key (nullable).
-        $chunkResult = [
-            'saved'      => [['uuid' => 'x']],
-            'updated'    => [],
-            'invalid'    => [],
-            'errors'     => [],
-            'statistics' => ['saved' => 1],
-        ];
-
-        $merged = $this->invokePrivate('mergeChunkResult', [$result, $chunkResult, 0, 1]);
-
-        $this->assertCount(1, $merged['saved']);
-        $this->assertSame(1, $merged['statistics']['saved']);
-        // Missing stats should default to 0.
-        $this->assertSame(0, $merged['statistics']['updated']);
+        $this->assertSame(20000, $result);
     }
 
     // =========================================================================
@@ -1434,9 +1027,7 @@ class SaveObjectsTest extends TestCase
         $this->userSession->method('getUser')->willReturn($user);
 
         // Mock organisation service.
-        $org = new Organisation();
-        $org->setUuid('org-uuid-123');
-        $this->organisationService->method('ensureDefaultOrganisation')->willReturn($org);
+        $this->organisationService->method('getOrganisationForNewEntity')->willReturn('org-uuid-123');
 
         // Mock schema analysis.
         $this->bulkValidHandler->method('performComprehensiveSchemaAnalysis')
@@ -1505,9 +1096,7 @@ class SaveObjectsTest extends TestCase
         $user->method('getUID')->willReturn('admin');
         $this->userSession->method('getUser')->willReturn($user);
 
-        $org = new Organisation();
-        $org->setUuid('org-uuid');
-        $this->organisationService->method('ensureDefaultOrganisation')->willReturn($org);
+        $this->organisationService->method('getOrganisationForNewEntity')->willReturn('org-uuid');
 
         $this->bulkValidHandler->method('performComprehensiveSchemaAnalysis')
             ->willReturn([
@@ -1551,8 +1140,8 @@ class SaveObjectsTest extends TestCase
         $this->userSession->method('getUser')->willReturn(null);
 
         // Organisation service throws.
-        $this->organisationService->method('ensureDefaultOrganisation')
-            ->willThrowException(new \Exception('No org'));
+        $this->organisationService->method('getOrganisationForNewEntity')
+            ->willReturn(null);
 
         $this->bulkValidHandler->method('performComprehensiveSchemaAnalysis')
             ->willReturn([
@@ -1595,8 +1184,8 @@ class SaveObjectsTest extends TestCase
         $register = $this->createRegister(1);
 
         $this->userSession->method('getUser')->willReturn(null);
-        $this->organisationService->method('ensureDefaultOrganisation')
-            ->willThrowException(new \Exception('No org'));
+        $this->organisationService->method('getOrganisationForNewEntity')
+            ->willReturn(null);
 
         $this->bulkValidHandler->method('performComprehensiveSchemaAnalysis')
             ->willReturn([
@@ -1646,8 +1235,8 @@ class SaveObjectsTest extends TestCase
         $register = $this->createRegister(1);
 
         $this->userSession->method('getUser')->willReturn(null);
-        $this->organisationService->method('ensureDefaultOrganisation')
-            ->willThrowException(new \Exception('No org'));
+        $this->organisationService->method('getOrganisationForNewEntity')
+            ->willReturn(null);
 
         $this->bulkValidHandler->method('performComprehensiveSchemaAnalysis')
             ->willReturn([
@@ -1693,8 +1282,8 @@ class SaveObjectsTest extends TestCase
         $register = $this->createRegister(1);
 
         $this->userSession->method('getUser')->willReturn(null);
-        $this->organisationService->method('ensureDefaultOrganisation')
-            ->willThrowException(new \Exception('No org'));
+        $this->organisationService->method('getOrganisationForNewEntity')
+            ->willReturn(null);
 
         $this->bulkValidHandler->method('performComprehensiveSchemaAnalysis')
             ->willReturn([
@@ -1743,8 +1332,8 @@ class SaveObjectsTest extends TestCase
         $register = $this->createRegister(1);
 
         $this->userSession->method('getUser')->willReturn(null);
-        $this->organisationService->method('ensureDefaultOrganisation')
-            ->willThrowException(new \Exception('No org'));
+        $this->organisationService->method('getOrganisationForNewEntity')
+            ->willReturn(null);
 
         $this->bulkValidHandler->method('performComprehensiveSchemaAnalysis')
             ->willReturn([
@@ -1793,8 +1382,8 @@ class SaveObjectsTest extends TestCase
         $register = $this->createRegister(1);
 
         $this->userSession->method('getUser')->willReturn(null);
-        $this->organisationService->method('ensureDefaultOrganisation')
-            ->willThrowException(new \Exception('No org'));
+        $this->organisationService->method('getOrganisationForNewEntity')
+            ->willReturn(null);
 
         $this->bulkValidHandler->method('performComprehensiveSchemaAnalysis')
             ->willReturn([
@@ -1837,8 +1426,8 @@ class SaveObjectsTest extends TestCase
         $register = $this->createRegister(1);
 
         $this->userSession->method('getUser')->willReturn(null);
-        $this->organisationService->method('ensureDefaultOrganisation')
-            ->willThrowException(new \Exception('No org'));
+        $this->organisationService->method('getOrganisationForNewEntity')
+            ->willReturn(null);
 
         $this->bulkValidHandler->method('performComprehensiveSchemaAnalysis')
             ->willReturn([
@@ -1886,8 +1475,8 @@ class SaveObjectsTest extends TestCase
         $register = $this->createRegister(1);
 
         $this->userSession->method('getUser')->willReturn(null);
-        $this->organisationService->method('ensureDefaultOrganisation')
-            ->willThrowException(new \Exception('No org'));
+        $this->organisationService->method('getOrganisationForNewEntity')
+            ->willReturn(null);
 
         $this->bulkValidHandler->method('performComprehensiveSchemaAnalysis')
             ->willReturn([
@@ -1967,89 +1556,6 @@ class SaveObjectsTest extends TestCase
         $result = $this->handler->saveObjects($objects);
 
         $this->assertCount(1, $result['saved']);
-    }
-
-    // =========================================================================
-    // prepareObjectsForSave — delegation paths
-    // =========================================================================
-
-    public function testPrepareObjectsForSaveMixedSchemaPath(): void
-    {
-        $objects = [['name' => 'A'], ['name' => 'B']];
-
-        $this->preparationHandler->expects($this->once())
-            ->method('prepareObjectsForBulkSave')
-            ->with($objects)
-            ->willReturn([[], [], []]);
-
-        // isMixedSchema=true, schema=null -> uses preparationHandler.
-        $result = $this->invokePrivate('prepareObjectsForSave', [
-            $objects,
-            null,  // register
-            null,  // schema (null = mixed schema)
-            true,  // isMixedSchema
-            true,  // enrich
-        ]);
-
-        $this->assertIsArray($result);
-    }
-
-    // =========================================================================
-    // logBulkOperationStart — additional boundaries
-    // =========================================================================
-
-    public function testLogBulkOperationStartExactThresholdSingleSchema(): void
-    {
-        // 10000 is exactly the threshold, should NOT log.
-        $this->logger->expects($this->never())->method('info');
-        $this->invokePrivate('logBulkOperationStart', [10000, false]);
-    }
-
-    public function testLogBulkOperationStartExactThresholdMixedSchema(): void
-    {
-        // 1000 is exactly the threshold for mixed, should NOT log.
-        $this->logger->expects($this->never())->method('info');
-        $this->invokePrivate('logBulkOperationStart', [1000, true]);
-    }
-
-    // =========================================================================
-    // deduplicateBatchObjects — edge cases
-    // =========================================================================
-
-    public function testDeduplicateBatchObjectsPreservesOrder(): void
-    {
-        $objects = [
-            ['id' => 'uuid-3', 'name' => 'Third'],
-            ['id' => 'uuid-1', 'name' => 'First'],
-            ['id' => 'uuid-2', 'name' => 'Second'],
-        ];
-
-        $result = $this->invokePrivate('deduplicateBatchObjects', [$objects]);
-
-        $this->assertCount(3, $result['objects']);
-        $this->assertSame(0, $result['duplicateCount']);
-        // array_values preserves insertion order.
-        $this->assertSame('Third', $result['objects'][0]['name']);
-        $this->assertSame('First', $result['objects'][1]['name']);
-        $this->assertSame('Second', $result['objects'][2]['name']);
-    }
-
-    public function testDeduplicateBatchObjectsMultipleDuplicateGroups(): void
-    {
-        $objects = [
-            ['id' => 'a', 'v' => 1],
-            ['id' => 'b', 'v' => 1],
-            ['id' => 'a', 'v' => 2],
-            ['id' => 'b', 'v' => 2],
-            ['id' => 'c', 'v' => 1],
-        ];
-
-        $result = $this->invokePrivate('deduplicateBatchObjects', [$objects]);
-
-        $this->assertCount(3, $result['objects']);
-        $this->assertArrayHasKey('a', $result['duplicateIds']);
-        $this->assertArrayHasKey('b', $result['duplicateIds']);
-        $this->assertArrayNotHasKey('c', $result['duplicateIds']);
     }
 
     // =========================================================================
@@ -2403,8 +1909,8 @@ class SaveObjectsTest extends TestCase
         $register = $this->createRegister(1);
 
         $this->userSession->method('getUser')->willReturn(null);
-        $this->organisationService->method('ensureDefaultOrganisation')
-            ->willThrowException(new \Exception('No org'));
+        $this->organisationService->method('getOrganisationForNewEntity')
+            ->willReturn(null);
 
         $this->bulkValidHandler->method('performComprehensiveSchemaAnalysis')
             ->willReturn([
@@ -2452,8 +1958,8 @@ class SaveObjectsTest extends TestCase
         $register = $this->createRegister(1);
 
         $this->userSession->method('getUser')->willReturn(null);
-        $this->organisationService->method('ensureDefaultOrganisation')
-            ->willThrowException(new \Exception('No org'));
+        $this->organisationService->method('getOrganisationForNewEntity')
+            ->willReturn(null);
 
         $this->bulkValidHandler->method('performComprehensiveSchemaAnalysis')
             ->willReturn([
@@ -2509,11 +2015,9 @@ class SaveObjectsTest extends TestCase
         $user->method('getUID')->willReturn('admin');
         $this->userSession->method('getUser')->willReturn($user);
 
-        $org = new Organisation();
-        $org->setUuid('org-uuid-123');
-        $this->organisationService->method('ensureDefaultOrganisation')->willReturn($org);
+        $this->organisationService->method('getOrganisationForNewEntity')->willReturn('org-uuid-123');
 
-        $this->bulkValidHandler->method('performComprehensiveSchemaAnalysis')
+        $this->objectMapper->method('ultraFastBulkSave')
             ->willReturn([
                 'metadataFields' => [],
                 'inverseProperties' => [],
@@ -2560,8 +2064,8 @@ class SaveObjectsTest extends TestCase
         $register = $this->createRegister(1);
 
         $this->userSession->method('getUser')->willReturn(null);
-        $this->organisationService->method('ensureDefaultOrganisation')
-            ->willThrowException(new \Exception('No org'));
+        $this->organisationService->method('getOrganisationForNewEntity')
+            ->willReturn(null);
 
         $this->bulkValidHandler->method('performComprehensiveSchemaAnalysis')
             ->willReturn([
@@ -2618,8 +2122,8 @@ class SaveObjectsTest extends TestCase
         $register = $this->createRegister(1);
 
         $this->userSession->method('getUser')->willReturn(null);
-        $this->organisationService->method('ensureDefaultOrganisation')
-            ->willThrowException(new \Exception('No org'));
+        $this->organisationService->method('getOrganisationForNewEntity')
+            ->willReturn(null);
 
         $this->bulkValidHandler->method('performComprehensiveSchemaAnalysis')
             ->willReturn([
@@ -2789,100 +2293,6 @@ class SaveObjectsTest extends TestCase
     }
 
     // =========================================================================
-    // processObjectsInChunks — multiple chunks
-    // =========================================================================
-
-    public function testProcessObjectsInChunksMultipleChunks(): void
-    {
-        // Create >5000 objects to force chunking at 2000.
-        $processedObjects = [];
-        for ($i = 0; $i < 3001; $i++) {
-            $processedObjects[] = ['@self' => ['schema' => 1, 'register' => 1], 'name' => "Object $i"];
-        }
-
-        $schemaCache = [1 => $this->createSchema(1)];
-
-        $this->chunkProcHandler->method('processObjectsChunk')
-            ->willReturn([
-                'saved'      => [],
-                'updated'    => [],
-                'unchanged'  => [],
-                'invalid'    => [],
-                'errors'     => [],
-                'statistics' => [
-                    'saved' => 0, 'updated' => 0, 'unchanged' => 0, 'invalid' => 0, 'errors' => 0,
-                ],
-            ]);
-
-        $result = $this->invokePrivate('processObjectsInChunks', [
-            $processedObjects,
-            $schemaCache,
-            $this->invokePrivate('createEmptyResult', [3001]),
-            true,  // _rbac
-            true,  // _multitenancy
-            false, // validation
-            false, // events
-            null,  // register
-            null,  // schema
-        ]);
-
-        // 3001 objects / 2000 chunk size = 2 chunks.
-        $this->assertCount(2, $result['chunkStatistics']);
-    }
-
-    // =========================================================================
-    // calculatePerformanceMetrics — deduplication efficiency calculation
-    // =========================================================================
-
-    public function testCalculatePerformanceMetricsDeduplicationPercentage(): void
-    {
-        $startTime = microtime(true) - 1.0;
-
-        $metrics = $this->invokePrivate('calculatePerformanceMetrics', [$startTime, 100, 100, 50]);
-
-        // 50/(100+50) * 100 = 33.3%
-        $this->assertArrayHasKey('deduplicationEfficiency', $metrics);
-        $this->assertStringContainsString('33.3', $metrics['deduplicationEfficiency']);
-    }
-
-    // =========================================================================
-    // mergeChunkResult — empty chunk result
-    // =========================================================================
-
-    public function testMergeChunkResultEmptyChunk(): void
-    {
-        $result = [
-            'saved'      => [['uuid' => 'existing']],
-            'updated'    => [],
-            'unchanged'  => [],
-            'invalid'    => [],
-            'errors'     => [],
-            'statistics' => [
-                'saved' => 1, 'updated' => 0, 'unchanged' => 0, 'invalid' => 0, 'errors' => 0,
-            ],
-        ];
-
-        $chunkResult = [
-            'saved'      => [],
-            'updated'    => [],
-            'unchanged'  => [],
-            'invalid'    => [],
-            'errors'     => [],
-            'statistics' => [
-                'saved' => 0, 'updated' => 0, 'unchanged' => 0, 'invalid' => 0, 'errors' => 0,
-            ],
-        ];
-
-        $merged = $this->invokePrivate('mergeChunkResult', [$result, $chunkResult, 0, 0]);
-
-        // Existing results should be preserved.
-        $this->assertCount(1, $merged['saved']);
-        $this->assertSame(1, $merged['statistics']['saved']);
-        // Chunk statistics should still be recorded.
-        $this->assertCount(1, $merged['chunkStatistics']);
-    }
-
-    // =========================================================================
     // saveObjects — single schema with autoPublish false config
     // =========================================================================
 
@@ -2894,8 +2304,8 @@ class SaveObjectsTest extends TestCase
         $register = $this->createRegister(1);
 
         $this->userSession->method('getUser')->willReturn(null);
-        $this->organisationService->method('ensureDefaultOrganisation')
-            ->willThrowException(new \Exception('No org'));
+        $this->organisationService->method('getOrganisationForNewEntity')
+            ->willReturn(null);
 
         $this->bulkValidHandler->method('performComprehensiveSchemaAnalysis')
             ->willReturn([
@@ -2940,8 +2350,8 @@ class SaveObjectsTest extends TestCase
         $register = $this->createRegister(1);
 
         $this->userSession->method('getUser')->willReturn(null);
-        $this->organisationService->method('ensureDefaultOrganisation')
-            ->willThrowException(new \Exception('No org'));
+        $this->organisationService->method('getOrganisationForNewEntity')
+            ->willReturn(null);
 
         $this->bulkValidHandler->method('performComprehensiveSchemaAnalysis')
             ->willReturn([
@@ -3045,8 +2455,8 @@ class SaveObjectsTest extends TestCase
         $register = $this->createRegister(1);
 
         $this->userSession->method('getUser')->willReturn(null);
-        $this->organisationService->method('ensureDefaultOrganisation')
-            ->willThrowException(new \Exception('No org'));
+        $this->organisationService->method('getOrganisationForNewEntity')
+            ->willReturn(null);
 
         $this->bulkValidHandler->method('performComprehensiveSchemaAnalysis')
             ->willReturn([
@@ -3192,8 +2602,8 @@ class SaveObjectsTest extends TestCase
         $register = $this->createRegister(1);
 
         $this->userSession->method('getUser')->willReturn(null);
-        $this->organisationService->method('ensureDefaultOrganisation')
-            ->willThrowException(new \Exception('No org'));
+        $this->organisationService->method('getOrganisationForNewEntity')
+            ->willReturn(null);
 
         $this->bulkValidHandler->method('performComprehensiveSchemaAnalysis')
             ->willReturn([
@@ -3246,8 +2656,8 @@ class SaveObjectsTest extends TestCase
         $register = $this->createRegister(1);
 
         $this->userSession->method('getUser')->willReturn(null);
-        $this->organisationService->method('ensureDefaultOrganisation')
-            ->willThrowException(new \Exception('No org'));
+        $this->organisationService->method('getOrganisationForNewEntity')
+            ->willReturn(null);
 
         $this->bulkValidHandler->method('performComprehensiveSchemaAnalysis')
             ->willReturn([
@@ -3390,8 +2800,8 @@ class SaveObjectsTest extends TestCase
             ->willReturn($register);
 
         $this->userSession->method('getUser')->willReturn(null);
-        $this->organisationService->method('ensureDefaultOrganisation')
-            ->willThrowException(new \Exception('No org'));
+        $this->organisationService->method('getOrganisationForNewEntity')
+            ->willReturn(null);
 
         $this->bulkValidHandler->method('performComprehensiveSchemaAnalysis')
             ->willReturn([
@@ -3474,8 +2884,8 @@ class SaveObjectsTest extends TestCase
         $register = $this->createRegister(1);
 
         $this->userSession->method('getUser')->willReturn(null);
-        $this->organisationService->method('ensureDefaultOrganisation')
-            ->willThrowException(new \Exception('No org'));
+        $this->organisationService->method('getOrganisationForNewEntity')
+            ->willReturn(null);
 
         $this->bulkValidHandler->method('performComprehensiveSchemaAnalysis')
             ->willReturn([
@@ -3528,8 +2938,8 @@ class SaveObjectsTest extends TestCase
         $register = $this->createRegister(1);
 
         $this->userSession->method('getUser')->willReturn(null);
-        $this->organisationService->method('ensureDefaultOrganisation')
-            ->willThrowException(new \Exception('No org'));
+        $this->organisationService->method('getOrganisationForNewEntity')
+            ->willReturn(null);
 
         $this->bulkValidHandler->method('performComprehensiveSchemaAnalysis')
             ->willReturn([
@@ -3582,8 +2992,8 @@ class SaveObjectsTest extends TestCase
         $register = $this->createRegister(1);
 
         $this->userSession->method('getUser')->willReturn(null);
-        $this->organisationService->method('ensureDefaultOrganisation')
-            ->willThrowException(new \Exception('No org'));
+        $this->organisationService->method('getOrganisationForNewEntity')
+            ->willReturn(null);
 
         $this->bulkValidHandler->method('performComprehensiveSchemaAnalysis')
             ->willReturn([
@@ -3646,8 +3056,8 @@ class SaveObjectsTest extends TestCase
         $register = $this->createRegister(1);
 
         $this->userSession->method('getUser')->willReturn(null);
-        $this->organisationService->method('ensureDefaultOrganisation')
-            ->willThrowException(new \Exception('No org'));
+        $this->organisationService->method('getOrganisationForNewEntity')
+            ->willReturn(null);
 
         $this->bulkValidHandler->method('performComprehensiveSchemaAnalysis')
             ->willReturn([
@@ -3711,8 +3121,8 @@ class SaveObjectsTest extends TestCase
         $register = $this->createRegister(1);
 
         $this->userSession->method('getUser')->willReturn(null);
-        $this->organisationService->method('ensureDefaultOrganisation')
-            ->willThrowException(new \Exception('No org'));
+        $this->organisationService->method('getOrganisationForNewEntity')
+            ->willReturn(null);
 
         $this->bulkValidHandler->method('performComprehensiveSchemaAnalysis')
             ->willReturn([

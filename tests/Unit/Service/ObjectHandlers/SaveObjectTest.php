@@ -173,6 +173,13 @@ class SaveObjectTest extends TestCase
         $this->registerMapper->method('find')->willReturn($this->mockRegister);
         $this->registerMapper->method('findAll')->willReturn([$this->mockRegister]);
 
+        // Create TranslationHandler mock that passes through data.
+        $translationHandler = $this->createMock(TranslationHandler::class);
+        $translationHandler->method('normalizeTranslationsForSave')
+            ->willReturnCallback(function (array $objectData) {
+                return $objectData;
+            });
+
         // Create SaveObject instance.
         $this->saveObject = new SaveObject(
             objectEntityMapper: $this->objectEntityMapper,
@@ -190,7 +197,7 @@ class SaveObjectTest extends TestCase
             settingsService: $this->settingsService,
             propertyRbacHandler: $this->propertyRbacHandler,
             computedFieldHandler: $this->createMock(ComputedFieldHandler::class),
-            translationHandler: $this->createMock(TranslationHandler::class),
+            translationHandler: $translationHandler,
             logger: $this->logger,
             tmloService: $this->createMock(TmloService::class),
             arrayLoader: new ArrayLoader(),

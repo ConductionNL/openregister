@@ -52,6 +52,11 @@ class ChatControllerTest extends TestCase
         $this->db = $this->createMock(IDBConnection::class);
         $this->logger = $this->createMock(LoggerInterface::class);
 
+        $l10n = $this->createMock(\OCP\IL10N::class);
+        $l10n->method('t')->willReturnCallback(function (string $text) {
+            return $text;
+        });
+
         $this->controller = new ChatController(
             'openregister',
             $this->request,
@@ -63,7 +68,7 @@ class ChatControllerTest extends TestCase
             $this->organisationService,
             $this->db,
             $this->logger,
-            $this->createMock(\OCP\IL10N::class),
+            $l10n,
             'testuser'
         );
     }

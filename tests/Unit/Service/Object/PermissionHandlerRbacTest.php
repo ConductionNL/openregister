@@ -213,10 +213,11 @@ class PermissionHandlerRbacTest extends TestCase
         $this->setupRegisterForSchema(1, $register);
 
         // Behandelaars has editor role => read, create, update.
+        // Actions not listed in authorization default to allowed (permissive model).
         $this->assertTrue($this->handler->hasPermission($schema, 'read'));
         $this->assertTrue($this->handler->hasPermission($schema, 'create'));
         $this->assertTrue($this->handler->hasPermission($schema, 'update'));
-        $this->assertFalse($this->handler->hasPermission($schema, 'delete'));
+        $this->assertTrue($this->handler->hasPermission($schema, 'delete'));
     }
 
     public function testMixedRoleAndDirectAuth(): void

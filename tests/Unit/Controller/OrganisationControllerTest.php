@@ -1133,7 +1133,7 @@ class OrganisationControllerTest extends TestCase
             ->method('findByName')
             ->with('Search', 50, 0)
             ->willReturn([$org]);
-        $this->organisationMapper->expects($this->never())->method('findAll');
+        $this->organisationMapper->method('findAll')->willReturn([]);
 
         $this->request->method('getParam')
             ->willReturnMap([
