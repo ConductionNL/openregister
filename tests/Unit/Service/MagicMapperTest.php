@@ -35,7 +35,6 @@ use PHPUnit\Framework\TestCase;
 use PHPUnit\Framework\MockObject\MockObject;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Db\UnifiedObjectMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Db\Register;
@@ -129,9 +128,9 @@ class MagicMapperTest extends TestCase
     /**
      * Mock object entity mapper
      *
-     * @var UnifiedObjectMapper&MockObject
+     * @var MagicMapper&MockObject
      */
-    private UnifiedObjectMapper $mockObjectMapper;
+    private MagicMapper $mockObjectMapper;
 
     /**
      * Mock schema mapper
@@ -194,7 +193,7 @@ class MagicMapperTest extends TestCase
 
         // Create mock dependencies.
         $this->mockDb = $this->createMock(IDBConnection::class);
-        $this->mockObjectMapper = $this->createMock(UnifiedObjectMapper::class);
+        $this->mockObjectMapper = $this->createMock(MagicMapper::class);
         $this->mockSchemaMapper = $this->createMock(SchemaMapper::class);
         $this->mockRegisterMapper = $this->createMock(RegisterMapper::class);
         $this->mockConfig = $this->createMock(IConfig::class);
