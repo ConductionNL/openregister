@@ -16,7 +16,7 @@ use DateTime;
 use OCA\OpenRegister\Db\AuditTrail;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Db\UnifiedObjectMapper;
+use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
@@ -31,7 +31,7 @@ use Symfony\Component\Uid\Uuid;
 class AuditTrailMapperIntegrationTest extends TestCase
 {
     private AuditTrailMapper $mapper;
-    private UnifiedObjectMapper $objectMapper;
+    private MagicMapper $objectMapper;
     private RegisterMapper $registerMapper;
     private SchemaMapper $schemaMapper;
 
@@ -48,7 +48,7 @@ class AuditTrailMapperIntegrationTest extends TestCase
     {
         parent::setUp();
         $this->mapper = \OC::$server->get(AuditTrailMapper::class);
-        $this->objectMapper = \OC::$server->get(UnifiedObjectMapper::class);
+        $this->objectMapper = \OC::$server->get(MagicMapper::class);
         $this->registerMapper = \OC::$server->get(RegisterMapper::class);
         $this->schemaMapper = \OC::$server->get(SchemaMapper::class);
     }

@@ -67,7 +67,10 @@ class Version1Date20250828120000 extends SimpleMigrationStep
      */
     public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper
     {
-        // @var ISchemaWrapper $schema
+        /*
+         * @var ISchemaWrapper $schema
+         */
+
         $schema = $schemaClosure();
 
         if ($schema->hasTable('openregister_objects') === false) {

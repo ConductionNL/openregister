@@ -7,7 +7,7 @@ namespace Unit\Controller;
 use Exception;
 use OCA\OpenRegister\Controller\SchemasController;
 use OCA\OpenRegister\Db\AuditTrailMapper;
-use OCA\OpenRegister\Db\UnifiedObjectMapper;
+use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\DownloadService;
@@ -39,7 +39,7 @@ class SchemasControllerTest extends TestCase
     private IRequest&MockObject $request;
     private IAppConfig&MockObject $config;
     private SchemaMapper&MockObject $schemaMapper;
-    private UnifiedObjectMapper&MockObject $objectMapper;
+    private MagicMapper&MockObject $objectMapper;
     private DownloadService&MockObject $downloadService;
     private UploadService&MockObject $uploadService;
     private AuditTrailMapper&MockObject $auditTrailMapper;
@@ -56,7 +56,7 @@ class SchemasControllerTest extends TestCase
         $this->request = $this->createMock(IRequest::class);
         $this->config = $this->createMock(IAppConfig::class);
         $this->schemaMapper = $this->createMock(SchemaMapper::class);
-        $this->objectMapper = $this->createMock(UnifiedObjectMapper::class);
+        $this->objectMapper = $this->createMock(MagicMapper::class);
         $this->downloadService = $this->createMock(DownloadService::class);
         $this->uploadService = $this->createMock(UploadService::class);
         $this->auditTrailMapper = $this->createMock(AuditTrailMapper::class);
