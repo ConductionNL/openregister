@@ -398,6 +398,12 @@ class ConfigurationsController extends Controller
             $configuration->setOwner($this->request->getParam('owner') ?? $this->userId);
             $configuration->setCreated(new DateTime());
             $configuration->setUpdated(new DateTime());
+            $configuration->setRegisters([]);
+            $configuration->setSchemas([]);
+            $configuration->setObjects([]);
+
+            // Persist the configuration entity so it appears in the configurations list.
+            $configuration = $this->configurationMapper->insert($configuration);
 
             // Import the data.
             $force  = $this->request->getParam('force') === 'true' || $this->request->getParam('force') === true;
@@ -409,6 +415,16 @@ class ConfigurationsController extends Controller
                 version: $this->request->getParam('version'),
                 force: $force
             );
+
+            // Link the imported registers, schemas and objects to the configuration.
+            $registerIds = array_map(static fn($r) => $r->getId(), $result['registers']);
+            $schemaIds   = array_map(static fn($s) => $s->getId(), $result['schemas']);
+            $objectIds   = array_map(static fn($o) => $o->getId(), $result['objects']);
+
+            $configuration->setRegisters(array_values(array_unique($registerIds)));
+            $configuration->setSchemas(array_values(array_unique($schemaIds)));
+            $configuration->setObjects(array_values(array_unique($objectIds)));
+            $this->configurationMapper->update($configuration);
 
             return new JSONResponse(
                 data: [

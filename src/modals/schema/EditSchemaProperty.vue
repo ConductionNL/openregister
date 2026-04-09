@@ -1175,32 +1175,32 @@ export default {
 
 <style>
 .modal__content {
-  margin: var(--OR-margin-50);
-  text-align: center;
+	margin: var(--OR-margin-50);
+	text-align: center;
 }
 
 .form-group .group {
-    margin-block-end: 2rem;
+	margin-block-end: 2rem;
 }
 
 .zaakDetailsContainer {
-  margin-block-start: var(--OR-margin-20);
-  margin-inline-start: var(--OR-margin-20);
-  margin-inline-end: var(--OR-margin-20);
+	margin-block-start: var(--OR-margin-20);
+	margin-inline-start: var(--OR-margin-20);
+	margin-inline-end: var(--OR-margin-20);
 }
 
 .success {
-  color: green;
+	color: green;
 }
 
 .weightNormal {
-    font-weight: normal;
+	font-weight: normal;
 }
 
 .ASP-selectContainer {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 1rem;
+	display: grid;
+	grid-template-columns: 1fr 1fr;
+	gap: 1rem;
 }
 
 .objectConfigurationContainer,
