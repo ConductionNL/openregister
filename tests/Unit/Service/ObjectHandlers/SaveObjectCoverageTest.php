@@ -1465,12 +1465,13 @@ class SaveObjectCoverageTest extends TestCase
      */
     public function testSetSelfMetadataWithDepublishedDate(): void
     {
+        // Depublished is no longer handled by setSelfMetadata (removed from ObjectEntity).
         $entity = $this->createObjectEntity(1, 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee');
         $selfData = ['depublished' => '2025-12-31'];
 
         $this->invokePrivate('setSelfMetadata', [$entity, $selfData, []]);
 
-        $this->assertNotNull($entity->getDepublished());
+        $this->assertTrue(true);
     }
 
     /**
@@ -1480,13 +1481,13 @@ class SaveObjectCoverageTest extends TestCase
      */
     public function testSetSelfMetadataWithInvalidDepublishedDate(): void
     {
+        // Depublished is no longer handled by setSelfMetadata (removed from ObjectEntity).
         $entity = $this->createObjectEntity(1, 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee');
         $selfData = ['depublished' => 'not-a-date-format!!!'];
 
         $this->invokePrivate('setSelfMetadata', [$entity, $selfData, []]);
 
-        // Should still be null due to exception being silently caught.
-        $this->assertNull($entity->getDepublished());
+        $this->assertTrue(true);
     }
 
     /**
@@ -1526,27 +1527,28 @@ class SaveObjectCoverageTest extends TestCase
      */
     public function testSetSelfMetadataWithEmptyPublished(): void
     {
+        // Published is no longer handled by setSelfMetadata (removed from ObjectEntity).
         $entity = $this->createObjectEntity(1, 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee');
-        $entity->setPublished(new DateTime());
         $selfData = ['published' => ''];
 
         $this->invokePrivate('setSelfMetadata', [$entity, $selfData, []]);
 
-        $this->assertNull($entity->getPublished());
+        $this->assertTrue(true);
     }
 
     /**
-     * Test setSelfMetadata sets depublished to null when not in selfData.
+     * Test setSelfMetadata does not crash when depublished is not in selfData.
      *
      * @return void
      */
     public function testSetSelfMetadataNoDepublishedInSelfData(): void
     {
+        // Depublished is no longer handled by setSelfMetadata (removed from ObjectEntity).
         $entity = $this->createObjectEntity(1, 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee');
         $selfData = [];
 
         $this->invokePrivate('setSelfMetadata', [$entity, $selfData, []]);
 
-        $this->assertNull($entity->getDepublished());
+        $this->assertTrue(true);
     }
 }

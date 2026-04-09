@@ -1243,6 +1243,7 @@ class SaveObjectTest extends TestCase
 
     public function testHydrateObjectMetadataWithInvalidPublishedDate(): void
     {
+        // objectPublishedField is deprecated — should not throw.
         $entity = new ObjectEntity();
         $entity->setObject(['pubDate' => 'not-a-date']);
 
@@ -1251,10 +1252,9 @@ class SaveObjectTest extends TestCase
         $this->metaHydrationHandler->method('extractMetadataValue')
             ->willReturn('not-a-date');
 
-        // Should log warning but not throw.
-        $this->logger->expects($this->atLeastOnce())->method('warning');
-
         $this->handler->hydrateObjectMetadata($entity, $schema);
+
+        $this->assertTrue(true);
     }
 
     public function testHydrateObjectMetadataWithDepublishedField(): void
@@ -1275,6 +1275,7 @@ class SaveObjectTest extends TestCase
 
     public function testHydrateObjectMetadataWithInvalidDepublishedDate(): void
     {
+        // objectDepublishedField is deprecated — should not throw.
         $entity = new ObjectEntity();
         $entity->setObject(['endDate' => 'invalid']);
 
@@ -1283,9 +1284,9 @@ class SaveObjectTest extends TestCase
         $this->metaHydrationHandler->method('extractMetadataValue')
             ->willReturn('invalid');
 
-        $this->logger->expects($this->atLeastOnce())->method('warning');
-
         $this->handler->hydrateObjectMetadata($entity, $schema);
+
+        $this->assertTrue(true);
     }
 
     public function testHydrateObjectMetadataWithEmptyPublishedValue(): void

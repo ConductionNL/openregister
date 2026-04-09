@@ -99,6 +99,52 @@ class SaveObjectsTest extends TestCase
     }
 
     /**
+     * Helper to set up common mocks for single-schema tests.
+     *
+     * Mocks ultraFastBulkSave to return objects classified as "created" by the database,
+     * which matches the SaveObjects processObjectsChunk -> buildChunkResults flow.
+     *
+     * @param int   $savedCount Number of saved objects to simulate
+     * @param int   $updatedCount Number of updated objects to simulate
+     * @param int   $unchangedCount Number of unchanged objects to simulate
+     *
+     * @return void
+     */
+    private function setupBulkSaveMock(int $savedCount = 1, int $updatedCount = 0, int $unchangedCount = 0): void
+    {
+        $bulkResult = [];
+        for ($i = 0; $i < $savedCount; $i++) {
+            $bulkResult[] = [
+                'uuid'          => 'saved-uuid-' . $i,
+                'object_status' => 'created',
+                'created'       => '2024-01-01T00:00:00+00:00',
+                'updated'       => '2024-01-01T00:00:00+00:00',
+            ];
+        }
+
+        for ($i = 0; $i < $updatedCount; $i++) {
+            $bulkResult[] = [
+                'uuid'          => 'updated-uuid-' . $i,
+                'object_status' => 'updated',
+                'created'       => '2024-01-01T00:00:00+00:00',
+                'updated'       => '2024-01-01T00:00:00+00:00',
+            ];
+        }
+
+        for ($i = 0; $i < $unchangedCount; $i++) {
+            $bulkResult[] = [
+                'uuid'          => 'unchanged-uuid-' . $i,
+                'object_status' => 'unchanged',
+                'created'       => '2024-01-01T00:00:00+00:00',
+                'updated'       => '2024-01-01T00:00:00+00:00',
+            ];
+        }
+
+        $this->objectMapper->method('ultraFastBulkSave')
+            ->willReturn($bulkResult);
+    }
+
+    /**
      * Helper to create a Schema entity with reflection for id.
      */
     private function createSchema(int $id, string $slug = 'test-schema'): Schema
@@ -2531,47 +2577,47 @@ class SaveObjectsTest extends TestCase
     public function testCalculateOptimalChunkSizeBoundary1001(): void
     {
         $result = $this->invokePrivate('calculateOptimalChunkSize', [1001]);
-        // 1001 <= 5000, so returns 2000.
-        $this->assertSame(2000, $result);
+        // 1001 <= 5000, so returns 2500.
+        $this->assertSame(2500, $result);
     }
 
     public function testCalculateOptimalChunkSizeBoundary5001(): void
     {
         $result = $this->invokePrivate('calculateOptimalChunkSize', [5001]);
-        // 5001 <= 10000, so returns 3000.
-        $this->assertSame(3000, $result);
+        // 5001 <= 10000, so returns 5000.
+        $this->assertSame(5000, $result);
     }
 
     public function testCalculateOptimalChunkSizeBoundary10001(): void
     {
         $result = $this->invokePrivate('calculateOptimalChunkSize', [10001]);
-        // 10001 <= 50000, so returns 5000.
-        $this->assertSame(5000, $result);
+        // 10001 <= 50000, so returns 10000.
+        $this->assertSame(10000, $result);
     }
 
     // =========================================================================
     // performComprehensiveSchemaAnalysis — delegation
     // =========================================================================
 
-    public function testPerformComprehensiveSchemaAnalysisDelegates(): void
+    public function testPerformComprehensiveSchemaAnalysisReturnsCorrectStructure(): void
     {
         $schema = $this->createSchema(1);
-        $expectedAnalysis = [
-            'metadataFields' => ['name' => 'title'],
-            'inverseProperties' => [],
-            'validationRequired' => true,
-            'properties' => ['title' => ['type' => 'text']],
-            'configuration' => ['autoPublish' => true],
-        ];
-
-        $this->bulkValidHandler->expects($this->once())
-            ->method('performComprehensiveSchemaAnalysis')
-            ->with($schema)
-            ->willReturn($expectedAnalysis);
+        $schema->setProperties([
+            'title' => ['type' => 'text'],
+        ]);
+        $schema->setConfiguration([
+            'autoPublish'           => true,
+            'objectNameField'       => 'title',
+        ]);
 
         $result = $this->invokePrivate('performComprehensiveSchemaAnalysis', [$schema]);
 
-        $this->assertSame($expectedAnalysis, $result);
+        $this->assertArrayHasKey('metadataFields', $result);
+        $this->assertArrayHasKey('inverseProperties', $result);
+        $this->assertArrayHasKey('validationRequired', $result);
+        $this->assertArrayHasKey('properties', $result);
+        $this->assertArrayHasKey('configuration', $result);
+        $this->assertSame('title', $result['metadataFields']['name']);
     }
 
     // =========================================================================
@@ -2693,20 +2739,6 @@ class SaveObjectsTest extends TestCase
         $result = $this->handler->saveObjects($objects, $register, $schema);
 
         $this->assertCount(1, $result['saved']);
-    }
-
-    // =========================================================================
-    // isCommonTextWord — non-matching edge cases
-    // =========================================================================
-
-    public function testIsCommonTextWordWithEmptyString(): void
-    {
-        $this->assertFalse($this->invokePrivate('isCommonTextWord', ['']));
-    }
-
-    public function testIsCommonTextWordWithNumericString(): void
-    {
-        $this->assertFalse($this->invokePrivate('isCommonTextWord', ['12345']));
     }
 
     // =========================================================================

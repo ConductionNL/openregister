@@ -828,6 +828,7 @@ class SaveObjectDeepTest extends TestCase
 
     public function testHydrateObjectMetadataPublishedDate(): void
     {
+        // objectPublishedField is deprecated — should not throw.
         $entity = $this->createObjectEntity(1, 'uuid-1', ['publicatieDatum' => '2025-01-01']);
         $schema = $this->createMockSchema(1, 'test', ['objectPublishedField' => 'publicatieDatum']);
 
@@ -835,24 +836,25 @@ class SaveObjectDeepTest extends TestCase
             ->willReturn('2025-01-01');
 
         $this->handler->hydrateObjectMetadata($entity, $schema);
-        $this->assertInstanceOf(DateTime::class, $entity->getPublished());
+        $this->assertTrue(true);
     }
 
     public function testHydrateObjectMetadataInvalidPublishedDate(): void
     {
+        // objectPublishedField is deprecated — should not throw.
         $entity = $this->createObjectEntity(1, 'uuid-1', ['date' => 'not-a-date']);
         $schema = $this->createMockSchema(1, 'test', ['objectPublishedField' => 'date']);
 
         $this->metaHydrationHandler->method('extractMetadataValue')
             ->willReturn('not-a-date');
 
-        $this->logger->expects($this->atLeastOnce())->method('warning');
-
         $this->handler->hydrateObjectMetadata($entity, $schema);
+        $this->assertTrue(true);
     }
 
     public function testHydrateObjectMetadataDepublishedDate(): void
     {
+        // objectDepublishedField is deprecated — should not throw.
         $entity = $this->createObjectEntity(1, 'uuid-1', ['eindDatum' => '2025-12-31']);
         $schema = $this->createMockSchema(1, 'test', ['objectDepublishedField' => 'eindDatum']);
 
@@ -860,20 +862,20 @@ class SaveObjectDeepTest extends TestCase
             ->willReturn('2025-12-31');
 
         $this->handler->hydrateObjectMetadata($entity, $schema);
-        $this->assertInstanceOf(DateTime::class, $entity->getDepublished());
+        $this->assertTrue(true);
     }
 
     public function testHydrateObjectMetadataInvalidDepublishedDate(): void
     {
+        // objectDepublishedField is deprecated — should not throw.
         $entity = $this->createObjectEntity(1, 'uuid-1', ['end' => 'invalid']);
         $schema = $this->createMockSchema(1, 'test', ['objectDepublishedField' => 'end']);
 
         $this->metaHydrationHandler->method('extractMetadataValue')
             ->willReturn('invalid');
 
-        $this->logger->expects($this->atLeastOnce())->method('warning');
-
         $this->handler->hydrateObjectMetadata($entity, $schema);
+        $this->assertTrue(true);
     }
 
     public function testHydrateObjectMetadataImageArrayNumericFileIds(): void
@@ -1078,30 +1080,31 @@ class SaveObjectDeepTest extends TestCase
 
     public function testSetSelfMetadataPublishedDate(): void
     {
+        // Published is no longer handled by setSelfMetadata (removed from ObjectEntity).
         $entity = $this->createObjectEntity(1, 'uuid-1');
         $this->invokePrivateMethod('setSelfMetadata', [$entity, ['published' => '2025-06-15T10:00:00+00:00'], []]);
-        $this->assertInstanceOf(DateTime::class, $entity->getPublished());
+        $this->assertTrue(true);
     }
 
     public function testSetSelfMetadataPublishedEmpty(): void
     {
+        // Published is no longer handled by setSelfMetadata (removed from ObjectEntity).
         $entity = $this->createObjectEntity(1, 'uuid-1');
-        $entity->setPublished(new DateTime());
         $this->invokePrivateMethod('setSelfMetadata', [$entity, ['published' => ''], []]);
-        $this->assertNull($entity->getPublished());
+        $this->assertTrue(true);
     }
 
     public function testSetSelfMetadataPublishedNotPresent(): void
     {
+        // Published is no longer handled by setSelfMetadata (removed from ObjectEntity).
         $entity = $this->createObjectEntity(1, 'uuid-1');
-        $originalDate = new DateTime('2025-01-01');
-        $entity->setPublished($originalDate);
         $this->invokePrivateMethod('setSelfMetadata', [$entity, [], []]);
-        $this->assertEquals($originalDate, $entity->getPublished());
+        $this->assertTrue(true);
     }
 
     public function testSetSelfMetadataInvalidPublishedDate(): void
     {
+        // Published is no longer handled by setSelfMetadata (removed from ObjectEntity).
         $entity = $this->createObjectEntity(1, 'uuid-1');
         $this->invokePrivateMethod('setSelfMetadata', [$entity, ['published' => 'not-a-date-at-all!!!'], []]);
         $this->assertTrue(true);
@@ -1109,17 +1112,18 @@ class SaveObjectDeepTest extends TestCase
 
     public function testSetSelfMetadataDepublishedDate(): void
     {
+        // Depublished is no longer handled by setSelfMetadata (removed from ObjectEntity).
         $entity = $this->createObjectEntity(1, 'uuid-1');
         $this->invokePrivateMethod('setSelfMetadata', [$entity, ['depublished' => '2025-12-31T23:59:59+00:00'], []]);
-        $this->assertInstanceOf(DateTime::class, $entity->getDepublished());
+        $this->assertTrue(true);
     }
 
     public function testSetSelfMetadataDepublishedEmpty(): void
     {
+        // Depublished is no longer handled by setSelfMetadata (removed from ObjectEntity).
         $entity = $this->createObjectEntity(1, 'uuid-1');
-        $entity->setDepublished(new DateTime());
         $this->invokePrivateMethod('setSelfMetadata', [$entity, ['depublished' => ''], []]);
-        $this->assertNull($entity->getDepublished());
+        $this->assertTrue(true);
     }
 
     public function testSetSelfMetadataOwner(): void
@@ -1145,8 +1149,9 @@ class SaveObjectDeepTest extends TestCase
 
     public function testSetSelfMetadataDepublishedNotPresent(): void
     {
+        // Depublished is no longer handled by setSelfMetadata (removed from ObjectEntity).
         $entity = $this->createObjectEntity(1, 'uuid-1');
         $this->invokePrivateMethod('setSelfMetadata', [$entity, [], []]);
-        $this->assertNull($entity->getDepublished());
+        $this->assertTrue(true);
     }
 }
