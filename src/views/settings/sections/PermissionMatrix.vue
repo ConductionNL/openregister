@@ -194,11 +194,11 @@ export default {
 		async loadData() {
 			this.loading = true
 			try {
-				await this.registerStore.fetchRegisterList()
-				this.registers = this.registerStore.registerList || []
+				const registerResult = await this.registerStore.refreshRegisterList()
+				this.registers = registerResult?.data || this.registerStore.registerList || []
 
-				await this.schemaStore.fetchSchemaList()
-				this.schemas = this.schemaStore.schemaList || []
+				const schemaResult = await this.schemaStore.refreshSchemaList()
+				this.schemas = schemaResult?.data || this.schemaStore.schemaList || []
 			} catch (error) {
 				console.error('Failed to load permission matrix data:', error)
 			} finally {
