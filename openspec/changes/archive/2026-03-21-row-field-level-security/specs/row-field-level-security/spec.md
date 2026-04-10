@@ -491,4 +491,25 @@ When evaluating property-level authorization match conditions, `ConditionMatcher
 - **Complete operator coverage**: All 9 MongoDB-style operators are specified with SQL generation and PHP evaluation paths.
 - **Dynamic variables fully specified**: `$userId`, `$organisation`, `$now` with resolution paths, caching behavior, and null-handling.
 - **No major design ambiguity**: The condition syntax, evaluation order (schema > row > field), and interaction with multi-tenancy are well-defined.
-- **Minor gaps identified**: Audit log integration, security rule management API, and extended `$CURRENT_USER` variable support are the remaining enhancement opportunities.
+- **Minor gaps identified**: Audit log integration (now implemented via AuthorizationAuditService), security rule management API, and extended `$CURRENT_USER` variable support are the remaining enhancement opportunities.
+
+### Requirement: Row-level security performance target
+The system SHALL ensure that row-level security filtering via `MagicRbacHandler` adds less than 50ms overhead to typical list queries (up to 1000 results). Performance SHALL be measured as the difference between a query with RBAC enabled vs disabled on the same dataset.
+
+#### Scenario: List query with RBAC filtering within performance target
+- **WHEN** a user queries a schema with 10,000 objects and RBAC filtering is enabled
+- **THEN** the additional latency from RBAC filtering SHALL be less than 50ms for a result set of up to 1000 objects
+- **AND** the RBAC conditions SHALL be applied at the SQL level (not post-query filtering)
+
+### Requirement: Register authorization cascade in MagicRbacHandler
+The `MagicRbacHandler` SHALL support register-level authorization cascade when building SQL-level RBAC conditions. When a schema has no authorization block, the handler SHALL look up the parent register's authorization for building row-level filter conditions.
+
+#### Scenario: SQL RBAC uses register authorization for unconfigured schema
+- **WHEN** a schema has no authorization AND its register has `{ "read": [{ "group": "medewerkers", "match": { "_organisation": "$organisation" } }] }`
+- **THEN** `MagicRbacHandler::applyRbacFilters()` SHALL use the register's authorization to build SQL conditions
+- **AND** objects SHALL be filtered by the user's organisation at the database level
+
+#### Scenario: Schema with own authorization ignores register in SQL RBAC
+- **WHEN** a schema has its own authorization block
+- **THEN** `MagicRbacHandler::applyRbacFilters()` SHALL use only the schema's authorization
+- **AND** the register's authorization SHALL NOT influence the SQL conditions
