@@ -408,6 +408,13 @@ class MagicSearchHandler
         );
         $conditions       = array_merge($conditions, $objectConditions);
 
+        // 6. TMLO metadata JSON field filters (tmlo.archiefstatus, tmlo.archiefnominatie, etc.).
+        $tmloConditions = $this->buildTmloFilterConditionsSql(
+            query: $query,
+            connection: $connection
+        );
+        $conditions     = array_merge($conditions, $tmloConditions);
+
         return $conditions;
     }//end buildWhereConditionsSql()
 
@@ -600,6 +607,64 @@ class MagicSearchHandler
 
         return '('.implode(' OR ', $orParts).')';
     }//end buildArrayPropertyConditionSql()
+
+    /**
+     * Build SQL conditions for TMLO metadata JSON field filters.
+     *
+     * Supports dot-notation filters like:
+     * - tmlo.archiefstatus=semi_statisch (exact match on JSON sub-field)
+     * - tmlo.archiefnominatie=vernietigen (exact match)
+     * - tmlo.archiefactiedatum[from]=2025-01-01 (range filter)
+     * - tmlo.archiefactiedatum[to]=2025-12-31 (range filter)
+     * - tmlo.vernietigingsCategorie=cat1 (exact match)
+     *
+     * Uses PostgreSQL ->> operator for JSON field extraction.
+     *
+     * @param array  $query      The full query array
+     * @param object $connection Database connection for value quoting
+     *
+     * @return string[] Array of SQL conditions
+     */
+    private function buildTmloFilterConditionsSql(array $query, object $connection): array
+    {
+        $conditions       = [];
+        $archiefactieFrom = null;
+        $archiefactieTo   = null;
+
+        foreach ($query as $key => $value) {
+            if (str_starts_with($key, 'tmlo.') === false) {
+                continue;
+            }
+
+            $subField = substr($key, 5);
+
+            // Handle date range filters for archiefactiedatum.
+            if ($subField === 'archiefactiedatum[from]') {
+                $archiefactieFrom = $value;
+                continue;
+            }
+
+            if ($subField === 'archiefactiedatum[to]') {
+                $archiefactieTo = $value;
+                continue;
+            }
+
+            // Standard exact match on TMLO JSON sub-field.
+            $quotedValue  = $connection->quote((string) $value);
+            $conditions[] = "_tmlo::jsonb ->> ".$connection->quote($subField)." = {$quotedValue}";
+        }//end foreach
+
+        // Build archiefactiedatum range condition.
+        if ($archiefactieFrom !== null) {
+            $conditions[] = "_tmlo::jsonb ->> 'archiefactiedatum' >= ".$connection->quote($archiefactieFrom);
+        }
+
+        if ($archiefactieTo !== null) {
+            $conditions[] = "_tmlo::jsonb ->> 'archiefactiedatum' <= ".$connection->quote($archiefactieTo);
+        }
+
+        return $conditions;
+    }//end buildTmloFilterConditionsSql()
 
     /**
      * Get the list of reserved query parameter names

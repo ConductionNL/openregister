@@ -138,8 +138,6 @@ export default {
 					delete objectToCopy['@self'].uri
 					delete objectToCopy['@self'].created
 					delete objectToCopy['@self'].updated
-					delete objectToCopy['@self'].published
-					delete objectToCopy['@self'].depublished
 					delete objectToCopy['@self'].version
 					delete objectToCopy['@self'].files
 					delete objectToCopy['@self'].relations

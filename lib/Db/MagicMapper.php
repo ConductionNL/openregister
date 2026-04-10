@@ -2058,6 +2058,11 @@ class MagicMapper extends AbstractObjectMapper
                 'type'     => 'json',
                 'nullable' => true,
             ],
+            self::METADATA_PREFIX.'tmlo'           => [
+                'name'     => self::METADATA_PREFIX.'tmlo',
+                'type'     => 'json',
+                'nullable' => true,
+            ],
         ];
     }//end getMetadataColumns()
 
@@ -2896,6 +2901,7 @@ class MagicMapper extends AbstractObjectMapper
             'geo',
             'retention',
             'groups',
+            'tmlo',
             'created',
             'updated',
             'expires',
@@ -2934,6 +2940,7 @@ class MagicMapper extends AbstractObjectMapper
                 'geo',
                 'retention',
                 'groups',
+                'tmlo',
             ];
             if (in_array($field, $jsonFields) === true) {
                 // Convert to JSON if not already a string.
