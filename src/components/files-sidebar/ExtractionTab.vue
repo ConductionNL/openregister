@@ -10,7 +10,7 @@
 			:name="t('openregister', 'Failed to load extraction data')"
 			:description="errorMessage">
 			<template #icon>
-				<span class="material-design-icon" v-html="alertCircleIcon" />
+				<AlertCircleOutline :size="44" />
 			</template>
 		</NcEmptyContent>
 
@@ -18,7 +18,7 @@
 		<NcEmptyContent v-else-if="status.extractionStatus === 'none'"
 			:name="t('openregister', 'No extraction data available for this file')">
 			<template #icon>
-				<span class="material-design-icon" v-html="fileSearchIcon" />
+				<FileSearchOutline :size="44" />
 			</template>
 			<template #action>
 				<NcButton :disabled="extracting"
@@ -144,12 +144,8 @@ import axios from '@nextcloud/axios'
 import NcButton from '@nextcloud/vue/dist/Components/NcButton.js'
 import NcEmptyContent from '@nextcloud/vue/dist/Components/NcEmptyContent.js'
 import NcLoadingIcon from '@nextcloud/vue/dist/Components/NcLoadingIcon.js'
-
-// alert-circle-outline SVG
-const alertCircleIcon = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M11,15H13V17H11V15M11,7H13V13H11V7M12,2C6.47,2 2,6.5 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M12,20A8,8 0 0,1 4,12A8,8 0 0,1 12,4A8,8 0 0,1 20,12A8,8 0 0,1 12,20Z" /></svg>'
-
-// file-search-outline SVG
-const fileSearchIcon = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M14 2H6C4.89 2 4 2.89 4 4V20C4 21.11 4.89 22 6 22H13.81C13.28 21.09 13 20.05 13 19C13 15.69 15.69 13 19 13C19.34 13 19.67 13.03 20 13.08V8L14 2M13 9V3.5L18.5 9H13M20.31 18.9C20.75 18.21 21 17.38 21 16.5C21 14.57 19.43 13 17.5 13S14 14.57 14 16.5 15.57 20 17.5 20C18.37 20 19.19 19.75 19.88 19.32L23 22.39L24.39 21L21.32 17.88Z" /></svg>'
+import AlertCircleOutline from 'vue-material-design-icons/AlertCircleOutline.vue'
+import FileSearchOutline from 'vue-material-design-icons/FileSearchOutline.vue'
 
 export default {
 	name: 'ExtractionTab',
@@ -158,6 +154,8 @@ export default {
 		NcButton,
 		NcEmptyContent,
 		NcLoadingIcon,
+		AlertCircleOutline,
+		FileSearchOutline,
 	},
 
 	props: {
