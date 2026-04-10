@@ -355,12 +355,13 @@ class MagicSearchHandler
      * Includes RBAC filtering when enabled (default). Values are quoted inline
      * (not parameterized) for UNION query compatibility.
      *
-     * @param array  $query  Search parameters including filters.
-     * @param Schema $schema The schema for property filtering.
+     * @param array      $query           Search parameters including filters.
+     * @param Schema     $schema          The schema for property filtering.
+     * @param array|null $existingColumns Optional list of existing column names.
      *
      * @return string[] Array of SQL WHERE conditions (without leading AND/WHERE).
      */
-    public function buildWhereConditionsSql(array $query, Schema $schema): array
+    public function buildWhereConditionsSql(array $query, Schema $schema, ?array $existingColumns=null): array
     {
         $conditions = [];
         // Get connection for value quoting through QueryBuilder.
@@ -391,7 +392,8 @@ class MagicSearchHandler
                 search: trim($search),
                 schema: $schema,
                 query: $query,
-                connection: $connection
+                connection: $connection,
+                existingColumns: $existingColumns
             );
             if ($searchCondition !== null) {
                 $conditions[] = $searchCondition;
@@ -450,10 +452,11 @@ class MagicSearchHandler
      * Without _fuzzy=true: ~140ms (ILIKE only)
      * With _fuzzy=true: ~160ms (ILIKE + similarity on _name)
      *
-     * @param string $search     Trimmed search term
-     * @param Schema $schema     Schema for determining searchable columns
-     * @param array  $query      Full query array for extracting _fuzzy param
-     * @param object $connection Database connection for value quoting
+     * @param string     $search          Trimmed search term
+     * @param Schema     $schema          Schema for determining searchable columns
+     * @param array      $query           Full query array for extracting _fuzzy param
+     * @param object     $connection      Database connection for value quoting
+     * @param array|null $existingColumns Optional list of existing column names.
      *
      * @return string|null SQL condition or null if no search conditions generated
      */
@@ -461,7 +464,8 @@ class MagicSearchHandler
         string $search,
         Schema $schema,
         array $query,
-        object $connection
+        object $connection,
+        ?array $existingColumns=null
     ): ?string {
         $searchConditions = [];
         $likePattern      = $connection->quote('%'.$search.'%');
@@ -475,7 +479,12 @@ class MagicSearchHandler
         foreach ($properties as $propName => $propDef) {
             $type = $propDef['type'] ?? 'string';
             if ($type === 'string') {
-                $columnName         = $this->sanitizeColumnName(name: $propName);
+                $columnName = $this->sanitizeColumnName(name: $propName);
+                // In UNION contexts, only search columns that actually exist in this table.
+                if ($existingColumns !== null && in_array($columnName, $existingColumns, true) === false) {
+                    continue;
+                }
+
                 $searchConditions[] = "{$columnName}::text ILIKE {$likePattern}";
             }
         }

@@ -7,7 +7,7 @@ namespace Unit\Controller;
 use Exception;
 use OCA\OpenRegister\Controller\RegistersController;
 use OCA\OpenRegister\Db\AuditTrailMapper;
-use OCA\OpenRegister\Db\UnifiedObjectMapper;
+use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
@@ -40,7 +40,7 @@ class RegistersControllerTest extends TestCase
     private RegistersController $controller;
     private IRequest&MockObject $request;
     private RegisterService&MockObject $registerService;
-    private UnifiedObjectMapper&MockObject $objectMapper;
+    private MagicMapper&MockObject $objectMapper;
     private UploadService&MockObject $uploadService;
     private LoggerInterface&MockObject $logger;
     private IUserSession&MockObject $userSession;
@@ -60,7 +60,7 @@ class RegistersControllerTest extends TestCase
 
         $this->request = $this->createMock(IRequest::class);
         $this->registerService = $this->createMock(RegisterService::class);
-        $this->objectMapper = $this->createMock(UnifiedObjectMapper::class);
+        $this->objectMapper = $this->createMock(MagicMapper::class);
         $this->uploadService = $this->createMock(UploadService::class);
         $this->logger = $this->createMock(LoggerInterface::class);
         $this->userSession = $this->createMock(IUserSession::class);

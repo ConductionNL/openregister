@@ -17,7 +17,6 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Object;
 use DateTime;
 use Exception;
 use OCA\OpenRegister\Db\MagicMapper;
-use OCA\OpenRegister\Db\UnifiedObjectMapper;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
@@ -44,8 +43,8 @@ class BulkOperationsHandlerTest extends TestCase
     /** @var SaveObjects&MockObject */
     private SaveObjects $saveObjectsHandler;
 
-    /** @var UnifiedObjectMapper&MockObject */
-    private UnifiedObjectMapper $objectMapper;
+    /** @var MagicMapper&MockObject */
+    private MagicMapper $objectMapper;
 
     /** @var PermissionHandler&MockObject */
     private PermissionHandler $permissionHandler;
@@ -70,7 +69,7 @@ class BulkOperationsHandlerTest extends TestCase
         parent::setUp();
 
         $this->saveObjectsHandler = $this->createMock(SaveObjects::class);
-        $this->objectMapper = $this->createMock(UnifiedObjectMapper::class);
+        $this->objectMapper = $this->createMock(MagicMapper::class);
         $this->permissionHandler = $this->createMock(PermissionHandler::class);
         $this->cacheHandler = $this->createMock(CacheHandler::class);
         $this->magicMapper = $this->createMock(MagicMapper::class);
