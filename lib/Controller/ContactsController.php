@@ -193,7 +193,7 @@ class ContactsController extends Controller
                 );
             }//end if
 
-            return new JSONResponse($link->jsonSerialize(), 201);
+            return new JSONResponse($link, 201);
         } catch (DoesNotExistException $e) {
             return new JSONResponse(['error' => 'Object not found'], 404);
         } catch (Exception $e) {
@@ -219,7 +219,7 @@ class ContactsController extends Controller
      * @NoAdminRequired
      * @NoCSRFRequired
      */
-    public function update(string $register, string $schema, string $id, string $contactId): JSONResponse
+    public function update(string $register, string $schema, string $id, string $contactUid): JSONResponse
     {
         try {
             $object = $this->validateObject(object: $register, schema: $schema, schemaObject: $id);
@@ -227,15 +227,9 @@ class ContactsController extends Controller
                 return new JSONResponse(['error' => 'Object not found'], 404);
             }
 
-            $data = $this->request->getParams();
-
-            if (empty($data['role']) === true) {
-                return new JSONResponse(['error' => 'role is required'], 400);
-            }
-
-            $link = $this->contactService->updateRole((int) $contactId, $data['role']);
-
-            return new JSONResponse($link->jsonSerialize());
+            // Role updates are not yet supported with the generic metadata column approach.
+            // Unlink and relink with the new role as a workaround.
+            return new JSONResponse(['error' => 'Role update not yet supported. Unlink and relink with the new role.'], 501);
         } catch (DoesNotExistException $e) {
             return new JSONResponse(['error' => 'Object not found'], 404);
         } catch (Exception $e) {
@@ -261,7 +255,7 @@ class ContactsController extends Controller
      * @NoAdminRequired
      * @NoCSRFRequired
      */
-    public function destroy(string $register, string $schema, string $id, string $contactId): JSONResponse
+    public function destroy(string $register, string $schema, string $id, string $contactUid): JSONResponse
     {
         try {
             $object = $this->validateObject(object: $register, schema: $schema, schemaObject: $id);
@@ -269,7 +263,7 @@ class ContactsController extends Controller
                 return new JSONResponse(['error' => 'Object not found'], 404);
             }
 
-            $this->contactService->unlinkContact((int) $contactId);
+            $this->contactService->unlinkContact($object->getUuid(), $contactUid);
 
             return new JSONResponse(['success' => true]);
         } catch (DoesNotExistException $e) {

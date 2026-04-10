@@ -84,6 +84,20 @@ use OCA\OpenRegister\Service\Schemas\PropertyValidatorHandler;
  * @method void setConfiguration(?array $configuration)
  * @method array|null getHooks()
  * @method void setHooks(?array $hooks)
+ * @method array|null getMail()
+ * @method void setMail(?array $mail)
+ * @method array|null getContacts()
+ * @method void setContacts(?array $contacts)
+ * @method array|null getNotes()
+ * @method void setNotes(?array $notes)
+ * @method array|null getTodos()
+ * @method void setTodos(?array $todos)
+ * @method array|null getCalendar()
+ * @method void setCalendar(?array $calendar)
+ * @method array|null getTalk()
+ * @method void setTalk(?array $talk)
+ * @method array|null getDeck()
+ * @method void setDeck(?array $deck)
  *
  * @SuppressWarnings(PHPMD.ExcessiveClassLength)
  * @SuppressWarnings(PHPMD.ExcessiveClassComplexity)
@@ -374,6 +388,27 @@ class Schema extends Entity implements JsonSerializable
      */
     protected ?array $hooks = null;
 
+    /** @var array|null Linked mail entity IDs */
+    protected ?array $mail = null;
+
+    /** @var array|null Linked contact entity IDs */
+    protected ?array $contacts = null;
+
+    /** @var array|null Linked note entity IDs */
+    protected ?array $notes = null;
+
+    /** @var array|null Linked todo entity IDs */
+    protected ?array $todos = null;
+
+    /** @var array|null Linked calendar event entity IDs */
+    protected ?array $calendar = null;
+
+    /** @var array|null Linked Talk conversation IDs */
+    protected ?array $talk = null;
+
+    /** @var array|null Linked Deck card IDs */
+    protected ?array $deck = null;
+
     /**
      * Constructor for the Schema class
      *
@@ -413,6 +448,13 @@ class Schema extends Entity implements JsonSerializable
         $this->addType(fieldName: 'published', type: 'datetime');
         $this->addType(fieldName: 'depublished', type: 'datetime');
         $this->addType(fieldName: 'hooks', type: 'json');
+        $this->addType(fieldName: 'mail', type: 'json');
+        $this->addType(fieldName: 'contacts', type: 'json');
+        $this->addType(fieldName: 'notes', type: 'json');
+        $this->addType(fieldName: 'todos', type: 'json');
+        $this->addType(fieldName: 'calendar', type: 'json');
+        $this->addType(fieldName: 'talk', type: 'json');
+        $this->addType(fieldName: 'deck', type: 'json');
     }//end __construct()
 
     /**
@@ -1247,6 +1289,13 @@ class Schema extends Entity implements JsonSerializable
             'anyOf'          => $this->anyOf,
             'facets'         => $this->facets,
             'hooks'          => $this->hooks,
+            '_mail'          => $this->mail,
+            '_contacts'      => $this->contacts,
+            '_notes'         => $this->notes,
+            '_todos'         => $this->todos,
+            '_calendar'      => $this->calendar,
+            '_talk'          => $this->talk,
+            '_deck'          => $this->deck,
         ];
     }//end jsonSerialize()
 
@@ -1528,6 +1577,12 @@ class Schema extends Entity implements JsonSerializable
                 continue;
             }
 
+            if ($key === 'linkedTypes') {
+                $this->validateLinkedTypesValue($value);
+                $validatedConfig[$key] = $value;
+                continue;
+            }
+
             if ($key === 'calendarProvider' && is_array($value) === true) {
                 $this->validateCalendarProviderConfig(config: $value);
                 $validatedConfig[$key] = $value;
@@ -1639,6 +1694,71 @@ class Schema extends Entity implements JsonSerializable
             }
         }
     }//end validateAllowedTagsValue()
+
+    /**
+     * Valid linked type values for Nextcloud entity integration
+     */
+    private const VALID_LINKED_TYPES = [
+        'files',
+        'mail',
+        'contacts',
+        'notes',
+        'todos',
+        'calendar',
+        'talk',
+        'deck',
+    ];
+
+    /**
+     * Validate the linkedTypes configuration value
+     *
+     * @param mixed $value The linkedTypes value to validate
+     *
+     * @throws InvalidArgumentException If validation fails
+     *
+     * @return void
+     */
+    private function validateLinkedTypesValue(mixed $value): void
+    {
+        if ($value === null) {
+            return;
+        }
+
+        if (is_array($value) === false) {
+            throw new InvalidArgumentException("Configuration 'linkedTypes' must be an array or null");
+        }
+
+        foreach ($value as $type) {
+            if (is_string($type) === false) {
+                throw new InvalidArgumentException("All values in 'linkedTypes' must be strings");
+            }
+
+            if (in_array($type, self::VALID_LINKED_TYPES, true) === false) {
+                throw new InvalidArgumentException(
+                    "Invalid linked type '$type'. Valid values: " . implode(', ', self::VALID_LINKED_TYPES)
+                );
+            }
+        }
+    }//end validateLinkedTypesValue()
+
+    /**
+     * Get the linked types from the schema configuration
+     *
+     * Returns the array of Nextcloud entity types this schema can link to.
+     * Defaults to empty array if not configured.
+     *
+     * @return array The linked types array
+     */
+    public function getLinkedTypes(): array
+    {
+        $configuration = $this->getConfiguration();
+
+        if ($configuration === null) {
+            return [];
+        }
+
+        return $configuration['linkedTypes'] ?? [];
+    }//end getLinkedTypes()
 
     /**
      * Check whether this schema should be searchable in SOLR

@@ -1,9 +1,7 @@
 <template>
 	<div
 		class="or-mail-sidebar"
-		:class="{ 'or-mail-sidebar--collapsed': collapsed }"
-		role="complementary"
-		:aria-label="t('openregister', 'OpenRegister: Linked Objects sidebar')">
+		:class="{ 'or-mail-sidebar--collapsed': collapsed }">
 		<!-- Collapse toggle tab -->
 		<button
 			class="or-mail-sidebar__toggle"
@@ -13,116 +11,77 @@
 			<span class="or-mail-sidebar__toggle-icon">OR</span>
 		</button>
 
-		<div v-show="!collapsed" class="or-mail-sidebar__content">
-			<div class="or-mail-sidebar__header">
-				<h2 class="or-mail-sidebar__title">
-					{{ t('openregister', 'OpenRegister') }}
-				</h2>
-			</div>
+		<div v-show="!collapsed" class="or-mail-sidebar__inner">
+			<NcAppSidebar
+				:title="t('openregister', 'OpenRegister')"
+				:subtitle="isMessageView ? '' : t('openregister', 'Select an email')"
+				:compact="true"
+				:active.sync="activeTab"
+				@close="toggleCollapsed">
+				<NcAppSidebarTab
+					id="actions"
+					:name="t('openregister', 'Actions')"
+					icon="icon-add">
+					<ActionsTab
+						:account-id="accountId"
+						:message-id="messageId"
+						@linked="onLinked" />
+				</NcAppSidebarTab>
 
-			<!-- Placeholder when no email is selected -->
-			<div v-if="!isMessageView" class="or-mail-empty or-mail-sidebar__placeholder">
-				{{ t('openregister', 'Select an email to see linked objects') }}
-			</div>
+				<NcAppSidebarTab
+					id="objects"
+					:name="t('openregister', 'Objects')"
+					icon="icon-link">
+					<ObjectsTab
+						ref="objectsTab"
+						:account-id="accountId"
+						:message-id="messageId" />
+				</NcAppSidebarTab>
 
-			<!-- Error state -->
-			<div v-else-if="error" class="or-mail-error">
-				<p v-if="error === 'server'">
-					{{ t('openregister', 'Could not load linked objects. Try again later.') }}
-				</p>
-				<p v-else-if="error === 'timeout'">
-					{{ t('openregister', 'Request timed out. Please try again.') }}
-				</p>
-				<p v-else>
-					{{ t('openregister', 'An error occurred.') }}
-				</p>
-				<button class="or-mail-btn or-mail-btn--secondary" @click="retry">
-					{{ t('openregister', 'Retry') }}
-				</button>
-			</div>
-
-			<!-- Content when email is selected -->
-			<template v-else>
-				<LinkedObjectsList
-					:objects="linkedObjects"
-					:loading="loading"
-					@unlink="handleUnlink" />
-
-				<SuggestedObjectsList
-					:objects="suggestedObjects"
-					:loading="loading" />
-
-				<!-- Link action button -->
-				<div class="or-mail-sidebar__actions">
-					<button
-						class="or-mail-btn or-mail-btn--primary or-mail-sidebar__link-btn"
-						@click="showLinkDialog = true">
-						{{ t('openregister', 'Link to Object') }}
-					</button>
-				</div>
-			</template>
+				<NcAppSidebarTab
+					id="entities"
+					:name="t('openregister', 'Entities')"
+					icon="icon-user">
+					<EntitiesTab
+						:account-id="accountId"
+						:message-id="messageId" />
+				</NcAppSidebarTab>
+			</NcAppSidebar>
 		</div>
-
-		<!-- Link dialog -->
-		<LinkObjectDialog
-			:visible="showLinkDialog"
-			:linked-object-uuids="linkedObjectUuids"
-			@link="handleLink"
-			@close="showLinkDialog = false" />
 	</div>
 </template>
 
 <script>
 import { translate as t } from '@nextcloud/l10n'
-import { showSuccess, showError } from '@nextcloud/dialogs'
-import LinkedObjectsList from './components/LinkedObjectsList.vue'
-import SuggestedObjectsList from './components/SuggestedObjectsList.vue'
-import LinkObjectDialog from './components/LinkObjectDialog.vue'
+import NcAppSidebar from '@nextcloud/vue/dist/Components/NcAppSidebar.js'
+import NcAppSidebarTab from '@nextcloud/vue/dist/Components/NcAppSidebarTab.js'
+import ActionsTab from './components/ActionsTab.vue'
+import ObjectsTab from './components/ObjectsTab.vue'
+import EntitiesTab from './components/EntitiesTab.vue'
 import { useMailObserver } from './composables/useMailObserver.js'
-import { useEmailLinks } from './composables/useEmailLinks.js'
 
 const COLLAPSED_STORAGE_KEY = 'openregister-mail-sidebar-collapsed'
 
 export default {
 	name: 'MailSidebar',
 	components: {
-		LinkedObjectsList,
-		SuggestedObjectsList,
-		LinkObjectDialog,
+		NcAppSidebar,
+		NcAppSidebarTab,
+		ActionsTab,
+		ObjectsTab,
+		EntitiesTab,
 	},
 	setup() {
-		const emailLinks = useEmailLinks()
-		const mailObserver = useMailObserver({
-			debounceMs: 300,
-			onChange: (parsed) => {
-				if (parsed.messageId !== null) {
-					// We pass sender as null; it will be extracted from linked results
-					emailLinks.loadForMessage(parsed.accountId, parsed.messageId, null)
-				} else {
-					emailLinks.clear()
-				}
-			},
-		})
-
-		return {
-			...emailLinks,
-			...mailObserver,
-		}
+		const mailObserver = useMailObserver({ debounceMs: 300 })
+		return { ...mailObserver }
 	},
 	data() {
 		return {
 			collapsed: false,
-			showLinkDialog: false,
-			currentSender: null,
+			activeTab: 'actions',
 		}
 	},
-	computed: {
-		linkedObjectUuids() {
-			return (this.linkedObjects || []).map((obj) => obj.objectUuid)
-		},
-	},
 	created() {
-		// Restore collapsed state from localStorage
 		const stored = localStorage.getItem(COLLAPSED_STORAGE_KEY)
 		if (stored === 'true') {
 			this.collapsed = true
@@ -134,42 +93,34 @@ export default {
 			this.collapsed = !this.collapsed
 			localStorage.setItem(COLLAPSED_STORAGE_KEY, String(this.collapsed))
 		},
-		retry() {
-			if (this.accountId && this.messageId) {
-				this.loadForMessage(this.accountId, this.messageId, this.currentSender)
-			}
-		},
-		async handleLink(selectedObject) {
-			try {
-				await this.linkObject({
-					mailAccountId: this.accountId,
-					mailMessageId: this.messageId,
-					objectUuid: selectedObject.uuid,
-					registerId: selectedObject.registerId,
-					schemaId: selectedObject.schemaId,
-				})
-				showSuccess(t('openregister', 'Object linked successfully'))
-				// Refresh sidebar
-				this.loadForMessage(this.accountId, this.messageId, this.currentSender, false)
-			} catch (err) {
-				const msg = err.response?.data?.error || t('openregister', 'Failed to link object')
-				showError(msg)
-			}
-		},
-		async handleUnlink(object) {
-			if (!confirm(t('openregister', 'Remove link between this email and {title}?', {
-				title: object.objectTitle || object.objectUuid,
-			}))) {
-				return
-			}
-			try {
-				await this.unlinkObject(object.linkId, this.accountId, this.messageId)
-				showSuccess(t('openregister', 'Link removed'))
-				this.loadForMessage(this.accountId, this.messageId, this.currentSender, false)
-			} catch {
-				showError(t('openregister', 'Failed to remove link'))
+		onLinked() {
+			if (this.$refs.objectsTab) {
+				this.$refs.objectsTab.loadObjects()
 			}
 		},
 	},
 }
 </script>
+
+<style scoped>
+.or-mail-sidebar__inner {
+	height: 100%;
+	display: flex;
+	flex-direction: column;
+}
+
+/* Override NcAppSidebar positioning since we manage our own fixed container */
+.or-mail-sidebar__inner :deep(.app-sidebar) {
+	position: relative;
+	height: 100%;
+	width: 100%;
+	z-index: auto;
+	top: auto;
+	right: auto;
+}
+
+/* Hide the default close button since we have our own collapse toggle */
+.or-mail-sidebar__inner :deep(.app-sidebar__close) {
+	display: none;
+}
+</style>
