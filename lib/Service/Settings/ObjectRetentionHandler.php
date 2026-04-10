@@ -253,6 +253,90 @@ class ObjectRetentionHandler
     }//end updateRetentionSettingsOnly()
 
     /**
+     * Get archival settings (destruction scheduling, selectielijst config, etc.)
+     *
+     * @return array Archival configuration settings
+     *
+     * @throws \RuntimeException If archival settings retrieval fails
+     */
+    public function getArchivalSettingsOnly(): array
+    {
+        try {
+            $archivalConfig = $this->appConfig->getValueString($this->appName, 'archival', '');
+
+            if (empty($archivalConfig) === true) {
+                return $this->getArchivalDefaults();
+            }
+
+            $archivalData = json_decode($archivalConfig, true);
+            return [
+                'destructionCheckInterval' => $archivalData['destructionCheckInterval'] ?? 86400,
+                'notificationLeadDays'     => $archivalData['notificationLeadDays'] ?? 30,
+                'defaultExtensionPeriod'   => $archivalData['defaultExtensionPeriod'] ?? 'P1Y',
+                'destructionBatchSize'     => $archivalData['destructionBatchSize'] ?? 50,
+                'selectielijstRegister'    => $archivalData['selectielijstRegister'] ?? null,
+                'selectielijstSchema'      => $archivalData['selectielijstSchema'] ?? null,
+                'destructionListRegister'  => $archivalData['destructionListRegister'] ?? null,
+                'destructionListSchema'    => $archivalData['destructionListSchema'] ?? null,
+                'archivalRegister'         => $archivalData['archivalRegister'] ?? null,
+            ];
+        } catch (Exception $e) {
+            throw new RuntimeException('Failed to retrieve archival settings: '.$e->getMessage());
+        }//end try
+    }//end getArchivalSettingsOnly()
+
+    /**
+     * Update archival settings
+     *
+     * @param array $archivalData Archival configuration data
+     *
+     * @return array Updated archival configuration
+     *
+     * @throws \RuntimeException If archival settings update fails
+     */
+    public function updateArchivalSettingsOnly(array $archivalData): array
+    {
+        try {
+            $archivalConfig = [
+                'destructionCheckInterval' => $archivalData['destructionCheckInterval'] ?? 86400,
+                'notificationLeadDays'     => $archivalData['notificationLeadDays'] ?? 30,
+                'defaultExtensionPeriod'   => $archivalData['defaultExtensionPeriod'] ?? 'P1Y',
+                'destructionBatchSize'     => $archivalData['destructionBatchSize'] ?? 50,
+                'selectielijstRegister'    => $archivalData['selectielijstRegister'] ?? null,
+                'selectielijstSchema'      => $archivalData['selectielijstSchema'] ?? null,
+                'destructionListRegister'  => $archivalData['destructionListRegister'] ?? null,
+                'destructionListSchema'    => $archivalData['destructionListSchema'] ?? null,
+                'archivalRegister'         => $archivalData['archivalRegister'] ?? null,
+            ];
+
+            $this->appConfig->setValueString($this->appName, 'archival', json_encode($archivalConfig));
+            return $archivalConfig;
+        } catch (Exception $e) {
+            throw new RuntimeException('Failed to update archival settings: '.$e->getMessage());
+        }
+    }//end updateArchivalSettingsOnly()
+
+    /**
+     * Get default archival settings
+     *
+     * @return array Default archival configuration
+     */
+    private function getArchivalDefaults(): array
+    {
+        return [
+            'destructionCheckInterval' => 86400,
+            'notificationLeadDays'     => 30,
+            'defaultExtensionPeriod'   => 'P1Y',
+            'destructionBatchSize'     => 50,
+            'selectielijstRegister'    => null,
+            'selectielijstSchema'      => null,
+            'destructionListRegister'  => null,
+            'destructionListSchema'    => null,
+            'archivalRegister'         => null,
+        ];
+    }//end getArchivalDefaults()
+
+    /**
      * Get version information only
      *
      * @return string[] Version information

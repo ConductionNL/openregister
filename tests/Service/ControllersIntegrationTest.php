@@ -29,7 +29,7 @@ use OCA\OpenRegister\Controller\ViewsController;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\EndpointLogMapper;
 use OCA\OpenRegister\Db\EndpointMapper;
-use OCA\OpenRegister\Db\UnifiedObjectMapper;
+use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
@@ -112,9 +112,9 @@ class ControllersIntegrationTest extends TestCase
     /**
      * Real object entity mapper from DI
      *
-     * @var UnifiedObjectMapper
+     * @var MagicMapper
      */
-    private UnifiedObjectMapper $objectMapper;
+    private MagicMapper $objectMapper;
 
     /**
      * Controllers under test
@@ -212,7 +212,7 @@ class ControllersIntegrationTest extends TestCase
         // Get real services from DI.
         $this->registerMapper = \OC::$server->get(RegisterMapper::class);
         $this->schemaMapper = \OC::$server->get(SchemaMapper::class);
-        $this->objectMapper = \OC::$server->get(UnifiedObjectMapper::class);
+        $this->objectMapper = \OC::$server->get(MagicMapper::class);
 
         // Create mock for request (data carrier for HTTP params).
         $this->request = $this->createMock(IRequest::class);

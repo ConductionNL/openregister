@@ -1275,4 +1275,37 @@ class AuditTrailMapper extends QBMapper
     }//end getStatisticsGroupedBySchema()
 
 
+    /**
+     * Create a custom audit trail entry for archival operations.
+     *
+     * @param ObjectEntity $object  The object the entry relates to
+     * @param string       $action  The archival action (e.g., archival.destroyed)
+     * @param array        $context Additional context data
+     *
+     * @return AuditTrail The created audit trail entry
+     *
+     * @SuppressWarnings(PHPMD.StaticAccess)
+     */
+    public function createAuditTrailEntry(
+        ObjectEntity $object,
+        string $action,
+        array $context=[]
+    ): AuditTrail {
+        $user   = \OC::$server->getUserSession()->getUser();
+        $userId = $user !== null ? $user->getUID() : 'system';
+
+        $auditTrail = new AuditTrail();
+        $auditTrail->setUuid(\Symfony\Component\Uid\Uuid::v4()->toRfc4122());
+        $auditTrail->setObjectUuid($object->getUuid());
+        $auditTrail->setRegister($object->getRegister());
+        $auditTrail->setSchema($object->getSchema());
+        $auditTrail->setAction($action);
+        $auditTrail->setChanged($context);
+        $auditTrail->setUser($userId);
+        $auditTrail->setCreated(new \DateTime());
+
+        return $this->insert(entity: $auditTrail);
+    }//end createAuditTrailEntry()
+
+
 }//end class

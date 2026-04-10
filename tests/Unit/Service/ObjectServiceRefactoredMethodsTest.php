@@ -22,12 +22,11 @@ namespace OCA\OpenRegister\Tests\Unit\Service;
 
 use Exception;
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Db\ObjectEntityMapper;
+use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
-use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ViewMapper;
 use OCA\OpenRegister\Service\FileService;
 use OCA\OpenRegister\Service\ObjectService;
@@ -175,7 +174,7 @@ class ObjectServiceRefactoredMethodsTest extends TestCase
 			$this->createMock(RegisterMapper::class),
 			$this->createMock(SchemaMapper::class),
 			$this->createMock(ViewMapper::class),
-			$this->createMock(ObjectEntityMapper::class),
+			$this->createMock(MagicMapper::class),
 			$this->createMock(MagicMapper::class),
 			$this->createMock(FileService::class),
 			$this->createMock(IUserSession::class),
