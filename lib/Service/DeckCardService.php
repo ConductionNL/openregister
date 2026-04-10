@@ -4,7 +4,7 @@
  * DeckCardService
  *
  * Service that wraps Nextcloud Deck card operations for linking cards to OpenRegister objects.
- * Uses the _deck metadata column as primary storage.
+ * Uses the Deck app's internal PHP service classes when available.
  *
  * @category  Service
  * @package   OCA\OpenRegister\Service
@@ -19,14 +19,16 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service;
 
+use DateTime;
 use Exception;
-use OCA\OpenRegister\Db\MagicMapper;
+use OCA\OpenRegister\Db\DeckLink;
+use OCA\OpenRegister\Db\DeckLinkMapper;
 use OCP\App\IAppManager;
 use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
 
 /**
- * DeckCardService manages Deck card-to-object links via the _deck metadata column.
+ * DeckCardService manages Deck card-to-object links.
  *
  * @category Service
  * @package  OCA\OpenRegister\Service
@@ -35,22 +37,55 @@ use Psr\Log\LoggerInterface;
  */
 class DeckCardService
 {
+
+    /**
+     * Deck link mapper.
+     *
+     * @var DeckLinkMapper
+     */
+    private readonly DeckLinkMapper $deckLinkMapper;
+
+    /**
+     * App manager.
+     *
+     * @var IAppManager
+     */
+    private readonly IAppManager $appManager;
+
+    /**
+     * User session.
+     *
+     * @var IUserSession
+     */
+    private readonly IUserSession $userSession;
+
+    /**
+     * Logger.
+     *
+     * @var LoggerInterface
+     */
+    private readonly LoggerInterface $logger;
+
     /**
      * Constructor.
      *
-     * @param MagicMapper          $magicMapper         Object mapper
-     * @param LinkedEntityService  $linkedEntityService Reverse lookup service
-     * @param IAppManager          $appManager          App manager
-     * @param IUserSession         $userSession         User session
-     * @param LoggerInterface      $logger              Logger
+     * @param DeckLinkMapper  $deckLinkMapper Deck link mapper
+     * @param IAppManager     $appManager     App manager
+     * @param IUserSession    $userSession    User session
+     * @param LoggerInterface $logger         Logger
+     *
+     * @return void
      */
     public function __construct(
-        private readonly MagicMapper $magicMapper,
-        private readonly LinkedEntityService $linkedEntityService,
-        private readonly IAppManager $appManager,
-        private readonly IUserSession $userSession,
-        private readonly LoggerInterface $logger,
+        DeckLinkMapper $deckLinkMapper,
+        IAppManager $appManager,
+        IUserSession $userSession,
+        LoggerInterface $logger
     ) {
+        $this->deckLinkMapper = $deckLinkMapper;
+        $this->appManager     = $appManager;
+        $this->userSession    = $userSession;
+        $this->logger         = $logger;
     }//end __construct()
 
     /**
@@ -64,7 +99,7 @@ class DeckCardService
     }//end isDeckAvailable()
 
     /**
-     * Get all deck card links for an object, enriched from Deck DB.
+     * Get all deck links for an object.
      *
      * @param string $objectUuid The object UUID.
      *
@@ -72,79 +107,70 @@ class DeckCardService
      */
     public function getCardsForObject(string $objectUuid): array
     {
-        $object  = $this->magicMapper->find($objectUuid);
-        $deckIds = $object->getDeck() ?? [];
-        $total   = count($deckIds);
+        $links = $this->deckLinkMapper->findByObjectUuid($objectUuid);
 
-        $results = [];
-        foreach ($deckIds as $deckRef) {
-            $parts = explode('/', $deckRef, 2);
-            if (count($parts) !== 2) {
-                $results[] = ['id' => $deckRef, 'label' => 'Invalid format'];
-                continue;
-            }
+        $results = array_map(
+            static function (DeckLink $link): array {
+                return $link->jsonSerialize();
+            },
+            $links
+        );
 
-            [$boardId, $cardId] = $parts;
-            $cardInfo = $this->getDeckCardInfo((int) $cardId);
-
-            if ($cardInfo === null) {
-                $results[] = ['id' => $deckRef, 'label' => 'Not found'];
-                continue;
-            }
-
-            $results[] = [
-                'id'      => $deckRef,
-                'title'   => $cardInfo['title'] ?? '',
-                'boardId' => (int) $boardId,
-                'stackId' => $cardInfo['stackId'] ?? 0,
-            ];
-        }
-
-        return ['results' => $results, 'total' => $total];
+        return ['results' => $results, 'total' => count($results)];
     }//end getCardsForObject()
 
     /**
      * Create a new Deck card linked to an object, or link an existing card.
      *
      * @param string $objectUuid The object UUID.
-     * @param int    $registerId The register ID (kept for interface compatibility).
+     * @param int    $registerId The register ID.
      * @param array  $data       Card data: boardId, stackId, title, description, or cardId for existing.
      *
-     * @return array The linked card data.
+     * @return DeckLink The created link.
      *
      * @throws Exception If parameters are missing or Deck operations fail.
      */
-    public function linkOrCreateCard(string $objectUuid, int $registerId, array $data): array
+    public function linkOrCreateCard(string $objectUuid, int $registerId, array $data): DeckLink
     {
         $user = $this->userSession->getUser();
         if ($user === null) {
             throw new Exception('No user logged in');
         }
 
-        $cardId  = null;
-        $boardId = 0;
+        $cardId    = null;
+        $cardTitle = null;
+        $boardId   = 0;
+        $stackId   = 0;
 
         if (empty($data['cardId']) === false) {
             // Link existing card.
             $cardId   = (int) $data['cardId'];
-            $cardInfo = $this->getDeckCardInfo($cardId);
+            $cardInfo = $this->getDeckCardInfo(cardId: $cardId);
             if ($cardInfo === null) {
                 throw new Exception('Deck card not found', 404);
             }
 
-            $boardId = $cardInfo['boardId'] ?? (int) ($data['boardId'] ?? 0);
+            $cardTitle = $cardInfo['title'] ?? 'Unknown';
+            $boardId   = $cardInfo['boardId'] ?? 0;
+            $stackId   = $cardInfo['stackId'] ?? 0;
+
+            // Check for duplicate.
+            $existing = $this->deckLinkMapper->findByObjectAndCard($objectUuid, $cardId);
+            if ($existing !== null) {
+                throw new Exception('Card already linked to this object', 409);
+            }
         } else if (empty($data['boardId']) === false && empty($data['stackId']) === false) {
             // Create new card.
-            $boardId = (int) $data['boardId'];
-            $stackId = (int) $data['stackId'];
-            $title   = $data['title'] ?? 'Untitled';
+            $boardId   = (int) $data['boardId'];
+            $stackId   = (int) $data['stackId'];
+            $cardTitle = $data['title'] ?? 'Untitled';
 
             $cardId = $this->createDeckCard(
-                $boardId,
-                $stackId,
-                $title,
-                $data['description'] ?? '',
-                $objectUuid
+                boardId: $boardId,
+                    stackId: $stackId,
+                    title: $cardTitle,
+                description: $data['description'] ?? '',
+                    objectUuid: $objectUuid
             );
             if ($cardId === null) {
                 throw new Exception('Failed to create Deck card');
@@ -153,48 +179,36 @@ class DeckCardService
             throw new Exception('Either cardId or boardId+stackId is required');
         }//end if
 
-        $deckRef = $boardId . '/' . $cardId;
+        $link = new DeckLink();
+        $link->setObjectUuid($objectUuid);
+        $link->setRegisterId($registerId);
+        $link->setBoardId($boardId);
+        $link->setStackId($stackId);
+        $link->setCardId($cardId);
+        $link->setCardTitle($cardTitle);
+        $link->setLinkedBy($user->getUID());
+        $link->setLinkedAt(new DateTime());
 
-        // Append to _deck column.
-        $object  = $this->magicMapper->find($objectUuid);
-        $deckIds = $object->getDeck() ?? [];
-
-        if (in_array($deckRef, $deckIds, true) === true) {
-            // Idempotent.
-            return ['id' => $deckRef, 'cardId' => $cardId, 'boardId' => $boardId];
-        }
-
-        $deckIds[] = $deckRef;
-        $object->setDeck($deckIds);
-        $this->magicMapper->update($object);
-
-        return ['id' => $deckRef, 'cardId' => $cardId, 'boardId' => $boardId];
+        return $this->deckLinkMapper->insert($link);
     }//end linkOrCreateCard()
 
     /**
-     * Remove a deck card link from an object.
+     * Remove a deck link.
      *
-     * @param string $objectUuid The object UUID.
-     * @param string $deckRef    The deck reference (e.g., "3/42").
+     * @param int $linkId The link ID.
      *
      * @return void
      *
-     * @throws Exception If object not found.
+     * @throws Exception If link not found.
      */
-    public function unlinkCard(string $objectUuid, string $deckRef): void
+    public function unlinkCard(int $linkId): void
     {
-        $object  = $this->magicMapper->find($objectUuid);
-        $deckIds = $object->getDeck() ?? [];
-
-        $deckIds = array_values(array_filter(
-            $deckIds,
-            static function (string $id) use ($deckRef): bool {
-                return $id !== $deckRef;
-            }
-        ));
-
-        $object->setDeck($deckIds);
-        $this->magicMapper->update($object);
+        try {
+            $link = $this->deckLinkMapper->find($linkId);
+            $this->deckLinkMapper->delete($link);
+        } catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
+            throw new Exception('Deck link not found', 404);
+        }
     }//end unlinkCard()
 
     /**
@@ -202,19 +216,22 @@ class DeckCardService
      *
      * @param int $boardId The Deck board ID.
      *
-     * @return array Array of linked objects.
+     * @return array Array of deck links.
      */
     public function getObjectsForBoard(int $boardId): array
     {
-        // Use reverse lookup — all deck refs start with "boardId/".
-        // Since reverseLookup searches for exact ID, we need a different approach.
-        // For now, return empty — this needs a prefix-based search.
-        $this->logger->debug('[DeckCardService] getObjectsForBoard: prefix-based lookup not yet implemented');
-        return [];
+        $links = $this->deckLinkMapper->findByBoardId($boardId);
+
+        return array_map(
+            static function (DeckLink $link): array {
+                return $link->jsonSerialize();
+            },
+            $links
+        );
     }//end getObjectsForBoard()
 
     /**
-     * Delete all deck card links for an object (cleanup on object deletion).
+     * Delete all deck links for an object (cleanup).
      *
      * @param string $objectUuid The object UUID.
      *
@@ -222,23 +239,13 @@ class DeckCardService
      */
     public function deleteLinksForObject(string $objectUuid): int
     {
-        try {
-            $object  = $this->magicMapper->find($objectUuid);
-            $deckIds = $object->getDeck() ?? [];
-            $count   = count($deckIds);
-
-            $object->setDeck(null);
-            $this->magicMapper->update($object);
-
-            return $count;
-        } catch (Exception $e) {
-            $this->logger->warning('[DeckCardService] deleteLinksForObject failed: ' . $e->getMessage());
-            return 0;
-        }
+        return $this->deckLinkMapper->deleteByObjectUuid($objectUuid);
     }//end deleteLinksForObject()
 
     /**
-     * Get Deck card info by card ID using Deck's service classes.
+     * Get Deck card info by card ID using direct DB query.
+     *
+     * Falls back to direct DB if Deck service classes are not available.
      *
      * @param int $cardId The card ID.
      *
@@ -247,6 +254,7 @@ class DeckCardService
     private function getDeckCardInfo(int $cardId): ?array
     {
         try {
+            // Try using Deck's CardService if available.
             if (class_exists('OCA\Deck\Service\CardService') === true) {
                 $cardService = \OC::$server->get('OCA\Deck\Service\CardService');
                 $card        = $cardService->find($cardId);
@@ -258,7 +266,7 @@ class DeckCardService
                 ];
             }
         } catch (Exception $e) {
-            $this->logger->debug('Deck CardService not available: ' . $e->getMessage());
+            $this->logger->debug('Deck CardService not available, card lookup skipped: '.$e->getMessage());
         }
 
         return null;
@@ -291,29 +299,15 @@ class DeckCardService
                     $fullDescription .= "\n\n";
                 }
 
-                $fullDescription .= '[Object: ' . $objectUuid . '](/apps/openregister/objects/' . $objectUuid . ')';
+                $fullDescription .= '[Object: '.$objectUuid.'](/apps/openregister/objects/'.$objectUuid.')';
 
-                $card = $cardService->create(
-                    $title,
-                    $stackId,
-                    'plain',
-                    0,
-                    $this->userSession->getUser()->getUID()
-                );
-                $cardService->update(
-                    $card->getId(),
-                    $title,
-                    $stackId,
-                    'plain',
-                    0,
-                    $fullDescription,
-                    $this->userSession->getUser()->getUID()
-                );
+                $card = $cardService->create($title, $stackId, 'plain', 0, $this->userSession->getUser()->getUID());
+                $cardService->update($card->getId(), $title, $stackId, 'plain', 0, $fullDescription, $this->userSession->getUser()->getUID());
 
                 return $card->getId();
             }
         } catch (Exception $e) {
-            $this->logger->warning('Failed to create Deck card: ' . $e->getMessage());
+            $this->logger->warning('Failed to create Deck card: '.$e->getMessage());
         }
 
         return null;

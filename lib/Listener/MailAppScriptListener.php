@@ -19,12 +19,10 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Listener;
 
-use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Db\RegisterMapper;
 use OCP\App\IAppManager;
-use OCP\AppFramework\Http\Events\BeforeTemplateRenderedEvent;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventListener;
-use OCP\IRequest;
 use OCP\IUserSession;
 use OCP\Util;
 use Psr\Log\LoggerInterface;
@@ -32,13 +30,12 @@ use Psr\Log\LoggerInterface;
 /**
  * Injects the OpenRegister mail sidebar script when the Mail app renders.
  *
- * Listens for BeforeTemplateRenderedEvent (fired for all app pages) and
- * only injects the sidebar script when:
- * 1. The current page is the Mail app.
- * 2. The user is logged in and has Mail enabled.
- * 3. At least one schema declares 'mail' in its linkedTypes configuration.
+ * Conditions for injection:
+ * 1. The event is BeforeTemplateRenderedEvent from the Mail app.
+ * 2. The Mail app is installed and enabled for the current user.
+ * 3. The user has access to at least one OpenRegister register.
  *
- * @template-implements IEventListener<BeforeTemplateRenderedEvent>
+ * @template-implements IEventListener<Event>
  *
  * @psalm-suppress UnusedClass
  */
@@ -47,17 +44,15 @@ class MailAppScriptListener implements IEventListener
     /**
      * Constructor.
      *
-     * @param IAppManager     $appManager    The app manager.
-     * @param IUserSession    $userSession   The user session.
-     * @param IRequest        $request       The request object.
-     * @param SchemaMapper    $schemaMapper  The schema mapper.
-     * @param LoggerInterface $logger        The logger.
+     * @param IAppManager     $appManager     The app manager.
+     * @param IUserSession    $userSession    The user session.
+     * @param RegisterMapper  $registerMapper The register mapper.
+     * @param LoggerInterface $logger         The logger.
      */
     public function __construct(
         private readonly IAppManager $appManager,
         private readonly IUserSession $userSession,
-        private readonly IRequest $request,
-        private readonly SchemaMapper $schemaMapper,
+        private readonly RegisterMapper $registerMapper,
         private readonly LoggerInterface $logger
     ) {
     }//end __construct()
@@ -71,13 +66,10 @@ class MailAppScriptListener implements IEventListener
      */
     public function handle(Event $event): void
     {
-        if (($event instanceof BeforeTemplateRenderedEvent) === false) {
-            return;
-        }
-
-        // Only inject on the Mail app page.
-        $requestUri = $this->request->getRequestUri();
-        if (str_contains($requestUri, '/apps/mail') === false) {
+        // Only handle BeforeTemplateRenderedEvent from the Mail app.
+        // We use string comparison to avoid a hard dependency on the Mail app classes.
+        $eventClass = get_class($event);
+        if (str_contains($eventClass, 'OCA\\Mail\\') === false) {
             return;
         }
 
@@ -91,8 +83,8 @@ class MailAppScriptListener implements IEventListener
             return;
         }
 
-        // Check if any schema declares 'mail' in linkedTypes.
-        if ($this->hasLinkedType('mail') === false) {
+        // Check user has access to at least one register.
+        if ($this->userHasRegisterAccess() === false) {
             return;
         }
 
@@ -100,36 +92,30 @@ class MailAppScriptListener implements IEventListener
         Util::addScript('openregister', 'openregister-mail-sidebar');
         Util::addStyle('openregister', 'mail-sidebar');
 
-        $this->logger->debug('Mail sidebar script injected for user {user}', [
-            'user' => $user->getUID(),
-        ]);
+        $this->logger->debug(
+                'Mail sidebar script injected for user {user}',
+                [
+                    'user' => $user->getUID(),
+                ]
+                );
     }//end handle()
 
     /**
-     * Check if any schema has the given type in its linkedTypes configuration.
+     * Check if the current user has access to any OpenRegister register.
      *
-     * @param string $type The linked type to check for
-     *
-     * @return bool True if at least one schema has this linked type.
+     * @return bool True if the user has register access.
      */
-    private function hasLinkedType(string $type): bool
+    private function userHasRegisterAccess(): bool
     {
         try {
-            $schemas = $this->schemaMapper->findAll();
-            foreach ($schemas as $schema) {
-                if (in_array($type, $schema->getLinkedTypes(), true) === true) {
-                    return true;
-                }
-            }
-
-            return false;
+            $registers = $this->registerMapper->findAll(1, 0);
+            return count($registers) > 0;
         } catch (\Exception $e) {
             $this->logger->warning(
-                'Could not check linkedTypes for sidebar: {error}',
+                'Could not check register access for mail sidebar: {error}',
                 ['error' => $e->getMessage()]
             );
-
             return false;
         }
-    }//end hasLinkedType()
+    }//end userHasRegisterAccess()
 }//end class

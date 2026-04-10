@@ -4,8 +4,7 @@
  * ContactService
  *
  * Service that wraps CardDAV vCard operations for linking contacts to OpenRegister objects.
- * Uses _contacts metadata column as primary storage + X-OPENREGISTER-* vCard properties as
- * secondary notification to the Contacts app.
+ * Uses dual storage: X-OPENREGISTER-* vCard properties + openregister_contact_links table.
  *
  * @category  Service
  * @package   OCA\OpenRegister\Service
@@ -20,15 +19,17 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service;
 
+use DateTime;
 use Exception;
 use OCA\DAV\CardDAV\CardDavBackend;
-use OCA\OpenRegister\Db\MagicMapper;
+use OCA\OpenRegister\Db\ContactLink;
+use OCA\OpenRegister\Db\ContactLinkMapper;
 use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
 use Sabre\VObject\Reader;
 
 /**
- * ContactService manages contact-to-object links via the _contacts metadata column.
+ * ContactService manages contact-to-object links via dual storage.
  *
  * @category Service
  * @package  OCA\OpenRegister\Service
@@ -39,26 +40,59 @@ use Sabre\VObject\Reader;
  */
 class ContactService
 {
+
+    /**
+     * Contact link mapper.
+     *
+     * @var ContactLinkMapper
+     */
+    private readonly ContactLinkMapper $contactLinkMapper;
+
+    /**
+     * CardDAV backend.
+     *
+     * @var CardDavBackend
+     */
+    private readonly CardDavBackend $cardDavBackend;
+
+    /**
+     * User session.
+     *
+     * @var IUserSession
+     */
+    private readonly IUserSession $userSession;
+
+    /**
+     * Logger.
+     *
+     * @var LoggerInterface
+     */
+    private readonly LoggerInterface $logger;
+
     /**
      * Constructor.
      *
-     * @param MagicMapper          $magicMapper         Object mapper
-     * @param LinkedEntityService  $linkedEntityService Reverse lookup service
-     * @param CardDavBackend       $cardDavBackend      CardDAV backend
-     * @param IUserSession         $userSession         User session
-     * @param LoggerInterface      $logger              Logger
+     * @param ContactLinkMapper $contactLinkMapper Contact link mapper
+     * @param CardDavBackend    $cardDavBackend    CardDAV backend
+     * @param IUserSession      $userSession       User session
+     * @param LoggerInterface   $logger            Logger
+     *
+     * @return void
      */
     public function __construct(
-        private readonly MagicMapper $magicMapper,
-        private readonly LinkedEntityService $linkedEntityService,
-        private readonly CardDavBackend $cardDavBackend,
-        private readonly IUserSession $userSession,
-        private readonly LoggerInterface $logger,
+        ContactLinkMapper $contactLinkMapper,
+        CardDavBackend $cardDavBackend,
+        IUserSession $userSession,
+        LoggerInterface $logger
     ) {
+        $this->contactLinkMapper = $contactLinkMapper;
+        $this->cardDavBackend    = $cardDavBackend;
+        $this->userSession       = $userSession;
+        $this->logger            = $logger;
     }//end __construct()
 
     /**
-     * Get all contact links for an object, enriched from CardDAV.
+     * Get all contact links for an object.
      *
      * @param string $objectUuid The object UUID.
      *
@@ -66,14 +100,15 @@ class ContactService
      */
     public function getContactsForObject(string $objectUuid): array
     {
-        $object     = $this->magicMapper->find($objectUuid);
-        $contactIds = $object->getContacts() ?? [];
-        $total      = count($contactIds);
+        $links = $this->contactLinkMapper->findByObjectUuid($objectUuid);
+        $total = $this->contactLinkMapper->countByObjectUuid($objectUuid);
 
-        $results = [];
-        foreach ($contactIds as $contactUid) {
-            $results[] = $this->enrichContact($contactUid);
-        }
+        $results = array_map(
+            static function (ContactLink $link): array {
+                return $link->jsonSerialize();
+            },
+            $links
+        );
 
         return ['results' => $results, 'total' => $total];
     }//end getContactsForObject()
@@ -82,12 +117,12 @@ class ContactService
      * Link an existing contact to an object.
      *
      * @param string      $objectUuid    The object UUID.
-     * @param int         $registerId    The register ID (kept for interface compatibility).
+     * @param int         $registerId    The register ID.
      * @param int         $addressbookId The addressbook ID.
      * @param string      $contactUri    The contact URI in the addressbook.
      * @param string|null $role          The role of this contact on the object.
      *
-     * @return array The enriched contact data.
+     * @return ContactLink The created link.
      *
      * @throws Exception If the contact does not exist.
      */
@@ -96,17 +131,27 @@ class ContactService
         int $registerId,
         int $addressbookId,
         string $contactUri,
-        ?string $role = null
-    ): array {
+        ?string $role=null
+    ): ContactLink {
         // Verify the contact exists.
         $card = $this->cardDavBackend->getCard($addressbookId, $contactUri);
         if ($card === false) {
             throw new Exception('Contact not found', 404);
         }
 
-        // Parse vCard for UID.
-        $vcard      = Reader::read($card['carddata']);
-        $contactUid = isset($vcard->UID) === true ? (string) $vcard->UID : '';
+        $user = $this->userSession->getUser();
+        if ($user === null) {
+            throw new Exception('No user logged in');
+        }
+
+        // Parse vCard for cached fields.
+        $vcard       = Reader::read($card['carddata']);
+        $contactUid  = isset($vcard->UID) === true ? (string) $vcard->UID : '';
+        $displayName = isset($vcard->FN) === true ? (string) $vcard->FN : null;
+        $email       = null;
+        if (isset($vcard->EMAIL) === true) {
+            $email = (string) $vcard->EMAIL;
+        }
 
         // Add X-OPENREGISTER-* properties to the vCard.
         $vcard->add('X-OPENREGISTER-OBJECT', $objectUuid);
@@ -116,27 +161,30 @@ class ContactService
 
         $this->cardDavBackend->updateCard($addressbookId, $contactUri, $vcard->serialize());
 
-        // Append to _contacts column.
-        $object     = $this->magicMapper->find($objectUuid);
-        $contactIds = $object->getContacts() ?? [];
+        // Create DB record.
+        $link = new ContactLink();
+        $link->setObjectUuid($objectUuid);
+        $link->setRegisterId($registerId);
+        $link->setContactUid($contactUid);
+        $link->setAddressbookId($addressbookId);
+        $link->setContactUri($contactUri);
+        $link->setDisplayName($displayName);
+        $link->setEmail($email);
+        $link->setRole($role);
+        $link->setLinkedBy($user->getUID());
+        $link->setLinkedAt(new DateTime());
 
-        if (in_array($contactUid, $contactIds, true) === false) {
-            $contactIds[] = $contactUid;
-            $object->setContacts($contactIds);
-            $this->magicMapper->update($object);
-        }
-
-        return $this->enrichContact($contactUid);
+        return $this->contactLinkMapper->insert($link);
     }//end linkContact()
 
     /**
      * Create a new contact and link it to an object.
      *
      * @param string $objectUuid The object UUID.
-     * @param int    $registerId The register ID (kept for interface compatibility).
+     * @param int    $registerId The register ID.
      * @param array  $data       Contact data: fullName, email, phone, role.
      *
-     * @return array The enriched contact data.
+     * @return ContactLink The created link.
      *
      * @throws Exception If no user or addressbook.
      */
@@ -144,7 +192,7 @@ class ContactService
         string $objectUuid,
         int $registerId,
         array $data
-    ): array {
+    ): ContactLink {
         $user = $this->userSession->getUser();
         if ($user === null) {
             throw new Exception('No user logged in');
@@ -162,67 +210,113 @@ class ContactService
         $lines   = [];
         $lines[] = 'BEGIN:VCARD';
         $lines[] = 'VERSION:3.0';
-        $lines[] = 'UID:' . $uid;
-        $lines[] = 'FN:' . ($data['fullName'] ?? 'Unknown');
+        $lines[] = 'UID:'.$uid;
+        $lines[] = 'FN:'.($data['fullName'] ?? 'Unknown');
 
         if (empty($data['email']) === false) {
-            $lines[] = 'EMAIL;TYPE=INTERNET:' . $data['email'];
+            $lines[] = 'EMAIL;TYPE=INTERNET:'.$data['email'];
         }
 
         if (empty($data['phone']) === false) {
-            $lines[] = 'TEL;TYPE=CELL:' . $data['phone'];
+            $lines[] = 'TEL;TYPE=CELL:'.$data['phone'];
         }
 
-        $lines[] = 'X-OPENREGISTER-OBJECT:' . $objectUuid;
+        $lines[] = 'X-OPENREGISTER-OBJECT:'.$objectUuid;
         if ($role !== null) {
-            $lines[] = 'X-OPENREGISTER-ROLE:' . $role;
+            $lines[] = 'X-OPENREGISTER-ROLE:'.$role;
         }
 
         $lines[] = 'END:VCARD';
 
-        $cardData   = implode("\r\n", $lines) . "\r\n";
-        $contactUri = $uid . '.vcf';
+        $cardData   = implode("\r\n", $lines)."\r\n";
+        $contactUri = $uid.'.vcf';
 
         $this->cardDavBackend->createCard($addressbook['id'], $contactUri, $cardData);
 
-        // Append UID to _contacts column.
-        $object     = $this->magicMapper->find($objectUuid);
-        $contactIds = $object->getContacts() ?? [];
-        $contactIds[] = $uid;
-        $object->setContacts($contactIds);
-        $this->magicMapper->update($object);
+        // Create DB record.
+        $link = new ContactLink();
+        $link->setObjectUuid($objectUuid);
+        $link->setRegisterId($registerId);
+        $link->setContactUid($uid);
+        $link->setAddressbookId($addressbook['id']);
+        $link->setContactUri($contactUri);
+        $link->setDisplayName($data['fullName'] ?? null);
+        $link->setEmail($data['email'] ?? null);
+        $link->setRole($role);
+        $link->setLinkedBy($user->getUID());
+        $link->setLinkedAt(new DateTime());
 
-        return $this->enrichContact($uid);
+        return $this->contactLinkMapper->insert($link);
     }//end createAndLinkContact()
 
     /**
-     * Remove a contact link from an object.
+     * Update the role on a contact-object link.
      *
-     * @param string $objectUuid The object UUID.
-     * @param string $contactUid The contact UID.
+     * @param int    $linkId The link ID.
+     * @param string $role   The new role.
+     *
+     * @return ContactLink The updated link.
+     *
+     * @throws Exception If link not found.
+     */
+    public function updateRole(int $linkId, string $role): ContactLink
+    {
+        try {
+            $link = $this->contactLinkMapper->find($linkId);
+        } catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
+            throw new Exception('Contact link not found', 404);
+        }
+
+        // Update vCard role property.
+        try {
+            $card = $this->cardDavBackend->getCard($link->getAddressbookId(), $link->getContactUri());
+            if ($card !== false) {
+                $vcard = Reader::read($card['carddata']);
+                // Remove old role properties.
+                unset($vcard->{'X-OPENREGISTER-ROLE'});
+                $vcard->add('X-OPENREGISTER-ROLE', $role);
+                $this->cardDavBackend->updateCard($link->getAddressbookId(), $link->getContactUri(), $vcard->serialize());
+            }
+        } catch (Exception $e) {
+            $this->logger->warning('Failed to update vCard role: '.$e->getMessage());
+        }
+
+        $link->setRole($role);
+
+        return $this->contactLinkMapper->update($link);
+    }//end updateRole()
+
+    /**
+     * Remove a contact link.
+     *
+     * @param int $linkId The link ID.
      *
      * @return void
      *
-     * @throws Exception If object not found.
+     * @throws Exception If link not found.
      */
-    public function unlinkContact(string $objectUuid, string $contactUid): void
+    public function unlinkContact(int $linkId): void
     {
+        try {
+            $link = $this->contactLinkMapper->find($linkId);
+        } catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
+            throw new Exception('Contact link not found', 404);
+        }
+
         // Remove X-OPENREGISTER-* from vCard.
-        $this->cleanVcardProperties($contactUid);
-
-        // Remove from _contacts array.
-        $object     = $this->magicMapper->find($objectUuid);
-        $contactIds = $object->getContacts() ?? [];
-
-        $contactIds = array_values(array_filter(
-            $contactIds,
-            static function (string $uid) use ($contactUid): bool {
-                return $uid !== $contactUid;
+        try {
+            $card = $this->cardDavBackend->getCard($link->getAddressbookId(), $link->getContactUri());
+            if ($card !== false) {
+                $vcard = Reader::read($card['carddata']);
+                unset($vcard->{'X-OPENREGISTER-OBJECT'});
+                unset($vcard->{'X-OPENREGISTER-ROLE'});
+                $this->cardDavBackend->updateCard($link->getAddressbookId(), $link->getContactUri(), $vcard->serialize());
             }
-        ));
+        } catch (Exception $e) {
+            $this->logger->warning('Failed to clean vCard properties: '.$e->getMessage());
+        }
 
-        $object->setContacts($contactIds);
-        $this->magicMapper->update($object);
+        $this->contactLinkMapper->delete($link);
     }//end unlinkContact()
 
     /**
@@ -230,15 +324,22 @@ class ContactService
      *
      * @param string $contactUid The contact UID.
      *
-     * @return array Array of linked objects.
+     * @return array Array of contact links with object UUIDs and roles.
      */
     public function getObjectsForContact(string $contactUid): array
     {
-        return $this->linkedEntityService->reverseLookup('contacts', $contactUid);
+        $links = $this->contactLinkMapper->findByContactUid($contactUid);
+
+        return array_map(
+            static function (ContactLink $link): array {
+                return $link->jsonSerialize();
+            },
+            $links
+        );
     }//end getObjectsForContact()
 
     /**
-     * Delete all contact links for an object (cleanup on object deletion).
+     * Delete all contact links for an object (cleanup).
      *
      * @param string $objectUuid The object UUID.
      *
@@ -246,110 +347,27 @@ class ContactService
      */
     public function deleteLinksForObject(string $objectUuid): void
     {
-        try {
-            $object     = $this->magicMapper->find($objectUuid);
-            $contactIds = $object->getContacts() ?? [];
+        $links = $this->contactLinkMapper->findByObjectUuid($objectUuid);
 
-            // Clean vCard properties for each contact.
-            foreach ($contactIds as $contactUid) {
-                $this->cleanVcardProperties($contactUid);
+        foreach ($links as $link) {
+            try {
+                $card = $this->cardDavBackend->getCard($link->getAddressbookId(), $link->getContactUri());
+                if ($card !== false) {
+                    $vcard = Reader::read($card['carddata']);
+                    // Remove properties matching this object only.
+                    unset($vcard->{'X-OPENREGISTER-OBJECT'});
+                    unset($vcard->{'X-OPENREGISTER-ROLE'});
+                    $this->cardDavBackend->updateCard($link->getAddressbookId(), $link->getContactUri(), $vcard->serialize());
+                }
+            } catch (Exception $e) {
+                $this->logger->warning(
+                    'Failed to clean vCard for contact '.$link->getContactUid().': '.$e->getMessage()
+                );
             }
+        }//end foreach
 
-            $object->setContacts(null);
-            $this->magicMapper->update($object);
-        } catch (Exception $e) {
-            $this->logger->warning('[ContactService] deleteLinksForObject failed: ' . $e->getMessage());
-        }
+        $this->contactLinkMapper->deleteByObjectUuid($objectUuid);
     }//end deleteLinksForObject()
-
-    /**
-     * Enrich a contact UID with data from CardDAV.
-     *
-     * @param string $contactUid The contact UID.
-     *
-     * @return array Enriched contact data.
-     */
-    private function enrichContact(string $contactUid): array
-    {
-        $user = $this->userSession->getUser();
-        if ($user === null) {
-            return ['id' => $contactUid, 'label' => 'Not found'];
-        }
-
-        $principal    = 'principals/users/' . $user->getUID();
-        $addressbooks = $this->cardDavBackend->getAddressBooksForUser($principal);
-
-        foreach ($addressbooks as $addressbook) {
-            $cards = $this->cardDavBackend->getCards($addressbook['id']);
-            foreach ($cards as $card) {
-                if (isset($card['carddata']) === false) {
-                    continue;
-                }
-
-                try {
-                    $vcard = Reader::read($card['carddata']);
-                    $uid   = isset($vcard->UID) === true ? (string) $vcard->UID : '';
-                    if ($uid === $contactUid) {
-                        return [
-                            'id'    => $contactUid,
-                            'name'  => isset($vcard->FN) === true ? (string) $vcard->FN : $contactUid,
-                            'email' => isset($vcard->EMAIL) === true ? (string) $vcard->EMAIL : null,
-                        ];
-                    }
-                } catch (Exception $e) {
-                    continue;
-                }
-            }
-        }
-
-        return ['id' => $contactUid, 'label' => 'Not found'];
-    }//end enrichContact()
-
-    /**
-     * Remove X-OPENREGISTER-* properties from a contact's vCard.
-     *
-     * @param string $contactUid The contact UID.
-     *
-     * @return void
-     */
-    private function cleanVcardProperties(string $contactUid): void
-    {
-        $user = $this->userSession->getUser();
-        if ($user === null) {
-            return;
-        }
-
-        $principal    = 'principals/users/' . $user->getUID();
-        $addressbooks = $this->cardDavBackend->getAddressBooksForUser($principal);
-
-        foreach ($addressbooks as $addressbook) {
-            $cards = $this->cardDavBackend->getCards($addressbook['id']);
-            foreach ($cards as $card) {
-                if (isset($card['carddata']) === false) {
-                    continue;
-                }
-
-                try {
-                    $vcard = Reader::read($card['carddata']);
-                    $uid   = isset($vcard->UID) === true ? (string) $vcard->UID : '';
-                    if ($uid === $contactUid) {
-                        unset($vcard->{'X-OPENREGISTER-OBJECT'});
-                        unset($vcard->{'X-OPENREGISTER-ROLE'});
-                        $this->cardDavBackend->updateCard(
-                            $addressbook['id'],
-                            $card['uri'],
-                            $vcard->serialize()
-                        );
-                        return;
-                    }
-                } catch (Exception $e) {
-                    $this->logger->warning(
-                        '[ContactService] Failed to clean vCard for ' . $contactUid . ': ' . $e->getMessage()
-                    );
-                }
-            }
-        }
-    }//end cleanVcardProperties()
 
     /**
      * Find the user's default addressbook.
@@ -363,13 +381,14 @@ class ContactService
             return null;
         }
 
-        $principal    = 'principals/users/' . $user->getUID();
+        $principal    = 'principals/users/'.$user->getUID();
         $addressbooks = $this->cardDavBackend->getAddressBooksForUser($principal);
 
         if (empty($addressbooks) === true) {
             return null;
         }
 
+        // Return first addressbook.
         return $addressbooks[0];
     }//end findUserAddressbook()
 }//end class
