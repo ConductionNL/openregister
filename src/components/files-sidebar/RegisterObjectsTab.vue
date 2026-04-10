@@ -80,8 +80,6 @@ export default {
 			error: false,
 			errorMessage: '',
 			objects: [],
-			databaseOffIcon,
-			alertCircleIcon,
 		}
 	},
 

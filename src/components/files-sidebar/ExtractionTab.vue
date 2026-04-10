@@ -184,8 +184,6 @@ export default {
 				anonymizedAt: null,
 				anonymizedFileId: null,
 			},
-			alertCircleIcon,
-			fileSearchIcon,
 		}
 	},
 
