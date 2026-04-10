@@ -1,4 +1,5 @@
 <script setup>
+import { translate as t, translatePlural as n } from '@nextcloud/l10n'
 import { schemaStore, navigationStore } from '../../store/store.js'
 import SchemaStatsBlock from '../../components/SchemaStatsBlock.vue'
 </script>
@@ -424,11 +425,6 @@ export default {
 .breakdown-value.deleted {
 	color: var(--color-error);
 	background: var(--color-error-light);
-}
-
-.breakdown-value.published {
-	color: var(--color-success);
-	background: var(--color-success-light);
 }
 
 .steps-section {

@@ -1,1 +1,0 @@
-select (object#>>'{tooi}') as gemeentecode, count(*) as count from oc_openregister_objects where register = '2' group by gemeentecode;

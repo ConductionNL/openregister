@@ -1,4 +1,5 @@
 <script setup>
+import { translate as t } from '@nextcloud/l10n'
 import { registerStore, schemaStore, navigationStore, objectStore, dashboardStore } from '../../store/store.js'
 </script>
 
@@ -303,15 +304,6 @@ import { registerStore, schemaStore, navigationStore, objectStore, dashboardStor
 					</template>
 				</NcCheckboxRadioSwitch>
 
-				<NcCheckboxRadioSwitch
-					:checked="publish"
-					type="switch"
-					@update:checked="publish = $event">
-					Auto-publish imported objects
-					<template #helper>
-						Automatically set the published date for all created and updated objects to the current timestamp.
-					</template>
-				</NcCheckboxRadioSwitch>
 			</div>
 		</div>
 
@@ -381,7 +373,6 @@ export default {
 			events: false, // Whether to enable events (default: false)
 			rbac: true, // Whether to enable RBAC (default: true)
 			multi: true, // Whether to enable multi-tenancy (default: true)
-			publish: false, // Whether to auto-publish imported objects (default: false)
 			allowedFileTypes: ['json', 'xlsx', 'xls', 'csv'], // Allowed file types
 			importSummary: null, // The import summary from the backend
 			importResults: null, // The import results for display
@@ -422,9 +413,21 @@ export default {
 		schemaOptions() {
 			if (!registerStore.registerItem) return { options: [] }
 
+			// Convert register schemas to strings for comparison.
+			// Schema IDs can be either numbers or objects with an id property.
+			const registerSchemaIds = (registerStore.registerItem.schemas || []).map(schema => {
+				// If schema is an object with an id property, extract it; otherwise use the value directly.
+				const schemaId = typeof schema === 'object' && schema !== null ? schema.id : schema
+				return String(schemaId)
+			})
+
 			return {
 				options: schemaStore.schemaList
-					.filter(schema => registerStore.registerItem.schemas.some(registerSchema => registerSchema.id === schema.id))
+					.filter(schema => {
+						// Convert schema ID to string for comparison.
+						const schemaId = String(schema.id)
+						return registerSchemaIds.includes(schemaId)
+					})
 					.map(schema => ({
 						value: schema.id,
 						label: schema.title,
@@ -476,22 +479,14 @@ export default {
 		this.registerLoading = true
 		this.schemaLoading = true
 
-		// Only load lists if they're empty
-		if (!registerStore.registerList.length) {
-			registerStore.refreshRegisterList()
-				.finally(() => (this.registerLoading = false))
-		} else {
-			this.registerLoading = false
-		}
+		// Always load lists to ensure fresh data.
+		registerStore.refreshRegisterList()
+			.finally(() => (this.registerLoading = false))
 
-		if (!schemaStore.schemaList.length) {
-			schemaStore.refreshSchemaList()
-				.finally(() => (this.schemaLoading = false))
-		} else {
-			this.schemaLoading = false
-		}
+		schemaStore.refreshSchemaList()
+			.finally(() => (this.schemaLoading = false))
 
-		// Load objects if register and schema are already selected
+		// Load objects if register and schema are already selected.
 		if (registerStore.registerItem && schemaStore.schemaItem) {
 			objectStore.refreshObjectList()
 		}
@@ -560,7 +555,6 @@ export default {
 			this.events = false // Reset to default
 			this.rbac = true // Reset to default
 			this.multi = true // Reset to default
-			this.publish = false // Reset to default
 			this.importSummary = null
 			this.importResults = null
 			this.expandedSheets = {} // Reset expanded state
@@ -645,9 +639,30 @@ export default {
 			const i = Math.floor(Math.log(bytes) / Math.log(k))
 			return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i]
 		},
-		handleRegisterChange(option) {
+		async handleRegisterChange(option) {
+			if (!option) {
+				registerStore.setRegisterItem(null)
+				schemaStore.setSchemaItem(null)
+				return
+			}
+
 			registerStore.setRegisterItem(option)
 			schemaStore.setSchemaItem(null)
+
+			// Always refresh schema list when register changes to ensure we have all schemas.
+			// This is important because schemas might not be loaded yet or might have changed.
+			const registerSchemas = option.schemas || []
+			if (registerSchemas.length > 0) {
+				this.schemaLoading = true
+				try {
+					// Load all schemas to ensure we have the ones for this register.
+					await schemaStore.refreshSchemaList()
+				} catch (error) {
+					console.error('Error loading schemas:', error)
+				} finally {
+					this.schemaLoading = false
+				}
+			}
 		},
 		async handleSchemaChange(option) {
 			schemaStore.setSchemaItem(option)

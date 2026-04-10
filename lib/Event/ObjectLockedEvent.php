@@ -1,4 +1,5 @@
 <?php
+
 /**
  * OpenRegister ObjectLockedEvent
  *
@@ -35,7 +36,6 @@ class ObjectLockedEvent extends Event
      */
     private ObjectEntity $object;
 
-
     /**
      * Constructor for ObjectLockedEvent
      *
@@ -47,9 +47,7 @@ class ObjectLockedEvent extends Event
     {
         parent::__construct();
         $this->object = $object;
-
     }//end __construct()
-
 
     /**
      * Get the locked object entity
@@ -59,8 +57,5 @@ class ObjectLockedEvent extends Event
     public function getObject(): ObjectEntity
     {
         return $this->object;
-
     }//end getObject()
-
-
 }//end class

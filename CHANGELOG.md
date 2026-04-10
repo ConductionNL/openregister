@@ -1,35 +1,22 @@
-# Version: 0.1.2
-
-* [#1](https://github.com/ConductionNL/openregister/pull/1): Create openregister.csr
-
 # Changelog
 
-## 0.1.57 – 2025-01-16
-### Fixed
-- SOLR setup now uses tenant-specific configSets and collections instead of base resources
-- Enhanced SOLR setup error reporting with detailed progress tracking and troubleshooting steps
-- Fixed dashboard stats availability inconsistency with connection test
-- Centralized all SOLR operations through GuzzleSolrService for consistency
-- Improved multi-tenant isolation in SOLR infrastructure
-
-### Added
-- Visual progress bar in SOLR setup dialog showing completed vs total steps
-- Detailed error information display with primary error, error type, and operation context
-- Configuration details shown during failed SOLR setup attempts
-- Numbered troubleshooting steps section with actionable items
-- Enhanced step timeline with individual step status and timestamps
-- Color-coded progress indicators for better user experience
-
-## 0.1.5 – 2024-09-07
-### Added
-- First version for the Nextcloud store
-
-### Changed
-- Changes in existing functionality for this release:
+## 0.2.13-unstable.78 – 2026-04-03
 
 ### Fixed
-- Bug fixes for this release:
+- Fix `MagicMapper::getExistingTableColumns()` to use platform-aware `table_schema` filter (`DATABASE()` for MySQL/MariaDB, `current_schema()` for PostgreSQL), preventing `Duplicate column name '_id'` errors on MariaDB writes
 
-### Added
-- Initial release
+
+## 0.2.9-beta.36 – 2026-01-12
+
+### Other
+- By checking the md5 checksum of the existing file and the content of the incoming data. ([#518](https://github.com/ConductionNL/openregister/pull/518))
+- Would be nice to delete schemas ([#519](https://github.com/ConductionNL/openregister/pull/519))
+- Stable 2025-08-05 ([#523](https://github.com/ConductionNL/openregister/pull/523))
+
+## 0.2.9-beta.1 – 2026-01-09
+
+### Other
+- By checking the md5 checksum of the existing file and the content of the incoming data. ([#518](https://github.com/ConductionNL/openregister/pull/518))
+- Would be nice to delete schemas ([#519](https://github.com/ConductionNL/openregister/pull/519))
+- Stable 2025-08-05 ([#523](https://github.com/ConductionNL/openregister/pull/523))
 

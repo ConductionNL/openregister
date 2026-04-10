@@ -1,0 +1,27 @@
+schema: spec-driven
+
+context: |
+  Project: OpenRegister
+  Repo: ConductionNL/openregister
+  Type: Nextcloud App (PHP)
+  Description: Core data registration platform for structured data management
+  Key components: Registers, Schemas, Objects, Sources, ObjectService
+  Database: PostgreSQL with pgvector support
+  Mount path: /var/www/html/custom_apps/openregister
+
+  Shared specs: See ../openspec/specs/ for cross-project conventions
+  Project guidelines: See ../project.md for workspace-wide standards
+
+rules:
+  proposal:
+    - Reference shared nextcloud-app spec for app structure requirements
+    - Consider impact on dependent apps (opencatalogi, softwarecatalog)
+    - "ADR-011: Before implementing ANY utility (validation, formatting, parsing), search OpenRegister lib/Formats/, lib/Service/, and lib/Handler/ for existing implementations. Common duplications: BSN validation (BsnFormat.php), date formatting, slug generation, UUID handling. If found, reuse via DI or document why duplication is necessary."
+  specs:
+    - ObjectService.saveObject() takes entity/array as first arg (NOT a type string)
+    - Include migration specs for any schema changes
+  design:
+    - Use Nextcloud OCP interfaces for all framework interactions
+    - Include OpenRegister service layer patterns (RegisterService, SchemaService, ObjectService)
+  tasks:
+    - Test with opencatalogi and softwarecatalog to verify no regressions

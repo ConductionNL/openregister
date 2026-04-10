@@ -1,4 +1,5 @@
 <script setup>
+import { translate as t } from '@nextcloud/l10n'
 import { schemaStore, navigationStore, objectStore, registerStore } from '../../store/store.js'
 </script>
 
@@ -120,8 +121,8 @@ export default {
 						search: '',
 					})
 
-					if (objectStore.objectList?.results?.length) {
-						this.objects.push(...objectStore.objectList.results)
+					if (objectStore.getCollection(objectStore.currentType).length) {
+						this.objects.push(...objectStore.getCollection(objectStore.currentType))
 						this.registerName = reg.title
 					}
 				}

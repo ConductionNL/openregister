@@ -1,0 +1,109 @@
+# Docker Compose for OpenCatalogi Federation Testing
+#
+# Sets up two isolated Nextcloud instances with shared PostgreSQL to test
+# federation features: directory sync, listing management, federated search,
+# broadcast/anti-loop protection, and cross-catalog publication aggregation.
+#
+# Usage:
+#   bash tests/federation/run-federation-tests.sh
+#
+# Or manually:
+#   docker compose -f docker-compose.federation.yml up -d
+#   # ... run tests ...
+#   docker compose -f docker-compose.federation.yml down -v
+#
+# Ports: 9081 (instance 1), 9082 (instance 2) — avoids conflict with dev env (8080)
+# Network: isolated federation-test-network (does not touch openregister-network)
+
+volumes:
+  federation-nc1:
+  federation-nc2:
+
+networks:
+  federation-test-network:
+    name: federation-test-network
+    driver: bridge
+
+services:
+  # Shared PostgreSQL with two databases
+  federation-db:
+    container_name: federation-db
+    image: pgvector/pgvector:pg16
+    restart: "no"
+    environment:
+      - POSTGRES_USER=nextcloud
+      - POSTGRES_PASSWORD=federation-test
+      - POSTGRES_DB=nc1
+    volumes:
+      - ./tests/federation/init-databases.sql:/docker-entrypoint-initdb.d/01-init-databases.sql:ro
+    networks:
+      - federation-test-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U nextcloud -d nc1"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  # Nextcloud Instance 1 (the "home" catalog that discovers others)
+  nc-fed-1:
+    user: root
+    container_name: nc-fed-1
+    image: nextcloud
+    restart: "no"
+    ports:
+      - "9081:80"
+    depends_on:
+      federation-db:
+        condition: service_healthy
+    volumes:
+      - federation-nc1:/var/www/html:rw
+      - .:/var/www/html/custom_apps/openregister
+      - ../opencatalogi:/var/www/html/custom_apps/opencatalogi
+    environment:
+      - POSTGRES_DB=nc1
+      - POSTGRES_USER=nextcloud
+      - POSTGRES_PASSWORD=federation-test
+      - POSTGRES_HOST=federation-db
+      - NEXTCLOUD_ADMIN_USER=admin
+      - NEXTCLOUD_ADMIN_PASSWORD=admin
+      - PHP_MEMORY_LIMIT=1G
+    networks:
+      - federation-test-network
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost/status.php | grep -q '\"installed\":true' || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+      start_period: 60s
+
+  # Nextcloud Instance 2 (the "remote" catalog to be discovered and searched)
+  nc-fed-2:
+    user: root
+    container_name: nc-fed-2
+    image: nextcloud
+    restart: "no"
+    ports:
+      - "9082:80"
+    depends_on:
+      federation-db:
+        condition: service_healthy
+    volumes:
+      - federation-nc2:/var/www/html:rw
+      - .:/var/www/html/custom_apps/openregister
+      - ../opencatalogi:/var/www/html/custom_apps/opencatalogi
+    environment:
+      - POSTGRES_DB=nc2
+      - POSTGRES_USER=nextcloud
+      - POSTGRES_PASSWORD=federation-test
+      - POSTGRES_HOST=federation-db
+      - NEXTCLOUD_ADMIN_USER=admin
+      - NEXTCLOUD_ADMIN_PASSWORD=admin
+      - PHP_MEMORY_LIMIT=1G
+    networks:
+      - federation-test-network
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost/status.php | grep -q '\"installed\":true' || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+      start_period: 60s

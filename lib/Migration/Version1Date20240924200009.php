@@ -1,5 +1,5 @@
 <?php
-// phpcs:ignoreFile
+
 /**
  * OpenRegister Migration
  *
@@ -32,34 +32,43 @@ use OCP\Migration\SimpleMigrationStep;
 
 /**
  * FIXME Auto-generated migration step: Please modify to your needs!
+ *
+ * @SuppressWarnings(PHPMD.UnusedFormalParameter)
  */
 class Version1Date20240924200009 extends SimpleMigrationStep
 {
-
-
     /**
-     * @param IOutput                   $output
-     * @param Closure(): ISchemaWrapper $schemaClosure
-     * @param array                     $options
+     * Execute actions before schema changes
+     *
+     * @param IOutput                   $output        Output interface for migration progress
+     * @param Closure(): ISchemaWrapper $schemaClosure Schema closure function
+     * @param array                     $options       Migration options
+     *
+     * @return void
+     *
+     * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      */
     public function preSchemaChange(IOutput $output, Closure $schemaClosure, array $options): void
     {
-
     }//end preSchemaChange()
 
-
     /**
-     * @param IOutput                   $output
-     * @param Closure(): ISchemaWrapper $schemaClosure
-     * @param array                     $options
+     * Apply schema changes
      *
-     * @return null|ISchemaWrapper
+     * @param IOutput                   $output        Output interface for migration progress
+     * @param Closure(): ISchemaWrapper $schemaClosure Schema closure function
+     * @param array                     $options       Migration options
+     *
+     * @return ISchemaWrapper
+     *
+     * @SuppressWarnings (PHPMD.UnusedFormalParameter)
      */
     public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper
     {
         /*
          * @var ISchemaWrapper $schema
          */
+
         $schema = $schemaClosure();
 
         if ($schema->hasTable('openregister_sources') === false) {
@@ -134,19 +143,20 @@ class Version1Date20240924200009 extends SimpleMigrationStep
         }
 
         return $schema;
-
     }//end changeSchema()
 
-
     /**
-     * @param IOutput                   $output
-     * @param Closure(): ISchemaWrapper $schemaClosure
-     * @param array                     $options
+     * Performs actions after schema changes
+     *
+     * @param IOutput                   $output        Output interface for migration progress
+     * @param Closure(): ISchemaWrapper $schemaClosure Schema closure function
+     * @param array                     $options       Migration options
+     *
+     * @SuppressWarnings(PHPMD.UnusedFormalParameter)
+     *
+     * @return void
      */
     public function postSchemaChange(IOutput $output, Closure $schemaClosure, array $options): void
     {
-
     }//end postSchemaChange()
-
-
 }//end class

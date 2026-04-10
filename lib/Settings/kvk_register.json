@@ -1,0 +1,1212 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "KVK Mock Register",
+    "description": "Mock KVK (Kamer van Koophandel) register with Disney-themed test data from the official KVK test environment, supplemented with realistic fictional Dutch businesses.",
+    "version": "1.0.0"
+  },
+  "x-openregister": {
+    "type": "mock",
+    "app": "openregister",
+    "openregister": "^v0.2.10",
+    "description": "KVK mock register for development and testing — enables Pipelinq, Procest and other apps to develop business integrations without KVK API credentials"
+  },
+  "paths": {},
+  "components": {
+    "registers": {
+      "kvk": {
+        "slug": "kvk",
+        "title": "KVK (Kamer van Koophandel)",
+        "description": "Mock Handelsregister with fictional business records aligned to the KVK API data model. Contains Disney-themed test companies from the official KVK test environment and additional realistic Dutch businesses covering diverse legal forms, sectors, and provinces.",
+        "schemas": [
+          "maatschappelijke-activiteit",
+          "vestiging"
+        ],
+        "folder": "Open Registers/KVK"
+      }
+    },
+    "schemas": {
+      "maatschappelijke-activiteit": {
+        "slug": "maatschappelijke-activiteit",
+        "title": "Maatschappelijke Activiteit",
+        "version": "1.0.0",
+        "published": "2026-01-01T00:00:00+00:00",
+        "summary": "A business entity registered at the Chamber of Commerce",
+        "description": "Represents a maatschappelijke activiteit (business entity) in the KVK Handelsregister. Each record corresponds to a unique KVK number and contains the legal form, trade names, SBI activity codes, employee count, and registration dates.",
+        "required": [
+          "kvkNummer",
+          "naam"
+        ],
+        "properties": {
+          "kvkNummer": {
+            "type": "string",
+            "description": "8-digit KVK registration number",
+            "pattern": "^\\d{8}$",
+            "minLength": 8,
+            "maxLength": 8,
+            "facetable": true
+          },
+          "naam": {
+            "type": "string",
+            "description": "Primary name of the business",
+            "maxLength": 255,
+            "facetable": true
+          },
+          "handelsnamen": {
+            "type": "array",
+            "description": "Trade names with ordering",
+            "items": {
+              "type": "object",
+              "properties": {
+                "naam": {
+                  "type": "string",
+                  "description": "Trade name"
+                },
+                "volgorde": {
+                  "type": "integer",
+                  "description": "Display order (0 = primary)"
+                }
+              },
+              "required": ["naam", "volgorde"]
+            },
+            "facetable": false
+          },
+          "rechtsvorm": {
+            "type": "string",
+            "description": "Legal form description",
+            "facetable": true
+          },
+          "uitgebreideRechtsvorm": {
+            "type": "string",
+            "description": "Detailed legal form description",
+            "facetable": false
+          },
+          "formeleRegistratiedatum": {
+            "type": "string",
+            "description": "Formal registration date (ISO 8601)",
+            "format": "date",
+            "facetable": false
+          },
+          "materieleRegistratie": {
+            "type": "object",
+            "description": "Material registration dates",
+            "properties": {
+              "datumAanvang": {
+                "type": "string",
+                "description": "Start date of material registration",
+                "format": "date"
+              },
+              "datumEinde": {
+                "type": "string",
+                "description": "End date of material registration (null if active)",
+                "format": "date"
+              }
+            },
+            "facetable": false
+          },
+          "totaalWerkzamePersonen": {
+            "type": "integer",
+            "description": "Total number of employed persons",
+            "minimum": 0,
+            "facetable": true
+          },
+          "sbiActiviteiten": {
+            "type": "array",
+            "description": "SBI (Standaard Bedrijfsindeling) activity codes",
+            "items": {
+              "type": "object",
+              "properties": {
+                "sbiCode": {
+                  "type": "string",
+                  "description": "SBI code"
+                },
+                "sbiOmschrijving": {
+                  "type": "string",
+                  "description": "SBI activity description"
+                },
+                "indHoofdactiviteit": {
+                  "type": "string",
+                  "description": "Whether this is the main activity (Ja/Nee)",
+                  "enum": ["Ja", "Nee"]
+                }
+              },
+              "required": ["sbiCode", "sbiOmschrijving", "indHoofdactiviteit"]
+            },
+            "facetable": false
+          },
+          "indNonMailing": {
+            "type": "string",
+            "description": "Non-mailing indicator (Ja/Nee)",
+            "enum": ["Ja", "Nee"],
+            "facetable": false
+          },
+          "actief": {
+            "type": "boolean",
+            "description": "Whether the business is currently active (computed from datumEinde)",
+            "facetable": true
+          }
+        },
+        "hardValidation": false,
+        "searchable": true,
+        "authorization": {
+          "read": ["public"]
+        }
+      },
+      "vestiging": {
+        "slug": "vestiging",
+        "title": "Vestiging",
+        "version": "1.0.0",
+        "published": "2026-01-01T00:00:00+00:00",
+        "summary": "A branch/establishment of a business",
+        "description": "Represents a vestiging (branch/establishment) in the KVK Handelsregister. Each vestiging has a unique 12-digit vestigingsnummer and is linked to a parent business via kvkNummer. Contains address information, employee counts, and SBI activity codes.",
+        "required": [
+          "vestigingsnummer",
+          "kvkNummer",
+          "eersteHandelsnaam"
+        ],
+        "properties": {
+          "vestigingsnummer": {
+            "type": "string",
+            "description": "12-digit branch number",
+            "pattern": "^\\d{12}$",
+            "minLength": 12,
+            "maxLength": 12,
+            "facetable": true
+          },
+          "kvkNummer": {
+            "type": "string",
+            "description": "8-digit KVK number of the parent business",
+            "pattern": "^\\d{8}$",
+            "facetable": true
+          },
+          "eersteHandelsnaam": {
+            "type": "string",
+            "description": "Primary trade name of the branch",
+            "maxLength": 255,
+            "facetable": true
+          },
+          "indHoofdvestiging": {
+            "type": "string",
+            "description": "Whether this is the main branch (Ja/Nee)",
+            "enum": ["Ja", "Nee"],
+            "facetable": true
+          },
+          "indCommercieleVestiging": {
+            "type": "string",
+            "description": "Whether this is a commercial branch (Ja/Nee)",
+            "enum": ["Ja", "Nee"],
+            "facetable": false
+          },
+          "voltijdWerkzamePersonen": {
+            "type": "integer",
+            "description": "Number of full-time employees",
+            "minimum": 0,
+            "facetable": false
+          },
+          "deeltijdWerkzamePersonen": {
+            "type": "integer",
+            "description": "Number of part-time employees",
+            "minimum": 0,
+            "facetable": false
+          },
+          "totaalWerkzamePersonen": {
+            "type": "integer",
+            "description": "Total number of employees at this branch",
+            "minimum": 0,
+            "facetable": true
+          },
+          "adressen": {
+            "type": "array",
+            "description": "Addresses of the branch (bezoekadres, correspondentieadres)",
+            "items": {
+              "type": "object",
+              "properties": {
+                "type": {
+                  "type": "string",
+                  "description": "Address type",
+                  "enum": ["bezoekadres", "correspondentieadres"]
+                },
+                "straatnaam": {
+                  "type": "string",
+                  "description": "Street name"
+                },
+                "huisnummer": {
+                  "type": "integer",
+                  "description": "House number"
+                },
+                "huisletter": {
+                  "type": "string",
+                  "description": "House letter (optional)"
+                },
+                "postbusnummer": {
+                  "type": "integer",
+                  "description": "PO box number (optional)"
+                },
+                "postcode": {
+                  "type": "string",
+                  "description": "Postal code (####XX)"
+                },
+                "plaats": {
+                  "type": "string",
+                  "description": "City"
+                },
+                "land": {
+                  "type": "string",
+                  "description": "Country"
+                }
+              },
+              "required": ["type"]
+            },
+            "facetable": false
+          },
+          "handelsnamen": {
+            "type": "array",
+            "description": "Trade names of the branch",
+            "items": {
+              "type": "object",
+              "properties": {
+                "naam": {
+                  "type": "string",
+                  "description": "Trade name"
+                },
+                "volgorde": {
+                  "type": "integer",
+                  "description": "Display order"
+                }
+              },
+              "required": ["naam", "volgorde"]
+            },
+            "facetable": false
+          },
+          "sbiActiviteiten": {
+            "type": "array",
+            "description": "SBI activity codes for this branch",
+            "items": {
+              "type": "object",
+              "properties": {
+                "sbiCode": {
+                  "type": "string"
+                },
+                "sbiOmschrijving": {
+                  "type": "string"
+                },
+                "indHoofdactiviteit": {
+                  "type": "string",
+                  "enum": ["Ja", "Nee"]
+                }
+              },
+              "required": ["sbiCode", "sbiOmschrijving", "indHoofdactiviteit"]
+            },
+            "facetable": false
+          }
+        },
+        "hardValidation": false,
+        "searchable": true,
+        "authorization": {
+          "read": ["public"]
+        }
+      }
+    },
+    "objects": [
+      {
+        "@self": {
+          "register": "kvk",
+          "schema": "maatschappelijke-activiteit",
+          "slug": "test-emz-dagobert"
+        },
+        "kvkNummer": "69599084",
+        "naam": "Test EMZ Dagobert",
+        "handelsnamen": [
+          { "naam": "Test EMZ Dagobert", "volgorde": 0 },
+          { "naam": "Dagobert's Goudhandel", "volgorde": 1 }
+        ],
+        "rechtsvorm": "Eenmanszaak",
+        "uitgebreideRechtsvorm": "Eenmanszaak",
+        "formeleRegistratiedatum": "2017-01-08",
+        "materieleRegistratie": {
+          "datumAanvang": "2017-01-08",
+          "datumEinde": null
+        },
+        "totaalWerkzamePersonen": 1,
+        "sbiActiviteiten": [
+          { "sbiCode": "10110", "sbiOmschrijving": "Slachterijen (geen pluimvee-)", "indHoofdactiviteit": "Ja" },
+          { "sbiCode": "10120", "sbiOmschrijving": "Slachterijen (pluimvee-)", "indHoofdactiviteit": "Nee" }
+        ],
+        "indNonMailing": "Nee",
+        "actief": true
+      },
+      {
+        "@self": {
+          "register": "kvk",
+          "schema": "maatschappelijke-activiteit",
+          "slug": "test-nv-katrien"
+        },
+        "kvkNummer": "68727720",
+        "naam": "Test NV Katrien",
+        "handelsnamen": [
+          { "naam": "Test NV Katrien", "volgorde": 0 },
+          { "naam": "Katrien's Modehuis", "volgorde": 1 }
+        ],
+        "rechtsvorm": "Naamloze Vennootschap",
+        "uitgebreideRechtsvorm": "Naamloze Vennootschap",
+        "formeleRegistratiedatum": "2017-03-15",
+        "materieleRegistratie": {
+          "datumAanvang": "2017-03-15",
+          "datumEinde": null
+        },
+        "totaalWerkzamePersonen": 12,
+        "sbiActiviteiten": [
+          { "sbiCode": "4771", "sbiOmschrijving": "Winkels in kleding", "indHoofdactiviteit": "Ja" },
+          { "sbiCode": "4772", "sbiOmschrijving": "Winkels in schoenen en lederwaren", "indHoofdactiviteit": "Nee" }
+        ],
+        "indNonMailing": "Nee",
+        "actief": true
+      },
+      {
+        "@self": {
+          "register": "kvk",
+          "schema": "maatschappelijke-activiteit",
+          "slug": "test-bv-donald"
+        },
+        "kvkNummer": "68750110",
+        "naam": "Test BV Donald",
+        "handelsnamen": [
+          { "naam": "Test BV Donald", "volgorde": 0 },
+          { "naam": "Donald's Scheepvaart B.V.", "volgorde": 1 }
+        ],
+        "rechtsvorm": "Besloten Vennootschap",
+        "uitgebreideRechtsvorm": "Besloten Vennootschap met beperkte aansprakelijkheid",
+        "formeleRegistratiedatum": "2017-02-20",
+        "materieleRegistratie": {
+          "datumAanvang": "2017-02-20",
+          "datumEinde": null
+        },
+        "totaalWerkzamePersonen": 5,
+        "sbiActiviteiten": [
+          { "sbiCode": "5010", "sbiOmschrijving": "Zee- en kustvaart (passagiers)", "indHoofdactiviteit": "Ja" },
+          { "sbiCode": "5020", "sbiOmschrijving": "Zee- en kustvaart (vracht)", "indHoofdactiviteit": "Nee" }
+        ],
+        "indNonMailing": "Ja",
+        "actief": true
+      },
+      {
+        "@self": {
+          "register": "kvk",
+          "schema": "maatschappelijke-activiteit",
+          "slug": "test-stichting-bolderbast"
+        },
+        "kvkNummer": "69599068",
+        "naam": "Test Stichting Bolderbast",
+        "handelsnamen": [
+          { "naam": "Test Stichting Bolderbast", "volgorde": 0 }
+        ],
+        "rechtsvorm": "Stichting",
+        "uitgebreideRechtsvorm": "Stichting",
+        "formeleRegistratiedatum": "2017-05-10",
+        "materieleRegistratie": {
+          "datumAanvang": "2017-05-10",
+          "datumEinde": null
+        },
+        "totaalWerkzamePersonen": 3,
+        "sbiActiviteiten": [
+          { "sbiCode": "8810", "sbiOmschrijving": "Maatschappelijke dienstverlening zonder overnachting", "indHoofdactiviteit": "Ja" }
+        ],
+        "indNonMailing": "Nee",
+        "actief": true
+      },
+      {
+        "@self": {
+          "register": "kvk",
+          "schema": "maatschappelijke-activiteit",
+          "slug": "test-vof-guus"
+        },
+        "kvkNummer": "69599076",
+        "naam": "Test VOF Guus",
+        "handelsnamen": [
+          { "naam": "Test VOF Guus", "volgorde": 0 },
+          { "naam": "Guus Gelansen Goudsmederij", "volgorde": 1 }
+        ],
+        "rechtsvorm": "Vennootschap Onder Firma",
+        "uitgebreideRechtsvorm": "Vennootschap onder firma",
+        "formeleRegistratiedatum": "2017-04-01",
+        "materieleRegistratie": {
+          "datumAanvang": "2017-04-01",
+          "datumEinde": null
+        },
+        "totaalWerkzamePersonen": 4,
+        "sbiActiviteiten": [
+          { "sbiCode": "3212", "sbiOmschrijving": "Vervaardiging van sieraden", "indHoofdactiviteit": "Ja" }
+        ],
+        "indNonMailing": "Nee",
+        "actief": true
+      },
+      {
+        "@self": {
+          "register": "kvk",
+          "schema": "maatschappelijke-activiteit",
+          "slug": "stichting-free-opentrans"
+        },
+        "kvkNummer": "90000102",
+        "naam": "Stichting Free opentrans",
+        "handelsnamen": [
+          { "naam": "Stichting Free opentrans", "volgorde": 0 }
+        ],
+        "rechtsvorm": "Stichting",
+        "uitgebreideRechtsvorm": "Stichting",
+        "formeleRegistratiedatum": "2022-06-15",
+        "materieleRegistratie": {
+          "datumAanvang": "2022-06-15",
+          "datumEinde": null
+        },
+        "totaalWerkzamePersonen": 2,
+        "sbiActiviteiten": [
+          { "sbiCode": "6201", "sbiOmschrijving": "Ontwikkelen, produceren en uitgeven van software", "indHoofdactiviteit": "Ja" }
+        ],
+        "indNonMailing": "Nee",
+        "actief": true
+      },
+      {
+        "@self": {
+          "register": "kvk",
+          "schema": "maatschappelijke-activiteit",
+          "slug": "grand-kontex-bv"
+        },
+        "kvkNummer": "90001354",
+        "naam": "Grand Kontex B.V.",
+        "handelsnamen": [
+          { "naam": "Grand Kontex B.V.", "volgorde": 0 },
+          { "naam": "Kontex Solutions", "volgorde": 1 }
+        ],
+        "rechtsvorm": "Besloten Vennootschap",
+        "uitgebreideRechtsvorm": "Besloten Vennootschap met beperkte aansprakelijkheid",
+        "formeleRegistratiedatum": "2023-01-10",
+        "materieleRegistratie": {
+          "datumAanvang": "2023-01-10",
+          "datumEinde": null
+        },
+        "totaalWerkzamePersonen": 8,
+        "sbiActiviteiten": [
+          { "sbiCode": "6420", "sbiOmschrijving": "Financiele holdings", "indHoofdactiviteit": "Ja" }
+        ],
+        "indNonMailing": "Nee",
+        "actief": true
+      },
+      {
+        "@self": {
+          "register": "kvk",
+          "schema": "maatschappelijke-activiteit",
+          "slug": "regional-stimflex-cooperatie"
+        },
+        "kvkNummer": "55344526",
+        "naam": "Regional Stimflex Cooperatie",
+        "handelsnamen": [
+          { "naam": "Regional Stimflex Cooperatie", "volgorde": 0 },
+          { "naam": "Stimflex Europe", "volgorde": 1 }
+        ],
+        "rechtsvorm": "Cooperatie",
+        "uitgebreideRechtsvorm": "Cooperatie met beperkte aansprakelijkheid",
+        "formeleRegistratiedatum": "2015-09-22",
+        "materieleRegistratie": {
+          "datumAanvang": "2015-09-22",
+          "datumEinde": null
+        },
+        "totaalWerkzamePersonen": 15,
+        "sbiActiviteiten": [
+          { "sbiCode": "7022", "sbiOmschrijving": "Overige adviesbureaus op het gebied van management", "indHoofdactiviteit": "Ja" }
+        ],
+        "indNonMailing": "Nee",
+        "actief": true
+      },
+      {
+        "@self": {
+          "register": "kvk",
+          "schema": "maatschappelijke-activiteit",
+          "slug": "bakkerij-de-vries-bv"
+        },
+        "kvkNummer": "74123456",
+        "naam": "Bakkerij De Vries B.V.",
+        "handelsnamen": [
+          { "naam": "Bakkerij De Vries B.V.", "volgorde": 0 },
+          { "naam": "De Vries Brood & Banket", "volgorde": 1 }
+        ],
+        "rechtsvorm": "Besloten Vennootschap",
+        "uitgebreideRechtsvorm": "Besloten Vennootschap met beperkte aansprakelijkheid",
+        "formeleRegistratiedatum": "2010-03-14",
+        "materieleRegistratie": {
+          "datumAanvang": "2010-03-14",
+          "datumEinde": null
+        },
+        "totaalWerkzamePersonen": 25,
+        "sbiActiviteiten": [
+          { "sbiCode": "1071", "sbiOmschrijving": "Vervaardiging van brood en vers banketbakkerswerk", "indHoofdactiviteit": "Ja" }
+        ],
+        "indNonMailing": "Nee",
+        "actief": true
+      },
+      {
+        "@self": {
+          "register": "kvk",
+          "schema": "maatschappelijke-activiteit",
+          "slug": "van-den-berg-it-solutions"
+        },
+        "kvkNummer": "81234567",
+        "naam": "Van den Berg IT Solutions",
+        "handelsnamen": [
+          { "naam": "Van den Berg IT Solutions", "volgorde": 0 },
+          { "naam": "VdB IT", "volgorde": 1 }
+        ],
+        "rechtsvorm": "Eenmanszaak",
+        "uitgebreideRechtsvorm": "Eenmanszaak",
+        "formeleRegistratiedatum": "2019-08-01",
+        "materieleRegistratie": {
+          "datumAanvang": "2019-08-01",
+          "datumEinde": null
+        },
+        "totaalWerkzamePersonen": 1,
+        "sbiActiviteiten": [
+          { "sbiCode": "6201", "sbiOmschrijving": "Ontwikkelen, produceren en uitgeven van software", "indHoofdactiviteit": "Ja" }
+        ],
+        "indNonMailing": "Nee",
+        "actief": true
+      },
+      {
+        "@self": {
+          "register": "kvk",
+          "schema": "maatschappelijke-activiteit",
+          "slug": "gemeente-voorbeeldstad"
+        },
+        "kvkNummer": "50123456",
+        "naam": "Gemeente Voorbeeldstad",
+        "handelsnamen": [
+          { "naam": "Gemeente Voorbeeldstad", "volgorde": 0 }
+        ],
+        "rechtsvorm": "Publiekrechtelijke Rechtspersoon",
+        "uitgebreideRechtsvorm": "Gemeente",
+        "formeleRegistratiedatum": "1900-01-01",
+        "materieleRegistratie": {
+          "datumAanvang": "1900-01-01",
+          "datumEinde": null
+        },
+        "totaalWerkzamePersonen": 450,
+        "sbiActiviteiten": [
+          { "sbiCode": "8411", "sbiOmschrijving": "Algemeen overheidsbestuur", "indHoofdactiviteit": "Ja" }
+        ],
+        "indNonMailing": "Nee",
+        "actief": true
+      },
+      {
+        "@self": {
+          "register": "kvk",
+          "schema": "maatschappelijke-activiteit",
+          "slug": "bouwbedrijf-jansen-vof"
+        },
+        "kvkNummer": "62345678",
+        "naam": "Bouwbedrijf Jansen VOF",
+        "handelsnamen": [
+          { "naam": "Bouwbedrijf Jansen VOF", "volgorde": 0 },
+          { "naam": "Jansen Bouw", "volgorde": 1 }
+        ],
+        "rechtsvorm": "Vennootschap Onder Firma",
+        "uitgebreideRechtsvorm": "Vennootschap onder firma",
+        "formeleRegistratiedatum": "2005-11-20",
+        "materieleRegistratie": {
+          "datumAanvang": "2005-11-20",
+          "datumEinde": null
+        },
+        "totaalWerkzamePersonen": 50,
+        "sbiActiviteiten": [
+          { "sbiCode": "4120", "sbiOmschrijving": "Algemene burgerlijke en utiliteitsbouw", "indHoofdactiviteit": "Ja" }
+        ],
+        "indNonMailing": "Nee",
+        "actief": true
+      },
+      {
+        "@self": {
+          "register": "kvk",
+          "schema": "maatschappelijke-activiteit",
+          "slug": "restaurant-het-gerecht"
+        },
+        "kvkNummer": "71234567",
+        "naam": "Restaurant Het Gerecht",
+        "handelsnamen": [
+          { "naam": "Restaurant Het Gerecht", "volgorde": 0 },
+          { "naam": "Het Gerecht Catering", "volgorde": 1 }
+        ],
+        "rechtsvorm": "Eenmanszaak",
+        "uitgebreideRechtsvorm": "Eenmanszaak",
+        "formeleRegistratiedatum": "2016-06-01",
+        "materieleRegistratie": {
+          "datumAanvang": "2016-06-01",
+          "datumEinde": null
+        },
+        "totaalWerkzamePersonen": 8,
+        "sbiActiviteiten": [
+          { "sbiCode": "5610", "sbiOmschrijving": "Restaurants, cafetaria's, snackbars, ijssalons, eetkramen e.d.", "indHoofdactiviteit": "Ja" }
+        ],
+        "indNonMailing": "Nee",
+        "actief": true
+      },
+      {
+        "@self": {
+          "register": "kvk",
+          "schema": "maatschappelijke-activiteit",
+          "slug": "zorggroep-horizon"
+        },
+        "kvkNummer": "83456789",
+        "naam": "Zorggroep Horizon",
+        "handelsnamen": [
+          { "naam": "Zorggroep Horizon", "volgorde": 0 },
+          { "naam": "Horizon Ziekenhuis Maastricht", "volgorde": 1 }
+        ],
+        "rechtsvorm": "Stichting",
+        "uitgebreideRechtsvorm": "Stichting",
+        "formeleRegistratiedatum": "1998-04-15",
+        "materieleRegistratie": {
+          "datumAanvang": "1998-04-15",
+          "datumEinde": null
+        },
+        "totaalWerkzamePersonen": 200,
+        "sbiActiviteiten": [
+          { "sbiCode": "8610", "sbiOmschrijving": "Ziekenhuizen", "indHoofdactiviteit": "Ja" },
+          { "sbiCode": "8810", "sbiOmschrijving": "Maatschappelijke dienstverlening zonder overnachting", "indHoofdactiviteit": "Nee" }
+        ],
+        "indNonMailing": "Nee",
+        "actief": true
+      },
+      {
+        "@self": {
+          "register": "kvk",
+          "schema": "maatschappelijke-activiteit",
+          "slug": "transport-nederland-nv"
+        },
+        "kvkNummer": "64567890",
+        "naam": "TransPort Nederland NV",
+        "handelsnamen": [
+          { "naam": "TransPort Nederland NV", "volgorde": 0 },
+          { "naam": "TransPort Logistiek", "volgorde": 1 },
+          { "naam": "TP Express", "volgorde": 2 }
+        ],
+        "rechtsvorm": "Naamloze Vennootschap",
+        "uitgebreideRechtsvorm": "Naamloze Vennootschap",
+        "formeleRegistratiedatum": "2002-09-01",
+        "materieleRegistratie": {
+          "datumAanvang": "2002-09-01",
+          "datumEinde": null
+        },
+        "totaalWerkzamePersonen": 150,
+        "sbiActiviteiten": [
+          { "sbiCode": "4941", "sbiOmschrijving": "Goederenvervoer over de weg", "indHoofdactiviteit": "Ja" }
+        ],
+        "indNonMailing": "Nee",
+        "actief": true
+      },
+      {
+        "@self": {
+          "register": "kvk",
+          "schema": "maatschappelijke-activiteit",
+          "slug": "duckstad-vastgoed-bv-inactive"
+        },
+        "kvkNummer": "67890123",
+        "naam": "Duckstad Vastgoed B.V.",
+        "handelsnamen": [
+          { "naam": "Duckstad Vastgoed B.V.", "volgorde": 0 }
+        ],
+        "rechtsvorm": "Besloten Vennootschap",
+        "uitgebreideRechtsvorm": "Besloten Vennootschap met beperkte aansprakelijkheid",
+        "formeleRegistratiedatum": "2012-01-15",
+        "materieleRegistratie": {
+          "datumAanvang": "2012-01-15",
+          "datumEinde": "2024-08-31"
+        },
+        "totaalWerkzamePersonen": 0,
+        "sbiActiviteiten": [
+          { "sbiCode": "6810", "sbiOmschrijving": "Handel in eigen onroerend goed", "indHoofdactiviteit": "Ja" }
+        ],
+        "indNonMailing": "Ja",
+        "actief": false
+      },
+      {
+        "@self": {
+          "register": "kvk",
+          "schema": "vestiging",
+          "slug": "ves-dagobert-hoofd"
+        },
+        "vestigingsnummer": "000041816825",
+        "kvkNummer": "69599084",
+        "eersteHandelsnaam": "Test EMZ Dagobert",
+        "indHoofdvestiging": "Ja",
+        "indCommercieleVestiging": "Ja",
+        "voltijdWerkzamePersonen": 1,
+        "deeltijdWerkzamePersonen": 0,
+        "totaalWerkzamePersonen": 1,
+        "adressen": [
+          {
+            "type": "bezoekadres",
+            "straatnaam": "Abebe Bikilalaan",
+            "huisnummer": 17,
+            "huisletter": "M",
+            "postcode": "1034WL",
+            "plaats": "Amsterdam",
+            "land": "Nederland"
+          }
+        ],
+        "handelsnamen": [
+          { "naam": "Test EMZ Dagobert", "volgorde": 0 },
+          { "naam": "Dagobert's Goudhandel", "volgorde": 1 }
+        ],
+        "sbiActiviteiten": [
+          { "sbiCode": "10110", "sbiOmschrijving": "Slachterijen (geen pluimvee-)", "indHoofdactiviteit": "Ja" },
+          { "sbiCode": "10120", "sbiOmschrijving": "Slachterijen (pluimvee-)", "indHoofdactiviteit": "Nee" }
+        ]
+      },
+      {
+        "@self": {
+          "register": "kvk",
+          "schema": "vestiging",
+          "slug": "ves-dagobert-neven"
+        },
+        "vestigingsnummer": "000041816833",
+        "kvkNummer": "69599084",
+        "eersteHandelsnaam": "Dagobert's Goudhandel Filiaal",
+        "indHoofdvestiging": "Nee",
+        "indCommercieleVestiging": "Ja",
+        "voltijdWerkzamePersonen": 0,
+        "deeltijdWerkzamePersonen": 1,
+        "totaalWerkzamePersonen": 1,
+        "adressen": [
+          {
+            "type": "bezoekadres",
+            "straatnaam": "Kalverstraat",
+            "huisnummer": 152,
+            "postcode": "1012XE",
+            "plaats": "Amsterdam",
+            "land": "Nederland"
+          }
+        ],
+        "handelsnamen": [
+          { "naam": "Dagobert's Goudhandel Filiaal", "volgorde": 0 }
+        ],
+        "sbiActiviteiten": [
+          { "sbiCode": "10110", "sbiOmschrijving": "Slachterijen (geen pluimvee-)", "indHoofdactiviteit": "Ja" }
+        ]
+      },
+      {
+        "@self": {
+          "register": "kvk",
+          "schema": "vestiging",
+          "slug": "ves-katrien-hoofd"
+        },
+        "vestigingsnummer": "000038492710",
+        "kvkNummer": "68727720",
+        "eersteHandelsnaam": "Test NV Katrien",
+        "indHoofdvestiging": "Ja",
+        "indCommercieleVestiging": "Ja",
+        "voltijdWerkzamePersonen": 8,
+        "deeltijdWerkzamePersonen": 4,
+        "totaalWerkzamePersonen": 12,
+        "adressen": [
+          {
+            "type": "bezoekadres",
+            "straatnaam": "Kerkstraat",
+            "huisnummer": 45,
+            "postcode": "9641AW",
+            "plaats": "Veendam",
+            "land": "Nederland"
+          },
+          {
+            "type": "correspondentieadres",
+            "straatnaam": "Kerkstraat",
+            "huisnummer": 45,
+            "postcode": "9641AW",
+            "plaats": "Veendam",
+            "land": "Nederland"
+          }
+        ],
+        "handelsnamen": [
+          { "naam": "Test NV Katrien", "volgorde": 0 },
+          { "naam": "Katrien's Modehuis", "volgorde": 1 }
+        ],
+        "sbiActiviteiten": [
+          { "sbiCode": "4771", "sbiOmschrijving": "Winkels in kleding", "indHoofdactiviteit": "Ja" },
+          { "sbiCode": "4772", "sbiOmschrijving": "Winkels in schoenen en lederwaren", "indHoofdactiviteit": "Nee" }
+        ]
+      },
+      {
+        "@self": {
+          "register": "kvk",
+          "schema": "vestiging",
+          "slug": "ves-donald-hoofd"
+        },
+        "vestigingsnummer": "000038750201",
+        "kvkNummer": "68750110",
+        "eersteHandelsnaam": "Test BV Donald",
+        "indHoofdvestiging": "Ja",
+        "indCommercieleVestiging": "Ja",
+        "voltijdWerkzamePersonen": 3,
+        "deeltijdWerkzamePersonen": 1,
+        "totaalWerkzamePersonen": 4,
+        "adressen": [
+          {
+            "type": "bezoekadres",
+            "straatnaam": "Tsjerkebuorren",
+            "huisnummer": 12,
+            "postcode": "8823KL",
+            "plaats": "Lollum",
+            "land": "Nederland"
+          },
+          {
+            "type": "correspondentieadres",
+            "postbusnummer": 42,
+            "postcode": "1000AA",
+            "plaats": "Rommeldam",
+            "land": "Nederland"
+          }
+        ],
+        "handelsnamen": [
+          { "naam": "Test BV Donald", "volgorde": 0 },
+          { "naam": "Donald's Scheepvaart B.V.", "volgorde": 1 }
+        ],
+        "sbiActiviteiten": [
+          { "sbiCode": "5010", "sbiOmschrijving": "Zee- en kustvaart (passagiers)", "indHoofdactiviteit": "Ja" },
+          { "sbiCode": "5020", "sbiOmschrijving": "Zee- en kustvaart (vracht)", "indHoofdactiviteit": "Nee" }
+        ]
+      },
+      {
+        "@self": {
+          "register": "kvk",
+          "schema": "vestiging",
+          "slug": "ves-donald-neven"
+        },
+        "vestigingsnummer": "000038750219",
+        "kvkNummer": "68750110",
+        "eersteHandelsnaam": "Donald's Scheepvaart B.V. - Kantoor Amsterdam",
+        "indHoofdvestiging": "Nee",
+        "indCommercieleVestiging": "Ja",
+        "voltijdWerkzamePersonen": 1,
+        "deeltijdWerkzamePersonen": 0,
+        "totaalWerkzamePersonen": 1,
+        "adressen": [
+          {
+            "type": "bezoekadres",
+            "straatnaam": "De Ruijterkade",
+            "huisnummer": 7,
+            "postcode": "1013AA",
+            "plaats": "Amsterdam",
+            "land": "Nederland"
+          }
+        ],
+        "handelsnamen": [
+          { "naam": "Donald's Scheepvaart B.V. - Kantoor Amsterdam", "volgorde": 0 }
+        ],
+        "sbiActiviteiten": [
+          { "sbiCode": "5010", "sbiOmschrijving": "Zee- en kustvaart (passagiers)", "indHoofdactiviteit": "Ja" }
+        ]
+      },
+      {
+        "@self": {
+          "register": "kvk",
+          "schema": "vestiging",
+          "slug": "ves-bolderbast-hoofd"
+        },
+        "vestigingsnummer": "000041599068",
+        "kvkNummer": "69599068",
+        "eersteHandelsnaam": "Test Stichting Bolderbast",
+        "indHoofdvestiging": "Ja",
+        "indCommercieleVestiging": "Nee",
+        "voltijdWerkzamePersonen": 2,
+        "deeltijdWerkzamePersonen": 1,
+        "totaalWerkzamePersonen": 3,
+        "adressen": [
+          {
+            "type": "bezoekadres",
+            "straatnaam": "Markt",
+            "huisnummer": 8,
+            "postcode": "7241AA",
+            "plaats": "Lochem",
+            "land": "Nederland"
+          }
+        ],
+        "handelsnamen": [
+          { "naam": "Test Stichting Bolderbast", "volgorde": 0 }
+        ],
+        "sbiActiviteiten": [
+          { "sbiCode": "8810", "sbiOmschrijving": "Maatschappelijke dienstverlening zonder overnachting", "indHoofdactiviteit": "Ja" }
+        ]
+      },
+      {
+        "@self": {
+          "register": "kvk",
+          "schema": "vestiging",
+          "slug": "ves-guus-hoofd"
+        },
+        "vestigingsnummer": "000041599076",
+        "kvkNummer": "69599076",
+        "eersteHandelsnaam": "Test VOF Guus",
+        "indHoofdvestiging": "Ja",
+        "indCommercieleVestiging": "Ja",
+        "voltijdWerkzamePersonen": 2,
+        "deeltijdWerkzamePersonen": 2,
+        "totaalWerkzamePersonen": 4,
+        "adressen": [
+          {
+            "type": "bezoekadres",
+            "straatnaam": "Stadhuisplein",
+            "huisnummer": 1,
+            "postcode": "1315HR",
+            "plaats": "Almere",
+            "land": "Nederland"
+          }
+        ],
+        "handelsnamen": [
+          { "naam": "Test VOF Guus", "volgorde": 0 },
+          { "naam": "Guus Gelansen Goudsmederij", "volgorde": 1 }
+        ],
+        "sbiActiviteiten": [
+          { "sbiCode": "3212", "sbiOmschrijving": "Vervaardiging van sieraden", "indHoofdactiviteit": "Ja" }
+        ]
+      },
+      {
+        "@self": {
+          "register": "kvk",
+          "schema": "vestiging",
+          "slug": "ves-stimflex-hoofd"
+        },
+        "vestigingsnummer": "000035344526",
+        "kvkNummer": "55344526",
+        "eersteHandelsnaam": "Regional Stimflex Cooperatie",
+        "indHoofdvestiging": "Ja",
+        "indCommercieleVestiging": "Ja",
+        "voltijdWerkzamePersonen": 15,
+        "deeltijdWerkzamePersonen": 0,
+        "totaalWerkzamePersonen": 15,
+        "adressen": [
+          {
+            "type": "bezoekadres",
+            "straatnaam": "Calle de la Innovacion",
+            "huisnummer": 22,
+            "postcode": "08001",
+            "plaats": "Barcelona",
+            "land": "Spanje"
+          },
+          {
+            "type": "correspondentieadres",
+            "straatnaam": "Herengracht",
+            "huisnummer": 100,
+            "postcode": "1015BS",
+            "plaats": "Amsterdam",
+            "land": "Nederland"
+          }
+        ],
+        "handelsnamen": [
+          { "naam": "Regional Stimflex Cooperatie", "volgorde": 0 },
+          { "naam": "Stimflex Europe", "volgorde": 1 }
+        ],
+        "sbiActiviteiten": [
+          { "sbiCode": "7022", "sbiOmschrijving": "Overige adviesbureaus op het gebied van management", "indHoofdactiviteit": "Ja" }
+        ]
+      },
+      {
+        "@self": {
+          "register": "kvk",
+          "schema": "vestiging",
+          "slug": "ves-bakkerij-de-vries-hoofd"
+        },
+        "vestigingsnummer": "000074123401",
+        "kvkNummer": "74123456",
+        "eersteHandelsnaam": "Bakkerij De Vries B.V.",
+        "indHoofdvestiging": "Ja",
+        "indCommercieleVestiging": "Ja",
+        "voltijdWerkzamePersonen": 18,
+        "deeltijdWerkzamePersonen": 7,
+        "totaalWerkzamePersonen": 25,
+        "adressen": [
+          {
+            "type": "bezoekadres",
+            "straatnaam": "Prinsengracht",
+            "huisnummer": 200,
+            "postcode": "1016GS",
+            "plaats": "Amsterdam",
+            "land": "Nederland"
+          }
+        ],
+        "handelsnamen": [
+          { "naam": "Bakkerij De Vries B.V.", "volgorde": 0 },
+          { "naam": "De Vries Brood & Banket", "volgorde": 1 }
+        ],
+        "sbiActiviteiten": [
+          { "sbiCode": "1071", "sbiOmschrijving": "Vervaardiging van brood en vers banketbakkerswerk", "indHoofdactiviteit": "Ja" }
+        ]
+      },
+      {
+        "@self": {
+          "register": "kvk",
+          "schema": "vestiging",
+          "slug": "ves-van-den-berg-hoofd"
+        },
+        "vestigingsnummer": "000081234501",
+        "kvkNummer": "81234567",
+        "eersteHandelsnaam": "Van den Berg IT Solutions",
+        "indHoofdvestiging": "Ja",
+        "indCommercieleVestiging": "Ja",
+        "voltijdWerkzamePersonen": 1,
+        "deeltijdWerkzamePersonen": 0,
+        "totaalWerkzamePersonen": 1,
+        "adressen": [
+          {
+            "type": "bezoekadres",
+            "straatnaam": "Oudegracht",
+            "huisnummer": 88,
+            "postcode": "3511AR",
+            "plaats": "Utrecht",
+            "land": "Nederland"
+          }
+        ],
+        "handelsnamen": [
+          { "naam": "Van den Berg IT Solutions", "volgorde": 0 },
+          { "naam": "VdB IT", "volgorde": 1 }
+        ],
+        "sbiActiviteiten": [
+          { "sbiCode": "6201", "sbiOmschrijving": "Ontwikkelen, produceren en uitgeven van software", "indHoofdactiviteit": "Ja" }
+        ]
+      },
+      {
+        "@self": {
+          "register": "kvk",
+          "schema": "vestiging",
+          "slug": "ves-bouwbedrijf-jansen-hoofd"
+        },
+        "vestigingsnummer": "000062345601",
+        "kvkNummer": "62345678",
+        "eersteHandelsnaam": "Bouwbedrijf Jansen VOF",
+        "indHoofdvestiging": "Ja",
+        "indCommercieleVestiging": "Ja",
+        "voltijdWerkzamePersonen": 40,
+        "deeltijdWerkzamePersonen": 10,
+        "totaalWerkzamePersonen": 50,
+        "adressen": [
+          {
+            "type": "bezoekadres",
+            "straatnaam": "Coolsingel",
+            "huisnummer": 40,
+            "postcode": "3011AD",
+            "plaats": "Rotterdam",
+            "land": "Nederland"
+          }
+        ],
+        "handelsnamen": [
+          { "naam": "Bouwbedrijf Jansen VOF", "volgorde": 0 },
+          { "naam": "Jansen Bouw", "volgorde": 1 }
+        ],
+        "sbiActiviteiten": [
+          { "sbiCode": "4120", "sbiOmschrijving": "Algemene burgerlijke en utiliteitsbouw", "indHoofdactiviteit": "Ja" }
+        ]
+      },
+      {
+        "@self": {
+          "register": "kvk",
+          "schema": "vestiging",
+          "slug": "ves-restaurant-het-gerecht-hoofd"
+        },
+        "vestigingsnummer": "000071234501",
+        "kvkNummer": "71234567",
+        "eersteHandelsnaam": "Restaurant Het Gerecht",
+        "indHoofdvestiging": "Ja",
+        "indCommercieleVestiging": "Ja",
+        "voltijdWerkzamePersonen": 3,
+        "deeltijdWerkzamePersonen": 5,
+        "totaalWerkzamePersonen": 8,
+        "adressen": [
+          {
+            "type": "bezoekadres",
+            "straatnaam": "Grote Markt",
+            "huisnummer": 31,
+            "postcode": "9711LV",
+            "plaats": "Groningen",
+            "land": "Nederland"
+          }
+        ],
+        "handelsnamen": [
+          { "naam": "Restaurant Het Gerecht", "volgorde": 0 },
+          { "naam": "Het Gerecht Catering", "volgorde": 1 }
+        ],
+        "sbiActiviteiten": [
+          { "sbiCode": "5610", "sbiOmschrijving": "Restaurants, cafetaria's, snackbars, ijssalons, eetkramen e.d.", "indHoofdactiviteit": "Ja" }
+        ]
+      },
+      {
+        "@self": {
+          "register": "kvk",
+          "schema": "vestiging",
+          "slug": "ves-zorggroep-horizon-hoofd"
+        },
+        "vestigingsnummer": "000083456701",
+        "kvkNummer": "83456789",
+        "eersteHandelsnaam": "Zorggroep Horizon",
+        "indHoofdvestiging": "Ja",
+        "indCommercieleVestiging": "Nee",
+        "voltijdWerkzamePersonen": 150,
+        "deeltijdWerkzamePersonen": 50,
+        "totaalWerkzamePersonen": 200,
+        "adressen": [
+          {
+            "type": "bezoekadres",
+            "straatnaam": "Oxfordlaan",
+            "huisnummer": 70,
+            "postcode": "6229ER",
+            "plaats": "Maastricht",
+            "land": "Nederland"
+          }
+        ],
+        "handelsnamen": [
+          { "naam": "Zorggroep Horizon", "volgorde": 0 },
+          { "naam": "Horizon Ziekenhuis Maastricht", "volgorde": 1 }
+        ],
+        "sbiActiviteiten": [
+          { "sbiCode": "8610", "sbiOmschrijving": "Ziekenhuizen", "indHoofdactiviteit": "Ja" },
+          { "sbiCode": "8810", "sbiOmschrijving": "Maatschappelijke dienstverlening zonder overnachting", "indHoofdactiviteit": "Nee" }
+        ]
+      },
+      {
+        "@self": {
+          "register": "kvk",
+          "schema": "vestiging",
+          "slug": "ves-transport-nederland-hoofd"
+        },
+        "vestigingsnummer": "000064567801",
+        "kvkNummer": "64567890",
+        "eersteHandelsnaam": "TransPort Nederland NV",
+        "indHoofdvestiging": "Ja",
+        "indCommercieleVestiging": "Ja",
+        "voltijdWerkzamePersonen": 120,
+        "deeltijdWerkzamePersonen": 30,
+        "totaalWerkzamePersonen": 150,
+        "adressen": [
+          {
+            "type": "bezoekadres",
+            "straatnaam": "Herengracht",
+            "huisnummer": 500,
+            "postcode": "1017CB",
+            "plaats": "Amsterdam",
+            "land": "Nederland"
+          },
+          {
+            "type": "correspondentieadres",
+            "straatnaam": "Herengracht",
+            "huisnummer": 500,
+            "postcode": "1017CB",
+            "plaats": "Amsterdam",
+            "land": "Nederland"
+          }
+        ],
+        "handelsnamen": [
+          { "naam": "TransPort Nederland NV", "volgorde": 0 },
+          { "naam": "TransPort Logistiek", "volgorde": 1 },
+          { "naam": "TP Express", "volgorde": 2 }
+        ],
+        "sbiActiviteiten": [
+          { "sbiCode": "4941", "sbiOmschrijving": "Goederenvervoer over de weg", "indHoofdactiviteit": "Ja" }
+        ]
+      }
+    ]
+  }
+}

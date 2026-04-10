@@ -4,44 +4,57 @@ volumes:
   apps:
   db:
   config:
-  solr:
   ollama:
   presidio-models:
+  tgi-models:
+  vllm-models:
+  openllm-models:
+  openllm-cache:
+  n8n:
+  solr:
+  elasticsearch:
 
 services:
   db:
-    image: mariadb:10.6
+    image: pgvector/pgvector:pg16
     restart: always
-    command: --transaction-isolation=READ-COMMITTED --log-bin=binlog --binlog-format=ROW
+    container_name: openregister-postgres-dev
     volumes:
-      - db:/var/lib/mysql
+      - db:/var/lib/postgresql/data
+      - ./docker/postgres/init-extensions.sql:/docker-entrypoint-initdb.d/01-init-extensions.sql:ro
     environment:
-      - MYSQL_ROOT_PASSWORD='!ChangeMe!'
-      - MYSQL_PASSWORD='!ChangeMe!'
-      - MYSQL_DATABASE=nextcloud
-      - MYSQL_USER=nextcloud
-
-  # Solr in standalone mode
-  solr:
-    image: solr:9-slim
-    container_name: openregister-solr
-    restart: always
+      - POSTGRES_DB=nextcloud
+      - POSTGRES_USER=nextcloud
+      - POSTGRES_PASSWORD=!ChangeMe!
     ports:
-      - "8983:8983"
-    volumes:
-      - solr:/var/solr
-    environment:
-      - SOLR_HEAP=512m
-    command:
-      - solr-foreground
+      - "5432:5432"
     healthcheck:
-      test: ["CMD-SHELL", "curl -f http://localhost:8983/solr/admin/info/system || exit 1"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
+      test: ["CMD-SHELL", "pg_isready -U nextcloud -d nextcloud"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    command: >
+      postgres
+      -c shared_preload_libraries=pg_trgm,vector
+      -c max_connections=200
+      -c shared_buffers=256MB
+      -c effective_cache_size=1GB
+      -c maintenance_work_mem=64MB
+      -c checkpoint_completion_target=0.9
+      -c wal_buffers=16MB
+      -c default_statistics_target=100
+      -c random_page_cost=1.1
+      -c effective_io_concurrency=200
+      -c work_mem=4MB
+      -c min_wal_size=1GB
+      -c max_wal_size=4GB
+      -c log_statement=all
+      -c log_duration=on
 
-  # Ollama for local LLM inference
+  # Ollama for local LLM inference (Optional - use --profile ollama)
   ollama:
+    profiles:
+      - ollama
     image: ollama/ollama:latest
     container_name: openregister-ollama
     restart: always
@@ -76,8 +89,10 @@ services:
       retries: 3
       start_period: 60s
 
-  # Presidio Analyzer for PII detection and NER (Development)
+  # Presidio Analyzer for PII detection and NER (Optional - use --profile presidio)
   presidio-analyzer:
+    profiles:
+      - presidio
     image: mcr.microsoft.com/presidio-analyzer:latest
     container_name: openregister-presidio-analyzer-dev
     restart: always
@@ -100,6 +115,243 @@ services:
       retries: 3
       start_period: 30s
 
+  # Solr in standalone mode (Optional - use --profile solr)
+  # Traditional search engine - kept for backwards compatibility
+  # Note: PostgreSQL with pgvector+pg_trgm is now recommended
+  solr:
+    profiles:
+      - solr
+      - search
+    image: solr:9-slim
+    container_name: openregister-solr-dev
+    restart: always
+    ports:
+      - "8983:8983"
+    volumes:
+      - solr:/var/solr
+    environment:
+      - SOLR_HEAP=512m
+      - SOLR_LOG_LEVEL=DEBUG
+    command:
+      - solr-foreground
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8983/solr/admin/info/system || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Elasticsearch for alternative search (Optional - use --profile elasticsearch)
+  # Modern search engine - kept for backwards compatibility
+  # Note: PostgreSQL with pgvector+pg_trgm is now recommended
+  elasticsearch:
+    profiles:
+      - elasticsearch
+      - search
+    image: elasticsearch:8.11.3
+    container_name: openregister-elasticsearch-dev
+    restart: always
+    ports:
+      - "9200:9200"
+      - "9300:9300"
+    volumes:
+      - elasticsearch:/usr/share/elasticsearch/data
+    environment:
+      - discovery.type=single-node
+      - xpack.security.enabled=false
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+      - cluster.name=openregister-dev
+      - node.name=openregister-dev-node
+      - logger.level=DEBUG
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+        reservations:
+          memory: 512M
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:9200/_cluster/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+  # n8n Workflow Automation (Optional - use --profile n8n)
+  n8n:
+    profiles:
+      - n8n
+      - automation
+    image: n8nio/n8n:latest
+    container_name: openregister-n8n-dev
+    restart: always
+    ports:
+      - "5678:5678"
+    volumes:
+      - n8n:/home/node/.n8n
+    environment:
+      - N8N_BASIC_AUTH_ACTIVE=true
+      - N8N_BASIC_AUTH_USER=admin
+      - N8N_BASIC_AUTH_PASSWORD=admin
+      - N8N_HOST=localhost
+      - N8N_PORT=5678
+      - N8N_PROTOCOL=http
+      - WEBHOOK_URL=http://localhost:5678/
+      - GENERIC_TIMEZONE=Europe/Amsterdam
+      - TZ=Europe/Amsterdam
+      - EXECUTIONS_DATA_SAVE_ON_ERROR=all
+      - EXECUTIONS_DATA_SAVE_ON_SUCCESS=all
+      - EXECUTIONS_DATA_SAVE_MANUAL_EXECUTIONS=true
+      - N8N_LOG_LEVEL=debug
+    healthcheck:
+      test: ["CMD-SHELL", "wget --spider -q http://localhost:5678/healthz || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+  # Docusaurus documentation server with hot-reload (Development)
+  documentation:
+    image: node:20-alpine
+    container_name: openregister-docs-dev
+    restart: always
+    working_dir: /app
+    ports:
+      - "3001:3000"
+    volumes:
+      - ./website:/app:rw
+    command: >
+      sh -c "
+        echo 'Installing dependencies...' &&
+        npm install --legacy-peer-deps &&
+        echo 'Starting Docusaurus development server...' &&
+        npm start -- --host 0.0.0.0
+      "
+    environment:
+      - NODE_ENV=development
+      - BROWSER=none  # Prevent auto-opening browser in container
+    healthcheck:
+      test: ["CMD-SHELL", "node -e \"require('http').get('http://localhost:3000', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})\""]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+  # Hugging Face Text Generation Inference (TGI) with OpenAI-compatible API (Optional - use --profile huggingface or --profile llm)
+  tgi-llm:
+    profiles:
+      - huggingface
+      - llm
+    image: ghcr.io/huggingface/text-generation-inference:latest
+    container_name: openregister-tgi-llm-dev
+    restart: always
+    ports:
+      - "8081:80"
+    volumes:
+      - tgi-models:/data
+    environment:
+      - MODEL_ID=mistralai/Mistral-7B-Instruct-v0.2
+      - MAX_INPUT_LENGTH=4096
+      - MAX_TOTAL_TOKENS=8192
+      - MAX_BATCH_PREFILL_TOKENS=4096
+      - MAX_CONCURRENT_REQUESTS=128
+      - MAX_WAITING_TOKENS=20
+      # - HUGGING_FACE_HUB_TOKEN=your_token_here
+      - LOG_LEVEL=DEBUG
+    deploy:
+      resources:
+        limits:
+          memory: 16G
+        reservations:
+          memory: 8G
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+    shm_size: '2gb'
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:80/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 120s
+
+  # OpenLLM Management Interface (Optional - use --profile huggingface or --profile llm)
+  # Web UI for managing and downloading language models
+  # Access at: http://localhost:3002 (changed from 3000 to avoid docs conflict)
+  openllm:
+    profiles:
+      - huggingface
+      - llm
+    image: ghcr.io/bentoml/openllm:latest
+    container_name: openregister-openllm-dev
+    restart: always
+    ports:
+      - "3002:3000"
+      - "8082:8082"
+    volumes:
+      - openllm-models:/models
+      - openllm-cache:/root/.cache
+    environment:
+      - OPENLLM_MODEL=mistralai/Mistral-7B-Instruct-v0.2
+      - OPENLLM_BACKEND=vllm
+      - OPENLLM_PORT=3000
+      - OPENLLM_API_PORT=8082
+      - CUDA_VISIBLE_DEVICES=0
+      - OPENLLM_MAX_MODEL_LEN=4096
+      - OPENLLM_GPU_MEMORY_UTILIZATION=0.9
+      # - HUGGING_FACE_HUB_TOKEN=your_token_here
+      - OPENLLM_DEBUG=true
+    deploy:
+      resources:
+        limits:
+          memory: 16G
+        reservations:
+          memory: 8G
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+    shm_size: '2gb'
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:3000/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 180s
+    command: start mistralai/Mistral-7B-Instruct-v0.2 --backend vllm
+
+  # Hugging Face Dolphin VLM for document parsing (Optional - use --profile huggingface)
+  dolphin-vlm:
+    profiles:
+      - huggingface
+    build:
+      context: ./docker/dolphin
+      dockerfile: Dockerfile
+    container_name: openregister-dolphin-vlm
+    restart: always
+    ports:
+      - "8083:5000"
+    volumes:
+      - ./docker/dolphin/models:/app/models
+    environment:
+      - MODEL_PATH=/app/models
+      - LOG_LEVEL=INFO
+    deploy:
+      resources:
+        limits:
+          memory: 8G
+        reservations:
+          memory: 4G
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:5000/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 120s
+
   nextcloud:
     user: root
     container_name: nextcloud-dev
@@ -109,19 +361,16 @@ services:
       - 8080:80
     links:
       - db
-      - solr
-      - ollama
-      - presidio-analyzer
     volumes:
       - nextcloud:/var/www/html:rw
       - ./custom_apps:/var/www/html/custom_apps
       - .:/var/www/html/custom_apps/openregister
       - ./docker/entrypoint-openregister-dev.sh:/entrypoint-openregister.sh:ro
     environment:
-      - MYSQL_PASSWORD='!ChangeMe!'
-      - MYSQL_DATABASE=nextcloud
-      - MYSQL_USER=nextcloud
-      - MYSQL_HOST=db
+      - POSTGRES_DB=nextcloud
+      - POSTGRES_USER=nextcloud
+      - POSTGRES_PASSWORD=!ChangeMe!
+      - POSTGRES_HOST=db
       - TZ=Europe/Amsterdam
       - NEXTCLOUD_ADMIN_USER=admin
       - NEXTCLOUD_ADMIN_PASSWORD=admin
@@ -138,7 +387,6 @@ services:
       wait $$NEXTCLOUD_PID
       "
     depends_on:
-      - db
-      - solr
-      - ollama
+      db:
+        condition: service_healthy
 

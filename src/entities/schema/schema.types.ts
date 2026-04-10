@@ -19,7 +19,6 @@ export type TSchema = {
         allowedTags?: string[]; // Array of allowed tags for files
         unique?: boolean; // Whether objects must be unique
         facetCacheTtl?: number; // Cache TTL for facets in seconds
-        autoPublish?: boolean; // Whether objects should be auto-published on creation
     }
     hardValidation: boolean; // Whether hard validation is enabled
     maxDepth: number; // Maximum depth of the schema
@@ -32,7 +31,6 @@ export type TSchema = {
             invalid: number
             deleted: number
             locked: number
-            published: number
         },
         logs: {
             total: number

@@ -1,4 +1,5 @@
 <?php
+
 /**
  * OpenRegister BsnFormat
  *
@@ -22,8 +23,6 @@ use Opis\JsonSchema\Format;
 
 class BsnFormat implements Format
 {
-
-
     /**
      * Validates if a given value conforms to the Dutch BSN (Burgerservicenummer) format.
      *
@@ -55,13 +54,10 @@ class BsnFormat implements Format
                 $multiplier = $reversedIterator;
             }
 
-            $control += ($character * $multiplier);
+            $control += ((int) $character * $multiplier);
             $reversedIterator--;
         }
 
         return ($control % 11) === 0;
-
     }//end validate()
-
-
 }//end class

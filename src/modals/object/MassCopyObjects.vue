@@ -1,4 +1,5 @@
 <script setup>
+import { translate as t } from '@nextcloud/l10n'
 import { objectStore, navigationStore } from '../../store/store.js'
 </script>
 
@@ -199,8 +200,6 @@ export default {
 							delete objectToCopy['@self'].uri
 							delete objectToCopy['@self'].created
 							delete objectToCopy['@self'].updated
-							delete objectToCopy['@self'].published
-							delete objectToCopy['@self'].depublished
 							delete objectToCopy['@self'].version
 							delete objectToCopy['@self'].files
 							delete objectToCopy['@self'].relations

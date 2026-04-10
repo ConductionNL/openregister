@@ -1,4 +1,5 @@
 <script setup>
+import { translate as t, translatePlural as n } from '@nextcloud/l10n'
 import { dashboardStore, schemaStore, navigationStore } from '../../store/store.js'
 import formatBytes from '../../services/formatBytes.js'
 </script>
@@ -63,7 +64,30 @@ import formatBytes from '../../services/formatBytes.js'
 					</NcActions>
 				</div>
 			</span>
-			<div class="dashboardContent">
+
+			<!-- Tab navigation -->
+			<div class="schemaTabNav">
+				<button
+					:class="['tabButton', { active: activeTab === 'dashboard' }]"
+					@click="activeTab = 'dashboard'">
+					<ChartBox :size="16" />
+					{{ t('openregister', 'Dashboard') }}
+				</button>
+				<button
+					:class="['tabButton', { active: activeTab === 'calendar' }]"
+					@click="activeTab = 'calendar'">
+					<CalendarMonth :size="16" />
+					{{ t('openregister', 'Calendar') }}
+				</button>
+			</div>
+
+			<!-- Calendar Provider Tab -->
+			<CalendarProviderTab
+				v-if="activeTab === 'calendar'"
+				:schema="schemaStore.schemaItem" />
+
+			<!-- Dashboard Tab (original content) -->
+			<div v-show="activeTab === 'dashboard'" class="dashboardContent">
 				<span>{{ schemaStore.schemaItem.description }}</span>
 
 				<!-- Schema Statistics -->
@@ -95,13 +119,6 @@ import formatBytes from '../../services/formatBytes.js'
 									{{ t('openregister', 'Deleted') }}
 								</td>
 								<td>{{ schemaStats.objects?.deleted || 0 }}</td>
-								<td>-</td>
-							</tr>
-							<tr class="subRow">
-								<td class="indented">
-									{{ t('openregister', 'Published') }}
-								</td>
-								<td>{{ schemaStats.objects?.published || 0 }}</td>
 								<td>-</td>
 							</tr>
 							<tr>
@@ -170,6 +187,9 @@ import Upload from 'vue-material-design-icons/Upload.vue'
 import TrashCanOutline from 'vue-material-design-icons/TrashCanOutline.vue'
 import PlusCircleOutline from 'vue-material-design-icons/PlusCircleOutline.vue'
 import AlertCircle from 'vue-material-design-icons/AlertCircle.vue'
+import CalendarMonth from 'vue-material-design-icons/CalendarMonth.vue'
+import ChartBox from 'vue-material-design-icons/ChartBox.vue'
+import CalendarProviderTab from './CalendarProviderTab.vue'
 
 export default {
 	name: 'SchemaDetails',
@@ -187,9 +207,13 @@ export default {
 		Download,
 		Upload,
 		AlertCircle,
+		CalendarMonth,
+		ChartBox,
+		CalendarProviderTab,
 	},
 	data() {
 		return {
+			activeTab: 'dashboard',
 			schemaStats: null,
 			statsLoading: false,
 			statsError: null,
@@ -356,6 +380,39 @@ export default {
 	h3 {
 		margin-bottom: 15px;
 		color: var(--color-main-text);
+	}
+}
+
+.schemaTabNav {
+	display: flex;
+	gap: 0;
+	border-bottom: 2px solid var(--color-border);
+	margin-inline: 20px;
+	margin-bottom: 0;
+
+	.tabButton {
+		display: flex;
+		align-items: center;
+		gap: 6px;
+		padding: 10px 16px;
+		background: none;
+		border: none;
+		border-bottom: 2px solid transparent;
+		margin-bottom: -2px;
+		cursor: pointer;
+		color: var(--color-text-maxcontrast);
+		font-size: 14px;
+		font-weight: 500;
+		transition: color 0.15s, border-color 0.15s;
+
+		&:hover {
+			color: var(--color-main-text);
+		}
+
+		&.active {
+			color: var(--color-primary);
+			border-bottom-color: var(--color-primary);
+		}
 	}
 }
 </style>

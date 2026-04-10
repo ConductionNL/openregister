@@ -42,8 +42,6 @@ describe('Object Entity', () => {
 				size: null,
 				updated: '2023-01-01T00:00:00Z',
 				created: '2023-01-01T00:00:00Z',
-				published: null,
-				depublished: null,
 			},
 		}
 		const object = new ObjectEntity(partialData)
@@ -60,8 +58,6 @@ describe('Object Entity', () => {
 		expect(object['@self'].files).toBe(null)
 		expect(object['@self'].updated).toBe('2023-01-01T00:00:00Z')
 		expect(object['@self'].created).toBe('2023-01-01T00:00:00Z')
-		expect(object['@self'].published).toBe(null)
-		expect(object['@self'].depublished).toBe(null)
 		expect(object['@self'].locked).toBe(null)
 		expect(object['@self'].owner).toBe(null)
 		expect(object.validate().success).toBe(true)
@@ -118,15 +114,11 @@ describe('Object Entity', () => {
 	it('should handle null values in @self properly', () => {
 		const mockData = mockObjectData()[0]
 		mockData['@self'].locked = null
-		mockData['@self'].published = null
-		mockData['@self'].depublished = null
 		mockData['@self'].validation = null
 		mockData['@self'].authorization = null
 		const object = new ObjectEntity(mockData)
 
 		expect(object['@self'].locked).toBeNull()
-		expect(object['@self'].published).toBeNull()
-		expect(object['@self'].depublished).toBeNull()
 		expect(object['@self'].validation).toBeNull()
 		expect(object['@self'].authorization).toBeNull()
 		expect(object.validate().success).toBe(true)
@@ -161,8 +153,6 @@ describe('Object Entity', () => {
 				size: null,
 				updated: '2023-01-01T00:00:00Z',
 				created: '2023-01-01T00:00:00Z',
-				published: null,
-				depublished: null,
 			},
 		}
 		const object = new ObjectEntity(minimalData)
@@ -171,8 +161,6 @@ describe('Object Entity', () => {
 		expect(object['@self'].name).toBe(null)
 		expect(object['@self'].description).toBe(null)
 		expect(object['@self'].folder).toBe(null)
-		expect(object['@self'].published).toBe(null)
-		expect(object['@self'].depublished).toBe(null)
 		expect(object['@self'].validation).toBe(null)
 		expect(object.validate().success).toBe(true)
 	})

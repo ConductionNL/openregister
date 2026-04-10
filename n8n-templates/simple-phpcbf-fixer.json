@@ -1,0 +1,32 @@
+{
+  "name": "PHPQA PHPCBF Auto-Fixer (Working)",
+  "active": false,
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [{"field": "cronExpression", "expression": "0 * * * *"}]
+        }
+      },
+      "id": "schedule-trigger",
+      "name": "Every Hour",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [20, 300]
+    },
+    {
+      "parameters": {
+        "command": "docker exec -u 33 master-nextcloud-1 bash -c 'cd /var/www/html/apps-extra/openregister && php vendor/bin/phpcbf --standard=PSR12 lib/ 2>&1'"
+      },
+      "id": "run-phpcbf",
+      "name": "Run PHPCBF Auto-Fix",
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "position": [240, 300]
+    }
+  ],
+  "connections": {
+    "Every Hour": {"main": [[{"node": "Run PHPCBF Auto-Fix"}]]}
+  },
+  "settings": {}
+}

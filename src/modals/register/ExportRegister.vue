@@ -1,4 +1,5 @@
 <script setup>
+import { translate as t } from '@nextcloud/l10n'
 import { registerStore, navigationStore, schemaStore } from '../../store/store.js'
 import { generateUrl } from '@nextcloud/router'
 import axios from '@nextcloud/axios'
@@ -7,7 +8,7 @@ import axios from '@nextcloud/axios'
 <template>
 	<NcDialog v-if="navigationStore.modal === 'exportRegister'"
 		name="export-register-dialog"
-		title="Export Register"
+		title="Export Objects"
 		size="small"
 		:can-close="false">
 		<NcNoteCard v-if="error" type="error">
@@ -15,7 +16,7 @@ import axios from '@nextcloud/axios'
 		</NcNoteCard>
 
 		<div class="formContainer">
-			<p>Export register "{{ registerTitle }}"?</p>
+			<p>Export "{{ schemaTitle }}" objects from "{{ registerTitle }}"</p>
 
 			<div class="formGroup">
 				<label>Export Format:</label>
@@ -25,24 +26,6 @@ import axios from '@nextcloud/axios'
 					option-value="value"
 					:reduce="option => option.value" />
 			</div>
-
-			<div v-if="exportFormat === 'csv'" class="formGroup">
-				<label>Schema:</label>
-				<NcSelect v-bind="schemaOptions"
-					:model-value="selectedSchemaValue"
-					:loading="schemaLoading"
-					:disabled="!registerStore.registerItem || schemaLoading"
-					aria-label-combobox="Select a schema"
-					placeholder="Select a schema"
-					@update:model-value="handleSchemaChange" />
-			</div>
-
-			<NcCheckboxRadioSwitch
-				:checked="includeObjects"
-				type="switch"
-				@update:checked="includeObjects = $event">
-				Include objects
-			</NcCheckboxRadioSwitch>
 		</div>
 
 		<template #actions>
@@ -53,9 +36,9 @@ import axios from '@nextcloud/axios'
 				Cancel
 			</NcButton>
 			<NcButton
-				:disabled="loading || (exportFormat === 'csv' && !schemaStore.schemaItem)"
+				:disabled="loading"
 				type="primary"
-				@click="exportRegister">
+				@click="exportObjects">
 				<template #icon>
 					<NcLoadingIcon v-if="loading" :size="20" />
 					<Export v-else :size="20" />
@@ -72,7 +55,6 @@ import {
 	NcDialog,
 	NcLoadingIcon,
 	NcNoteCard,
-	NcCheckboxRadioSwitch,
 	NcSelect,
 } from '@nextcloud/vue'
 
@@ -86,7 +68,6 @@ export default {
 		NcButton,
 		NcLoadingIcon,
 		NcNoteCard,
-		NcCheckboxRadioSwitch,
 		NcSelect,
 		// Icons
 		Export,
@@ -96,14 +77,11 @@ export default {
 		return {
 			loading: false,
 			error: null,
-			includeObjects: true,
-			exportFormat: 'configuration',
+			exportFormat: 'excel',
 			exportFormats: [
-				{ label: 'Configuration (JSON)', value: 'configuration' },
 				{ label: 'Excel', value: 'excel' },
 				{ label: 'CSV', value: 'csv' },
 			],
-			schemaLoading: false,
 		}
 	},
 	computed: {
@@ -111,66 +89,24 @@ export default {
 			const item = registerStore.registerItem
 			return item?.title || 'Unknown'
 		},
-		schemaOptions() {
-			if (!registerStore.registerItem) return { options: [] }
-
-			return {
-				options: schemaStore.schemaList
-					.filter(schema => registerStore.registerItem.schemas.some(registerSchema => registerSchema.id === schema.id))
-					.map(schema => ({
-						value: schema.id,
-						label: schema.title,
-						title: schema.title,
-						schema,
-					})),
-				reduce: option => option.schema,
-				label: 'title',
-				getOptionLabel: option => {
-					return option.title || (option.schema && option.schema.title) || option.label || ''
-				},
-			}
+		schemaTitle() {
+			const item = schemaStore.schemaItem
+			return item?.title || 'Unknown'
 		},
-		selectedSchemaValue() {
-			if (!schemaStore.schemaItem) return null
-			const schema = schemaStore.schemaItem
-			return {
-				value: schema.id,
-				label: schema.title,
-				title: schema.title,
-				schema,
-			}
-		},
-	},
-	mounted() {
-		// Load schemas if not already loaded
-		if (!schemaStore.schemaList.length) {
-			this.schemaLoading = true
-			schemaStore.refreshSchemaList()
-				.finally(() => (this.schemaLoading = false))
-		}
 	},
 	methods: {
 		closeModal() {
 			navigationStore.setModal(false)
 			this.loading = false
 			this.error = null
-			this.includeObjects = true
-			this.exportFormat = 'configuration'
-			schemaStore.setSchemaItem(null)
+			this.exportFormat = 'excel'
 		},
-		handleSchemaChange(option) {
-			schemaStore.setSchemaItem(option)
-		},
-		async exportRegister() {
-			const item = registerStore.registerItem
-			if (!item?.id) {
-				this.error = 'Invalid register selected'
-				return
-			}
+		async exportObjects() {
+			const register = registerStore.registerItem
+			const schema = schemaStore.schemaItem
 
-			// For CSV export, schema must be selected
-			if (this.exportFormat === 'csv' && !schemaStore.schemaItem) {
-				this.error = 'Please select a schema for CSV export'
+			if (!register?.id || !schema?.id) {
+				this.error = 'Register and schema are required'
 				return
 			}
 
@@ -178,36 +114,28 @@ export default {
 			this.error = null
 
 			try {
-				// Generate the export URL with query parameters
-				const url = generateUrl(`/apps/openregister/api/registers/${item.id}/export`)
+				const registerSlug = register.slug || register.id
+				const schemaSlug = schema.slug || schema.id
+				const url = generateUrl(`/apps/openregister/api/objects/${registerSlug}/${schemaSlug}/export`)
 				const params = {
-					format: this.exportFormat,
-					includeObjects: this.includeObjects,
+					type: this.exportFormat,
 				}
 
-				// Add schema parameter for CSV exports
-				if (this.exportFormat === 'csv' && schemaStore.schemaItem) {
-					params.schema = schemaStore.schemaItem.id
-				}
-
-				// Make the API call
 				const response = await axios({
 					url,
 					method: 'GET',
 					params,
-					responseType: 'blob', // Important for file download
+					responseType: 'blob',
 				})
 
-				// Create a download link
 				const blob = new Blob([response.data], { type: response.headers['content-type'] })
 				const downloadUrl = window.URL.createObjectURL(blob)
 				const link = document.createElement('a')
 
-				// Get filename from response headers or generate a default one
 				const contentDisposition = response.headers['content-disposition']
 				const filename = contentDisposition
 					? contentDisposition.split('filename=')[1].replace(/"/g, '')
-					: `register_${item.id}_${new Date().toISOString().split('T')[0]}.${this.exportFormat === 'excel' ? 'xlsx' : this.exportFormat === 'csv' ? 'csv' : 'json'}`
+					: `${registerSlug}_${schemaSlug}_${new Date().toISOString().split('T')[0]}.${this.exportFormat === 'excel' ? 'xlsx' : 'csv'}`
 
 				link.href = downloadUrl
 				link.download = filename
@@ -218,7 +146,7 @@ export default {
 
 				this.closeModal()
 			} catch (error) {
-				this.error = error.response?.data?.error || error.message || 'Failed to export register'
+				this.error = error.response?.data?.error || error.message || 'Failed to export objects'
 			} finally {
 				this.loading = false
 			}

@@ -1,0 +1,173 @@
+{
+  "name": "AI-Powered Code Fixer with Ollama",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "ai-code-fix",
+        "responseMode": "lastNode",
+        "options": {}
+      },
+      "id": "webhook-trigger",
+      "name": "Webhook Trigger",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [250, 300],
+      "webhookId": "ai-code-fix-webhook"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://host.docker.internal:9090/phpcs-detailed",
+        "options": {
+          "timeout": 60000
+        }
+      },
+      "id": "get-phpcs-issues",
+      "name": "Get PHPCS Issues",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [450, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Extract files with issues for processing\nconst data = $input.first().json;\n\nif (!data.phpcs_issues || data.phpcs_issues.length === 0) {\n  return {\n    message: 'No PHPCS issues found',\n    files_to_fix: 0\n  };\n}\n\n// Return array of files to fix\nreturn data.phpcs_issues.map(file => ({\n  file_path: file.file,\n  errors: file.errors,\n  warnings: file.warnings,\n  issues_by_line: file.issues_by_line\n}));"
+      },
+      "id": "prepare-files",
+      "name": "Prepare Files for Fixing",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [650, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=http://host.docker.internal:9090/read-file",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "file",
+              "value": "={{$json.file_path}}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "read-file",
+      "name": "Read File Content",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [850, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=http://host.docker.internal:9090/backup-file",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "file",
+              "value": "={{$json.file}}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "backup-file",
+      "name": "Backup Original File",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1050, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=http://host.docker.internal:9090/ai-fix-code",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\"file\": \"{{$json.file}}\", \"issues\": {{JSON.stringify($json.issues_by_line)}}, \"content\": \"{{$json.content}}\"}",
+        "options": {
+          "timeout": 120000
+        }
+      },
+      "id": "ai-fix",
+      "name": "AI Fix Code (Ollama)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1250, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=http://host.docker.internal:9090/write-file",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "file",
+              "value": "={{$json.file}}"
+            },
+            {
+              "name": "content",
+              "value": "={{$json.fixed_code}}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "write-fixed",
+      "name": "Write Fixed Code",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1450, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Aggregate results from all fixed files\nconst items = $input.all();\n\nconst summary = {\n  timestamp: new Date().toISOString(),\n  workflow: 'AI Code Fixer',\n  total_files_processed: items.length,\n  files_fixed: items.filter(i => i.json.status === 'success').length,\n  files: items.map(i => ({\n    file: i.json.file,\n    status: i.json.status,\n    bytes_written: i.json.bytes_written\n  }))\n};\n\nreturn summary;"
+      },
+      "id": "aggregate-results",
+      "name": "Aggregate Results",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1650, 300]
+    }
+  ],
+  "connections": {
+    "Webhook Trigger": {
+      "main": [[{"node": "Get PHPCS Issues", "type": "main", "index": 0}]]
+    },
+    "Get PHPCS Issues": {
+      "main": [[{"node": "Prepare Files for Fixing", "type": "main", "index": 0}]]
+    },
+    "Prepare Files for Fixing": {
+      "main": [[{"node": "Read File Content", "type": "main", "index": 0}]]
+    },
+    "Read File Content": {
+      "main": [[{"node": "Backup Original File", "type": "main", "index": 0}]]
+    },
+    "Backup Original File": {
+      "main": [[{"node": "AI Fix Code (Ollama)", "type": "main", "index": 0}]]
+    },
+    "AI Fix Code (Ollama)": {
+      "main": [[{"node": "Write Fixed Code", "type": "main", "index": 0}]]
+    },
+    "Write Fixed Code": {
+      "main": [[{"node": "Aggregate Results", "type": "main", "index": 0}]]
+    }
+  },
+  "settings": {
+    "saveDataErrorExecution": "all",
+    "saveDataSuccessExecution": "all",
+    "saveManualExecutions": true,
+    "callerPolicy": "workflowsFromSameOwner"
+  },
+  "staticData": null,
+  "meta": null,
+  "pinData": null,
+  "tags": []
+}
+
+
+

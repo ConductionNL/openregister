@@ -32,11 +32,11 @@ echo "━━━━━━━━━━━━━━━━━━━━━━━━�
 if ($httpCode === 200) {
     $result = json_decode($response, true);
     if ($result) {
-        // DEBUG: Show full structure
+        // DEBUG: Show full structure.
         echo "Full response structure:\n";
         echo json_encode($result, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE) . "\n\n";
         
-        // Try to extract message content
+        // Try to extract message content.
         $messageContent = '';
         if (is_string($result['message'] ?? null)) {
             $messageContent = $result['message'];
