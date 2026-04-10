@@ -393,6 +393,16 @@ return [
         ['name' => 'organisation#setActive', 'url' => '/api/organisations/{uuid}/set-active', 'verb' => 'POST'],
         ['name' => 'organisation#join', 'url' => '/api/organisations/{uuid}/join', 'verb' => 'POST'],
         ['name' => 'organisation#leave', 'url' => '/api/organisations/{uuid}/leave', 'verb' => 'POST'],
+
+        // Organisations - Tenant lifecycle management.
+        ['name' => 'organisation#suspend', 'url' => '/api/organisations/{uuid}/suspend', 'verb' => 'PUT'],
+        ['name' => 'organisation#activate', 'url' => '/api/organisations/{uuid}/activate', 'verb' => 'PUT'],
+        ['name' => 'organisation#deprovision', 'url' => '/api/organisations/{uuid}/deprovision', 'verb' => 'PUT'],
+        ['name' => 'organisation#usage', 'url' => '/api/organisations/{uuid}/usage', 'verb' => 'GET'],
+
+        // Admin - Tenant isolation verification and metrics.
+        ['name' => 'organisation#isolationVerify', 'url' => '/api/admin/isolation-verify', 'verb' => 'POST'],
+        ['name' => 'organisation#isolationMetrics', 'url' => '/api/admin/isolation-metrics', 'verb' => 'GET'],
 		// Tags.
 		['name' => 'tags#getAllTags', 'url' => '/api/tags', 'verb' => 'GET'],
 		
