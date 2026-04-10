@@ -520,5 +520,40 @@ return [
 
 		// GraphQL Subscriptions (SSE).
 		['name' => 'graphQLSubscription#subscribe', 'url' => '/api/graphql/subscribe', 'verb' => 'GET'],
+
+		// Retention management: archival settings.
+		['name' => 'Settings\ConfigurationSettings#getArchivalSettings', 'url' => '/api/settings/archival', 'verb' => 'GET'],
+		['name' => 'Settings\ConfigurationSettings#updateArchivalSettings', 'url' => '/api/settings/archival', 'verb' => 'PUT'],
+		['name' => 'Settings\ConfigurationSettings#updateArchivalSettings', 'url' => '/api/settings/archival', 'verb' => 'PATCH'],
+
+		// Retention management: destruction list approval workflow.
+		['name' => 'retention#approveDestructionList', 'url' => '/api/retention/destruction-lists/{id}/approve', 'verb' => 'POST', 'requirements' => ['id' => '[^/]+']],
+		['name' => 'retention#rejectDestructionList', 'url' => '/api/retention/destruction-lists/{id}/reject', 'verb' => 'POST', 'requirements' => ['id' => '[^/]+']],
+
+		// Retention management: legal holds.
+		['name' => 'retention#placeLegalHold', 'url' => '/api/retention/legal-holds', 'verb' => 'POST'],
+		['name' => 'retention#releaseLegalHold', 'url' => '/api/retention/legal-holds/{id}', 'verb' => 'DELETE', 'requirements' => ['id' => '[^/]+']],
+		['name' => 'retention#placeBulkLegalHold', 'url' => '/api/retention/legal-holds/bulk', 'verb' => 'POST'],
+
+		// Archival destruction workflow endpoints (spec-compliant /api/archival/ prefix).
+		['name' => 'archival#listDestructionLists', 'url' => '/api/archival/destruction-lists', 'verb' => 'GET'],
+		['name' => 'archival#getDestructionList', 'url' => '/api/archival/destruction-lists/{id}', 'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
+		['name' => 'archival#approveDestructionList', 'url' => '/api/archival/destruction-lists/{id}/approve', 'verb' => 'POST', 'requirements' => ['id' => '[^/]+']],
+		['name' => 'archival#rejectDestructionList', 'url' => '/api/archival/destruction-lists/{id}/reject', 'verb' => 'POST', 'requirements' => ['id' => '[^/]+']],
+		['name' => 'archival#createLegalHold', 'url' => '/api/archival/legal-holds', 'verb' => 'POST'],
+		['name' => 'archival#releaseLegalHold', 'url' => '/api/archival/legal-holds/{id}', 'verb' => 'DELETE', 'requirements' => ['id' => '[^/]+']],
+		['name' => 'archival#listLegalHolds', 'url' => '/api/archival/legal-holds', 'verb' => 'GET'],
+		['name' => 'archival#listCertificates', 'url' => '/api/archival/certificates', 'verb' => 'GET'],
+
+		// e-Depot transfer settings.
+		['name' => 'Settings\EdepotSettings#getEdepotSettings', 'url' => '/api/settings/edepot', 'verb' => 'GET'],
+		['name' => 'Settings\EdepotSettings#updateEdepotSettings', 'url' => '/api/settings/edepot', 'verb' => 'PUT'],
+		['name' => 'Settings\EdepotSettings#updateEdepotSettings', 'url' => '/api/settings/edepot', 'verb' => 'PATCH'],
+		['name' => 'Settings\EdepotSettings#testEdepotConnection', 'url' => '/api/settings/edepot/test', 'verb' => 'POST'],
+
+		// e-Depot transfer management.
+		['name' => 'transfer#index', 'url' => '/api/transfers', 'verb' => 'GET'],
+		['name' => 'transfer#show', 'url' => '/api/transfers/{id}', 'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
+		['name' => 'transfer#create', 'url' => '/api/transfers', 'verb' => 'POST'],
     ],
 ];

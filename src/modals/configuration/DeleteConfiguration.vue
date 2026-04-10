@@ -1,10 +1,6 @@
-<script setup>
-import { configurationStore, navigationStore } from '../../store/store.js'
-</script>
-
 <template>
-	<NcDialog v-if="navigationStore.modal === 'deleteConfiguration'"
-		title="Delete Configuration"
+	<NcDialog v-if="navigationStore.dialog === 'deleteConfiguration'"
+		name="Delete Configuration"
 		size="small"
 		:can-close="false">
 		<NcNoteCard v-if="error" type="error">
@@ -48,6 +44,8 @@ import {
 import Cancel from 'vue-material-design-icons/Cancel.vue'
 import Delete from 'vue-material-design-icons/Delete.vue'
 
+import { configurationStore, navigationStore } from '../../store/store.js'
+
 export default {
 	name: 'DeleteConfiguration',
 	components: {
@@ -59,6 +57,9 @@ export default {
 		Cancel,
 		Delete,
 	},
+	setup() {
+		return { configurationStore, navigationStore }
+	},
 	data() {
 		return {
 			loading: false,
@@ -67,7 +68,7 @@ export default {
 	},
 	methods: {
 		closeModal() {
-			navigationStore.setModal(false)
+			navigationStore.setDialog(false)
 			this.loading = false
 			this.error = null
 		},

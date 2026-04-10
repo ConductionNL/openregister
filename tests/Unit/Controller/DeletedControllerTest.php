@@ -6,7 +6,7 @@ namespace Unit\Controller;
 
 use OCA\OpenRegister\Controller\DeletedController;
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Db\UnifiedObjectMapper;
+use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\ObjectService;
@@ -20,7 +20,7 @@ class DeletedControllerTest extends TestCase
 {
     private DeletedController $controller;
     private IRequest&MockObject $request;
-    private UnifiedObjectMapper&MockObject $objectMapper;
+    private MagicMapper&MockObject $objectMapper;
     private RegisterMapper&MockObject $registerMapper;
     private SchemaMapper&MockObject $schemaMapper;
     private ObjectService&MockObject $objectService;
@@ -31,7 +31,7 @@ class DeletedControllerTest extends TestCase
         parent::setUp();
 
         $this->request = $this->createMock(IRequest::class);
-        $this->objectMapper = $this->createMock(UnifiedObjectMapper::class);
+        $this->objectMapper = $this->createMock(MagicMapper::class);
         $this->registerMapper = $this->createMock(RegisterMapper::class);
         $this->schemaMapper = $this->createMock(SchemaMapper::class);
         $this->objectService = $this->createMock(ObjectService::class);

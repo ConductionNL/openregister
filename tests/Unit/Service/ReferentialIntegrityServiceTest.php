@@ -29,7 +29,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service;
 
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Db\UnifiedObjectMapper;
+use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
@@ -66,9 +66,9 @@ class ReferentialIntegrityServiceTest extends TestCase
     /**
      * Mock object entity mapper.
      *
-     * @var UnifiedObjectMapper&MockObject
+     * @var MagicMapper&MockObject
      */
-    private UnifiedObjectMapper $objectMapper;
+    private MagicMapper $objectMapper;
 
     /**
      * Mock audit trail mapper.
@@ -107,7 +107,7 @@ class ReferentialIntegrityServiceTest extends TestCase
     {
         $this->schemaMapper       = $this->createMock(SchemaMapper::class);
         $this->registerMapper     = $this->createMock(RegisterMapper::class);
-        $this->objectMapper = $this->createMock(UnifiedObjectMapper::class);
+        $this->objectMapper = $this->createMock(MagicMapper::class);
         $this->auditTrailMapper   = $this->createMock(AuditTrailMapper::class);
         $this->logger = $this->createMock(LoggerInterface::class);
 

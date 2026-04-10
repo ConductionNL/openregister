@@ -16,7 +16,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Service;
 
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Db\UnifiedObjectMapper;
+use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
@@ -43,7 +43,7 @@ class BulkAndHandlersIntegrationTest extends TestCase
     private FilePropertyHandler $fileHandler;
     private RegisterMapper $registerMapper;
     private SchemaMapper $schemaMapper;
-    private UnifiedObjectMapper $objectMapper;
+    private MagicMapper $objectMapper;
     private \OCP\IDBConnection $db;
     private ?Register $testRegister = null;
     private ?Schema $testSchema = null;
@@ -59,7 +59,7 @@ class BulkAndHandlersIntegrationTest extends TestCase
         $this->fileHandler = \OC::$server->get(FilePropertyHandler::class);
         $this->registerMapper = \OC::$server->get(RegisterMapper::class);
         $this->schemaMapper = \OC::$server->get(SchemaMapper::class);
-        $this->objectMapper = \OC::$server->get(UnifiedObjectMapper::class);
+        $this->objectMapper = \OC::$server->get(MagicMapper::class);
         $this->db = \OC::$server->get(\OCP\IDBConnection::class);
 
         $this->createTestRegisterAndSchema();

@@ -26,7 +26,7 @@ use DateTime;
 use OCA\OpenRegister\Db\Mapping;
 use OCA\OpenRegister\Db\MappingMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Db\UnifiedObjectMapper;
+use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
@@ -65,7 +65,7 @@ class ServicesIntegrationTest extends TestCase
     private IDBConnection $db;
     private RegisterMapper $registerMapper;
     private SchemaMapper $schemaMapper;
-    private UnifiedObjectMapper $objectMapper;
+    private MagicMapper $objectMapper;
     private ?Register $testRegister = null;
     private ?Schema $testSchema = null;
 
@@ -115,7 +115,7 @@ class ServicesIntegrationTest extends TestCase
         $this->db = \OC::$server->get(IDBConnection::class);
         $this->registerMapper = \OC::$server->get(RegisterMapper::class);
         $this->schemaMapper = \OC::$server->get(SchemaMapper::class);
-        $this->objectMapper = \OC::$server->get(UnifiedObjectMapper::class);
+        $this->objectMapper = \OC::$server->get(MagicMapper::class);
 
         $this->createTestRegisterAndSchema();
     }

@@ -25,7 +25,6 @@ use DateTime;
 use Exception;
 use RuntimeException;
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Db\ObjectEntityMapper;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
@@ -117,7 +116,7 @@ class ObjectServiceTest extends TestCase
 	private $facetHandler;
 	/** @var MockObject&SearchQueryHandler */
 	private $searchQueryHandler;
-	/** @var MockObject&ObjectEntityMapper */
+	/** @var MockObject&MagicMapper */
 	private $objectEntityMapper;
 	/** @var MockObject&MagicMapper */
 	private $unifiedObjectMapper;
@@ -161,7 +160,7 @@ class ObjectServiceTest extends TestCase
 		$this->queryHandler = $this->createMock(QueryHandler::class);
 		$this->facetHandler = $this->createMock(FacetHandler::class);
 		$this->searchQueryHandler = $this->createMock(SearchQueryHandler::class);
-		$this->objectEntityMapper = $this->createMock(ObjectEntityMapper::class);
+		$this->objectEntityMapper = $this->createMock(MagicMapper::class);
 		$this->unifiedObjectMapper = $this->createMock(MagicMapper::class);
 		$this->registerMapper = $this->createMock(RegisterMapper::class);
 		$this->schemaMapper = $this->createMock(SchemaMapper::class);
@@ -399,9 +398,9 @@ class ObjectServiceTest extends TestCase
 	}
 
 	/**
-	 * Test setObject falls back to ObjectEntityMapper when no context.
+	 * Test setObject falls back to MagicMapper when no context.
 	 */
-	public function testSetObjectFallsBackToObjectEntityMapperWithoutContext(): void
+	public function testSetObjectFallsBackToMagicMapperWithoutContext(): void
 	{
 		$entity = new ObjectEntity();
 		$entity->setId(7);
@@ -943,7 +942,7 @@ class ObjectServiceTest extends TestCase
 	/**
 	 * Test count delegates to objectEntityMapper.countAll.
 	 */
-	public function testCountDelegatesToObjectEntityMapper(): void
+	public function testCountDelegatesToMagicMapper(): void
 	{
 		$this->objectEntityMapper
 			->expects($this->once())
