@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Unit\Service;
 
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Db\UnifiedObjectMapper;
+use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
@@ -26,7 +26,7 @@ use PHPUnit\Framework\TestCase;
 class ExportServiceGapTest extends TestCase
 {
     private ExportService $exportService;
-    private UnifiedObjectMapper&MockObject $objectMapper;
+    private MagicMapper&MockObject $objectMapper;
     private RegisterMapper&MockObject $registerMapper;
     private IUserManager&MockObject $userManager;
     private IGroupManager&MockObject $groupManager;
@@ -38,7 +38,7 @@ class ExportServiceGapTest extends TestCase
     {
         parent::setUp();
 
-        $this->objectMapper = $this->createMock(UnifiedObjectMapper::class);
+        $this->objectMapper = $this->createMock(MagicMapper::class);
         $this->registerMapper = $this->createMock(RegisterMapper::class);
         $this->userManager = $this->createMock(IUserManager::class);
         $this->groupManager = $this->createMock(IGroupManager::class);

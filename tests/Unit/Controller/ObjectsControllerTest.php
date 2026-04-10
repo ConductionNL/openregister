@@ -8,7 +8,7 @@ use Exception;
 use OCP\DB\Exception as DBException;
 use OCA\OpenRegister\Controller\ObjectsController;
 use OCA\OpenRegister\Db\AuditTrailMapper;
-use OCA\OpenRegister\Db\UnifiedObjectMapper;
+use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Dto\DeletionAnalysis;
@@ -44,7 +44,7 @@ class ObjectsControllerTest extends TestCase
     private IAppConfig&MockObject $config;
     private IAppManager&MockObject $appManager;
     private ContainerInterface&MockObject $container;
-    private UnifiedObjectMapper&MockObject $objectMapper;
+    private MagicMapper&MockObject $objectMapper;
     private RegisterMapper&MockObject $registerMapper;
     private SchemaMapper&MockObject $schemaMapper;
     private AuditTrailMapper&MockObject $auditTrailMapper;
@@ -64,7 +64,7 @@ class ObjectsControllerTest extends TestCase
         $this->config = $this->createMock(IAppConfig::class);
         $this->appManager = $this->createMock(IAppManager::class);
         $this->container = $this->createMock(ContainerInterface::class);
-        $this->objectMapper = $this->createMock(UnifiedObjectMapper::class);
+        $this->objectMapper = $this->createMock(MagicMapper::class);
         $this->registerMapper = $this->createMock(RegisterMapper::class);
         $this->schemaMapper = $this->createMock(SchemaMapper::class);
         $this->auditTrailMapper = $this->createMock(AuditTrailMapper::class);

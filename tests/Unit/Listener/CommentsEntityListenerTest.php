@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Unit\Listener;
 
-use OCA\OpenRegister\Db\UnifiedObjectMapper;
+use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Listener\CommentsEntityListener;
 use OCP\Comments\CommentsEntityEvent;
 use OCP\EventDispatcher\Event;
@@ -15,13 +15,13 @@ use Psr\Log\LoggerInterface;
 class CommentsEntityListenerTest extends TestCase
 {
     private CommentsEntityListener $listener;
-    private UnifiedObjectMapper&MockObject $objectMapper;
+    private MagicMapper&MockObject $objectMapper;
     private LoggerInterface&MockObject $logger;
 
     protected function setUp(): void
     {
         parent::setUp();
-        $this->objectMapper = $this->createMock(UnifiedObjectMapper::class);
+        $this->objectMapper = $this->createMock(MagicMapper::class);
         $this->logger = $this->createMock(LoggerInterface::class);
 
         $this->listener = new CommentsEntityListener(

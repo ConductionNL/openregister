@@ -213,9 +213,9 @@ class FileFormattingHandler
         $filters        = $this->extractFilterParameters(requestParams: $requestParams ?? []);
         $formattedFiles = $this->applyFileFilters(formattedFiles: $formattedFiles, filters: $filters);
 
-        // Apply pagination.
-        $page   = max(1, (int) ($requestParams['page'] ?? 1));
-        $limit  = max(1, min(100, (int) ($requestParams['limit'] ?? 30)));
+        // Apply pagination (support both _page/_limit and page/limit conventions).
+        $page   = max(1, (int) ($requestParams['_page'] ?? $requestParams['page'] ?? 1));
+        $limit  = max(1, min(100, (int) ($requestParams['_limit'] ?? $requestParams['limit'] ?? 30)));
         $offset = ($page - 1) * $limit;
         $total  = count($formattedFiles);
         $pages  = (int) ceil($total / $limit);

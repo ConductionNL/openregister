@@ -7,12 +7,11 @@ use InvalidArgumentException;
 use OCA\OpenRegister\Db\AuditTrail;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Db\ObjectEntityMapper;
+use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
-use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Service\LogService;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
@@ -20,7 +19,7 @@ use PHPUnit\Framework\TestCase;
 class LogServiceTest extends TestCase
 {
     private AuditTrailMapper&MockObject $auditTrailMapper;
-    private ObjectEntityMapper&MockObject $objectEntityMapper;
+    private MagicMapper&MockObject $objectEntityMapper;
     private MagicMapper&MockObject $unifiedObjectMapper;
     private RegisterMapper&MockObject $registerMapper;
     private SchemaMapper&MockObject $schemaMapper;
@@ -29,7 +28,7 @@ class LogServiceTest extends TestCase
     protected function setUp(): void
     {
         $this->auditTrailMapper = $this->createMock(AuditTrailMapper::class);
-        $this->objectEntityMapper = $this->createMock(ObjectEntityMapper::class);
+        $this->objectEntityMapper = $this->createMock(MagicMapper::class);
         $this->unifiedObjectMapper = $this->createMock(MagicMapper::class);
         $this->registerMapper = $this->createMock(RegisterMapper::class);
         $this->schemaMapper = $this->createMock(SchemaMapper::class);
