@@ -82,7 +82,7 @@ class FileLockHandler
         $ttl           = $ttlMinutes ?? self::DEFAULT_TTL_MINUTES;
 
         // Check for existing lock.
-        $existingLock = $this->getLockInfo($fileId);
+        $existingLock = $this->getLockInfo(fileId: $fileId);
         if ($existingLock !== null) {
             if ($existingLock['lockedBy'] === $currentUserId) {
                 // Refresh the lock for the same user.
@@ -110,7 +110,7 @@ class FileLockHandler
     public function unlockFile(int $fileId, bool $force=false): array
     {
         $currentUserId = $this->getCurrentUserId();
-        $lockInfo      = $this->getLockInfo($fileId);
+        $lockInfo      = $this->getLockInfo(fileId: $fileId);
 
         if ($lockInfo === null) {
             return ['locked' => false];
@@ -146,7 +146,7 @@ class FileLockHandler
      */
     public function isLocked(int $fileId): bool
     {
-        return $this->getLockInfo($fileId) !== null;
+        return $this->getLockInfo(fileId: $fileId) !== null;
     }//end isLocked()
 
     /**
@@ -193,7 +193,7 @@ class FileLockHandler
      */
     public function assertCanModify(int $fileId): void
     {
-        $lockInfo = $this->getLockInfo($fileId);
+        $lockInfo = $this->getLockInfo(fileId: $fileId);
         if ($lockInfo === null) {
             return;
         }

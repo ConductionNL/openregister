@@ -170,6 +170,7 @@ class SelectionList extends Entity implements JsonSerializable
      */
     public function hydrate(array $data): static
     {
+        // phpcs:disable -- Entity __call setters cannot use named args.
         if (isset($data['uuid']) === true) {
             $this->setUuid($data['uuid']);
         }
@@ -198,6 +199,7 @@ class SelectionList extends Entity implements JsonSerializable
             $this->setOrganisation($data['organisation']);
         }
 
+        // phpcs:enable
         return $this;
     }//end hydrate()
 }//end class
