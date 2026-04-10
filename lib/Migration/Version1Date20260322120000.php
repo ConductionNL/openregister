@@ -68,20 +68,28 @@ class Version1Date20260322120000 extends SimpleMigrationStep
             return;
         }
 
+        // Get the configured table prefix (default: oc_).
+        $prefix    = \OC::$server->getConfig()->getSystemValueString('dbtableprefix', 'oc_');
+        $tableName = $prefix.'openregister_objects';
+        $indexName = 'idx_or_objects_retention_gin';
+
         // Check if index already exists.
         $result = $connection->executeQuery(
-            "SELECT 1 FROM pg_indexes WHERE indexname = 'idx_or_objects_retention_gin'"
+            "SELECT 1 FROM pg_indexes WHERE indexname = :idx",
+            ['idx' => $indexName]
         );
 
         if ($result->fetchOne() !== false) {
-            $output->info('GIN index idx_or_objects_retention_gin already exists');
+            $output->info("GIN index $indexName already exists");
             return;
         }
 
+        // Nextcloud DBAL stores JSON columns as `json` (not `jsonb`), so we
+        // must cast to jsonb before applying jsonb_path_ops.
         $connection->executeStatement(
-            'CREATE INDEX idx_or_objects_retention_gin ON oc_openregister_objects USING gin (retention jsonb_path_ops)'
+            "CREATE INDEX $indexName ON $tableName USING gin ((retention::jsonb) jsonb_path_ops)"
         );
 
-        $output->info('Created GIN index idx_or_objects_retention_gin on openregister_objects.retention');
+        $output->info("Created GIN index $indexName on $tableName.retention");
     }//end postSchemaChange()
 }//end class
