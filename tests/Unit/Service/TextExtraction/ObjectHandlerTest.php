@@ -18,7 +18,7 @@ use DateTime;
 use Exception;
 use OCA\OpenRegister\Db\ChunkMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Db\UnifiedObjectMapper;
+use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\TextExtraction\ObjectHandler;
@@ -37,8 +37,8 @@ use ReflectionClass;
 class ObjectHandlerTest extends TestCase
 {
 
-    /** @var UnifiedObjectMapper&MockObject */
-    private UnifiedObjectMapper $objectMapper;
+    /** @var MagicMapper&MockObject */
+    private MagicMapper $objectMapper;
 
     /** @var ChunkMapper&MockObject */
     private ChunkMapper $chunkMapper;
@@ -56,7 +56,7 @@ class ObjectHandlerTest extends TestCase
 
     protected function setUp(): void
     {
-        $this->objectMapper   = $this->createMock(UnifiedObjectMapper::class);
+        $this->objectMapper   = $this->createMock(MagicMapper::class);
         $this->chunkMapper    = $this->createMock(ChunkMapper::class);
         $this->schemaMapper   = $this->createMock(SchemaMapper::class);
         $this->registerMapper = $this->createMock(RegisterMapper::class);

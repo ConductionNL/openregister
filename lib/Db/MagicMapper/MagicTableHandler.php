@@ -111,22 +111,40 @@ class MagicTableHandler
             if (($tableExists === true) && ($force === false)) {
                 // Table exists and not forcing update - check if schema changed.
                 if ($this->magicMapper->hasRegisterSchemaChanged(register: $register, schema: $schema) === false) {
-                    $this->logger->debug(
-                        message: '[MagicTableHandler] Table exists and schema unchanged, skipping',
+                    // Sanity check: verify all schema columns exist in the table.
+                    // The version hash can be stale if it was stored without a full sync.
+                    $requiredColumns = $this->magicMapper->buildTableColumnsFromSchema(schema: $schema);
+                    $currentColumns  = $this->magicMapper->getExistingTableColumns(tableName: $tableName);
+                    $missingColumns  = array_diff_key($requiredColumns, array_flip($currentColumns));
+
+                    if (empty($missingColumns) === true) {
+                        $this->logger->debug(
+                            message: '[MagicTableHandler] Table exists and schema unchanged, skipping',
+                            context: [
+                                'file'      => __FILE__,
+                                'line'      => __LINE__,
+                                'tableName' => $tableName,
+                                'cacheKey'  => $cacheKey,
+                            ]
+                        );
+                        return true;
+                    }
+
+                    $this->logger->warning(
+                        message: '[MagicTableHandler] Schema version unchanged but columns missing, forcing sync',
                         context: [
-                            'file'      => __FILE__,
-                            'line'      => __LINE__,
-                            'tableName' => $tableName,
-                            'cacheKey'  => $cacheKey,
+                            'file'           => __FILE__,
+                            'line'           => __LINE__,
+                            'tableName'      => $tableName,
+                            'missingColumns' => array_keys($missingColumns),
                         ]
                     );
-                    return true;
-                }
+                }//end if
 
-                // Schema changed, update table.
+                // Schema changed or columns missing, update table.
                 $result = $this->syncTableForRegisterSchema(register: $register, schema: $schema);
                 return $result['success'] ?? true;
-            }
+            }//end if
 
             // Create new table or recreate if forced.
             if (($tableExists === true) && ($force === true)) {

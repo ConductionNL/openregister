@@ -2018,7 +2018,7 @@ class SettingsControllerTest extends TestCase
             }
         };
 
-        $mockObjectMapper = $this->createMock(\OCA\OpenRegister\Db\UnifiedObjectMapper::class);
+        $mockObjectMapper = $this->createMock(\OCA\OpenRegister\Db\MagicMapper::class);
         $mockSchemaMapper = $this->createMock(\OCA\OpenRegister\Db\SchemaMapper::class);
 
         $this->container->method('get')
@@ -2028,7 +2028,7 @@ class SettingsControllerTest extends TestCase
                         return $mockIndexService;
                     }
 
-                    if ($id === \OCA\OpenRegister\Db\UnifiedObjectMapper::class) {
+                    if ($id === \OCA\OpenRegister\Db\MagicMapper::class) {
                         return $mockObjectMapper;
                     }
 
@@ -2085,7 +2085,7 @@ class SettingsControllerTest extends TestCase
             }
         };
 
-        $mockObjectMapper = $this->createMock(\OCA\OpenRegister\Db\UnifiedObjectMapper::class);
+        $mockObjectMapper = $this->createMock(\OCA\OpenRegister\Db\MagicMapper::class);
         $mockSchemaMapper = $this->createMock(\OCA\OpenRegister\Db\SchemaMapper::class);
 
         $this->container->method('get')
@@ -2095,7 +2095,7 @@ class SettingsControllerTest extends TestCase
                         return $mockIndexService;
                     }
 
-                    if ($id === \OCA\OpenRegister\Db\UnifiedObjectMapper::class) {
+                    if ($id === \OCA\OpenRegister\Db\MagicMapper::class) {
                         return $mockObjectMapper;
                     }
 
@@ -2131,7 +2131,7 @@ class SettingsControllerTest extends TestCase
                     return $mockIndexService;
                 }
 
-                throw new \Exception('UnifiedObjectMapper not available');
+                throw new \Exception('MagicMapper not available');
             });
 
         $response = $this->controller->testSchemaMapping();

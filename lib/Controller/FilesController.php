@@ -601,6 +601,8 @@ class FilesController extends Controller
             $tags = explode(',', $tags);
         }
 
+        $tags = array_values(array_filter($tags, static fn($t) => trim($t) !== ''));
+
         return [
             'name'     => $files['name'] ?? '',
             'type'     => $files['type'] ?? '',
@@ -634,6 +636,8 @@ class FilesController extends Controller
             if (is_array($tags) === false) {
                 $tags = explode(',', $tags);
             }
+
+            $tags = array_values(array_filter($tags, static fn($t) => trim($t) !== ''));
 
             // Extract file arrays safely.
             $typeArray = [];
