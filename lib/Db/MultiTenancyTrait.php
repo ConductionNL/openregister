@@ -389,6 +389,8 @@ trait MultiTenancyTrait
     /**
      * Check if admin override is enabled
      *
+     * In SaaS mode, admin override is always disabled to enforce hard tenant boundaries.
+     *
      * @return bool True if admin override is enabled
      */
     private function isAdminOverrideEnabled(): bool
@@ -403,8 +405,41 @@ trait MultiTenancyTrait
         }
 
         $multitenancyData = json_decode($multitenancyConfig, true);
+
+        // In SaaS mode, admin override is always disabled for organisation boundary.
+        if (($multitenancyData['saasMode'] ?? false) === true) {
+            if (isset($this->logger) === true) {
+                $this->logger->debug(
+                    '[MultiTenancyTrait] SaaS mode active — admin override disabled for organisation boundary',
+                    ['file' => __FILE__, 'line' => __LINE__]
+                );
+            }
+
+            return false;
+        }
+
         return $multitenancyData['adminOverride'] ?? false;
     }//end isAdminOverrideEnabled()
+
+    /**
+     * Check if SaaS mode is enabled
+     *
+     * @return bool True if SaaS mode is enabled
+     */
+    protected function isSaasMode(): bool
+    {
+        if (isset($this->appConfig) === false) {
+            return false;
+        }
+
+        $multitenancyConfig = $this->appConfig->getValueString('openregister', 'multitenancy', '');
+        if (empty($multitenancyConfig) === true) {
+            return false;
+        }
+
+        $multitenancyData = json_decode($multitenancyConfig, true);
+        return ($multitenancyData['saasMode'] ?? false) === true;
+    }//end isSaasMode()
 
     /**
      * Apply filter when no active organisation is set
@@ -464,6 +499,19 @@ trait MultiTenancyTrait
         $isAdmin = $this->isUserAdmin(user: $user);
 
         if ($isAdmin === true && $this->isAdminOverrideEnabled() === true) {
+            // Audit log the admin cross-tenant override.
+            if (isset($this->logger) === true) {
+                $hasGetUid = ($user !== null && method_exists($user, 'getUID'));
+                $userId    = ($hasGetUid === true) ? $user->getUID() : 'unknown';
+                $this->logger->info(
+                    '[MultiTenancyTrait] Admin override: cross-organisation access granted',
+                    [
+                        'type'   => 'cross_tenant_access_admin_override',
+                        'userId' => $userId,
+                    ]
+                );
+            }
+
             return;
         }
 
@@ -639,11 +687,27 @@ trait MultiTenancyTrait
 
         // Verify the organisations match (applies to everyone including admins).
         if ($entityOrgUuid !== $activeOrgUuid) {
+            // Audit log the cross-tenant access attempt.
+            if (isset($this->logger) === true) {
+                $userId = $this->getCurrentUserId() ?? 'anonymous';
+                $this->logger->warning(
+                    '[MultiTenancyTrait] Cross-tenant access denied',
+                    [
+                        'type'               => 'cross_tenant_access_denied',
+                        'userId'             => $userId,
+                        'sourceOrganisation' => $activeOrgUuid,
+                        'targetOrganisation' => $entityOrgUuid,
+                        'entityType'         => get_class($entity),
+                        'entityId'           => $entity->getId(),
+                    ]
+                );
+            }
+
             throw new Exception(
                 'Security violation: You do not have permission to access this resource from a different organisation.',
                 Response::HTTP_FORBIDDEN
             );
-        }
+        }//end if
     }//end verifyOrganisationAccess()
 
     /**
