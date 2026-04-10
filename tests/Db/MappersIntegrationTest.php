@@ -22,7 +22,7 @@ use OCA\OpenRegister\Db\Configuration;
 use OCA\OpenRegister\Db\ConfigurationMapper;
 use OCA\OpenRegister\Db\FileMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Db\UnifiedObjectMapper;
+use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity\FacetsHandler;
 use OCA\OpenRegister\Db\ObjectEntity\QueryOptimizationHandler;
 use OCA\OpenRegister\Db\ObjectEntity\StatisticsHandler;
@@ -53,7 +53,7 @@ class MappersIntegrationTest extends TestCase
     private FileMapper $fileMapper;
     private RegisterMapper $registerMapper;
     private SchemaMapper $schemaMapper;
-    private UnifiedObjectMapper $objectMapper;
+    private MagicMapper $objectMapper;
     private StatisticsHandler $statisticsHandler;
     private QueryOptimizationHandler $queryOptimizationHandler;
     private FacetsHandler $facetsHandler;
@@ -89,7 +89,7 @@ class MappersIntegrationTest extends TestCase
         $this->fileMapper = \OC::$server->get(FileMapper::class);
         $this->registerMapper = \OC::$server->get(RegisterMapper::class);
         $this->schemaMapper = \OC::$server->get(SchemaMapper::class);
-        $this->objectMapper = \OC::$server->get(UnifiedObjectMapper::class);
+        $this->objectMapper = \OC::$server->get(MagicMapper::class);
         $this->statisticsHandler = \OC::$server->get(StatisticsHandler::class);
         $this->queryOptimizationHandler = \OC::$server->get(QueryOptimizationHandler::class);
         $this->facetsHandler = \OC::$server->get(FacetsHandler::class);

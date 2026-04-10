@@ -544,6 +544,28 @@ class SettingsService
         return $this->objectRetentionHandler->updateRetentionSettingsOnly($data);
     }//end updateRetentionSettingsOnly()
 
+    /**
+     * Get archival settings only
+     *
+     * @return array Archival settings
+     */
+    public function getArchivalSettingsOnly(): array
+    {
+        return $this->objectRetentionHandler->getArchivalSettingsOnly();
+    }//end getArchivalSettingsOnly()
+
+    /**
+     * Update archival settings only
+     *
+     * @param array $data Archival settings data
+     *
+     * @return array Updated archival settings
+     */
+    public function updateArchivalSettingsOnly(array $data): array
+    {
+        return $this->objectRetentionHandler->updateArchivalSettingsOnly($data);
+    }//end updateArchivalSettingsOnly()
+
     // CacheSettingsHandler methods (3 main ones).
 
     /**

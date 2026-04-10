@@ -2846,6 +2846,21 @@ class SaveObject
         bool $persist,
         bool $silent
     ): ObjectEntity {
+        // Check archival immutability: destroyed and transferred objects cannot be modified.
+        $retention    = $existingObject->getRetention() ?? [];
+        $archStatus   = $retention['archiefstatus'] ?? null;
+        $immutableMap = [
+            'vernietigd'   => 'OBJECT_DESTROYED',
+            'overgebracht' => 'OBJECT_TRANSFERRED',
+        ];
+
+        if ($archStatus !== null && isset($immutableMap[$archStatus]) === true) {
+            throw new Exception(
+                'Cannot modify object: archival status is '.$archStatus.' (error: '.$immutableMap[$archStatus].')',
+                409
+            );
+        }
+
         // IMPORTANT: Capture the old state BEFORE prepareObjectForUpdate modifies the entity.
         // This is critical for event dispatching - the old status must be captured here,
         // not after preparation when the entity has already been modified.
@@ -2938,6 +2953,16 @@ class SaveObject
             selfData: $selfData,
             _multitenancy: $_multitenancy
         );
+
+        // Apply archival metadata from schema archive configuration.
+        try {
+            $retentionService = \OC::$server->get(\OCA\OpenRegister\Service\RetentionService::class);
+            $preparedObject   = $retentionService->applyArchivalMetadata($preparedObject, $schema);
+        } catch (\Throwable $e) {
+            $this->logger->debug(
+                '[SaveObject] RetentionService not available, skipping archival metadata: '.$e->getMessage()
+            );
+        }
 
         // If not persisting, return the prepared object.
         if ($persist === false) {
@@ -3788,6 +3813,20 @@ class SaveObject
             selfData: $selfData,
             folderId: $folderId
         );
+
+        // Recalculate archiefactiedatum if source property changed.
+        try {
+            $retentionService = \OC::$server->get(\OCA\OpenRegister\Service\RetentionService::class);
+            $preparedObject   = $retentionService->recalculateArchiefactiedatum(
+                $preparedObject,
+                $schema,
+                $oldObject->getObject()
+            );
+        } catch (\Throwable $e) {
+            $this->logger->debug(
+                '[SaveObject] RetentionService not available for recalculation: '.$e->getMessage()
+            );
+        }
 
         // Update the object properties.
         $preparedObject->setRegister((string) $registerId);

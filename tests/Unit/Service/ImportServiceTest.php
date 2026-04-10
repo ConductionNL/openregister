@@ -15,7 +15,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service;
 
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Db\UnifiedObjectMapper;
+use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
@@ -39,8 +39,8 @@ use ReflectionClass;
  */
 class ImportServiceTest extends TestCase
 {
-    /** @var UnifiedObjectMapper&MockObject */
-    private UnifiedObjectMapper $objectMapper;
+    /** @var MagicMapper&MockObject */
+    private MagicMapper $objectMapper;
 
     /** @var SchemaMapper&MockObject */
     private SchemaMapper $schemaMapper;
@@ -62,7 +62,7 @@ class ImportServiceTest extends TestCase
 
     protected function setUp(): void
     {
-        $this->objectMapper = $this->createMock(UnifiedObjectMapper::class);
+        $this->objectMapper = $this->createMock(MagicMapper::class);
         $this->schemaMapper = $this->createMock(SchemaMapper::class);
         $this->objectService = $this->createMock(ObjectService::class);
         $this->logger = $this->createMock(LoggerInterface::class);

@@ -20,7 +20,7 @@ use DateTime;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
-use OCA\OpenRegister\Db\UnifiedObjectMapper;
+use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Service\SchemaService;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
@@ -61,8 +61,8 @@ class SchemaServiceCoverageTest extends TestCase
     /** @var SchemaMapper&MockObject */
     private SchemaMapper $schemaMapper;
 
-    /** @var UnifiedObjectMapper&MockObject */
-    private UnifiedObjectMapper $objectMapper;
+    /** @var MagicMapper&MockObject */
+    private MagicMapper $objectMapper;
 
     /** @var LoggerInterface&MockObject */
     private LoggerInterface $logger;
@@ -74,7 +74,7 @@ class SchemaServiceCoverageTest extends TestCase
         parent::setUp();
 
         $this->schemaMapper = $this->createMock(SchemaMapper::class);
-        $this->objectMapper = $this->createMock(UnifiedObjectMapper::class);
+        $this->objectMapper = $this->createMock(MagicMapper::class);
         $this->logger = $this->createMock(LoggerInterface::class);
 
         $this->service = new SchemaService(

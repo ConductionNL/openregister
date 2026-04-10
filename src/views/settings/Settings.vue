@@ -38,6 +38,9 @@
 		<!-- RBAC Configuration Section -->
 		<RbacConfiguration />
 
+		<!-- Permission Matrix Section -->
+		<PermissionMatrix />
+
 		<!-- Organisation Configuration Section -->
 		<OrganisationConfiguration />
 
@@ -79,6 +82,7 @@ import SolrConfiguration from './sections/SolrConfiguration.vue'
 import StatisticsOverview from './sections/StatisticsOverview.vue'
 import CacheManagement from './sections/CacheManagement.vue'
 import RbacConfiguration from './sections/RbacConfiguration.vue'
+import PermissionMatrix from './sections/PermissionMatrix.vue'
 import OrganisationConfiguration from './sections/OrganisationConfiguration.vue'
 import MultitenancyConfiguration from './sections/MultitenancyConfiguration.vue'
 import RetentionConfiguration from './sections/RetentionConfiguration.vue'
@@ -105,6 +109,7 @@ export default {
 		StatisticsOverview,
 		CacheManagement,
 		RbacConfiguration,
+		PermissionMatrix,
 		OrganisationConfiguration,
 		MultitenancyConfiguration,
 		RetentionConfiguration,
