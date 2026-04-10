@@ -16,6 +16,7 @@ rules:
   proposal:
     - Reference shared nextcloud-app spec for app structure requirements
     - Consider impact on dependent apps (opencatalogi, softwarecatalog)
+    - "ADR-011: Before implementing ANY utility (validation, formatting, parsing), search OpenRegister lib/Formats/, lib/Service/, and lib/Handler/ for existing implementations. Common duplications: BSN validation (BsnFormat.php), date formatting, slug generation, UUID handling. If found, reuse via DI or document why duplication is necessary."
   specs:
     - ObjectService.saveObject() takes entity/array as first arg (NOT a type string)
     - Include migration specs for any schema changes

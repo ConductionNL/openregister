@@ -60,11 +60,6 @@ phpqa_output.log
 simple-solr-test.php
 test-solr-connection.php
 
-# Files with unusual extensions or no extensions that could be mistakes
-**/PR *
-**/adds *
-**/implements *
-
 phpqa/
 
 # Docker AI models (too large for git)
@@ -74,3 +69,8 @@ docker/dolphin/models/
 !issues/
 !issues/**
 
+# TODO: fix whatever is wrong with these files that causes them to always end up in git changes
+website/docs/Features/img_4.png
+website/docs/Features/img_5.png
+website/docs/features/img_4.png
+website/docs/features/img_5.png
