@@ -10,7 +10,7 @@
 			:name="t('openregister', 'Failed to load register data')"
 			:description="errorMessage">
 			<template #icon>
-				<span class="material-design-icon" v-html="alertCircleIcon" />
+				<AlertCircleOutline :size="44" />
 			</template>
 		</NcEmptyContent>
 
@@ -18,7 +18,7 @@
 		<NcEmptyContent v-else-if="objects.length === 0"
 			:name="t('openregister', 'No register objects reference this file')">
 			<template #icon>
-				<span class="material-design-icon" v-html="databaseOffIcon" />
+				<DatabaseOffOutline :size="44" />
 			</template>
 		</NcEmptyContent>
 
@@ -54,12 +54,8 @@ import { generateUrl } from '@nextcloud/router'
 import axios from '@nextcloud/axios'
 import NcEmptyContent from '@nextcloud/vue/dist/Components/NcEmptyContent.js'
 import NcLoadingIcon from '@nextcloud/vue/dist/Components/NcLoadingIcon.js'
-
-// database-off-outline SVG
-const databaseOffIcon = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M1,4.27L2.28,3L21,21.72L19.73,23L17.73,21C16.07,21.56 13.85,22 12,22C7.58,22 4,20.21 4,18V8C4,7.17 4.8,6.35 6.13,5.71L1,4.27M18,14.8V8.64C16.53,9.47 14.39,10 12,10C11.15,10 10.31,9.93 9.5,9.8L18,14.8M20,8V12.5L18,10.5V8.64C18.72,8.22 19.26,7.74 19.57,7.27C18.84,6.16 16,5 12,5C10.93,5 9.93,5.12 9.04,5.3L7.47,3.73C8.81,3.26 10.35,3 12,3C16.42,3 20,4.79 20,7V8M4,14.77C5.61,15.55 7.72,16 10,16L4,10V14.77M12,20C13.82,20 15.53,19.64 16.86,19.08L12.13,14.34C10.12,14.23 8.21,13.82 6.72,13.15L6,12.8V17.5C6,18.5 8.13,20 12,20Z" /></svg>'
-
-// alert-circle-outline SVG
-const alertCircleIcon = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M11,15H13V17H11V15M11,7H13V13H11V7M12,2C6.47,2 2,6.5 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M12,20A8,8 0 0,1 4,12A8,8 0 0,1 12,4A8,8 0 0,1 20,12A8,8 0 0,1 12,20Z" /></svg>'
+import AlertCircleOutline from 'vue-material-design-icons/AlertCircleOutline.vue'
+import DatabaseOffOutline from 'vue-material-design-icons/DatabaseOffOutline.vue'
 
 export default {
 	name: 'RegisterObjectsTab',
@@ -67,6 +63,8 @@ export default {
 	components: {
 		NcEmptyContent,
 		NcLoadingIcon,
+		AlertCircleOutline,
+		DatabaseOffOutline,
 	},
 
 	props: {
@@ -82,8 +80,6 @@ export default {
 			error: false,
 			errorMessage: '',
 			objects: [],
-			databaseOffIcon,
-			alertCircleIcon,
 		}
 	},
 
