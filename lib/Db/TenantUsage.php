@@ -54,49 +54,49 @@ class TenantUsage extends Entity implements JsonSerializable
     /**
      * Organisation UUID.
      *
-     * @var string
+     * @var string Organisation UUID
      */
     protected string $organisationUuid = '';
 
     /**
      * Usage period (hourly bucket).
      *
-     * @var DateTime
+     * @var DateTime Usage period (hourly bucket)
      */
     protected ?DateTime $period = null;
 
     /**
      * Number of API requests.
      *
-     * @var integer
+     * @var integer Number of API requests
      */
     protected int $requestCount = 0;
 
     /**
      * Bandwidth in bytes.
      *
-     * @var integer
+     * @var integer Bandwidth in bytes
      */
     protected int $bandwidthBytes = 0;
 
     /**
      * Storage in bytes.
      *
-     * @var integer
+     * @var integer Storage in bytes
      */
     protected int $storageBytes = 0;
 
     /**
      * Creation timestamp.
      *
-     * @var DateTime|null
+     * @var DateTime|null Creation timestamp
      */
     protected ?DateTime $created = null;
 
     /**
      * Last update timestamp.
      *
-     * @var DateTime|null
+     * @var DateTime|null Last update timestamp
      */
     protected ?DateTime $updated = null;
 

@@ -101,10 +101,10 @@ class TenantUsageSyncJob extends TimedJob
             $requestKey   = "or_quota_{$orgUuid}_{$hourBucket}";
             $bandwidthKey = "or_bw_{$orgUuid}_{$hourBucket}";
 
-            $fetchedRequests  = apcu_fetch($requestKey);
-            $fetchedBandwidth = apcu_fetch($bandwidthKey);
-            $requestCount     = ($fetchedRequests !== false ? $fetchedRequests : 0);
-            $bandwidthBytes   = ($fetchedBandwidth !== false ? $fetchedBandwidth : 0);
+            $requestCount   = apcu_fetch($requestKey, $reqSuccess);
+            $requestCount   = ($reqSuccess === true) ? (int) $requestCount : 0;
+            $bandwidthBytes = apcu_fetch($bandwidthKey, $bwSuccess);
+            $bandwidthBytes = ($bwSuccess === true) ? (int) $bandwidthBytes : 0;
 
             if ($requestCount === 0 && $bandwidthBytes === 0) {
                 continue;
@@ -112,11 +112,11 @@ class TenantUsageSyncJob extends TimedJob
 
             try {
                 $this->tenantUsageMapper->upsertUsage(
-                    organisationUuid: $orgUuid,
-                    period: $period,
-                    requestCount: (int) $requestCount,
-                    bandwidthBytes: (int) $bandwidthBytes,
-                    storageBytes: 0
+                    $orgUuid,
+                    $period,
+                    (int) $requestCount,
+                    (int) $bandwidthBytes,
+                    0
                 );
                 $syncedCount++;
             } catch (\Exception $e) {

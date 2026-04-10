@@ -1165,10 +1165,10 @@ class OrganisationController extends Controller
             $currentBandwidth = 0;
 
             if (function_exists('apcu_enabled') === true && apcu_enabled() === true) {
-                $fetchedRequests  = apcu_fetch("or_quota_{$orgUuid}_{$hourBucket}");
-                $fetchedBandwidth = apcu_fetch("or_bw_{$orgUuid}_{$hourBucket}");
-                $currentRequests  = (int) ($fetchedRequests !== false ? $fetchedRequests : 0);
-                $currentBandwidth = (int) ($fetchedBandwidth !== false ? $fetchedBandwidth : 0);
+                $reqFetched       = apcu_fetch("or_quota_{$orgUuid}_{$hourBucket}", $reqSuccess);
+                $currentRequests  = ($reqSuccess === true) ? (int) $reqFetched : 0;
+                $bwFetched        = apcu_fetch("or_bw_{$orgUuid}_{$hourBucket}", $bwSuccess);
+                $currentBandwidth = ($bwSuccess === true) ? (int) $bwFetched : 0;
             }
 
             // Get historical data (last 30 days).
