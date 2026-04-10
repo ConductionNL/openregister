@@ -40,6 +40,18 @@ All create, update, and delete operations on register objects MUST generate an a
   - `action`: `delete`
   - `data`: full snapshot of the object before deletion
 
+### Requirement: The AuditTrail entity MUST include hash and previousHash fields
+The `AuditTrail` entity MUST be extended with `hash` and `previousHash` string fields for cryptographic chain integrity.
+
+#### Scenario: New audit trail entry includes hash fields in JSON
+- **WHEN** an audit trail entry with hash chaining is serialized to JSON
+- **THEN** the JSON output MUST include `hash` and `previousHash` string fields
+- **AND** both fields MUST be 64-character hexadecimal strings (SHA-256 output)
+
+#### Scenario: Legacy entry without hash fields
+- **WHEN** an audit trail entry created before hash chaining is serialized to JSON
+- **THEN** the JSON output MUST include `hash` and `previousHash` as null values
+
 ### Requirement: The audit trail MUST use cryptographic hash chaining
 Each audit trail entry MUST include a hash that chains to the previous entry, making any tampering detectable.
 
@@ -59,13 +71,20 @@ Each audit trail entry MUST include a hash that chains to the previous entry, ma
 No user, including administrators, MUST be able to modify or delete audit trail entries through the application.
 
 #### Scenario: Reject audit trail deletion via API
-- GIVEN an admin user attempts to DELETE /api/audit-trail/{id}
+- GIVEN an admin user attempts to DELETE `/api/audit-trails/{id}`
 - THEN the system MUST return HTTP 405 Method Not Allowed
+- AND the response MUST include `{"error": "Audit trail entries cannot be deleted"}`
 - AND the audit entry MUST remain unchanged
 
-#### Scenario: Reject audit trail modification
-- GIVEN an admin attempts to PUT /api/audit-trail/{id} with modified data
+#### Scenario: Reject audit trail modification via PUT
+- GIVEN an admin attempts to PUT `/api/audit-trails/{id}` with modified data
 - THEN the system MUST return HTTP 405 Method Not Allowed
+- AND the response MUST include `{"error": "Audit trail entries cannot be modified"}`
+
+#### Scenario: Reject audit trail modification via PATCH
+- GIVEN an admin attempts to PATCH `/api/audit-trails/{id}` with modified data
+- THEN the system MUST return HTTP 405 Method Not Allowed
+- AND the response MUST include `{"error": "Audit trail entries cannot be modified"}`
 
 ### Requirement: The audit trail MUST support minimum 10-year retention
 Audit trail entries MUST be retained for at least 10 years, with configurable retention periods per register.
@@ -103,22 +122,22 @@ Read operations on schemas marked as containing sensitive data MUST also produce
 
 ### Current Implementation Status
 - **Implemented:**
-  - `AuditTrail` entity (`lib/Db/AuditTrail.php`) with fields: uuid, schema, register, object, objectUuid, registerUuid, schemaUuid, action, changed, user, userName, created, organisation, session, request, ipAddress, size
+  - `AuditTrail` entity (`lib/Db/AuditTrail.php`) with fields: uuid, schema, register, object, objectUuid, registerUuid, schemaUuid, action, changed, user, userName, created, organisation, session, request, ipAddress, size, hash, previousHash
   - `AuditTrailMapper` (`lib/Db/AuditTrailMapper.php`) with `createAuditTrail()` method recording create/update/delete actions with user context, session, IP address, and changed fields
   - `AuditHandler` (`lib/Service/Object/AuditHandler.php`) orchestrating audit trail creation during object operations
   - Referential integrity actions logged with specific action types: `referential_integrity.cascade_delete`, `referential_integrity.set_null`, `referential_integrity.set_default`, `referential_integrity.restrict_blocked` (in `ReferentialIntegrityService`)
   - `RevertHandler` (`lib/Service/Object/RevertHandler.php`) uses audit trail for object reversion
   - AuditTrail controller for listing/viewing entries
+  - Cryptographic hash chaining: `AuditHashService` computes SHA-256 hashes, `AuditTrailMapper.insert()` chains hashes automatically
+  - Immutability enforcement: PUT/DELETE on audit trail API endpoints return HTTP 405
+  - Hash chain verification endpoint: `GET /api/audit-trails/verify`
+  - Export functionality: `GET /api/audit-trails/export` (JSON/CSV)
 - **NOT implemented:**
-  - Cryptographic hash chaining (no `hash` field exists on AuditTrail entity; no SHA-256 chain, no genesis hash)
-  - Immutability enforcement (no explicit blocking of DELETE/PUT on audit trail API endpoints)
   - 10-year retention configuration (no retention period settings per register)
   - Archive mechanism for old entries (no partitioning or separate archive table)
-  - Export functionality for compliance audits (no date-range export with hash verification)
   - Sensitive data read auditing (no `read` action logging; only mutations are recorded)
-  - Hash chain verification endpoint
 - **Partial:**
-  - The existing AuditTrail records most of the required metadata (user, timestamp, action, changed fields) but lacks hash chaining and immutability guarantees
+  - The existing AuditTrail records most of the required metadata including hash chaining and immutability guarantees
 
 ### Standards & References
 - **GDPR Article 30** — Processing records requirement
@@ -129,19 +148,9 @@ Read operations on schemas marked as containing sensitive data MUST also produce
 - **W3C PROV-O** — Provenance ontology (for audit trail semantics)
 - **Common Criteria (ISO 15408)** — Security audit logging requirements
 
-### Specificity Assessment
-- The spec is well-defined for the hash chaining mechanism and CRUD audit scenarios.
-- Missing: database migration details for adding the `hash` column; performance impact analysis of hash computation on every write; API endpoint definitions for verification and export.
-- Ambiguous: whether "immutability" means application-level enforcement only or requires database-level constraints (e.g., triggers preventing UPDATE/DELETE on the audit trail table).
-- Open questions:
-  - What is the genesis hash value? Should it be configurable or hardcoded?
-  - How should hash chain breaks be reported (admin notification, API endpoint, dashboard widget)?
-  - For sensitive data read auditing, what defines "sensitive" — a schema-level flag, or per-property marking?
-  - Should the archive mechanism use database partitioning, separate tables, or external storage?
-
 ## Nextcloud Integration Analysis
 
-- **Status**: Already implemented in OpenRegister
-- **Existing Implementation**: `AuditTrail` entity with comprehensive fields (uuid, schema, register, object, action, changed, user, userName, session, request, ipAddress, size). `AuditTrailMapper` with `createAuditTrail()` recording all mutations. `AuditHandler` orchestrates audit trail creation. `AuditTrailController` for listing/viewing/exporting entries. `RevertHandler` uses audit trail for object reversion. Referential integrity actions logged with specific action types.
-- **Nextcloud Core Integration**: The `AuditTrail` entity extends NC's `Entity` base class, `AuditTrailMapper` extends `QBMapper`. Events fired via `IEventDispatcher`. Should implement `IProvider` for NC's Activity app stream to surface audit entries in the NC activity feed. Consider integrating with NC's `ILogger` for system-level audit logging. Export functionality could leverage NC's file download infrastructure.
-- **Recommendation**: Mark as implemented. Consider implementing `IProvider` for the Activity app to surface audit entries in NC's activity stream. Hash chaining, immutability enforcement, and 10-year retention are documented as not-yet-implemented enhancements.
+- **Status**: Implemented in OpenRegister
+- **Existing Implementation**: `AuditTrail` entity with comprehensive fields including hash and previousHash for chain integrity. `AuditTrailMapper` with `createAuditTrail()` recording all mutations and automatic hash chain computation on insert. `AuditHashService` for SHA-256 hash computation and chain verification. `AuditHandler` orchestrates audit trail creation. `AuditTrailController` for listing/viewing/exporting/verification/verwerkingsregister/inzageverzoek. `RevertHandler` uses audit trail for object reversion. Referential integrity actions logged with specific action types.
+- **Nextcloud Core Integration**: The `AuditTrail` entity extends NC's `Entity` base class, `AuditTrailMapper` extends `QBMapper`. Events fired via `IEventDispatcher`. Should implement `IProvider` for NC's Activity app stream to surface audit entries in the NC activity feed. Consider integrating with NC's `ILogger` for system-level audit logging.
+- **Recommendation**: Mark as implemented. Consider implementing `IProvider` for the Activity app to surface audit entries in NC's activity stream. 10-year retention and sensitive data read auditing are documented as not-yet-implemented enhancements.

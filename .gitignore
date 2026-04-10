@@ -58,6 +58,7 @@ phpqa_output.log
 simple-solr-test.php
 test-solr-connection.php
 
+<<<<<<< HEAD
 # Files with unusual extensions or no extensions that could be mistakes
 **/PR *
 **/adds *
@@ -65,6 +66,8 @@ test-solr-connection.php
 
 website/.docusaurus/
 
+=======
+>>>>>>> origin/development
 phpqa/
 
 # Docker AI models (too large for git)
