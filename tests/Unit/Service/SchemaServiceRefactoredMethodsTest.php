@@ -21,7 +21,7 @@
 namespace OCA\OpenRegister\Tests\Unit\Service;
 
 use OCA\OpenRegister\Db\SchemaMapper;
-use OCA\OpenRegister\Db\UnifiedObjectMapper;
+use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Service\SchemaService;
 use Psr\Log\LoggerInterface;
 use PHPUnit\Framework\TestCase;
@@ -53,7 +53,7 @@ class SchemaServiceRefactoredMethodsTest extends TestCase
 	/** @var MockObject|SchemaMapper */
 	private $schemaMapper;
 
-	/** @var MockObject|UnifiedObjectMapper */
+	/** @var MockObject|MagicMapper */
 	private $objectMapper;
 
 	/** @var MockObject|LoggerInterface */
@@ -70,7 +70,7 @@ class SchemaServiceRefactoredMethodsTest extends TestCase
 
 		// Create mocks for all dependencies.
 		$this->schemaMapper = $this->createMock(SchemaMapper::class);
-		$this->objectMapper = $this->createMock(UnifiedObjectMapper::class);
+		$this->objectMapper = $this->createMock(MagicMapper::class);
 		$this->logger = $this->createMock(LoggerInterface::class);
 
 		// Create SchemaService instance.

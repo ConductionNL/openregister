@@ -438,7 +438,8 @@ class ObjectsProvider implements IFilteringProvider
         if (isset($this->nameCache[$key]) === false) {
             try {
                 $schema = $this->schemaMapper->find($schemaId);
-                $this->nameCache[$key] = ($schema->getTitle() !== null && $schema->getTitle() !== '' ? $schema->getTitle() : (string) $schemaId);
+                $title  = $schema->getTitle();
+                $this->nameCache[$key] = ($title !== null && $title !== '' ? $title : (string) $schemaId);
             } catch (\Exception $e) {
                 $this->nameCache[$key] = (string) $schemaId;
             }

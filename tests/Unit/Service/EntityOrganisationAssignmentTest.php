@@ -47,7 +47,7 @@ use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Db\UnifiedObjectMapper;
+use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Service\OrganisationService;
 use OCA\OpenRegister\Service\RegisterService;
 use OCA\OpenRegister\Service\ObjectService;
@@ -95,7 +95,7 @@ class EntityOrganisationAssignmentTest extends TestCase
     private $schemaMapper;
 
     /**
-     * @var UnifiedObjectMapper|MockObject
+     * @var MagicMapper|MockObject
      */
     private $objectMapper;
 
@@ -172,7 +172,7 @@ class EntityOrganisationAssignmentTest extends TestCase
         $this->organisationMapper = $this->createMock(OrganisationMapper::class);
         $this->registerMapper = $this->createMock(RegisterMapper::class);
         $this->schemaMapper = $this->createMock(SchemaMapper::class);
-        $this->objectMapper = $this->createMock(UnifiedObjectMapper::class);
+        $this->objectMapper = $this->createMock(MagicMapper::class);
         $this->userSession = $this->createMock(IUserSession::class);
         $this->session = $this->createMock(ISession::class);
         $this->ncConfig = $this->createMock(IConfig::class);
