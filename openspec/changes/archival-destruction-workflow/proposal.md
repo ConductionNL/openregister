@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 ---
 status: approved
 ---
@@ -41,7 +40,6 @@ Implement a phased archival and destruction workflow:
 - The `retention` field on ObjectEntity is currently unused; we must ensure backward compatibility
 - Destruction is irreversible; the approval workflow is critical for safety
 - Selection list configuration must be flexible enough for different government contexts
-=======
 # Proposal: archival-destruction-workflow
 
 ## Summary
@@ -113,4 +111,3 @@ Implement a NEN 15489 compliant archival destruction workflow for register objec
 
 - OpenRegister already has CSV import/export with ID support -- this change focuses solely on the destruction workflow
 - The archived change `archivering-vernietiging` covers related ground but this proposal adds selectielijst management and the multi-step approval workflow as distinct capabilities
->>>>>>> origin/development

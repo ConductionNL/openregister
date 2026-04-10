@@ -87,11 +87,8 @@ Vrij en open source onder de EUPL-licentie.
 		<job>OCA\OpenRegister\Cron\WebhookRetryJob</job>
 		<job>OCA\OpenRegister\BackgroundJob\BlobMigrationJob</job>
 		<job>OCA\OpenRegister\BackgroundJob\DestructionCheckJob</job>
-<<<<<<< HEAD
-=======
 		<job>OCA\OpenRegister\Cron\TransferCheckJob</job>
 		<job>OCA\OpenRegister\BackgroundJob\TransferExecutionJob</job>
->>>>>>> origin/development
 	</background-jobs>
 
     <navigations>
