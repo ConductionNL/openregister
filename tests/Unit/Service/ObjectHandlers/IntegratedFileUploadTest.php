@@ -22,14 +22,13 @@ namespace OCA\OpenRegister\Tests\Unit\Service\ObjectHandlers;
 
 use Exception;
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Db\ObjectEntityMapper;
+use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use stdClass;
 use OCA\OpenRegister\Db\AuditTrailMapper;
-use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Service\Object\SaveObject;
 use OCA\OpenRegister\Service\Object\SaveObject\MetadataHydrationHandler;
 use OCA\OpenRegister\Service\Object\SaveObject\FilePropertyHandler;
@@ -115,7 +114,7 @@ class IntegratedFileUploadTest extends TestCase
     /** @var SaveObject */
     private SaveObject $saveObject;
 
-    /** @var MockObject|ObjectEntityMapper */
+    /** @var MockObject|MagicMapper */
     private $objectEntityMapper;
 
     /** @var MockObject|MagicMapper */
@@ -176,7 +175,7 @@ class IntegratedFileUploadTest extends TestCase
         parent::setUp();
 
         // Create mocks for all dependencies.
-        $this->objectEntityMapper = $this->createMock(ObjectEntityMapper::class);
+        $this->objectEntityMapper = $this->createMock(MagicMapper::class);
         $this->unifiedObjectMapper = $this->createMock(MagicMapper::class);
         $this->metaHydrationHandler = $this->createMock(MetadataHydrationHandler::class);
         $this->filePropertyHandler = $this->createMock(FilePropertyHandler::class);

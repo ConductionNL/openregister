@@ -48,7 +48,11 @@ use OCP\AppFramework\Http\DataDownloadResponse;
 use OCP\DB\Exception as DBException;
 use OCP\IUserSession;
 use OCA\OpenRegister\Exception\DatabaseConstraintException;
+use OCA\OpenRegister\Service\AuthorizationAuditService;
+use OCA\OpenRegister\Service\Object\PermissionHandler;
+use OCP\IGroupManager;
 use OCP\IRequest;
+use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\Uid\Uuid;
 
@@ -165,6 +169,8 @@ class RegistersController extends Controller
      * @param GitHubHandler        $githubService        GitHub service for publishing
      * @param IAppManager          $appManager           App manager for app version
      * @param OasService           $oasService           OAS service for OpenAPI generation
+     * @param ContainerInterface   $container            Container for lazy loading services
+     * @param IGroupManager       $groupManager         Group manager for RBAC checks
      *
      * @return void
      *
@@ -186,7 +192,9 @@ class RegistersController extends Controller
         RegisterMapper $registerMapper,
         GitHubHandler $githubService,
         IAppManager $appManager,
-        OasService $oasService
+        OasService $oasService,
+        private readonly ContainerInterface $container,
+        private readonly IGroupManager $groupManager
     ) {
         $this->logger->debug(
             message: '[RegistersController] Constructor started.',
@@ -500,9 +508,57 @@ class RegistersController extends Controller
         unset($data['owner']);
         unset($data['created']);
 
+        // Check manage permission if authorization or roles configuration is being modified.
+        $oldRegisterAuth  = null;
+        $oldRegisterRoles = null;
+        if (isset($data['authorization']) === true || isset($data['configuration']['roles']) === true) {
+            try {
+                $existingRegister = $this->registerMapper->find($id);
+                $oldRegisterAuth  = $existingRegister->getAuthorization();
+                $oldConfig        = $existingRegister->getConfiguration();
+                $oldRegisterRoles = $oldConfig['roles'] ?? null;
+                $manageAllowed    = $this->checkRegisterManagePermission(register: $existingRegister);
+                if ($manageAllowed === false) {
+                    return new JSONResponse(
+                        data: ['error' => 'User does not have permission to manage authorization for this register'],
+                        statusCode: 403
+                    );
+                }
+            } catch (DoesNotExistException $e) {
+                return new JSONResponse(data: ['error' => 'Register not found'], statusCode: 404);
+            }
+        }
+
         try {
             // Update the register with the provided data.
-            return new JSONResponse(data: $this->registerService->updateFromArray(id: $id, data: $data));
+            $updatedRegister = $this->registerService->updateFromArray(id: $id, data: $data);
+
+            // Log authorization and role changes.
+            try {
+                $auditService = $this->container->get(AuthorizationAuditService::class);
+
+                if (isset($data['authorization']) === true) {
+                    $auditService->logRegisterAuthorizationChange(
+                        $id,
+                        $updatedRegister['title'] ?? '',
+                        $oldRegisterAuth,
+                        $updatedRegister['authorization'] ?? null
+                    );
+                }
+
+                if (isset($data['configuration']['roles']) === true) {
+                    $auditService->logRoleDefinitionChange(
+                        $id,
+                        $updatedRegister['title'] ?? '',
+                        $oldRegisterRoles,
+                        $updatedRegister['configuration']['roles'] ?? null
+                    );
+                }
+            } catch (\Throwable $e) {
+                // Audit logging should not break the update operation.
+            }//end try
+
+            return new JSONResponse(data: $updatedRegister);
         } catch (DBException $e) {
             // Handle database constraint violations with user-friendly messages.
             $constraintException = DatabaseConstraintException::fromDatabaseException(
@@ -519,7 +575,7 @@ class RegistersController extends Controller
                 data: ['error' => $e->getMessage()],
                 statusCode: $e->getHttpStatusCode()
             );
-        }
+        }//end try
     }//end update()
 
     /**
@@ -1431,4 +1487,70 @@ class RegistersController extends Controller
             return new JSONResponse(['error' => $e->getMessage()], 400);
         }//end try
     }//end depublish()
+
+    /**
+     * Check if the current user has 'manage' permission on a register.
+     *
+     * Uses the register's own authorization block to check for the 'manage' action.
+     * Admin users always pass this check.
+     *
+     * @param Register $register The register to check manage permission for.
+     *
+     * @return bool True if user has manage permission.
+     */
+    private function checkRegisterManagePermission(Register $register): bool
+    {
+        $authorization = $register->getAuthorization();
+
+        // If no authorization configured, only admins can manage (default secure).
+        // Check if manage action is defined.
+        if (empty($authorization) === true || isset($authorization['manage']) === false) {
+            // Fall back: only admin users can manage if no manage rules are defined.
+            $user = $this->userSession->getUser();
+            if ($user === null) {
+                return false;
+            }
+
+            try {
+                $groupManager = $this->container->get(\OCP\IGroupManager::class);
+                $userGroups   = $groupManager->getUserGroupIds($user);
+                return in_array('admin', $userGroups, true);
+            } catch (\Throwable $e) {
+                return false;
+            }
+        }
+
+        // Use PermissionHandler logic via a schema-like check.
+        // Create a minimal check using the register's authorization directly.
+        $user = $this->userSession->getUser();
+        if ($user === null) {
+            return false;
+        }
+
+        try {
+            $userGroups = $this->groupManager->getUserGroupIds($user);
+
+            // Admin bypass.
+            if (in_array('admin', $userGroups, true) === true) {
+                return true;
+            }
+
+            $manageRules = $authorization['manage'];
+            foreach ($userGroups as $groupId) {
+                foreach ($manageRules as $entry) {
+                    if (is_string($entry) === true && $entry === $groupId) {
+                        return true;
+                    }
+
+                    if (is_array($entry) === true && isset($entry['group']) === true && $entry['group'] === $groupId) {
+                        return true;
+                    }
+                }
+            }
+        } catch (\Throwable $e) {
+            return false;
+        }//end try
+
+        return false;
+    }//end checkRegisterManagePermission()
 }//end class
