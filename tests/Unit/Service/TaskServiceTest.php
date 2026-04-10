@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Unit\Service;
 
 use Exception;
+use OCA\OpenRegister\Exception\NoVtodoCalendarException;
 use OCA\OpenRegister\Service\TaskService;
 use OCP\IUser;
 use OCP\IUserSession;
@@ -94,8 +95,8 @@ class TaskServiceTest extends TestCase
         $this->userSession->method('getUser')->willReturn($user);
         $calDavBackend->method('getCalendarsForUser')->willReturn([]);
 
-        $this->expectException(Exception::class);
-        $this->expectExceptionMessage('Failed to create tasks calendar for user testuser');
+        $this->expectException(NoVtodoCalendarException::class);
+        $this->expectExceptionMessage('No VTODO-supporting calendar found');
 
         $service->getTasksForObject('some-uuid');
     }

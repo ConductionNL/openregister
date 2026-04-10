@@ -132,6 +132,7 @@ class NoteServiceTest extends TestCase
 
         $this->userSession->method('getUser')->willReturn($user);
         $this->commentsManager->method('create')->willReturn($comment);
+        $comment->expects($this->once())->method('setVerb')->with('comment');
         $this->commentsManager->expects($this->once())->method('save');
         $this->userManager->method('get')->willReturn($user);
 

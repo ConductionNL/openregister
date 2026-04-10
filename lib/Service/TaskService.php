@@ -371,30 +371,7 @@ class TaskService
             }//end if
         }//end foreach
 
-        // No VTODO calendar found — create one.
-        $this->calDavBackend->createCalendar(
-            $principal,
-            'tasks',
-            [
-                '{DAV:}displayname'                                               => 'Tasks',
-                '{urn:ietf:params:xml:ns:caldav}supported-calendar-component-set' => new \Sabre\CalDAV\Xml\Property\SupportedCalendarComponentSet(
-                    ['VTODO']
-                ),
-            ]
-        );
-
-        // Re-fetch to get the created calendar.
-        $calendars = $this->calDavBackend->getCalendarsForUser($principal);
-        foreach ($calendars as $calendar) {
-            if ($calendar['uri'] === 'tasks') {
-                return [
-                    'id'  => $calendar['id'],
-                    'uri' => $calendar['uri'],
-                ];
-            }
-        }
-
-        throw new Exception('Failed to create tasks calendar for user '.$user->getUID());
+        throw new \OCA\OpenRegister\Exception\NoVtodoCalendarException($user->getUID());
     }//end findUserCalendar()
 
     /**
