@@ -299,13 +299,6 @@ class Organisation extends Entity implements JsonSerializable
         $this->addType(fieldName: 'request_quota', type: 'integer');
         $this->addType(fieldName: 'authorization', type: 'json');
         $this->addType(fieldName: 'parent', type: 'string');
-        $this->addType(fieldName: 'mail', type: 'json');
-        $this->addType(fieldName: 'contacts', type: 'json');
-        $this->addType(fieldName: 'notes', type: 'json');
-        $this->addType(fieldName: 'todos', type: 'json');
-        $this->addType(fieldName: 'calendar', type: 'json');
-        $this->addType(fieldName: 'talk', type: 'json');
-        $this->addType(fieldName: 'deck', type: 'json');
         $this->addType(fieldName: 'status', type: 'string');
         $this->addType(fieldName: 'environment', type: 'string');
         $this->addType(fieldName: 'provisioned_at', type: 'datetime');
@@ -734,13 +727,6 @@ class Organisation extends Entity implements JsonSerializable
             'deprovisionedAt' => $this->deprovisionedAt instanceof DateTime ? $this->deprovisionedAt->format('c') : null,
             'created'         => $this->getCreatedFormatted(),
             'updated'         => $this->getUpdatedFormatted(),
-            '_mail'           => $this->mail,
-            '_contacts'       => $this->contacts,
-            '_notes'          => $this->notes,
-            '_todos'          => $this->todos,
-            '_calendar'       => $this->calendar,
-            '_talk'           => $this->talk,
-            '_deck'           => $this->deck,
         ];
     }//end jsonSerialize()
 
