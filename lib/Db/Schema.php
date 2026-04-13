@@ -476,6 +476,13 @@ class Schema extends Entity implements JsonSerializable
         $this->addType(fieldName: 'published', type: 'datetime');
         $this->addType(fieldName: 'depublished', type: 'datetime');
         $this->addType(fieldName: 'hooks', type: 'json');
+        $this->addType(fieldName: 'mail', type: 'json');
+        $this->addType(fieldName: 'contacts', type: 'json');
+        $this->addType(fieldName: 'notes', type: 'json');
+        $this->addType(fieldName: 'todos', type: 'json');
+        $this->addType(fieldName: 'calendar', type: 'json');
+        $this->addType(fieldName: 'talk', type: 'json');
+        $this->addType(fieldName: 'deck', type: 'json');
     }//end __construct()
 
     /**

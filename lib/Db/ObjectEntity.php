@@ -97,11 +97,17 @@ use OCP\IUserSession;
  * @method void setTmlo(?array $tmlo)
  * @method array|null getMail()
  * @method void setMail(?array $mail)
+ * @method array|null getContacts()
  * @method void setContacts(?array $contacts)
+ * @method array|null getNotes()
  * @method void setNotes(?array $notes)
+ * @method array|null getTodos()
  * @method void setTodos(?array $todos)
+ * @method array|null getCalendar()
  * @method void setCalendar(?array $calendar)
+ * @method array|null getTalk()
  * @method void setTalk(?array $talk)
+ * @method array|null getDeck()
  * @method void setDeck(?array $deck)
  * @method int|null getSize()
  * @method void setSize(?int $size)
@@ -505,6 +511,13 @@ class ObjectEntity extends Entity implements JsonSerializable
         $this->addType(fieldName: 'geo', type: 'json');
         $this->addType(fieldName: 'retention', type: 'json');
         $this->addType(fieldName: 'tmlo', type: 'json');
+        $this->addType(fieldName: 'mail', type: 'json');
+        $this->addType(fieldName: 'contacts', type: 'json');
+        $this->addType(fieldName: 'notes', type: 'json');
+        $this->addType(fieldName: 'todos', type: 'json');
+        $this->addType(fieldName: 'calendar', type: 'json');
+        $this->addType(fieldName: 'talk', type: 'json');
+        $this->addType(fieldName: 'deck', type: 'json');
         $this->addType(fieldName: 'size', type: 'string');
         $this->addType(fieldName: 'schemaVersion', type: 'string');
         $this->addType(fieldName: 'name', type: 'string');
@@ -756,6 +769,13 @@ class ObjectEntity extends Entity implements JsonSerializable
             'created'       => $this->getFormattedDate(date: $this->created),
             'deleted'       => $this->getDeleted(),
             'source'        => $this->source,
+            'mail'          => $this->getMail(),
+            'contacts'      => $this->getContacts(),
+            'notes'         => $this->getNotes(),
+            'todos'         => $this->getTodos(),
+            'calendar'      => $this->getCalendar(),
+            'talk'          => $this->getTalk(),
+            'deck'          => $this->getDeck(),
         ];
 
         // Add relevance score if set (from fuzzy search).
