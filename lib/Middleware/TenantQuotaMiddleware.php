@@ -24,6 +24,7 @@ namespace OCA\OpenRegister\Middleware;
 use DateTime;
 use OCA\OpenRegister\Service\OrganisationService;
 use OCA\OpenRegister\Service\TenantLifecycleService;
+use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\AppFramework\Http\Response;
 use OCP\AppFramework\Middleware;
@@ -88,7 +89,7 @@ class TenantQuotaMiddleware extends Middleware
      *
      * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      */
-    public function beforeController($controller, $methodName): void
+    public function beforeController(string|Controller $controller, string $methodName): void
     {
         // Skip for non-authenticated requests (public endpoints).
         $user = $this->userSession->getUser();
@@ -146,7 +147,7 @@ class TenantQuotaMiddleware extends Middleware
      *
      * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      */
-    public function afterController($controller, $methodName, Response $response): Response
+    public function afterController(string|Controller $controller, string $methodName, Response $response): Response
     {
         $organisation = $this->organisationService->getActiveOrganisation();
         if ($organisation === null) {
@@ -194,7 +195,7 @@ class TenantQuotaMiddleware extends Middleware
      *
      * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      */
-    public function afterException($controller, $methodName, \Exception $exception): ?Response
+    public function afterException(string|Controller $controller, string $methodName, \Exception $exception): ?Response
     {
         if ($exception instanceof TenantStatusException) {
             return new JSONResponse(

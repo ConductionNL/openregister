@@ -133,7 +133,6 @@ The system SHALL map CalDAV VTODO STATUS values to lowercase JSON strings for co
 
 The system SHALL determine which CalDAV calendar to use by finding the user's first calendar that supports VTODO components. The `TaskService::findUserCalendar()` method MUST check the `supported-calendar-component-set` property on each calendar and handle object, string, and iterable component sets.
 
-<<<<<<< HEAD
 #### Scenario: Use first VTODO-supporting calendar
 - **GIVEN** the user has calendars `personal` (VEVENT+VTODO) and `birthdays` (VEVENT only)
 - **WHEN** tasks are created or listed
@@ -386,32 +385,6 @@ All interaction endpoints SHALL follow a consistent sub-resource pattern under t
 - **WHEN** a response is returned
 - **THEN** the Content-Type MUST be `application/json`
 - **AND** list responses MUST use the format `{"results": [...], "total": N}`
-=======
-- GIVEN a cross-origin request to the tasks API
-- THEN the response MUST include appropriate CORS headers (following existing OpenRegister CORS patterns)
-
-### REQ-OI-003: Note Service [MVP]
-
-The system MUST provide a `NoteService` that wraps Nextcloud's `ICommentsManager` for creating, reading, and deleting notes (comments) on OpenRegister objects. The service also depends on `IUserSession` (for current user context) and `IUserManager` (for resolving display names). When a note is created on an object, the note's ID MUST also be added to the object's `_notes` metadata column for reverse lookup consistency. When a note is deleted, its ID MUST be removed from `_notes`.
-
-#### Scenario: Register OpenRegister as a comments entity type
-
-- GIVEN the OpenRegister app is loaded
-- THEN it MUST register a `CommentsEntityListener` for `CommentsEntityEvent` (registered in `Application::registerEventListeners()`)
-- AND the listener calls `$event->addEntityCollection('openregister', ...)` with a validation closure
-- AND the closure uses `ObjectEntityMapper::find($objectUuid)` to validate whether the given object UUID exists in the database
-
-#### Scenario: Create a note on an object
-
-- GIVEN an OpenRegister object with UUID "abc-123"
-- WHEN the service creates a note with message "Applicant called, will send documents tomorrow"
-- THEN a comment MUST be created via ICommentsManager with:
-  - `actorType`: `"users"`
-  - `actorId`: current user ID
-  - `objectType`: `"openregister"`
-  - `objectId`: `"abc-123"`
-- AND the note's `id` MUST be added to the object's `_notes` metadata column
->>>>>>> origin/feature/linked-entity-types
 
 ---
 
@@ -423,15 +396,7 @@ The system MUST provide a `NoteService` that wraps Nextcloud's `ICommentsManager
 - **Reliability**: Cleanup failures during object deletion MUST be logged but MUST NOT block the deletion. Individual task/note deletion failures MUST NOT prevent other cleanup operations from proceeding.
 - **Scalability**: The in-memory task filtering approach is adequate for typical use (up to 1,000 calendar objects per user). For deployments with very large calendars, a CalDAV REPORT query or indexed storage SHOULD be considered as a future optimization.
 
-<<<<<<< HEAD
 ---
-=======
-- GIVEN a comment on an OpenRegister object
-- WHEN the service deletes the note via `NoteService::deleteNote(int $noteId)`
-- THEN the comment MUST be removed via `ICommentsManager::delete()`
-- AND the note's `id` MUST be removed from the object's `_notes` metadata column
-- NOTE: The current implementation does NOT enforce author/admin authorization on delete. Any authenticated user with access to the object can delete any note. Authorization enforcement is a future improvement.
->>>>>>> origin/feature/linked-entity-types
 
 ## Architecture Overview
 

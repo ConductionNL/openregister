@@ -88,6 +88,7 @@ Vrij en open source onder de EUPL-licentie.
 		<job>OCA\OpenRegister\BackgroundJob\BlobMigrationJob</job>
 		<job>OCA\OpenRegister\BackgroundJob\DestructionCheckJob</job>
 		<job>OCA\OpenRegister\Cron\TransferCheckJob</job>
+		<job>OCA\OpenRegister\BackgroundJob\TransferExecutionJob</job>
 		<job>OCA\OpenRegister\BackgroundJob\ScheduledWorkflowJob</job>
 		<job>OCA\OpenRegister\BackgroundJob\ActionScheduleJob</job>
 		<job>OCA\OpenRegister\BackgroundJob\TenantDeprovisionJob</job>

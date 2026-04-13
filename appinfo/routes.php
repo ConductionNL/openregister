@@ -393,6 +393,16 @@ return [
         ['name' => 'organisation#setActive', 'url' => '/api/organisations/{uuid}/set-active', 'verb' => 'POST'],
         ['name' => 'organisation#join', 'url' => '/api/organisations/{uuid}/join', 'verb' => 'POST'],
         ['name' => 'organisation#leave', 'url' => '/api/organisations/{uuid}/leave', 'verb' => 'POST'],
+
+        // Organisations - Tenant lifecycle management.
+        ['name' => 'organisation#suspend', 'url' => '/api/organisations/{uuid}/suspend', 'verb' => 'PUT'],
+        ['name' => 'organisation#activate', 'url' => '/api/organisations/{uuid}/activate', 'verb' => 'PUT'],
+        ['name' => 'organisation#deprovision', 'url' => '/api/organisations/{uuid}/deprovision', 'verb' => 'PUT'],
+        ['name' => 'organisation#usage', 'url' => '/api/organisations/{uuid}/usage', 'verb' => 'GET'],
+
+        // Admin - Tenant isolation verification and metrics.
+        ['name' => 'organisation#isolationVerify', 'url' => '/api/admin/isolation-verify', 'verb' => 'POST'],
+        ['name' => 'organisation#isolationMetrics', 'url' => '/api/admin/isolation-metrics', 'verb' => 'GET'],
 		// Tags.
 		['name' => 'tags#getAllTags', 'url' => '/api/tags', 'verb' => 'GET'],
 		
@@ -555,39 +565,5 @@ return [
 		['name' => 'transfer#index', 'url' => '/api/transfers', 'verb' => 'GET'],
 		['name' => 'transfer#show', 'url' => '/api/transfers/{id}', 'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
 		['name' => 'transfer#create', 'url' => '/api/transfers', 'verb' => 'POST'],
-
-		// Files sidebar tab endpoints.
-		['name' => 'fileSidebar#getObjectsForFile', 'url' => '/api/files/{fileId}/objects', 'verb' => 'GET', 'requirements' => ['fileId' => '\\d+']],
-		['name' => 'fileSidebar#getExtractionStatus', 'url' => '/api/files/{fileId}/extraction-status', 'verb' => 'GET', 'requirements' => ['fileId' => '\\d+']],
-
-		// Linked entity management.
-		['name' => 'linkedEntity#addObjectLink', 'url' => '/api/objects/{uuid}/_linked/{type}', 'verb' => 'POST', 'requirements' => ['uuid' => '[^/]+', 'type' => '[^/]+']],
-		['name' => 'linkedEntity#removeObjectLink', 'url' => '/api/objects/{uuid}/_linked/{type}/{entityId}', 'verb' => 'DELETE', 'requirements' => ['uuid' => '[^/]+', 'type' => '[^/]+', 'entityId' => '[^/]+']],
-		['name' => 'linkedEntity#addRegisterLink', 'url' => '/api/registers/{uuid}/_linked/{type}', 'verb' => 'POST', 'requirements' => ['uuid' => '[^/]+', 'type' => '[^/]+']],
-		['name' => 'linkedEntity#addSchemaLink', 'url' => '/api/schemas/{uuid}/_linked/{type}', 'verb' => 'POST', 'requirements' => ['uuid' => '[^/]+', 'type' => '[^/]+']],
-		['name' => 'linkedEntity#reverseLookup', 'url' => '/api/linked/{type}/{entityId}', 'verb' => 'GET', 'requirements' => ['type' => '[^/]+', 'entityId' => '[^/]+']],
-
-		// Approval chains.
-		['name' => 'approval#index', 'url' => '/api/approval-chains', 'verb' => 'GET'],
-		['name' => 'approval#show', 'url' => '/api/approval-chains/{id}', 'verb' => 'GET', 'requirements' => ['id' => '\d+']],
-		['name' => 'approval#create', 'url' => '/api/approval-chains', 'verb' => 'POST'],
-		['name' => 'approval#update', 'url' => '/api/approval-chains/{id}', 'verb' => 'PUT', 'requirements' => ['id' => '\d+']],
-		['name' => 'approval#destroy', 'url' => '/api/approval-chains/{id}', 'verb' => 'DELETE', 'requirements' => ['id' => '\d+']],
-		['name' => 'approval#objects', 'url' => '/api/approval-chains/{id}/objects', 'verb' => 'GET', 'requirements' => ['id' => '\d+']],
-		['name' => 'approval#steps', 'url' => '/api/approval-steps', 'verb' => 'GET'],
-		['name' => 'approval#approve', 'url' => '/api/approval-chains/{id}/approve', 'verb' => 'POST', 'requirements' => ['id' => '\d+']],
-		['name' => 'approval#reject', 'url' => '/api/approval-chains/{id}/reject', 'verb' => 'POST', 'requirements' => ['id' => '\d+']],
-
-		// Scheduled workflows.
-		['name' => 'scheduledWorkflow#index', 'url' => '/api/scheduled-workflows', 'verb' => 'GET'],
-		['name' => 'scheduledWorkflow#show', 'url' => '/api/scheduled-workflows/{id}', 'verb' => 'GET', 'requirements' => ['id' => '\d+']],
-		['name' => 'scheduledWorkflow#create', 'url' => '/api/scheduled-workflows', 'verb' => 'POST'],
-		['name' => 'scheduledWorkflow#update', 'url' => '/api/scheduled-workflows/{id}', 'verb' => 'PUT', 'requirements' => ['id' => '\d+']],
-		['name' => 'scheduledWorkflow#destroy', 'url' => '/api/scheduled-workflows/{id}', 'verb' => 'DELETE', 'requirements' => ['id' => '\d+']],
-
-		// Workflow executions.
-		['name' => 'workflowExecution#index', 'url' => '/api/workflow-executions', 'verb' => 'GET'],
-		['name' => 'workflowExecution#show', 'url' => '/api/workflow-executions/{id}', 'verb' => 'GET', 'requirements' => ['id' => '\d+']],
-		['name' => 'workflowExecution#destroy', 'url' => '/api/workflow-executions/{id}', 'verb' => 'DELETE', 'requirements' => ['id' => '\d+']],
     ],
 ];
