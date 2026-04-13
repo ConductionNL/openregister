@@ -1272,11 +1272,13 @@ class MagicMapper extends AbstractObjectMapper
         // Columns that don't exist use NULL::text AS placeholder.
         // Cast to text ensures type compatibility across schemas in UNION.
         // (e.g., one schema has 'type' as text, another as jsonb).
+        $existingColumns = [];
         foreach (array_keys($allPropertyColumns) as $columnName) {
             $quotedCol = $this->quoteIdentifier(name: $columnName, isPostgres: $isPostgres);
             $colExpr   = "NULL::text AS {$quotedCol}";
             if ($this->columnExistsInTable(tableName: $tableName, columnName: $columnName) === true) {
-                $colExpr = "{$quotedCol}::text AS {$quotedCol}";
+                $colExpr           = "{$quotedCol}::text AS {$quotedCol}";
+                $existingColumns[] = $columnName;
             }
 
             $selectColumns[] = $colExpr;
@@ -1301,7 +1303,14 @@ class MagicMapper extends AbstractObjectMapper
                 $type = $propDef['type'] ?? 'string';
                 if (in_array($type, ['string', 'text'], true) === true) {
                     $columnName = $this->sanitizeColumnName(name: $propName);
-                    $quotedCol  = $this->quoteIdentifier(name: $columnName, isPostgres: $isPostgres);
+                    // Only score columns that actually exist in this table.
+                    // Columns from other schemas are aliased as NULL in the SELECT
+                    // and cannot be referenced by similarity()/ILIKE expressions.
+                    if ($this->columnExistsInTable(tableName: $tableName, columnName: $columnName) === false) {
+                        continue;
+                    }
+
+                    $quotedCol = $this->quoteIdentifier(name: $columnName, isPostgres: $isPostgres);
                     // Fallback: use CASE with ILIKE for basic relevance scoring.
                     $likePattern = "'%".trim($quotedTerm, "'")."%'";
                     $scoreExpr   = "CASE WHEN {$quotedCol}::text ILIKE {$likePattern} THEN 1 ELSE 0 END";
@@ -1312,7 +1321,7 @@ class MagicMapper extends AbstractObjectMapper
 
                     $searchColumns[] = $scoreExpr;
                 }
-            }
+            }//end foreach
 
             $selectColumns[] = '0 AS _search_score';
             if (empty($searchColumns) === false) {
@@ -1329,7 +1338,12 @@ class MagicMapper extends AbstractObjectMapper
 
         // Build WHERE conditions using shared method (single source of truth for filters).
         // This ensures search, count, and facets all use the same filter logic.
-        $whereClauses = $this->searchHandler->buildWhereConditionsSql(query: $query, schema: $schema);
+        // Pass existing columns so property-based search only targets columns in this table.
+        $whereClauses = $this->searchHandler->buildWhereConditionsSql(
+            query: $query,
+            schema: $schema,
+            existingColumns: $existingColumns
+        );
 
         if (empty($whereClauses) === false) {
             $selectSql .= ' WHERE '.implode(' AND ', $whereClauses);
@@ -1760,6 +1774,9 @@ class MagicMapper extends AbstractObjectMapper
         // Add all metadata columns from ObjectEntity with underscore prefix.
         $columns = array_merge($columns, $this->getMetadataColumns());
 
+        // Add linked entity type columns based on schema's linkedTypes configuration.
+        $columns = array_merge($columns, $this->getLinkedTypeColumns($schema));
+
         // Get schema properties and convert to SQL columns.
         $schemaProperties = $schema->getProperties();
 
@@ -2044,8 +2061,63 @@ class MagicMapper extends AbstractObjectMapper
                 'type'     => 'json',
                 'nullable' => true,
             ],
+            self::METADATA_PREFIX.'tmlo'           => [
+                'name'     => self::METADATA_PREFIX.'tmlo',
+                'type'     => 'json',
+                'nullable' => true,
+            ],
         ];
     }//end getMetadataColumns()
+
+    /**
+     * Map linkedTypes configuration values to their metadata column names
+     */
+    private const LINKED_TYPE_COLUMN_MAP = [
+        'mail'     => '_mail',
+        'contacts' => '_contacts',
+        'notes'    => '_notes',
+        'todos'    => '_todos',
+        'calendar' => '_calendar',
+        'talk'     => '_talk',
+        'deck'     => '_deck',
+    ];
+
+    /**
+     * Get linked entity type columns based on schema's linkedTypes configuration
+     *
+     * Returns JSON columns for each linked type declared in the schema.
+     * The 'files' linked type is excluded because _files already exists in metadata columns.
+     *
+     * @param Schema $schema The schema to get linked type columns for
+     *
+     * @return array Column definitions keyed by column name
+     */
+    private function getLinkedTypeColumns(Schema $schema): array
+    {
+        $linkedTypes = $schema->getLinkedTypes();
+        $columns     = [];
+
+        foreach ($linkedTypes as $type) {
+            // Skip 'files' — _files already exists in metadata columns.
+            if ($type === 'files') {
+                continue;
+            }
+
+            $columnName = self::LINKED_TYPE_COLUMN_MAP[$type] ?? null;
+            if ($columnName === null) {
+                continue;
+            }
+
+            $columns[$columnName] = [
+                'name'     => $columnName,
+                'type'     => 'json',
+                'nullable' => true,
+                'index'    => true,
+            ];
+        }
+
+        return $columns;
+    }//end getLinkedTypeColumns()
 
     /**
      * Map JSON schema property to SQL column definition
@@ -2882,10 +2954,20 @@ class MagicMapper extends AbstractObjectMapper
             'geo',
             'retention',
             'groups',
+            'tmlo',
             'created',
             'updated',
             'expires',
         ];
+
+        // Dynamically add linked type fields based on schema's linkedTypes configuration.
+        // LINKED_TYPE_COLUMN_MAP values are column names with _ prefix (e.g., '_mail'),
+        // but the metadata loop adds its own prefix, so we use the linkedType key directly.
+        foreach ($schema->getLinkedTypes() as $linkedType) {
+            if (isset(self::LINKED_TYPE_COLUMN_MAP[$linkedType]) === true && $linkedType !== 'files') {
+                $metadataFields[] = $linkedType;
+            }
+        }
 
         foreach ($metadataFields as $field) {
             $value = $metadata[$field] ?? null;
@@ -2920,7 +3002,14 @@ class MagicMapper extends AbstractObjectMapper
                 'geo',
                 'retention',
                 'groups',
+                'tmlo',
             ];
+            // Add active linked type fields as JSON fields.
+            foreach ($schema->getLinkedTypes() as $linkedType) {
+                if (isset(self::LINKED_TYPE_COLUMN_MAP[$linkedType]) === true && $linkedType !== 'files') {
+                    $jsonFields[] = $linkedType;
+                }
+            }
             if (in_array($field, $jsonFields) === true) {
                 // Convert to JSON if not already a string.
                 // Note: Empty string → NULL conversion is handled at final insert/update stage.
@@ -5644,6 +5733,100 @@ class MagicMapper extends AbstractObjectMapper
 
         return $results;
     }//end findByRelationUsingRelationsColumn()
+
+    /**
+     * Find objects in a specific schema's magic table that have a given entity ID in a linked type column.
+     *
+     * Used for reverse lookups: "find all objects linked to mail 1/6".
+     * The linked type columns (_mail, _contacts, etc.) store JSON arrays of string IDs.
+     *
+     * @param Schema $schema     The schema whose magic table to search
+     * @param string $columnName The column name (e.g., '_mail', '_contacts')
+     * @param string $entityId   The entity ID to search for
+     *
+     * @return array Array of ObjectEntity objects
+     */
+    public function findByLinkedEntity(Schema $schema, string $columnName, string $entityId): array
+    {
+        $results   = [];
+        $tableName = $this->getTableName($schema);
+
+        if ($tableName === null) {
+            return [];
+        }
+
+        $fullTableName = 'oc_' . $tableName;
+        $platform      = $this->db->getDatabasePlatform();
+        $isPostgres    = stripos($platform::class, 'PostgreSQL') !== false;
+
+        try {
+            if ($isPostgres === true) {
+                // PostgreSQL: use JSONB containment operator.
+                $sql = "SELECT * FROM {$fullTableName}
+                        WHERE (_deleted IS NULL OR _deleted = 'null'::jsonb)
+                        AND {$columnName} IS NOT NULL
+                        AND {$columnName} @> to_jsonb(?::text)
+                        LIMIT 100";
+            } else {
+                // MySQL: use JSON_SEARCH to find the ID as a value in the array.
+                $sql = "SELECT * FROM {$fullTableName}
+                        WHERE _deleted IS NULL
+                        AND {$columnName} IS NOT NULL
+                        AND JSON_SEARCH({$columnName}, 'one', ?) IS NOT NULL
+                        LIMIT 100";
+            }
+
+            $stmt = $this->db->prepare($sql);
+            $stmt->execute([$entityId]);
+            $rows = $stmt->fetchAll();
+
+            foreach ($rows as $row) {
+                try {
+                    $entity = $this->rowToObjectEntity($row);
+                    if ($entity !== null) {
+                        $results[] = $entity;
+                    }
+                } catch (Exception $e) {
+                    continue;
+                }
+            }
+        } catch (Exception $e) {
+            $this->logger->debug(
+                '[MagicMapper] findByLinkedEntity query failed',
+                [
+                    'table'    => $fullTableName,
+                    'column'   => $columnName,
+                    'entityId' => $entityId,
+                    'error'    => $e->getMessage(),
+                ]
+            );
+        }//end try
+
+        return $results;
+    }//end findByLinkedEntity()
+
+    /**
+     * Get the magic table name for a schema.
+     *
+     * @param Schema $schema The schema
+     *
+     * @return string|null The table name or null
+     */
+    private function getTableName(Schema $schema): ?string
+    {
+        // The table name follows the pattern: TABLE_PREFIX + registerId + "_" + schemaId.
+        // We need to find the register for this schema.
+        $tables = $this->getAllMagicMapperTables();
+
+        $schemaId = (string) $schema->getId();
+        foreach ($tables as $tableName) {
+            if (str_ends_with($tableName, '_' . $schemaId) === true) {
+                return $tableName;
+            }
+        }
+
+        return null;
+    }//end getTableName()
 
     /**
      * Batch find objects in a specific schema that reference ANY of the given UUIDs.

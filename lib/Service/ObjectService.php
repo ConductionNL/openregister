@@ -1073,6 +1073,11 @@ class ObjectService
             _rbac: $_rbac
         );
 
+        // Reject updates to transferred objects (archiefstatus = overgebracht).
+        if ($uuid !== null) {
+            $this->rejectIfTransferred(uuid: $uuid);
+        }
+
         // Track if UUID was originally null (to distinguish user-provided vs auto-generated UUIDs).
         $uuidWasNull = ($uuid === null);
 
@@ -1141,6 +1146,19 @@ class ObjectService
             _validation: true,
             uploadedFiles: $uploadedFiles
         );
+
+        // Invalidate contact matching cache for objects with email properties.
+        try {
+            $container = \OC::$server;
+            if ($container !== null) {
+                $contactMatchingService = $container->get(
+                    \OCA\OpenRegister\Service\ContactMatchingService::class
+                );
+                $contactMatchingService->invalidateCacheForObject($object);
+            }
+        } catch (\Exception $e) {
+            // ContactMatchingService not available — skip cache invalidation.
+        }
 
         // Render and return the saved object.
         return $this->renderHandler->renderEntity(
@@ -1423,6 +1441,9 @@ class ObjectService
      */
     public function deleteObject(string $uuid, bool $_rbac=true, bool $_multitenancy=true): bool
     {
+        // Reject deletion of transferred objects (archiefstatus = overgebracht).
+        $this->rejectIfTransferred(uuid: $uuid);
+
         // Find the object to get its owner for permission check (include soft-deleted objects).
         try {
             $objectToDelete = $this->objectMapper->find(
@@ -1468,6 +1489,44 @@ class ObjectService
             _multitenancy: $_multitenancy
         );
     }//end deleteObject()
+
+    /**
+     * Reject an operation if the object has been transferred to e-Depot.
+     *
+     * Objects with archiefstatus 'overgebracht' are read-only. The authoritative
+     * copy resides in the e-Depot and this system copy MUST NOT be modified.
+     *
+     * @param string $uuid The object UUID to check.
+     *
+     * @return void
+     *
+     * @throws \OCP\AppFramework\Http\ContentSecurityPolicy
+     */
+    private function rejectIfTransferred(string $uuid): void
+    {
+        try {
+            $object = $this->objectMapper->find(
+                identifier: $uuid,
+                register: null,
+                schema: null,
+                includeDeleted: true
+            );
+
+            $retention = ($object->getRetention() ?? []);
+            if (isset($retention['archiefstatus']) === true && $retention['archiefstatus'] === 'overgebracht') {
+                throw new \OCP\AppFramework\Db\DoesNotExistException(
+                    'OBJECT_TRANSFERRED: This object has been transferred to the e-Depot and is read-only.'
+                );
+            }
+        } catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
+            // Re-throw if it's our transfer exception.
+            if (str_starts_with($e->getMessage(), 'OBJECT_TRANSFERRED:') === true) {
+                throw $e;
+            }
+
+            // Object doesn't exist yet (new object), no check needed.
+        }//end try
+    }//end rejectIfTransferred()
 
         /**
          * Get the active organization for the current user

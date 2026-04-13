@@ -41,10 +41,12 @@ use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Object\CacheHandler;
 use OCA\OpenRegister\Service\Object\SaveObject\ComputedFieldHandler;
 use OCA\OpenRegister\Service\Object\SaveObject\FilePropertyHandler;
+use OCA\OpenRegister\Service\Object\SaveObject\LinkedEntityPropertyHandler;
 use OCA\OpenRegister\Service\Object\TranslationHandler;
 use OCA\OpenRegister\Service\Object\SaveObject\MetadataHydrationHandler;
 use OCA\OpenRegister\Service\OrganisationService;
 use OCA\OpenRegister\Service\PropertyRbacHandler;
+use OCA\OpenRegister\Service\TmloService;
 use OCA\OpenRegister\Service\Schemas\SchemaCacheHandler;
 use OCA\OpenRegister\Service\Schemas\FacetCacheHandler;
 use OCA\OpenRegister\Db\AuditTrailMapper;
@@ -190,6 +192,7 @@ class SaveObject
      * @param ComputedFieldHandler     $computedFieldHandler Handler for computed field evaluation
      * @param TranslationHandler       $translationHandler   Handler for translation operations
      * @param LoggerInterface          $logger               Logger interface for logging operations
+     * @param TmloService              $tmloService          TMLO archival metadata service
      * @param ArrayLoader              $arrayLoader          Twig array loader for template rendering
      *
      * @SuppressWarnings(PHPMD.ExcessiveParameterList) Nextcloud DI requires constructor injection
@@ -199,6 +202,7 @@ class SaveObject
         private readonly MagicMapper $unifiedObjectMapper,
         private readonly MetadataHydrationHandler $metaHydrationHandler,
         private readonly FilePropertyHandler $filePropertyHandler,
+        private readonly LinkedEntityPropertyHandler $linkedEntityHandler,
         private readonly IUserSession $userSession,
         private readonly AuditTrailMapper $auditTrailMapper,
         private readonly SchemaMapper $schemaMapper,
@@ -211,6 +215,7 @@ class SaveObject
         private readonly ComputedFieldHandler $computedFieldHandler,
         private readonly TranslationHandler $translationHandler,
         private readonly LoggerInterface $logger,
+        private readonly TmloService $tmloService,
         ArrayLoader $arrayLoader,
     ) {
         $this->twig = new Environment($arrayLoader);
@@ -2843,6 +2848,21 @@ class SaveObject
         bool $persist,
         bool $silent
     ): ObjectEntity {
+        // Check archival immutability: destroyed and transferred objects cannot be modified.
+        $retention    = $existingObject->getRetention() ?? [];
+        $archStatus   = $retention['archiefstatus'] ?? null;
+        $immutableMap = [
+            'vernietigd'   => 'OBJECT_DESTROYED',
+            'overgebracht' => 'OBJECT_TRANSFERRED',
+        ];
+
+        if ($archStatus !== null && isset($immutableMap[$archStatus]) === true) {
+            throw new Exception(
+                'Cannot modify object: archival status is '.$archStatus.' (error: '.$immutableMap[$archStatus].')',
+                409
+            );
+        }
+
         // IMPORTANT: Capture the old state BEFORE prepareObjectForUpdate modifies the entity.
         // This is critical for event dispatching - the old status must be captured here,
         // not after preparation when the entity has already been modified.
@@ -2935,6 +2955,16 @@ class SaveObject
             selfData: $selfData,
             _multitenancy: $_multitenancy
         );
+
+        // Apply archival metadata from schema archive configuration.
+        try {
+            $retentionService = \OC::$server->get(\OCA\OpenRegister\Service\RetentionService::class);
+            $preparedObject   = $retentionService->applyArchivalMetadata($preparedObject, $schema);
+        } catch (\Throwable $e) {
+            $this->logger->debug(
+                '[SaveObject] RetentionService not available, skipping archival metadata: '.$e->getMessage()
+            );
+        }
 
         // If not persisting, return the prepared object.
         if ($persist === false) {
@@ -3198,6 +3228,12 @@ class SaveObject
             throw new Exception('Object metadata hydration failed: '.$e->getMessage().'. '.$mismatchHint, 0, $e);
         }
 
+        // Extract Nc* property references and populate linked entity metadata columns.
+        $this->linkedEntityHandler->extractAndPopulate($objectEntity, $schema, $preparedData);
+
+        // Populate TMLO archival metadata defaults if register has TMLO enabled.
+        $this->populateTmloDefaults(objectEntity: $objectEntity, schema: $schema, selfData: $selfData);
+
         // Set user information if available.
         $user = $this->userSession->getUser();
         if ($user !== null) {
@@ -3283,6 +3319,12 @@ class SaveObject
         // Hydrate name and description from schema configuration.
         $this->hydrateObjectMetadata(entity: $existingObject, schema: $schema);
 
+        // Extract Nc* property references and populate linked entity metadata columns.
+        $this->linkedEntityHandler->extractAndPopulate($existingObject, $schema, $preparedData);
+
+        // Validate TMLO metadata if present (status transitions and field values).
+        $this->validateTmloOnUpdate(existingObject: $existingObject, selfData: $selfData);
+
         // NOTE: Relations are already updated in prepareObjectForCreation() - no need to update again
         // Duplicate call would overwrite relations after handleInverseRelationsWriteBack removes properties
         // Update object relations (result currently unused but operation has side effects).
@@ -3329,7 +3371,98 @@ class SaveObject
         if (array_key_exists('organisation', $selfData) === true && empty($selfData['organisation']) === false) {
             $objectEntity->setOrganisation($selfData['organisation']);
         }
+
+        // Set TMLO metadata from @self if provided.
+        if (array_key_exists('tmlo', $selfData) === true && is_array($selfData['tmlo']) === true) {
+            $objectEntity->setTmlo($selfData['tmlo']);
+        }
     }//end setSelfMetadata()
+
+    /**
+     * Populate TMLO defaults on a new object if the register has TMLO enabled.
+     *
+     * @param ObjectEntity $objectEntity The object entity being created
+     * @param Schema       $schema       The schema for TMLO defaults
+     * @param array        $selfData     The @self metadata from the request
+     *
+     * @return void
+     */
+    private function populateTmloDefaults(ObjectEntity $objectEntity, Schema $schema, array $selfData): void
+    {
+        $registerId = $objectEntity->getRegister();
+        if ($registerId === null) {
+            return;
+        }
+
+        try {
+            $register = $this->getCachedRegister(registerId: (int) $registerId);
+        } catch (Exception $e) {
+            return;
+        }
+
+        if ($this->tmloService->isTmloEnabled($register) === false) {
+            return;
+        }
+
+        // If TMLO data was explicitly provided via @self, use it as the starting point.
+        if (array_key_exists('tmlo', $selfData) === true && is_array($selfData['tmlo']) === true) {
+            $objectEntity->setTmlo($selfData['tmlo']);
+        }
+
+        // Validate field values before populating.
+        $currentTmlo = $objectEntity->getTmlo();
+        if (is_array($currentTmlo) === true && empty($currentTmlo) === false) {
+            $errors = $this->tmloService->validateFieldValues($currentTmlo);
+            if (empty($errors) === false) {
+                throw new Exception('TMLO validation failed: '.implode('; ', $errors));
+            }
+        }
+
+        $this->tmloService->populateDefaults($objectEntity, $register, $schema);
+    }//end populateTmloDefaults()
+
+    /**
+     * Validate TMLO metadata on an object update (status transitions and field values).
+     *
+     * @param ObjectEntity $existingObject The existing object being updated
+     * @param array        $selfData       The @self metadata from the request
+     *
+     * @return void
+     *
+     * @throws Exception If TMLO validation fails
+     */
+    private function validateTmloOnUpdate(ObjectEntity $existingObject, array $selfData): void
+    {
+        // Only validate if TMLO data was provided in the update.
+        if (array_key_exists('tmlo', $selfData) === false || is_array($selfData['tmlo']) === false) {
+            return;
+        }
+
+        $newTmlo = $selfData['tmlo'];
+
+        // Validate field values.
+        $fieldErrors = $this->tmloService->validateFieldValues($newTmlo);
+        if (empty($fieldErrors) === false) {
+            throw new Exception('TMLO validation failed: '.implode('; ', $fieldErrors));
+        }
+
+        // Validate status transition if archiefstatus is changing.
+        $oldTmlo   = $existingObject->getTmlo();
+        $oldStatus = ($oldTmlo['archiefstatus'] ?? TmloService::ARCHIEFSTATUS_ACTIEF);
+        $newStatus = ($newTmlo['archiefstatus'] ?? null);
+
+        if ($newStatus !== null && $newStatus !== $oldStatus) {
+            // Merge old TMLO with new for complete validation context.
+            $mergedTmlo       = array_merge(($oldTmlo ?? []), $newTmlo);
+            $transitionErrors = $this->tmloService->validateStatusTransition($mergedTmlo, $oldStatus);
+            if (empty($transitionErrors) === false) {
+                throw new Exception('TMLO status transition failed: '.implode('; ', $transitionErrors));
+            }
+        }
+
+        // Update the TMLO field on the entity.
+        $existingObject->setTmlo(array_merge(($oldTmlo ?? []), $newTmlo));
+    }//end validateTmloOnUpdate()
 
     /**
      * Validate reference existence for all properties with validateReference: true.
@@ -3688,6 +3821,20 @@ class SaveObject
             selfData: $selfData,
             folderId: $folderId
         );
+
+        // Recalculate archiefactiedatum if source property changed.
+        try {
+            $retentionService = \OC::$server->get(\OCA\OpenRegister\Service\RetentionService::class);
+            $preparedObject   = $retentionService->recalculateArchiefactiedatum(
+                $preparedObject,
+                $schema,
+                $oldObject->getObject()
+            );
+        } catch (\Throwable $e) {
+            $this->logger->debug(
+                '[SaveObject] RetentionService not available for recalculation: '.$e->getMessage()
+            );
+        }
 
         // Update the object properties.
         $preparedObject->setRegister((string) $registerId);

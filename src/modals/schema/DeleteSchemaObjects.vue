@@ -372,11 +372,6 @@ export default {
 	background: var(--color-error-light);
 }
 
-.breakdown-value.published {
-	color: var(--color-success);
-	background: var(--color-success-light);
-}
-
 .no-objects-info {
 	margin: 1rem 0;
 	padding: 1rem;

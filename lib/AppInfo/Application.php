@@ -141,6 +141,7 @@ use OCA\OpenRegister\Listener\ObjectCleanupListener;
 use OCA\OpenRegister\Listener\ToolRegistrationListener;
 use OCA\OpenRegister\Listener\GraphQLSubscriptionListener;
 use OCA\OpenRegister\Listener\WebhookEventListener;
+use OCA\OpenRegister\Listener\FilesSidebarListener;
 use OCA\OpenRegister\Listener\HookListener;
 use OCA\OpenRegister\Service\NoteService;
 use OCA\OpenRegister\Service\TaskService;
@@ -255,6 +256,9 @@ class Application extends App implements IBootstrap
         // Register the LanguageMiddleware for Accept-Language header parsing.
         $context->registerMiddleware(LanguageMiddleware::class);
 
+        // Register the TenantQuotaMiddleware for tenant quota enforcement and status checks.
+        $context->registerMiddleware(\OCA\OpenRegister\Middleware\TenantQuotaMiddleware::class);
+
         // Register all services in phases to resolve circular dependencies.
         $this->registerMappersWithCircularDependencies(context: $context);
         $this->registerCacheAndFileHandlers(context: $context);
@@ -313,7 +317,10 @@ class Application extends App implements IBootstrap
                     accountManager: $container->get('OCP\Accounts\IAccountManager'),
                     logger: $container->get('Psr\Log\LoggerInterface'),
                     organisationService: $container->get(OrganisationService::class),
-                    eventDispatcher: $container->get('OCP\EventDispatcher\IEventDispatcher')
+                    eventDispatcher: $container->get('OCP\EventDispatcher\IEventDispatcher'),
+                    avatarManager: $container->get('OCP\IAvatarManager'),
+                    auditTrailMapper: $container->get(\OCA\OpenRegister\Db\AuditTrailMapper::class),
+                    secureRandom: $container->get('OCP\Security\ISecureRandom')
                 );
             }
         );
@@ -554,6 +561,8 @@ class Application extends App implements IBootstrap
         );
 
         $context->registerSearchProvider(ObjectsProvider::class);
+        $context->registerReferenceProvider(\OCA\OpenRegister\Reference\ObjectReferenceProvider::class);
+        $context->registerCalendarProvider(\OCA\OpenRegister\Calendar\RegisterCalendarProvider::class);
     }//end registerConfigurationServices()
 
     /**
@@ -745,11 +754,28 @@ class Application extends App implements IBootstrap
         $context->registerEventListener(ObjectUpdatedEvent::class, GraphQLSubscriptionListener::class);
         $context->registerEventListener(ObjectDeletedEvent::class, GraphQLSubscriptionListener::class);
 
+        // FilesSidebarListener injects the sidebar tab script into the Files app.
+        $context->registerEventListener('OCA\Files\Event\LoadAdditionalScriptsEvent', FilesSidebarListener::class);
+
+        // MailAppScriptListener injects the mail sidebar when schemas have linkedTypes: ["mail"].
+        $context->registerEventListener(\OCP\AppFramework\Http\Events\BeforeTemplateRenderedEvent::class, \OCA\OpenRegister\Listener\MailAppScriptListener::class);
+
         // CommentsEntityListener registers "openregister" objectType for Nextcloud Comments.
         $context->registerEventListener(CommentsEntityEvent::class, CommentsEntityListener::class);
 
         // ObjectCleanupListener cleans up notes and tasks when an object is deleted.
         $context->registerEventListener(ObjectDeletedEvent::class, ObjectCleanupListener::class);
+
+        // ActivityEventListener publishes Nextcloud Activity events for entity lifecycle.
+        $context->registerEventListener(ObjectCreatedEvent::class, \OCA\OpenRegister\Listener\ActivityEventListener::class);
+        $context->registerEventListener(ObjectUpdatedEvent::class, \OCA\OpenRegister\Listener\ActivityEventListener::class);
+        $context->registerEventListener(ObjectDeletedEvent::class, \OCA\OpenRegister\Listener\ActivityEventListener::class);
+        $context->registerEventListener(RegisterCreatedEvent::class, \OCA\OpenRegister\Listener\ActivityEventListener::class);
+        $context->registerEventListener(RegisterUpdatedEvent::class, \OCA\OpenRegister\Listener\ActivityEventListener::class);
+        $context->registerEventListener(RegisterDeletedEvent::class, \OCA\OpenRegister\Listener\ActivityEventListener::class);
+        $context->registerEventListener(SchemaCreatedEvent::class, \OCA\OpenRegister\Listener\ActivityEventListener::class);
+        $context->registerEventListener(SchemaUpdatedEvent::class, \OCA\OpenRegister\Listener\ActivityEventListener::class);
+        $context->registerEventListener(SchemaDeletedEvent::class, \OCA\OpenRegister\Listener\ActivityEventListener::class);
     }//end registerEventListeners()
 
     /**
@@ -761,9 +787,13 @@ class Application extends App implements IBootstrap
      */
     public function boot(IBootContext $context): void
     {
-        // Deep link registration is deferred to avoid circular DI resolution.
-        // DeepLinkRegistryService depends on RegisterMapper/SchemaMapper which
-        // trigger circular resolution chains when resolved during boot.
-        // Consuming apps register their patterns lazily on first use instead.
+        // Dispatch the deep link registration event so consuming apps
+        // (Procest, Pipelinq, etc.) can register their URL patterns.
+        // DeepLinkRegistryService uses ContainerInterface for lazy mapper
+        // resolution, so no circular DI issues during registration.
+        $server     = $context->getServerContainer();
+        $dispatcher = $server->get(IEventDispatcher::class);
+        $registry   = $server->get(DeepLinkRegistryService::class);
+        $dispatcher->dispatchTyped(new DeepLinkRegistrationEvent(registry: $registry));
     }//end boot()
 }//end class

@@ -93,6 +93,22 @@ use OCP\IUserSession;
  * @method void setGeo(?array $geo)
  * @method array|null getRetention()
  * @method void setRetention(?array $retention)
+ * @method array|null getTmlo()
+ * @method void setTmlo(?array $tmlo)
+ * @method array|null getMail()
+ * @method void setMail(?array $mail)
+ * @method array|null getContacts()
+ * @method void setContacts(?array $contacts)
+ * @method array|null getNotes()
+ * @method void setNotes(?array $notes)
+ * @method array|null getTodos()
+ * @method void setTodos(?array $todos)
+ * @method array|null getCalendar()
+ * @method void setCalendar(?array $calendar)
+ * @method array|null getTalk()
+ * @method void setTalk(?array $talk)
+ * @method array|null getDeck()
+ * @method void setDeck(?array $deck)
  * @method int|null getSize()
  * @method void setSize(?int $size)
  * @method string|null getName()
@@ -267,6 +283,42 @@ class ObjectEntity extends Entity implements JsonSerializable
     protected ?array $retention = [];
 
     /**
+     * TMLO (Toepassingsprofiel Metadatastandaard Lokale Overheden) archival metadata.
+     *
+     * Contains structured archival metadata conforming to TMLO 1.2 / MDTO:
+     * - classificatie: Archival classification code
+     * - archiefnominatie: blijvend_bewaren or vernietigen
+     * - archiefactiedatum: ISO-8601 date for archival action
+     * - archiefstatus: actief, semi_statisch, overgebracht, or vernietigd
+     * - bewaarTermijn: ISO-8601 duration (e.g., P7Y)
+     * - vernietigingsCategorie: Destruction category from VNG Selectielijst
+     *
+     * @var array|null TMLO archival metadata
+     */
+    protected ?array $tmlo = [];
+
+    /** @var array|null Linked mail entity IDs */
+    protected ?array $mail = null;
+
+    /** @var array|null Linked contact entity IDs */
+    protected ?array $contacts = null;
+
+    /** @var array|null Linked note entity IDs */
+    protected ?array $notes = null;
+
+    /** @var array|null Linked todo entity IDs */
+    protected ?array $todos = null;
+
+    /** @var array|null Linked calendar event entity IDs */
+    protected ?array $calendar = null;
+
+    /** @var array|null Linked Talk conversation IDs */
+    protected ?array $talk = null;
+
+    /** @var array|null Linked Deck card IDs */
+    protected ?array $deck = null;
+
+    /**
      * Size of the object in byte.
      *
      * @var string|null Size of the object
@@ -430,6 +482,14 @@ class ObjectEntity extends Entity implements JsonSerializable
         $this->addType(fieldName: 'deleted', type: 'json');
         $this->addType(fieldName: 'geo', type: 'json');
         $this->addType(fieldName: 'retention', type: 'json');
+        $this->addType(fieldName: 'tmlo', type: 'json');
+        $this->addType(fieldName: 'mail', type: 'json');
+        $this->addType(fieldName: 'contacts', type: 'json');
+        $this->addType(fieldName: 'notes', type: 'json');
+        $this->addType(fieldName: 'todos', type: 'json');
+        $this->addType(fieldName: 'calendar', type: 'json');
+        $this->addType(fieldName: 'talk', type: 'json');
+        $this->addType(fieldName: 'deck', type: 'json');
         $this->addType(fieldName: 'size', type: 'string');
         $this->addType(fieldName: 'schemaVersion', type: 'string');
         $this->addType(fieldName: 'name', type: 'string');
@@ -467,6 +527,7 @@ class ObjectEntity extends Entity implements JsonSerializable
             'groups',
             'geo',
             'retention',
+            'tmlo',
         ];
 
         // If this is an array field and it's null, return empty array.
@@ -588,7 +649,7 @@ class ObjectEntity extends Entity implements JsonSerializable
      *     owner: array|null|string, organisation: array|null|string,
      *     groups: mixed, authorization: array|null, folder: null|string,
      *     application: array|null|string, validation: array|null,
-     *     geo: array|null, retention: array|null, size: null|string,
+     *     geo: array|null, retention: array|null, tmlo: array|null, size: null|string,
      *     updated: null|string, created: null|string,
      *     deleted: array|null},...}
      */
@@ -640,7 +701,7 @@ class ObjectEntity extends Entity implements JsonSerializable
      *     owner: array|null|string, organisation: array|null|string,
      *     groups: mixed, authorization: array|null, folder: null|string,
      *     application: array|null|string, validation: array|null,
-     *     geo: array|null, retention: array|null, size: null|string,
+     *     geo: array|null, retention: array|null, tmlo: array|null, size: null|string,
      *     updated: null|string, created: null|string,
      *     deleted: array|null}
      *
@@ -674,11 +735,19 @@ class ObjectEntity extends Entity implements JsonSerializable
             'validation'    => $this->getValidation(),
             'geo'           => $this->getGeo(),
             'retention'     => $this->getRetention(),
+            'tmlo'          => $this->getTmlo(),
             'size'          => $this->size,
             'updated'       => $this->getFormattedDate(date: $this->updated),
             'created'       => $this->getFormattedDate(date: $this->created),
             'deleted'       => $this->getDeleted(),
             'source'        => $this->source,
+            'mail'          => $this->getMail(),
+            'contacts'      => $this->getContacts(),
+            'notes'         => $this->getNotes(),
+            'todos'         => $this->getTodos(),
+            'calendar'      => $this->getCalendar(),
+            'talk'          => $this->getTalk(),
+            'deck'          => $this->getDeck(),
         ];
 
         // Add relevance score if set (from fuzzy search).

@@ -48,6 +48,14 @@ class PropertyValidatorHandler
         'object',
         'null',
         'file',
+        'NcFile',
+        'NcMail',
+        'NcContact',
+        'NcNote',
+        'NcTodo',
+        'NcCalendarEvent',
+        'NcTalk',
+        'NcDeck',
     ];
 
     /**

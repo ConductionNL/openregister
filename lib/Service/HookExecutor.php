@@ -25,6 +25,7 @@ use Exception;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Db\WorkflowExecutionMapper;
 use OCA\OpenRegister\Event\ObjectCreatedEvent;
 use OCA\OpenRegister\Event\ObjectCreatingEvent;
 use OCA\OpenRegister\Event\ObjectDeletedEvent;
@@ -48,6 +49,7 @@ use Psr\Log\LoggerInterface;
  * 5. Process responses (approved/rejected/modified)
  * 6. Apply failure modes (reject/allow/flag/queue)
  * 7. Log all hook executions
+ * 8. Persist execution history to WorkflowExecution entities
  *
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
  * @SuppressWarnings(PHPMD.ExcessiveClassComplexity)
@@ -58,17 +60,19 @@ class HookExecutor
     /**
      * Constructor for HookExecutor.
      *
-     * @param WorkflowEngineRegistry $engineRegistry      Engine registry for resolving adapters
-     * @param CloudEventFormatter    $cloudEventFormatter CloudEvent payload builder
-     * @param SchemaMapper           $schemaMapper        Schema mapper for loading schemas
-     * @param IJobList               $jobList             Background job list for queue mode
-     * @param LoggerInterface        $logger              Logger
+     * @param WorkflowEngineRegistry  $engineRegistry      Engine registry for resolving adapters
+     * @param CloudEventFormatter     $cloudEventFormatter CloudEvent payload builder
+     * @param SchemaMapper            $schemaMapper        Schema mapper for loading schemas
+     * @param IJobList                $jobList             Background job list for queue mode
+     * @param WorkflowExecutionMapper $executionMapper     Execution history persistence
+     * @param LoggerInterface         $logger              Logger
      */
     public function __construct(
         private readonly WorkflowEngineRegistry $engineRegistry,
         private readonly CloudEventFormatter $cloudEventFormatter,
         private readonly SchemaMapper $schemaMapper,
         private readonly IJobList $jobList,
+        private readonly WorkflowExecutionMapper $executionMapper,
         private readonly LoggerInterface $logger
     ) {
     }//end __construct()
@@ -760,7 +764,7 @@ class HookExecutor
     }//end scheduleRetryJob()
 
     /**
-     * Log a hook execution.
+     * Log a hook execution and persist it to the WorkflowExecution entity.
      *
      * @param array<string, mixed> $hook           Hook configuration
      * @param string               $eventType      Event type
@@ -791,6 +795,7 @@ class HookExecutor
         $hookId     = ($hook['id'] ?? 'unknown');
         $engineName = ($hook['engine'] ?? 'unknown');
         $workflowId = ($hook['workflowId'] ?? 'unknown');
+        $mode       = ($hook['mode'] ?? 'sync');
         $objectUuid = ($object->getUuid() ?? (string) $object->getId());
 
         $context = [
@@ -809,6 +814,37 @@ class HookExecutor
         if ($deliveryStatus !== null) {
             $context['deliveryStatus'] = $deliveryStatus;
         }
+
+        // Determine the persisted status.
+        $persistedStatus = $responseStatus ?? $deliveryStatus ?? ($success === true ? 'approved' : 'error');
+
+        // Persist execution history to WorkflowExecution entity.
+        try {
+            $this->executionMapper->createFromArray(
+                    [
+                        'hookId'     => $hookId,
+                        'eventType'  => $eventType,
+                        'objectUuid' => $objectUuid,
+                        'schemaId'   => $object->getSchema(),
+                        'registerId' => $object->getRegister(),
+                        'engine'     => $engineName,
+                        'workflowId' => $workflowId,
+                        'mode'       => $mode,
+                        'status'     => $persistedStatus,
+                        'durationMs' => $durationMs,
+                        'errors'     => $error !== null ? json_encode([['message' => $error]]) : null,
+                        'metadata'   => json_encode($context),
+                        'payload'    => ($payload !== null || $success === false) && $payload !== null ? json_encode($payload) : null,
+                        'executedAt' => new \DateTime(),
+                    ]
+                    );
+        } catch (Exception $e) {
+            // Persistence failure MUST NOT fail the original hook execution.
+            $this->logger->warning(
+                message: '[HookExecutor] Failed to persist execution history',
+                context: ['hookId' => $hookId, 'error' => $e->getMessage()]
+            );
+        }//end try
 
         if ($success === true) {
             $this->logger->info(

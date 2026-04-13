@@ -46,13 +46,6 @@ import formatBytes from '../../services/formatBytes.js'
 					<td>{{ registerStats.objects?.deleted || 0 }}</td>
 					<td>-</td>
 				</tr>
-				<tr class="cn-detail-page__stats-row--sub">
-					<td class="cn-detail-page__stats-cell--indented">
-						{{ t('openregister', 'Published') }}
-					</td>
-					<td>{{ registerStats.objects?.published || 0 }}</td>
-					<td>-</td>
-				</tr>
 				<tr>
 					<td>{{ t('openregister', 'Files') }}</td>
 					<td>{{ registerStats.files?.total || 0 }}</td>
@@ -171,7 +164,6 @@ import formatBytes from '../../services/formatBytes.js'
 								schema.stats?.objects?.invalid || 0,
 								schema.stats?.objects?.deleted || 0,
 								schema.stats?.objects?.locked || 0,
-								schema.stats?.objects?.published || 0
 							]" />
 					</div>
 				</div>
@@ -434,12 +426,12 @@ export default {
 				chart: {
 					type: 'pie',
 				},
-				labels: ['Valid', 'Invalid', 'Deleted', 'Locked', 'Published'],
+				labels: ['Valid', 'Invalid', 'Deleted', 'Locked'],
 				legend: {
 					position: 'bottom',
 					fontSize: '14px',
 				},
-				colors: ['#41B883', '#E46651', '#00D8FF', '#DD6B20', '#38A169'],
+				colors: ['#41B883', '#E46651', '#00D8FF', '#DD6B20'],
 				tooltip: {
 					y: {
 						formatter(val) {

@@ -1327,6 +1327,24 @@
         "Backend parameter is required": "Backend-parameter is vereist",
         "Failed to get database information: %s": "Database-informatie ophalen mislukt: %s",
         "SOLR setup error: %s": "SOLR-installatiefout: %s",
-        "Reindex failed: %s": "Herindexering mislukt: %s"
+        "Reindex failed: %s": "Herindexering mislukt: %s",
+        "Anonymized": "Geanonimiseerd",
+        "Entities detected": "Entiteiten gedetecteerd",
+        "Extract Now": "Nu extraheren",
+        "Extracted at": "Geëxtraheerd op",
+        "Extraction": "Extractie",
+        "Failed to load extraction data": "Kan extractiegegevens niet laden",
+        "Failed to load register data": "Kan registergegevens niet laden",
+        "Failed to retrieve extraction status.": "Kan extractiestatus niet ophalen.",
+        "Failed to retrieve objects for file.": "Kan objecten voor bestand niet ophalen.",
+        "No extraction data available for this file": "Geen extractiegegevens beschikbaar voor dit bestand",
+        "No register objects reference this file": "Geen registerobjecten verwijzen naar dit bestand",
+        "Not extracted": "Niet geëxtraheerd",
+        "Register Objects": "Registerobjecten",
+        "Risk level": "Risiconiveau",
+        "Text chunks": "Tekstfragmenten",
+        "Unknown error": "Onbekende fout",
+        "Very high": "Zeer hoog",
+        "{title} in {register} / {schema}": "{title} in {register} / {schema}"
     }
 }

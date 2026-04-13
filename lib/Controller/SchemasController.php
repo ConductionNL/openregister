@@ -44,6 +44,9 @@ use OCP\IAppConfig;
 use OCP\IRequest;
 use Symfony\Component\Uid\Uuid;
 use OCA\OpenRegister\Db\AuditTrailMapper;
+use OCA\OpenRegister\Service\AuthorizationAuditService;
+use OCA\OpenRegister\Service\Object\PermissionHandler;
+use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -91,6 +94,7 @@ class SchemasController extends Controller
      * @param FacetCacheHandler   $facetCacheSvc       Schema facet cache service for facet caching
      * @param SchemaService       $schemaService       Schema service for exploration operations
      * @param LoggerInterface     $logger              Logger for error tracking
+     * @param ContainerInterface  $container           Container for lazy loading services
      *
      * @return void
      *
@@ -109,7 +113,8 @@ class SchemasController extends Controller
         private readonly SchemaCacheHandler $schemaCacheService,
         private readonly FacetCacheHandler $facetCacheSvc,
         private readonly SchemaService $schemaService,
-        private readonly LoggerInterface $logger
+        private readonly LoggerInterface $logger,
+        private readonly ContainerInterface $container
     ) {
         // Call parent constructor to initialize base controller.
         parent::__construct(appName: $appName, request: $request);
@@ -466,9 +471,46 @@ class SchemasController extends Controller
         unset($data['owner']);
         unset($data['created']);
 
+        // Check manage permission if authorization field is being modified.
+        $oldSchemaAuth = null;
+        if (isset($data['authorization']) === true) {
+            try {
+                $existingSchema    = $this->schemaMapper->find($id);
+                $oldSchemaAuth     = $existingSchema->getAuthorization();
+                $permissionHandler = $this->container->get(PermissionHandler::class);
+                if ($permissionHandler->hasPermission(
+                    $existingSchema,
+                    'manage'
+                ) === false
+                ) {
+                    return new JSONResponse(
+                        data: ['error' => 'User does not have permission to manage authorization for this schema'],
+                        statusCode: 403
+                    );
+                }
+            } catch (DoesNotExistException $e) {
+                return new JSONResponse(data: ['error' => 'Schema not found'], statusCode: 404);
+            }
+        }
+
         try {
             // Update the schema with the provided data.
             $updatedSchema = $this->schemaMapper->updateFromArray(id: $id, object: $data);
+
+            // Log authorization change if authorization was modified.
+            if (isset($data['authorization']) === true) {
+                try {
+                    $auditService = $this->container->get(AuthorizationAuditService::class);
+                    $auditService->logSchemaAuthorizationChange(
+                        $updatedSchema->getId(),
+                        $updatedSchema->getTitle() ?? '',
+                        $oldSchemaAuth,
+                        $updatedSchema->getAuthorization()
+                    );
+                } catch (\Throwable $e) {
+                    // Audit logging should not break the update operation.
+                }
+            }
 
             // **CACHE INVALIDATION**: Clear all schema-related caches when schema is updated.
             $this->schemaCacheService->invalidateForSchemaChange(schemaId: $updatedSchema->getId(), operation: 'update');

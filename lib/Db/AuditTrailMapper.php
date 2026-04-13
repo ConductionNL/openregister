@@ -143,6 +143,7 @@ class AuditTrailMapper extends QBMapper
                         'schema',
                         'register',
                         'object',
+                        'object_uuid',
                         'action',
                         'changed',
                         'user',
@@ -198,6 +199,7 @@ class AuditTrailMapper extends QBMapper
                         'schema',
                         'register',
                         'object',
+                        'object_uuid',
                         'action',
                         'changed',
                         'user',
@@ -213,10 +215,7 @@ class AuditTrailMapper extends QBMapper
                 continue;
             }
 
-            $direction = 'ASC';
-            if (strtoupper($direction) === 'DESC') {
-                $direction = 'DESC';
-            }
+            $direction = strtoupper($direction) === 'DESC' ? 'DESC' : 'ASC';
 
             $qb->addOrderBy($field, $direction);
         }//end foreach
@@ -495,6 +494,98 @@ class AuditTrailMapper extends QBMapper
             }
         }
     }//end revertChanges()
+
+
+    /**
+     * Find audit trails by actor (user ID) with pagination and filtering
+     *
+     * Returns audit trail entries where the given user performed the action,
+     * ordered by creation date descending (most recent first).
+     *
+     * @param string      $userId The user ID of the actor
+     * @param int         $limit  Maximum number of results to return
+     * @param int         $offset Number of results to skip
+     * @param string|null $type   Optional action type filter (create, update, delete)
+     * @param string|null $from   Optional start date filter (Y-m-d format)
+     * @param string|null $to     Optional end date filter (Y-m-d format)
+     *
+     * @return array{results: AuditTrail[], total: int} Array with results and total count
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+     */
+    public function findByActor(
+        string $userId,
+        int $limit=25,
+        int $offset=0,
+        ?string $type=null,
+        ?string $from=null,
+        ?string $to=null
+    ): array {
+        // Build count query first.
+        $countQb = $this->db->getQueryBuilder();
+        $countQb->select($countQb->createFunction('COUNT(*) as total'))
+            ->from('openregister_audit_trails')
+            ->where(
+                $countQb->expr()->eq('user', $countQb->createNamedParameter($userId, IQueryBuilder::PARAM_STR))
+            );
+
+        // Build results query.
+        $qb = $this->db->getQueryBuilder();
+        $qb->select('*')
+            ->from('openregister_audit_trails')
+            ->where(
+                $qb->expr()->eq('user', $qb->createNamedParameter($userId, IQueryBuilder::PARAM_STR))
+            )
+            ->orderBy('created', 'DESC');
+
+        // Apply type filter to both queries.
+        if ($type !== null && $type !== '') {
+            $qb->andWhere(
+                $qb->expr()->eq('action', $qb->createNamedParameter($type, IQueryBuilder::PARAM_STR))
+            );
+            $countQb->andWhere(
+                $countQb->expr()->eq('action', $countQb->createNamedParameter($type, IQueryBuilder::PARAM_STR))
+            );
+        }
+
+        // Apply date range filter to both queries.
+        if ($from !== null && $from !== '') {
+            $fromDate = $from.' 00:00:00';
+            $qb->andWhere(
+                $qb->expr()->gte('created', $qb->createNamedParameter($fromDate, IQueryBuilder::PARAM_STR))
+            );
+            $countQb->andWhere(
+                $countQb->expr()->gte('created', $countQb->createNamedParameter($fromDate, IQueryBuilder::PARAM_STR))
+            );
+        }
+
+        if ($to !== null && $to !== '') {
+            $toDate = $to.' 23:59:59';
+            $qb->andWhere(
+                $qb->expr()->lte('created', $qb->createNamedParameter($toDate, IQueryBuilder::PARAM_STR))
+            );
+            $countQb->andWhere(
+                $countQb->expr()->lte('created', $countQb->createNamedParameter($toDate, IQueryBuilder::PARAM_STR))
+            );
+        }
+
+        // Execute count query.
+        $countResult = $countQb->executeQuery();
+        $countRow    = $countResult->fetch();
+        $countResult->closeCursor();
+        $total = (int) ($countRow['total'] ?? 0);
+
+        // Apply pagination and execute results query.
+        $qb->setMaxResults($limit);
+        $qb->setFirstResult($offset);
+
+        $results = $this->findEntities(query: $qb);
+
+        return [
+            'results' => $results,
+            'total'   => $total,
+        ];
+    }//end findByActor()
 
 
     /**
@@ -1182,6 +1273,39 @@ class AuditTrailMapper extends QBMapper
             return $statsMap;
         }//end try
     }//end getStatisticsGroupedBySchema()
+
+
+    /**
+     * Create a custom audit trail entry for archival operations.
+     *
+     * @param ObjectEntity $object  The object the entry relates to
+     * @param string       $action  The archival action (e.g., archival.destroyed)
+     * @param array        $context Additional context data
+     *
+     * @return AuditTrail The created audit trail entry
+     *
+     * @SuppressWarnings(PHPMD.StaticAccess)
+     */
+    public function createAuditTrailEntry(
+        ObjectEntity $object,
+        string $action,
+        array $context=[]
+    ): AuditTrail {
+        $user   = \OC::$server->getUserSession()->getUser();
+        $userId = $user !== null ? $user->getUID() : 'system';
+
+        $auditTrail = new AuditTrail();
+        $auditTrail->setUuid(\Symfony\Component\Uid\Uuid::v4()->toRfc4122());
+        $auditTrail->setObjectUuid($object->getUuid());
+        $auditTrail->setRegister($object->getRegister());
+        $auditTrail->setSchema($object->getSchema());
+        $auditTrail->setAction($action);
+        $auditTrail->setChanged($context);
+        $auditTrail->setUser($userId);
+        $auditTrail->setCreated(new \DateTime());
+
+        return $this->insert(entity: $auditTrail);
+    }//end createAuditTrailEntry()
 
 
 }//end class

@@ -1393,11 +1393,6 @@ export default {
 	background: var(--color-error-light);
 }
 
-.breakdown-value.published {
-	color: var(--color-success);
-	background: var(--color-success-light);
-}
-
 .steps-section {
 	margin-bottom: 2rem;
 }
