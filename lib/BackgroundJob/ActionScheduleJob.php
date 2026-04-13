@@ -68,7 +68,7 @@ class ActionScheduleJob extends TimedJob
      *
      * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      */
-    protected function run($arguments): void
+    protected function run($argument): void
     {
         try {
             $actions = $this->actionMapper->findAll(
@@ -94,6 +94,9 @@ class ActionScheduleJob extends TimedJob
 
             foreach ($scheduledActions as $action) {
                 try {
+                    /*
+                     * @psalm-suppress UndefinedClass CronExpression is an optional runtime dependency
+                     */
                     $cron = new CronExpression($action->getSchedule());
 
                     $lastExecuted = $action->getLastExecutedAt();
@@ -102,6 +105,9 @@ class ActionScheduleJob extends TimedJob
                     if ($lastExecuted === null) {
                         $isDue = true;
                     } else {
+                        /*
+                         * @psalm-suppress UndefinedClass
+                         */
                         $nextRun = $cron->getNextRunDate($lastExecuted);
                         $isDue   = $nextRun <= $now;
                     }
