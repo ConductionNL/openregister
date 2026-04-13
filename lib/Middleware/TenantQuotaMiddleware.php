@@ -157,7 +157,13 @@ class TenantQuotaMiddleware extends Middleware
      */
     public function afterController(string|Controller $controller, string $methodName, Response $response): Response
     {
-        $organisation = $this->organisationService->getActiveOrganisation();
+        try {
+            $organisation = $this->organisationService->getActiveOrganisation();
+        } catch (\Exception $e) {
+            $this->logger->warning('[TenantQuotaMiddleware] Could not load organisation in afterController: '.$e->getMessage());
+            return $response;
+        }
+
         if ($organisation === null) {
             return $response;
         }
