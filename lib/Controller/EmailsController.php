@@ -116,7 +116,7 @@ class EmailsController extends Controller
         }
 
         try {
-            $object = $this->validateObject(object: $register, schema: $schema, schemaObject: $id);
+            $object = $this->validateObject(register: $register, schema: $schema, id: $id);
             if ($object === null) {
                 return new JSONResponse(['error' => 'Object not found'], 404);
             }
@@ -160,7 +160,7 @@ class EmailsController extends Controller
         }
 
         try {
-            $object = $this->validateObject(object: $register, schema: $schema, schemaObject: $id);
+            $object = $this->validateObject(register: $register, schema: $schema, id: $id);
             if ($object === null) {
                 return new JSONResponse(['error' => 'Object not found'], 404);
             }
@@ -225,12 +225,12 @@ class EmailsController extends Controller
         }
 
         try {
-            $object = $this->validateObject(object: $register, schema: $schema, schemaObject: $id);
+            $object = $this->validateObject(register: $register, schema: $schema, id: $id);
             if ($object === null) {
                 return new JSONResponse(['error' => 'Object not found'], 404);
             }
 
-            $this->emailService->unlinkEmail($object->getUuid(), $emailId);
+            $this->emailService->unlinkEmail((int) $emailId);
 
             return new JSONResponse(['success' => true]);
         } catch (DoesNotExistException $e) {
@@ -323,5 +323,4 @@ class EmailsController extends Controller
             return new JSONResponse(['error' => 'Internal server error'], 500);
         }
     }//end bySender()
-
 }//end class

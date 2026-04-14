@@ -71,7 +71,10 @@ class Version1Date20260326100000 extends SimpleMigrationStep
      */
     public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper
     {
-        /** @var ISchemaWrapper $schema */
+        /*
+         * @var ISchemaWrapper $schema
+         */
+
         $schema  = $schemaClosure();
         $changed = false;
 
@@ -87,20 +90,24 @@ class Version1Date20260326100000 extends SimpleMigrationStep
                     continue;
                 }
 
-                $table->addColumn($columnName, Types::JSON, [
-                    'notnull' => false,
-                    'default' => null,
-                ]);
+                $table->addColumn(
+                        name: $columnName,
+                        typeName: Types::JSON,
+                        options: [
+                            'notnull' => false,
+                            'default' => null,
+                        ]
+                        );
                 $changed = true;
 
                 $output->info("Added column $columnName to $tableName");
             }
-        }
+        }//end foreach
 
         if ($changed === false) {
             return null;
         }
 
         return $schema;
-    }
-}
+    }//end changeSchema()
+}//end class

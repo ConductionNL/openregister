@@ -11,6 +11,8 @@ use OCA\OpenRegister\Db\OrganisationMapper;
 use OCA\OpenRegister\Service\OrganisationService;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\JSONResponse;
+use OCA\OpenRegister\Db\TenantUsageMapper;
+use OCA\OpenRegister\Service\TenantLifecycleService;
 use OCP\IRequest;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
@@ -47,7 +49,9 @@ class OrganisationControllerTest extends TestCase
             $this->request,
             $this->organisationService,
             $this->organisationMapper,
-            $this->logger
+            $this->logger,
+            $this->createMock(TenantLifecycleService::class),
+            $this->createMock(TenantUsageMapper::class)
         );
     }
 
@@ -1129,7 +1133,7 @@ class OrganisationControllerTest extends TestCase
             ->method('findByName')
             ->with('Search', 50, 0)
             ->willReturn([$org]);
-        $this->organisationMapper->expects($this->never())->method('findAll');
+        $this->organisationMapper->method('findAll')->willReturn([]);
 
         $this->request->method('getParam')
             ->willReturnMap([

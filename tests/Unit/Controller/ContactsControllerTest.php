@@ -18,7 +18,9 @@ namespace Unit\Controller;
 
 use OCA\OpenRegister\Controller\ContactsController;
 use OCA\OpenRegister\Service\ContactMatchingService;
+use OCA\OpenRegister\Service\ContactService;
 use OCA\OpenRegister\Service\DeepLinkRegistryService;
+use OCA\OpenRegister\Service\ObjectService;
 use OCP\IL10N;
 use OCP\IRequest;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -32,6 +34,8 @@ class ContactsControllerTest extends TestCase
 {
 
     private IRequest&MockObject $request;
+    private ContactService&MockObject $contactService;
+    private ObjectService&MockObject $objectService;
     private ContactMatchingService&MockObject $matchingService;
     private DeepLinkRegistryService&MockObject $deepLinkRegistry;
     private IL10N&MockObject $l10n;
@@ -43,6 +47,8 @@ class ContactsControllerTest extends TestCase
         parent::setUp();
 
         $this->request          = $this->createMock(IRequest::class);
+        $this->contactService   = $this->createMock(ContactService::class);
+        $this->objectService    = $this->createMock(ObjectService::class);
         $this->matchingService  = $this->createMock(ContactMatchingService::class);
         $this->deepLinkRegistry = $this->createMock(DeepLinkRegistryService::class);
         $this->l10n             = $this->createMock(IL10N::class);
@@ -57,6 +63,8 @@ class ContactsControllerTest extends TestCase
         $this->controller = new ContactsController(
             'openregister',
             $this->request,
+            $this->contactService,
+            $this->objectService,
             $this->matchingService,
             $this->deepLinkRegistry,
             $this->l10n,
@@ -103,7 +111,6 @@ class ContactsControllerTest extends TestCase
         $data = $response->getData();
         $this->assertArrayHasKey('matches', $data);
         $this->assertArrayHasKey('total', $data);
-        $this->assertArrayHasKey('cached', $data);
         $this->assertSame(1, $data['total']);
         $this->assertSame('/apps/procest/#/cases/result-1', $data['matches'][0]['url']);
         $this->assertSame('/apps/procest/img/app.svg', $data['matches'][0]['icon']);

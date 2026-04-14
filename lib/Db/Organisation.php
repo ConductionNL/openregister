@@ -74,20 +74,6 @@ use Symfony\Component\Uid\Uuid;
  * @method void setDeprovisionedAt(?DateTime $deprovisionedAt)
  * @method string|null getParent()
  * @method static setParent(?string $parent)
- * @method array|null getMail()
- * @method void setMail(?array $mail)
- * @method array|null getContacts()
- * @method void setContacts(?array $contacts)
- * @method array|null getNotes()
- * @method void setNotes(?array $notes)
- * @method array|null getTodos()
- * @method void setTodos(?array $todos)
- * @method array|null getCalendar()
- * @method void setCalendar(?array $calendar)
- * @method array|null getTalk()
- * @method void setTalk(?array $talk)
- * @method array|null getDeck()
- * @method void setDeck(?array $deck)
  *
  * @SuppressWarnings(PHPMD.TooManyFields)
  *
@@ -262,27 +248,6 @@ class Organisation extends Entity implements JsonSerializable
      * @var string|null Parent organisation UUID
      */
     protected ?string $parent = null;
-
-    /** @var array|null Linked mail entity IDs */
-    protected ?array $mail = null;
-
-    /** @var array|null Linked contact entity IDs */
-    protected ?array $contacts = null;
-
-    /** @var array|null Linked note entity IDs */
-    protected ?array $notes = null;
-
-    /** @var array|null Linked todo entity IDs */
-    protected ?array $todos = null;
-
-    /** @var array|null Linked calendar event entity IDs */
-    protected ?array $calendar = null;
-
-    /** @var array|null Linked Talk conversation IDs */
-    protected ?array $talk = null;
-
-    /** @var array|null Linked Deck card IDs */
-    protected ?array $deck = null;
 
     /**
      * Array of child organisation UUIDs (computed, not stored in database)

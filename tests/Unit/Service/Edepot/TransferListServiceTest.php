@@ -16,7 +16,7 @@ namespace Unit\Service\Edepot;
 use InvalidArgumentException;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Db\ObjectEntityMapper;
+use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Service\Edepot\TransferListService;
 use OCP\IAppConfig;
 use OCP\Notification\IManager as INotificationManager;
@@ -30,7 +30,7 @@ use Psr\Log\LoggerInterface;
  */
 class TransferListServiceTest extends TestCase
 {
-    private ObjectEntityMapper&MockObject $objectMapper;
+    private MagicMapper&MockObject $objectMapper;
     private AuditTrailMapper&MockObject $auditTrailMapper;
     private IAppConfig&MockObject $appConfig;
     private INotificationManager&MockObject $notificationManager;
@@ -41,7 +41,7 @@ class TransferListServiceTest extends TestCase
     {
         parent::setUp();
 
-        $this->objectMapper = $this->createMock(ObjectEntityMapper::class);
+        $this->objectMapper = $this->createMock(MagicMapper::class);
         $this->auditTrailMapper = $this->createMock(AuditTrailMapper::class);
         $this->appConfig = $this->createMock(IAppConfig::class);
         $this->notificationManager = $this->createMock(INotificationManager::class);

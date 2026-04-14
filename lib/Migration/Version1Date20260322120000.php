@@ -25,6 +25,7 @@ namespace OCA\OpenRegister\Migration;
 
 use Closure;
 use OCP\DB\ISchemaWrapper;
+use OCP\IConfig;
 use OCP\IDBConnection;
 use OCP\Migration\IOutput;
 use OCP\Migration\SimpleMigrationStep;
@@ -40,6 +41,18 @@ use OCP\Migration\SimpleMigrationStep;
  */
 class Version1Date20260322120000 extends SimpleMigrationStep
 {
+    /**
+     * Constructor.
+     *
+     * @param IDBConnection $connection Database connection
+     * @param IConfig       $config     Nextcloud config
+     */
+    public function __construct(
+        private readonly IDBConnection $connection,
+        private readonly IConfig $config
+    ) {
+    }//end __construct()
+
     /**
      * Apply database-specific JSON indexes after schema changes.
      *
@@ -59,20 +72,19 @@ class Version1Date20260322120000 extends SimpleMigrationStep
             return;
         }
 
-        $connection = \OC::$server->get(IDBConnection::class);
-        $platform   = $connection->getDatabasePlatform();
-        $prefix     = \OC::$server->getConfig()->getSystemValueString('dbtableprefix', 'oc_');
-        $tableName  = $prefix.'openregister_objects';
+        $platform  = $this->connection->getDatabasePlatform();
+        $prefix    = $this->config->getSystemValueString('dbtableprefix', 'oc_');
+        $tableName = $prefix.'openregister_objects';
 
         if (str_contains(get_class($platform), 'PostgreSQL') === true) {
-            $this->createPostgreSqlIndex($connection, $tableName, $output);
-        } elseif (str_contains(get_class($platform), 'MariaDb') === true
+            $this->createPostgreSqlIndex(connection: $this->connection, tableName: $tableName, output: $output);
+        } else if (str_contains(get_class($platform), 'MariaDb') === true
             || str_contains(get_class($platform), 'MySQL') === true
         ) {
-            $this->createMariaDbIndexes($connection, $tableName, $output);
+            $this->createMariaDbIndexes(connection: $this->connection, tableName: $tableName, output: $output);
         } else {
             $output->info('Skipping retention JSON index: unsupported database platform');
-        }
+        }//end if
     }//end postSchemaChange()
 
     /**
@@ -149,6 +161,6 @@ class Version1Date20260322120000 extends SimpleMigrationStep
             );
 
             $output->info("Created virtual column + index $indexName on $tableName.$colName");
-        }
+        }//end foreach
     }//end createMariaDbIndexes()
 }//end class

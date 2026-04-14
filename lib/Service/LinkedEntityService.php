@@ -6,7 +6,7 @@
  * @category Service
  * @package  OCA\OpenRegister
  * @author   Conduction <info@conduction.nl>
- * @license  AGPL-3.0-or-later https://www.gnu.org/licenses/agpl-3.0.html
+ * @license  EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  * @link     https://github.com/ConductionNL/openregister
  */
 
@@ -33,7 +33,7 @@ use Psr\Log\LoggerInterface;
  * @category Service
  * @package  OCA\OpenRegister
  * @author   Conduction <info@conduction.nl>
- * @license  AGPL-3.0-or-later https://www.gnu.org/licenses/agpl-3.0.html
+ * @license  EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  * @link     https://github.com/ConductionNL/openregister
  *
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects) Service integrates multiple mappers for cross-table lookups
@@ -63,10 +63,10 @@ class LinkedEntityService
      * Constructor for LinkedEntityService.
      *
      * @param MagicMapper        $magicMapper        Magic mapper for object operations
-     * @param SchemaMapper        $schemaMapper        Schema mapper
-     * @param RegisterMapper      $registerMapper      Register mapper
-     * @param OrganisationMapper  $organisationMapper  Organisation mapper
-     * @param LoggerInterface     $logger              Logger
+     * @param SchemaMapper       $schemaMapper       Schema mapper
+     * @param RegisterMapper     $registerMapper     Register mapper
+     * @param OrganisationMapper $organisationMapper Organisation mapper
+     * @param LoggerInterface    $logger             Logger
      */
     public function __construct(
         private readonly MagicMapper $magicMapper,
@@ -90,12 +90,12 @@ class LinkedEntityService
      */
     public function addLink(string $objectUuid, string $type, string $entityId): array
     {
-        $this->validateType($type);
+        $this->validateType(type: $type);
         $columnName = self::TYPE_COLUMN_MAP[$type];
 
         $object      = $this->magicMapper->find($objectUuid);
-        $getter      = 'get' . ucfirst($columnName);
-        $setter      = 'set' . ucfirst($columnName);
+        $getter      = 'get'.ucfirst($columnName);
+        $setter      = 'set'.ucfirst($columnName);
         $existingIds = $object->$getter() ?? [];
 
         // Idempotent: don't add if already present.
@@ -121,20 +121,22 @@ class LinkedEntityService
      */
     public function removeLink(string $objectUuid, string $type, string $entityId): array
     {
-        $this->validateType($type);
+        $this->validateType(type: $type);
         $columnName = self::TYPE_COLUMN_MAP[$type];
 
         $object      = $this->magicMapper->find($objectUuid);
-        $getter      = 'get' . ucfirst($columnName);
-        $setter      = 'set' . ucfirst($columnName);
+        $getter      = 'get'.ucfirst($columnName);
+        $setter      = 'set'.ucfirst($columnName);
         $existingIds = $object->$getter() ?? [];
 
-        $existingIds = array_values(array_filter(
+        $existingIds = array_values(
+                array_filter(
             $existingIds,
             function ($id) use ($entityId) {
                 return $id !== $entityId;
             }
-        ));
+        )
+                );
 
         $object->$setter($existingIds);
         $this->magicMapper->update($object);
@@ -155,7 +157,7 @@ class LinkedEntityService
      */
     public function addLinkToRegister(string $registerUuid, string $type, string $entityId): array
     {
-        $this->validateType($type);
+        $this->validateType(type: $type);
         $columnName = self::TYPE_COLUMN_MAP[$type];
 
         $registers = $this->registerMapper->findAll(filters: ['uuid' => $registerUuid]);
@@ -164,8 +166,8 @@ class LinkedEntityService
         }
 
         $register    = $registers[0];
-        $getter      = 'get' . ucfirst($columnName);
-        $setter      = 'set' . ucfirst($columnName);
+        $getter      = 'get'.ucfirst($columnName);
+        $setter      = 'set'.ucfirst($columnName);
         $existingIds = $register->$getter() ?? [];
 
         if (in_array($entityId, $existingIds, true) === false) {
@@ -190,7 +192,7 @@ class LinkedEntityService
      */
     public function addLinkToSchema(string $schemaUuid, string $type, string $entityId): array
     {
-        $this->validateType($type);
+        $this->validateType(type: $type);
         $columnName = self::TYPE_COLUMN_MAP[$type];
 
         $schemas = $this->schemaMapper->findAll(filters: ['uuid' => $schemaUuid]);
@@ -199,8 +201,8 @@ class LinkedEntityService
         }
 
         $schema      = $schemas[0];
-        $getter      = 'get' . ucfirst($columnName);
-        $setter      = 'set' . ucfirst($columnName);
+        $getter      = 'get'.ucfirst($columnName);
+        $setter      = 'set'.ucfirst($columnName);
         $existingIds = $schema->$getter() ?? [];
 
         if (in_array($entityId, $existingIds, true) === false) {
@@ -227,15 +229,15 @@ class LinkedEntityService
      */
     public function reverseLookup(string $type, string $entityId): array
     {
-        $this->validateType($type);
+        $this->validateType(type: $type);
         $columnName = self::TYPE_COLUMN_MAP[$type];
         $results    = [];
 
         // 1. Scan magic tables (objects).
-        $results = array_merge($results, $this->scanMagicTables($type, $columnName, $entityId));
+        $results = array_merge($results, $this->scanMagicTables(type: $type, columnName: $columnName, entityId: $entityId));
 
         // 2. Scan entity tables.
-        $results = array_merge($results, $this->scanEntityTables($columnName, $entityId));
+        $results = array_merge($results, $this->scanEntityTables(columnName: $columnName, entityId: $entityId));
 
         return $results;
     }//end reverseLookup()
@@ -275,7 +277,7 @@ class LinkedEntityService
             try {
                 $objects = $this->magicMapper->findByLinkedEntity(
                     $schema,
-                    '_' . $columnName,
+                    '_'.$columnName,
                     $entityId
                 );
 
@@ -294,7 +296,7 @@ class LinkedEntityService
                     '[LinkedEntityService] Error scanning magic table',
                     ['schema' => $schema->getId(), 'error' => $e->getMessage()]
                 );
-            }
+            }//end try
 
             $scanned++;
         }//end foreach
@@ -318,7 +320,7 @@ class LinkedEntityService
         try {
             $allRegisters = $this->registerMapper->findAll();
             foreach ($allRegisters as $register) {
-                $getter = 'get' . ucfirst($columnName);
+                $getter = 'get'.ucfirst($columnName);
                 $ids    = $register->$getter() ?? [];
                 if (in_array($entityId, $ids, true) === true) {
                     $results[] = [
@@ -339,7 +341,7 @@ class LinkedEntityService
         try {
             $allSchemas = $this->schemaMapper->findAll();
             foreach ($allSchemas as $schema) {
-                $getter = 'get' . ucfirst($columnName);
+                $getter = 'get'.ucfirst($columnName);
                 $ids    = $schema->$getter() ?? [];
                 if (in_array($entityId, $ids, true) === true) {
                     $results[] = [
@@ -360,13 +362,13 @@ class LinkedEntityService
         try {
             $allOrganisations = $this->organisationMapper->findAll();
             foreach ($allOrganisations as $organisation) {
-                $getter = 'get' . ucfirst($columnName);
+                $getter = 'get'.ucfirst($columnName);
                 $ids    = $organisation->$getter() ?? [];
                 if (in_array($entityId, $ids, true) === true) {
                     $results[] = [
-                        'entityType'  => 'organisation',
-                        'uuid'        => $organisation->getUuid(),
-                        'name'        => $organisation->getName(),
+                        'entityType' => 'organisation',
+                        'uuid'       => $organisation->getUuid(),
+                        'name'       => $organisation->getName(),
                     ];
                 }
             }
@@ -393,7 +395,7 @@ class LinkedEntityService
     {
         if (isset(self::TYPE_COLUMN_MAP[$type]) === false) {
             throw new Exception(
-                "Invalid linked entity type '$type'. Valid types: " . implode(', ', array_keys(self::TYPE_COLUMN_MAP))
+                "Invalid linked entity type '$type'. Valid types: ".implode(', ', array_keys(self::TYPE_COLUMN_MAP))
             );
         }
     }//end validateType()

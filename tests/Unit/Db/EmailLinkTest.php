@@ -18,7 +18,7 @@ class EmailLinkTest extends TestCase
         $link->setMailMessageUid('MSG-001');
         $link->setSubject('Test email subject');
         $link->setSender('sender@test.local');
-        $link->setDate(new DateTime('2026-03-25T10:00:00+00:00'));
+        $link->setMailDate(new DateTime('2026-03-25T10:00:00+00:00'));
         $link->setLinkedBy('admin');
         $link->setLinkedAt(new DateTime('2026-03-25T11:00:00+00:00'));
 
@@ -32,7 +32,7 @@ class EmailLinkTest extends TestCase
         $this->assertSame('Test email subject', $json['subject']);
         $this->assertSame('sender@test.local', $json['sender']);
         $this->assertSame('admin', $json['linkedBy']);
-        $this->assertStringContainsString('2026-03-25', $json['date']);
+        $this->assertStringContainsString('2026-03-25', $json['mailDate']);
         $this->assertStringContainsString('2026-03-25', $json['linkedAt']);
     }
 
@@ -43,7 +43,7 @@ class EmailLinkTest extends TestCase
         $json = $link->jsonSerialize();
 
         $this->assertNull($json['objectUuid']);
-        $this->assertNull($json['date']);
+        $this->assertNull($json['mailDate']);
         $this->assertNull($json['linkedAt']);
         $this->assertNull($json['subject']);
     }

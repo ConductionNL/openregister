@@ -240,7 +240,7 @@ class ActionListener implements IEventListener
                     }
 
                     foreach ($conditions as $key => $expected) {
-                        $actual = $this->getNestedValue(array: $payload, key: $key);
+                        $actual = $this->getNestedValue(data: $payload, key: $key);
 
                         if (is_array($expected) === true) {
                             if (in_array($actual, $expected) === false) {

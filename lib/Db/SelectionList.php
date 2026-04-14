@@ -170,34 +170,36 @@ class SelectionList extends Entity implements JsonSerializable
      */
     public function hydrate(array $data): static
     {
+        // phpcs:disable -- Entity __call setters cannot use named args.
         if (isset($data['uuid']) === true) {
-            $this->setUuid(uuid: $data['uuid']);
+            $this->setUuid($data['uuid']);
         }
 
         if (isset($data['category']) === true) {
-            $this->setCategory(category: $data['category']);
+            $this->setCategory($data['category']);
         }
 
         if (isset($data['retentionYears']) === true) {
-            $this->setRetentionYears(retentionYears: (int) $data['retentionYears']);
+            $this->setRetentionYears((int) $data['retentionYears']);
         }
 
         if (isset($data['action']) === true) {
-            $this->setAction(action: $data['action']);
+            $this->setAction($data['action']);
         }
 
         if (isset($data['description']) === true) {
-            $this->setDescription(description: $data['description']);
+            $this->setDescription($data['description']);
         }
 
         if (isset($data['schemaOverrides']) === true) {
-            $this->setSchemaOverrides(schemaOverrides: $data['schemaOverrides']);
+            $this->setSchemaOverrides($data['schemaOverrides']);
         }
 
         if (isset($data['organisation']) === true) {
-            $this->setOrganisation(organisation: $data['organisation']);
+            $this->setOrganisation($data['organisation']);
         }
 
+        // phpcs:enable
         return $this;
     }//end hydrate()
 }//end class

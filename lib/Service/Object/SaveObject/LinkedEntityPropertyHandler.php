@@ -8,7 +8,7 @@
  * @category Service
  * @package  OCA\OpenRegister
  * @author   Conduction <info@conduction.nl>
- * @license  AGPL-3.0-or-later https://www.gnu.org/licenses/agpl-3.0.html
+ * @license  EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  * @link     https://github.com/ConductionNL/openregister
  */
 
@@ -28,7 +28,7 @@ use Psr\Log\LoggerInterface;
  * @category Service
  * @package  OCA\OpenRegister
  * @author   Conduction <info@conduction.nl>
- * @license  AGPL-3.0-or-later https://www.gnu.org/licenses/agpl-3.0.html
+ * @license  EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  * @link     https://github.com/ConductionNL/openregister
  */
 class LinkedEntityPropertyHandler
@@ -100,16 +100,16 @@ class LinkedEntityPropertyHandler
             }
 
             $this->extractFromProperty(
-                $propertyName,
-                $propertyConfig,
-                $data,
-                $extractedIds
+                propertyName: $propertyName,
+                propertyConfig: $propertyConfig,
+                data: $data,
+                extractedIds: $extractedIds
             );
         }
 
         // Merge extracted IDs into metadata columns, preserving ad-hoc links.
         foreach ($extractedIds as $ncType => $ids) {
-            $this->mergeIntoMetadataColumn($object, $ncType, $ids);
+            $this->mergeIntoMetadataColumn(object: $object, ncType: $ncType, newIds: $ids);
         }
 
         return $object;
@@ -136,7 +136,7 @@ class LinkedEntityPropertyHandler
         // Direct Nc* type property.
         if ($type !== null && isset(self::NC_TYPE_TO_SETTER[$type]) === true) {
             $value = $data[$propertyName] ?? null;
-            $id    = $this->extractIdFromEnvelope($value);
+            $id    = $this->extractIdFromEnvelope(value: $value);
             if ($id !== null) {
                 $extractedIds[$type][] = $id;
             }
@@ -151,7 +151,7 @@ class LinkedEntityPropertyHandler
                 $values = $data[$propertyName] ?? [];
                 if (is_array($values) === true) {
                     foreach ($values as $value) {
-                        $id = $this->extractIdFromEnvelope($value);
+                        $id = $this->extractIdFromEnvelope(value: $value);
                         if ($id !== null) {
                             $extractedIds[$itemsType][] = $id;
                         }
@@ -177,7 +177,7 @@ class LinkedEntityPropertyHandler
             return null;
         }
 
-        // Full envelope: { "type": "NcMail", "id": "1/6", "label": "..." }
+        // Full envelope: { "type": "NcMail", "id": "1/6", "label": "..." }.
         if (is_array($value) === true && isset($value['id']) === true) {
             return (string) $value['id'];
         }

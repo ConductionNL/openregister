@@ -42,7 +42,9 @@ use PHPUnit\Framework\TestCase;
 use PHPUnit\Framework\MockObject\MockObject;
 use OCA\OpenRegister\Db\Organisation;
 use OCA\OpenRegister\Db\OrganisationMapper;
+use OCA\OpenRegister\Db\TenantUsageMapper;
 use OCA\OpenRegister\Service\OrganisationService;
+use OCA\OpenRegister\Service\TenantLifecycleService;
 use OCA\OpenRegister\Controller\OrganisationController;
 use OCP\IUserSession;
 use OCP\IUser;
@@ -175,7 +177,9 @@ class UserOrganisationRelationshipTest extends TestCase
             request: $this->request,
             organisationService: $this->organisationService,
             organisationMapper: $this->organisationMapper,
-            logger: $this->logger
+            logger: $this->logger,
+            tenantLifecycleService: $this->createMock(TenantLifecycleService::class),
+            tenantUsageMapper: $this->createMock(TenantUsageMapper::class)
         );
     }
 

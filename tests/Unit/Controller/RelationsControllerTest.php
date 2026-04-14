@@ -53,10 +53,10 @@ class RelationsControllerTest extends TestCase
         );
     }
 
-    private function setupObject(string $uuid = 'abc-123'): ObjectEntity&MockObject
+    private function setupObject(string $uuid = 'abc-123'): ObjectEntity
     {
-        $object = $this->createMock(ObjectEntity::class);
-        $object->method('getUuid')->willReturn($uuid);
+        $object = new ObjectEntity();
+        $object->setUuid($uuid);
         $this->objectService->method('getObject')->willReturn($object);
         return $object;
     }

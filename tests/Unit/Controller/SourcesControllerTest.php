@@ -11,6 +11,7 @@ use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IAppConfig;
+use OCP\IL10N;
 use OCP\IRequest;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
@@ -35,11 +36,15 @@ class SourcesControllerTest extends TestCase
         $this->config = $this->createMock(IAppConfig::class);
         $this->sourceMapper = $this->createMock(SourceMapper::class);
 
+        $l10n = $this->createMock(IL10N::class);
+        $l10n->method('t')->willReturnArgument(0);
+
         $this->controller = new SourcesController(
             'openregister',
             $this->request,
             $this->config,
-            $this->sourceMapper
+            $this->sourceMapper,
+            $l10n
         );
     }
 

@@ -45,7 +45,6 @@ class SearchTrailTest extends TestCase
         $this->assertSame('boolean', $fieldTypes['facetableRequested']);
         $this->assertSame('json', $fieldTypes['filters']);
         $this->assertSame('json', $fieldTypes['sortParameters']);
-        $this->assertSame('boolean', $fieldTypes['publishedOnly']);
         $this->assertSame('string', $fieldTypes['executionType']);
         $this->assertSame('datetime', $fieldTypes['created']);
         $this->assertSame('string', $fieldTypes['organisationId']);
@@ -336,7 +335,7 @@ class SearchTrailTest extends TestCase
             'user', 'userName', 'registerName', 'schemaName', 'session',
             'ipAddress', 'userAgent', 'requestUri', 'httpMethod', 'responseTime',
             'page', 'limit', 'offset', 'facetsRequested', 'facetableRequested',
-            'filters', 'sortParameters', 'publishedOnly', 'executionType',
+            'filters', 'sortParameters', 'executionType',
             'created', 'organisationId', 'organisationIdType', 'expires', 'size',
         ];
 

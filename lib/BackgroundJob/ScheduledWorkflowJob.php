@@ -62,7 +62,7 @@ class ScheduledWorkflowJob extends TimedJob
     ) {
         parent::__construct(time: $time);
         // Run every 60 seconds; individual schedules are checked internally.
-        $this->setInterval(interval: 60);
+        $this->setInterval(seconds: 60);
     }//end __construct()
 
     /**

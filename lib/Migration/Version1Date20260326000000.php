@@ -55,35 +55,38 @@ class Version1Date20260326000000 extends SimpleMigrationStep
      */
     public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper
     {
-        /** @var ISchemaWrapper $schema */
+        /*
+         * @var ISchemaWrapper $schema
+         */
+
         $schema  = $schemaClosure();
         $changed = false;
 
-        if ($this->createActionsTable($schema, $output) === true) {
+        if ($this->createActionsTable(schema: $schema, output: $output) === true) {
             $changed = true;
         }
 
-        if ($this->createActionLogsTable($schema, $output) === true) {
+        if ($this->createActionLogsTable(schema: $schema, output: $output) === true) {
             $changed = true;
         }
 
-        if ($this->createEmailLinksTable($schema, $output) === true) {
+        if ($this->createEmailLinksTable(schema: $schema, output: $output) === true) {
             $changed = true;
         }
 
-        if ($this->createContactLinksTable($schema, $output) === true) {
+        if ($this->createContactLinksTable(schema: $schema, output: $output) === true) {
             $changed = true;
         }
 
-        if ($this->createDeckLinksTable($schema, $output) === true) {
+        if ($this->createDeckLinksTable(schema: $schema, output: $output) === true) {
             $changed = true;
         }
 
-        if ($this->createSelectionListsTable($schema, $output) === true) {
+        if ($this->createSelectionListsTable(schema: $schema, output: $output) === true) {
             $changed = true;
         }
 
-        if ($this->createDestructionListsTable($schema, $output) === true) {
+        if ($this->createDestructionListsTable(schema: $schema, output: $output) === true) {
             $changed = true;
         }
 
@@ -221,50 +224,98 @@ class Version1Date20260326000000 extends SimpleMigrationStep
 
         $table = $schema->createTable('openregister_email_links');
 
-        $table->addColumn('id', Types::BIGINT, [
-            'autoincrement' => true,
-            'notnull'       => true,
-            'length'        => 20,
-        ]);
-        $table->addColumn('mail_account_id', Types::INTEGER, [
-            'notnull' => true,
-        ]);
-        $table->addColumn('mail_message_id', Types::INTEGER, [
-            'notnull' => true,
-        ]);
-        $table->addColumn('mail_message_uid', Types::STRING, [
-            'notnull' => false,
-            'length'  => 255,
-        ]);
-        $table->addColumn('subject', Types::STRING, [
-            'notnull' => false,
-            'length'  => 512,
-        ]);
-        $table->addColumn('sender', Types::STRING, [
-            'notnull' => false,
-            'length'  => 255,
-        ]);
-        $table->addColumn('mail_date', Types::STRING, [
-            'notnull' => false,
-            'length'  => 64,
-        ]);
-        $table->addColumn('object_uuid', Types::STRING, [
-            'notnull' => true,
-            'length'  => 36,
-        ]);
-        $table->addColumn('register_id', Types::INTEGER, [
-            'notnull' => true,
-        ]);
-        $table->addColumn('schema_id', Types::INTEGER, [
-            'notnull' => false,
-        ]);
-        $table->addColumn('linked_by', Types::STRING, [
-            'notnull' => false,
-            'length'  => 64,
-        ]);
-        $table->addColumn('linked_at', Types::DATETIME, [
-            'notnull' => false,
-        ]);
+        $table->addColumn(
+                'id',
+                Types::BIGINT,
+                [
+                    'autoincrement' => true,
+                    'notnull'       => true,
+                    'length'        => 20,
+                ]
+                );
+        $table->addColumn(
+                'mail_account_id',
+                Types::INTEGER,
+                [
+                    'notnull' => true,
+                ]
+                );
+        $table->addColumn(
+                'mail_message_id',
+                Types::INTEGER,
+                [
+                    'notnull' => true,
+                ]
+                );
+        $table->addColumn(
+                'mail_message_uid',
+                Types::STRING,
+                [
+                    'notnull' => false,
+                    'length'  => 255,
+                ]
+                );
+        $table->addColumn(
+                'subject',
+                Types::STRING,
+                [
+                    'notnull' => false,
+                    'length'  => 512,
+                ]
+                );
+        $table->addColumn(
+                'sender',
+                Types::STRING,
+                [
+                    'notnull' => false,
+                    'length'  => 255,
+                ]
+                );
+        $table->addColumn(
+                'mail_date',
+                Types::STRING,
+                [
+                    'notnull' => false,
+                    'length'  => 64,
+                ]
+                );
+        $table->addColumn(
+                'object_uuid',
+                Types::STRING,
+                [
+                    'notnull' => true,
+                    'length'  => 36,
+                ]
+                );
+        $table->addColumn(
+                'register_id',
+                Types::INTEGER,
+                [
+                    'notnull' => true,
+                ]
+                );
+        $table->addColumn(
+                'schema_id',
+                Types::INTEGER,
+                [
+                    'notnull' => false,
+                ]
+                );
+        $table->addColumn(
+                'linked_by',
+                Types::STRING,
+                [
+                    'notnull' => false,
+                    'length'  => 64,
+                ]
+                );
+        $table->addColumn(
+                'linked_at',
+                Types::DATETIME,
+                [
+                    'notnull' => false,
+                ]
+                );
 
         $table->setPrimaryKey(['id']);
         $table->addIndex(['mail_account_id', 'mail_message_id'], 'email_links_msg_idx');
@@ -370,49 +421,89 @@ class Version1Date20260326000000 extends SimpleMigrationStep
 
         $table = $schema->createTable('openregister_selection_lists');
 
-        $table->addColumn('id', Types::BIGINT, [
-            'autoincrement' => true,
-            'notnull'       => true,
-        ]);
-        $table->addColumn('uuid', Types::STRING, [
-            'notnull' => true,
-            'length'  => 36,
-        ]);
-        $table->addColumn('category', Types::STRING, [
-            'notnull' => true,
-            'length'  => 255,
-        ]);
-        $table->addColumn('retention_years', Types::INTEGER, [
-            'notnull' => true,
-            'default' => 0,
-        ]);
-        $table->addColumn('action', Types::STRING, [
-            'notnull' => true,
-            'length'  => 50,
-            'default' => 'vernietigen',
-        ]);
-        $table->addColumn('description', Types::TEXT, [
-            'notnull' => false,
-            'default' => null,
-        ]);
-        $table->addColumn('schema_overrides', Types::TEXT, [
-            'notnull' => false,
-            'default' => null,
-            'comment' => 'JSON map of schema UUID to override retention years',
-        ]);
-        $table->addColumn('organisation', Types::STRING, [
-            'notnull' => false,
-            'length'  => 255,
-            'default' => null,
-        ]);
-        $table->addColumn('created', Types::DATETIME, [
-            'notnull' => false,
-            'default' => null,
-        ]);
-        $table->addColumn('updated', Types::DATETIME, [
-            'notnull' => false,
-            'default' => null,
-        ]);
+        $table->addColumn(
+                'id',
+                Types::BIGINT,
+                [
+                    'autoincrement' => true,
+                    'notnull'       => true,
+                ]
+                );
+        $table->addColumn(
+                'uuid',
+                Types::STRING,
+                [
+                    'notnull' => true,
+                    'length'  => 36,
+                ]
+                );
+        $table->addColumn(
+                'category',
+                Types::STRING,
+                [
+                    'notnull' => true,
+                    'length'  => 255,
+                ]
+                );
+        $table->addColumn(
+                'retention_years',
+                Types::INTEGER,
+                [
+                    'notnull' => true,
+                    'default' => 0,
+                ]
+                );
+        $table->addColumn(
+                'action',
+                Types::STRING,
+                [
+                    'notnull' => true,
+                    'length'  => 50,
+                    'default' => 'vernietigen',
+                ]
+                );
+        $table->addColumn(
+                'description',
+                Types::TEXT,
+                [
+                    'notnull' => false,
+                    'default' => null,
+                ]
+                );
+        $table->addColumn(
+                'schema_overrides',
+                Types::TEXT,
+                [
+                    'notnull' => false,
+                    'default' => null,
+                    'comment' => 'JSON map of schema UUID to override retention years',
+                ]
+                );
+        $table->addColumn(
+                'organisation',
+                Types::STRING,
+                [
+                    'notnull' => false,
+                    'length'  => 255,
+                    'default' => null,
+                ]
+                );
+        $table->addColumn(
+                'created',
+                Types::DATETIME,
+                [
+                    'notnull' => false,
+                    'default' => null,
+                ]
+                );
+        $table->addColumn(
+                'updated',
+                Types::DATETIME,
+                [
+                    'notnull' => false,
+                    'default' => null,
+                ]
+                );
 
         $table->setPrimaryKey(['id']);
         $table->addUniqueIndex(['uuid'], 'sl_uuid_idx');
@@ -440,54 +531,98 @@ class Version1Date20260326000000 extends SimpleMigrationStep
 
         $table = $schema->createTable('openregister_destruction_lists');
 
-        $table->addColumn('id', Types::BIGINT, [
-            'autoincrement' => true,
-            'notnull'       => true,
-        ]);
-        $table->addColumn('uuid', Types::STRING, [
-            'notnull' => true,
-            'length'  => 36,
-        ]);
-        $table->addColumn('name', Types::STRING, [
-            'notnull' => true,
-            'length'  => 255,
-        ]);
-        $table->addColumn('status', Types::STRING, [
-            'notnull' => true,
-            'length'  => 50,
-            'default' => 'pending_review',
-        ]);
-        $table->addColumn('objects', Types::TEXT, [
-            'notnull' => false,
-            'default' => null,
-            'comment' => 'JSON array of object UUIDs',
-        ]);
-        $table->addColumn('approved_by', Types::STRING, [
-            'notnull' => false,
-            'length'  => 255,
-            'default' => null,
-        ]);
-        $table->addColumn('approved_at', Types::DATETIME, [
-            'notnull' => false,
-            'default' => null,
-        ]);
-        $table->addColumn('notes', Types::TEXT, [
-            'notnull' => false,
-            'default' => null,
-        ]);
-        $table->addColumn('organisation', Types::STRING, [
-            'notnull' => false,
-            'length'  => 255,
-            'default' => null,
-        ]);
-        $table->addColumn('created', Types::DATETIME, [
-            'notnull' => false,
-            'default' => null,
-        ]);
-        $table->addColumn('updated', Types::DATETIME, [
-            'notnull' => false,
-            'default' => null,
-        ]);
+        $table->addColumn(
+                'id',
+                Types::BIGINT,
+                [
+                    'autoincrement' => true,
+                    'notnull'       => true,
+                ]
+                );
+        $table->addColumn(
+                'uuid',
+                Types::STRING,
+                [
+                    'notnull' => true,
+                    'length'  => 36,
+                ]
+                );
+        $table->addColumn(
+                'name',
+                Types::STRING,
+                [
+                    'notnull' => true,
+                    'length'  => 255,
+                ]
+                );
+        $table->addColumn(
+                'status',
+                Types::STRING,
+                [
+                    'notnull' => true,
+                    'length'  => 50,
+                    'default' => 'pending_review',
+                ]
+                );
+        $table->addColumn(
+                'objects',
+                Types::TEXT,
+                [
+                    'notnull' => false,
+                    'default' => null,
+                    'comment' => 'JSON array of object UUIDs',
+                ]
+                );
+        $table->addColumn(
+                'approved_by',
+                Types::STRING,
+                [
+                    'notnull' => false,
+                    'length'  => 255,
+                    'default' => null,
+                ]
+                );
+        $table->addColumn(
+                'approved_at',
+                Types::DATETIME,
+                [
+                    'notnull' => false,
+                    'default' => null,
+                ]
+                );
+        $table->addColumn(
+                'notes',
+                Types::TEXT,
+                [
+                    'notnull' => false,
+                    'default' => null,
+                ]
+                );
+        $table->addColumn(
+                'organisation',
+                Types::STRING,
+                [
+                    'notnull' => false,
+                    'length'  => 255,
+                    'default' => null,
+                ]
+                );
+        $table->addColumn(
+                'created',
+                Types::DATETIME,
+                [
+                    'notnull' => false,
+                    'default' => null,
+                ]
+                );
+        $table->addColumn(
+                'updated',
+                Types::DATETIME,
+                [
+                    'notnull' => false,
+                    'default' => null,
+                ]
+                );
 
         $table->setPrimaryKey(['id']);
         $table->addUniqueIndex(['uuid'], 'dl_uuid_idx');

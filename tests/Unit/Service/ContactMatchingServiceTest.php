@@ -77,14 +77,12 @@ class ContactMatchingServiceTest extends TestCase
         $this->cache->method('get')->willReturn(null);
         $this->cache->expects($this->once())->method('set');
 
-        $schema = $this->createMock(Schema::class);
-        $schema->method('getTitle')->willReturn('Medewerkers');
-        $schema->method('getName')->willReturn('medewerkers');
+        $schema = new Schema();
+        $schema->setTitle('Medewerkers');
         $this->schemaMapper->method('find')->willReturn($schema);
 
-        $register = $this->createMock(Register::class);
-        $register->method('getTitle')->willReturn('Gemeente');
-        $register->method('getName')->willReturn('gemeente');
+        $register = new Register();
+        $register->setTitle('Gemeente');
         $this->registerMapper->method('find')->willReturn($register);
 
         $this->objectService->method('searchObjects')
@@ -110,14 +108,12 @@ class ContactMatchingServiceTest extends TestCase
     {
         $this->cache->method('get')->willReturn(null);
 
-        $schema = $this->createMock(Schema::class);
-        $schema->method('getTitle')->willReturn('People');
-        $schema->method('getName')->willReturn('people');
+        $schema = new Schema();
+        $schema->setTitle('People');
         $this->schemaMapper->method('find')->willReturn($schema);
 
-        $register = $this->createMock(Register::class);
-        $register->method('getTitle')->willReturn('Main');
-        $register->method('getName')->willReturn('main');
+        $register = new Register();
+        $register->setTitle('Main');
         $this->registerMapper->method('find')->willReturn($register);
 
         $this->objectService->method('searchObjects')
@@ -186,14 +182,12 @@ class ContactMatchingServiceTest extends TestCase
     {
         $this->cache->method('get')->willReturn(null);
 
-        $schema = $this->createMock(Schema::class);
-        $schema->method('getTitle')->willReturn('Personen');
-        $schema->method('getName')->willReturn('personen');
+        $schema = new Schema();
+        $schema->setTitle('Personen');
         $this->schemaMapper->method('find')->willReturn($schema);
 
-        $register = $this->createMock(Register::class);
-        $register->method('getTitle')->willReturn('Gemeente');
-        $register->method('getName')->willReturn('gemeente');
+        $register = new Register();
+        $register->setTitle('Gemeente');
         $this->registerMapper->method('find')->willReturn($register);
 
         $this->objectService->method('searchObjects')
@@ -216,14 +210,12 @@ class ContactMatchingServiceTest extends TestCase
     {
         $this->cache->method('get')->willReturn(null);
 
-        $schema = $this->createMock(Schema::class);
-        $schema->method('getTitle')->willReturn('Personen');
-        $schema->method('getName')->willReturn('personen');
+        $schema = new Schema();
+        $schema->setTitle('Personen');
         $this->schemaMapper->method('find')->willReturn($schema);
 
-        $register = $this->createMock(Register::class);
-        $register->method('getTitle')->willReturn('Main');
-        $register->method('getName')->willReturn('main');
+        $register = new Register();
+        $register->setTitle('Main');
         $this->registerMapper->method('find')->willReturn($register);
 
         $this->objectService->method('searchObjects')
@@ -259,20 +251,19 @@ class ContactMatchingServiceTest extends TestCase
     {
         $this->cache->method('get')->willReturn(null);
 
-        $schema = $this->createMock(Schema::class);
-        $schema->method('getTitle')->willReturn('Organisaties');
-        $schema->method('getName')->willReturn('organisaties');
+        $schema = new Schema();
+        $schema->setTitle('Organisaties');
         $this->schemaMapper->method('find')->willReturn($schema);
 
-        $register = $this->createMock(Register::class);
-        $register->method('getTitle')->willReturn('Main');
-        $register->method('getName')->willReturn('main');
+        $register = new Register();
+        $register->setTitle('Main');
         $this->registerMapper->method('find')->willReturn($register);
 
         $this->objectService->method('searchObjects')
             ->willReturn([
                 [
                     '@self'       => ['uuid' => 'org-789', 'schema' => 1, 'register' => 1],
+                    'schema'      => ['title' => 'Organisaties'],
                     'organisatie' => 'Gemeente Tilburg',
                     'naam'        => 'Gemeente Tilburg',
                 ],
@@ -307,9 +298,8 @@ class ContactMatchingServiceTest extends TestCase
             ]);
 
         // Schema title is "Personen" which does NOT match org patterns.
-        $schema = $this->createMock(Schema::class);
-        $schema->method('getTitle')->willReturn('Personen');
-        $schema->method('getName')->willReturn('personen');
+        $schema = new Schema();
+        $schema->setTitle('Personen');
         $this->schemaMapper->method('find')->willReturn($schema);
 
         $results = $this->service->matchByOrganization('Gemeente Tilburg');
@@ -326,14 +316,12 @@ class ContactMatchingServiceTest extends TestCase
     {
         $this->cache->method('get')->willReturn(null);
 
-        $schema = $this->createMock(Schema::class);
-        $schema->method('getTitle')->willReturn('Medewerkers');
-        $schema->method('getName')->willReturn('medewerkers');
+        $schema = new Schema();
+        $schema->setTitle('Medewerkers');
         $this->schemaMapper->method('find')->willReturn($schema);
 
-        $register = $this->createMock(Register::class);
-        $register->method('getTitle')->willReturn('Main');
-        $register->method('getName')->willReturn('main');
+        $register = new Register();
+        $register->setTitle('Main');
         $this->registerMapper->method('find')->willReturn($register);
 
         // Same object matched by both email and name search.
@@ -359,14 +347,12 @@ class ContactMatchingServiceTest extends TestCase
     {
         $this->cache->method('get')->willReturn(null);
 
-        $schema = $this->createMock(Schema::class);
-        $schema->method('getTitle')->willReturn('Personen');
-        $schema->method('getName')->willReturn('personen');
+        $schema = new Schema();
+        $schema->setTitle('Personen');
         $this->schemaMapper->method('find')->willReturn($schema);
 
-        $register = $this->createMock(Register::class);
-        $register->method('getTitle')->willReturn('Main');
-        $register->method('getName')->willReturn('main');
+        $register = new Register();
+        $register->setTitle('Main');
         $this->registerMapper->method('find')->willReturn($register);
 
         $this->objectService->method('searchObjects')
@@ -388,14 +374,12 @@ class ContactMatchingServiceTest extends TestCase
     {
         $this->cache->method('get')->willReturn(null);
 
-        $schema = $this->createMock(Schema::class);
-        $schema->method('getTitle')->willReturn('Organisaties');
-        $schema->method('getName')->willReturn('organisaties');
+        $schema = new Schema();
+        $schema->setTitle('Organisaties');
         $this->schemaMapper->method('find')->willReturn($schema);
 
-        $register = $this->createMock(Register::class);
-        $register->method('getTitle')->willReturn('Main');
-        $register->method('getName')->willReturn('main');
+        $register = new Register();
+        $register->setTitle('Main');
         $this->registerMapper->method('find')->willReturn($register);
 
         // Different objects for email and org.

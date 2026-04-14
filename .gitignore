@@ -12,7 +12,6 @@
 .phpunit.cache/
 
 /node_modules/
-/website/node_modules/
 /docs/node_modules/
 /website/.docusaurus/
 /docs/build/

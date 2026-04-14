@@ -8,7 +8,7 @@
  * @category Service
  * @package  OCA\OpenRegister
  * @author   Conduction <info@conduction.nl>
- * @license  AGPL-3.0-or-later https://www.gnu.org/licenses/agpl-3.0.html
+ * @license  EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  * @link     https://github.com/ConductionNL/openregister
  */
 
@@ -31,7 +31,7 @@ use Psr\Log\LoggerInterface;
  * @category Service
  * @package  OCA\OpenRegister
  * @author   Conduction <info@conduction.nl>
- * @license  AGPL-3.0-or-later https://www.gnu.org/licenses/agpl-3.0.html
+ * @license  EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  * @link     https://github.com/ConductionNL/openregister
  * @version  1.0.0
  */
@@ -82,7 +82,7 @@ class FileLockHandler
         $ttl           = $ttlMinutes ?? self::DEFAULT_TTL_MINUTES;
 
         // Check for existing lock.
-        $existingLock = $this->getLockInfo(identifier: $fileId);
+        $existingLock = $this->getLockInfo(fileId: $fileId);
         if ($existingLock !== null) {
             if ($existingLock['lockedBy'] === $currentUserId) {
                 // Refresh the lock for the same user.
@@ -110,7 +110,7 @@ class FileLockHandler
     public function unlockFile(int $fileId, bool $force=false): array
     {
         $currentUserId = $this->getCurrentUserId();
-        $lockInfo      = $this->getLockInfo(identifier: $fileId);
+        $lockInfo      = $this->getLockInfo(fileId: $fileId);
 
         if ($lockInfo === null) {
             return ['locked' => false];
@@ -146,7 +146,7 @@ class FileLockHandler
      */
     public function isLocked(int $fileId): bool
     {
-        return $this->getLockInfo(identifier: $fileId) !== null;
+        return $this->getLockInfo(fileId: $fileId) !== null;
     }//end isLocked()
 
     /**
@@ -193,7 +193,7 @@ class FileLockHandler
      */
     public function assertCanModify(int $fileId): void
     {
-        $lockInfo = $this->getLockInfo(identifier: $fileId);
+        $lockInfo = $this->getLockInfo(fileId: $fileId);
         if ($lockInfo === null) {
             return;
         }

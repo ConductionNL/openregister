@@ -758,7 +758,10 @@ class Application extends App implements IBootstrap
         $context->registerEventListener('OCA\Files\Event\LoadAdditionalScriptsEvent', FilesSidebarListener::class);
 
         // MailAppScriptListener injects the mail sidebar when schemas have linkedTypes: ["mail"].
-        $context->registerEventListener(\OCP\AppFramework\Http\Events\BeforeTemplateRenderedEvent::class, \OCA\OpenRegister\Listener\MailAppScriptListener::class);
+        $context->registerEventListener(
+            \OCP\AppFramework\Http\Events\BeforeTemplateRenderedEvent::class,
+            \OCA\OpenRegister\Listener\MailAppScriptListener::class
+        );
 
         // CommentsEntityListener registers "openregister" objectType for Nextcloud Comments.
         $context->registerEventListener(CommentsEntityEvent::class, CommentsEntityListener::class);

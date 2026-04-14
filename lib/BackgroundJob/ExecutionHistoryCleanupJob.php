@@ -59,7 +59,7 @@ class ExecutionHistoryCleanupJob extends TimedJob
     ) {
         parent::__construct(time: $time);
         // Run once daily (86400 seconds).
-        $this->setInterval(interval: 86400);
+        $this->setInterval(seconds: 86400);
     }//end __construct()
 
     /**

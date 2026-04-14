@@ -29,12 +29,16 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Service\Object\SaveObject;
-use OCA\OpenRegister\Service\Object\SaveObject\MetadataHydrationHandler;
+use OCA\OpenRegister\Service\Object\SaveObject\ComputedFieldHandler;
 use OCA\OpenRegister\Service\Object\SaveObject\FilePropertyHandler;
+use OCA\OpenRegister\Service\Object\SaveObject\LinkedEntityPropertyHandler;
+use OCA\OpenRegister\Service\Object\SaveObject\MetadataHydrationHandler;
+use OCA\OpenRegister\Service\Object\TranslationHandler;
 use OCA\OpenRegister\Service\Object\CacheHandler;
 use OCA\OpenRegister\Service\OrganisationService;
 use OCA\OpenRegister\Service\PropertyRbacHandler;
 use OCA\OpenRegister\Service\SettingsService;
+use OCA\OpenRegister\Service\TmloService;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\IURLGenerator;
 use OCP\IUserSession;
@@ -220,6 +224,7 @@ class SaveObjectRefactoredMethodsTest extends TestCase
             $this->unifiedObjectMapper,
             $this->metaHydrationHandler,
             $this->filePropertyHandler,
+            $this->createMock(LinkedEntityPropertyHandler::class),
             $this->userSession,
             $this->auditTrailMapper,
             $this->schemaMapper,
@@ -229,7 +234,10 @@ class SaveObjectRefactoredMethodsTest extends TestCase
             $this->cacheHandler,
             $this->settingsService,
             $this->propertyRbacHandler,
+            $this->createMock(ComputedFieldHandler::class),
+            $this->createMock(TranslationHandler::class),
             $this->logger,
+            $this->createMock(TmloService::class),
             $arrayLoader
         );
 

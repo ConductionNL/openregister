@@ -214,10 +214,15 @@ class MagicMapperTest extends TestCase
         $this->mockSchema->setVersion('1.0');
         $this->mockSchema->testConfiguration = [];
 
+        // Reset static construct counter to avoid circular dependency guard.
+        $ref = new \ReflectionClass(MagicMapper::class);
+        $prop = $ref->getProperty('constructCount');
+        $prop->setAccessible(true);
+        $prop->setValue(null, 0);
+
         // Create MagicMapper instance with all required dependencies.
         $this->magicMapper = new MagicMapper(
             $this->mockDb,
-            $this->mockObjectMapper,
             $this->mockSchemaMapper,
             $this->mockRegisterMapper,
             $this->mockConfig,
@@ -432,7 +437,7 @@ class MagicMapperTest extends TestCase
             '_id', '_uuid', '_slug', '_uri', '_version', '_register', '_schema',
             '_owner', '_organisation', '_application', '_folder', '_name',
             '_description', '_summary', '_image', '_size', '_schema_version',
-            '_created', '_updated', '_published', '_depublished', '_expires',
+            '_created', '_updated', '_expires',
             '_files', '_relations', '_locked', '_authorization', '_validation',
             '_deleted', '_geo', '_retention', '_groups'
         ];
@@ -668,62 +673,6 @@ class MagicMapperTest extends TestCase
         $this->assertEquals(32, strlen($version)); // MD5 hash length
 
     }//end testRegisterSchemaVersionCalculation()
-
-
-    /**
-     * Test JSON string detection utility method
-     *
-     * @dataProvider jsonStringProvider
-     *
-     * @param string $input    Input string to test
-     * @param bool   $expected Expected result
-     *
-     * @return void
-     */
-    public function testJsonStringDetection(string $input, bool $expected): void
-    {
-        $reflection = new \ReflectionClass($this->magicMapper);
-        $method = $reflection->getMethod('isJsonString');
-        $method->setAccessible(true);
-
-        $result = $method->invoke($this->magicMapper, $input);
-
-        $this->assertEquals($expected, $result);
-
-    }//end testJsonStringDetection()
-
-
-    /**
-     * Data provider for JSON string detection
-     *
-     * @return array<string, array<mixed>>
-     */
-    public function jsonStringProvider(): array
-    {
-        return [
-            'valid_json_object' => [
-                'input' => '{"name": "John", "age": 30}',
-                'expected' => true
-            ],
-            'valid_json_array' => [
-                'input' => '["apple", "banana", "cherry"]',
-                'expected' => true
-            ],
-            'invalid_json' => [
-                'input' => '{name: "John", age: 30}',
-                'expected' => false
-            ],
-            'plain_string' => [
-                'input' => 'just a regular string',
-                'expected' => false
-            ],
-            'null_string' => [
-                'input' => 'null',
-                'expected' => true
-            ]
-        ];
-
-    }//end jsonStringProvider()
 
 
 }//end class

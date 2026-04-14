@@ -160,21 +160,21 @@ class FileSidebarServiceTest extends TestCase
         $this->chunkMapper->method('getLatestUpdatedTimestamp')->willReturn(1700000000);
 
         // Two entity relations — one PERSON, one EMAIL.
-        $relation1 = $this->createMock(EntityRelation::class);
-        $relation1->method('getAnonymized')->willReturn(false);
-        $relation1->method('getEntityId')->willReturn(10);
+        $relation1 = new EntityRelation();
+        $relation1->setAnonymized(false);
+        $relation1->setEntityId(10);
 
-        $relation2 = $this->createMock(EntityRelation::class);
-        $relation2->method('getAnonymized')->willReturn(false);
-        $relation2->method('getEntityId')->willReturn(20);
+        $relation2 = new EntityRelation();
+        $relation2->setAnonymized(false);
+        $relation2->setEntityId(20);
 
         $this->entityRelationMapper->method('findByFileId')->willReturn([$relation1, $relation2]);
 
-        $entity1 = $this->createMock(GdprEntity::class);
-        $entity1->method('getType')->willReturn('PERSON');
+        $entity1 = new GdprEntity();
+        $entity1->setType('PERSON');
 
-        $entity2 = $this->createMock(GdprEntity::class);
-        $entity2->method('getType')->willReturn('EMAIL');
+        $entity2 = new GdprEntity();
+        $entity2->setType('EMAIL');
 
         $this->gdprEntityMapper->method('find')
             ->willReturnMap([
@@ -210,14 +210,14 @@ class FileSidebarServiceTest extends TestCase
         $this->chunkMapper->method('findBySource')->willReturn(['chunk1']);
         $this->chunkMapper->method('getLatestUpdatedTimestamp')->willReturn(null);
 
-        $relation = $this->createMock(EntityRelation::class);
-        $relation->method('getAnonymized')->willReturn(true);
-        $relation->method('getEntityId')->willReturn(30);
+        $relation = new EntityRelation();
+        $relation->setAnonymized(true);
+        $relation->setEntityId(30);
 
         $this->entityRelationMapper->method('findByFileId')->willReturn([$relation]);
 
-        $entity = $this->createMock(GdprEntity::class);
-        $entity->method('getType')->willReturn('SSN');
+        $entity = new GdprEntity();
+        $entity->setType('SSN');
 
         $this->gdprEntityMapper->method('find')->willReturn($entity);
         $this->riskLevelService->method('getRiskLevel')->willReturn('very_high');

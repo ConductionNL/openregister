@@ -191,33 +191,37 @@ class DestructionList extends Entity implements JsonSerializable
      * @param array<string, mixed> $data The data array
      *
      * @return static
+     *
+     * @phpcs:disable Squiz.Functions.FunctionDeclarationArgumentSpacing -- Entity __call setters cannot use named args
      */
     public function hydrate(array $data): static
     {
+        // phpcs:disable
         if (isset($data['uuid']) === true) {
-            $this->setUuid(uuid: $data['uuid']);
+            $this->setUuid($data['uuid']);
         }
 
         if (isset($data['name']) === true) {
-            $this->setName(name: $data['name']);
+            $this->setName($data['name']);
         }
 
         if (isset($data['status']) === true) {
-            $this->setStatus(status: $data['status']);
+            $this->setStatus($data['status']);
         }
 
         if (isset($data['objects']) === true) {
-            $this->setObjects(objects: $data['objects']);
+            $this->setObjects($data['objects']);
         }
 
         if (isset($data['notes']) === true) {
-            $this->setNotes(notes: $data['notes']);
+            $this->setNotes($data['notes']);
         }
 
         if (isset($data['organisation']) === true) {
-            $this->setOrganisation(organisation: $data['organisation']);
+            $this->setOrganisation($data['organisation']);
         }
 
+        // phpcs:enable
         return $this;
     }//end hydrate()
 }//end class

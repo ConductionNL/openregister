@@ -127,6 +127,12 @@ class SettingsServiceTest extends TestCase
         $this->userManager = $this->createMock(IUserManager::class);
         $this->db = $this->createMock(IDBConnection::class);
 
+        // Mock getDatabasePlatform to return a MySQL-like platform object (avoids TypeError on ::class).
+        $mockPlatform = $this->getMockBuilder(\Doctrine\DBAL\Platforms\AbstractPlatform::class)
+            ->disableOriginalConstructor()
+            ->getMock();
+        $this->db->method('getDatabasePlatform')->willReturn($mockPlatform);
+
         // Mock handler dependencies.
         $this->configurationSettingsHandler = $this->createMock(ConfigurationSettingsHandler::class);
         $this->objectRetentionHandler = $this->createMock(ObjectRetentionHandler::class);
@@ -3114,76 +3120,47 @@ class SettingsServiceTest extends TestCase
         $this->db->method('getQueryBuilder')
             ->willReturn($qb);
 
-        // Mock executeQuery to handle blob count, blob size, magic tables, sources check, and main query.
+        // Actual call order: (1) table listing, (2) sources check, (3) main stats query.
         $callCount = 0;
         $this->db->method('executeQuery')
             ->willReturnCallback(function (string $query) use (&$callCount) {
                 $callCount++;
                 $mockResult = $this->createMock(\OCP\DB\IResult::class);
 
-                // First call: blob count query.
+                // First call: magic table listing query.
                 if ($callCount === 1) {
-                    $mockResult->method('fetch')
-                        ->willReturn(['cnt' => '10']);
+                    $mockResult->method('fetchAll')->willReturn([]);
                     return $mockResult;
                 }
 
-                // Second call: blob size query.
+                // Second call: sources table existence check.
                 if ($callCount === 2) {
-                    $mockResult->method('fetch')
-                        ->willReturn(['total' => '5000']);
+                    $mockResult->method('fetch')->willReturn(['1' => 1]);
                     return $mockResult;
                 }
 
-                // Third call: getDatabasePlatform tables query.
-                // This is after the platform check, so simulate pg_tables or info_schema.
+                // Third call: main stats query.
                 if ($callCount === 3) {
-                    // Return empty table list (no magic mapper tables).
-                    $mockResult->method('fetchAll')
-                        ->willReturn([]);
-                    return $mockResult;
-                }
-
-                // Fourth call: sources table existence check.
-                if ($callCount === 4) {
-                    $mockResult->method('fetch')
-                        ->willReturn(['1' => 1]);
-                    return $mockResult;
-                }
-
-                // Fifth call: main stats query.
-                if ($callCount === 5) {
                     $mockResult->method('fetch')
                         ->willReturn([
-                            'total_objects'                  => '10',
-                            'deleted_objects'                => '2',
-                            'total_audit_trails'             => '50',
-                            'total_search_trails'            => '30',
-                            'total_configurations'           => '5',
-                            'total_organisations'            => '3',
-                            'total_registers'                => '4',
-                            'total_schemas'                  => '6',
-                            'total_sources'                  => '2',
-                            'total_webhook_logs'             => '15',
-                            'objects_without_owner'           => '1',
-                            'objects_without_organisation'    => '0',
-                            'audit_trails_without_expiry'    => '10',
-                            'search_trails_without_expiry'   => '5',
-                            'expired_audit_trails'           => '3',
-                            'expired_search_trails'          => '1',
-                            'expired_objects'                => '0',
+                            'total_audit_trails'            => '50',
+                            'total_search_trails'           => '30',
+                            'total_configurations'          => '5',
+                            'total_organisations'           => '3',
+                            'total_registers'               => '4',
+                            'total_schemas'                 => '6',
+                            'total_sources'                 => '2',
+                            'total_webhook_logs'            => '15',
+                            'audit_trails_without_expiry'   => '10',
+                            'search_trails_without_expiry'  => '5',
+                            'expired_audit_trails'          => '3',
+                            'expired_search_trails'         => '1',
                         ]);
                     return $mockResult;
                 }
 
-                // Additional calls.
                 return $mockResult;
             });
-
-        // Mock getDatabasePlatform (needed for magic mapper table detection).
-        $platform = $this->createMock(\Doctrine\DBAL\Platforms\PostgreSQLPlatform::class);
-        $this->db->method('getDatabasePlatform')
-            ->willReturn($platform);
 
         $this->cacheSettingsHandler->method('getCacheStats')
             ->willReturn(['success' => true, 'caches' => []]);
@@ -3199,15 +3176,12 @@ class SettingsServiceTest extends TestCase
         $this->assertArrayHasKey('solr', $result);
         $this->assertArrayHasKey('cache', $result);
 
-        // Verify totals include blob + magic counts.
-        $this->assertSame(10, $result['totals']['totalObjects']);
-        $this->assertSame(10, $result['totals']['totalBlobObjects']);
-        $this->assertSame(0, $result['totals']['totalMagicObjects']);
-        $this->assertSame(5000, $result['totals']['totalBlobSize']);
+        // Verify totals (no magic tables, so totalObjects = 0).
+        $this->assertSame(0, $result['totals']['totalObjects']);
+        $this->assertSame(50, $result['totals']['totalAuditTrails']);
+        $this->assertSame(4, $result['totals']['totalRegisters']);
 
         // Verify warnings.
-        $this->assertSame(1, $result['warnings']['objectsWithoutOwner']);
-        $this->assertSame(0, $result['warnings']['objectsWithoutOrganisation']);
         $this->assertSame(10, $result['warnings']['auditTrailsWithoutExpiry']);
         $this->assertSame(3, $result['warnings']['expiredAuditTrails']);
     }
@@ -3226,6 +3200,7 @@ class SettingsServiceTest extends TestCase
         $this->db->method('getQueryBuilder')
             ->willReturn($qb);
 
+        // Call order: (1) table listing, (2) sources check (throws), (3) main stats.
         $callCount = 0;
         $this->db->method('executeQuery')
             ->willReturnCallback(function (string $query) use (&$callCount) {
@@ -3233,33 +3208,25 @@ class SettingsServiceTest extends TestCase
                 $mockResult = $this->createMock(\OCP\DB\IResult::class);
 
                 if ($callCount === 1) {
-                    // Blob count.
-                    $mockResult->method('fetch')->willReturn(['cnt' => '5']);
+                    // MySQL table listing - return one magic table.
+                    $mockResult->method('fetchAll')->willReturn(['oc_openregister_table_1_1']);
                     return $mockResult;
                 }
 
                 if ($callCount === 2) {
-                    // Blob size.
-                    $mockResult->method('fetch')->willReturn(['total' => '2000']);
+                    // Magic table count/size.
+                    $mockResult->method('fetch')->willReturn(['cnt' => '5', 'total_size' => '2000']);
                     return $mockResult;
                 }
 
                 if ($callCount === 3) {
-                    // MySQL table listing.
-                    $mockResult->method('fetchAll')->willReturn([]);
-                    return $mockResult;
-                }
-
-                if ($callCount === 4) {
                     // Sources table check - throw to simulate not installed.
                     throw new \Exception('Table does not exist');
                 }
 
-                if ($callCount === 5) {
+                if ($callCount === 4) {
                     // Main stats query.
                     $mockResult->method('fetch')->willReturn([
-                        'total_objects'                 => '5',
-                        'deleted_objects'               => '0',
                         'total_audit_trails'            => '20',
                         'total_search_trails'           => '10',
                         'total_configurations'          => '2',
@@ -3268,24 +3235,16 @@ class SettingsServiceTest extends TestCase
                         'total_schemas'                 => '3',
                         'total_sources'                 => '0',
                         'total_webhook_logs'            => '5',
-                        'objects_without_owner'          => '0',
-                        'objects_without_organisation'   => '0',
                         'audit_trails_without_expiry'   => '0',
                         'search_trails_without_expiry'  => '0',
                         'expired_audit_trails'          => '0',
                         'expired_search_trails'         => '0',
-                        'expired_objects'               => '0',
                     ]);
                     return $mockResult;
                 }
 
                 return $mockResult;
             });
-
-        // MySQL platform (not PostgreSQL).
-        $platform = $this->createMock(\Doctrine\DBAL\Platforms\MySQLPlatform::class);
-        $this->db->method('getDatabasePlatform')
-            ->willReturn($platform);
 
         $this->cacheSettingsHandler->method('getCacheStats')
             ->willReturn([]);
@@ -3313,6 +3272,7 @@ class SettingsServiceTest extends TestCase
         $this->db->method('getQueryBuilder')
             ->willReturn($qb);
 
+        // Call order: (1) table listing, (2) table1 count, (3) table2 count, (4) sources, (5) main.
         $callCount = 0;
         $this->db->method('executeQuery')
             ->willReturnCallback(function (string $query) use (&$callCount) {
@@ -3320,49 +3280,35 @@ class SettingsServiceTest extends TestCase
                 $mockResult = $this->createMock(\OCP\DB\IResult::class);
 
                 if ($callCount === 1) {
-                    // Blob count.
-                    $mockResult->method('fetch')->willReturn(['cnt' => '5']);
-                    return $mockResult;
-                }
-
-                if ($callCount === 2) {
-                    // Blob size.
-                    $mockResult->method('fetch')->willReturn(['total' => '1000']);
-                    return $mockResult;
-                }
-
-                if ($callCount === 3) {
                     // Table listing - return 2 magic mapper tables.
                     $mockResult->method('fetchAll')
                         ->willReturn(['oc_openregister_table_abc', 'oc_openregister_table_def']);
                     return $mockResult;
                 }
 
-                if ($callCount === 4) {
+                if ($callCount === 2) {
                     // First magic mapper table count/size.
                     $mockResult->method('fetch')
                         ->willReturn(['cnt' => '100', 'total_size' => '50000']);
                     return $mockResult;
                 }
 
-                if ($callCount === 5) {
+                if ($callCount === 3) {
                     // Second magic mapper table count/size.
                     $mockResult->method('fetch')
                         ->willReturn(['cnt' => '200', 'total_size' => '80000']);
                     return $mockResult;
                 }
 
-                if ($callCount === 6) {
+                if ($callCount === 4) {
                     // Sources table check.
                     $mockResult->method('fetch')->willReturn(['1' => 1]);
                     return $mockResult;
                 }
 
-                if ($callCount === 7) {
+                if ($callCount === 5) {
                     // Main stats query.
                     $mockResult->method('fetch')->willReturn([
-                        'total_objects'                 => '5',
-                        'deleted_objects'               => '0',
                         'total_audit_trails'            => '0',
                         'total_search_trails'           => '0',
                         'total_configurations'          => '0',
@@ -3371,23 +3317,16 @@ class SettingsServiceTest extends TestCase
                         'total_schemas'                 => '0',
                         'total_sources'                 => '0',
                         'total_webhook_logs'            => '0',
-                        'objects_without_owner'          => '0',
-                        'objects_without_organisation'   => '0',
                         'audit_trails_without_expiry'   => '0',
                         'search_trails_without_expiry'  => '0',
                         'expired_audit_trails'          => '0',
                         'expired_search_trails'         => '0',
-                        'expired_objects'               => '0',
                     ]);
                     return $mockResult;
                 }
 
                 return $mockResult;
             });
-
-        $platform = $this->createMock(\Doctrine\DBAL\Platforms\PostgreSQLPlatform::class);
-        $this->db->method('getDatabasePlatform')
-            ->willReturn($platform);
 
         $this->cacheSettingsHandler->method('getCacheStats')
             ->willReturn([]);
@@ -3397,13 +3336,9 @@ class SettingsServiceTest extends TestCase
         $result = $this->settingsService->getStats();
 
         $this->assertIsArray($result);
-        // totalObjects = blobCount(5) + magicCount(100+200) = 305.
-        $this->assertSame(305, $result['totals']['totalObjects']);
-        $this->assertSame(5, $result['totals']['totalBlobObjects']);
-        $this->assertSame(300, $result['totals']['totalMagicObjects']);
-        $this->assertSame(131000, $result['totals']['totalSize']);
-        $this->assertSame(1000, $result['totals']['totalBlobSize']);
-        $this->assertSame(130000, $result['totals']['totalMagicSize']);
+        // totalObjects = magicCount(100+200) = 300.
+        $this->assertSame(300, $result['totals']['totalObjects']);
+        $this->assertSame(130000, $result['totals']['totalSize']);
     }
 
     /**
@@ -3420,6 +3355,7 @@ class SettingsServiceTest extends TestCase
         $this->db->method('getQueryBuilder')
             ->willReturn($qb);
 
+        // Call order: (1) table listing, (2) sources check (throws), (3) main query returns false.
         $callCount = 0;
         $this->db->method('executeQuery')
             ->willReturnCallback(function (string $query) use (&$callCount) {
@@ -3427,27 +3363,17 @@ class SettingsServiceTest extends TestCase
                 $mockResult = $this->createMock(\OCP\DB\IResult::class);
 
                 if ($callCount === 1) {
-                    $mockResult->method('fetch')->willReturn(['cnt' => '0']);
-                    return $mockResult;
-                }
-
-                if ($callCount === 2) {
-                    $mockResult->method('fetch')->willReturn(['total' => '0']);
-                    return $mockResult;
-                }
-
-                if ($callCount === 3) {
-                    // Tables listing.
+                    // Tables listing - empty.
                     $mockResult->method('fetchAll')->willReturn([]);
                     return $mockResult;
                 }
 
-                if ($callCount === 4) {
+                if ($callCount === 2) {
                     // Sources check - throw.
                     throw new \Exception('No sources table');
                 }
 
-                if ($callCount === 5) {
+                if ($callCount === 3) {
                     // Main query returns false.
                     $mockResult->method('fetch')->willReturn(false);
                     return $mockResult;
@@ -3455,10 +3381,6 @@ class SettingsServiceTest extends TestCase
 
                 return $mockResult;
             });
-
-        $platform = $this->createMock(\Doctrine\DBAL\Platforms\PostgreSQLPlatform::class);
-        $this->db->method('getDatabasePlatform')
-            ->willReturn($platform);
 
         $this->cacheSettingsHandler->method('getCacheStats')
             ->willReturn([]);
@@ -3471,7 +3393,7 @@ class SettingsServiceTest extends TestCase
         // getStats catches it and returns default empty stats.
         $this->assertIsArray($result);
         $this->assertArrayHasKey('warnings', $result);
-        $this->assertSame(0, $result['warnings']['objectsWithoutOwner']);
+        $this->assertSame(0, $result['warnings']['auditTrailsWithoutExpiry']);
     }
 
     /**
@@ -3488,6 +3410,7 @@ class SettingsServiceTest extends TestCase
         $this->db->method('getQueryBuilder')
             ->willReturn($qb);
 
+        // Call order: (1) table listing, (2) broken table query, (3) sources check, (4) main.
         $callCount = 0;
         $this->db->method('executeQuery')
             ->willReturnCallback(function (string $query) use (&$callCount) {
@@ -3495,38 +3418,26 @@ class SettingsServiceTest extends TestCase
                 $mockResult = $this->createMock(\OCP\DB\IResult::class);
 
                 if ($callCount === 1) {
-                    $mockResult->method('fetch')->willReturn(['cnt' => '5']);
-                    return $mockResult;
-                }
-
-                if ($callCount === 2) {
-                    $mockResult->method('fetch')->willReturn(['total' => '500']);
-                    return $mockResult;
-                }
-
-                if ($callCount === 3) {
                     // Return one magic table.
                     $mockResult->method('fetchAll')
                         ->willReturn(['oc_openregister_table_broken']);
                     return $mockResult;
                 }
 
-                if ($callCount === 4) {
+                if ($callCount === 2) {
                     // Magic table query fails.
                     throw new \Exception('Corrupted table');
                 }
 
-                if ($callCount === 5) {
+                if ($callCount === 3) {
                     // Sources check.
                     throw new \Exception('No sources');
                 }
 
-                if ($callCount === 6) {
+                if ($callCount === 4) {
                     // Main stats query.
                     $mockResult->method('fetch')->willReturn([
-                        'total_objects'                 => '5',
-                        'deleted_objects'               => '0',
-                        'total_audit_trails'            => '0',
+                        'total_audit_trails'            => '5',
                         'total_search_trails'           => '0',
                         'total_configurations'          => '0',
                         'total_organisations'           => '0',
@@ -3534,23 +3445,16 @@ class SettingsServiceTest extends TestCase
                         'total_schemas'                 => '0',
                         'total_sources'                 => '0',
                         'total_webhook_logs'            => '0',
-                        'objects_without_owner'          => '0',
-                        'objects_without_organisation'   => '0',
                         'audit_trails_without_expiry'   => '0',
                         'search_trails_without_expiry'  => '0',
                         'expired_audit_trails'          => '0',
                         'expired_search_trails'         => '0',
-                        'expired_objects'               => '0',
                     ]);
                     return $mockResult;
                 }
 
                 return $mockResult;
             });
-
-        $platform = $this->createMock(\Doctrine\DBAL\Platforms\PostgreSQLPlatform::class);
-        $this->db->method('getDatabasePlatform')
-            ->willReturn($platform);
 
         $this->cacheSettingsHandler->method('getCacheStats')
             ->willReturn([]);
@@ -3561,8 +3465,8 @@ class SettingsServiceTest extends TestCase
 
         $this->assertIsArray($result);
         // Magic count should be 0 since the table query failed (skipped).
-        $this->assertSame(5, $result['totals']['totalObjects']);
-        $this->assertSame(0, $result['totals']['totalMagicObjects']);
+        $this->assertSame(0, $result['totals']['totalObjects']);
+        $this->assertSame(5, $result['totals']['totalAuditTrails']);
     }
 
     /**
@@ -3650,7 +3554,7 @@ class SettingsServiceTest extends TestCase
         // Either the outer catch was hit (error key) or the inner catch zeroed the stats.
         if (isset($result['error']) === false) {
             $this->assertArrayHasKey('warnings', $result);
-            $this->assertSame(0, $result['warnings']['objectsWithoutOwner']);
+            $this->assertSame(0, $result['warnings']['auditTrailsWithoutExpiry']);
             $this->assertSame(0, $result['totals']['totalObjects']);
         } else {
             $this->assertSame('Failed to retrieve stats', $result['error']);
@@ -3943,17 +3847,12 @@ class SettingsServiceTest extends TestCase
         $qb->method('getTableName')->willReturnArgument(0);
         $this->db->method('getQueryBuilder')->willReturn($qb);
 
+        // getDatabasePlatform throws - magic mapper outer catch fires, magicCount stays 0.
         $this->db->method('getDatabasePlatform')
             ->willThrowException(new \Exception('Platform unavailable'));
 
-        $callCount = 0;
-        $blobCountStmt = $this->createMock(\OCP\DB\IResult::class);
-        $blobCountStmt->method('fetch')->willReturn(['cnt' => '10', 'total' => '500']);
-
         $statsStmt = $this->createMock(\OCP\DB\IResult::class);
         $statsStmt->method('fetch')->willReturn([
-            'total_objects'                => '10',
-            'deleted_objects'              => '0',
             'total_audit_trails'           => '0',
             'total_search_trails'          => '0',
             'total_configurations'         => '0',
@@ -3962,26 +3861,22 @@ class SettingsServiceTest extends TestCase
             'total_schemas'                => '2',
             'total_sources'                => '0',
             'total_webhook_logs'           => '0',
-            'objects_without_owner'        => '0',
-            'objects_without_organisation' => '0',
             'audit_trails_without_expiry'  => '0',
             'search_trails_without_expiry' => '0',
             'expired_audit_trails'         => '0',
             'expired_search_trails'        => '0',
-            'expired_objects'              => '0',
         ]);
 
+        $callCount = 0;
         $this->db->method('executeQuery')
-            ->willReturnCallback(function ($query) use (&$callCount, $blobCountStmt, $statsStmt) {
+            ->willReturnCallback(function ($query) use (&$callCount, $statsStmt) {
                 $callCount++;
-                if ($callCount <= 2) {
-                    return $blobCountStmt;
-                }
-
-                if ($callCount === 3) {
+                // Call 1: sources check (throws).
+                if ($callCount === 1) {
                     throw new \Exception('No sources table');
                 }
 
+                // Call 2: main stats query.
                 return $statsStmt;
             });
 
@@ -3992,8 +3887,8 @@ class SettingsServiceTest extends TestCase
 
         $this->assertIsArray($result);
         $this->assertArrayHasKey('totals', $result);
-        $this->assertSame(0, $result['totals']['totalMagicObjects']);
-        $this->assertSame(10, $result['totals']['totalBlobObjects']);
+        $this->assertSame(0, $result['totals']['totalObjects']);
+        $this->assertSame(1, $result['totals']['totalRegisters']);
     }
 
     /**
@@ -4006,19 +3901,11 @@ class SettingsServiceTest extends TestCase
         $qb->method('getTableName')->willReturnArgument(0);
         $this->db->method('getQueryBuilder')->willReturn($qb);
 
-        $platform = $this->createMock(\Doctrine\DBAL\Platforms\AbstractPlatform::class);
-        $this->db->method('getDatabasePlatform')->willReturn($platform);
-
-        $blobStmt = $this->createMock(\OCP\DB\IResult::class);
-        $blobStmt->method('fetch')->willReturn(['cnt' => '5', 'total' => '200']);
-
         $tablesStmt = $this->createMock(\OCP\DB\IResult::class);
         $tablesStmt->method('fetchAll')->willReturn(['oc_openregister_table_abc']);
 
         $statsStmt = $this->createMock(\OCP\DB\IResult::class);
         $statsStmt->method('fetch')->willReturn([
-            'total_objects'                => '5',
-            'deleted_objects'              => '0',
             'total_audit_trails'           => '0',
             'total_search_trails'          => '0',
             'total_configurations'         => '0',
@@ -4027,36 +3914,33 @@ class SettingsServiceTest extends TestCase
             'total_schemas'                => '0',
             'total_sources'                => '0',
             'total_webhook_logs'           => '0',
-            'objects_without_owner'        => '0',
-            'objects_without_organisation' => '0',
             'audit_trails_without_expiry'  => '0',
             'search_trails_without_expiry' => '0',
             'expired_audit_trails'         => '0',
             'expired_search_trails'        => '0',
-            'expired_objects'              => '0',
         ]);
 
         $callCount = 0;
         $this->db->method('executeQuery')
             ->willReturnCallback(
-                function ($query) use (&$callCount, $blobStmt, $tablesStmt, $statsStmt) {
+                function ($query) use (&$callCount, $tablesStmt, $statsStmt) {
                     $callCount++;
-                    if ($callCount <= 2) {
-                        return $blobStmt;
-                    }
-
-                    if ($callCount === 3) {
+                    // Call 1: table listing.
+                    if ($callCount === 1) {
                         return $tablesStmt;
                     }
 
-                    if ($callCount === 4) {
+                    // Call 2: magic table query fails.
+                    if ($callCount === 2) {
                         throw new \Exception('Table oc_openregister_table_abc corrupt');
                     }
 
-                    if ($callCount === 5) {
+                    // Call 3: sources check (throws).
+                    if ($callCount === 3) {
                         throw new \Exception('No sources table');
                     }
 
+                    // Call 4: main stats.
                     return $statsStmt;
                 }
             );
@@ -4068,7 +3952,7 @@ class SettingsServiceTest extends TestCase
 
         $this->assertIsArray($result);
         $this->assertArrayHasKey('totals', $result);
-        $this->assertSame(0, $result['totals']['totalMagicObjects']);
+        $this->assertSame(0, $result['totals']['totalObjects']);
     }
 
     /**
@@ -4081,12 +3965,6 @@ class SettingsServiceTest extends TestCase
         $qb->method('getTableName')->willReturnArgument(0);
         $this->db->method('getQueryBuilder')->willReturn($qb);
 
-        $platform = $this->createMock(\Doctrine\DBAL\Platforms\AbstractPlatform::class);
-        $this->db->method('getDatabasePlatform')->willReturn($platform);
-
-        $blobStmt = $this->createMock(\OCP\DB\IResult::class);
-        $blobStmt->method('fetch')->willReturn(['cnt' => '3', 'total' => '100']);
-
         $tablesStmt = $this->createMock(\OCP\DB\IResult::class);
         $tablesStmt->method('fetchAll')->willReturn(['oc_openregister_table_xyz']);
 
@@ -4095,8 +3973,6 @@ class SettingsServiceTest extends TestCase
 
         $statsStmt = $this->createMock(\OCP\DB\IResult::class);
         $statsStmt->method('fetch')->willReturn([
-            'total_objects'                => '3',
-            'deleted_objects'              => '1',
             'total_audit_trails'           => '5',
             'total_search_trails'          => '2',
             'total_configurations'         => '1',
@@ -4105,13 +3981,10 @@ class SettingsServiceTest extends TestCase
             'total_schemas'                => '4',
             'total_sources'                => '0',
             'total_webhook_logs'           => '0',
-            'objects_without_owner'        => '1',
-            'objects_without_organisation' => '0',
             'audit_trails_without_expiry'  => '0',
             'search_trails_without_expiry' => '0',
             'expired_audit_trails'         => '0',
             'expired_search_trails'        => '0',
-            'expired_objects'              => '0',
         ]);
 
         $callCount = 0;
@@ -4119,28 +3992,27 @@ class SettingsServiceTest extends TestCase
             ->willReturnCallback(
                 function ($query) use (
                     &$callCount,
-                    $blobStmt,
                     $tablesStmt,
                     $magicStmt,
                     $statsStmt
                 ) {
                     $callCount++;
-                    if ($callCount <= 2) {
-                        return $blobStmt;
-                    }
-
-                    if ($callCount === 3) {
+                    // Call 1: table listing.
+                    if ($callCount === 1) {
                         return $tablesStmt;
                     }
 
-                    if ($callCount === 4) {
+                    // Call 2: magic table count/size.
+                    if ($callCount === 2) {
                         return $magicStmt;
                     }
 
-                    if ($callCount === 5) {
+                    // Call 3: sources check (throws).
+                    if ($callCount === 3) {
                         throw new \Exception('No sources table');
                     }
 
+                    // Call 4: main stats.
                     return $statsStmt;
                 }
             );
@@ -4152,15 +4024,9 @@ class SettingsServiceTest extends TestCase
 
         $this->assertIsArray($result);
         $this->assertArrayHasKey('totals', $result);
-        $this->assertSame(10, $result['totals']['totalObjects']);
-        $this->assertSame(3, $result['totals']['totalBlobObjects']);
-        $this->assertSame(7, $result['totals']['totalMagicObjects']);
-        $this->assertSame(450, $result['totals']['totalSize']);
-        $this->assertSame(100, $result['totals']['totalBlobSize']);
-        $this->assertSame(350, $result['totals']['totalMagicSize']);
-        $this->assertSame(1, $result['totals']['deletedObjects']);
+        $this->assertSame(7, $result['totals']['totalObjects']);
+        $this->assertSame(350, $result['totals']['totalSize']);
         $this->assertSame(5, $result['totals']['totalAuditTrails']);
-        $this->assertSame(1, $result['warnings']['objectsWithoutOwner']);
     }
 
     /**
@@ -4244,12 +4110,6 @@ class SettingsServiceTest extends TestCase
         $qb->method('getTableName')->willReturnArgument(0);
         $this->db->method('getQueryBuilder')->willReturn($qb);
 
-        $platform = $this->createMock(\Doctrine\DBAL\Platforms\AbstractPlatform::class);
-        $this->db->method('getDatabasePlatform')->willReturn($platform);
-
-        $blobStmt = $this->createMock(\OCP\DB\IResult::class);
-        $blobStmt->method('fetch')->willReturn(['cnt' => '0', 'total' => '0']);
-
         $tablesStmt = $this->createMock(\OCP\DB\IResult::class);
         $tablesStmt->method('fetchAll')->willReturn([]);
 
@@ -4257,8 +4117,6 @@ class SettingsServiceTest extends TestCase
 
         $statsStmt = $this->createMock(\OCP\DB\IResult::class);
         $statsStmt->method('fetch')->willReturn([
-            'total_objects'                => '0',
-            'deleted_objects'              => '0',
             'total_audit_trails'           => '0',
             'total_search_trails'          => '0',
             'total_configurations'         => '0',
@@ -4267,13 +4125,10 @@ class SettingsServiceTest extends TestCase
             'total_schemas'                => '0',
             'total_sources'                => '3',
             'total_webhook_logs'           => '0',
-            'objects_without_owner'        => '0',
-            'objects_without_organisation' => '0',
             'audit_trails_without_expiry'  => '0',
             'search_trails_without_expiry' => '0',
             'expired_audit_trails'         => '0',
             'expired_search_trails'        => '0',
-            'expired_objects'              => '0',
         ]);
 
         $callCount = 0;
@@ -4281,24 +4136,22 @@ class SettingsServiceTest extends TestCase
             ->willReturnCallback(
                 function ($query) use (
                     &$callCount,
-                    $blobStmt,
                     $tablesStmt,
                     $sourcesCheckStmt,
                     $statsStmt
                 ) {
                     $callCount++;
-                    if ($callCount <= 2) {
-                        return $blobStmt;
-                    }
-
-                    if ($callCount === 3) {
+                    // Call 1: table listing (empty).
+                    if ($callCount === 1) {
                         return $tablesStmt;
                     }
 
-                    if ($callCount === 4) {
+                    // Call 2: sources check (succeeds).
+                    if ($callCount === 2) {
                         return $sourcesCheckStmt;
                     }
 
+                    // Call 3: main stats.
                     return $statsStmt;
                 }
             );

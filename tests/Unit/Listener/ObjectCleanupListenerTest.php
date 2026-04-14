@@ -50,8 +50,8 @@ class ObjectCleanupListenerTest extends TestCase
 
     private function createDeleteEvent(string $uuid = 'abc-123'): ObjectDeletedEvent
     {
-        $object = $this->createMock(ObjectEntity::class);
-        $object->method('getUuid')->willReturn($uuid);
+        $object = new ObjectEntity();
+        $object->setUuid($uuid);
         return new ObjectDeletedEvent($object);
     }
 

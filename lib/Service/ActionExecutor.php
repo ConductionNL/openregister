@@ -116,7 +116,7 @@ class ActionExecutor
             $cloudEventPayload = $this->buildCloudEventPayload(action: $action, payload: $payload, eventType: $eventType);
 
             // Resolve engine adapter.
-            $engine = $this->engineRegistry->getEngine($action->getEngine());
+            $engine = $this->engineRegistry->getEngine((int) $action->getEngine());
             if ($engine === null) {
                 throw new Exception("Engine '{$action->getEngine()}' not available");
             }

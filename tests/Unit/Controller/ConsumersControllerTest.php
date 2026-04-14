@@ -9,6 +9,7 @@ use OCA\OpenRegister\Db\Consumer;
 use OCA\OpenRegister\Db\ConsumerMapper;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http\JSONResponse;
+use OCP\IL10N;
 use OCP\IRequest;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
@@ -26,10 +27,16 @@ class ConsumersControllerTest extends TestCase
         $this->request = $this->createMock(IRequest::class);
         $this->consumerMapper = $this->createMock(ConsumerMapper::class);
 
+        $l10n = $this->createMock(IL10N::class);
+        $l10n->method('t')->willReturnCallback(function (string $text) {
+            return $text;
+        });
+
         $this->controller = new ConsumersController(
             'openregister',
             $this->request,
-            $this->consumerMapper
+            $this->consumerMapper,
+            $l10n
         );
     }
 

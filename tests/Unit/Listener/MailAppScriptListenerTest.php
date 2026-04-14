@@ -2,7 +2,13 @@
 
 declare(strict_types=1);
 
-namespace Unit\Listener;
+namespace OCA\Mail\Events {
+    if (!class_exists(\OCA\Mail\Events\BeforeMailTemplateRenderedEvent::class, false)) {
+        class BeforeMailTemplateRenderedEvent extends \OCP\EventDispatcher\Event {}
+    }
+}
+
+namespace Unit\Listener {
 
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
@@ -105,23 +111,16 @@ class MailAppScriptListenerTest extends TestCase
     }
 
     /**
-     * Create a mock event that looks like it comes from the Mail app.
+     * Create an event that looks like it comes from the Mail app.
      *
-     * We use a dynamic mock class in the OCA\Mail namespace.
+     * Uses a real class in the OCA\Mail namespace so that get_class()
+     * contains 'OCA\Mail\' as the listener checks.
      *
-     * @return Event&MockObject
+     * @return Event
      */
-    private function createMailEvent(): Event&MockObject
+    private function createMailEvent(): Event
     {
-        // We can't easily mock a class name from OCA\Mail namespace,
-        // so we'll use a real Event subclass and override get_class behavior.
-        // Instead, we test with a real anonymous class.
-        $event = new class extends Event {
-        };
-
-        // The listener checks get_class($event) for 'OCA\Mail\'
-        // Since our anonymous class won't match, we need to test differently.
-        // For this test, we verify the negative paths work correctly.
-        return $this->createMock(Event::class);
+        return new \OCA\Mail\Events\BeforeMailTemplateRenderedEvent();
     }
 }
+} // end namespace Unit\Listener

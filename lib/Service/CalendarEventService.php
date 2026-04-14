@@ -388,7 +388,7 @@ class CalendarEventService
             return null;
         }
 
-        $linkData = $this->extractOpenRegisterProperties(vtodo: $vevent);
+        $linkData = $this->extractOpenRegisterProperties(vevent: $vevent);
 
         $dtstart = null;
         if (isset($vevent->DTSTART) === true) {

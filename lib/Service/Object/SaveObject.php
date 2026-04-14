@@ -176,24 +176,25 @@ class SaveObject
     /**
      * Constructor for SaveObject handler.
      *
-     * @param MagicMapper              $objectEntityMapper   Object entity mapper
-     * @param MagicMapper              $unifiedObjectMapper  Unified object mapper for object operations
-     * @param MetadataHydrationHandler $metaHydrationHandler Handler for metadata extraction
-     * @param FilePropertyHandler      $filePropertyHandler  Handler for file property operations
-     * @param IUserSession             $userSession          User session service
-     * @param AuditTrailMapper         $auditTrailMapper     Audit trail mapper for logging changes
-     * @param SchemaMapper             $schemaMapper         Schema mapper for schema operations
-     * @param RegisterMapper           $registerMapper       Register mapper for register operations
-     * @param IURLGenerator            $urlGenerator         URL generator service
-     * @param OrganisationService      $organisationService  Service for organisation operations
-     * @param CacheHandler             $cacheHandler         Object cache service for entity and query caching
-     * @param SettingsService          $settingsService      Settings service for accessing trail settings
-     * @param PropertyRbacHandler      $propertyRbacHandler  Property-level RBAC handler
-     * @param ComputedFieldHandler     $computedFieldHandler Handler for computed field evaluation
-     * @param TranslationHandler       $translationHandler   Handler for translation operations
-     * @param LoggerInterface          $logger               Logger interface for logging operations
-     * @param TmloService              $tmloService          TMLO archival metadata service
-     * @param ArrayLoader              $arrayLoader          Twig array loader for template rendering
+     * @param MagicMapper                 $objectEntityMapper   Object entity mapper
+     * @param MagicMapper                 $unifiedObjectMapper  Unified object mapper for object operations
+     * @param MetadataHydrationHandler    $metaHydrationHandler Handler for metadata extraction
+     * @param FilePropertyHandler         $filePropertyHandler  Handler for file property operations
+     * @param LinkedEntityPropertyHandler $linkedEntityHandler  Linked entity property handler
+     * @param IUserSession                $userSession          User session service
+     * @param AuditTrailMapper            $auditTrailMapper     Audit trail mapper for logging changes
+     * @param SchemaMapper                $schemaMapper         Schema mapper for schema operations
+     * @param RegisterMapper              $registerMapper       Register mapper for register operations
+     * @param IURLGenerator               $urlGenerator         URL generator service
+     * @param OrganisationService         $organisationService  Service for organisation operations
+     * @param CacheHandler                $cacheHandler         Object cache service for entity and query caching
+     * @param SettingsService             $settingsService      Settings service for accessing trail settings
+     * @param PropertyRbacHandler         $propertyRbacHandler  Property-level RBAC handler
+     * @param ComputedFieldHandler        $computedFieldHandler Handler for computed field evaluation
+     * @param TranslationHandler          $translationHandler   Handler for translation operations
+     * @param LoggerInterface             $logger               Logger interface for logging operations
+     * @param TmloService                 $tmloService          TMLO archival metadata service
+     * @param ArrayLoader                 $arrayLoader          Twig array loader for template rendering
      *
      * @SuppressWarnings(PHPMD.ExcessiveParameterList) Nextcloud DI requires constructor injection
      */

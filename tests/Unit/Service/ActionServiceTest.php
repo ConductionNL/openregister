@@ -209,8 +209,8 @@ class ActionServiceTest extends TestCase
 
     public function testMigrateFromHooksCreatesActions(): void
     {
-        $schema = $this->createMock(Schema::class);
-        $schema->method('getHooks')->willReturn([
+        $schema = new Schema();
+        $schema->setHooks([
             [
                 'id'         => 'validate-bsn',
                 'event'      => 'creating',
@@ -222,8 +222,8 @@ class ActionServiceTest extends TestCase
                 'onFailure'  => 'reject',
             ],
         ]);
-        $schema->method('getUuid')->willReturn('schema-uuid-1');
-        $schema->method('getName')->willReturn('Test Schema');
+        $schema->setUuid('schema-uuid-1');
+        $schema->setTitle('Test Schema');
 
         $this->schemaMapper
             ->expects($this->once())

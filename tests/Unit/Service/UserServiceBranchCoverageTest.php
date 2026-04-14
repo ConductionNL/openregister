@@ -4,17 +4,20 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service;
 
+use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Service\UserService;
 use OCA\OpenRegister\Service\OrganisationService;
 use OCP\Accounts\IAccountManager;
 use OCP\Accounts\IAccount;
 use OCP\Accounts\IAccountProperty;
 use OCP\EventDispatcher\IEventDispatcher;
+use OCP\IAvatarManager;
 use OCP\IConfig;
 use OCP\IGroupManager;
 use OCP\IUser;
 use OCP\IUserManager;
 use OCP\IUserSession;
+use OCP\Security\ISecureRandom;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
@@ -59,7 +62,10 @@ class UserServiceBranchCoverageTest extends TestCase
             $this->accountManager,
             $this->logger,
             $this->organisationService,
-            $this->eventDispatcher
+            $this->eventDispatcher,
+            $this->createMock(IAvatarManager::class),
+            $this->createMock(AuditTrailMapper::class),
+            $this->createMock(ISecureRandom::class)
         );
     }
 

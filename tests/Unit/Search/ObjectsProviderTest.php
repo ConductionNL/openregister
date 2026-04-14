@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Search;
 
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Search\ObjectsProvider;
 use OCA\OpenRegister\Service\DeepLinkRegistryService;
 use OCA\OpenRegister\Service\ObjectService;
@@ -48,7 +50,9 @@ class ObjectsProviderTest extends TestCase
             $this->urlGenerator,
             $this->objectService,
             $this->logger,
-            $this->deepLinkRegistry
+            $this->deepLinkRegistry,
+            $this->createMock(SchemaMapper::class),
+            $this->createMock(RegisterMapper::class)
         );
     }
 

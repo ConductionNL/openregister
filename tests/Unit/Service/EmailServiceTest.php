@@ -26,7 +26,11 @@ class EmailServiceTest extends TestCase
 
     protected function setUp(): void
     {
-        $this->emailLinkMapper = $this->createMock(EmailLinkMapper::class);
+        $this->emailLinkMapper = $this->getMockBuilder(EmailLinkMapper::class)
+            ->disableOriginalConstructor()
+            ->onlyMethods(['findByObjectUuid', 'countByObjectUuid', 'findBySender', 'findByObjectAndMessage', 'deleteByObjectUuid', 'insert', 'delete'])
+            ->addMethods(['find'])
+            ->getMock();
         $this->appManager = $this->createMock(IAppManager::class);
         $this->db = $this->createMock(IDBConnection::class);
         $this->userSession = $this->createMock(IUserSession::class);

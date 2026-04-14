@@ -6,7 +6,7 @@
  * @category Service
  * @package  OCA\OpenRegister
  * @author   Conduction <info@conduction.nl>
- * @license  AGPL-3.0-or-later https://www.gnu.org/licenses/agpl-3.0.html
+ * @license  EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  * @link     https://github.com/ConductionNL/openregister
  */
 
@@ -26,7 +26,7 @@ use Psr\Log\LoggerInterface;
  * @category Service
  * @package  OCA\OpenRegister
  * @author   Conduction <info@conduction.nl>
- * @license  AGPL-3.0-or-later https://www.gnu.org/licenses/agpl-3.0.html
+ * @license  EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  * @link     https://github.com/ConductionNL/openregister
  *
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects) Enrichment requires multiple NC APIs
@@ -49,10 +49,10 @@ class LinkedEntityEnricher
     /**
      * Constructor for LinkedEntityEnricher.
      *
-     * @param IDBConnection   $db              Database connection for Mail app queries
+     * @param IDBConnection    $db              Database connection for Mail app queries
      * @param ICommentsManager $commentsManager Comments manager for notes
-     * @param IUserManager    $userManager     User manager for resolving display names
-     * @param LoggerInterface $logger          Logger
+     * @param IUserManager     $userManager     User manager for resolving display names
+     * @param LoggerInterface  $logger          Logger
      */
     public function __construct(
         private readonly IDBConnection $db,
@@ -103,8 +103,8 @@ class LinkedEntityEnricher
 
         foreach ($ids as $id) {
             $parts = explode('/', $id, 2);
-            if (count($parts) !== 2) {
-                $results[] = $this->notFoundResult($id);
+            if (count(value: $parts) !== 2) {
+                $results[] = $this->notFoundResult(id: $id);
                 continue;
             }
 
@@ -117,7 +117,7 @@ class LinkedEntityEnricher
                 $row = $stmt->fetch();
 
                 if ($row === false) {
-                    $results[] = $this->notFoundResult($id);
+                    $results[] = $this->notFoundResult(id: $id);
                     continue;
                 }
 
@@ -129,8 +129,8 @@ class LinkedEntityEnricher
                 ];
             } catch (\Exception $e) {
                 $this->logger->debug('[LinkedEntityEnricher] Mail enrichment failed', ['id' => $id, 'error' => $e->getMessage()]);
-                $results[] = $this->notFoundResult($id);
-            }
+                $results[] = $this->notFoundResult(id: $id);
+            }//end try
         }//end foreach
 
         return $results;
@@ -155,14 +155,14 @@ class LinkedEntityEnricher
                 $row = $stmt->fetch();
 
                 if ($row === false) {
-                    $results[] = $this->notFoundResult($id);
+                    $results[] = $this->notFoundResult(id: $id);
                     continue;
                 }
 
                 // Parse minimal vCard data.
                 $carddata = $row['carddata'] ?? '';
-                $name     = $this->extractVcardField($carddata, 'FN');
-                $email    = $this->extractVcardField($carddata, 'EMAIL');
+                $name     = $this->extractVcardField(carddata: $carddata, field: 'FN');
+                $email    = $this->extractVcardField(carddata: $carddata, field: 'EMAIL');
 
                 $results[] = [
                     'id'    => $id,
@@ -171,8 +171,8 @@ class LinkedEntityEnricher
                 ];
             } catch (\Exception $e) {
                 $this->logger->debug('[LinkedEntityEnricher] Contact enrichment failed', ['id' => $id, 'error' => $e->getMessage()]);
-                $results[] = $this->notFoundResult($id);
-            }
+                $results[] = $this->notFoundResult(id: $id);
+            }//end try
         }//end foreach
 
         return $results;
@@ -201,7 +201,7 @@ class LinkedEntityEnricher
                     'date'    => $comment->getCreationDateTime()->format('c'),
                 ];
             } catch (\Exception $e) {
-                $results[] = $this->notFoundResult($id);
+                $results[] = $this->notFoundResult(id: $id);
             }
         }
 
@@ -223,8 +223,8 @@ class LinkedEntityEnricher
 
         foreach ($ids as $id) {
             $parts = explode('/', $id, 2);
-            if (count($parts) !== 2) {
-                $results[] = $this->notFoundResult($id);
+            if (count(value: $parts) !== 2) {
+                $results[] = $this->notFoundResult(id: $id);
                 continue;
             }
 
@@ -237,14 +237,14 @@ class LinkedEntityEnricher
                 $row = $stmt->fetch();
 
                 if ($row === false) {
-                    $results[] = $this->notFoundResult($id);
+                    $results[] = $this->notFoundResult(id: $id);
                     continue;
                 }
 
                 $caldata = $row['calendardata'] ?? '';
-                $summary = $this->extractIcalField($caldata, 'SUMMARY');
-                $status  = $this->extractIcalField($caldata, 'STATUS');
-                $due     = $this->extractIcalField($caldata, 'DUE');
+                $summary = $this->extractIcalField(caldata: $caldata, field: 'SUMMARY');
+                $status  = $this->extractIcalField(caldata: $caldata, field: 'STATUS');
+                $due     = $this->extractIcalField(caldata: $caldata, field: 'DUE');
 
                 $results[] = [
                     'id'     => $id,
@@ -253,8 +253,8 @@ class LinkedEntityEnricher
                     'due'    => $due,
                 ];
             } catch (\Exception $e) {
-                $results[] = $this->notFoundResult($id);
-            }
+                $results[] = $this->notFoundResult(id: $id);
+            }//end try
         }//end foreach
 
         return $results;
@@ -275,8 +275,8 @@ class LinkedEntityEnricher
 
         foreach ($ids as $id) {
             $parts = explode('/', $id, 2);
-            if (count($parts) !== 2) {
-                $results[] = $this->notFoundResult($id);
+            if (count(value: $parts) !== 2) {
+                $results[] = $this->notFoundResult(id: $id);
                 continue;
             }
 
@@ -289,15 +289,15 @@ class LinkedEntityEnricher
                 $row = $stmt->fetch();
 
                 if ($row === false) {
-                    $results[] = $this->notFoundResult($id);
+                    $results[] = $this->notFoundResult(id: $id);
                     continue;
                 }
 
                 $caldata  = $row['calendardata'] ?? '';
-                $summary  = $this->extractIcalField($caldata, 'SUMMARY');
-                $dtstart  = $this->extractIcalField($caldata, 'DTSTART');
-                $dtend    = $this->extractIcalField($caldata, 'DTEND');
-                $location = $this->extractIcalField($caldata, 'LOCATION');
+                $summary  = $this->extractIcalField(caldata: $caldata, field: 'SUMMARY');
+                $dtstart  = $this->extractIcalField(caldata: $caldata, field: 'DTSTART');
+                $dtend    = $this->extractIcalField(caldata: $caldata, field: 'DTEND');
+                $location = $this->extractIcalField(caldata: $caldata, field: 'LOCATION');
 
                 $results[] = [
                     'id'       => $id,
@@ -307,8 +307,8 @@ class LinkedEntityEnricher
                     'location' => $location,
                 ];
             } catch (\Exception $e) {
-                $results[] = $this->notFoundResult($id);
-            }
+                $results[] = $this->notFoundResult(id: $id);
+            }//end try
         }//end foreach
 
         return $results;
@@ -333,7 +333,7 @@ class LinkedEntityEnricher
                 $row = $stmt->fetch();
 
                 if ($row === false) {
-                    $results[] = $this->notFoundResult($id);
+                    $results[] = $this->notFoundResult(id: $id);
                     continue;
                 }
 
@@ -343,9 +343,9 @@ class LinkedEntityEnricher
                     'type' => (int) ($row['type'] ?? 0),
                 ];
             } catch (\Exception $e) {
-                $results[] = $this->notFoundResult($id);
+                $results[] = $this->notFoundResult(id: $id);
             }
-        }
+        }//end foreach
 
         return $results;
     }//end enrichTalk()
@@ -365,8 +365,8 @@ class LinkedEntityEnricher
 
         foreach ($ids as $id) {
             $parts = explode('/', $id, 2);
-            if (count($parts) !== 2) {
-                $results[] = $this->notFoundResult($id);
+            if (count(value: $parts) !== 2) {
+                $results[] = $this->notFoundResult(id: $id);
                 continue;
             }
 
@@ -384,7 +384,7 @@ class LinkedEntityEnricher
                 $row = $stmt->fetch();
 
                 if ($row === false) {
-                    $results[] = $this->notFoundResult($id);
+                    $results[] = $this->notFoundResult(id: $id);
                     continue;
                 }
 
@@ -395,8 +395,8 @@ class LinkedEntityEnricher
                     'stack' => $row['stack_title'] ?? '',
                 ];
             } catch (\Exception $e) {
-                $results[] = $this->notFoundResult($id);
-            }
+                $results[] = $this->notFoundResult(id: $id);
+            }//end try
         }//end foreach
 
         return $results;
@@ -427,7 +427,7 @@ class LinkedEntityEnricher
      */
     private function extractVcardField(string $carddata, string $field): ?string
     {
-        if (preg_match('/' . preg_quote($field, '/') . '[^:]*:(.+)/i', $carddata, $matches) === 1) {
+        if (preg_match('/'.preg_quote($field, '/').'[^:]*:(.+)/i', $carddata, $matches) === 1) {
             return trim($matches[1]);
         }
 
@@ -444,7 +444,7 @@ class LinkedEntityEnricher
      */
     private function extractIcalField(string $caldata, string $field): ?string
     {
-        if (preg_match('/' . preg_quote($field, '/') . '[^:]*:(.+)/i', $caldata, $matches) === 1) {
+        if (preg_match('/'.preg_quote($field, '/').'[^:]*:(.+)/i', $caldata, $matches) === 1) {
             return trim($matches[1]);
         }
 

@@ -34,7 +34,7 @@ use OCA\OpenRegister\Service\OrganisationService;
 use OCA\OpenRegister\Service\SearchTrailService;
 use OCA\OpenRegister\Service\SettingsService;
 use OCA\OpenRegister\Service\Object\AuditHandler;
-use OCA\OpenRegister\Service\Object\BulkOperationsHandler;
+// BulkOperationsHandler was removed from ObjectService.
 use OCA\OpenRegister\Service\Object\CacheHandler;
 use OCA\OpenRegister\Service\Object\CascadingHandler;
 use OCA\OpenRegister\Service\Object\DataManipulationHandler;
@@ -48,7 +48,7 @@ use OCA\OpenRegister\Service\Object\MigrationHandler;
 use OCA\OpenRegister\Service\Object\PerformanceHandler;
 use OCA\OpenRegister\Service\Object\PerformanceOptimizationHandler;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
-use OCA\OpenRegister\Service\Object\PublishHandler;
+// PublishHandler was removed from ObjectService.
 use OCA\OpenRegister\Service\Object\QueryHandler;
 use OCA\OpenRegister\Service\Object\RelationHandler;
 use OCA\OpenRegister\Service\Object\RenderObject;
@@ -100,8 +100,7 @@ class ObjectServiceRefactoredMethodsTest extends TestCase
 	/** @var MockObject|DeleteObject */
 	private $deleteHandler;
 
-	/** @var MockObject|PublishHandler */
-	private $publishHandler;
+	// PublishHandler was removed from ObjectService.
 
 	/** @var MockObject|CascadingHandler */
 	private $cascadingHandler;
@@ -130,7 +129,6 @@ class ObjectServiceRefactoredMethodsTest extends TestCase
 		$this->renderHandler = $this->createMock(RenderObject::class);
 		$this->validateHandler = $this->createMock(ValidateObject::class);
 		$this->deleteHandler = $this->createMock(DeleteObject::class);
-		$this->publishHandler = $this->createMock(PublishHandler::class);
 		$this->cascadingHandler = $this->createMock(CascadingHandler::class);
 		$this->permissionHandler = $this->createMock(PermissionHandler::class);
 
@@ -158,10 +156,8 @@ class ObjectServiceRefactoredMethodsTest extends TestCase
 			$this->validateHandler,
 			$this->createMock(LockHandler::class),
 			$this->createMock(AuditHandler::class),
-			$this->publishHandler,
 			$this->createMock(RelationHandler::class),
 			$this->createMock(MergeHandler::class),
-			$this->createMock(BulkOperationsHandler::class),
 			$this->createMock(FacetHandler::class),
 			$this->createMock(MetadataHandler::class),
 			$this->createMock(PerformanceOptimizationHandler::class),
@@ -174,7 +170,6 @@ class ObjectServiceRefactoredMethodsTest extends TestCase
 			$this->createMock(RegisterMapper::class),
 			$this->createMock(SchemaMapper::class),
 			$this->createMock(ViewMapper::class),
-			$this->createMock(MagicMapper::class),
 			$this->createMock(MagicMapper::class),
 			$this->createMock(FileService::class),
 			$this->createMock(IUserSession::class),

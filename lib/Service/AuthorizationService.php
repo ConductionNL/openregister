@@ -41,6 +41,27 @@ class AuthorizationService
 {
 
     /**
+     * Supported HMAC algorithms.
+     *
+     * @var string[]
+     */
+    public const HMAC_ALGORITHMS = ['HS256', 'HS384', 'HS512'];
+
+    /**
+     * Supported PKCS1 (RSA) algorithms.
+     *
+     * @var string[]
+     */
+    public const PKCS1_ALGORITHMS = ['RS256', 'RS384', 'RS512'];
+
+    /**
+     * Supported PSS (RSA-PSS) algorithms.
+     *
+     * @var string[]
+     */
+    public const PSS_ALGORITHMS = ['PS256', 'PS384', 'PS512'];
+
+    /**
      * Map of JWT algorithm names to hash_hmac algorithm strings.
      *
      * @var array<string, string>

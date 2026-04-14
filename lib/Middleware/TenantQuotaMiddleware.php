@@ -97,7 +97,15 @@ class TenantQuotaMiddleware extends Middleware
             return;
         }
 
-        $organisation = $this->organisationService->getActiveOrganisation();
+        try {
+            $organisation = $this->organisationService->getActiveOrganisation();
+        } catch (\Exception $e) {
+            // Organisation loading may fail during migrations or schema changes.
+            // Gracefully skip quota checking rather than blocking all requests.
+            $this->logger->warning('[TenantQuotaMiddleware] Could not load organisation: '.$e->getMessage());
+            return;
+        }
+
         if ($organisation === null) {
             return;
         }
@@ -149,7 +157,13 @@ class TenantQuotaMiddleware extends Middleware
      */
     public function afterController(string|Controller $controller, string $methodName, Response $response): Response
     {
-        $organisation = $this->organisationService->getActiveOrganisation();
+        try {
+            $organisation = $this->organisationService->getActiveOrganisation();
+        } catch (\Exception $e) {
+            $this->logger->warning('[TenantQuotaMiddleware] Could not load organisation in afterController: '.$e->getMessage());
+            return $response;
+        }
+
         if ($organisation === null) {
             return $response;
         }
@@ -222,7 +236,7 @@ class TenantQuotaMiddleware extends Middleware
             return $response;
         }
 
-        return null;
+        throw $exception;
     }//end afterException()
 
     /**

@@ -13,10 +13,10 @@ use Jose\Component\Signature\Serializer\CompactSerializer;
 use OC\AppFramework\Middleware\Security\Exceptions\SecurityException;
 use OCA\OpenRegister\Db\Consumer;
 use OCA\OpenRegister\Db\ConsumerMapper;
+// Consumer entity is used directly in JWT algorithm tests.
 use OCA\OpenRegister\Exception\AuthenticationException;
 use OCA\OpenRegister\Service\AuthorizationService;
 use OCP\AppFramework\Http\Response;
-use OCP\IGroupManager;
 use OCP\IRequest;
 use OCP\IUser;
 use OCP\IUserManager;
@@ -43,11 +43,6 @@ class AuthorizationServiceTest extends TestCase
      */
     private ConsumerMapper $consumerMapper;
 
-    /**
-     * @var IGroupManager&MockObject
-     */
-    private IGroupManager $groupManager;
-
     private AuthorizationService $service;
 
     protected function setUp(): void
@@ -55,13 +50,11 @@ class AuthorizationServiceTest extends TestCase
         $this->userManager = $this->createMock(IUserManager::class);
         $this->userSession = $this->createMock(IUserSession::class);
         $this->consumerMapper = $this->createMock(ConsumerMapper::class);
-        $this->groupManager = $this->createMock(IGroupManager::class);
 
         $this->service = new AuthorizationService(
             $this->userManager,
             $this->userSession,
-            $this->consumerMapper,
-            $this->groupManager
+            $this->consumerMapper
         );
     }
 
@@ -655,15 +648,21 @@ class AuthorizationServiceTest extends TestCase
 
     public function testAuthorizeJwtThrowsWhenInvalidAlgorithmHeader(): void
     {
-        // Craft a JWT with an unsupported algorithm in the header to trigger
-        // the InvalidHeaderException catch block in authorizeJwt.
+        // Craft a JWT with an unsupported algorithm ('none') to trigger
+        // the 'algorithm is not supported' branch after issuer lookup.
         $header = rtrim(strtr(base64_encode(json_encode(['alg' => 'none', 'typ' => 'JWT'])), '+/', '-_'), '=');
         $payload = rtrim(strtr(base64_encode(json_encode(['iss' => 'test', 'iat' => time()])), '+/', '-_'), '=');
         $signature = rtrim(strtr(base64_encode('fake-signature'), '+/', '-_'), '=');
         $token = "$header.$payload.$signature";
 
+        // Consumer must exist so findIssuer succeeds; algorithm check happens after.
+        $consumer = new Consumer();
+        $consumer->setName('test');
+        $consumer->setAuthorizationConfiguration(['publicKey' => 'secret', 'algorithm' => 'none']);
+        $this->consumerMapper->method('findAll')->willReturn([$consumer]);
+
         $this->expectException(AuthenticationException::class);
-        $this->expectExceptionMessage('could not be validated');
+        $this->expectExceptionMessage('not supported');
 
         $this->service->authorizeJwt('Bearer ' . $token);
     }
@@ -675,11 +674,16 @@ class AuthorizationServiceTest extends TestCase
         $signature = rtrim(strtr(base64_encode('fake'), '+/', '-_'), '=');
         $token = "$header.$payload.$signature";
 
+        $consumer = new Consumer();
+        $consumer->setName('test');
+        $consumer->setAuthorizationConfiguration(['publicKey' => 'secret', 'algorithm' => 'none']);
+        $this->consumerMapper->method('findAll')->willReturn([$consumer]);
+
         try {
             $this->service->authorizeJwt('Bearer ' . $token);
             $this->fail('Expected AuthenticationException');
         } catch (AuthenticationException $e) {
-            $this->assertArrayHasKey('reason', $e->getDetails());
+            $this->assertArrayHasKey('algorithm', $e->getDetails());
         }
     }
 
@@ -1060,155 +1064,14 @@ class AuthorizationServiceTest extends TestCase
     }
 
     // ==========================================
-    // getJWK (private, via reflection)
+    // getJWK — removed: method no longer exists in AuthorizationService
     // ==========================================
-
-    public function testGetJwkHmacHs256ReturnsJwkSet(): void
-    {
-        $result = $this->invokePrivateMethod(
-            $this->service,
-            'getJWK',
-            ['my-shared-secret', 'HS256']
-        );
-
-        $this->assertInstanceOf(JWKSet::class, $result);
-        $this->assertCount(1, $result);
-    }
-
-    public function testGetJwkHmacHs384ReturnsJwkSet(): void
-    {
-        $result = $this->invokePrivateMethod(
-            $this->service,
-            'getJWK',
-            ['my-shared-secret-384', 'HS384']
-        );
-
-        $this->assertInstanceOf(JWKSet::class, $result);
-    }
-
-    public function testGetJwkHmacHs512ReturnsJwkSet(): void
-    {
-        $result = $this->invokePrivateMethod(
-            $this->service,
-            'getJWK',
-            ['my-shared-secret-512', 'HS512']
-        );
-
-        $this->assertInstanceOf(JWKSet::class, $result);
-    }
-
-    public function testGetJwkRsaReturnsJwkSet(): void
-    {
-        // Generate an RSA key pair for testing.
-        $keyResource = openssl_pkey_new([
-            'private_key_bits' => 2048,
-            'private_key_type' => OPENSSL_KEYTYPE_RSA,
-        ]);
-
-        $details = openssl_pkey_get_details($keyResource);
-        $publicKeyPem = $details['key'];
-        $publicKeyBase64 = base64_encode($publicKeyPem);
-
-        $result = $this->invokePrivateMethod(
-            $this->service,
-            'getJWK',
-            [$publicKeyBase64, 'RS256']
-        );
-
-        $this->assertInstanceOf(JWKSet::class, $result);
-        $this->assertCount(1, $result);
-    }
-
-    public function testGetJwkPsReturnsJwkSet(): void
-    {
-        $keyResource = openssl_pkey_new([
-            'private_key_bits' => 2048,
-            'private_key_type' => OPENSSL_KEYTYPE_RSA,
-        ]);
-
-        $details = openssl_pkey_get_details($keyResource);
-        $publicKeyPem = $details['key'];
-        $publicKeyBase64 = base64_encode($publicKeyPem);
-
-        $result = $this->invokePrivateMethod(
-            $this->service,
-            'getJWK',
-            [$publicKeyBase64, 'PS256']
-        );
-
-        $this->assertInstanceOf(JWKSet::class, $result);
-    }
-
-    public function testGetJwkThrowsForUnsupportedAlgorithm(): void
-    {
-        $this->expectException(AuthenticationException::class);
-        $this->expectExceptionMessage('not supported');
-
-        $this->invokePrivateMethod(
-            $this->service,
-            'getJWK',
-            ['some-key', 'EdDSA']
-        );
-    }
-
-    public function testGetJwkUnsupportedAlgorithmDetailsContainAlgorithm(): void
-    {
-        try {
-            $this->invokePrivateMethod(
-                $this->service,
-                'getJWK',
-                ['some-key', 'UNKNOWN']
-            );
-            $this->fail('Expected AuthenticationException');
-        } catch (AuthenticationException $e) {
-            $this->assertArrayHasKey('algorithm', $e->getDetails());
-            $this->assertSame('UNKNOWN', $e->getDetails()['algorithm']);
-        }
-    }
 
     // ==========================================
     // checkHeaders (private, via reflection)
     // ==========================================
 
-    public function testCheckHeadersWithValidHs256Token(): void
-    {
-        $secret = 'test-secret-for-headers';
-        $payload = ['iss' => 'test', 'iat' => time()];
-        $tokenString = $this->buildHmacJwt($payload, $secret, 'HS256');
-
-        $serializer = new CompactSerializer();
-        $jws = $serializer->unserialize($tokenString);
-
-        // Should not throw.
-        $this->invokePrivateMethod($this->service, 'checkHeaders', [$jws]);
-        $this->assertTrue(true);
-    }
-
-    public function testCheckHeadersWithValidHs384Token(): void
-    {
-        $secret = 'test-secret-for-headers-384';
-        $payload = ['iss' => 'test', 'iat' => time()];
-        $tokenString = $this->buildHmacJwt($payload, $secret, 'HS384');
-
-        $serializer = new CompactSerializer();
-        $jws = $serializer->unserialize($tokenString);
-
-        $this->invokePrivateMethod($this->service, 'checkHeaders', [$jws]);
-        $this->assertTrue(true);
-    }
-
-    public function testCheckHeadersWithValidHs512Token(): void
-    {
-        $secret = 'test-secret-for-headers-512';
-        $payload = ['iss' => 'test', 'iat' => time()];
-        $tokenString = $this->buildHmacJwt($payload, $secret, 'HS512');
-
-        $serializer = new CompactSerializer();
-        $jws = $serializer->unserialize($tokenString);
-
-        $this->invokePrivateMethod($this->service, 'checkHeaders', [$jws]);
-        $this->assertTrue(true);
-    }
+    // checkHeaders — removed: method no longer exists in AuthorizationService
 
     // ==========================================
     // corsAfterController
@@ -1217,7 +1080,7 @@ class AuthorizationServiceTest extends TestCase
     public function testCorsAfterControllerAddsOriginHeader(): void
     {
         $request = $this->createMock(IRequest::class);
-        $request->server = ['HTTP_ORIGIN' => 'https://example.com'];
+        $request->method('getHeader')->with('Origin')->willReturn('https://example.com');
 
         $response = $this->createMock(Response::class);
         $response->expects($this->once())
@@ -1236,7 +1099,7 @@ class AuthorizationServiceTest extends TestCase
     public function testCorsAfterControllerReturnsResponseWithoutOrigin(): void
     {
         $request = $this->createMock(IRequest::class);
-        $request->server = [];
+        $request->method('getHeader')->with('Origin')->willReturn('');
 
         $response = $this->createMock(Response::class);
         $response->expects($this->never())
@@ -1250,7 +1113,7 @@ class AuthorizationServiceTest extends TestCase
     public function testCorsAfterControllerThrowsOnCredentialsTrue(): void
     {
         $request = $this->createMock(IRequest::class);
-        $request->server = ['HTTP_ORIGIN' => 'https://example.com'];
+        $request->method('getHeader')->with('Origin')->willReturn('https://example.com');
 
         $response = $this->createMock(Response::class);
         $response->expects($this->once())
@@ -1265,7 +1128,7 @@ class AuthorizationServiceTest extends TestCase
     public function testCorsAfterControllerAllowsCredentialsFalse(): void
     {
         $request = $this->createMock(IRequest::class);
-        $request->server = ['HTTP_ORIGIN' => 'https://example.com'];
+        $request->method('getHeader')->with('Origin')->willReturn('https://example.com');
 
         $response = $this->createMock(Response::class);
         $response->expects($this->once())
@@ -1283,7 +1146,7 @@ class AuthorizationServiceTest extends TestCase
     public function testCorsAfterControllerHandlesMultipleHeaders(): void
     {
         $request = $this->createMock(IRequest::class);
-        $request->server = ['HTTP_ORIGIN' => 'https://test.org'];
+        $request->method('getHeader')->with('Origin')->willReturn('https://test.org');
 
         $response = $this->createMock(Response::class);
         $response->expects($this->once())
@@ -1305,7 +1168,7 @@ class AuthorizationServiceTest extends TestCase
     public function testCorsAfterControllerCredentialsCaseInsensitive(): void
     {
         $request = $this->createMock(IRequest::class);
-        $request->server = ['HTTP_ORIGIN' => 'https://example.com'];
+        $request->method('getHeader')->with('Origin')->willReturn('https://example.com');
 
         $response = $this->createMock(Response::class);
         $response->expects($this->once())
@@ -1320,7 +1183,7 @@ class AuthorizationServiceTest extends TestCase
     public function testCorsAfterControllerWithEmptyHeaders(): void
     {
         $request = $this->createMock(IRequest::class);
-        $request->server = ['HTTP_ORIGIN' => 'https://example.com'];
+        $request->method('getHeader')->with('Origin')->willReturn('https://example.com');
 
         $response = $this->createMock(Response::class);
         $response->expects($this->once())
@@ -1338,7 +1201,7 @@ class AuthorizationServiceTest extends TestCase
     public function testCorsAfterControllerWithNullServerKey(): void
     {
         $request = $this->createMock(IRequest::class);
-        $request->server = ['SERVER_NAME' => 'localhost'];
+        $request->method('getHeader')->with('Origin')->willReturn('');
 
         $response = $this->createMock(Response::class);
         $response->expects($this->never())

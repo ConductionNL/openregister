@@ -170,7 +170,7 @@ class RegistersController extends Controller
      * @param IAppManager          $appManager           App manager for app version
      * @param OasService           $oasService           OAS service for OpenAPI generation
      * @param ContainerInterface   $container            Container for lazy loading services
-     * @param IGroupManager       $groupManager         Group manager for RBAC checks
+     * @param IGroupManager        $groupManager         Group manager for RBAC checks
      *
      * @return void
      *
