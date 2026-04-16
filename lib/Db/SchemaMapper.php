@@ -1079,10 +1079,10 @@ class SchemaMapper extends QBMapper
         if ($count === 0) {
             $platform   = $this->db->getDatabasePlatform();
             $isPostgres = stripos($platform::class, 'PostgreSQL') !== false;
-            $prefix     = $isPostgres ? 'oc_' : 'oc_';
+            $prefix     = $isPostgres === true ? 'oc_' : 'oc_';
 
-            $tablePattern = $prefix . 'openregister_table_%_' . (int) $schemaId;
-            $sql = $isPostgres
+            $tablePattern = $prefix.'openregister_table_%_'.(int) $schemaId;
+            $sql          = $isPostgres === true
                 ? "SELECT table_name FROM information_schema.tables WHERE table_schema = current_schema() AND table_name LIKE ?"
                 : "SELECT table_name FROM information_schema.tables WHERE table_schema = DATABASE() AND table_name LIKE ?";
 
@@ -1092,13 +1092,13 @@ class SchemaMapper extends QBMapper
             while (($row = $stmt->fetch()) !== false) {
                 $tableName = $row['table_name'];
                 // Verify the table name matches the exact pattern (avoid partial matches).
-                if (preg_match('/^oc_openregister_table_\d+_' . (int) $schemaId . '$/', $tableName) !== 1) {
+                if (preg_match('/^oc_openregister_table_\d+_'.(int) $schemaId.'$/', $tableName) !== 1) {
                     continue;
                 }
 
                 // Strip the oc_ prefix for the query builder.
                 $magicTable = substr($tableName, 3);
-                $qb2 = $this->db->getQueryBuilder();
+                $qb2        = $this->db->getQueryBuilder();
                 $qb2->select($qb2->func()->count('*'))
                     ->from($magicTable)
                     ->where($qb2->expr()->isNull('_deleted'));
@@ -1110,7 +1110,7 @@ class SchemaMapper extends QBMapper
                 if ($count > 0) {
                     break;
                 }
-            }
+            }//end while
         }//end if
 
         if ($count > 0) {

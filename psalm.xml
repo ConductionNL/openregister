@@ -20,9 +20,23 @@
     </stubs>
     <issueHandlers>
         <UndefinedDocblockClass errorLevel="suppress"/>
+        <UndefinedConstant>
+            <errorLevel type="suppress">
+                <!-- ext-curl constants -->
+                <referencedConstant name="CURLOPT_POST"/>
+                <referencedConstant name="CURLOPT_RETURNTRANSFER"/>
+                <referencedConstant name="CURLOPT_HTTPHEADER"/>
+                <referencedConstant name="CURLOPT_POSTFIELDS"/>
+                <referencedConstant name="CURLOPT_TIMEOUT"/>
+                <referencedConstant name="CURLOPT_SSL_VERIFYPEER"/>
+                <referencedConstant name="CURLOPT_FOLLOWLOCATION"/>
+                <referencedConstant name="CURLINFO_HTTP_CODE"/>
+            </errorLevel>
+        </UndefinedConstant>
         <UndefinedClass>
             <errorLevel type="suppress">
                 <referencedClass name="OC"/>
+                <referencedClass name="ZipArchive"/>
                 <referencedClass name="Doctrine\DBAL\Types\Types"/>
                 <referencedClass name="Doctrine\DBAL\Types\Type"/>
                 <referencedClass name="Doctrine\DBAL\Connection"/>

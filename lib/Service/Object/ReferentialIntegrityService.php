@@ -107,6 +107,7 @@ class ReferentialIntegrityService
      * @param MagicMapper      $objectEntityMapper Object entity data mapper.
      * @param AuditTrailMapper $auditTrailMapper   Audit trail mapper for integrity action logging.
      * @param LoggerInterface  $logger             Logger for debugging.
+     * @param IDBConnection    $db                 Database connection.
      */
     public function __construct(
         private readonly SchemaMapper $schemaMapper,

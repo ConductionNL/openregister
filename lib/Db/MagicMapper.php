@@ -6273,7 +6273,7 @@ class MagicMapper extends AbstractObjectMapper
             }
 
             $objectData[$propertyName] = $value;
-        }
+        }//end foreach
 
         $entity->setObject($objectData);
 
