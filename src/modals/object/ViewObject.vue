@@ -61,7 +61,7 @@ import { objectStore, navigationStore, registerStore, schemaStore } from '../../
 				<div v-else>
 					<div class="tabContainer">
 						<BTabs v-model="activeTab" content-class="mt-3" justified>
-							<BTab title="Properties" active>
+							<BTab :title="t('openregister', 'Properties')" active>
 								<div class="viewTableContainer">
 									<table class="viewTable">
 										<thead>
@@ -175,13 +175,13 @@ import { objectStore, navigationStore, registerStore, schemaStore } from '../../
 									</table>
 								</div>
 							</BTab>
-							<BTab v-if="!isNewObject" title="Metadata">
+							<BTab v-if="!isNewObject" :title="t('openregister', 'Metadata')">
 								<div class="viewTableContainer">
 									<table class="viewTable">
 										<thead>
 											<tr class="viewTableRow">
 												<th class="tableColumnConstrained">
-													Metadata
+													{{ t('openregister', 'Metadata') }}
 												</th>
 												<th class="tableColumnExpanded">
 													Value
@@ -220,9 +220,9 @@ import { objectStore, navigationStore, registerStore, schemaStore } from '../../
 									</table>
 								</div>
 							</BTab>
-							<BTab title="Data">
+							<BTab :title="t('openregister', 'Data')">
 								<NcNoteCard v-if="success" type="success" class="note-card">
-									<p>Object successfully modified</p>
+									<p>{{ t('openregister', 'Object successfully modified') }}</p>
 								</NcNoteCard>
 								<div class="json-editor">
 									<div :class="`codeMirrorContainer ${getTheme()}`">
@@ -249,7 +249,7 @@ import { objectStore, navigationStore, registerStore, schemaStore } from '../../
 									</span>
 								</div>
 							</BTab>
-							<BTab v-if="!isNewObject" title="Uses">
+							<BTab v-if="!isNewObject" :title="t('openregister', 'Uses')">
 								<div v-if="objectStore.uses.results.length > 0" class="search-list-table">
 									<table class="table">
 										<thead>
@@ -285,7 +285,7 @@ import { objectStore, navigationStore, registerStore, schemaStore } from '../../
 									<p>No uses found for this object</p>
 								</NcNoteCard>
 							</BTab>
-							<BTab v-if="!isNewObject" title="Used by">
+							<BTab v-if="!isNewObject" :title="t('openregister', 'Used by')">
 								<div v-if="objectStore.used.results.length > 0" class="search-list-table">
 									<table class="table">
 										<thead>
@@ -321,7 +321,7 @@ import { objectStore, navigationStore, registerStore, schemaStore } from '../../
 									<p>No objects are using this object</p>
 								</NcNoteCard>
 							</BTab>
-							<BTab v-if="!isNewObject" title="Contracts">
+							<BTab v-if="!isNewObject" :title="t('openregister', 'Contracts')">
 								<div v-if="objectStore.contracts.length > 0" class="search-list-table">
 									<table class="table">
 										<thead>
@@ -357,7 +357,7 @@ import { objectStore, navigationStore, registerStore, schemaStore } from '../../
 									<p>No contracts found for this object</p>
 								</NcNoteCard>
 							</BTab>
-							<BTab v-if="!isNewObject" title="Files">
+							<BTab v-if="!isNewObject" :title="t('openregister', 'Files')">
 								<div v-if="paginatedFiles.length > 0" class="viewTableContainer">
 									<table class="viewTable">
 										<thead>

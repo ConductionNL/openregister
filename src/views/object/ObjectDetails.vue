@@ -90,12 +90,12 @@ import { objectStore, navigationStore } from '../../store/store.js'
 
 				<div class="tabContainer">
 					<BTabs content-class="mt-3" justified>
-						<BTab title="Data" active>
+						<BTab :title="t('openregister', 'Data')" active>
 							<pre class="json-display"><!-- do not remove this comment
                                 -->{{ JSON.stringify(objectStore.objectItem.object, null, 2) }}
                             </pre>
 						</BTab>
-						<BTab title="Uses">
+						<BTab :title="t('openregister', 'Uses')">
 							<div v-if="objectStore.objectItem.relations && Object.keys(objectStore.objectItem.relations).length > 0">
 								<NcListItem v-for="(relation, key) in objectStore.objectItem.relations"
 									:key="key"
@@ -112,10 +112,10 @@ import { objectStore, navigationStore } from '../../store/store.js'
 								</NcListItem>
 							</div>
 							<div v-else class="tabPanel">
-								No relations found
+								{{ t('openregister', 'No relations found') }}
 							</div>
 						</BTab>
-						<BTab title="Used by">
+						<BTab :title="t('openregister', 'Used by')">
 							<div v-if="objectStore.relations.length">
 								<NcListItem v-for="(relation, key) in objectStore.relations"
 									:key="key"
@@ -140,12 +140,12 @@ import { objectStore, navigationStore } from '../../store/store.js'
 								No relations found
 							</div>
 						</BTab>
-						<BTab title="Files">
+						<BTab :title="t('openregister', 'Files')">
 							<NcButton @click="openFolder(objectStore.objectItem.folder)">
 								<template #icon>
 									<FolderOutline :size="20" />
 								</template>
-								Open folder
+								{{ t('openregister', 'Open folder') }}
 							</NcButton>
 
 							<div v-if="objectStore.files.results?.length > 0">
@@ -209,12 +209,12 @@ import { objectStore, navigationStore } from '../../store/store.js'
 									name="Bijlagen aan het laden" />
 							</div>
 						</BTab>
-						<BTab title="Syncs">
+						<BTab :title="t('openregister', 'Syncs')">
 							<div v-if="true || !syncs.length" class="tabPanel">
-								No synchronizations found
+								{{ t('openregister', 'No synchronizations found') }}
 							</div>
 						</BTab>
-						<BTab title="Audit Trails">
+						<BTab :title="t('openregister', 'Audit Trails')">
 							<div v-if="objectStore.auditTrails.results?.length">
 								<NcListItem v-for="(auditTrail, key) in objectStore.auditTrails.results"
 									:key="key"

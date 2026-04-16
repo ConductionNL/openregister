@@ -6,7 +6,7 @@ import { registerStore, schemaStore, navigationStore, objectStore, dashboardStor
 <template>
 	<NcDialog v-if="navigationStore.modal === 'importRegister'"
 		name="import"
-		title="Import Data into Register"
+		:title="t('openregister', 'Import Data into Register')"
 		size="large"
 		:can-close="true"
 		@update:open="handleDialogClose">

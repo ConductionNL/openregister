@@ -161,7 +161,7 @@ import { translate as t } from '@nextcloud/l10n'
 
 		<!-- GitLab Token Configuration -->
 		<SettingsCard
-			title="GitLab Personal Access Token"
+			:title="t('openregister', 'GitLab Personal Access Token')"
 			icon="🔐"
 			:collapsible="false">
 			<template #icon>

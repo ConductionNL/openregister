@@ -543,14 +543,14 @@ import { navigationStore, schemaStore, registerStore } from '../../store/store.j
 						<NcSelect
 							v-bind="itemsTypeOptions"
 							v-model="oneOfItem.type"
-							:input-label="'Type'" />
+							:input-label="t('openregister', 'Type')" />
 					</div>
 
 					<div class="ASP-selectContainer">
 						<NcSelect
 							v-bind="formatOptions"
 							v-model="oneOfItem.format"
-							:input-label="'Format'" />
+							:input-label="t('openregister', 'Format')" />
 					</div>
 
 					<NcButton

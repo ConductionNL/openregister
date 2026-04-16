@@ -6,7 +6,7 @@ import { configurationStore, navigationStore, registerStore, schemaStore } from 
 <template>
 	<NcDialog v-if="navigationStore.modal === 'importConfiguration'"
 		name="importConfiguration"
-		title="Import Configuration"
+		:title="t('openregister', 'Import Configuration')"
 		size="large"
 		:can-close="!loading"
 		@update:open="closeModal">
@@ -47,8 +47,8 @@ import { configurationStore, navigationStore, registerStore, schemaStore } from 
 						<div class="searchContainer">
 							<NcTextField
 								:value.sync="searchQuery"
-								label="Search configurations"
-								placeholder="Enter search terms or leave empty to browse all"
+								:label="t('openregister', 'Search configurations')"
+								:placeholder="t('openregister', 'Enter search terms or leave empty to browse all')"
 								@keyup.enter="searchConfigurations">
 								<Magnify :size="20" />
 							</NcTextField>

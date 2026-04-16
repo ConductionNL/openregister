@@ -6,7 +6,7 @@ import { configurationStore, navigationStore } from '../../store/store.js'
 <template>
 	<NcDialog v-if="navigationStore.modal === 'publishConfiguration'"
 		name="publishConfiguration"
-		title="Publish Configuration to GitHub"
+		:title="t('openregister', 'Publish Configuration to GitHub')"
 		size="large"
 		:can-close="!loading"
 		@update:open="closeModal">

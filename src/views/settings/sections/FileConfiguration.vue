@@ -417,7 +417,7 @@
 
 		<!-- Supported File Types -->
 		<SettingsCard
-			title="Supported File Types"
+			:title="t('openregister', 'Supported File Types')"
 			icon="📎"
 			:collapsible="true"
 			:default-collapsed="true">
@@ -449,12 +449,12 @@
 							<span class="file-type-extension">(.{{ fileType.extension }})</span>
 							<span v-if="fileType.llphantSupport === 'none'"
 								class="support-indicator dolphin-required"
-								title="Requires Dolphin AI for OCR text extraction">
-								(Dolphin required)
+								:title="t('openregister', 'Requires Dolphin AI for OCR text extraction')">
+								{{ t('openregister', '(Dolphin required)') }}
 							</span>
 							<span v-else-if="fileType.dolphinOcr && fileSettings.textExtractor.id === 'dolphin'"
 								class="support-indicator ocr"
-								title="Dolphin OCR enabled">
+								:title="t('openregister', 'Dolphin OCR enabled')">
 								📷 OCR
 							</span>
 						</span>

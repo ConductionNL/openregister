@@ -87,8 +87,8 @@ import { translate as t } from '@nextcloud/l10n'
 										&#8627; {{ schema.title || schema.name || 'Schema #' + schema.id }}
 										<span v-if="!schema.authorization || Object.keys(schema.authorization).length === 0"
 											class="inherited-badge"
-											title="Inherits permissions from register">
-											inherited
+											:title="t('openregister', 'Inherits permissions from register')">
+											{{ t('openregister', 'inherited') }}
 										</span>
 									</td>
 									<td v-for="action in actions"

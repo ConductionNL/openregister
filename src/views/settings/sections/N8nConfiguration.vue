@@ -195,7 +195,7 @@
 		<!-- Workflow Management -->
 		<SettingsCard
 			v-if="n8nEnabled && connectionStatus && connectionStatus.success && initResult && initResult.success"
-			title="Workflow Management"
+			:title="t('openregister', 'Workflow Management')"
 			icon="⚙️"
 			:collapsible="true"
 			:default-collapsed="false">

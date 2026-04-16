@@ -257,7 +257,7 @@ import { configurationStore, navigationStore, organisationStore, applicationStor
 								track-by="id"
 								:label-outside="true"
 								:filterable="true"
-								placeholder="Search views..."
+								:placeholder="t('openregister', 'Search views...')"
 								:close-on-select="false"
 								@search-change="searchViews"
 								@input="updateViews">
@@ -289,7 +289,7 @@ import { configurationStore, navigationStore, organisationStore, applicationStor
 								track-by="id"
 								:label-outside="true"
 								:filterable="true"
-								placeholder="Search applications..."
+								:placeholder="t('openregister', 'Search applications...')"
 								:close-on-select="false"
 								@search-change="searchApplications"
 								@input="updateManagedApplications">
@@ -328,7 +328,7 @@ import { configurationStore, navigationStore, organisationStore, applicationStor
 								label="label"
 								track-by="value"
 								:label-outside="true"
-								placeholder="Select source type..."
+								:placeholder="t('openregister', 'Select source type...')"
 								@input="updateSourceType">
 								<template #option="{ label, description }">
 									<div class="option-content">
@@ -372,7 +372,7 @@ import { configurationStore, navigationStore, organisationStore, applicationStor
 								label="name"
 								track-by="id"
 								:label-outside="true"
-								placeholder="Select owner application (optional)..."
+								:placeholder="t('openregister', 'Select owner application (optional)...')"
 								@input="updateApplication">
 								<template #option="{ name, description }">
 									<div class="option-content">
@@ -430,7 +430,7 @@ import { configurationStore, navigationStore, organisationStore, applicationStor
 								label="label"
 								track-by="value"
 								:label-outside="true"
-								placeholder="Select groups to notify..."
+								:placeholder="t('openregister', 'Select groups to notify...')"
 								:close-on-select="false"
 								@input="updateNotificationGroups">
 								<template #option="{ label }">
