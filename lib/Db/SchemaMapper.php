@@ -1082,9 +1082,8 @@ class SchemaMapper extends QBMapper
             $prefix     = $isPostgres === true ? 'oc_' : 'oc_';
 
             $tablePattern = $prefix.'openregister_table_%_'.(int) $schemaId;
-            $sql          = $isPostgres === true
-                ? "SELECT table_name FROM information_schema.tables WHERE table_schema = current_schema() AND table_name LIKE ?"
-                : "SELECT table_name FROM information_schema.tables WHERE table_schema = DATABASE() AND table_name LIKE ?";
+            $schemaFilter = $isPostgres === true ? 'table_schema = current_schema()' : 'table_schema = DATABASE()';
+            $sql          = "SELECT table_name FROM information_schema.tables WHERE {$schemaFilter} AND table_name LIKE ?";
 
             $stmt = $this->db->prepare($sql);
             $stmt->execute([$tablePattern]);
