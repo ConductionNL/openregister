@@ -1674,7 +1674,7 @@
 	"variable": [
 		{
 			"key": "baseUrl",
-			"value": "http://localhost:8080"
+			"value": "http://localhost"
 		},
 		{
 			"key": "username",

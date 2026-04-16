@@ -36,7 +36,9 @@
 							"    var jsonData = pm.response.json();",
 							"    pm.expect(jsonData).to.have.property('id');",
 							"    pm.collectionVariables.set('registerId', jsonData.id);",
+							"    pm.collectionVariables.set('registerSlug', jsonData.slug);",
 							"    console.log('✅ Register created with ID: ' + jsonData.id);",
+							"    console.log('   Register slug: ' + jsonData.slug);",
 							"});",
 							"",
 							"pm.test('Register has correct title', function () {",
@@ -62,8 +64,16 @@
 				},
 				"url": {
 					"raw": "{{baseUrl}}/index.php/apps/openregister/api/registers",
-					"host": ["{{baseUrl}}"],
-					"path": ["index.php", "apps", "openregister", "api", "registers"]
+					"host": [
+						"{{baseUrl}}"
+					],
+					"path": [
+						"index.php",
+						"apps",
+						"openregister",
+						"api",
+						"registers"
+					]
 				}
 			},
 			"response": []
@@ -113,8 +123,16 @@
 				},
 				"url": {
 					"raw": "{{baseUrl}}/index.php/apps/openregister/api/schemas",
-					"host": ["{{baseUrl}}"],
-					"path": ["index.php", "apps", "openregister", "api", "schemas"]
+					"host": [
+						"{{baseUrl}}"
+					],
+					"path": [
+						"index.php",
+						"apps",
+						"openregister",
+						"api",
+						"schemas"
+					]
 				}
 			},
 			"response": []
@@ -132,9 +150,9 @@
 							"",
 							"pm.test('Response has object UUID', function () {",
 							"    var jsonData = pm.response.json();",
-							"    pm.expect(jsonData).to.have.property('uuid');",
-							"    pm.collectionVariables.set('object1Uuid', jsonData.uuid);",
-							"    console.log('✅ Object 1 created with UUID: ' + jsonData.uuid);",
+							"    pm.expect(jsonData).to.have.property('id');",
+							"    pm.collectionVariables.set('object1Uuid', jsonData.id);",
+							"    console.log('✅ Object 1 created with UUID: ' + jsonData.id);",
 							"});",
 							"",
 							"pm.test('Object has correct data', function () {",
@@ -161,9 +179,19 @@
 					"raw": "{\n    \"name\": \"John Doe\",\n    \"age\": 30,\n    \"active\": true\n}"
 				},
 				"url": {
-					"raw": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{schemaSlug}}",
-					"host": ["{{baseUrl}}"],
-					"path": ["index.php", "apps", "openregister", "api", "objects", "{{schemaSlug}}"]
+					"raw": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{registerSlug}}/{{schemaSlug}}",
+					"host": [
+						"{{baseUrl}}"
+					],
+					"path": [
+						"index.php",
+						"apps",
+						"openregister",
+						"api",
+						"objects",
+						"{{registerSlug}}",
+						"{{schemaSlug}}"
+					]
 				}
 			},
 			"response": []
@@ -181,9 +209,9 @@
 							"",
 							"pm.test('Response has object UUID', function () {",
 							"    var jsonData = pm.response.json();",
-							"    pm.expect(jsonData).to.have.property('uuid');",
-							"    pm.collectionVariables.set('object2Uuid', jsonData.uuid);",
-							"    console.log('✅ Object 2 created with UUID: ' + jsonData.uuid);",
+							"    pm.expect(jsonData).to.have.property('id');",
+							"    pm.collectionVariables.set('object2Uuid', jsonData.id);",
+							"    console.log('✅ Object 2 created with UUID: ' + jsonData.id);",
 							"});"
 						],
 						"type": "text/javascript"
@@ -203,9 +231,19 @@
 					"raw": "{\n    \"name\": \"Jane Smith\",\n    \"age\": 25,\n    \"active\": true\n}"
 				},
 				"url": {
-					"raw": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{schemaSlug}}",
-					"host": ["{{baseUrl}}"],
-					"path": ["index.php", "apps", "openregister", "api", "objects", "{{schemaSlug}}"]
+					"raw": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{registerSlug}}/{{schemaSlug}}",
+					"host": [
+						"{{baseUrl}}"
+					],
+					"path": [
+						"index.php",
+						"apps",
+						"openregister",
+						"api",
+						"objects",
+						"{{registerSlug}}",
+						"{{schemaSlug}}"
+					]
 				}
 			},
 			"response": []
@@ -236,9 +274,20 @@
 				"method": "GET",
 				"header": [],
 				"url": {
-					"raw": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{object1Uuid}}",
-					"host": ["{{baseUrl}}"],
-					"path": ["index.php", "apps", "openregister", "api", "objects", "{{object1Uuid}}"]
+					"raw": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{registerSlug}}/{{schemaSlug}}/{{object1Uuid}}",
+					"host": [
+						"{{baseUrl}}"
+					],
+					"path": [
+						"index.php",
+						"apps",
+						"openregister",
+						"api",
+						"objects",
+						"{{registerSlug}}",
+						"{{schemaSlug}}",
+						"{{object1Uuid}}"
+					]
 				}
 			},
 			"response": []
@@ -279,9 +328,20 @@
 					"raw": "{\n    \"name\": \"John Doe Updated\",\n    \"age\": 31,\n    \"active\": false\n}"
 				},
 				"url": {
-					"raw": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{object1Uuid}}",
-					"host": ["{{baseUrl}}"],
-					"path": ["index.php", "apps", "openregister", "api", "objects", "{{object1Uuid}}"]
+					"raw": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{registerSlug}}/{{schemaSlug}}/{{object1Uuid}}",
+					"host": [
+						"{{baseUrl}}"
+					],
+					"path": [
+						"index.php",
+						"apps",
+						"openregister",
+						"api",
+						"objects",
+						"{{registerSlug}}",
+						"{{schemaSlug}}",
+						"{{object1Uuid}}"
+					]
 				}
 			},
 			"response": []
@@ -312,9 +372,19 @@
 				"method": "GET",
 				"header": [],
 				"url": {
-					"raw": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{schemaSlug}}",
-					"host": ["{{baseUrl}}"],
-					"path": ["index.php", "apps", "openregister", "api", "objects", "{{schemaSlug}}"]
+					"raw": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{registerSlug}}/{{schemaSlug}}",
+					"host": [
+						"{{baseUrl}}"
+					],
+					"path": [
+						"index.php",
+						"apps",
+						"openregister",
+						"api",
+						"objects",
+						"{{registerSlug}}",
+						"{{schemaSlug}}"
+					]
 				}
 			},
 			"response": []
@@ -354,8 +424,17 @@
 				},
 				"url": {
 					"raw": "{{baseUrl}}/index.php/apps/openregister/api/registers/{{registerId}}",
-					"host": ["{{baseUrl}}"],
-					"path": ["index.php", "apps", "openregister", "api", "registers", "{{registerId}}"]
+					"host": [
+						"{{baseUrl}}"
+					],
+					"path": [
+						"index.php",
+						"apps",
+						"openregister",
+						"api",
+						"registers",
+						"{{registerId}}"
+					]
 				}
 			},
 			"response": []
@@ -395,8 +474,17 @@
 				},
 				"url": {
 					"raw": "{{baseUrl}}/index.php/apps/openregister/api/schemas/{{schemaId}}",
-					"host": ["{{baseUrl}}"],
-					"path": ["index.php", "apps", "openregister", "api", "schemas", "{{schemaId}}"]
+					"host": [
+						"{{baseUrl}}"
+					],
+					"path": [
+						"index.php",
+						"apps",
+						"openregister",
+						"api",
+						"schemas",
+						"{{schemaId}}"
+					]
 				}
 			},
 			"response": []
@@ -422,8 +510,17 @@
 				"header": [],
 				"url": {
 					"raw": "{{baseUrl}}/index.php/apps/openregister/api/schemas/{{schemaId}}",
-					"host": ["{{baseUrl}}"],
-					"path": ["index.php", "apps", "openregister", "api", "schemas", "{{schemaId}}"]
+					"host": [
+						"{{baseUrl}}"
+					],
+					"path": [
+						"index.php",
+						"apps",
+						"openregister",
+						"api",
+						"schemas",
+						"{{schemaId}}"
+					]
 				}
 			},
 			"response": []
@@ -448,9 +545,20 @@
 				"method": "DELETE",
 				"header": [],
 				"url": {
-					"raw": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{object1Uuid}}",
-					"host": ["{{baseUrl}}"],
-					"path": ["index.php", "apps", "openregister", "api", "objects", "{{object1Uuid}}"]
+					"raw": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{registerSlug}}/{{schemaSlug}}/{{object1Uuid}}",
+					"host": [
+						"{{baseUrl}}"
+					],
+					"path": [
+						"index.php",
+						"apps",
+						"openregister",
+						"api",
+						"objects",
+						"{{registerSlug}}",
+						"{{schemaSlug}}",
+						"{{object1Uuid}}"
+					]
 				}
 			},
 			"response": []
@@ -475,9 +583,20 @@
 				"method": "GET",
 				"header": [],
 				"url": {
-					"raw": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{object1Uuid}}",
-					"host": ["{{baseUrl}}"],
-					"path": ["index.php", "apps", "openregister", "api", "objects", "{{object1Uuid}}"]
+					"raw": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{registerSlug}}/{{schemaSlug}}/{{object1Uuid}}",
+					"host": [
+						"{{baseUrl}}"
+					],
+					"path": [
+						"index.php",
+						"apps",
+						"openregister",
+						"api",
+						"objects",
+						"{{registerSlug}}",
+						"{{schemaSlug}}",
+						"{{object1Uuid}}"
+					]
 				}
 			},
 			"response": []
@@ -502,9 +621,20 @@
 				"method": "DELETE",
 				"header": [],
 				"url": {
-					"raw": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{object2Uuid}}",
-					"host": ["{{baseUrl}}"],
-					"path": ["index.php", "apps", "openregister", "api", "objects", "{{object2Uuid}}"]
+					"raw": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{registerSlug}}/{{schemaSlug}}/{{object2Uuid}}",
+					"host": [
+						"{{baseUrl}}"
+					],
+					"path": [
+						"index.php",
+						"apps",
+						"openregister",
+						"api",
+						"objects",
+						"{{registerSlug}}",
+						"{{schemaSlug}}",
+						"{{object2Uuid}}"
+					]
 				}
 			},
 			"response": []
@@ -530,8 +660,17 @@
 				"header": [],
 				"url": {
 					"raw": "{{baseUrl}}/index.php/apps/openregister/api/schemas/{{schemaId}}",
-					"host": ["{{baseUrl}}"],
-					"path": ["index.php", "apps", "openregister", "api", "schemas", "{{schemaId}}"]
+					"host": [
+						"{{baseUrl}}"
+					],
+					"path": [
+						"index.php",
+						"apps",
+						"openregister",
+						"api",
+						"schemas",
+						"{{schemaId}}"
+					]
 				}
 			},
 			"response": []
@@ -559,8 +698,17 @@
 				"header": [],
 				"url": {
 					"raw": "{{baseUrl}}/index.php/apps/openregister/api/registers/{{registerId}}",
-					"host": ["{{baseUrl}}"],
-					"path": ["index.php", "apps", "openregister", "api", "registers", "{{registerId}}"]
+					"host": [
+						"{{baseUrl}}"
+					],
+					"path": [
+						"index.php",
+						"apps",
+						"openregister",
+						"api",
+						"registers",
+						"{{registerId}}"
+					]
 				}
 			},
 			"response": []
@@ -584,6 +732,10 @@
 			"value": ""
 		},
 		{
+			"key": "registerSlug",
+			"value": ""
+		},
+		{
 			"key": "schemaId",
 			"value": ""
 		},
@@ -601,5 +753,3 @@
 		}
 	]
 }
-
-

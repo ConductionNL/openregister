@@ -37,6 +37,7 @@ use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Dto\DeletionAnalysis;
+use OCP\IDBConnection;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\Uid\Uuid;
 
@@ -112,7 +113,8 @@ class ReferentialIntegrityService
         private readonly RegisterMapper $registerMapper,
         private readonly MagicMapper $objectEntityMapper,
         private readonly AuditTrailMapper $auditTrailMapper,
-        private readonly LoggerInterface $logger
+        private readonly LoggerInterface $logger,
+        private readonly IDBConnection $db
     ) {
     }//end __construct()
 
@@ -349,7 +351,7 @@ class ReferentialIntegrityService
                 $registerCache[(string) $register->getId()] = $register;
             }
 
-            $db = \OC::$server->getDatabaseConnection();
+            $db = $this->db;
             // phpcs:ignore Generic.Files.LineLength.MaxExceeded -- SQL query must stay as single string.
             $sql  = "SELECT table_name FROM information_schema.tables WHERE table_name LIKE 'oc_openregister_table_%' AND table_schema = current_schema()";
             $stmt = $db->prepare($sql);
@@ -847,7 +849,7 @@ class ReferentialIntegrityService
             $queryMode = 'scalar';
         }
 
-        $db         = \OC::$server->getDatabaseConnection();
+        $db         = $this->db;
         $platform   = $db->getDatabasePlatform();
         $isPostgres = stripos($platform::class, 'PostgreSQL') !== false;
 

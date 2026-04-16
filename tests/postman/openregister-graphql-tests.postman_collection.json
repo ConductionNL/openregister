@@ -7,18 +7,47 @@
 	"auth": {
 		"type": "basic",
 		"basic": [
-			{ "key": "username", "value": "{{admin_user}}", "type": "string" },
-			{ "key": "password", "value": "{{admin_password}}", "type": "string" }
+			{
+				"key": "username",
+				"value": "{{username}}",
+				"type": "string"
+			},
+			{
+				"key": "password",
+				"value": "{{password}}",
+				"type": "string"
+			}
 		]
 	},
 	"variable": [
-		{ "key": "base_url", "value": "http://localhost:8080" },
-		{ "key": "admin_user", "value": "admin" },
-		{ "key": "admin_password", "value": "admin" },
-		{ "key": "test_register_id", "value": "" },
-		{ "key": "test_schema_id", "value": "" },
-		{ "key": "test_object_uuid", "value": "" },
-		{ "key": "test_schema_slug", "value": "" }
+		{
+			"key": "baseUrl",
+			"value": "http://localhost"
+		},
+		{
+			"key": "username",
+			"value": "admin"
+		},
+		{
+			"key": "password",
+			"value": "admin"
+		},
+		{
+			"key": "test_register_id",
+			"value": ""
+		},
+		{
+			"key": "test_schema_id",
+			"value": ""
+		},
+		{
+			"key": "test_object_uuid",
+			"value": ""
+		},
+		{
+			"key": "test_schema_slug",
+			"value": ""
+		}
 	],
 	"item": [
 		{
@@ -43,12 +72,17 @@
 			],
 			"request": {
 				"method": "POST",
-				"header": [{ "key": "Content-Type", "value": "application/json" }],
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
 				"body": {
 					"mode": "raw",
 					"raw": "{\"title\": \"Newman GraphQL Test Register\", \"description\": \"Test register for GraphQL Newman tests\", \"schemas\": []}"
 				},
-				"url": "{{base_url}}/index.php/apps/openregister/api/registers"
+				"url": "{{baseUrl}}/index.php/apps/openregister/api/registers"
 			}
 		},
 		{
@@ -74,12 +108,17 @@
 			],
 			"request": {
 				"method": "POST",
-				"header": [{ "key": "Content-Type", "value": "application/json" }],
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
 				"body": {
 					"mode": "raw",
 					"raw": "{\"title\": \"Newman GraphQL Meldingen\", \"description\": \"Test schema for GraphQL tests\", \"properties\": {\"title\": {\"type\": \"string\"}, \"status\": {\"type\": \"string\"}, \"priority\": {\"type\": \"integer\"}, \"email\": {\"type\": \"string\", \"format\": \"email\"}}, \"required\": [\"title\"]}"
 				},
-				"url": "{{base_url}}/index.php/apps/openregister/api/schemas"
+				"url": "{{baseUrl}}/index.php/apps/openregister/api/schemas"
 			}
 		},
 		{
@@ -99,12 +138,17 @@
 			],
 			"request": {
 				"method": "PUT",
-				"header": [{ "key": "Content-Type", "value": "application/json" }],
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
 				"body": {
 					"mode": "raw",
 					"raw": "{\"schemas\": [{{test_schema_id}}]}"
 				},
-				"url": "{{base_url}}/index.php/apps/openregister/api/registers/{{test_register_id}}"
+				"url": "{{baseUrl}}/index.php/apps/openregister/api/registers/{{test_register_id}}"
 			}
 		},
 		{
@@ -157,12 +201,17 @@
 			],
 			"request": {
 				"method": "POST",
-				"header": [{ "key": "Content-Type", "value": "application/json" }],
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
 				"body": {
 					"mode": "raw",
 					"raw": "{\"query\": \"{ __schema { types { name } } }\"}"
 				},
-				"url": "{{base_url}}/index.php/apps/openregister/api/graphql"
+				"url": "{{baseUrl}}/index.php/apps/openregister/api/graphql"
 			}
 		},
 		{
@@ -194,12 +243,17 @@
 			],
 			"request": {
 				"method": "POST",
-				"header": [{ "key": "Content-Type", "value": "application/json" }],
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
 				"body": {
 					"mode": "raw",
 					"raw": "{\"query\": \"{ __schema { queryType { name } } }\"}"
 				},
-				"url": "{{base_url}}/index.php/apps/openregister/api/graphql"
+				"url": "{{baseUrl}}/index.php/apps/openregister/api/graphql"
 			}
 		},
 		{
@@ -224,12 +278,17 @@
 			],
 			"request": {
 				"method": "POST",
-				"header": [{ "key": "Content-Type", "value": "application/json" }],
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
 				"body": {
 					"mode": "raw",
 					"raw": "{\"query\": \"{ thisFieldDoesNotExist }\"}"
 				},
-				"url": "{{base_url}}/index.php/apps/openregister/api/graphql"
+				"url": "{{baseUrl}}/index.php/apps/openregister/api/graphql"
 			}
 		},
 		{
@@ -256,12 +315,17 @@
 			],
 			"request": {
 				"method": "POST",
-				"header": [{ "key": "Content-Type", "value": "application/json" }],
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
 				"body": {
 					"mode": "raw",
 					"raw": "{\"notQuery\": \"test\"}"
 				},
-				"url": "{{base_url}}/index.php/apps/openregister/api/graphql"
+				"url": "{{baseUrl}}/index.php/apps/openregister/api/graphql"
 			}
 		},
 		{
@@ -285,12 +349,17 @@
 			],
 			"request": {
 				"method": "POST",
-				"header": [{ "key": "Content-Type", "value": "application/json" }],
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
 				"body": {
 					"mode": "raw",
 					"raw": "{\"query\": \"{ broken query {{\"}"
 				},
-				"url": "{{base_url}}/index.php/apps/openregister/api/graphql"
+				"url": "{{baseUrl}}/index.php/apps/openregister/api/graphql"
 			}
 		},
 		{
@@ -316,12 +385,17 @@
 			],
 			"request": {
 				"method": "POST",
-				"header": [{ "key": "Content-Type", "value": "application/json" }],
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
 				"body": {
 					"mode": "raw",
 					"raw": "{\"query\": \"{ __type(name: \\\"PageInfo\\\") { fields { name } } }\"}"
 				},
-				"url": "{{base_url}}/index.php/apps/openregister/api/graphql"
+				"url": "{{baseUrl}}/index.php/apps/openregister/api/graphql"
 			}
 		},
 		{
@@ -347,12 +421,17 @@
 			],
 			"request": {
 				"method": "POST",
-				"header": [{ "key": "Content-Type", "value": "application/json" }],
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
 				"body": {
 					"mode": "raw",
 					"raw": "{\"query\": \"{ __type(name: \\\"AuditTrailEntry\\\") { fields { name } } }\"}"
 				},
-				"url": "{{base_url}}/index.php/apps/openregister/api/graphql"
+				"url": "{{baseUrl}}/index.php/apps/openregister/api/graphql"
 			}
 		},
 		{
@@ -384,12 +463,17 @@
 			],
 			"request": {
 				"method": "POST",
-				"header": [{ "key": "Content-Type", "value": "application/json" }],
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
 				"body": {
 					"mode": "raw",
 					"raw": "{\"query\": \"{ __schema { types { name fields { name } } } }\"}"
 				},
-				"url": "{{base_url}}/index.php/apps/openregister/api/graphql"
+				"url": "{{baseUrl}}/index.php/apps/openregister/api/graphql"
 			}
 		},
 		{
@@ -414,12 +498,17 @@
 			],
 			"request": {
 				"method": "POST",
-				"header": [{ "key": "Content-Type", "value": "application/json" }],
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
 				"body": {
 					"mode": "raw",
 					"raw": "{\"query\": \"{ __type(name: \\\"Query\\\") { fields { name } } }\"}"
 				},
-				"url": "{{base_url}}/index.php/apps/openregister/api/graphql"
+				"url": "{{baseUrl}}/index.php/apps/openregister/api/graphql"
 			}
 		},
 		{
@@ -453,12 +542,17 @@
 			],
 			"request": {
 				"method": "POST",
-				"header": [{ "key": "Content-Type", "value": "application/json" }],
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
 				"body": {
 					"mode": "raw",
 					"raw": "{\"query\": \"{ __type(name: \\\"Mutation\\\") { fields { name } } }\"}"
 				},
-				"url": "{{base_url}}/index.php/apps/openregister/api/graphql"
+				"url": "{{baseUrl}}/index.php/apps/openregister/api/graphql"
 			}
 		},
 		{
@@ -478,7 +572,7 @@
 			],
 			"request": {
 				"method": "DELETE",
-				"url": "{{base_url}}/index.php/apps/openregister/api/schemas/{{test_schema_id}}"
+				"url": "{{baseUrl}}/index.php/apps/openregister/api/schemas/{{test_schema_id}}"
 			}
 		},
 		{
@@ -498,7 +592,7 @@
 			],
 			"request": {
 				"method": "DELETE",
-				"url": "{{base_url}}/index.php/apps/openregister/api/registers/{{test_register_id}}"
+				"url": "{{baseUrl}}/index.php/apps/openregister/api/registers/{{test_register_id}}"
 			}
 		}
 	]

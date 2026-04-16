@@ -629,8 +629,8 @@ class SchemasController extends Controller
                 operation: 'delete'
             );
 
-            // Return an empty response.
-            return new JSONResponse(data: []);
+            // Return 204 No Content for successful delete (REST convention).
+            return new JSONResponse(data: null, statusCode: 204);
         } catch (\OCA\OpenRegister\Exception\ValidationException $e) {
             // Return 409 Conflict for cascade protection (objects still attached).
             return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 409);

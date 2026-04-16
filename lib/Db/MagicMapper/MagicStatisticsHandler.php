@@ -572,6 +572,9 @@ class MagicStatisticsHandler
                 if ($schemaType === 'string' && (is_int($value) === true || is_float($value) === true)) {
                     // Schema expects string but database returned numeric - cast to string.
                     $value = (string) $value;
+                } else if ($schemaType === 'boolean' && $value !== null) {
+                    // Schema expects boolean but database returned integer (0/1) - cast to bool.
+                    $value = (bool) $value;
                 }
 
                 // Format date/datetime values based on schema format.

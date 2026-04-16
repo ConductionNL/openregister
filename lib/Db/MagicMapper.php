@@ -6211,18 +6211,22 @@ class MagicMapper extends AbstractObjectMapper
             $entity->setName($row['_name']);
         }
 
-        // Build column-to-property mapping from schema if available.
-        // This allows us to restore original property names (e.g., 'e-mailadres').
-        // from their sanitized column names (e.g., 'e_mailadres').
+        // Build column-to-property mapping and type mapping from schema if available.
+        // This allows us to restore original property names (e.g., 'e-mailadres')
+        // from their sanitized column names (e.g., 'e_mailadres') and cast types properly.
         $columnToPropertyMap = [];
+        $propertyTypeMap     = [];
         if (isset($row['_schema']) === true) {
             try {
                 $schema = $this->schemaMapper->find((int) $row['_schema']);
                 if ($schema !== null) {
                     $properties = $schema->getProperties() ?? [];
-                    foreach (array_keys($properties) as $propertyName) {
+                    foreach ($properties as $propertyName => $propertyDef) {
                         $columnName = $this->sanitizeColumnName(name: $propertyName);
                         $columnToPropertyMap[$columnName] = $propertyName;
+                        if (isset($propertyDef['type']) === true) {
+                            $propertyTypeMap[$propertyName] = $propertyDef['type'];
+                        }
                     }
                 }
             } catch (\Exception $e) {
@@ -6257,6 +6261,15 @@ class MagicMapper extends AbstractObjectMapper
                     $objectData[$propertyName] = $decoded;
                     continue;
                 }
+            }
+
+            // Cast boolean values from database integers (0/1) to PHP booleans.
+            if (isset($propertyTypeMap[$propertyName]) === true
+                && $propertyTypeMap[$propertyName] === 'boolean'
+                && $value !== null
+            ) {
+                $objectData[$propertyName] = (bool) $value;
+                continue;
             }
 
             $objectData[$propertyName] = $value;

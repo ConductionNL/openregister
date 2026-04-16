@@ -1059,6 +1059,10 @@ class SchemaMapper extends QBMapper
         }
 
         // Count objects that reference this schema (excluding soft-deleted objects).
+        // Check both the central objects table and any magic tables for this schema.
+        $count = 0;
+
+        // 1. Check the central openregister_objects table.
         $qb = $this->db->getQueryBuilder();
         $qb->select($qb->func()->count('*'))
             ->from('openregister_objects')
@@ -1068,8 +1072,46 @@ class SchemaMapper extends QBMapper
             ->andWhere($qb->expr()->isNull('deleted'));
 
         $result = $qb->executeQuery();
-        $count  = (int) $result->fetchOne();
+        $count += (int) $result->fetchOne();
         $result->closeCursor();
+
+        // 2. Check magic tables (openregister_table_{registerId}_{schemaId}).
+        if ($count === 0) {
+            $platform   = $this->db->getDatabasePlatform();
+            $isPostgres = stripos($platform::class, 'PostgreSQL') !== false;
+            $prefix     = $isPostgres ? 'oc_' : 'oc_';
+
+            $tablePattern = $prefix . 'openregister_table_%_' . (int) $schemaId;
+            $sql = $isPostgres
+                ? "SELECT table_name FROM information_schema.tables WHERE table_schema = current_schema() AND table_name LIKE ?"
+                : "SELECT table_name FROM information_schema.tables WHERE table_schema = DATABASE() AND table_name LIKE ?";
+
+            $stmt = $this->db->prepare($sql);
+            $stmt->execute([$tablePattern]);
+
+            while (($row = $stmt->fetch()) !== false) {
+                $tableName = $row['table_name'];
+                // Verify the table name matches the exact pattern (avoid partial matches).
+                if (preg_match('/^oc_openregister_table_\d+_' . (int) $schemaId . '$/', $tableName) !== 1) {
+                    continue;
+                }
+
+                // Strip the oc_ prefix for the query builder.
+                $magicTable = substr($tableName, 3);
+                $qb2 = $this->db->getQueryBuilder();
+                $qb2->select($qb2->func()->count('*'))
+                    ->from($magicTable)
+                    ->where($qb2->expr()->isNull('_deleted'));
+
+                $result2 = $qb2->executeQuery();
+                $count  += (int) $result2->fetchOne();
+                $result2->closeCursor();
+
+                if ($count > 0) {
+                    break;
+                }
+            }
+        }//end if
 
         if ($count > 0) {
             throw new ValidationException(message: 'Cannot delete schema: objects are still attached.');

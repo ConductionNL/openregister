@@ -629,8 +629,8 @@ class RegistersController extends Controller
             $register = $this->registerService->find($id);
             $this->registerService->delete($register);
 
-            // Return an empty response.
-            return new JSONResponse(data: []);
+            // Return 204 No Content for successful delete (REST convention).
+            return new JSONResponse(data: null, statusCode: 204);
         } catch (DoesNotExistException $e) {
             // Return 404 Not Found when register doesn't exist or is not accessible.
             return new JSONResponse(data: ['error' => 'Register not found'], statusCode: 404);
