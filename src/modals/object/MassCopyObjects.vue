@@ -27,7 +27,7 @@ import { objectStore, navigationStore } from '../../store/store.js'
 			</div>
 
 			<div v-if="selectedNamingPattern?.value === 'custom'" class="form-group">
-				<label for="customPattern">Custom pattern:</label>
+				<label for="customPattern">{{ t('openregister', 'Custom pattern:') }}</label>
 				<NcTextField
 					id="customPattern"
 					v-model="customPattern"

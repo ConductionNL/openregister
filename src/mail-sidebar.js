@@ -20,13 +20,14 @@ const MOUNT_MAX_RETRIES = 30
  * @return {HTMLElement|null} The mount point element or null.
  */
 function findMountPoint() {
-	// Try the Mail app content area
-	const appContent = document.getElementById('app-content-vue')
+	// NcAppSidebar expects to live inside the NC content wrapper.
+	// Mount inside #content-vue so the sidebar positions correctly
+	// alongside the mail app content.
+	const mailApp = document.querySelector('#content-vue.app-mail')
+		|| document.getElementById('app-content-vue')
 		|| document.getElementById('app-content')
-		|| document.querySelector('.app-content')
-		|| document.querySelector('#content')
 
-	return appContent || null
+	return mailApp || null
 }
 
 /**

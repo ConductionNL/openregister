@@ -35,8 +35,8 @@ import { objectStore, navigationStore, registerStore, schemaStore } from '../../
 			<div class="search-container">
 				<NcTextField
 					v-model="searchTerm"
-					label="Search objects"
-					placeholder="Type to search for objects..."
+					:label="t('openregister', 'Search objects')"
+					:placeholder="t('openregister', 'Type to search for objects...')"
 					@input="searchObjects" />
 			</div>
 

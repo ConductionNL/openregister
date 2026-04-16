@@ -1,10 +1,14 @@
+<script setup>
+import { translate as t } from '@nextcloud/l10n'
+</script>
+
 <template>
 	<SettingsSection
 		id="api-tokens"
-		name="API Token Configuration"
-		description="Configure API tokens for external service integrations"
+		:name="t('openregister', 'API Token Configuration')"
+		:description="t('openregister', 'Configure API tokens for external service integrations')"
 		:loading="loading"
-		loading-message="Loading API tokens...">
+		:loading-message="t('openregister', 'Loading API tokens...')"
 		<!-- Section Description -->
 		<div class="section-description-full">
 			<p class="main-description">
@@ -22,7 +26,7 @@
 
 		<!-- Required Scopes Info -->
 		<SettingsCard
-			title="Required Token Scopes"
+			:title="t('openregister', 'Required Token Scopes')"
 			icon="📋"
 			:collapsible="true"
 			:default-collapsed="true">
@@ -84,7 +88,7 @@
 
 		<!-- GitHub Token Configuration -->
 		<SettingsCard
-			title="GitHub Personal Access Token"
+			:title="t('openregister', 'GitHub Personal Access Token')"
 			icon="🔐"
 			:collapsible="false">
 			<template #icon>

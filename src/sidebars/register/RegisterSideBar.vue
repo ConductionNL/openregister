@@ -180,7 +180,7 @@ import { registerStore, dashboardStore, navigationStore, schemaStore } from '../
 						:value="formData.description || ''"
 						@update:value="v => updateField('description', v)" />
 					<NcSelect
-						input-label="Schemas"
+						:input-label="t('openregister', 'Schemas')"
 						:options="schemaSelectOptions"
 						:value="getSchemaSelectValue(formData.schemas)"
 						:multiple="true"

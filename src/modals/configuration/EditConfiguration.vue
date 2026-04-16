@@ -5,7 +5,7 @@ import { configurationStore, navigationStore, organisationStore, applicationStor
 
 <template>
 	<NcDialog v-if="navigationStore.modal === 'editConfiguration'"
-		:name="configurationStore.configurationItem?.id ? 'Edit Configuration' : 'New Configuration'"
+		:name="configurationStore.configurationItem?.id ? t('openregister', 'Edit Configuration') : t('openregister', 'New Configuration')"
 		size="large"
 		:can-close="true"
 		:open="true"
@@ -20,25 +20,25 @@ import { configurationStore, navigationStore, organisationStore, applicationStor
 				<BTab active>
 					<template #title>
 						<Cog :size="16" />
-						<span>Settings</span>
+						<span>{{ t('openregister', 'Settings') }}</span>
 					</template>
 
 					<div class="form-editor">
 						<NcTextField
-							label="Title *"
-							placeholder="Enter configuration title"
+							:label="t('openregister', 'Title *')"
+							:placeholder="t('openregister', 'Enter configuration title')"
 							:value="configurationStore.configurationItem?.title || ''"
 							:error="!configurationStore.configurationItem?.title?.trim?.()"
 							@update:value="updateTitle" />
 
 						<NcTextArea
-							label="Description"
-							placeholder="Enter configuration description (optional)"
+							:label="t('openregister', 'Description')"
+							:placeholder="t('openregister', 'Enter configuration description (optional)')"
 							:value="configurationStore.configurationItem?.description || ''"
 							@update:value="updateDescription" />
 
 						<div class="selectField">
-							<label for="type-select">Type</label>
+							<label for="type-select">{{ t('openregister', 'Type') }}</label>
 							<NcSelect
 								id="type-select"
 								v-model="selectedType"
@@ -46,7 +46,7 @@ import { configurationStore, navigationStore, organisationStore, applicationStor
 								label="label"
 								track-by="value"
 								:label-outside="true"
-								placeholder="Select configuration type..."
+								:placeholder="t('openregister', 'Select configuration type...')"
 								@input="updateType">
 								<template #option="{ label, description }">
 									<div class="option-content">
@@ -56,17 +56,17 @@ import { configurationStore, navigationStore, organisationStore, applicationStor
 								</template>
 							</NcSelect>
 							<p class="field-hint">
-								Configuration type (default, application, etc.)
+								{{ t('openregister', 'Configuration type (default, application, etc.)') }}
 							</p>
 						</div>
 
 						<NcTextField
-							label="App ID"
-							placeholder="myapp"
+							:label="t('openregister', 'App ID')"
+							:placeholder="t('openregister', 'myapp')"
 							:value="configurationStore.configurationItem?.app || ''"
 							@update:value="updateApp">
 							<template #helper-text-message>
-								<p>Application identifier for this configuration (optional)</p>
+								<p>{{ t('openregister', 'Application identifier for this configuration (optional)') }}</p>
 							</template>
 						</NcTextField>
 
@@ -78,12 +78,12 @@ import { configurationStore, navigationStore, organisationStore, applicationStor
 				<BTab>
 					<template #title>
 						<Database :size="16" />
-						<span>Configuration</span>
+						<span>{{ t('openregister', 'Configuration') }}</span>
 					</template>
 
 					<div class="form-editor">
 						<div class="selectField">
-							<label for="registers-select">Registers</label>
+							<label for="registers-select">{{ t('openregister', 'Registers') }}</label>
 							<NcSelect
 								id="registers-select"
 								v-model="selectedRegisters"
@@ -94,7 +94,7 @@ import { configurationStore, navigationStore, organisationStore, applicationStor
 								track-by="id"
 								:label-outside="true"
 								:filterable="true"
-								placeholder="Search registers..."
+								:placeholder="t('openregister', 'Search registers...')"
 								:close-on-select="false"
 								@search-change="searchRegisters"
 								@input="updateRegisters">
@@ -105,8 +105,8 @@ import { configurationStore, navigationStore, organisationStore, applicationStor
 									</div>
 								</template>
 								<template #no-options>
-									<span v-if="loadingRegisters">Searching...</span>
-									<span v-else>No registers found</span>
+									<span v-if="loadingRegisters">{{ t('openregister', 'Searching...') }}</span>
+									<span v-else>{{ t('openregister', 'No registers found') }}</span>
 								</template>
 							</NcSelect>
 							<p class="field-hint">
@@ -115,7 +115,7 @@ import { configurationStore, navigationStore, organisationStore, applicationStor
 						</div>
 
 						<div class="selectField">
-							<label for="schemas-select">Schemas</label>
+							<label for="schemas-select">{{ t('openregister', 'Schemas') }}</label>
 							<NcSelect
 								id="schemas-select"
 								v-model="selectedSchemas"
@@ -126,7 +126,7 @@ import { configurationStore, navigationStore, organisationStore, applicationStor
 								track-by="id"
 								:label-outside="true"
 								:filterable="true"
-								placeholder="Search schemas..."
+								:placeholder="t('openregister', 'Search schemas...')"
 								:close-on-select="false"
 								@search-change="searchSchemas"
 								@input="updateSchemas">
@@ -137,8 +137,8 @@ import { configurationStore, navigationStore, organisationStore, applicationStor
 									</div>
 								</template>
 								<template #no-options>
-									<span v-if="loadingSchemas">Searching...</span>
-									<span v-else>No schemas found</span>
+									<span v-if="loadingSchemas">{{ t('openregister', 'Searching...') }}</span>
+									<span v-else>{{ t('openregister', 'No schemas found') }}</span>
 								</template>
 							</NcSelect>
 							<p class="field-hint">
@@ -147,7 +147,7 @@ import { configurationStore, navigationStore, organisationStore, applicationStor
 						</div>
 
 						<div class="selectField">
-							<label for="objects-select">Objects</label>
+							<label for="objects-select">{{ t('openregister', 'Objects') }}</label>
 							<NcSelect
 								id="objects-select"
 								v-model="selectedObjects"
@@ -158,7 +158,7 @@ import { configurationStore, navigationStore, organisationStore, applicationStor
 								track-by="id"
 								:label-outside="true"
 								:filterable="true"
-								placeholder="Search objects..."
+								:placeholder="t('openregister', 'Search objects...')"
 								:close-on-select="false"
 								:disabled="selectedRegisters.length === 0 && selectedSchemas.length === 0"
 								@search-change="searchObjects"
@@ -170,9 +170,9 @@ import { configurationStore, navigationStore, organisationStore, applicationStor
 									</div>
 								</template>
 								<template #no-options>
-									<span v-if="loadingObjects">Searching...</span>
-									<span v-else-if="selectedRegisters.length === 0 && selectedSchemas.length === 0">Please select registers or schemas first</span>
-									<span v-else>No objects found</span>
+									<span v-if="loadingObjects">{{ t('openregister', 'Searching...') }}</span>
+									<span v-else-if="selectedRegisters.length === 0 && selectedSchemas.length === 0">{{ t('openregister', 'Please select registers or schemas first') }}</span>
+									<span v-else>{{ t('openregister', 'No objects found') }}</span>
 								</template>
 							</NcSelect>
 							<p class="field-hint">
@@ -182,7 +182,7 @@ import { configurationStore, navigationStore, organisationStore, applicationStor
 						</div>
 
 						<div class="selectField">
-							<label for="sources-select">Data Sources</label>
+							<label for="sources-select">{{ t('openregister', 'Data Sources') }}</label>
 							<NcSelect
 								id="sources-select"
 								v-model="selectedSources"
@@ -193,7 +193,7 @@ import { configurationStore, navigationStore, organisationStore, applicationStor
 								track-by="id"
 								:label-outside="true"
 								:filterable="true"
-								placeholder="Search data sources..."
+								:placeholder="t('openregister', 'Search data sources...')"
 								:close-on-select="false"
 								@search-change="searchSources"
 								@input="updateSources">
@@ -204,8 +204,8 @@ import { configurationStore, navigationStore, organisationStore, applicationStor
 									</div>
 								</template>
 								<template #no-options>
-									<span v-if="loadingSources">Searching...</span>
-									<span v-else>No sources found</span>
+									<span v-if="loadingSources">{{ t('openregister', 'Searching...') }}</span>
+									<span v-else>{{ t('openregister', 'No sources found') }}</span>
 								</template>
 							</NcSelect>
 							<p class="field-hint">
@@ -214,7 +214,7 @@ import { configurationStore, navigationStore, organisationStore, applicationStor
 						</div>
 
 						<div class="selectField">
-							<label for="agents-select">Agents</label>
+							<label for="agents-select">{{ t('openregister', 'Agents') }}</label>
 							<NcSelect
 								id="agents-select"
 								v-model="selectedAgents"
@@ -225,7 +225,7 @@ import { configurationStore, navigationStore, organisationStore, applicationStor
 								track-by="id"
 								:label-outside="true"
 								:filterable="true"
-								placeholder="Search agents..."
+								:placeholder="t('openregister', 'Search agents...')"
 								:close-on-select="false"
 								@search-change="searchAgents"
 								@input="updateAgents">
@@ -236,8 +236,8 @@ import { configurationStore, navigationStore, organisationStore, applicationStor
 									</div>
 								</template>
 								<template #no-options>
-									<span v-if="loadingAgents">Searching...</span>
-									<span v-else>No agents found</span>
+									<span v-if="loadingAgents">{{ t('openregister', 'Searching...') }}</span>
+									<span v-else>{{ t('openregister', 'No agents found') }}</span>
 								</template>
 							</NcSelect>
 							<p class="field-hint">
@@ -246,7 +246,7 @@ import { configurationStore, navigationStore, organisationStore, applicationStor
 						</div>
 
 						<div class="selectField">
-							<label for="views-select">Views</label>
+							<label for="views-select">{{ t('openregister', 'Views') }}</label>
 							<NcSelect
 								id="views-select"
 								v-model="selectedViews"

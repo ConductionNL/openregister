@@ -463,7 +463,7 @@ import { objectStore, navigationStore, registerStore, schemaStore } from '../../
 															:taggable="true"
 															:multiple="true"
 															:disabled="labelsLoading"
-															input-label="Labels" />
+															:input-label="t('openregister', 'Labels')" />
 														<div class="fileLabelsEditActions">
 															<NcButton :disabled="labelsLoading" type="primary" @click="saveFileLabels(attachment)">
 																<template #icon>

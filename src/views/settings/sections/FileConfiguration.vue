@@ -70,7 +70,7 @@
 
 		<!-- Text Extraction Settings -->
 		<SettingsCard
-			title="Text Extraction"
+			:title="t('openregister', 'Text Extraction')"
 			icon="📄"
 			:collapsible="true"
 			:default-collapsed="true">
@@ -79,7 +79,7 @@
 					<label for="extraction-scope">Extract Text From</label>
 					<NcSelect v-model="fileSettings.extractionScope"
 						input-id="extraction-scope"
-						input-label="Extraction Scope"
+						:input-label="t('openregister', 'Extraction Scope')"
 						:options="extractionScopes"
 						@input="saveSettings">
 						<template #option="{ label, description }">
@@ -98,7 +98,7 @@
 					<label for="text-extractor">Text Extractor</label>
 					<NcSelect v-model="fileSettings.textExtractor"
 						input-id="text-extractor"
-						input-label="Text Extraction Engine"
+						:input-label="t('openregister', 'Text Extraction Engine')"
 						:disabled="fileSettings.extractionScope.id === 'none'"
 						:options="textExtractors"
 						@input="saveSettings">
@@ -122,7 +122,7 @@
 							<label for="dolphin-endpoint">Dolphin API Endpoint</label>
 							<NcTextField id="dolphin-endpoint"
 								v-model="fileSettings.dolphinApiEndpoint"
-								placeholder="https://api.your-dolphin-instance.com"
+								:placeholder="t('openregister', 'https://api.your-dolphin-instance.com')"
 								@update:value="saveSettings">
 								<template #trailing-button-icon>
 									<InformationIcon :size="20" />
@@ -138,7 +138,7 @@
 							<NcTextField id="dolphin-key"
 								v-model="fileSettings.dolphinApiKey"
 								type="password"
-								placeholder="Enter your API key"
+								:placeholder="t('openregister', 'Enter your API key')"
 								@update:value="saveSettings">
 								<template #trailing-button-icon>
 									<KeyIcon :size="20" />
@@ -165,7 +165,7 @@
 					<label for="extraction-mode">Extraction Mode</label>
 					<NcSelect v-model="fileSettings.extractionMode"
 						input-id="extraction-mode"
-						input-label="Extraction Mode"
+						:input-label="t('openregister', 'Extraction Mode')"
 						:disabled="fileSettings.extractionScope.id === 'none'"
 						:options="extractionModes"
 						@input="saveSettings">
@@ -284,7 +284,7 @@
 
 		<!-- Object Text Extraction Settings -->
 		<SettingsCard
-			title="Object Text Extraction"
+			:title="t('openregister', 'Object Text Extraction')"
 			icon="📦"
 			:collapsible="true"
 			:default-collapsed="true">
@@ -293,7 +293,7 @@
 					<label for="object-extraction-mode">Extraction Mode</label>
 					<NcSelect v-model="objectSettings.extractionMode"
 						input-id="object-extraction-mode"
-						input-label="Object Extraction Mode"
+						:input-label="t('openregister', 'Object Extraction Mode')"
 						:options="extractionModes"
 						@input="saveObjectSettings">
 						<template #option="{ label, description }">
@@ -312,7 +312,7 @@
 
 		<!-- Entity Recognition Settings -->
 		<SettingsCard
-			title="Entity Recognition"
+			:title="t('openregister', 'Entity Recognition')"
 			icon="🔍"
 			:collapsible="true"
 			:default-collapsed="true">
@@ -335,7 +335,7 @@
 					<label for="entity-recognition-method">Detection Method</label>
 					<NcSelect v-model="fileSettings.entityRecognitionMethod"
 						input-id="entity-recognition-method"
-						input-label="Entity Recognition Method"
+						:input-label="t('openregister', 'Entity Recognition Method')"
 						:options="entityRecognitionMethods"
 						@input="saveSettings">
 						<template #option="{ label, description, icon }">
@@ -358,7 +358,7 @@
 							<label for="presidio-endpoint">Presidio API Endpoint</label>
 							<NcTextField id="presidio-endpoint"
 								v-model="fileSettings.presidioApiEndpoint"
-								placeholder="http://openregister-presidio-analyzer:3000"
+								:placeholder="t('openregister', 'http://openregister-presidio-analyzer:3000')"
 								@update:value="saveSettings">
 								<template #trailing-button-icon>
 									<InformationIcon :size="20" />
@@ -545,6 +545,7 @@
 
 <script>
 import { mapStores } from 'pinia'
+import { translate as t } from '@nextcloud/l10n'
 import { useSettingsStore } from '../../../store/settings.js'
 import SettingsSection from '../../../components/shared/SettingsSection.vue'
 import SettingsCard from '../../../components/shared/SettingsCard.vue'

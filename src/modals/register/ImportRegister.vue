@@ -209,8 +209,8 @@ import { registerStore, schemaStore, navigationStore, objectStore, dashboardStor
 				:model-value="selectedRegisterValue"
 				:loading="registerLoading"
 				:disabled="registerLoading"
-				aria-label-combobox="Select a register"
-				placeholder="Select a register"
+				:aria-label-combobox="t('openregister', 'Select a register')"
+				:placeholder="t('openregister', 'Select a register')"
 				@update:model-value="handleRegisterChange" />
 
 			<NcSelect v-if="selectedFile && (getFileExtension(selectedFile?.name) === 'csv')"
@@ -218,8 +218,8 @@ import { registerStore, schemaStore, navigationStore, objectStore, dashboardStor
 				:model-value="selectedSchemaValue"
 				:loading="schemaLoading"
 				:disabled="!registerStore.registerItem || schemaLoading"
-				aria-label-combobox="Select a schema"
-				placeholder="Select a schema"
+				:aria-label-combobox="t('openregister', 'Select a schema')"
+				:placeholder="t('openregister', 'Select a schema')"
 				@update:model-value="handleSchemaChange" />
 
 			<div class="fileTypes">

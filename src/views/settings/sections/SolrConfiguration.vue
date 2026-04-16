@@ -1,7 +1,11 @@
+<script setup>
+import { translate as t } from '@nextcloud/l10n'
+</script>
+
 <template>
 	<SettingsSection
-		name="Search Configuration"
-		description="Configure Apache SOLR search engine for advanced search capabilities"
+		:name="t('openregister', 'Search Configuration')"
+		:description="t('openregister', 'Configure Apache SOLR search engine for advanced search capabilities')"
 		:loading="loading"
 		loading-message="Loading search configuration...">
 		<template #actions>
@@ -613,12 +617,12 @@
 								<input
 									v-model="fieldFilter"
 									type="text"
-									placeholder="Filter fields..."
+									:placeholder="t('openregister', 'Filter fields...')"
 									class="field-filter">
 								<NcSelect
 									v-model="fieldTypeFilter"
 									:options="fieldTypeOptions"
-									placeholder="Filter by type"
+									:placeholder="t('openregister', 'Filter by type')"
 									:clearable="true"
 									class="field-type-filter" />
 							</div>
@@ -1118,6 +1122,7 @@ import FileWarmupModal from '../../../modals/settings/FileWarmupModal.vue'
 import axios from '@nextcloud/axios'
 import { generateUrl } from '@nextcloud/router'
 import { showSuccess, showError } from '@nextcloud/dialogs'
+import { translate as t } from '@nextcloud/l10n'
 
 export default {
 	name: 'SolrConfiguration',
@@ -1531,14 +1536,14 @@ export default {
 				// Show success notification
 				if (this.fieldCreationResult?.success) {
 					if (dryRun) {
-						showSuccess(`Dry run completed: ${this.fieldCreationResult.would_create?.length || 0} fields would be created`)
+						showSuccess(t('openregister', 'Dry run completed: {count} fields would be created', { count: this.fieldCreationResult.would_create?.length || 0 }))
 					} else {
-						showSuccess(`Successfully created ${this.fieldCreationResult.created?.length || 0} SOLR fields`)
+						showSuccess(t('openregister', 'Successfully created {count} SOLR fields', { count: this.fieldCreationResult.created?.length || 0 }))
 					}
 				}
 			} catch (error) {
 				console.error('Error creating missing SOLR fields:', error)
-				showError('Failed to create missing SOLR fields: ' + error.message)
+				showError(t('openregister', 'Failed to create missing SOLR fields: {error}', { error: error.message }))
 			}
 		},
 
@@ -1551,16 +1556,16 @@ export default {
 				if (this.fieldCreationResult?.success) {
 					const fixedCount = this.fieldCreationResult.fixed?.length || 0
 					if (dryRun) {
-						showSuccess(`Dry run completed: ${fixedCount} fields would be fixed`)
+						showSuccess(t('openregister', 'Dry run completed: {count} fields would be fixed', { count: fixedCount }))
 					} else {
-						showSuccess(`Successfully fixed ${fixedCount} SOLR field configurations`)
+						showSuccess(t('openregister', 'Successfully fixed {count} SOLR field configurations', { count: fixedCount }))
 						// Refresh the field comparison after fixing
 						await this.inspectFields()
 					}
 				}
 			} catch (error) {
 				console.error('Error fixing mismatched SOLR fields:', error)
-				showError('Failed to fix mismatched SOLR fields: ' + error.message)
+				showError(t('openregister', 'Failed to fix mismatched SOLR fields: {error}', { error: error.message }))
 			}
 		},
 

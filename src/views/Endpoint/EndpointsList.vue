@@ -10,7 +10,7 @@ import { endpointStore, navigationStore, searchStore } from '../../store/store.j
 				<NcTextField
 					:value.sync="searchStore.search"
 					:show-trailing-button="searchStore.search !== ''"
-					label="Search"
+					:label="t('openregister', 'Search')"
 					class="searchField"
 					trailing-button-icon="close"
 					@trailing-button-click="endpointStore.refreshEndpointList()">
@@ -21,13 +21,13 @@ import { endpointStore, navigationStore, searchStore } from '../../store/store.j
 						<template #icon>
 							<Refresh :size="20" />
 						</template>
-						Refresh
+						{{ t('openregister', 'Refresh') }}
 					</NcActionButton>
 					<NcActionButton close-after-click @click="endpointStore.setEndpointItem({}); navigationStore.setModal('editEndpoint')">
 						<template #icon>
 							<Plus :size="20" />
 						</template>
-						Add endpoint
+						{{ t('openregister', 'Add endpoint') }}
 					</NcActionButton>
 				</NcActions>
 			</div>
@@ -51,13 +51,13 @@ import { endpointStore, navigationStore, searchStore } from '../../store/store.j
 							<template #icon>
 								<Pencil />
 							</template>
-							Edit
+							{{ t('openregister', 'Edit') }}
 						</NcActionButton>
 						<NcActionButton close-after-click @click="endpointStore.setEndpointItem(endpoint); navigationStore.setDialog('deleteEndpoint')">
 							<template #icon>
 								<TrashCanOutline />
 							</template>
-							Delete
+							{{ t('openregister', 'Delete') }}
 						</NcActionButton>
 					</template>
 				</NcListItem>
@@ -68,10 +68,10 @@ import { endpointStore, navigationStore, searchStore } from '../../store/store.j
 			class="loadingIcon"
 			:size="64"
 			appearance="dark"
-			name="Loading endpoints" />
+			:name="t('openregister', 'Loading endpoints')" />
 
 		<div v-if="!endpointStore.endpointList.length" class="emptyListHeader">
-			No endpoints defined
+			{{ t('openregister', 'No endpoints defined') }}
 		</div>
 	</NcAppContentList>
 </template>
