@@ -25,6 +25,7 @@ use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\DB\Exception as DBException;
 use OCP\IRequest;
+use OCP\IGroupManager;
 use OCP\IUserSession;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
@@ -55,6 +56,7 @@ class RegistersControllerTest extends TestCase
     private GitHubHandler&MockObject $githubService;
     private IAppManager&MockObject $appManager;
     private OasService&MockObject $oasService;
+    private IGroupManager&MockObject $groupManager;
 
     protected function setUp(): void
     {
@@ -75,6 +77,7 @@ class RegistersControllerTest extends TestCase
         $this->githubService = $this->createMock(GitHubHandler::class);
         $this->appManager = $this->createMock(IAppManager::class);
         $this->oasService = $this->createMock(OasService::class);
+        $this->groupManager = $this->createMock(IGroupManager::class);
 
         $this->controller = new RegistersController(
             'openregister',
@@ -93,7 +96,8 @@ class RegistersControllerTest extends TestCase
             $this->githubService,
             $this->appManager,
             $this->oasService,
-            $this->createMock(\Psr\Container\ContainerInterface::class)
+            $this->createMock(\Psr\Container\ContainerInterface::class),
+            $this->groupManager
         );
     }
 

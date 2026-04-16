@@ -485,11 +485,13 @@ class MagicSearchHandler
                     continue;
                 }
 
-                $searchConditions[] = "{$columnName}::text ILIKE {$likePattern}";
+                $quotedCol = $this->quoteColumnName(name: $columnName);
+                $searchConditions[] = "{$quotedCol}::text ILIKE {$likePattern}";
             }
         }
 
         // Search in metadata text fields (ILIKE for all).
+        // Metadata columns start with _ so they don't clash with reserved keywords.
         $searchConditions[] = "_name::text ILIKE {$likePattern}";
         $searchConditions[] = "_description::text ILIKE {$likePattern}";
         $searchConditions[] = "_summary::text ILIKE {$likePattern}";
@@ -539,12 +541,13 @@ class MagicSearchHandler
             }
 
             $columnName   = $this->sanitizeColumnName(name: $key);
+            $quotedCol    = $this->quoteColumnName(name: $columnName);
             $propertyType = $properties[$key]['type'] ?? 'string';
 
             // Handle array-type properties (JSONB columns) with JSON containment operator.
             if ($propertyType === 'array') {
                 $conditions[] = $this->buildArrayPropertyConditionSql(
-                    columnName: $columnName,
+                    columnName: $quotedCol,
                     value: $value,
                     connection: $connection
                 );
@@ -558,14 +561,14 @@ class MagicSearchHandler
                         fn($v) => $connection->quote((string) $v),
                         $value
                     );
-                    $conditions[] = "{$columnName} IN (".implode(', ', $quotedValues).')';
+                    $conditions[] = "{$quotedCol} IN (".implode(', ', $quotedValues).')';
                 }
 
                 continue;
             }
 
             // Simple equality filter.
-            $conditions[] = "{$columnName} = ".$connection->quote((string) $value);
+            $conditions[] = "{$quotedCol} = ".$connection->quote((string) $value);
         }//end foreach
 
         return $conditions;
@@ -923,6 +926,7 @@ class MagicSearchHandler
             }
 
             $columnName   = $this->sanitizeColumnName(name: $field);
+            $quotedCol    = $this->quoteColumnName(name: $columnName);
             $propertyType = $properties[$field]['type'] ?? 'string';
 
             if ($value === 'IS NOT NULL') {
@@ -936,17 +940,20 @@ class MagicSearchHandler
             }
 
             // Handle array type columns (JSON arrays in PostgreSQL).
+            // applyJsonArrayFilter/applyJsonObjectFilter use raw SQL via andWhere(),
+            // so they need the quoted column name.
             if ($propertyType === 'array') {
-                $this->applyJsonArrayFilter(qb: $qb, columnName: $columnName, value: $value);
+                $this->applyJsonArrayFilter(qb: $qb, columnName: $quotedCol, value: $value);
                 continue;
             }
 
             // Handle object type columns (JSON objects with 'value' key containing UUID).
             if ($propertyType === 'object') {
-                $this->applyJsonObjectFilter(qb: $qb, columnName: $columnName, value: $value);
+                $this->applyJsonObjectFilter(qb: $qb, columnName: $quotedCol, value: $value);
                 continue;
             }
 
+            // Query builder methods auto-quote identifiers, so use plain column name.
             if (is_array($value) === true) {
                 $qb->andWhere(
                     $qb->expr()->in(
@@ -1130,9 +1137,10 @@ class MagicSearchHandler
                 && in_array($propertyConfig['format'] ?? '', $dateFormats, true) === false
             ) {
                 $columnName = $this->sanitizeColumnName(name: $field);
+                $quotedCol  = $this->quoteColumnName(name: $columnName);
                 $searchConditions->add(
                     $qb->expr()->like(
-                        $qb->createFunction("LOWER(t.{$columnName})"),
+                        $qb->createFunction("LOWER(t.{$quotedCol}::text)"),
                         $searchPattern
                     )
                 );
@@ -1226,6 +1234,7 @@ class MagicSearchHandler
                 $qb->addOrderBy("t.{$field}", $direction);
             } else if (($properties[$field] ?? null) !== null) {
                 // Schema property field sorting.
+                // Query builder auto-quotes identifiers, so use plain column name.
                 $columnName = $this->sanitizeColumnName(name: $field);
                 $qb->addOrderBy("t.{$columnName}", $direction);
             }//end if
@@ -1553,6 +1562,26 @@ class MagicSearchHandler
         // Limit length to 64 characters (MySQL limit).
         return substr($name, 0, 64);
     }//end sanitizeColumnName()
+
+    /**
+     * Quote a column identifier for safe use in SQL.
+     *
+     * Wraps column names in platform-specific quotes to prevent conflicts
+     * with SQL reserved keywords (e.g. "case", "status", "order").
+     *
+     * @param string $name The sanitized column name to quote.
+     *
+     * @return string The quoted column identifier.
+     */
+    private function quoteColumnName(string $name): string
+    {
+        $platform = $this->db->getDatabasePlatform();
+        if (str_contains(get_class($platform), 'PostgreSQL') === true) {
+            return '"'.$name.'"';
+        }
+
+        return '`'.$name.'`';
+    }//end quoteColumnName()
 
     /**
      * Convert snake_case column name to camelCase property name

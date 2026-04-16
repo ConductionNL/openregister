@@ -47,7 +47,7 @@
 			<NcButton
 				type="secondary"
 				@click="clearFilters">
-				{{ t('openregister', 'Clear Filters') }}
+				{{ t('openregister', 'Clear filters') }}
 			</NcButton>
 		</div>
 	</div>

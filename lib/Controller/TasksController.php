@@ -77,6 +77,41 @@ class TasksController extends Controller
     }//end __construct()
 
     /**
+     * Get all tasks for the current user across all calendars.
+     *
+     * Returns all CalDAV VTODOs from the user's VTODO-supporting calendars,
+     * optionally filtered by status or assignee.
+     *
+     * @return JSONResponse JSON response with all user tasks
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     */
+    public function allUserTasks(): JSONResponse
+    {
+        try {
+            $status   = $this->request->getParam('status');
+            $limit    = (int) ($this->request->getParam('_limit') ?? $this->request->getParam('limit') ?? 50);
+            $offset   = (int) ($this->request->getParam('_offset') ?? $this->request->getParam('offset') ?? 0);
+            $assignee = $this->request->getParam('assignee');
+
+            $result = $this->taskService->getAllUserTasks(
+                status: $status,
+                limit: $limit,
+                offset: $offset,
+                assignee: $assignee
+            );
+
+            return new JSONResponse(data: $result);
+        } catch (Exception $e) {
+            return new JSONResponse(
+                data: ['error' => $e->getMessage()],
+                statusCode: 500
+            );
+        }//end try
+    }//end allUserTasks()
+
+    /**
      * List all tasks linked to a specific object.
      *
      * @param string $register The register slug or identifier

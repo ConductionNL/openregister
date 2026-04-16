@@ -235,7 +235,7 @@
 						<!-- Info about loaded facets -->
 						<div v-if="facetData && Object.keys(facetData).length > 0" class="facets-loaded-info">
 							<p class="facets-loaded-description">
-								{{ t('openregister', 'Filter data loaded automatically. Use the filters below to refine your search.') }}
+								{{ t('openregister', 'Filter data loaded automatically. use the filters below to refine your search.') }}
 							</p>
 						</div>
 					</div>
@@ -324,7 +324,7 @@
 
 						<div v-else-if="filteredViews.length === 0" class="noViews">
 							<NcNoteCard type="info">
-								{{ viewSearchQuery ? t('openregister', 'No views match your search') : t('openregister', 'No saved views yet. Create one in the Search tab!') }}
+								{{ viewSearchQuery ? t('openregister', 'No views match your search') : t('openregister', 'No saved views yet. create one in the search tab!') }}
 							</NcNoteCard>
 						</div>
 

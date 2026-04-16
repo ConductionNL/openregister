@@ -67,9 +67,11 @@ class MailAppScriptListener implements IEventListener
     public function handle(Event $event): void
     {
         // Only handle BeforeTemplateRenderedEvent from the Mail app.
-        // We use string comparison to avoid a hard dependency on the Mail app classes.
-        $eventClass = get_class($event);
-        if (str_contains($eventClass, 'OCA\\Mail\\') === false) {
+        if (!($event instanceof \OCP\AppFramework\Http\Events\BeforeTemplateRenderedEvent)) {
+            return;
+        }
+
+        if ($event->getResponse()->getApp() !== 'mail') {
             return;
         }
 

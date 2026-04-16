@@ -70,7 +70,7 @@ import { registerStore, navigationStore } from '../../store/store.js'
 				<h3>{{ t('openregister', 'File Path') }}</h3>
 				<NcTextField
 					v-model="filePath"
-					:placeholder="t('openregister', 'e.g., lib/Settings/register.json')"
+					:placeholder="t('openregister', 'e.g., lib/settings/register.json')"
 					:disabled="loading"
 					:label="t('openregister', 'Path in repository')" />
 				<p class="formHint">

@@ -256,7 +256,8 @@ class LinkedEntityService
         $results = [];
 
         // Find schemas that declare this linkedType.
-        $allSchemas = $this->schemaMapper->findAll();
+        // Disable RBAC and multitenancy to search all schemas.
+        $allSchemas = $this->schemaMapper->findAll(_rbac: false, _multitenancy: false);
         $scanned    = 0;
 
         foreach ($allSchemas as $schema) {

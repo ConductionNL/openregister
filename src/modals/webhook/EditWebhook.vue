@@ -149,10 +149,10 @@
 							<NcCheckboxRadioSwitch
 								:checked="configuration.sendCloudEvent !== false"
 								@update:checked="updateSendCloudEvent">
-								{{ t('openregister', 'Send as CloudEvent') }}
+								{{ t('openregister', 'Send as cloudevent') }}
 							</NcCheckboxRadioSwitch>
 							<p class="field-hint">
-								{{ t('openregister', 'Wrap webhook payload in CloudEvents format for better interoperability') }}
+								{{ t('openregister', 'Wrap webhook payload in cloudevents format for better interoperability') }}
 							</p>
 						</div>
 
@@ -240,11 +240,12 @@
 							<label class="dialog-label">{{ t('openregister', 'Headers') }}</label>
 							<NcTextArea
 								:value="headersText"
-								:placeholder="t('openregister', 'X-Custom-Header: value\nAuthorization: Bearer token')"
+								:placeholder="t('openregister', 'X-Custom-Header: value
+authorization: bearer token')"
 								rows="4"
 								@update:value="updateHeaders" />
 							<p class="field-hint">
-								{{ t('openregister', 'Custom HTTP headers (one per line, format: Header-Name: value)') }}
+								{{ t('openregister', 'Custom HTTP headers (one per line, format: header-name: value)') }}
 							</p>
 						</div>
 
