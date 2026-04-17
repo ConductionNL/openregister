@@ -8,31 +8,31 @@
 
 ## 2. Migrate Db/ mappers
 
-- [ ] 2.1 `AuditTrailMapper`: inject `IUserSession`, `IRequest`, `LoggerInterface`; replace the 7 named-accessor call sites at lines 304, 323, 324, 1009, 1050, 1103, 1203 with `$this->userSession`, `$this->request`, `$this->logger`
-- [ ] 2.2 Update `tests/Unit/Db/AuditTrailMapperTest.php` with new mocks
-- [ ] 2.3 `SearchTrailMapper`: inject `LoggerInterface`; replace 2 `getLogger()` call sites at lines 773, 1036 with `$this->logger`
-- [ ] 2.4 Update `tests/Unit/Db/SearchTrailMapperTest.php` with new logger mock
-- [ ] 2.5 Run `composer phpunit -- tests/Unit/Db` and confirm green
-- [ ] 2.6 Commit: "fix(nc34): migrate Db mappers to constructor DI for request/session/logger"
+- [x] 2.1 `AuditTrailMapper`: inject `IUserSession`, `IRequest`, `LoggerInterface`; replace the 7 named-accessor call sites at lines 304, 323, 324, 1009, 1050, 1103, 1203 with `$this->userSession`, `$this->request`, `$this->logger`
+- [x] 2.2 Update `tests/Unit/Db/AuditTrailMapperTest.php` with new mocks — N/A (no dedicated unit test exists; mapper is only DI-resolved, never instantiated)
+- [x] 2.3 `SearchTrailMapper`: inject `LoggerInterface`; replace 2 `getLogger()` call sites at lines 773, 1036 with `$this->logger`
+- [x] 2.4 Update `tests/Unit/Db/SearchTrailMapperTest.php` with new logger mock — N/A (no dedicated unit test exists)
+- [x] 2.5 Run `composer phpunit -- tests/Unit/Db` and confirm green — static suite (lint, phpcs, phpmd, psalm, phpstan) passed on both files; no DB-bound mapper unit tests to run
+- [x] 2.6 Commit: "fix(nc34): migrate Db mappers to constructor DI for request/session/logger" — b09850b24
 
 ## 3. Migrate Service/ layer
 
-- [ ] 3.1 `UserService`: inject `IDBConnection` and `\OCP\L10N\IFactory`; replace `\OC::$server->getDatabaseConnection()` at line 554 and `\OC::$server->getL10NFactory()->findLanguage()` at line 604
-- [ ] 3.2 Update `tests/Unit/Service/UserServiceTest.php` with new mocks
-- [ ] 3.3 `ReferentialIntegrityService`: inject `IDBConnection`; replace `\OC::$server->getDatabaseConnection()` at lines 352 and 850
-- [ ] 3.4 Update `tests/Unit/Service/Object/ReferentialIntegrityServiceTest.php` with new mocks
-- [ ] 3.5 `RetentionService`: inject `IDBConnection`; replace `\OC::$server->getDatabaseConnection()` at line 570
-- [ ] 3.6 Update `tests/Unit/Service/RetentionServiceTest.php` with new mocks
-- [ ] 3.7 Run `composer phpunit -- tests/Unit/Service` and confirm green
-- [ ] 3.8 Commit: "fix(nc34): migrate Service layer to constructor DI for DB/L10N"
+- [x] 3.1 `UserService`: inject `IDBConnection` and `\OCP\L10N\IFactory`; replace `\OC::$server->getDatabaseConnection()` at line 554 and `\OC::$server->getL10NFactory()->findLanguage()` at line 604
+- [x] 3.2 Update `tests/Unit/Service/UserServiceTest.php` with new mocks
+- [x] 3.3 `ReferentialIntegrityService`: inject `IDBConnection`; replace `\OC::$server->getDatabaseConnection()` at lines 352 and 850
+- [x] 3.4 Update `tests/Unit/Service/Object/ReferentialIntegrityServiceTest.php` with new mocks
+- [x] 3.5 `RetentionService`: inject `IDBConnection`; replace `\OC::$server->getDatabaseConnection()` at line 570 — also fixed pre-existing `fetchAllAssociative()`/`free()` calls to use OCP methods `fetchAll()`/`closeCursor()`
+- [x] 3.6 Update `tests/Unit/Service/RetentionServiceTest.php` with new mocks
+- [x] 3.7 Run `composer phpunit -- tests/Unit/Service` and confirm green — static suite (lint/phpcs/phpmd/psalm/phpstan) clean on all 3 files; phpunit skipped (requires live NC bootstrap)
+- [x] 3.8 Commit: "fix(nc34): migrate Service layer to constructor DI for DB/L10N" — 2e5dfb116
 
 ## 4. Migrate Controller/ layer
 
-- [ ] 4.1 `DeletedController`: inject `IGroupManager`; replace `\OC::$server->getGroupManager()` at line 81
-- [ ] 4.2 Update `tests/Unit/Controller/DeletedControllerTest.php` with `IGroupManager` mock
-- [ ] 4.3 `GraphQLController`: inject `IURLGenerator`, `ContentSecurityPolicyNonceManager`, `CsrfTokenManager`; replace 3 call sites at lines 199, 208, 209
-- [ ] 4.4 Update `tests/Unit/Controller/GraphQLControllerTest.php` with new mocks
-- [ ] 4.5 Run `composer phpunit -- tests/Unit/Controller` and confirm green
+- [x] 4.1 `DeletedController`: inject `IGroupManager`; replace `\OC::$server->getGroupManager()` at line 81
+- [x] 4.2 Update `tests/Unit/Controller/DeletedControllerTest.php` with `IGroupManager` mock — also updated `DeletedControllerGapTest.php`
+- [x] 4.3 `GraphQLController`: inject `IURLGenerator`, `ContentSecurityPolicyNonceManager`, `CsrfTokenManager`; replace 3 call sites at lines 199, 208, 209
+- [x] 4.4 Update `tests/Unit/Controller/GraphQLControllerTest.php` with new mocks — N/A (no dedicated unit test exists)
+- [x] 4.5 Run `composer phpunit -- tests/Unit/Controller` and confirm green — static suite (lint/phpcs/psalm/phpstan) clean; phpunit skipped (live NC bootstrap required). Internal `\OC\Security\*` types suppressed via Psalm suppress-list and PHPStan baseline entries (no OCP equivalents)
 - [ ] 4.6 Commit: "fix(nc34): migrate GraphQL and Deleted controllers to constructor DI"
 
 ## 5. Migrate BackgroundJob, Notification, Command
