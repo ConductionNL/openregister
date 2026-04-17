@@ -74,6 +74,20 @@ use Symfony\Component\Uid\Uuid;
  * @method void setDeprovisionedAt(?DateTime $deprovisionedAt)
  * @method string|null getParent()
  * @method static setParent(?string $parent)
+ * @method array|null getMail()
+ * @method void setMail(?array $mail)
+ * @method array|null getContacts()
+ * @method void setContacts(?array $contacts)
+ * @method array|null getNotes()
+ * @method void setNotes(?array $notes)
+ * @method array|null getTodos()
+ * @method void setTodos(?array $todos)
+ * @method array|null getCalendar()
+ * @method void setCalendar(?array $calendar)
+ * @method array|null getTalk()
+ * @method void setTalk(?array $talk)
+ * @method array|null getDeck()
+ * @method void setDeck(?array $deck)
  *
  * @SuppressWarnings(PHPMD.TooManyFields)
  *
@@ -269,6 +283,27 @@ class Organisation extends Entity implements JsonSerializable
      * @var array|null Array of role definitions
      */
     protected ?array $roles = null;
+
+    /** @var array|null Linked mail app data */
+    protected ?array $mail = null;
+
+    /** @var array|null Linked contacts app data */
+    protected ?array $contacts = null;
+
+    /** @var array|null Linked notes app data */
+    protected ?array $notes = null;
+
+    /** @var array|null Linked todos app data */
+    protected ?array $todos = null;
+
+    /** @var array|null Linked calendar app data */
+    protected ?array $calendar = null;
+
+    /** @var array|null Linked talk app data */
+    protected ?array $talk = null;
+
+    /** @var array|null Linked deck app data */
+    protected ?array $deck = null;
 
     /**
      * User count for this organisation (computed property, not stored in database)

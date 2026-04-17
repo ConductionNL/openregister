@@ -856,8 +856,15 @@ class ObjectServiceDeepTest extends TestCase
         $this->fileService->method('createEntityFolder')
             ->willThrowException(new \Exception('Cannot create folder'));
 
+        // Should not call update since exception is caught before update.
+        $this->objectEntityMapper->expects($this->never())
+            ->method('update');
+
         // Should not throw - silently handles exception.
         $this->service->ensureObjectFolderExists($entity);
+
+        // Folder should remain null since creation failed.
+        $this->assertNull($entity->getFolder());
 
     }//end testEnsureObjectFolderExistsException()
 

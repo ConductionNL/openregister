@@ -2387,12 +2387,12 @@ class ImportHandlerTest extends TestCase
         $this->handler->setObjectMapper($objectMapper);
 
         $ref  = new ReflectionClass($this->handler);
-        $prop = $ref->getProperty('objectMapperForRouting');
+        $prop = $ref->getProperty('routingMapper');
         $prop->setAccessible(true);
 
         $this->assertSame($objectMapper, $prop->getValue($this->handler));
 
-    }//end testSetMagicMapper()
+    }//end testSetObjectMapper()
 
 
     // =========================================================================
@@ -3697,10 +3697,7 @@ class ImportHandlerTest extends TestCase
         $this->registerMapper->method('createFromArray')->willReturn($register);
         $this->registerMapper->method('update')->willReturn($register);
 
-        // objectEntityMapper.findDirectBlobStorage throws DoesNotExistException → create.
-        $this->objectEntityMapper->method('findDirectBlobStorage')
-            ->willThrowException(new \OCP\AppFramework\Db\DoesNotExistException('not found'));
-
+        // No routingMapper set — code skips find and goes straight to insert.
         $createdObject = new ObjectEntity();
         $this->setEntityId($createdObject, 999);
         $this->objectEntityMapper->expects($this->once())
@@ -3764,11 +3761,14 @@ class ImportHandlerTest extends TestCase
         $this->registerMapper->method('createFromArray')->willReturn($register);
         $this->registerMapper->method('update')->willReturn($register);
 
-        // findDirectBlobStorage returns an existing object — should skip insert.
+        // Set up routingMapper to find existing object — should skip insert.
         $existingObject = new ObjectEntity();
         $this->setEntityId($existingObject, 888);
-        $this->objectEntityMapper->method('findDirectBlobStorage')
+
+        $unifiedMapper = $this->createMock(MagicMapper::class);
+        $unifiedMapper->method('find')
             ->willReturn($existingObject);
+        $this->handler->setObjectMapper($unifiedMapper);
 
         $this->objectEntityMapper->expects($this->never())->method('insert');
 
@@ -4001,8 +4001,11 @@ class ImportHandlerTest extends TestCase
         $this->registerMapper->method('createFromArray')->willReturn($register);
         $this->registerMapper->method('update')->willReturn($register);
 
-        $this->objectEntityMapper->method('findDirectBlobStorage')
+        // Set up routingMapper to throw MultipleObjectsReturnedException — should skip.
+        $unifiedMapper = $this->createMock(MagicMapper::class);
+        $unifiedMapper->method('find')
             ->willThrowException(new \OCP\AppFramework\Db\MultipleObjectsReturnedException('multiple found'));
+        $this->handler->setObjectMapper($unifiedMapper);
 
         $this->objectEntityMapper->expects($this->never())->method('insert');
 
@@ -5725,9 +5728,7 @@ class ImportHandlerTest extends TestCase
             ->with($register, $schema);
         $this->handler->setMagicMapper($magicMapper);
 
-        $this->objectEntityMapper->method('findDirectBlobStorage')
-            ->willThrowException(new \OCP\AppFramework\Db\DoesNotExistException('not found'));
-
+        // No routingMapper set — code skips find and goes straight to insert.
         $createdObject = new ObjectEntity();
         $this->setEntityId($createdObject, 777);
         $this->objectEntityMapper->method('insert')->willReturn($createdObject);
@@ -5791,9 +5792,7 @@ class ImportHandlerTest extends TestCase
             ->willThrowException(new Exception('Table creation failed'));
         $this->handler->setMagicMapper($magicMapper);
 
-        $this->objectEntityMapper->method('findDirectBlobStorage')
-            ->willThrowException(new \OCP\AppFramework\Db\DoesNotExistException('not found'));
-
+        // No routingMapper set — code skips find and goes straight to insert.
         $createdObject = new ObjectEntity();
         $this->setEntityId($createdObject, 778);
         $this->objectEntityMapper->method('insert')->willReturn($createdObject);
@@ -5853,9 +5852,7 @@ class ImportHandlerTest extends TestCase
         $this->registerMapper->method('createFromArray')->willReturn($register);
         $this->registerMapper->method('update')->willReturn($register);
 
-        $this->objectEntityMapper->method('findDirectBlobStorage')
-            ->willThrowException(new \OCP\AppFramework\Db\DoesNotExistException('not found'));
-
+        // No routingMapper set — code skips find and goes straight to insert.
         $createdObject = new ObjectEntity();
         $this->setEntityId($createdObject, 779);
         $this->objectEntityMapper->method('insert')->willReturn($createdObject);
@@ -5915,10 +5912,7 @@ class ImportHandlerTest extends TestCase
         $this->registerMapper->method('createFromArray')->willReturn($register);
         $this->registerMapper->method('update')->willReturn($register);
 
-        // UUID from seed object should be used for lookup.
-        $this->objectEntityMapper->method('findDirectBlobStorage')
-            ->willThrowException(new \OCP\AppFramework\Db\DoesNotExistException('not found'));
-
+        // No routingMapper set — code skips find and goes straight to insert.
         $capturedEntity = null;
         $createdObject  = new ObjectEntity();
         $this->setEntityId($createdObject, 780);
@@ -5983,8 +5977,7 @@ class ImportHandlerTest extends TestCase
         $this->registerMapper->method('createFromArray')->willReturn($register);
         $this->registerMapper->method('update')->willReturn($register);
 
-        $this->objectEntityMapper->method('findDirectBlobStorage')
-            ->willThrowException(new \OCP\AppFramework\Db\DoesNotExistException('not found'));
+        // No routingMapper set — code skips find and goes straight to insert.
         $this->objectEntityMapper->method('insert')
             ->willThrowException(new Exception('Insert failed'));
 
@@ -6040,9 +6033,7 @@ class ImportHandlerTest extends TestCase
         $this->schemaMapper->method('update')->willReturn($schema);
         $this->schemaMapper->method('updateFromArray')->willReturn($schema);
 
-        $this->objectEntityMapper->method('findDirectBlobStorage')
-            ->willThrowException(new \OCP\AppFramework\Db\DoesNotExistException('not found'));
-
+        // No routingMapper set — code skips find and goes straight to insert.
         $capturedEntity = null;
         $createdObject  = new ObjectEntity();
         $this->setEntityId($createdObject, 781);

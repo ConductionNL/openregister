@@ -1217,4 +1217,94 @@ class AuditTrailMapper extends QBMapper
     }//end createAuditTrailEntry()
 
 
+    /**
+     * Get processing activities from audit trail entries.
+     *
+     * Groups audit trail entries by processing activity ID and returns
+     * summary statistics for each activity.
+     *
+     * @param string|null $organisationId Optional organisation filter
+     *
+     * @return array List of processing activity summaries
+     */
+    public function getProcessingActivities(?string $organisationId = null): array
+    {
+        $qb = $this->db->getQueryBuilder();
+
+        $qb->select('*')
+            ->from($this->getTableName())
+            ->orderBy('created', 'DESC');
+
+        if ($organisationId !== null) {
+            $qb->andWhere($qb->expr()->eq('organisation', $qb->createNamedParameter($organisationId)));
+        }
+
+        $result = $qb->executeQuery();
+        $rows = $result->fetchAll();
+        $result->closeCursor();
+
+        // Group by action type as processing activities
+        $activities = [];
+        foreach ($rows as $row) {
+            $action = $row['action'] ?? 'unknown';
+            if (!isset($activities[$action])) {
+                $activities[$action] = [
+                    'processingActivityId' => $action,
+                    'entryCount' => 0,
+                    'firstSeen' => $row['created'] ?? null,
+                    'lastSeen' => $row['created'] ?? null,
+                ];
+            }
+            $activities[$action]['entryCount']++;
+            if (($row['created'] ?? null) !== null) {
+                if ($activities[$action]['firstSeen'] === null || $row['created'] < $activities[$action]['firstSeen']) {
+                    $activities[$action]['firstSeen'] = $row['created'];
+                }
+                if ($activities[$action]['lastSeen'] === null || $row['created'] > $activities[$action]['lastSeen']) {
+                    $activities[$action]['lastSeen'] = $row['created'];
+                }
+            }
+        }
+
+        return array_values($activities);
+    }//end getProcessingActivities()
+
+
+    /**
+     * Find audit trail entries by identifier.
+     *
+     * Searches the changed JSON field for entries matching the given identifier,
+     * grouped by schema.
+     *
+     * @param string $identifier The identifier to search for
+     *
+     * @return array Matching audit trail entries grouped by schema
+     */
+    public function findByIdentifier(string $identifier): array
+    {
+        $qb = $this->db->getQueryBuilder();
+
+        $qb->select('*')
+            ->from($this->getTableName())
+            ->where($qb->expr()->like('changed', $qb->createNamedParameter('%' . $this->db->escapeLikeParameter($identifier) . '%')))
+            ->orderBy('created', 'DESC');
+
+        $result = $qb->executeQuery();
+        $rows = $result->fetchAll();
+        $result->closeCursor();
+
+        // Group results by schema
+        $grouped = [];
+        foreach ($rows as $row) {
+            $schemaId = $row['schema'] ?? 'unknown';
+            if (!isset($grouped[$schemaId])) {
+                $grouped[$schemaId] = [];
+            }
+            $grouped[$schemaId][] = $row;
+        }
+
+        return $grouped;
+    }//end findByIdentifier()
+
+
 }//end class
