@@ -582,10 +582,10 @@ class MagicSearchHandler
                         $value
                     );
                     $conditions[] = "{$columnName} IN (".implode(', ', $quotedValues).')';
-                }
+                }//end if
 
                 continue;
-            }
+            }//end if
 
             // Simple equality filter.
             $conditions[] = "{$columnName} = ".$connection->quote((string) $value);
@@ -1005,10 +1005,10 @@ class MagicSearchHandler
                             $qb->createNamedParameter($value, IQueryBuilder::PARAM_STR_ARRAY)
                         )
                     );
-                }
+                }//end if
 
                 continue;
-            }
+            }//end if
 
             $qb->andWhere($qb->expr()->eq("t.{$columnName}", $qb->createNamedParameter($value)));
         }//end foreach
