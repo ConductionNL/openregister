@@ -52,13 +52,13 @@
     { "id": "6.7", "title": "Commit Migration class DI migration", "status": "done", "commit": "deaeb763b", "section": "6. Migrate Migration/ classes" },
 
     { "id": "7.1", "title": "Update ToolRegistrationEvent.php:43 docblock to use \\OCP\\Server::get", "status": "done", "section": "7. Fix docblock reference" },
-    { "id": "7.2", "title": "Commit docblock fix", "status": "pending", "section": "7. Fix docblock reference" },
+    { "id": "7.2", "title": "Commit docblock fix", "status": "done", "commit": "5411392da", "section": "7. Fix docblock reference" },
 
-    { "id": "8.1", "title": "Create phpcs-custom-sniffs/CustomSniffs/Sniffs/Nextcloud/ directory", "status": "pending", "section": "8. Build the PHPCS sniff" },
-    { "id": "8.2", "title": "Implement NoLegacyServerAccessorsSniff.php (named accessors only)", "status": "pending", "section": "8. Build the PHPCS sniff" },
-    { "id": "8.3", "title": "Register sniff in phpcs.xml", "status": "pending", "section": "8. Build the PHPCS sniff" },
-    { "id": "8.4", "title": "Write NoLegacyServerAccessorsSniffTest.php (positive + negative cases)", "status": "pending", "section": "8. Build the PHPCS sniff" },
-    { "id": "8.5", "title": "Run composer phpcs against lib/ — zero errors", "status": "pending", "section": "8. Build the PHPCS sniff" },
+    { "id": "8.1", "title": "Create phpcs-custom-sniffs/CustomSniffs/Sniffs/Nextcloud/ directory", "status": "done", "section": "8. Build the PHPCS sniff" },
+    { "id": "8.2", "title": "Implement NoLegacyServerAccessorsSniff.php (named accessors only)", "status": "done", "section": "8. Build the PHPCS sniff" },
+    { "id": "8.3", "title": "Register sniff in phpcs.xml", "status": "done", "section": "8. Build the PHPCS sniff" },
+    { "id": "8.4", "title": "Write NoLegacyServerAccessorsSniffTest.php (positive + negative cases)", "status": "done", "section": "8. Build the PHPCS sniff" },
+    { "id": "8.5", "title": "Run composer phpcs against lib/ — zero errors", "status": "done", "section": "8. Build the PHPCS sniff" },
     { "id": "8.6", "title": "Commit PHPCS sniff", "status": "pending", "section": "8. Build the PHPCS sniff" },
 
     { "id": "9.1", "title": "Run full composer check:strict", "status": "pending", "section": "9. Final verification" },

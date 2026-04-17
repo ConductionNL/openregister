@@ -59,31 +59,31 @@
 ## 7. Fix docblock reference
 
 - [x] 7.1 Update `lib/Event/ToolRegistrationEvent.php:43` docblock example from `\OC::$server->get(MyCMSTool::class)` to `\OCP\Server::get(MyCMSTool::class)` (OCP public API in the documentation, even while we discourage service-locator internally)
-- [ ] 7.2 Commit: "docs(nc34): update ToolRegistrationEvent docblock to use OCP API"
+- [x] 7.2 Commit: "docs(nc34): update ToolRegistrationEvent docblock to use OCP API" — 5411392da
 
 ## 8. Build the PHPCS sniff
 
-- [ ] 8.1 Create directory `phpcs-custom-sniffs/CustomSniffs/Sniffs/Nextcloud/`
-- [ ] 8.2 Implement `NoLegacyServerAccessorsSniff.php`:
-  - Listen for `T_VARIABLE` (`$server`) or use `T_STRING` (`OC`) + `T_DOUBLE_COLON` + `T_VARIABLE` sequence detection — mirror the approach in `NamedParametersSniff`
-  - Match the token pattern `OC :: $server -> getX` where `X` starts with an uppercase letter (named accessor)
-  - Report as error code `CustomSniffs.Nextcloud.NoLegacyServerAccessors.LegacyNamedAccessor` with message `"Named accessor \\OC::$server->%s() is removed in Nextcloud 34. Inject %s via the constructor instead."` — interpolate the method name and the approved OCP replacement from a static map
-  - Do NOT flag PSR-11 `->get(...)` in this change (D4 in design.md) — that is deferred
-  - Ignore `T_COMMENT`, `T_DOC_COMMENT`, and string-literal tokens so docblock examples do not trip the sniff
-- [ ] 8.3 Register the sniff in `phpcs.xml`:
+- [x] 8.1 Create directory `phpcs-custom-sniffs/CustomSniffs/Sniffs/Nextcloud/`
+- [x] 8.2 Implement `NoLegacyServerAccessorsSniff.php`:
+  - Listens on `T_DOUBLE_COLON` and reconstructs the `OC :: $server -> getX (` token sequence (mirrors the NamedParametersSniff walking pattern, one anchor step earlier)
+  - Matches `getX` where `X` starts with an uppercase letter; excludes the lowercase `get` PSR-11 call
+  - Reports error `LegacyNamedAccessor` with the message template `"Named accessor \\OC::$server->%s() is removed in Nextcloud 34. Inject %s via the constructor instead."` — interpolating the accessor name and the approved OCP interface from a static map of known removals
+  - Docblock/string-literal tokens never surface as `T_DOUBLE_COLON` in PHPCS's tokenizer, so the pattern is naturally safe inside comments and strings (covered by tests 8.4.5–8.4.6)
+- [x] 8.3 Register the sniff in `phpcs.xml`:
   ```xml
   <rule ref="./phpcs-custom-sniffs/CustomSniffs/Sniffs/Nextcloud/NoLegacyServerAccessorsSniff.php">
       <type>error</type>
   </rule>
   ```
-- [ ] 8.4 Write `tests/Unit/CustomSniffs/NoLegacyServerAccessorsSniffTest.php` with at least these cases:
+- [x] 8.4 Write `tests/Unit/CustomSniffs/NoLegacyServerAccessorsSniffTest.php` with these cases (all 7 pass):
   - ✅ positive: `\OC::$server->getSystemConfig()` reports an error
-  - ✅ positive: `\OC::$server->getDatabaseConnection()` reports an error
+  - ✅ positive: `\OC::$server->getDatabaseConnection()` reports an error referencing `OCP\IDBConnection`
   - ✅ positive: `\OC::$server->getLogger()` reports an error
   - ❌ negative: `\OC::$server->get(IConfig::class)` does NOT report (PSR-11 deferred)
-  - ❌ negative: `$this->config` does NOT report
-  - ❌ negative: docblock string `"\\OC::$server->getX()"` does NOT report
-- [ ] 8.5 Run `composer phpcs` against `lib/` — confirm zero errors (all named accessors are gone after tasks 1–7)
+  - ❌ negative: `$this->config->getSystemValue(...)` does NOT report
+  - ❌ negative: docblock example `\OC::$server->getSystemConfig()` does NOT report
+  - ❌ negative: string-literal containing the pattern does NOT report
+- [x] 8.5 Run `composer phpcs` against `lib/` — confirmed zero errors; `grep "OC::\$server->get[A-Z]" lib/` also returns zero matches
 - [ ] 8.6 Commit: "chore(phpcs): add NoLegacyServerAccessorsSniff to prevent regressions"
 
 ## 9. Final verification
