@@ -49,9 +49,9 @@
     { "id": "6.4", "title": "Version1Date20251103120000: inject IDBConnection", "status": "done", "section": "6. Migrate Migration/ classes" },
     { "id": "6.5", "title": "Verify migrations via occ migrations:execute", "status": "done", "section": "6. Migrate Migration/ classes" },
     { "id": "6.6", "title": "Clean up commented-out line in Version1Date20250902130000.php:86", "status": "done", "section": "6. Migrate Migration/ classes" },
-    { "id": "6.7", "title": "Commit Migration class DI migration", "status": "pending", "section": "6. Migrate Migration/ classes" },
+    { "id": "6.7", "title": "Commit Migration class DI migration", "status": "done", "commit": "deaeb763b", "section": "6. Migrate Migration/ classes" },
 
-    { "id": "7.1", "title": "Update ToolRegistrationEvent.php:43 docblock to use \\OCP\\Server::get", "status": "pending", "section": "7. Fix docblock reference" },
+    { "id": "7.1", "title": "Update ToolRegistrationEvent.php:43 docblock to use \\OCP\\Server::get", "status": "done", "section": "7. Fix docblock reference" },
     { "id": "7.2", "title": "Commit docblock fix", "status": "pending", "section": "7. Fix docblock reference" },
 
     { "id": "8.1", "title": "Create phpcs-custom-sniffs/CustomSniffs/Sniffs/Nextcloud/ directory", "status": "pending", "section": "8. Build the PHPCS sniff" },

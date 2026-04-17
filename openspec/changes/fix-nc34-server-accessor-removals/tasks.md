@@ -54,11 +54,11 @@
 - [x] 6.4 `Version1Date20251103120000`: same treatment for line 131
 - [x] 6.5 Verify migrations still run cleanly — static suite (lint/phpcs/phpmd/psalm/phpstan) clean on all 5 touched migration files; `occ migrations:execute` smoke test deferred to Phase 9 dev-env verification (requires live NC container)
 - [x] 6.6 Remove (or clean up) the commented-out line in `Version1Date20250902130000.php:86` — removed dead `$connection = \OC::$server->getDatabaseConnection()` comment plus its accompanying "currently unused but reserved for future use" note
-- [ ] 6.7 Commit: "fix(nc34): migrate migration classes to constructor DI for IDBConnection"
+- [x] 6.7 Commit: "fix(nc34): migrate migration classes to constructor DI for IDBConnection" — deaeb763b
 
 ## 7. Fix docblock reference
 
-- [ ] 7.1 Update `lib/Event/ToolRegistrationEvent.php:43` docblock example from `\OC::$server->get(MyCMSTool::class)` to `\OCP\Server::get(MyCMSTool::class)` (OCP public API in the documentation, even while we discourage service-locator internally)
+- [x] 7.1 Update `lib/Event/ToolRegistrationEvent.php:43` docblock example from `\OC::$server->get(MyCMSTool::class)` to `\OCP\Server::get(MyCMSTool::class)` (OCP public API in the documentation, even while we discourage service-locator internally)
 - [ ] 7.2 Commit: "docs(nc34): update ToolRegistrationEvent docblock to use OCP API"
 
 ## 8. Build the PHPCS sniff
