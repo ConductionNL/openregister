@@ -1461,10 +1461,15 @@ class SchemaMapper extends QBMapper
      */
     private function determineFacetTypeFromProperty(array $property): string
     {
-        $propertyType = $property['type'] ?? 'string';
+        $propertyType   = $property['type'] ?? 'string';
+        $propertyFormat = $property['format'] ?? '';
 
         // Date/datetime properties use date_histogram.
-        if (in_array($propertyType, ['date', 'datetime', 'date-time']) === true) {
+        // Checks both 'type' (e.g. type: date) and 'format' (e.g. type: string, format: date)
+        // because JSON Schema represents dates as type: "string" with format: "date".
+        if (in_array($propertyType, ['date', 'datetime', 'date-time']) === true
+            || in_array($propertyFormat, ['date', 'date-time', 'datetime']) === true
+        ) {
             return 'date_histogram';
         }
 

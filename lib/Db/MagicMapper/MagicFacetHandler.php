@@ -471,6 +471,23 @@ class MagicFacetHandler
                         schema: $schemaForLabels
                     );
                 }
+            } else if ($type === 'date_histogram') {
+                $interval = $config['interval'] ?? 'month';
+
+                // Find which tables have this column.
+                $tablesWithColumn = [];
+                foreach ($tableConfigs as $tc) {
+                    if ($this->columnExists(tableName: $tc['tableName'], columnName: $columnName) === true) {
+                        $tablesWithColumn[] = $tc;
+                    }
+                }
+
+                $facets[$field] = $this->getDateHistogramFacetUnion(
+                    tableConfigs: $tablesWithColumn,
+                    field: $columnName,
+                    interval: $interval,
+                    baseQuery: $baseQuery
+                );
             }//end if
 
             // Add schema property title if available.
