@@ -551,9 +551,32 @@ class MagicSearchHandler
                 continue;
             }
 
-            // Handle array filter values with IN clause (for non-array property types).
+            // Handle array filter values: comparison operators (gte/lte/gt/lt/in) or IN clause.
             if (is_array($value) === true) {
-                if (empty($value) === false) {
+                $comparisonOperators = ['gte', 'lte', 'gt', 'lt', 'in'];
+                if (empty(array_intersect(array_keys($value), $comparisonOperators)) === false) {
+                    if (isset($value['gte']) === true) {
+                        $conditions[] = "{$columnName} >= ".$connection->quote((string) $value['gte']);
+                    }
+
+                    if (isset($value['lte']) === true) {
+                        $conditions[] = "{$columnName} <= ".$connection->quote((string) $value['lte']);
+                    }
+
+                    if (isset($value['gt']) === true) {
+                        $conditions[] = "{$columnName} > ".$connection->quote((string) $value['gt']);
+                    }
+
+                    if (isset($value['lt']) === true) {
+                        $conditions[] = "{$columnName} < ".$connection->quote((string) $value['lt']);
+                    }
+
+                    if (isset($value['in']) === true) {
+                        $inValues     = is_array($value['in']) === true ? $value['in'] : [$value['in']];
+                        $quotedValues = array_map(fn($v) => $connection->quote((string) $v), $inValues);
+                        $conditions[] = "{$columnName} IN (".implode(', ', $quotedValues).')';
+                    }
+                } else if (empty($value) === false) {
                     $quotedValues = array_map(
                         fn($v) => $connection->quote((string) $v),
                         $value
@@ -948,12 +971,42 @@ class MagicSearchHandler
             }
 
             if (is_array($value) === true) {
-                $qb->andWhere(
-                    $qb->expr()->in(
-                        "t.{$columnName}",
-                        $qb->createNamedParameter($value, IQueryBuilder::PARAM_STR_ARRAY)
-                    )
-                );
+                $comparisonOperators = ['gte', 'lte', 'gt', 'lt', 'in'];
+                if (empty(array_intersect(array_keys($value), $comparisonOperators)) === false) {
+                    if (isset($value['gte']) === true) {
+                        $qb->andWhere($qb->expr()->gte("t.{$columnName}", $qb->createNamedParameter($value['gte'])));
+                    }
+
+                    if (isset($value['lte']) === true) {
+                        $qb->andWhere($qb->expr()->lte("t.{$columnName}", $qb->createNamedParameter($value['lte'])));
+                    }
+
+                    if (isset($value['gt']) === true) {
+                        $qb->andWhere($qb->expr()->gt("t.{$columnName}", $qb->createNamedParameter($value['gt'])));
+                    }
+
+                    if (isset($value['lt']) === true) {
+                        $qb->andWhere($qb->expr()->lt("t.{$columnName}", $qb->createNamedParameter($value['lt'])));
+                    }
+
+                    if (isset($value['in']) === true) {
+                        $inValues = is_array($value['in']) === true ? $value['in'] : [$value['in']];
+                        $qb->andWhere(
+                            $qb->expr()->in(
+                                "t.{$columnName}",
+                                $qb->createNamedParameter($inValues, IQueryBuilder::PARAM_STR_ARRAY)
+                            )
+                        );
+                    }
+                } else {
+                    $qb->andWhere(
+                        $qb->expr()->in(
+                            "t.{$columnName}",
+                            $qb->createNamedParameter($value, IQueryBuilder::PARAM_STR_ARRAY)
+                        )
+                    );
+                }
+
                 continue;
             }
 
