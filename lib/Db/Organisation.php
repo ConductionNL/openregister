@@ -284,25 +284,53 @@ class Organisation extends Entity implements JsonSerializable
      */
     protected ?array $roles = null;
 
-    /** @var array|null Linked mail app data */
+    /**
+     * Linked mail app data.
+     *
+     * @var array|null Linked mail app data
+     */
     protected ?array $mail = null;
 
-    /** @var array|null Linked contacts app data */
+    /**
+     * Linked contacts app data.
+     *
+     * @var array|null Linked contacts app data
+     */
     protected ?array $contacts = null;
 
-    /** @var array|null Linked notes app data */
+    /**
+     * Linked notes app data.
+     *
+     * @var array|null Linked notes app data
+     */
     protected ?array $notes = null;
 
-    /** @var array|null Linked todos app data */
+    /**
+     * Linked todos app data.
+     *
+     * @var array|null Linked todos app data
+     */
     protected ?array $todos = null;
 
-    /** @var array|null Linked calendar app data */
+    /**
+     * Linked calendar app data.
+     *
+     * @var array|null Linked calendar app data
+     */
     protected ?array $calendar = null;
 
-    /** @var array|null Linked talk app data */
+    /**
+     * Linked talk app data.
+     *
+     * @var array|null Linked talk app data
+     */
     protected ?array $talk = null;
 
-    /** @var array|null Linked deck app data */
+    /**
+     * Linked deck app data.
+     *
+     * @var array|null Linked deck app data
+     */
     protected ?array $deck = null;
 
     /**

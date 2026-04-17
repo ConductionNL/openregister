@@ -1227,7 +1227,7 @@ class AuditTrailMapper extends QBMapper
      *
      * @return array List of processing activity summaries
      */
-    public function getProcessingActivities(?string $organisationId = null): array
+    public function getProcessingActivities(?string $organisationId=null): array
     {
         $qb = $this->db->getQueryBuilder();
 
@@ -1240,31 +1240,33 @@ class AuditTrailMapper extends QBMapper
         }
 
         $result = $qb->executeQuery();
-        $rows = $result->fetchAll();
+        $rows   = $result->fetchAll();
         $result->closeCursor();
 
-        // Group by action type as processing activities
+        // Group by action type as processing activities.
         $activities = [];
         foreach ($rows as $row) {
             $action = $row['action'] ?? 'unknown';
-            if (!isset($activities[$action])) {
+            if (isset($activities[$action]) === false) {
                 $activities[$action] = [
                     'processingActivityId' => $action,
-                    'entryCount' => 0,
-                    'firstSeen' => $row['created'] ?? null,
-                    'lastSeen' => $row['created'] ?? null,
+                    'entryCount'           => 0,
+                    'firstSeen'            => $row['created'] ?? null,
+                    'lastSeen'             => $row['created'] ?? null,
                 ];
             }
+
             $activities[$action]['entryCount']++;
             if (($row['created'] ?? null) !== null) {
                 if ($activities[$action]['firstSeen'] === null || $row['created'] < $activities[$action]['firstSeen']) {
                     $activities[$action]['firstSeen'] = $row['created'];
                 }
+
                 if ($activities[$action]['lastSeen'] === null || $row['created'] > $activities[$action]['lastSeen']) {
                     $activities[$action]['lastSeen'] = $row['created'];
                 }
             }
-        }
+        }//end foreach
 
         return array_values($activities);
     }//end getProcessingActivities()
@@ -1284,22 +1286,24 @@ class AuditTrailMapper extends QBMapper
     {
         $qb = $this->db->getQueryBuilder();
 
+        $likeParam = $qb->createNamedParameter('%'.$this->db->escapeLikeParameter($identifier).'%');
         $qb->select('*')
             ->from($this->getTableName())
-            ->where($qb->expr()->like('changed', $qb->createNamedParameter('%' . $this->db->escapeLikeParameter($identifier) . '%')))
+            ->where($qb->expr()->like('changed', $likeParam))
             ->orderBy('created', 'DESC');
 
         $result = $qb->executeQuery();
-        $rows = $result->fetchAll();
+        $rows   = $result->fetchAll();
         $result->closeCursor();
 
-        // Group results by schema
+        // Group results by schema.
         $grouped = [];
         foreach ($rows as $row) {
             $schemaId = $row['schema'] ?? 'unknown';
-            if (!isset($grouped[$schemaId])) {
+            if (isset($grouped[$schemaId]) === false) {
                 $grouped[$schemaId] = [];
             }
+
             $grouped[$schemaId][] = $row;
         }
 
