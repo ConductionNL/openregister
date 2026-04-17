@@ -4,7 +4,7 @@
 - [x] 1.2 Replace `\OC::$server->getSystemConfig()->getValue('dbtableprefix', 'oc_')` at line 876 with `$this->config->getSystemValue('dbtableprefix', 'oc_')`
 - [x] 1.3 Update `tests/Unit/Db/OrganisationMapperTest.php` to pass an `IConfig` mock to the constructor — N/A (no dedicated unit test exists; mapper is DI-resolved everywhere and only mocked — not instantiated — by other unit tests)
 - [x] 1.4 Run `composer check:strict` and confirm `OrganisationMapper` passes — static suite (lint, phpcs, phpmd, psalm, phpstan) scoped to the file all pass; phpunit skipped here (needs live DB env)
-- [ ] 1.5 Commit: "fix(nc34): inject IConfig into OrganisationMapper, replace getSystemConfig"
+- [x] 1.5 Commit: "fix(nc34): inject IConfig into OrganisationMapper, replace getSystemConfig" — 2a9e15ac9
 
 ## 2. Migrate Db/ mappers
 

@@ -9,7 +9,7 @@
     { "id": "1.2", "title": "Replace \\OC::$server->getSystemConfig() at OrganisationMapper.php:876", "status": "done", "section": "1. Fix the reported crash (OrganisationMapper)" },
     { "id": "1.3", "title": "Update tests/Unit/Db/OrganisationMapperTest.php (N/A — no unit test)", "status": "done", "section": "1. Fix the reported crash (OrganisationMapper)" },
     { "id": "1.4", "title": "Run composer check:strict scoped to OrganisationMapper", "status": "done", "section": "1. Fix the reported crash (OrganisationMapper)" },
-    { "id": "1.5", "title": "Commit Phase 1 crash fix", "status": "pending", "section": "1. Fix the reported crash (OrganisationMapper)" },
+    { "id": "1.5", "title": "Commit Phase 1 crash fix", "status": "done", "commit": "2a9e15ac9", "section": "1. Fix the reported crash (OrganisationMapper)" },
 
     { "id": "2.1", "title": "AuditTrailMapper: inject IUserSession, IRequest, LoggerInterface", "status": "pending", "section": "2. Migrate Db/ mappers" },
     { "id": "2.2", "title": "Update AuditTrailMapperTest.php", "status": "pending", "section": "2. Migrate Db/ mappers" },
