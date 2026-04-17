@@ -192,4 +192,53 @@ class MagicFacetHandlerTest extends TestCase
             $this->invokeBuildDateKeyExpr($handler, 't.publicatiedatum', 'quarter')
         );
     }//end testQualifiedFieldInQuarterConcatOnMariadb()
+
+    // -------------------------------------------------------------------------
+    // determineFacetTypeFromProperty()
+    // -------------------------------------------------------------------------
+    private function invokeDetermineFacetTypeFromProperty(MagicFacetHandler $handler, array $property): string
+    {
+        $method = new ReflectionMethod(MagicFacetHandler::class, 'determineFacetTypeFromProperty');
+        $method->setAccessible(true);
+        return $method->invoke($handler, $property);
+    }//end invokeDetermineFacetTypeFromProperty()
+
+    public function testStringWithDateFormatReturnDateHistogram(): void
+    {
+        // Regression: before the fix this returned 'terms' because only the
+        // 'type' field was checked, not 'format'.
+        $handler = $this->buildHandler($this->createMock(MariaDBPlatform::class));
+        $this->assertSame(
+            'date_histogram',
+            $this->invokeDetermineFacetTypeFromProperty($handler, ['type' => 'string', 'format' => 'date'])
+        );
+    }//end testStringWithDateFormatReturnDateHistogram()
+
+    public function testStringWithDateTimeFormatReturnsDateHistogram(): void
+    {
+        $handler = $this->buildHandler($this->createMock(MariaDBPlatform::class));
+        $this->assertSame(
+            'date_histogram',
+            $this->invokeDetermineFacetTypeFromProperty($handler, ['type' => 'string', 'format' => 'date-time'])
+        );
+    }//end testStringWithDateTimeFormatReturnsDateHistogram()
+
+    public function testPlainStringDefaultsToTerms(): void
+    {
+        $handler = $this->buildHandler($this->createMock(MariaDBPlatform::class));
+        $this->assertSame(
+            'terms',
+            $this->invokeDetermineFacetTypeFromProperty($handler, ['type' => 'string'])
+        );
+    }//end testPlainStringDefaultsToTerms()
+
+    public function testExplicitFacetableTypeOverrideIsRespected(): void
+    {
+        $handler  = $this->buildHandler($this->createMock(MariaDBPlatform::class));
+        $property = ['type' => 'string', 'facetable' => ['type' => 'date_histogram']];
+        $this->assertSame(
+            'date_histogram',
+            $this->invokeDetermineFacetTypeFromProperty($handler, $property)
+        );
+    }//end testExplicitFacetableTypeOverrideIsRespected()
 }//end class
