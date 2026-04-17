@@ -26,6 +26,7 @@ use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\RetentionService;
 use OCA\OpenRegister\Service\Settings\ObjectRetentionHandler;
 use OCP\IAppConfig;
+use OCP\IDBConnection;
 use OCP\IUserSession;
 use OCP\IUser;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -46,6 +47,7 @@ class RetentionServiceTest extends TestCase
     private IAppConfig&MockObject $appConfig;
     private IUserSession&MockObject $userSession;
     private LoggerInterface&MockObject $logger;
+    private IDBConnection&MockObject $db;
     private RetentionService $service;
 
 
@@ -61,6 +63,7 @@ class RetentionServiceTest extends TestCase
         $this->appConfig       = $this->createMock(IAppConfig::class);
         $this->userSession     = $this->createMock(IUserSession::class);
         $this->logger          = $this->createMock(LoggerInterface::class);
+        $this->db              = $this->createMock(IDBConnection::class);
 
         $this->service = new RetentionService(
             $this->objectMapper,
@@ -71,6 +74,7 @@ class RetentionServiceTest extends TestCase
             $this->appConfig,
             $this->userSession,
             $this->logger,
+            $this->db,
         );
     }//end setUp()
 
