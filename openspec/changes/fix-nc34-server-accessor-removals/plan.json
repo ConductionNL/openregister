@@ -1,0 +1,72 @@
+{
+  "change": "fix-nc34-server-accessor-removals",
+  "project": "openregister",
+  "repo": "ConductionNL/openregister",
+  "created": "2026-04-17",
+  "tracking_issue": 1281,
+  "tasks": [
+    { "id": "1.1", "title": "Inject IConfig into OrganisationMapper constructor", "status": "done", "section": "1. Fix the reported crash (OrganisationMapper)" },
+    { "id": "1.2", "title": "Replace \\OC::$server->getSystemConfig() at OrganisationMapper.php:876", "status": "done", "section": "1. Fix the reported crash (OrganisationMapper)" },
+    { "id": "1.3", "title": "Update tests/Unit/Db/OrganisationMapperTest.php (N/A — no unit test)", "status": "done", "section": "1. Fix the reported crash (OrganisationMapper)" },
+    { "id": "1.4", "title": "Run composer check:strict scoped to OrganisationMapper", "status": "done", "section": "1. Fix the reported crash (OrganisationMapper)" },
+    { "id": "1.5", "title": "Commit Phase 1 crash fix", "status": "pending", "section": "1. Fix the reported crash (OrganisationMapper)" },
+
+    { "id": "2.1", "title": "AuditTrailMapper: inject IUserSession, IRequest, LoggerInterface", "status": "pending", "section": "2. Migrate Db/ mappers" },
+    { "id": "2.2", "title": "Update AuditTrailMapperTest.php", "status": "pending", "section": "2. Migrate Db/ mappers" },
+    { "id": "2.3", "title": "SearchTrailMapper: inject LoggerInterface", "status": "pending", "section": "2. Migrate Db/ mappers" },
+    { "id": "2.4", "title": "Update SearchTrailMapperTest.php", "status": "pending", "section": "2. Migrate Db/ mappers" },
+    { "id": "2.5", "title": "Run phpunit tests/Unit/Db", "status": "pending", "section": "2. Migrate Db/ mappers" },
+    { "id": "2.6", "title": "Commit Db mapper DI migration", "status": "pending", "section": "2. Migrate Db/ mappers" },
+
+    { "id": "3.1", "title": "UserService: inject IDBConnection and IFactory", "status": "pending", "section": "3. Migrate Service/ layer" },
+    { "id": "3.2", "title": "Update UserServiceTest.php", "status": "pending", "section": "3. Migrate Service/ layer" },
+    { "id": "3.3", "title": "ReferentialIntegrityService: inject IDBConnection", "status": "pending", "section": "3. Migrate Service/ layer" },
+    { "id": "3.4", "title": "Update ReferentialIntegrityServiceTest.php", "status": "pending", "section": "3. Migrate Service/ layer" },
+    { "id": "3.5", "title": "RetentionService: inject IDBConnection", "status": "pending", "section": "3. Migrate Service/ layer" },
+    { "id": "3.6", "title": "Update RetentionServiceTest.php", "status": "pending", "section": "3. Migrate Service/ layer" },
+    { "id": "3.7", "title": "Run phpunit tests/Unit/Service", "status": "pending", "section": "3. Migrate Service/ layer" },
+    { "id": "3.8", "title": "Commit Service layer DI migration", "status": "pending", "section": "3. Migrate Service/ layer" },
+
+    { "id": "4.1", "title": "DeletedController: inject IGroupManager", "status": "pending", "section": "4. Migrate Controller/ layer" },
+    { "id": "4.2", "title": "Update DeletedControllerTest.php", "status": "pending", "section": "4. Migrate Controller/ layer" },
+    { "id": "4.3", "title": "GraphQLController: inject IURLGenerator, ContentSecurityPolicyNonceManager, CsrfTokenManager", "status": "pending", "section": "4. Migrate Controller/ layer" },
+    { "id": "4.4", "title": "Update GraphQLControllerTest.php", "status": "pending", "section": "4. Migrate Controller/ layer" },
+    { "id": "4.5", "title": "Run phpunit tests/Unit/Controller", "status": "pending", "section": "4. Migrate Controller/ layer" },
+    { "id": "4.6", "title": "Commit Controller DI migration", "status": "pending", "section": "4. Migrate Controller/ layer" },
+
+    { "id": "5.1", "title": "DestructionCheckJob: inject IDBConnection", "status": "pending", "section": "5. Migrate BackgroundJob, Notification, Command" },
+    { "id": "5.2", "title": "Update DestructionCheckJobTest.php", "status": "pending", "section": "5. Migrate BackgroundJob, Notification, Command" },
+    { "id": "5.3", "title": "Notifier: inject IURLGenerator", "status": "pending", "section": "5. Migrate BackgroundJob, Notification, Command" },
+    { "id": "5.4", "title": "Update NotifierTest.php", "status": "pending", "section": "5. Migrate BackgroundJob, Notification, Command" },
+    { "id": "5.5", "title": "SolrDebugCommand: replace container lookup with explicit DI", "status": "pending", "section": "5. Migrate BackgroundJob, Notification, Command" },
+    { "id": "5.6", "title": "Update SolrDebugCommandTest.php", "status": "pending", "section": "5. Migrate BackgroundJob, Notification, Command" },
+    { "id": "5.7", "title": "Run phpunit tests/Unit/BackgroundJob tests/Unit/Notification tests/Unit/Command", "status": "pending", "section": "5. Migrate BackgroundJob, Notification, Command" },
+    { "id": "5.8", "title": "Commit BackgroundJob/Notifier/Command DI migration", "status": "pending", "section": "5. Migrate BackgroundJob, Notification, Command" },
+
+    { "id": "6.1", "title": "Version1Date20250830120000: inject IDBConnection", "status": "pending", "section": "6. Migrate Migration/ classes" },
+    { "id": "6.2", "title": "Version1Date20250908180000: inject IDBConnection", "status": "pending", "section": "6. Migrate Migration/ classes" },
+    { "id": "6.3", "title": "Version1Date20250929120000: inject IDBConnection", "status": "pending", "section": "6. Migrate Migration/ classes" },
+    { "id": "6.4", "title": "Version1Date20251103120000: inject IDBConnection", "status": "pending", "section": "6. Migrate Migration/ classes" },
+    { "id": "6.5", "title": "Verify migrations via occ migrations:execute", "status": "pending", "section": "6. Migrate Migration/ classes" },
+    { "id": "6.6", "title": "Clean up commented-out line in Version1Date20250902130000.php:86", "status": "pending", "section": "6. Migrate Migration/ classes" },
+    { "id": "6.7", "title": "Commit Migration class DI migration", "status": "pending", "section": "6. Migrate Migration/ classes" },
+
+    { "id": "7.1", "title": "Update ToolRegistrationEvent.php:43 docblock to use \\OCP\\Server::get", "status": "pending", "section": "7. Fix docblock reference" },
+    { "id": "7.2", "title": "Commit docblock fix", "status": "pending", "section": "7. Fix docblock reference" },
+
+    { "id": "8.1", "title": "Create phpcs-custom-sniffs/CustomSniffs/Sniffs/Nextcloud/ directory", "status": "pending", "section": "8. Build the PHPCS sniff" },
+    { "id": "8.2", "title": "Implement NoLegacyServerAccessorsSniff.php (named accessors only)", "status": "pending", "section": "8. Build the PHPCS sniff" },
+    { "id": "8.3", "title": "Register sniff in phpcs.xml", "status": "pending", "section": "8. Build the PHPCS sniff" },
+    { "id": "8.4", "title": "Write NoLegacyServerAccessorsSniffTest.php (positive + negative cases)", "status": "pending", "section": "8. Build the PHPCS sniff" },
+    { "id": "8.5", "title": "Run composer phpcs against lib/ — zero errors", "status": "pending", "section": "8. Build the PHPCS sniff" },
+    { "id": "8.6", "title": "Commit PHPCS sniff", "status": "pending", "section": "8. Build the PHPCS sniff" },
+
+    { "id": "9.1", "title": "Run full composer check:strict", "status": "pending", "section": "9. Final verification" },
+    { "id": "9.2", "title": "Grep lib/ — zero \\OC::$server->get[A-Z] matches", "status": "pending", "section": "9. Final verification" },
+    { "id": "9.3", "title": "Grep full repo — only docblock/comment occurrences remain", "status": "pending", "section": "9. Final verification" },
+    { "id": "9.4", "title": "Dev env smoke test of organisation endpoint", "status": "pending", "section": "9. Final verification" },
+    { "id": "9.5", "title": "Smoke-test four touched migrations", "status": "pending", "section": "9. Final verification" },
+    { "id": "9.6", "title": "Update PHPStan baseline if counts changed (no new entries)", "status": "pending", "section": "9. Final verification" },
+    { "id": "9.7", "title": "Open PR", "status": "pending", "section": "9. Final verification" }
+  ]
+}
