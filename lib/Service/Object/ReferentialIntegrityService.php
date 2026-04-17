@@ -850,7 +850,7 @@ class ReferentialIntegrityService
         }
 
         $platform   = $this->db->getDatabasePlatform();
-        $isPostgres = stripos($platform::class, 'PostgreSQL') !== false;
+        $isPostgres = stripos(get_class($platform), 'PostgreSQL') !== false;
 
         if ($isPostgres === true) {
             $deletedCheck = "(_deleted IS NULL OR _deleted = 'null'::jsonb)";
