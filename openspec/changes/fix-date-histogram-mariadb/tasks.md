@@ -1,8 +1,8 @@
 ## 1. Phase 1 — Minimal platform branch (unblocks MariaDB)
 
-- [ ] 1.1 Add private helper `buildDateKeyExpr(string $field, string $interval): string` to `MagicFacetHandler` that returns `TO_CHAR($field, '<pg-pattern>')` on PostgreSQL and `DATE_FORMAT($field, '<my-pattern>')` on MariaDB/MySQL, with `CONCAT(YEAR($field), '-Q', QUARTER($field))` for the quarter interval on MariaDB.
-- [ ] 1.2 Replace the three `TO_CHAR(...)` call sites in `MagicFacetHandler` with the helper: `getDateHistogramFacetUnion()` line 812, `getDateHistogramFacet()` lines 1310 and 1338.
-- [ ] 1.3 Correct the misleading comment at `MagicFacetHandler.php:1308` ("Nextcloud default" is not PostgreSQL); replace with a neutral comment describing the platform branch.
+- [x] 1.1 Add private helper `buildDateKeyExpr(string $field, string $interval): string` to `MagicFacetHandler` that returns `TO_CHAR($field, '<pg-pattern>')` on PostgreSQL and `DATE_FORMAT($field, '<my-pattern>')` on MariaDB/MySQL, with `CONCAT(YEAR($field), '-Q', QUARTER($field))` for the quarter interval on MariaDB.
+- [x] 1.2 Replace the three `TO_CHAR(...)` call sites in `MagicFacetHandler` with the helper: `getDateHistogramFacetUnion()` line 812, `getDateHistogramFacet()` lines 1310 and 1338.
+- [x] 1.3 Correct the misleading comment at `MagicFacetHandler.php:1308` ("Nextcloud default" is not PostgreSQL); replace with a neutral comment describing the platform branch.
 - [ ] 1.4 Run the existing `MagicFacetHandlerIntegrationTest` suite on MariaDB (`docker-compose.mariadb-test.yml`) and confirm no regressions on PostgreSQL (`docker-compose.yml`).
 - [ ] 1.5 Manually verify in the dev environment: `GET /apps/openregister/api/objects?_facets=<date-field>&_schema=<id>` returns populated `buckets` on MariaDB for `interval: year` and `interval: month`.
 
