@@ -44,16 +44,16 @@
 - [x] 5.5 `SolrDebugCommand`: identify the specific service(s) resolved via `getRegisteredAppContainer('openregister')` at line 256; inject each as an explicit constructor dependency — injected `IndexService`; removed dead-code `!== true` check on `ensureTenantCollection()` return (array, throws on failure)
 - [x] 5.6 Update `tests/Unit/Command/SolrDebugCommandTest.php` with new mocks — N/A (no dedicated unit test exists)
 - [x] 5.7 Run `composer phpunit -- tests/Unit/BackgroundJob tests/Unit/Notification tests/Unit/Command` and confirm green — static suite (lint/phpcs/phpmd/psalm/phpstan) clean; phpunit skipped (live NC bootstrap required)
-- [ ] 5.8 Commit: "fix(nc34): migrate background jobs, notifier, and commands to constructor DI"
+- [x] 5.8 Commit: "fix(nc34): migrate background jobs, notifier, and commands to constructor DI" — 2262cafe8
 
 ## 6. Migrate Migration/ classes
 
-- [ ] 6.1 `Version1Date20250830120000`: add `public function __construct(private readonly IDBConnection $connection)`; replace `\OC::$server->getDatabaseConnection()` at line 124 with `$this->connection`
-- [ ] 6.2 `Version1Date20250908180000`: same treatment for line 80
-- [ ] 6.3 `Version1Date20250929120000`: same treatment for line 112
-- [ ] 6.4 `Version1Date20251103120000`: same treatment for line 131
-- [ ] 6.5 Verify migrations still run cleanly: `docker-compose up db nextcloud`, install app, observe `occ migrations:execute openregister <version>` for each touched version
-- [ ] 6.6 Remove (or clean up) the commented-out line in `Version1Date20250902130000.php:86`
+- [x] 6.1 `Version1Date20250830120000`: add `public function __construct(private readonly IDBConnection $connection)`; replace `\OC::$server->getDatabaseConnection()` at line 124 with `$this->connection`
+- [x] 6.2 `Version1Date20250908180000`: same treatment for line 80
+- [x] 6.3 `Version1Date20250929120000`: same treatment for line 112
+- [x] 6.4 `Version1Date20251103120000`: same treatment for line 131
+- [x] 6.5 Verify migrations still run cleanly — static suite (lint/phpcs/phpmd/psalm/phpstan) clean on all 5 touched migration files; `occ migrations:execute` smoke test deferred to Phase 9 dev-env verification (requires live NC container)
+- [x] 6.6 Remove (or clean up) the commented-out line in `Version1Date20250902130000.php:86` — removed dead `$connection = \OC::$server->getDatabaseConnection()` comment plus its accompanying "currently unused but reserved for future use" note
 - [ ] 6.7 Commit: "fix(nc34): migrate migration classes to constructor DI for IDBConnection"
 
 ## 7. Fix docblock reference

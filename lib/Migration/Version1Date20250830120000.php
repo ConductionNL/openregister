@@ -27,6 +27,7 @@ namespace OCA\OpenRegister\Migration;
 use Closure;
 use OCP\DB\ISchemaWrapper;
 use OCP\DB\Types;
+use OCP\IDBConnection;
 use OCP\Migration\IOutput;
 use OCP\Migration\SimpleMigrationStep;
 
@@ -35,6 +36,15 @@ use OCP\Migration\SimpleMigrationStep;
  */
 class Version1Date20250830120000 extends SimpleMigrationStep
 {
+    /**
+     * Constructor.
+     *
+     * @param IDBConnection $connection Database connection
+     */
+    public function __construct(private readonly IDBConnection $connection)
+    {
+    }//end __construct()
+
     /**
      * Change the database schema
      *
@@ -121,10 +131,7 @@ class Version1Date20250830120000 extends SimpleMigrationStep
             // If both 'owner' and 'app' columns exist, copy data and drop 'owner'.
             if ($table->hasColumn('owner') === true && $table->hasColumn('app') === true) {
                 // Copy data from 'owner' to 'app' column using raw SQL.
-                $connection = \OC::$server->getDatabaseConnection();
-
-                // Copy the data.
-                $connection->executeStatement(
+                $this->connection->executeStatement(
                     'UPDATE `*PREFIX*openregister_configurations` SET `app` = `owner`'
                 );
 
