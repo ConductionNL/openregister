@@ -29,6 +29,7 @@ use OCA\OpenRegister\Service\Settings\ObjectRetentionHandler;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCP\BackgroundJob\TimedJob;
 use OCP\AppFramework\Utility\ITimeFactory;
+use OCP\IDBConnection;
 use OCP\IGroupManager;
 use OCP\Notification\IManager as INotificationManager;
 use Psr\Log\LoggerInterface;
@@ -57,10 +58,13 @@ class DestructionCheckJob extends TimedJob
     /**
      * Constructor.
      *
-     * @param ITimeFactory $time Time factory for parent class
+     * @param ITimeFactory  $time Time factory for parent class
+     * @param IDBConnection $db   Database connection
      */
-    public function __construct(ITimeFactory $time)
-    {
+    public function __construct(
+        ITimeFactory $time,
+        private readonly IDBConnection $db
+    ) {
         parent::__construct(time: $time);
 
         try {
@@ -169,15 +173,14 @@ class DestructionCheckJob extends TimedJob
 
         try {
             $objectMapper = \OC::$server->get(MagicMapper::class);
-            $connection   = \OC::$server->getDatabaseConnection();
-            $qb           = $connection->getQueryBuilder();
+            $qb           = $this->db->getQueryBuilder();
 
             $qb->select('id')->from('openregister_objects')
                 ->where($qb->expr()->isNotNull('retention'));
 
             $result = $qb->executeQuery();
-            $rows   = $result->fetchAllAssociative();
-            $result->free();
+            $rows   = $result->fetchAll();
+            $result->closeCursor();
 
             $appConfig    = \OC::$server->get(\OCP\IAppConfig::class);
             $notifiedJson = $appConfig->getValueString('openregister', self::NOTIFIED_KEY, '[]');

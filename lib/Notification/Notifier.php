@@ -21,6 +21,7 @@
 namespace OCA\OpenRegister\Notification;
 
 use InvalidArgumentException;
+use OCP\IURLGenerator;
 use OCP\L10N\IFactory;
 use OCP\Notification\INotification;
 use OCP\Notification\INotifier;
@@ -34,22 +35,16 @@ use OCP\Notification\INotifier;
  */
 class Notifier implements INotifier
 {
-
-    /**
-     * L10N factory for translation.
-     *
-     * @var IFactory The L10N factory instance.
-     */
-    private IFactory $factory;
-
     /**
      * Constructor
      *
-     * @param IFactory $factory The L10N factory instance
+     * @param IFactory      $factory      The L10N factory instance
+     * @param IURLGenerator $urlGenerator URL generator for notification icons and actions
      */
-    public function __construct(IFactory $factory)
-    {
-        $this->factory = $factory;
+    public function __construct(
+        private readonly IFactory $factory,
+        private readonly IURLGenerator $urlGenerator
+    ) {
     }//end __construct()
 
     /**
@@ -132,7 +127,7 @@ class Notifier implements INotifier
         );
 
         $notification->setIcon(
-            \OC::$server->getURLGenerator()->imagePath(appName: 'openregister', file: 'app.svg')
+            $this->urlGenerator->imagePath(appName: 'openregister', file: 'app.svg')
         );
 
         // Add action to view the configuration.
@@ -141,8 +136,8 @@ class Notifier implements INotifier
             $action->setLabel($l->t(text: 'View'))
                 ->setPrimary(true)
                 ->setLink(
-                    link: \OC::$server->getURLGenerator()->linkToRouteAbsolute(
-                        route: 'openregister.dashboard.page'
+                    link: $this->urlGenerator->linkToRouteAbsolute(
+                        routeName: 'openregister.dashboard.page'
                     ).'#/configurations/'.$parameters['configurationId'],
                     requestType: 'GET'
                 );
