@@ -20,12 +20,15 @@
 
 namespace OCA\OpenRegister\Controller;
 
+use OC\Security\CSP\ContentSecurityPolicyNonceManager;
+use OC\Security\CSRF\CsrfTokenManager;
 use OCA\OpenRegister\Service\GraphQL\GraphQLService;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\ContentSecurityPolicy;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\AppFramework\Http\Response;
 use OCP\IRequest;
+use OCP\IURLGenerator;
 
 /**
  * Controller for the GraphQL API endpoint.
@@ -37,28 +40,25 @@ use OCP\IRequest;
  */
 class GraphQLController extends Controller
 {
-
-    /**
-     * GraphQL service instance.
-     *
-     * @var GraphQLService
-     */
-    private readonly GraphQLService $graphQLService;
-
     /**
      * GraphQLController constructor.
      *
-     * @param string         $appName        Application name
-     * @param IRequest       $request        Request object
-     * @param GraphQLService $graphQLService GraphQL service
+     * @param string                            $appName        Application name
+     * @param IRequest                          $request        Request object
+     * @param GraphQLService                    $graphQLService GraphQL service
+     * @param IURLGenerator                     $urlGenerator   URL generator for route linking
+     * @param ContentSecurityPolicyNonceManager $nonceManager   CSP nonce provider
+     * @param CsrfTokenManager                  $csrfManager    CSRF token manager
      */
     public function __construct(
         string $appName,
         IRequest $request,
-        GraphQLService $graphQLService
+        private readonly GraphQLService $graphQLService,
+        private readonly IURLGenerator $urlGenerator,
+        private readonly ContentSecurityPolicyNonceManager $nonceManager,
+        private readonly CsrfTokenManager $csrfManager
     ) {
         parent::__construct(appName: $appName, request: $request);
-        $this->graphQLService = $graphQLService;
 
     }//end __construct()
 
@@ -196,8 +196,7 @@ class GraphQLController extends Controller
      */
     private function getGraphiQLHtml(): string
     {
-        $urlGenerator = \OC::$server->getURLGenerator();
-        $endpoint     = $urlGenerator->linkToRoute('openregister.graphQL.execute');
+        $endpoint = $this->urlGenerator->linkToRoute('openregister.graphQL.execute');
 
         // Ensure /index.php is included for environments without URL rewriting.
         if (str_contains(haystack: $endpoint, needle: '/index.php') === false) {
@@ -205,8 +204,8 @@ class GraphQLController extends Controller
         }
 
         // Get CSP nonce for inline scripts and CSRF request token for auth.
-        $nonce        = \OC::$server->getContentSecurityPolicyNonceManager()->getNonce();
-        $requestToken = \OC::$server->getCsrfTokenManager()->getToken()->getEncryptedValue();
+        $nonce        = $this->nonceManager->getNonce();
+        $requestToken = $this->csrfManager->getToken()->getEncryptedValue();
 
         return <<<HTML
 <!DOCTYPE html>

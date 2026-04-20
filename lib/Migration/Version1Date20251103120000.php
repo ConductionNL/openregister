@@ -22,6 +22,7 @@ namespace OCA\OpenRegister\Migration;
 
 use Closure;
 use OCP\DB\ISchemaWrapper;
+use OCP\IDBConnection;
 use OCP\Migration\IOutput;
 use OCP\Migration\SimpleMigrationStep;
 
@@ -33,6 +34,15 @@ use OCP\Migration\SimpleMigrationStep;
  */
 class Version1Date20251103120000 extends SimpleMigrationStep
 {
+    /**
+     * Constructor.
+     *
+     * @param IDBConnection $connection Database connection
+     */
+    public function __construct(private readonly IDBConnection $connection)
+    {
+    }//end __construct()
+
     /**
      * Rename the table from openregister_views to openregister_view
      *
@@ -128,8 +138,9 @@ class Version1Date20251103120000 extends SimpleMigrationStep
 
         if ($schema->hasTable('openregister_views') === true && $schema->hasTable('openregister_view') === true) {
             // Copy data.
-            $connection = \OC::$server->getDatabaseConnection();
-            $connection->executeQuery('INSERT INTO `*PREFIX*openregister_view` SELECT * FROM `*PREFIX*openregister_views`');
+            $this->connection->executeQuery(
+                'INSERT INTO `*PREFIX*openregister_view` SELECT * FROM `*PREFIX*openregister_views`'
+            );
 
             $output->info(message: 'Copied data from openregister_views to openregister_view');
 

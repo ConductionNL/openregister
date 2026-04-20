@@ -32,6 +32,9 @@ use RuntimeException;
 use stdClass;
 use ReflectionClass;
 use OCP\IDBConnection;
+use OCP\IRequest;
+use OCP\IUserSession;
+use Psr\Log\LoggerInterface;
 use Symfony\Component\Uid\Uuid;
 
 /**
@@ -61,12 +64,18 @@ class AuditTrailMapper extends QBMapper
     /**
      * Constructor for the AuditTrailMapper
      *
-     * @param IDBConnection                     $db        The database connection
-     * @param \Psr\Container\ContainerInterface $container DI container for lazy mapper resolution
+     * @param IDBConnection                     $db          The database connection
+     * @param \Psr\Container\ContainerInterface $container   DI container for lazy mapper resolution
+     * @param IUserSession                      $userSession User session service
+     * @param IRequest                          $request     Current request
+     * @param LoggerInterface                   $logger      Logger
      */
     public function __construct(
         IDBConnection $db,
-        private readonly \Psr\Container\ContainerInterface $container
+        private readonly \Psr\Container\ContainerInterface $container,
+        private readonly IUserSession $userSession,
+        private readonly IRequest $request,
+        private readonly LoggerInterface $logger
     ) {
         parent::__construct(db: $db, tableName: 'openregister_audit_trails', entityClass: AuditTrail::class);
     }//end __construct()
@@ -301,7 +310,7 @@ class AuditTrailMapper extends QBMapper
         }//end if
 
         // Get the current user.
-        $user = \OC::$server->getUserSession()->getUser();
+        $user = $this->userSession->getUser();
 
         // Create and populate a new AuditTrail object.
         $auditTrail = new AuditTrail();
@@ -320,8 +329,8 @@ class AuditTrailMapper extends QBMapper
         }
 
         $auditTrail->setSession(session_id());
-        $auditTrail->setRequest(\OC::$server->getRequest()->getId());
-        $auditTrail->setIpAddress(\OC::$server->getRequest()->getRemoteAddress());
+        $auditTrail->setRequest($this->request->getId());
+        $auditTrail->setIpAddress($this->request->getRemoteAddress());
         $auditTrail->setCreated(new DateTime());
         $auditTrail->setRegister($objectEntity->getRegister());
         $auditTrail->setSchema($objectEntity->getSchema());
@@ -1006,7 +1015,7 @@ class AuditTrailMapper extends QBMapper
             return $result > 0;
         } catch (\Exception $e) {
             // Log the error for debugging purposes.
-            \OC::$server->getLogger()->error(
+            $this->logger->error(
                 message: '[AuditTrailMapper] Failed to clear expired audit trail logs: '.$e->getMessage(),
                 context: [
                     'file'      => __FILE__,
@@ -1047,7 +1056,7 @@ class AuditTrailMapper extends QBMapper
             return $result > 0;
         } catch (\Exception $e) {
             // Log the error for debugging purposes.
-            \OC::$server->getLogger()->error(
+            $this->logger->error(
                 message: '[AuditTrailMapper] Failed to clear all audit trail logs: '.$e->getMessage(),
                 context: [
                     'file'      => __FILE__,
@@ -1100,7 +1109,7 @@ class AuditTrailMapper extends QBMapper
             return $qb->executeStatement();
         } catch (\Exception $e) {
             // Log the error for debugging purposes.
-            \OC::$server->getLogger()->error(
+            $this->logger->error(
                 message: '[AuditTrailMapper] Failed to set expiry dates for audit trails: '.$e->getMessage(),
                 context: [
                     'file'      => __FILE__,
@@ -1200,7 +1209,7 @@ class AuditTrailMapper extends QBMapper
         string $action,
         array $context=[]
     ): AuditTrail {
-        $user   = \OC::$server->getUserSession()->getUser();
+        $user   = $this->userSession->getUser();
         $userId = $user !== null ? $user->getUID() : 'system';
 
         $auditTrail = new AuditTrail();
@@ -1211,7 +1220,7 @@ class AuditTrailMapper extends QBMapper
         $auditTrail->setAction($action);
         $auditTrail->setChanged($context);
         $auditTrail->setUser($userId);
-        $auditTrail->setCreated(new \DateTime());
+        $auditTrail->setCreated(new DateTime());
 
         return $this->insert(entity: $auditTrail);
     }//end createAuditTrailEntry()
