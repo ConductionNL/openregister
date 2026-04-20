@@ -1266,18 +1266,25 @@ class MagicMapper extends AbstractObjectMapper
         // Base SELECT with metadata columns.
         $selectColumns = $metadataColumns;
 
-        // Add schema property columns for UNION compatibility.
-        // Each schema's SELECT includes ALL property columns across all schemas.
-        // Columns that exist in this schema's table use the real column cast to text.
-        // Columns that don't exist use NULL::text AS placeholder.
-        // Cast to text ensures type compatibility across schemas in UNION.
-        // (e.g., one schema has 'type' as text, another as jsonb).
+        // Every SELECT in the UNION must have identical columns in the same order.
+        // We build the superset of all property columns across all schemas:
+        // - Columns present in this table are cast to a text type so that the same
+        //   column from two different schemas (e.g. 'type' as VARCHAR in one table
+        //   and JSONB in another) remains type-compatible across the UNION arms.
+        // - Columns absent from this table are emitted as NULL with the same alias
+        //   so the column count stays consistent.
+        // Cast syntax is database-specific: PostgreSQL uses `col::text`, while
+        // MariaDB/MySQL requires the standard `CAST(col AS CHAR)`.
         $existingColumns = [];
         foreach (array_keys($allPropertyColumns) as $columnName) {
             $quotedCol = $this->quoteIdentifier(name: $columnName, isPostgres: $isPostgres);
-            $colExpr   = "NULL::text AS {$quotedCol}";
+            // Absent column: emit a typed NULL placeholder.
+            $colExpr   = $isPostgres ? "NULL::text AS {$quotedCol}" : "NULL AS {$quotedCol}";
             if ($this->columnExistsInTable(tableName: $tableName, columnName: $columnName) === true) {
-                $colExpr           = "{$quotedCol}::text AS {$quotedCol}";
+                // Present column: cast to text for cross-schema type compatibility.
+                $colExpr           = $isPostgres
+                    ? "{$quotedCol}::text AS {$quotedCol}"
+                    : "CAST({$quotedCol} AS CHAR) AS {$quotedCol}";
                 $existingColumns[] = $columnName;
             }
 
@@ -1310,13 +1317,19 @@ class MagicMapper extends AbstractObjectMapper
                         continue;
                     }
 
-                    $quotedCol = $this->quoteIdentifier(name: $columnName, isPostgres: $isPostgres);
-                    // Fallback: use CASE with ILIKE for basic relevance scoring.
+                    $quotedCol   = $this->quoteIdentifier(name: $columnName, isPostgres: $isPostgres);
                     $likePattern = "'%".trim($quotedTerm, "'")."%'";
-                    $scoreExpr   = "CASE WHEN {$quotedCol}::text ILIKE {$likePattern} THEN 1 ELSE 0 END";
-                    if ($hasTrgm === true) {
-                        // Use similarity() for fuzzy scoring when pg_trgm is available.
-                        $scoreExpr = "COALESCE(similarity({$quotedCol}::text, {$quotedTerm}), 0)";
+                    if ($isPostgres === true) {
+                        // PostgreSQL: prefer pg_trgm similarity() for fuzzy relevance;
+                        // fall back to case-insensitive ILIKE when the extension is absent.
+                        $scoreExpr = "CASE WHEN {$quotedCol}::text ILIKE {$likePattern} THEN 1 ELSE 0 END";
+                        if ($hasTrgm === true) {
+                            $scoreExpr = "COALESCE(similarity({$quotedCol}::text, {$quotedTerm}), 0)";
+                        }
+                    } else {
+                        // MariaDB/MySQL: ILIKE and similarity() are unavailable;
+                        // use case-sensitive LIKE with a standard CAST instead.
+                        $scoreExpr = "CASE WHEN CAST({$quotedCol} AS CHAR) LIKE {$likePattern} THEN 1 ELSE 0 END";
                     }
 
                     $searchColumns[] = $scoreExpr;
