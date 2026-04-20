@@ -1137,7 +1137,8 @@ class MagicMapper extends AbstractObjectMapper
         $unionSql = implode(' UNION ALL ', $parts);
 
         // Apply global ORDER BY - supports _order parameter or defaults to search score.
-        $hasSearch   = isset($query['_search']) === true && empty($query['_search']) === false;
+        $hasSearch   = isset($query['_search']) === true
+            && empty($query['_search']) === false;
         $orderParams = $query['_order'] ?? [];
 
         if (empty($orderParams) === false && is_array($orderParams) === true) {
@@ -1285,7 +1286,11 @@ class MagicMapper extends AbstractObjectMapper
             $colExpr   = $isPostgres
                 ? "NULL::text AS {$quotedCol}"
                 : "NULL AS {$quotedCol}";
-            if ($this->columnExistsInTable(tableName: $tableName, columnName: $columnName) === true) {
+            $columnInTable = $this->columnExistsInTable(
+                tableName: $tableName,
+                columnName: $columnName
+            );
+            if ($columnInTable === true) {
                 // Present column: cast to text for cross-schema type compatibility.
                 $colExpr           = $isPostgres
                     ? "{$quotedCol}::text AS {$quotedCol}"
@@ -1300,7 +1305,8 @@ class MagicMapper extends AbstractObjectMapper
         $selectColumns[] = "'{$schema->getId()}' AS _union_schema_id";
 
         // Add search score if _search is present.
-        $hasSearch   = isset($query['_search']) === true && empty($query['_search']) === false;
+        $hasSearch   = isset($query['_search']) === true
+            && empty($query['_search']) === false;
         $searchTerm  = $query['_search'] ?? '';
         $schemaProps = $schema->getProperties() ?? [];
 
@@ -1318,11 +1324,18 @@ class MagicMapper extends AbstractObjectMapper
                     // Only score columns that actually exist in this table.
                     // Columns from other schemas are aliased as NULL in the SELECT
                     // and cannot be referenced by similarity()/ILIKE expressions.
-                    if ($this->columnExistsInTable(tableName: $tableName, columnName: $columnName) === false) {
+                    $columnInTable = $this->columnExistsInTable(
+                        tableName: $tableName,
+                        columnName: $columnName
+                    );
+                    if ($columnInTable === false) {
                         continue;
                     }
 
-                    $quotedCol   = $this->quoteIdentifier(name: $columnName, isPostgres: $isPostgres);
+                    $quotedCol   = $this->quoteIdentifier(
+                        name: $columnName,
+                        isPostgres: $isPostgres
+                    );
                     $likePattern = "'%".trim($quotedTerm, "'")."%'";
                     if ($isPostgres === true) {
                         // PostgreSQL: pg_trgm similarity() for fuzzy relevance;
@@ -1347,7 +1360,8 @@ class MagicMapper extends AbstractObjectMapper
             $selectColumns[] = '0 AS _search_score';
             if (empty($searchColumns) === false) {
                 $scoreExpression = 'GREATEST('.implode(', ', $searchColumns).')';
-                $selectColumns[count($selectColumns) - 1] = "{$scoreExpression} AS _search_score";
+                $lastIndex       = count($selectColumns) - 1;
+                $selectColumns[$lastIndex] = "{$scoreExpression} AS _search_score";
             }
         }//end if
 
@@ -1355,7 +1369,8 @@ class MagicMapper extends AbstractObjectMapper
             $selectColumns[] = '0 AS _search_score';
         }
 
-        $selectSql = 'SELECT '.implode(', ', $selectColumns)." FROM {$fullTableName}";
+        $colList   = implode(', ', $selectColumns);
+        $selectSql = "SELECT {$colList} FROM {$fullTableName}";
 
         // Build WHERE conditions using shared method (single source of truth for filters).
         // This ensures search, count, and facets all use the same filter logic.
