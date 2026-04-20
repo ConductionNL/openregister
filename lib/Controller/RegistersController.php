@@ -284,7 +284,7 @@ class RegistersController extends Controller
         $registersArr = array_map(fn($register) => $register->jsonSerialize(), $registers);
 
         // If 'schemas' is requested in _extend, expand schema IDs to full schema objects.
-        if (in_array('schemas', $extend, true) === true) {
+//        if (in_array('schemas', $extend, true) === true) {
             foreach ($registersArr as &$register) {
                 if (($register['schemas'] ?? null) !== null && is_array($register['schemas']) === true) {
                     $expandedSchemas = [];
@@ -362,7 +362,7 @@ class RegistersController extends Controller
 
             unset($register);
             // CRITICAL: Unset reference to prevent array corruption.
-        }//end if
+//        }//end if
 
         // If '@self.stats' is requested, attach statistics to each register.
         if (in_array('@self.stats', $extend, true) === true) {
