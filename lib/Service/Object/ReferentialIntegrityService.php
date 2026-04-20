@@ -37,6 +37,7 @@ use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Dto\DeletionAnalysis;
+use OCP\IDBConnection;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\Uid\Uuid;
 
@@ -106,13 +107,15 @@ class ReferentialIntegrityService
      * @param MagicMapper      $objectEntityMapper Object entity data mapper.
      * @param AuditTrailMapper $auditTrailMapper   Audit trail mapper for integrity action logging.
      * @param LoggerInterface  $logger             Logger for debugging.
+     * @param IDBConnection    $db                 Database connection for raw SQL queries.
      */
     public function __construct(
         private readonly SchemaMapper $schemaMapper,
         private readonly RegisterMapper $registerMapper,
         private readonly MagicMapper $objectEntityMapper,
         private readonly AuditTrailMapper $auditTrailMapper,
-        private readonly LoggerInterface $logger
+        private readonly LoggerInterface $logger,
+        private readonly IDBConnection $db
     ) {
     }//end __construct()
 
@@ -349,10 +352,9 @@ class ReferentialIntegrityService
                 $registerCache[(string) $register->getId()] = $register;
             }
 
-            $db = \OC::$server->getDatabaseConnection();
             // phpcs:ignore Generic.Files.LineLength.MaxExceeded -- SQL query must stay as single string.
             $sql  = "SELECT table_name FROM information_schema.tables WHERE table_name LIKE 'oc_openregister_table_%' AND table_schema = current_schema()";
-            $stmt = $db->prepare($sql);
+            $stmt = $this->db->prepare($sql);
             $stmt->execute();
             $tables = [];
             while (($row = $stmt->fetch()) !== false) {
@@ -847,9 +849,8 @@ class ReferentialIntegrityService
             $queryMode = 'scalar';
         }
 
-        $db         = \OC::$server->getDatabaseConnection();
-        $platform   = $db->getDatabasePlatform();
-        $isPostgres = stripos($platform::class, 'PostgreSQL') !== false;
+        $platform   = $this->db->getDatabasePlatform();
+        $isPostgres = stripos(get_class($platform), 'PostgreSQL') !== false;
 
         if ($isPostgres === true) {
             $deletedCheck = "(_deleted IS NULL OR _deleted = 'null'::jsonb)";
@@ -868,7 +869,7 @@ class ReferentialIntegrityService
 
         $sql = "{$selectClause} WHERE {$whereCondition} LIMIT 100";
 
-        $stmt = $db->prepare($sql);
+        $stmt = $this->db->prepare($sql);
         $stmt->execute([$targetUuid]);
         $rows = $stmt->fetchAll();
 

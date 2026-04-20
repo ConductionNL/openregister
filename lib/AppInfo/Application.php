@@ -320,7 +320,9 @@ class Application extends App implements IBootstrap
                     eventDispatcher: $container->get('OCP\EventDispatcher\IEventDispatcher'),
                     avatarManager: $container->get('OCP\IAvatarManager'),
                     auditTrailMapper: $container->get(\OCA\OpenRegister\Db\AuditTrailMapper::class),
-                    secureRandom: $container->get('OCP\Security\ISecureRandom')
+                    secureRandom: $container->get('OCP\Security\ISecureRandom'),
+                    db: $container->get('OCP\IDBConnection'),
+                    l10nFactory: $container->get('OCP\L10N\IFactory')
                 );
             }
         );
