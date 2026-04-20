@@ -1278,6 +1278,7 @@ class MagicMapper extends AbstractObjectMapper
          * Cast syntax is database-specific: PostgreSQL uses `col::text`, while
          * MariaDB/MySQL requires the standard `CAST(col AS CHAR)`.
          */
+        
         $existingColumns = [];
         foreach (array_keys($allPropertyColumns) as $columnName) {
             $quotedCol = $this->quoteIdentifier(
