@@ -1277,9 +1277,14 @@ class MagicMapper extends AbstractObjectMapper
         // MariaDB/MySQL requires the standard `CAST(col AS CHAR)`.
         $existingColumns = [];
         foreach (array_keys($allPropertyColumns) as $columnName) {
-            $quotedCol = $this->quoteIdentifier(name: $columnName, isPostgres: $isPostgres);
+            $quotedCol = $this->quoteIdentifier(
+                name: $columnName,
+                isPostgres: $isPostgres
+            );
             // Absent column: emit a typed NULL placeholder.
-            $colExpr   = $isPostgres ? "NULL::text AS {$quotedCol}" : "NULL AS {$quotedCol}";
+            $colExpr   = $isPostgres
+                ? "NULL::text AS {$quotedCol}"
+                : "NULL AS {$quotedCol}";
             if ($this->columnExistsInTable(tableName: $tableName, columnName: $columnName) === true) {
                 // Present column: cast to text for cross-schema type compatibility.
                 $colExpr           = $isPostgres
@@ -1320,16 +1325,19 @@ class MagicMapper extends AbstractObjectMapper
                     $quotedCol   = $this->quoteIdentifier(name: $columnName, isPostgres: $isPostgres);
                     $likePattern = "'%".trim($quotedTerm, "'")."%'";
                     if ($isPostgres === true) {
-                        // PostgreSQL: prefer pg_trgm similarity() for fuzzy relevance;
-                        // fall back to case-insensitive ILIKE when the extension is absent.
-                        $scoreExpr = "CASE WHEN {$quotedCol}::text ILIKE {$likePattern} THEN 1 ELSE 0 END";
+                        // PostgreSQL: pg_trgm similarity() for fuzzy relevance;
+                        // fall back to ILIKE when pg_trgm is unavailable.
+                        $scoreExpr = "CASE WHEN {$quotedCol}::text"
+                            . " ILIKE {$likePattern} THEN 1 ELSE 0 END";
                         if ($hasTrgm === true) {
-                            $scoreExpr = "COALESCE(similarity({$quotedCol}::text, {$quotedTerm}), 0)";
+                            $scoreExpr = "COALESCE(similarity({$quotedCol}::text,"
+                                . " {$quotedTerm}), 0)";
                         }
                     } else {
                         // MariaDB/MySQL: ILIKE and similarity() are unavailable;
                         // use case-sensitive LIKE with a standard CAST instead.
-                        $scoreExpr = "CASE WHEN CAST({$quotedCol} AS CHAR) LIKE {$likePattern} THEN 1 ELSE 0 END";
+                        $scoreExpr = "CASE WHEN CAST({$quotedCol} AS CHAR)"
+                            . " LIKE {$likePattern} THEN 1 ELSE 0 END";
                     }
 
                     $searchColumns[] = $scoreExpr;
