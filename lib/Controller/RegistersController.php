@@ -348,8 +348,8 @@ class RegistersController extends Controller
                                 $statsJson       = json_encode($schema['stats']);
                                 $msg = "[RegistersController] Set stats for schema {$schemaId}: {$statsJson}";
                                 $this->logger->debug(
-                                    message: $msg,
-                                    context: ['file' => __FILE__, 'line' => __LINE__]
+                                message: $msg,
+                                context: ['file' => __FILE__, 'line' => __LINE__]
                                 );
                             }
                         }//end foreach
@@ -363,7 +363,6 @@ class RegistersController extends Controller
             unset($register);
             // CRITICAL: Unset reference to prevent array corruption.
         }//end if
-
         // If '@self.stats' is requested, attach statistics to each register.
         if (in_array('@self.stats', $extend, true) === true) {
             foreach ($registersArr as &$register) {
