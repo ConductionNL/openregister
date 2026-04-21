@@ -24,9 +24,9 @@ The access control system integrates with:
 
 Access can be controlled at multiple levels:
 - Register level - Control access to entire registers
-- Schema level - Manage permissions for specific register/schema combinations  
+- Schema level - Manage permissions for specific register/schema combinations
 - Object level - Set permissions on individual objects
-- Property level - Fine-grained control over specific object properties
+- Property level - Fine-grained, conditional control over specific object properties (see [Property Authorization](./property-authorization.md))
 
 ## Permission Types
 
@@ -521,6 +521,50 @@ $object->setAuthorization([
 ]);
 ```
 
+### Property-Level Authorization
+
+In addition to the schema- and object-level rules above, individual properties can carry their own `authorization` block with conditional rules. This is covered in depth in [Property Authorization](./property-authorization.md); this section is a short map into that feature.
+
+Property-level rules support:
+
+- **Group checks** — the same groups used at schema level (including `"public"`).
+- **`match` conditions** on the object, with operators: `$eq`, `$ne`, `$gt`, `$gte`, `$lt`, `$lte`, `$in`, `$nin`, `$exists`.
+- **Dynamic variables** resolved at evaluation time: `$organisation` / `$activeOrganisation`, `$userId` / `$user`, `$now`.
+
+Example — a `publishedAt` field that is only visible after its own timestamp:
+
+```json
+{
+  "publishedAt": {
+    "type": "string",
+    "format": "date-time",
+    "authorization": {
+      "read": [
+        { "group": "public", "match": { "publishedAt": { "$lte": "$now" } } }
+      ]
+    }
+  }
+}
+```
+
+Example — internal notes scoped to the owning organisation:
+
+```json
+{
+  "interneAantekening": {
+    "type": "string",
+    "authorization": {
+      "read":   [{ "group": "public",  "match": { "_organisation": "$organisation" } }],
+      "update": [{ "group": "editors", "match": { "_organisation": "$organisation" } }]
+    }
+  }
+}
+```
+
+Reads that fail property authorization strip the field from the response; writes that fail produce a validation error rather than a silent drop. Schemas with no `authorization` blocks on any property skip property-RBAC evaluation entirely.
+
+See [Property Authorization](./property-authorization.md) for the full operator catalogue, variable reference, edge cases, and more examples.
+
 ### RBAC Configuration
 
 RBAC can be configured in Nextcloud app settings:
@@ -853,23 +897,15 @@ $oldExceptions = $mapper->findByCriteria([
 
 ### Future Enhancements
 
-1. **Field-Level Authorization**
-   - Control access to specific object properties
-   - Redact sensitive fields based on user permissions
-
-2. **Time-Based Permissions**
-   - Temporary permission grants with expiration
-   - Scheduled permission changes
-
-3. **Audit Logging**
+1. **Audit Logging**
    - Log all authorization decisions
    - Track permission changes over time
 
-4. **Permission Testing Tool**
+2. **Permission Testing Tool**
    - UI for testing user permissions
    - Visualize effective permissions for users/groups
 
-5. **RBAC Analytics**
+3. **RBAC Analytics**
    - Permission usage statistics
    - Identify over-privileged users
    - Suggest permission optimizations
