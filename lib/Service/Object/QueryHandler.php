@@ -377,7 +377,7 @@ class QueryHandler
         unset($paginatedQuery['_page'], $paginatedQuery['_facetable'], $paginatedQuery['_extend']);
 
         $countQuery = $query;
-        unset($countQuery['_limit'], $countQuery['_offset'], $countQuery['_page'], $countQuery['_facetable'], $paginatedQuery['_extend']);
+        unset($countQuery['_limit'], $countQuery['_offset'], $countQuery['_page'], $countQuery['_facetable'], $countQuery['_extend']);
 
         // Get active organization context for multi-tenancy.
         $activeOrgUuid = null;
