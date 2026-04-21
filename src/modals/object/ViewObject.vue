@@ -124,7 +124,7 @@ import { objectStore, navigationStore, registerStore, schemaStore } from '../../
 														<!-- Date/Time properties -->
 														<NcDateTimePickerNative
 															v-else-if="getPropertyInputComponent(key) === 'NcDateTimePickerNative'"
-															:value="getDatePickerValue(key, formData[key] !== undefined ? formData[key] : value) || undefined"
+															:value="stringToDate(formData[key] !== undefined ? formData[key] : value, currentSchema.properties[key].format) || undefined"
 															:type="getPropertyInputType(key)"
 															:label="getPropertyDisplayName(key)"
 															@input="updatePropertyValue(key, $event)" />
@@ -621,6 +621,7 @@ import Plus from 'vue-material-design-icons/Plus.vue'
 import ExclamationThick from 'vue-material-design-icons/ExclamationThick.vue'
 import ArrowRight from 'vue-material-design-icons/ArrowRight.vue'
 import PaginationComponent from '../../components/PaginationComponent.vue'
+import { stringToDate, dateToString } from '../../services/dateUtils.js'
 export default {
 	name: 'ViewObject',
 	components: {
@@ -631,9 +632,9 @@ export default {
 		NcTextField,
 		NcCheckboxRadioSwitch,
 		NcLoadingIcon,
+		NcDateTimePickerNative,
 		NcActions,
 		NcActionButton,
-		NcDateTimePickerNative,
 		NcEmptyContent,
 		NcSelect,
 		CodeMirror,
@@ -1829,7 +1830,7 @@ export default {
 				case 'string':
 				default:
 					if (newValue instanceof Date && schemaProperty?.format) {
-						convertedValue = this.formatDateForBackend(newValue, schemaProperty.format)
+						convertedValue = dateToString(newValue, schemaProperty.format)
 					} else {
 						convertedValue = newValue
 					}
@@ -1941,6 +1942,9 @@ export default {
 
 			return null
 		},
+		stringToDate(value, format) {
+			return stringToDate(value, format)
+		},
 		getPropertyInputType(key) {
 			const schemaProperty = this.currentSchema?.properties?.[key]
 			if (!schemaProperty) return 'text'
@@ -1966,43 +1970,6 @@ export default {
 			default:
 				return 'text'
 			}
-		},
-		formatDateForBackend(date, format) {
-			const yyyy = date.getFullYear().toString().padStart(4, '0')
-			const MM = (date.getMonth() + 1).toString().padStart(2, '0')
-			const dd = date.getDate().toString().padStart(2, '0')
-			const hh = date.getHours().toString().padStart(2, '0')
-			const mm = date.getMinutes().toString().padStart(2, '0')
-			const ss = date.getSeconds().toString().padStart(2, '0')
-			if (format === 'date') return `${yyyy}-${MM}-${dd}`
-			if (format === 'time') return `${hh}:${mm}:${ss}`
-			if (format === 'date-time') return `${yyyy}-${MM}-${dd}T${hh}:${mm}:${ss}`
-			return date.toISOString()
-		},
-		getDatePickerValue(key, rawValue) {
-			if (!rawValue) return null
-			if (rawValue instanceof Date) return rawValue
-			const format = this.currentSchema?.properties?.[key]?.format
-			if (format === 'date') {
-				// Handle "YYYY-MM-DD", "YYYY-MM-DDTHH:MM:SS" and "YYYY-MM-DD HH:MM:SS" (MySQL format)
-				const datePart = rawValue.split(/[T ]/)[0]
-				const parts = datePart.split('-').map(Number)
-				if (parts.length === 3 && parts.every(n => !isNaN(n))) {
-					return new Date(parts[0], parts[1] - 1, parts[2])
-				}
-			} else if (format === 'time') {
-				const parts = rawValue.split(':').map(Number)
-				if (parts.length >= 2 && parts.every(n => !isNaN(n))) {
-					const d = new Date()
-					d.setHours(parts[0], parts[1], parts[2] || 0, 0)
-					return d
-				}
-			} else if (format === 'date-time') {
-				// Normalize space separator to T for Date parsing
-				const d = new Date(rawValue.replace(' ', 'T'))
-				if (!isNaN(d.getTime())) return d
-			}
-			return null
 		},
 		getPropertyInputComponent(key) {
 			const schemaProperty = this.currentSchema?.properties?.[key]
