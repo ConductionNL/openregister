@@ -379,7 +379,8 @@ class MagicMapper extends AbstractObjectMapper
         $this->bulkHandler = new MagicBulkHandler(
             db: $this->db,
             logger: $this->logger,
-            eventDispatcher: $this->eventDispatcher
+            eventDispatcher: $this->eventDispatcher,
+            dateTimeNormalizer: $this->container->get(\OCA\OpenRegister\Service\DateTimeNormalizer::class)
         );
 
         // CacheHandler and ICacheFactory are resolved lazily via container
@@ -404,7 +405,8 @@ class MagicMapper extends AbstractObjectMapper
             db: $this->db,
             logger: $this->logger,
             registerMapper: $this->registerMapper,
-            schemaMapper: $this->schemaMapper
+            schemaMapper: $this->schemaMapper,
+            dateTimeNormalizer: $this->container->get(\OCA\OpenRegister\Service\DateTimeNormalizer::class)
         );
 
         // Use setter injection for the count callback to avoid circular dependency.
@@ -2981,13 +2983,12 @@ class MagicMapper extends AbstractObjectMapper
                 if ($value instanceof DateTime) {
                     $value = $value->format('Y-m-d H:i:s');
                 } else if (is_string($value) === true) {
-                    // Validate and convert datetime strings.
-                    try {
-                        $dateTime = new DateTime($value);
-                        $value    = $dateTime->format('Y-m-d H:i:s');
-                    } catch (Exception $e) {
-                        $value = null;
-                    }
+                    // Delegate string parsing to DateTimeNormalizer so that empty/whitespace
+                    // input becomes null rather than silently becoming "now". The outer
+                    // default-to-now logic for absent created/updated is preserved above.
+                    $value = $this->container
+                        ->get(\OCA\OpenRegister\Service\DateTimeNormalizer::class)
+                        ->formatForDatabase($value);
                 }
             }
 

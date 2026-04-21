@@ -22,6 +22,7 @@ namespace OCA\OpenRegister\Db\ObjectHandlers;
 
 use DateTime;
 use Exception;
+use OCA\OpenRegister\Service\DateTimeNormalizer;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 
 /**
@@ -37,6 +38,17 @@ use OCP\DB\QueryBuilder\IQueryBuilder;
  */
 class MariaDbSearchHandler
 {
+
+    /**
+     * Constructor.
+     *
+     * @param DateTimeNormalizer $dateTimeNormalizer Canonical datetime normaliser.
+     */
+    public function __construct(
+        private readonly DateTimeNormalizer $dateTimeNormalizer
+    ) {
+    }//end __construct()
+
     /**
      * Main metadata fields that can be filtered on
      *
@@ -571,6 +583,12 @@ class MariaDbSearchHandler
             $sqlOperator     = $this->convertToSqlOperator(operator: $operator);
             $normalizedValue = $this->normalizeDateValue(field: $field, value: $operatorValue);
 
+            // Drop the predicate entirely when the input cannot be resolved to a
+            // meaningful date value (empty string, whitespace, or unparseable).
+            if ($normalizedValue === null) {
+                continue;
+            }
+
             if ($this->applyComparisonOperator(
                     queryBuilder: $queryBuilder,
                     qualifiedField: $qualifiedField,
@@ -620,25 +638,25 @@ class MariaDbSearchHandler
     }//end convertToSqlOperator()
 
     /**
-     * Normalize date value to database format
+     * Normalize date value to database format.
+     *
+     * Returns `null` for empty, whitespace-only, or otherwise unparseable input on date
+     * fields so callers can drop the predicate entirely rather than injecting a stale
+     * filter value (see `fix-empty-string-date-conversion` decision D5).
      *
      * @param string $field Field name
      * @param mixed  $value Value
      *
-     * @return string Normalized value
+     * @return string|null Normalized value, or null when the value cannot be meaningfully
+     *                     applied as a date predicate.
      */
-    private function normalizeDateValue(string $field, mixed $value): string
+    private function normalizeDateValue(string $field, mixed $value): ?string
     {
         if ($this->isDateField(field: $field) === false) {
             return $value;
         }
 
-        try {
-            $dateTime = new DateTime($value);
-            return $dateTime->format('Y-m-d H:i:s');
-        } catch (Exception $e) {
-            return $value;
-        }
+        return $this->dateTimeNormalizer->formatForDatabase($value);
     }//end normalizeDateValue()
 
     /**

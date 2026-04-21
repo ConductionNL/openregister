@@ -44,6 +44,7 @@ use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Event\ObjectCreatedEvent;
 use OCA\OpenRegister\Event\ObjectUpdatedEvent;
+use OCA\OpenRegister\Service\DateTimeNormalizer;
 use OCP\EventDispatcher\IEventDispatcher;
 use OCP\IDBConnection;
 use Psr\Log\LoggerInterface;
@@ -88,7 +89,8 @@ class MagicBulkHandler
     public function __construct(
         private readonly IDBConnection $db,
         private readonly LoggerInterface $logger,
-        private readonly IEventDispatcher $eventDispatcher
+        private readonly IEventDispatcher $eventDispatcher,
+        private readonly DateTimeNormalizer $dateTimeNormalizer
     ) {
         // Try to get max_allowed_packet from database configuration.
         $this->initializeMaxPacketSize();
@@ -755,32 +757,9 @@ class MagicBulkHandler
      */
     private function formatDateTimeForDatabase(mixed $value, ?string $default): ?string
     {
-        // If already a DateTime object, format it.
-        if ($value instanceof DateTime) {
-            return $value->format('Y-m-d H:i:s');
-        }
-
-        // If it's a string, try to parse and reformat.
-        if (is_string($value) === true) {
-            try {
-                $dateTime = new DateTime($value);
-                return $dateTime->format('Y-m-d H:i:s');
-            } catch (\Exception $e) {
-                // If parsing fails, return the default.
-                $this->logger->debug(
-                    message: '[MagicBulkHandler] Failed to parse datetime value',
-                    context: [
-                        'file'  => __FILE__,
-                        'line'  => __LINE__,
-                        'value' => $value,
-                        'error' => $e->getMessage(),
-                    ]
-                );
-                return $default;
-            }
-        }
-
-        // For any other type, return the default.
-        return $default;
+        // Delegate to DateTimeNormalizer — empty/whitespace/null input returns null
+        // instead of silently becoming "now" via PHP's new DateTime('').
+        $formatted = $this->dateTimeNormalizer->formatForDatabase($value);
+        return $formatted ?? $default;
     }//end formatDateTimeForDatabase()
 }//end class

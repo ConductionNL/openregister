@@ -41,6 +41,7 @@ use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Db\ViewMapper;
+use OCA\OpenRegister\Service\DateTimeNormalizer;
 use OCA\OpenRegister\Service\Object\CacheHandler;
 use OCA\OpenRegister\Service\Schemas\SchemaCacheHandler;
 use OCA\OpenRegister\Service\Schemas\FacetCacheHandler;
@@ -277,6 +278,7 @@ class ObjectService
         private readonly LoggerInterface $logger,
         private readonly CacheHandler $cacheHandler,
         private readonly SettingsService $settingsService,
+        private readonly DateTimeNormalizer $dateTimeNormalizer,
         private readonly IAppContainer $container
         // TODO: CIRCULAR DEPENDENCY ISSUE - ExportService, ImportService, and VectorizationService
         // These services have deep circular dependencies:
@@ -1369,20 +1371,36 @@ class ObjectService
             }
 
             $format = $propertyDef['format'] ?? null;
-            if ($format !== 'date') {
+            if ($format !== 'date' && $format !== 'date-time') {
                 continue;
             }
 
-            // If the value is already a valid date (Y-m-d), skip.
-            if (preg_match('/^\d{4}-\d{2}-\d{2}$/', $object[$propertyName]) === 1) {
+            // Empty / whitespace-only strings normalise to null instead of silently
+            // becoming the current datetime via PHP's "new DateTime('')" footgun.
+            if (trim($object[$propertyName]) === '') {
+                $object[$propertyName] = null;
                 continue;
             }
 
-            // Try to parse as datetime and extract just the date part.
-            try {
-                $object[$propertyName] = (new DateTime($object[$propertyName]))->format('Y-m-d');
-            } catch (\Exception $e) {
-                // Leave the original value; validation will catch invalid formats.
+            if ($format === 'date') {
+                // If already a valid date (Y-m-d), skip.
+                if (preg_match('/^\d{4}-\d{2}-\d{2}$/', $object[$propertyName]) === 1) {
+                    continue;
+                }
+
+                $parsed = $this->dateTimeNormalizer->normalize($object[$propertyName]);
+                if ($parsed !== null) {
+                    $object[$propertyName] = $parsed->format('Y-m-d');
+                }
+
+                continue;
+            }
+
+            // For date-time: accept valid input; invalid/empty input → null.
+            // Leave otherwise-valid strings untouched so downstream validation runs.
+            $parsed = $this->dateTimeNormalizer->normalize($object[$propertyName]);
+            if ($parsed === null) {
+                $object[$propertyName] = null;
             }
         }//end foreach
 
