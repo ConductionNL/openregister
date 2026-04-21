@@ -639,8 +639,69 @@ GET /api/files/{id}/metadata
 You can retrieve all files associated with an object:
 
 ```
-GET /api/objects/files/{objectId}
+GET /api/objects/{register}/{schema}/{id}/files
 ```
+
+#### Pagination
+
+The listing endpoint supports standard pagination parameters:
+
+| Parameter | Default | Minimum | Maximum | Notes |
+|-----------|---------|---------|---------|-------|
+| `_page` | `1` | `1` | — | Page number |
+| `_limit` | `30` | `1` | **none** | Values below `1` are clamped to `1`; no upper ceiling — `_limit=5000` is honoured |
+
+Per-object attachment counts are the natural bound for this endpoint, so there is no artificial cap on `_limit`. Call sites that want a fixed page size should set `_limit` explicitly.
+
+#### Lock-aware response (authenticated callers)
+
+When the request is made by an authenticated user, each file entry in the response carries two additional fields that expose Nextcloud lock state:
+
+```json
+{
+  "id": 42,
+  "title": "report.pdf",
+  "locked": true,
+  "lock": {
+    "type": "user",
+    "scope": "exclusive",
+    "owner": "alice",
+    "createdAt": "2026-04-21T10:00:00+00:00",
+    "expiresAt": "2026-04-21T10:30:00+00:00"
+  }
+}
+```
+
+| Field | Description |
+|-------|-------------|
+| `locked` | `true` if the file has an active Nextcloud lock, `false` otherwise |
+| `lock.type` | Lock type — one of `"user"`, `"app"`, `"token"` |
+| `lock.scope` | WebDAV lock scope — one of `"exclusive"`, `"shared"` |
+| `lock.owner` | User id (for `user`/`token` types) or app id (for `app` type) |
+| `lock.createdAt` | ISO 8601 timestamp of when the lock was acquired |
+| `lock.expiresAt` | ISO 8601 timestamp of expiry, or `null` if the lock has no timeout |
+
+When Nextcloud's lock provider is not available (the `files_lock` app is disabled), `locked` is `false` and `lock` is omitted.
+
+#### Anonymous callers
+
+When the request has no authenticated session (e.g. a public object fetched without credentials), **both `locked` and `lock` are omitted from every entry**. This prevents anonymous callers from observing who holds a lock or what apps are editing the file.
+
+#### Locked-file resilience
+
+A single Nextcloud-locked file no longer crashes the listing. If any file raises a `LockedException` during formatting, the endpoint returns HTTP 200 with a minimal envelope for that entry instead of failing the whole request:
+
+```json
+{
+  "id": 42,
+  "title": "report.pdf",
+  "locked": true,
+  "lock": { "type": "user", "scope": "exclusive", "owner": "alice", "createdAt": "...", "expiresAt": null },
+  "error": "locked"
+}
+```
+
+For anonymous callers, the stub carries only `{id, title, error: "locked"}` — no `locked`, no `lock`. A structured `info`-level log line is emitted server-side for each locked file encountered, so operators can still observe lock contention.
 
 ### Updating Files
 
