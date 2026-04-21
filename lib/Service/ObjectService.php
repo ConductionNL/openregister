@@ -226,6 +226,7 @@ class ObjectService
      * @param LoggerInterface                $logger              Logger for performance monitoring.
      * @param CacheHandler                   $cacheHandler        Service for entity and query caching.
      * @param SettingsService                $settingsService     Service for settings operations.
+     * @param DateTimeNormalizer             $dateTimeNormalizer  Normaliser for user-supplied datetime input.
      * @param IAppContainer                  $container           Application container.
      *
      * @SuppressWarnings(PHPMD.ExcessiveParameterList) Nextcloud DI requires constructor injection

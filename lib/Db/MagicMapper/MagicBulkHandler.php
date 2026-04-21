@@ -82,9 +82,10 @@ class MagicBulkHandler
     /**
      * Constructor for MagicBulkHandler
      *
-     * @param IDBConnection    $db              Database connection for operations
-     * @param LoggerInterface  $logger          Logger for debugging and error reporting
-     * @param IEventDispatcher $eventDispatcher Event dispatcher for business logic hooks
+     * @param IDBConnection      $db                 Database connection for operations
+     * @param LoggerInterface    $logger             Logger for debugging and error reporting
+     * @param IEventDispatcher   $eventDispatcher    Event dispatcher for business logic hooks
+     * @param DateTimeNormalizer $dateTimeNormalizer Normaliser for user-supplied datetime input
      */
     public function __construct(
         private readonly IDBConnection $db,

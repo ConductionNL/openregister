@@ -122,7 +122,7 @@ class DateTimeNormalizer
      */
     public function formatForDatabase(mixed $value): ?string
     {
-        $dt = $this->normalize($value);
+        $dt = $this->normalize(value: $value);
         if ($dt === null) {
             return null;
         }
@@ -139,12 +139,11 @@ class DateTimeNormalizer
      */
     public function formatForIso8601(mixed $value): ?string
     {
-        $dt = $this->normalize($value);
+        $dt = $this->normalize(value: $value);
         if ($dt === null) {
             return null;
         }
 
         return $dt->format(DateTimeInterface::ATOM);
     }//end formatForIso8601()
-
 }//end class

@@ -38,7 +38,6 @@ use OCP\DB\QueryBuilder\IQueryBuilder;
  */
 class MariaDbSearchHandler
 {
-
     /**
      * Constructor.
      *
