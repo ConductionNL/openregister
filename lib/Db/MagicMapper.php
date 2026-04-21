@@ -1139,7 +1139,8 @@ class MagicMapper extends AbstractObjectMapper
         $unionSql = implode(' UNION ALL ', $parts);
 
         // Apply global ORDER BY - supports _order parameter or defaults to search score.
-        $hasSearch   = isset($query['_search']) === true && empty($query['_search']) === false;
+        $hasSearch   = isset($query['_search']) === true
+            && empty($query['_search']) === false;
         $orderParams = $query['_order'] ?? [];
 
         if (empty($orderParams) === false && is_array($orderParams) === true) {
@@ -1268,29 +1269,55 @@ class MagicMapper extends AbstractObjectMapper
         // Base SELECT with metadata columns.
         $selectColumns = $metadataColumns;
 
-        // Add schema property columns for UNION compatibility.
-        // Each schema's SELECT includes ALL property columns across all schemas.
-        // Columns that exist in this schema's table use the real column cast to text.
-        // Columns that don't exist use NULL::text AS placeholder.
-        // Cast to text ensures type compatibility across schemas in UNION.
-        // (e.g., one schema has 'type' as text, another as jsonb).
+        /*
+         * Every SELECT in the UNION must have identical columns in the same order.
+         * We build the superset of all property columns across all schemas:
+         *  - Columns present in this table are cast to a text type so that the same
+         *    column from two different schemas (e.g. 'type' as VARCHAR in one table
+         *    and JSONB in another) remains type-compatible across the UNION arms.
+         *  - Columns absent from this table are emitted as NULL with the same alias
+         *    so the column count stays consistent.
+         * Cast syntax is database-specific: PostgreSQL uses `col::text`, while
+         * MariaDB/MySQL requires the standard `CAST(col AS CHAR)`.
+         */
+
         $existingColumns = [];
         foreach (array_keys($allPropertyColumns) as $columnName) {
-            $quotedCol = $this->quoteIdentifier(name: $columnName, isPostgres: $isPostgres);
-            $colExpr   = "NULL::text AS {$quotedCol}";
-            if ($this->columnExistsInTable(tableName: $tableName, columnName: $columnName) === true) {
-                $colExpr           = "{$quotedCol}::text AS {$quotedCol}";
+            $quotedCol = $this->quoteIdentifier(
+                name: $columnName,
+                isPostgres: $isPostgres
+            );
+            // Absent column: emit a typed NULL placeholder.
+            if ($isPostgres === true) {
+                $colExpr = "NULL::text AS {$quotedCol}";
+            } else {
+                $colExpr = "NULL AS {$quotedCol}";
+            }
+
+            $columnInTable = $this->columnExistsInTable(
+                tableName: $tableName,
+                columnName: $columnName
+            );
+            if ($columnInTable === true) {
+                // Present column: cast to text for cross-schema type compatibility.
+                if ($isPostgres === true) {
+                    $colExpr = "{$quotedCol}::text AS {$quotedCol}";
+                } else {
+                    $colExpr = "CAST({$quotedCol} AS CHAR) AS {$quotedCol}";
+                }
+
                 $existingColumns[] = $columnName;
             }
 
             $selectColumns[] = $colExpr;
-        }
+        }//end foreach
 
         $selectColumns[] = "'{$register->getId()}' AS _union_register_id";
         $selectColumns[] = "'{$schema->getId()}' AS _union_schema_id";
 
         // Add search score if _search is present.
-        $hasSearch   = isset($query['_search']) === true && empty($query['_search']) === false;
+        $hasSearch   = isset($query['_search']) === true
+            && empty($query['_search']) === false;
         $searchTerm  = $query['_search'] ?? '';
         $schemaProps = $schema->getProperties() ?? [];
 
@@ -1308,27 +1335,41 @@ class MagicMapper extends AbstractObjectMapper
                     // Only score columns that actually exist in this table.
                     // Columns from other schemas are aliased as NULL in the SELECT
                     // and cannot be referenced by similarity()/ILIKE expressions.
-                    if ($this->columnExistsInTable(tableName: $tableName, columnName: $columnName) === false) {
+                    $columnInTable = $this->columnExistsInTable(
+                        tableName: $tableName,
+                        columnName: $columnName
+                    );
+                    if ($columnInTable === false) {
                         continue;
                     }
 
-                    $quotedCol = $this->quoteIdentifier(name: $columnName, isPostgres: $isPostgres);
-                    // Fallback: use CASE with ILIKE for basic relevance scoring.
+                    $quotedCol   = $this->quoteIdentifier(
+                        name: $columnName,
+                        isPostgres: $isPostgres
+                    );
                     $likePattern = "'%".trim($quotedTerm, "'")."%'";
-                    $scoreExpr   = "CASE WHEN {$quotedCol}::text ILIKE {$likePattern} THEN 1 ELSE 0 END";
-                    if ($hasTrgm === true) {
-                        // Use similarity() for fuzzy scoring when pg_trgm is available.
-                        $scoreExpr = "COALESCE(similarity({$quotedCol}::text, {$quotedTerm}), 0)";
+                    if ($isPostgres === true) {
+                        // PostgreSQL: pg_trgm similarity() for fuzzy relevance;
+                        // fall back to ILIKE when pg_trgm is unavailable.
+                        $scoreExpr = "CASE WHEN {$quotedCol}::text ILIKE {$likePattern} THEN 1 ELSE 0 END";
+                        if ($hasTrgm === true) {
+                            $scoreExpr = "COALESCE(similarity({$quotedCol}::text, {$quotedTerm}), 0)";
+                        }
+                    } else {
+                        // MariaDB/MySQL: ILIKE and similarity() are unavailable;
+                        // use case-sensitive LIKE with a standard CAST instead.
+                        $scoreExpr = "CASE WHEN CAST({$quotedCol} AS CHAR) LIKE {$likePattern} THEN 1 ELSE 0 END";
                     }
 
                     $searchColumns[] = $scoreExpr;
-                }
+                }//end if
             }//end foreach
 
             $selectColumns[] = '0 AS _search_score';
             if (empty($searchColumns) === false) {
                 $scoreExpression = 'GREATEST('.implode(', ', $searchColumns).')';
-                $selectColumns[count($selectColumns) - 1] = "{$scoreExpression} AS _search_score";
+                $lastIndex       = count($selectColumns) - 1;
+                $selectColumns[$lastIndex] = "{$scoreExpression} AS _search_score";
             }
         }//end if
 
@@ -1336,7 +1377,8 @@ class MagicMapper extends AbstractObjectMapper
             $selectColumns[] = '0 AS _search_score';
         }
 
-        $selectSql = 'SELECT '.implode(', ', $selectColumns)." FROM {$fullTableName}";
+        $colList   = implode(', ', $selectColumns);
+        $selectSql = "SELECT {$colList} FROM {$fullTableName}";
 
         // Build WHERE conditions using shared method (single source of truth for filters).
         // This ensures search, count, and facets all use the same filter logic.
