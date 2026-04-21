@@ -21,6 +21,8 @@ namespace OCA\OpenRegister\Listener;
 
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCP\App\IAppManager;
+use OCP\AppFramework\Http\Events\BeforeTemplateRenderedEvent;
+use OCP\AppFramework\Http\TemplateResponse;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventListener;
 use OCP\IUserSession;
@@ -66,10 +68,17 @@ class MailAppScriptListener implements IEventListener
      */
     public function handle(Event $event): void
     {
-        // Only handle BeforeTemplateRenderedEvent from the Mail app.
-        // We use string comparison to avoid a hard dependency on the Mail app classes.
-        $eventClass = get_class($event);
-        if (str_contains($eventClass, 'OCA\\Mail\\') === false) {
+        // Only handle the core BeforeTemplateRenderedEvent rendered by the Mail app.
+        if ($event instanceof BeforeTemplateRenderedEvent === false) {
+            return;
+        }
+
+        $response = $event->getResponse();
+        if ($response instanceof TemplateResponse === false) {
+            return;
+        }
+
+        if ($response->getApp() !== 'mail') {
             return;
         }
 
