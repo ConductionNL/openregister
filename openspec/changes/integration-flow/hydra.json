@@ -6,7 +6,7 @@
   "depends_on": [
     "pluggable-integration-registry"
   ],
-  "issue": "",
+  "issue": "https://github.com/ConductionNL/openregister/issues/1320",
   "pipeline": {},
   "cycles": []
 }

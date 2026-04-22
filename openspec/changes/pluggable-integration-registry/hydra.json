@@ -4,7 +4,7 @@
   "app": "openregister",
   "repo": "https://github.com/ConductionNL/openregister",
   "depends_on": [],
-  "issue": "",
+  "issue": "https://github.com/ConductionNL/openregister/issues/1307",
   "pipeline": {},
   "cycles": []
 }
