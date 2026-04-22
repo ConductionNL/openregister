@@ -5,7 +5,7 @@
 		@closing="$emit('closing')">
 		<div class="vectorization-config-content">
 			<p class="description">
-				{{ t('openregister', 'Configure parameters for object vectorization. This process will generate vector embeddings for all objects matching your view filters.') }}
+				{{ t('openregister', 'Configure parameters for object vectorization. this process will generate vector embeddings for all objects matching your view filters.') }}
 			</p>
 
 			<!-- Execution Mode -->
@@ -69,8 +69,8 @@
 					v-model.number="maxObjects"
 					type="number"
 					min="0"
-					:placeholder="t('openregister', 'Maximum number of objects to process. Set to 0 to process all objects.')">
-				<small>{{ t('openregister', 'Maximum number of objects to process. Set to 0 to process all objects.') }}</small>
+					:placeholder="t('openregister', 'Maximum number of objects to process. set to 0 to process all objects.')">
+				<small>{{ t('openregister', 'Maximum number of objects to process. set to 0 to process all objects.') }}</small>
 			</div>
 
 			<div class="form-group">
@@ -89,7 +89,7 @@
 			<h3>{{ t('openregister', 'View Selection') }}</h3>
 			<div class="info-box">
 				<InformationOutline :size="20" />
-				<p>{{ t('openregister', 'Choose which views to include in the vectorization process. Leave empty to process all views based on your configuration.') }}</p>
+				<p>{{ t('openregister', 'Choose which views to include in the vectorization process. leave empty to process all views based on your configuration.') }}</p>
 			</div>
 
 			<div class="form-group">

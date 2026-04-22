@@ -8,8 +8,8 @@
 			:open="navigationStore.sidebarState.search"
 			:active-filters="objectStore.searchParams.filters"
 			:facet-data="objectStore.searchFacets"
-			search-tab-label="Search"
-			search-placeholder="Type to search..."
+			:search-tab-label="t('openregister', 'Search')"
+			:search-placeholder="t('openregister', 'Type to search...')"
 			@update:open="(e) => navigationStore.setSidebarState('search', e)"
 			@search="onSearchInput"
 			@filter-change="onFilterChange"
@@ -119,7 +119,7 @@
 							:input-label="t('openregister', 'Registers')"
 							:multiple="true"
 							:close-on-select="false"
-							placeholder="Select one or more registers"
+							:placeholder="t('openregister', 'Select one or more registers')"
 							@update:model-value="handleRegisterChange">
 							<template #option="{ title, description }">
 								<div class="option-content">
@@ -142,7 +142,7 @@
 							:input-label="t('openregister', 'Schemas')"
 							:multiple="true"
 							:close-on-select="false"
-							placeholder="Select one or more schemas"
+							:placeholder="t('openregister', 'Select one or more schemas')"
 							@update:model-value="handleSchemaChange">
 							<template #option="{ title, description }">
 								<div class="option-content">
@@ -235,7 +235,7 @@
 						<!-- Info about loaded facets -->
 						<div v-if="facetData && Object.keys(facetData).length > 0" class="facets-loaded-info">
 							<p class="facets-loaded-description">
-								{{ t('openregister', 'Filter data loaded automatically. Use the filters below to refine your search.') }}
+								{{ t('openregister', 'Filter data loaded automatically. use the filters below to refine your search.') }}
 							</p>
 						</div>
 					</div>
@@ -324,7 +324,7 @@
 
 						<div v-else-if="filteredViews.length === 0" class="noViews">
 							<NcNoteCard type="info">
-								{{ viewSearchQuery ? t('openregister', 'No views match your search') : t('openregister', 'No saved views yet. Create one in the Search tab!') }}
+								{{ viewSearchQuery ? t('openregister', 'No views match your search') : t('openregister', 'No saved views yet. create one in the search tab!') }}
 							</NcNoteCard>
 						</div>
 

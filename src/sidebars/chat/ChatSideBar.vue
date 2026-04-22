@@ -7,9 +7,9 @@ import { navigationStore, conversationStore } from '../../store/store.js'
 		<NcAppSidebar
 			ref="sidebar"
 			v-model="activeTab"
-			name="Conversations"
-			subtitle="Manage your chat conversations"
-			subname="AI Assistant"
+			:name="t('openregister', 'Conversations')"
+			:subtitle="t('openregister', 'Manage your chat conversations')"
+			:subname="t('openregister', 'AI Assistant')"
 			:open="navigationStore.sidebarState.chat"
 			@update:open="(e) => navigationStore.setSidebarState('chat', e)">
 			<!-- Active Conversations Tab -->
@@ -44,7 +44,7 @@ import { navigationStore, conversationStore } from '../../store/store.js'
 					<!-- Empty State -->
 					<div v-else-if="!conversationStore.conversationList || conversationStore.conversationList.length === 0" class="noConversations">
 						<NcNoteCard type="info">
-							{{ t('openregister', 'No conversations yet. Create a new one to get started!') }}
+							{{ t('openregister', 'No conversations yet. create a new one to get started!') }}
 						</NcNoteCard>
 					</div>
 

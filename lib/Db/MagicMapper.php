@@ -1260,11 +1260,18 @@ class MagicMapper extends AbstractObjectMapper
         // Add table prefix.
         $fullTableName = 'oc_'.$tableName;
 
-        // Get metadata column names (common across all tables).
-        $metadataColumns = array_keys($this->getMetadataColumns());
-
-        // Base SELECT with metadata columns.
-        $selectColumns = $metadataColumns;
+        // Get metadata column names, checking each exists in this table.
+        // Newer metadata columns (e.g. _tmlo) may not exist in older tables.
+        // Cast to text for UNION type compatibility (some columns are jsonb, others text).
+        $metadataColumns = $this->getMetadataColumns();
+        $selectColumns   = [];
+        foreach ($metadataColumns as $metaCol => $metaDef) {
+            if ($this->columnExistsInTable(tableName: $tableName, columnName: $metaCol) === true) {
+                $selectColumns[] = "{$metaCol}::text AS {$metaCol}";
+            } else {
+                $selectColumns[] = "NULL::text AS {$metaCol}";
+            }
+        }
 
         // Add schema property columns for UNION compatibility.
         // Each schema's SELECT includes ALL property columns across all schemas.
@@ -5764,9 +5771,9 @@ class MagicMapper extends AbstractObjectMapper
             if ($isPostgres === true) {
                 // PostgreSQL: use JSONB containment operator.
                 $sql = "SELECT * FROM {$fullTableName}
-                        WHERE (_deleted IS NULL OR _deleted = 'null'::jsonb)
+                        WHERE (_deleted IS NULL OR _deleted::text = 'null')
                         AND {$columnName} IS NOT NULL
-                        AND {$columnName} @> to_jsonb(?::text)
+                        AND {$columnName}::jsonb @> to_jsonb(?::text)
                         LIMIT 100";
             } else {
                 // MySQL: use JSON_SEARCH to find the ID as a value in the array.

@@ -8,7 +8,7 @@ import axios from '@nextcloud/axios'
 <template>
 	<NcDialog v-if="navigationStore.modal === 'exportRegister'"
 		name="export-register-dialog"
-		title="Export Objects"
+		:title="t('openregister', 'Export Objects')"
 		size="small"
 		:can-close="false">
 		<NcNoteCard v-if="error" type="error">
@@ -16,10 +16,10 @@ import axios from '@nextcloud/axios'
 		</NcNoteCard>
 
 		<div class="formContainer">
-			<p>Export "{{ schemaTitle }}" objects from "{{ registerTitle }}"</p>
+			<p>{{ t('openregister', 'Export "{schema}" objects from "{register}"', { schema: schemaTitle, register: registerTitle }) }}</p>
 
 			<div class="formGroup">
-				<label>Export Format:</label>
+				<label>{{ t('openregister', 'Export Format:') }}</label>
 				<NcSelect v-model="exportFormat"
 					:options="exportFormats"
 					option-label="label"
@@ -33,7 +33,7 @@ import axios from '@nextcloud/axios'
 				<template #icon>
 					<Cancel :size="20" />
 				</template>
-				Cancel
+				{{ t('openregister', 'Cancel') }}
 			</NcButton>
 			<NcButton
 				:disabled="loading"
@@ -43,7 +43,7 @@ import axios from '@nextcloud/axios'
 					<NcLoadingIcon v-if="loading" :size="20" />
 					<Export v-else :size="20" />
 				</template>
-				Export
+				{{ t('openregister', 'Export') }}
 			</NcButton>
 		</template>
 	</NcDialog>
@@ -57,6 +57,8 @@ import {
 	NcNoteCard,
 	NcSelect,
 } from '@nextcloud/vue'
+
+import { translate as t } from '@nextcloud/l10n'
 
 import Cancel from 'vue-material-design-icons/Cancel.vue'
 import Export from 'vue-material-design-icons/Export.vue'
@@ -106,7 +108,7 @@ export default {
 			const schema = schemaStore.schemaItem
 
 			if (!register?.id || !schema?.id) {
-				this.error = 'Register and schema are required'
+				this.error = t('openregister', 'Register and schema are required')
 				return
 			}
 
@@ -146,7 +148,7 @@ export default {
 
 				this.closeModal()
 			} catch (error) {
-				this.error = error.response?.data?.error || error.message || 'Failed to export objects'
+				this.error = error.response?.data?.error || error.message || t('openregister', 'Failed to export objects')
 			} finally {
 				this.loading = false
 			}

@@ -1,7 +1,11 @@
+<script setup>
+import { translate as t } from '@nextcloud/l10n'
+</script>
+
 <template>
 	<NcDialog
 		v-if="show"
-		name="Inspect SOLR Index"
+		:name="t('openregister', 'Inspect SOLR Index')"
 		:can-close="!loading"
 		size="large"
 		@closing="$emit('close')">
@@ -11,7 +15,7 @@
 				<div class="search-row">
 					<NcTextField
 						v-model="searchQuery"
-						label="Search Query"
+						:label="t('openregister', 'Search Query')"
 						placeholder="self_name:* or title:example or created:[2024-01-01T00:00:00Z TO NOW]"
 						@keyup.enter="searchDocuments">
 						<template #trailing-button-icon>
@@ -23,14 +27,14 @@
 						<template #icon>
 							<Magnify :size="20" />
 						</template>
-						Search
+						{{ t('openregister', 'Search') }}
 					</NcButton>
 
 					<NcButton type="tertiary" :disabled="loading" @click="openQueryHelp">
 						<template #icon>
 							<InformationOutline :size="20" />
 						</template>
-						Query Help
+						{{ t('openregister', 'Query Help') }}
 					</NcButton>
 				</div>
 
@@ -38,9 +42,9 @@
 					<NcSelect
 						v-model="selectedFields"
 						:options="availableFields"
-						label="Fields to Display"
+						:label="t('openregister', 'Fields to Display')"
 						multiple
-						placeholder="Select fields to display" />
+						:placeholder="t('openregister', 'Select fields to display')" />
 
 					<div class="pagination-controls">
 						<span class="pagination-info">
@@ -91,7 +95,7 @@
 									<ChevronDown v-if="!showErrorDetails" :size="20" />
 									<ChevronUp v-else :size="20" />
 								</template>
-								{{ showErrorDetails ? 'Hide' : 'Show' }} Technical Details
+								{{ showErrorDetails ? t('openregister', 'Hide') : t('openregister', 'Show') }} {{ t('openregister', 'Technical Details') }}
 							</NcButton>
 							<div v-if="showErrorDetails" class="error-details-content">
 								<pre>{{ JSON.stringify(errorDetails, null, 2) }}</pre>
@@ -104,8 +108,8 @@
 			<!-- Results -->
 			<div v-else-if="documents && documents.length > 0" class="results-section">
 				<div class="results-header">
-					<h3>Search Results</h3>
-					<span class="results-count">{{ totalResults }} documents found</span>
+					<h3>{{ t('openregister', 'Search Results') }}</h3>
+					<span class="results-count">{{ t('openregister', '{count} documents found', { count: totalResults }) }}</span>
 				</div>
 
 				<div class="documents-list">

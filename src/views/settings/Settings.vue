@@ -13,8 +13,8 @@
 			:loading="settingsStore.loadingVersionInfo"
 			:is-up-to-date="true"
 			:show-update-button="true"
-			title="Version Information"
-			description="Information about the current OpenRegister installation">
+			:title="t('openregister', 'Version Information')"
+			:description="t('openregister', 'Information about the current OpenRegister installation')">
 			<template #actions>
 				<NcButton
 					type="secondary"

@@ -125,7 +125,7 @@
 							<div v-if="message.feedback && message.showFeedbackInput" class="feedback-comment">
 								<textarea
 									v-model="message.feedbackComment"
-									:placeholder="t('openregister', 'Your feedback has been recorded. Optionally, you can provide additional details here...')"
+									:placeholder="t('openregister', 'Your feedback has been recorded. optionally, you can provide additional details here...')"
 									class="feedback-input"
 									rows="3"
 									@keydown.enter.ctrl="saveFeedbackComment(message)" />
@@ -176,7 +176,7 @@
 				</div>
 				<div class="input-hint">
 					<InformationOutline :size="14" />
-					<span>{{ t('openregister', 'Press Enter to send, Shift+Enter for new line') }}</span>
+					<span>{{ t('openregister', 'Press enter to send, shift+enter for new line') }}</span>
 				</div>
 			</div>
 		</div>
@@ -230,7 +230,7 @@
 			@closing="showChatSettings = false">
 			<div class="chat-settings-dialog">
 				<p class="settings-description">
-					{{ t('openregister', 'Control which views and tools the AI can use in this conversation. By default, all agent capabilities are enabled.') }}
+					{{ t('openregister', 'Control which views and tools the AI can use in this conversation. by default, all agent capabilities are enabled.') }}
 				</p>
 
 				<!-- Views Section -->
@@ -794,7 +794,7 @@ export default {
 
 				// Hide input after saving
 				this.$set(message, 'showFeedbackInput', false)
-				showSuccess(this.t('openregister', 'Additional feedback saved. Thank you!'))
+				showSuccess(this.t('openregister', 'Additional feedback saved. thank you!'))
 			} catch (error) {
 				console.error('Failed to save feedback comment:', error)
 				showError(this.t('openregister', 'Failed to save additional feedback'))

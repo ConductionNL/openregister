@@ -112,7 +112,7 @@ import { auditTrailStore, navigationStore, registerStore, schemaStore } from '..
 					<template #icon>
 						<FilterOffOutline :size="20" />
 					</template>
-					{{ t('openregister', 'Clear Filters') }}
+					{{ t('openregister', 'Clear filters') }}
 				</NcButton>
 			</div>
 

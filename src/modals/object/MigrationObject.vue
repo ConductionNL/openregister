@@ -108,7 +108,7 @@ import { objectStore, navigationStore, registerStore, schemaStore } from '../../
 					:options="availableRegisters"
 					label="title"
 					track-by="id"
-					placeholder="Select a register..."
+					:placeholder="t('openregister', 'Select a register...')"
 					@update:model-value="onRegisterChange" />
 			</div>
 
@@ -120,7 +120,7 @@ import { objectStore, navigationStore, registerStore, schemaStore } from '../../
 					:options="availableSchemas"
 					label="title"
 					track-by="id"
-					placeholder="Select a schema..."
+					:placeholder="t('openregister', 'Select a schema...')"
 					@update:model-value="onSchemaChange" />
 			</div>
 		</div>
