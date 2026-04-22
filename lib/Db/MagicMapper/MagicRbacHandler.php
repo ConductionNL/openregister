@@ -1261,8 +1261,15 @@ class MagicRbacHandler
             return null;
         }
 
-        $sqlOperator = $comparisonMap[$operator];
-        $quotedValue = $this->quoteValue(value: $operand);
+        $sqlOperator     = $comparisonMap[$operator];
+        $resolvedOperand = $this->resolveDynamicValue(value: $operand);
+
+        // If dynamic variable resolved to null, this condition cannot be met.
+        if ($operand !== $resolvedOperand && $resolvedOperand === null) {
+            return null;
+        }
+
+        $quotedValue = $this->quoteValue(value: $resolvedOperand);
         return "{$columnName} {$sqlOperator} {$quotedValue}";
     }//end buildComparisonOperatorConditionSql()
 
