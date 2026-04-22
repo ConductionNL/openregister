@@ -147,6 +147,14 @@ Every registered widget SHALL render correctly in four surfaces: `user-dashboard
 - **THEN** the main `widget` component MUST be rendered with `surface='email-digest'`
 - **AND** no error MUST be thrown
 
+#### Scenario: Widget render failure is isolated
+
+- **GIVEN** an integration's widget component throws an error during render
+- **WHEN** it is mounted on a dashboard alongside other widgets
+- **THEN** the failing widget MUST render a fallback "Widget unavailable" state with the integration id and error message
+- **AND** other widgets on the same dashboard MUST continue to render normally
+- **AND** the error MUST be logged for debugging
+
 ---
 
 ### Requirement: External Integration Routing via OpenConnector
@@ -238,15 +246,160 @@ When a JSON schema property declares `referenceType: <integration-id>`, frontend
 - **WHEN** `CnDetailGrid` renders the object
 - **THEN** the `notes` value MUST be rendered as plain text — no integration widget invoked
 
+#### Scenario: Reference to a missing entity renders a broken-link placeholder
+
+- **GIVEN** a schema property `assignedHandler: { type: 'string', referenceType: 'contacts' }` and an object with `assignedHandler: 'vcard-uuid-deleted'`
+- **AND** the referenced vCard has been deleted from the NC address book
+- **WHEN** `CnDetailGrid` renders the object
+- **THEN** the widget MUST render a "Reference unavailable" placeholder with the id visible to admins (not to end users)
+- **AND** the render MUST NOT throw
+
+#### Scenario: Reference to a provider whose required NC app is uninstalled
+
+- **GIVEN** a schema property with `referenceType: 'deck'` and the NC Deck app is not installed
+- **WHEN** `CnDetailGrid` renders the object
+- **THEN** the widget MUST render a "Deck not installed" placeholder with admin-only install hint
+- **AND** the render MUST NOT throw
+
+---
+
+### Requirement: Tags and Audit-Trail as First-Class Integrations
+
+The umbrella SHALL ship `tags` and `audit-trail` as `IntegrationProvider` implementations. Both SHALL declare `getRequiredApp(): null` (always-available) and `getGroup(): 'core'`. Neither SHALL be special-cased in `CnObjectSidebar` rendering — they flow through the same registry + three-stage filter as every other integration.
+
+#### Rationale
+
+Historically these two were hardcoded tabs. Promoting them to first-class integrations makes the registry the single source of truth for what appears in the sidebar, eliminates special cases in rendering, and exposes the parity gap (neither has a card widget today) the umbrella must fill.
+
+#### Scenario: Tags provider appears in the registry
+
+- **GIVEN** the umbrella change is applied
+- **WHEN** `IntegrationRegistry::getEnabled()` is called
+- **THEN** the result MUST include a provider with `id='tags'`, `group='core'`, `requiredApp=null`
+
+#### Scenario: Audit-trail provider requires admin permission
+
+- **GIVEN** the umbrella change is applied
+- **WHEN** `IntegrationRegistry::getEnabled()` is called on behalf of a non-admin user
+- **THEN** the `audit-trail` provider MUST be excluded per its `requiresPermission(): 'audit.view'` declaration
+
+---
+
+### Requirement: Registration Collision Handling
+
+Registering an integration id that is already present SHALL be detected. On the PHP side, two DI-tagged providers with the same `getId()` SHALL cause the container build to fail. On the JS side, calling `integrations.register({ id: 'foo', ... })` when `foo` is already registered SHALL throw synchronously in development mode and log a warning (keeping the first registration) in production mode.
+
+#### Rationale
+
+Silent overwrite produces the worst debugging experience. Dev-mode throw catches it during development; production warn-and-keep prevents a single misbehaving app from breaking an entire NC deployment.
+
+#### Scenario: Duplicate JS registration in dev mode throws
+
+- **GIVEN** an integration `forms` is already registered
+- **WHEN** another call is made: `integrations.register({ id: 'forms', ... })` in development mode
+- **THEN** the call MUST throw a `IntegrationCollisionError` synchronously
+- **AND** the error message MUST name the id and point at both registration sites
+
+#### Scenario: Duplicate JS registration in production warns
+
+- **GIVEN** an integration `forms` is already registered and the runtime is in production mode
+- **WHEN** another call is made: `integrations.register({ id: 'forms', ... })`
+- **THEN** the call MUST log a warning via `console.warn`
+- **AND** the first registration MUST remain in effect (second is ignored)
+
+#### Scenario: Duplicate DI tag fails container build
+
+- **GIVEN** two services tagged `IntegrationProvider` both return `'forms'` from `getId()`
+- **WHEN** the NC DI container is built
+- **THEN** container build MUST fail with a clear error naming the id and both service class names
+
+---
+
+### Requirement: Error-Handling Contract
+
+Provider methods that fail SHALL surface errors through a documented contract, not as generic 500s. `list()`, `get()`, `create()`, `update()`, `delete()` SHALL throw one of: `ProviderUnavailableException` (underlying system down), `ProviderAuthException` (credentials missing/expired), `ProviderNotFoundException` (entity doesn't exist), or `ProviderValidationException` (payload rejected). `ObjectsController` SHALL map these to HTTP statuses (503, 401, 404, 422) with a consistent JSON error body.
+
+#### Scenario: Underlying NC app unreachable returns 503
+
+- **GIVEN** the `deck` integration's backing Deck app crashes mid-request
+- **WHEN** `GET /api/objects/{register}/{schema}/{id}/deck` is called
+- **THEN** `DeckProvider::list()` MUST throw `ProviderUnavailableException`
+- **AND** the response MUST be HTTP 503 with body `{"error": "Integration unavailable", "integration": "deck", "details": "..."}`
+
+#### Scenario: External auth expired returns 401 with reconnect hint
+
+- **GIVEN** an external provider `openproject` whose OpenConnector source has expired OAuth tokens
+- **WHEN** `POST /api/objects/.../openproject` is called
+- **THEN** `OpenProjectProvider::create()` MUST throw `ProviderAuthException`
+- **AND** the response MUST be HTTP 401 with body including a `reconnectUrl` field
+
+#### Scenario: Unknown integration id returns 404
+
+- **GIVEN** a request targets integration id `foobar` that is not registered
+- **WHEN** `GET /api/objects/.../foobar` is called
+- **THEN** the response MUST be HTTP 404 with body `{"error": "Unknown integration", "integration": "foobar"}`
+
+---
+
+### Requirement: Pagination on List Endpoints
+
+List operations (`IntegrationProvider::list()` and `GET /api/objects/.../{integrationId}`) SHALL support pagination via `limit` and `offset` query parameters. Default limit SHALL be 20; maximum limit SHALL be 100. Responses SHALL include `total` (the unfiltered count) and `hasMore` (boolean convenience flag).
+
+#### Scenario: Default pagination
+
+- **GIVEN** an object with 150 linked emails
+- **WHEN** `GET /api/objects/{register}/{schema}/{id}/email` is called without pagination params
+- **THEN** the response MUST include the first 20 emails
+- **AND** MUST include `{total: 150, limit: 20, offset: 0, hasMore: true}`
+
+#### Scenario: Explicit limit capped at 100
+
+- **GIVEN** a caller requests `?limit=500`
+- **WHEN** the list endpoint executes
+- **THEN** the response MUST return at most 100 rows
+- **AND** `limit` in the response metadata MUST equal `100`
+
+---
+
+### Requirement: Migration of Existing Schemas
+
+A one-time data migration SHALL populate `configuration.linkedTypes` on every schema where the field is currently absent, setting it to `["files", "notes", "tasks", "tags", "audit-trail"]` — the five historically-hardcoded built-ins. This preserves user-visible behavior for existing deployments after the registry-driven filter is activated.
+
+#### Rationale
+
+Before this change, `CnObjectSidebar` showed all 5 hardcoded tabs regardless of `linkedTypes`. After, `linkedTypes` becomes the authoritative per-schema whitelist. Without the migration, every schema whose `linkedTypes` was absent (the common case) would lose all sidebar tabs on upgrade. Auto-populating preserves behavior and lets schema authors narrow the list when they want.
+
+#### Scenario: Existing schema without linkedTypes is migrated
+
+- **GIVEN** a schema saved before this change with no `configuration.linkedTypes`
+- **WHEN** the migration runs as part of the release
+- **THEN** the schema's `configuration.linkedTypes` MUST be set to `["files", "notes", "tasks", "tags", "audit-trail"]`
+- **AND** the schema MUST be saved with a migration-audit entry recording the change
+
+#### Scenario: Existing schema with linkedTypes is not touched
+
+- **GIVEN** a schema with `configuration.linkedTypes: ["files", "notes"]` already set
+- **WHEN** the migration runs
+- **THEN** the schema MUST NOT be modified
+
+#### Scenario: Schema with stale integration id logs but does not fail
+
+- **GIVEN** a schema with `linkedTypes: ["calendar"]` on an instance where the `calendar` provider is not yet registered
+- **WHEN** the schema is loaded
+- **THEN** validation MUST NOT reject on read
+- **AND** a warning MUST be logged identifying the schema and the stale id
+- **AND** the `calendar` tab MUST simply not render (stage 1 registry filter drops it)
+
 ---
 
 ### Requirement: Backwards Compatibility
 
-The change SHALL preserve the public API of `CnObjectSidebar` and the existing `LinkedEntityService` shape. Existing consumers (apps, scripts, docs) SHALL continue to function with zero code changes.
+The change SHALL preserve the public API of `CnObjectSidebar` and the existing `LinkedEntityService` shape. Existing consumers (apps, scripts, docs) SHALL continue to function with zero code changes after the schema migration has run.
 
 #### Scenario: Existing CnObjectSidebar consumer works unchanged
 
 - **GIVEN** an app using `<CnObjectSidebar :hidden-tabs="['tasks']" object-type="case" :object-id="id" />`
+- **AND** the schema migration has populated `linkedTypes` on the corresponding schema
 - **WHEN** the app upgrades `@conduction/nextcloud-vue` to the version including this change
 - **THEN** the sidebar MUST render with the same 5 tabs minus `tasks`
 - **AND** no console warnings or errors MUST appear
@@ -257,3 +410,10 @@ The change SHALL preserve the public API of `CnObjectSidebar` and the existing `
 - **WHEN** the schema is loaded after the change
 - **THEN** `linkedTypes` validation MUST pass
 - **AND** the schema MUST continue to limit integrations to the same two types
+
+#### Scenario: Schema author can narrow the migrated defaults
+
+- **GIVEN** a schema was migrated to `linkedTypes: ["files", "notes", "tasks", "tags", "audit-trail"]`
+- **WHEN** the schema author edits the list down to `["files", "notes"]`
+- **THEN** the schema MUST save without error
+- **AND** subsequent renders MUST honour the narrower whitelist
