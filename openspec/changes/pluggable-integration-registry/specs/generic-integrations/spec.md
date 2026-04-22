@@ -15,7 +15,7 @@ This spec defines the **integration registry**: a backend service + frontend reg
 
 ---
 
-## Requirements
+## ADDED Requirements
 
 ### Requirement: Integration Provider Contract
 

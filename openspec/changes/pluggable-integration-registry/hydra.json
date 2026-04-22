@@ -4,38 +4,7 @@
   "app": "openregister",
   "repo": "https://github.com/ConductionNL/openregister",
   "depends_on": [],
-  "leaf_plan": {
-    "wave_1_backend_ready_ui_missing": [
-      "integration-email",
-      "integration-calendar",
-      "integration-deck",
-      "integration-contacts",
-      "integration-talk"
-    ],
-    "wave_2_new_nc_native": [
-      "integration-forms",
-      "integration-polls",
-      "integration-bookmarks",
-      "integration-maps",
-      "integration-collectives",
-      "integration-activity",
-      "integration-photos",
-      "integration-flow",
-      "integration-analytics",
-      "integration-time-tracker",
-      "integration-shares",
-      "integration-cospend"
-    ],
-    "wave_3_external_via_openconnector": [
-      "integration-openproject",
-      "integration-xwiki"
-    ],
-    "wave_0_5_followup": [
-      "cleanup-linked-entity-type-map"
-    ],
-    "companion_in_hydra_repo": [
-      "adr-020-apps-consume-or-abstractions"
-    ]
-  },
+  "issue": "",
+  "pipeline": {},
   "cycles": []
 }
