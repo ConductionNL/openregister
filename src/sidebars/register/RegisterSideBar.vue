@@ -266,7 +266,6 @@ export default {
 				invalid: stats.invalid || 0,
 				deleted: stats.deleted || 0,
 				locked: stats.locked || 0,
-				published: stats.published || 0,
 			}
 			return breakdown
 		},

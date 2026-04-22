@@ -5,17 +5,22 @@ declare(strict_types=1);
 namespace Unit\Service;
 
 use OCA\OpenRegister\Event\UserProfileUpdatedEvent;
+use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Service\OrganisationService;
 use OCA\OpenRegister\Service\UserService;
 use OCP\Accounts\IAccount;
 use OCP\Accounts\IAccountManager;
 use OCP\Accounts\IAccountProperty;
 use OCP\EventDispatcher\IEventDispatcher;
+use OCP\IAvatarManager;
 use OCP\IConfig;
+use OCP\IDBConnection;
 use OCP\IGroupManager;
 use OCP\IUser;
 use OCP\IUserManager;
 use OCP\IUserSession;
+use OCP\L10N\IFactory;
+use OCP\Security\ISecureRandom;
 use PHPUnit\Framework\TestCase;
 use PHPUnit\Framework\MockObject\MockObject;
 use Psr\Log\LoggerInterface;
@@ -68,7 +73,12 @@ class UserServiceTest extends TestCase
             $this->accountManager,
             $this->logger,
             $this->organisationService,
-            $this->eventDispatcher
+            $this->eventDispatcher,
+            $this->createMock(IAvatarManager::class),
+            $this->createMock(AuditTrailMapper::class),
+            $this->createMock(ISecureRandom::class),
+            $this->createMock(IDBConnection::class),
+            $this->createMock(IFactory::class)
         );
     }
 
@@ -85,7 +95,12 @@ class UserServiceTest extends TestCase
             $this->accountManager,
             $this->logger,
             $this->organisationService,
-            $this->eventDispatcher
+            $this->eventDispatcher,
+            $this->createMock(IAvatarManager::class),
+            $this->createMock(AuditTrailMapper::class),
+            $this->createMock(ISecureRandom::class),
+            $this->createMock(IDBConnection::class),
+            $this->createMock(IFactory::class)
         );
     }
 

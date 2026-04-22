@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Controller;
 
 use OCA\OpenRegister\Controller\TagsController;
+use OCA\OpenRegister\Service\File\TaggingHandler;
 use OCA\OpenRegister\Service\FileService;
 use OCA\OpenRegister\Service\ObjectService;
 use OCP\AppFramework\Http\JSONResponse;
@@ -31,7 +32,8 @@ class TagsControllerTest extends TestCase
             'openregister',
             $this->request,
             $this->objectService,
-            $this->fileService
+            $this->fileService,
+            $this->createMock(TaggingHandler::class)
         );
     }
 

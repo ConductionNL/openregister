@@ -36,7 +36,6 @@ use OCA\OpenRegister\Service\FileService;
 use OCA\OpenRegister\Service\OrganisationService;
 use OCA\OpenRegister\Service\SettingsService;
 use OCA\OpenRegister\Service\SearchTrailService;
-use OCA\OpenRegister\Service\Object\BulkOperationsHandler;
 use OCA\OpenRegister\Service\Object\CacheHandler;
 use OCA\OpenRegister\Service\Object\CascadingHandler;
 use OCA\OpenRegister\Service\Object\DataManipulationHandler;
@@ -51,7 +50,6 @@ use OCA\OpenRegister\Service\Object\MigrationHandler;
 use OCA\OpenRegister\Service\Object\PerformanceHandler;
 use OCA\OpenRegister\Service\Object\PerformanceOptimizationHandler;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
-use OCA\OpenRegister\Service\Object\PublishHandler;
 use OCA\OpenRegister\Service\Object\QueryHandler;
 use OCA\OpenRegister\Service\Object\RelationHandler;
 use OCA\OpenRegister\Service\Object\RenderObject;
@@ -96,8 +94,6 @@ class ObjectServiceTest extends TestCase
 	private $validateHandler;
 	/** @var MockObject&DeleteObject */
 	private $deleteHandler;
-	/** @var MockObject&PublishHandler */
-	private $publishHandler;
 	/** @var MockObject&LockHandler */
 	private $lockHandler;
 	/** @var MockObject&AuditHandler */
@@ -108,8 +104,6 @@ class ObjectServiceTest extends TestCase
 	private $performanceHandler;
 	/** @var MockObject&CascadingHandler */
 	private $cascadingHandler;
-	/** @var MockObject&BulkOperationsHandler */
-	private $bulkOpsHandler;
 	/** @var MockObject&QueryHandler */
 	private $queryHandler;
 	/** @var MockObject&FacetHandler */
@@ -118,8 +112,6 @@ class ObjectServiceTest extends TestCase
 	private $searchQueryHandler;
 	/** @var MockObject&MagicMapper */
 	private $objectEntityMapper;
-	/** @var MockObject&MagicMapper */
-	private $unifiedObjectMapper;
 	/** @var MockObject&RegisterMapper */
 	private $registerMapper;
 	/** @var MockObject&SchemaMapper */
@@ -150,18 +142,15 @@ class ObjectServiceTest extends TestCase
 		$this->renderHandler = $this->createMock(RenderObject::class);
 		$this->validateHandler = $this->createMock(ValidateObject::class);
 		$this->deleteHandler = $this->createMock(DeleteObject::class);
-		$this->publishHandler = $this->createMock(PublishHandler::class);
 		$this->lockHandler = $this->createMock(LockHandler::class);
 		$this->auditHandler = $this->createMock(AuditHandler::class);
 		$this->permissionHandler = $this->createMock(PermissionHandler::class);
 		$this->performanceHandler = $this->createMock(PerformanceHandler::class);
 		$this->cascadingHandler = $this->createMock(CascadingHandler::class);
-		$this->bulkOpsHandler = $this->createMock(BulkOperationsHandler::class);
 		$this->queryHandler = $this->createMock(QueryHandler::class);
 		$this->facetHandler = $this->createMock(FacetHandler::class);
 		$this->searchQueryHandler = $this->createMock(SearchQueryHandler::class);
 		$this->objectEntityMapper = $this->createMock(MagicMapper::class);
-		$this->unifiedObjectMapper = $this->createMock(MagicMapper::class);
 		$this->registerMapper = $this->createMock(RegisterMapper::class);
 		$this->schemaMapper = $this->createMock(SchemaMapper::class);
 		$this->fileService = $this->createMock(FileService::class);
@@ -175,48 +164,45 @@ class ObjectServiceTest extends TestCase
 		$this->schema = new Schema();
 		$this->schema->setId(2);
 
-		// Instantiate ObjectService with all 40 constructor params.
+		// Instantiate ObjectService with all constructor params (positional).
 		$this->service = new ObjectService(
-			dataManipHandler: $this->createMock(DataManipulationHandler::class),
-			deleteHandler: $this->deleteHandler,
-			getHandler: $this->getHandler,
-			performanceHandler: $this->performanceHandler,
-			permissionHandler: $this->permissionHandler,
-			renderHandler: $this->renderHandler,
-			saveHandler: $this->saveHandler,
-			saveObjectsHandler: $this->createMock(SaveObjects::class),
-			searchQueryHandler: $this->searchQueryHandler,
-			validateHandler: $this->validateHandler,
-			lockHandler: $this->lockHandler,
-			auditHandler: $this->auditHandler,
-			publishHandler: $this->publishHandler,
-			relationHandler: $this->createMock(RelationHandler::class),
-			mergeHandler: $this->createMock(MergeHandler::class),
-			bulkOpsHandler: $this->bulkOpsHandler,
-			facetHandler: $this->facetHandler,
-			metadataHandler: $this->createMock(MetadataHandler::class),
-			perfOptHandler: $this->createMock(PerformanceOptimizationHandler::class),
-			queryHandler: $this->queryHandler,
-			revertHandler: $this->createMock(RevertHandler::class),
-			utilityHandler: $this->createMock(UtilityHandler::class),
-			validationHandler: $this->createMock(ValidationHandler::class),
-			cascadingHandler: $this->cascadingHandler,
-			migrationHandler: $this->createMock(MigrationHandler::class),
-			registerMapper: $this->registerMapper,
-			schemaMapper: $this->schemaMapper,
-			viewMapper: $this->createMock(ViewMapper::class),
-			objectEntityMapper: $this->objectEntityMapper,
-			unifiedObjectMapper: $this->unifiedObjectMapper,
-			fileService: $this->fileService,
-			userSession: $this->createMock(IUserSession::class),
-			searchTrailService: $this->createMock(SearchTrailService::class),
-			groupManager: $this->createMock(IGroupManager::class),
-			userManager: $this->createMock(IUserManager::class),
-			organisationService: $this->organisationService,
-			logger: $this->logger,
-			cacheHandler: $this->createMock(CacheHandler::class),
-			settingsService: $this->createMock(SettingsService::class),
-			container: $this->createMock(IAppContainer::class)
+			$this->createMock(DataManipulationHandler::class),
+			$this->deleteHandler,
+			$this->getHandler,
+			$this->performanceHandler,
+			$this->permissionHandler,
+			$this->renderHandler,
+			$this->saveHandler,
+			$this->createMock(SaveObjects::class),
+			$this->searchQueryHandler,
+			$this->validateHandler,
+			$this->lockHandler,
+			$this->auditHandler,
+			$this->createMock(RelationHandler::class),
+			$this->createMock(MergeHandler::class),
+			$this->facetHandler,
+			$this->createMock(MetadataHandler::class),
+			$this->createMock(PerformanceOptimizationHandler::class),
+			$this->queryHandler,
+			$this->createMock(RevertHandler::class),
+			$this->createMock(UtilityHandler::class),
+			$this->createMock(ValidationHandler::class),
+			$this->cascadingHandler,
+			$this->createMock(MigrationHandler::class),
+			$this->registerMapper,
+			$this->schemaMapper,
+			$this->createMock(ViewMapper::class),
+			$this->objectEntityMapper,
+			$this->fileService,
+			$this->createMock(IUserSession::class),
+			$this->createMock(SearchTrailService::class),
+			$this->createMock(IGroupManager::class),
+			$this->createMock(IUserManager::class),
+			$this->organisationService,
+			$this->logger,
+			$this->createMock(CacheHandler::class),
+			$this->createMock(SettingsService::class),
+			$this->createMock(IAppContainer::class)
 		);
 
 		$this->reflection = new ReflectionClass(ObjectService::class);
@@ -387,7 +373,7 @@ class ObjectServiceTest extends TestCase
 		$entity = new ObjectEntity();
 		$entity->setId(5);
 
-		$this->unifiedObjectMapper
+		$this->objectEntityMapper
 			->expects($this->once())
 			->method('find')
 			->willReturn($entity);
@@ -490,8 +476,6 @@ class ObjectServiceTest extends TestCase
 		$entity->setId(1);
 		$entity->setUuid('550e8400-e29b-41d4-a716-446655440000');
 		$entity->setSchema(2);
-		// Set published to now so no permission check.
-		$entity->setPublished(new DateTime('-1 hour'));
 
 		$this->getHandler
 			->expects($this->once())
@@ -538,7 +522,6 @@ class ObjectServiceTest extends TestCase
 		$entity = new ObjectEntity();
 		$entity->setId(1);
 		$entity->setSchema(2);
-		$entity->setPublished(new DateTime('-1 hour'));
 
 		$this->getHandler->method('find')->willReturn($entity);
 
@@ -765,81 +748,6 @@ class ObjectServiceTest extends TestCase
 		$this->assertTrue($result);
 	}
 
-	// ── 9. publish() / depublish() tests ────────────────────────────────
-
-	/**
-	 * Test publish delegates to publishHandler.
-	 */
-	public function testPublishDelegatesToPublishHandler(): void
-	{
-		$entity = new ObjectEntity();
-		$entity->setId(1);
-		$entity->setPublished(new DateTime());
-
-		$this->publishHandler
-			->expects($this->once())
-			->method('publish')
-			->with(
-				uuid: '550e8400-e29b-41d4-a716-446655440000',
-				date: null,
-				_rbac: true,
-				_multitenancy: true
-			)
-			->willReturn($entity);
-
-		$result = $this->service->publish(uuid: '550e8400-e29b-41d4-a716-446655440000');
-
-		$this->assertSame($entity, $result);
-	}
-
-	/**
-	 * Test publish passes custom date and rbac flag.
-	 */
-	public function testPublishWithCustomDateAndRbac(): void
-	{
-		$date = new DateTime('2025-06-15');
-		$entity = new ObjectEntity();
-		$entity->setId(1);
-
-		$this->publishHandler
-			->expects($this->once())
-			->method('publish')
-			->with(
-				uuid: 'test-uuid',
-				date: $date,
-				_rbac: false,
-				_multitenancy: false
-			)
-			->willReturn($entity);
-
-		$result = $this->service->publish(
-			uuid: 'test-uuid',
-			date: $date,
-			_rbac: false,
-			_multitenancy: false
-		);
-
-		$this->assertSame($entity, $result);
-	}
-
-	/**
-	 * Test depublish delegates to publishHandler.depublish.
-	 */
-	public function testDepublishDelegatesToPublishHandler(): void
-	{
-		$entity = new ObjectEntity();
-		$entity->setId(1);
-
-		$this->publishHandler
-			->expects($this->once())
-			->method('depublish')
-			->willReturn($entity);
-
-		$result = $this->service->depublish(uuid: 'test-uuid');
-
-		$this->assertSame($entity, $result);
-	}
-
 	// ── 10. lockObject() / unlockObject() tests ─────────────────────────
 
 	/**
@@ -882,59 +790,6 @@ class ObjectServiceTest extends TestCase
 		$result = $this->service->unlockObject(identifier: 'obj-uuid');
 
 		$this->assertTrue($result);
-	}
-
-	// ── 11. saveObjects() (bulk) tests ──────────────────────────────────
-
-	/**
-	 * Test saveObjects delegates to bulkOpsHandler with context.
-	 */
-	public function testSaveObjectsDelegatesToBulkOpsHandler(): void
-	{
-		$objects = [
-			['name' => 'Object 1'],
-			['name' => 'Object 2'],
-		];
-
-		$expectedResult = [
-			'created' => 2,
-			'updated' => 0,
-			'errors' => [],
-		];
-
-		$this->bulkOpsHandler
-			->expects($this->once())
-			->method('saveObjects')
-			->willReturn($expectedResult);
-
-		$result = $this->service->saveObjects(
-			objects: $objects,
-			register: $this->register,
-			schema: $this->schema
-		);
-
-		$this->assertSame($expectedResult, $result);
-		$this->assertSame($this->register, $this->getProperty('currentRegister'));
-		$this->assertSame($this->schema, $this->getProperty('currentSchema'));
-	}
-
-	// ── 12. deleteObjects() (bulk) tests ────────────────────────────────
-
-	/**
-	 * Test deleteObjects delegates to bulkOpsHandler.
-	 */
-	public function testDeleteObjectsDelegatesToBulkOpsHandler(): void
-	{
-		$uuids = ['uuid-1', 'uuid-2', 'uuid-3'];
-
-		$this->bulkOpsHandler
-			->expects($this->once())
-			->method('deleteObjects')
-			->willReturn([1, 2, 3]);
-
-		$result = $this->service->deleteObjects(uuids: $uuids);
-
-		$this->assertSame([1, 2, 3], $result);
 	}
 
 	// ── 13. count() tests ───────────────────────────────────────────────
@@ -1808,65 +1663,6 @@ class ObjectServiceTest extends TestCase
 		$this->assertArrayHasKey('objects', $result['@self']);
 	}
 
-	// ── 36. publishObjects / depublishObjects delegation ────────────────
-
-	public function testPublishObjectsDelegatesToBulkOps(): void
-	{
-		$this->bulkOpsHandler->expects($this->once())
-			->method('publishObjects')
-			->willReturn(['uuid-1', 'uuid-2']);
-
-		$result = $this->service->publishObjects(uuids: ['uuid-1', 'uuid-2']);
-
-		$this->assertSame(['uuid-1', 'uuid-2'], $result);
-	}
-
-	public function testDepublishObjectsDelegatesToBulkOps(): void
-	{
-		$this->bulkOpsHandler->expects($this->once())
-			->method('depublishObjects')
-			->willReturn(['uuid-1']);
-
-		$result = $this->service->depublishObjects(uuids: ['uuid-1']);
-
-		$this->assertSame(['uuid-1'], $result);
-	}
-
-	// ── 37. publishObjectsBySchema / deleteObjectsBySchema ──────────────
-
-	public function testPublishObjectsBySchemaDelegatesToBulkOps(): void
-	{
-		$this->bulkOpsHandler->expects($this->once())
-			->method('publishObjectsBySchema')
-			->willReturn(['published_count' => 5, 'published_uuids' => [], 'schema_id' => 2]);
-
-		$result = $this->service->publishObjectsBySchema(2);
-
-		$this->assertSame(5, $result['published_count']);
-	}
-
-	public function testDeleteObjectsBySchemaDelegatesToBulkOps(): void
-	{
-		$this->bulkOpsHandler->expects($this->once())
-			->method('deleteObjectsBySchema')
-			->willReturn(['deleted_count' => 3, 'deleted_uuids' => [], 'schema_id' => 2]);
-
-		$result = $this->service->deleteObjectsBySchema(1, 2);
-
-		$this->assertSame(3, $result['deleted_count']);
-	}
-
-	public function testDeleteObjectsByRegisterDelegatesToBulkOps(): void
-	{
-		$this->bulkOpsHandler->expects($this->once())
-			->method('deleteObjectsByRegister')
-			->willReturn(['deleted_count' => 10, 'deleted_uuids' => [], 'register_id' => 1]);
-
-		$result = $this->service->deleteObjectsByRegister(1);
-
-		$this->assertSame(10, $result['deleted_count']);
-	}
-
 	// ── 38. listObjects / createObject / updateObject ───────────────────
 
 	public function testListObjectsDelegatesToSearchObjects(): void
@@ -2223,43 +2019,6 @@ class ObjectServiceTest extends TestCase
 		$this->assertCount(1, $uuids);
 	}
 
-	// ── 52. saveObjects context setting ─────────────────────────────────
-
-	public function testSaveObjectsSetsRegisterSchemaContext(): void
-	{
-		$this->performanceHandler->method('getCachedEntities')
-			->willReturnCallback(function ($ids, $callback) {
-				return $callback($ids);
-			});
-		$this->registerMapper->method('find')->willReturn($this->register);
-		$this->schemaMapper->method('find')->willReturn($this->schema);
-
-		$this->bulkOpsHandler->expects($this->once())
-			->method('saveObjects')
-			->willReturn(['created' => 0, 'updated' => 0, 'failed' => 0]);
-
-		$result = $this->service->saveObjects(
-			objects: [],
-			register: $this->register,
-			schema: $this->schema
-		);
-
-		$this->assertIsArray($result);
-	}
-
-	// ── 53. deleteObjects delegation ────────────────────────────────────
-
-	public function testDeleteObjectsDelegatesToBulkOps(): void
-	{
-		$this->bulkOpsHandler->expects($this->once())
-			->method('deleteObjects')
-			->willReturn([1, 2, 3]);
-
-		$result = $this->service->deleteObjects(uuids: ['uuid-1', 'uuid-2', 'uuid-3']);
-
-		$this->assertSame([1, 2, 3], $result);
-	}
-
 	// ── 54. ensureObjectFolderExists ────────────────────────────────────
 
 	public function testEnsureObjectFolderExistsCreatesFolder(): void
@@ -2581,7 +2340,6 @@ class ObjectServiceTest extends TestCase
 				false, // effectiveMt should be false for public schema
 				$this->anything(),
 				$this->anything(),
-				$this->anything(),
 				$this->anything()
 			)
 			->willReturn(['results' => [], 'total' => 0, '@self' => []]);
@@ -2598,7 +2356,7 @@ class ObjectServiceTest extends TestCase
 
 	public function testSearchObjectsPaginatedExplicitDatabaseSource(): void
 	{
-		$this->searchQueryHandler->method('isSolrAvailable')->willReturn(true);
+		$this->searchQueryHandler->method('isSolrAvailable')->willReturn(false);
 		$this->queryHandler->method('searchObjectsPaginatedDatabase')->willReturn([
 			'results' => [],
 			'total' => 0,

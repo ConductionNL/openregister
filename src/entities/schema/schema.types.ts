@@ -17,6 +17,7 @@ export type TSchema = {
         objectImageField?: string; // Field to use as object image
         allowFiles?: boolean; // Whether files are allowed for this schema
         allowedTags?: string[]; // Array of allowed tags for files
+        linkedTypes?: string[]; // Nc entity types this schema can link to (mail, contacts, etc.)
         unique?: boolean; // Whether objects must be unique
         facetCacheTtl?: number; // Cache TTL for facets in seconds
     }
@@ -31,7 +32,6 @@ export type TSchema = {
             invalid: number
             deleted: number
             locked: number
-            published: number
         },
         logs: {
             total: number

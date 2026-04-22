@@ -66,7 +66,7 @@ class RetentionController extends Controller
      * @param LoggerInterface        $logger           Logger
      */
     public function __construct(
-        $appName,
+        string $appName,
         IRequest $request,
         private readonly RetentionService $retentionService,
         private readonly ObjectRetentionHandler $settingsHandler,

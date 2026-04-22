@@ -52,6 +52,7 @@ class SolrDebugCommand extends Command
      * @param LoggerInterface $logger          Logger for debugging output
      * @param IConfig         $config          Nextcloud configuration
      * @param IClientService  $clientService   HTTP client service (unused)
+     * @param IndexService    $indexService    SOLR/OpenSearch index service
      */
     public function __construct(
         private readonly SettingsService $settingsService,
@@ -62,7 +63,8 @@ class SolrDebugCommand extends Command
          *
          * @psalm-suppress UnusedProperty
          */
-        private readonly IClientService $clientService
+        private readonly IClientService $clientService,
+        private readonly IndexService $indexService
     ) {
         parent::__construct();
     }//end __construct()
@@ -252,14 +254,7 @@ class SolrDebugCommand extends Command
         $output->writeln('<info>🔗 Testing SOLR Connection</info>');
 
         try {
-            // Get SOLR service via direct DI injection.
-            $container   = \OC::$server->getRegisteredAppContainer('openregister');
-            $solrService = $container->get(IndexService::class);
-
-            if ($solrService === null) {
-                $output->writeln('<error>❌ Failed to create SOLR service</error>');
-                return;
-            }
+            $solrService = $this->indexService;
 
             if ($solrService->isAvailable() === false) {
                 $output->writeln('<error>❌ SOLR service is not available</error>');
@@ -279,14 +274,10 @@ class SolrDebugCommand extends Command
             $output->writeln("  Tenant ID: <comment>{$connectionResult['details']['tenant_id']}</comment>");
             $output->writeln("  Mode: <comment>{$connectionResult['details']['mode']}</comment>");
 
-            // Test tenant collection creation.
+            // Test tenant collection creation (throws on failure).
             $output->writeln('');
             $output->writeln('<info>🏗️ Testing tenant collection creation...</info>');
-            if ($solrService->ensureTenantCollection() !== true) {
-                $output->writeln('<error>❌ Failed to create tenant collection</error>');
-                return;
-            }
-
+            $solrService->ensureTenantCollection();
             $output->writeln('<info>✅ Tenant collection ready</info>');
             $docCount = $solrService->getDocumentCount();
             $output->writeln("  Document count: <comment>$docCount</comment>");

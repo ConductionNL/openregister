@@ -1,5 +1,10 @@
 # Changelog
 
+## Unreleased
+
+### Fixed
+- Empty-string date fields now correctly round-trip as `null`. Previously, objects persisted with an empty string (`""`) for a `date` or `date-time` property were silently rewritten to the current date on write (because `(new DateTime(''))->format('Y-m-d')` returns today) and rendered as the current datetime on read (because `new DateTime('')` returns "now"). Object writes (`ObjectService::normalizeDateValues`), reads (`MagicStatisticsHandler`), bulk imports, metadata handling, and search now route user-supplied datetime input through a central `DateTimeNormalizer`. On next read/save, empty-string values normalize to `null`. ([#1292](https://github.com/ConductionNL/openregister/issues/1292))
+
 ## 0.2.13-unstable.78 – 2026-04-03
 
 ### Fixed

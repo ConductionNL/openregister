@@ -34,6 +34,7 @@ use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Service\Settings\ObjectRetentionHandler;
 use OCP\IAppConfig;
+use OCP\IDBConnection;
 use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\Uid\Uuid;
@@ -89,6 +90,7 @@ class RetentionService
      * @param IAppConfig             $appConfig       App configuration
      * @param IUserSession           $userSession     Current user session
      * @param LoggerInterface        $logger          Logger
+     * @param IDBConnection          $db              Database connection for eligibility queries
      */
     public function __construct(
         private readonly MagicMapper $objectMapper,
@@ -99,6 +101,7 @@ class RetentionService
         private readonly IAppConfig $appConfig,
         private readonly IUserSession $userSession,
         private readonly LoggerInterface $logger,
+        private readonly IDBConnection $db,
     ) {
     }//end __construct()
 
@@ -351,9 +354,13 @@ class RetentionService
             $retention['archiefactiedatum'] = $newDate;
             $object->setRetention($retention);
 
-            $this->logger->info(
-                '[RetentionService] Recalculated archiefactiedatum for object '.$object->getUuid().': '.$oldDate.' -> '.$newDate
+            $msg = sprintf(
+                '[RetentionService] Recalculated archiefactiedatum for object %s: %s -> %s',
+                $object->getUuid(),
+                $oldDate,
+                $newDate
             );
+            $this->logger->info($msg);
         }
 
         return $object;
@@ -567,8 +574,7 @@ class RetentionService
 
         try {
             // Query objects with archival metadata indicating destruction eligibility.
-            $connection = \OC::$server->getDatabaseConnection();
-            $qb         = $connection->getQueryBuilder();
+            $qb = $this->db->getQueryBuilder();
 
             $qb->select('id')
                 ->from('openregister_objects')
@@ -577,8 +583,8 @@ class RetentionService
                 );
 
             $result = $qb->executeQuery();
-            $rows   = $result->fetchAllAssociative();
-            $result->free();
+            $rows   = $result->fetchAll();
+            $result->closeCursor();
 
             $eligible = [];
 

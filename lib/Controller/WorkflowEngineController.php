@@ -27,7 +27,7 @@ use OCP\IRequest;
 use Psr\Log\LoggerInterface;
 
 /**
- * Controller for workflow engine CRUD and health checks.
+ * Controller for workflow engine CRUD, health checks, and test hooks.
  *
  * @psalm-suppress UnusedClass
  *
@@ -220,4 +220,72 @@ class WorkflowEngineController extends Controller
 
         return new JSONResponse($engines);
     }//end available()
+
+    /**
+     * Test a hook by executing a workflow with sample data (dry-run).
+     *
+     * No database writes occur. The response includes dryRun: true.
+     *
+     * @param int $id Engine ID
+     *
+     * @return JSONResponse
+     */
+    public function testHook(int $id): JSONResponse
+    {
+        $workflowId = $this->request->getParam('workflowId');
+        $sampleData = $this->request->getParam('sampleData', []);
+        $timeout    = (int) $this->request->getParam('timeout', 30);
+
+        if (empty($workflowId) === true) {
+            return new JSONResponse(['error' => 'workflowId is required'], 400);
+        }
+
+        if (is_array($sampleData) === false) {
+            $sampleData = json_decode((string) $sampleData, true) ?? [];
+        }
+
+        try {
+            $adapter = $this->registry->resolveAdapterById($id);
+            $result  = $adapter->executeWorkflow(
+                workflowId: $workflowId,
+                data: $sampleData,
+                timeout: $timeout
+            );
+
+            $response           = $result->toArray();
+            $response['dryRun'] = true;
+
+            return new JSONResponse($response);
+        } catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
+            return new JSONResponse(['error' => $this->l10n->t('Engine not found')], 404);
+        } catch (\Exception $e) {
+            $message = $e->getMessage();
+            $lower   = strtolower($message);
+
+            // Connectivity errors return 502.
+            if (str_contains($lower, 'connection') === true
+                || str_contains($lower, 'unreachable') === true
+                || str_contains($lower, 'refused') === true
+            ) {
+                return new JSONResponse(
+                        [
+                            'status' => 'error',
+                            'errors' => [['message' => $message]],
+                            'dryRun' => true,
+                        ],
+                        502
+                        );
+            }
+
+            // Workflow errors return 422.
+            return new JSONResponse(
+                    [
+                        'status' => 'error',
+                        'errors' => [['message' => $message]],
+                        'dryRun' => true,
+                    ],
+                    422
+                    );
+        }//end try
+    }//end testHook()
 }//end class

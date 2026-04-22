@@ -21,6 +21,7 @@ export class Schema implements TSchema {
 		objectImageField?: string
 		allowFiles?: boolean
 		allowedTags?: string[]
+		linkedTypes?: string[]
 		unique?: boolean
 		facetCacheTtl?: number
 	}
@@ -50,6 +51,7 @@ export class Schema implements TSchema {
 			objectImageField: '',
 			allowFiles: false,
 			allowedTags: [],
+			linkedTypes: [],
 			unique: false,
 			facetCacheTtl: 0,
 		}

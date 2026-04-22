@@ -124,10 +124,10 @@ import { objectStore, navigationStore, registerStore, schemaStore } from '../../
 														<!-- Date/Time properties -->
 														<NcDateTimePickerNative
 															v-else-if="getPropertyInputComponent(key) === 'NcDateTimePickerNative'"
-															:value="formData[key] !== undefined ? formData[key] : value"
+															:value="stringToDate(formData[key] !== undefined ? formData[key] : value, currentSchema.properties[key].format) || undefined"
 															:type="getPropertyInputType(key)"
 															:label="getPropertyDisplayName(key)"
-															@update:value="updatePropertyValue(key, $event)" />
+															@input="updatePropertyValue(key, $event)" />
 
 														<!-- Text/Number properties -->
 														<NcTextField
@@ -621,6 +621,7 @@ import Plus from 'vue-material-design-icons/Plus.vue'
 import ExclamationThick from 'vue-material-design-icons/ExclamationThick.vue'
 import ArrowRight from 'vue-material-design-icons/ArrowRight.vue'
 import PaginationComponent from '../../components/PaginationComponent.vue'
+import { stringToDate, dateToString } from '../../services/dateUtils.js'
 export default {
 	name: 'ViewObject',
 	components: {
@@ -631,9 +632,9 @@ export default {
 		NcTextField,
 		NcCheckboxRadioSwitch,
 		NcLoadingIcon,
+		NcDateTimePickerNative,
 		NcActions,
 		NcActionButton,
-		NcDateTimePickerNative,
 		NcEmptyContent,
 		NcSelect,
 		CodeMirror,
@@ -1828,7 +1829,11 @@ export default {
 					break
 				case 'string':
 				default:
-					convertedValue = newValue
+					if (newValue instanceof Date && schemaProperty?.format) {
+						convertedValue = dateToString(newValue, schemaProperty.format)
+					} else {
+						convertedValue = newValue
+					}
 					break
 				}
 			}
@@ -1936,6 +1941,9 @@ export default {
 			}
 
 			return null
+		},
+		stringToDate(value, format) {
+			return stringToDate(value, format)
 		},
 		getPropertyInputType(key) {
 			const schemaProperty = this.currentSchema?.properties?.[key]

@@ -86,6 +86,15 @@ Vrij en open source onder de EUPL-licentie.
 		<job>OCA\OpenRegister\BackgroundJob\CronFileTextExtractionJob</job>
 		<job>OCA\OpenRegister\Cron\WebhookRetryJob</job>
 		<job>OCA\OpenRegister\BackgroundJob\BlobMigrationJob</job>
+		<job>OCA\OpenRegister\BackgroundJob\DestructionCheckJob</job>
+		<job>OCA\OpenRegister\Cron\TransferCheckJob</job>
+		<job>OCA\OpenRegister\BackgroundJob\TransferExecutionJob</job>
+		<job>OCA\OpenRegister\BackgroundJob\ScheduledWorkflowJob</job>
+		<job>OCA\OpenRegister\BackgroundJob\ActionScheduleJob</job>
+		<job>OCA\OpenRegister\BackgroundJob\TenantDeprovisionJob</job>
+		<job>OCA\OpenRegister\BackgroundJob\TenantPurgeJob</job>
+		<job>OCA\OpenRegister\BackgroundJob\TenantUsageSyncJob</job>
+		<job>OCA\OpenRegister\BackgroundJob\ExecutionHistoryCleanupJob</job>
 	</background-jobs>
 
     <navigations>
@@ -114,4 +123,22 @@ Vrij en open source onder de EUPL-licentie.
 	<notification>
 		<service>OCA\OpenRegister\Notification\Notifier</service>
 	</notification>
+
+	<contactsmenu>
+		<provider>OCA\OpenRegister\Contacts\ContactsMenuProvider</provider>
+	</contactsmenu>
+
+	<activity>
+		<providers>
+			<provider>OCA\OpenRegister\Activity\Provider</provider>
+		</providers>
+		<settings>
+			<setting>OCA\OpenRegister\Activity\Setting\ObjectSetting</setting>
+			<setting>OCA\OpenRegister\Activity\Setting\RegisterSetting</setting>
+			<setting>OCA\OpenRegister\Activity\Setting\SchemaSetting</setting>
+		</settings>
+		<filters>
+			<filter>OCA\OpenRegister\Activity\Filter</filter>
+		</filters>
+	</activity>
 </info>

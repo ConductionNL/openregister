@@ -190,7 +190,7 @@ class BlobMigrationJobTest extends TestCase
         $this->setMigrationComplete('false');
 
         // blobTableExists check: simulate table exists.
-        $stmt = $this->createMock(\Doctrine\DBAL\Result::class);
+        $stmt = $this->createMock(\OCP\DB\IPreparedStatement::class);
         $stmt->method('fetch')->willReturn(['1' => 1]);
 
         $platform = $this->createMock(\Doctrine\DBAL\Platforms\PostgreSQLPlatform::class);
@@ -205,13 +205,14 @@ class BlobMigrationJobTest extends TestCase
         $remainingCalled = false;
         $this->appConfig
             ->method('setValueString')
-            ->willReturnCallback(static function (string $app, string $key, string $value) use (&$completeCalled, &$remainingCalled): void {
+            ->willReturnCallback(static function (string $app, string $key, string $value) use (&$completeCalled, &$remainingCalled): bool {
                 if ($app === 'openregister' && $key === 'blob_migration_complete' && $value === 'true') {
                     $completeCalled = true;
                 }
                 if ($app === 'openregister' && $key === 'blob_migration_remaining' && $value === '0') {
                     $remainingCalled = true;
                 }
+                return true;
             });
 
         $job = $this->makeJob();
@@ -255,7 +256,7 @@ class BlobMigrationJobTest extends TestCase
             });
 
         // blobTableExists: table exists.
-        $stmt = $this->createMock(\Doctrine\DBAL\Result::class);
+        $stmt = $this->createMock(\OCP\DB\IPreparedStatement::class);
         $stmt->method('fetch')->willReturn(['1' => 1]);
         $platform = $this->createMock(\Doctrine\DBAL\Platforms\PostgreSQLPlatform::class);
         $this->db->method('getDatabasePlatform')->willReturn($platform);
@@ -317,8 +318,9 @@ class BlobMigrationJobTest extends TestCase
         $setValues = [];
         $this->appConfig
             ->method('setValueString')
-            ->willReturnCallback(static function (string $app, string $key, string $value) use (&$setValues): void {
+            ->willReturnCallback(static function (string $app, string $key, string $value) use (&$setValues): bool {
                 $setValues[$key] = $value;
+                return true;
             });
 
         $job = $this->makeJob();
@@ -444,7 +446,7 @@ class BlobMigrationJobTest extends TestCase
         $this->setMigrationComplete('false');
 
         // blobTableExists: table does not exist.
-        $stmt = $this->createMock(\Doctrine\DBAL\Result::class);
+        $stmt = $this->createMock(\OCP\DB\IPreparedStatement::class);
         $stmt->method('fetch')->willReturn(false);
         $platform = $this->createMock(\Doctrine\DBAL\Platforms\PostgreSQLPlatform::class);
         $this->db->method('getDatabasePlatform')->willReturn($platform);
@@ -453,10 +455,11 @@ class BlobMigrationJobTest extends TestCase
         $completeCalled = false;
         $this->appConfig
             ->method('setValueString')
-            ->willReturnCallback(static function (string $app, string $key, string $value) use (&$completeCalled): void {
+            ->willReturnCallback(static function (string $app, string $key, string $value) use (&$completeCalled): bool {
                 if ($app === 'openregister' && $key === 'blob_migration_complete' && $value === 'true') {
                     $completeCalled = true;
                 }
+                return true;
             });
 
         $job = $this->makeJob();
@@ -473,8 +476,15 @@ class BlobMigrationJobTest extends TestCase
     {
         $this->setMigrationComplete('false');
 
-        // blobTableExists throws exception.
-        $this->db->method('getDatabasePlatform')
+        // blobTableExists succeeds (table exists).
+        $stmt = $this->createMock(\OCP\DB\IPreparedStatement::class);
+        $stmt->method('fetch')->willReturn(['1' => 1]);
+        $platform = $this->createMock(\Doctrine\DBAL\Platforms\PostgreSQLPlatform::class);
+        $this->db->method('getDatabasePlatform')->willReturn($platform);
+        $this->db->method('prepare')->willReturn($stmt);
+
+        // fetchBlobObjects throws via getQueryBuilder.
+        $this->db->method('getQueryBuilder')
             ->willThrowException(new \Exception('Database unavailable'));
 
         $this->logger

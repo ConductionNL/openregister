@@ -22,8 +22,10 @@
 
 namespace OCA\OpenRegister\Tests\Unit\Service;
 
+use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Service\UserService;
 use OCA\OpenRegister\Service\OrganisationService;
+use OCP\IAvatarManager;
 use OCP\IUser;
 use OCP\IUserManager;
 use OCP\IUserSession;
@@ -34,6 +36,7 @@ use OCP\Accounts\IAccount;
 use OCP\Accounts\IAccountProperty;
 use OCP\EventDispatcher\IEventDispatcher;
 use OCP\IGroup;
+use OCP\Security\ISecureRandom;
 use PHPUnit\Framework\TestCase;
 use PHPUnit\Framework\MockObject\MockObject;
 use Psr\Log\LoggerInterface;
@@ -70,7 +73,10 @@ class UserServiceCoverageTest extends TestCase
             $this->accountManager,
             $this->logger,
             $this->organisationService,
-            $this->eventDispatcher
+            $this->eventDispatcher,
+            $this->createMock(IAvatarManager::class),
+            $this->createMock(AuditTrailMapper::class),
+            $this->createMock(ISecureRandom::class)
         );
     }
 

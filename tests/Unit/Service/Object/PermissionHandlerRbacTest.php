@@ -67,21 +67,21 @@ class PermissionHandlerRbacTest extends TestCase
         return $user;
     }
 
-    private function createSchema(int $id, ?array $authorization): Schema&MockObject
+    private function createSchema(int $id, ?array $authorization): Schema
     {
-        $schema = $this->createMock(Schema::class);
-        $schema->method('getId')->willReturn($id);
-        $schema->method('getAuthorization')->willReturn($authorization);
-        $schema->method('getTitle')->willReturn('Test Schema ' . $id);
+        $schema = new Schema();
+        $schema->setId($id);
+        $schema->setAuthorization($authorization);
+        $schema->setTitle('Test Schema ' . $id);
         return $schema;
     }
 
-    private function createRegister(int $id, ?array $authorization, ?array $configuration = null): Register&MockObject
+    private function createRegister(int $id, ?array $authorization, ?array $configuration = null): Register
     {
-        $register = $this->createMock(Register::class);
-        $register->method('getId')->willReturn($id);
-        $register->method('getAuthorization')->willReturn($authorization);
-        $register->method('getConfiguration')->willReturn($configuration ?? []);
+        $register = new Register();
+        $register->setId($id);
+        $register->setAuthorization($authorization);
+        $register->setConfiguration($configuration ?? []);
         return $register;
     }
 
@@ -213,10 +213,11 @@ class PermissionHandlerRbacTest extends TestCase
         $this->setupRegisterForSchema(1, $register);
 
         // Behandelaars has editor role => read, create, update.
+        // Actions not listed in authorization default to allowed (permissive model).
         $this->assertTrue($this->handler->hasPermission($schema, 'read'));
         $this->assertTrue($this->handler->hasPermission($schema, 'create'));
         $this->assertTrue($this->handler->hasPermission($schema, 'update'));
-        $this->assertFalse($this->handler->hasPermission($schema, 'delete'));
+        $this->assertTrue($this->handler->hasPermission($schema, 'delete'));
     }
 
     public function testMixedRoleAndDirectAuth(): void

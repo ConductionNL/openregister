@@ -26,6 +26,7 @@ use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\FileService;
 use OCP\AppFramework\Http\DataResponse;
 use OCP\Files\IRootFolder;
+use OCP\EventDispatcher\IEventDispatcher;
 use OCP\IRequest;
 use OCP\IUserManager;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -88,7 +89,8 @@ class FilesControllerRefactoredMethodsTest extends TestCase
 			fileService: $this->fileService,
 			objectService: $this->objectService,
 			rootFolder: $this->rootFolder,
-			userManager: $this->userManager
+			userManager: $this->userManager,
+			eventDispatcher: $this->createMock(IEventDispatcher::class)
 		);
 
 		// Set up reflection for accessing private methods.

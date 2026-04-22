@@ -62,11 +62,16 @@ use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\File\CreateFileHandler;
 use OCA\OpenRegister\Service\File\DeleteFileHandler;
 use OCA\OpenRegister\Service\File\DocumentProcessingHandler;
+use OCA\OpenRegister\Service\File\FileAuditHandler;
+use OCA\OpenRegister\Service\File\FileBatchHandler;
 use OCA\OpenRegister\Service\File\FileFormattingHandler;
+use OCA\OpenRegister\Service\File\FileLockHandler;
 use OCA\OpenRegister\Service\File\FileOwnershipHandler;
+use OCA\OpenRegister\Service\File\FilePreviewHandler;
 use OCA\OpenRegister\Service\File\FilePublishingHandler;
 use OCA\OpenRegister\Service\File\FileSharingHandler;
 use OCA\OpenRegister\Service\File\FileValidationHandler;
+use OCA\OpenRegister\Service\File\FileVersioningHandler;
 use OCA\OpenRegister\Service\File\FolderManagementHandler;
 use OCA\OpenRegister\Service\File\ReadFileHandler;
 use OCA\OpenRegister\Service\File\TaggingHandler;
@@ -280,6 +285,41 @@ class FileService
     private FilePublishingHandler $filePublishingHandler;
 
     /**
+     * File versioning handler (Single Responsibility: Version listing and restore)
+     *
+     * @var FileVersioningHandler
+     */
+    private FileVersioningHandler $fileVersioningHandler;
+
+    /**
+     * File lock handler (Single Responsibility: File locking and unlocking)
+     *
+     * @var FileLockHandler
+     */
+    private FileLockHandler $fileLockHandler;
+
+    /**
+     * File batch handler (Single Responsibility: Batch file operations)
+     *
+     * @var FileBatchHandler
+     */
+    private FileBatchHandler $fileBatchHandler;
+
+    /**
+     * File preview handler (Single Responsibility: Preview and thumbnail generation)
+     *
+     * @var FilePreviewHandler
+     */
+    private FilePreviewHandler $filePreviewHandler;
+
+    /**
+     * File audit handler (Single Responsibility: Download audit logging)
+     *
+     * @var FileAuditHandler
+     */
+    private FileAuditHandler $fileAuditHandler;
+
+    /**
      * Root folder name for all OpenRegister files.
      *
      * @var            string
@@ -341,6 +381,11 @@ class FileService
      * @param FileFormattingHandler     $fileFormatHandler    File formatting handler
      * @param DocumentProcessingHandler $docProcHandler       Document processing handler
      * @param FilePublishingHandler     $filePubHandler       File publishing handler
+     * @param FileVersioningHandler     $fileVerHandler       File versioning handler
+     * @param FileLockHandler           $fileLockHandler      File lock handler
+     * @param FileBatchHandler          $fileBatchHandler     File batch handler
+     * @param FilePreviewHandler        $filePreviewHandler   File preview handler
+     * @param FileAuditHandler          $fileAuditHandler     File audit handler
      *
      * @SuppressWarnings(PHPMD.ExcessiveParameterList) Nextcloud DI requires constructor injection
      */
@@ -367,7 +412,12 @@ class FileService
         TaggingHandler $taggingHandler,
         FileFormattingHandler $fileFormatHandler,
         DocumentProcessingHandler $docProcHandler,
-        FilePublishingHandler $filePubHandler
+        FilePublishingHandler $filePubHandler,
+        FileVersioningHandler $fileVerHandler,
+        FileLockHandler $fileLockHandler,
+        FileBatchHandler $fileBatchHandler,
+        FilePreviewHandler $filePreviewHandler,
+        FileAuditHandler $fileAuditHandler
     ) {
         $this->logger = $logger;
         $this->logger->debug(
@@ -397,6 +447,11 @@ class FileService
         $this->fileFormattingHandler     = $fileFormatHandler;
         $this->documentProcessingHandler = $docProcHandler;
         $this->filePublishingHandler     = $filePubHandler;
+        $this->fileVersioningHandler     = $fileVerHandler;
+        $this->fileLockHandler           = $fileLockHandler;
+        $this->fileBatchHandler          = $fileBatchHandler;
+        $this->filePreviewHandler        = $filePreviewHandler;
+        $this->fileAuditHandler          = $fileAuditHandler;
 
         // Break circular dependency: FolderManagementHandler needs FileService for cross-handler coordination.
         $this->logger->debug(
@@ -472,6 +527,13 @@ class FileService
         $this->filePublishingHandler->setFileService($this);
         $this->logger->debug(
             message: '[FileService] Called filePublishingHandler->setFileService.',
+            context: ['file' => __FILE__, 'line' => __LINE__]
+        );
+
+        // Break circular dependency: FileBatchHandler needs FileService for action delegation.
+        $this->fileBatchHandler->setFileService($this);
+        $this->logger->debug(
+            message: '[FileService] Called fileBatchHandler->setFileService.',
             context: ['file' => __FILE__, 'line' => __LINE__]
         );
 
@@ -1691,4 +1753,173 @@ class FileService
             entities: $entities
         );
     }//end anonymizeDocument()
+
+    /**
+     * Get the file versioning handler.
+     *
+     * @return FileVersioningHandler The versioning handler.
+     */
+    public function getVersioningHandler(): FileVersioningHandler
+    {
+        return $this->fileVersioningHandler;
+    }//end getVersioningHandler()
+
+    /**
+     * Get the file lock handler.
+     *
+     * @return FileLockHandler The lock handler.
+     */
+    public function getLockHandler(): FileLockHandler
+    {
+        return $this->fileLockHandler;
+    }//end getLockHandler()
+
+    /**
+     * Get the file batch handler.
+     *
+     * @return FileBatchHandler The batch handler.
+     */
+    public function getBatchHandler(): FileBatchHandler
+    {
+        return $this->fileBatchHandler;
+    }//end getBatchHandler()
+
+    /**
+     * Get the file preview handler.
+     *
+     * @return FilePreviewHandler The preview handler.
+     */
+    public function getPreviewHandler(): FilePreviewHandler
+    {
+        return $this->filePreviewHandler;
+    }//end getPreviewHandler()
+
+    /**
+     * Get the file audit handler.
+     *
+     * @return FileAuditHandler The audit handler.
+     */
+    public function getAuditHandler(): FileAuditHandler
+    {
+        return $this->fileAuditHandler;
+    }//end getAuditHandler()
+
+    /**
+     * Rename a file attached to an object.
+     *
+     * @param ObjectEntity $object  The parent object entity.
+     * @param int          $fileId  The file ID.
+     * @param string       $newName The new file name.
+     *
+     * @return File The renamed file.
+     *
+     * @throws Exception If the rename fails.
+     */
+    public function renameFile(ObjectEntity $object, int $fileId, string $newName): File
+    {
+        // Check lock.
+        $this->fileLockHandler->assertCanModify($fileId);
+
+        $file = $this->readFileHandler->getFile(object: $object, file: $fileId);
+        if ($file === null) {
+            throw new Exception("File not found");
+        }
+
+        // Validate new name.
+        if (empty(trim($newName)) === true) {
+            throw new Exception("File name is required");
+        }
+
+        $invalidChars = ["/", "\\", ":", "*", "?", "\"", "<", ">", "|"];
+        foreach ($invalidChars as $char) {
+            if (str_contains($newName, $char) === true) {
+                throw new Exception("File name contains invalid characters");
+            }
+        }
+
+        // Check for name conflict.
+        $parent = $file->getParent();
+        try {
+            $parent->get($newName);
+            throw new Exception("A file with name \"".$newName."\" already exists for this object");
+        } catch (\OCP\Files\NotFoundException $e) {
+            // Name is available.
+        }
+
+        // Perform the rename via move in same folder.
+        $file->move($parent->getPath()."/".$newName);
+
+        $this->logger->info(
+            message: "[FileService] Renamed file {$fileId} to {$newName}",
+            context: ["file" => __FILE__, "line" => __LINE__]
+        );
+
+        return $file;
+    }//end renameFile()
+
+    /**
+     * Copy a file to another object.
+     *
+     * @param ObjectEntity $sourceObject The source object entity.
+     * @param int          $fileId       The source file ID.
+     * @param ObjectEntity $targetObject The target object entity.
+     *
+     * @return File The new file copy.
+     *
+     * @throws Exception If the copy fails.
+     */
+    public function copyFile(ObjectEntity $sourceObject, int $fileId, ObjectEntity $targetObject): File
+    {
+        $sourceFile = $this->readFileHandler->getFile(object: $sourceObject, file: $fileId);
+        if ($sourceFile === null) {
+            throw new Exception("Source file not found");
+        }
+
+        $content  = $sourceFile->getContent();
+        $fileName = $sourceFile->getName();
+
+        // Use CreateFileHandler to create the file in target object folder.
+        $newFile = $this->createFileHandler->createFile(
+            objectEntity: $targetObject,
+            fileName: $fileName,
+            content: $content
+        );
+
+        $this->logger->info(
+            message: "[FileService] Copied file {$fileId} from object {".$sourceObject->getUuid()."} to {".$targetObject->getUuid()."}",
+            context: ["file" => __FILE__, "line" => __LINE__]
+        );
+
+        return $newFile;
+    }//end copyFile()
+
+    /**
+     * Move a file to another object (copy + delete source).
+     *
+     * @param ObjectEntity $sourceObject The source object entity.
+     * @param int          $fileId       The source file ID.
+     * @param ObjectEntity $targetObject The target object entity.
+     *
+     * @return File The moved file.
+     *
+     * @throws Exception If the move fails.
+     */
+    public function moveFile(ObjectEntity $sourceObject, int $fileId, ObjectEntity $targetObject): File
+    {
+        // Check lock.
+        $this->fileLockHandler->assertCanModify($fileId);
+
+        // Copy first.
+        $newFile = $this->copyFile(sourceObject: $sourceObject, fileId: $fileId, targetObject: $targetObject);
+
+        // Delete source.
+        $this->deleteFile(file: $fileId, object: $sourceObject);
+
+        $this->logger->info(
+            message: "[FileService] Moved file {$fileId} from object {".$sourceObject->getUuid()."} to {".$targetObject->getUuid()."}",
+            context: ["file" => __FILE__, "line" => __LINE__]
+        );
+
+        return $newFile;
+    }//end moveFile()
 }//end class

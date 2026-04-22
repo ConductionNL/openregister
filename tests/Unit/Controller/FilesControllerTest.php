@@ -17,6 +17,7 @@ use OCP\Files\File;
 use OCP\Files\Folder;
 use OCP\Files\IRootFolder;
 use OCP\Files\NotFoundException;
+use OCP\EventDispatcher\IEventDispatcher;
 use OCP\IRequest;
 use OCP\IUser;
 use OCP\IUserManager;
@@ -50,7 +51,8 @@ class FilesControllerTest extends TestCase
             $this->fileService,
             $this->objectService,
             $this->rootFolder,
-            $this->userManager
+            $this->userManager,
+            $this->createMock(IEventDispatcher::class)
         );
 
         $this->reflection = new ReflectionClass(FilesController::class);

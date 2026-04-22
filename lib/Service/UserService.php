@@ -23,14 +23,20 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service;
 
+use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Event\UserProfileUpdatedEvent;
 use OCP\EventDispatcher\IEventDispatcher;
+use OCP\IAvatarManager;
+use OCP\IDBConnection;
 use OCP\IUser;
 use OCP\IUserManager;
 use OCP\IUserSession;
 use OCP\IConfig;
 use OCP\IGroupManager;
 use OCP\Accounts\IAccountManager;
+use OCP\L10N\IFactory;
+use OCP\Notification\IManager as INotificationManager;
+use OCP\Security\ISecureRandom;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -62,6 +68,52 @@ class UserService
     private ?array $cachedOrgStats = null;
 
     /**
+     * App name constant for config storage
+     */
+    private const APP_NAME = 'openregister';
+
+    /**
+     * Maximum number of API tokens per user
+     */
+    private const MAX_TOKENS = 10;
+
+    /**
+     * Export rate limit in seconds (1 hour)
+     */
+    private const EXPORT_RATE_LIMIT = 3600;
+
+    /**
+     * Default notification preferences
+     */
+    private const DEFAULT_NOTIFICATION_PREFS = [
+        'objectChanges'       => true,
+        'assignments'         => true,
+        'organisationChanges' => true,
+        'systemAnnouncements' => true,
+        'emailDigest'         => 'daily',
+    ];
+
+    /**
+     * Valid email digest frequencies
+     */
+    private const VALID_DIGEST_FREQUENCIES = ['none', 'daily', 'weekly'];
+
+    /**
+     * Allowed avatar MIME types
+     */
+    private const ALLOWED_AVATAR_TYPES = [
+        'image/jpeg',
+        'image/png',
+        'image/gif',
+        'image/webp',
+    ];
+
+    /**
+     * Maximum avatar file size in bytes (5 MB)
+     */
+    private const MAX_AVATAR_SIZE = 5242880;
+
+    /**
      * UserService constructor
      *
      * @param IUserManager        $userManager         The user manager service
@@ -72,6 +124,13 @@ class UserService
      * @param LoggerInterface     $logger              The logger interface
      * @param OrganisationService $organisationService The organisation service
      * @param IEventDispatcher    $eventDispatcher     The event dispatcher service
+     * @param IAvatarManager      $avatarManager       The avatar manager service
+     * @param AuditTrailMapper    $auditTrailMapper    The audit trail mapper
+     * @param ISecureRandom       $secureRandom        Secure random generator
+     * @param IDBConnection       $db                  Database connection for direct queries
+     * @param IFactory            $l10nFactory         L10N factory for language detection
+     *
+     * @SuppressWarnings(PHPMD.ExcessiveParameterList) Service requires many Nextcloud dependencies
      */
     public function __construct(
         private readonly IUserManager $userManager,
@@ -81,7 +140,12 @@ class UserService
         private readonly IAccountManager $accountManager,
         private readonly LoggerInterface $logger,
         private readonly OrganisationService $organisationService,
-        private readonly IEventDispatcher $eventDispatcher
+        private readonly IEventDispatcher $eventDispatcher,
+        private readonly IAvatarManager $avatarManager,
+        private readonly AuditTrailMapper $auditTrailMapper,
+        private readonly ISecureRandom $secureRandom,
+        private readonly IDBConnection $db,
+        private readonly IFactory $l10nFactory
     ) {
     }//end __construct()
 
@@ -493,8 +557,7 @@ class UserService
                 return 0;
             }
 
-            $connection = \OC::$server->getDatabaseConnection();
-            $query      = $connection->getQueryBuilder();
+            $query = $this->db->getQueryBuilder();
 
             $query->select('s.size')
                 ->from('storages', 's')
@@ -543,7 +606,7 @@ class UserService
         if (method_exists($user, 'getLanguage') === true) {
             $language = $user->getLanguage();
             if (empty($language) === true) {
-                $language = \OC::$server->getL10NFactory()->findLanguage();
+                $language = $this->l10nFactory->findLanguage();
             }
         }
 
@@ -830,4 +893,584 @@ class UserService
 
         return $scopeMap[$propertyName] ?? IAccountManager::SCOPE_PRIVATE;
     }//end getDefaultPropertyScope()
+
+    /**
+     * Change password for the current user
+     *
+     * Validates the current password, checks backend capability,
+     * and sets the new password.
+     *
+     * @param IUser  $user            The user changing their password
+     * @param string $currentPassword The current password for verification
+     * @param string $newPassword     The new password to set
+     *
+     * @return array Result array with success status
+     *
+     * @throws \InvalidArgumentException If inputs are invalid
+     * @throws \RuntimeException         If password change fails
+     */
+    public function changePassword(IUser $user, string $currentPassword, string $newPassword): array
+    {
+        // Check backend capability.
+        if (method_exists($user, 'canChangePassword') === true && $user->canChangePassword() === false) {
+            throw new \RuntimeException(
+                'Password changes are not supported by your authentication backend',
+                409
+            );
+        }
+
+        // Verify current password.
+        $verifiedUser = $this->userManager->checkPassword($user->getUID(), $currentPassword);
+        if ($verifiedUser === false) {
+            throw new \RuntimeException('Current password is incorrect', 403);
+        }
+
+        // Set new password.
+        $result = $user->setPassword($newPassword);
+        if ($result === false) {
+            throw new \RuntimeException(
+                'New password does not meet the password policy requirements',
+                400
+            );
+        }
+
+        return [
+            'success' => true,
+            'message' => 'Password updated successfully',
+        ];
+    }//end changePassword()
+
+    /**
+     * Upload a new avatar for the user
+     *
+     * Validates file type and size, then sets via IAvatarManager.
+     *
+     * @param IUser  $user     The user uploading an avatar
+     * @param string $data     The raw image data
+     * @param string $mimeType The MIME type of the uploaded file
+     * @param int    $size     The file size in bytes
+     *
+     * @return array Result array with success status and avatar URL
+     *
+     * @throws \RuntimeException If upload fails
+     */
+    public function uploadAvatar(IUser $user, string $data, string $mimeType, int $size): array
+    {
+        // Check backend capability.
+        if (method_exists($user, 'canChangeAvatar') === true && $user->canChangeAvatar() === false) {
+            throw new \RuntimeException(
+                'Avatar changes are not supported by your authentication backend',
+                409
+            );
+        }
+
+        // Validate file type.
+        if (in_array($mimeType, self::ALLOWED_AVATAR_TYPES, true) === false) {
+            throw new \RuntimeException(
+                'Unsupported image format. Allowed: JPEG, PNG, GIF, WebP',
+                400
+            );
+        }
+
+        // Validate file size.
+        if ($size > self::MAX_AVATAR_SIZE) {
+            throw new \RuntimeException('Avatar image must be smaller than 5 MB', 400);
+        }
+
+        $userId = $user->getUID();
+        $avatar = $this->avatarManager->getAvatar($userId);
+        $avatar->set($data);
+
+        return [
+            'success'   => true,
+            'avatarUrl' => '/avatar/'.$userId.'/128',
+        ];
+    }//end uploadAvatar()
+
+    /**
+     * Delete the user's avatar
+     *
+     * Removes the custom avatar and resets to the default.
+     *
+     * @param IUser $user The user deleting their avatar
+     *
+     * @return array Result array with success status
+     *
+     * @throws \RuntimeException If deletion fails
+     */
+    public function deleteAvatar(IUser $user): array
+    {
+        // Check backend capability.
+        if (method_exists($user, 'canChangeAvatar') === true && $user->canChangeAvatar() === false) {
+            throw new \RuntimeException(
+                'Avatar changes are not supported by your authentication backend',
+                409
+            );
+        }
+
+        $avatar = $this->avatarManager->getAvatar($user->getUID());
+        $avatar->remove();
+
+        return [
+            'success' => true,
+            'message' => 'Avatar removed',
+        ];
+    }//end deleteAvatar()
+
+    /**
+     * Export personal data for the current user (GDPR Article 20)
+     *
+     * Assembles profile data, organisation memberships, and audit trail entries
+     * into a downloadable JSON structure. Rate limited to once per hour.
+     *
+     * @param IUser $user The user requesting data export
+     *
+     * @return array The export data structure
+     *
+     * @throws \RuntimeException If rate limited
+     */
+    public function exportPersonalData(IUser $user): array
+    {
+        $userId = $user->getUID();
+
+        // Check rate limit.
+        $lastExport      = $this->config->getUserValue($userId, self::APP_NAME, 'last_export_time', '0');
+        $timeSinceExport = time() - (int) $lastExport;
+
+        if ($timeSinceExport < self::EXPORT_RATE_LIMIT) {
+            $retryAfter = self::EXPORT_RATE_LIMIT - $timeSinceExport;
+            throw new \RuntimeException(
+                json_encode(
+                        [
+                            'error'       => 'Data export is limited to once per hour',
+                            'retry_after' => $retryAfter,
+                        ]
+                        ),
+                429
+            );
+        }
+
+        // Record export time.
+        $this->config->setUserValue($userId, self::APP_NAME, 'last_export_time', (string) time());
+
+        // Build profile data.
+        $profile = $this->buildUserDataArray(user: $user);
+
+        // Get audit trail entries.
+        $auditData  = $this->auditTrailMapper->findByActor($userId, 1000, 0);
+        $auditTrail = array_map(
+            function ($entry) {
+                return $entry->jsonSerialize();
+            },
+            $auditData['results']
+        );
+
+        return [
+            'exportDate'    => date('c'),
+            'profile'       => $profile,
+            'organisations' => $profile['organisations'] ?? [],
+            'objects'       => [],
+            'auditTrail'    => $auditTrail,
+        ];
+    }//end exportPersonalData()
+
+    /**
+     * Get notification preferences for the current user
+     *
+     * Returns stored preferences with defaults for unset values.
+     *
+     * @param IUser $user The user to get preferences for
+     *
+     * @return array The notification preferences
+     */
+    public function getNotificationPreferences(IUser $user): array
+    {
+        $userId = $user->getUID();
+        $prefs  = [];
+
+        foreach (self::DEFAULT_NOTIFICATION_PREFS as $key => $defaultValue) {
+            $stored = $this->config->getUserValue($userId, self::APP_NAME, 'notification_'.$key, '');
+
+            if ($stored === '') {
+                $prefs[$key] = $defaultValue;
+                continue;
+            }
+
+            // Convert string booleans.
+            if ($defaultValue === true || $defaultValue === false) {
+                $prefs[$key] = ($stored === 'true' || $stored === '1');
+            } else {
+                $prefs[$key] = $stored;
+            }
+        }
+
+        return $prefs;
+    }//end getNotificationPreferences()
+
+    /**
+     * Update notification preferences for the current user
+     *
+     * Validates and stores preference values in IConfig.
+     *
+     * @param IUser $user  The user to update preferences for
+     * @param array $prefs The preference values to update
+     *
+     * @return array The complete updated preferences
+     *
+     * @throws \InvalidArgumentException If invalid preference values
+     */
+    public function setNotificationPreferences(IUser $user, array $prefs): array
+    {
+        $userId = $user->getUID();
+
+        // Validate emailDigest if provided.
+        if (isset($prefs['emailDigest']) === true) {
+            if (in_array($prefs['emailDigest'], self::VALID_DIGEST_FREQUENCIES, true) === false) {
+                throw new \InvalidArgumentException(
+                    'Invalid emailDigest value. Allowed: none, daily, weekly'
+                );
+            }
+        }
+
+        // Store provided preferences.
+        foreach ($prefs as $key => $value) {
+            if (array_key_exists($key, self::DEFAULT_NOTIFICATION_PREFS) === false) {
+                continue;
+            }
+
+            $storeValue = is_bool($value) === true ? ($value === true ? 'true' : 'false') : (string) $value;
+            $this->config->setUserValue($userId, self::APP_NAME, 'notification_'.$key, $storeValue);
+        }
+
+        // Return complete preferences.
+        return $this->getNotificationPreferences(user: $user);
+    }//end setNotificationPreferences()
+
+    /**
+     * Get activity history for the current user
+     *
+     * Queries audit trail entries where the user is the actor.
+     *
+     * @param IUser       $user   The user to get activity for
+     * @param int         $limit  Maximum results to return
+     * @param int         $offset Results to skip
+     * @param string|null $type   Optional action type filter
+     * @param string|null $from   Optional start date (Y-m-d)
+     * @param string|null $to     Optional end date (Y-m-d)
+     *
+     * @return array Activity results with total count
+     */
+    public function getUserActivity(
+        IUser $user,
+        int $limit=25,
+        int $offset=0,
+        ?string $type=null,
+        ?string $from=null,
+        ?string $to=null
+    ): array {
+        $data = $this->auditTrailMapper->findByActor(
+            $user->getUID(),
+            $limit,
+            $offset,
+            $type,
+            $from,
+            $to
+        );
+
+        $results = array_map(
+            function ($entry) {
+                $serialized = $entry->jsonSerialize();
+                return [
+                    'id'         => $serialized['id'] ?? null,
+                    'type'       => $serialized['action'] ?? null,
+                    'objectUuid' => $serialized['objectUuid'] ?? null,
+                    'register'   => $serialized['register'] ?? null,
+                    'schema'     => $serialized['schema'] ?? null,
+                    'timestamp'  => $serialized['created'] ?? null,
+                    'summary'    => ($serialized['action'] ?? 'action').' on object',
+                ];
+            },
+            $data['results']
+        );
+
+        return [
+            'results' => $results,
+            'total'   => $data['total'],
+        ];
+    }//end getUserActivity()
+
+    /**
+     * Create a new API token for the user
+     *
+     * Generates a cryptographically secure token and stores it in IConfig.
+     *
+     * @param IUser       $user      The user creating a token
+     * @param string      $name      The token name
+     * @param string|null $expiresIn Optional expiration (e.g., "90d")
+     *
+     * @return array The created token data (full value shown only once)
+     *
+     * @throws \RuntimeException If maximum tokens reached
+     */
+    public function createApiToken(IUser $user, string $name, ?string $expiresIn=null): array
+    {
+        $userId = $user->getUID();
+        $tokens = $this->getStoredTokens(userId: $userId);
+
+        if (count($tokens) >= self::MAX_TOKENS) {
+            throw new \RuntimeException(
+                'Maximum number of API tokens ('.self::MAX_TOKENS.') reached. Revoke an existing token first.',
+                400
+            );
+        }
+
+        // Generate a secure token.
+        $tokenValue = $this->secureRandom->generate(64);
+        $tokenId    = $this->secureRandom->generate(16);
+
+        // Calculate expiration.
+        $expires = null;
+        if ($expiresIn !== null && $expiresIn !== '') {
+            $expires = $this->parseExpiration(expiresIn: $expiresIn);
+        }
+
+        $now       = date('c');
+        $tokenData = [
+            'id'       => $tokenId,
+            'name'     => $name,
+            'token'    => hash('sha256', $tokenValue),
+            'preview'  => substr($tokenValue, -4),
+            'created'  => $now,
+            'lastUsed' => null,
+            'expires'  => $expires,
+        ];
+
+        $tokens[$tokenId] = $tokenData;
+        $this->storeTokens(userId: $userId, tokens: $tokens);
+
+        return [
+            'id'      => $tokenId,
+            'name'    => $name,
+            'token'   => $tokenValue,
+            'created' => $now,
+            'expires' => $expires,
+        ];
+    }//end createApiToken()
+
+    /**
+     * List API tokens for the user (masked values)
+     *
+     * @param IUser $user The user to list tokens for
+     *
+     * @return array Array of token objects with masked values
+     */
+    public function listApiTokens(IUser $user): array
+    {
+        $tokens = $this->getStoredTokens(userId: $user->getUID());
+
+        return array_values(
+                array_map(
+            function ($token) {
+                return [
+                    'id'       => $token['id'],
+                    'name'     => $token['name'],
+                    'preview'  => '****'.($token['preview'] ?? ''),
+                    'created'  => $token['created'],
+                    'lastUsed' => $token['lastUsed'] ?? null,
+                    'expires'  => $token['expires'] ?? null,
+                ];
+            },
+                $tokens
+        )
+                );
+    }//end listApiTokens()
+
+    /**
+     * Revoke an API token by ID
+     *
+     * @param IUser  $user    The user revoking the token
+     * @param string $tokenId The token ID to revoke
+     *
+     * @return array Result array
+     *
+     * @throws \RuntimeException If token not found
+     */
+    public function revokeApiToken(IUser $user, string $tokenId): array
+    {
+        $userId = $user->getUID();
+        $tokens = $this->getStoredTokens(userId: $userId);
+
+        if (isset($tokens[$tokenId]) === false) {
+            throw new \RuntimeException('Token not found', 404);
+        }
+
+        unset($tokens[$tokenId]);
+        $this->storeTokens(userId: $userId, tokens: $tokens);
+
+        return [
+            'success' => true,
+            'message' => 'Token revoked',
+        ];
+    }//end revokeApiToken()
+
+    /**
+     * Request account deactivation
+     *
+     * Creates a pending deactivation request for admin approval.
+     *
+     * @param IUser  $user   The user requesting deactivation
+     * @param string $reason Optional reason for deactivation
+     *
+     * @return array Result array with status
+     *
+     * @throws \RuntimeException If duplicate request exists
+     */
+    public function requestDeactivation(IUser $user, string $reason=''): array
+    {
+        $userId = $user->getUID();
+
+        // Check for existing request.
+        $existing = $this->config->getUserValue($userId, self::APP_NAME, 'deactivation_request', '');
+        if ($existing !== '') {
+            $existingData = json_decode($existing, true);
+            throw new \RuntimeException(
+                json_encode(
+                        [
+                            'error'       => 'A deactivation request is already pending',
+                            'requestedAt' => $existingData['requestedAt'] ?? null,
+                        ]
+                        ),
+                409
+            );
+        }
+
+        $now         = date('c');
+        $requestData = [
+            'status'      => 'pending',
+            'reason'      => $reason,
+            'requestedAt' => $now,
+        ];
+
+        $this->config->setUserValue($userId, self::APP_NAME, 'deactivation_request', json_encode($requestData));
+
+        return [
+            'success'     => true,
+            'message'     => 'Deactivation request submitted',
+            'status'      => 'pending',
+            'requestedAt' => $now,
+        ];
+    }//end requestDeactivation()
+
+    /**
+     * Get deactivation request status
+     *
+     * @param IUser $user The user to check status for
+     *
+     * @return array Status information
+     */
+    public function getDeactivationStatus(IUser $user): array
+    {
+        $userId   = $user->getUID();
+        $existing = $this->config->getUserValue($userId, self::APP_NAME, 'deactivation_request', '');
+
+        if ($existing === '') {
+            return [
+                'status'         => 'active',
+                'pendingRequest' => null,
+            ];
+        }
+
+        $data = json_decode($existing, true);
+        return [
+            'status'         => $data['status'] ?? 'pending',
+            'pendingRequest' => $data,
+        ];
+    }//end getDeactivationStatus()
+
+    /**
+     * Cancel a pending deactivation request
+     *
+     * @param IUser $user The user cancelling their request
+     *
+     * @return array Result array
+     *
+     * @throws \RuntimeException If no pending request
+     */
+    public function cancelDeactivation(IUser $user): array
+    {
+        $userId   = $user->getUID();
+        $existing = $this->config->getUserValue($userId, self::APP_NAME, 'deactivation_request', '');
+
+        if ($existing === '') {
+            throw new \RuntimeException('No pending deactivation request', 404);
+        }
+
+        $this->config->deleteUserValue($userId, self::APP_NAME, 'deactivation_request');
+
+        return [
+            'success' => true,
+            'message' => 'Deactivation request cancelled',
+            'status'  => 'active',
+        ];
+    }//end cancelDeactivation()
+
+    /**
+     * Get stored API tokens for a user
+     *
+     * @param string $userId The user ID
+     *
+     * @return array The stored tokens
+     */
+    private function getStoredTokens(string $userId): array
+    {
+        $stored = $this->config->getUserValue($userId, self::APP_NAME, 'api_tokens', '');
+        if ($stored === '') {
+            return [];
+        }
+
+        return json_decode($stored, true) ?? [];
+    }//end getStoredTokens()
+
+    /**
+     * Store API tokens for a user
+     *
+     * @param string $userId The user ID
+     * @param array  $tokens The tokens array to store
+     *
+     * @return void
+     */
+    private function storeTokens(string $userId, array $tokens): void
+    {
+        $this->config->setUserValue($userId, self::APP_NAME, 'api_tokens', json_encode($tokens));
+    }//end storeTokens()
+
+    /**
+     * Parse an expiration string into an ISO date
+     *
+     * @param string $expiresIn Expiration string (e.g., "90d", "24h")
+     *
+     * @return string|null ISO 8601 date or null
+     */
+    private function parseExpiration(string $expiresIn): ?string
+    {
+        $matches = [];
+        if (preg_match('/^(\d+)([dhm])$/', $expiresIn, $matches) !== 1) {
+            return null;
+        }
+
+        $value = (int) $matches[1];
+        $unit  = $matches[2];
+
+        $intervalMap = [
+            'd' => 'days',
+            'h' => 'hours',
+            'm' => 'minutes',
+        ];
+
+        $interval = $intervalMap[$unit] ?? 'days';
+        $date     = new \DateTime();
+        $date->modify('+'.$value.' '.$interval);
+
+        return $date->format('c');
+    }//end parseExpiration()
 }//end class

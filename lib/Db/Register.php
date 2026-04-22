@@ -69,6 +69,20 @@ use OCP\AppFramework\Db\Entity;
  * @method void setLanguages(?array $languages)
  * @method array|null getConfiguration()
  * @method void setConfiguration(array|string|null $configuration)
+ * @method array|null getMail()
+ * @method void setMail(?array $mail)
+ * @method array|null getContacts()
+ * @method void setContacts(?array $contacts)
+ * @method array|null getNotes()
+ * @method void setNotes(?array $notes)
+ * @method array|null getTodos()
+ * @method void setTodos(?array $todos)
+ * @method array|null getCalendar()
+ * @method void setCalendar(?array $calendar)
+ * @method array|null getTalk()
+ * @method void setTalk(?array $talk)
+ * @method array|null getDeck()
+ * @method void setDeck(?array $deck)
  *
  * @SuppressWarnings(PHPMD.ExcessiveClassComplexity)
  * @SuppressWarnings(PHPMD.TooManyFields)
@@ -266,6 +280,55 @@ class Register extends Entity implements JsonSerializable
     protected ?array $configuration = [];
 
     /**
+     * Linked mail entity IDs for this register.
+     *
+     * @var array|null Linked mail entity IDs
+     */
+    protected ?array $mail = null;
+
+    /**
+     * Linked contact entity IDs for this register.
+     *
+     * @var array|null Linked contact entity IDs
+     */
+    protected ?array $contacts = null;
+
+    /**
+     * Linked note entity IDs for this register.
+     *
+     * @var array|null Linked note entity IDs
+     */
+    protected ?array $notes = null;
+
+    /**
+     * Linked todo entity IDs for this register.
+     *
+     * @var array|null Linked todo entity IDs
+     */
+    protected ?array $todos = null;
+
+    /**
+     * Linked calendar event entity IDs for this register.
+     *
+     * @var array|null Linked calendar event entity IDs
+     */
+    protected ?array $calendar = null;
+
+    /**
+     * Linked Talk conversation IDs for this register.
+     *
+     * @var array|null Linked Talk conversation IDs
+     */
+    protected ?array $talk = null;
+
+    /**
+     * Linked Deck card IDs for this register.
+     *
+     * @var array|null Linked Deck card IDs
+     */
+    protected ?array $deck = null;
+
+    /**
      * Constructor for the Register class
      *
      * Sets up field types for all properties
@@ -293,6 +356,13 @@ class Register extends Entity implements JsonSerializable
         $this->addType(fieldName: 'depublished', type: 'datetime');
         $this->addType(fieldName: 'languages', type: 'json');
         $this->addType(fieldName: 'configuration', type: 'json');
+        $this->addType(fieldName: 'mail', type: 'json');
+        $this->addType(fieldName: 'contacts', type: 'json');
+        $this->addType(fieldName: 'notes', type: 'json');
+        $this->addType(fieldName: 'todos', type: 'json');
+        $this->addType(fieldName: 'calendar', type: 'json');
+        $this->addType(fieldName: 'talk', type: 'json');
+        $this->addType(fieldName: 'deck', type: 'json');
     }//end __construct()
 
     /**
@@ -523,6 +593,13 @@ class Register extends Entity implements JsonSerializable
                 'groups'    => count($groups),
             ],
             'deleted'       => $deleted,
+            '_mail'         => $this->mail,
+            '_contacts'     => $this->contacts,
+            '_notes'        => $this->notes,
+            '_todos'        => $this->todos,
+            '_calendar'     => $this->calendar,
+            '_talk'         => $this->talk,
+            '_deck'         => $this->deck,
         ];
     }//end jsonSerialize()
 

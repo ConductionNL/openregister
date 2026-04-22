@@ -408,6 +408,13 @@ class MagicSearchHandler
         );
         $conditions       = array_merge($conditions, $objectConditions);
 
+        // 6. TMLO metadata JSON field filters (tmlo.archiefstatus, tmlo.archiefnominatie, etc.).
+        $tmloConditions = $this->buildTmloFilterConditionsSql(
+            query: $query,
+            connection: $connection
+        );
+        $conditions     = array_merge($conditions, $tmloConditions);
+
         return $conditions;
     }//end buildWhereConditionsSql()
 
@@ -544,18 +551,41 @@ class MagicSearchHandler
                 continue;
             }
 
-            // Handle array filter values with IN clause (for non-array property types).
+            // Handle array filter values: comparison operators (gte/lte/gt/lt/in) or IN clause.
             if (is_array($value) === true) {
-                if (empty($value) === false) {
+                $comparisonOperators = ['gte', 'lte', 'gt', 'lt', 'in'];
+                if (empty(array_intersect(array_keys($value), $comparisonOperators)) === false) {
+                    if (isset($value['gte']) === true) {
+                        $conditions[] = "{$columnName} >= ".$connection->quote((string) $value['gte']);
+                    }
+
+                    if (isset($value['lte']) === true) {
+                        $conditions[] = "{$columnName} <= ".$connection->quote((string) $value['lte']);
+                    }
+
+                    if (isset($value['gt']) === true) {
+                        $conditions[] = "{$columnName} > ".$connection->quote((string) $value['gt']);
+                    }
+
+                    if (isset($value['lt']) === true) {
+                        $conditions[] = "{$columnName} < ".$connection->quote((string) $value['lt']);
+                    }
+
+                    if (isset($value['in']) === true) {
+                        $inValues     = is_array($value['in']) === true ? $value['in'] : [$value['in']];
+                        $quotedValues = array_map(fn($v) => $connection->quote((string) $v), $inValues);
+                        $conditions[] = "{$columnName} IN (".implode(', ', $quotedValues).')';
+                    }
+                } else if (empty($value) === false) {
                     $quotedValues = array_map(
                         fn($v) => $connection->quote((string) $v),
                         $value
                     );
                     $conditions[] = "{$columnName} IN (".implode(', ', $quotedValues).')';
-                }
+                }//end if
 
                 continue;
-            }
+            }//end if
 
             // Simple equality filter.
             $conditions[] = "{$columnName} = ".$connection->quote((string) $value);
@@ -600,6 +630,64 @@ class MagicSearchHandler
 
         return '('.implode(' OR ', $orParts).')';
     }//end buildArrayPropertyConditionSql()
+
+    /**
+     * Build SQL conditions for TMLO metadata JSON field filters.
+     *
+     * Supports dot-notation filters like:
+     * - tmlo.archiefstatus=semi_statisch (exact match on JSON sub-field)
+     * - tmlo.archiefnominatie=vernietigen (exact match)
+     * - tmlo.archiefactiedatum[from]=2025-01-01 (range filter)
+     * - tmlo.archiefactiedatum[to]=2025-12-31 (range filter)
+     * - tmlo.vernietigingsCategorie=cat1 (exact match)
+     *
+     * Uses PostgreSQL ->> operator for JSON field extraction.
+     *
+     * @param array  $query      The full query array
+     * @param object $connection Database connection for value quoting
+     *
+     * @return string[] Array of SQL conditions
+     */
+    private function buildTmloFilterConditionsSql(array $query, object $connection): array
+    {
+        $conditions       = [];
+        $archiefactieFrom = null;
+        $archiefactieTo   = null;
+
+        foreach ($query as $key => $value) {
+            if (str_starts_with($key, 'tmlo.') === false) {
+                continue;
+            }
+
+            $subField = substr($key, 5);
+
+            // Handle date range filters for archiefactiedatum.
+            if ($subField === 'archiefactiedatum[from]') {
+                $archiefactieFrom = $value;
+                continue;
+            }
+
+            if ($subField === 'archiefactiedatum[to]') {
+                $archiefactieTo = $value;
+                continue;
+            }
+
+            // Standard exact match on TMLO JSON sub-field.
+            $quotedValue  = $connection->quote((string) $value);
+            $conditions[] = "_tmlo::jsonb ->> ".$connection->quote($subField)." = {$quotedValue}";
+        }//end foreach
+
+        // Build archiefactiedatum range condition.
+        if ($archiefactieFrom !== null) {
+            $conditions[] = "_tmlo::jsonb ->> 'archiefactiedatum' >= ".$connection->quote($archiefactieFrom);
+        }
+
+        if ($archiefactieTo !== null) {
+            $conditions[] = "_tmlo::jsonb ->> 'archiefactiedatum' <= ".$connection->quote($archiefactieTo);
+        }
+
+        return $conditions;
+    }//end buildTmloFilterConditionsSql()
 
     /**
      * Get the list of reserved query parameter names
@@ -883,14 +971,44 @@ class MagicSearchHandler
             }
 
             if (is_array($value) === true) {
-                $qb->andWhere(
-                    $qb->expr()->in(
-                        "t.{$columnName}",
-                        $qb->createNamedParameter($value, IQueryBuilder::PARAM_STR_ARRAY)
-                    )
-                );
+                $comparisonOperators = ['gte', 'lte', 'gt', 'lt', 'in'];
+                if (empty(array_intersect(array_keys($value), $comparisonOperators)) === false) {
+                    if (isset($value['gte']) === true) {
+                        $qb->andWhere($qb->expr()->gte("t.{$columnName}", $qb->createNamedParameter($value['gte'])));
+                    }
+
+                    if (isset($value['lte']) === true) {
+                        $qb->andWhere($qb->expr()->lte("t.{$columnName}", $qb->createNamedParameter($value['lte'])));
+                    }
+
+                    if (isset($value['gt']) === true) {
+                        $qb->andWhere($qb->expr()->gt("t.{$columnName}", $qb->createNamedParameter($value['gt'])));
+                    }
+
+                    if (isset($value['lt']) === true) {
+                        $qb->andWhere($qb->expr()->lt("t.{$columnName}", $qb->createNamedParameter($value['lt'])));
+                    }
+
+                    if (isset($value['in']) === true) {
+                        $inValues = is_array($value['in']) === true ? $value['in'] : [$value['in']];
+                        $qb->andWhere(
+                            $qb->expr()->in(
+                                "t.{$columnName}",
+                                $qb->createNamedParameter($inValues, IQueryBuilder::PARAM_STR_ARRAY)
+                            )
+                        );
+                    }
+                } else {
+                    $qb->andWhere(
+                        $qb->expr()->in(
+                            "t.{$columnName}",
+                            $qb->createNamedParameter($value, IQueryBuilder::PARAM_STR_ARRAY)
+                        )
+                    );
+                }//end if
+
                 continue;
-            }
+            }//end if
 
             $qb->andWhere($qb->expr()->eq("t.{$columnName}", $qb->createNamedParameter($value)));
         }//end foreach

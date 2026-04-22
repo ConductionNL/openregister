@@ -363,7 +363,7 @@ class ConfigurationsControllerTest extends TestCase
             'x-openregister' => ['app' => 'myapp'],
         ];
         $this->configurationService->method('getUploadedJson')->willReturn($jsonData);
-        $this->configurationService->method('importFromJson')->willReturn(['schemas' => [], 'registers' => []]);
+        $this->configurationService->method('importFromJson')->willReturn(['schemas' => [], 'registers' => [], 'objects' => []]);
 
         $result = $this->controller->import();
 

@@ -67,8 +67,6 @@ class ObjectEntityTest extends TestCase
         $this->assertSame('string', $types['image']);
         $this->assertSame('datetime', $types['updated']);
         $this->assertSame('datetime', $types['created']);
-        $this->assertSame('datetime', $types['published']);
-        $this->assertSame('datetime', $types['depublished']);
         $this->assertSame('json', $types['groups']);
         $this->assertSame('datetime', $types['expires']);
     }

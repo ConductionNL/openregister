@@ -23,6 +23,7 @@ namespace OCA\OpenRegister\Migration;
 
 use Closure;
 use OCP\DB\ISchemaWrapper;
+use OCP\IDBConnection;
 use OCP\Migration\IOutput;
 use OCP\Migration\SimpleMigrationStep;
 
@@ -36,6 +37,15 @@ use OCP\Migration\SimpleMigrationStep;
  */
 class Version1Date20250908180000 extends SimpleMigrationStep
 {
+    /**
+     * Constructor.
+     *
+     * @param IDBConnection $connection Database connection
+     */
+    public function __construct(private readonly IDBConnection $connection)
+    {
+    }//end __construct()
+
     /**
      * Enhance updated column with ON UPDATE CURRENT_TIMESTAMP
      *
@@ -76,16 +86,13 @@ class Version1Date20250908180000 extends SimpleMigrationStep
     {
         $output->info(message: '🔧 Modifying updated column to auto-update on row changes...');
 
-        // Use direct database connection for MySQL-specific syntax.
-        $connection = \OC::$server->getDatabaseConnection();
-
         try {
             // Modify the updated column to include ON UPDATE CURRENT_TIMESTAMP.
             $sql = "ALTER TABLE `oc_openregister_objects`
                     MODIFY COLUMN `updated` datetime NOT NULL
                     DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP";
 
-            $connection->executeStatement($sql);
+            $this->connection->executeStatement($sql);
 
             $output->info(message: '✅ Updated column now auto-updates on row modifications');
             $output->info(message: '🎯 This enables precise create vs update tracking:');

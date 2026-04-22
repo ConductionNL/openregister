@@ -80,7 +80,7 @@ class RelationHandlerTest extends TestCase
         $this->logger             = $this->createMock(LoggerInterface::class);
 
         $this->handler = new RelationHandler(
-            objectMapper: $this->objectMapper,
+            objectEntityMapper: $this->objectMapper,
             schemaMapper: $this->schemaMapper,
             performanceHandler: $this->performanceHandler,
             rbacHandler: $this->rbacHandler,

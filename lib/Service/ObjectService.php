@@ -41,6 +41,7 @@ use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Db\ViewMapper;
+use OCA\OpenRegister\Service\DateTimeNormalizer;
 use OCA\OpenRegister\Service\Object\CacheHandler;
 use OCA\OpenRegister\Service\Schemas\SchemaCacheHandler;
 use OCA\OpenRegister\Service\Schemas\FacetCacheHandler;
@@ -225,6 +226,7 @@ class ObjectService
      * @param LoggerInterface                $logger              Logger for performance monitoring.
      * @param CacheHandler                   $cacheHandler        Service for entity and query caching.
      * @param SettingsService                $settingsService     Service for settings operations.
+     * @param DateTimeNormalizer             $dateTimeNormalizer  Normaliser for user-supplied datetime input.
      * @param IAppContainer                  $container           Application container.
      *
      * @SuppressWarnings(PHPMD.ExcessiveParameterList) Nextcloud DI requires constructor injection
@@ -277,6 +279,7 @@ class ObjectService
         private readonly LoggerInterface $logger,
         private readonly CacheHandler $cacheHandler,
         private readonly SettingsService $settingsService,
+        private readonly DateTimeNormalizer $dateTimeNormalizer,
         private readonly IAppContainer $container
         // TODO: CIRCULAR DEPENDENCY ISSUE - ExportService, ImportService, and VectorizationService
         // These services have deep circular dependencies:
@@ -1073,6 +1076,11 @@ class ObjectService
             _rbac: $_rbac
         );
 
+        // Reject updates to transferred objects (archiefstatus = overgebracht).
+        if ($uuid !== null) {
+            $this->rejectIfTransferred(uuid: $uuid);
+        }
+
         // Track if UUID was originally null (to distinguish user-provided vs auto-generated UUIDs).
         $uuidWasNull = ($uuid === null);
 
@@ -1141,6 +1149,19 @@ class ObjectService
             _validation: true,
             uploadedFiles: $uploadedFiles
         );
+
+        // Invalidate contact matching cache for objects with email properties.
+        try {
+            $container = \OC::$server;
+            if ($container !== null) {
+                $contactMatchingService = $container->get(
+                    \OCA\OpenRegister\Service\ContactMatchingService::class
+                );
+                $contactMatchingService->invalidateCacheForObject($object);
+            }
+        } catch (\Exception $e) {
+            // ContactMatchingService not available — skip cache invalidation.
+        }
 
         // Render and return the saved object.
         return $this->renderHandler->renderEntity(
@@ -1351,20 +1372,36 @@ class ObjectService
             }
 
             $format = $propertyDef['format'] ?? null;
-            if ($format !== 'date') {
+            if ($format !== 'date' && $format !== 'date-time') {
                 continue;
             }
 
-            // If the value is already a valid date (Y-m-d), skip.
-            if (preg_match('/^\d{4}-\d{2}-\d{2}$/', $object[$propertyName]) === 1) {
+            // Empty / whitespace-only strings normalise to null instead of silently
+            // becoming the current datetime via PHP's "new DateTime('')" footgun.
+            if (trim($object[$propertyName]) === '') {
+                $object[$propertyName] = null;
                 continue;
             }
 
-            // Try to parse as datetime and extract just the date part.
-            try {
-                $object[$propertyName] = (new DateTime($object[$propertyName]))->format('Y-m-d');
-            } catch (\Exception $e) {
-                // Leave the original value; validation will catch invalid formats.
+            if ($format === 'date') {
+                // If already a valid date (Y-m-d), skip.
+                if (preg_match('/^\d{4}-\d{2}-\d{2}$/', $object[$propertyName]) === 1) {
+                    continue;
+                }
+
+                $parsed = $this->dateTimeNormalizer->normalize($object[$propertyName]);
+                if ($parsed !== null) {
+                    $object[$propertyName] = $parsed->format('Y-m-d');
+                }
+
+                continue;
+            }
+
+            // For date-time: accept valid input; invalid/empty input → null.
+            // Leave otherwise-valid strings untouched so downstream validation runs.
+            $parsed = $this->dateTimeNormalizer->normalize($object[$propertyName]);
+            if ($parsed === null) {
+                $object[$propertyName] = null;
             }
         }//end foreach
 
@@ -1423,6 +1460,9 @@ class ObjectService
      */
     public function deleteObject(string $uuid, bool $_rbac=true, bool $_multitenancy=true): bool
     {
+        // Reject deletion of transferred objects (archiefstatus = overgebracht).
+        $this->rejectIfTransferred(uuid: $uuid);
+
         // Find the object to get its owner for permission check (include soft-deleted objects).
         try {
             $objectToDelete = $this->objectMapper->find(
@@ -1468,6 +1508,44 @@ class ObjectService
             _multitenancy: $_multitenancy
         );
     }//end deleteObject()
+
+    /**
+     * Reject an operation if the object has been transferred to e-Depot.
+     *
+     * Objects with archiefstatus 'overgebracht' are read-only. The authoritative
+     * copy resides in the e-Depot and this system copy MUST NOT be modified.
+     *
+     * @param string $uuid The object UUID to check.
+     *
+     * @return void
+     *
+     * @throws \OCP\AppFramework\Http\ContentSecurityPolicy
+     */
+    private function rejectIfTransferred(string $uuid): void
+    {
+        try {
+            $object = $this->objectMapper->find(
+                identifier: $uuid,
+                register: null,
+                schema: null,
+                includeDeleted: true
+            );
+
+            $retention = ($object->getRetention() ?? []);
+            if (isset($retention['archiefstatus']) === true && $retention['archiefstatus'] === 'overgebracht') {
+                throw new \OCP\AppFramework\Db\DoesNotExistException(
+                    'OBJECT_TRANSFERRED: This object has been transferred to the e-Depot and is read-only.'
+                );
+            }
+        } catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
+            // Re-throw if it's our transfer exception.
+            if (str_starts_with($e->getMessage(), 'OBJECT_TRANSFERRED:') === true) {
+                throw $e;
+            }
+
+            // Object doesn't exist yet (new object), no check needed.
+        }//end try
+    }//end rejectIfTransferred()
 
         /**
          * Get the active organization for the current user

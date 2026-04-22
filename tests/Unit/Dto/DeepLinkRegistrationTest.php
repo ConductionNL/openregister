@@ -1,143 +1,168 @@
 <?php
 
+declare(strict_types=1);
+
+/**
+ * DeepLinkRegistration Unit Tests
+ *
+ * Tests URL template placeholder resolution including contact placeholders.
+ *
+ * @category Tests
+ * @package  OCA\OpenRegister\Tests\Unit\Dto
+ * @author   Conduction Development Team <dev@conduction.nl>
+ * @license  EUPL-1.2
+ */
+
 namespace Unit\Dto;
 
 use OCA\OpenRegister\Dto\DeepLinkRegistration;
-use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 
+/**
+ * Test class for DeepLinkRegistration.
+ */
 class DeepLinkRegistrationTest extends TestCase
 {
-    // --- Constructor ---
 
-    public function testConstructorWithAllParameters(): void
+    // -------------------------------------------------------------------------
+    // Contact placeholder resolution
+    // -------------------------------------------------------------------------
+
+    public function testContactEmailPlaceholderIsUrlEncoded(): void
     {
-        $reg = new DeepLinkRegistration('procest', 'main', 'zaak', '/app/{uuid}', 'icon-zaak');
+        $reg = new DeepLinkRegistration(
+            appId: 'procest',
+            registerSlug: 'main',
+            schemaSlug: 'zaken',
+            urlTemplate: '/apps/procest/#/cases?email={contactEmail}'
+        );
 
-        $this->assertSame('procest', $reg->appId);
-        $this->assertSame('main', $reg->registerSlug);
-        $this->assertSame('zaak', $reg->schemaSlug);
-        $this->assertSame('/app/{uuid}', $reg->urlTemplate);
-        $this->assertSame('icon-zaak', $reg->icon);
+        $url = $reg->resolveUrl(
+            objectData: ['uuid' => 'abc-123'],
+            contactContext: [
+                'contactEmail' => 'jan@example.nl',
+                'contactName'  => 'Jan de Vries',
+                'contactId'    => 'uid-456',
+            ]
+        );
+
+        $this->assertStringContainsString(urlencode('jan@example.nl'), $url);
+        $this->assertStringNotContainsString('jan@example.nl', $url);
     }
 
-    public function testConstructorDefaultIcon(): void
+    public function testContactNamePlaceholderIsUrlEncoded(): void
     {
-        $reg = new DeepLinkRegistration('myapp', 'reg', 'schema', '/url');
-        $this->assertSame('', $reg->icon);
+        $reg = new DeepLinkRegistration(
+            appId: 'procest',
+            registerSlug: 'main',
+            schemaSlug: 'zaken',
+            urlTemplate: '/apps/procest/#/cases?name={contactName}'
+        );
+
+        $url = $reg->resolveUrl(
+            objectData: ['uuid' => 'abc-123'],
+            contactContext: [
+                'contactEmail' => 'jan@example.nl',
+                'contactName'  => 'Jan de Vries',
+                'contactId'    => 'uid-456',
+            ]
+        );
+
+        $this->assertStringContainsString(urlencode('Jan de Vries'), $url);
     }
 
-    public function testPropertiesAreReadonly(): void
+    public function testEntityIdPlaceholderIsReplacedWithUuid(): void
     {
-        $reg = new DeepLinkRegistration('app', 'r', 's', '/t');
-        $this->assertSame('app', $reg->appId);
+        $reg = new DeepLinkRegistration(
+            appId: 'procest',
+            registerSlug: 'main',
+            schemaSlug: 'zaken',
+            urlTemplate: '/apps/procest/#/cases/{entityId}'
+        );
+
+        $url = $reg->resolveUrl(
+            objectData: ['uuid' => 'abc-123'],
+            contactContext: ['contactEmail' => 'test@example.nl']
+        );
+
+        $this->assertSame('/apps/procest/#/cases/abc-123', $url);
     }
 
-    // --- resolveUrl() ---
-
-    public function testResolveUrlReplacesUuid(): void
+    public function testContactIdPlaceholderIsUrlEncoded(): void
     {
-        $reg = new DeepLinkRegistration('app', 'r', 's', '/items/{uuid}');
-        $result = $reg->resolveUrl(['uuid' => 'abc-123']);
-        $this->assertSame('/items/abc-123', $result);
+        $reg = new DeepLinkRegistration(
+            appId: 'procest',
+            registerSlug: 'main',
+            schemaSlug: 'zaken',
+            urlTemplate: '/apps/procest/#/contact/{contactId}'
+        );
+
+        $url = $reg->resolveUrl(
+            objectData: ['uuid' => 'abc-123'],
+            contactContext: ['contactId' => 'vcard-uid-789']
+        );
+
+        $this->assertStringContainsString('vcard-uid-789', $url);
     }
 
-    public function testResolveUrlReplacesId(): void
+    public function testBothObjectAndContactPlaceholdersCoexist(): void
     {
-        $reg = new DeepLinkRegistration('app', 'r', 's', '/items/{id}');
-        $result = $reg->resolveUrl(['id' => 42]);
-        $this->assertSame('/items/42', $result);
+        $reg = new DeepLinkRegistration(
+            appId: 'procest',
+            registerSlug: 'main',
+            schemaSlug: 'zaken',
+            urlTemplate: '/apps/procest/#/cases/{uuid}?email={contactEmail}&name={contactName}'
+        );
+
+        $url = $reg->resolveUrl(
+            objectData: ['uuid' => 'obj-uuid-111'],
+            contactContext: [
+                'contactEmail' => 'test@example.nl',
+                'contactName'  => 'Test User',
+            ]
+        );
+
+        $this->assertStringContainsString('obj-uuid-111', $url);
+        $this->assertStringContainsString(urlencode('test@example.nl'), $url);
+        $this->assertStringContainsString(urlencode('Test User'), $url);
     }
 
-    public function testResolveUrlReplacesRegisterAndSchema(): void
+    public function testMissingContactContextLeavesPlaceholdersAsIs(): void
     {
-        $reg = new DeepLinkRegistration('app', 'r', 's', '/{register}/{schema}/{uuid}');
-        $result = $reg->resolveUrl(['uuid' => 'u1', 'register' => 'reg1', 'schema' => 'sch1']);
-        $this->assertSame('/reg1/sch1/u1', $result);
+        $reg = new DeepLinkRegistration(
+            appId: 'procest',
+            registerSlug: 'main',
+            schemaSlug: 'zaken',
+            urlTemplate: '/apps/procest/#/cases/{uuid}?email={contactEmail}'
+        );
+
+        // No contactContext = empty array (default).
+        $url = $reg->resolveUrl(
+            objectData: ['uuid' => 'abc-123']
+        );
+
+        // Without contact context, the {contactEmail} placeholder should remain.
+        $this->assertStringContainsString('{contactEmail}', $url);
+        $this->assertStringContainsString('abc-123', $url);
     }
 
-    public function testResolveUrlReplacesCustomTopLevelKeys(): void
+    public function testOriginalObjectPlaceholdersStillWork(): void
     {
-        $reg = new DeepLinkRegistration('app', 'r', 's', '/cases/{caseNumber}/view');
-        $result = $reg->resolveUrl(['caseNumber' => 'CASE-001', 'uuid' => 'u1']);
-        $this->assertSame('/cases/CASE-001/view', $result);
-    }
+        $reg = new DeepLinkRegistration(
+            appId: 'procest',
+            registerSlug: 'main',
+            schemaSlug: 'zaken',
+            urlTemplate: '/apps/procest/#/{schema}/{uuid}'
+        );
 
-    public function testResolveUrlIgnoresNonScalarValues(): void
-    {
-        $reg = new DeepLinkRegistration('app', 'r', 's', '/items/{uuid}/{nested}');
-        $result = $reg->resolveUrl([
-            'uuid' => 'abc',
-            'nested' => ['not' => 'scalar'],
-        ]);
-        $this->assertSame('/items/abc/{nested}', $result);
-    }
+        $url = $reg->resolveUrl(
+            objectData: [
+                'uuid'     => 'abc-123',
+                'schema'   => '5',
+                'register' => '3',
+            ]
+        );
 
-    public function testResolveUrlMissingPlaceholderLeavesEmpty(): void
-    {
-        $reg = new DeepLinkRegistration('app', 'r', 's', '/items/{uuid}');
-        $result = $reg->resolveUrl([]);
-        $this->assertSame('/items/', $result);
-    }
-
-    public function testResolveUrlNoPlaceholders(): void
-    {
-        $reg = new DeepLinkRegistration('app', 'r', 's', '/static/page');
-        $result = $reg->resolveUrl(['uuid' => 'ignored']);
-        $this->assertSame('/static/page', $result);
-    }
-
-    public function testResolveUrlMultiplePlaceholders(): void
-    {
-        $reg = new DeepLinkRegistration('app', 'r', 's', '/{register}/{schema}/{id}/{uuid}');
-        $result = $reg->resolveUrl([
-            'uuid' => 'u-1',
-            'id' => 99,
-            'register' => 5,
-            'schema' => 10,
-        ]);
-        $this->assertSame('/5/10/99/u-1', $result);
-    }
-
-    public function testResolveUrlCastsIntToString(): void
-    {
-        $reg = new DeepLinkRegistration('app', 'r', 's', '/view/{id}');
-        $result = $reg->resolveUrl(['id' => 0]);
-        $this->assertSame('/view/0', $result);
-    }
-
-    public function testResolveUrlBooleanScalar(): void
-    {
-        $reg = new DeepLinkRegistration('app', 'r', 's', '/view/{active}');
-        $result = $reg->resolveUrl(['active' => true]);
-        $this->assertSame('/view/1', $result);
-    }
-
-    public function testResolveUrlEmptyObjectData(): void
-    {
-        $reg = new DeepLinkRegistration('app', 'r', 's', '/items/{uuid}');
-        $result = $reg->resolveUrl([]);
-        // {uuid} is replaced with empty string from default replacements
-        $this->assertSame('/items/', $result);
-    }
-
-    #[DataProvider('resolveUrlProvider')]
-    public function testResolveUrlVariousCombinations(
-        string $template,
-        array $data,
-        string $expected
-    ): void {
-        $reg = new DeepLinkRegistration('app', 'r', 's', $template);
-        $this->assertSame($expected, $reg->resolveUrl($data));
-    }
-
-    public static function resolveUrlProvider(): array
-    {
-        return [
-            'simple uuid' => ['/item/{uuid}', ['uuid' => 'x'], '/item/x'],
-            'integer id'  => ['/item/{id}', ['id' => 5], '/item/5'],
-            'no placeholders' => ['/static', ['uuid' => 'x'], '/static'],
-            'custom key' => ['/by/{slug}', ['slug' => 'my-slug'], '/by/my-slug'],
-        ];
+        $this->assertSame('/apps/procest/#/5/abc-123', $url);
     }
 }

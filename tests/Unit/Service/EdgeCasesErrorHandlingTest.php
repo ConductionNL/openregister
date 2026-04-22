@@ -21,7 +21,9 @@ namespace OCA\OpenRegister\Tests\Unit\Service;
 use PHPUnit\Framework\TestCase;
 use PHPUnit\Framework\MockObject\MockObject;
 use OCA\OpenRegister\Service\OrganisationService;
+use OCA\OpenRegister\Service\TenantLifecycleService;
 use OCA\OpenRegister\Controller\OrganisationController;
+use OCA\OpenRegister\Db\TenantUsageMapper;
 use OCA\OpenRegister\Db\OrganisationMapper;
 use OCA\OpenRegister\Db\Organisation;
 use OCP\IUserSession;
@@ -97,7 +99,9 @@ class EdgeCasesErrorHandlingTest extends TestCase
             $this->request,
             $this->organisationService,
             $this->organisationMapper,
-            $this->logger
+            $this->logger,
+            $this->createMock(TenantLifecycleService::class),
+            $this->createMock(TenantUsageMapper::class)
         );
     }
 

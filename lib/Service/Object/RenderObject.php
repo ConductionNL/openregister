@@ -40,6 +40,7 @@ use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Service\Object\CacheHandler;
 use OCA\OpenRegister\Service\Object\SaveObject\ComputedFieldHandler;
+use OCA\OpenRegister\Service\Object\LinkedEntityEnricher;
 use OCA\OpenRegister\Service\Object\TranslationHandler;
 use OCA\OpenRegister\Service\PropertyRbacHandler;
 use OCP\SystemTag\ISystemTagManager;
@@ -126,6 +127,7 @@ class RenderObject
      * @param FileService            $fileService          File service for file operations.
      * @param ComputedFieldHandler   $computedFieldHandler Handler for computed field evaluation.
      * @param TranslationHandler     $translationHandler   Handler for translatable property resolution.
+     * @param LinkedEntityEnricher   $linkedEntityEnricher Enricher for linked entity metadata.
      *
      * @SuppressWarnings(PHPMD.ExcessiveParameterList) All parameters are DI-injected dependencies
      */
@@ -143,6 +145,7 @@ class RenderObject
         private readonly FileService $fileService,
         private readonly ComputedFieldHandler $computedFieldHandler,
         private readonly TranslationHandler $translationHandler,
+        private readonly LinkedEntityEnricher $linkedEntityEnricher,
     ) {
     }//end __construct()
 
@@ -1033,6 +1036,25 @@ class RenderObject
                 _unset: $unset,
                 visitedIds: $visitedIds
             );
+        }
+
+        // Enrich linked entity metadata columns via _extend (e.g., _extend[_mail]=1).
+        if (is_array($_extend) === true) {
+            $linkedExtend = array_intersect_key(
+                array_flip($_extend),
+                array_flip(['_mail', '_contacts', '_notes', '_todos', '_calendar', '_talk', '_deck'])
+            );
+            if (empty($linkedExtend) === false) {
+                $serialized = $entity->jsonSerialize();
+                $enriched   = $this->linkedEntityEnricher->enrich($serialized, $linkedExtend);
+                // Update the linked type values on the entity.
+                foreach ($linkedExtend as $key => $unused) {
+                    if (isset($enriched[$key]) === true) {
+                        $setter = 'set'.ucfirst(ltrim($key, '_'));
+                        $entity->$setter($enriched[$key]);
+                    }
+                }
+            }
         }
 
         // Evaluate computed fields with evaluateOn: 'read'.

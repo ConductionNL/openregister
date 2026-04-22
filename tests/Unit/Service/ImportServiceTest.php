@@ -70,7 +70,6 @@ class ImportServiceTest extends TestCase
         $this->jobList = $this->createMock(IJobList::class);
 
         $this->service = new ImportService(
-            $this->objectMapper,
             $this->schemaMapper,
             $this->objectService,
             $this->logger,
@@ -1955,31 +1954,6 @@ class ImportServiceTest extends TestCase
     }
 
     // =========================================================================
-    // Private method testing via Reflection: addPublishedDateToObjects
-    // =========================================================================
-
-    public function testAddPublishedDateToObjects(): void
-    {
-        $ref = new ReflectionClass($this->service);
-        $method = $ref->getMethod('addPublishedDateToObjects');
-        $method->setAccessible(true);
-
-        $objects = [
-            ['name' => 'Obj1'],
-            ['name' => 'Obj2', '@self' => []],
-            ['name' => 'Obj3', '@self' => ['published' => '2025-01-01']],
-        ];
-
-        $result = $method->invoke($this->service, $objects, '2025-06-15T12:00:00+00:00');
-
-        // Obj1: @self created and published set.
-        $this->assertSame('2025-06-15T12:00:00+00:00', $result[0]['@self']['published']);
-        // Obj2: published set.
-        $this->assertSame('2025-06-15T12:00:00+00:00', $result[1]['@self']['published']);
-        // Obj3: already has published date, should NOT be overwritten.
-        $this->assertSame('2025-01-01', $result[2]['@self']['published']);
-    }
-
     // =========================================================================
     // Private method testing via Reflection: isUserAdmin
     // =========================================================================

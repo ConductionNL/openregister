@@ -85,6 +85,9 @@ class CacheHandlerCoverageTest extends TestCase
     /** @var IUserSession&MockObject */
     private IUserSession $userSession;
 
+    /** @var array Service map for container mock — tests can add services here. */
+    private array $containerServices = [];
+
     /** @var RegisterMapper&MockObject */
     private RegisterMapper $registerMapper;
 
@@ -106,6 +109,17 @@ class CacheHandlerCoverageTest extends TestCase
         $this->nameDistributedCache = $this->createMock(IMemcache::class);
         $this->container = $this->createMock(IAppContainer::class);
         $this->userSession = $this->createMock(IUserSession::class);
+
+        // Set up container callback that uses containerServices map.
+        // Tests can add services like IndexService to $this->containerServices before calling createHandler.
+        $this->containerServices = [];
+        $this->containerServices[MagicMapper::class] = $this->objectMapper;
+
+        $servicesRef = &$this->containerServices;
+        $this->container->method('get')
+            ->willReturnCallback(function (string $class) use (&$servicesRef) {
+                return $servicesRef[$class] ?? null;
+            });
         $this->registerMapper = $this->createMock(RegisterMapper::class);
         $this->schemaMapper = $this->createMock(SchemaMapper::class);
         $this->db = $this->createMock(IDBConnection::class);
@@ -128,13 +142,17 @@ class CacheHandlerCoverageTest extends TestCase
                 });
         }
 
+        $effectiveContainer = null;
+        if ($withContainer === true) {
+            $effectiveContainer = $this->container;
+        }
+
         return new CacheHandler(
-            $this->objectMapper,
             $this->organisationMapper,
             $this->logger,
             $withDistributedCache ? $this->cacheFactory : null,
             $this->userSession,
-            $withContainer ? $this->container : null,
+            $effectiveContainer,
             $this->registerMapper,
             $this->schemaMapper,
             $this->db
@@ -211,7 +229,6 @@ class CacheHandlerCoverageTest extends TestCase
             ->willThrowException(new \Exception('Redis unavailable'));
 
         $handler = new CacheHandler(
-            $this->objectMapper,
             $this->organisationMapper,
             $this->logger,
             $cacheFactory,
@@ -240,7 +257,7 @@ class CacheHandlerCoverageTest extends TestCase
 
     public function testGetObjectCacheMissLoadsFromDb(): void
     {
-        $handler = $this->createHandler(false, false);
+        $handler = $this->createHandler(false, true);
         $entity = $this->createObjectEntity(1, 'uuid-1');
 
         $this->objectMapper->method('find')
@@ -319,7 +336,7 @@ class CacheHandlerCoverageTest extends TestCase
 
     public function testPreloadObjectsFromDb(): void
     {
-        $handler = $this->createHandler(false, false);
+        $handler = $this->createHandler(false, true);
         $entity = $this->createObjectEntity(1, 'uuid-1');
 
         $this->objectMapper->method('findMultiple')
@@ -745,8 +762,7 @@ class CacheHandlerCoverageTest extends TestCase
         $indexService = $this->createMock(IndexService::class);
         $indexService->method('commit')->willReturn(true);
 
-        $this->container->method('get')
-            ->willReturn($indexService);
+        $this->containerServices[\OCA\OpenRegister\Service\IndexService::class] = $indexService;
 
         $result = $handler->commitSolr();
         $this->assertTrue($result['success']);
@@ -759,8 +775,7 @@ class CacheHandlerCoverageTest extends TestCase
         $indexService = $this->createMock(IndexService::class);
         $indexService->method('commit')->willReturn(false);
 
-        $this->container->method('get')
-            ->willReturn($indexService);
+        $this->containerServices[\OCA\OpenRegister\Service\IndexService::class] = $indexService;
 
         $result = $handler->commitSolr();
         $this->assertFalse($result['success']);
@@ -773,8 +788,7 @@ class CacheHandlerCoverageTest extends TestCase
         $indexService = $this->createMock(IndexService::class);
         $indexService->method('commit')->willThrowException(new \Exception('Connection refused'));
 
-        $this->container->method('get')
-            ->willReturn($indexService);
+        $this->containerServices[\OCA\OpenRegister\Service\IndexService::class] = $indexService;
 
         $result = $handler->commitSolr();
         $this->assertFalse($result['success']);
@@ -977,12 +991,12 @@ class CacheHandlerCoverageTest extends TestCase
 
     public function testIndexObjectInSolrFailure(): void
     {
-        $handler = $this->createHandler(false, true);
         $indexService = $this->createMock(IndexService::class);
         $indexService->method('isAvailable')->willReturn(true);
         $indexService->method('indexObject')->willReturn(false);
 
-        $this->container->method('get')->willReturn($indexService);
+        $this->containerServices[\OCA\OpenRegister\Service\IndexService::class] = $indexService;
+        $handler = $this->createHandler(false, true);
 
         $entity = $this->createObjectEntity();
         $result = $this->invokeMethod($handler, 'indexObjectInSolr', [$entity, false]);

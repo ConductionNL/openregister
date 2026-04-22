@@ -40,7 +40,7 @@ use OCP\EventDispatcher\Event;
  *             ToolRegistrationEvent::class,
  *             function(ToolRegistrationEvent $event) {
  *                 // Get your tool from DI container
- *                 $tool = \OC::$server->get(MyCMSTool::class);
+ *                 $tool = \OCP\Server::get(MyCMSTool::class);
  *
  *                 // Register it with metadata
  *                 $event->registerTool('myapp.cms', $tool, [

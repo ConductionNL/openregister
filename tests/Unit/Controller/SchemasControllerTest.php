@@ -33,6 +33,8 @@ use Psr\Log\LoggerInterface;
  *
  * @package Unit\Controller
  */
+use Psr\Container\ContainerInterface;
+
 class SchemasControllerTest extends TestCase
 {
     private SchemasController $controller;
@@ -79,7 +81,8 @@ class SchemasControllerTest extends TestCase
             $this->schemaCacheService,
             $this->facetCacheSvc,
             $this->schemaService,
-            $this->logger
+            $this->logger,
+            $this->createMock(\Psr\Container\ContainerInterface::class)
         );
     }
 

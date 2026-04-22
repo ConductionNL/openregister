@@ -1,0 +1,226 @@
+{
+  "change": "fix-date-histogram-mariadb",
+  "project": "openregister",
+  "repo": "ConductionNL/openregister",
+  "created": "2026-04-17",
+  "tracking_issue": 1279,
+  "tracking_issue_url": "https://github.com/ConductionNL/openregister/issues/1279",
+  "tasks": [
+    {
+      "id": "1.1",
+      "section": "Phase 1 — Minimal platform branch (unblocks MariaDB)",
+      "title": "Add buildDateKeyExpr helper to MagicFacetHandler",
+      "description": "Add private helper buildDateKeyExpr(string $field, string $interval): string that returns TO_CHAR($field, '<pg-pattern>') on PostgreSQL and DATE_FORMAT($field, '<my-pattern>') on MariaDB/MySQL, with CONCAT(YEAR($field), '-Q', QUARTER($field)) for the quarter interval on MariaDB.",
+      "status": "pending",
+      "spec_ref": "faceting-configuration",
+      "files_likely_affected": ["lib/Db/MagicMapper/MagicFacetHandler.php"]
+    },
+    {
+      "id": "1.2",
+      "section": "Phase 1 — Minimal platform branch (unblocks MariaDB)",
+      "title": "Replace three TO_CHAR call sites with helper",
+      "description": "Replace the three TO_CHAR(...) call sites in MagicFacetHandler with the helper: getDateHistogramFacetUnion() line 812, getDateHistogramFacet() lines 1310 and 1338.",
+      "status": "pending",
+      "spec_ref": "faceting-configuration",
+      "files_likely_affected": ["lib/Db/MagicMapper/MagicFacetHandler.php"]
+    },
+    {
+      "id": "1.3",
+      "section": "Phase 1 — Minimal platform branch (unblocks MariaDB)",
+      "title": "Fix misleading Nextcloud-default comment",
+      "description": "Correct the misleading comment at MagicFacetHandler.php:1308 ('Nextcloud default' is not PostgreSQL); replace with a neutral comment describing the platform branch.",
+      "status": "pending",
+      "spec_ref": "faceting-configuration",
+      "files_likely_affected": ["lib/Db/MagicMapper/MagicFacetHandler.php"]
+    },
+    {
+      "id": "1.4",
+      "section": "Phase 1 — Minimal platform branch (unblocks MariaDB)",
+      "title": "Verify existing tests on both DBs",
+      "description": "Run the existing MagicFacetHandlerIntegrationTest suite on MariaDB (docker-compose.mariadb-test.yml) and confirm no regressions on PostgreSQL (docker-compose.yml).",
+      "status": "pending",
+      "spec_ref": "faceting-configuration",
+      "files_likely_affected": ["tests/Db/MagicFacetHandlerIntegrationTest.php"]
+    },
+    {
+      "id": "1.5",
+      "section": "Phase 1 — Minimal platform branch (unblocks MariaDB)",
+      "title": "Manual smoke test in dev environment",
+      "description": "Manually verify in the dev environment: GET /apps/openregister/api/objects?_facets=<date-field>&_schema=<id> returns populated buckets on MariaDB for interval: year and interval: month.",
+      "status": "pending",
+      "spec_ref": "faceting-configuration",
+      "files_likely_affected": []
+    },
+    {
+      "id": "2.1",
+      "section": "Phase 2 — Correctness follow-ups",
+      "title": "MariaDbFacetHandler week format %Y-%u → %x-%v",
+      "description": "Change MariaDbFacetHandler::getDateFormatForInterval() week case from '%Y-%u' to '%x-%v' (ISO year + ISO week).",
+      "status": "pending",
+      "spec_ref": "faceting-configuration",
+      "files_likely_affected": ["lib/Db/ObjectHandlers/MariaDbFacetHandler.php"]
+    },
+    {
+      "id": "2.2",
+      "section": "Phase 2 — Correctness follow-ups",
+      "title": "MetaDataFacetHandler week format %Y-%u → %x-%v",
+      "description": "Change MetaDataFacetHandler::getDateFormatForInterval() week case from '%Y-%u' to '%x-%v' (same parity).",
+      "status": "pending",
+      "spec_ref": "faceting-configuration",
+      "files_likely_affected": ["lib/Db/ObjectHandlers/MetaDataFacetHandler.php"]
+    },
+    {
+      "id": "2.3",
+      "section": "Phase 2 — Correctness follow-ups",
+      "title": "Fix week-bounds bug via setISODate",
+      "description": "Replace the buggy strtotime($dateKey) week-bounds code in MagicFacetHandler::getDateBoundsForBucket() (lines ~1411-1419) with DateTime::setISODate() matching the correct implementation already present in MariaDbFacetHandler::getDateBoundsForBucket() (lines ~435-445).",
+      "status": "pending",
+      "spec_ref": "faceting-configuration",
+      "files_likely_affected": ["lib/Db/MagicMapper/MagicFacetHandler.php"]
+    },
+    {
+      "id": "2.4",
+      "section": "Phase 2 — Correctness follow-ups",
+      "title": "Verify 2-digit ISO week regex compatibility",
+      "description": "Confirm MariaDbFacetHandler::getDateBoundsForBucket() week regex still accepts 2-digit ISO week from %x-%v output (pattern /^(\\d{4})-(\\d{1,2})$/); widen/pad if needed to handle 2-digit week consistently.",
+      "status": "pending",
+      "spec_ref": "faceting-configuration",
+      "files_likely_affected": ["lib/Db/ObjectHandlers/MariaDbFacetHandler.php"]
+    },
+    {
+      "id": "2.5",
+      "section": "Phase 2 — Correctness follow-ups",
+      "title": "Remove dead legacy QueryBuilder block",
+      "description": "Audit MagicFacetHandler::getDateHistogramFacet() lines 1306-1325: remove the dead 'Fallback: Build query manually (legacy behavior)' $queryBuilder block that is unconditionally overwritten at line 1328. Confirm no private caller bypasses searchHandler/$schema.",
+      "status": "pending",
+      "spec_ref": "faceting-configuration",
+      "files_likely_affected": ["lib/Db/MagicMapper/MagicFacetHandler.php"]
+    },
+    {
+      "id": "3.1",
+      "section": "Tests",
+      "title": "testDateHistogramYearOnMariaDB",
+      "description": "Add testDateHistogramYearOnMariaDB() to MagicFacetHandlerIntegrationTest — inserts rows across 3 years, asserts bucket keys '2023'/'2024' with correct counts and from/to bounds.",
+      "status": "pending",
+      "spec_ref": "faceting-configuration",
+      "files_likely_affected": ["tests/Db/MagicFacetHandlerIntegrationTest.php"]
+    },
+    {
+      "id": "3.2",
+      "section": "Tests",
+      "title": "testDateHistogramMonthOnMariaDB",
+      "description": "Add testDateHistogramMonthOnMariaDB() — asserts '%Y-%m' format buckets and chronological ordering.",
+      "status": "pending",
+      "spec_ref": "faceting-configuration",
+      "files_likely_affected": ["tests/Db/MagicFacetHandlerIntegrationTest.php"]
+    },
+    {
+      "id": "3.3",
+      "section": "Tests",
+      "title": "testDateHistogramDayOnMariaDB",
+      "description": "Add testDateHistogramDayOnMariaDB() — asserts '%Y-%m-%d' format buckets.",
+      "status": "pending",
+      "spec_ref": "faceting-configuration",
+      "files_likely_affected": ["tests/Db/MagicFacetHandlerIntegrationTest.php"]
+    },
+    {
+      "id": "3.4",
+      "section": "Tests",
+      "title": "testDateHistogramWeekIsoOnMariaDB",
+      "description": "Add testDateHistogramWeekIsoOnMariaDB() — inserts a row dated 2023-01-01 (Sunday, ISO week 52 of 2022), asserts bucket key '2022-52'.",
+      "status": "pending",
+      "spec_ref": "faceting-configuration",
+      "files_likely_affected": ["tests/Db/MagicFacetHandlerIntegrationTest.php"]
+    },
+    {
+      "id": "3.5",
+      "section": "Tests",
+      "title": "testDateHistogramQuarterOnMariaDB",
+      "description": "Add testDateHistogramQuarterOnMariaDB() — asserts keys '2024-Q1', '2024-Q3' via CONCAT(YEAR(...), '-Q', QUARTER(...)).",
+      "status": "pending",
+      "spec_ref": "faceting-configuration",
+      "files_likely_affected": ["tests/Db/MagicFacetHandlerIntegrationTest.php"]
+    },
+    {
+      "id": "3.6",
+      "section": "Tests",
+      "title": "testDateHistogramYearOnPostgresUnchanged",
+      "description": "Add testDateHistogramYearOnPostgresUnchanged() — regression guard: SQL still uses TO_CHAR(..., 'YYYY').",
+      "status": "pending",
+      "spec_ref": "faceting-configuration",
+      "files_likely_affected": ["tests/Db/MagicFacetHandlerIntegrationTest.php"]
+    },
+    {
+      "id": "3.7",
+      "section": "Tests",
+      "title": "testWeekBoundsUseIsoWeek",
+      "description": "Add testWeekBoundsUseIsoWeek() — unit test: getDateBoundsForBucket('2025-12', 'week') returns {from: '2025-03-17', to: '2025-03-23'}, not December 2025.",
+      "status": "pending",
+      "spec_ref": "faceting-configuration",
+      "files_likely_affected": ["tests/Db/MagicFacetHandlerIntegrationTest.php"]
+    },
+    {
+      "id": "3.8",
+      "section": "Tests",
+      "title": "testWeekBoundsWeekOneOfIsoYear",
+      "description": "Add testWeekBoundsWeekOneOfIsoYear() — getDateBoundsForBucket('2024-01', 'week') returns {from: '2024-01-01', to: '2024-01-07'}.",
+      "status": "pending",
+      "spec_ref": "faceting-configuration",
+      "files_likely_affected": ["tests/Db/MagicFacetHandlerIntegrationTest.php"]
+    },
+    {
+      "id": "3.9",
+      "section": "Tests",
+      "title": "Gate DB-specific tests via markTestSkipped",
+      "description": "Gate DB-specific assertions with markTestSkipped() when getDatabasePlatform() does not match.",
+      "status": "pending",
+      "spec_ref": "faceting-configuration",
+      "files_likely_affected": ["tests/Db/MagicFacetHandlerIntegrationTest.php"]
+    },
+    {
+      "id": "4.1",
+      "section": "Verification",
+      "title": "composer check:strict green",
+      "description": "Run composer check:strict — all PHPCS/PHPMD/Psalm/PHPStan green. Fix any pre-existing issues touched by the diff (per CLAUDE.md rule).",
+      "status": "pending",
+      "spec_ref": "faceting-configuration",
+      "files_likely_affected": []
+    },
+    {
+      "id": "4.2",
+      "section": "Verification",
+      "title": "Full PHPUnit suite on both DBs",
+      "description": "Run full PHPUnit suite against both DB services in docker-compose (PostgreSQL default + docker-compose.mariadb-test.yml).",
+      "status": "pending",
+      "spec_ref": "faceting-configuration",
+      "files_likely_affected": []
+    },
+    {
+      "id": "4.3",
+      "section": "Verification",
+      "title": "Smoke-test dependent apps on MariaDB",
+      "description": "Smoke-test downstream apps: run opencatalogi and softwarecatalog facet requests against a MariaDB-backed dev instance and confirm date-based filters produce buckets.",
+      "status": "pending",
+      "spec_ref": "faceting-configuration",
+      "files_likely_affected": []
+    },
+    {
+      "id": "4.4",
+      "section": "Verification",
+      "title": "CI passes on both matrix jobs",
+      "description": "Confirm CI runs the MariaDB matrix job from mariadb-ci-matrix spec and both jobs pass on the PR.",
+      "status": "pending",
+      "spec_ref": "faceting-configuration",
+      "files_likely_affected": []
+    },
+    {
+      "id": "4.5",
+      "section": "Verification",
+      "title": "Update faceting-configuration spec header",
+      "description": "Update openregister/openspec/specs/faceting-configuration/spec.md: add this change to the OpenSpec changes list in the header; confirm Status line reflects in-progress while change is active.",
+      "status": "pending",
+      "spec_ref": "faceting-configuration",
+      "files_likely_affected": ["openspec/specs/faceting-configuration/spec.md"]
+    }
+  ]
+}

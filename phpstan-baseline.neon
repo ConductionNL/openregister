@@ -1,6 +1,36 @@
 parameters:
 	ignoreErrors:
 		-
+			message: "#^Parameter \\$nonceManager of method OCA\\\\OpenRegister\\\\Controller\\\\GraphQLController\\:\\:__construct\\(\\) has invalid type OC\\\\Security\\\\CSP\\\\ContentSecurityPolicyNonceManager\\.$#"
+			count: 2
+			path: lib/Controller/GraphQLController.php
+
+		-
+			message: "#^Property OCA\\\\OpenRegister\\\\Controller\\\\GraphQLController\\:\\:\\$nonceManager has unknown class OC\\\\Security\\\\CSP\\\\ContentSecurityPolicyNonceManager as its type\\.$#"
+			count: 2
+			path: lib/Controller/GraphQLController.php
+
+		-
+			message: "#^Parameter \\$csrfManager of method OCA\\\\OpenRegister\\\\Controller\\\\GraphQLController\\:\\:__construct\\(\\) has invalid type OC\\\\Security\\\\CSRF\\\\CsrfTokenManager\\.$#"
+			count: 2
+			path: lib/Controller/GraphQLController.php
+
+		-
+			message: "#^Property OCA\\\\OpenRegister\\\\Controller\\\\GraphQLController\\:\\:\\$csrfManager has unknown class OC\\\\Security\\\\CSRF\\\\CsrfTokenManager as its type\\.$#"
+			count: 2
+			path: lib/Controller/GraphQLController.php
+
+		-
+			message: "#^Call to method getNonce\\(\\) on an unknown class OC\\\\Security\\\\CSP\\\\ContentSecurityPolicyNonceManager\\.$#"
+			count: 1
+			path: lib/Controller/GraphQLController.php
+
+		-
+			message: "#^Call to method getToken\\(\\) on an unknown class OC\\\\Security\\\\CSRF\\\\CsrfTokenManager\\.$#"
+			count: 1
+			path: lib/Controller/GraphQLController.php
+
+		-
 			message: "#^Parameter \\$container of class OCA\\\\OpenRegister\\\\Service\\\\Object\\\\CacheHandler constructor expects OCP\\\\AppFramework\\\\IAppContainer\\|null, Psr\\\\Container\\\\ContainerInterface given\\.$#"
 			count: 1
 			path: lib/AppInfo/Application.php
@@ -16,6 +46,21 @@ parameters:
 			path: lib/AppInfo/Application.php
 
 		-
+			message: "#^Call to method getNextRunDate\\(\\) on an unknown class Cron\\\\CronExpression\\.$#"
+			count: 1
+			path: lib/BackgroundJob/ActionScheduleJob.php
+
+		-
+			message: "#^Instantiated class Cron\\\\CronExpression not found\\.$#"
+			count: 1
+			path: lib/BackgroundJob/ActionScheduleJob.php
+
+		-
+			message: "#^PHPDoc tag @param references unknown parameter\\: \\$arguments$#"
+			count: 1
+			path: lib/BackgroundJob/ActionScheduleJob.php
+
+		-
 			message: "#^Access to constant class on an unknown class Doctrine\\\\DBAL\\\\Platforms\\\\AbstractPlatform\\.$#"
 			count: 1
 			path: lib/BackgroundJob/BlobMigrationJob.php
@@ -24,6 +69,26 @@ parameters:
 			message: "#^Variable \\$fileId on left side of \\?\\? always exists and is not nullable\\.$#"
 			count: 1
 			path: lib/BackgroundJob/CronFileTextExtractionJob.php
+
+		-
+			message: "#^Unknown parameter \\$filters in call to method OCA\\\\OpenRegister\\\\Db\\\\OrganisationMapper\\:\\:findAll\\(\\)\\.$#"
+			count: 1
+			path: lib/BackgroundJob/TenantDeprovisionJob.php
+
+		-
+			message: "#^Unknown parameter \\$filters in call to method OCA\\\\OpenRegister\\\\Db\\\\OrganisationMapper\\:\\:findAll\\(\\)\\.$#"
+			count: 1
+			path: lib/BackgroundJob/TenantPurgeJob.php
+
+		-
+			message: "#^Unknown parameter \\$filters in call to method OCA\\\\OpenRegister\\\\Db\\\\OrganisationMapper\\:\\:findAll\\(\\)\\.$#"
+			count: 1
+			path: lib/BackgroundJob/TenantUsageSyncJob.php
+
+		-
+			message: "#^Property OCA\\\\OpenRegister\\\\Calendar\\\\RegisterCalendarProvider\\:\\:\\$userSession is never read, only written\\.$#"
+			count: 1
+			path: lib/Calendar/RegisterCalendarProvider.php
 
 		-
 			message: "#^Call to an undefined method OCA\\\\OpenRegister\\\\Db\\\\Register\\:\\:getName\\(\\)\\.$#"
@@ -54,6 +119,16 @@ parameters:
 			message: "#^Offset 'success' does not exist on array\\{results\\: mixed, total\\: mixed, start\\: mixed\\}\\.$#"
 			count: 4
 			path: lib/Command/SolrManagementCommand.php
+
+		-
+			message: "#^Missing parameter \\$id \\(int\\) in call to method OCA\\\\OpenRegister\\\\Controller\\\\ActionsController\\:\\:update\\(\\)\\.$#"
+			count: 1
+			path: lib/Controller/ActionsController.php
+
+		-
+			message: "#^Unknown parameter \\$objectId in call to method OCA\\\\OpenRegister\\\\Controller\\\\ActionsController\\:\\:update\\(\\)\\.$#"
+			count: 1
+			path: lib/Controller/ActionsController.php
 
 		-
 			message: "#^Method OCA\\\\OpenRegister\\\\Controller\\\\AgentsController\\:\\:index\\(\\) should return OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<200\\|500, array\\{error\\?\\: 'Failed to retrieve…', results\\?\\: array\\<OCA\\\\OpenRegister\\\\Db\\\\Agent\\>\\}, array\\> but returns OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<200, array\\{results\\: array\\<OCA\\\\OpenRegister\\\\Db\\\\Agent\\>\\}, array\\{\\}\\>\\.$#"
@@ -146,6 +221,26 @@ parameters:
 			path: lib/Controller/ApplicationsController.php
 
 		-
+			message: "#^Property OCA\\\\OpenRegister\\\\Controller\\\\ApprovalController\\:\\:\\$logger is never read, only written\\.$#"
+			count: 1
+			path: lib/Controller/ApprovalController.php
+
+		-
+			message: "#^Call to an undefined method OCA\\\\OpenRegister\\\\Db\\\\MagicMapper\\:\\:findByUuid\\(\\)\\.$#"
+			count: 5
+			path: lib/Controller/ArchivalController.php
+
+		-
+			message: "#^Call to an undefined method OCA\\\\OpenRegister\\\\Db\\\\AuditTrailMapper\\:\\:findByIdentifier\\(\\)\\.$#"
+			count: 1
+			path: lib/Controller/AuditTrailController.php
+
+		-
+			message: "#^Call to an undefined method OCA\\\\OpenRegister\\\\Db\\\\AuditTrailMapper\\:\\:getProcessingActivities\\(\\)\\.$#"
+			count: 1
+			path: lib/Controller/AuditTrailController.php
+
+		-
 			message: "#^Method OCA\\\\OpenRegister\\\\Controller\\\\AuditTrailController\\:\\:index\\(\\) should return OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<200, array\\{results\\: array\\<OCA\\\\OpenRegister\\\\Db\\\\AuditTrail\\>, total\\: int\\<0, max\\>, page\\: int\\|null, pages\\: float, limit\\: int, offset\\: int\\|null\\}, array\\> but returns OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<200, array\\{results\\: array\\<OCA\\\\OpenRegister\\\\Db\\\\AuditTrail\\>, total\\: int, page\\: mixed, pages\\: float, limit\\: mixed, offset\\: mixed\\}, array\\{\\}\\>\\.$#"
 			count: 1
 			path: lib/Controller/AuditTrailController.php
@@ -176,11 +271,6 @@ parameters:
 			path: lib/Controller/AuditTrailController.php
 
 		-
-			message: "#^Unreachable statement \\- code above always terminates\\.$#"
-			count: 1
-			path: lib/Controller/AuditTrailController.php
-
-		-
 			message: "#^Method OCA\\\\OpenRegister\\\\Controller\\\\BulkController\\:\\:save\\(\\) should return OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<200\\|400\\|404\\|500, array\\{error\\?\\: string, success\\?\\: true, message\\?\\: 'Bulk save operation…', saved_count\\?\\: mixed, saved_objects\\?\\: array\\<string, mixed\\>, requested_count\\?\\: int\\<0, max\\>\\}, array\\> but returns OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<200, array\\{success\\: bool, message\\: string, saved_count\\: \\(array\\|float\\|int\\), saved_objects\\: array\\<string, mixed\\>, requested_count\\: int\\}, array\\{\\}\\>\\.$#"
 			count: 1
 			path: lib/Controller/BulkController.php
@@ -199,6 +289,26 @@ parameters:
 			message: "#^Method OCA\\\\OpenRegister\\\\Controller\\\\BulkController\\:\\:save\\(\\) should return OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<200\\|400\\|404\\|500, array\\{error\\?\\: string, success\\?\\: true, message\\?\\: 'Bulk save operation…', saved_count\\?\\: mixed, saved_objects\\?\\: array\\<string, mixed\\>, requested_count\\?\\: int\\<0, max\\>\\}, array\\> but returns OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<500, array\\{error\\: string\\}, array\\{\\}\\>\\.$#"
 			count: 1
 			path: lib/Controller/BulkController.php
+
+		-
+			message: "#^Missing parameter \\$id \\(string\\) in call to method OCA\\\\OpenRegister\\\\Controller\\\\CalendarEventsController\\:\\:validateObject\\(\\)\\.$#"
+			count: 4
+			path: lib/Controller/CalendarEventsController.php
+
+		-
+			message: "#^Missing parameter \\$register \\(string\\) in call to method OCA\\\\OpenRegister\\\\Controller\\\\CalendarEventsController\\:\\:validateObject\\(\\)\\.$#"
+			count: 4
+			path: lib/Controller/CalendarEventsController.php
+
+		-
+			message: "#^Unknown parameter \\$object in call to method OCA\\\\OpenRegister\\\\Controller\\\\CalendarEventsController\\:\\:validateObject\\(\\)\\.$#"
+			count: 4
+			path: lib/Controller/CalendarEventsController.php
+
+		-
+			message: "#^Unknown parameter \\$schemaObject in call to method OCA\\\\OpenRegister\\\\Controller\\\\CalendarEventsController\\:\\:validateObject\\(\\)\\.$#"
+			count: 4
+			path: lib/Controller/CalendarEventsController.php
 
 		-
 			message: "#^Method OCA\\\\OpenRegister\\\\Controller\\\\ChatController\\:\\:getChatStats\\(\\) should return OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<200\\|500, array\\{error\\?\\: 'Failed to get chat…', message\\?\\: string, total_agents\\?\\: int, total_conversations\\?\\: int, total_messages\\?\\: int\\}, array\\> but returns OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<200, array\\{total_agents\\: int, total_conversations\\: int, total_messages\\: int\\}, array\\{\\}\\>\\.$#"
@@ -426,6 +536,36 @@ parameters:
 			path: lib/Controller/ConfigurationsController.php
 
 		-
+			message: "#^Method OCA\\\\OpenRegister\\\\Service\\\\ContactService\\:\\:unlinkContact\\(\\) invoked with 2 parameters, 1 required\\.$#"
+			count: 1
+			path: lib/Controller/ContactsController.php
+
+		-
+			message: "#^Missing parameter \\$id \\(string\\) in call to method OCA\\\\OpenRegister\\\\Controller\\\\ContactsController\\:\\:validateObject\\(\\)\\.$#"
+			count: 4
+			path: lib/Controller/ContactsController.php
+
+		-
+			message: "#^Missing parameter \\$register \\(string\\) in call to method OCA\\\\OpenRegister\\\\Controller\\\\ContactsController\\:\\:validateObject\\(\\)\\.$#"
+			count: 4
+			path: lib/Controller/ContactsController.php
+
+		-
+			message: "#^Parameter \\#1 \\$linkId of method OCA\\\\OpenRegister\\\\Service\\\\ContactService\\:\\:unlinkContact\\(\\) expects int, string\\|null given\\.$#"
+			count: 1
+			path: lib/Controller/ContactsController.php
+
+		-
+			message: "#^Unknown parameter \\$object in call to method OCA\\\\OpenRegister\\\\Controller\\\\ContactsController\\:\\:validateObject\\(\\)\\.$#"
+			count: 4
+			path: lib/Controller/ContactsController.php
+
+		-
+			message: "#^Unknown parameter \\$schemaObject in call to method OCA\\\\OpenRegister\\\\Controller\\\\ContactsController\\:\\:validateObject\\(\\)\\.$#"
+			count: 4
+			path: lib/Controller/ContactsController.php
+
+		-
 			message: "#^Method OCA\\\\OpenRegister\\\\Controller\\\\ConversationController\\:\\:create\\(\\) should return OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<201\\|500, array\\{error\\?\\: 'Failed to create…', message\\?\\: string, id\\?\\: int, uuid\\?\\: string\\|null, title\\?\\: string\\|null, userId\\?\\: string\\|null, organisation\\?\\: string\\|null, agentId\\?\\: int\\|null, \\.\\.\\.\\}, array\\> but returns OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<201, array\\{id\\: int, uuid\\: string\\|null, title\\: string\\|null, userId\\: string\\|null, organisation\\: string\\|null, agentId\\: int\\|null, metadata\\: array\\|null, deletedAt\\: string\\|null, \\.\\.\\.\\}, array\\{\\}\\>\\.$#"
 			count: 1
 			path: lib/Controller/ConversationController.php
@@ -541,6 +681,36 @@ parameters:
 			path: lib/Controller/DashboardController.php
 
 		-
+			message: "#^Method OCA\\\\OpenRegister\\\\Service\\\\DeckCardService\\:\\:unlinkCard\\(\\) invoked with 2 parameters, 1 required\\.$#"
+			count: 1
+			path: lib/Controller/DeckController.php
+
+		-
+			message: "#^Missing parameter \\$id \\(string\\) in call to method OCA\\\\OpenRegister\\\\Controller\\\\DeckController\\:\\:validateObject\\(\\)\\.$#"
+			count: 3
+			path: lib/Controller/DeckController.php
+
+		-
+			message: "#^Missing parameter \\$register \\(string\\) in call to method OCA\\\\OpenRegister\\\\Controller\\\\DeckController\\:\\:validateObject\\(\\)\\.$#"
+			count: 3
+			path: lib/Controller/DeckController.php
+
+		-
+			message: "#^Parameter \\#1 \\$linkId of method OCA\\\\OpenRegister\\\\Service\\\\DeckCardService\\:\\:unlinkCard\\(\\) expects int, string\\|null given\\.$#"
+			count: 1
+			path: lib/Controller/DeckController.php
+
+		-
+			message: "#^Unknown parameter \\$object in call to method OCA\\\\OpenRegister\\\\Controller\\\\DeckController\\:\\:validateObject\\(\\)\\.$#"
+			count: 3
+			path: lib/Controller/DeckController.php
+
+		-
+			message: "#^Unknown parameter \\$schemaObject in call to method OCA\\\\OpenRegister\\\\Controller\\\\DeckController\\:\\:validateObject\\(\\)\\.$#"
+			count: 3
+			path: lib/Controller/DeckController.php
+
+		-
 			message: "#^Method OCA\\\\OpenRegister\\\\Controller\\\\DeletedController\\:\\:index\\(\\) should return OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<200\\|500, array\\{error\\?\\: string, results\\?\\: array\\<int, OCA\\\\OpenRegister\\\\Db\\\\ObjectEntity\\>, total\\?\\: int, page\\?\\: int, pages\\?\\: 1\\|float, limit\\?\\: int\\|null, offset\\?\\: int\\|null\\}, array\\> but returns OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<200, array\\{results\\: array\\<int, mixed\\>, total\\: mixed, page\\: mixed, pages\\: float\\|int, limit\\: mixed, offset\\: mixed\\}, array\\{\\}\\>\\.$#"
 			count: 1
 			path: lib/Controller/DeletedController.php
@@ -559,6 +729,11 @@ parameters:
 			message: "#^Property OCA\\\\OpenRegister\\\\Controller\\\\DeletedController\\:\\:\\$schemaMapper is never read, only written\\.$#"
 			count: 1
 			path: lib/Controller/DeletedController.php
+
+		-
+			message: "#^Property OCA\\\\OpenRegister\\\\Controller\\\\EmailsController\\:\\:\\$userSession is never read, only written\\.$#"
+			count: 1
+			path: lib/Controller/EmailsController.php
 
 		-
 			message: "#^Call to an undefined method OCA\\\\OpenRegister\\\\Db\\\\Endpoint\\:\\:getName\\(\\)\\.$#"
@@ -1296,6 +1471,11 @@ parameters:
 			path: lib/Controller/OrganisationController.php
 
 		-
+			message: "#^Variable \\$organisation might not be defined\\.$#"
+			count: 1
+			path: lib/Controller/OrganisationController.php
+
+		-
 			message: "#^Method OCA\\\\OpenRegister\\\\Controller\\\\RegistersController\\:\\:create\\(\\) should return OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<int, array\\{error\\: string\\}, array\\>\\|OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<201, OCA\\\\OpenRegister\\\\Db\\\\Register, array\\> but returns OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<100\\|101\\|102\\|200\\|201\\|202\\|203\\|204\\|205\\|206\\|207\\|208\\|226\\|300\\|301\\|302\\|303\\|304\\|305\\|306\\|307\\|400\\|401\\|402\\|403\\|404\\|405\\|406\\|407\\|408\\|409\\|410\\|411\\|412\\|413\\|414\\|415\\|416\\|417\\|418\\|422\\|423\\|424\\|426\\|428\\|429\\|431\\|500\\|501\\|502\\|503\\|504\\|505\\|506\\|507\\|508\\|509\\|510\\|511, array\\{error\\: string\\}, array\\{\\}\\>\\.$#"
 			count: 2
 			path: lib/Controller/RegistersController.php
@@ -1386,6 +1566,16 @@ parameters:
 			path: lib/Controller/RegistersController.php
 
 		-
+			message: "#^Method OCA\\\\OpenRegister\\\\Controller\\\\RegistersController\\:\\:update\\(\\) should return OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<int, array\\{error\\: string\\}, array\\>\\|OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<200, OCA\\\\OpenRegister\\\\Db\\\\Register, array\\> but returns OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<403, array\\{error\\: string\\}, array\\{\\}\\>\\.$#"
+			count: 1
+			path: lib/Controller/RegistersController.php
+
+		-
+			message: "#^Method OCA\\\\OpenRegister\\\\Controller\\\\RegistersController\\:\\:update\\(\\) should return OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<int, array\\{error\\: string\\}, array\\>\\|OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<200, OCA\\\\OpenRegister\\\\Db\\\\Register, array\\> but returns OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<404, array\\{error\\: string\\}, array\\{\\}\\>\\.$#"
+			count: 1
+			path: lib/Controller/RegistersController.php
+
+		-
 			message: "#^Offset 'id' on array\\{id\\: int, uuid\\: string\\|null, uri\\: string\\|null, slug\\: string\\|null, title\\: string\\|null, description\\: string\\|null, version\\: string\\|null, summary\\: string\\|null, \\.\\.\\.\\} on left side of \\?\\? always exists and is not nullable\\.$#"
 			count: 1
 			path: lib/Controller/RegistersController.php
@@ -1434,6 +1624,26 @@ parameters:
 			message: "#^Unknown parameter \\$_multitenancy in call to method OCA\\\\OpenRegister\\\\Db\\\\SchemaMapper\\:\\:find\\(\\)\\.$#"
 			count: 1
 			path: lib/Controller/RegistersController.php
+
+		-
+			message: "#^Property OCA\\\\OpenRegister\\\\Controller\\\\RetentionController\\:\\:\\$saveObject is never read, only written\\.$#"
+			count: 1
+			path: lib/Controller/RetentionController.php
+
+		-
+			message: "#^Property OCA\\\\OpenRegister\\\\Controller\\\\RetentionController\\:\\:\\$settingsHandler is never read, only written\\.$#"
+			count: 1
+			path: lib/Controller/RetentionController.php
+
+		-
+			message: "#^Strict comparison using \\=\\=\\= between OCA\\\\OpenRegister\\\\Db\\\\ObjectEntity and null will always evaluate to false\\.$#"
+			count: 4
+			path: lib/Controller/RetentionController.php
+
+		-
+			message: "#^Property OCA\\\\OpenRegister\\\\Controller\\\\ScheduledWorkflowController\\:\\:\\$logger is never read, only written\\.$#"
+			count: 1
+			path: lib/Controller/ScheduledWorkflowController.php
 
 		-
 			message: "#^Method OCA\\\\OpenRegister\\\\Controller\\\\SchemasController\\:\\:create\\(\\) should return OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<int, array\\{error\\: string\\}, array\\>\\|OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<201, OCA\\\\OpenRegister\\\\Db\\\\Schema, array\\> but returns OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<100\\|101\\|102\\|200\\|201\\|202\\|203\\|204\\|205\\|206\\|207\\|208\\|226\\|300\\|301\\|302\\|303\\|304\\|305\\|306\\|307\\|400\\|401\\|402\\|403\\|404\\|405\\|406\\|407\\|408\\|409\\|410\\|411\\|412\\|413\\|414\\|415\\|416\\|417\\|418\\|422\\|423\\|424\\|426\\|428\\|429\\|431\\|500\\|501\\|502\\|503\\|504\\|505\\|506\\|507\\|508\\|509\\|510\\|511, array\\{error\\: string\\}, array\\{\\}\\>\\.$#"
@@ -1532,6 +1742,16 @@ parameters:
 
 		-
 			message: "#^Method OCA\\\\OpenRegister\\\\Controller\\\\SchemasController\\:\\:update\\(\\) should return OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<int, array\\{error\\: string\\}, array\\>\\|OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<200, OCA\\\\OpenRegister\\\\Db\\\\Schema, array\\> but returns OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<400, array\\{error\\: string\\}, array\\{\\}\\>\\.$#"
+			count: 1
+			path: lib/Controller/SchemasController.php
+
+		-
+			message: "#^Method OCA\\\\OpenRegister\\\\Controller\\\\SchemasController\\:\\:update\\(\\) should return OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<int, array\\{error\\: string\\}, array\\>\\|OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<200, OCA\\\\OpenRegister\\\\Db\\\\Schema, array\\> but returns OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<403, array\\{error\\: string\\}, array\\{\\}\\>\\.$#"
+			count: 1
+			path: lib/Controller/SchemasController.php
+
+		-
+			message: "#^Method OCA\\\\OpenRegister\\\\Controller\\\\SchemasController\\:\\:update\\(\\) should return OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<int, array\\{error\\: string\\}, array\\>\\|OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<200, OCA\\\\OpenRegister\\\\Db\\\\Schema, array\\> but returns OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<404, array\\{error\\: string\\}, array\\{\\}\\>\\.$#"
 			count: 1
 			path: lib/Controller/SchemasController.php
 
@@ -1734,6 +1954,11 @@ parameters:
 			message: "#^Property OCA\\\\OpenRegister\\\\Controller\\\\Settings\\\\ConfigurationSettingsController\\:\\:\\$logger is never read, only written\\.$#"
 			count: 1
 			path: lib/Controller/Settings/ConfigurationSettingsController.php
+
+		-
+			message: "#^Property OCA\\\\OpenRegister\\\\Controller\\\\Settings\\\\EdepotSettingsController\\:\\:\\$logger is never read, only written\\.$#"
+			count: 1
+			path: lib/Controller/Settings/EdepotSettingsController.php
 
 		-
 			message: "#^Method OCA\\\\OpenRegister\\\\Controller\\\\Settings\\\\FileSettingsController\\:\\:getFileExtractionStats\\(\\) should return OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<200, array\\{success\\: true, totalFiles\\: mixed, processedFiles\\: mixed, pendingFiles\\: mixed, untrackedFiles\\: mixed, totalChunks\\: mixed, extractedTextStorageMB\\: string, totalFilesStorageMB\\: string, \\.\\.\\.\\}, array\\> but returns OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<200, array\\{success\\: bool, totalFiles\\: int, processedFiles\\: int, pendingFiles\\: int, untrackedFiles\\: int, totalChunks\\: int, extractedTextStorageMB\\: string, totalFilesStorageMB\\: string, \\.\\.\\.\\}, array\\{\\}\\>\\.$#"
@@ -2436,14 +2661,59 @@ parameters:
 			path: lib/Controller/TagsController.php
 
 		-
-			message: "#^Property OCA\\\\OpenRegister\\\\Controller\\\\TagsController\\:\\:\\$objectService is never read, only written\\.$#"
+			message: "#^Missing parameter \\$id \\(int\\|string\\) in call to method OCA\\\\OpenRegister\\\\Service\\\\ObjectService\\:\\:find\\(\\)\\.$#"
 			count: 1
-			path: lib/Controller/TagsController.php
+			path: lib/Controller/TmloController.php
+
+		-
+			message: "#^Parameter \\#1 \\$data of class OCP\\\\AppFramework\\\\Http\\\\DataResponse constructor expects T of OCP\\\\AppFramework\\\\Http\\\\DataResponseType, string given\\.$#"
+			count: 2
+			path: lib/Controller/TmloController.php
+
+		-
+			message: "#^Unknown parameter \\$filters in call to method OCA\\\\OpenRegister\\\\Service\\\\ObjectService\\:\\:findAll\\(\\)\\.$#"
+			count: 2
+			path: lib/Controller/TmloController.php
+
+		-
+			message: "#^Unknown parameter \\$identifier in call to method OCA\\\\OpenRegister\\\\Service\\\\ObjectService\\:\\:find\\(\\)\\.$#"
+			count: 1
+			path: lib/Controller/TmloController.php
+
+		-
+			message: "#^Unknown parameter \\$register in call to method OCA\\\\OpenRegister\\\\Service\\\\ObjectService\\:\\:findAll\\(\\)\\.$#"
+			count: 2
+			path: lib/Controller/TmloController.php
+
+		-
+			message: "#^Unknown parameter \\$schema in call to method OCA\\\\OpenRegister\\\\Service\\\\ObjectService\\:\\:findAll\\(\\)\\.$#"
+			count: 2
+			path: lib/Controller/TmloController.php
+
+		-
+			message: "#^Property OCA\\\\OpenRegister\\\\Controller\\\\TransferController\\:\\:\\$transferListService is never read, only written\\.$#"
+			count: 1
+			path: lib/Controller/TransferController.php
+
+		-
+			message: "#^Property OCA\\\\OpenRegister\\\\Controller\\\\TransferController\\:\\:\\$transferService is never read, only written\\.$#"
+			count: 1
+			path: lib/Controller/TransferController.php
 
 		-
 			message: "#^Method OCA\\\\OpenRegister\\\\Controller\\\\UiController\\:\\:makeSpaResponse\\(\\) should return OCP\\\\AppFramework\\\\Http\\\\TemplateResponse but returns static\\(OCP\\\\AppFramework\\\\Http\\\\Response\\<int, array\\<string, mixed\\>\\>\\)\\.$#"
 			count: 1
 			path: lib/Controller/UiController.php
+
+		-
+			message: "#^Parameter \\$statusCode of class OCP\\\\AppFramework\\\\Http\\\\JSONResponse constructor expects S of 100\\|101\\|102\\|200\\|201\\|202\\|203\\|204\\|205\\|206\\|207\\|208\\|226\\|300\\|301\\|302\\|303\\|304\\|305\\|306\\|307\\|400\\|401\\|402\\|403\\|404\\|405\\|406\\|407\\|408\\|409\\|410\\|411\\|412\\|413\\|414\\|415\\|416\\|417\\|418\\|422\\|423\\|424\\|426\\|428\\|429\\|431\\|500\\|501\\|502\\|503\\|504\\|505\\|506\\|507\\|508\\|509\\|510\\|511, int given\\.$#"
+			count: 1
+			path: lib/Controller/UserController.php
+
+		-
+			message: "#^Property OCA\\\\OpenRegister\\\\Controller\\\\UserController\\:\\:\\$l10n is never read, only written\\.$#"
+			count: 1
+			path: lib/Controller/UserController.php
 
 		-
 			message: "#^Method OCA\\\\OpenRegister\\\\Controller\\\\UserSettingsController\\:\\:removeGitHubToken\\(\\) should return OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<200\\|401\\|500, array\\{error\\?\\: 'Failed to remove…'\\|'User not…', success\\?\\: true, message\\?\\: 'GitHub token…'\\}, array\\> but returns OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<200, array\\{success\\: bool, message\\: string\\}, array\\{\\}\\>\\.$#"
@@ -2551,9 +2821,59 @@ parameters:
 			path: lib/Controller/WebhooksController.php
 
 		-
+			message: "#^Property OCA\\\\OpenRegister\\\\Controller\\\\WorkflowExecutionController\\:\\:\\$logger is never read, only written\\.$#"
+			count: 1
+			path: lib/Controller/WorkflowExecutionController.php
+
+		-
+			message: "#^Parameter \\$objectMapper of method OCA\\\\OpenRegister\\\\Cron\\\\TransferCheckJob\\:\\:__construct\\(\\) has invalid type OCA\\\\OpenRegister\\\\Db\\\\ObjectEntityMapper\\.$#"
+			count: 2
+			path: lib/Cron/TransferCheckJob.php
+
+		-
+			message: "#^Property OCA\\\\OpenRegister\\\\Cron\\\\TransferCheckJob\\:\\:\\$objectMapper has unknown class OCA\\\\OpenRegister\\\\Db\\\\ObjectEntityMapper as its type\\.$#"
+			count: 2
+			path: lib/Cron/TransferCheckJob.php
+
+		-
+			message: "#^Property OCA\\\\OpenRegister\\\\Cron\\\\TransferCheckJob\\:\\:\\$objectMapper is never read, only written\\.$#"
+			count: 1
+			path: lib/Cron/TransferCheckJob.php
+
+		-
 			message: "#^Call to an undefined method OCA\\\\OpenRegister\\\\Db\\\\WebhookLog\\:\\:getWebhookId\\(\\)\\.$#"
 			count: 1
 			path: lib/Cron/WebhookRetryJob.php
+
+		-
+			message: "#^Parameter \\$entity of method OCP\\\\AppFramework\\\\Db\\\\QBMapper\\<OCA\\\\OpenRegister\\\\Db\\\\ActionLog\\>\\:\\:insert\\(\\) expects OCA\\\\OpenRegister\\\\Db\\\\ActionLog, OCP\\\\AppFramework\\\\Db\\\\Entity given\\.$#"
+			count: 1
+			path: lib/Db/ActionLogMapper.php
+
+		-
+			message: "#^Call to an undefined method OCP\\\\AppFramework\\\\Db\\\\Entity\\:\\:getOrganisation\\(\\)\\.$#"
+			count: 1
+			path: lib/Db/ActionMapper.php
+
+		-
+			message: "#^Call to an undefined method OCP\\\\AppFramework\\\\Db\\\\Entity\\:\\:setOrganisation\\(\\)\\.$#"
+			count: 2
+			path: lib/Db/ActionMapper.php
+
+		-
+			message: "#^Parameter \\$entity of method OCP\\\\AppFramework\\\\Db\\\\QBMapper\\<OCA\\\\OpenRegister\\\\Db\\\\Action\\>\\:\\:delete\\(\\) expects OCA\\\\OpenRegister\\\\Db\\\\Action, OCP\\\\AppFramework\\\\Db\\\\Entity given\\.$#"
+			count: 1
+			path: lib/Db/ActionMapper.php
+
+		-
+			message: "#^Parameter \\$entity of method OCP\\\\AppFramework\\\\Db\\\\QBMapper\\<OCA\\\\OpenRegister\\\\Db\\\\Action\\>\\:\\:insert\\(\\) expects OCA\\\\OpenRegister\\\\Db\\\\Action, OCP\\\\AppFramework\\\\Db\\\\Entity given\\.$#"
+			count: 1
+			path: lib/Db/ActionMapper.php
+
+		-
+			message: "#^Parameter \\$entity of method OCP\\\\AppFramework\\\\Db\\\\QBMapper\\<OCA\\\\OpenRegister\\\\Db\\\\Action\\>\\:\\:update\\(\\) expects OCA\\\\OpenRegister\\\\Db\\\\Action, OCP\\\\AppFramework\\\\Db\\\\Entity given\\.$#"
+			count: 1
+			path: lib/Db/ActionMapper.php
 
 		-
 			message: "#^Call to an undefined method OCP\\\\AppFramework\\\\Db\\\\Entity\\:\\:getOrganisation\\(\\)\\.$#"
@@ -2662,12 +2982,12 @@ parameters:
 
 		-
 			message: "#^Parameter \\#1 \\$register of method OCA\\\\OpenRegister\\\\Db\\\\AuditTrail\\:\\:setRegister\\(\\) expects int\\|null, string\\|null given\\.$#"
-			count: 1
+			count: 2
 			path: lib/Db/AuditTrailMapper.php
 
 		-
 			message: "#^Parameter \\#1 \\$schema of method OCA\\\\OpenRegister\\\\Db\\\\AuditTrail\\:\\:setSchema\\(\\) expects int\\|null, string\\|null given\\.$#"
-			count: 1
+			count: 2
 			path: lib/Db/AuditTrailMapper.php
 
 		-
@@ -2734,6 +3054,16 @@ parameters:
 			message: "#^Parameter \\$entity of method OCP\\\\AppFramework\\\\Db\\\\QBMapper\\<OCA\\\\OpenRegister\\\\Db\\\\Conversation\\>\\:\\:update\\(\\) expects OCA\\\\OpenRegister\\\\Db\\\\Conversation, OCP\\\\AppFramework\\\\Db\\\\Entity given\\.$#"
 			count: 1
 			path: lib/Db/ConversationMapper.php
+
+		-
+			message: "#^Missing parameter \\$entity \\(OCP\\\\AppFramework\\\\Db\\\\Entity\\) in call to method OCA\\\\OpenRegister\\\\Db\\\\DestructionListMapper\\:\\:update\\(\\)\\.$#"
+			count: 1
+			path: lib/Db/DestructionListMapper.php
+
+		-
+			message: "#^Unknown parameter \\$objectId in call to method OCA\\\\OpenRegister\\\\Db\\\\DestructionListMapper\\:\\:update\\(\\)\\.$#"
+			count: 1
+			path: lib/Db/DestructionListMapper.php
 
 		-
 			message: "#^Unknown PHPDoc tag\\: @phpstan\\-api$#"
@@ -2812,7 +3142,7 @@ parameters:
 
 		-
 			message: "#^Access to constant class on an unknown class Doctrine\\\\DBAL\\\\Platforms\\\\AbstractPlatform\\.$#"
-			count: 9
+			count: 10
 			path: lib/Db/MagicMapper.php
 
 		-
@@ -2947,7 +3277,7 @@ parameters:
 
 		-
 			message: "#^Class Doctrine\\\\DBAL\\\\Platforms\\\\PostgreSQLPlatform not found\\.$#"
-			count: 2
+			count: 3
 			path: lib/Db/MagicMapper/MagicFacetHandler.php
 
 		-
@@ -3004,6 +3334,11 @@ parameters:
 			message: "#^Unknown parameter \\$_rbac in call to method OCA\\\\OpenRegister\\\\Db\\\\SchemaMapper\\:\\:find\\(\\)\\.$#"
 			count: 4
 			path: lib/Db/MagicMapper/MagicStatisticsHandler.php
+
+		-
+			message: "#^Parameter \\#1 \\$array of function array_flip expects array\\<int\\|string\\>, array\\<array\\> given\\.$#"
+			count: 1
+			path: lib/Db/MagicMapper/MagicTableHandler.php
 
 		-
 			message: "#^Property OCP\\\\AppFramework\\\\Db\\\\Entity\\:\\:\\$id \\(int\\) in isset\\(\\) is not nullable\\.$#"
@@ -3104,6 +3439,41 @@ parameters:
 			message: "#^Strict comparison using \\=\\=\\= between 0\\|1\\|false and true will always evaluate to false\\.$#"
 			count: 1
 			path: lib/Db/ObjectHandlers/MariaDbFacetHandler.php
+
+		-
+			message: "#^Access to an undefined property OCA\\\\OpenRegister\\\\Db\\\\Organisation\\:\\:\\$calendar\\.$#"
+			count: 1
+			path: lib/Db/Organisation.php
+
+		-
+			message: "#^Access to an undefined property OCA\\\\OpenRegister\\\\Db\\\\Organisation\\:\\:\\$contacts\\.$#"
+			count: 1
+			path: lib/Db/Organisation.php
+
+		-
+			message: "#^Access to an undefined property OCA\\\\OpenRegister\\\\Db\\\\Organisation\\:\\:\\$deck\\.$#"
+			count: 1
+			path: lib/Db/Organisation.php
+
+		-
+			message: "#^Access to an undefined property OCA\\\\OpenRegister\\\\Db\\\\Organisation\\:\\:\\$mail\\.$#"
+			count: 1
+			path: lib/Db/Organisation.php
+
+		-
+			message: "#^Access to an undefined property OCA\\\\OpenRegister\\\\Db\\\\Organisation\\:\\:\\$notes\\.$#"
+			count: 1
+			path: lib/Db/Organisation.php
+
+		-
+			message: "#^Access to an undefined property OCA\\\\OpenRegister\\\\Db\\\\Organisation\\:\\:\\$talk\\.$#"
+			count: 1
+			path: lib/Db/Organisation.php
+
+		-
+			message: "#^Access to an undefined property OCA\\\\OpenRegister\\\\Db\\\\Organisation\\:\\:\\$todos\\.$#"
+			count: 1
+			path: lib/Db/Organisation.php
 
 		-
 			message: "#^Call to an undefined static method OCP\\\\AppFramework\\\\Db\\\\Entity\\:\\:setActive\\(\\)\\.$#"
@@ -3386,6 +3756,16 @@ parameters:
 			path: lib/Db/SearchTrailMapper.php
 
 		-
+			message: "#^Missing parameter \\$entity \\(OCP\\\\AppFramework\\\\Db\\\\Entity\\) in call to method OCA\\\\OpenRegister\\\\Db\\\\SelectionListMapper\\:\\:update\\(\\)\\.$#"
+			count: 1
+			path: lib/Db/SelectionListMapper.php
+
+		-
+			message: "#^Unknown parameter \\$objectId in call to method OCA\\\\OpenRegister\\\\Db\\\\SelectionListMapper\\:\\:update\\(\\)\\.$#"
+			count: 1
+			path: lib/Db/SelectionListMapper.php
+
+		-
 			message: "#^Call to an undefined method OCP\\\\AppFramework\\\\Db\\\\Entity\\:\\:getOrganisation\\(\\)\\.$#"
 			count: 1
 			path: lib/Db/SourceMapper.php
@@ -3574,6 +3954,21 @@ parameters:
 			message: "#^Strict comparison using \\=\\=\\= between int and null will always evaluate to false\\.$#"
 			count: 1
 			path: lib/Listener/ObjectChangeListener.php
+
+		-
+			message: "#^Constant OCA\\\\OpenRegister\\\\Middleware\\\\TenantQuotaMiddleware\\:\\:ENV_BANDWIDTH_MULTIPLIER is unused\\.$#"
+			count: 1
+			path: lib/Middleware/TenantQuotaMiddleware.php
+
+		-
+			message: "#^PHPDoc tag @throws with type OCP\\\\AppFramework\\\\Http\\\\TenantQuotaExceededException is not subtype of Throwable$#"
+			count: 1
+			path: lib/Middleware/TenantQuotaMiddleware.php
+
+		-
+			message: "#^Parameter \\#2 \\$statusCode of class OCP\\\\AppFramework\\\\Http\\\\JSONResponse constructor expects S of 100\\|101\\|102\\|200\\|201\\|202\\|203\\|204\\|205\\|206\\|207\\|208\\|226\\|300\\|301\\|302\\|303\\|304\\|305\\|306\\|307\\|400\\|401\\|402\\|403\\|404\\|405\\|406\\|407\\|408\\|409\\|410\\|411\\|412\\|413\\|414\\|415\\|416\\|417\\|418\\|422\\|423\\|424\\|426\\|428\\|429\\|431\\|500\\|501\\|502\\|503\\|504\\|505\\|506\\|507\\|508\\|509\\|510\\|511, int given\\.$#"
+			count: 1
+			path: lib/Middleware/TenantQuotaMiddleware.php
 
 		-
 			message: "#^Call to method addColumn\\(\\) on an unknown class Doctrine\\\\DBAL\\\\Schema\\\\Table\\.$#"
@@ -4001,9 +4396,164 @@ parameters:
 			path: lib/Migration/Version1Date20260306120000.php
 
 		-
+			message: "#^Call to method addColumn\\(\\) on an unknown class Doctrine\\\\DBAL\\\\Schema\\\\Table\\.$#"
+			count: 13
+			path: lib/Migration/Version1Date20260322000000.php
+
+		-
+			message: "#^Call to method addIndex\\(\\) on an unknown class Doctrine\\\\DBAL\\\\Schema\\\\Table\\.$#"
+			count: 2
+			path: lib/Migration/Version1Date20260322000000.php
+
+		-
+			message: "#^Call to method addUniqueIndex\\(\\) on an unknown class Doctrine\\\\DBAL\\\\Schema\\\\Table\\.$#"
+			count: 1
+			path: lib/Migration/Version1Date20260322000000.php
+
+		-
+			message: "#^Call to method hasColumn\\(\\) on an unknown class Doctrine\\\\DBAL\\\\Schema\\\\Table\\.$#"
+			count: 5
+			path: lib/Migration/Version1Date20260322000000.php
+
+		-
+			message: "#^Call to method setPrimaryKey\\(\\) on an unknown class Doctrine\\\\DBAL\\\\Schema\\\\Table\\.$#"
+			count: 1
+			path: lib/Migration/Version1Date20260322000000.php
+
+		-
+			message: "#^Right side of \\|\\| is always false\\.$#"
+			count: 1
+			path: lib/Migration/Version1Date20260322000000.php
+
+		-
+			message: "#^Call to method addColumn\\(\\) on an unknown class Doctrine\\\\DBAL\\\\Schema\\\\Table\\.$#"
+			count: 2
+			path: lib/Migration/Version1Date20260322100000.php
+
+		-
+			message: "#^Call to method addIndex\\(\\) on an unknown class Doctrine\\\\DBAL\\\\Schema\\\\Table\\.$#"
+			count: 2
+			path: lib/Migration/Version1Date20260322100000.php
+
+		-
+			message: "#^Call to method hasColumn\\(\\) on an unknown class Doctrine\\\\DBAL\\\\Schema\\\\Table\\.$#"
+			count: 3
+			path: lib/Migration/Version1Date20260322100000.php
+
+		-
+			message: "#^Call to method hasIndex\\(\\) on an unknown class Doctrine\\\\DBAL\\\\Schema\\\\Table\\.$#"
+			count: 2
+			path: lib/Migration/Version1Date20260322100000.php
+
+		-
+			message: "#^Access to undefined constant OCP\\\\DB\\\\Types\\:\\:DATETIME_MUTABLE\\.$#"
+			count: 2
+			path: lib/Migration/Version1Date20260325120000.php
+
+		-
+			message: "#^Call to method addColumn\\(\\) on an unknown class Doctrine\\\\DBAL\\\\Schema\\\\Table\\.$#"
+			count: 104
+			path: lib/Migration/Version1Date20260326000000.php
+
+		-
+			message: "#^Call to method addIndex\\(\\) on an unknown class Doctrine\\\\DBAL\\\\Schema\\\\Table\\.$#"
+			count: 20
+			path: lib/Migration/Version1Date20260326000000.php
+
+		-
+			message: "#^Call to method addUniqueIndex\\(\\) on an unknown class Doctrine\\\\DBAL\\\\Schema\\\\Table\\.$#"
+			count: 6
+			path: lib/Migration/Version1Date20260326000000.php
+
+		-
+			message: "#^Call to method setPrimaryKey\\(\\) on an unknown class Doctrine\\\\DBAL\\\\Schema\\\\Table\\.$#"
+			count: 7
+			path: lib/Migration/Version1Date20260326000000.php
+
+		-
+			message: "#^Else branch is unreachable because ternary operator condition is always true\\.$#"
+			count: 1
+			path: lib/Reference/ObjectReferenceProvider.php
+
+		-
+			message: "#^Offset '@self' on array\\{@self\\: array\\{id\\: string\\|null, slug\\: string\\|null, name\\: string\\|null, description\\: int\\|string, summary\\: string\\|null, image\\: string\\|null, uri\\: string\\|null, version\\: string\\|null, \\.\\.\\.\\}\\} on left side of \\?\\? always exists and is not nullable\\.$#"
+			count: 1
+			path: lib/Reference/ObjectReferenceProvider.php
+
+		-
+			message: "#^Offset 'updated' on array\\{@self\\: array\\{id\\: string\\|null, slug\\: string\\|null, name\\: string\\|null, description\\: int\\|string, summary\\: string\\|null, image\\: string\\|null, uri\\: string\\|null, version\\: string\\|null, \\.\\.\\.\\}\\} on left side of \\?\\? does not exist\\.$#"
+			count: 1
+			path: lib/Reference/ObjectReferenceProvider.php
+
+		-
+			message: "#^Call to an undefined method OCA\\\\OpenRegister\\\\Db\\\\WorkflowEngine\\:\\:execute\\(\\)\\.$#"
+			count: 2
+			path: lib/Service/ActionExecutor.php
+
+		-
+			message: "#^Call to an undefined method OCA\\\\OpenRegister\\\\WorkflowEngine\\\\WorkflowResult\\:\\:getModifiedData\\(\\)\\.$#"
+			count: 1
+			path: lib/Service/ActionExecutor.php
+
+		-
+			message: "#^Property OCA\\\\OpenRegister\\\\Service\\\\ActionExecutor\\:\\:\\$cloudEventFormatter is never read, only written\\.$#"
+			count: 1
+			path: lib/Service/ActionExecutor.php
+
+		-
+			message: "#^Strict comparison using \\=\\=\\= between OCA\\\\OpenRegister\\\\Db\\\\WorkflowEngine and null will always evaluate to false\\.$#"
+			count: 1
+			path: lib/Service/ActionExecutor.php
+
+		-
+			message: "#^Call to an undefined method OCA\\\\OpenRegister\\\\Db\\\\Schema\\:\\:getName\\(\\)\\.$#"
+			count: 1
+			path: lib/Service/ActionService.php
+
+		-
 			message: "#^Unknown parameter \\$filters in call to method OCA\\\\OpenRegister\\\\Db\\\\ApplicationMapper\\:\\:findAll\\(\\)\\.$#"
 			count: 1
 			path: lib/Service/ApplicationService.php
+
+		-
+			message: "#^Call to an undefined method OCA\\\\OpenRegister\\\\Db\\\\MagicMapper\\:\\:findByUuid\\(\\)\\.$#"
+			count: 3
+			path: lib/Service/Archival/DestructionService.php
+
+		-
+			message: "#^Call to an undefined method OCA\\\\OpenRegister\\\\Db\\\\ObjectEntity\\:\\:getTitle\\(\\)\\.$#"
+			count: 1
+			path: lib/Service/Archival/DestructionService.php
+
+		-
+			message: "#^Call to function in_array\\(\\) with arguments string\\|null, array\\<string, int\\> and true will always evaluate to false\\.$#"
+			count: 1
+			path: lib/Service/Archival/DestructionService.php
+
+		-
+			message: "#^Missing parameter \\$object \\(array\\|JsonSerializable\\) in call to method OCA\\\\OpenRegister\\\\Service\\\\Object\\\\DeleteObject\\:\\:delete\\(\\)\\.$#"
+			count: 1
+			path: lib/Service/Archival/DestructionService.php
+
+		-
+			message: "#^Property OCA\\\\OpenRegister\\\\Service\\\\Archival\\\\DestructionService\\:\\:\\$auditTrailMapper is never read, only written\\.$#"
+			count: 1
+			path: lib/Service/Archival/DestructionService.php
+
+		-
+			message: "#^Strict comparison using \\=\\=\\= between false and true will always evaluate to false\\.$#"
+			count: 1
+			path: lib/Service/Archival/DestructionService.php
+
+		-
+			message: "#^Unknown parameter \\$objectEntity in call to method OCA\\\\OpenRegister\\\\Service\\\\Object\\\\DeleteObject\\:\\:delete\\(\\)\\.$#"
+			count: 1
+			path: lib/Service/Archival/DestructionService.php
+
+		-
+			message: "#^Property OCA\\\\OpenRegister\\\\Service\\\\Archival\\\\LegalHoldService\\:\\:\\$auditTrailMapper is never read, only written\\.$#"
+			count: 1
+			path: lib/Service/Archival/LegalHoldService.php
 
 		-
 			message: "#^Instantiated class OC\\\\AppFramework\\\\Middleware\\\\Security\\\\Exceptions\\\\SecurityException not found\\.$#"
@@ -4021,8 +4571,53 @@ parameters:
 			path: lib/Service/AuthorizationService.php
 
 		-
-			message: "#^Access to an undefined property LLPhant\\\\OpenAIConfig\\:\\:\\$temperature\\.$#"
+			message: "#^Call to method createCalendarObject\\(\\) on an unknown class OCA\\\\DAV\\\\CalDAV\\\\CalDavBackend\\.$#"
 			count: 1
+			path: lib/Service/CalendarEventService.php
+
+		-
+			message: "#^Call to method getCalendarObject\\(\\) on an unknown class OCA\\\\DAV\\\\CalDAV\\\\CalDavBackend\\.$#"
+			count: 3
+			path: lib/Service/CalendarEventService.php
+
+		-
+			message: "#^Call to method getCalendarObjects\\(\\) on an unknown class OCA\\\\DAV\\\\CalDAV\\\\CalDavBackend\\.$#"
+			count: 1
+			path: lib/Service/CalendarEventService.php
+
+		-
+			message: "#^Call to method getCalendarsForUser\\(\\) on an unknown class OCA\\\\DAV\\\\CalDAV\\\\CalDavBackend\\.$#"
+			count: 1
+			path: lib/Service/CalendarEventService.php
+
+		-
+			message: "#^Call to method updateCalendarObject\\(\\) on an unknown class OCA\\\\DAV\\\\CalDAV\\\\CalDavBackend\\.$#"
+			count: 2
+			path: lib/Service/CalendarEventService.php
+
+		-
+			message: "#^Call to static method read\\(\\) on an unknown class Sabre\\\\VObject\\\\Reader\\.$#"
+			count: 3
+			path: lib/Service/CalendarEventService.php
+
+		-
+			message: "#^Parameter \\$calDavBackend of method OCA\\\\OpenRegister\\\\Service\\\\CalendarEventService\\:\\:__construct\\(\\) has invalid type OCA\\\\DAV\\\\CalDAV\\\\CalDavBackend\\.$#"
+			count: 2
+			path: lib/Service/CalendarEventService.php
+
+		-
+			message: "#^Property OCA\\\\OpenRegister\\\\Service\\\\CalendarEventService\\:\\:\\$calDavBackend has unknown class OCA\\\\DAV\\\\CalDAV\\\\CalDavBackend as its type\\.$#"
+			count: 2
+			path: lib/Service/CalendarEventService.php
+
+		-
+			message: "#^Access to an undefined property LLPhant\\\\OpenAIConfig\\:\\:\\$temperature\\.$#"
+			count: 2
+			path: lib/Service/Chat/ConversationManagementHandler.php
+
+		-
+			message: "#^Variable \\$config might not be defined\\.$#"
+			count: 4
 			path: lib/Service/Chat/ConversationManagementHandler.php
 
 		-
@@ -4042,12 +4637,17 @@ parameters:
 
 		-
 			message: "#^Access to an undefined property LLPhant\\\\OpenAIConfig\\:\\:\\$temperature\\.$#"
-			count: 1
+			count: 2
 			path: lib/Service/Chat/ResponseGenerationHandler.php
 
 		-
 			message: "#^Variable \\$chatProvider on left side of \\?\\? always exists and is not nullable\\.$#"
 			count: 1
+			path: lib/Service/Chat/ResponseGenerationHandler.php
+
+		-
+			message: "#^Variable \\$config might not be defined\\.$#"
+			count: 5
 			path: lib/Service/Chat/ResponseGenerationHandler.php
 
 		-
@@ -4371,6 +4971,81 @@ parameters:
 			path: lib/Service/ConfigurationService.php
 
 		-
+			message: "#^Call to an undefined method OCA\\\\OpenRegister\\\\Db\\\\Register\\:\\:getName\\(\\)\\.$#"
+			count: 1
+			path: lib/Service/ContactMatchingService.php
+
+		-
+			message: "#^Call to an undefined method OCA\\\\OpenRegister\\\\Db\\\\Schema\\:\\:getName\\(\\)\\.$#"
+			count: 1
+			path: lib/Service/ContactMatchingService.php
+
+		-
+			message: "#^Call to function is_array\\(\\) with OCA\\\\OpenRegister\\\\Db\\\\ObjectEntity will always evaluate to false\\.$#"
+			count: 2
+			path: lib/Service/ContactMatchingService.php
+
+		-
+			message: "#^Method OCA\\\\OpenRegister\\\\Service\\\\ContactMatchingService\\:\\:countMatchingNameParts\\(\\) is unused\\.$#"
+			count: 1
+			path: lib/Service/ContactMatchingService.php
+
+		-
+			message: "#^Method OCA\\\\OpenRegister\\\\Service\\\\ContactMatchingService\\:\\:formatMatch\\(\\) is unused\\.$#"
+			count: 1
+			path: lib/Service/ContactMatchingService.php
+
+		-
+			message: "#^Method OCA\\\\OpenRegister\\\\Service\\\\ContactMatchingService\\:\\:hasMatchingProperty\\(\\) is unused\\.$#"
+			count: 1
+			path: lib/Service/ContactMatchingService.php
+
+		-
+			message: "#^Unreachable statement \\- code above always terminates\\.$#"
+			count: 2
+			path: lib/Service/ContactMatchingService.php
+
+		-
+			message: "#^Call to an undefined method OCA\\\\OpenRegister\\\\Db\\\\ContactLinkMapper\\:\\:find\\(\\)\\.$#"
+			count: 2
+			path: lib/Service/ContactService.php
+
+		-
+			message: "#^Call to method createCard\\(\\) on an unknown class OCA\\\\DAV\\\\CardDAV\\\\CardDavBackend\\.$#"
+			count: 1
+			path: lib/Service/ContactService.php
+
+		-
+			message: "#^Call to method getAddressBooksForUser\\(\\) on an unknown class OCA\\\\DAV\\\\CardDAV\\\\CardDavBackend\\.$#"
+			count: 1
+			path: lib/Service/ContactService.php
+
+		-
+			message: "#^Call to method getCard\\(\\) on an unknown class OCA\\\\DAV\\\\CardDAV\\\\CardDavBackend\\.$#"
+			count: 4
+			path: lib/Service/ContactService.php
+
+		-
+			message: "#^Call to method updateCard\\(\\) on an unknown class OCA\\\\DAV\\\\CardDAV\\\\CardDavBackend\\.$#"
+			count: 4
+			path: lib/Service/ContactService.php
+
+		-
+			message: "#^Call to static method read\\(\\) on an unknown class Sabre\\\\VObject\\\\Reader\\.$#"
+			count: 4
+			path: lib/Service/ContactService.php
+
+		-
+			message: "#^Parameter \\$cardDavBackend of method OCA\\\\OpenRegister\\\\Service\\\\ContactService\\:\\:__construct\\(\\) has invalid type OCA\\\\DAV\\\\CardDAV\\\\CardDavBackend\\.$#"
+			count: 2
+			path: lib/Service/ContactService.php
+
+		-
+			message: "#^Property OCA\\\\OpenRegister\\\\Service\\\\ContactService\\:\\:\\$cardDavBackend has unknown class OCA\\\\DAV\\\\CardDAV\\\\CardDavBackend as its type\\.$#"
+			count: 2
+			path: lib/Service/ContactService.php
+
+		-
 			message: "#^Offset 'total' on array\\{total\\: int, successful\\: int, failed\\: int\\} on left side of \\?\\? always exists and is not nullable\\.$#"
 			count: 1
 			path: lib/Service/DashboardService.php
@@ -4386,6 +5061,11 @@ parameters:
 			path: lib/Service/DashboardService.php
 
 		-
+			message: "#^Call to an undefined method OCA\\\\OpenRegister\\\\Db\\\\DeckLinkMapper\\:\\:find\\(\\)\\.$#"
+			count: 1
+			path: lib/Service/DeckCardService.php
+
+		-
 			message: "#^Static property OCA\\\\OpenRegister\\\\Service\\\\DeepLinkRegistryService\\:\\:\\$registerSlugMap is never read, only written\\.$#"
 			count: 1
 			path: lib/Service/DeepLinkRegistryService.php
@@ -4394,6 +5074,91 @@ parameters:
 			message: "#^Static property OCA\\\\OpenRegister\\\\Service\\\\DeepLinkRegistryService\\:\\:\\$schemaSlugMap is never read, only written\\.$#"
 			count: 1
 			path: lib/Service/DeepLinkRegistryService.php
+
+		-
+			message: "#^Call to method find\\(\\) on an unknown class OCA\\\\OpenRegister\\\\Db\\\\ObjectEntityMapper\\.$#"
+			count: 1
+			path: lib/Service/Edepot/EdepotTransferService.php
+
+		-
+			message: "#^Call to method update\\(\\) on an unknown class OCA\\\\OpenRegister\\\\Db\\\\ObjectEntityMapper\\.$#"
+			count: 2
+			path: lib/Service/Edepot/EdepotTransferService.php
+
+		-
+			message: "#^Offset int\\<0, 2\\> on array\\{30, 120, 480\\} on left side of \\?\\? always exists and is not nullable\\.$#"
+			count: 1
+			path: lib/Service/Edepot/EdepotTransferService.php
+
+		-
+			message: "#^Parameter \\$objectMapper of method OCA\\\\OpenRegister\\\\Service\\\\Edepot\\\\EdepotTransferService\\:\\:__construct\\(\\) has invalid type OCA\\\\OpenRegister\\\\Db\\\\ObjectEntityMapper\\.$#"
+			count: 2
+			path: lib/Service/Edepot/EdepotTransferService.php
+
+		-
+			message: "#^Property OCA\\\\OpenRegister\\\\Service\\\\Edepot\\\\EdepotTransferService\\:\\:\\$objectMapper has unknown class OCA\\\\OpenRegister\\\\Db\\\\ObjectEntityMapper as its type\\.$#"
+			count: 2
+			path: lib/Service/Edepot/EdepotTransferService.php
+
+		-
+			message: "#^Property OCA\\\\OpenRegister\\\\Service\\\\Edepot\\\\EdepotTransferService\\:\\:\\$transferListService is never read, only written\\.$#"
+			count: 1
+			path: lib/Service/Edepot/EdepotTransferService.php
+
+		-
+			message: "#^Variable \\$lastResult on left side of \\?\\? always exists and is not nullable\\.$#"
+			count: 1
+			path: lib/Service/Edepot/EdepotTransferService.php
+
+		-
+			message: "#^Parameter \\$objectMapper of method OCA\\\\OpenRegister\\\\Service\\\\Edepot\\\\TransferListService\\:\\:__construct\\(\\) has invalid type OCA\\\\OpenRegister\\\\Db\\\\ObjectEntityMapper\\.$#"
+			count: 2
+			path: lib/Service/Edepot/TransferListService.php
+
+		-
+			message: "#^Property OCA\\\\OpenRegister\\\\Service\\\\Edepot\\\\TransferListService\\:\\:\\$appConfig is never read, only written\\.$#"
+			count: 1
+			path: lib/Service/Edepot/TransferListService.php
+
+		-
+			message: "#^Property OCA\\\\OpenRegister\\\\Service\\\\Edepot\\\\TransferListService\\:\\:\\$auditTrailMapper is never read, only written\\.$#"
+			count: 1
+			path: lib/Service/Edepot/TransferListService.php
+
+		-
+			message: "#^Property OCA\\\\OpenRegister\\\\Service\\\\Edepot\\\\TransferListService\\:\\:\\$objectMapper has unknown class OCA\\\\OpenRegister\\\\Db\\\\ObjectEntityMapper as its type\\.$#"
+			count: 2
+			path: lib/Service/Edepot/TransferListService.php
+
+		-
+			message: "#^Property OCA\\\\OpenRegister\\\\Service\\\\Edepot\\\\TransferListService\\:\\:\\$objectMapper is never read, only written\\.$#"
+			count: 1
+			path: lib/Service/Edepot/TransferListService.php
+
+		-
+			message: "#^Call to method login\\(\\) on an unknown class phpseclib3\\\\Net\\\\SFTP\\.$#"
+			count: 2
+			path: lib/Service/Edepot/Transport/SftpTransport.php
+
+		-
+			message: "#^Call to static method load\\(\\) on an unknown class phpseclib3\\\\Crypt\\\\PublicKeyLoader\\.$#"
+			count: 1
+			path: lib/Service/Edepot/Transport/SftpTransport.php
+
+		-
+			message: "#^Instantiated class phpseclib3\\\\Net\\\\SFTP not found\\.$#"
+			count: 1
+			path: lib/Service/Edepot/Transport/SftpTransport.php
+
+		-
+			message: "#^Method OCA\\\\OpenRegister\\\\Service\\\\Edepot\\\\Transport\\\\SftpTransport\\:\\:createSftpConnection\\(\\) has invalid return type phpseclib3\\\\Net\\\\SFTP\\.$#"
+			count: 2
+			path: lib/Service/Edepot/Transport/SftpTransport.php
+
+		-
+			message: "#^Call to an undefined method OCA\\\\OpenRegister\\\\Db\\\\EmailLinkMapper\\:\\:find\\(\\)\\.$#"
+			count: 1
+			path: lib/Service/EmailService.php
 
 		-
 			message: "#^Call to an undefined method OCA\\\\OpenRegister\\\\Db\\\\Endpoint\\:\\:getMethod\\(\\)\\.$#"
@@ -4551,6 +5316,26 @@ parameters:
 			path: lib/Service/File/DocumentProcessingHandler.php
 
 		-
+			message: "#^Property OCA\\\\OpenRegister\\\\Service\\\\File\\\\FileAuditHandler\\:\\:\\$auditTrailMapper is never read, only written\\.$#"
+			count: 1
+			path: lib/Service/File/FileAuditHandler.php
+
+		-
+			message: "#^Property OCA\\\\OpenRegister\\\\Service\\\\File\\\\FileBatchHandler\\:\\:\\$deleteHandler is never read, only written\\.$#"
+			count: 1
+			path: lib/Service/File/FileBatchHandler.php
+
+		-
+			message: "#^Property OCA\\\\OpenRegister\\\\Service\\\\File\\\\FileBatchHandler\\:\\:\\$publishingHandler is never read, only written\\.$#"
+			count: 1
+			path: lib/Service/File/FileBatchHandler.php
+
+		-
+			message: "#^Property OCA\\\\OpenRegister\\\\Service\\\\File\\\\FileBatchHandler\\:\\:\\$taggingHandler is never read, only written\\.$#"
+			count: 1
+			path: lib/Service/File/FileBatchHandler.php
+
+		-
 			message: "#^Property OCA\\\\OpenRegister\\\\Service\\\\File\\\\FileCrudHandler\\:\\:\\$fileOwnershipHandler is never read, only written\\.$#"
 			count: 1
 			path: lib/Service/File/FileCrudHandler.php
@@ -4611,6 +5396,16 @@ parameters:
 			path: lib/Service/File/FileFormattingHandler.php
 
 		-
+			message: "#^Property OCA\\\\OpenRegister\\\\Service\\\\File\\\\FilePreviewHandler\\:\\:\\$rootFolder is never read, only written\\.$#"
+			count: 1
+			path: lib/Service/File/FilePreviewHandler.php
+
+		-
+			message: "#^Property OCA\\\\OpenRegister\\\\Service\\\\File\\\\FileVersioningHandler\\:\\:\\$rootFolder is never read, only written\\.$#"
+			count: 1
+			path: lib/Service/File/FileVersioningHandler.php
+
+		-
 			message: "#^Method OCA\\\\OpenRegister\\\\Service\\\\File\\\\FolderManagementHandler\\:\\:createObjectFolderInRegister\\(\\) should return OCP\\\\Files\\\\Folder but returns OCP\\\\Files\\\\Node\\.$#"
 			count: 1
 			path: lib/Service/File/FolderManagementHandler.php
@@ -4659,6 +5454,11 @@ parameters:
 			message: "#^Property OCA\\\\OpenRegister\\\\Service\\\\File\\\\UpdateFileHandler\\:\\:\\$systemTagMapper is never read, only written\\.$#"
 			count: 1
 			path: lib/Service/File/UpdateFileHandler.php
+
+		-
+			message: "#^Call to an undefined method OCA\\\\OpenRegister\\\\Service\\\\File\\\\CreateFileHandler\\:\\:createFile\\(\\)\\.$#"
+			count: 1
+			path: lib/Service/FileService.php
 
 		-
 			message: "#^Constant OCA\\\\OpenRegister\\\\Service\\\\FileService\\:\\:APP_GROUP is unused\\.$#"
@@ -4714,6 +5514,11 @@ parameters:
 			message: "#^Property OCA\\\\OpenRegister\\\\Service\\\\FileService\\:\\:\\$userSession is never read, only written\\.$#"
 			count: 1
 			path: lib/Service/FileService.php
+
+		-
+			message: "#^Call to an undefined method OCP\\\\IDBConnection\\:\\:getInner\\(\\)\\.$#"
+			count: 1
+			path: lib/Service/FileSidebarService.php
 
 		-
 			message: "#^Method OCA\\\\OpenRegister\\\\Db\\\\AuditTrailMapper\\:\\:findAll\\(\\) invoked with 4 parameters, 0\\-2 required\\.$#"
@@ -4914,6 +5719,16 @@ parameters:
 			message: "#^Property OCA\\\\OpenRegister\\\\Service\\\\Index\\\\WarmupHandler\\:\\:\\$db is never read, only written\\.$#"
 			count: 1
 			path: lib/Service/Index/WarmupHandler.php
+
+		-
+			message: "#^Unknown parameter \\$filters in call to method OCA\\\\OpenRegister\\\\Db\\\\RegisterMapper\\:\\:findAll\\(\\)\\.$#"
+			count: 1
+			path: lib/Service/LinkedEntityService.php
+
+		-
+			message: "#^Unknown parameter \\$filters in call to method OCA\\\\OpenRegister\\\\Db\\\\SchemaMapper\\:\\:findAll\\(\\)\\.$#"
+			count: 1
+			path: lib/Service/LinkedEntityService.php
 
 		-
 			message: "#^Method OCA\\\\OpenRegister\\\\Service\\\\LogService\\:\\:deleteLogs\\(\\) should return array\\{deleted\\: int\\<0, max\\>, failed\\: int\\<0, max\\>, total\\: int\\<0, max\\>\\} but returns array\\{success\\: true, deleted\\: int\\<0, max\\>, failed\\: int\\<0, max\\>\\}\\.$#"
@@ -5446,6 +6261,11 @@ parameters:
 			path: lib/Service/Object/SaveObject.php
 
 		-
+			message: "#^Call to an undefined method Twig\\\\Loader\\\\LoaderInterface\\:\\:setTemplate\\(\\)\\.$#"
+			count: 1
+			path: lib/Service/Object/SaveObject/ComputedFieldHandler.php
+
+		-
 			message: "#^Offset 'name' on array\\{name\\: string, type\\: string, tmp_name\\: string, error\\: int\\<min, \\-1\\>\\|int\\<1, max\\>, size\\: int\\} on left side of \\?\\? always exists and is not nullable\\.$#"
 			count: 1
 			path: lib/Service/Object/SaveObject/FilePropertyHandler.php
@@ -5521,8 +6341,8 @@ parameters:
 			path: lib/Service/Object/SaveObjects/BulkValidationHandler.php
 
 		-
-			message: "#^Else branch is unreachable because previous condition is always true\\.$#"
-			count: 2
+			message: "#^Anonymous function should never return but return statement found\\.$#"
+			count: 1
 			path: lib/Service/Object/SaveObjects/ChunkProcessingHandler.php
 
 		-
@@ -5536,7 +6356,17 @@ parameters:
 			path: lib/Service/Object/SaveObjects/ChunkProcessingHandler.php
 
 		-
+			message: "#^Strict comparison using \\!\\=\\= between true and true will always evaluate to false\\.$#"
+			count: 1
+			path: lib/Service/Object/SaveObjects/ChunkProcessingHandler.php
+
+		-
 			message: "#^Strict comparison using \\=\\=\\= between true and false will always evaluate to false\\.$#"
+			count: 1
+			path: lib/Service/Object/SaveObjects/ChunkProcessingHandler.php
+
+		-
+			message: "#^Unreachable statement \\- code above always terminates\\.$#"
 			count: 1
 			path: lib/Service/Object/SaveObjects/ChunkProcessingHandler.php
 
@@ -5549,6 +6379,11 @@ parameters:
 			message: "#^Property OCA\\\\OpenRegister\\\\Service\\\\Object\\\\SaveObjects\\\\PreparationHandler\\:\\:\\$userSession is never read, only written\\.$#"
 			count: 1
 			path: lib/Service/Object/SaveObjects/PreparationHandler.php
+
+		-
+			message: "#^Variable \\$businessData might not be defined\\.$#"
+			count: 2
+			path: lib/Service/Object/SaveObjects/TransformationHandler.php
 
 		-
 			message: "#^Offset '_search' on non\\-empty\\-array\\<string, mixed\\> in isset\\(\\) always exists and is not nullable\\.$#"
@@ -5586,22 +6421,12 @@ parameters:
 			path: lib/Service/Object/ValidateObject.php
 
 		-
-			message: "#^Access to an undefined property object\\{properties\\?\\: object, required\\?\\: array\\<string\\>\\}\\:\\:\\$required\\.$#"
+			message: "#^Access to an undefined property object\\:\\:\\$required\\.$#"
 			count: 1
 			path: lib/Service/Object/ValidateObject.php
 
 		-
 			message: "#^Expression on left side of \\?\\? is not nullable\\.$#"
-			count: 1
-			path: lib/Service/Object/ValidateObject.php
-
-		-
-			message: "#^Result of && is always true\\.$#"
-			count: 1
-			path: lib/Service/Object/ValidateObject.php
-
-		-
-			message: "#^Variable \\$properties in isset\\(\\) always exists and is not nullable\\.$#"
 			count: 1
 			path: lib/Service/Object/ValidateObject.php
 
@@ -5667,6 +6492,11 @@ parameters:
 
 		-
 			message: "#^Function React\\\\Async\\\\await not found\\.$#"
+			count: 1
+			path: lib/Service/ObjectService.php
+
+		-
+			message: "#^PHPDoc tag @throws with type OCP\\\\AppFramework\\\\Http\\\\ContentSecurityPolicy is not subtype of Throwable$#"
 			count: 1
 			path: lib/Service/ObjectService.php
 
@@ -5836,6 +6666,36 @@ parameters:
 			path: lib/Service/RegisterService.php
 
 		-
+			message: "#^Call to an undefined method OCA\\\\OpenRegister\\\\Db\\\\ObjectEntity\\:\\:getTitle\\(\\)\\.$#"
+			count: 1
+			path: lib/Service/RetentionService.php
+
+		-
+			message: "#^Constant OCA\\\\OpenRegister\\\\Service\\\\RetentionService\\:\\:VALID_AFLEIDINGSWIJZEN is unused\\.$#"
+			count: 1
+			path: lib/Service/RetentionService.php
+
+		-
+			message: "#^Constant OCA\\\\OpenRegister\\\\Service\\\\RetentionService\\:\\:VALID_NOMINATIES is unused\\.$#"
+			count: 1
+			path: lib/Service/RetentionService.php
+
+		-
+			message: "#^Constant OCA\\\\OpenRegister\\\\Service\\\\RetentionService\\:\\:VALID_STATUSES is unused\\.$#"
+			count: 1
+			path: lib/Service/RetentionService.php
+
+		-
+			message: "#^Property OCA\\\\OpenRegister\\\\Service\\\\RetentionService\\:\\:\\$appConfig is never read, only written\\.$#"
+			count: 1
+			path: lib/Service/RetentionService.php
+
+		-
+			message: "#^Property OCA\\\\OpenRegister\\\\Service\\\\RetentionService\\:\\:\\$auditMapper is never read, only written\\.$#"
+			count: 1
+			path: lib/Service/RetentionService.php
+
+		-
 			message: "#^Regex pattern is invalid\\: Unknown modifier '\\\\' in pattern\\: /\\^\\[\\^\\<\\>\\:\"/\\\\\\|\\?\\*\\]\\+\\\\\\.\\[a\\-zA\\-Z0\\-9\\]\\+\\$/$#"
 			count: 1
 			path: lib/Service/SchemaService.php
@@ -5971,11 +6831,6 @@ parameters:
 			path: lib/Service/SettingsService.php
 
 		-
-			message: "#^Else branch is unreachable because previous condition is always true\\.$#"
-			count: 2
-			path: lib/Service/SettingsService.php
-
-		-
 			message: "#^Method OCA\\\\OpenRegister\\\\Service\\\\SettingsService\\:\\:getStats\\(\\) should return array\\{timestamp\\: int, date\\: string, warnings\\: array\\{objectsWithoutOwner\\: int, objectsWithoutOrganisation\\: int, auditTrailsWithoutExpiry\\: int, searchTrailsWithoutExpiry\\: int, expiredAuditTrails\\: int, expiredSearchTrails\\: int, expiredObjects\\: int\\}, totals\\: array\\{totalObjects\\: int, totalAuditTrails\\: int, totalSearchTrails\\: int, totalConfigurations\\: int, totalOrganisations\\: int, totalRegisters\\: int, totalSchemas\\: int, totalSources\\: int, \\.\\.\\.\\}, solr\\?\\: array\\<string, mixed\\>, cache\\?\\: array\\<string, mixed\\>, system\\: array\\{php_version\\: string, memory_limit\\: string, max_execution_time\\: string\\}\\} but returns array\\{error\\: 'Failed to retrieve…', message\\: string\\}\\.$#"
 			count: 1
 			path: lib/Service/SettingsService.php
@@ -6026,6 +6881,11 @@ parameters:
 			path: lib/Service/SettingsService.php
 
 		-
+			message: "#^Strict comparison using \\=\\=\\= between OCA\\\\OpenRegister\\\\Db\\\\ObjectEntity and null will always evaluate to false\\.$#"
+			count: 2
+			path: lib/Service/SettingsService.php
+
+		-
 			message: "#^Call to method createCalendarObject\\(\\) on an unknown class OCA\\\\DAV\\\\CalDAV\\\\CalDavBackend\\.$#"
 			count: 1
 			path: lib/Service/TaskService.php
@@ -6069,6 +6929,11 @@ parameters:
 			message: "#^Property OCA\\\\OpenRegister\\\\Service\\\\TaskService\\:\\:\\$calDavBackend has unknown class OCA\\\\DAV\\\\CalDAV\\\\CalDavBackend as its type\\.$#"
 			count: 2
 			path: lib/Service/TaskService.php
+
+		-
+			message: "#^Property OCA\\\\OpenRegister\\\\Service\\\\TenantLifecycleService\\:\\:\\$eventDispatcher is never read, only written\\.$#"
+			count: 1
+			path: lib/Service/TenantLifecycleService.php
 
 		-
 			message: "#^Offset 'confidence' on array\\{language\\: null, level\\: null, confidence\\: null, method\\: null\\} on left side of \\?\\? always exists and is always null\\.$#"
@@ -6146,6 +7011,21 @@ parameters:
 			path: lib/Service/TextExtractionService.php
 
 		-
+			message: "#^Property OCA\\\\OpenRegister\\\\Service\\\\TmloService\\:\\:\\$registerMapper is never read, only written\\.$#"
+			count: 1
+			path: lib/Service/TmloService.php
+
+		-
+			message: "#^Property OCA\\\\OpenRegister\\\\Service\\\\TmloService\\:\\:\\$schemaMapper is never read, only written\\.$#"
+			count: 1
+			path: lib/Service/TmloService.php
+
+		-
+			message: "#^Strict comparison using \\=\\=\\= between mixed and null will always evaluate to false\\.$#"
+			count: 1
+			path: lib/Service/TmloService.php
+
+		-
 			message: "#^Class OCA\\\\OpenRegister\\\\Service\\\\UploadService has an uninitialized readonly property \\$client\\. Assign it in the constructor\\.$#"
 			count: 1
 			path: lib/Service/UploadService.php
@@ -6166,6 +7046,11 @@ parameters:
 			path: lib/Service/UploadService.php
 
 		-
+			message: "#^Call to an undefined method OCA\\\\OpenRegister\\\\Db\\\\AuditTrailMapper\\:\\:findByActor\\(\\)\\.$#"
+			count: 2
+			path: lib/Service/UserService.php
+
+		-
 			message: "#^Else branch is unreachable because previous condition is always true\\.$#"
 			count: 1
 			path: lib/Service/UserService.php
@@ -6176,7 +7061,12 @@ parameters:
 			path: lib/Service/UserService.php
 
 		-
-			message: "#^Property OCA\\\\OpenRegister\\\\Service\\\\UserService\\:\\:\\$userManager is never read, only written\\.$#"
+			message: "#^Offset 'd'\\|'h'\\|'m' on array\\{d\\: 'days', h\\: 'hours', m\\: 'minutes'\\} on left side of \\?\\? always exists and is not nullable\\.$#"
+			count: 1
+			path: lib/Service/UserService.php
+
+		-
+			message: "#^Strict comparison using \\=\\=\\= between 'daily' and false will always evaluate to false\\.$#"
 			count: 1
 			path: lib/Service/UserService.php
 

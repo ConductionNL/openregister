@@ -100,7 +100,6 @@ class ObjectsControllerTest extends TestCase
             $this->config,
             $this->appManager,
             $this->container,
-            $this->objectMapper,
             $this->registerMapper,
             $this->schemaMapper,
             $this->auditTrailMapper,
@@ -270,74 +269,6 @@ class ObjectsControllerTest extends TestCase
         $this->assertFalse($data['locked']);
         $this->assertSame('uuid-123', $data['uuid']);
         $this->assertSame('Object unlocked successfully', $data['message']);
-    }
-
-    public function testPublishReturnsPublishedObject(): void
-    {
-        $this->setupAdminUser();
-
-        $objectEntity = new \OCA\OpenRegister\Db\ObjectEntity();
-        $objectEntity->setUuid('uuid-123');
-        $objectEntity->setObject(['title' => 'Test']);
-
-        $this->objectService->method('setSchema')->willReturnSelf();
-        $this->objectService->method('setRegister')->willReturnSelf();
-        $this->request->method('getParam')->willReturn(null);
-        $this->objectService->method('publish')->willReturn($objectEntity);
-
-        $result = $this->controller->publish('uuid-123', 'reg1', 'schema1', $this->objectService);
-
-        $this->assertSame(200, $result->getStatus());
-    }
-
-    public function testPublishReturns400OnException(): void
-    {
-        $this->setupAdminUser();
-
-        $this->objectService->method('setSchema')->willReturnSelf();
-        $this->objectService->method('setRegister')->willReturnSelf();
-        $this->request->method('getParam')->willReturn(null);
-        $this->objectService->method('publish')
-            ->willThrowException(new DBException('Publish failed'));
-
-        $result = $this->controller->publish('uuid-123', 'reg1', 'schema1', $this->objectService);
-
-        $this->assertSame(400, $result->getStatus());
-        $data = $result->getData();
-        $this->assertArrayHasKey('error', $data);
-    }
-
-    public function testDepublishReturnsDepublishedObject(): void
-    {
-        $this->setupAdminUser();
-
-        $objectEntity = new \OCA\OpenRegister\Db\ObjectEntity();
-        $objectEntity->setUuid('uuid-123');
-        $objectEntity->setObject(['title' => 'Test']);
-
-        $this->objectService->method('setSchema')->willReturnSelf();
-        $this->objectService->method('setRegister')->willReturnSelf();
-        $this->request->method('getParam')->willReturn(null);
-        $this->objectService->method('depublish')->willReturn($objectEntity);
-
-        $result = $this->controller->depublish('uuid-123', 'reg1', 'schema1', $this->objectService);
-
-        $this->assertSame(200, $result->getStatus());
-    }
-
-    public function testDepublishReturns400OnException(): void
-    {
-        $this->setupAdminUser();
-
-        $this->objectService->method('setSchema')->willReturnSelf();
-        $this->objectService->method('setRegister')->willReturnSelf();
-        $this->request->method('getParam')->willReturn(null);
-        $this->objectService->method('depublish')
-            ->willThrowException(new DBException('Depublish failed'));
-
-        $result = $this->controller->depublish('uuid-123', 'reg1', 'schema1', $this->objectService);
-
-        $this->assertSame(400, $result->getStatus());
     }
 
     public function testMergeReturnsMergedObject(): void
@@ -708,30 +639,14 @@ class ObjectsControllerTest extends TestCase
         $this->assertFalse($data['success']);
     }
 
-    public function testClearBlobSuccess(): void
+    public function testClearBlobReturnsRetiredMessage(): void
     {
-        $this->objectMapper->method('clearBlobObjects')->willReturn([
-            'deleted' => 25,
-        ]);
-
         $result = $this->controller->clearBlob();
 
         $this->assertSame(200, $result->getStatus());
         $data = $result->getData();
         $this->assertTrue($data['success']);
-        $this->assertSame(25, $data['deleted']);
-    }
-
-    public function testClearBlobReturns500OnException(): void
-    {
-        $this->objectMapper->method('clearBlobObjects')
-            ->willThrowException(new DBException('Clear failed'));
-
-        $result = $this->controller->clearBlob();
-
-        $this->assertSame(500, $result->getStatus());
-        $data = $result->getData();
-        $this->assertFalse($data['success']);
+        $this->assertSame(0, $data['deleted']);
     }
 
     public function testContractsReturnsPaginatedResults(): void
@@ -799,9 +714,7 @@ class ObjectsControllerTest extends TestCase
 
         $this->objectService->method('setSchema')->willReturnSelf();
         $this->objectService->method('setRegister')->willReturnSelf();
-        $this->objectMapper->method('findAcrossAllSources')->willReturn([
-            'object' => $objectEntity,
-        ]);
+        $this->objectService->method('find')->willReturn($objectEntity);
 
         $analysis = new DeletionAnalysis(true, [], [], [], [], []);
         $deleteHandler = $this->createMock(\OCA\OpenRegister\Service\Object\DeleteObject::class);
@@ -817,7 +730,7 @@ class ObjectsControllerTest extends TestCase
     {
         $this->objectService->method('setSchema')->willReturnSelf();
         $this->objectService->method('setRegister')->willReturnSelf();
-        $this->objectMapper->method('findAcrossAllSources')
+        $this->objectService->method('find')
             ->willThrowException(new \OCP\AppFramework\Db\DoesNotExistException('Not found'));
 
         $result = $this->controller->canDelete('uuid-123', 'reg1', 'schema1', $this->objectService);
@@ -829,7 +742,7 @@ class ObjectsControllerTest extends TestCase
     {
         $this->objectService->method('setSchema')->willReturnSelf();
         $this->objectService->method('setRegister')->willReturnSelf();
-        $this->objectMapper->method('findAcrossAllSources')
+        $this->objectService->method('find')
             ->willThrowException(new Exception('Permission denied'));
 
         $result = $this->controller->canDelete('uuid-123', 'reg1', 'schema1', $this->objectService);
@@ -1361,7 +1274,7 @@ class ObjectsControllerTest extends TestCase
     {
         $this->objectService->method('setSchema')->willReturnSelf();
         $this->objectService->method('setRegister')->willReturnSelf();
-        $this->objectMapper->method('findAcrossAllSources')
+        $this->objectService->method('find')
             ->willThrowException(new Exception('Analysis error'));
 
         $result = $this->controller->canDelete('uuid-123', 'reg1', 'schema1', $this->objectService);
@@ -1381,46 +1294,6 @@ class ObjectsControllerTest extends TestCase
         $result = $this->controller->merge('uuid-123', 'reg1', 'schema1', $this->objectService);
 
         $this->assertSame(400, $result->getStatus());
-    }
-
-    // --- publish() with regular user ---
-
-    public function testPublishWithRegularUser(): void
-    {
-        $this->setupRegularUser();
-
-        $objectEntity = new \OCA\OpenRegister\Db\ObjectEntity();
-        $objectEntity->setUuid('uuid-123');
-        $objectEntity->setObject(['title' => 'Test']);
-
-        $this->objectService->method('setSchema')->willReturnSelf();
-        $this->objectService->method('setRegister')->willReturnSelf();
-        $this->request->method('getParam')->willReturn(null);
-        $this->objectService->method('publish')->willReturn($objectEntity);
-
-        $result = $this->controller->publish('uuid-123', 'reg1', 'schema1', $this->objectService);
-
-        $this->assertSame(200, $result->getStatus());
-    }
-
-    // --- depublish() with regular user ---
-
-    public function testDepublishWithRegularUser(): void
-    {
-        $this->setupRegularUser();
-
-        $objectEntity = new \OCA\OpenRegister\Db\ObjectEntity();
-        $objectEntity->setUuid('uuid-123');
-        $objectEntity->setObject(['title' => 'Test']);
-
-        $this->objectService->method('setSchema')->willReturnSelf();
-        $this->objectService->method('setRegister')->willReturnSelf();
-        $this->request->method('getParam')->willReturn(null);
-        $this->objectService->method('depublish')->willReturn($objectEntity);
-
-        $result = $this->controller->depublish('uuid-123', 'reg1', 'schema1', $this->objectService);
-
-        $this->assertSame(200, $result->getStatus());
     }
 
     // --- import() with no file returns 400 (duplicate guard) ---
@@ -2527,9 +2400,7 @@ class ObjectsControllerTest extends TestCase
 
         $this->objectService->method('setSchema')->willReturnSelf();
         $this->objectService->method('setRegister')->willReturnSelf();
-        $this->objectMapper->method('findAcrossAllSources')->willReturn([
-            'object' => $objectEntity,
-        ]);
+        $this->objectService->method('find')->willReturn($objectEntity);
 
         $analysis = new \OCA\OpenRegister\Dto\DeletionAnalysis(
             false,
@@ -3551,54 +3422,6 @@ class ObjectsControllerTest extends TestCase
     }
 
     // =========================================================================
-    // publish() — with specific date parameter
-    // =========================================================================
-
-    public function testPublishWithDateParameter(): void
-    {
-        $this->setupAdminUser();
-
-        $objectEntity = new \OCA\OpenRegister\Db\ObjectEntity();
-        $objectEntity->setUuid('uuid-123');
-        $objectEntity->setObject(['title' => 'Test']);
-
-        $this->objectService->method('setSchema')->willReturnSelf();
-        $this->objectService->method('setRegister')->willReturnSelf();
-        $this->request->method('getParam')->willReturnMap([
-            ['date', null, '2025-06-15'],
-        ]);
-        $this->objectService->method('publish')->willReturn($objectEntity);
-
-        $result = $this->controller->publish('uuid-123', 'reg1', 'schema1', $this->objectService);
-
-        $this->assertSame(200, $result->getStatus());
-    }
-
-    // =========================================================================
-    // depublish() — with specific date parameter
-    // =========================================================================
-
-    public function testDepublishWithDateParameter(): void
-    {
-        $this->setupAdminUser();
-
-        $objectEntity = new \OCA\OpenRegister\Db\ObjectEntity();
-        $objectEntity->setUuid('uuid-123');
-        $objectEntity->setObject(['title' => 'Test']);
-
-        $this->objectService->method('setSchema')->willReturnSelf();
-        $this->objectService->method('setRegister')->willReturnSelf();
-        $this->request->method('getParam')->willReturnMap([
-            ['date', null, '2025-12-31'],
-        ]);
-        $this->objectService->method('depublish')->willReturn($objectEntity);
-
-        $result = $this->controller->depublish('uuid-123', 'reg1', 'schema1', $this->objectService);
-
-        $this->assertSame(200, $result->getStatus());
-    }
-
-    // =========================================================================
     // destroy() — as regular user succeeds when service allows
     // =========================================================================
 
@@ -4003,24 +3826,6 @@ class ObjectsControllerTest extends TestCase
     }
 
     // =========================================================================
-    // clearBlob() — success with zero deleted
-    // =========================================================================
-
-    public function testClearBlobSuccessWithZeroDeleted(): void
-    {
-        $this->objectMapper->method('clearBlobObjects')->willReturn([
-            'deleted' => 0,
-        ]);
-
-        $result = $this->controller->clearBlob();
-
-        $this->assertSame(200, $result->getStatus());
-        $data = $result->getData();
-        $this->assertTrue($data['success']);
-        $this->assertSame(0, $data['deleted']);
-    }
-
-    // =========================================================================
     // lock() — with LockedException
     // =========================================================================
 
@@ -4052,9 +3857,7 @@ class ObjectsControllerTest extends TestCase
 
         $this->objectService->method('setSchema')->willReturnSelf();
         $this->objectService->method('setRegister')->willReturnSelf();
-        $this->objectMapper->method('findAcrossAllSources')->willReturn([
-            'object' => $objectEntity,
-        ]);
+        $this->objectService->method('find')->willReturn($objectEntity);
 
         $analysis = new DeletionAnalysis(
             false,
@@ -4624,7 +4427,6 @@ class ObjectsControllerTest extends TestCase
             $this->config,
             $this->appManager,
             $this->container,
-            $this->objectMapper,
             $this->registerMapper,
             $this->schemaMapper,
             $this->auditTrailMapper,

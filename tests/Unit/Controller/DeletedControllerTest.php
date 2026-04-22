@@ -11,6 +11,7 @@ use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\ObjectService;
 use OCP\AppFramework\Http\JSONResponse;
+use OCP\IGroupManager;
 use OCP\IRequest;
 use OCP\IUserSession;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -25,6 +26,7 @@ class DeletedControllerTest extends TestCase
     private SchemaMapper&MockObject $schemaMapper;
     private ObjectService&MockObject $objectService;
     private IUserSession&MockObject $userSession;
+    private IGroupManager&MockObject $groupManager;
 
     protected function setUp(): void
     {
@@ -36,6 +38,7 @@ class DeletedControllerTest extends TestCase
         $this->schemaMapper = $this->createMock(SchemaMapper::class);
         $this->objectService = $this->createMock(ObjectService::class);
         $this->userSession = $this->createMock(IUserSession::class);
+        $this->groupManager = $this->createMock(IGroupManager::class);
 
         $this->controller = new DeletedController(
             'openregister',
@@ -44,7 +47,8 @@ class DeletedControllerTest extends TestCase
             $this->registerMapper,
             $this->schemaMapper,
             $this->objectService,
-            $this->userSession
+            $this->userSession,
+            $this->groupManager
         );
     }
 

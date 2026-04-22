@@ -62,8 +62,32 @@ use Symfony\Component\Uid\Uuid;
  * @method void setRequestQuota(?int $requestQuota)
  * @method array|null getAuthorization()
  * @method static setAuthorization(array|string|null $authorization)
+ * @method string|null getStatus()
+ * @method void setStatus(?string $status)
+ * @method string|null getEnvironment()
+ * @method void setEnvironment(?string $environment)
+ * @method DateTime|null getProvisionedAt()
+ * @method void setProvisionedAt(?DateTime $provisionedAt)
+ * @method DateTime|null getSuspendedAt()
+ * @method void setSuspendedAt(?DateTime $suspendedAt)
+ * @method DateTime|null getDeprovisionedAt()
+ * @method void setDeprovisionedAt(?DateTime $deprovisionedAt)
  * @method string|null getParent()
  * @method static setParent(?string $parent)
+ * @method array|null getMail()
+ * @method void setMail(?array $mail)
+ * @method array|null getContacts()
+ * @method void setContacts(?array $contacts)
+ * @method array|null getNotes()
+ * @method void setNotes(?array $notes)
+ * @method array|null getTodos()
+ * @method void setTodos(?array $todos)
+ * @method array|null getCalendar()
+ * @method void setCalendar(?array $calendar)
+ * @method array|null getTalk()
+ * @method void setTalk(?array $talk)
+ * @method array|null getDeck()
+ * @method void setDeck(?array $deck)
  *
  * @SuppressWarnings(PHPMD.TooManyFields)
  *
@@ -190,6 +214,45 @@ class Organisation extends Entity implements JsonSerializable
     protected ?array $authorization = null;
 
     /**
+     * Tenant lifecycle status
+     *
+     * Valid values: provisioning, active, suspended, deprovisioning, archived
+     *
+     * @var string|null Lifecycle status
+     */
+    protected ?string $status = 'active';
+
+    /**
+     * OTAP environment type
+     *
+     * Valid values: development, test, acceptance, production
+     *
+     * @var string|null Environment type
+     */
+    protected ?string $environment = 'production';
+
+    /**
+     * Timestamp when the organisation was provisioned
+     *
+     * @var DateTime|null Provisioning timestamp
+     */
+    protected ?DateTime $provisionedAt = null;
+
+    /**
+     * Timestamp when the organisation was suspended
+     *
+     * @var DateTime|null Suspension timestamp
+     */
+    protected ?DateTime $suspendedAt = null;
+
+    /**
+     * Timestamp when the organisation deprovisioning started
+     *
+     * @var DateTime|null Deprovisioning timestamp
+     */
+    protected ?DateTime $deprovisionedAt = null;
+
+    /**
      * UUID of parent organisation for hierarchical organisation structures
      *
      * Enables parent-child relationships where children inherit access
@@ -229,6 +292,55 @@ class Organisation extends Entity implements JsonSerializable
     public ?int $userCount = null;
 
     /**
+     * Linked mail entity IDs for this organisation.
+     *
+     * @var array|null Linked mail entity IDs
+     */
+    protected ?array $mail = null;
+
+    /**
+     * Linked contact entity IDs for this organisation.
+     *
+     * @var array|null Linked contact entity IDs
+     */
+    protected ?array $contacts = null;
+
+    /**
+     * Linked note entity IDs for this organisation.
+     *
+     * @var array|null Linked note entity IDs
+     */
+    protected ?array $notes = null;
+
+    /**
+     * Linked todo entity IDs for this organisation.
+     *
+     * @var array|null Linked todo entity IDs
+     */
+    protected ?array $todos = null;
+
+    /**
+     * Linked calendar event entity IDs for this organisation.
+     *
+     * @var array|null Linked calendar entity IDs
+     */
+    protected ?array $calendar = null;
+
+    /**
+     * Linked Talk conversation IDs for this organisation.
+     *
+     * @var array|null Linked Talk entity IDs
+     */
+    protected ?array $talk = null;
+
+    /**
+     * Linked Deck card IDs for this organisation.
+     *
+     * @var array|null Linked Deck entity IDs
+     */
+    protected ?array $deck = null;
+
+    /**
      * Organisation constructor
      *
      * Sets up the entity type mappings for proper database handling.
@@ -250,6 +362,18 @@ class Organisation extends Entity implements JsonSerializable
         $this->addType(fieldName: 'request_quota', type: 'integer');
         $this->addType(fieldName: 'authorization', type: 'json');
         $this->addType(fieldName: 'parent', type: 'string');
+        $this->addType(fieldName: 'mail', type: 'json');
+        $this->addType(fieldName: 'contacts', type: 'json');
+        $this->addType(fieldName: 'notes', type: 'json');
+        $this->addType(fieldName: 'todos', type: 'json');
+        $this->addType(fieldName: 'calendar', type: 'json');
+        $this->addType(fieldName: 'talk', type: 'json');
+        $this->addType(fieldName: 'deck', type: 'json');
+        $this->addType(fieldName: 'status', type: 'string');
+        $this->addType(fieldName: 'environment', type: 'string');
+        $this->addType(fieldName: 'provisioned_at', type: 'datetime');
+        $this->addType(fieldName: 'suspended_at', type: 'datetime');
+        $this->addType(fieldName: 'deprovisioned_at', type: 'datetime');
     }//end __construct()
 
     /**
@@ -635,18 +759,18 @@ class Organisation extends Entity implements JsonSerializable
         $groups = $this->getGroups();
 
         return [
-            'id'            => $this->id,
-            'uuid'          => $this->uuid,
-            'slug'          => $this->slug,
-            'name'          => $this->name,
-            'description'   => $this->description,
-            'users'         => $users,
-            'groups'        => $groups,
-            'owner'         => $this->owner,
-            'active'        => $this->isActive(),
-            'parent'        => $this->parent,
-            'children'      => $this->children ?? [],
-            'quota'         => [
+            'id'              => $this->id,
+            'uuid'            => $this->uuid,
+            'slug'            => $this->slug,
+            'name'            => $this->name,
+            'description'     => $this->description,
+            'users'           => $users,
+            'groups'          => $groups,
+            'owner'           => $this->owner,
+            'active'          => $this->isActive(),
+            'parent'          => $this->parent,
+            'children'        => $this->children ?? [],
+            'quota'           => [
                 'storage'   => $this->storageQuota,
                 'bandwidth' => $this->bandwidthQuota,
                 'requests'  => $this->requestQuota,
@@ -655,7 +779,7 @@ class Organisation extends Entity implements JsonSerializable
                 'groups'    => null,
         // To be set via admin configuration.
             ],
-            'usage'         => [
+            'usage'           => [
                 'storage'   => 0,
             // To be calculated from actual usage.
                 'bandwidth' => 0,
@@ -665,9 +789,21 @@ class Organisation extends Entity implements JsonSerializable
                 'users'     => count($users),
                 'groups'    => count($groups),
             ],
-            'authorization' => $this->authorization ?? $this->getDefaultAuthorization(),
-            'created'       => $this->getCreatedFormatted(),
-            'updated'       => $this->getUpdatedFormatted(),
+            'authorization'   => $this->authorization ?? $this->getDefaultAuthorization(),
+            'status'          => $this->status ?? 'active',
+            'environment'     => $this->environment ?? 'production',
+            'provisionedAt'   => $this->provisionedAt instanceof DateTime ? $this->provisionedAt->format('c') : null,
+            'suspendedAt'     => $this->suspendedAt instanceof DateTime ? $this->suspendedAt->format('c') : null,
+            'deprovisionedAt' => $this->deprovisionedAt instanceof DateTime ? $this->deprovisionedAt->format('c') : null,
+            'created'         => $this->getCreatedFormatted(),
+            'updated'         => $this->getUpdatedFormatted(),
+            '_mail'           => $this->mail,
+            '_contacts'       => $this->contacts,
+            '_notes'          => $this->notes,
+            '_todos'          => $this->todos,
+            '_calendar'       => $this->calendar,
+            '_talk'           => $this->talk,
+            '_deck'           => $this->deck,
         ];
     }//end jsonSerialize()
 

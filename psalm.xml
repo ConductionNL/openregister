@@ -81,6 +81,8 @@
                 <referencedClass name="OCP\Notification\IManager"/>
                 <referencedClass name="OCP\Share\IManager"/>
                 <referencedClass name="OC\Files\AppData\Factory"/>
+                <referencedClass name="OC\Security\CSP\ContentSecurityPolicyNonceManager"/>
+                <referencedClass name="OC\Security\CSRF\CsrfTokenManager"/>
                 <referencedClass name="Doctrine\DBAL\Platforms\PostgreSQLPlatform"/>
                 <referencedClass name="OCA\DAV\CalDAV\CalDavBackend"/>
                 <referencedClass name="Sabre\VObject\Reader"/>
