@@ -38,3 +38,16 @@ Standard four; single-entity is amount chip.
 ### Requirement: Permission Inheritance
 
 `requiresPermission() === null`; Cospend ACLs apply.
+
+---
+
+### Requirement: Graceful Degradation
+
+The provider SHALL conform to the umbrella's Error-Handling Contract. When an underlying bill or project in NC Cospend is missing, inaccessible, or the backing service is down, the provider SHALL surface the documented exception types rather than leaking generic errors.
+
+#### Scenario: Multiple currencies in the same link set
+
+- **GIVEN** an object linked to bills in EUR, USD, and GBP
+- **WHEN** `CnCospendCard` renders with `surface='detail-page'`
+- **THEN** three side-by-side totals MUST be rendered, one per currency
+- **AND** no cross-currency aggregation MUST be attempted

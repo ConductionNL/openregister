@@ -86,3 +86,16 @@ Schema property `referenceType: 'email'` SHALL render `CnEmailCard` at `surface=
 ### Requirement: Permission Inheritance
 
 `EmailProvider::requiresPermission()` SHALL return `null`. Access inherits from object RBAC + Mail app access (user sees only emails in accounts they control).
+
+---
+
+### Requirement: Graceful Degradation
+
+The provider SHALL conform to the umbrella's Error-Handling Contract. When an underlying email in Nextcloud Mail is missing, inaccessible, or the backing service is down, the provider SHALL surface the documented exception types rather than leaking generic errors.
+
+#### Scenario: Linked message deleted from Mail
+
+- **GIVEN** a link to a Mail message that was moved to trash and purged
+- **WHEN** `GET /api/objects/.../email/{linkId}` is called
+- **THEN** the response MUST be HTTP 404 per the umbrella Error-Handling Contract (`ProviderNotFoundException`)
+- **AND** the list endpoint MUST filter the orphaned record out rather than 404-ing the whole list

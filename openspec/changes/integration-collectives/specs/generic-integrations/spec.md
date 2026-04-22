@@ -52,3 +52,16 @@ Unlike other integrations, `CnCollectivesCard` at `surface='detail-page'` SHALL 
 ### Requirement: Permission Inheritance
 
 `requiresPermission() === null`; Collectives ACLs apply.
+
+---
+
+### Requirement: Graceful Degradation
+
+The provider SHALL conform to the umbrella's Error-Handling Contract. When an underlying page in NC Collectives is missing, inaccessible, or the backing service is down, the provider SHALL surface the documented exception types rather than leaking generic errors.
+
+#### Scenario: Linked page's collective access revoked
+
+- **GIVEN** a user whose access to a collective was revoked after a page was linked
+- **WHEN** `CnCollectivesTab` renders for that user
+- **THEN** the inaccessible page MUST render a "No access to this page" placeholder
+- **AND** the link record MUST NOT be removed (another user may still have access)

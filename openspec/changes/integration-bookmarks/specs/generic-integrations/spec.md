@@ -44,3 +44,16 @@ Four surfaces, standard contract.
 ### Requirement: Permission Inheritance
 
 `requiresPermission() === null`; Bookmarks' own ACLs apply.
+
+---
+
+### Requirement: Graceful Degradation
+
+The provider SHALL conform to the umbrella's Error-Handling Contract. When an underlying bookmark in NC Bookmarks is missing, inaccessible, or the backing service is down, the provider SHALL surface the documented exception types rather than leaking generic errors.
+
+#### Scenario: Bookmark URL returns HTTP error
+
+- **GIVEN** a linked bookmark whose URL returns 4xx/5xx at check time
+- **WHEN** the user clicks "check link" from the tab
+- **THEN** the bookmark row MUST display the returned status code and date checked
+- **AND** the link itself MUST remain (dead-link cleanup is manual, not automatic)

@@ -79,3 +79,16 @@ Tab SHALL support both creating new cards and linking existing cards. Creating S
 ### Requirement: Permission Inheritance
 
 `DeckProvider::requiresPermission()` SHALL return `null`. Deck ACLs govern per-board access transitively.
+
+---
+
+### Requirement: Graceful Degradation
+
+The provider SHALL conform to the umbrella's Error-Handling Contract. When an underlying Deck card in NC Deck is missing, inaccessible, or the backing service is down, the provider SHALL surface the documented exception types rather than leaking generic errors.
+
+#### Scenario: Linked card archived in Deck
+
+- **GIVEN** a linked card that was archived in Deck (not deleted)
+- **WHEN** `CnDeckCard` renders
+- **THEN** the card MUST display with a visible "Archived" badge
+- **AND** link operations (unlink, reassign board) MUST remain available

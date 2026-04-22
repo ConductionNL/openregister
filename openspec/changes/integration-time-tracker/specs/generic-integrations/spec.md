@@ -49,3 +49,16 @@ Standard four; detail-page shows per-user/week breakdown.
 ### Requirement: Permission Inheritance
 
 `requiresPermission() === null`; backend app ACLs govern.
+
+---
+
+### Requirement: Graceful Degradation
+
+The provider SHALL conform to the umbrella's Error-Handling Contract. When an underlying time entry in the configured Time backend is missing, inaccessible, or the backing service is down, the provider SHALL surface the documented exception types rather than leaking generic errors.
+
+#### Scenario: Reconcile repairs drift
+
+- **GIVEN** the per-object total in the link table drifts from the sum of individual entries
+- **WHEN** `occ openregister:time:reconcile` runs
+- **THEN** the total MUST be recalculated from the backend truth
+- **AND** each correction MUST be audit-logged

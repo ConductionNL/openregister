@@ -51,3 +51,16 @@ Response rendering SHALL be read-only. Editing delegates to NC Forms.
 ### Requirement: Permission Inheritance
 
 `FormsProvider::requiresPermission()` SHALL return `null`.
+
+---
+
+### Requirement: Graceful Degradation
+
+The provider SHALL conform to the umbrella's Error-Handling Contract. When an underlying form or response in NC Forms is missing, inaccessible, or the backing service is down, the provider SHALL surface the documented exception types rather than leaking generic errors.
+
+#### Scenario: Form deleted but response links exist
+
+- **GIVEN** a form was deleted from NC Forms after responses were linked to OR objects
+- **WHEN** `CnFormsTab` renders for an affected object
+- **THEN** linked response rows MUST render with "Form deleted" context rather than empty labels
+- **AND** a reconciliation action MUST be available to admins

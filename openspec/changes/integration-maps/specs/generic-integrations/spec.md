@@ -44,3 +44,16 @@ Users SHALL be able to add a location by (a) entering an address (geocoded) or (
 ### Requirement: Permission Inheritance
 
 `requiresPermission() === null`; object + Maps ACLs apply.
+
+---
+
+### Requirement: Graceful Degradation
+
+The provider SHALL conform to the umbrella's Error-Handling Contract. When an underlying location in NC Maps is missing, inaccessible, or the backing service is down, the provider SHALL surface the documented exception types rather than leaking generic errors.
+
+#### Scenario: Geocoding service unavailable during add
+
+- **GIVEN** user adds a location by address and the Nominatim service is unavailable
+- **WHEN** geocoding fails
+- **THEN** the UI MUST offer "Place on map" as a fallback (user clicks the map)
+- **AND** the link record MUST persist with `address_source='click-placed'` and the entered address text

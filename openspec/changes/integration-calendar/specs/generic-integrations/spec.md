@@ -127,3 +127,17 @@ The provider SHALL declare `requiresPermission(): null`. Access to the calendar 
 - **GIVEN** a user with object read access AND a restricted view of NC Calendar (limited to one calendar)
 - **WHEN** the user lists the object's meetings
 - **THEN** only meetings on calendars the user can see MUST be returned (NC Calendar enforces this transitively)
+
+---
+
+### Requirement: Graceful Degradation
+
+The provider SHALL conform to the umbrella's Error-Handling Contract. When an underlying VEVENT in Nextcloud Calendar is missing, inaccessible, or the backing service is down, the provider SHALL surface the documented exception types rather than leaking generic errors.
+
+#### Scenario: Concurrent unlink vs delete race
+
+- **GIVEN** a linked VEVENT
+- **AND** user A clicks "Unlink" in OR while user B deletes the VEVENT directly in NC Calendar at the same time
+- **WHEN** both operations resolve
+- **THEN** the link record MUST be removed (unlink succeeds)
+- **AND** no exception MUST be surfaced to user A for the missing VEVENT

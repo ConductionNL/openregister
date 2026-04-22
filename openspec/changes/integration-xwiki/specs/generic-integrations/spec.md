@@ -63,3 +63,23 @@ Standard four; single-entity is page-title + breadcrumb chip.
 ### Requirement: Permission Inheritance
 
 `requiresPermission() === null`; XWiki's own ACLs govern transitively via OpenConnector.
+
+---
+
+### Requirement: Graceful Degradation
+
+The provider SHALL conform to the umbrella's Error-Handling Contract. When an underlying wiki page in XWiki (via OpenConnector) is missing, inaccessible, or the backing service is down, the provider SHALL surface the documented exception types rather than leaking generic errors.
+
+#### Scenario: XWiki page moved to a new space
+
+- **GIVEN** a linked page that was moved from `Dept.Policy.Privacy` to `Legal.Privacy` in XWiki
+- **WHEN** `CnXwikiTab` renders
+- **THEN** the row MUST show the new breadcrumb (XWiki returns redirect to new path)
+- **AND** the link record's canonical reference SHOULD be updated on next fetch
+
+#### Scenario: XWiki macro output sanitisation
+
+- **GIVEN** a page containing an XWiki `{{velocity}}` macro
+- **WHEN** `CnXwikiCard` renders with `surface='detail-page'`
+- **THEN** the macro MUST be stripped (not executed) in the preview text
+- **AND** the preview MUST NOT include `<script>` or other executable markup from the XWiki renderer output

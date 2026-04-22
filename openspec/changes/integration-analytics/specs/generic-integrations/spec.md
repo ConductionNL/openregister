@@ -50,3 +50,22 @@ Standard four; single-entity includes sparkline.
 ### Requirement: Permission Inheritance
 
 `requiresPermission() === null`; Analytics ACLs govern.
+
+---
+
+### Requirement: Graceful Degradation
+
+The provider SHALL conform to the umbrella's Error-Handling Contract. When an underlying report in NC Analytics is missing, inaccessible, or the backing service is down, the provider SHALL surface the documented exception types rather than leaking generic errors.
+
+#### Scenario: Analytics report returns no data
+
+- **GIVEN** a linked Analytics report whose dataset has zero rows
+- **WHEN** `CnAnalyticsCard` renders
+- **THEN** an empty-state chart MUST be displayed with "No data" labeling
+- **AND** the refresh action MUST remain available
+
+#### Scenario: Analytics app version mismatch
+
+- **GIVEN** NC Analytics returns a chart config version OR does not recognise
+- **WHEN** `CnAnalyticsCard` attempts to render
+- **THEN** it MUST fall back to a link-out "Open in Analytics" affordance (no broken chart)

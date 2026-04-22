@@ -72,3 +72,16 @@ Widget on `user-dashboard` / `app-dashboard` SHALL display unread-message count 
 ### Requirement: Permission Inheritance
 
 `TalkProvider::requiresPermission()` SHALL return `null`. Talk's own room ACLs govern visibility transitively.
+
+---
+
+### Requirement: Graceful Degradation
+
+The provider SHALL conform to the umbrella's Error-Handling Contract. When an underlying conversation in NC Talk is missing, inaccessible, or the backing service is down, the provider SHALL surface the documented exception types rather than leaking generic errors.
+
+#### Scenario: Conversation deleted in Talk
+
+- **GIVEN** a linked Talk conversation that the user or an admin deleted in the Talk app
+- **WHEN** `CnTalkTab` renders
+- **THEN** the conversation MUST be filtered out of the listing
+- **AND** the empty state MUST appear if it was the last linked conversation

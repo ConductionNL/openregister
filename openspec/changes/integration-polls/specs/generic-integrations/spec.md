@@ -46,3 +46,22 @@ Tab SHALL show each poll's status (draft/open/closed), vote tally, and the curre
 ### Requirement: Permission Inheritance
 
 `PollsProvider::requiresPermission()` SHALL return `null`; Polls' own ACLs apply.
+
+---
+
+### Requirement: Graceful Degradation
+
+The provider SHALL conform to the umbrella's Error-Handling Contract. When an underlying poll in NC Polls is missing, inaccessible, or the backing service is down, the provider SHALL surface the documented exception types rather than leaking generic errors.
+
+#### Scenario: Closed poll remains accessible after closure
+
+- **GIVEN** a linked poll has been closed in NC Polls (status=closed)
+- **WHEN** `CnPollsTab` renders
+- **THEN** the poll MUST still be shown with final tally and `status='closed'`
+- **AND** vote affordances MUST NOT be rendered
+
+#### Scenario: Deleted poll filters out of list
+
+- **GIVEN** a linked poll was deleted from NC Polls
+- **WHEN** `CnPollsTab` renders
+- **THEN** the orphaned link MUST be filtered out with a log warning for admin reconciliation

@@ -49,3 +49,16 @@ Standard four; dashboard surface shows count headline.
 ### Requirement: Permission Inheritance
 
 `requiresPermission() === null`. Share visibility per-user is governed by NC Share Manager transitively.
+
+---
+
+### Requirement: Graceful Degradation
+
+The provider SHALL conform to the umbrella's Error-Handling Contract. When an underlying share in NC core sharing is missing, inaccessible, or the backing service is down, the provider SHALL surface the documented exception types rather than leaking generic errors.
+
+#### Scenario: User lacks share-management permission
+
+- **GIVEN** a user viewing object shares but lacking the NC permission to revoke a specific share
+- **WHEN** `CnSharesTab` renders that share
+- **THEN** the revoke action MUST be disabled with a tooltip "Only the share owner can revoke"
+- **AND** listing the share MUST still succeed

@@ -55,3 +55,16 @@ Standard four surfaces with grid/strip appropriate to each.
 ### Requirement: Permission Inheritance
 
 `requiresPermission() === null`; file permissions apply.
+
+---
+
+### Requirement: Graceful Degradation
+
+The provider SHALL conform to the umbrella's Error-Handling Contract. When an underlying photo in NC Photos is missing, inaccessible, or the backing service is down, the provider SHALL surface the documented exception types rather than leaking generic errors.
+
+#### Scenario: HEIC format without preview support
+
+- **GIVEN** a linked photo in HEIC format and the server has no HEIC preview provider
+- **WHEN** `CnPhotosTab` grid renders
+- **THEN** a format-unsupported placeholder MUST be shown with the filename
+- **AND** download MUST still work

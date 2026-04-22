@@ -84,3 +84,16 @@ Clicking a contact SHALL open a flyout listing all OR objects (across all schema
 ### Requirement: Permission Inheritance
 
 `ContactsProvider::requiresPermission()` SHALL return `null`. Access inherits from object RBAC + Contacts address book permissions.
+
+---
+
+### Requirement: Graceful Degradation
+
+The provider SHALL conform to the umbrella's Error-Handling Contract. When an underlying contact in NC Contacts is missing, inaccessible, or the backing service is down, the provider SHALL surface the documented exception types rather than leaking generic errors.
+
+#### Scenario: Linked contact deleted from address book
+
+- **GIVEN** a link pointing to a vCard that was deleted from NC Contacts
+- **WHEN** `CnContactsTab` renders
+- **THEN** the role section MUST show a "Contact unavailable" placeholder for the orphaned link
+- **AND** an admin-visible action MUST offer to clean up the stale link

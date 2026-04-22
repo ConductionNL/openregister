@@ -72,3 +72,16 @@ Capabilities response SHALL include `authStatus` in the `openproject` integratio
 ### Requirement: Permission Inheritance
 
 `requiresPermission() === null`; OpenProject's own ACLs govern per-WP visibility transitively.
+
+---
+
+### Requirement: Graceful Degradation
+
+The provider SHALL conform to the umbrella's Error-Handling Contract. When an underlying work package in OpenProject (via OpenConnector) is missing, inaccessible, or the backing service is down, the provider SHALL surface the documented exception types rather than leaking generic errors.
+
+#### Scenario: OpenConnector source returns rate-limit error
+
+- **GIVEN** a burst of list requests to OpenProject exceeds its rate limit
+- **WHEN** OpenConnector surfaces a 429
+- **THEN** the integration MUST render a "Rate-limited, retrying…" state
+- **AND** MUST back off and retry per OpenConnector's retry policy (not reimplemented in OR)

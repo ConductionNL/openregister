@@ -49,3 +49,16 @@ Standard four; detail-page shows linked rules + recent events.
 - **WHEN** `CnObjectSidebar` renders
 - **THEN** no Flow tab MUST appear
 - **AND** `/api/integrations/flow` MUST return HTTP 403 for the user
+
+---
+
+### Requirement: Graceful Degradation
+
+The provider SHALL conform to the umbrella's Error-Handling Contract. When an underlying flow rule in NC Flow (workflowengine) is missing, inaccessible, or the backing service is down, the provider SHALL surface the documented exception types rather than leaking generic errors.
+
+#### Scenario: Flow rule deleted while linked
+
+- **GIVEN** a flow rule link whose underlying rule was deleted in NC Flow admin
+- **WHEN** `CnFlowTab` renders
+- **THEN** the row MUST render a "Rule deleted" placeholder with the former rule name (from cache)
+- **AND** the "recent events" panel MUST continue to show historical fires from the NC event log

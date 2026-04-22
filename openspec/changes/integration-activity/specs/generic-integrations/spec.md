@@ -48,3 +48,16 @@ Standard four surfaces; detail-page surface mirrors tab.
 ### Requirement: Permission Inheritance
 
 `requiresPermission() === null`; NC Activity's filtering governs per-user visibility.
+
+---
+
+### Requirement: Graceful Degradation
+
+The provider SHALL conform to the umbrella's Error-Handling Contract. When an underlying activity event in NC Activity is missing, inaccessible, or the backing service is down, the provider SHALL surface the documented exception types rather than leaking generic errors.
+
+#### Scenario: Activity app disabled mid-session
+
+- **GIVEN** the user had `CnActivityTab` open when an admin disabled NC Activity
+- **WHEN** the next poll fetches new events
+- **THEN** the tab MUST render a "Activity unavailable" state (no crash)
+- **AND** the integration MUST disappear from the registry on the next request
