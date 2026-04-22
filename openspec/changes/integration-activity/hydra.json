@@ -3,9 +3,10 @@
   "spec_slug": "integration-activity",
   "app": "openregister",
   "repo": "https://github.com/ConductionNL/openregister",
-  "depends_on": ["pluggable-integration-registry"],
-  "wave": 2,
-  "wave_label": "nc-native-greenfield",
-  "notes": "Introduces 'query-time' storage strategy; coordinates with umbrella for enum update",
+  "depends_on": [
+    "pluggable-integration-registry"
+  ],
+  "issue": "",
+  "pipeline": {},
   "cycles": []
 }

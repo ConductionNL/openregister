@@ -3,10 +3,10 @@
   "spec_slug": "integration-calendar",
   "app": "openregister",
   "repo": "https://github.com/ConductionNL/openregister",
-  "depends_on": ["pluggable-integration-registry"],
-  "wave": 1,
-  "wave_label": "backend-ready-ui-missing",
-  "soft_depends_on": ["integration-contacts"],
-  "soft_depends_reason": "Attendee picker uses contacts integration's single-entity widget when available; falls back to plain email input otherwise — leaf is independently shippable",
+  "depends_on": [
+    "pluggable-integration-registry"
+  ],
+  "issue": "",
+  "pipeline": {},
   "cycles": []
 }
