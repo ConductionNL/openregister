@@ -72,6 +72,7 @@ import ActionsTab from './components/ActionsTab.vue'
 import ObjectsTab from './components/ObjectsTab.vue'
 import EntitiesTab from './components/EntitiesTab.vue'
 import { useMailObserver } from './composables/useMailObserver.js'
+import { useAttachmentDrag } from './composables/useAttachmentDrag.js'
 
 import LinkVariant from 'vue-material-design-icons/LinkVariant.vue'
 import Plus from 'vue-material-design-icons/Plus.vue'
@@ -93,6 +94,7 @@ export default {
 	},
 	setup() {
 		const mailObserver = useMailObserver({ debounceMs: 300 })
+		useAttachmentDrag()
 		return { ...mailObserver }
 	},
 	data() {
