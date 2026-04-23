@@ -25,14 +25,17 @@ use OCP\Migration\IOutput;
 use OCP\Migration\SimpleMigrationStep;
 
 /**
- * Relax `object` NOT NULL on `oc_openregister_audit_trails`.
+ * Relax NOT NULL on legacy `oc_openregister_audit_trails` columns.
  *
  * The referential-integrity audit entries (cascade_delete, set_null,
  * set_default, restrict_blocked) are written from code paths that only know
- * the affected object's UUID, not its integer primary key. With `object`
- * declared NOT NULL the INSERT fails on PostgreSQL, which aborts the entire
- * delete transaction and surfaces as a 403 to the caller. `object_uuid`
- * already carries the useful identifier; `object` is a legacy FK-ish column.
+ * the affected object's UUID, the action, the changed payload, the user ID,
+ * and the timestamp. With `object`, `user_name`, and `session` declared
+ * NOT NULL the INSERT fails on PostgreSQL, which aborts the entire delete
+ * transaction and surfaces as a 403 to the caller. The alternate
+ * identifiers (`object_uuid`, `user`) already carry the useful information;
+ * `user_name` and `session` are display-only legacy columns, and `object`
+ * is a legacy FK-ish integer column.
  *
  * @SuppressWarnings(PHPMD.UnusedFormalParameter)
  */
@@ -59,18 +62,27 @@ class Version1Date20260423100000 extends SimpleMigrationStep
             return null;
         }
 
-        $table = $schema->getTable('openregister_audit_trails');
-        if ($table->hasColumn('object') === false) {
-            return null;
+        $table   = $schema->getTable('openregister_audit_trails');
+        $changed = false;
+
+        foreach (['object', 'user_name', 'session'] as $columnName) {
+            if ($table->hasColumn($columnName) === false) {
+                continue;
+            }
+
+            $column = $table->getColumn($columnName);
+            if ($column->getNotnull() === false) {
+                continue;
+            }
+
+            $column->setNotnull(false);
+            $output->info("Relaxed NOT NULL on openregister_audit_trails.$columnName");
+            $changed = true;
         }
 
-        $column = $table->getColumn('object');
-        if ($column->getNotnull() === false) {
+        if ($changed === false) {
             return null;
         }
-
-        $column->setNotnull(false);
-        $output->info('Relaxed NOT NULL on openregister_audit_trails.object');
 
         return $schema;
     }//end changeSchema()
