@@ -1784,12 +1784,16 @@ class TextExtractionService
                 ];
             }
 
-            $offset += $chunkLength - $chunkOverlap;
-
-            // Prevent infinite loop.
-            if ($offset <= 0) {
-                $offset = $chunkLength;
+            // If chunk cannot advance past overlap (e.g. final sliver of
+            // text), stop — the remainder is already captured above or too
+            // small to emit. Prevents an infinite loop when the remaining
+            // tail is shorter than or equal to $chunkOverlap.
+            $advance = ($chunkLength - $chunkOverlap);
+            if ($advance < 1) {
+                break;
             }
+
+            $offset += $advance;
         }//end while
 
         return array_filter(
