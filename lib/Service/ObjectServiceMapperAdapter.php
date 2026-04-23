@@ -2,6 +2,10 @@
 /**
  * Adapter that exposes a mapper-like API over ObjectService.
  *
+ * @author    Conduction Development Team <info@conduction.nl>
+ * @copyright 2024 Conduction B.V.
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ *
  * @category Service
  * @package  OCA\OpenRegister\Service
  */
@@ -23,13 +27,12 @@ use OCA\OpenRegister\Service\Object\ValidateObject;
  */
 class ObjectServiceMapperAdapter
 {
-
     /**
      * Constructor.
      *
-     * @param ObjectService        $objectService The underlying object service.
-     * @param int|string|null      $register      Register ID to scope all calls to.
-     * @param int|string|null      $schema        Schema ID to scope all calls to.
+     * @param ObjectService   $objectService The underlying object service.
+     * @param int|string|null $register      Register ID to scope all calls to.
+     * @param int|string|null $schema        Schema ID to scope all calls to.
      */
     public function __construct(
         private readonly ObjectService $objectService,
@@ -288,5 +291,4 @@ class ObjectServiceMapperAdapter
     {
         return $this->objectService->getValidateHandler();
     }//end getValidateHandler()
-
 }//end class
