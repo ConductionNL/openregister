@@ -272,7 +272,7 @@ class AuditTrailMapper extends QBMapper
             $objectEntity = $new;
         }
 
-        if ($action === 'delete' || str_starts_with((string) $action, 'referential_integrity.')) {
+        if ($action === 'delete' || str_starts_with((string) $action, 'referential_integrity.') === true) {
             $objectEntity = $old;
         }
 
@@ -284,7 +284,7 @@ class AuditTrailMapper extends QBMapper
         $isDeleteAction = (
             $action === 'delete'
             || $action === 'read'
-            || str_starts_with($action, 'referential_integrity.')
+            || str_starts_with($action, 'referential_integrity.') === true
         );
         if ($isDeleteAction === false) {
             $oldArray = [];
