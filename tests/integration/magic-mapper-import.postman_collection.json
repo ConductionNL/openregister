@@ -77,9 +77,9 @@
 					}
 				},
 				"url": {
-					"raw": "{{base_url}}/configurations?force=true",
+					"raw": "{{base_url}}/index.php/apps/openregister/api/configurations?force=true",
 					"host": ["{{base_url}}"],
-					"path": ["configurations"],
+					"path": ["index.php", "apps", "openregister", "api", "configurations"],
 					"query": [
 						{
 							"key": "force",
@@ -125,9 +125,9 @@
 				"method": "GET",
 				"header": [],
 				"url": {
-					"raw": "{{base_url}}/registers?slug=voorzieningen",
+					"raw": "{{base_url}}/index.php/apps/openregister/api/registers?slug=voorzieningen",
 					"host": ["{{base_url}}"],
-					"path": ["registers"],
+					"path": ["index.php", "apps", "openregister", "api", "registers"],
 					"query": [
 						{
 							"key": "slug",
@@ -168,9 +168,9 @@
 				"method": "GET",
 				"header": [],
 				"url": {
-					"raw": "{{base_url}}/schemas?slug=module",
+					"raw": "{{base_url}}/index.php/apps/openregister/api/schemas?slug=module",
 					"host": ["{{base_url}}"],
-					"path": ["schemas"],
+					"path": ["index.php", "apps", "openregister", "api", "schemas"],
 					"query": [
 						{
 							"key": "slug",
@@ -229,9 +229,9 @@
 					]
 				},
 				"url": {
-					"raw": "{{base_url}}/registers/{{register_id}}/import",
+					"raw": "{{base_url}}/index.php/apps/openregister/api/registers/{{register_id}}/import",
 					"host": ["{{base_url}}"],
-					"path": ["registers", "{{register_id}}", "import"]
+					"path": ["index.php", "apps", "openregister", "api", "registers", "{{register_id}}", "import"]
 				}
 			},
 			"response": []
@@ -269,9 +269,9 @@
 				"method": "GET",
 				"header": [],
 				"url": {
-					"raw": "{{base_url}}/objects?register=voorzieningen&schema=module&_limit=5",
+					"raw": "{{base_url}}/index.php/apps/openregister/api/objects?register=voorzieningen&schema=module&_limit=5",
 					"host": ["{{base_url}}"],
-					"path": ["objects"],
+					"path": ["index.php", "apps", "openregister", "api", "objects"],
 					"query": [
 						{
 							"key": "register",
