@@ -39,31 +39,31 @@
 					</td>
 				</tr>
 
-				<!-- User group (authenticated users) -->
+				<!-- Authenticated users group -->
 				<tr class="user-row">
 					<td class="group-name">
-						<span class="group-badge user">user</span>
+						<span class="group-badge user">authenticated</span>
 						<small>Authenticated users</small>
 					</td>
 					<td>
 						<NcCheckboxRadioSwitch
-							:checked="hasPermission('user', 'create')"
-							@update:checked="updatePermission('user', 'create', $event)" />
+							:checked="hasPermission('authenticated', 'create')"
+							@update:checked="updatePermission('authenticated', 'create', $event)" />
 					</td>
 					<td>
 						<NcCheckboxRadioSwitch
-							:checked="hasPermission('user', 'read')"
-							@update:checked="updatePermission('user', 'read', $event)" />
+							:checked="hasPermission('authenticated', 'read')"
+							@update:checked="updatePermission('authenticated', 'read', $event)" />
 					</td>
 					<td>
 						<NcCheckboxRadioSwitch
-							:checked="hasPermission('user', 'update')"
-							@update:checked="updatePermission('user', 'update', $event)" />
+							:checked="hasPermission('authenticated', 'update')"
+							@update:checked="updatePermission('authenticated', 'update', $event)" />
 					</td>
 					<td>
 						<NcCheckboxRadioSwitch
-							:checked="hasPermission('user', 'delete')"
-							@update:checked="updatePermission('user', 'delete', $event)" />
+							:checked="hasPermission('authenticated', 'delete')"
+							@update:checked="updatePermission('authenticated', 'delete', $event)" />
 					</td>
 				</tr>
 
@@ -184,7 +184,7 @@ export default {
 			// If no organisation groups specified, show all available groups
 			if (!this.organisationGroups || this.organisationGroups.length === 0) {
 				return this.availableGroups
-					.filter(group => group.id !== 'admin' && group.id !== 'public' && group.id !== 'user')
+					.filter(group => group.id !== 'admin' && group.id !== 'public' && group.id !== 'authenticated')
 					.sort((a, b) => a.name.localeCompare(b.name))
 			}
 
@@ -192,7 +192,7 @@ export default {
 			return this.availableGroups
 				.filter(group => {
 					// Exclude special groups
-					if (group.id === 'admin' || group.id === 'public' || group.id === 'user') {
+					if (group.id === 'admin' || group.id === 'public' || group.id === 'authenticated') {
 						return false
 					}
 					// Only include groups that are in the organisation's groups list
