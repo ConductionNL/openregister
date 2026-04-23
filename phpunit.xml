@@ -5,6 +5,7 @@
          colors="true"
          cacheDirectory=".phpunit.cache"
          executionOrder="default"
+         defaultTestSuite="Unit Tests"
          requireCoverageMetadata="false"
          beStrictAboutCoverageMetadata="true"
          beStrictAboutOutputDuringTests="true"
