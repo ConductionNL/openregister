@@ -38,6 +38,11 @@ if (defined('PHP_CODESNIFFER_CBF') === false) {
 
 /**
  * NoLegacyServerAccessorsSniffTest — covers positive and negative cases.
+ *
+ * @requires PHP < 8.4
+ * Skipped on PHP 8.4 pending PHPCS 3.10+ upgrade: squizlabs/php_codesniffer 3.9
+ * references a `T_ANON_CLASS` constant via dead-code paths that PHP 8.4 flags
+ * as an error when the Generic Functions sniff is loaded.
  */
 final class NoLegacyServerAccessorsSniffTest extends TestCase
 {
