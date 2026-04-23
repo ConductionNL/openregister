@@ -3152,6 +3152,18 @@ class MagicMapper extends AbstractObjectMapper
                         }
                     }//end if
 
+                    // Normalise date/date-time properties to Y-m-d H:i:s for MySQL DATETIME columns.
+                    $propertyFormat = $propertyConfig['format'] ?? null;
+                    if (in_array($propertyFormat, ['date-time', 'date'], true) === true && $value !== null) {
+                        if ($value instanceof \DateTime) {
+                            $value = $value->format('Y-m-d H:i:s');
+                        } else if (is_string($value) === true) {
+                            $value = $this->container
+                                ->get(\OCA\OpenRegister\Service\DateTimeNormalizer::class)
+                                ->formatForDatabase($value);
+                        }
+                    }
+
                     // Convert boolean values to integers (0/1) for database compatibility.
                     // PHP's false can be incorrectly converted to empty string '' by some drivers.
                     // Using 0/1 integers ensures PostgreSQL and other databases handle booleans correctly.
@@ -5088,6 +5100,9 @@ class MagicMapper extends AbstractObjectMapper
             $objectData = $entity->getObject() ?? [];
             $entity->setObject(array_merge($objectData, $modifiedData));
         }
+
+        // Ensure table has all required columns before updating (e.g. _tmlo added after table was created).
+        $this->ensureTableForRegisterSchema(register: $register, schema: $schema);
 
         $tableName = $this->getTableNameForRegisterSchema(register: $register, schema: $schema);
         $uuid      = $entity->getUuid();

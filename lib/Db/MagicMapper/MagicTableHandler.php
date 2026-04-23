@@ -115,7 +115,7 @@ class MagicTableHandler
                     // The version hash can be stale if it was stored without a full sync.
                     $requiredColumns = $this->magicMapper->buildTableColumnsFromSchema(schema: $schema);
                     $currentColumns  = $this->magicMapper->getExistingTableColumns(tableName: $tableName);
-                    $missingColumns  = array_diff_key($requiredColumns, array_flip($currentColumns));
+                    $missingColumns  = array_diff_key($requiredColumns, $currentColumns);
 
                     if (empty($missingColumns) === true) {
                         $this->logger->debug(
