@@ -15,6 +15,8 @@
  * @version GIT: <git_id>
  *
  * @link https://www.OpenRegister.nl
+ *
+ * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-88
  */
 
 namespace OCA\OpenRegister\Service\Settings;
@@ -93,6 +95,8 @@ class SearchBackendHandler
      * @return array Backend configuration with 'active' key.
      *
      * @throws \RuntimeException If backend configuration retrieval fails.
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-88
      */
     public function getSearchBackendConfig(): array
     {
@@ -125,6 +129,8 @@ class SearchBackendHandler
      * @throws \RuntimeException If backend configuration update fails.
      *
      * @psalm-return array{active: 'elasticsearch'|'solr', available: list{'solr', 'elasticsearch'}, updated: int<1, max>}
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-88
      */
     public function updateSearchBackendConfig(string $backend): array
     {

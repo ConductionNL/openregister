@@ -41,6 +41,9 @@
 </template>
 
 <script>
+/**
+ * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-50
+ */
 import { translate as t } from '@nextcloud/l10n'
 import axios from '@nextcloud/axios'
 import { generateUrl } from '@nextcloud/router'
@@ -172,6 +175,9 @@ export default {
 				this.$set(this.searching, schema.id, false)
 			}
 		},
+		/**
+		 * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-50
+		 */
 		async linkObject(schema, obj) {
 			const objectUuid = obj.id || obj.uuid || obj._uuid
 			if (!objectUuid || !this.accountId || !this.messageId) return
