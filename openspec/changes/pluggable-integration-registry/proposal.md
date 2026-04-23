@@ -106,7 +106,7 @@ This is the **umbrella**. The individual integrations (email, calendar, deck, co
 - OCS capabilities exposure — full registry (id + label + group + enabled + permission + auth status) advertised via `/ocs/v2.php/cloud/capabilities`
 - Deprecate `LinkedEntityService::TYPE_COLUMN_MAP` constant — marked deprecated in this change; removal scheduled in a follow-up cleanup change after built-in providers stabilise
 - ADR `hydra/openspec/architecture/adr-019-integration-registry.md` — org-wide (multiple Conduction apps consume the registry)
-- Companion ADR flagged but **not authored here**: `adr-020-apps-consume-or-abstractions.md` (org-wide principle — separate small change in hydra)
+- Companion ADR flagged but **not authored here**: `adr-022-apps-consume-or-abstractions.md` (org-wide principle — separate small change in hydra)
 - Developer guide: `docs/integrations/README.md` — "How to add an integration"
 - Scaffold script: `scripts/scaffold-integration.sh <id>` — generates the skeleton a leaf change needs
 - Spec delta: new `generic-integrations` capability
@@ -120,7 +120,7 @@ This is the **umbrella**. The individual integrations (email, calendar, deck, co
 - Reworking the OpenConnector source/consumer API itself — this change uses it as-is.
 - Fusing `LinkedEntityService` with `RelationsService` — they remain distinct in this umbrella. The contract is *shaped* to allow future unification (provider talks about "linked things" generically) but the unification is a separate later change.
 - Removing `LinkedEntityService::TYPE_COLUMN_MAP` — deprecated here, removed in a follow-up cleanup change.
-- Authoring the companion `adr-020-apps-consume-or-abstractions.md` — flagged as required, lives in hydra, separate change.
+- Authoring the companion `adr-022-apps-consume-or-abstractions.md` — flagged as required, lives in hydra, separate change.
 - Dashboard / detail page composition per consuming app — each app chooses which integrations to include on which surfaces.
 - Migration of existing schema reference properties to use the new `referenceType` marker — schemas opt in as needed; no bulk migration.
 

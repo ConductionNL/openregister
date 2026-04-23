@@ -256,7 +256,7 @@ The `referenceType` marker is added to the schema property type system as an opt
 
 ### AD-21: Apps consume OR abstractions over local duplication (companion ADR)
 
-**Decision**: This umbrella references — and depends on — a companion org-wide ADR ("Apps consume OpenRegister abstractions") that lives in `hydra/openspec/architecture/adr-020-apps-consume-or-abstractions.md` (companion to ADR-019 which this change instantiates). That ADR is *not authored by this change*; it is flagged as required and tracked as a separate proposal in the hydra repo.
+**Decision**: This umbrella references — and depends on — a companion org-wide ADR ("Apps consume OpenRegister abstractions") that lives in `hydra/openspec/architecture/adr-022-apps-consume-or-abstractions.md` (companion to ADR-019 which this change instantiates). That ADR is *not authored by this change*; it is flagged as required and tracked as a separate proposal in the hydra repo.
 
 **Why**: The integration registry is a concrete instance of a broader principle: Conduction apps should hook into OpenRegister abstractions (registers, schemas, objects, integrations, RBAC, audit, archival, ...) rather than build parallel mechanisms. That principle applies far beyond integrations and deserves its own ADR. Codifying it explicitly prevents future drift where an app reinvents, say, a sidebar tab system or a relations table.
 
@@ -467,7 +467,7 @@ GET    /api/integrations/{integrationId}    ← single integration metadata + he
 
 | File | Purpose |
 |---|---|
-| `hydra/openspec/architecture/adr-020-apps-consume-or-abstractions.md` | Org-wide principle ADR — flagged as required, lives in a separate hydra change |
+| `hydra/openspec/architecture/adr-022-apps-consume-or-abstractions.md` | Org-wide principle ADR — flagged as required, lives in a separate hydra change |
 
 ## Risks
 
