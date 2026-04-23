@@ -15,6 +15,8 @@
  * @version GIT: <git-id>
  *
  * @link https://www.OpenRegister.app
+ *
+ * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-83
  */
 
 declare(strict_types=1);
@@ -192,6 +194,8 @@ class ScheduledWorkflowJob extends TimedJob
      * @param string            $error     Error message
      *
      * @return void
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-83
      */
     private function handleError(ScheduledWorkflow $schedule, $startTime, string $error): void
     {

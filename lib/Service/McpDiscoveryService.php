@@ -15,6 +15,9 @@
  * @version GIT: <git-id>
  *
  * @link https://OpenRegister.app
+ *
+ * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-52
+ * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-53
  */
 
 namespace OCA\OpenRegister\Service;
@@ -107,6 +110,8 @@ class McpDiscoveryService
      * @param string $capabilityId The capability identifier
      *
      * @return string The absolute URL
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-52
      */
     private function getCapabilityHref(string $capabilityId): string
     {
@@ -122,6 +127,8 @@ class McpDiscoveryService
      * Returns a compact overview of all capability areas with drill-down URLs.
      *
      * @return array<string, mixed> The discovery catalog
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-52
      */
     public function getCatalog(): array
     {
@@ -232,6 +239,8 @@ class McpDiscoveryService
      * @return array<string, mixed>|null The capability detail, or null if unknown
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-53
      */
     public function getCapabilityDetail(string $capability): ?array
     {
@@ -262,6 +271,8 @@ class McpDiscoveryService
      * @SuppressWarnings(PHPMD.UnusedPrivateMethod)
      *
      * @return array<string, mixed> Capability detail with endpoints and context
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-53
      */
     private function buildRegistersCapability(): array
     {
@@ -335,6 +346,8 @@ class McpDiscoveryService
      * @SuppressWarnings(PHPMD.UnusedPrivateMethod)
      *
      * @return array<string, mixed> Capability detail with endpoints and context
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-53
      */
     private function buildSchemasCapability(): array
     {
@@ -406,6 +419,8 @@ class McpDiscoveryService
      * @SuppressWarnings(PHPMD.UnusedPrivateMethod)
      *
      * @return array<string, mixed> Capability detail with endpoints and context
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-53
      */
     private function buildObjectsCapability(): array
     {
@@ -545,6 +560,8 @@ class McpDiscoveryService
      * @SuppressWarnings(PHPMD.UnusedPrivateMethod)
      *
      * @return array<string, mixed> Capability detail with endpoints and context
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-53
      */
     private function buildSearchCapability(): array
     {
@@ -617,6 +634,8 @@ class McpDiscoveryService
      * @SuppressWarnings(PHPMD.UnusedPrivateMethod)
      *
      * @return array<string, mixed> Capability detail with endpoints and context
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-53
      */
     private function buildFilesCapability(): array
     {
@@ -671,6 +690,8 @@ class McpDiscoveryService
      * @SuppressWarnings(PHPMD.UnusedPrivateMethod)
      *
      * @return array<string, mixed> Capability detail with endpoints and context
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-53
      */
     private function buildAuditCapability(): array
     {
@@ -710,6 +731,8 @@ class McpDiscoveryService
      * @SuppressWarnings(PHPMD.UnusedPrivateMethod)
      *
      * @return array<string, mixed> Capability detail with endpoints and context
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-53
      */
     private function buildBulkCapability(): array
     {
@@ -749,6 +772,8 @@ class McpDiscoveryService
      * @SuppressWarnings(PHPMD.UnusedPrivateMethod)
      *
      * @return array<string, mixed> Capability detail with endpoints and context
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-53
      */
     private function buildWebhooksCapability(): array
     {
@@ -803,6 +828,8 @@ class McpDiscoveryService
      * @SuppressWarnings(PHPMD.UnusedPrivateMethod)
      *
      * @return array<string, mixed> Capability detail with endpoints and context
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-53
      */
     private function buildChatCapability(): array
     {
@@ -852,6 +879,8 @@ class McpDiscoveryService
      * @SuppressWarnings(PHPMD.UnusedPrivateMethod)
      *
      * @return array<string, mixed> Capability detail with endpoints and context
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-53
      */
     private function buildViewsCapability(): array
     {

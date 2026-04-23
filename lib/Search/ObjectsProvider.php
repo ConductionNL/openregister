@@ -15,6 +15,8 @@
  * @version GIT: <git-id>
  *
  * @link https://OpenRegister.app
+ *
+ * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-91
  */
 
 declare(strict_types=1);
@@ -246,6 +248,8 @@ class ObjectsProvider implements IFilteringProvider
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)  Search filter building requires many conditional checks
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
      * Search requires handling many filters, building queries, and formatting results
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-91
      */
     public function search(IUser $user, ISearchQuery $query): SearchResult
     {

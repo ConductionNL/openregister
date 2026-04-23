@@ -16,6 +16,9 @@
  * @version GIT: <git_id>
  *
  * @link https://www.OpenRegister.app
+ *
+ * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-22
+ * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-24
  */
 
 declare(strict_types=1);
@@ -98,6 +101,8 @@ class EdepotTransferService
      * @param TransportInterface  $transport    The transport to use.
      *
      * @return array<string,mixed> The updated transfer list with results.
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-22
      */
     public function executeTransfer(array $transferList, TransportInterface $transport): array
     {
@@ -518,6 +523,8 @@ class EdepotTransferService
      * @param string              $transport    The transport protocol name.
      *
      * @return void
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-24
      */
     private function logTransferInitiated(array $transferList, string $transport): void
     {
@@ -541,6 +548,8 @@ class EdepotTransferService
      * @param string       $reference    The e-Depot reference.
      *
      * @return void
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-24
      */
     private function logObjectTransferred(ObjectEntity $object, string $transferUuid, string $reference): void
     {
@@ -579,6 +588,8 @@ class EdepotTransferService
      * @param string              $transport    Transport protocol.
      *
      * @return void
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-24
      */
     private function logTransferFailed(array $transferList, string $error, string $transport): void
     {

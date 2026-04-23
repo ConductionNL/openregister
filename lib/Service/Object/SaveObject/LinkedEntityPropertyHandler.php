@@ -10,6 +10,8 @@
  * @author   Conduction <info@conduction.nl>
  * @license  EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  * @link     https://github.com/ConductionNL/openregister
+ *
+ * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-43
  */
 
 namespace OCA\OpenRegister\Service\Object\SaveObject;
@@ -83,6 +85,8 @@ class LinkedEntityPropertyHandler
      * @param array        $data   The object data being saved
      *
      * @return ObjectEntity The updated object entity
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-43
      */
     public function extractAndPopulate(ObjectEntity $object, Schema $schema, array $data): ObjectEntity
     {
@@ -198,6 +202,8 @@ class LinkedEntityPropertyHandler
      * @param array        $newIds The newly extracted IDs
      *
      * @return void
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-43
      */
     private function mergeIntoMetadataColumn(ObjectEntity $object, string $ncType, array $newIds): void
     {
