@@ -43,18 +43,6 @@ class ObjectServiceMapperAdapter
     }
 
     /**
-     * Alias of find() for interface compatibility with QBMapper-based mappers.
-     *
-     * @param int|string $identifier Object UUID.
-     *
-     * @return ObjectEntity|null
-     */
-    public function findByUuid(int|string $identifier): ?ObjectEntity
-    {
-        return $this->find(identifier: $identifier);
-    }
-
-    /**
      * Return a list of objects matching the given criteria.
      *
      * The adapter's register and schema are injected into $config['filters']
