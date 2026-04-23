@@ -89,6 +89,22 @@ class CacheSettingsHandler
     private ?IAppContainer $container = null;
 
     /**
+     * In-process cache for object cache stats with a short TTL to avoid
+     * calling CacheHandler on every request. Instance-scoped rather than
+     * method-static so test isolation is preserved.
+     *
+     * @var array|null
+     */
+    private ?array $objectStatsCache = null;
+
+    /**
+     * Unix timestamp of the last refresh of $objectStatsCache.
+     *
+     * @var int
+     */
+    private int $objectStatsCacheTimestamp = 0;
+
+    /**
      * Constructor for CacheSettingsHandler
      *
      * @param ICacheFactory      $cacheFactory       Cache factory.
@@ -223,12 +239,9 @@ class CacheSettingsHandler
      */
     private function getCachedObjectStats(): array
     {
-        // Use a simple in-memory cache with 30-second TTL to avoid expensive CacheHandler calls.
-        static $cachedStats = null;
-        static $lastUpdate  = 0;
-
+        // In-memory cache with 30-second TTL to avoid expensive CacheHandler calls.
         $now = time();
-        if ($cachedStats === null || ($now - $lastUpdate) > 30) {
+        if ($this->objectStatsCache === null || ($now - $this->objectStatsCacheTimestamp) > 30) {
             try {
                 $objectCacheService = $this->objectCacheService;
                 if ($objectCacheService === null && $this->container !== null) {
@@ -243,10 +256,10 @@ class CacheSettingsHandler
                     throw new Exception('CacheHandler not available');
                 }
 
-                $cachedStats = $objectCacheService->getStats();
+                $this->objectStatsCache = $objectCacheService->getStats();
             } catch (Exception $e) {
                 // If no object cache stats available, use defaults.
-                $cachedStats = [
+                $this->objectStatsCache = [
                     'entries'         => 0,
                     'hits'            => 0,
                     'requests'        => 0,
@@ -259,10 +272,10 @@ class CacheSettingsHandler
                 ];
             }//end try
 
-            $lastUpdate = $now;
+            $this->objectStatsCacheTimestamp = $now;
         }//end if
 
-        return $cachedStats;
+        return $this->objectStatsCache;
     }//end getCachedObjectStats()
 
      /**

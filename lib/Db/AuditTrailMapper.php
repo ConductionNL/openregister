@@ -1320,4 +1320,79 @@ class AuditTrailMapper extends QBMapper
     }//end findByIdentifier()
 
 
+    /**
+     * Find audit trail entries by the actor (user UID) that produced them.
+     *
+     * Returns an associative array with `results` (array of AuditTrail entities)
+     * and `total` (unbounded count matching the filters).
+     *
+     * @param string      $userId The actor UID to filter on.
+     * @param int         $limit  Maximum number of rows to return.
+     * @param int         $offset Row offset for pagination.
+     * @param string|null $action Optional action filter (create|update|delete).
+     * @param string|null $from   Optional ISO-8601 start date (inclusive).
+     * @param string|null $to     Optional ISO-8601 end date (inclusive).
+     *
+     * @return array{results: array<int, AuditTrail>, total: int}
+     */
+    public function findByActor(
+        string $userId,
+        int $limit=25,
+        int $offset=0,
+        ?string $action=null,
+        ?string $from=null,
+        ?string $to=null
+    ): array {
+        $qb = $this->db->getQueryBuilder();
+
+        $qb->select('*')
+            ->from($this->getTableName())
+            ->where($qb->expr()->eq('user', $qb->createNamedParameter($userId)))
+            ->orderBy('created', 'DESC')
+            ->setMaxResults($limit)
+            ->setFirstResult($offset);
+
+        if ($action !== null && $action !== '') {
+            $qb->andWhere($qb->expr()->eq('action', $qb->createNamedParameter($action)));
+        }
+
+        if ($from !== null && $from !== '') {
+            $qb->andWhere($qb->expr()->gte('created', $qb->createNamedParameter($from)));
+        }
+
+        if ($to !== null && $to !== '') {
+            $qb->andWhere($qb->expr()->lte('created', $qb->createNamedParameter($to)));
+        }
+
+        $results = $this->findEntities($qb);
+
+        // Count total matches (unbounded).
+        $count = $this->db->getQueryBuilder();
+        $count->select($count->func()->count('*', 'total_count'))
+            ->from($this->getTableName())
+            ->where($count->expr()->eq('user', $count->createNamedParameter($userId)));
+
+        if ($action !== null && $action !== '') {
+            $count->andWhere($count->expr()->eq('action', $count->createNamedParameter($action)));
+        }
+
+        if ($from !== null && $from !== '') {
+            $count->andWhere($count->expr()->gte('created', $count->createNamedParameter($from)));
+        }
+
+        if ($to !== null && $to !== '') {
+            $count->andWhere($count->expr()->lte('created', $count->createNamedParameter($to)));
+        }
+
+        $result = $count->executeQuery();
+        $row    = $result->fetch();
+        $result->closeCursor();
+
+        return [
+            'results' => $results,
+            'total'   => (int) ($row['total_count'] ?? 0),
+        ];
+    }//end findByActor()
+
+
 }//end class
