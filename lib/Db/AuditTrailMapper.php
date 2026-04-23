@@ -272,7 +272,7 @@ class AuditTrailMapper extends QBMapper
             $objectEntity = $new;
         }
 
-        if ($action === 'delete') {
+        if ($action === 'delete' || str_starts_with((string) $action, 'referential_integrity.')) {
             $objectEntity = $old;
         }
 
