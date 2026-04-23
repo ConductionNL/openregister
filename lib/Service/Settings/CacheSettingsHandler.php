@@ -100,7 +100,7 @@ class CacheSettingsHandler
     /**
      * Unix timestamp of the last refresh of $objectStatsCache.
      *
-     * @var int
+     * @var integer
      */
     private int $objectStatsCacheTimestamp = 0;
 

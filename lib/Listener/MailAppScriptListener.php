@@ -68,11 +68,14 @@ class MailAppScriptListener implements IEventListener
      */
     public function handle(Event $event): void
     {
-        // Handle two shapes of "mail app is rendering" events:
-        //   1. An OCA\Mail\* custom event (legacy Mail-app-specific events).
-        //   2. Nextcloud core BeforeTemplateRenderedEvent whose response->getApp()
-        //      is 'mail' (what Mail actually dispatches today).
-        if ($this->isMailRenderEvent($event) === false) {
+        /*
+         * Handle two shapes of "mail app is rendering" events:
+         * 1. An OCA\Mail\* custom event (legacy Mail-app-specific events).
+         * 2. Nextcloud core BeforeTemplateRenderedEvent whose response->getApp()
+         *    is 'mail' (what Mail actually dispatches today).
+         */
+
+        if ($this->isMailRenderEvent(event: $event) === false) {
             return;
         }
 

@@ -1364,7 +1364,7 @@ class AuditTrailMapper extends QBMapper
             $qb->andWhere($qb->expr()->lte('created', $qb->createNamedParameter($to)));
         }
 
-        $results = $this->findEntities($qb);
+        $results = $this->findEntities(query: $qb);
 
         // Count total matches (unbounded).
         $count = $this->db->getQueryBuilder();
