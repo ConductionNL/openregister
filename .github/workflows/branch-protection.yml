@@ -5,5 +5,5 @@ on:
     branches: [main, beta]
 
 jobs:
-  check:
+  branch-protection:
     uses: ConductionNL/.github/.github/workflows/branch-protection.yml@main

@@ -27,12 +27,14 @@ use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Event\UserProfileUpdatedEvent;
 use OCP\EventDispatcher\IEventDispatcher;
 use OCP\IAvatarManager;
+use OCP\IDBConnection;
 use OCP\IUser;
 use OCP\IUserManager;
 use OCP\IUserSession;
 use OCP\IConfig;
 use OCP\IGroupManager;
 use OCP\Accounts\IAccountManager;
+use OCP\L10N\IFactory;
 use OCP\Notification\IManager as INotificationManager;
 use OCP\Security\ISecureRandom;
 use Psr\Log\LoggerInterface;
@@ -125,6 +127,8 @@ class UserService
      * @param IAvatarManager      $avatarManager       The avatar manager service
      * @param AuditTrailMapper    $auditTrailMapper    The audit trail mapper
      * @param ISecureRandom       $secureRandom        Secure random generator
+     * @param IDBConnection       $db                  Database connection for direct queries
+     * @param IFactory            $l10nFactory         L10N factory for language detection
      *
      * @SuppressWarnings(PHPMD.ExcessiveParameterList) Service requires many Nextcloud dependencies
      */
@@ -139,7 +143,9 @@ class UserService
         private readonly IEventDispatcher $eventDispatcher,
         private readonly IAvatarManager $avatarManager,
         private readonly AuditTrailMapper $auditTrailMapper,
-        private readonly ISecureRandom $secureRandom
+        private readonly ISecureRandom $secureRandom,
+        private readonly IDBConnection $db,
+        private readonly IFactory $l10nFactory
     ) {
     }//end __construct()
 
@@ -551,8 +557,7 @@ class UserService
                 return 0;
             }
 
-            $connection = \OC::$server->getDatabaseConnection();
-            $query      = $connection->getQueryBuilder();
+            $query = $this->db->getQueryBuilder();
 
             $query->select('s.size')
                 ->from('storages', 's')
@@ -601,7 +606,7 @@ class UserService
         if (method_exists($user, 'getLanguage') === true) {
             $language = $user->getLanguage();
             if (empty($language) === true) {
-                $language = \OC::$server->getL10NFactory()->findLanguage();
+                $language = $this->l10nFactory->findLanguage();
             }
         }
 

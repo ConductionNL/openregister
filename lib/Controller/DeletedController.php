@@ -28,6 +28,7 @@ use OCA\OpenRegister\Service\ObjectService;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\AppFramework\Http\TemplateResponse;
+use OCP\IGroupManager;
 use OCP\IRequest;
 use OCP\IUserSession;
 
@@ -51,6 +52,7 @@ class DeletedController extends Controller
      * @param SchemaMapper   $schemaMapper       The schema mapper
      * @param ObjectService  $objectService      The object service
      * @param IUserSession   $userSession        The user session
+     * @param IGroupManager  $groupManager       The group manager for admin checks
      *
      * @return void
      */
@@ -61,7 +63,8 @@ class DeletedController extends Controller
         private readonly RegisterMapper $registerMapper,
         private readonly SchemaMapper $schemaMapper,
         private readonly ObjectService $objectService,
-        private readonly IUserSession $userSession
+        private readonly IUserSession $userSession,
+        private readonly IGroupManager $groupManager
     ) {
         parent::__construct(appName: $appName, request: $request);
     }//end __construct()
@@ -78,8 +81,7 @@ class DeletedController extends Controller
             return false;
         }
 
-        $groupManager = \OC::$server->getGroupManager();
-        return $groupManager->isAdmin($user->getUID());
+        return $this->groupManager->isAdmin($user->getUID());
     }//end isCurrentUserAdmin()
 
     /**

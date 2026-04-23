@@ -8,9 +8,8 @@ require_once __DIR__ . '/../../../lib/base.php';
 use OCA\OpenRegister\Service\VectorizationService;
 use OCA\OpenRegister\Service\Vectorization\ObjectVectorizationStrategy;
 
-// Get service from container.
-$container = \OC::$server->getRegisteredAppContainer('openregister');
-$vectorizationService = $container->get(VectorizationService::class);
+// Get service from the public OCP container (PSR-11).
+$vectorizationService = \OCP\Server::get(VectorizationService::class);
 
 echo "Starting object vectorization...\n";
 

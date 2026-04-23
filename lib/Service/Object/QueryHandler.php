@@ -374,10 +374,10 @@ class QueryHandler
 
         // Prepare paginated query (remove pagination params for count query).
         $paginatedQuery = array_merge($query, ['_limit' => $limit, '_offset' => $offset]);
-        unset($paginatedQuery['_page'], $paginatedQuery['_facetable']);
+        unset($paginatedQuery['_page'], $paginatedQuery['_facetable'], $paginatedQuery['_extend']);
 
         $countQuery = $query;
-        unset($countQuery['_limit'], $countQuery['_offset'], $countQuery['_page'], $countQuery['_facetable']);
+        unset($countQuery['_limit'], $countQuery['_offset'], $countQuery['_page'], $countQuery['_facetable'], $countQuery['_extend']);
 
         // Get active organization context for multi-tenancy.
         $activeOrgUuid = null;

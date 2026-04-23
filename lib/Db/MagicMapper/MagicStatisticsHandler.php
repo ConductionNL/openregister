@@ -38,6 +38,7 @@ use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Service\DateTimeNormalizer;
 use OCP\IDBConnection;
 use Psr\Log\LoggerInterface;
 
@@ -74,16 +75,18 @@ class MagicStatisticsHandler
     /**
      * Constructor for MagicStatisticsHandler
      *
-     * @param IDBConnection   $db             Database connection for table discovery
-     * @param LoggerInterface $logger         Logger for debugging and error reporting
-     * @param RegisterMapper  $registerMapper Mapper for register lookups
-     * @param SchemaMapper    $schemaMapper   Mapper for schema lookups
+     * @param IDBConnection      $db                 Database connection for table discovery
+     * @param LoggerInterface    $logger             Logger for debugging and error reporting
+     * @param RegisterMapper     $registerMapper     Mapper for register lookups
+     * @param SchemaMapper       $schemaMapper       Mapper for schema lookups
+     * @param DateTimeNormalizer $dateTimeNormalizer Normaliser for user-supplied datetime values
      */
     public function __construct(
         private readonly IDBConnection $db,
         private readonly LoggerInterface $logger,
         private readonly RegisterMapper $registerMapper,
-        private readonly SchemaMapper $schemaMapper
+        private readonly SchemaMapper $schemaMapper,
+        private readonly DateTimeNormalizer $dateTimeNormalizer
     ) {
     }//end __construct()
 
@@ -575,22 +578,15 @@ class MagicStatisticsHandler
                 }
 
                 // Format date/datetime values based on schema format.
+                // Empty-string / whitespace-only input normalises to null via DateTimeNormalizer
+                // instead of PHP's "new DateTime('')" silently returning the current timestamp.
                 $propertyFormat = $propertyFormats[$propertyName] ?? null;
                 if ($value !== null && is_string($value) === true && $propertyFormat !== null) {
                     if ($propertyFormat === 'date') {
-                        // Schema expects date-only (Y-m-d), strip time component.
-                        try {
-                            $value = (new DateTime($value))->format('Y-m-d');
-                        } catch (\Exception $e) {
-                            // Keep original value if parsing fails.
-                        }
+                        $normalised = $this->dateTimeNormalizer->normalize($value);
+                        $value      = $normalised !== null ? $normalised->format('Y-m-d') : null;
                     } else if ($propertyFormat === 'date-time') {
-                        // Schema expects full ISO 8601 datetime.
-                        try {
-                            $value = (new DateTime($value))->format('c');
-                        } catch (\Exception $e) {
-                            // Keep original value if parsing fails.
-                        }
+                        $value = $this->dateTimeNormalizer->formatForIso8601($value);
                     }
                 }
 

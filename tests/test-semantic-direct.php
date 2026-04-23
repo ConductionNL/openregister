@@ -9,9 +9,8 @@ use OCA\OpenRegister\Service\VectorEmbeddingService;
 
 echo "=== DIRECT SEMANTIC SEARCH TEST ===\n\n";
 
-// Get service.
-$container = \OC::$server->getRegisteredAppContainer('openregister');
-$vectorService = $container->get(VectorEmbeddingService::class);
+// Get service from the public OCP container (PSR-11).
+$vectorService = \OCP\Server::get(VectorEmbeddingService::class);
 
 // Test 1: Search without filters.
 echo "Test 1: Search 'mokum' WITHOUT filters\n";

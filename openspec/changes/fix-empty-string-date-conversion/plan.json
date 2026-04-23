@@ -1,0 +1,522 @@
+{
+  "change": "fix-empty-string-date-conversion",
+  "project": "openregister",
+  "repo": "ConductionNL/openregister",
+  "created": "2026-04-20",
+  "tracking_issue": 1292,
+  "tracking_issue_url": "https://github.com/ConductionNL/openregister/issues/1292",
+  "spec_ref": "specs/datetime-input-handling/spec.md",
+  "tasks": [
+    {
+      "id": 1,
+      "number": "1.1",
+      "section": "Audit & pinning",
+      "title": "Inventory new DateTime( call sites",
+      "description": "Ripgrep `new DateTime\\(` across `lib/` and produce a complete inventory of call sites; classify each as user-supplied input, internal/trusted value, or literal/now.",
+      "status": "done",
+      "acceptance_criteria": [],
+      "files_likely_affected": [
+        "lib/**/*.php"
+      ]
+    },
+    {
+      "id": 2,
+      "number": "1.2",
+      "section": "Audit & pinning",
+      "title": "Confirm exhaustiveness of user-supplied sites",
+      "description": "Confirm the user-supplied sites listed in design.md are exhaustive; add any newly discovered sites to the inventory.",
+      "status": "done",
+      "acceptance_criteria": [],
+      "files_likely_affected": [
+        "openspec/changes/fix-empty-string-date-conversion/design.md"
+      ]
+    },
+    {
+      "id": 3,
+      "number": "1.3",
+      "section": "Audit & pinning",
+      "title": "Add failing regression test for the defect",
+      "description": "Add a regression test that demonstrates the current defect: write an object with publishedAt = '' for a date-time property, read it back, assert value is NOT the current datetime (fails before fix, passes after).",
+      "status": "done",
+      "acceptance_criteria": [],
+      "files_likely_affected": [
+        "tests/Unit/Db/MagicStatisticsHandlerTest.php"
+      ]
+    },
+    {
+      "id": 4,
+      "number": "2.1",
+      "section": "Implement the normalizer",
+      "title": "Create DateTimeNormalizer class",
+      "description": "Create lib/Service/DateTimeNormalizer.php (final location confirmed at code review) with the contract from design.md D2.",
+      "status": "done",
+      "acceptance_criteria": [],
+      "files_likely_affected": [
+        "lib/Service/DateTimeNormalizer.php"
+      ]
+    },
+    {
+      "id": 5,
+      "number": "2.2",
+      "section": "Implement the normalizer",
+      "title": "Implement normalize()",
+      "description": "Implement normalize(mixed $value): ?DateTimeImmutable with rules: null \u2192 null, trim + empty \u2192 null, DateTimeInterface \u2192 pass through as immutable, parse failures \u2192 null + debug log.",
+      "status": "done",
+      "acceptance_criteria": [],
+      "files_likely_affected": [
+        "lib/Service/DateTimeNormalizer.php"
+      ]
+    },
+    {
+      "id": 6,
+      "number": "2.3",
+      "section": "Implement the normalizer",
+      "title": "Implement formatForDatabase()",
+      "description": "Implement formatForDatabase(mixed $value): ?string returning Y-m-d H:i:s or null.",
+      "status": "done",
+      "acceptance_criteria": [],
+      "files_likely_affected": [
+        "lib/Service/DateTimeNormalizer.php"
+      ]
+    },
+    {
+      "id": 7,
+      "number": "2.4",
+      "section": "Implement the normalizer",
+      "title": "Implement formatForIso8601()",
+      "description": "Implement formatForIso8601(mixed $value): ?string returning ISO 8601 with offset or null.",
+      "status": "done",
+      "acceptance_criteria": [],
+      "files_likely_affected": [
+        "lib/Service/DateTimeNormalizer.php"
+      ]
+    },
+    {
+      "id": 8,
+      "number": "2.5",
+      "section": "Implement the normalizer",
+      "title": "Wire up as injectable service",
+      "description": "Register as an injectable service (no static state; DI via constructor).",
+      "status": "done",
+      "acceptance_criteria": [],
+      "files_likely_affected": [
+        "lib/Service/DateTimeNormalizer.php",
+        "lib/AppInfo/Application.php"
+      ]
+    },
+    {
+      "id": 9,
+      "number": "2.6",
+      "section": "Implement the normalizer",
+      "title": "Docblock mandate",
+      "description": "Add a class docblock stating that all user-datetime conversion MUST go through this class and referencing this change.",
+      "status": "done",
+      "acceptance_criteria": [],
+      "files_likely_affected": [
+        "lib/Service/DateTimeNormalizer.php"
+      ]
+    },
+    {
+      "id": 10,
+      "number": "3.1",
+      "section": "Unit tests for the normalizer",
+      "title": "Unit: null input \u2192 null",
+      "description": "Test null input produces null.",
+      "status": "done",
+      "acceptance_criteria": [],
+      "files_likely_affected": [
+        "tests/Unit/Service/DateTimeNormalizerTest.php"
+      ]
+    },
+    {
+      "id": 11,
+      "number": "3.2",
+      "section": "Unit tests for the normalizer",
+      "title": "Unit: empty string \u2192 null",
+      "description": "Test empty string input produces null.",
+      "status": "done",
+      "acceptance_criteria": [],
+      "files_likely_affected": [
+        "tests/Unit/Service/DateTimeNormalizerTest.php"
+      ]
+    },
+    {
+      "id": 12,
+      "number": "3.3",
+      "section": "Unit tests for the normalizer",
+      "title": "Unit: whitespace-only \u2192 null",
+      "description": "Test whitespace-only string inputs ('   ', '\\t', '\\n') produce null.",
+      "status": "done",
+      "acceptance_criteria": [],
+      "files_likely_affected": [
+        "tests/Unit/Service/DateTimeNormalizerTest.php"
+      ]
+    },
+    {
+      "id": 13,
+      "number": "3.4",
+      "section": "Unit tests for the normalizer",
+      "title": "Unit: ISO 8601 with offset",
+      "description": "Test valid ISO 8601 with offset produces correct DateTimeImmutable.",
+      "status": "done",
+      "acceptance_criteria": [],
+      "files_likely_affected": [
+        "tests/Unit/Service/DateTimeNormalizerTest.php"
+      ]
+    },
+    {
+      "id": 14,
+      "number": "3.5",
+      "section": "Unit tests for the normalizer",
+      "title": "Unit: ISO 8601 Zulu",
+      "description": "Test valid ISO 8601 Zulu produces correct DateTimeImmutable.",
+      "status": "done",
+      "acceptance_criteria": [],
+      "files_likely_affected": [
+        "tests/Unit/Service/DateTimeNormalizerTest.php"
+      ]
+    },
+    {
+      "id": 15,
+      "number": "3.6",
+      "section": "Unit tests for the normalizer",
+      "title": "Unit: database format",
+      "description": "Test Y-m-d H:i:s input produces correct DateTimeImmutable.",
+      "status": "done",
+      "acceptance_criteria": [],
+      "files_likely_affected": [
+        "tests/Unit/Service/DateTimeNormalizerTest.php"
+      ]
+    },
+    {
+      "id": 16,
+      "number": "3.7",
+      "section": "Unit tests for the normalizer",
+      "title": "Unit: date-only",
+      "description": "Test Y-m-d input produces DateTimeImmutable at midnight.",
+      "status": "done",
+      "acceptance_criteria": [],
+      "files_likely_affected": [
+        "tests/Unit/Service/DateTimeNormalizerTest.php"
+      ]
+    },
+    {
+      "id": 17,
+      "number": "3.8",
+      "section": "Unit tests for the normalizer",
+      "title": "Unit: existing DateTime passthrough",
+      "description": "Test existing DateTime/DateTimeImmutable passthrough produces an immutable instance.",
+      "status": "done",
+      "acceptance_criteria": [],
+      "files_likely_affected": [
+        "tests/Unit/Service/DateTimeNormalizerTest.php"
+      ]
+    },
+    {
+      "id": 18,
+      "number": "3.9",
+      "section": "Unit tests for the normalizer",
+      "title": "Unit: garbled string",
+      "description": "Test garbled strings produce null and emit a debug log.",
+      "status": "done",
+      "acceptance_criteria": [],
+      "files_likely_affected": [
+        "tests/Unit/Service/DateTimeNormalizerTest.php"
+      ]
+    },
+    {
+      "id": 19,
+      "number": "3.10",
+      "section": "Unit tests for the normalizer",
+      "title": "Unit: non-string non-null non-DateTime",
+      "description": "Test numeric/array/object input produces null and emits a debug log.",
+      "status": "done",
+      "acceptance_criteria": [],
+      "files_likely_affected": [
+        "tests/Unit/Service/DateTimeNormalizerTest.php"
+      ]
+    },
+    {
+      "id": 20,
+      "number": "3.11",
+      "section": "Unit tests for the normalizer",
+      "title": "Unit: formatForDatabase + formatForIso8601",
+      "description": "Test formatForDatabase and formatForIso8601 with each of the preceding inputs.",
+      "status": "done",
+      "acceptance_criteria": [],
+      "files_likely_affected": [
+        "tests/Unit/Service/DateTimeNormalizerTest.php"
+      ]
+    },
+    {
+      "id": 21,
+      "number": "4.1",
+      "section": "Migrate call sites (read path)",
+      "title": "Migrate MagicStatisticsHandler date branch",
+      "description": "Replace the date branch at ~line 583 with a delegation to the normalizer (format to Y-m-d).",
+      "status": "done",
+      "acceptance_criteria": [],
+      "files_likely_affected": [
+        "lib/Db/MagicMapper/MagicStatisticsHandler.php"
+      ]
+    },
+    {
+      "id": 22,
+      "number": "4.2",
+      "section": "Migrate call sites (read path)",
+      "title": "Migrate MagicStatisticsHandler date-time branch",
+      "description": "Replace the date-time branch at ~line 590 with a delegation to the normalizer (format to ISO 8601).",
+      "status": "done",
+      "acceptance_criteria": [],
+      "files_likely_affected": [
+        "lib/Db/MagicMapper/MagicStatisticsHandler.php"
+      ]
+    },
+    {
+      "id": 23,
+      "number": "4.3",
+      "section": "Migrate call sites (read path)",
+      "title": "Add MagicStatisticsHandler tests",
+      "description": "Add/extend a MagicStatisticsHandler test covering: empty-string stored value \u2192 rendered as null; valid stored value \u2192 rendered correctly.",
+      "status": "done",
+      "acceptance_criteria": [],
+      "files_likely_affected": [
+        "tests/Unit/Db/MagicMapper/MagicStatisticsHandlerTest.php"
+      ]
+    },
+    {
+      "id": 24,
+      "number": "5.1",
+      "section": "Migrate call sites (write + bulk + search)",
+      "title": "Migrate MagicBulkHandler::formatDateTimeForDatabase",
+      "description": "Delegate to DateTimeNormalizer::formatForDatabase; remove direct new DateTime($value).",
+      "status": "done",
+      "acceptance_criteria": [],
+      "files_likely_affected": [
+        "lib/Db/MagicMapper/MagicBulkHandler.php"
+      ]
+    },
+    {
+      "id": 25,
+      "number": "5.2",
+      "section": "Migrate call sites (write + bulk + search)",
+      "title": "Migrate MagicMapper metadata handling",
+      "description": "Delegate metadata datetime conversion (~line 2986) to the normalizer; keep the existing default-to-now-when-key-is-absent logic for created/updated exactly as-is (D3).",
+      "status": "done",
+      "acceptance_criteria": [],
+      "files_likely_affected": [
+        "lib/Db/MagicMapper.php"
+      ]
+    },
+    {
+      "id": 26,
+      "number": "5.3",
+      "section": "Migrate call sites (write + bulk + search)",
+      "title": "Migrate MariaDbSearchHandler::normalizeDateValue",
+      "description": "Delegate to the normalizer; return null on empty/invalid input (D5).",
+      "status": "done",
+      "acceptance_criteria": [],
+      "files_likely_affected": [
+        "lib/Db/ObjectHandlers/MariaDbSearchHandler.php"
+      ]
+    },
+    {
+      "id": 27,
+      "number": "5.4",
+      "section": "Migrate call sites (write + bulk + search)",
+      "title": "Verify no remaining unguarded sites",
+      "description": "Grep for any remaining unguarded new DateTime($ on user-supplied paths; migrate or document why each remaining site is safe.",
+      "status": "done",
+      "acceptance_criteria": [],
+      "files_likely_affected": [
+        "lib/**/*.php"
+      ]
+    },
+    {
+      "id": 28,
+      "number": "6.1",
+      "section": "Regression tests for migrated sites",
+      "title": "Integration: POST publishedAt='' \u2192 GET null",
+      "description": "POST object with publishedAt='' \u2192 GET object \u2192 publishedAt is null.",
+      "status": "pending",
+      "acceptance_criteria": [],
+      "files_likely_affected": [
+        "tests/Integration/"
+      ]
+    },
+    {
+      "id": 29,
+      "number": "6.2",
+      "section": "Regression tests for migrated sites",
+      "title": "Integration: valid datetime round-trip",
+      "description": "POST object with publishedAt='2026-04-20T14:00:00Z' \u2192 GET object \u2192 value round-trips correctly.",
+      "status": "pending",
+      "acceptance_criteria": [],
+      "files_likely_affected": [
+        "tests/Integration/"
+      ]
+    },
+    {
+      "id": 30,
+      "number": "6.3",
+      "section": "Regression tests for migrated sites",
+      "title": "Integration: absent publishedAt \u2192 GET null",
+      "description": "POST object WITHOUT publishedAt in payload \u2192 GET object \u2192 publishedAt is null (unchanged behavior).",
+      "status": "pending",
+      "acceptance_criteria": [],
+      "files_likely_affected": [
+        "tests/Integration/"
+      ]
+    },
+    {
+      "id": 31,
+      "number": "6.4",
+      "section": "Regression tests for migrated sites",
+      "title": "Integration: bulk import empty dates",
+      "description": "Bulk import path with empty-string date values \u2192 no current-datetime substitution.",
+      "status": "pending",
+      "acceptance_criteria": [],
+      "files_likely_affected": [
+        "tests/Integration/"
+      ]
+    },
+    {
+      "id": 32,
+      "number": "6.5",
+      "section": "Regression tests for migrated sites",
+      "title": "Integration: search with empty date filter",
+      "description": "Search with publishedAt='' filter \u2192 no SQL predicate for empty filter (or no-op predicate).",
+      "status": "pending",
+      "acceptance_criteria": [],
+      "files_likely_affected": [
+        "tests/Integration/"
+      ]
+    },
+    {
+      "id": 33,
+      "number": "6.6",
+      "section": "Regression tests for migrated sites",
+      "title": "Integration: expires='' persists as null",
+      "description": "POST metadata with expires='' \u2192 persisted as null.",
+      "status": "pending",
+      "acceptance_criteria": [],
+      "files_likely_affected": [
+        "tests/Integration/"
+      ]
+    },
+    {
+      "id": 34,
+      "number": "6.7",
+      "section": "Regression tests for migrated sites",
+      "title": "Integration: absent created \u2192 defaults to now",
+      "description": "POST without created in payload \u2192 created defaulted to now (existing behavior preserved).",
+      "status": "pending",
+      "acceptance_criteria": [],
+      "files_likely_affected": [
+        "tests/Integration/"
+      ]
+    },
+    {
+      "id": 35,
+      "number": "7.1",
+      "section": "Cross-app verification",
+      "title": "opencatalogi regression check",
+      "description": "Run opencatalogi test suite against the patched backend; confirm no regressions.",
+      "status": "pending",
+      "acceptance_criteria": [],
+      "files_likely_affected": [
+        "../opencatalogi/"
+      ]
+    },
+    {
+      "id": 36,
+      "number": "7.2",
+      "section": "Cross-app verification",
+      "title": "softwarecatalog regression check",
+      "description": "Run softwarecatalog test suite against the patched backend; confirm no regressions.",
+      "status": "pending",
+      "acceptance_criteria": [],
+      "files_likely_affected": [
+        "../softwarecatalog/"
+      ]
+    },
+    {
+      "id": 37,
+      "number": "7.3",
+      "section": "Cross-app verification",
+      "title": "docudesk spot-check",
+      "description": "Spot-check docudesk flows that consume OpenRegister datetime values (where applicable).",
+      "status": "pending",
+      "acceptance_criteria": [],
+      "files_likely_affected": [
+        "../docudesk/"
+      ]
+    },
+    {
+      "id": 38,
+      "number": "8.1",
+      "section": "Quality & documentation",
+      "title": "composer check:strict passes",
+      "description": "PHPCS, PHPMD, Psalm, PHPStan all clean.",
+      "status": "pending",
+      "acceptance_criteria": [],
+      "files_likely_affected": []
+    },
+    {
+      "id": 39,
+      "number": "8.2",
+      "section": "Quality & documentation",
+      "title": "CHANGELOG update",
+      "description": "Update CHANGELOG.md with a user-facing note on the behavior correction.",
+      "status": "done",
+      "acceptance_criteria": [],
+      "files_likely_affected": [
+        "CHANGELOG.md"
+      ]
+    },
+    {
+      "id": 40,
+      "number": "8.3",
+      "section": "Quality & documentation",
+      "title": "Release note",
+      "description": "Empty-string date fields now correctly round-trip as null; previously, empty-string dates on existing objects rendered as the current datetime. On next read/save, the value normalises to null.",
+      "status": "done",
+      "acceptance_criteria": [],
+      "files_likely_affected": [
+        "CHANGELOG.md"
+      ]
+    },
+    {
+      "id": 41,
+      "number": "8.4",
+      "section": "Quality & documentation",
+      "title": "Follow-up: data-normalisation maintenance command",
+      "description": "Optional: file a follow-up issue for the stored-data normalisation maintenance command (UPDATE ... SET col = NULL WHERE col = '') flagged in design.md \u00a7Migration Plan.",
+      "status": "pending",
+      "acceptance_criteria": [],
+      "files_likely_affected": []
+    },
+    {
+      "id": 42,
+      "number": "9.1",
+      "section": "Wrap-up",
+      "title": "openspec verify",
+      "description": "Run openspec verify fix-empty-string-date-conversion and resolve any findings.",
+      "status": "done",
+      "acceptance_criteria": [],
+      "files_likely_affected": [
+        "openspec/changes/fix-empty-string-date-conversion/"
+      ]
+    },
+    {
+      "id": 43,
+      "number": "9.2",
+      "section": "Wrap-up",
+      "title": "Open PR",
+      "description": "Open PR referencing this change; link the failing-then-passing regression test from task 1.3.",
+      "status": "pending",
+      "acceptance_criteria": [],
+      "files_likely_affected": []
+    }
+  ]
+}

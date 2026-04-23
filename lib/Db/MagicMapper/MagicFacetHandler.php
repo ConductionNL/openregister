@@ -471,6 +471,23 @@ class MagicFacetHandler
                         schema: $schemaForLabels
                     );
                 }
+            } else if ($type === 'date_histogram') {
+                $interval = $config['interval'] ?? 'month';
+
+                // Find which tables have this column.
+                $tablesWithColumn = [];
+                foreach ($tableConfigs as $tc) {
+                    if ($this->columnExists(tableName: $tc['tableName'], columnName: $columnName) === true) {
+                        $tablesWithColumn[] = $tc;
+                    }
+                }
+
+                $facets[$field] = $this->getDateHistogramFacetUnion(
+                    tableConfigs: $tablesWithColumn,
+                    field: $columnName,
+                    interval: $interval,
+                    baseQuery: $baseQuery
+                );
             }//end if
 
             // Add schema property title if available.
@@ -796,7 +813,6 @@ class MagicFacetHandler
             return ['type' => 'date_histogram', 'interval' => $interval, 'buckets' => []];
         }
 
-        $dateFormat = $this->getDateFormatForInterval(interval: $interval);
         $unionParts = [];
         $prefix     = 'oc_';
 
@@ -809,7 +825,7 @@ class MagicFacetHandler
                 continue;
             }
 
-            $selectExpr  = "TO_CHAR({$field}, '{$dateFormat}')";
+            $selectExpr  = $this->buildDateKeyExpr(field: $field, interval: $interval);
             $whereClause = "{$field} IS NOT NULL";
             $subSql      = "SELECT {$selectExpr} as date_key, COUNT(*) as cnt FROM {$fullTableName} WHERE {$whereClause}";
 
@@ -1299,15 +1315,16 @@ class MagicFacetHandler
             ];
         }
 
-        // Build date histogram query based on interval using PostgreSQL-compatible syntax.
-        $dateFormat = $this->getDateFormatForInterval(interval: $interval);
+        // Build date histogram query based on interval. The date-key SQL
+        // expression is platform-specific (TO_CHAR on PostgreSQL, DATE_FORMAT
+        // on MariaDB/MySQL); buildDateKeyExpr() encapsulates the branch.
+        $dateKeyExpr = $this->buildDateKeyExpr(field: $field, interval: $interval);
 
         // Fallback: Build query manually (legacy behavior).
         $queryBuilder = $this->db->getQueryBuilder();
 
-        // Use TO_CHAR for PostgreSQL (Nextcloud default) instead of DATE_FORMAT (MySQL).
         $queryBuilder->selectAlias(
-            $queryBuilder->createFunction("TO_CHAR($field, '$dateFormat')"),
+            $queryBuilder->createFunction($dateKeyExpr),
             'date_key'
         )
             ->selectAlias($queryBuilder->createFunction('COUNT(*)'), 'doc_count')
@@ -1334,8 +1351,9 @@ class MagicFacetHandler
 
             // Add date histogram-specific SELECT and GROUP BY.
             // Note: buildFilteredQuery uses alias 't' for table.
+            $tDateKeyExpr = $this->buildDateKeyExpr(field: "t.{$field}", interval: $interval);
             $queryBuilder->selectAlias(
-                $queryBuilder->createFunction("TO_CHAR(t.{$field}, '{$dateFormat}')"),
+                $queryBuilder->createFunction($tDateKeyExpr),
                 'date_key'
             )
                 ->addSelect($queryBuilder->createFunction('COUNT(*) as doc_count'))
@@ -1807,6 +1825,60 @@ class MagicFacetHandler
                 return 'YYYY-MM';
         }
     }//end getDateFormatForInterval()
+
+    /**
+     * Build the platform-specific SQL expression that produces the `date_key`
+     * string for a date_histogram bucket.
+     *
+     * On PostgreSQL this wraps the field in `TO_CHAR(..., '<pg-pattern>')`.
+     * On MariaDB/MySQL it uses `DATE_FORMAT(..., '<my-pattern>')`, with a
+     * `CONCAT(YEAR(), '-Q', QUARTER())` special case for the `quarter`
+     * interval (MariaDB's DATE_FORMAT has no quarter specifier and its
+     * Oracle-compat TO_CHAR does not accept quoted literals).
+     *
+     * Bucket keys produced on both platforms MUST match for the same input
+     * date — e.g. week uses ISO year + ISO week on both (`IYYY-IW` on PG,
+     * `%x-%v` on MariaDB).
+     *
+     * @param string $field    The qualified SQL column expression (e.g. `publicatiedatum` or `t.publicatiedatum`).
+     * @param string $interval The histogram interval (day, week, month, quarter, year).
+     *
+     * @return string The full SQL expression that evaluates to the bucket key string.
+     */
+    private function buildDateKeyExpr(string $field, string $interval): string
+    {
+        $isPostgres = $this->db->getDatabasePlatform() instanceof \Doctrine\DBAL\Platforms\PostgreSQLPlatform;
+
+        if ($isPostgres === true) {
+            $pgFormat = $this->getDateFormatForInterval(interval: $interval);
+            return "TO_CHAR({$field}, '{$pgFormat}')";
+        }
+
+        // MariaDB / MySQL: quarter needs a CONCAT because DATE_FORMAT has no
+        // quarter specifier and quoted literals are not portable.
+        if ($interval === 'quarter') {
+            return "CONCAT(YEAR({$field}), '-Q', QUARTER({$field}))";
+        }
+
+        switch ($interval) {
+            case 'day':
+                $myFormat = '%Y-%m-%d';
+                break;
+            case 'week':
+                // ISO year + ISO week — matches PostgreSQL IYYY-IW.
+                $myFormat = '%x-%v';
+                break;
+            case 'year':
+                $myFormat = '%Y';
+                break;
+            case 'month':
+            default:
+                $myFormat = '%Y-%m';
+                break;
+        }
+
+        return "DATE_FORMAT({$field}, '{$myFormat}')";
+    }//end buildDateKeyExpr()
 
     /**
      * Batch resolve UUID labels with field-level caching optimization.
