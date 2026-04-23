@@ -25,7 +25,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Cron;
 
 use DateTime;
-use OCA\OpenRegister\Db\ObjectEntityMapper;
+use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Service\Edepot\TransferListService;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\BackgroundJob\TimedJob;
@@ -55,14 +55,14 @@ class TransferCheckJob extends TimedJob
      * Constructor.
      *
      * @param ITimeFactory        $time                The time factory.
-     * @param ObjectEntityMapper  $objectMapper        The object mapper.
+     * @param MagicMapper         $objectMapper        The object mapper.
      * @param TransferListService $transferListService The transfer list service.
      * @param IAppConfig          $appConfig           The app configuration.
      * @param LoggerInterface     $logger              Logger.
      */
     public function __construct(
         ITimeFactory $time,
-        private readonly ObjectEntityMapper $objectMapper,
+        private readonly MagicMapper $objectMapper,
         private readonly TransferListService $transferListService,
         private readonly IAppConfig $appConfig,
         private readonly LoggerInterface $logger,
