@@ -1,4 +1,10 @@
 <?php
+/**
+ * Adapter that exposes a mapper-like API over ObjectService.
+ *
+ * @category Service
+ * @package  OCA\OpenRegister\Service
+ */
 
 declare(strict_types=1);
 
@@ -17,12 +23,20 @@ use OCA\OpenRegister\Service\Object\ValidateObject;
  */
 class ObjectServiceMapperAdapter
 {
+
+    /**
+     * Constructor.
+     *
+     * @param ObjectService        $objectService The underlying object service.
+     * @param int|string|null      $register      Register ID to scope all calls to.
+     * @param int|string|null      $schema        Schema ID to scope all calls to.
+     */
     public function __construct(
         private readonly ObjectService $objectService,
-        private readonly int|string|null $register = null,
-        private readonly int|string|null $schema = null
+        private readonly int|string|null $register=null,
+        private readonly int|string|null $schema=null
     ) {
-    }
+    }//end __construct()
 
     /**
      * Find a single object by its ID or UUID.
@@ -32,7 +46,7 @@ class ObjectServiceMapperAdapter
      *
      * @return ObjectEntity|null
      */
-    public function find(int|string $identifier, ?array $extend = null): ?ObjectEntity
+    public function find(int|string $identifier, ?array $extend=null): ?ObjectEntity
     {
         return $this->objectService->find(
             id: $identifier,
@@ -40,7 +54,7 @@ class ObjectServiceMapperAdapter
             register: $this->register,
             schema: $this->schema
         );
-    }
+    }//end find()
 
     /**
      * Return a list of objects matching the given criteria.
@@ -63,14 +77,14 @@ class ObjectServiceMapperAdapter
      * @return array
      */
     public function findAll(
-        array $config = [],
-        ?array $filters = null,
-        ?array $ids = null,
-        ?int $limit = null,
-        ?int $offset = null,
-        ?array $sort = null,
-        ?array $extend = null,
-        ?string $search = null
+        array $config=[],
+        ?array $filters=null,
+        ?array $ids=null,
+        ?int $limit=null,
+        ?int $offset=null,
+        ?array $sort=null,
+        ?array $extend=null,
+        ?string $search=null
     ): array {
         if ($filters !== null) {
             $config['filters'] = $filters;
@@ -102,16 +116,16 @@ class ObjectServiceMapperAdapter
 
         $config['filters'] ??= [];
 
-        if ($this->register !== null && !isset($config['filters']['register'])) {
+        if ($this->register !== null && isset($config['filters']['register']) === false) {
             $config['filters']['register'] = $this->register;
         }
 
-        if ($this->schema !== null && !isset($config['filters']['schema'])) {
+        if ($this->schema !== null && isset($config['filters']['schema']) === false) {
             $config['filters']['schema'] = $this->schema;
         }
 
         return $this->objectService->findAll(config: $config);
-    }
+    }//end findAll()
 
     /**
      * Create a new object from a plain data array.
@@ -129,7 +143,7 @@ class ObjectServiceMapperAdapter
             register: $this->register,
             schema: $this->schema
         );
-    }
+    }//end createFromArray()
 
     /**
      * Update an existing object from a plain data array.
@@ -154,8 +168,8 @@ class ObjectServiceMapperAdapter
     public function updateFromArray(
         int|string $id,
         array $object,
-        bool $validate = true,
-        bool $patch = false
+        bool $validate=true,
+        bool $patch=false
     ): ObjectEntity {
         if ($patch === true) {
             $existing = $this->objectService->find(
@@ -163,7 +177,7 @@ class ObjectServiceMapperAdapter
                 register: $this->register,
                 schema: $this->schema
             );
-            $object = array_merge($existing->getObject(), $object);
+            $object   = array_merge($existing->getObject(), $object);
         }
 
         return $this->objectService->saveObject(
@@ -171,7 +185,7 @@ class ObjectServiceMapperAdapter
             register: $this->register,
             schema: $this->schema
         );
-    }
+    }//end updateFromArray()
 
     /**
      * Persist an already-hydrated ObjectEntity.
@@ -190,7 +204,7 @@ class ObjectServiceMapperAdapter
             register: $this->register,
             schema: $this->schema
         );
-    }
+    }//end update()
 
     /**
      * Delete an object by criteria array.
@@ -207,11 +221,11 @@ class ObjectServiceMapperAdapter
     {
         $id = $criteria['id'] ?? null;
         if ($id === null) {
-            throw new ValidationException('No id given to delete');
+            throw new ValidationException(message: 'No id given to delete');
         }
 
         return $this->objectService->deleteObject((string) $id);
-    }
+    }//end delete()
 
     /**
      * Return the schema ID this adapter is scoped to, or null for unconstrained.
@@ -221,7 +235,7 @@ class ObjectServiceMapperAdapter
     public function getSchema(): ?int
     {
         return $this->schema !== null ? (int) $this->schema : null;
-    }
+    }//end getSchema()
 
     /**
      * Return the register ID this adapter is scoped to, or null for unconstrained.
@@ -231,7 +245,7 @@ class ObjectServiceMapperAdapter
     public function getRegister(): ?int
     {
         return $this->register !== null ? (int) $this->register : null;
-    }
+    }//end getRegister()
 
     /**
      * Return a paginated list of objects matching the given request parameters.
@@ -245,7 +259,7 @@ class ObjectServiceMapperAdapter
      *
      * @return array{results: array, total: int, page: int, pages: int}
      */
-    public function findAllPaginated(array $requestParams = []): array
+    public function findAllPaginated(array $requestParams=[]): array
     {
         if ($this->register !== null && isset($requestParams['_register']) === false) {
             $requestParams['_register'] = $this->register;
@@ -259,11 +273,11 @@ class ObjectServiceMapperAdapter
 
         return [
             'results' => $result['results'] ?? [],
-            'total'   => $result['total']   ?? 0,
-            'page'    => $result['page']     ?? 1,
-            'pages'   => $result['pages']    ?? 1,
+            'total'   => $result['total'] ?? 0,
+            'page'    => $result['page'] ?? 1,
+            'pages'   => $result['pages'] ?? 1,
         ];
-    }
+    }//end findAllPaginated()
 
     /**
      * Return the object-validation handler from the underlying ObjectService.
@@ -273,5 +287,6 @@ class ObjectServiceMapperAdapter
     public function getValidateHandler(): ValidateObject
     {
         return $this->objectService->getValidateHandler();
-    }
-}
+    }//end getValidateHandler()
+
+}//end class

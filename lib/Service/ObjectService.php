@@ -3205,6 +3205,8 @@ class ObjectService
      *
      * Called by external apps (e.g. OpenConnector) before performing a fresh
      * lookup to prevent stale context from a previous request bleeding through.
+     *
+     * @return void
      */
     public function clearCurrents(): void
     {
@@ -3241,7 +3243,7 @@ class ObjectService
      *
      * @return ObjectServiceMapperAdapter
      */
-    public function getMapper(int|string|null $register = null, int|string|null $schema = null): ObjectServiceMapperAdapter
+    public function getMapper(int|string|null $register=null, int|string|null $schema=null): ObjectServiceMapperAdapter
     {
         // A non-numeric string (e.g. 'objectEntity') is a type-hint from the caller, not a register ID.
         // Return an unconstrained adapter so find() searches across all registers/schemas.
