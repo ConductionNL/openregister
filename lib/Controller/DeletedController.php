@@ -81,7 +81,7 @@ class DeletedController extends Controller
             return false;
         }
 
-        return $this->groupManager->isAdmin($user->getUID());
+        return (bool) $this->groupManager->isAdmin($user->getUID());
     }//end isCurrentUserAdmin()
 
     /**

@@ -358,6 +358,17 @@ class ReferentialIntegrityService
             $stmt->execute();
             $tables = [];
             while (($row = $stmt->fetch()) !== false) {
+                // If fetch() returns something other than a row array or false
+                // (e.g. null from a mocked statement), stop the loop to avoid
+                // spinning forever on non-advancing iteration.
+                if (is_array($row) === false) {
+                    break;
+                }
+
+                if (isset($row['table_name']) === false || is_string($row['table_name']) === false) {
+                    continue;
+                }
+
                 $tables[] = substr($row['table_name'], 3);
             }
 
