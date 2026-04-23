@@ -278,13 +278,21 @@ class AuditTrailMapper extends QBMapper
 
         // Initialize an array to store changed fields.
         $changed = [];
-        if ($action !== 'delete' && $action !== 'read') {
+        // Treat delete-ish actions (including referential_integrity.*_delete /
+        // set_null / set_default / restrict_blocked) as "no new state" — $new
+        // is legitimately null here and the per-field diff below would blow up.
+        $isDeleteAction = (
+            $action === 'delete'
+            || $action === 'read'
+            || str_starts_with($action, 'referential_integrity.')
+        );
+        if ($isDeleteAction === false) {
             $oldArray = [];
             if ($old !== null) {
                 $oldArray = $old->jsonSerialize();
             }
 
-            $newArray = $new->jsonSerialize();
+            $newArray = ($new !== null) ? $new->jsonSerialize() : [];
 
             // Compare old and new values to detect changes.
             foreach ($newArray as $key => $value) {
