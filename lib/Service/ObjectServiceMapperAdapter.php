@@ -140,6 +140,16 @@ class ObjectServiceMapperAdapter
         return $this->register !== null ? (int) $this->register : null;
     }
 
+    /**
+     * Return a paginated list of objects matching the given request parameters.
+     *
+     * Injects the adapter's register and schema into the query when not already
+     * present, then delegates to ObjectService::searchObjectsPaginated().
+     *
+     * @param array $requestParams Raw query parameters (limit, page, filters, etc.).
+     *
+     * @return array{results: array, total: int, page: int, pages: int}
+     */
     public function findAllPaginated(array $requestParams = []): array
     {
         if ($this->register !== null && isset($requestParams['_register']) === false) {
@@ -160,6 +170,11 @@ class ObjectServiceMapperAdapter
         ];
     }
 
+    /**
+     * Return the object-validation handler from the underlying ObjectService.
+     *
+     * @return mixed
+     */
     public function getValidateHandler(): mixed
     {
         return $this->objectService->getValidateHandler();

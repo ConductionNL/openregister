@@ -3200,6 +3200,12 @@ class ObjectService
         );
     }//end validateAndSaveObjectsBySchema()
 
+    /**
+     * Reset the current register, schema, and object context.
+     *
+     * Called by external apps (e.g. OpenConnector) before performing a fresh
+     * lookup to prevent stale context from a previous request bleeding through.
+     */
     public function clearCurrents(): void
     {
         $this->currentRegister = null;
@@ -3207,11 +3213,34 @@ class ObjectService
         $this->currentObject   = null;
     }//end clearCurrents()
 
+    /**
+     * Return the internal object-validation handler.
+     *
+     * Exposed so adapters and external services can run validation without
+     * depending on ObjectService internals directly.
+     *
+     * @return ValidateObject
+     */
     public function getValidateHandler(): ValidateObject
     {
         return $this->validateHandler;
     }//end getValidateHandler()
 
+    /**
+     * Return a mapper-like adapter scoped to the given register and schema.
+     *
+     * Allows external apps to interact with OpenRegister objects through a
+     * familiar mapper contract without depending on ObjectService internals.
+     *
+     * When $register is a non-numeric string (e.g. the type hint 'objectEntity'
+     * passed by OpenConnector), it is treated as an unscoped request and both
+     * register and schema are set to null so the adapter searches globally.
+     *
+     * @param int|string|null $register Register ID, or a type-hint string that is ignored.
+     * @param int|string|null $schema   Schema ID.
+     *
+     * @return ObjectServiceMapperAdapter
+     */
     public function getMapper(int|string|null $register = null, int|string|null $schema = null): ObjectServiceMapperAdapter
     {
         // A non-numeric string (e.g. 'objectEntity') is a type-hint from the caller, not a register ID.
