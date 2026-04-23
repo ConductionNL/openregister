@@ -111,6 +111,11 @@ class MagicTableHandler
             if (($tableExists === true) && ($force === false)) {
                 // Table exists and not forcing update - check if schema changed.
                 if ($this->magicMapper->hasRegisterSchemaChanged(register: $register, schema: $schema) === false) {
+                    // Fast path: columns already verified in this process, skip information_schema query.
+                    if (MagicMapper::isTableColumnsVerified(cacheKey: $cacheKey) === true) {
+                        return true;
+                    }
+
                     // Sanity check: verify all schema columns exist in the table.
                     // The version hash can be stale if it was stored without a full sync.
                     $requiredColumns = $this->magicMapper->buildTableColumnsFromSchema(schema: $schema);
@@ -118,6 +123,7 @@ class MagicTableHandler
                     $missingColumns  = array_diff_key($requiredColumns, $currentColumns);
 
                     if (empty($missingColumns) === true) {
+                        MagicMapper::setTableColumnsVerified(cacheKey: $cacheKey);
                         $this->logger->debug(
                             message: '[MagicTableHandler] Table exists and schema unchanged, skipping',
                             context: [
@@ -450,6 +456,8 @@ class MagicTableHandler
                 'columnsReRequiredList' => $columnStats['columnsReRequired'],
                 'columnsDroppedList'    => $columnStats['columnsDropped'],
             ];
+
+            MagicMapper::setTableColumnsVerified(cacheKey: $cacheKey);
 
             $this->logger->info(
                 message: '[MagicTableHandler] Successfully updated register+schema table',

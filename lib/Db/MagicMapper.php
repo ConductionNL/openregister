@@ -214,6 +214,16 @@ class MagicMapper extends AbstractObjectMapper
     private static array $calcVersionCache = [];
 
     /**
+     * Cache recording whether a register+schema table's columns have been verified
+     * in the current PHP process. Eliminates repeated information_schema queries
+     * on the happy path. Cleared by invalidateTableCache() and clearAllStaticCaches().
+     * Key format: 'registerId_schemaId' => true
+     *
+     * @var array<string, bool>
+     */
+    private static array $tableColumnsVerifiedCache = [];
+
+    /**
      * Cache for column existence checks to avoid repeated information_schema queries.
      * Key format: 'tableName' => ['column1' => true, 'column2' => true, ...]
      *
@@ -480,6 +490,34 @@ class MagicMapper extends AbstractObjectMapper
     }//end setRegSchemaTableCache()
 
     /**
+     * Mark a register+schema table's columns as verified for this process.
+     *
+     * @param string $cacheKey The cache key (registerId_schemaId)
+     *
+     * @return void
+     *
+     * @internal Used by MagicTableHandler.
+     */
+    public static function setTableColumnsVerified(string $cacheKey): void
+    {
+        self::$tableColumnsVerifiedCache[$cacheKey] = true;
+    }//end setTableColumnsVerified()
+
+    /**
+     * Check whether a register+schema table's columns have been verified.
+     *
+     * @param string $cacheKey The cache key (registerId_schemaId)
+     *
+     * @return bool True if columns have been verified in this process
+     *
+     * @internal Used by MagicTableHandler.
+     */
+    public static function isTableColumnsVerified(string $cacheKey): bool
+    {
+        return isset(self::$tableColumnsVerifiedCache[$cacheKey]);
+    }//end isTableColumnsVerified()
+
+    /**
      * Clear all static caches used by MagicMapper.
      *
      * @return void
@@ -488,10 +526,11 @@ class MagicMapper extends AbstractObjectMapper
      */
     public static function clearAllStaticCaches(): void
     {
-        self::$tableExistsCache    = [];
-        self::$regSchemaTableCache = [];
-        self::$tableStructureCache = [];
-        self::$calcVersionCache    = [];
+        self::$tableExistsCache          = [];
+        self::$regSchemaTableCache       = [];
+        self::$tableStructureCache       = [];
+        self::$calcVersionCache          = [];
+        self::$tableColumnsVerifiedCache = [];
     }//end clearAllStaticCaches()
 
     /**
@@ -1698,6 +1737,7 @@ class MagicMapper extends AbstractObjectMapper
         unset(self::$regSchemaTableCache[$cacheKey]);
         unset(self::$tableStructureCache[$cacheKey]);
         unset(self::$calcVersionCache[$cacheKey]);
+        unset(self::$tableColumnsVerifiedCache[$cacheKey]);
 
         $this->logger->debug(
             message: '[MagicMapper] Invalidated table cache',
