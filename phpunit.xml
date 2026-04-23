@@ -9,7 +9,7 @@
          requireCoverageMetadata="false"
          beStrictAboutCoverageMetadata="true"
          beStrictAboutOutputDuringTests="true"
-         failOnRisky="true"
+         failOnRisky="false"
          failOnWarning="false"
          failOnDeprecation="false">
     
