@@ -53,6 +53,7 @@ use OCA\OpenRegister\Service\Object\PerformanceHandler;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCA\OpenRegister\Service\Object\RenderObject;
 use OCA\OpenRegister\Service\Object\SaveObject;
+use OCA\OpenRegister\Service\ObjectServiceMapperAdapter;
 use OCA\OpenRegister\Service\Object\SaveObjects;
 use OCA\OpenRegister\Service\Object\SearchQueryHandler;
 use OCA\OpenRegister\Service\Object\ValidateObject;
@@ -3198,4 +3199,33 @@ class ObjectService
             offset: $offset
         );
     }//end validateAndSaveObjectsBySchema()
+
+    public function clearCurrents(): void
+    {
+        $this->currentRegister = null;
+        $this->currentSchema   = null;
+        $this->currentObject   = null;
+    }//end clearCurrents()
+
+    public function getValidateHandler(): ValidateObject
+    {
+        return $this->validateHandler;
+    }//end getValidateHandler()
+
+    public function getMapper(int|string|null $register = null, int|string|null $schema = null): ObjectServiceMapperAdapter
+    {
+        // A non-numeric string (e.g. 'objectEntity') is a type-hint from the caller, not a register ID.
+        // Return an unconstrained adapter so find() searches across all registers/schemas.
+        if (is_string($register) === true && is_numeric($register) === false) {
+            $register = null;
+            $schema   = null;
+        }
+
+        return new ObjectServiceMapperAdapter(
+            objectService: $this,
+            register: $register,
+            schema: $schema
+        );
+    }//end getMapper()
+
 }//end class

@@ -140,6 +140,26 @@ class ObjectServiceMapperAdapter
         return $this->register !== null ? (int) $this->register : null;
     }
 
+    public function findAllPaginated(array $requestParams = []): array
+    {
+        if ($this->register !== null && isset($requestParams['_register']) === false) {
+            $requestParams['_register'] = $this->register;
+        }
+
+        if ($this->schema !== null && isset($requestParams['_schema']) === false) {
+            $requestParams['_schema'] = $this->schema;
+        }
+
+        $result = $this->objectService->searchObjectsPaginated(query: $requestParams);
+
+        return [
+            'results' => $result['results'] ?? [],
+            'total'   => $result['total']   ?? 0,
+            'page'    => $result['page']     ?? 1,
+            'pages'   => $result['pages']    ?? 1,
+        ];
+    }
+
     public function getValidateHandler(): mixed
     {
         return $this->objectService->getValidateHandler();
