@@ -3062,7 +3062,7 @@ class MagicMapper extends AbstractObjectMapper
                     $value = $now;
                 }
 
-                if ($value instanceof DateTime) {
+                if ($value instanceof \DateTimeInterface) {
                     $value = $value->format('Y-m-d H:i:s');
                 } else if (is_string($value) === true) {
                     // Delegate string parsing to DateTimeNormalizer so that empty/whitespace
@@ -3195,7 +3195,7 @@ class MagicMapper extends AbstractObjectMapper
                     // Normalise date/date-time properties to Y-m-d H:i:s for MySQL DATETIME columns.
                     $propertyFormat = $propertyConfig['format'] ?? null;
                     if (in_array($propertyFormat, ['date-time', 'date'], true) === true && $value !== null) {
-                        if ($value instanceof \DateTime) {
+                        if ($value instanceof \DateTimeInterface) {
                             $value = $value->format('Y-m-d H:i:s');
                         } else if (is_string($value) === true) {
                             $value = $this->container
