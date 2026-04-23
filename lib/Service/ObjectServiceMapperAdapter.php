@@ -2,12 +2,11 @@
 /**
  * Adapter that exposes a mapper-like API over ObjectService.
  *
+ * @category  Service
+ * @package   OCA\OpenRegister\Service
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2024 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
- *
- * @category Service
- * @package  OCA\OpenRegister\Service
  */
 
 declare(strict_types=1);
