@@ -25,7 +25,7 @@ use DateTime;
 use InvalidArgumentException;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Db\ObjectEntityMapper;
+use OCA\OpenRegister\Db\MagicMapper;
 use OCP\IAppConfig;
 use OCP\Notification\IManager as INotificationManager;
 use Psr\Log\LoggerInterface;
@@ -58,14 +58,14 @@ class TransferListService
     /**
      * Constructor.
      *
-     * @param ObjectEntityMapper   $objectMapper        The object mapper.
+     * @param MagicMapper          $objectMapper        The object mapper.
      * @param AuditTrailMapper     $auditTrailMapper    The audit trail mapper.
      * @param IAppConfig           $appConfig           The app configuration.
      * @param INotificationManager $notificationManager The notification manager.
      * @param LoggerInterface      $logger              Logger.
      */
     public function __construct(
-        private readonly ObjectEntityMapper $objectMapper,
+        private readonly MagicMapper $objectMapper,
         private readonly AuditTrailMapper $auditTrailMapper,
         private readonly IAppConfig $appConfig,
         private readonly INotificationManager $notificationManager,
