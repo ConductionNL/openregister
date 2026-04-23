@@ -146,14 +146,18 @@ class ObjectServiceMapperAdapter
     /**
      * Update an existing object from a plain data array.
      *
-     * When $patch is true, only the supplied fields are changed (PATCH semantics).
-     * When false, the object is fully replaced (PUT semantics).
+     * When $patch is true, only the supplied fields are changed (PATCH semantics):
+     * the existing object is fetched, the incoming fields are merged on top, and
+     * the result is saved. When false, the full object is replaced (PUT semantics).
+     *
+     * Both paths route through saveObject() with the adapter's register/schema
+     * context so the correct dynamic table is targeted.
      *
      * Note: the $validate parameter is accepted for interface compatibility but
      * validation is always performed by the underlying ObjectService.
      *
      * @param int|string $id       Object ID or UUID.
-     * @param array      $object   New object data.
+     * @param array      $object   New or partial object data.
      * @param bool       $validate Accepted for interface compatibility; has no effect.
      * @param bool       $patch    When true, perform a partial update (PATCH).
      *
@@ -166,10 +170,19 @@ class ObjectServiceMapperAdapter
         bool $patch = false
     ): ObjectEntity {
         if ($patch === true) {
-            return $this->objectService->patchObject((string) $id, $object);
+            $existing = $this->objectService->find(
+                id: (string) $id,
+                register: $this->register,
+                schema: $this->schema
+            );
+            $object = array_merge($existing->getObject(), $object);
         }
 
-        return $this->objectService->updateObject((string) $id, $object);
+        return $this->objectService->saveObject(
+            object: array_merge($object, ['id' => (string) $id]),
+            register: $this->register,
+            schema: $this->schema
+        );
     }
 
     /**
