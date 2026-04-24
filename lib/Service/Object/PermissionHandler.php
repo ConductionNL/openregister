@@ -30,6 +30,7 @@ use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Db\MagicMapper;
+use OCA\OpenRegister\Service\ConditionMatcher;
 use OCP\IUserSession;
 use OCP\IUserManager;
 use OCP\IGroupManager;
@@ -44,6 +45,12 @@ use Psr\Container\ContainerInterface;
  * - User and group authorization
  * - Multi-tenancy filtering
  * - Object ownership verification
+ *
+ * Conditional match evaluation (rules with a `match` clause) is delegated to
+ * {@see \OCA\OpenRegister\Service\ConditionMatcher} — the single shared PHP-side
+ * matcher used across the RBAC stack (ADR-011). Do not reimplement condition
+ * evaluation locally. For SQL-side conditional filtering (list endpoints), see
+ * {@see \OCA\OpenRegister\Db\MagicMapper\MagicRbacHandler::applyRbacFilters()}.
  *
  * @category Handler
  * @package  OCA\OpenRegister\Service\Objects
@@ -84,6 +91,7 @@ class PermissionHandler
      * @param IGroupManager      $groupManager       Group manager for checking user groups.
      * @param SchemaMapper       $schemaMapper       Mapper for schema operations.
      * @param MagicMapper        $objectEntityMapper Mapper for object entity operations.
+     * @param ConditionMatcher   $conditionMatcher   Shared PHP-side match evaluator (ADR-011).
      * @param LoggerInterface    $logger             Logger for permission auditing.
      * @param ContainerInterface $container          Container for lazy loading services.
      */
@@ -93,6 +101,7 @@ class PermissionHandler
         private readonly IGroupManager $groupManager,
         private readonly SchemaMapper $schemaMapper,
         private readonly MagicMapper $objectEntityMapper,
+        private readonly ConditionMatcher $conditionMatcher,
         private readonly LoggerInterface $logger,
         private readonly ContainerInterface $container
     ) {
@@ -139,24 +148,13 @@ class PermissionHandler
         }
 
         // Resolve object context for conditional authorization matching.
+        // $activeOrganisation is resolved by ConditionMatcher itself (via OrganisationService);
+        // no per-call lookup is needed here anymore.
         $objectData         = null;
         $objectOrganisation = null;
-        $activeOrganisation = null;
-
         if ($object !== null) {
             $objectData         = $object->getObject();
             $objectOrganisation = $object->getOrganisation();
-        }
-
-        // Get the user's active organisation for $organisation variable resolution.
-        try {
-            $organisationService = $this->container->get('OCA\OpenRegister\Service\OrganisationService');
-            $activeOrg           = $organisationService->getActiveOrganisation();
-            if ($activeOrg !== null) {
-                $activeOrganisation = $activeOrg->getUuid();
-            }
-        } catch (\Throwable $e) {
-            // OrganisationService not available, conditional matching will be limited.
         }
 
         $authorization = $this->resolveAuthorization(schema: $schema);
@@ -174,8 +172,7 @@ class PermissionHandler
                     userGroup: null,
                     objectOwner: $objectOwner,
                     objectData: $objectData,
-                    objectOrganisation: $objectOrganisation,
-                    activeOrganisation: $activeOrganisation
+                    objectOrganisation: $objectOrganisation
                 );
             }
 
@@ -194,8 +191,7 @@ class PermissionHandler
                 userGroup: null,
                 objectOwner: $objectOwner,
                 objectData: $objectData,
-                objectOrganisation: $objectOrganisation,
-                activeOrganisation: $activeOrganisation
+                objectOrganisation: $objectOrganisation
             );
         }
 
@@ -215,8 +211,7 @@ class PermissionHandler
                     userId: $userId,
                     objectOwner: $objectOwner,
                     objectData: $objectData,
-                    objectOrganisation: $objectOrganisation,
-                    activeOrganisation: $activeOrganisation
+                    objectOrganisation: $objectOrganisation
                 ) === true
             ) {
                 return true;
@@ -231,8 +226,7 @@ class PermissionHandler
                 userId: $userId,
                 objectOwner: $objectOwner,
                 objectData: $objectData,
-                objectOrganisation: $objectOrganisation,
-                activeOrganisation: $activeOrganisation
+                objectOrganisation: $objectOrganisation
             ) === true
         ) {
             return true;
@@ -489,6 +483,16 @@ class PermissionHandler
      * - If no authorization is set, everyone has permission
      * - If authorization is set but action is not specified, everyone has permission
      *
+     * Deduplication note:
+     *   Conditional match evaluation (rules with a `match` clause) is delegated to
+     *   {@see \OCA\OpenRegister\Service\ConditionMatcher}. ConditionMatcher is the
+     *   single PHP-side conditional-match evaluator used across the RBAC stack:
+     *   PropertyRbacHandler (property-level), PermissionHandler (schema-level), and
+     *   MagicRbacHandler::hasPermission() (row-level PHP path). The SQL emission
+     *   path in MagicRbacHandler::applyRbacFilters() is the only specialised
+     *   interpreter of the same rule grammar — it produces SQL WHERE fragments
+     *   instead of PHP verdicts. Do not introduce a fourth match evaluator here.
+     *
      * @param array|null  $authorization      The schema's authorization array
      * @param string      $groupId            The group ID to check
      * @param string      $action             The CRUD action (create, read, update, delete)
@@ -496,8 +500,7 @@ class PermissionHandler
      * @param string|null $userGroup          Optional user group for admin check
      * @param string|null $objectOwner        Optional object owner for ownership check
      * @param array|null  $objectData         Optional object data for conditional matching
-     * @param string|null $objectOrganisation Optional object organisation
-     * @param string|null $activeOrganisation Optional active organisation UUID
+     * @param string|null $objectOrganisation Optional object organisation (folded into @self.organisation)
      *
      * @return bool True if the group has permission
      *
@@ -511,8 +514,7 @@ class PermissionHandler
         ?string $userGroup=null,
         ?string $objectOwner=null,
         ?array $objectData=null,
-        ?string $objectOrganisation=null,
-        ?string $activeOrganisation=null
+        ?string $objectOrganisation=null
     ): bool {
         // Admin group always has all permissions.
         if ($groupId === 'admin' || $userGroup === 'admin') {
@@ -552,75 +554,33 @@ class PermissionHandler
                     return true;
                 }
 
-                // Evaluate all match conditions (all must pass).
-                if ($this->evaluateMatchConditions(
-                    conditions: $entry['match'],
-                    objectData: $objectData,
-                    objectOrganisation: $objectOrganisation,
-                    activeOrganisation: $activeOrganisation
-                ) === true
+                // Evaluate all match conditions (all must pass) via the shared ConditionMatcher.
+                // Build the envelope so ConditionMatcher::getObjectValue() can resolve _organisation
+                // (and any other _-prefixed @self field) by stripping the underscore and looking
+                // up @self[<stripped>].
+                //
+                // Precedence: the `+` array union keeps any existing `@self.organisation` already
+                // present in $objectData, and only falls back to the separately-passed
+                // $objectOrganisation when @self has no `organisation` key. This matches the
+                // pre-unification behaviour where the object's own @self was authoritative and
+                // the explicit parameter was the fallback source.
+                $envelope = ($objectData ?? []);
+                if ($objectOrganisation !== null) {
+                    $envelope['@self'] = (($envelope['@self'] ?? []) + ['organisation' => $objectOrganisation]);
+                }
+
+                if ($this->conditionMatcher->objectMatchesConditions(
+                        object: $envelope,
+                        match: $entry['match']
+                    ) === true
                 ) {
                     return true;
                 }
-            }
+            }//end if
         }//end foreach
 
         return false;
     }//end hasGroupPermission()
-
-    /**
-     * Evaluate match conditions from a conditional authorization entry
-     *
-     * Supports variable substitution:
-     * - $organisation -> replaced with the user's active organisation UUID
-     *
-     * Supports special field prefixes:
-     * - _organisation -> matches against the object's @self.organisation
-     * - Other fields -> matched against the object data
-     *
-     * @param array       $conditions         Key-value pairs of field => expected value
-     * @param array|null  $objectData         The object's data fields
-     * @param string|null $objectOrganisation The object's @self.organisation
-     * @param string|null $activeOrganisation The user's active organisation UUID
-     *
-     * @return bool True if all conditions are satisfied
-     */
-    public function evaluateMatchConditions(
-        array $conditions,
-        ?array $objectData,
-        ?string $objectOrganisation,
-        ?string $activeOrganisation
-    ): bool {
-        foreach ($conditions as $field => $expectedValue) {
-            // Resolve $organisation variable in the expected value.
-            if ($expectedValue === '$organisation') {
-                if ($activeOrganisation === null) {
-                    return false;
-                }
-
-                $expectedValue = $activeOrganisation;
-            }
-
-            // Get the actual value to compare against.
-            // Regular field: match against object data; special _organisation field: match against @self.organisation.
-            $actualValue = $objectData[$field] ?? null;
-            if ($field === '_organisation') {
-                $actualValue = $objectOrganisation;
-            }
-
-            // If the actual value is an array with an 'id' key (resolved relation), use the id.
-            if (is_array($actualValue) === true && isset($actualValue['id']) === true) {
-                $actualValue = $actualValue['id'];
-            }
-
-            // Compare values.
-            if ($actualValue !== $expectedValue) {
-                return false;
-            }
-        }//end foreach
-
-        return true;
-    }//end evaluateMatchConditions()
 
     /**
      * Get all groups that have permission for a specific action
