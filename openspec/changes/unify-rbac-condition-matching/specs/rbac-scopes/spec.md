@@ -88,3 +88,43 @@ Authorization rules MUST support conditional matching where access depends on bo
 - **AND** `PermissionHandler::hasPermission()` MUST therefore deny `draft-1`, matching the list endpoint's exclusion
 - **AND** the only null-aware operator whose verdict depends on `null` MUST be `$exists` (`$exists: true` → `false` for null, `$exists: false` → `true` for null)
 - **AND** `$eq: null` MAY match null object values as a backward-compatible "match missing field" escape hatch; rule authors requiring strict SQL-aligned semantics SHOULD use `$exists: false` instead
+
+#### Scenario: Resolved relations unwrap to their scalar id for scalar comparisons
+
+- **GIVEN** a conditional rule `{ "match": { "parent": "uuid-123" } }`
+- **AND** object data where the `parent` property has been expanded into its full related object: `{ "parent": { "id": "uuid-123", "name": "Parent" } }`
+- **WHEN** `ConditionMatcher::objectMatchesConditions()` evaluates the rule
+- **THEN** the object value `{ "id": "uuid-123", ... }` MUST be unwrapped to the scalar `"uuid-123"` before the equality check
+- **AND** the rule MUST return `true` regardless of whether the consumer passes expanded or unexpanded object data
+- **AND** this unwrapping MUST happen for every comparison branch (simple equality, operator objects, null checks) so list (SQL compares against the id column directly) and find (PHP compares after unwrapping) produce identical verdicts
+- **AND** array values without an `id` key MUST NOT be unwrapped — they stay as arrays and mismatch against scalar rules (arrays-as-first-class are not a resolved-relation shape)
+
+#### Scenario: Unknown operators fail closed (reject the match)
+
+- **GIVEN** a malformed conditional rule using an operator the system does not recognise, e.g. `{ "match": { "publishedAt": { "$foo": "bar" } } }`
+- **WHEN** `MagicRbacHandler::applyRbacFilters()` (list) and `ConditionMatcher::objectMatchesConditions()` (find) each process the rule
+- **THEN** the SQL path MUST produce no clause that could satisfy the rule (`buildSingleOperatorCondition` returns `null`; the rule is dropped from the OR list; if no other rule grants access the row is filtered out)
+- **AND** the PHP path MUST return `false` from `OperatorEvaluator::applySingleOperator()` for the unknown operator (fail-closed), NOT `true`
+- **AND** both paths MUST log a warning identifying the unknown operator
+- **AND** neither path MUST grant access on a malformed rule — this prevents typos and forward-incompatible schemas from accidentally widening the access surface
+
+### Requirement: Divergences from strict SQL three-valued logic (documented)
+
+The PHP-side matcher aims for parity with SQL's three-valued logic, but two operators deliberately diverge for ergonomic reasons. Rule authors who need strict SQL alignment MUST avoid these forms and use `$exists` instead.
+
+#### Scenario: `$eq: null` matches null object values (escape hatch)
+
+- **GIVEN** a rule `{ "match": { "field": null } }` where the rule author's intent is "match objects where `field` is missing"
+- **WHEN** the PHP path evaluates this against an object with `field: null`
+- **THEN** `operatorEquals` MUST return `true` (`null === null`)
+- **AND** the SQL path (which emits `col = NULL`, evaluating to `NULL`) would filter this row out, so the two paths diverge for this specific form
+- **AND** rule authors SHOULD prefer `{ "match": { "field": { "$exists": false } } }` when strict SQL alignment matters (e.g. UNION queries, cross-engine deployments)
+
+#### Scenario: `$ne: null` evaluates against PHP `!==`, not SQL `IS NOT NULL`
+
+- **GIVEN** a rule `{ "match": { "field": { "$ne": null } } }` where the rule author's intent is "match objects where `field` has a value"
+- **WHEN** the PHP path evaluates this against an object with a non-null `field`
+- **THEN** `operatorNotEquals` MUST return `true` (`<value> !== null`)
+- **AND** when the PHP path evaluates this against an object with `field: null`, `operatorNotEquals` MUST return `false` (the null-value guard explicitly added for SQL alignment)
+- **AND** the SQL path (which emits `col != NULL`, always `NULL`) would filter every row out, so the two paths diverge for this specific form (PHP returns sensible results for the non-null case; SQL returns no rows)
+- **AND** rule authors SHOULD prefer `{ "match": { "field": { "$exists": true } } }` when strict SQL alignment matters

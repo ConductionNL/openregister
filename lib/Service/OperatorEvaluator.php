@@ -102,11 +102,17 @@ class OperatorEvaluator
                 return $this->operatorLessThanOrEqual(value: $value, operand: $operand);
 
             default:
+                // Fail-closed on unknown operators to match the SQL path.
+                // MagicRbacHandler::buildSingleOperatorCondition returns null for
+                // unknown operators; applyRbacFilters then produces no SQL clause
+                // that could satisfy the rule, and the row is excluded. Returning
+                // true here would grant access on malformed rules (fail-open),
+                // creating a list-vs-find security drift.
                 $this->logger->warning(
-                    message: '[OperatorEvaluator] Unknown operator',
+                    message: '[OperatorEvaluator] Unknown operator — rejecting match',
                     context: ['file' => __FILE__, 'line' => __LINE__, 'operator' => $operator]
                 );
-                return true;
+                return false;
         }//end switch
     }//end applySingleOperator()
 
@@ -148,6 +154,12 @@ class OperatorEvaluator
     /**
      * Check $in operator: value must be in the operand array
      *
+     * SQL three-valued logic: NULL IN (...) evaluates to NULL, which WHERE treats
+     * as false (row filtered out). PHP's in_array happens to return false when
+     * looking up null in most arrays, but returns true for an array containing
+     * null — which would diverge from SQL. Explicitly reject null values to
+     * keep list and find verdicts aligned.
+     *
      * @param mixed $value   Object value
      * @param mixed $operand Array of allowed values
      *
@@ -156,6 +168,10 @@ class OperatorEvaluator
     private function operatorIn(mixed $value, mixed $operand): bool
     {
         if (is_array($operand) === false) {
+            return false;
+        }
+
+        if ($value === null) {
             return false;
         }
 

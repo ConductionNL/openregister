@@ -166,10 +166,13 @@ class OperatorEvaluatorTest extends TestCase
 
     // ── Unknown operator ──
 
-    public function testUnknownOperatorReturnsTrueAndLogsWarning(): void
+    public function testUnknownOperatorReturnsFalseAndLogsWarning(): void
     {
+        // Fail-closed: an unknown operator MUST reject the match so malformed
+        // rules cannot grant unintended access. This matches the SQL path,
+        // which drops unknown-operator conditions and cannot satisfy the rule.
         $this->logger->expects($this->once())->method('warning');
-        $this->assertTrue($this->evaluator->valueMatchesOperator(5, ['$unknown' => 1]));
+        $this->assertFalse($this->evaluator->valueMatchesOperator(5, ['$unknown' => 1]));
     }
 
     // ── Empty operators ──
@@ -228,6 +231,14 @@ class OperatorEvaluatorTest extends TestCase
     {
         // SQL: NULL IN ('a', 'b') → NULL → filter out
         $this->assertFalse($this->evaluator->valueMatchesOperator(null, ['$in' => ['a', 'b']]));
+    }
+
+    public function testInAgainstNullValueWithNullInOperandArrayStillReturnsFalse(): void
+    {
+        // Regression: PHP's in_array(null, [null, 'x'], true) returns true, but
+        // SQL NULL IN (NULL, 'x') evaluates to NULL → filter out. The explicit
+        // null guard on operatorIn keeps the PHP verdict aligned.
+        $this->assertFalse($this->evaluator->valueMatchesOperator(null, ['$in' => [null, 'x']]));
     }
 
     public function testNinAgainstNullValueReturnsFalse(): void

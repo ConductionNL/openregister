@@ -122,7 +122,9 @@ class ConditionMatcher
     private function singleConditionMatches(array $object, string $property, mixed $value): bool
     {
         // Get object value, checking both direct property and @self.
-        $objectValue = $this->getObjectValue(object: $object, property: $property);
+        $objectValue = $this->unwrapResolvedRelation(
+            value: $this->getObjectValue(object: $object, property: $property)
+        );
 
         // Resolve dynamic variables in the match value.
         $resolvedValue = $this->resolveDynamicValue(value: $value);
@@ -152,6 +154,33 @@ class ConditionMatcher
 
         return true;
     }//end singleConditionMatches()
+
+    /**
+     * Unwrap resolved relations to their scalar id.
+     *
+     * When a property has been expanded into its full related object (array with
+     * an 'id' key), RBAC conditions still compare against the scalar id. Mirrors
+     * the behaviour of the pre-unification PermissionHandler::evaluateMatchConditions
+     * — without this, a rule like {"match": {"parent": "uuid-123"}} would flip from
+     * allow to deny for any schema where "parent" is a resolved relation
+     * (list-vs-find drift). Arrays without an 'id' key are not resolved relations
+     * and pass through unchanged.
+     *
+     * @param mixed $value Raw value from the object (may be a scalar, null, or
+     *                     an array representing a resolved relation or a plain
+     *                     array-valued property).
+     *
+     * @return mixed The unwrapped scalar id, or the original value if not a
+     *               resolved relation.
+     */
+    private function unwrapResolvedRelation(mixed $value): mixed
+    {
+        if (is_array($value) === true && isset($value['id']) === true) {
+            return $value['id'];
+        }
+
+        return $value;
+    }//end unwrapResolvedRelation()
 
     /**
      * Get a value from the object, checking both direct property and @self

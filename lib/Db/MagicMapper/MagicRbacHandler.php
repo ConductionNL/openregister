@@ -61,10 +61,13 @@ use Psr\Log\LoggerInterface;
  *   1. SQL emission — {@see applyRbacFilters()} and {@see buildRbacConditionsSql()}
  *      translate conditional rules into `WHERE` fragments for the list endpoint.
  *      This is the canonical row-level path and remains specialised to this class.
- *   2. PHP-side verdict — {@see hasPermission()} delegates conditional match
- *      evaluation to {@see \OCA\OpenRegister\Service\ConditionMatcher}, the shared
- *      matcher used across the RBAC stack (ADR-011). Do not reintroduce a local
- *      PHP-side condition matcher here.
+ *   2. PHP-side verdict — {@see hasPermission()} dispatches simple string rules
+ *      locally (group-in-groups membership only) and delegates the `match:` branch
+ *      of conditional rules to {@see \OCA\OpenRegister\Service\ConditionMatcher},
+ *      the shared matcher used across the RBAC stack (ADR-011). New conditional
+ *      operators or dynamic variables MUST be added to ConditionMatcher /
+ *      OperatorEvaluator, not re-implemented here. The string-rule dispatch is
+ *      intentionally kept in-class because it needs no operator vocabulary.
  *
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
  * @SuppressWarnings(PHPMD.ExcessiveClassComplexity)

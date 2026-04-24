@@ -986,4 +986,94 @@ class PermissionHandlerRbacTest extends TestCase
             'Draft with no publicatiedatum: deny'
         );
     }
+
+    public function testResolvedRelationUnwrappingViaRealConditionMatcher(): void
+    {
+        // Regression test for the scenario the deleted testEvaluateMatchConditionsResolvedRelation
+        // covered: when a property has been expanded into its full related object
+        // (e.g. {id: 'uuid-123', name: 'Parent'}), RBAC conditions MUST still compare
+        // against the scalar id. Without unwrapping, a rule like
+        // {"match": {"parent": "uuid-123"}} would flip from allow to deny after the
+        // unification, diverging from the SQL path (which compares the id column
+        // directly regardless of expansion). Real-wired end-to-end test — no mocks.
+        $this->mockUser('jan', ['behandelaars']);
+
+        $schema = $this->createSchema(1, [
+            'read' => [
+                ['group' => 'behandelaars', 'match' => ['parent' => 'uuid-123']],
+            ],
+        ]);
+
+        $register = $this->createRegister(10, null);
+        $this->setupRegisterForSchema(1, $register);
+
+        // Object has `parent` expanded into a resolved relation.
+        $object  = $this->createObjectEntity([
+            'parent' => ['id' => 'uuid-123', 'name' => 'Parent'],
+        ]);
+        $handler = $this->buildHandlerWithRealMatcher();
+
+        $this->assertTrue(
+            $handler->hasPermission(
+                schema: $schema,
+                action: 'read',
+                userId: 'jan',
+                objectOwner: null,
+                _rbac: true,
+                object: $object
+            ),
+            'Resolved relation with matching id MUST satisfy the scalar id rule'
+        );
+
+        // Negative case: mismatched id.
+        $objectMismatch = $this->createObjectEntity([
+            'parent' => ['id' => 'uuid-456', 'name' => 'Other'],
+        ]);
+
+        $this->assertFalse(
+            $handler->hasPermission(
+                schema: $schema,
+                action: 'read',
+                userId: 'jan',
+                objectOwner: null,
+                _rbac: true,
+                object: $objectMismatch
+            ),
+            'Resolved relation with mismatched id MUST NOT satisfy the rule'
+        );
+    }
+
+    public function testUnknownOperatorFailsClosedViaRealConditionMatcher(): void
+    {
+        // Regression test for bbrands02's critical finding: a malformed rule with
+        // an unknown operator (e.g. $foo) MUST reject the match rather than
+        // granting access. Previously OperatorEvaluator returned true on unknown
+        // operators (fail-open), while the SQL path produced no clause and
+        // denied. Aligning both paths to fail-closed.
+        $this->mockUser('jan', ['behandelaars']);
+
+        $schema = $this->createSchema(1, [
+            'read' => [
+                ['group' => 'behandelaars', 'match' => ['publishedAt' => ['$foo' => 'bar']]],
+            ],
+        ]);
+
+        $register = $this->createRegister(10, null);
+        $this->setupRegisterForSchema(1, $register);
+
+        $object  = $this->createObjectEntity(['publishedAt' => 'bar']);
+        $handler = $this->buildHandlerWithRealMatcher();
+
+        $this->assertFalse(
+            $handler->hasPermission(
+                schema: $schema,
+                action: 'read',
+                userId: 'jan',
+                objectOwner: null,
+                _rbac: true,
+                object: $object
+            ),
+            'Malformed rule with unknown operator MUST NOT grant access'
+        );
+    }
 }

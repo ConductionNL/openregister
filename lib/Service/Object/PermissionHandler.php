@@ -558,6 +558,12 @@ class PermissionHandler
                 // Build the envelope so ConditionMatcher::getObjectValue() can resolve _organisation
                 // (and any other _-prefixed @self field) by stripping the underscore and looking
                 // up @self[<stripped>].
+                //
+                // Precedence: the `+` array union keeps any existing `@self.organisation` already
+                // present in $objectData, and only falls back to the separately-passed
+                // $objectOrganisation when @self has no `organisation` key. This matches the
+                // pre-unification behaviour where the object's own @self was authoritative and
+                // the explicit parameter was the fallback source.
                 $envelope = ($objectData ?? []);
                 if ($objectOrganisation !== null) {
                     $envelope['@self'] = (($envelope['@self'] ?? []) + ['organisation' => $objectOrganisation]);
