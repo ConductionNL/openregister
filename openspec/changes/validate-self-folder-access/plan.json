@@ -1,0 +1,416 @@
+{
+  "change": "validate-self-folder-access",
+  "project": "openregister",
+  "repo": "ConductionNL/openregister",
+  "created": "2026-04-23",
+  "tracking_issue": 1342,
+  "tracking_issue_url": "https://github.com/ConductionNL/openregister/issues/1342",
+  "labels": ["openspec", "openregister", "self-folder-access-control"],
+  "sections": [
+    {
+      "id": 1,
+      "title": "Exception type",
+      "tasks": [
+        {
+          "id": "1.1",
+          "title": "Add FolderAccessDeniedException",
+          "description": "Create lib/Exception/FolderAccessDeniedException.php extending \\Exception in namespace OCA\\OpenRegister\\Exception with docblock explaining throw contract and HTTP 403 mapping.",
+          "status": "pending",
+          "spec_ref": "self-folder-access-control",
+          "acceptance_criteria": [
+            "File lib/Exception/FolderAccessDeniedException.php exists",
+            "Class extends \\Exception directly (not NotPermittedException)",
+            "Namespace is OCA\\OpenRegister\\Exception",
+            "Docblock describes when it is thrown and the HTTP 403 mapping"
+          ],
+          "files_likely_affected": ["lib/Exception/FolderAccessDeniedException.php"]
+        },
+        {
+          "id": "1.2",
+          "title": "Regenerate autoloader if required",
+          "description": "Run composer dump-autoload so the new class is classmap-registered.",
+          "status": "pending",
+          "spec_ref": "self-folder-access-control",
+          "acceptance_criteria": ["composer autoload resolves FolderAccessDeniedException"],
+          "files_likely_affected": ["composer.json", "composer.lock"]
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "title": "Access-control helper",
+      "tasks": [
+        {
+          "id": "2.1",
+          "title": "Add assertFolderIsAccessible() in FolderManagementHandler",
+          "description": "Private method assertFolderIsAccessible(string $folderId, ?IUser $currentUser): Folder that resolves via getOpenRegisterUserFolder()->getById(), verifies the node exists, is a Folder, and isReadable() returns true. Does NOT use rootFolder or getNodeById(). Throws FolderAccessDeniedException with the attempted ID on any failure.",
+          "status": "pending",
+          "spec_ref": "self-folder-access-control",
+          "acceptance_criteria": [
+            "Method exists on FolderManagementHandler as private",
+            "Signature: assertFolderIsAccessible(string $folderId, ?IUser $currentUser): Folder",
+            "Uses getOpenRegisterUserFolder()->getById() only",
+            "No reference to rootFolder or getNodeById() in this method",
+            "Verifies instanceof Folder AND isReadable()",
+            "Throws FolderAccessDeniedException on all failure paths"
+          ],
+          "files_likely_affected": ["lib/Service/File/FolderManagementHandler.php"]
+        },
+        {
+          "id": "2.2",
+          "title": "Inline comment pointing readers to getNodeById()",
+          "description": "Document why the binding path deliberately avoids the root-folder fallback and point readers at getNodeById() as the general-purpose helper that retains the fallback.",
+          "status": "pending",
+          "spec_ref": "self-folder-access-control",
+          "acceptance_criteria": ["Comment block above or inside assertFolderIsAccessible() explains the design"],
+          "files_likely_affected": ["lib/Service/File/FolderManagementHandler.php"]
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "title": "Wire the check into createObjectFolderById()",
+      "tasks": [
+        {
+          "id": "3.1",
+          "title": "Branch on getFolder() shape",
+          "description": "Empty → auto-create (unchanged). Non-numeric → auto-create (legacy, unchanged). Non-empty numeric → call assertFolderIsAccessible() and use the returned Folder as the resolved existing folder.",
+          "status": "pending",
+          "spec_ref": "self-folder-access-control",
+          "acceptance_criteria": [
+            "Numeric folder values route through assertFolderIsAccessible()",
+            "Empty values follow existing auto-create path",
+            "Non-numeric (legacy) values follow existing auto-create path"
+          ],
+          "files_likely_affected": ["lib/Service/File/FolderManagementHandler.php"]
+        },
+        {
+          "id": "3.2",
+          "title": "Remove implicit auto-create-on-invalid-ID for numeric branch",
+          "description": "If assertFolderIsAccessible() throws, propagate FolderAccessDeniedException — do not fall through to the register-folder creation path.",
+          "status": "pending",
+          "spec_ref": "self-folder-access-control",
+          "acceptance_criteria": [
+            "Numeric folder ID that fails access check surfaces the exception",
+            "No new folder is created for a failed numeric binding attempt"
+          ],
+          "files_likely_affected": ["lib/Service/File/FolderManagementHandler.php"]
+        },
+        {
+          "id": "3.3",
+          "title": "Verify getExistingFolderFromProperty() still used by other callers",
+          "description": "Grep the codebase to confirm other callers of getExistingFolderFromProperty() remain intact; only the numeric user-supplied branch in createObjectFolderById() stops using it.",
+          "status": "pending",
+          "spec_ref": "self-folder-access-control",
+          "acceptance_criteria": [
+            "grep shows remaining callers of getExistingFolderFromProperty() function correctly"
+          ],
+          "files_likely_affected": ["lib/Service/File/FolderManagementHandler.php"]
+        }
+      ]
+    },
+    {
+      "id": 4,
+      "title": "Audit trail on denial",
+      "tasks": [
+        {
+          "id": "4.1",
+          "title": "Add logFolderAccessDenied() private method",
+          "description": "Writes AuditTrailMapper entry with action: folder_access_denied, actor: $currentUser?->getUID() ?? system, metadata: {folder, timestamp}. On mapper failure, log warning but do not swallow the denial.",
+          "status": "pending",
+          "spec_ref": "self-folder-access-control",
+          "acceptance_criteria": [
+            "Method exists as private on FolderManagementHandler",
+            "Writes AuditTrailMapper entry with action folder_access_denied",
+            "Actor resolves to UID or system fallback",
+            "Mapper failures logged at warning level only"
+          ],
+          "files_likely_affected": ["lib/Service/File/FolderManagementHandler.php"]
+        },
+        {
+          "id": "4.2",
+          "title": "Call audit method from assertFolderIsAccessible() before throw",
+          "description": "Every failure path (not found, not a folder, not readable) invokes logFolderAccessDenied() immediately before throwing.",
+          "status": "pending",
+          "spec_ref": "self-folder-access-control",
+          "acceptance_criteria": ["Every throw site in assertFolderIsAccessible() is preceded by audit call"],
+          "files_likely_affected": ["lib/Service/File/FolderManagementHandler.php"]
+        },
+        {
+          "id": "4.3",
+          "title": "Verify audit is written before exception is thrown",
+          "description": "Unit or integration test asserts audit entry exists after a caught denial.",
+          "status": "pending",
+          "spec_ref": "self-folder-access-control",
+          "acceptance_criteria": ["Test demonstrates audit entry present even when denial caught"],
+          "files_likely_affected": ["Tests/Unit/Service/File/FolderManagementHandlerAccessControlTest.php"]
+        }
+      ]
+    },
+    {
+      "id": 5,
+      "title": "Controller mapping to HTTP 403",
+      "tasks": [
+        {
+          "id": "5.1",
+          "title": "Identify save endpoints",
+          "description": "Grep lib/Controller/ObjectsController.php (and siblings) for saveObject( callsites. List endpoints that need the new catch.",
+          "status": "pending",
+          "spec_ref": "self-folder-access-control",
+          "acceptance_criteria": ["Documented list of save endpoints needing the catch"],
+          "files_likely_affected": ["lib/Controller/ObjectsController.php"]
+        },
+        {
+          "id": "5.2",
+          "title": "Catch FolderAccessDeniedException specifically",
+          "description": "Catch BEFORE generic \\Exception. Return JSONResponse status 403 with body {error: folder_access_denied, folder: <attempted-id>}. Prefer extending existing shared error-handler method over copy-paste try/catch.",
+          "status": "pending",
+          "spec_ref": "self-folder-access-control",
+          "acceptance_criteria": [
+            "Catch block for FolderAccessDeniedException comes before generic \\Exception",
+            "Response is HTTP 403 with JSON body containing error and folder keys"
+          ],
+          "files_likely_affected": ["lib/Controller/ObjectsController.php", "lib/Service/Object/SaveObjects.php"]
+        },
+        {
+          "id": "5.3",
+          "title": "Confirm no upstream absorption",
+          "description": "Confirm no controller base class, middleware, or AppFramework hook catches FolderAccessDeniedException as generic \\Exception before the intended 403 mapping runs.",
+          "status": "pending",
+          "spec_ref": "self-folder-access-control",
+          "acceptance_criteria": ["Grep and manual trace confirms no upstream generic catch absorbs the exception"],
+          "files_likely_affected": ["lib/Controller/", "lib/Middleware/"]
+        }
+      ]
+    },
+    {
+      "id": 6,
+      "title": "Audit internal callers",
+      "tasks": [
+        {
+          "id": "6.1",
+          "title": "Grep for @self.folder / ObjectEntity::setFolder() callsites",
+          "description": "Identify every caller outside FolderManagementHandler and document status: (a) always accessible ID, (b) needs explicit $currentUser, (c) clears field before save.",
+          "status": "pending",
+          "spec_ref": "self-folder-access-control",
+          "acceptance_criteria": ["Documented audit of every callsite with classification"],
+          "files_likely_affected": []
+        },
+        {
+          "id": "6.2",
+          "title": "Verify known callers are unaffected",
+          "description": "Confirm TransferCheckJob, DestructionCheckJob, ImportService, SolrNightlyWarmupJob, NameCacheWarmupJob, RegistersLoader, etc. do not set @self.folder or otherwise regress.",
+          "status": "pending",
+          "spec_ref": "self-folder-access-control",
+          "acceptance_criteria": ["Each listed caller's behaviour unchanged and documented"],
+          "files_likely_affected": [
+            "lib/Cron/TransferCheckJob.php",
+            "lib/Cron/DestructionCheckJob.php",
+            "lib/Service/ImportService.php",
+            "lib/Cron/SolrNightlyWarmupJob.php",
+            "lib/Cron/NameCacheWarmupJob.php",
+            "lib/Service/Install/RegistersLoader.php"
+          ]
+        },
+        {
+          "id": "6.3",
+          "title": "Fix any regressing caller in the same PR",
+          "description": "If audit surfaces a regression, remediate by passing $currentUser through, clearing the field before save, or routing through the HTTP 403 flow.",
+          "status": "pending",
+          "spec_ref": "self-folder-access-control",
+          "acceptance_criteria": ["All regressions fixed within this change"],
+          "files_likely_affected": []
+        }
+      ]
+    },
+    {
+      "id": 7,
+      "title": "Unit tests",
+      "tasks": [
+        {
+          "id": "7.1",
+          "title": "Add FolderManagementHandlerAccessControlTest",
+          "description": "Cover: (a) owned folder bind succeeds; (b) shared-readable bind succeeds; (c) unshared cross-user throws; (d) non-existent ID throws; (e) file-ID throws; (f) trashed folder throws; (g) empty property auto-creates; (h) legacy non-numeric auto-creates; (i) explicit $currentUser overrides session; (j) audit entry written on each denial.",
+          "status": "pending",
+          "spec_ref": "self-folder-access-control",
+          "acceptance_criteria": [
+            "All 10 scenarios present and green",
+            "File located at Tests/Unit/Service/File/FolderManagementHandlerAccessControlTest.php"
+          ],
+          "files_likely_affected": ["Tests/Unit/Service/File/FolderManagementHandlerAccessControlTest.php"]
+        },
+        {
+          "id": "7.2",
+          "title": "Assert FolderAccessDeniedException distinctness",
+          "description": "Test asserts exception extends \\Exception directly and is NOT a subclass of NotPermittedException or other Nextcloud exceptions (so catch-blocks don't accidentally absorb it).",
+          "status": "pending",
+          "spec_ref": "self-folder-access-control",
+          "acceptance_criteria": ["Reflection-based test validates parent is \\Exception"],
+          "files_likely_affected": ["Tests/Unit/Exception/FolderAccessDeniedExceptionTest.php"]
+        },
+        {
+          "id": "7.3",
+          "title": "Assert ObjectsController returns HTTP 403",
+          "description": "Controller-level test injects a mocked service that throws FolderAccessDeniedException and asserts status 403 with structured body.",
+          "status": "pending",
+          "spec_ref": "self-folder-access-control",
+          "acceptance_criteria": ["Test passes with status 403 and correct body structure"],
+          "files_likely_affected": ["Tests/Unit/Controller/ObjectsControllerTest.php"]
+        },
+        {
+          "id": "7.4",
+          "title": "Run tests inside the Nextcloud container",
+          "description": "docker exec -w /var/www/html/custom_apps/openregister nextcloud php vendor/bin/phpunit -c phpunit-unit.xml --filter FolderManagementHandlerAccessControl — confirm green.",
+          "status": "pending",
+          "spec_ref": "self-folder-access-control",
+          "acceptance_criteria": ["phpunit run inside container is green"],
+          "files_likely_affected": []
+        },
+        {
+          "id": "7.5",
+          "title": "Confirm unit-test coverage ≥75% for new code (ADR-009)",
+          "description": "Generate coverage report for touched files and confirm threshold.",
+          "status": "pending",
+          "spec_ref": "self-folder-access-control",
+          "acceptance_criteria": ["Coverage report shows ≥75% for new code"],
+          "files_likely_affected": []
+        }
+      ]
+    },
+    {
+      "id": 8,
+      "title": "Integration / manual verification",
+      "tasks": [
+        {
+          "id": "8.1",
+          "title": "Reset local env",
+          "description": "bash clean-env.sh or /clean-env skill; bring full stack up.",
+          "status": "pending",
+          "spec_ref": "self-folder-access-control",
+          "acceptance_criteria": ["Clean stack running, baseline healthy"],
+          "files_likely_affected": []
+        },
+        {
+          "id": "8.2",
+          "title": "As alice, create folder alice-private",
+          "description": "Create via Files UI, note the node ID.",
+          "status": "pending",
+          "spec_ref": "self-folder-access-control",
+          "acceptance_criteria": ["alice-private exists with recorded node ID"],
+          "files_likely_affected": []
+        },
+        {
+          "id": "8.3",
+          "title": "As bob, POST object with alice's folder ID",
+          "description": "Confirm HTTP 403 with error: folder_access_denied in body.",
+          "status": "pending",
+          "spec_ref": "self-folder-access-control",
+          "acceptance_criteria": ["HTTP 403 returned with structured error body"],
+          "files_likely_affected": []
+        },
+        {
+          "id": "8.4",
+          "title": "As bob, POST without @self.folder",
+          "description": "Confirm auto-create proceeds normally (HTTP 201).",
+          "status": "pending",
+          "spec_ref": "self-folder-access-control",
+          "acceptance_criteria": ["HTTP 201, folder auto-created under register folder"],
+          "files_likely_affected": []
+        },
+        {
+          "id": "8.5",
+          "title": "As bob, POST with own folder ID",
+          "description": "Confirm HTTP 201 and returned object.folder matches.",
+          "status": "pending",
+          "spec_ref": "self-folder-access-control",
+          "acceptance_criteria": ["HTTP 201; folder field matches the supplied ID"],
+          "files_likely_affected": []
+        },
+        {
+          "id": "8.6",
+          "title": "Query audit trail",
+          "description": "Confirm bob's denial from 8.3 is present with attempted folder ID and timestamp.",
+          "status": "pending",
+          "spec_ref": "self-folder-access-control",
+          "acceptance_criteria": ["Audit entry with action folder_access_denied retrievable"],
+          "files_likely_affected": []
+        },
+        {
+          "id": "8.7",
+          "title": "Audit failure does not swallow denial",
+          "description": "Restart Nextcloud container with intentionally broken AuditTrailMapper (or mock the failure) and repeat 8.3. Confirm HTTP 403 still returned and warning logged.",
+          "status": "pending",
+          "spec_ref": "self-folder-access-control",
+          "acceptance_criteria": ["HTTP 403 still returned under audit failure", "Warning present in logs"],
+          "files_likely_affected": []
+        }
+      ]
+    },
+    {
+      "id": 9,
+      "title": "Documentation",
+      "tasks": [
+        {
+          "id": "9.1",
+          "title": "Update docs/api/objects.md",
+          "description": "Document the @self.folder access-control contract: success, denial (HTTP 403 + structured body), preserved auto-create for absent/legacy values.",
+          "status": "pending",
+          "spec_ref": "self-folder-access-control",
+          "acceptance_criteria": ["docs/api/objects.md updated with access-control contract section"],
+          "files_likely_affected": ["docs/api/objects.md"]
+        },
+        {
+          "id": "9.2",
+          "title": "Add CHANGELOG entry flagging BREAKING",
+          "description": "Next release version entry: 'Callers that set @self.folder to a node ID outside the acting user's accessible tree now receive HTTP 403 instead of a silent cross-tenant bind.'",
+          "status": "pending",
+          "spec_ref": "self-folder-access-control",
+          "acceptance_criteria": ["CHANGELOG contains BREAKING note for this behaviour"],
+          "files_likely_affected": ["CHANGELOG.md"]
+        },
+        {
+          "id": "9.3",
+          "title": "Note downstream consumers and follow-ups",
+          "description": "Reference DocuDesk add-dossier-schema as first beneficiary and occ openregister:folder-audit follow-up as separately tracked.",
+          "status": "pending",
+          "spec_ref": "self-folder-access-control",
+          "acceptance_criteria": ["Documentation cross-references the downstream change and follow-up command"],
+          "files_likely_affected": ["docs/api/objects.md", "CHANGELOG.md"]
+        }
+      ]
+    },
+    {
+      "id": 10,
+      "title": "Strict quality gates",
+      "tasks": [
+        {
+          "id": "10.1",
+          "title": "Run composer check:strict",
+          "description": "PHPCS, PHPMD, Psalm, PHPStan — ensure no new warnings in touched files.",
+          "status": "pending",
+          "spec_ref": "self-folder-access-control",
+          "acceptance_criteria": ["composer check:strict passes with no new warnings on touched files"],
+          "files_likely_affected": []
+        },
+        {
+          "id": "10.2",
+          "title": "Confirm no new @SuppressWarnings annotations",
+          "description": "Grep touched files for new @SuppressWarnings annotations; none introduced.",
+          "status": "pending",
+          "spec_ref": "self-folder-access-control",
+          "acceptance_criteria": ["No new @SuppressWarnings in the diff"],
+          "files_likely_affected": []
+        },
+        {
+          "id": "10.3",
+          "title": "Run full unit-test suite inside container",
+          "description": "docker exec -w /var/www/html/custom_apps/openregister nextcloud php vendor/bin/phpunit -c phpunit-unit.xml — confirm green.",
+          "status": "pending",
+          "spec_ref": "self-folder-access-control",
+          "acceptance_criteria": ["Full unit-test suite green inside container"],
+          "files_likely_affected": []
+        }
+      ]
+    }
+  ]
+}
