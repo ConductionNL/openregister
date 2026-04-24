@@ -102,11 +102,17 @@ class OperatorEvaluator
                 return $this->operatorLessThanOrEqual(value: $value, operand: $operand);
 
             default:
+                // Fail-closed on unknown operators to match the SQL path.
+                // MagicRbacHandler::buildSingleOperatorCondition returns null for
+                // unknown operators; applyRbacFilters then produces no SQL clause
+                // that could satisfy the rule, and the row is excluded. Returning
+                // true here would grant access on malformed rules (fail-open),
+                // creating a list-vs-find security drift.
                 $this->logger->warning(
-                    message: '[OperatorEvaluator] Unknown operator',
+                    message: '[OperatorEvaluator] Unknown operator — rejecting match',
                     context: ['file' => __FILE__, 'line' => __LINE__, 'operator' => $operator]
                 );
-                return true;
+                return false;
         }//end switch
     }//end applySingleOperator()
 
@@ -126,6 +132,11 @@ class OperatorEvaluator
     /**
      * Check $ne operator: value must not equal operand
      *
+     * SQL three-valued logic: NULL != X evaluates to NULL, which WHERE treats
+     * as false (row filtered out). PHP must match: if value is null, return
+     * false unless operand is also null (i.e. $ne: null explicitly asking for
+     * "has a value").
+     *
      * @param mixed $value   Object value
      * @param mixed $operand Value to exclude
      *
@@ -133,11 +144,21 @@ class OperatorEvaluator
      */
     private function operatorNotEquals(mixed $value, mixed $operand): bool
     {
+        if ($value === null && $operand !== null) {
+            return false;
+        }
+
         return $value !== $operand;
     }//end operatorNotEquals()
 
     /**
      * Check $in operator: value must be in the operand array
+     *
+     * SQL three-valued logic: NULL IN (...) evaluates to NULL, which WHERE treats
+     * as false (row filtered out). PHP's in_array happens to return false when
+     * looking up null in most arrays, but returns true for an array containing
+     * null — which would diverge from SQL. Explicitly reject null values to
+     * keep list and find verdicts aligned.
      *
      * @param mixed $value   Object value
      * @param mixed $operand Array of allowed values
@@ -150,11 +171,19 @@ class OperatorEvaluator
             return false;
         }
 
+        if ($value === null) {
+            return false;
+        }
+
         return in_array($value, $operand, true);
     }//end operatorIn()
 
     /**
      * Check $nin operator: value must not be in the operand array
+     *
+     * SQL three-valued logic: NULL NOT IN (...) evaluates to NULL, filtered out
+     * by WHERE. Conservative semantics: if we cannot tell whether the value is
+     * in the list (because it is null), deny the match.
      *
      * @param mixed $value   Object value
      * @param mixed $operand Array of excluded values
@@ -165,6 +194,10 @@ class OperatorEvaluator
     {
         if (is_array($operand) === false) {
             return true;
+        }
+
+        if ($value === null) {
+            return false;
         }
 
         return in_array($value, $operand, true) === false;
@@ -194,18 +227,28 @@ class OperatorEvaluator
     /**
      * Check $gt operator: value must be greater than operand
      *
+     * Matches SQL three-valued logic: NULL <op> X evaluates to NULL, which is
+     * filtered out by WHERE. PHP's loose comparison would coerce null to 0/""
+     * and yield a misleading true/false — we suppress that.
+     *
      * @param mixed $value   Object value
      * @param mixed $operand Threshold value
      *
-     * @return bool True if value is greater than operand
+     * @return bool True if value is strictly greater than operand
      */
     private function operatorGreaterThan(mixed $value, mixed $operand): bool
     {
+        if ($value === null || $operand === null) {
+            return false;
+        }
+
         return $value > $operand;
     }//end operatorGreaterThan()
 
     /**
      * Check $gte operator: value must be greater than or equal to operand
+     *
+     * SQL three-valued logic applies — see operatorGreaterThan().
      *
      * @param mixed $value   Object value
      * @param mixed $operand Threshold value
@@ -214,24 +257,40 @@ class OperatorEvaluator
      */
     private function operatorGreaterThanOrEqual(mixed $value, mixed $operand): bool
     {
+        if ($value === null || $operand === null) {
+            return false;
+        }
+
         return $value >= $operand;
     }//end operatorGreaterThanOrEqual()
 
     /**
      * Check $lt operator: value must be less than operand
      *
+     * SQL three-valued logic applies — see operatorGreaterThan().
+     *
      * @param mixed $value   Object value
      * @param mixed $operand Threshold value
      *
-     * @return bool True if value is less than operand
+     * @return bool True if value is strictly less than operand
      */
     private function operatorLessThan(mixed $value, mixed $operand): bool
     {
+        if ($value === null || $operand === null) {
+            return false;
+        }
+
         return $value < $operand;
     }//end operatorLessThan()
 
     /**
      * Check $lte operator: value must be less than or equal to operand
+     *
+     * SQL three-valued logic applies — see operatorGreaterThan(). This is the
+     * operator that surfaced the reported `publishedAt: null` bug: PHP's loose
+     * comparison treated `null <= '<datetime>'` as true (because null coerces
+     * to an empty string which is lexicographically less than any non-empty
+     * string), while SQL correctly filtered the row out.
      *
      * @param mixed $value   Object value
      * @param mixed $operand Threshold value
@@ -240,6 +299,10 @@ class OperatorEvaluator
      */
     private function operatorLessThanOrEqual(mixed $value, mixed $operand): bool
     {
+        if ($value === null || $operand === null) {
+            return false;
+        }
+
         return $value <= $operand;
     }//end operatorLessThanOrEqual()
 }//end class

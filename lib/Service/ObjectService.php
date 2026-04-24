@@ -53,6 +53,7 @@ use OCA\OpenRegister\Service\Object\PerformanceHandler;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCA\OpenRegister\Service\Object\RenderObject;
 use OCA\OpenRegister\Service\Object\SaveObject;
+use OCA\OpenRegister\Service\ObjectServiceMapperAdapter;
 use OCA\OpenRegister\Service\Object\SaveObjects;
 use OCA\OpenRegister\Service\Object\SearchQueryHandler;
 use OCA\OpenRegister\Service\Object\ValidateObject;
@@ -3198,4 +3199,63 @@ class ObjectService
             offset: $offset
         );
     }//end validateAndSaveObjectsBySchema()
+
+    /**
+     * Reset the current register, schema, and object context.
+     *
+     * Called by external apps (e.g. OpenConnector) before performing a fresh
+     * lookup to prevent stale context from a previous request bleeding through.
+     *
+     * @return void
+     */
+    public function clearCurrents(): void
+    {
+        $this->currentRegister = null;
+        $this->currentSchema   = null;
+        $this->currentObject   = null;
+    }//end clearCurrents()
+
+    /**
+     * Return the internal object-validation handler.
+     *
+     * Exposed so adapters and external services can run validation without
+     * depending on ObjectService internals directly.
+     *
+     * @return ValidateObject
+     */
+    public function getValidateHandler(): ValidateObject
+    {
+        return $this->validateHandler;
+    }//end getValidateHandler()
+
+    /**
+     * Return a mapper-like adapter scoped to the given register and schema.
+     *
+     * Allows external apps to interact with OpenRegister objects through a
+     * familiar mapper contract without depending on ObjectService internals.
+     *
+     * When $register is a non-numeric string (e.g. the type hint 'objectEntity'
+     * passed by OpenConnector), it is treated as an unscoped request and both
+     * register and schema are set to null so the adapter searches globally.
+     *
+     * @param int|string|null $register Register ID, or a type-hint string that is ignored.
+     * @param int|string|null $schema   Schema ID.
+     *
+     * @return ObjectServiceMapperAdapter
+     */
+    public function getMapper(int|string|null $register=null, int|string|null $schema=null): ObjectServiceMapperAdapter
+    {
+        // A non-numeric string (e.g. 'objectEntity') is a type-hint from the caller, not a register ID.
+        // Return an unconstrained adapter so find() searches across all registers/schemas.
+        if (is_string($register) === true && is_numeric($register) === false) {
+            $register = null;
+            $schema   = null;
+        }
+
+        return new ObjectServiceMapperAdapter(
+            objectService: $this,
+            register: $register,
+            schema: $schema
+        );
+    }//end getMapper()
 }//end class
