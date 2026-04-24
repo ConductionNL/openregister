@@ -185,10 +185,19 @@ class ConditionMatcher
      * Supports special variables:
      * - $organisation / $activeOrganisation: Current user's active organisation UUID
      * - $userId / $user: Current user's ID
-     * - $now: Current datetime in ISO 8601 format
+     * - $now: Current datetime as 'Y-m-d H:i:s' (SQL-native format)
      *
      * For operator arrays (e.g. {"$lte": "$now"}), resolves dynamic values
      * inside operator operands recursively.
+     *
+     * The `$now` format MUST stay aligned with
+     * {@see \OCA\OpenRegister\Db\MagicMapper\MagicRbacHandler::resolveDynamicValue()}
+     * — both paths evaluate the same authorization JSON, and for text/JSON-stored
+     * date columns the comparison is a raw lexicographic string compare. A format
+     * mismatch causes list (SQL) and find (PHP) endpoints to disagree on objects
+     * whose stored dates use a different separator (e.g. ISO 8601 "T" vs space).
+     * See `rbac-scopes/spec.md` scenario "Dynamic `$now` variable resolves to a
+     * canonical SQL-native format".
      *
      * @param mixed $value The value to resolve
      *
@@ -221,8 +230,12 @@ class ConditionMatcher
         }
 
         // Check for $now variable.
+        // MUST match MagicRbacHandler's SQL-path format (Y-m-d H:i:s) so that
+        // list and find endpoints produce identical verdicts for text-column
+        // date comparisons. Previously used 'c' (ISO 8601 with "T" separator),
+        // which caused divergence against columns storing dates in SQL format.
         if ($value === '$now') {
-            return (new DateTime())->format('c');
+            return (new DateTime())->format('Y-m-d H:i:s');
         }
 
         return $value;

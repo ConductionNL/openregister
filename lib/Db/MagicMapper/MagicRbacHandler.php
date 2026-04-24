@@ -40,6 +40,7 @@ namespace OCA\OpenRegister\Db\MagicMapper;
 use DateTime;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Service\ConditionMatcher;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\IUserSession;
@@ -55,6 +56,15 @@ use Psr\Log\LoggerInterface;
  * This class provides comprehensive RBAC filtering for dynamically created
  * schema-based tables, ensuring that users can only access objects they have
  * permission to view based on schema authorization configurations.
+ *
+ * Two enforcement paths live here:
+ *   1. SQL emission — {@see applyRbacFilters()} and {@see buildRbacConditionsSql()}
+ *      translate conditional rules into `WHERE` fragments for the list endpoint.
+ *      This is the canonical row-level path and remains specialised to this class.
+ *   2. PHP-side verdict — {@see hasPermission()} delegates conditional match
+ *      evaluation to {@see \OCA\OpenRegister\Service\ConditionMatcher}, the shared
+ *      matcher used across the RBAC stack (ADR-011). Do not reintroduce a local
+ *      PHP-side condition matcher here.
  *
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
  * @SuppressWarnings(PHPMD.ExcessiveClassComplexity)
@@ -76,18 +86,20 @@ class MagicRbacHandler
     /**
      * Constructor for MagicRbacHandler
      *
-     * @param IUserSession       $userSession  User session for current user context
-     * @param IGroupManager      $groupManager Group manager for user group operations
-     * @param IUserManager       $userManager  User manager for user operations
-     * @param IAppConfig         $appConfig    App configuration for RBAC settings
-     * @param ContainerInterface $container    Container for service injection
-     * @param LoggerInterface    $logger       Logger for debugging
+     * @param IUserSession       $userSession      User session for current user context
+     * @param IGroupManager      $groupManager     Group manager for user group operations
+     * @param IUserManager       $userManager      User manager for user operations
+     * @param IAppConfig         $appConfig        App configuration for RBAC settings
+     * @param ConditionMatcher   $conditionMatcher Shared PHP-side match evaluator (ADR-011; SQL emitter stays in this class).
+     * @param ContainerInterface $container        Container for service injection
+     * @param LoggerInterface    $logger           Logger for debugging
      */
     public function __construct(
         private readonly IUserSession $userSession,
         private readonly IGroupManager $groupManager,
         private readonly IUserManager $userManager,
         private readonly IAppConfig $appConfig,
+        private readonly ConditionMatcher $conditionMatcher,
         private readonly ContainerInterface $container,
         private readonly LoggerInterface $logger
     ) {
@@ -628,7 +640,8 @@ class MagicRbacHandler
      * This is a non-query version of the RBAC check for use in validation.
      * Note: This method checks if user has ANY possible access to the schema.
      * For conditional rules with match criteria, this returns true if the user
-     * qualifies for the group (actual object matching happens at query time).
+     * qualifies for the group AND (when object data is supplied) ConditionMatcher
+     * confirms the object satisfies the match clause.
      *
      * @param Schema      $schema      Schema to check
      * @param string      $action      CRUD action to check
@@ -636,6 +649,8 @@ class MagicRbacHandler
      * @param array|null  $objectData  Optional object data for conditional checks
      *
      * @return bool True if user has permission
+     *
+     * @SuppressWarnings(PHPMD.NPathComplexity) Rule-type dispatch is inlined to keep the delegation to ConditionMatcher single-site.
      */
     public function hasPermission(
         Schema $schema,
@@ -679,272 +694,50 @@ class MagicRbacHandler
         }
 
         // Process each rule.
+        //
+        // Deduplication note (ADR-011):
+        // Conditional match evaluation is delegated to the shared
+        // {@see \OCA\OpenRegister\Service\ConditionMatcher}. The SQL emitter
+        // (applyRbacFilters → buildMatchConditions → buildPropertyCondition)
+        // handles the row-level path; ConditionMatcher handles the PHP-side
+        // path for this method and for PermissionHandler/PropertyRbacHandler.
         foreach ($rules as $rule) {
-            if ($this->checkPermissionRule(
-                rule: $rule,
-                userGroups: $userGroups,
-                userId: $userId,
-                objectData: $objectData
-            ) === true
-            ) {
-                return true;
+            // Simple string rule: direct group match.
+            if (is_string($rule) === true) {
+                if ($rule === 'public' || in_array($rule, $userGroups, true) === true) {
+                    return true;
+                }
+
+                continue;
             }
-        }
+
+            // Conditional rule: array with 'group' and optional 'match'.
+            if (is_array($rule) === true && isset($rule['group']) === true) {
+                $group         = $rule['group'];
+                $userQualifies = ($group === 'public' || in_array($group, $userGroups, true) === true);
+                if ($userQualifies === false) {
+                    continue;
+                }
+
+                $match = ($rule['match'] ?? null);
+                // No match conditions or no object data: group match alone is sufficient.
+                if ($match === null || empty($match) === true || $objectData === null) {
+                    return true;
+                }
+
+                // Delegate conditional evaluation to the shared ConditionMatcher.
+                if ($this->conditionMatcher->objectMatchesConditions(
+                        object: $objectData,
+                        match: $match
+                    ) === true
+                ) {
+                    return true;
+                }
+            }//end if
+        }//end foreach
 
         return false;
     }//end hasPermission()
-
-    /**
-     * Check if a user matches a single permission rule
-     *
-     * @param mixed       $rule       Authorization rule
-     * @param array       $userGroups User's group IDs
-     * @param string|null $userId     Current user ID
-     * @param array|null  $objectData Optional object data for conditional checks
-     *
-     * @return bool True if rule grants access
-     */
-    private function checkPermissionRule(
-        mixed $rule,
-        array $userGroups,
-        ?string $userId,
-        ?array $objectData
-    ): bool {
-        // Simple rule: just a group name string.
-        if (is_string($rule) === true) {
-            // 'public' grants access to anyone, including unauthenticated users.
-            if ($rule === 'public') {
-                return true;
-            }
-
-            return in_array($rule, $userGroups, true);
-        }
-
-        // Conditional rule: object with 'group' and optional 'match'.
-        if (is_array($rule) === true && isset($rule['group']) === true) {
-            return $this->checkConditionalPermissionRule(
-                rule: $rule,
-                userGroups: $userGroups,
-                objectData: $objectData
-            );
-        }
-
-        return false;
-    }//end checkPermissionRule()
-
-    /**
-     * Check if a conditional permission rule grants access
-     *
-     * @param array      $rule       Rule with 'group' and optional 'match'
-     * @param array      $userGroups User's group IDs
-     * @param array|null $objectData Optional object data for conditional checks
-     *
-     * @return bool True if rule grants access
-     */
-    private function checkConditionalPermissionRule(array $rule, array $userGroups, ?array $objectData): bool
-    {
-        $group = $rule['group'];
-        $match = $rule['match'] ?? null;
-
-        // Check if user qualifies for the group.
-        // 'public' grants access to anyone, including unauthenticated users.
-        $userQualifies = ($group === 'public' || in_array($group, $userGroups, true) === true);
-
-        if ($userQualifies === false) {
-            return false;
-        }
-
-        // If no match conditions or no object data, grant access.
-        if ($match === null || empty($match) === true || $objectData === null) {
-            return true;
-        }
-
-        // Check if object matches conditions.
-        return $this->objectMatchesConditions(objectData: $objectData, match: $match);
-    }//end checkConditionalPermissionRule()
-
-    /**
-     * Check if object data matches the given conditions
-     *
-     * @param array $objectData Object data to check
-     * @param array $match      Match conditions
-     *
-     * @return bool True if object matches all conditions
-     */
-    private function objectMatchesConditions(array $objectData, array $match): bool
-    {
-        foreach ($match as $property => $value) {
-            if ($this->objectPropertyMatchesCondition(
-                objectData: $objectData,
-                property: $property,
-                value: $value
-            ) === false
-            ) {
-                return false;
-            }
-        }//end foreach
-
-        return true;
-    }//end objectMatchesConditions()
-
-    /**
-     * Check if a single object property matches a condition value
-     *
-     * @param array  $objectData Object data to check
-     * @param string $property   Property name
-     * @param mixed  $value      Expected value or operator object
-     *
-     * @return bool True if the property matches the condition
-     */
-    private function objectPropertyMatchesCondition(array $objectData, string $property, mixed $value): bool
-    {
-        $objectValue = $objectData[$property] ?? null;
-
-        // Resolve dynamic variables in the match value.
-        $resolvedValue = $this->resolveDynamicValue(value: $value);
-
-        // If dynamic variable resolved to null, condition cannot be met.
-        if ($value !== $resolvedValue && $resolvedValue === null) {
-            return false;
-        }
-
-        // Simple value: equals comparison.
-        if (is_string($resolvedValue) === true || is_numeric($resolvedValue) === true || is_bool($resolvedValue) === true) {
-            return $objectValue === $resolvedValue;
-        }
-
-        // Operator object.
-        if (is_array($resolvedValue) === true) {
-            return $this->valueMatchesOperator(value: $objectValue, operators: $resolvedValue);
-        }
-
-        // Null value: check if object value is null.
-        if ($resolvedValue === null && $objectValue !== null) {
-            return false;
-        }
-
-        return true;
-    }//end objectPropertyMatchesCondition()
-
-    /**
-     * Check if a value matches operator conditions
-     *
-     * @param mixed $value     Object value
-     * @param array $operators Operator conditions
-     *
-     * @return bool True if value matches
-     */
-    private function valueMatchesOperator(mixed $value, array $operators): bool
-    {
-        foreach ($operators as $operator => $operand) {
-            if ($this->singleOperatorMatches(value: $value, operator: $operator, operand: $operand) === false) {
-                return false;
-            }
-        }//end foreach
-
-        return true;
-    }//end valueMatchesOperator()
-
-    /**
-     * Check if a single operator condition matches a value
-     *
-     * @param mixed  $value    Object value to check
-     * @param string $operator Operator (e.g. '$eq', '$gt')
-     * @param mixed  $operand  Operand to compare against
-     *
-     * @return bool True if the value satisfies the operator condition
-     */
-    private function singleOperatorMatches(mixed $value, string $operator, mixed $operand): bool
-    {
-        // Comparison operators.
-        if ($this->comparisonOperatorMatches(value: $value, operator: $operator, operand: $operand) === false) {
-            return false;
-        }
-
-        // Array operators ($in, $nin).
-        if ($this->arrayOperatorMatches(value: $value, operator: $operator, operand: $operand) === false) {
-            return false;
-        }
-
-        // Existence operator ($exists).
-        if ($operator === '$exists') {
-            return $this->existsOperatorMatches(value: $value, operand: $operand);
-        }
-
-        return true;
-    }//end singleOperatorMatches()
-
-    /**
-     * Check comparison operators ($eq, $ne, $gt, $gte, $lt, $lte) against a value
-     *
-     * @param mixed  $value    Object value
-     * @param string $operator Operator string
-     * @param mixed  $operand  Operand value
-     *
-     * @return bool True if condition is satisfied (or operator is not a comparison operator)
-     */
-    private function comparisonOperatorMatches(mixed $value, string $operator, mixed $operand): bool
-    {
-        $comparisonChecks = [
-            '$eq'  => fn() => $value === $operand,
-            '$ne'  => fn() => $value !== $operand,
-            '$gt'  => fn() => $value > $operand,
-            '$gte' => fn() => $value >= $operand,
-            '$lt'  => fn() => $value < $operand,
-            '$lte' => fn() => $value <= $operand,
-        ];
-
-        if (isset($comparisonChecks[$operator]) === false) {
-            return true;
-        }
-
-        return $comparisonChecks[$operator]();
-    }//end comparisonOperatorMatches()
-
-    /**
-     * Check array operators ($in, $nin) against a value
-     *
-     * @param mixed  $value    Object value
-     * @param string $operator Operator string
-     * @param mixed  $operand  Operand value (expected array)
-     *
-     * @return bool True if condition is satisfied (or operator is not an array operator)
-     */
-    private function arrayOperatorMatches(mixed $value, string $operator, mixed $operand): bool
-    {
-        if ($operator === '$in') {
-            return is_array($operand) === true && in_array($value, $operand, true) === true;
-        }
-
-        if ($operator === '$nin') {
-            if (is_array($operand) === true && in_array($value, $operand, true) === true) {
-                return false;
-            }
-        }
-
-        return true;
-    }//end arrayOperatorMatches()
-
-    /**
-     * Check $exists operator against a value
-     *
-     * @param mixed $value   Object value
-     * @param mixed $operand Boolean operand (true = must exist, false = must not exist)
-     *
-     * @return bool True if condition is satisfied
-     */
-    private function existsOperatorMatches(mixed $value, mixed $operand): bool
-    {
-        if ($operand === true && $value === null) {
-            return false;
-        }
-
-        if ($operand === false && $value !== null) {
-            return false;
-        }
-
-        return true;
-    }//end existsOperatorMatches()
 
     /**
      * Build RBAC conditions as raw SQL for use in UNION queries.

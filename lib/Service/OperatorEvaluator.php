@@ -126,6 +126,11 @@ class OperatorEvaluator
     /**
      * Check $ne operator: value must not equal operand
      *
+     * SQL three-valued logic: NULL != X evaluates to NULL, which WHERE treats
+     * as false (row filtered out). PHP must match: if value is null, return
+     * false unless operand is also null (i.e. $ne: null explicitly asking for
+     * "has a value").
+     *
      * @param mixed $value   Object value
      * @param mixed $operand Value to exclude
      *
@@ -133,6 +138,10 @@ class OperatorEvaluator
      */
     private function operatorNotEquals(mixed $value, mixed $operand): bool
     {
+        if ($value === null && $operand !== null) {
+            return false;
+        }
+
         return $value !== $operand;
     }//end operatorNotEquals()
 
@@ -156,6 +165,10 @@ class OperatorEvaluator
     /**
      * Check $nin operator: value must not be in the operand array
      *
+     * SQL three-valued logic: NULL NOT IN (...) evaluates to NULL, filtered out
+     * by WHERE. Conservative semantics: if we cannot tell whether the value is
+     * in the list (because it is null), deny the match.
+     *
      * @param mixed $value   Object value
      * @param mixed $operand Array of excluded values
      *
@@ -165,6 +178,10 @@ class OperatorEvaluator
     {
         if (is_array($operand) === false) {
             return true;
+        }
+
+        if ($value === null) {
+            return false;
         }
 
         return in_array($value, $operand, true) === false;
@@ -194,18 +211,28 @@ class OperatorEvaluator
     /**
      * Check $gt operator: value must be greater than operand
      *
+     * Matches SQL three-valued logic: NULL <op> X evaluates to NULL, which is
+     * filtered out by WHERE. PHP's loose comparison would coerce null to 0/""
+     * and yield a misleading true/false — we suppress that.
+     *
      * @param mixed $value   Object value
      * @param mixed $operand Threshold value
      *
-     * @return bool True if value is greater than operand
+     * @return bool True if value is strictly greater than operand
      */
     private function operatorGreaterThan(mixed $value, mixed $operand): bool
     {
+        if ($value === null || $operand === null) {
+            return false;
+        }
+
         return $value > $operand;
     }//end operatorGreaterThan()
 
     /**
      * Check $gte operator: value must be greater than or equal to operand
+     *
+     * SQL three-valued logic applies — see operatorGreaterThan().
      *
      * @param mixed $value   Object value
      * @param mixed $operand Threshold value
@@ -214,24 +241,40 @@ class OperatorEvaluator
      */
     private function operatorGreaterThanOrEqual(mixed $value, mixed $operand): bool
     {
+        if ($value === null || $operand === null) {
+            return false;
+        }
+
         return $value >= $operand;
     }//end operatorGreaterThanOrEqual()
 
     /**
      * Check $lt operator: value must be less than operand
      *
+     * SQL three-valued logic applies — see operatorGreaterThan().
+     *
      * @param mixed $value   Object value
      * @param mixed $operand Threshold value
      *
-     * @return bool True if value is less than operand
+     * @return bool True if value is strictly less than operand
      */
     private function operatorLessThan(mixed $value, mixed $operand): bool
     {
+        if ($value === null || $operand === null) {
+            return false;
+        }
+
         return $value < $operand;
     }//end operatorLessThan()
 
     /**
      * Check $lte operator: value must be less than or equal to operand
+     *
+     * SQL three-valued logic applies — see operatorGreaterThan(). This is the
+     * operator that surfaced the reported `publishedAt: null` bug: PHP's loose
+     * comparison treated `null <= '<datetime>'` as true (because null coerces
+     * to an empty string which is lexicographically less than any non-empty
+     * string), while SQL correctly filtered the row out.
      *
      * @param mixed $value   Object value
      * @param mixed $operand Threshold value
@@ -240,6 +283,10 @@ class OperatorEvaluator
      */
     private function operatorLessThanOrEqual(mixed $value, mixed $operand): bool
     {
+        if ($value === null || $operand === null) {
+            return false;
+        }
+
         return $value <= $operand;
     }//end operatorLessThanOrEqual()
 }//end class
