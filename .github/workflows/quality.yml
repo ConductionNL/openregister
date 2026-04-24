@@ -2,8 +2,9 @@ name: Code Quality
 
 on:
   push:
-    branches: [main, development, feature/**, bugfix/**, hotfix/**]
+    branches: [main, beta, development, feature/**, bugfix/**, hotfix/**]
   pull_request:
+    types: [opened, reopened]
     branches: [main, beta, development]
   workflow_dispatch:
 
@@ -13,6 +14,7 @@ concurrency:
 
 jobs:
   quality:
+    if: github.event_name != 'push' || github.event.created != true
     uses: ConductionNL/.github/.github/workflows/quality.yml@main
     with:
       app-name: openregister
