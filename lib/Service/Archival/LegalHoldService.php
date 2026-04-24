@@ -108,6 +108,8 @@ class LegalHoldService
      * @param string       $reason The reason for the legal hold (e.g. WOO-verzoek reference).
      *
      * @return ObjectEntity The updated object with legal hold applied.
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-5
      */
     public function placeHold(ObjectEntity $object, string $reason): ObjectEntity
     {
@@ -148,6 +150,8 @@ class LegalHoldService
      * @param string       $reason The reason for releasing the hold.
      *
      * @return ObjectEntity The updated object with legal hold released.
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-5
      */
     public function releaseHold(ObjectEntity $object, string $reason): ObjectEntity
     {
@@ -198,6 +202,8 @@ class LegalHoldService
      * @param ObjectEntity $object The object to check.
      *
      * @return bool True if the object has an active legal hold.
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-5
      */
     public function hasActiveHold(ObjectEntity $object): bool
     {
@@ -213,6 +219,8 @@ class LegalHoldService
      * @param array<string, mixed> $retention The object's retention data.
      *
      * @return bool True if the retention data indicates an active legal hold.
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-5
      */
     public function hasActiveHoldFromRetention(array $retention): bool
     {
@@ -229,6 +237,8 @@ class LegalHoldService
      * @param string $reason     The reason for the bulk legal hold.
      *
      * @return void
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-5
      */
     public function bulkPlaceHold(int $schemaId, int $registerId, string $reason): void
     {

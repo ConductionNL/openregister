@@ -320,6 +320,8 @@ class ArchivalController extends Controller
      * @return JSONResponse The legal hold result.
      *
      * @NoAdminRequired
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-5
      */
     public function createLegalHold(): JSONResponse
     {
@@ -406,6 +408,8 @@ class ArchivalController extends Controller
      * @return JSONResponse The release result.
      *
      * @NoAdminRequired
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-5
      */
     public function releaseLegalHold(string $id): JSONResponse
     {

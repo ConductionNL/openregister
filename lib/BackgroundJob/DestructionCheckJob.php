@@ -90,6 +90,9 @@ class DestructionCheckJob extends TimedJob
      *
      * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-1
+     * @spec openspec/changes/retrofit-archival-destruction-workflow-2026-04-24/tasks.md#task-1
      */
     protected function run($argument): void
     {
@@ -256,6 +259,8 @@ class DestructionCheckJob extends TimedJob
      * @param LoggerInterface $logger        Logger
      *
      * @return void
+     *
+     * @spec openspec/changes/retrofit-archival-destruction-workflow-2026-04-24/tasks.md#task-1
      */
     private function sendObjectNotification(
         string $uuid,
