@@ -184,6 +184,7 @@ class ObjectServiceMapperAdapter
                     message: sprintf('Object "%s" not found or not accessible', $id)
                 );
             }
+			
             $object = array_merge($existing->getObject(), $object);
         }
 
