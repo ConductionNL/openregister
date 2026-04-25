@@ -1,0 +1,10 @@
+{
+  "schema_version": 2,
+  "spec_slug": "integration-talk",
+  "app": "openregister",
+  "repo": "https://github.com/ConductionNL/openregister",
+  "depends_on": ["pluggable-integration-registry"],
+  "wave": 1,
+  "wave_label": "backend-ready-ui-missing",
+  "cycles": []
+}
