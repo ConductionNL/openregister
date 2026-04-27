@@ -2,14 +2,14 @@
   "$schema": "http://cyclonedx.org/schema/bom-1.5.schema.json",
   "bomFormat": "CycloneDX",
   "specVersion": "1.5",
-  "serialNumber": "urn:uuid:b2d2775e-5371-45f7-9eef-ec8d1d5689fd",
+  "serialNumber": "urn:uuid:d12e8afa-983c-4718-9486-160305d0f3b0",
   "version": 1,
   "metadata": {
-    "timestamp": "2026-03-16T08:57:55Z",
+    "timestamp": "2026-04-27T20:49:36Z",
     "tools": [
       {
         "name": "composer",
-        "version": "2.9.3"
+        "version": "2.9.7"
       },
       {
         "vendor": "cyclonedx",
@@ -82,10 +82,10 @@
       }
     ],
     "component": {
-      "bom-ref": "conductionnl/openregister-dev-feature/add-sbom-generation",
+      "bom-ref": "conductionnl/openregister-dev-feature/php-linting-specs",
       "type": "application",
       "name": "openregister",
-      "version": "dev-feature/add-sbom-generation",
+      "version": "dev-feature/php-linting-specs",
       "group": "conductionnl",
       "description": "Quickly build data registers based on schema.json",
       "author": "Conduction b.v.",
@@ -96,15 +96,15 @@
           }
         }
       ],
-      "purl": "pkg:composer/conductionnl/openregister@dev-feature/add-sbom-generation",
+      "purl": "pkg:composer/conductionnl/openregister@dev-feature/php-linting-specs",
       "properties": [
         {
           "name": "cdx:composer:package:distReference",
-          "value": "ef8ed0dcbfcb72ce502db98f9f5f0535d05a1b33"
+          "value": "df030e33a13a66ce88786b460f200f8284442470"
         },
         {
           "name": "cdx:composer:package:sourceReference",
-          "value": "ef8ed0dcbfcb72ce502db98f9f5f0535d05a1b33"
+          "value": "df030e33a13a66ce88786b460f200f8284442470"
         },
         {
           "name": "cdx:composer:package:type",
@@ -55593,7 +55593,7 @@
       ]
     },
     {
-      "ref": "conductionnl/openregister-dev-feature/add-sbom-generation",
+      "ref": "conductionnl/openregister-dev-feature/php-linting-specs",
       "dependsOn": [
         "adbario/php-dot-notation-3.3.0.0",
         "elasticsearch/elasticsearch-8.15.0.0",
