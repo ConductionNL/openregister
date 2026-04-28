@@ -4,6 +4,17 @@ Generated: 2026-04-28 10:21 UTC
 Branch: `retrofit/reverse-spec-openregister-tenant-lifecycle-2026-04-28`  
 Scanner: opsx-coverage-scan v1
 
+## Scope
+
+| Input | Count |
+|---|---|
+| Spec capabilities | 45 |
+| Spec REQs (positional, derived from `### Requirement:` / `### REQ-NNN:` headings) | 393 |
+| PHP files scanned (`lib/`, excl. Migration/Db) | 436 |
+| PHP methods scanned | 3703 |
+| Frontend files scanned (`src/`, excl. tests/bootstrap) | 267 |
+| Frontend units scanned (functions/methods/components) | 2244 |
+
 ## Summary
 
 | Bucket | Count | Next action |

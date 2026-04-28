@@ -54,7 +54,8 @@ class UserProfileUpdatedEvent extends Event
      * Get the user whose profile was updated.
      *
      * @return IUser The user object.
-     * @spec   openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-27
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-27
      */
     public function getUser(): IUser
     {
@@ -65,7 +66,8 @@ class UserProfileUpdatedEvent extends Event
      * Get the user ID.
      *
      * @return string The user ID.
-     * @spec   openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-27
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-27
      */
     public function getUserId(): string
     {
@@ -76,7 +78,8 @@ class UserProfileUpdatedEvent extends Event
      * Get the old user data before the update.
      *
      * @return array The old user data.
-     * @spec   openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-27
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-27
      */
     public function getOldData(): array
     {
@@ -87,7 +90,8 @@ class UserProfileUpdatedEvent extends Event
      * Get the new user data after the update.
      *
      * @return array The new user data.
-     * @spec   openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-27
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-27
      */
     public function getNewData(): array
     {
@@ -98,7 +102,8 @@ class UserProfileUpdatedEvent extends Event
      * Get the list of changed field names.
      *
      * @return array Array of field names that were changed.
-     * @spec   openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-27
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-27
      */
     public function getChanges(): array
     {
@@ -111,7 +116,8 @@ class UserProfileUpdatedEvent extends Event
      * @param string $fieldName The field name to check.
      *
      * @return bool True if the field was changed, false otherwise.
-     * @spec   openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-27
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-27
      */
     public function hasChanged(string $fieldName): bool
     {
@@ -122,7 +128,8 @@ class UserProfileUpdatedEvent extends Event
      * Check if any name fields were changed.
      *
      * @return bool True if firstName, lastName, middleName, or displayName was changed.
-     * @spec   openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-27
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-27
      */
     public function hasNameChanges(): bool
     {

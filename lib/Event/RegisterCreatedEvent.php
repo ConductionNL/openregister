@@ -53,7 +53,8 @@ class RegisterCreatedEvent extends Event
      * Get the created register
      *
      * @return Register The register that was created
-     * @spec   openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-27
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-27
      */
     public function getRegister(): Register
     {

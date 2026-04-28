@@ -62,7 +62,8 @@ class ObjectUpdatedEvent extends Event
      * Get the updated object entity
      *
      * @return ObjectEntity The object entity after update
-     * @spec   openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-27
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-27
      */
     public function getObject(): ObjectEntity
     {
@@ -73,7 +74,8 @@ class ObjectUpdatedEvent extends Event
      * Get the updated object entity
      *
      * @return ObjectEntity The object entity after update
-     * @spec   openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-27
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-27
      */
     public function getNewObject(): ObjectEntity
     {
@@ -84,7 +86,8 @@ class ObjectUpdatedEvent extends Event
      * Get the original object entity
      *
      * @return ObjectEntity|null The object entity before update (null if not available)
-     * @spec   openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-27
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-27
      */
     public function getOldObject(): ?ObjectEntity
     {

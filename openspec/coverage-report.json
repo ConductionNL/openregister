@@ -3,6 +3,14 @@
   "app": "openregister",
   "branch": "retrofit/reverse-spec-openregister-tenant-lifecycle-2026-04-28",
   "scanner_version": "1",
+  "scope": {
+    "spec_capabilities": 45,
+    "spec_reqs_total": 393,
+    "php_files_scanned": 436,
+    "php_methods_scanned": 3703,
+    "frontend_files_scanned": 267,
+    "frontend_units_scanned": 2244
+  },
   "buckets": {
     "annotated": [
       {

@@ -59,7 +59,8 @@ class OrganisationCreatedEvent extends Event
      * Get the organisation that was created
      *
      * @return Organisation The organisation entity
-     * @spec   openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-27
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-27
      */
     public function getOrganisation(): Organisation
     {

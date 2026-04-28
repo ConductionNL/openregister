@@ -62,7 +62,8 @@ class OrganisationUpdatedEvent extends Event
      * Get the organisation (the updated state).
      *
      * @return Organisation The organisation after update.
-     * @spec   openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-27
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-27
      */
     public function getOrganisation(): Organisation
     {
@@ -73,7 +74,8 @@ class OrganisationUpdatedEvent extends Event
      * Get the new organisation state.
      *
      * @return Organisation The organisation after update.
-     * @spec   openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-27
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-27
      */
     public function getNewOrganisation(): Organisation
     {
@@ -84,7 +86,8 @@ class OrganisationUpdatedEvent extends Event
      * Get the old organisation state.
      *
      * @return Organisation The organisation before update.
-     * @spec   openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-27
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-27
      */
     public function getOldOrganisation(): Organisation
     {

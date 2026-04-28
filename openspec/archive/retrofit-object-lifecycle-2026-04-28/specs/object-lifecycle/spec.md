@@ -12,11 +12,11 @@ Describes the internal pipeline that governs how OpenRegister objects are create
 
 ### REQ-001: The system MUST process object mutations through a layered save pipeline
 
-Every create or update operation on an object MUST pass through `SaveObject` → `SaveObjects` → `CrudHandler` in a defined execution order, applying validation, relation cascade, metadata hydration, and computed field resolution before persisting. The pipeline MUST be deterministic: the same input object with the same schema MUST always produce the same persisted state and version increment.
+Every create or update operation on an object MUST be processed through a layered handler pipeline before persisting. For a single object the entry point is `SaveObject::saveObject()`, which invokes validation, metadata hydration, computed field resolution, and relation cascade handlers in sequence before calling the mapper's insert/update. For bulk operations the entry point is `SaveObjects::saveObjects()`, which delegates to `SaveObject::saveObject()` per item after preparation and chunking. The pipeline MUST be deterministic: the same input object with the same schema MUST always produce the same persisted state and version increment.
 
 #### Scenario: Single object create flows through full pipeline
 - **GIVEN** a valid object payload for schema `meldingen` in register `gemeente`
-- **WHEN** `CrudHandler::save()` is invoked
+- **WHEN** `SaveObject::saveObject()` is invoked
 - **THEN** the pipeline MUST invoke validation, metadata hydration, computed field resolution, and relation cascade handlers in order before calling the mapper's insert/update
 - **AND** the resulting entity MUST have a non-null `uuid`, `version`, and `created` timestamp
 
@@ -74,7 +74,7 @@ When handling batches of objects, `SaveObjects` and its sub-handlers (`Preparati
 #### Scenario: UUID assigned on first save
 - **GIVEN** a new object is submitted without a uuid
 - **WHEN** `MetadataHydrationHandler` processes it
-- **THEN** a UUIv4 MUST be assigned to the `uuid` field
+- **THEN** a UUIDv4 MUST be assigned to the `uuid` field
 - **AND** `created` and `updated` MUST both be set to the current UTC timestamp
 
 #### Scenario: Computed field references sibling field

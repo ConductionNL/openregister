@@ -53,7 +53,8 @@ class OrganisationDeletedEvent extends Event
      * Get the deleted organisation.
      *
      * @return Organisation The organisation that was deleted.
-     * @spec   openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-27
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-27
      */
     public function getOrganisation(): Organisation
     {

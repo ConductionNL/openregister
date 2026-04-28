@@ -269,7 +269,8 @@ class ImportHandler
      * @param ObjectService $objectService The object service instance.
      *
      * @return void
-     * @spec   openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-29
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-29
      */
     public function setObjectService(ObjectService $objectService): void
     {
@@ -285,7 +286,8 @@ class ImportHandler
      * @param mixed $service The OpenConnector configuration service.
      *
      * @return void
-     * @spec   openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-29
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-29
      */
     public function setOpenConnectorConfigurationService(mixed $service): void
     {
@@ -325,7 +327,8 @@ class ImportHandler
      * @param MagicMapper $magicMapper The magic mapper instance.
      *
      * @return void
-     * @spec   openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-29
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-29
      */
     public function setMagicMapper(MagicMapper $magicMapper): void
     {
@@ -341,7 +344,8 @@ class ImportHandler
      * @param MagicMapper $objectMapper The object mapper instance.
      *
      * @return void
-     * @spec   openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-29
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-29
      */
     public function setObjectMapper(MagicMapper $objectMapper): void
     {
@@ -395,7 +399,8 @@ class ImportHandler
      * @param mixed $data The data to convert.
      *
      * @return array The converted array data.
-     * @spec   openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-29
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-29
      */
     public function ensureArrayStructure(mixed $data): array
     {

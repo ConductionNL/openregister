@@ -119,7 +119,8 @@ class GitHubHandler
      * Get authentication headers for GitHub API
      *
      * @return array<string, string> GitHub API headers.
-     * @spec   openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-29
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-29
      */
     private function getHeaders(): array
     {
@@ -1219,7 +1220,8 @@ class GitHubHandler
      *
      * @return string|null File SHA or null if file doesn't exist
      * @throws \Exception If API request fails
-     * @spec   openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-29
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-29
      */
     public function getFileSha(string $owner, string $repo, string $path, string $branch='main'): ?string
     {
@@ -1270,7 +1272,8 @@ class GitHubHandler
      * @param string $userId The user ID
      *
      * @return null|string The token or null if not set
-     * @spec   openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-29
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-29
      */
     public function getUserToken(string $userId): string|null
     {
@@ -1289,7 +1292,8 @@ class GitHubHandler
      * @param string      $userId The user ID
      *
      * @return void
-     * @spec   openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-29
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-29
      */
     public function setUserToken(?string $token, string $userId): void
     {
@@ -1307,7 +1311,8 @@ class GitHubHandler
      * @param string|null $userId The user ID (optional, uses current user if not provided)
      *
      * @return bool True if token is valid, false otherwise
-     * @spec   openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-29
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-29
      */
     public function validateToken(?string $userId=null): bool
     {

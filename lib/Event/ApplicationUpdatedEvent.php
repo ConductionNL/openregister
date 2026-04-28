@@ -62,7 +62,8 @@ class ApplicationUpdatedEvent extends Event
      * Get the updated application
      *
      * @return Application The application after update
-     * @spec   openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-27
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-27
      */
     public function getNewApplication(): Application
     {
@@ -73,7 +74,8 @@ class ApplicationUpdatedEvent extends Event
      * Get the original application
      *
      * @return Application The application before update
-     * @spec   openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-27
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-27
      */
     public function getOldApplication(): Application
     {

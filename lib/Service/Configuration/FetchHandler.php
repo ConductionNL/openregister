@@ -93,7 +93,8 @@ class FetchHandler
      * @return array|JSONResponse The parsed data array or error response.
      *
      * @throws \Exception If the request fails or parsing fails.
-     * @spec   openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-29
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-29
      */
     public function getJSONfromURL(string $url): array|JSONResponse
     {
