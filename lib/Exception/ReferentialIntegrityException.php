@@ -61,6 +61,8 @@ class ReferentialIntegrityException extends Exception
      * Get the deletion analysis.
      *
      * @return DeletionAnalysis The analysis containing blocker and target details.
+     *
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-26
      */
     public function getAnalysis(): DeletionAnalysis
     {
@@ -71,6 +73,8 @@ class ReferentialIntegrityException extends Exception
      * Get a structured error response body suitable for JSON API responses.
      *
      * @return array The structured error response with error code, message, and blockers.
+     *
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-26
      */
     public function toResponseBody(): array
     {

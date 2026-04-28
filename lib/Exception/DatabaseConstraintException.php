@@ -74,6 +74,8 @@ class DatabaseConstraintException extends Exception
      * Used by API controllers to return appropriate HTTP responses.
      *
      * @return int The HTTP status code (typically 409 for constraint violations)
+     *
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-26
      */
     public function getHttpStatusCode(): int
     {
@@ -92,6 +94,8 @@ class DatabaseConstraintException extends Exception
      *                               Used to customize error messages (default: 'item')
      *
      * @return DatabaseConstraintException The user-friendly exception with parsed message
+     *
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-26
      */
     public static function fromDatabaseException(
         Exception $dbException,
@@ -122,6 +126,8 @@ class DatabaseConstraintException extends Exception
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Constraint parsing requires many conditional error type checks
      * @SuppressWarnings(PHPMD.NPathComplexity)      Constraint parsing requires many conditional error type checks
+     *
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-26
      */
     private static function parseConstraintError(string $dbMessage, string $entityType): string
     {

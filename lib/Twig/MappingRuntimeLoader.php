@@ -51,6 +51,8 @@ class MappingRuntimeLoader implements RuntimeLoaderInterface
      * @param string $class The runtime class to load
      *
      * @return MappingRuntime|null The runtime instance or null if not this class
+     *
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-28
      */
     public function load(string $class): ?MappingRuntime
     {

@@ -45,6 +45,8 @@ class AuthenticationRuntime implements RuntimeExtensionInterface
      * @return string The OAuth access token
      *
      * @throws \GuzzleHttp\Exception\GuzzleException If the request fails.
+     *
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-28
      */
     public function oauthToken(Source $source): string
     {
@@ -63,6 +65,8 @@ class AuthenticationRuntime implements RuntimeExtensionInterface
      * @return string The DeCOS access token
      *
      * @throws \GuzzleHttp\Exception\GuzzleException If the request fails.
+     *
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-28
      */
     public function decosToken(Source $source): string
     {
@@ -79,6 +83,8 @@ class AuthenticationRuntime implements RuntimeExtensionInterface
      * @param Source $source The source to authenticate with
      *
      * @return string The signed JWT token
+     *
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-28
      */
     public function jwtToken(Source $source): string
     {

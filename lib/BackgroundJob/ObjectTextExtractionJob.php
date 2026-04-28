@@ -98,6 +98,8 @@ class ObjectTextExtractionJob extends QueuedJob
      * @param array $argument Job arguments containing object_id
      *
      * @return void
+     *
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-20
      */
     protected function run($argument): void
     {

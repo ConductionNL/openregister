@@ -62,6 +62,8 @@ class OpenRegisterAdmin implements IIconSection
      * Get the icon for this admin section.
      *
      * @return string Icon path
+     *
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-25
      */
     public function getIcon(): string
     {
@@ -74,6 +76,8 @@ class OpenRegisterAdmin implements IIconSection
      * @return string Section ID
      *
      * @psalm-return 'openregister'
+     *
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-25
      */
     public function getID(): string
     {
@@ -84,6 +88,8 @@ class OpenRegisterAdmin implements IIconSection
      * Get the display name of this admin section.
      *
      * @return string Section name
+     *
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-25
      */
     public function getName(): string
     {
@@ -96,6 +102,8 @@ class OpenRegisterAdmin implements IIconSection
      * @return int Section priority
      *
      * @psalm-return 97
+     *
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-25
      */
     public function getPriority(): int
     {

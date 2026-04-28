@@ -47,6 +47,8 @@ class RegisterRiskLevelMetadata implements IRepairStep
      * Get the name of this repair step.
      *
      * @return string
+     *
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-21
      */
     public function getName(): string
     {
@@ -59,6 +61,8 @@ class RegisterRiskLevelMetadata implements IRepairStep
      * @param IOutput $output Output interface for status messages
      *
      * @return void
+     *
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-21
      */
     public function run(IOutput $output): void
     {

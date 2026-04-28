@@ -59,6 +59,8 @@ class LogCleanUpTask extends TimedJob
      * @param LoggerInterface  $logger           The logger for logging operations
      *
      * @return void
+     *
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-15
      */
     public function __construct(
         ITimeFactory $time,
@@ -90,6 +92,8 @@ class LogCleanUpTask extends TimedJob
      * @return void
      *
      * @SuppressWarnings(PHPMD.UnusedFormalParameter)
+     *
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-15
      */
     protected function run($argument): void
     {

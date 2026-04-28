@@ -88,6 +88,8 @@ class ValidationException extends Exception
      * Returns null if validation errors were not provided.
      *
      * @return ValidationError|null The validation errors object or null if not available
+     *
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-26
      */
     public function getErrors(): ?ValidationError
     {

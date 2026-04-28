@@ -61,6 +61,8 @@ class CommentsEntityListener implements IEventListener
      * @param LoggerInterface $logger             Logger for error reporting
      *
      * @return void
+     *
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-1
      */
     public function __construct(
         MagicMapper $objectEntityMapper,
@@ -79,6 +81,8 @@ class CommentsEntityListener implements IEventListener
      * @param Event $event The event to handle
      *
      * @return void
+     *
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-1
      */
     public function handle(Event $event): void
     {

@@ -44,6 +44,8 @@ class AbstractNodesFolderEventListener implements IEventListener
      * @param FileService   $fileService   Service for handling file operations
      *
      * @return void
+     *
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-1
      */
     public function __construct(
         private readonly ObjectService $objectService,
@@ -57,6 +59,8 @@ class AbstractNodesFolderEventListener implements IEventListener
      * @param Event $event The event to be handled
      *
      * @return void
+     *
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-1
      */
     public function handle(Event $event): void
     {
@@ -86,6 +90,8 @@ class AbstractNodesFolderEventListener implements IEventListener
      * @return void
      *
      * @SuppressWarnings(PHPMD.UnusedFormalParameter)
+     *
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-1
      */
     private function handleNodeCopied(NodeCopiedEvent $_event): void
     {
@@ -100,6 +106,8 @@ class AbstractNodesFolderEventListener implements IEventListener
      * @return void
      *
      * @SuppressWarnings(PHPMD.UnusedFormalParameter)
+     *
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-1
      */
     private function handleNodeRenamed(NodeRenamedEvent $_event): void
     {

@@ -78,6 +78,8 @@ class CronFileTextExtractionJob extends TimedJob
      *
      * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
+     *
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-20
      */
     protected function run($argument): void
     {
@@ -260,6 +262,8 @@ class CronFileTextExtractionJob extends TimedJob
      * @param LoggerInterface $logger          Logger for debug messages
      *
      * @return array<int, array<string, mixed>> List of pending files with metadata.
+     *
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-20
      */
     private function getPendingFiles(
         FileMapper $fileMapper,

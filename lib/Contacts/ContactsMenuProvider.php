@@ -122,6 +122,8 @@ class ContactsMenuProvider implements IProvider
      * @param IEntry $entry The contact entry to process
      *
      * @return void
+     *
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-28
      */
     public function process(IEntry $entry): void
     {
@@ -144,6 +146,8 @@ class ContactsMenuProvider implements IProvider
      * @param IEntry $entry The contact entry
      *
      * @return void
+     *
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-28
      */
     private function doProcess(IEntry $entry): void
     {
@@ -183,6 +187,8 @@ class ContactsMenuProvider implements IProvider
      * @param string $primaryEmail The primary email for the search link
      *
      * @return void
+     *
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-28
      */
     private function injectCountBadge(IEntry $entry, array $matches, string $primaryEmail): void
     {
@@ -221,6 +227,8 @@ class ContactsMenuProvider implements IProvider
      * @param string|null $fullName     The contact full name
      *
      * @return void
+     *
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-28
      */
     private function injectEntityActions(
         IEntry $entry,
