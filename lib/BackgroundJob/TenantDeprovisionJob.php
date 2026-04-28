@@ -60,6 +60,8 @@ class TenantDeprovisionJob extends TimedJob
      * @return void
      *
      * @SuppressWarnings(PHPMD.UnusedFormalParameter)
+     *
+     * @spec openspec/changes/retrofit-tenant-lifecycle-2026-04-28/tasks.md#task-1
      */
     protected function run(mixed $argument): void
     {
