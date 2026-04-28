@@ -253,6 +253,8 @@ class TenantQuotaMiddleware extends Middleware
      * @return void
      *
      * @throws TenantQuotaExceededException If quota is exceeded
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-75
      */
     private function checkRequestQuota(object $organisation): void
     {

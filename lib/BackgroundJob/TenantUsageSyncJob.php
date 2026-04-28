@@ -62,6 +62,8 @@ class TenantUsageSyncJob extends TimedJob
      * @return void
      *
      * @SuppressWarnings(PHPMD.UnusedFormalParameter)
+     *
+     * @spec openspec/changes/retrofit-tenant-isolation-audit-2026-04-28/tasks.md#task-2
      */
     protected function run(mixed $argument): void
     {
