@@ -29,3 +29,7 @@
 - [x] task-27: rbac-scopes#REQ-001 — AuthenticationService (OAuth/JWT token management) cross-cap (retroactive annotation)
 - [x] task-28: object-lifecycle#REQ-001 — Twig extensions/runtimes, ContactsMenuProvider cross-cap (retroactive annotation)
 - [x] task-29: object-lifecycle#REQ-001 — SchemaTool, RegisterTool, ToolInterface (LLM function tool layer over object CRUD) cross-cap (retroactive annotation)
+- [x] task-30: object-lifecycle#REQ-003 — CacheWarmupJob, NameCacheWarmupJob (configurable cache warmup background jobs) cross-cap (retroactive annotation)
+- [x] task-31: zoeken-filteren#REQ-001 — SolrWarmupJob (post-import Solr index warmup) cross-cap (retroactive annotation)
+- [x] task-32: workflow-engine-abstraction#REQ-010 — ActionRetryJob (retry failed action executions), ExecutionHistoryCleanupJob (prune old execution history) cross-cap (retroactive annotation)
+- [x] task-33: edepot-transfer#REQ-001 — TransferExecutionJob (queued e-Depot transfer execution) cross-cap (retroactive annotation)
