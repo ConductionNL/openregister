@@ -69,6 +69,8 @@ class SearchController extends Controller
      * @param IndexService $indexService The index search service instance
      *
      * @return void
+     *
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-10
      */
     public function __construct(
         string $appName,
@@ -98,6 +100,8 @@ class SearchController extends Controller
      * @psalm-return JSONResponse<200, array{results: array<never, array{id: mixed|null, name: 'Unknown'|mixed,
      *                                type: 'object', url: mixed|null, source: 'openregister'}>, total: 0|mixed,
      *                                facets: array<never, never>|mixed}, array<never, never>>
+     *
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-10
      */
     public function search(): JSONResponse
     {

@@ -145,6 +145,8 @@ class TypeMapperHandler
      * Reset cached input types (called when regenerating schema).
      *
      * @return void
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-41
      */
     public function resetCache(): void
     {
@@ -163,6 +165,8 @@ class TypeMapperHandler
      * @param array<string, Type> $scalars The custom scalar types
      *
      * @return void
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-41
      */
     public function setScalars(array $scalars): void
     {
@@ -565,6 +569,8 @@ class TypeMapperHandler
      * @param RegisterSchema $schema The register schema
      *
      * @return array<string, array<string, mixed>> The argument definitions
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-41
      */
     public function getListArgs(RegisterSchema $schema): array
     {

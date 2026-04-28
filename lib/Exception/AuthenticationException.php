@@ -36,6 +36,8 @@ class AuthenticationException extends Exception
      *
      * @param string $message A human-readable error message
      * @param array  $details Structured details about the failure
+     *
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-26
      */
     public function __construct(string $message, array $details)
     {
@@ -48,6 +50,8 @@ class AuthenticationException extends Exception
      * Get the failure details.
      *
      * @return array The details array.
+     *
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-26
      */
     public function getDetails(): array
     {

@@ -65,6 +65,8 @@ class QueryComplexityAnalyzer
      * @param array<string, int> $costs Map of schema slug to cost
      *
      * @return void
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-39
      */
     public function setSchemaCosts(array $costs): void
     {
@@ -163,6 +165,8 @@ class QueryComplexityAnalyzer
      * @param array<string, mixed>|null $variables    Query variables
      *
      * @return array{depth: int, cost: int}
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-39
      */
     private function analyzeSelectionSet(
         SelectionSetNode $selectionSet,
@@ -223,6 +227,8 @@ class QueryComplexityAnalyzer
      * @param array<string, mixed>|null $variables Query variables
      *
      * @return int The multiplier
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-39
      */
     private function getListMultiplier(FieldNode $field, ?array $variables): int
     {
@@ -259,6 +265,8 @@ class QueryComplexityAnalyzer
      * @param string $fieldName The field name
      *
      * @return int The cost
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-39
      */
     private function getResolverCost(string $fieldName): int
     {

@@ -97,6 +97,8 @@ class SyncConfigurationsJob extends TimedJob
      * @param GitLabHandler        $gitlabService        GitLab service
      * @param Client               $httpClient           HTTP client
      * @param LoggerInterface      $logger               Logger
+     *
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-14
      */
     public function __construct(
         ITimeFactory $time,
@@ -130,6 +132,8 @@ class SyncConfigurationsJob extends TimedJob
      * @return void
      *
      * @SuppressWarnings(PHPMD.UnusedFormalParameter)
+     *
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-14
      */
     protected function run($argument): void
     {
@@ -217,6 +221,8 @@ class SyncConfigurationsJob extends TimedJob
      * @param Configuration $configuration Configuration to check
      *
      * @return bool True if sync is due
+     *
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-14
      */
     private function isDueForSync(Configuration $configuration): bool
     {
@@ -243,6 +249,8 @@ class SyncConfigurationsJob extends TimedJob
      *
      * @return void
      * @throws Exception If sync fails
+     *
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-14
      */
     private function syncConfiguration(Configuration $configuration): void
     {
@@ -277,6 +285,8 @@ class SyncConfigurationsJob extends TimedJob
      *
      * @return void
      * @throws Exception If sync fails
+     *
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-14
      */
     private function syncFromGitHub(Configuration $configuration): void
     {
@@ -327,6 +337,8 @@ class SyncConfigurationsJob extends TimedJob
      *
      * @return void
      * @throws Exception If sync fails
+     *
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-14
      */
     private function syncFromGitLab(Configuration $configuration): void
     {
@@ -381,6 +393,8 @@ class SyncConfigurationsJob extends TimedJob
      *
      * @return void
      * @throws Exception If sync fails
+     *
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-14
      */
     private function syncFromUrl(Configuration $configuration): void
     {
@@ -426,6 +440,8 @@ class SyncConfigurationsJob extends TimedJob
      *
      * @return void
      * @throws Exception If sync fails
+     *
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-14
      */
     private function syncFromLocal(Configuration $configuration): void
     {

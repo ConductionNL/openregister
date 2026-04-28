@@ -113,6 +113,8 @@ class GraphQLResolver
      * @return array<string, mixed>|null The resolved object data
      *
      * @throws Error If object not found or access denied
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-37
      */
     public function resolveSingle(Schema $schema, mixed $root, array $args): ?array
     {
@@ -162,6 +164,8 @@ class GraphQLResolver
      * @param array  $args   Query arguments (filter, sort, search, fuzzy, first, offset, after, facets, selfFilter)
      *
      * @return array<string, mixed> The connection result
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-37
      */
     public function resolveList(Schema $schema, mixed $root, array $args): array
     {
@@ -267,6 +271,8 @@ class GraphQLResolver
      * @return array<string, mixed> The created object data
      *
      * @throws Error If access denied or validation fails
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-38
      */
     public function resolveCreate(Schema $schema, array $args, ?string $operationName=null): array
     {
@@ -328,6 +334,8 @@ class GraphQLResolver
      * @return array<string, mixed> The updated object data
      *
      * @throws Error If access denied, not found, or validation fails
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-38
      */
     public function resolveUpdate(Schema $schema, array $args, ?string $operationName=null): array
     {
@@ -401,6 +409,8 @@ class GraphQLResolver
      * @return bool True if deleted
      *
      * @throws Error If access denied or not found
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-38
      */
     public function resolveDelete(Schema $schema, array $args): bool
     {
@@ -481,6 +491,8 @@ class GraphQLResolver
      * @param string $objectUuid The object UUID
      *
      * @return array<array<string, mixed>> The referencing objects
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-37
      */
     public function resolveUsedBy(string $objectUuid): array
     {
@@ -717,6 +729,8 @@ class GraphQLResolver
      * Get collected partial errors.
      *
      * @return Error[]
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-41
      */
     public function getPartialErrors(): array
     {

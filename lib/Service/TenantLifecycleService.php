@@ -107,6 +107,8 @@ class TenantLifecycleService
      * @return void
      *
      * @throws Exception If the transition is invalid
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-73
      */
     public function validateTransition(string $currentStatus, string $targetStatus): void
     {
@@ -342,6 +344,8 @@ class TenantLifecycleService
      * @param string $environment The environment to validate
      *
      * @return bool Whether the environment is valid
+     *
+     * @spec openspec/changes/retrofit-tenant-lifecycle-2026-04-28/tasks.md#task-2
      */
     public function isValidEnvironment(string $environment): bool
     {
@@ -355,6 +359,8 @@ class TenantLifecycleService
      * @param string $targetEnv Target environment
      *
      * @return bool Whether the promotion order is valid
+     *
+     * @spec openspec/changes/retrofit-tenant-lifecycle-2026-04-28/tasks.md#task-2
      */
     public function isValidPromotionOrder(string $sourceEnv, string $targetEnv): bool
     {

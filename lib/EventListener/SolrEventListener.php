@@ -51,6 +51,8 @@ class SolrEventListener implements IEventListener
      *
      * @param CacheHandler    $cacheHandler Service for handling object caching and Solr operations
      * @param LoggerInterface $logger       Logger for debugging and monitoring
+     *
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-10
      */
     public function __construct(
         private readonly CacheHandler $cacheHandler,
@@ -64,6 +66,8 @@ class SolrEventListener implements IEventListener
      * @param Event $event The event to handle
      *
      * @return void
+     *
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-10
      */
     public function handle(Event $event): void
     {
@@ -382,6 +386,8 @@ class SolrEventListener implements IEventListener
      * @param \OCA\OpenRegister\Db\Schema $newSchema New schema version
      *
      * @return bool True if fields changed and reindex is needed
+     *
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-10
      */
     private function schemaFieldsChanged($oldSchema, $newSchema): bool
     {
@@ -398,6 +404,8 @@ class SolrEventListener implements IEventListener
      * @param int $schemaId Schema ID to reindex
      *
      * @return void
+     *
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-10
      */
     private function triggerSchemaReindex(int $schemaId): void
     {

@@ -59,6 +59,8 @@ class PreparationHandler
      * @param SchemaMapper          $schemaMapper     Mapper for schema operations.
      * @param BulkValidationHandler $bulkValidHandler Handler for schema analysis.
      * @param IUserSession          $userSession      User session for owner assignment.
+     *
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-4
      */
     public function __construct(
         private readonly SaveObject $saveHandler,
@@ -95,6 +97,8 @@ class PreparationHandler
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)  Complex metadata hydration and schema processing
      * @SuppressWarnings(PHPMD.NPathComplexity)       Many conditional paths for metadata extraction
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Complete preparation pipeline with multiple steps
+     *
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-4
      */
     public function prepareObjectsForBulkSave(array $objects): array
     {
@@ -215,6 +219,8 @@ class PreparationHandler
      * @param int|string $schemaId The schema ID to load.
      *
      * @return Schema The loaded schema.
+     *
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-4
      */
     private function loadSchemaWithCache($schemaId): Schema
     {
@@ -236,6 +242,8 @@ class PreparationHandler
      * @param Schema $schema The schema to analyze.
      *
      * @return array The schema analysis with metadataFields, inverseProperties, and configuration.
+     *
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-4
      */
     private function getSchemaAnalysisWithCache(Schema $schema): array
     {
@@ -250,6 +258,8 @@ class PreparationHandler
      * @param string $uuid   The object UUID.
      *
      * @return array The processed object.
+     *
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-4
      */
     private function handlePreValidationCascading(array $object, string $uuid): array
     {
@@ -272,6 +282,8 @@ class PreparationHandler
      * @return void
      *
      * @SuppressWarnings(PHPMD.UnusedFormalParameter)
+     *
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-4
      */
     private function handleBulkInverseRelationsWithAnalysis(array &$preparedObjects, array $schemaAnalysis): void
     {

@@ -43,6 +43,8 @@ class MigrateStorageCommand extends Command
      * Constructor for MigrateStorageCommand.
      *
      * @param MigrationService $migrationService Migration service instance.
+     *
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-21
      */
     public function __construct(
         private readonly MigrationService $migrationService,
@@ -54,6 +56,8 @@ class MigrateStorageCommand extends Command
      * Configure the command.
      *
      * @return void
+     *
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-21
      */
     protected function configure(): void
     {
@@ -122,6 +126,8 @@ class MigrateStorageCommand extends Command
      * @param OutputInterface $output Output interface.
      *
      * @return int Command exit code.
+     *
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-21
      */
     protected function execute(InputInterface $input, OutputInterface $output): int
     {

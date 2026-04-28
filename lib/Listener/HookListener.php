@@ -66,6 +66,8 @@ class HookListener implements IEventListener
      * @param Event $event The lifecycle event
      *
      * @return void
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-65
      */
     public function handle(Event $event): void
     {
@@ -106,6 +108,8 @@ class HookListener implements IEventListener
      * @param Event $event The lifecycle event
      *
      * @return ObjectEntity|null The object entity or null
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-65
      */
     private function getObjectFromEvent(Event $event): ?ObjectEntity
     {
