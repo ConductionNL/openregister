@@ -17,6 +17,8 @@
  * @version GIT: <git_id>
  *
  * @link https://www.OpenRegister.app
+ *
+ * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-58
  */
 
 declare(strict_types=1);
@@ -60,6 +62,8 @@ class RequestScopedCache
      * @param string $key       The cache key (e.g. entity id, uuid, or slug)
      *
      * @return mixed The cached value, or null if not found
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-58
      */
     public function get(string $namespace, string $key): mixed
     {

@@ -11,6 +11,8 @@
  * @author    Conduction Development Team <dev@conductio.nl>
  * @copyright 2024 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ *
+ * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-40
  */
 
 namespace OCA\OpenRegister\Service\GraphQL;
@@ -163,6 +165,8 @@ class GraphQLService
      * Get the GraphQL schema, using APCu cache when available.
      *
      * @return Schema The GraphQL schema
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-40
      */
     private function getSchema(): Schema
     {

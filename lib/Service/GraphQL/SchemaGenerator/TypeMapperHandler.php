@@ -10,6 +10,8 @@
  * @author   Conduction B.V. <info@conduction.nl>
  * @license  EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  * @link     https://OpenRegister.app
+ *
+ * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-38
  */
 
 namespace OCA\OpenRegister\Service\GraphQL\SchemaGenerator;
@@ -527,6 +529,8 @@ class TypeMapperHandler
      * Get the shared AuditTrail type.
      *
      * @return ObjectType The AuditTrail type
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-38
      */
     public function getAuditTrailType(): ObjectType
     {

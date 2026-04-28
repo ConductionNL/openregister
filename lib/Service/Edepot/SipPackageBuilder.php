@@ -16,6 +16,8 @@
  * @version GIT: <git_id>
  *
  * @link https://www.OpenRegister.app
+ *
+ * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-20
  */
 
 declare(strict_types=1);
@@ -280,6 +282,8 @@ class SipPackageBuilder
      * @param array<int,array<string,mixed>> $objectsWithFiles Objects and their file metadata.
      *
      * @return string The METS XML string.
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-20
      */
     private function generateMetsXml(string $transferId, array $objectsWithFiles): string
     {
@@ -363,6 +367,8 @@ class SipPackageBuilder
      * @param array<int,array<string,mixed>> $objectsWithFiles Objects and their file metadata.
      *
      * @return string The PREMIS XML string.
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-20
      */
     private function generatePremisXml(string $transferId, array $objectsWithFiles): string
     {

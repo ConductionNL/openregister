@@ -11,6 +11,8 @@
  * @author    Conduction Development Team <dev@conductio.nl>
  * @copyright 2024 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ *
+ * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-39
  */
 
 namespace OCA\OpenRegister\Service\GraphQL;
@@ -79,6 +81,8 @@ class QueryComplexityAnalyzer
      * @return array{depth: int, cost: int, maxDepth: int, maxCost: int} Analysis result
      *
      * @throws Error If query exceeds complexity limits
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-39
      */
     public function analyze(DocumentNode $document, ?array $variables=null): array
     {

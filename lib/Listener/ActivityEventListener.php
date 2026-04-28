@@ -15,6 +15,8 @@
  * @version GIT: <git-id>
  *
  * @link https://OpenRegister.app
+ *
+ * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-26
  */
 
 declare(strict_types=1);
@@ -57,6 +59,8 @@ class ActivityEventListener implements IEventListener
      * @param Event $event The dispatched event.
      *
      * @return void
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-26
      */
     public function handle(Event $event): void
     {

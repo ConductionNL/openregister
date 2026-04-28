@@ -15,6 +15,8 @@
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
  * @link https://OpenRegister.app
+ *
+ * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-75
  */
 
 declare(strict_types=1);
@@ -88,6 +90,8 @@ class TenantQuotaMiddleware extends Middleware
      * @throws \OCP\AppFramework\Http\TenantQuotaExceededException
      *
      * @SuppressWarnings(PHPMD.UnusedFormalParameter)
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-75
      */
     public function beforeController(string|Controller $controller, string $methodName): void
     {
@@ -154,6 +158,8 @@ class TenantQuotaMiddleware extends Middleware
      * @return Response The unmodified response
      *
      * @SuppressWarnings(PHPMD.UnusedFormalParameter)
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-75
      */
     public function afterController(string|Controller $controller, string $methodName, Response $response): Response
     {
