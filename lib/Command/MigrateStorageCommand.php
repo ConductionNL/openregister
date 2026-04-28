@@ -43,6 +43,8 @@ class MigrateStorageCommand extends Command
      * Constructor for MigrateStorageCommand.
      *
      * @param MigrationService $migrationService Migration service instance.
+     *
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-21
      */
     public function __construct(
         private readonly MigrationService $migrationService,

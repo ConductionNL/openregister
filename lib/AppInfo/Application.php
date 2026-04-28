@@ -228,6 +228,8 @@ class Application extends App implements IBootstrap
      * Constructor for the Application class
      *
      * @return void
+     *
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-24
      */
     public function __construct()
     {

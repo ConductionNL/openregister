@@ -86,6 +86,8 @@ class AuthenticationService
      * Constructor.
      *
      * @param ArrayLoader $loader The Twig array loader
+     *
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-27
      */
     public function __construct(ArrayLoader $loader)
     {

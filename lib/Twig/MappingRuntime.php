@@ -54,6 +54,8 @@ class MappingRuntime implements RuntimeExtensionInterface
      *
      * @param MappingService $mappingService The mapping service for executing mappings
      * @param MappingMapper  $mappingMapper  The mapping mapper for finding mappings
+     *
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-28
      */
     public function __construct(
         private readonly MappingService $mappingService,

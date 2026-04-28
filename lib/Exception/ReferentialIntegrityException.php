@@ -47,6 +47,8 @@ class ReferentialIntegrityException extends Exception
      * @param DeletionAnalysis $analysis The deletion analysis with blocker information.
      * @param int              $code     The error code.
      * @param Exception|null   $previous The previous exception.
+     *
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-26
      */
     public function __construct(DeletionAnalysis $analysis, int $code=0, ?Exception $previous=null)
     {

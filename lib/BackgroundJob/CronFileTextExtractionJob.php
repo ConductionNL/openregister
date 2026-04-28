@@ -62,6 +62,8 @@ class CronFileTextExtractionJob extends TimedJob
      * Initializes the timed job with the time factory and sets the interval.
      *
      * @param ITimeFactory $time Time factory for parent class
+     *
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-20
      */
     public function __construct(ITimeFactory $time)
     {

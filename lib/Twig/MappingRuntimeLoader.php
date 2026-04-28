@@ -38,6 +38,8 @@ class MappingRuntimeLoader implements RuntimeLoaderInterface
      *
      * @param MappingService $mappingService The mapping service
      * @param MappingMapper  $mappingMapper  The mapping mapper
+     *
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-28
      */
     public function __construct(
         private readonly MappingService $mappingService,

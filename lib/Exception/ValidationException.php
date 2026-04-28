@@ -66,6 +66,8 @@ class ValidationException extends Exception
      * @param ValidationError|null $errors   The detailed validation errors from Opis validator
      *
      * @return void
+     *
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-26
      */
     public function __construct(
         string $message,

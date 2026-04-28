@@ -62,6 +62,8 @@ class FileExtractionController extends Controller
      * @param ChunkMapper           $chunkMapper          Chunk mapper for text chunks
      * @param EntityRelationMapper  $entityRelationMapper Entity relation mapper
      * @param RiskLevelService      $riskLevelService     Risk level computation service
+     *
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-20
      */
     public function __construct(
         string $appName,

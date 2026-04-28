@@ -50,6 +50,8 @@ class OpenRegisterAdmin implements ISettings
      *
      * @param IConfig $config Config service
      * @param IL10N   $l      Localization helper
+     *
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-25
      */
     public function __construct(IConfig $config, IL10N $l)
     {

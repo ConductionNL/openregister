@@ -37,6 +37,8 @@ class RegisterRiskLevelMetadata implements IRepairStep
      * Constructor.
      *
      * @param RiskLevelService $riskLevelService Risk level service
+     *
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-21
      */
     public function __construct(
         private readonly RiskLevelService $riskLevelService

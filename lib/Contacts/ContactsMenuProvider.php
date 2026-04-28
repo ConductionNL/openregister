@@ -99,6 +99,8 @@ class ContactsMenuProvider implements IProvider
      * @param LoggerInterface         $logger           The logger
      *
      * @return void
+     *
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-28
      */
     public function __construct(
         ContactMatchingService $matchingService,

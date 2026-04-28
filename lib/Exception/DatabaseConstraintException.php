@@ -60,6 +60,8 @@ class DatabaseConstraintException extends Exception
      * @param int            $code       The error code
      * @param int            $httpStatus The HTTP status code (default: 409 Conflict)
      * @param Exception|null $previous   The previous exception
+     *
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-26
      */
     public function __construct(string $message, int $code=0, int $httpStatus=409, ?Exception $previous=null)
     {

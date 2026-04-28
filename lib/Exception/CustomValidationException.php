@@ -65,6 +65,8 @@ class CustomValidationException extends Exception
      *                                                     names
      *
      * @return void
+     *
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-26
      */
     public function __construct(string $message, array $errors)
     {

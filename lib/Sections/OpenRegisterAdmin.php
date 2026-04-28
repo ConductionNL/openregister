@@ -51,6 +51,8 @@ class OpenRegisterAdmin implements IIconSection
      *
      * @param IL10N         $l            Localization service
      * @param IURLGenerator $urlGenerator URL generator service
+     *
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-25
      */
     public function __construct(IL10N $l, IURLGenerator $urlGenerator)
     {
