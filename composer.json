@@ -82,7 +82,7 @@
 		"elasticsearch/elasticsearch": "^v8.14.0",
 		"guzzlehttp/guzzle": "^7.0",
 		"opis/json-schema": "^2.3",
-		"phpoffice/phpspreadsheet": "^4.2",
+		"phpoffice/phpspreadsheet": "^5.7",
 		"phpoffice/phpword": "^1.2",
 		"react/async": "^4.3",
 		"react/event-loop": "^1.5",
