@@ -90,6 +90,8 @@ class PermissionHandler
      * @param MagicMapper        $objectEntityMapper Mapper for object entity operations.
      * @param LoggerInterface    $logger             Logger for permission auditing.
      * @param ContainerInterface $container          Container for lazy loading services.
+     *
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-7
      */
     public function __construct(
         private readonly IUserSession $userSession,
@@ -128,6 +130,8 @@ class PermissionHandler
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) RBAC permission checks require multiple conditional paths
      * @SuppressWarnings(PHPMD.NPathComplexity)      User/group/owner permission combinations create many paths
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag)  RBAC flag follows established API patterns
+     *
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-7
      */
     public function hasPermission(
         Schema $schema,
@@ -260,6 +264,8 @@ class PermissionHandler
      * @throws Exception If permission is not granted
      *
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag) RBAC flag follows established API patterns
+     *
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-7
      */
     public function checkPermission(
         Schema $schema,
@@ -306,6 +312,8 @@ class PermissionHandler
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Permission filtering requires multiple conditional checks
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag)  RBAC/multitenancy flags follow established API patterns
+     *
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-7
      */
     public function filterObjectsForPermissions(array $objects, bool $_rbac, bool $_multitenancy): array
     {
@@ -380,6 +388,8 @@ class PermissionHandler
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) UUID filtering with permission checks requires multiple conditions
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag)  RBAC/multitenancy flags follow established API patterns
+     *
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-7
      */
     public function filterUuidsForPermissions(array $uuids, bool $_rbac, bool $_multitenancy): array
     {
@@ -449,6 +459,8 @@ class PermissionHandler
      * Get the active organisation UUID for the current context
      *
      * @return string|null The active organisation UUID or null if none set
+     *
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-7
      */
     public function getActiveOrganisationForContext(): ?string
     {
@@ -506,6 +518,8 @@ class PermissionHandler
      * @return bool True if the group has permission
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+     *
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-7
      */
     public function hasGroupPermission(
         ?array $authorization,
@@ -588,6 +602,8 @@ class PermissionHandler
      * @param string|null $activeOrganisation The user's active organisation UUID
      *
      * @return bool True if all conditions are satisfied
+     *
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-7
      */
     public function evaluateMatchConditions(
         array $conditions,
@@ -633,6 +649,8 @@ class PermissionHandler
      * @param string     $action        The CRUD action to check
      *
      * @return array Array of group IDs that have permission, or empty array if all groups have permission
+     *
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-7
      */
     public function getAuthorizedGroups(?array $authorization, string $action): array
     {
@@ -660,6 +678,8 @@ class PermissionHandler
      * @param Schema $schema The schema to resolve authorization for.
      *
      * @return array|null The effective authorization array, or null if none configured.
+     *
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-7
      */
     public function resolveAuthorization(Schema $schema): ?array
     {
@@ -794,6 +814,8 @@ class PermissionHandler
      * @return array The authorization with roles expanded to action-level entries.
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+     *
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-7
      */
     public function expandRoles(array $authorization, Schema $schema): array
     {

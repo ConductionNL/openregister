@@ -130,6 +130,8 @@ class RenderObject
      * @param LinkedEntityEnricher   $linkedEntityEnricher Enricher for linked entity metadata.
      *
      * @SuppressWarnings(PHPMD.ExcessiveParameterList) All parameters are DI-injected dependencies
+     *
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
      */
     public function __construct(
         private readonly FileMapper $fileMapper,
@@ -162,6 +164,8 @@ class RenderObject
      * @phpstan-param array<string, ObjectEntity> $ultraPreloadCache
      *
      * @return void
+     *
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
      */
     public function setUltraPreloadCache(array $ultraPreloadCache): void
     {
@@ -182,6 +186,8 @@ class RenderObject
      * @return int Number of objects in the ultra preload cache
      *
      * @psalm-return int<0, max>
+     *
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
      */
     public function getUltraCacheSize(): int
     {
@@ -194,6 +200,8 @@ class RenderObject
      * @param int|string $id The register ID
      *
      * @return Register|null The register or null if not found
+     *
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
      */
     private function getRegister(int | string $id): ?Register
     {
@@ -218,6 +226,8 @@ class RenderObject
      * @param int|string $id The schema ID
      *
      * @return Schema|null The schema or null if not found
+     *
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
      */
     private function getSchema(int | string $id): ?Schema
     {
@@ -247,6 +257,8 @@ class RenderObject
      * @param string $value The string to check
      *
      * @return bool True if the string matches UUID format
+     *
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
      */
     private function isUuidLike(string $value): bool
     {
@@ -259,6 +271,8 @@ class RenderObject
      * @param int|string $id The object ID or UUID
      *
      * @return ObjectEntity|null The object or null if not found
+     *
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
      */
     private function getObject(int | string $id): ?ObjectEntity
     {
@@ -291,6 +305,8 @@ class RenderObject
      * Clear all caches
      *
      * @return void
+     *
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
      */
     public function clearCache(): void
     {
@@ -306,6 +322,8 @@ class RenderObject
      * Objects are indexed by their UUID for easy lookup by the frontend.
      *
      * @return array<string, array> Objects indexed by UUID, serialized as arrays
+     *
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
      */
     public function getObjectsCache(): array
     {
@@ -338,6 +356,8 @@ class RenderObject
      * @return ObjectEntity The updated object with files information
      *
      * @throws \RuntimeException If multiple nodes are found for the object's uuid
+     *
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
      */
     private function renderFiles(ObjectEntity $object): ObjectEntity
     {
@@ -427,6 +447,8 @@ class RenderObject
      * @phpstan-return array<int, string>
      *
      * @return array List of file tags
+     *
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
      */
     private function getFileTags(string $fileId): array
     {
@@ -485,6 +507,8 @@ class RenderObject
      * @throws Exception If schema or file operations fail.
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) File property handling requires multiple type checks
+     *
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
      */
     private function renderFileProperties(ObjectEntity $entity): ObjectEntity
     {
@@ -557,6 +581,8 @@ class RenderObject
      *
      * @psalm-return   bool
      * @phpstan-return bool
+     *
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
      */
     private function isFilePropertyConfig(array $propertyConfig): bool
     {
@@ -600,6 +626,8 @@ class RenderObject
      *
      * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+     *
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
      */
     private function hydrateFileProperty($propertyValue, array $propertyConfig, string $_propertyName)
     {
@@ -661,6 +689,8 @@ class RenderObject
      * @param mixed $fileId The file ID to retrieve.
      *
      * @return string|null The base64 data URI or null if file not found.
+     *
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
      */
     private function getFileAsBase64($fileId): ?string
     {
@@ -704,6 +734,8 @@ class RenderObject
      * @return ObjectEntity The entity with hydrated metadata.
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Metadata extraction requires multiple conditional checks
+     *
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
      */
     private function hydrateMetadataFromFileProperties(ObjectEntity $entity): ObjectEntity
     {
@@ -753,6 +785,8 @@ class RenderObject
      * @param string $path The path (e.g., 'logo' or 'nested.field').
      *
      * @return mixed|null The value at the path or null if not found.
+     *
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
      */
     private function getValueFromPath(array $data, string $path)
     {
@@ -786,6 +820,8 @@ class RenderObject
      *     extension: string, size: int, hash: string, published: null|string,
      *     modified: int|null, labels: list<string>}|null
      * @phpstan-return array<string, mixed>|null
+     *
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
      */
     private function getFileObject($fileId): array|null
     {
@@ -859,6 +895,8 @@ class RenderObject
      * @SuppressWarnings(PHPMD.NPathComplexity)        Multiple optional rendering features create many paths
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength)  Comprehensive rendering requires extensive logic
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag)    RBAC and multitenancy flags control security behavior
+     *
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
      */
     public function renderEntity(
         ObjectEntity $entity,
@@ -1122,6 +1160,8 @@ class RenderObject
      * @param int   $depth      The current depth.
      *
      * @return array
+     *
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
      */
     private function handleWildcardExtends(array $objectData, array &$_extend, int $depth): array
     {
@@ -1187,6 +1227,8 @@ class RenderObject
      * @SuppressWarnings(PHPMD.NPathComplexity)       Many extension scenarios create multiple code paths
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Comprehensive dot notation handling requires extensive logic
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag)   All flag controls extension behavior
+     *
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
      */
     private function handleExtendDot(
         array $data,
@@ -1381,6 +1423,8 @@ class RenderObject
      * @return array The extended object data
      *
      * @SuppressWarnings(PHPMD.UnusedFormalParameter)
+     *
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
      */
     private function extendObject(
         ObjectEntity $entity,
@@ -1457,6 +1501,8 @@ class RenderObject
      * @param array $extend     The properties to extend
      *
      * @return array Array of UUIDs to preload
+     *
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
      */
     private function collectUuidsForExtend(array $objectData, array $extend): array
     {
@@ -1516,6 +1562,8 @@ class RenderObject
      * @param array $extend   The _extend parameter specifying which properties to extend
      *
      * @return void
+     *
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
      */
     private function preloadInverseRelationships(array $entities, array $extend): void
     {
@@ -1583,6 +1631,8 @@ class RenderObject
      * @param array $extend             The _extend parameter specifying which properties to extend
      *
      * @return array Filtered array of inverse properties that are being extended
+     *
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
      */
     private function filterExtendedInverseProperties(array $inversedProperties, array $extend): array
     {
@@ -1602,6 +1652,8 @@ class RenderObject
      * @param array $entities Array of ObjectEntity instances
      *
      * @return array Array of UUID strings
+     *
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
      */
     private function collectEntityUuids(array $entities): array
     {
@@ -1623,6 +1675,8 @@ class RenderObject
      * @param array $propConfig The property configuration array
      *
      * @return array|null Array with keys 'targetSchemaRef' and 'inversedByFields', or null if invalid
+     *
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
      */
     private function extractInverseConfig(array $propConfig): ?array
     {
@@ -1660,6 +1714,8 @@ class RenderObject
      * @param ObjectEntity $firstEntity The first entity (used to determine register)
      *
      * @return void
+     *
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
      */
     private function preloadSingleInverseProperty(
         string $propName,
@@ -1744,6 +1800,8 @@ class RenderObject
      * @param array  $inversedByFields Array of field names that may hold the inverse reference
      *
      * @return array Array of ObjectEntity instances that reference the given UUIDs
+     *
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
      */
     private function batchLoadReferencingObjects(
         array $entityUuids,
@@ -1790,6 +1848,8 @@ class RenderObject
      * @param string $propName    The inverse property name
      *
      * @return void
+     *
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
      */
     private function initializeInverseCacheEntries(array $entityUuids, string $propName): void
     {
@@ -1813,6 +1873,8 @@ class RenderObject
      * @param string $propName           The inverse property name for cache key generation
      *
      * @return void
+     *
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
      */
     private function indexReferencingObjects(
         array $referencingObjects,
@@ -1858,6 +1920,8 @@ class RenderObject
      * @param string $field   The field name to extract referenced UUIDs from
      *
      * @return array Array of UUID strings (may contain nulls which should be filtered by caller)
+     *
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
      */
     private function resolveReferencedUuids(array $refData, string $field): array
     {
@@ -1884,6 +1948,8 @@ class RenderObject
      * @param Schema $schema The schema to check for inversed properties
      *
      * @return array Array of property names that have inversedBy configurations
+     *
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
      */
     private function getInversedProperties(Schema $schema): array
     {
@@ -1925,6 +1991,8 @@ class RenderObject
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)  Complex inversed relationship resolution
      * @SuppressWarnings(PHPMD.NPathComplexity)       Multiple relationship types create many paths
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Comprehensive relationship handling requires extensive logic
+     *
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
      */
     private function handleInversedProperties(
         ObjectEntity $entity,
@@ -2184,6 +2252,8 @@ class RenderObject
      * @param array        $inversedProperties The inversed property configurations
      *
      * @return array The updated object data with inversed properties populated
+     *
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
      */
     private function handleInversedPropertiesFromCache(
         ObjectEntity $entity,
@@ -2261,6 +2331,8 @@ class RenderObject
      * @param string $schemaRef The schema reference (ID, UUID, path, or slug)
      *
      * @return string The resolved schema ID
+     *
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
      */
     private function resolveSchemaReference(string $schemaRef): string
     {
@@ -2321,6 +2393,8 @@ class RenderObject
      * @param string $reference The reference string that may contain query parameters
      *
      * @return string The reference string without query parameters
+     *
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
      */
     private function removeQueryParameters(string $reference): string
     {
@@ -2351,6 +2425,8 @@ class RenderObject
      * @psalm-return list<ObjectEntity>
      *
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag) RBAC and multitenancy flags control security behavior
+     *
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
      */
     public function renderEntities(
         array $entities,

@@ -54,6 +54,8 @@ class DataManipulationHandler
      * @param string               $path The dot-separated path (e.g., 'user.profile.name').
      *
      * @return mixed The value at the path, or null if path doesn't exist
+     *
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
      */
     public function getValueFromPath(array $data, string $path): mixed
     {
@@ -80,6 +82,8 @@ class DataManipulationHandler
      * @param string $value The value to convert to a slug.
      *
      * @return null|string The generated slug or null if generation failed
+     *
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
      */
     public function generateSlugFromValue(string $value): string|null
     {
@@ -110,6 +114,8 @@ class DataManipulationHandler
      * @param string $text The text to convert to a slug.
      *
      * @return string The generated slug
+     *
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
      */
     public function createSlugHelper(string $text): string
     {
@@ -148,6 +154,8 @@ class DataManipulationHandler
      * @param array<string, string> $mapping    Mapping array (target => source property names).
      *
      * @return array<string, mixed> The mapped data
+     *
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
      */
     public function mapObjectProperties(array $sourceData, array $mapping): array
     {

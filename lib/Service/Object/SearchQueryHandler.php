@@ -59,6 +59,8 @@ class SearchQueryHandler
      * @param SettingsService $settingsService Service for settings operations.
      * @param LoggerInterface $logger          Logger for performance monitoring.
      * @param IRequest        $request         Request object.
+     *
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-10
      */
     public function __construct(
         private readonly ViewMapper $viewMapper,
@@ -88,6 +90,8 @@ class SearchQueryHandler
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)  Complex query building with parameter reconstruction
      * @SuppressWarnings(PHPMD.NPathComplexity)       Many paths for handling different parameter formats
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Handles extensive parameter processing for query building
+     *
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-10
      */
     public function buildSearchQuery(
         array $requestParams,
@@ -267,6 +271,8 @@ class SearchQueryHandler
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Complex view merging with multiple filter types
      * @SuppressWarnings(PHPMD.NPathComplexity)      Multiple view filter paths for registers, schemas, and search terms
+     *
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-10
      */
     public function applyViewsToQuery(array $query, array $viewIds): array
     {
@@ -378,6 +384,8 @@ class SearchQueryHandler
      * Check if SOLR search engine is available
      *
      * @return bool True if SOLR is enabled and available, false otherwise
+     *
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-10
      */
     public function isSolrAvailable(): bool
     {
@@ -400,6 +408,8 @@ class SearchQueryHandler
      * @return array<string, mixed> Cleaned query parameters
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Multiple conditional paths for parameter normalization
+     *
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-10
      */
     public function cleanQuery(array $parameters): array
     {
@@ -468,6 +478,8 @@ class SearchQueryHandler
      * @param int                  $pages            Total number of pages.
      *
      * @return void
+     *
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-10
      */
     public function addPaginationUrls(array &$paginatedResults, int $page, int $pages): void
     {
@@ -511,6 +523,8 @@ class SearchQueryHandler
      * @return string '?' if URL has no query string, '&' otherwise
      *
      * @psalm-return '&'|'?'
+     *
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-10
      */
     private function getUrlSeparator(string $url): string
     {
@@ -534,6 +548,8 @@ class SearchQueryHandler
      * @param string               $_executionType Type of execution (sync, async, optimized, etc.).
      *
      * @return void
+     *
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-10
      */
     public function logSearchTrail(
         array $_query,

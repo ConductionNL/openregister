@@ -56,6 +56,8 @@ class CrudHandler
      *
      * @param ObjectService   $objectService Object service for save/search operations
      * @param LoggerInterface $logger        PSR-3 logger
+     *
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
      */
     public function __construct(
         private readonly ObjectService $objectService,
@@ -81,6 +83,8 @@ class CrudHandler
      * @psalm-return array{results: array<never, never>, total: 0}
      *
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag) - Boolean flags provide flexible API filtering options
+     *
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
      */
     public function list(
         array $query=[],
@@ -152,6 +156,8 @@ class CrudHandler
      * @throws \Exception If retrieval fails
      *
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag) - Boolean flags control RBAC and multitenancy behavior
+     *
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
      */
     public function get(string $objectId, bool $_rbac=true, bool $_multitenancy=true)
     {
@@ -199,6 +205,8 @@ class CrudHandler
      * @throws \Exception If creation fails
      *
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag) - Boolean flags control RBAC and multitenancy behavior
+     *
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
      */
     public function create(array $data, bool $_rbac=true, bool $_multitenancy=true)
     {
@@ -248,6 +256,8 @@ class CrudHandler
      * @throws \Exception If update fails
      *
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag) - Boolean flags control RBAC and multitenancy behavior
+     *
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
      */
     public function update(
         string $objectId,
@@ -307,6 +317,8 @@ class CrudHandler
      * @throws \Exception If patch fails
      *
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag) - Boolean flags control RBAC and multitenancy behavior
+     *
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
      */
     public function patch(
         string $objectId,
@@ -383,6 +395,8 @@ class CrudHandler
      * @throws \Exception If deletion fails
      *
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag) - Boolean flags control RBAC and multitenancy behavior
+     *
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
      */
     public function delete(string $objectId, bool $_rbac=true, bool $_multitenancy=true): bool
     {
@@ -434,6 +448,8 @@ class CrudHandler
      * @return array Normalized search query
      *
      * @psalm-return array<string, mixed>
+     *
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
      */
     public function buildSearchQuery(
         array $requestParams,

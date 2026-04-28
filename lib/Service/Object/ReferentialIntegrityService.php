@@ -108,6 +108,8 @@ class ReferentialIntegrityService
      * @param AuditTrailMapper $auditTrailMapper   Audit trail mapper for integrity action logging.
      * @param LoggerInterface  $logger             Logger for debugging.
      * @param IDBConnection    $db                 Database connection for raw SQL queries.
+     *
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
      */
     public function __construct(
         private readonly SchemaMapper $schemaMapper,
@@ -127,6 +129,8 @@ class ReferentialIntegrityService
      * @param ObjectEntity $object The object to analyze for deletion.
      *
      * @return DeletionAnalysis The analysis result with targets and blockers.
+     *
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
      */
     public function canDelete(ObjectEntity $object): DeletionAnalysis
     {
@@ -160,6 +164,8 @@ class ReferentialIntegrityService
      * @return void
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Multiple action types require distinct handling paths
+     *
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
      */
     public function applyDeletionActions(
         DeletionAnalysis $analysis,
@@ -231,6 +237,8 @@ class ReferentialIntegrityService
      * @param string           $userId     The user who attempted the deletion.
      *
      * @return void
+     *
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
      */
     public function logRestrictBlock(
         string $objectUuid,
@@ -272,6 +280,8 @@ class ReferentialIntegrityService
      * @param string $schemaId The schema ID to check.
      *
      * @return bool True if any schema has onDelete config referencing this schema.
+     *
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
      */
     public function hasIncomingOnDeleteReferences(string $schemaId): bool
     {
@@ -285,6 +295,8 @@ class ReferentialIntegrityService
      * @param string $value The onDelete value to validate.
      *
      * @return bool True if the value is valid.
+     *
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
      */
     public static function isValidOnDeleteAction(string $value): bool
     {
@@ -300,6 +312,8 @@ class ReferentialIntegrityService
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)
      * Reduced from 19 to ~12 by extracting buildSchemaRegisterMap + indexRelationsForSchema.
+     *
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
      */
     private function ensureRelationIndex(): void
     {
@@ -339,6 +353,8 @@ class ReferentialIntegrityService
      * Tables follow convention: openregister_table_{registerId}_{schemaId}.
      *
      * @return void
+     *
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
      */
     private function buildSchemaRegisterMap(): void
     {
@@ -388,6 +404,8 @@ class ReferentialIntegrityService
      * @param array                       $allSchemas All schemas for ref resolution
      *
      * @return void
+     *
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
      */
     private function indexRelationsForSchema(\OCA\OpenRegister\Db\Schema $schema, array $allSchemas): void
     {
@@ -435,6 +453,8 @@ class ReferentialIntegrityService
      * @param array $property The property configuration array.
      *
      * @return string|null The uppercase onDelete action, or null if not set.
+     *
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
      */
     private function extractOnDelete(array $property): ?string
     {
@@ -453,6 +473,8 @@ class ReferentialIntegrityService
      * @param array $property The property configuration array.
      *
      * @return string|null The $ref value, or null if not a relation property.
+     *
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
      */
     private function extractTargetRef(array $property): ?string
     {
@@ -480,6 +502,8 @@ class ReferentialIntegrityService
      * @return string|null The resolved schema ID, or null if not found.
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Multiple resolution strategies needed
+     *
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
      */
     private function resolveSchemaRef(string $ref, array $allSchemas): ?string
     {
@@ -521,6 +545,8 @@ class ReferentialIntegrityService
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)  Graph walking requires many conditional paths per action type
      * @SuppressWarnings(PHPMD.NPathComplexity)       Multiple action types and fallback chains create many paths
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Core algorithm that handles all 5 action types inline
+     *
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
      */
     private function walkDeletionGraph(
         ObjectEntity $object,
@@ -703,6 +729,8 @@ class ReferentialIntegrityService
      * @param bool   $isArray        Whether the property is an array type.
      *
      * @return ObjectEntity[] Matching objects.
+     *
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
      */
     private function findReferencingObjects(
         string $sourceSchemaId,
@@ -822,6 +850,8 @@ class ReferentialIntegrityService
      * @return ObjectEntity[] Matching objects.
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Handles PostgreSQL/MySQL and array/scalar variants
+     *
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
      */
     private function findReferencingInMagicTable(
         Register $register,
@@ -910,6 +940,8 @@ class ReferentialIntegrityService
      * @param string $propertyName The property name to check.
      *
      * @return bool True if the property is required.
+     *
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
      */
     private function isRequiredProperty(string $schemaId, string $propertyName): bool
     {
@@ -928,6 +960,8 @@ class ReferentialIntegrityService
      * @param string $propertyName The property name.
      *
      * @return mixed The default value, or null if not set.
+     *
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
      */
     private function getDefaultValue(string $schemaId, string $propertyName): mixed
     {
@@ -959,6 +993,8 @@ class ReferentialIntegrityService
      * @param string      $userId     The user who initiated the original deletion.
      *
      * @return void
+     *
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
      */
     private function logIntegrityAction(
         string $action,
@@ -1011,6 +1047,8 @@ class ReferentialIntegrityService
      * @param array $target The nullify target from the DeletionAnalysis.
      *
      * @return void
+     *
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
      */
     private function applySetNull(array $target): void
     {
@@ -1068,6 +1106,8 @@ class ReferentialIntegrityService
      * @param array $target The default target from the DeletionAnalysis.
      *
      * @return void
+     *
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
      */
     private function applySetDefault(array $target): void
     {
@@ -1118,6 +1158,8 @@ class ReferentialIntegrityService
      * @return void
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Groups targets and handles entity resolution per group
+     *
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
      */
     private function applyBatchCascadeDelete(
         array $cascadeTargets,
