@@ -710,6 +710,8 @@ class DestructionService
      * @param string $reason          The reason for extension.
      *
      * @return void
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-6
      */
     private function extendArchiefactiedatum(string $uuid, string $extensionPeriod, string $reason): void
     {

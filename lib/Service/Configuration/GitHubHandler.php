@@ -119,6 +119,7 @@ class GitHubHandler
      * Get authentication headers for GitHub API
      *
      * @return array<string, string> GitHub API headers.
+     * @spec   openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-29
      */
     private function getHeaders(): array
     {
@@ -179,6 +180,8 @@ class GitHubHandler
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)  GitHub API search has many response conditions
      * @SuppressWarnings(PHPMD.NPathComplexity)       Search involves many conditional data extractions
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Full search implementation requires comprehensive handling
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-29
      */
     public function searchConfigurations(string $search='', int $page=1, int $perPage=30): array
     {
@@ -351,6 +354,8 @@ class GitHubHandler
      * @since 0.2.10
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Error handling requires multiple status code checks
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-29
      */
     private function getGitHubErrorMessage(?int $statusCode, string $rawError): string
     {
@@ -413,6 +418,8 @@ class GitHubHandler
      * @return array Configuration details
      *
      * @since 0.2.11
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-29
      */
     private function getEnrichedConfigDetails(
         string $owner,
@@ -497,6 +504,8 @@ class GitHubHandler
      *     type: 'unknown'|mixed,
      *     openregister: mixed|null
      * }|null
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-29
      */
     public function enrichConfigurationDetails(string $owner, string $repo, string $path, string $branch='main'): array|null
     {
@@ -577,6 +586,8 @@ class GitHubHandler
      * @since 0.2.10
      *
      * @psalm-return array<array{name: mixed, commit: mixed|null, protected: false|mixed}>
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-29
      */
     public function getBranches(string $owner, string $repo): array
     {
@@ -640,6 +651,8 @@ class GitHubHandler
      * @throws \Exception If file cannot be fetched or parsed
      *
      * @since 0.2.10
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-29
      */
     public function getFileContent(string $owner, string $repo, string $path, string $branch='main'): array
     {
@@ -720,6 +733,8 @@ class GitHubHandler
      *     description: ''|mixed, title: mixed|string, type: 'manual'|mixed,
      *     version: '1.0.0'|mixed}, path: mixed, sha: mixed|null,
      *     url: mixed|null}>
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-29
      */
     public function listConfigurationFiles(string $owner, string $repo, string $branch='main', string $path=''): array
     {
@@ -809,6 +824,8 @@ class GitHubHandler
      * @since 0.2.10
      *
      * @psalm-return array{openapi: mixed, 'x-openregister': mixed,...}|null
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-29
      */
     private function parseConfigurationFile(string $owner, string $repo, string $path, string $branch='main'): array|null
     {
@@ -870,6 +887,8 @@ class GitHubHandler
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Repository fetch has multiple auth and error conditions
      * @SuppressWarnings(PHPMD.NPathComplexity)      Auth check and error handling create multiple paths
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-29
      */
     public function getRepositories(int $page=1, int $perPage=100): array
     {
@@ -988,6 +1007,8 @@ class GitHubHandler
      *     default_branch: 'main'|mixed,
      *     url: ''|mixed
      * }
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-29
      */
     public function getRepositoryInfo(string $owner, string $repo): array
     {
@@ -1053,6 +1074,8 @@ class GitHubHandler
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)  Complex error handling for GitHub API responses
      * @SuppressWarnings(PHPMD.NPathComplexity)       Publish involves multiple error and success paths
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Full publish handling requires comprehensive error logic
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-29
      */
     public function publishConfiguration(
         string $owner,
@@ -1196,6 +1219,7 @@ class GitHubHandler
      *
      * @return string|null File SHA or null if file doesn't exist
      * @throws \Exception If API request fails
+     * @spec   openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-29
      */
     public function getFileSha(string $owner, string $repo, string $path, string $branch='main'): ?string
     {
@@ -1246,6 +1270,7 @@ class GitHubHandler
      * @param string $userId The user ID
      *
      * @return null|string The token or null if not set
+     * @spec   openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-29
      */
     public function getUserToken(string $userId): string|null
     {
@@ -1264,6 +1289,7 @@ class GitHubHandler
      * @param string      $userId The user ID
      *
      * @return void
+     * @spec   openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-29
      */
     public function setUserToken(?string $token, string $userId): void
     {
@@ -1281,6 +1307,7 @@ class GitHubHandler
      * @param string|null $userId The user ID (optional, uses current user if not provided)
      *
      * @return bool True if token is valid, false otherwise
+     * @spec   openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-29
      */
     public function validateToken(?string $userId=null): bool
     {

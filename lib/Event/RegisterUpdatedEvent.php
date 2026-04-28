@@ -62,6 +62,7 @@ class RegisterUpdatedEvent extends Event
      * Get the updated register
      *
      * @return Register The register after update
+     * @spec   openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-27
      */
     public function getNewRegister(): Register
     {
@@ -72,6 +73,7 @@ class RegisterUpdatedEvent extends Event
      * Get the original register
      *
      * @return Register The register before update
+     * @spec   openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-27
      */
     public function getOldRegister(): Register
     {

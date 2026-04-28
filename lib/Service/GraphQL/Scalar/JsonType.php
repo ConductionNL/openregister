@@ -67,6 +67,8 @@ class JsonType extends ScalarType
      * @param mixed $value The value to parse
      *
      * @return mixed The parsed value
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-40
      */
     public function parseValue(mixed $value): mixed
     {
@@ -81,6 +83,8 @@ class JsonType extends ScalarType
      * @param array|null                 $variables Variables map
      *
      * @return mixed The parsed value
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-40
      */
     public function parseLiteral(\GraphQL\Language\AST\Node $valueNode, ?array $variables=null): mixed
     {

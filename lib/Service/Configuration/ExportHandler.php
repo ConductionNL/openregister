@@ -187,6 +187,8 @@ class ExportHandler
      * @SuppressWarnings(PHPMD.NPathComplexity)       Export requires many conditional data transformations
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)  Configuration export has multiple input type conditions
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Export logic requires comprehensive data handling
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-35
      */
     public function exportConfig(
         array|Configuration|Register $input=[],

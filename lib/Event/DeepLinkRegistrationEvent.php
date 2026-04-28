@@ -67,6 +67,7 @@ class DeepLinkRegistrationEvent extends Event
      * @param string $icon         Optional icon identifier
      *
      * @return void
+     * @spec   openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-27
      */
     public function register(
         string $appId,
