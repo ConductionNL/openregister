@@ -357,6 +357,67 @@ class AuditTrailMapper extends QBMapper
      *
      * @psalm-return list<\OCA\OpenRegister\Db\AuditTrail>
      */
+    /**
+     * Find audit trail entries for a given actor (user uid).
+     *
+     * Used by UserService::getUserActivity() and ::exportPersonalData()
+     * to surface the activity log for a single user. Returns both the
+     * entity list and the total count so callers can paginate without
+     * a second query.
+     *
+     * @param string      $userId The actor's user id (uid).
+     * @param int         $limit  Page size.
+     * @param int         $offset Page offset.
+     * @param string|null $action Optional action filter (e.g. `create`).
+     * @param string|null $from   Optional ISO 8601 lower bound on `created`.
+     * @param string|null $to     Optional ISO 8601 upper bound on `created`.
+     *
+     * @return array{results: list<AuditTrail>, total: int}
+     */
+    public function findByActor(
+        string $userId,
+        int $limit=25,
+        int $offset=0,
+        ?string $action=null,
+        ?string $from=null,
+        ?string $to=null
+    ): array {
+        $resultsQb = $this->db->getQueryBuilder();
+        $resultsQb->select('*')
+            ->from('openregister_audit_trails')
+            ->where($resultsQb->expr()->eq('user', $resultsQb->createNamedParameter($userId, IQueryBuilder::PARAM_STR)))
+            ->orderBy('created', 'DESC')
+            ->setMaxResults($limit)
+            ->setFirstResult($offset);
+
+        $countQb = $this->db->getQueryBuilder();
+        $countQb->select($countQb->createFunction('COUNT(*) AS total'))
+            ->from('openregister_audit_trails')
+            ->where($countQb->expr()->eq('user', $countQb->createNamedParameter($userId, IQueryBuilder::PARAM_STR)));
+
+        if ($action !== null && $action !== '') {
+            $resultsQb->andWhere($resultsQb->expr()->eq('action', $resultsQb->createNamedParameter($action, IQueryBuilder::PARAM_STR)));
+            $countQb->andWhere($countQb->expr()->eq('action', $countQb->createNamedParameter($action, IQueryBuilder::PARAM_STR)));
+        }
+        if ($from !== null && $from !== '') {
+            $resultsQb->andWhere($resultsQb->expr()->gte('created', $resultsQb->createNamedParameter($from, IQueryBuilder::PARAM_STR)));
+            $countQb->andWhere($countQb->expr()->gte('created', $countQb->createNamedParameter($from, IQueryBuilder::PARAM_STR)));
+        }
+        if ($to !== null && $to !== '') {
+            $resultsQb->andWhere($resultsQb->expr()->lte('created', $resultsQb->createNamedParameter($to, IQueryBuilder::PARAM_STR)));
+            $countQb->andWhere($countQb->expr()->lte('created', $countQb->createNamedParameter($to, IQueryBuilder::PARAM_STR)));
+        }
+
+        $results = $this->findEntities(query: $resultsQb);
+
+        $stmt  = $countQb->executeQuery();
+        $row   = $stmt->fetch();
+        $stmt->closeCursor();
+        $total = (int) ($row['total'] ?? 0);
+
+        return ['results' => $results, 'total' => $total];
+    }//end findByActor()
+
     public function findByObjectUntil(int $objectId, string $objectUuid, $until=null): array
     {
         $qb = $this->db->getQueryBuilder();
