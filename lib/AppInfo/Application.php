@@ -142,6 +142,8 @@ use OCA\OpenRegister\Listener\ToolRegistrationListener;
 use OCA\OpenRegister\Listener\GraphQLSubscriptionListener;
 use OCA\OpenRegister\Listener\WebhookEventListener;
 use OCA\OpenRegister\Listener\FilesSidebarListener;
+use OCA\OpenRegister\Listener\AnnotationNotificationListener;
+use OCA\OpenRegister\Notification\AnnotationNotifier;
 use OCA\OpenRegister\Listener\CalculationOnSaveListener;
 use OCA\OpenRegister\Listener\HookListener;
 use OCA\OpenRegister\Listener\LifecycleInitialStateListener;
@@ -154,6 +156,7 @@ use OCP\Files\Events\Node\NodeWrittenEvent;
 use OCA\OpenRegister\Event\ObjectCreatedEvent;
 use OCA\OpenRegister\Event\ObjectCreatingEvent;
 use OCA\OpenRegister\Event\ObjectDeletingEvent;
+use OCA\OpenRegister\Event\ObjectTransitionedEvent;
 use OCA\OpenRegister\Event\ObjectUpdatingEvent;
 use OCA\OpenRegister\Event\ObjectUpdatedEvent;
 use OCA\OpenRegister\Event\ObjectDeletedEvent;
@@ -271,6 +274,11 @@ class Application extends App implements IBootstrap
         $this->registerVectorizationService(context: $context);
         $this->registerObjectInteractionServices(context: $context);
         $this->registerEventListeners(context: $context);
+
+        // Register the annotation-driven INotifier so notifications fired by
+        // AnnotationNotificationDispatcher get a parsed subject — without
+        // this Nextcloud silently drops the notification.
+        $context->registerNotifierService(AnnotationNotifier::class);
     }//end register()
 
     /**
@@ -752,6 +760,12 @@ class Application extends App implements IBootstrap
         // into the object payload before persistence (see x-openregister-calculations).
         $context->registerEventListener(ObjectCreatingEvent::class, CalculationOnSaveListener::class);
         $context->registerEventListener(ObjectUpdatingEvent::class, CalculationOnSaveListener::class);
+
+        // Notifications annotation listener — fires INotificationManager
+        // notifications declared on the schema's x-openregister-notifications.
+        $context->registerEventListener(ObjectCreatedEvent::class, AnnotationNotificationListener::class);
+        $context->registerEventListener(ObjectUpdatedEvent::class, AnnotationNotificationListener::class);
+        $context->registerEventListener(ObjectTransitionedEvent::class, AnnotationNotificationListener::class);
 
         // HookListener for schema hook execution on lifecycle events.
         $context->registerEventListener(ObjectCreatingEvent::class, HookListener::class);

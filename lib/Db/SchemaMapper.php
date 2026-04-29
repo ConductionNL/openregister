@@ -45,6 +45,7 @@ use Symfony\Component\Uid\Uuid;
 use OCA\OpenRegister\Service\Aggregation\AggregationAnnotationValidator;
 use OCA\OpenRegister\Service\Calculation\CalculationAnnotationValidator;
 use OCA\OpenRegister\Service\Lifecycle\LifecycleAnnotationValidator;
+use OCA\OpenRegister\Service\Notification\NotificationAnnotationValidator;
 use OCA\OpenRegister\Service\Schemas\PropertyValidatorHandler;
 
 /**
@@ -597,6 +598,7 @@ class SchemaMapper extends QBMapper
         $this->validateLifecycleAnnotation(schema: $schema);
         $this->validateAggregationsAnnotation(schema: $schema);
         $this->validateCalculationsAnnotation(schema: $schema);
+        $this->validateNotificationsAnnotation(schema: $schema);
     }//end cleanObject()
 
     /**
@@ -688,6 +690,33 @@ class SchemaMapper extends QBMapper
         $messages = array_map(static fn(array $err) => $err['message'], $errors);
         throw new Exception('x-openregister-calculations: '.implode(' ', $messages));
     }//end validateCalculationsAnnotation()
+
+    /**
+     * Validate the optional `x-openregister-notifications` annotation.
+     *
+     * @throws Exception When the annotation is malformed.
+     */
+    private function validateNotificationsAnnotation(Schema $schema): void
+    {
+        $configuration = ($schema->getConfiguration() ?? []);
+        $annotation    = ($configuration['x-openregister-notifications'] ?? null);
+        if (is_array($annotation) === false) {
+            return;
+        }
+
+        $shape = [
+            'properties'                    => ($schema->getProperties() ?? []),
+            'x-openregister-notifications'  => $annotation,
+        ];
+
+        $errors = (new NotificationAnnotationValidator())->validate($shape);
+        if (count($errors) === 0) {
+            return;
+        }
+
+        $messages = array_map(static fn(array $err) => $err['message'], $errors);
+        throw new Exception('x-openregister-notifications: '.implode(' ', $messages));
+    }//end validateNotificationsAnnotation()
 
     /**
      * Clean $ref properties to ensure they are strings
