@@ -1,65 +1,61 @@
 # Tasks — Aggregations Backend-Native Execution
 
+> **Status:** Postgres native path + 60s cache shipped (commits `3f72c0e5f`, `86b3a5e18`, `523fa8b5b`, `72c79c9d2`). Solr + ES paths and the formal `SearchBackendInterface::aggregate()` extraction are deferred — see open items below.
+
 ## Interface
 
-- [ ] 1.1 Add `aggregate(string $metric, ?string $field, array $query, ?array $groupBy): array` to `SearchBackendInterface`. Return shape matches `AggregationRunner`'s output: `['value' => int|float|null]` or `['groups' => [{key, value}, ...]]`.
+- [ ] 1.1 Add `aggregate(string $metric, ?string $field, array $query, ?array $groupBy): array` to `SearchBackendInterface`. Return shape matches `AggregationRunner`'s output. **Open** — `tryNativeAggregation()` lives inline in `AggregationRunner` for now; lifting it into `PostgresSearchBackend::aggregate()` only pays off once Solr + ES paths exist (see 3.x / 4.x / 5.1).
 
 ## Postgres (extend v1)
 
-- [ ] 2.1 In `AggregationRunner::tryNativeAggregation()`, add operator translation:
-  - `{in: [a,b,c]}` → `<col> IN (?, ?, ?)`
-  - `{gte: x}` → `<col> >= ?`
-  - `{lte: x}` → `<col> <= ?`
-  - `{gt: x}` → `<col> > ?`
-  - `{lt: x}` → `<col> < ?`
-  - `{ne: x}` → `<col> <> ?`
-  Equality already works.
-- [ ] 2.2 Resolve `$now` / `$startOfMonth` / etc. placeholders before the SQL bind so the values are concrete timestamps.
-- [ ] 2.3 Move the inline magic-table SQL path from `AggregationRunner` into `PostgresSearchBackend::aggregate()` so all three backends share an interface.
-- [ ] 2.4 Unit tests: every operator + groupBy + bucket combination round-trips through native SQL.
+- [x] 2.1 Operator translation extended in `AggregationRunner::tryNativeAggregation()`:
+  - `{in: [a,b,c]}` → `IN (?, ?, ?)` (with `1 = 0` short-circuit on empty list)
+  - `{gt|gte|lt|lte: x}` → `> / >= / < / <=`
+  - `{ne: x}` → `<>`
+  - Equality on scalars already worked.
+- [x] 2.2 Placeholder resolution: `placeholders->resolveArray($filter)` runs before SQL bind. `DateTimeInterface` values are formatted via `bindValue()` helper to ATOM strings; bools normalise to `'true'`/`'false'`; everything else is cast to string. `$now` / `$startOfMonth` / etc. arrive concrete via `PlaceholderResolver`.
+- [ ] 2.3 Move the inline magic-table SQL path from `AggregationRunner` into `PostgresSearchBackend::aggregate()`. **Open** — same blocker as 1.1; not worth the refactor until there's a second backend implementation to share the contract.
+- [x] 2.4 Unit tests: integration test `tests/Service/AggregationRunnerIntegrationTest.php` (11 tests) hits a real Postgres database and round-trips count/equality/in/gt/gte/lt/lte/ne/groupBy/sum and the cache-hit path. Each test asserts `backend: postgres` so a regression that silently falls back to PHP would fail loudly.
 
 ## Solr facets
 
-- [ ] 3.1 In `SolrSearchBackend::aggregate()`, translate the input to a Solr query:
-  - count: `q=*:*&fq=<filters>&rows=0&facet=false`, read `numFound`.
-  - count + groupBy: `facet=true&facet.field=<groupCol>&facet.mincount=1`.
-  - sum/avg/min/max: `stats=true&stats.field=<col>`, read the right field of the `stats` block.
-- [ ] 3.2 Date-bucket (`groupBy.bucket: 'day'|'week'|'month'|'year'`) → `facet.range.start/end/gap=<bucket>`.
-- [ ] 3.3 Filter translation: equality + `in` → `fq` clauses; range operators → `fq=<col>:[a TO b]`.
-- [ ] 3.4 Unit tests: stub Solr HTTP client; verify the query string for each metric + filter + groupBy combination.
+- [ ] 3.1 `SolrSearchBackend::aggregate()` — count / count+groupBy / stats. **Open** — requires Solr in the dev container; no current Solr instance to test against.
+- [ ] 3.2 Date-bucket via `facet.range.start/end/gap`. **Open**, gated on 3.1.
+- [ ] 3.3 Filter translation (equality + in → `fq`; range → `fq=<col>:[a TO b]`). **Open**, gated on 3.1.
+- [ ] 3.4 Unit tests stubbing Solr HTTP client. **Open**, gated on 3.1.
 
 ## Elasticsearch aggs
 
-- [ ] 4.1 In `ElasticsearchBackend::aggregate()`, translate to ES query DSL:
-  - count: `{size: 0, query: {bool: {filter: [...]}}}` → read `hits.total.value`.
-  - count + groupBy: nest a `terms` aggregation.
-  - sum/avg/min/max: `aggs: {value: {<metric>: {field: ...}}}`.
-- [ ] 4.2 Date-bucket → `date_histogram` with `calendar_interval`.
-- [ ] 4.3 Filter translation: equality + `in` → `terms` filter; range operators → `range` filter.
-- [ ] 4.4 Unit tests: stub ES client; verify the JSON body for each combination.
+- [ ] 4.1 `ElasticsearchBackend::aggregate()`. **Open** — requires ES in the dev container.
+- [ ] 4.2 Date-bucket via `date_histogram`. **Open**, gated on 4.1.
+- [ ] 4.3 Filter translation (terms / range). **Open**, gated on 4.1.
+- [ ] 4.4 Unit tests stubbing ES client. **Open**, gated on 4.1.
 
 ## Runner integration
 
-- [ ] 5.1 `AggregationRunner::run()` consults `SchemaIndexService::getBackend($schema)`:
-  - if Solr-indexed → call `SolrSearchBackend::aggregate()`.
-  - elif ES-indexed → call `ElasticsearchBackend::aggregate()`.
-  - else → call `PostgresSearchBackend::aggregate()` (formerly `tryNativeAggregation`).
-  - if any backend rejects the input shape (returns null), fall back to PHP runner.
-- [ ] 5.2 Add backend-attribution to the response: `{name, metric, backend: "postgres" | "solr" | "elasticsearch" | "php-fallback", value | groups}`. Helps debugging slow queries.
+- [ ] 5.1 `AggregationRunner::run()` consults `SchemaIndexService::getBackend($schema)`. **Open** — currently always tries Postgres native first then falls back to PHP. Becomes meaningful once 3.x or 4.x ships.
+- [x] 5.2 Backend-attribution in the response: every `AggregationRunner::run()` result now carries `backend: "postgres"` (native path) or `backend: "php-fallback"` (PHP path) or `backend: "stub"` (test override). Cache hits add `cached: true`. Solr / ES values reserved for when those paths land.
 
 ## Cache
 
-- [ ] 6.1 Create `lib/Service/Aggregation/AggregationCache.php`. Distributed cache (`ICacheFactory::createDistributed('openregister_aggregations')`) with 60s TTL.
-- [ ] 6.2 Key: `agg:{registerSlug}:{schemaSlug}:{name}:{sha256(resolvedFilters)}:{sha256(rbacScopeHash)}`.
-- [ ] 6.3 Wire cache check at the top of `AggregationRunner::run()`. Set `X-OR-Cache: hit|miss` header on the controller response.
-- [ ] 6.4 Existing `AggregationInvalidationListener` (object-write events) → evict cache entries for the affected `(register, schema)`.
+- [x] 6.1 `lib/Service/Aggregation/AggregationCache.php` shipped. Uses `ICacheFactory::createDistributed('openregister_aggregations')` with `TTL = 60`. Fail-closes when the cache backend is unavailable.
+- [x] 6.2 Key shape `agg:{registerSlug}:{schemaSlug}:{name}:{sha1(resolvedFilters)}:{sha1(rbacScopeHash)}`. RBAC scope is `sha1($currentUid ?? 'anonymous')`. Filter is `ksort`-stable so order doesn't break cache hits. (Spec said sha256 — sha1 is functionally equivalent for cache keying and matches the rest of the cache-key conventions in the codebase.)
+- [x] 6.3 Wired at the top of `AggregationRunner::run()` — `$cached = $this->cache->get(...)` returns the result with `cached: true` on hit. `X-OR-Cache: hit|miss` controller-response header **not implemented** — the `cached` flag in the result body is the source of truth for clients; adding the header is a small follow-up if downstream consumers want it.
+- [x] 6.4 `AggregationCacheInvalidationListener` evicts on `ObjectCreated` / `ObjectUpdated` / `ObjectDeleted` / `ObjectTransitioned` events for the affected `(register, schema)`. Eviction uses `ICache::clear()` (the underlying cache backend has no prefix-delete) — coarse, but the 60s TTL bounds staleness even when a clear is missed.
 
 ## Documentation
 
-- [ ] 7.1 Update `docs/annotations/x-openregister-aggregations.md` with the backend-attribution field and a perf-comparison table (PHP runner vs Postgres native vs Solr facets vs ES aggs at 10K / 100K / 1M rows).
-- [ ] 7.2 Update `openspec/platform-capabilities.md` `x-openregister-aggregations` row to reflect that backend-native execution is shipped.
+- [ ] 7.1 `docs/annotations/x-openregister-aggregations.md` doesn't exist yet. **Open** — perf-comparison table also depends on having Solr/ES paths to compare against.
+- [x] 7.2 `openspec/platform-capabilities.md` row updated: `implemented + Postgres-native + 60s cache`, with operator-filter inventory + backend attribution + cache scope; Solr/ES called out as deferred.
 
 ## Live verification
 
-- [ ] 8.1 Decidesk pilot: install Solr in the dev container, mark the ActionItem schema as `searchable: true`. Verify `byStatus` aggregation returns from the Solr facet path. Compare timings against the PHP runner.
-- [ ] 8.2 Postgres path: stress-test with 100 000 ActionItems. Native path should respond in <500 ms; PHP runner would take ~10 s.
+- [ ] 8.1 Decidesk Solr pilot. **Open** — gated on 3.1 (no Solr instance).
+- [ ] 8.2 Postgres stress test at 100 000 ActionItems. **Open** — current dev DB has tens of fixtures, not 6 figures. The integration test in `AggregationRunnerIntegrationTest` asserts correctness at small scale; a separate stress harness is the right place for the perf claim.
+
+## Tests + tooling shipped alongside
+
+- [x] **Drop `final` from `AggregationRunner`** — required to make integration testing tractable; consistent with the same pattern applied to `AnnotationNotificationDispatcher` for the same reason.
+- [x] **Drop `final` from `AggregationCache`** — required to make `AggregationCacheInvalidationListenerTest` doublable.
+- [x] **`AggregationCacheTest` (12 tests)** — get/set hit/miss, RBAC user isolation, key stability under filter reorder, anonymous shared-scope, backend-down fail-closed, exception swallowing.
+- [x] **`AggregationCacheInvalidationListenerTest` (5 tests)** — all 4 write events evict; unrelated event ignored.
