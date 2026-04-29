@@ -93,4 +93,36 @@ class NotificationAnnotationValidatorTest extends TestCase
         ]);
         $this->assertSame([], $errors);
     }
+
+    public function testGroupsRecipientAccepted(): void
+    {
+        $errors = $this->v->validate([
+            'x-openregister-notifications' => [
+                'opened' => [
+                    'trigger' => ['type' => 'transition', 'action' => 'open'],
+                    'recipients' => [['kind' => 'groups', 'groups' => ['admin']]],
+                    'channels' => ['nc-notification'],
+                    'subject' => 'x',
+                ],
+            ],
+            'properties' => [],
+        ]);
+        $this->assertSame([], $errors);
+    }
+
+    public function testEmailAndActivityChannelsAccepted(): void
+    {
+        $errors = $this->v->validate([
+            'x-openregister-notifications' => [
+                'opened' => [
+                    'trigger' => ['type' => 'created'],
+                    'recipients' => [['kind' => 'users', 'users' => ['admin']]],
+                    'channels' => ['nc-notification', 'email', 'activity'],
+                    'subject' => 'x',
+                ],
+            ],
+            'properties' => [],
+        ]);
+        $this->assertSame([], $errors);
+    }
 }

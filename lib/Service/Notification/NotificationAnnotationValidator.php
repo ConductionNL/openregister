@@ -36,9 +36,9 @@ final class NotificationAnnotationValidator
 
     private const VALID_TRIGGERS  = ['created', 'updated', 'transition'];
 
-    private const VALID_RECIPIENT_KINDS = ['users', 'field'];
+    private const VALID_RECIPIENT_KINDS = ['users', 'field', 'groups'];
 
-    private const VALID_CHANNELS = ['nc-notification'];
+    private const VALID_CHANNELS = ['nc-notification', 'email', 'activity'];
 
     /**
      * @param array<string, mixed> $schema Full schema (must include `properties`).

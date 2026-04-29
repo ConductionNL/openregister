@@ -29,10 +29,12 @@ namespace OCA\OpenRegister\Service\Aggregation;
 use DateTimeImmutable;
 use DateTimeInterface;
 use OCA\OpenRegister\Db\MagicMapper;
+use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Search\PlaceholderResolver;
+use OCP\IDBConnection;
 use RuntimeException;
 
 /**
@@ -45,7 +47,8 @@ final class AggregationRunner
         private readonly MagicMapper $magicMapper,
         private readonly RegisterMapper $registerMapper,
         private readonly SchemaMapper $schemaMapper,
-        private readonly PlaceholderResolver $placeholders
+        private readonly PlaceholderResolver $placeholders,
+        private readonly IDBConnection $db
     ) {}//end __construct()
 
     /**
@@ -88,9 +91,26 @@ final class AggregationRunner
 
         $resolvedFilter = $this->placeholders->resolveArray($filter);
 
-        // Pull all objects in (register, schema) and filter in PHP.
-        // V1 trades performance for correctness; backend-native
-        // aggregation comes in a follow-up.
+        // Try the Postgres-native fast path. Falls back to PHP when the
+        // query shape isn't supported (operator filters, complex values,
+        // non-Postgres DB, etc).
+        $native = $this->tryNativeAggregation(
+            register: $register,
+            schema: $schema,
+            metric: $metric,
+            field: is_string($field) === true ? $field : null,
+            filter: $resolvedFilter,
+            groupBy: is_array($groupBy) === true ? $groupBy : null
+        );
+        if ($native !== null) {
+            return [
+                'name'   => $name,
+                'metric' => $metric,
+                'field'  => is_string($field) === true ? $field : null,
+            ] + $native;
+        }
+
+        // Fall back: pull all objects and filter in PHP.
         $objects = $this->magicMapper->findAllInRegisterSchemaTable(
             register: $register,
             schema: $schema,
@@ -289,6 +309,130 @@ final class AggregationRunner
         }
         return $v;
     }//end normaliseForCompare()
+
+    /**
+     * Try to compute the aggregation directly in SQL on the magic table.
+     *
+     * Supports: count/sum/avg/min/max + simple equality filters
+     * + optional groupBy on a single field. Postgres only.
+     *
+     * Returns the result fragment ('value' or 'groups') on success, null
+     * to signal the caller should fall back to PHP-side aggregation.
+     *
+     * @param array<string, mixed>      $filter  Already placeholder-resolved.
+     * @param array<string, mixed>|null $groupBy
+     *
+     * @return array{value: int|float|null}|array{groups: array<int, array{key: mixed, value: int|float|null}>}|null
+     */
+    private function tryNativeAggregation(
+        Register $register,
+        Schema $schema,
+        string $metric,
+        ?string $field,
+        array $filter,
+        ?array $groupBy
+    ): ?array {
+        $platform = $this->db->getDatabasePlatform();
+        if (stripos($platform::class, 'PostgreSQL') === false) {
+            return null;
+        }
+
+        if (in_array($metric, ['count', 'sum', 'avg', 'min', 'max'], true) === false) {
+            return null;
+        }
+
+        // Reject filters with operator shapes (gte/lte/in/etc) — they need
+        // more careful SQL translation. Equality only for v1 native path.
+        foreach ($filter as $value) {
+            if (is_array($value) === true) {
+                return null;
+            }
+        }
+
+        $tableName = $this->magicMapper->getTableNameForRegisterSchema(
+            register: $register,
+            schema: $schema
+        );
+        if ($tableName === null || $tableName === '') {
+            return null;
+        }
+        $fullTable = '"oc_'.$tableName.'"';
+
+        $whereParts  = ["(_deleted IS NULL OR _deleted = 'null'::jsonb)"];
+        $bindings    = [];
+        foreach ($filter as $f => $v) {
+            $col          = $this->sanitizeColumnName((string) $f);
+            $whereParts[] = '"'.$col.'" = ?';
+            $bindings[]   = (string) $v;
+        }
+        $whereSql = implode(' AND ', $whereParts);
+
+        // Aggregate clause.
+        $aggCol = $field !== null ? '"'.$this->sanitizeColumnName($field).'"' : null;
+        $aggSql = match ($metric) {
+            'count' => 'COUNT(*)',
+            'sum'   => 'SUM(NULLIF('.$aggCol.'::text, \'\')::numeric)',
+            'avg'   => 'AVG(NULLIF('.$aggCol.'::text, \'\')::numeric)',
+            'min'   => 'MIN(NULLIF('.$aggCol.'::text, \'\')::numeric)',
+            'max'   => 'MAX(NULLIF('.$aggCol.'::text, \'\')::numeric)',
+        };
+
+        try {
+            if ($groupBy !== null && isset($groupBy['field']) === true) {
+                $groupCol = '"'.$this->sanitizeColumnName((string) $groupBy['field']).'"';
+                $sql      = "SELECT {$groupCol} AS bucket, {$aggSql} AS agg
+                             FROM {$fullTable}
+                             WHERE {$whereSql}
+                             GROUP BY {$groupCol}";
+                $stmt     = $this->db->prepare($sql);
+                $stmt->execute($bindings);
+                $groups   = [];
+                while (($row = $stmt->fetch()) !== false) {
+                    $value = $row['agg'];
+                    if ($metric !== 'count' && is_string($value) === true) {
+                        $value = (float) $value;
+                    } else if ($value !== null) {
+                        $value = (int) $value;
+                    }
+                    $groups[] = ['key' => $row['bucket'], 'value' => $value];
+                }
+                return ['groups' => $groups];
+            }
+
+            $sql  = "SELECT {$aggSql} AS agg FROM {$fullTable} WHERE {$whereSql}";
+            $stmt = $this->db->prepare($sql);
+            $stmt->execute($bindings);
+            $row = $stmt->fetch();
+            $value = $row !== false ? $row['agg'] : null;
+            if ($metric === 'count') {
+                return ['value' => (int) ($value ?? 0)];
+            }
+            if ($value === null) {
+                return ['value' => null];
+            }
+            return ['value' => is_string($value) === true ? (float) $value : $value];
+        } catch (\Throwable $e) {
+            // Native path failed (table not found, column not found, etc) —
+            // tell the caller to fall back to PHP.
+            return null;
+        }
+    }//end tryNativeAggregation()
+
+    /**
+     * Convert a property name to its magic-table column name. Mirrors
+     * MagicMapper::sanitizeColumnName so we don't expose a public API there.
+     */
+    private function sanitizeColumnName(string $name): string
+    {
+        $name = preg_replace('/([a-z0-9])([A-Z])/', '$1_$2', $name);
+        $name = strtolower((string) $name);
+        $name = preg_replace('/[^a-z0-9_]/', '_', (string) $name);
+        if (preg_match('/^[a-z_]/', $name) === 0) {
+            $name = 'col_'.$name;
+        }
+        $name = preg_replace('/_+/', '_', $name);
+        return rtrim((string) $name, '_');
+    }//end sanitizeColumnName()
 
     private function loadSchema(string $schemaRef): Schema
     {

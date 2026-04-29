@@ -25,6 +25,8 @@ use DateTime;
 use Exception;
 use OCA\OpenRegister\Db\EmailLink;
 use OCA\OpenRegister\Db\EmailLinkMapper;
+use OCA\OpenRegister\Db\MagicMapper;
+use OCA\OpenRegister\Db\SchemaMapper;
 use OCP\App\IAppManager;
 use OCP\IDBConnection;
 use OCP\IUserSession;
@@ -87,18 +89,32 @@ class EmailService
      *
      * @return void
      */
+    /**
+     * Schema mapper for iterating over schemas with `_mail` linked-type column.
+     */
+    private readonly SchemaMapper $schemaMapper;
+
+    /**
+     * Magic mapper for cross-table _mail JSONB containment queries.
+     */
+    private readonly MagicMapper $magicMapper;
+
     public function __construct(
         EmailLinkMapper $emailLinkMapper,
         IAppManager $appManager,
         IDBConnection $db,
         IUserSession $userSession,
-        LoggerInterface $logger
+        LoggerInterface $logger,
+        SchemaMapper $schemaMapper,
+        MagicMapper $magicMapper
     ) {
         $this->emailLinkMapper = $emailLinkMapper;
         $this->appManager      = $appManager;
         $this->db          = $db;
         $this->userSession = $userSession;
         $this->logger      = $logger;
+        $this->schemaMapper = $schemaMapper;
+        $this->magicMapper  = $magicMapper;
     }//end __construct()
 
     /**
@@ -216,15 +232,95 @@ class EmailService
      */
     public function searchBySender(string $sender): array
     {
-        $links = $this->emailLinkMapper->findBySender($sender);
+        // Backward-compat: if the legacy openregister_email_links table is
+        // still present (deployments that haven't run the drop migration
+        // yet), prefer it.
+        $legacy = $this->emailLinkMapper->findBySender($sender);
+        if ($legacy !== []) {
+            return array_map(
+                static fn(EmailLink $link): array => $link->jsonSerialize(),
+                $legacy
+            );
+        }
 
-        return array_map(
-            static function (EmailLink $link): array {
-                return $link->jsonSerialize();
-            },
-            $links
-        );
+        // New path: find Mail messages from this sender, then for each
+        // {accountId}/{messageId} ID look up which OR objects link them
+        // via the `_mail` JSON column on each magic table.
+        $messageIds = $this->findMessageIdsBySender(sender: $sender);
+        if ($messageIds === []) {
+            return [];
+        }
+
+        $results = [];
+        foreach ($this->getMailLinkedSchemas() as $schema) {
+            foreach ($messageIds as $linkedId) {
+                $entities = $this->magicMapper->findByLinkedEntity(
+                    schema: $schema,
+                    columnName: '_mail',
+                    entityId: $linkedId
+                );
+                foreach ($entities as $entity) {
+                    $results[] = [
+                        'objectUuid'    => (string) $entity->getUuid(),
+                        'register'      => (string) $entity->getRegister(),
+                        'schema'        => (string) $entity->getSchema(),
+                        'mailLinkedId'  => $linkedId,
+                    ];
+                }
+            }
+        }
+
+        return $results;
     }//end searchBySender()
+
+    /**
+     * Query the Mail app's database for message IDs from a sender.
+     *
+     * @return array<int, string> List of "{accountId}/{messageId}" identifiers.
+     */
+    private function findMessageIdsBySender(string $sender): array
+    {
+        if ($this->isMailAvailable() === false) {
+            return [];
+        }
+        try {
+            // mail_recipients.type=0 is "from"; mail_recipients.email is the address.
+            $sql  = "SELECT mb.account_id, m.id AS message_id
+                     FROM oc_mail_messages m
+                     JOIN oc_mail_recipients r ON r.message_id = m.id AND r.type = 0
+                     JOIN oc_mail_mailboxes mb ON mb.id = m.mailbox_id
+                     WHERE LOWER(r.email) = LOWER(?)
+                     LIMIT 200";
+            $stmt = $this->db->prepare($sql);
+            $stmt->execute([$sender]);
+            $ids  = [];
+            while (($row = $stmt->fetch()) !== false) {
+                $ids[] = ((int) $row['account_id']).'/'.((int) $row['message_id']);
+            }
+            return $ids;
+        } catch (Exception $e) {
+            $this->logger->warning('[EmailService] findMessageIdsBySender failed: '.$e->getMessage());
+            return [];
+        }
+    }//end findMessageIdsBySender()
+
+    /**
+     * Schemas that opt into mail linkage via `linkedTypes: ["mail"]`.
+     *
+     * @return array<int, \OCA\OpenRegister\Db\Schema>
+     */
+    private function getMailLinkedSchemas(): array
+    {
+        try {
+            $all = $this->schemaMapper->findAll(_multitenancy: false);
+        } catch (\Throwable) {
+            return [];
+        }
+        return array_values(array_filter(
+            $all,
+            static fn($schema) => in_array('mail', $schema->getLinkedTypes(), true) === true
+        ));
+    }//end getMailLinkedSchemas()
 
     /**
      * Delete all email links for an object (cleanup).
