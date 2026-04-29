@@ -400,9 +400,12 @@ class AnnotationNotificationDispatcher
         if ($permission === 'manage') {
             return $uids;
         }
-        // Read permission: also include groups via getGroups().
+        // Read permission: also include groups via getGroups(). The
+        // Entity base uses __call magic for accessors, so method_exists()
+        // is unreliable — fall through and let the magic call surface
+        // the value (or throw, which is caught below).
         try {
-            $groupsRaw = method_exists($object, 'getGroups') === true ? $object->getGroups() : null;
+            $groupsRaw = $object->getGroups();
             if (is_array($groupsRaw) === true) {
                 foreach ($groupsRaw as $gid) {
                     if (is_string($gid) === false || $gid === '') {

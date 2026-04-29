@@ -41,7 +41,7 @@ use Psr\Log\LoggerInterface;
  * the right tradeoff: aggregation results are derived data, and the
  * 60s TTL bounds staleness even when an evict is missed.
  */
-final class AggregationCache
+class AggregationCache
 {
 
     public const TTL = 60;
