@@ -105,7 +105,21 @@ final class CalculationEvaluator
         if ($name === '') {
             throw new EvaluationException('prop requires a non-empty field name.');
         }
-        return ($object[$name] ?? null);
+        // Support dotted paths: `@self.created`, `parent.subfield`, etc.
+        // The CalculationOnSaveListener injects `@self` system metadata so
+        // calculations can reference `@self.created`, `@self.updated`, etc.
+        if (strpos($name, '.') === false) {
+            return ($object[$name] ?? null);
+        }
+        $parts   = explode('.', $name);
+        $current = $object;
+        foreach ($parts as $part) {
+            if (is_array($current) === false || array_key_exists($part, $current) === false) {
+                return null;
+            }
+            $current = $current[$part];
+        }
+        return $current;
     }//end propValue()
 
     /**

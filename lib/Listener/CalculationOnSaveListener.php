@@ -81,6 +81,22 @@ class CalculationOnSaveListener implements IEventListener
         $data    = $object->getObject() ?? [];
         $changed = false;
 
+        // Inject `@self` system metadata so calculations can reference
+        // `@self.created`, `@self.updated`, etc. via the CalculationEvaluator's
+        // dotted prop path. ObjectEntity carries these on the entity itself,
+        // not in the data array.
+        $created = $object->getCreated();
+        $updated = $object->getUpdated();
+        $data['@self'] = [
+            'id'       => $object->getUuid(),
+            'uuid'     => $object->getUuid(),
+            'register' => $object->getRegister(),
+            'schema'   => $object->getSchema(),
+            'owner'    => $object->getOwner(),
+            'created'  => $created !== null ? $created->format(\DateTimeInterface::ATOM) : null,
+            'updated'  => $updated !== null ? $updated->format(\DateTimeInterface::ATOM) : null,
+        ];
+
         foreach ($calcs as $name => $spec) {
             if (is_array($spec) === false) {
                 continue;
@@ -104,6 +120,10 @@ class CalculationOnSaveListener implements IEventListener
                 $changed = true;
             }
         }
+
+        // Strip the synthetic @self before persisting; it's a runtime aid
+        // for the evaluator, not user data.
+        unset($data['@self']);
 
         if ($changed === true) {
             $object->setObject($data);

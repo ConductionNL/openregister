@@ -126,7 +126,23 @@ final class CalculationAnnotationValidator
         $args = $expr[$op];
         if ($op === 'prop') {
             $name = is_string($args) === true ? $args : (is_array($args) === true ? (string) ($args[0] ?? '') : '');
-            if ($name === '' || in_array($name, $allRefs, true) === false) {
+            if ($name === '') {
+                $errors[] = ['code' => 'calculation-prop-unknown', 'message' => sprintf('Calculation "%s": prop "%s" is not a property or calculation.', $owner, $name)];
+                return;
+            }
+            // `@self.<known-system-field>` is always allowed — the listener
+            // injects @self metadata at evaluation time. No dependency
+            // tracking for @self refs since they don't participate in
+            // the calculation cycle graph.
+            if (str_starts_with($name, '@self.') === true) {
+                $sysField = substr($name, 6);
+                $allowed  = ['id', 'uuid', 'register', 'schema', 'owner', 'created', 'updated'];
+                if (in_array($sysField, $allowed, true) === false) {
+                    $errors[] = ['code' => 'calculation-self-unknown', 'message' => sprintf('Calculation "%s": @self.%s is not a known system field. Allowed: %s.', $owner, $sysField, implode(', ', $allowed))];
+                }
+                return;
+            }
+            if (in_array($name, $allRefs, true) === false) {
                 $errors[] = ['code' => 'calculation-prop-unknown', 'message' => sprintf('Calculation "%s": prop "%s" is not a property or calculation.', $owner, $name)];
                 return;
             }
