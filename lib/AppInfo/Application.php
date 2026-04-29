@@ -142,6 +142,7 @@ use OCA\OpenRegister\Listener\ToolRegistrationListener;
 use OCA\OpenRegister\Listener\GraphQLSubscriptionListener;
 use OCA\OpenRegister\Listener\WebhookEventListener;
 use OCA\OpenRegister\Listener\FilesSidebarListener;
+use OCA\OpenRegister\Listener\CalculationOnSaveListener;
 use OCA\OpenRegister\Listener\HookListener;
 use OCA\OpenRegister\Listener\LifecycleInitialStateListener;
 use OCA\OpenRegister\Listener\LifecycleValidationListener;
@@ -746,6 +747,11 @@ class Application extends App implements IBootstrap
         // Order matters: initial state runs on creating; validation runs on updating.
         $context->registerEventListener(ObjectCreatingEvent::class, LifecycleInitialStateListener::class);
         $context->registerEventListener(ObjectUpdatingEvent::class, LifecycleValidationListener::class);
+
+        // Calculations annotation listener — materialises declared calculations
+        // into the object payload before persistence (see x-openregister-calculations).
+        $context->registerEventListener(ObjectCreatingEvent::class, CalculationOnSaveListener::class);
+        $context->registerEventListener(ObjectUpdatingEvent::class, CalculationOnSaveListener::class);
 
         // HookListener for schema hook execution on lifecycle events.
         $context->registerEventListener(ObjectCreatingEvent::class, HookListener::class);

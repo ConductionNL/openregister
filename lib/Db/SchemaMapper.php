@@ -43,6 +43,7 @@ use OCP\IUserSession;
 use OCP\IAppConfig;
 use Symfony\Component\Uid\Uuid;
 use OCA\OpenRegister\Service\Aggregation\AggregationAnnotationValidator;
+use OCA\OpenRegister\Service\Calculation\CalculationAnnotationValidator;
 use OCA\OpenRegister\Service\Lifecycle\LifecycleAnnotationValidator;
 use OCA\OpenRegister\Service\Schemas\PropertyValidatorHandler;
 
@@ -595,6 +596,7 @@ class SchemaMapper extends QBMapper
         $this->autoPopulateConfigurationFields(schema: $schema);
         $this->validateLifecycleAnnotation(schema: $schema);
         $this->validateAggregationsAnnotation(schema: $schema);
+        $this->validateCalculationsAnnotation(schema: $schema);
     }//end cleanObject()
 
     /**
@@ -659,6 +661,33 @@ class SchemaMapper extends QBMapper
         $messages = array_map(static fn(array $err) => $err['message'], $errors);
         throw new Exception('x-openregister-aggregations: '.implode(' ', $messages));
     }//end validateAggregationsAnnotation()
+
+    /**
+     * Validate the optional `x-openregister-calculations` annotation.
+     *
+     * @throws Exception When the annotation is malformed.
+     */
+    private function validateCalculationsAnnotation(Schema $schema): void
+    {
+        $configuration = ($schema->getConfiguration() ?? []);
+        $annotation    = ($configuration['x-openregister-calculations'] ?? null);
+        if (is_array($annotation) === false) {
+            return;
+        }
+
+        $shape = [
+            'properties'                    => ($schema->getProperties() ?? []),
+            'x-openregister-calculations'   => $annotation,
+        ];
+
+        $errors = (new CalculationAnnotationValidator())->validate($shape);
+        if (count($errors) === 0) {
+            return;
+        }
+
+        $messages = array_map(static fn(array $err) => $err['message'], $errors);
+        throw new Exception('x-openregister-calculations: '.implode(' ', $messages));
+    }//end validateCalculationsAnnotation()
 
     /**
      * Clean $ref properties to ensure they are strings

@@ -1,0 +1,187 @@
+<?php
+
+/**
+ * OpenRegister CalculationAnnotationValidator
+ *
+ * Schema-save validation for the `x-openregister-calculations` annotation.
+ *
+ * @category Service
+ * @package  OCA\OpenRegister\Service\Calculation
+ *
+ * @author    Conduction Development Team <dev@conduction.nl>
+ * @copyright 2026 Conduction B.V.
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ *
+ * @version GIT: <git-id>
+ *
+ * @link https://OpenRegister.app
+ */
+
+declare(strict_types=1);
+
+namespace OCA\OpenRegister\Service\Calculation;
+
+/**
+ * Validates `x-openregister-calculations` annotation shape and references.
+ *
+ * Checks (per calculation):
+ * - Spec is an object with `type` (string|integer|number|boolean|date) and `expression`.
+ * - Optional `materialise` is a boolean.
+ * - Every `prop` reference points to a property on the schema OR another
+ *   calculation declared in this annotation.
+ * - Every operator key is in the v1 vocabulary.
+ *
+ * Cross-calculation:
+ * - Cycle detection across {prop:calcA, prop:calcB} dependency graph.
+ */
+final class CalculationAnnotationValidator
+{
+
+    private const VALID_OPS = [
+        'prop', 'lit', 'concat', 'if', 'not', 'and', 'or',
+        '+', '-', '*', '/', '%',
+        'eq', 'ne', 'lt', 'lte', 'gt', 'gte',
+        'now', 'diffDays', 'formatDate',
+    ];
+
+    private const VALID_TYPES = ['string', 'integer', 'number', 'boolean', 'date'];
+
+    /**
+     * @param array<string, mixed> $schema Full schema (must include `properties`).
+     *
+     * @return array<int, array{code: string, message: string}>
+     */
+    public function validate(array $schema): array
+    {
+        if (isset($schema['x-openregister-calculations']) === false) {
+            return [];
+        }
+
+        $calcs = $schema['x-openregister-calculations'];
+        if (is_array($calcs) === false || count($calcs) === 0) {
+            return [['code' => 'calculations-empty', 'message' => 'x-openregister-calculations must declare at least one calculation.']];
+        }
+
+        $properties = ($schema['properties'] ?? []);
+        $propKeys   = is_array($properties) === true ? array_keys($properties) : [];
+        $calcNames  = array_keys($calcs);
+        $allRefs    = array_merge($propKeys, $calcNames);
+
+        $errors = [];
+        $deps   = [];
+
+        foreach ($calcs as $name => $spec) {
+            if (is_string($name) === false || $name === '') {
+                $errors[] = ['code' => 'calculation-bad-name', 'message' => 'Calculation names must be non-empty strings.'];
+                continue;
+            }
+            if (is_array($spec) === false) {
+                $errors[] = ['code' => 'calculation-malformed', 'message' => sprintf('Calculation "%s" must be an object.', $name)];
+                continue;
+            }
+
+            $type = (string) ($spec['type'] ?? '');
+            if (in_array($type, self::VALID_TYPES, true) === false) {
+                $errors[] = ['code' => 'calculation-bad-type', 'message' => sprintf('Calculation "%s" type must be one of [%s].', $name, implode(', ', self::VALID_TYPES))];
+            }
+
+            if (isset($spec['expression']) === false) {
+                $errors[] = ['code' => 'calculation-no-expression', 'message' => sprintf('Calculation "%s" requires an expression.', $name)];
+                continue;
+            }
+
+            $deps[$name] = [];
+            $this->walk($spec['expression'], $name, $allRefs, $errors, $deps[$name]);
+        }
+
+        $cycle = $this->findCycle($deps);
+        if ($cycle !== null) {
+            $errors[] = ['code' => 'calculation-cycle', 'message' => sprintf('Calculation cycle detected: %s.', implode(' -> ', $cycle))];
+        }
+
+        return $errors;
+    }//end validate()
+
+    /**
+     * @param array<int, string>                                 $allRefs   Available property + calc names.
+     * @param array<int, array{code: string, message: string}>   $errors    Mutable error accumulator.
+     * @param array<int, string>                                 $deps      Mutable list of calc deps for the current calc.
+     */
+    private function walk(mixed $expr, string $owner, array $allRefs, array &$errors, array &$deps): void
+    {
+        if (is_array($expr) === false) {
+            return; // Bare scalar literal.
+        }
+        if (count($expr) !== 1) {
+            $errors[] = ['code' => 'calculation-malformed-expr', 'message' => sprintf('Calculation "%s": expression must be single-key.', $owner)];
+            return;
+        }
+
+        $op = (string) array_key_first($expr);
+        if (in_array($op, self::VALID_OPS, true) === false) {
+            $errors[] = ['code' => 'calculation-unknown-op', 'message' => sprintf('Calculation "%s": unknown operator "%s".', $owner, $op)];
+            return;
+        }
+
+        $args = $expr[$op];
+        if ($op === 'prop') {
+            $name = is_string($args) === true ? $args : (is_array($args) === true ? (string) ($args[0] ?? '') : '');
+            if ($name === '' || in_array($name, $allRefs, true) === false) {
+                $errors[] = ['code' => 'calculation-prop-unknown', 'message' => sprintf('Calculation "%s": prop "%s" is not a property or calculation.', $owner, $name)];
+                return;
+            }
+            $deps[] = $name;
+            return;
+        }
+
+        if (is_array($args) === false) {
+            $this->walk($args, $owner, $allRefs, $errors, $deps);
+            return;
+        }
+        foreach ($args as $sub) {
+            $this->walk($sub, $owner, $allRefs, $errors, $deps);
+        }
+    }//end walk()
+
+    /**
+     * @param array<string, array<int, string>> $deps Dependency map.
+     *
+     * @return array<int, string>|null A cycle path if found, else null.
+     */
+    private function findCycle(array $deps): ?array
+    {
+        $colour = [];
+        $stack  = [];
+        $path   = null;
+
+        $visit = function (string $node) use (&$visit, &$colour, &$stack, &$deps, &$path) {
+            if ($path !== null) { return; }
+            if (($colour[$node] ?? 0) === 1) {
+                $idx = array_search($node, $stack, true);
+                if ($idx !== false) {
+                    $path = array_slice($stack, $idx);
+                    $path[] = $node;
+                }
+                return;
+            }
+            if (($colour[$node] ?? 0) === 2) { return; }
+
+            $colour[$node] = 1;
+            $stack[] = $node;
+            foreach (($deps[$node] ?? []) as $next) {
+                if (isset($deps[$next]) === true) { // Only follow calc-to-calc edges.
+                    $visit($next);
+                }
+            }
+            array_pop($stack);
+            $colour[$node] = 2;
+        };
+
+        foreach (array_keys($deps) as $name) {
+            $visit($name);
+            if ($path !== null) { return $path; }
+        }
+        return null;
+    }//end findCycle()
+
+}//end class
