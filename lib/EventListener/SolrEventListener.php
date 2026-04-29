@@ -15,6 +15,9 @@
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  * @version   GIT: <git_id>
  * @link      https://www.OpenRegister.app
+ *
+ * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-26
+ * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-27
  */
 
 declare(strict_types=1);
@@ -165,6 +168,8 @@ class SolrEventListener implements IEventListener
      * @param ObjectCreatedEvent $event The object creation event
      *
      * @return void
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-26
      */
     private function handleObjectCreated(ObjectCreatedEvent $event): void
     {
@@ -200,6 +205,8 @@ class SolrEventListener implements IEventListener
      * @param ObjectUpdatedEvent $event The object update event
      *
      * @return void
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-26
      */
     private function handleObjectUpdated(ObjectUpdatedEvent $event): void
     {
@@ -237,6 +244,8 @@ class SolrEventListener implements IEventListener
      * @param ObjectDeletedEvent $event The object deletion event
      *
      * @return void
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-26
      */
     private function handleObjectDeleted(ObjectDeletedEvent $event): void
     {
@@ -272,6 +281,8 @@ class SolrEventListener implements IEventListener
      * @param SchemaCreatedEvent $event The schema creation event
      *
      * @return void
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-27
      */
     private function handleSchemaCreated(SchemaCreatedEvent $event): void
     {
@@ -299,6 +310,8 @@ class SolrEventListener implements IEventListener
      * @param SchemaUpdatedEvent $event The schema update event
      *
      * @return void
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-27
      */
     private function handleSchemaUpdated(SchemaUpdatedEvent $event): void
     {
@@ -340,6 +353,8 @@ class SolrEventListener implements IEventListener
      * @param SchemaDeletedEvent $event The schema deletion event
      *
      * @return void
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-27
      */
     private function handleSchemaDeleted(SchemaDeletedEvent $event): void
     {

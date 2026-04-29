@@ -13,6 +13,8 @@
  * @version GIT: <git-id>
  *
  * @link https://OpenRegister.app
+ *
+ * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-85
  */
 
 declare(strict_types=1);
@@ -291,6 +293,8 @@ class N8nAdapter implements WorkflowEngineInterface
      * Check the health of the n8n engine.
      *
      * @return bool True if healthy
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-85
      */
     public function healthCheck(): bool
     {

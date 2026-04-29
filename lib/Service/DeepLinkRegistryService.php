@@ -15,6 +15,9 @@
  * @version GIT: <git-id>
  *
  * @link https://OpenRegister.app
+ *
+ * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-18
+ * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-19
  */
 
 declare(strict_types=1);
@@ -120,6 +123,8 @@ class DeepLinkRegistryService
      * @param string $icon         Optional icon identifier (defaults to "icon-{appId}")
      *
      * @return void
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-19
      */
     public function register(
         string $appId,
@@ -172,6 +177,8 @@ class DeepLinkRegistryService
      * @param int $schemaId   The schema database ID
      *
      * @return DeepLinkRegistration|null The registration, or null if none exists
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-18
      */
     public function resolve(int $registerId, int $schemaId): ?DeepLinkRegistration
     {
@@ -202,6 +209,8 @@ class DeepLinkRegistryService
      *                              Supports: contactId, contactEmail, contactName
      *
      * @return string|null The resolved URL, or null to use default
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-18
      */
     public function resolveUrl(
         int $registerId,
@@ -227,6 +236,8 @@ class DeepLinkRegistryService
      * @param int $schemaId   The schema database ID
      *
      * @return string|null The icon identifier, or null
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-18
      */
     public function resolveIcon(int $registerId, int $schemaId): ?string
     {
@@ -238,6 +249,8 @@ class DeepLinkRegistryService
      * Lazily build the ID↔slug maps from database.
      *
      * @return void
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-19
      */
     private function ensureIdMaps(): void
     {
@@ -293,6 +306,8 @@ class DeepLinkRegistryService
      * Check whether any registrations exist.
      *
      * @return bool True if at least one deep link is registered
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-19
      */
     public function hasRegistrations(): bool
     {
@@ -303,6 +318,8 @@ class DeepLinkRegistryService
      * Reset all registrations. Used for testing only.
      *
      * @return void
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-19
      */
     public static function reset(): void
     {

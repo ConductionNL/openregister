@@ -17,6 +17,10 @@
  * @version GIT: <git_id>
  *
  * @link https://www.OpenRegister.app
+ *
+ * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-55
+ * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-56
+ * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-57
  */
 
 declare(strict_types=1);
@@ -649,6 +653,8 @@ class PermissionHandler
      * @param Schema $schema The schema to find the register for.
      *
      * @return Register|null The parent register, or null if not found.
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-55
      */
     private function getRegisterForSchema(Schema $schema): ?Register
     {
@@ -683,6 +689,8 @@ class PermissionHandler
      * @param int $registerId The register ID to get authorization for.
      *
      * @return array|null The register's authorization array.
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-56
      */
     private function getRegisterAuthorization(int $registerId): ?array
     {
@@ -711,6 +719,8 @@ class PermissionHandler
      * @param int $registerId The register ID to get configuration for.
      *
      * @return array|null The register's configuration array.
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-57
      */
     private function getRegisterConfiguration(int $registerId): ?array
     {
@@ -817,6 +827,8 @@ class PermissionHandler
      * @param Schema $schema The schema to find role definitions for.
      *
      * @return array Array of role definitions, each with 'name', 'description', 'actions'.
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-57
      */
     private function getRoleDefinitionsForSchema(Schema $schema): array
     {

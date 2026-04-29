@@ -179,7 +179,13 @@ class ObjectServiceMapperAdapter
                 register: $this->register,
                 schema: $this->schema
             );
-            $object   = array_merge($existing->getObject(), $object);
+            if ($existing === null) {
+                throw new ValidationException(
+                    message: sprintf('Object "%s" not found or not accessible', $id)
+                );
+            }
+
+            $object = array_merge($existing->getObject(), $object);
         }
 
         return $this->objectService->saveObject(

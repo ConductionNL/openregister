@@ -16,6 +16,8 @@
  * @version GIT: <git-id>
  *
  * @link https://OpenRegister.app
+ *
+ * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-2
  */
 
 declare(strict_types=1);
@@ -232,6 +234,8 @@ class ArchivalService
      * 'vernietigen' and creates a destruction list for review.
      *
      * @return DestructionList|null The generated list, or null if no objects found
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-2
      */
     public function generateDestructionList(): ?DestructionList
     {
@@ -265,6 +269,8 @@ class ArchivalService
      * @return array{destroyed: int, errors: int, list: DestructionList} Result summary
      *
      * @throws InvalidArgumentException If list is not in pending_review status
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-2
      */
     public function approveDestructionList(DestructionList $list, string $userId): array
     {
@@ -366,6 +372,8 @@ class ArchivalService
      * @return DestructionList The updated destruction list
      *
      * @throws InvalidArgumentException If list is not in pending_review status
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-2
      */
     public function rejectFromDestructionList(DestructionList $list, array $objectUuids): DestructionList
     {

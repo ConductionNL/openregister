@@ -11,6 +11,11 @@
  * @author   Conduction B.V. <info@conduction.nl>
  * @license  EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  * @link     https://OpenRegister.app
+ *
+ * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-37
+ * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-38
+ * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-40
+ * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-41
  */
 
 namespace OCA\OpenRegister\Service\GraphQL;
@@ -451,6 +456,8 @@ class GraphQLResolver
      * @param int    $last       Number of entries to return
      *
      * @return array<array<string, mixed>> The audit trail entries
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-38
      */
     public function resolveAuditTrail(string $objectUuid, int $last=10): array
     {
@@ -517,6 +524,8 @@ class GraphQLResolver
      * @return void
      *
      * @throws Error If permission denied
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-37
      */
     private function checkSchemaPermission(Schema $schema, string $action): void
     {
@@ -663,6 +672,8 @@ class GraphQLResolver
      * @param Schema $schema The schema
      *
      * @return Register|null The register
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-40
      */
     private function findRegisterForSchema(Schema $schema): ?Register
     {
@@ -717,6 +728,8 @@ class GraphQLResolver
      * Reset state for a new request.
      *
      * @return void
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-41
      */
     public function reset(): void
     {

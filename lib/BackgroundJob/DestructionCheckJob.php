@@ -16,6 +16,9 @@
  * @version GIT: <git_id>
  *
  * @link https://www.OpenRegister.app
+ *
+ * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-2
+ * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-63
  */
 
 declare(strict_types=1);
@@ -161,6 +164,8 @@ class DestructionCheckJob extends TimedJob
      * @return void
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-63
      */
     private function sendPreDestructionNotifications(
         RetentionService $retentionService,
@@ -299,6 +304,8 @@ class DestructionCheckJob extends TimedJob
      * @param LoggerInterface $logger      Logger
      *
      * @return void
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-2
      */
     private function sendReviewNotification(
         string $listUuid,

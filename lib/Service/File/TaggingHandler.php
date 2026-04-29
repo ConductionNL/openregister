@@ -99,7 +99,11 @@ class TaggingHandler
         foreach ($tags as $tag) {
             // Check if tag exists by trying to get it by name.
             try {
-                $tagObj = $this->systemTagManager->getTagsByIds([$tag]);
+                $tagObj = false;
+                if (ctype_digit($tag) === true) {
+                    $tagObj = $this->systemTagManager->getTagsByIds([$tag]);
+                }
+
                 if (empty($tagObj) === false) {
                     // Tag exists (found by ID), just use its ID.
                     $newTagIds[] = $tag;
@@ -117,7 +121,7 @@ class TaggingHandler
             } catch (Exception $e) {
                 $this->logger->error(
                     message: '[TaggingHandler] Error processing tag '.$tag.': '.$e->getMessage(),
-                    context: ['file' => __FILE__, 'line' => __LINE__]
+                    context: ['file' => __FILE__, 'line' => __LINE__, 'trace' => $e->getTrace()]
                 );
                 // Try to create it anyway.
                 try {

@@ -16,6 +16,9 @@
  * @version GIT: <git-id>
  *
  * @link https://OpenRegister.app
+ *
+ * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-52
+ * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-53
  */
 
 namespace OCA\OpenRegister\Controller;
@@ -75,6 +78,8 @@ class McpController extends Controller
      * @PublicPage
      *
      * @CORS
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-52
      */
     public function discover(): JSONResponse
     {
@@ -101,6 +106,8 @@ class McpController extends Controller
      * @NoCSRFRequired
      *
      * @CORS
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-53
      */
     public function discoverCapability(string $capability): JSONResponse
     {

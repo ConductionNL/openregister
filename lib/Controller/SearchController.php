@@ -15,6 +15,8 @@
  * @version GIT: <git-id>
  *
  * @link https://OpenRegister.app
+ *
+ * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-92
  */
 
 namespace OCA\OpenRegister\Controller;
@@ -173,6 +175,8 @@ class SearchController extends Controller
      * @return string The processed search query ready for the SOLR search service
      *
      * @suppressWarnings(PHPMD.CyclomaticComplexity)
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-92
      */
     private function processSearchQuery(string $query): string
     {
