@@ -110,6 +110,56 @@ class NotificationAnnotationValidatorTest extends TestCase
         $this->assertSame([], $errors);
     }
 
+    public function testRelationRecipientAccepted(): void
+    {
+        $errors = $this->v->validate([
+            'x-openregister-notifications' => [
+                'opened' => [
+                    'trigger' => ['type' => 'transition', 'action' => 'open'],
+                    'recipients' => [['kind' => 'relation', 'relation' => 'approvers']],
+                    'channels' => ['nc-notification'],
+                    'subject' => 'x',
+                ],
+            ],
+            'properties' => [],
+        ]);
+        $this->assertSame([], $errors);
+    }
+
+    public function testWebhookChannelRequiresUrl(): void
+    {
+        $errors = $this->v->validate([
+            'x-openregister-notifications' => [
+                'opened' => [
+                    'trigger' => ['type' => 'created'],
+                    'recipients' => [['kind' => 'users', 'users' => ['admin']]],
+                    'channels' => ['webhook'],
+                    'subject' => 'x',
+                ],
+            ],
+            'properties' => [],
+        ]);
+        $codes = array_column($errors, 'code');
+        $this->assertContains('notification-webhook-no-url', $codes);
+    }
+
+    public function testWebhookChannelWithUrlAccepted(): void
+    {
+        $errors = $this->v->validate([
+            'x-openregister-notifications' => [
+                'opened' => [
+                    'trigger' => ['type' => 'created'],
+                    'recipients' => [['kind' => 'users', 'users' => ['admin']]],
+                    'channels' => ['webhook'],
+                    'webhook' => ['url' => 'https://hooks.example.com/x'],
+                    'subject' => 'x',
+                ],
+            ],
+            'properties' => [],
+        ]);
+        $this->assertSame([], $errors);
+    }
+
     public function testEmailAndActivityChannelsAccepted(): void
     {
         $errors = $this->v->validate([

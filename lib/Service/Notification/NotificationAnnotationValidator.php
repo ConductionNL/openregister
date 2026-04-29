@@ -36,9 +36,9 @@ final class NotificationAnnotationValidator
 
     private const VALID_TRIGGERS  = ['created', 'updated', 'transition'];
 
-    private const VALID_RECIPIENT_KINDS = ['users', 'field', 'groups'];
+    private const VALID_RECIPIENT_KINDS = ['users', 'field', 'groups', 'relation'];
 
-    private const VALID_CHANNELS = ['nc-notification', 'email', 'activity'];
+    private const VALID_CHANNELS = ['nc-notification', 'email', 'activity', 'webhook'];
 
     /**
      * @param array<string, mixed> $schema Full schema (must include `properties`).
@@ -89,6 +89,14 @@ final class NotificationAnnotationValidator
             $subject = ($spec['subject'] ?? null);
             if (is_string($subject) === false || $subject === '') {
                 $errors[] = ['code' => 'notification-no-subject', 'message' => sprintf('Notification "%s" requires a subject string.', $name)];
+            }
+
+            // When the `webhook` channel is declared, the spec MUST include a `webhook.url` value.
+            if (is_array($channels) === true && in_array('webhook', $channels, true) === true) {
+                $hook = ($spec['webhook'] ?? null);
+                if (is_array($hook) === false || empty($hook['url']) === true || filter_var($hook['url'], FILTER_VALIDATE_URL) === false) {
+                    $errors[] = ['code' => 'notification-webhook-no-url', 'message' => sprintf('Notification "%s" declares the `webhook` channel but webhook.url is missing or malformed.', $name)];
+                }
             }
 
             $recipients = ($spec['recipients'] ?? []);

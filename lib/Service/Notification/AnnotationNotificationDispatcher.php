@@ -28,6 +28,7 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCP\Activity\IManager as IActivityManager;
+use OCP\Http\Client\IClientService;
 use OCP\IGroupManager;
 use OCP\IUserManager;
 use OCP\Mail\IMailer;
@@ -47,7 +48,8 @@ final class AnnotationNotificationDispatcher
         private readonly IGroupManager $groupManager,
         private readonly IUserManager $userManager,
         private readonly IMailer $mailer,
-        private readonly IActivityManager $activityManager
+        private readonly IActivityManager $activityManager,
+        private readonly IClientService $httpClient
     ) {}//end __construct()
 
     /**
@@ -88,6 +90,19 @@ final class AnnotationNotificationDispatcher
             $rendered = $this->interpolate($subject, $data, $context);
             $channels = (array) ($spec['channels'] ?? ['nc-notification']);
 
+            // Webhook is fired once per dispatch, not once per recipient,
+            // and includes the recipient list in the payload.
+            if (in_array('webhook', $channels, true) === true) {
+                $this->emitWebhook(
+                    spec: $spec,
+                    object: $object,
+                    notificationName: (string) $name,
+                    subject: $rendered,
+                    recipients: $recipients,
+                    context: $context
+                );
+            }
+
             foreach ($recipients as $uid) {
                 if (in_array('nc-notification', $channels, true) === true) {
                     $this->emitNotification(
@@ -116,6 +131,67 @@ final class AnnotationNotificationDispatcher
             }
         }
     }//end dispatch()
+
+    /**
+     * POST a JSON payload to the configured webhook URL.
+     *
+     * @param array<string, mixed> $spec       The notification spec block.
+     * @param ObjectEntity         $object     The object the event happened on.
+     * @param string               $notificationName Annotation name.
+     * @param string               $subject    Interpolated subject.
+     * @param array<int, string>   $recipients Resolved recipient uids.
+     * @param array<string, mixed> $context    Trigger context (action, from, to).
+     */
+    private function emitWebhook(
+        array $spec,
+        ObjectEntity $object,
+        string $notificationName,
+        string $subject,
+        array $recipients,
+        array $context
+    ): void {
+        $hook = ($spec['webhook'] ?? null);
+        if (is_array($hook) === false) {
+            return;
+        }
+        $url = (string) ($hook['url'] ?? '');
+        if ($url === '' || filter_var($url, FILTER_VALIDATE_URL) === false) {
+            return;
+        }
+        $method  = strtoupper((string) ($hook['method'] ?? 'POST'));
+        $headers = is_array($hook['headers'] ?? null) === true ? $hook['headers'] : [];
+
+        $payload = [
+            'notification' => $notificationName,
+            'subject'      => $subject,
+            'object'       => [
+                'uuid'     => (string) ($object->getUuid() ?? ''),
+                'register' => $object->getRegister(),
+                'schema'   => $object->getSchema(),
+                'data'     => $object->getObject() ?? [],
+            ],
+            'recipients'   => $recipients,
+            'context'      => $context,
+            'timestamp'    => (new \DateTimeImmutable())->format(\DateTimeInterface::ATOM),
+        ];
+
+        try {
+            $client = $this->httpClient->newClient();
+            $client->request(
+                $method,
+                $url,
+                [
+                    'json'    => $payload,
+                    'headers' => array_merge(['Content-Type' => 'application/json'], $headers),
+                    'timeout' => 5,
+                ]
+            );
+        } catch (\Throwable $e) {
+            $this->logger->warning(
+                sprintf('[AnnotationNotificationDispatcher] webhook %s failed: %s', $url, $e->getMessage())
+            );
+        }
+    }//end emitWebhook()
 
     /**
      * @param array<string, mixed> $triggerSpec
@@ -171,6 +247,21 @@ final class AnnotationNotificationDispatcher
                 }
                 continue;
             }
+            if ($kind === 'relation') {
+                // Resolve a typed relation (declared via x-openregister-relations).
+                // Reads $data[<relationFieldName>] which by convention holds
+                // either a string UID, an array of string UIDs, or an
+                // array of objects each carrying a userId field.
+                $relName = (string) ($r['relation'] ?? '');
+                if ($relName === '') {
+                    continue;
+                }
+                $value = ($data[$relName] ?? null);
+                foreach ($this->extractUidsFromRelation($value) as $uid) {
+                    $uids[] = $uid;
+                }
+                continue;
+            }
             if ($kind === 'groups') {
                 foreach ((array) ($r['groups'] ?? []) as $gid) {
                     if (is_string($gid) === false || $gid === '') {
@@ -194,6 +285,43 @@ final class AnnotationNotificationDispatcher
         }
         return array_values(array_unique($uids));
     }//end resolveRecipients()
+
+    /**
+     * Extract candidate UIDs from a relation value. The relation value
+     * can be:
+     *   - a string (treat as UID directly)
+     *   - an array of strings (each treated as a UID)
+     *   - an array of objects with a `userId` or `uid` field
+     *   - any nested combination of the above
+     *
+     * @return array<int, string>
+     */
+    private function extractUidsFromRelation(mixed $value): array
+    {
+        if ($value === null) {
+            return [];
+        }
+        if (is_string($value) === true && $value !== '') {
+            return [$value];
+        }
+        if (is_array($value) === false) {
+            return [];
+        }
+        $out = [];
+        foreach ($value as $entry) {
+            if (is_string($entry) === true && $entry !== '') {
+                $out[] = $entry;
+                continue;
+            }
+            if (is_array($entry) === true) {
+                $candidate = ($entry['userId'] ?? $entry['uid'] ?? $entry['user_id'] ?? null);
+                if (is_string($candidate) === true && $candidate !== '') {
+                    $out[] = $candidate;
+                }
+            }
+        }
+        return $out;
+    }//end extractUidsFromRelation()
 
     /**
      * Replace {{prop}} tokens with values from $data, then $context.
