@@ -42,6 +42,7 @@ use OCP\IGroupManager;
 use OCP\IUserSession;
 use OCP\IAppConfig;
 use Symfony\Component\Uid\Uuid;
+use OCA\OpenRegister\Service\Aggregation\AggregationAnnotationValidator;
 use OCA\OpenRegister\Service\Lifecycle\LifecycleAnnotationValidator;
 use OCA\OpenRegister\Service\Schemas\PropertyValidatorHandler;
 
@@ -593,6 +594,7 @@ class SchemaMapper extends QBMapper
         $this->buildRequiredFieldsArray(schema: $schema);
         $this->autoPopulateConfigurationFields(schema: $schema);
         $this->validateLifecycleAnnotation(schema: $schema);
+        $this->validateAggregationsAnnotation(schema: $schema);
     }//end cleanObject()
 
     /**
@@ -630,6 +632,33 @@ class SchemaMapper extends QBMapper
         $messages = array_map(static fn(array $err) => $err['message'], $errors);
         throw new Exception('x-openregister-lifecycle: '.implode(' ', $messages));
     }//end validateLifecycleAnnotation()
+
+    /**
+     * Validate the optional `x-openregister-aggregations` annotation.
+     *
+     * @throws Exception When the annotation is malformed.
+     */
+    private function validateAggregationsAnnotation(Schema $schema): void
+    {
+        $configuration = ($schema->getConfiguration() ?? []);
+        $annotation    = ($configuration['x-openregister-aggregations'] ?? null);
+        if (is_array($annotation) === false) {
+            return;
+        }
+
+        $shape = [
+            'properties'                    => ($schema->getProperties() ?? []),
+            'x-openregister-aggregations'   => $annotation,
+        ];
+
+        $errors = (new AggregationAnnotationValidator())->validate($shape);
+        if (count($errors) === 0) {
+            return;
+        }
+
+        $messages = array_map(static fn(array $err) => $err['message'], $errors);
+        throw new Exception('x-openregister-aggregations: '.implode(' ', $messages));
+    }//end validateAggregationsAnnotation()
 
     /**
      * Clean $ref properties to ensure they are strings
