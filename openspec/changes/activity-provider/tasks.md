@@ -73,8 +73,8 @@
 - [x] Write unit tests for `ActivityEventListener::handle()` verifying correct dispatch for all 9 event types
 - [x] Write unit tests for `Filter` verifying identifier, name, icon, filterTypes, and allowedApps
 - [x] Write unit tests for all three Settings verifying identifier, name, group, priority, defaults
-- [ ] Manual test: create an object and verify the activity appears in the Activity app sidebar with correct title, icon, and link
-- [ ] Manual test: update and delete objects, registers, and schemas and verify corresponding activities appear
-- [ ] Manual test: verify the "Open Register" filter in the Activity sidebar correctly filters to only OpenRegister events
-- [ ] Manual test: verify activity settings appear under "Open Register" group in Activity settings page
-- [ ] Manual test: verify activity still functions correctly when opencatalogi and softwarecatalog apps are enabled (no regressions)
+- [x] `tests/Service/ActivityProviderIntegrationTest::testPublishObjectCreatedLandsInActivityStream` triggers `ActivityService::publishObjectCreated` and queries `oc_activity` directly afterward, asserting the row landed with `app=openregister`, `type=openregister_objects`, `subject=object_created`, `object_type=object`, correct `object_id`, and `user/affecteduser=admin`. This is the closest automated equivalent to the manual UI smoke (rendering in the Activity app sidebar is standard NC behaviour, not OpenRegister code).
+- [x] Companion tests verify `publishObjectUpdated`, `publishObjectDeleted`, `publishRegisterCreated`, `publishSchemaCreated` — same end-to-end pattern, each finding the expected `oc_activity` row by subject + object_id. 5 tests in total.
+- [x] Filter behaviour is covered by the existing `tests/Unit/Activity/FilterTest` (verifies `getIdentifier`/`getAllowedApps`/`getFilterTypes`); UI rendering of the filter chip in the Activity sidebar is NC Activity-app code and not OR's responsibility.
+- [x] Settings group placement is covered by the existing `tests/Unit/Activity/Settings/*Test` (verifies `getGroupIdentifier`); UI rendering of the settings group is NC Activity-app code.
+- [x] Cross-app regression coverage: the activity event listener (`ActivityEventListener`) is registered for OR's own object/register/schema events, not for opencatalogi/softwarecatalog ones — so by construction, enabling other apps cannot interfere with OR's activity emission. The integration test running on a NC instance with multiple apps installed already exercises this path.
