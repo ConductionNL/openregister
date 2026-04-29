@@ -112,13 +112,16 @@ Vrij en open source onder de EUPL-licentie.
 		<admin-section>OCA\OpenRegister\Sections\OpenRegisterAdmin</admin-section>
 	</settings>
 
-	<!-- TEMPORARILY DISABLED: Commands trigger circular DI during occ bootstrap
 	<commands>
-		<command>OCA\OpenRegister\Command\SolrDebugCommand</command>
-		<command>OCA\OpenRegister\Command\SolrManagementCommand</command>
-		<command>OCA\OpenRegister\Command\MigrateStorageCommand</command>
+		<!-- Solr / migrate-storage commands trigger circular DI during occ
+		     bootstrap (SettingsService → IndexService → many other services).
+		     Disabled until that's untangled. -->
+		<!-- <command>OCA\OpenRegister\Command\SolrDebugCommand</command> -->
+		<!-- <command>OCA\OpenRegister\Command\SolrManagementCommand</command> -->
+		<!-- <command>OCA\OpenRegister\Command\MigrateStorageCommand</command> -->
+		<!-- Annotation-related commands have light DI graphs (mappers + evaluator). -->
+		<command>OCA\OpenRegister\Command\RematerialiseCalculationsCommand</command>
 	</commands>
-	-->
 
 	<notification>
 		<service>OCA\OpenRegister\Notification\Notifier</service>
