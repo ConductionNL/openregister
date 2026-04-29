@@ -189,7 +189,7 @@ final class TransitionEngine
             return null;
         }
         try {
-            return $this->schemaMapper->find($schemaRef);
+            return $this->schemaMapper->find($schemaRef, _multitenancy: false);
         } catch (\Throwable $e) {
             return null;
         }

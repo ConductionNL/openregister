@@ -23,6 +23,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
+use OCA\OpenRegister\Exception\HookStoppedException;
 use OCA\OpenRegister\Service\Lifecycle\TransitionEngine;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
@@ -65,11 +66,17 @@ class TransitionController extends Controller
 
         try {
             $object = $this->engine->transition(objectId: $id, action: $action);
+        } catch (HookStoppedException $e) {
+            // The validator listener (or another listener) rejected the
+            // save by calling stopPropagation(). Surface its message as a
+            // structured 422 instead of a 500 stack trace.
+            return new JSONResponse(
+                ['error' => $e->getMessage()],
+                Http::STATUS_UNPROCESSABLE_ENTITY
+            );
         } catch (RuntimeException $e) {
             // Engine throws on missing object/schema/transition or
-            // disallowed-from-current-state. The validator listener
-            // surfaces guard denials by stopping propagation, which the
-            // ObjectService will translate into its own exception.
+            // disallowed-from-current-state.
             return new JSONResponse(
                 ['error' => $e->getMessage()],
                 Http::STATUS_UNPROCESSABLE_ENTITY

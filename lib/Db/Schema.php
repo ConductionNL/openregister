@@ -1636,6 +1636,15 @@ class Schema extends Entity implements JsonSerializable
 
             if (in_array($key, $passThrough, true) === true) {
                 $validatedConfig[$key] = $value;
+                continue;
+            }
+
+            // Allow declarative annotation extensions to round-trip
+            // through the schema's configuration column. Validation of
+            // their shape is done by the dedicated validators (e.g.
+            // LifecycleAnnotationValidator) at schema-save time.
+            if (str_starts_with((string) $key, 'x-openregister-') === true) {
+                $validatedConfig[$key] = $value;
             }
         }//end foreach
 

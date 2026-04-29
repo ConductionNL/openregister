@@ -180,7 +180,7 @@ class LifecycleValidationListener implements IEventListener
         }
 
         try {
-            return $this->schemaMapper->find($schemaRef);
+            return $this->schemaMapper->find($schemaRef, _multitenancy: false);
         } catch (\Throwable $e) {
             $this->logger->warning(
                 sprintf('Lifecycle listener could not load schema "%s": %s', (string) $schemaRef, $e->getMessage())

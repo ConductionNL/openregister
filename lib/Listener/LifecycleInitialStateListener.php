@@ -89,7 +89,7 @@ class LifecycleInitialStateListener implements IEventListener
         }
 
         try {
-            return $this->schemaMapper->find($schemaRef);
+            return $this->schemaMapper->find($schemaRef, _multitenancy: false);
         } catch (\Throwable $e) {
             $this->logger->warning(
                 sprintf(

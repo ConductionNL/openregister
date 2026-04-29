@@ -69,16 +69,26 @@ final class LifecycleGuardRegistry
             return $this->cache[$tag];
         }
 
-        try {
-            $instance = $this->container->get($tag);
-        } catch (\Throwable $e) {
+        $instance = null;
+        $errors   = [];
+        // Try OR's app container first (covers OR-internal guards) and
+        // fall back to the server container (covers FQCN-based references
+        // to guards in other apps that Nextcloud can autowire).
+        foreach ([$this->container, \OC::$server] as $candidate) {
+            try {
+                $instance = $candidate->get($tag);
+                break;
+            } catch (\Throwable $e) {
+                $errors[] = $e->getMessage();
+            }
+        }
+
+        if ($instance === null) {
             $this->logger->error(
-                sprintf('Lifecycle guard tag "%s" is not registered: %s', $tag, $e->getMessage())
+                sprintf('Lifecycle guard tag "%s" could not be resolved: %s', $tag, implode(' | ', $errors))
             );
             throw new RuntimeException(
-                message: sprintf('Lifecycle guard "%s" is not registered.', $tag),
-                code: 0,
-                previous: $e
+                message: sprintf('Lifecycle guard "%s" is not registered.', $tag)
             );
         }
 
