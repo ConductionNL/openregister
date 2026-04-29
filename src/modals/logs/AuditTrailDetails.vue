@@ -107,6 +107,9 @@ import { auditTrailStore, navigationStore } from '../../store/store.js'
 </template>
 
 <script>
+/**
+ * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-8
+ */
 import {
 	NcButton,
 	NcDialog,
@@ -138,6 +141,8 @@ export default {
 		/**
 		 * Check if audit trail has changes data
 		 * @return {boolean} True if has changes
+		 *
+		 * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-8
 		 */
 		hasChanges() {
 			const changed = auditTrailStore.auditTrailItem?.changed
@@ -157,6 +162,8 @@ export default {
 		/**
 		 * Get additional fields that aren't in the main display
 		 * @return {Array} Array of key-value pairs
+		 *
+		 * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-8
 		 */
 		additionalFields() {
 			if (!auditTrailStore.auditTrailItem) return []
@@ -175,6 +182,8 @@ export default {
 		/**
 		 * Close the dialog
 		 * @return {void}
+		 *
+		 * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-8
 		 */
 		closeDialog() {
 			navigationStore.setDialog(false)
@@ -184,6 +193,8 @@ export default {
 		 * Format date for display
 		 * @param {string} dateString - Date string to format
 		 * @return {string} Formatted date
+		 *
+		 * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-8
 		 */
 		formatDate(dateString) {
 			if (!dateString) return '-'
@@ -198,6 +209,8 @@ export default {
 		 * Format changes data for display
 		 * @param {*} changes - Changes data
 		 * @return {string} Formatted changes
+		 *
+		 * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-8
 		 */
 		formatChanges(changes) {
 			if (!changes) return ''
@@ -223,6 +236,8 @@ export default {
 		 * Format JSON data for display
 		 * @param {*} data - Data to format
 		 * @return {string} Formatted JSON
+		 *
+		 * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-8
 		 */
 		formatJson(data) {
 			if (!data) return ''
@@ -248,6 +263,8 @@ export default {
 		 * Format field name for display
 		 * @param {string} fieldName - Field name to format
 		 * @return {string} Formatted field name
+		 *
+		 * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-8
 		 */
 		formatFieldName(fieldName) {
 			return fieldName
@@ -260,6 +277,8 @@ export default {
 		 * Format field value for display
 		 * @param {*} value - Value to format
 		 * @return {string} Formatted value
+		 *
+		 * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-8
 		 */
 		formatFieldValue(value) {
 			if (value === null || value === undefined) return '-'
@@ -278,6 +297,8 @@ export default {
 		/**
 		 * Copy full audit trail data to clipboard
 		 * @return {Promise<void>}
+		 *
+		 * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-8
 		 */
 		async copyFullData() {
 			try {
@@ -293,6 +314,8 @@ export default {
 		/**
 		 * Copy changes data to clipboard
 		 * @return {Promise<void>}
+		 *
+		 * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-8
 		 */
 		async copyChanges() {
 			try {

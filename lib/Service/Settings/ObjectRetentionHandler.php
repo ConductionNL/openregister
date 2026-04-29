@@ -13,6 +13,8 @@
  * @version GIT: <git_id>
  *
  * @link https://www.OpenRegister.nl
+ *
+ * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-64
  */
 
 namespace OCA\OpenRegister\Service\Settings;
@@ -76,6 +78,8 @@ class ObjectRetentionHandler
      *     vectorizeAllViews: mixed|true, enabledViews: array<never, never>|mixed,
      *     includeMetadata: mixed|true, includeRelations: mixed|true,
      *     maxNestingDepth: 10|mixed, batchSize: 25|mixed, autoRetry: mixed|true}
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-64
      */
     public function getObjectSettingsOnly(): array
     {
@@ -129,6 +133,8 @@ class ObjectRetentionHandler
      *     vectorizeAllViews: mixed|true, enabledViews: array<never, never>|mixed,
      *     includeMetadata: mixed|true, includeRelations: mixed|true,
      *     maxNestingDepth: 10|mixed, batchSize: 25|mixed, autoRetry: mixed|true}
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-64
      */
     public function updateObjectSettingsOnly(array $objectData): array
     {
@@ -167,6 +173,8 @@ class ObjectRetentionHandler
      *     updateLogRetention: 604800000|mixed,
      *     deleteLogRetention: 2592000000|mixed, auditTrailsEnabled: bool,
      *     searchTrailsEnabled: bool}
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-64
      */
     public function getRetentionSettingsOnly(): array
     {
@@ -229,6 +237,8 @@ class ObjectRetentionHandler
      *     updateLogRetention: 604800000|mixed,
      *     deleteLogRetention: 2592000000|mixed, auditTrailsEnabled: mixed|true,
      *     searchTrailsEnabled: mixed|true}
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-64
      */
     public function updateRetentionSettingsOnly(array $retentionData): array
     {
@@ -258,6 +268,8 @@ class ObjectRetentionHandler
      * @return array Archival configuration settings
      *
      * @throws \RuntimeException If archival settings retrieval fails
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-64
      */
     public function getArchivalSettingsOnly(): array
     {
@@ -293,6 +305,8 @@ class ObjectRetentionHandler
      * @return array Updated archival configuration
      *
      * @throws \RuntimeException If archival settings update fails
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-64
      */
     public function updateArchivalSettingsOnly(array $archivalData): array
     {
@@ -320,6 +334,8 @@ class ObjectRetentionHandler
      * Get default archival settings
      *
      * @return array Default archival configuration
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-64
      */
     private function getArchivalDefaults(): array
     {

@@ -16,6 +16,8 @@
  * @version GIT: <git-id>
  *
  * @link https://OpenRegister.app
+ *
+ * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-91
  */
 
 namespace OCA\OpenRegister\Controller;
@@ -803,6 +805,8 @@ class SearchTrailController extends Controller
      * @NoCSRFRequired
      *
      * @return JSONResponse JSON response with multiple deletion result
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-91
      */
     public function destroyMultiple(): JSONResponse
     {

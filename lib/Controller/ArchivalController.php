@@ -16,6 +16,9 @@
  * @version GIT: <git_id>
  *
  * @link https://www.OpenRegister.app
+ *
+ * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-2
+ * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-5
  */
 
 namespace OCA\OpenRegister\Controller;
@@ -131,6 +134,8 @@ class ArchivalController extends Controller
      * @return JSONResponse The list of destruction lists.
      *
      * @NoAdminRequired
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-2
      */
     public function listDestructionLists(): JSONResponse
     {
@@ -161,6 +166,8 @@ class ArchivalController extends Controller
      * @return JSONResponse The destruction list detail.
      *
      * @NoAdminRequired
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-2
      */
     public function getDestructionList(string $id): JSONResponse
     {
@@ -191,6 +198,8 @@ class ArchivalController extends Controller
      * @return JSONResponse The updated destruction list.
      *
      * @NoAdminRequired
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-2
      */
     public function approveDestructionList(string $id): JSONResponse
     {
@@ -258,6 +267,8 @@ class ArchivalController extends Controller
      * @return JSONResponse The updated destruction list.
      *
      * @NoAdminRequired
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-2
      */
     public function rejectDestructionList(string $id): JSONResponse
     {
@@ -439,6 +450,8 @@ class ArchivalController extends Controller
      * @return JSONResponse The list of active legal holds.
      *
      * @NoAdminRequired
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-5
      */
     public function listLegalHolds(): JSONResponse
     {
@@ -463,6 +476,8 @@ class ArchivalController extends Controller
      * @return JSONResponse The list of destruction certificates.
      *
      * @NoAdminRequired
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-2
      */
     public function listCertificates(): JSONResponse
     {
@@ -486,6 +501,8 @@ class ArchivalController extends Controller
      * Check if the current user has the archivist role.
      *
      * @return JSONResponse|null Returns a 403 response if unauthorized, null if authorized.
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-2
      */
     private function checkArchivistRole(): ?JSONResponse
     {

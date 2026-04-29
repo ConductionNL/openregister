@@ -15,6 +15,8 @@
  * @version GIT: <git_id>
  *
  * @link https://www.OpenRegister.app
+ *
+ * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-23
  */
 
 declare(strict_types=1);
@@ -75,6 +77,8 @@ class EdepotSettingsController extends Controller
      * @NoCSRFRequired
      *
      * @return JSONResponse The current e-Depot configuration.
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-23
      */
     public function getEdepotSettings(): JSONResponse
     {
@@ -108,6 +112,8 @@ class EdepotSettingsController extends Controller
      * @NoCSRFRequired
      *
      * @return JSONResponse The update result.
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-23
      */
     public function updateEdepotSettings(): JSONResponse
     {

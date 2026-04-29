@@ -17,6 +17,8 @@
  * @version GIT: <git_id>
  *
  * @link https://www.OpenRegister.app
+ *
+ * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-20
  */
 
 declare(strict_types=1);
@@ -86,6 +88,8 @@ class MdtoXmlGenerator
      * @return string The generated MDTO XML string.
      *
      * @throws InvalidArgumentException If required fields are missing.
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-20
      */
     public function generate(ObjectEntity $object, array $files=[]): string
     {
@@ -131,6 +135,8 @@ class MdtoXmlGenerator
      * @return void
      *
      * @throws InvalidArgumentException If required fields are missing.
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-20
      */
     private function validateRequiredFields(ObjectEntity $object, array $retention): void
     {

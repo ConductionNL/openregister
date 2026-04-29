@@ -16,6 +16,8 @@
  * @version GIT: <git_id>
  *
  * @link https://www.OpenRegister.app
+ *
+ * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-17
  */
 
 namespace OCA\OpenRegister\Service\Configuration;
@@ -408,6 +410,8 @@ class ExportHandler
      * @param Register $register The register to export.
      *
      * @return array Register data formatted for OpenAPI export without instance-specific properties.
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-17
      */
     private function exportRegister(Register $register): array
     {

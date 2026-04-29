@@ -13,6 +13,8 @@
  * @version GIT: <git-id>
  *
  * @link https://OpenRegister.app
+ *
+ * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-85
  */
 
 declare(strict_types=1);
@@ -195,6 +197,8 @@ class WorkflowEngineController extends Controller
      * @param int $id Engine ID
      *
      * @return JSONResponse
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-85
      */
     public function health(int $id): JSONResponse
     {

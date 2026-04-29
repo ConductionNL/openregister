@@ -14,6 +14,14 @@
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  * @version   GIT: <git-id>
  * @link      https://OpenRegister.app
+ *
+ * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-28
+ * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-29
+ * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-31
+ * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-32
+ * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-33
+ * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-34
+ * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-36
  */
 
 declare(strict_types=1);
@@ -151,6 +159,8 @@ class FacetHandler
      *
      * @psalm-return   array<string, mixed>
      * @phpstan-return array<string, mixed>
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-33
      */
     public function getFacetsForObjects(array $query=[]): array
     {
@@ -238,6 +248,8 @@ class FacetHandler
      *
      * @psalm-return   array{'@self': array, object_fields: array}
      * @phpstan-return array<string, mixed>
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-32
      */
     public function getFacetableFields(array $baseQuery=[], int $_sampleSize=100): array
     {
@@ -274,6 +286,8 @@ class FacetHandler
      *
      * @psalm-return   list{'register', 'schema', 'owner', 'organisation', 'created', 'updated'}
      * @phpstan-return array<int, string>
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-32
      */
     public function getMetadataFacetableFields(): array
     {
@@ -302,6 +316,8 @@ class FacetHandler
      * @return         int The facet count.
      * @psalm-return   int<0, max>
      * @phpstan-return int
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-36
      */
     public function getFacetCount(bool $hasFacets, array $query): int
     {
@@ -329,6 +345,8 @@ class FacetHandler
      * @param array $facetableConfig Facetable field configuration from schema discovery.
      *
      * @return array Facets with performance metadata including strategy and fallback status.
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-33
      */
     private function calculateFacetsWithFallback(array $facetQuery, array $facetConfig, array $facetableConfig=[]): array
     {
@@ -454,6 +472,8 @@ class FacetHandler
      * @param array  $facetConfig The facet configuration.
      *
      * @return string A unique facet key.
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-29
      */
     private function generateNonAggregatedFacetKey(string $fieldName, int $schemaId, array $facetConfig): string
     {
@@ -486,6 +506,8 @@ class FacetHandler
      * @param array $facetableConfig Facetable field config from schema discovery.
      *
      * @return array Transformed facets in standardized format.
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-34
      */
     private function transformFacetsToStandardFormat(array $facets, array $facetableConfig=[]): array
     {
@@ -544,6 +566,8 @@ class FacetHandler
      *
      * @return array Keyed by field name, each value contains title,
      *               description, data_type, index_field, index_type, enabled.
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-28
      */
     private function getMetadataDefinitions(): array
     {
@@ -607,6 +631,8 @@ class FacetHandler
      * @param int   $startOrder     The current order counter.
      *
      * @return int The updated order counter after processing metadata facets.
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-31
      */
     private function transformMetadataFacets(array $metadataFacets, array &$transformed, int $startOrder): int
     {
@@ -649,6 +675,8 @@ class FacetHandler
      * @param int    $currentOrder The current order counter.
      *
      * @return int The updated order counter.
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-29
      */
     private function transformNonAggregatedFacet(
         string $field,
@@ -717,6 +745,8 @@ class FacetHandler
      * @param int    $currentOrder      The current order counter.
      *
      * @return int The updated order counter.
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-29
      */
     private function transformAggregatedFacet(
         string $field,
@@ -787,6 +817,8 @@ class FacetHandler
      * @param int|null $schemaId       Optional schema ID for non-aggregated facets.
      *
      * @return array The formatted facet entry.
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-34
      */
     private function buildFacetEntry(
         string $name,
@@ -844,6 +876,8 @@ class FacetHandler
      * @param string $field The field name (e.g., cloudDienstverleningsmodel).
      *
      * @return string The formatted title (e.g., Cloud Dienstverleningsmodel).
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-34
      */
     private function formatFieldTitle(string $field): string
     {
@@ -1015,6 +1049,8 @@ class FacetHandler
      * @param array $facets Facet data structure.
      *
      * @return int Total number of facet results.
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-33
      */
     private function countFacetResults(array $facets): int
     {
@@ -1155,6 +1191,8 @@ class FacetHandler
      * @return array[] Facetable field configuration with non-aggregated field metadata.
      *
      * @psalm-return array{'@self': array, object_fields: array, non_aggregated_fields: array}
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-32
      */
     private function getFacetableFieldsFromSchemas(array $schemas): array
     {
@@ -1228,6 +1266,8 @@ class FacetHandler
      * Get default metadata facets for @self fields.
      *
      * @return array Default metadata facet configuration.
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-31
      */
     private function getDefaultMetadataFacets(): array
     {
@@ -1246,6 +1286,8 @@ class FacetHandler
      * @param array $property The property configuration.
      *
      * @return string The facet type ('terms' or 'date_histogram').
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-28
      */
     private function determineFacetTypeFromProperty(array $property): string
     {

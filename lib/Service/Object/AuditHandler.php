@@ -16,6 +16,8 @@
  * @version GIT: <git_id>
  *
  * @link https://www.OpenRegister.nl
+ *
+ * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-8
  */
 
 declare(strict_types=1);
@@ -171,6 +173,8 @@ class AuditHandler
      * @param array  $filters Raw filters
      *
      * @return array Prepared filters for audit trail query.
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-8
      */
     private function prepareFilters(string $uuid, array $filters): array
     {

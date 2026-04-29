@@ -13,6 +13,8 @@
  * @version GIT: <git-id>
  *
  * @link https://OpenRegister.app
+ *
+ * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-83
  */
 
 declare(strict_types=1);
@@ -55,6 +57,8 @@ class WorkflowExecutionController extends Controller
      * @NoAdminRequired
      *
      * @return JSONResponse
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-83
      */
     public function index(): JSONResponse
     {
@@ -117,6 +121,8 @@ class WorkflowExecutionController extends Controller
      * @NoAdminRequired
      *
      * @return JSONResponse
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-83
      */
     public function show(int $id): JSONResponse
     {
@@ -135,6 +141,8 @@ class WorkflowExecutionController extends Controller
      * @param int $id Execution ID
      *
      * @return JSONResponse
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-83
      */
     public function destroy(int $id): JSONResponse
     {
