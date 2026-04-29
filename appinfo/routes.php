@@ -242,6 +242,29 @@ return [
         // Aggregations sugar endpoint.
         ['name' => 'aggregation#aggregate', 'url' => '/api/objects/aggregations/{register}/{schema}/{name}', 'verb' => 'GET'],
 
+        // Contacts matching API — used by ContactsMenuProvider + mail-sidebar.
+        ['name' => 'contacts#match', 'url' => '/api/contacts/match', 'verb' => 'GET'],
+
+        // Mail sidebar — reverse lookup of OR objects linked to an email.
+        // Search + bySender are app-global (no register/schema in path); the
+        // CRUD endpoints are scoped to an object so they take register/schema/id.
+        ['name' => 'emails#search',   'url' => '/api/emails/search',                                'verb' => 'GET'],
+        ['name' => 'emails#bySender', 'url' => '/api/emails/by-sender',                             'verb' => 'GET'],
+        ['name' => 'emails#index',    'url' => '/api/objects/{register}/{schema}/{id}/emails',     'verb' => 'GET',    'requirements' => ['id' => '[^/]+']],
+        ['name' => 'emails#create',   'url' => '/api/objects/{register}/{schema}/{id}/emails',     'verb' => 'POST',   'requirements' => ['id' => '[^/]+']],
+        ['name' => 'emails#destroy',  'url' => '/api/objects/{register}/{schema}/{id}/emails/{emailId}', 'verb' => 'DELETE', 'requirements' => ['id' => '[^/]+', 'emailId' => '[0-9]+']],
+
+        // Action registry CRUD + utilities.
+        ['name' => 'actions#index',            'url' => '/api/actions',                          'verb' => 'GET'],
+        ['name' => 'actions#create',           'url' => '/api/actions',                          'verb' => 'POST'],
+        ['name' => 'actions#show',             'url' => '/api/actions/{id}',                     'verb' => 'GET',    'requirements' => ['id' => '[0-9]+']],
+        ['name' => 'actions#update',           'url' => '/api/actions/{id}',                     'verb' => 'PUT',    'requirements' => ['id' => '[0-9]+']],
+        ['name' => 'actions#patch',            'url' => '/api/actions/{id}',                     'verb' => 'PATCH',  'requirements' => ['id' => '[0-9]+']],
+        ['name' => 'actions#destroy',          'url' => '/api/actions/{id}',                     'verb' => 'DELETE', 'requirements' => ['id' => '[0-9]+']],
+        ['name' => 'actions#test',             'url' => '/api/actions/{id}/test',                'verb' => 'POST',   'requirements' => ['id' => '[0-9]+']],
+        ['name' => 'actions#logs',             'url' => '/api/actions/{id}/logs',                'verb' => 'GET',    'requirements' => ['id' => '[0-9]+']],
+        ['name' => 'actions#migrateFromHooks', 'url' => '/api/actions/migrate-hooks/{schemaId}', 'verb' => 'POST',   'requirements' => ['schemaId' => '[0-9]+']],
+
         ['name' => 'objects#index', 'url' => '/api/objects/{register}/{schema}', 'verb' => 'GET'],
 
         ['name' => 'objects#create', 'url' => '/api/objects/{register}/{schema}', 'verb' => 'POST'],
