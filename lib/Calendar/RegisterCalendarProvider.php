@@ -192,7 +192,14 @@ class RegisterCalendarProvider implements ICalendarProvider
         $this->enabledSchemasCache = [];
 
         try {
-            $allSchemas = $this->schemaMapper->findAll();
+            // Bypass multi-tenancy: a user with read access to a schema's
+            // objects (which is checked downstream when each calendar event
+            // is fetched) should see the calendar even if the schema's
+            // organisation differs from the user's active organisation.
+            // Per-object ACLs gate the actual event content.
+            $allSchemas = $this->schemaMapper->findAll(
+                _multitenancy: false
+            );
 
             foreach ($allSchemas as $schema) {
                 $calendarConfig = $schema->getCalendarProviderConfig();

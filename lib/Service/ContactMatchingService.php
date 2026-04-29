@@ -189,6 +189,15 @@ class ContactMatchingService
             return [];
         }
 
+        // Fast path: skip if no schema declares linkedTypes:["contact"].
+        // Without this, the ContactsMenuProvider's call to matchByEmail on
+        // every contacts-menu render does a full-text search across every
+        // schema in every register, which wedges Apache workers when
+        // there are many schemas and no contact-linked ones.
+        if ($this->hasContactLinkedSchemas() === false) {
+            return [];
+        }
+
         $email    = strtolower(trim($email));
         $cacheKey = 'or_contact_match_email_'.hash('sha256', $email);
 
@@ -239,6 +248,10 @@ class ContactMatchingService
     public function matchByName(?string $name): array
     {
         if (empty($name) === true) {
+            return [];
+        }
+
+        if ($this->hasContactLinkedSchemas() === false) {
             return [];
         }
 
@@ -297,6 +310,10 @@ class ContactMatchingService
     public function matchByOrganization(?string $organization): array
     {
         if (empty($organization) === true) {
+            return [];
+        }
+
+        if ($this->hasContactLinkedSchemas() === false) {
             return [];
         }
 
@@ -502,6 +519,38 @@ class ContactMatchingService
      *
      * @return array The filtered match results
      */
+    /**
+     * Per-request cache for the contact-linked-schemas check.
+     */
+    private ?bool $hasContactLinkedSchemasCache = null;
+
+    /**
+     * Returns true when at least one schema declares
+     * `linkedTypes: ["contact"]` in its configuration.
+     *
+     * Used as a fast-path skip in matchByEmail/Name/Organization so the
+     * ContactsMenuProvider doesn't run an expensive cross-schema search
+     * on deployments that don't opt any schema into contact-linking.
+     */
+    private function hasContactLinkedSchemas(): bool
+    {
+        if ($this->hasContactLinkedSchemasCache !== null) {
+            return $this->hasContactLinkedSchemasCache;
+        }
+        try {
+            $schemas = $this->schemaMapper->findAll(_multitenancy: false);
+            foreach ($schemas as $schema) {
+                $linkedTypes = $schema->getLinkedTypes();
+                if (in_array('contact', $linkedTypes, true) === true) {
+                    return $this->hasContactLinkedSchemasCache = true;
+                }
+            }
+        } catch (\Throwable $e) {
+            // Fail closed — if we can't tell, skip the search.
+        }
+        return $this->hasContactLinkedSchemasCache = false;
+    }//end hasContactLinkedSchemas()
+
     private function searchAndFilter(
         string $searchTerm,
         array $propertyPatterns,
