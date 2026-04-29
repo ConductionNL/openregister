@@ -1870,6 +1870,10 @@ class FileService
      */
     public function copyFile(ObjectEntity $sourceObject, int $fileId, ObjectEntity $targetObject): File
     {
+        // Reject when the source is locked by someone else. Copying through
+        // a lock would let a second user observe a half-written state.
+        $this->fileLockHandler->assertCanModify($fileId);
+
         $sourceFile = $this->readFileHandler->getFile(object: $sourceObject, file: $fileId);
         if ($sourceFile === null) {
             throw new Exception("Source file not found");
