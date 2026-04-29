@@ -44,10 +44,14 @@ use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\Mapping;
 use OCA\OpenRegister\Db\MappingMapper;
 
+use OCA\OpenRegister\Service\FileService;
+use OCA\OpenRegister\Service\NoteService;
 use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Service\TaskService;
 use OCA\OpenRegister\Service\WorkflowEngineRegistry;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IAppConfig;
+use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
 use DateTime;
 use Symfony\Component\Yaml\Yaml;
@@ -220,6 +224,34 @@ class ImportHandler
     private ?DeployedWorkflowMapper $deployedWfMapper = null;
 
     /**
+     * Optional task service for seeding related VTODO items.
+     *
+     * @var TaskService|null
+     */
+    private ?TaskService $taskService = null;
+
+    /**
+     * Optional note service for seeding related comments.
+     *
+     * @var NoteService|null
+     */
+    private ?NoteService $noteService = null;
+
+    /**
+     * Optional file service for seeding related attachments.
+     *
+     * @var FileService|null
+     */
+    private ?FileService $fileService = null;
+
+    /**
+     * Optional user session for tasks/notes that require a logged-in actor.
+     *
+     * @var IUserSession|null
+     */
+    private ?IUserSession $userSession = null;
+
+    /**
      * Constructor for ImportHandler.
      *
      * @param SchemaMapper        $schemaMapper        The schema mapper.
@@ -313,6 +345,39 @@ class ImportHandler
     {
         $this->deployedWfMapper = $mapper;
     }//end setDeployedWorkflowMapper()
+
+    /**
+     * Inject the TaskService used by seed-related-items to create VTODO tasks.
+     */
+    public function setTaskService(?TaskService $taskService): void
+    {
+        $this->taskService = $taskService;
+    }//end setTaskService()
+
+    /**
+     * Inject the NoteService used by seed-related-items to attach comments.
+     */
+    public function setNoteService(?NoteService $noteService): void
+    {
+        $this->noteService = $noteService;
+    }//end setNoteService()
+
+    /**
+     * Inject the FileService used by seed-related-items to attach files.
+     */
+    public function setFileService(?FileService $fileService): void
+    {
+        $this->fileService = $fileService;
+    }//end setFileService()
+
+    /**
+     * Inject the IUserSession used to detect whether a logged-in actor
+     * exists at seed time. Tasks + notes are skipped without one.
+     */
+    public function setUserSession(?IUserSession $userSession): void
+    {
+        $this->userSession = $userSession;
+    }//end setUserSession()
 
     /**
      * Set the MagicMapper dependency for ensuring magic mapper tables exist.
@@ -2713,6 +2778,25 @@ class ImportHandler
             return;
         }
 
+        // Tasks + notes both require a logged-in actor (CalDAV calendar
+        // lookup, comment authorship). Capture this once at the top of
+        // the import — at occ install time there's no user session, so
+        // those item types skip with a warning. Files are tied to the
+        // object's folder, not the actor, so they always run.
+        $hasUserContext = ($this->userSession !== null && $this->userSession->getUser() !== null);
+        $this->logger->debug(
+            message: '[ImportHandler] Seed data import context',
+            context: [
+                'file'             => __FILE__,
+                'line'             => __LINE__,
+                'has_user_context' => $hasUserContext,
+            ]
+        );
+
+        $result['relatedFiles'] = ($result['relatedFiles'] ?? 0);
+        $result['relatedNotes'] = ($result['relatedNotes'] ?? 0);
+        $result['relatedTasks'] = ($result['relatedTasks'] ?? 0);
+
         // Determine target register for seedData objects.
         // SeedData should go into the first register defined in the configuration.
         $targetRegister = null;
@@ -2840,6 +2924,13 @@ class ImportHandler
             }//end if
 
             foreach ($objects as $objectData) {
+                // Strip + capture _relatedItems before any other processing.
+                // Must happen before the object is persisted so the marker
+                // never reaches the database. Tasks/notes/files are created
+                // AFTER successful insert so we have a real UUID to link to.
+                $relatedItems = ($objectData['_relatedItems'] ?? null);
+                unset($objectData['_relatedItems']);
+
                 // Check if object has @self with external configuration reference.
                 // This allows seedData from one app to reference schemas/registers from another app's configuration.
                 $selfData          = $objectData['@self'] ?? null;
@@ -3081,6 +3172,18 @@ class ImportHandler
                             'slug'      => $objectSlug,
                         ]
                     );
+
+                    if (is_array($relatedItems) === true && count($relatedItems) > 0) {
+                        $this->processRelatedItems(
+                            object: $createdObject,
+                            relatedItems: $relatedItems,
+                            registerId: (int) $targetRegId,
+                            schemaId: (int) $objectSchema->getId(),
+                            objectTitle: (string) ($objectData['title'] ?? $objectSlug),
+                            hasUserContext: $hasUserContext,
+                            result: $result
+                        );
+                    }
                 } catch (Exception $e) {
                     $this->logger->error(
                         message: "[ImportHandler] Failed to import seed for '{$schemaSlug}': ".$e->getMessage(),
@@ -3098,13 +3201,179 @@ class ImportHandler
         $this->logger->info(
             message: '[ImportHandler] Seed data import complete',
             context: [
-                'file'         => __FILE__,
-                'line'         => __LINE__,
-                'config_title' => $configData['info']['title'] ?? 'unknown',
-                'imported'     => count($result['objects']),
+                'file'           => __FILE__,
+                'line'           => __LINE__,
+                'config_title'   => $configData['info']['title'] ?? 'unknown',
+                'imported'       => count($result['objects']),
+                'related_files'  => $result['relatedFiles'] ?? 0,
+                'related_notes'  => $result['relatedNotes'] ?? 0,
+                'related_tasks'  => $result['relatedTasks'] ?? 0,
             ]
         );
     }//end importSeedData()
+
+    /**
+     * Create related Nextcloud items (files, notes, tasks) for a freshly
+     * seeded object. Each item type is attempted independently so a
+     * failure in one doesn't block the others.
+     *
+     * @param array<string, mixed> $relatedItems The `_relatedItems` payload — keys: files, notes, tasks.
+     * @param array<string, mixed> $result       Result accumulator updated in place with related-item counts.
+     */
+    private function processRelatedItems(
+        ObjectEntity $object,
+        array $relatedItems,
+        int $registerId,
+        int $schemaId,
+        string $objectTitle,
+        bool $hasUserContext,
+        array &$result
+    ): void {
+        $files = (array) ($relatedItems['files'] ?? []);
+        $notes = (array) ($relatedItems['notes'] ?? []);
+        $tasks = (array) ($relatedItems['tasks'] ?? []);
+
+        $this->logger->info(
+            message: '[ImportHandler] Processing related items for seed object',
+            context: [
+                'file'         => __FILE__,
+                'line'         => __LINE__,
+                'object_uuid'  => $object->getUuid(),
+                'files_count'  => count($files),
+                'notes_count'  => count($notes),
+                'tasks_count'  => count($tasks),
+            ]
+        );
+
+        $filesCreated = 0;
+        $notesCreated = 0;
+        $tasksCreated = 0;
+
+        if (count($files) > 0 && $this->fileService !== null) {
+            foreach ($files as $fileSpec) {
+                $name    = (string) ($fileSpec['name'] ?? '');
+                $content = ($fileSpec['content'] ?? null);
+                if ($name === '' || is_string($content) === false) {
+                    continue;
+                }
+                $tags  = (array) ($fileSpec['tags']  ?? []);
+                $share = (bool)  ($fileSpec['share'] ?? false);
+
+                // `base64:` prefix means the content was encoded; strip + decode.
+                if (str_starts_with($content, 'base64:') === true) {
+                    $decoded = base64_decode(substr($content, 7), strict: true);
+                    if ($decoded === false) {
+                        $this->logger->warning(
+                            message: '[ImportHandler] Seed file base64 decode failed - skipping',
+                            context: ['object_uuid' => $object->getUuid(), 'name' => $name]
+                        );
+                        continue;
+                    }
+                    $content = $decoded;
+                }
+
+                try {
+                    $this->fileService->addFile($object, $name, $content, $share, $tags);
+                    $filesCreated++;
+                } catch (\Throwable $e) {
+                    $this->logger->warning(
+                        message: '[ImportHandler] Seed file creation failed',
+                        context: [
+                            'object_uuid' => $object->getUuid(),
+                            'name'        => $name,
+                            'error'       => $e->getMessage(),
+                        ]
+                    );
+                }
+            }
+        }
+
+        if (count($notes) > 0 && $this->noteService !== null) {
+            if ($hasUserContext === false) {
+                $this->logger->warning(
+                    message: '[ImportHandler] Skipping seed notes - no user session available',
+                    context: ['object_uuid' => $object->getUuid(), 'count' => count($notes)]
+                );
+            } else {
+                foreach ($notes as $noteSpec) {
+                    $message = (string) ($noteSpec['message'] ?? '');
+                    if ($message === '') {
+                        continue;
+                    }
+                    try {
+                        $this->noteService->createNote((string) $object->getUuid(), $message);
+                        $notesCreated++;
+                    } catch (\Throwable $e) {
+                        $this->logger->warning(
+                            message: '[ImportHandler] Seed note creation failed',
+                            context: [
+                                'object_uuid' => $object->getUuid(),
+                                'error'       => $e->getMessage(),
+                            ]
+                        );
+                    }
+                }
+            }
+        }
+
+        if (count($tasks) > 0 && $this->taskService !== null) {
+            if ($hasUserContext === false) {
+                $this->logger->warning(
+                    message: '[ImportHandler] Skipping seed tasks - no user session available',
+                    context: ['object_uuid' => $object->getUuid(), 'count' => count($tasks)]
+                );
+            } else {
+                foreach ($tasks as $taskSpec) {
+                    $summary = (string) ($taskSpec['summary'] ?? '');
+                    if ($summary === '') {
+                        continue;
+                    }
+                    $taskData = [
+                        'summary'     => $summary,
+                        'description' => (string) ($taskSpec['description'] ?? ''),
+                        'status'      => (string) ($taskSpec['status'] ?? 'needs-action'),
+                        'priority'    => (int) ($taskSpec['priority'] ?? 0),
+                        'due'         => $taskSpec['due'] ?? null,
+                    ];
+                    try {
+                        $this->taskService->createTask(
+                            $registerId,
+                            $schemaId,
+                            (string) $object->getUuid(),
+                            $objectTitle,
+                            $taskData
+                        );
+                        $tasksCreated++;
+                    } catch (\Throwable $e) {
+                        $this->logger->warning(
+                            message: '[ImportHandler] Seed task creation failed',
+                            context: [
+                                'object_uuid' => $object->getUuid(),
+                                'summary'     => $summary,
+                                'error'       => $e->getMessage(),
+                            ]
+                        );
+                    }
+                }
+            }
+        }
+
+        $result['relatedFiles'] = ($result['relatedFiles'] ?? 0) + $filesCreated;
+        $result['relatedNotes'] = ($result['relatedNotes'] ?? 0) + $notesCreated;
+        $result['relatedTasks'] = ($result['relatedTasks'] ?? 0) + $tasksCreated;
+
+        $this->logger->debug(
+            message: '[ImportHandler] Related items processed for seed object',
+            context: [
+                'file'           => __FILE__,
+                'line'           => __LINE__,
+                'object_uuid'    => $object->getUuid(),
+                'files_created'  => $filesCreated,
+                'notes_created'  => $notesCreated,
+                'tasks_created'  => $tasksCreated,
+            ]
+        );
+    }//end processRelatedItems()
 
     /**
      * Ensure Nextcloud app dependencies are met for seedData import.

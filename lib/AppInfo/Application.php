@@ -516,6 +516,30 @@ class Application extends App implements IBootstrap
             $importHandler->setWorkflowEngineRegistry($container->get(WorkflowEngineRegistry::class));
             $importHandler->setDeployedWorkflowMapper($container->get(DeployedWorkflowMapper::class));
 
+            // Optional: services used by seed-related-items to attach files /
+            // notes / tasks. Wrapped in try/catch so a missing dependency
+            // doesn't break import for apps that don't seed related items.
+            try {
+                $importHandler->setFileService($container->get(\OCA\OpenRegister\Service\FileService::class));
+            } catch (\Throwable $e) {
+                $logger->debug('[Application] FileService unavailable for ImportHandler: ' . $e->getMessage());
+            }
+            try {
+                $importHandler->setNoteService($container->get(\OCA\OpenRegister\Service\NoteService::class));
+            } catch (\Throwable $e) {
+                $logger->debug('[Application] NoteService unavailable for ImportHandler: ' . $e->getMessage());
+            }
+            try {
+                $importHandler->setTaskService($container->get(\OCA\OpenRegister\Service\TaskService::class));
+            } catch (\Throwable $e) {
+                $logger->debug('[Application] TaskService unavailable for ImportHandler: ' . $e->getMessage());
+            }
+            try {
+                $importHandler->setUserSession($container->get('OCP\IUserSession'));
+            } catch (\Throwable $e) {
+                $logger->debug('[Application] IUserSession unavailable for ImportHandler: ' . $e->getMessage());
+            }
+
             return $importHandler;
         };
 
