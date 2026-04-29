@@ -36,9 +36,9 @@ final class NotificationAnnotationValidator
 
     private const VALID_TRIGGERS  = ['created', 'updated', 'transition'];
 
-    private const VALID_RECIPIENT_KINDS = ['users', 'field', 'groups', 'relation'];
+    private const VALID_RECIPIENT_KINDS = ['users', 'field', 'groups', 'relation', 'object-acl', 'expression'];
 
-    private const VALID_CHANNELS = ['nc-notification', 'email', 'activity', 'webhook'];
+    private const VALID_CHANNELS = ['nc-notification', 'email', 'activity', 'webhook', 'talk'];
 
     /**
      * @param array<string, mixed> $schema Full schema (must include `properties`).
@@ -99,6 +99,14 @@ final class NotificationAnnotationValidator
                 }
             }
 
+            // When the `talk` channel is declared, the spec MUST include a `talk.token`.
+            if (is_array($channels) === true && in_array('talk', $channels, true) === true) {
+                $talk = ($spec['talk'] ?? null);
+                if (is_array($talk) === false || empty($talk['token']) === true || is_string($talk['token']) === false) {
+                    $errors[] = ['code' => 'notification-talk-no-token', 'message' => sprintf('Notification "%s" declares the `talk` channel but talk.token is missing or not a string.', $name)];
+                }
+            }
+
             $recipients = ($spec['recipients'] ?? []);
             if (is_array($recipients) === false || count($recipients) === 0) {
                 $errors[] = ['code' => 'notification-no-recipients', 'message' => sprintf('Notification "%s" must declare at least one recipient.', $name)];
@@ -120,6 +128,18 @@ final class NotificationAnnotationValidator
                     $field = (string) ($recipient['field'] ?? '');
                     if ($field === '' || in_array($field, $propKeys, true) === false) {
                         $errors[] = ['code' => 'notification-recipient-field-unknown', 'message' => sprintf('Notification "%s" recipient[%d] field "%s" is not declared on the schema.', $name, $i, $field)];
+                    }
+                }
+                if ($kind === 'object-acl') {
+                    $perm = (string) ($recipient['permission'] ?? '');
+                    if (in_array($perm, ['read', 'manage'], true) === false) {
+                        $errors[] = ['code' => 'notification-recipient-acl-bad-permission', 'message' => sprintf('Notification "%s" recipient[%d] kind=object-acl requires permission in [read, manage]; got "%s".', $name, $i, $perm)];
+                    }
+                }
+                if ($kind === 'expression') {
+                    $resolver = (string) ($recipient['resolver'] ?? '');
+                    if ($resolver === '') {
+                        $errors[] = ['code' => 'notification-recipient-expression-no-resolver', 'message' => sprintf('Notification "%s" recipient[%d] kind=expression requires a resolver string (DI tag or FQCN).', $name, $i)];
                     }
                 }
             }

@@ -104,9 +104,10 @@ final class AggregationRunner
         );
         if ($native !== null) {
             return [
-                'name'   => $name,
-                'metric' => $metric,
-                'field'  => is_string($field) === true ? $field : null,
+                'name'    => $name,
+                'metric'  => $metric,
+                'field'   => is_string($field) === true ? $field : null,
+                'backend' => 'postgres',
             ] + $native;
         }
 
@@ -129,18 +130,20 @@ final class AggregationRunner
 
         if (is_array($groupBy) === true && isset($groupBy['field']) === true) {
             return [
-                'name'   => $name,
-                'metric' => $metric,
-                'field'  => is_string($field) === true ? $field : null,
-                'groups' => $this->computeGrouped($rows, $metric, $field, (string) $groupBy['field']),
+                'name'    => $name,
+                'metric'  => $metric,
+                'field'   => is_string($field) === true ? $field : null,
+                'backend' => 'php-fallback',
+                'groups'  => $this->computeGrouped($rows, $metric, $field, (string) $groupBy['field']),
             ];
         }
 
         return [
-            'name'   => $name,
-            'metric' => $metric,
-            'field'  => is_string($field) === true ? $field : null,
-            'value'  => $this->computeMetric($rows, $metric, $field),
+            'name'    => $name,
+            'metric'  => $metric,
+            'field'   => is_string($field) === true ? $field : null,
+            'backend' => 'php-fallback',
+            'value'   => $this->computeMetric($rows, $metric, $field),
         ];
     }//end run()
 
@@ -341,11 +344,19 @@ final class AggregationRunner
             return null;
         }
 
-        // Reject filters with operator shapes (gte/lte/in/etc) — they need
-        // more careful SQL translation. Equality only for v1 native path.
+        // Validate filter shapes are translatable. Supported:
+        //   {field: scalar}              → field = ?
+        //   {field: {in: [...]}}         → field IN (?, ?, ?)
+        //   {field: {gt|gte|lt|lte: x}}  → field > / >= / < / <= ?
+        //   {field: {ne: x}}             → field <> ?
+        // Reject anything else.
         foreach ($filter as $value) {
             if (is_array($value) === true) {
-                return null;
+                foreach (array_keys($value) as $op) {
+                    if (in_array((string) $op, ['in', 'gt', 'gte', 'lt', 'lte', 'ne'], true) === false) {
+                        return null;
+                    }
+                }
             }
         }
 
@@ -361,9 +372,42 @@ final class AggregationRunner
         $whereParts  = ["(_deleted IS NULL OR _deleted = 'null'::jsonb)"];
         $bindings    = [];
         foreach ($filter as $f => $v) {
-            $col          = $this->sanitizeColumnName((string) $f);
-            $whereParts[] = '"'.$col.'" = ?';
-            $bindings[]   = (string) $v;
+            $col = $this->sanitizeColumnName((string) $f);
+            if (is_array($v) === false) {
+                $whereParts[] = '"'.$col.'" = ?';
+                $bindings[]   = $this->bindValue($v);
+                continue;
+            }
+            foreach ($v as $op => $opValue) {
+                if ($op === 'in') {
+                    $list = is_array($opValue) === true ? $opValue : [];
+                    if (count($list) === 0) {
+                        // `in` with empty list never matches; emit a no-op
+                        // condition that returns no rows.
+                        $whereParts[] = '1 = 0';
+                        continue;
+                    }
+                    $placeholders = implode(', ', array_fill(0, count($list), '?'));
+                    $whereParts[] = '"'.$col.'" IN ('.$placeholders.')';
+                    foreach ($list as $item) {
+                        $bindings[] = $this->bindValue($item);
+                    }
+                    continue;
+                }
+                $sqlOp = match ((string) $op) {
+                    'gt'  => '>',
+                    'gte' => '>=',
+                    'lt'  => '<',
+                    'lte' => '<=',
+                    'ne'  => '<>',
+                    default => null,
+                };
+                if ($sqlOp === null) {
+                    continue;
+                }
+                $whereParts[] = '"'.$col.'" '.$sqlOp.' ?';
+                $bindings[]   = $this->bindValue($opValue);
+            }
         }
         $whereSql = implode(' AND ', $whereParts);
 
@@ -417,6 +461,25 @@ final class AggregationRunner
             return null;
         }
     }//end tryNativeAggregation()
+
+    /**
+     * Convert a value to its SQL bind shape.
+     *
+     * DateTimeImmutable values come from the PlaceholderResolver
+     * (e.g. `$startOfMonth`) — coerce them to ISO-8601 so they bind
+     * cleanly against text/date columns. Other values pass through
+     * as strings.
+     */
+    private function bindValue(mixed $value): string
+    {
+        if ($value instanceof DateTimeInterface) {
+            return $value->format(DateTimeInterface::ATOM);
+        }
+        if (is_bool($value) === true) {
+            return $value ? 'true' : 'false';
+        }
+        return (string) $value;
+    }//end bindValue()
 
     /**
      * Convert a property name to its magic-table column name. Mirrors

@@ -160,6 +160,106 @@ class NotificationAnnotationValidatorTest extends TestCase
         $this->assertSame([], $errors);
     }
 
+    public function testObjectAclRecipientRequiresPermission(): void
+    {
+        $errors = $this->v->validate([
+            'x-openregister-notifications' => [
+                'opened' => [
+                    'trigger' => ['type' => 'created'],
+                    'recipients' => [['kind' => 'object-acl']],
+                    'channels' => ['nc-notification'],
+                    'subject' => 'x',
+                ],
+            ],
+            'properties' => [],
+        ]);
+        $codes = array_column($errors, 'code');
+        $this->assertContains('notification-recipient-acl-bad-permission', $codes);
+    }
+
+    public function testObjectAclWithReadPermissionAccepted(): void
+    {
+        $errors = $this->v->validate([
+            'x-openregister-notifications' => [
+                'opened' => [
+                    'trigger' => ['type' => 'created'],
+                    'recipients' => [['kind' => 'object-acl', 'permission' => 'read']],
+                    'channels' => ['nc-notification'],
+                    'subject' => 'x',
+                ],
+            ],
+            'properties' => [],
+        ]);
+        $this->assertSame([], $errors);
+    }
+
+    public function testExpressionRecipientRequiresResolver(): void
+    {
+        $errors = $this->v->validate([
+            'x-openregister-notifications' => [
+                'opened' => [
+                    'trigger' => ['type' => 'created'],
+                    'recipients' => [['kind' => 'expression']],
+                    'channels' => ['nc-notification'],
+                    'subject' => 'x',
+                ],
+            ],
+            'properties' => [],
+        ]);
+        $codes = array_column($errors, 'code');
+        $this->assertContains('notification-recipient-expression-no-resolver', $codes);
+    }
+
+    public function testExpressionRecipientWithResolverAccepted(): void
+    {
+        $errors = $this->v->validate([
+            'x-openregister-notifications' => [
+                'opened' => [
+                    'trigger' => ['type' => 'created'],
+                    'recipients' => [['kind' => 'expression', 'resolver' => 'OCA\\Foo\\Resolver']],
+                    'channels' => ['nc-notification'],
+                    'subject' => 'x',
+                ],
+            ],
+            'properties' => [],
+        ]);
+        $this->assertSame([], $errors);
+    }
+
+    public function testTalkChannelRequiresToken(): void
+    {
+        $errors = $this->v->validate([
+            'x-openregister-notifications' => [
+                'opened' => [
+                    'trigger' => ['type' => 'transition', 'action' => 'open'],
+                    'recipients' => [['kind' => 'users', 'users' => ['admin']]],
+                    'channels' => ['talk'],
+                    'subject' => 'x',
+                ],
+            ],
+            'properties' => [],
+        ]);
+        $codes = array_column($errors, 'code');
+        $this->assertContains('notification-talk-no-token', $codes);
+    }
+
+    public function testTalkChannelWithTokenAccepted(): void
+    {
+        $errors = $this->v->validate([
+            'x-openregister-notifications' => [
+                'opened' => [
+                    'trigger' => ['type' => 'transition', 'action' => 'open'],
+                    'recipients' => [['kind' => 'users', 'users' => ['admin']]],
+                    'channels' => ['talk'],
+                    'talk' => ['token' => 'abc123'],
+                    'subject' => 'x',
+                ],
+            ],
+            'properties' => [],
+        ]);
+        $this->assertSame([], $errors);
+    }
+
     public function testEmailAndActivityChannelsAccepted(): void
     {
         $errors = $this->v->validate([

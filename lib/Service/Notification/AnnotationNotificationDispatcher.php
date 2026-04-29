@@ -81,7 +81,7 @@ final class AnnotationNotificationDispatcher
                 continue;
             }
 
-            $recipients = $this->resolveRecipients(($spec['recipients'] ?? []), $data);
+            $recipients = $this->resolveRecipients(($spec['recipients'] ?? []), $data, $object, $context);
             if (count($recipients) === 0) {
                 continue;
             }
@@ -101,6 +101,12 @@ final class AnnotationNotificationDispatcher
                     recipients: $recipients,
                     context: $context
                 );
+            }
+
+            // Talk channel is fired once per dispatch (chat message goes
+            // to the configured Talk room, recipients aren't @-mentioned).
+            if (in_array('talk', $channels, true) === true) {
+                $this->emitTalk(spec: $spec, message: $rendered);
             }
 
             foreach ($recipients as $uid) {
@@ -142,6 +148,62 @@ final class AnnotationNotificationDispatcher
      * @param array<int, string>   $recipients Resolved recipient uids.
      * @param array<string, mixed> $context    Trigger context (action, from, to).
      */
+    /**
+     * Post a chat message into a Talk room.
+     *
+     * Uses the standard NC Talk REST API at
+     * /ocs/v2.php/apps/spreed/api/v1/chat/{token}. Goes through the
+     * server-local HTTP loopback so we avoid round-tripping the public
+     * URL — Talk routes are local. Skip silently when the Talk app
+     * isn't enabled (status check from the IAppManager would be ideal
+     * but we let the HTTP 404 path log at warning instead).
+     *
+     * @param array<string, mixed> $spec    Notification spec block.
+     * @param string               $message Already-interpolated subject.
+     */
+    private function emitTalk(array $spec, string $message): void
+    {
+        $talk = ($spec['talk'] ?? null);
+        if (is_array($talk) === false) {
+            return;
+        }
+        $token = (string) ($talk['token'] ?? '');
+        if ($token === '') {
+            return;
+        }
+
+        try {
+            $client = $this->httpClient->newClient();
+            // Resolve the local OC URL — Talk's chat endpoint is internal
+            // to the NC instance, so we route via the configured overwrite
+            // host or fall back to the loopback.
+            $base = (string) \OC::$server->get(\OCP\IConfig::class)->getSystemValue('overwrite.cli.url', 'http://localhost');
+            $base = rtrim($base, '/');
+            $url  = $base.'/ocs/v2.php/apps/spreed/api/v1/chat/'.rawurlencode($token);
+
+            $client->post(
+                $url,
+                [
+                    'headers' => [
+                        'OCS-APIRequest' => 'true',
+                        'Accept'         => 'application/json',
+                        'Content-Type'   => 'application/x-www-form-urlencoded',
+                    ],
+                    'body'    => [
+                        'message'   => $message,
+                        'actorType' => 'bots',
+                        'actorId'   => 'openregister',
+                    ],
+                    'timeout' => 5,
+                ]
+            );
+        } catch (\Throwable $e) {
+            $this->logger->warning(
+                sprintf('[AnnotationNotificationDispatcher] talk to "%s" failed: %s', $token, $e->getMessage())
+            );
+        }
+    }//end emitTalk()
+
     private function emitWebhook(
         array $spec,
         ObjectEntity $object,
@@ -223,7 +285,7 @@ final class AnnotationNotificationDispatcher
      *
      * @return array<int, string>
      */
-    private function resolveRecipients(array $recipientsSpec, array $data): array
+    private function resolveRecipients(array $recipientsSpec, array $data, ?ObjectEntity $object = null, array $context = []): array
     {
         $uids = [];
         foreach ($recipientsSpec as $r) {
@@ -262,6 +324,24 @@ final class AnnotationNotificationDispatcher
                 }
                 continue;
             }
+            if ($kind === 'object-acl') {
+                if ($object !== null) {
+                    $perm = (string) ($r['permission'] ?? 'read');
+                    foreach ($this->resolveObjectAclRecipients($object, $perm) as $uid) {
+                        $uids[] = $uid;
+                    }
+                }
+                continue;
+            }
+            if ($kind === 'expression') {
+                if ($object !== null) {
+                    $resolverTag = (string) ($r['resolver'] ?? '');
+                    foreach ($this->resolveExpressionRecipients($resolverTag, $object, $context) as $uid) {
+                        $uids[] = $uid;
+                    }
+                }
+                continue;
+            }
             if ($kind === 'groups') {
                 foreach ((array) ($r['groups'] ?? []) as $gid) {
                     if (is_string($gid) === false || $gid === '') {
@@ -285,6 +365,90 @@ final class AnnotationNotificationDispatcher
         }
         return array_values(array_unique($uids));
     }//end resolveRecipients()
+
+    /**
+     * Resolve recipients from the object's per-object ACL.
+     *
+     * Reads `$object->getAuthorization()` (Schema entity carries the
+     * permission map per object). Returns every uid (and group-member
+     * uids) holding the requested permission level.
+     *
+     * v1 implementation: best-effort. Reads the object's `groups` and
+     * `owner` fields directly. Per-object ACL granularity (read vs
+     * manage) is treated as: `read` matches any user/group in the ACL;
+     * `manage` matches only the object owner. A future iteration can
+     * walk the full RBAC `OrObjectAclMapper` once that surface is
+     * stable.
+     *
+     * @return array<int, string>
+     */
+    private function resolveObjectAclRecipients(ObjectEntity $object, string $permission): array
+    {
+        $uids  = [];
+        $owner = $object->getOwner();
+        if (is_string($owner) === true && $owner !== '') {
+            $uids[] = $owner;
+        }
+        if ($permission === 'manage') {
+            return $uids;
+        }
+        // Read permission: also include groups via getGroups().
+        try {
+            $groupsRaw = method_exists($object, 'getGroups') === true ? $object->getGroups() : null;
+            if (is_array($groupsRaw) === true) {
+                foreach ($groupsRaw as $gid) {
+                    if (is_string($gid) === false || $gid === '') {
+                        continue;
+                    }
+                    $group = $this->groupManager->get($gid);
+                    if ($group === null) {
+                        continue;
+                    }
+                    foreach ($group->getUsers() as $user) {
+                        $uids[] = $user->getUID();
+                    }
+                }
+            }
+        } catch (\Throwable $e) {
+            $this->logger->warning(
+                sprintf('[AnnotationNotificationDispatcher] object-acl read resolution failed: %s', $e->getMessage())
+            );
+        }
+        return $uids;
+    }//end resolveObjectAclRecipients()
+
+    /**
+     * Resolve recipients via a DI-tagged RecipientResolverInterface.
+     *
+     * Looks up the resolver via \OC::$server (server container) so apps
+     * can register their resolver class by FQCN and have NC autowire
+     * its dependencies. Skips silently when the resolver doesn't exist
+     * or doesn't implement the interface.
+     *
+     * @param array<string, mixed> $context
+     * @return array<int, string>
+     */
+    private function resolveExpressionRecipients(string $resolverTag, ObjectEntity $object, array $context): array
+    {
+        if ($resolverTag === '') {
+            return [];
+        }
+        try {
+            $resolver = \OC::$server->get($resolverTag);
+            if (($resolver instanceof RecipientResolverInterface) === false) {
+                $this->logger->warning(
+                    sprintf('[AnnotationNotificationDispatcher] expression resolver "%s" does not implement RecipientResolverInterface', $resolverTag)
+                );
+                return [];
+            }
+            return array_values($resolver->resolve($object, $context));
+        } catch (\Throwable $e) {
+            $this->logger->warning(
+                sprintf('[AnnotationNotificationDispatcher] expression resolver "%s" failed: %s', $resolverTag, $e->getMessage())
+            );
+            return [];
+        }
+    }//end resolveExpressionRecipients()
 
     /**
      * Extract candidate UIDs from a relation value. The relation value
