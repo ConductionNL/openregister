@@ -143,6 +143,8 @@ use OCA\OpenRegister\Listener\GraphQLSubscriptionListener;
 use OCA\OpenRegister\Listener\WebhookEventListener;
 use OCA\OpenRegister\Listener\FilesSidebarListener;
 use OCA\OpenRegister\Listener\HookListener;
+use OCA\OpenRegister\Listener\LifecycleInitialStateListener;
+use OCA\OpenRegister\Listener\LifecycleValidationListener;
 use OCA\OpenRegister\Service\NoteService;
 use OCA\OpenRegister\Service\TaskService;
 use OCP\Comments\CommentsEntityEvent;
@@ -739,6 +741,11 @@ class Application extends App implements IBootstrap
 
         // ToolRegistrationListener for agent function tools.
         $context->registerEventListener(ToolRegistrationEvent::class, ToolRegistrationListener::class);
+
+        // Lifecycle annotation listeners — see x-openregister-lifecycle.
+        // Order matters: initial state runs on creating; validation runs on updating.
+        $context->registerEventListener(ObjectCreatingEvent::class, LifecycleInitialStateListener::class);
+        $context->registerEventListener(ObjectUpdatingEvent::class, LifecycleValidationListener::class);
 
         // HookListener for schema hook execution on lifecycle events.
         $context->registerEventListener(ObjectCreatingEvent::class, HookListener::class);

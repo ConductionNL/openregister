@@ -245,6 +245,9 @@ return [
         ['name' => 'objects#destroy', 'url' => '/api/objects/{register}/{schema}/{id}', 'verb' => 'DELETE', 'requirements' => ['id' => '[^/]+']],
         ['name' => 'objects#canDelete', 'url' => '/api/objects/{register}/{schema}/{id}/can-delete', 'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
         ['name' => 'objects#merge', 'url' => '/api/objects/{register}/{schema}/{id}/merge', 'verb' => 'POST', 'requirements' => ['id' => '[^/]+']],
+        // Lifecycle transitions.
+        ['name' => 'transition#transition', 'url' => '/api/objects/{id}/transition', 'verb' => 'POST', 'requirements' => ['id' => '[^/]+']],
+        ['name' => 'transition#availableActions', 'url' => '/api/objects/{id}/available-actions', 'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
         ['name' => 'objects#migrate', 'url' => '/api/migrate', 'verb' => 'POST'],
         // Relations.
         ['name' => 'objects#contracts', 'url' => '/api/objects/{register}/{schema}/{id}/contracts', 'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
