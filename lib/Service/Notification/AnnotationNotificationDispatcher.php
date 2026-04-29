@@ -216,6 +216,14 @@ class AnnotationNotificationDispatcher
         if (is_array($hook) === false) {
             return;
         }
+        // When the webhook is declared persistent, NotificationsAnnotationInstaller
+        // has already provisioned a Webhook entity that the standard webhook
+        // delivery pipeline (retry, HMAC, dead-letter) handles on the same
+        // events. Skipping here prevents a double-fire (inline POST + pipeline
+        // delivery) for the same notification.
+        if (($hook['persistent'] ?? false) === true) {
+            return;
+        }
         $url = (string) ($hook['url'] ?? '');
         if ($url === '' || filter_var($url, FILTER_VALIDATE_URL) === false) {
             return;

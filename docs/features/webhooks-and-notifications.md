@@ -109,30 +109,68 @@ OpenRegister integrates with Nextcloud's `INotificationManager` for user-facing 
 
 | Channel | Description |
 |---------|-------------|
-| In-app | Nextcloud notification bell (via `INotificationManager`) |
-| Webhook | Delegates to existing webhook delivery pipeline |
-| Email | Via Nextcloud mail system (being replaced by n8n) |
+| `nc-notification` | Nextcloud notification bell (via `INotificationManager`) |
+| `email` | Via `IMailer` (being replaced by n8n) |
+| `activity` | Activity stream entry per recipient |
+| `webhook` | Inline POST per dispatch; with `webhook.persistent: true` an auto-managed `Webhook` entity routes through the standard retry / HMAC / dead-letter pipeline |
+| `talk` | Posts a chat message to the configured Spreed room (one-shot per dispatch, recipients are not @-mentioned) |
 
 ### Notification Rules
 
-Notification rules are configured per schema:
+Rules live on the schema under `configuration['x-openregister-notifications']`. Each entry has `trigger`, `recipients`, `channels`, and a `subject` template (supports `{{prop}}` interpolation).
+
+#### Triggers
+
+| `trigger.type` | Fires when |
+|----------------|-----------|
+| `created` | Object created. |
+| `updated` | Object updated. |
+| `transition` | Object transitioned via the lifecycle state machine. Optional `trigger.action` filters to a specific action. |
+| `scheduled` | Periodic. Requires `trigger.intervalSec >= 60`. The 60s `ScheduledNotificationJob` iterates the schema, optionally narrowed by `trigger.filter` (flat equality match on object data), and dispatches once per interval. |
+| `threshold` | Aggregation crossed a threshold. Requires `trigger.aggregation` (declared on the same schema), `trigger.op` ∈ `[gt, gte, lt, lte, eq, ne]`, and `trigger.value`. `AggregationThresholdListener` re-runs the aggregation on object-write events and dispatches once per below→above transition. |
+
+#### Recipient kinds
+
+| `kind` | Resolution |
+|--------|------------|
+| `users` | Literal list (`recipient.users: [uid, …]`). |
+| `field` | Reads `recipient.field` from the object data, treats the value as a uid. |
+| `groups` | Members of `recipient.groups`. |
+| `relation` | Resolves a typed `x-openregister-relations` field; reads either a uid string, an array of uids, or an array of objects with `userId`. |
+| `object-acl` | ACL holders of the object for the configured `recipient.permission` ∈ `[read, manage]`. |
+| `expression` | Arbitrary resolver class (DI tag in `recipient.resolver`). Must implement `RecipientResolverInterface::resolve(ObjectEntity $object, array $context): string[]`. |
+
+#### Example
 
 ```json
 {
-  "notifications": [
-    {
-      "trigger": "object.created",
-      "recipient": "$owner",
-      "subject": "Nieuwe melding aangemaakt",
-      "template": "melding-aangemaakt"
+  "x-openregister-notifications": {
+    "meetingReminderDaily": {
+      "trigger": {"type": "scheduled", "intervalSec": 86400, "filter": {"lifecycle": "scheduled"}},
+      "recipients": [{"kind": "field", "field": "chair"}],
+      "channels": ["nc-notification", "email"],
+      "subject": "Reminder: {{title}} starts soon"
     },
-    {
-      "trigger": "object.status_changed",
-      "condition": { "field": "status", "value": "afgehandeld" },
-      "recipient": "$owner",
-      "subject": "Uw melding is afgehandeld"
+    "tooManyOverdue": {
+      "trigger": {"type": "threshold", "aggregation": "totalOverdue", "op": "gt", "value": 10},
+      "recipients": [{"kind": "groups", "groups": ["admin"]}],
+      "channels": ["nc-notification", "talk"],
+      "talk": {"token": "abc123def"},
+      "subject": "Action items overdue: {{value}}"
+    },
+    "meetingClosed": {
+      "trigger": {"type": "transition", "action": "close"},
+      "recipients": [{"kind": "object-acl", "permission": "manage"}],
+      "channels": ["webhook"],
+      "webhook": {
+        "persistent": true,
+        "url": "https://example.com/hooks/closed",
+        "events": ["ObjectTransitionedEvent"],
+        "secret": "..."
+      },
+      "subject": "Meeting closed"
     }
-  ]
+  }
 }
 ```
 
