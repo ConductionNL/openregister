@@ -312,27 +312,32 @@ class RegisterCalendar implements ICalendar
             return null;
         }
 
-        $filters = [];
+        // Use canonical operator-filter shape (`field => ['gte' => v, 'lte' => v]`)
+        // — the suffix-on-key form (`'field>='`) is not recognised by the
+        // magic-table search pipeline and silently filters out everything.
+        $rangeOps = [];
 
         if (isset($timerange['start']) === true) {
             $start = $timerange['start'];
             if ($start instanceof \DateTimeInterface) {
-                $start = $start->format('Y-m-d H:i:s');
+                $start = $start->format(\DateTimeInterface::ATOM);
             }
-
-            $filters[$dtstartField.'>='] = (string) $start;
+            $rangeOps['gte'] = (string) $start;
         }
 
         if (isset($timerange['end']) === true) {
             $end = $timerange['end'];
             if ($end instanceof \DateTimeInterface) {
-                $end = $end->format('Y-m-d H:i:s');
+                $end = $end->format(\DateTimeInterface::ATOM);
             }
-
-            $filters[$dtstartField.'<='] = (string) $end;
+            $rangeOps['lte'] = (string) $end;
         }
 
-        return empty($filters) === true ? null : $filters;
+        if (empty($rangeOps) === true) {
+            return null;
+        }
+
+        return [$dtstartField => $rangeOps];
     }//end buildTimerangeFilters()
 
     /**

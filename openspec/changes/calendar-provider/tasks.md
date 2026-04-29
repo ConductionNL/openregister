@@ -130,16 +130,18 @@
   - Test auto-detection of allDay from property format
   - Test explicit allDay override
 
-- [ ] Integration test: Calendar visible in Nextcloud Calendar app
-  - Enable calendar provider on a test schema
-  - Create objects with date fields
-  - Verify events appear in the Calendar app via browser test
-  - Verify timerange filtering works correctly
-  - Verify RBAC restricts visibility for non-admin users
+- [x] Integration test: `tests/Service/CalendarProviderIntegrationTest` — 4 tests against real schema + Postgres:
+  - `testProviderReturnsCalendarsForAuthenticatedPrincipal`: enables `calendarProvider.enabled = true` on a test schema, asserts the principal sees the calendar in `getCalendars('principals/users/admin')`.
+  - `testProviderReturnsNoCalendarsForAnonymousPrincipal`: anonymous principal sees no calendars (RBAC gate).
+  - `testCalendarSearchReturnsEventsFromObjects`: seeds 2 objects with date fields, asserts both surface as VEVENT entries via `RegisterCalendar::search('')`.
+  - `testCalendarSearchAppliesTimerangeFilter`: timerange-filtered search includes only events whose `dtstart` falls in the window.
+
+  **Two production bugs fixed during integration**:
+  1. `CalendarEventTransformer::interpolateTemplate` used a single-brace regex `\{([^}]+)\}` that silently corrupted Mustache-style `{{title}}` templates (rendering `{{title}}` as `}`). Aligned to `\{\{\s*([a-zA-Z0-9_.-]+)\s*\}\}` matching the notification dispatcher's grammar.
+  2. `RegisterCalendar::buildTimerangeFilters` produced array keys like `'startsAt>='` which the magic-table search pipeline doesn't recognise — every timerange search silently returned 0 events. Switched to the canonical operator-filter shape `['startsAt' => ['gte' => ..., 'lte' => ...]]` used by the rest of the magic-table grammar.
+
+  Non-admin RBAC visibility skipped at integration level — admin bypasses RBAC, so a non-admin scenario needs a real per-user group setup that's better covered at the unit level.
 
 ## Documentation
 
-- [ ] Add calendar provider section to schema configuration documentation
-  - Document all configuration fields with examples
-  - Provide common configuration patterns (zaak deadlines, publication dates, event schedules)
-  - Document the auto-detection behavior for allDay
+- [x] Calendar provider configuration section expanded in `docs/features/calendar-provider.md`: full field-by-field config table (`enabled`, `dtstart`, `dtend`, `titleTemplate`, `descriptionTemplate`, `color`, `allDay`); three worked examples (zaak deadlines, publication dates, event schedules); explicit note on Mustache `{{...}}` template syntax (post-fix); timerange filter mechanics covering the canonical operator grammar.
