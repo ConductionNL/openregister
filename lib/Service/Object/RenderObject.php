@@ -146,6 +146,7 @@ class RenderObject
         private readonly ComputedFieldHandler $computedFieldHandler,
         private readonly TranslationHandler $translationHandler,
         private readonly LinkedEntityEnricher $linkedEntityEnricher,
+        private readonly \OCA\OpenRegister\Service\Calculation\CalculationEvaluator $calculationEvaluator,
     ) {
     }//end __construct()
 
@@ -1109,10 +1110,81 @@ class RenderObject
             );
         }
 
+        // Evaluate virtual calculations (`materialise: false`) when the
+        // caller asks for them via _extend. Materialised calcs are
+        // already in $objectData (set by CalculationOnSaveListener).
+        $extendArr = is_array($_extend) === true ? $_extend : ($_extend === null ? [] : [$_extend]);
+        if (in_array('calculations', $extendArr, true) === true) {
+            $objectData = $this->applyVirtualCalculations(
+                entity: $entity,
+                schema: $renderSchema,
+                data: $objectData
+            );
+        }
+
         $entity->setObject($objectData);
 
         return $entity;
     }//end renderEntity()
+
+    /**
+     * Apply virtual (materialise:false) calculations declared on the
+     * schema to the given data array. Materialised calculations are
+     * persisted on save and skipped here.
+     *
+     * @param ObjectEntity                $entity The object being rendered (used for @self.* refs).
+     * @param Schema|null                 $schema The schema definition (may be null).
+     * @param array<string, mixed>        $data   The current rendered data array.
+     *
+     * @return array<string, mixed>
+     */
+    private function applyVirtualCalculations(ObjectEntity $entity, $schema, array $data): array
+    {
+        if ($schema === null) {
+            return $data;
+        }
+        $config = ($schema->getConfiguration() ?? []);
+        $calcs  = ($config['x-openregister-calculations'] ?? null);
+        if (is_array($calcs) === false || count($calcs) === 0) {
+            return $data;
+        }
+
+        $created = $entity->getCreated();
+        $updated = $entity->getUpdated();
+        $payload = $data;
+        $payload['@self'] = [
+            'id'       => $entity->getUuid(),
+            'uuid'     => $entity->getUuid(),
+            'register' => $entity->getRegister(),
+            'schema'   => $entity->getSchema(),
+            'owner'    => $entity->getOwner(),
+            'created'  => $created !== null ? $created->format(\DateTimeInterface::ATOM) : null,
+            'updated'  => $updated !== null ? $updated->format(\DateTimeInterface::ATOM) : null,
+        ];
+
+        foreach ($calcs as $name => $spec) {
+            if (is_array($spec) === false) {
+                continue;
+            }
+            // Skip materialised — already in $data from save-time listener.
+            if (($spec['materialise'] ?? false) === true) {
+                continue;
+            }
+            try {
+                $value = $this->calculationEvaluator->evaluate($payload, $spec['expression'] ?? null);
+                if ($value instanceof \DateTimeInterface) {
+                    $value = $value->format(\DateTimeInterface::ATOM);
+                }
+                $data[(string) $name] = $value;
+            } catch (\Throwable $e) {
+                $this->logger->debug(
+                    sprintf('[RenderObject] Virtual calculation "%s" failed: %s', (string) $name, $e->getMessage())
+                );
+            }
+        }
+
+        return $data;
+    }//end applyVirtualCalculations()
 
     /**
      * Handle extends containing a wildcard ($)
