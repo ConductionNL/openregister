@@ -34,7 +34,7 @@ namespace OCA\OpenRegister\Service\Notification;
 final class NotificationAnnotationValidator
 {
 
-    private const VALID_TRIGGERS  = ['created', 'updated', 'transition'];
+    private const VALID_TRIGGERS  = ['created', 'updated', 'transition', 'scheduled', 'threshold'];
 
     private const VALID_RECIPIENT_KINDS = ['users', 'field', 'groups', 'relation', 'object-acl', 'expression'];
 
@@ -70,9 +70,29 @@ final class NotificationAnnotationValidator
                 continue;
             }
 
-            $trigger = ($spec['trigger'] ?? null);
-            if (is_array($trigger) === false || in_array((string) ($trigger['type'] ?? ''), self::VALID_TRIGGERS, true) === false) {
+            $trigger     = ($spec['trigger'] ?? null);
+            $triggerType = is_array($trigger) === true ? (string) ($trigger['type'] ?? '') : '';
+            if (in_array($triggerType, self::VALID_TRIGGERS, true) === false) {
                 $errors[] = ['code' => 'notification-bad-trigger', 'message' => sprintf('Notification "%s" trigger.type must be one of [%s].', $name, implode(', ', self::VALID_TRIGGERS))];
+            }
+            if ($triggerType === 'scheduled') {
+                $intervalSec = is_array($trigger) === true ? ($trigger['intervalSec'] ?? null) : null;
+                if (is_int($intervalSec) === false || $intervalSec < 60) {
+                    $errors[] = ['code' => 'notification-scheduled-bad-interval', 'message' => sprintf('Notification "%s" trigger.type=scheduled requires trigger.intervalSec (integer >= 60).', $name)];
+                }
+            }
+            if ($triggerType === 'threshold') {
+                $aggregation = is_array($trigger) === true ? (string) ($trigger['aggregation'] ?? '') : '';
+                $op          = is_array($trigger) === true ? (string) ($trigger['op'] ?? '') : '';
+                if ($aggregation === '') {
+                    $errors[] = ['code' => 'notification-threshold-no-aggregation', 'message' => sprintf('Notification "%s" trigger.type=threshold requires trigger.aggregation referencing a declared aggregation.', $name)];
+                }
+                if (in_array($op, ['gt', 'gte', 'lt', 'lte', 'eq', 'ne'], true) === false) {
+                    $errors[] = ['code' => 'notification-threshold-bad-op', 'message' => sprintf('Notification "%s" trigger.type=threshold trigger.op must be one of [gt, gte, lt, lte, eq, ne]; got "%s".', $name, $op)];
+                }
+                if (is_array($trigger) === true && array_key_exists('value', $trigger) === false) {
+                    $errors[] = ['code' => 'notification-threshold-no-value', 'message' => sprintf('Notification "%s" trigger.type=threshold requires trigger.value.', $name)];
+                }
             }
 
             $channels = ($spec['channels'] ?? []);

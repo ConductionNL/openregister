@@ -275,4 +275,89 @@ class NotificationAnnotationValidatorTest extends TestCase
         ]);
         $this->assertSame([], $errors);
     }
+
+    public function testScheduledTriggerRequiresIntervalSec(): void
+    {
+        $errors = $this->v->validate([
+            'x-openregister-notifications' => [
+                'nightly' => [
+                    'trigger' => ['type' => 'scheduled'],
+                    'recipients' => [['kind' => 'users', 'users' => ['admin']]],
+                    'channels' => ['email'],
+                    'subject' => 'x',
+                ],
+            ],
+            'properties' => [],
+        ]);
+        $codes = array_column($errors, 'code');
+        $this->assertContains('notification-scheduled-bad-interval', $codes);
+    }
+
+    public function testScheduledTriggerRejectsTooShortInterval(): void
+    {
+        $errors = $this->v->validate([
+            'x-openregister-notifications' => [
+                'nightly' => [
+                    'trigger' => ['type' => 'scheduled', 'intervalSec' => 30],
+                    'recipients' => [['kind' => 'users', 'users' => ['admin']]],
+                    'channels' => ['email'],
+                    'subject' => 'x',
+                ],
+            ],
+            'properties' => [],
+        ]);
+        $codes = array_column($errors, 'code');
+        $this->assertContains('notification-scheduled-bad-interval', $codes);
+    }
+
+    public function testScheduledTriggerWithIntervalAccepted(): void
+    {
+        $errors = $this->v->validate([
+            'x-openregister-notifications' => [
+                'nightly' => [
+                    'trigger' => ['type' => 'scheduled', 'intervalSec' => 86400],
+                    'recipients' => [['kind' => 'users', 'users' => ['admin']]],
+                    'channels' => ['email'],
+                    'subject' => 'x',
+                ],
+            ],
+            'properties' => [],
+        ]);
+        $this->assertSame([], $errors);
+    }
+
+    public function testThresholdTriggerRequiresAggregationOpAndValue(): void
+    {
+        $errors = $this->v->validate([
+            'x-openregister-notifications' => [
+                'overLimit' => [
+                    'trigger' => ['type' => 'threshold'],
+                    'recipients' => [['kind' => 'users', 'users' => ['admin']]],
+                    'channels' => ['email'],
+                    'subject' => 'x',
+                ],
+            ],
+            'properties' => [],
+        ]);
+        $codes = array_column($errors, 'code');
+        $this->assertContains('notification-threshold-no-aggregation', $codes);
+        $this->assertContains('notification-threshold-bad-op', $codes);
+        $this->assertContains('notification-threshold-no-value', $codes);
+    }
+
+    public function testThresholdTriggerWithFullSpecAccepted(): void
+    {
+        $errors = $this->v->validate([
+            'x-openregister-notifications' => [
+                'overLimit' => [
+                    'trigger' => ['type' => 'threshold', 'aggregation' => 'totalCount', 'op' => 'gt', 'value' => 100],
+                    'recipients' => [['kind' => 'users', 'users' => ['admin']]],
+                    'channels' => ['email'],
+                    'subject' => 'x',
+                ],
+            ],
+            'properties' => [],
+        ]);
+        $this->assertSame([], $errors);
+    }
 }

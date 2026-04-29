@@ -12,10 +12,12 @@ use OCP\EventDispatcher\IEventDispatcher;
 use OCP\IAvatarManager;
 use OCP\IAvatar;
 use OCP\IConfig;
+use OCP\IDBConnection;
 use OCP\IGroupManager;
 use OCP\IUser;
 use OCP\IUserManager;
 use OCP\IUserSession;
+use OCP\L10N\IFactory;
 use OCP\Security\ISecureRandom;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
@@ -41,6 +43,8 @@ class UserServiceProfileActionsTest extends TestCase
     private IAvatarManager&MockObject $avatarManager;
     private AuditTrailMapper&MockObject $auditTrailMapper;
     private ISecureRandom&MockObject $secureRandom;
+    private IDBConnection&MockObject $db;
+    private IFactory&MockObject $l10nFactory;
 
     protected function setUp(): void
     {
@@ -57,6 +61,8 @@ class UserServiceProfileActionsTest extends TestCase
         $this->avatarManager = $this->createMock(IAvatarManager::class);
         $this->auditTrailMapper = $this->createMock(AuditTrailMapper::class);
         $this->secureRandom = $this->createMock(ISecureRandom::class);
+        $this->db = $this->createMock(IDBConnection::class);
+        $this->l10nFactory = $this->createMock(IFactory::class);
 
         $this->service = new UserService(
             $this->userManager,
@@ -69,7 +75,9 @@ class UserServiceProfileActionsTest extends TestCase
             $this->eventDispatcher,
             $this->avatarManager,
             $this->auditTrailMapper,
-            $this->secureRandom
+            $this->secureRandom,
+            $this->db,
+            $this->l10nFactory
         );
     }
 

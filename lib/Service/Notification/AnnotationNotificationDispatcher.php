@@ -38,7 +38,7 @@ use Psr\Log\LoggerInterface;
 /**
  * Reads notification annotations and dispatches matching ones.
  */
-final class AnnotationNotificationDispatcher
+class AnnotationNotificationDispatcher
 {
 
     public function __construct(

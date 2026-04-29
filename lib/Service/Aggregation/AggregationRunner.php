@@ -40,7 +40,7 @@ use RuntimeException;
 /**
  * Runs a named aggregation against a schema.
  */
-final class AggregationRunner
+class AggregationRunner
 {
 
     public function __construct(
@@ -48,7 +48,8 @@ final class AggregationRunner
         private readonly RegisterMapper $registerMapper,
         private readonly SchemaMapper $schemaMapper,
         private readonly PlaceholderResolver $placeholders,
-        private readonly IDBConnection $db
+        private readonly IDBConnection $db,
+        private readonly AggregationCache $cache
     ) {}//end __construct()
 
     /**
@@ -91,6 +92,25 @@ final class AggregationRunner
 
         $resolvedFilter = $this->placeholders->resolveArray($filter);
 
+        // Cache lookup: the resolved filter (with placeholders concrete)
+        // is the cache key together with the user's RBAC scope. 60s TTL.
+        $cacheKey = [
+            'metric'  => $metric,
+            'field'   => $field,
+            'filter'  => $resolvedFilter,
+            'groupBy' => $groupBy,
+        ];
+        $cached = $this->cache->get(
+            registerSlug: (string) $register->getSlug(),
+            schemaSlug: (string) $schema->getSlug(),
+            name: $name,
+            filter: $cacheKey
+        );
+        if ($cached !== null) {
+            $cached['cached'] = true;
+            return $cached;
+        }
+
         // Try the Postgres-native fast path. Falls back to PHP when the
         // query shape isn't supported (operator filters, complex values,
         // non-Postgres DB, etc).
@@ -103,12 +123,20 @@ final class AggregationRunner
             groupBy: is_array($groupBy) === true ? $groupBy : null
         );
         if ($native !== null) {
-            return [
+            $result = [
                 'name'    => $name,
                 'metric'  => $metric,
                 'field'   => is_string($field) === true ? $field : null,
                 'backend' => 'postgres',
             ] + $native;
+            $this->cache->set(
+                registerSlug: (string) $register->getSlug(),
+                schemaSlug: (string) $schema->getSlug(),
+                name: $name,
+                filter: $cacheKey,
+                result: $result
+            );
+            return $result;
         }
 
         // Fall back: pull all objects and filter in PHP.
@@ -129,22 +157,30 @@ final class AggregationRunner
         $rows = $this->applyFilter($rows, $resolvedFilter);
 
         if (is_array($groupBy) === true && isset($groupBy['field']) === true) {
-            return [
+            $result = [
                 'name'    => $name,
                 'metric'  => $metric,
                 'field'   => is_string($field) === true ? $field : null,
                 'backend' => 'php-fallback',
                 'groups'  => $this->computeGrouped($rows, $metric, $field, (string) $groupBy['field']),
             ];
+        } else {
+            $result = [
+                'name'    => $name,
+                'metric'  => $metric,
+                'field'   => is_string($field) === true ? $field : null,
+                'backend' => 'php-fallback',
+                'value'   => $this->computeMetric($rows, $metric, $field),
+            ];
         }
-
-        return [
-            'name'    => $name,
-            'metric'  => $metric,
-            'field'   => is_string($field) === true ? $field : null,
-            'backend' => 'php-fallback',
-            'value'   => $this->computeMetric($rows, $metric, $field),
-        ];
+        $this->cache->set(
+            registerSlug: (string) $register->getSlug(),
+            schemaSlug: (string) $schema->getSlug(),
+            name: $name,
+            filter: $cacheKey,
+            result: $result
+        );
+        return $result;
     }//end run()
 
     /**

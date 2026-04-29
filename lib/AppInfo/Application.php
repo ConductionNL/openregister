@@ -142,7 +142,10 @@ use OCA\OpenRegister\Listener\ToolRegistrationListener;
 use OCA\OpenRegister\Listener\GraphQLSubscriptionListener;
 use OCA\OpenRegister\Listener\WebhookEventListener;
 use OCA\OpenRegister\Listener\FilesSidebarListener;
+use OCA\OpenRegister\Listener\AggregationCacheInvalidationListener;
+use OCA\OpenRegister\Listener\AggregationThresholdListener;
 use OCA\OpenRegister\Listener\AnnotationNotificationListener;
+use OCA\OpenRegister\Service\Notification\NotificationsAnnotationInstaller;
 use OCA\OpenRegister\Notification\AnnotationNotifier;
 use OCA\OpenRegister\Listener\CalculationOnSaveListener;
 use OCA\OpenRegister\Listener\HookListener;
@@ -766,6 +769,22 @@ class Application extends App implements IBootstrap
         $context->registerEventListener(ObjectCreatedEvent::class, AnnotationNotificationListener::class);
         $context->registerEventListener(ObjectUpdatedEvent::class, AnnotationNotificationListener::class);
         $context->registerEventListener(ObjectTransitionedEvent::class, AnnotationNotificationListener::class);
+
+        // Aggregation cache eviction on every object write.
+        $context->registerEventListener(ObjectCreatedEvent::class, AggregationCacheInvalidationListener::class);
+        $context->registerEventListener(ObjectUpdatedEvent::class, AggregationCacheInvalidationListener::class);
+        $context->registerEventListener(ObjectDeletedEvent::class, AggregationCacheInvalidationListener::class);
+        $context->registerEventListener(ObjectTransitionedEvent::class, AggregationCacheInvalidationListener::class);
+
+        // Webhook auto-create installer for x-openregister-notifications with webhook.persistent: true.
+        $context->registerEventListener(SchemaCreatedEvent::class, NotificationsAnnotationInstaller::class);
+        $context->registerEventListener(SchemaUpdatedEvent::class, NotificationsAnnotationInstaller::class);
+
+        // Threshold trigger evaluator: re-runs aggregations on writes and dispatches when thresholds are crossed.
+        $context->registerEventListener(ObjectCreatedEvent::class, AggregationThresholdListener::class);
+        $context->registerEventListener(ObjectUpdatedEvent::class, AggregationThresholdListener::class);
+        $context->registerEventListener(ObjectDeletedEvent::class, AggregationThresholdListener::class);
+        $context->registerEventListener(ObjectTransitionedEvent::class, AggregationThresholdListener::class);
 
         // HookListener for schema hook execution on lifecycle events.
         $context->registerEventListener(ObjectCreatingEvent::class, HookListener::class);
