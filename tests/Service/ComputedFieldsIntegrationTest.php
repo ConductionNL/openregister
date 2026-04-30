@@ -187,6 +187,91 @@ class ComputedFieldsIntegrationTest extends TestCase
         $this->assertNull($result['broken'], 'invalid expression MUST evaluate to null, not crash the save');
     }
 
+    public function testDetectCircularDependenciesEmptyForAcyclicSchema(): void
+    {
+        // a -> b -> c -> (constant). No cycle.
+        $schema = $this->makeSchema([
+            'a' => ['type' => 'string', 'computed' => ['expression' => '{{ b }}']],
+            'b' => ['type' => 'string', 'computed' => ['expression' => '{{ c }}']],
+            'c' => ['type' => 'string', 'computed' => ['expression' => 'static']],
+        ]);
+
+        $cycles = $this->handler->detectCircularDependencies($schema);
+        $this->assertSame([], $cycles, 'acyclic dependency graph MUST yield zero cycles');
+    }
+
+    public function testDetectCircularDependenciesEmptyWhenNoComputed(): void
+    {
+        // No computed properties at all — detector MUST short-circuit
+        // to an empty result rather than walking the trivial graph.
+        $schema = $this->makeSchema([
+            'plain' => ['type' => 'string'],
+        ]);
+
+        $this->assertSame([], $this->handler->detectCircularDependencies($schema));
+    }
+
+    public function testDetectCircularDependenciesFlagsTwoNodeCycle(): void
+    {
+        // a -> b, b -> a. Classic two-node cycle.
+        $schema = $this->makeSchema([
+            'a' => ['type' => 'string', 'computed' => ['expression' => '{{ b }}']],
+            'b' => ['type' => 'string', 'computed' => ['expression' => '{{ a }}']],
+        ]);
+
+        $cycles = $this->handler->detectCircularDependencies($schema);
+
+        $this->assertNotEmpty($cycles, 'a<->b cycle MUST be flagged');
+        $this->assertCount(1, $cycles, 'symmetric cycle MUST be reported once, not twice');
+
+        $cycle = $cycles[0];
+        $this->assertContains('a', $cycle);
+        $this->assertContains('b', $cycle);
+    }
+
+    public function testDetectCircularDependenciesFlagsSelfLoop(): void
+    {
+        // a -> a. Length-1 cycle.
+        $schema = $this->makeSchema([
+            'a' => ['type' => 'string', 'computed' => ['expression' => '{{ a }} suffix']],
+        ]);
+
+        $cycles = $this->handler->detectCircularDependencies($schema);
+        $this->assertCount(1, $cycles, 'self-loop MUST be reported as a cycle');
+        $this->assertContains('a', $cycles[0]);
+    }
+
+    public function testDetectCircularDependenciesIgnoresNonComputedReferences(): void
+    {
+        // a is computed and references `plain` which is NOT computed.
+        // Plain inputs are inert leaves of the graph and CANNOT close
+        // a cycle, so no cycle should be reported.
+        $schema = $this->makeSchema([
+            'plain' => ['type' => 'string'],
+            'a'     => ['type' => 'string', 'computed' => ['expression' => '{{ plain }}']],
+        ]);
+
+        $this->assertSame([], $this->handler->detectCircularDependencies($schema));
+    }
+
+    public function testDetectCircularDependenciesFlagsThreeNodeCycle(): void
+    {
+        // a -> b -> c -> a.
+        $schema = $this->makeSchema([
+            'a' => ['type' => 'string', 'computed' => ['expression' => '{{ b }}']],
+            'b' => ['type' => 'string', 'computed' => ['expression' => '{{ c }}']],
+            'c' => ['type' => 'string', 'computed' => ['expression' => '{{ a }}']],
+        ]);
+
+        $cycles = $this->handler->detectCircularDependencies($schema);
+        $this->assertCount(1, $cycles, 'one canonical 3-node cycle MUST be reported, not three rotations');
+
+        $cycle = $cycles[0];
+        foreach (['a', 'b', 'c'] as $node) {
+            $this->assertContains($node, $cycle, 'cycle MUST contain '.$node);
+        }
+    }
+
     /**
      * @param array<string, array<string, mixed>> $properties
      */

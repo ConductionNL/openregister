@@ -1,8 +1,8 @@
 # Tasks: Computed Fields
 
-> **Status:** `lib/Service/Object/SaveObject/ComputedFieldHandler.php` is in production with full Twig sandbox + reference resolution. `tests/Service/ComputedFieldsIntegrationTest` (6 tests) verifies the evaluator end-to-end. **Production bug found and fixed**: Twig autoescape was on but the sandbox didn't allow the `escape` filter, so every `{{ var }}` expression silently failed with `Filter "escape" is not allowed`. Fixed by setting `autoescape: false` on the sandboxed environment.
+> **Status (Phase 2):** `lib/Service/Object/SaveObject/ComputedFieldHandler.php` is in production with full Twig sandbox + reference resolution. `tests/Service/ComputedFieldsIntegrationTest` (12 tests) verifies the evaluator end-to-end. **Production bug found and fixed**: Twig autoescape was on but the sandbox didn't allow the `escape` filter, so every `{{ var }}` expression silently failed with `Filter "escape" is not allowed`. Fixed by setting `autoescape: false` on the sandboxed environment. **Phase 2 added** static circular-dependency analysis between computed fields.
 >
-> 11 of 18 tasks tickably complete; 7 partial / open with notes.
+> 12 of 18 tasks tickably complete; 6 partial / open with notes.
 
 ## Implemented
 
@@ -18,11 +18,12 @@
 - [x] **Migration When Formula Changes.** Save-time evaluation re-materialises naturally when objects are resaved.
 - [x] **Interaction with Schema Hooks.** Computed evaluation happens inside the standard save pipeline; hooks see post-evaluation data.
 
+- [x] **Circular Dependency Detection.** `ComputedFieldHandler::detectCircularDependencies(Schema): array` performs a static analysis of the Twig expressions to build a dependency graph (computed property -> set of property names it references) and walks it with DFS to surface cycles. Same-property self-references count as length-1 cycles. The detector only considers edges between *computed* properties — non-computed inputs are inert leaves and cannot close a cycle. Cycles are canonicalised by their lexicographically smallest node so two starting points into the same cycle don't produce duplicate entries. Verified live by 6 new unit tests in `ComputedFieldsIntegrationTest`: empty result for acyclic schemas, empty result for schemas with no computed fields, two-node cycle (a<->b), self-loop (a->a), non-computed references skipped, three-node cycle (a->b->c->a) reported as one canonical cycle.
+
 ## Open / partial
 
 - [ ] **On-Demand Evaluation Mode.** Partial — `evaluateOn: read` covers on-render; an explicit "evaluate now without persisting" endpoint isn't shipped. **Open**.
 - [ ] **Aggregation Functions Across Related Objects.** Partial — single-uuid `$ref` lookups only; collection aggregation isn't pre-resolved. **Open**.
-- [ ] **Circular Dependency Detection.** Partial — `MAX_REF_DEPTH` guards reference recursion; same-schema cycles between computed fields aren't detected. **Open**.
 - [ ] **Performance and Caching.** Partial — Twig templates are cached within a request; cross-request opcode cache isn't wired. **Open**.
 - [ ] **Computed Fields in the UI.** Partial — backend metadata exposed; frontend "computed (read-only)" badge isn't shipped. **Open** (frontend).
 - [ ] **Audit Trail for Computed Values.** Partial — result captured; expression+input context isn't recorded. **Open**.
@@ -30,4 +31,4 @@
 
 ## Test coverage
 
-- [x] `tests/Service/ComputedFieldsIntegrationTest` — 6 integration tests covering detection, save-mode rendering, save/read mode separation, pass-through baseline, mode-aware listing, parse-failure fail-closed.
+- [x] `tests/Service/ComputedFieldsIntegrationTest` — 12 integration tests covering detection, save-mode rendering, save/read mode separation, pass-through baseline, mode-aware listing, parse-failure fail-closed, **circular-dependency detection** (acyclic schemas, no-computed schemas, two-node cycles, self-loops, non-computed references skipped, three-node cycles canonically reported).
