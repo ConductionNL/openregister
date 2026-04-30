@@ -24,6 +24,7 @@ use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Exception\ReferenceValidationException;
 use OCA\OpenRegister\Exception\ValidationException;
 use OCA\OpenRegister\Service\Object\SaveObject;
 use OCA\OpenRegister\Service\ObjectService;
@@ -130,6 +131,39 @@ class ReferenceExistenceValidationIntegrationTest extends TestCase
             'title'      => 'Referrer with bad UUID',
             'targetUuid' => 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee',
         ]);
+    }
+
+    public function testRejectionExceptionCarriesStructuredFields(): void
+    {
+        // Same scenario as testNonExistentUuidReferenceIsRejected, but
+        // we catch the exception ourselves so we can assert the
+        // structured fields exposed by ReferenceValidationException.
+        // Closes the spec's "structured diagnostic information" task.
+        $badUuid = 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee';
+        try {
+            $this->saveReferrer([
+                'title'      => 'Referrer with bad UUID for structured assert',
+                'targetUuid' => $badUuid,
+            ]);
+            $this->fail('expected ReferenceValidationException to be thrown for missing target');
+        } catch (ReferenceValidationException $e) {
+            $this->assertSame('targetUuid', $e->getPropertyName(), 'propertyName MUST identify the broken field');
+            $this->assertSame($badUuid, $e->getReferencedUuid(), 'referencedUuid MUST echo the unresolved UUID');
+            $this->assertNotEmpty($e->getTargetSchemaSlug(), 'targetSchemaSlug MUST be populated');
+            $this->assertSame(422, $e->getCode(), 'exception MUST carry HTTP 422 semantics');
+
+            $array = $e->toArray();
+            $this->assertSame('targetUuid', $array['propertyName']);
+            $this->assertSame($badUuid, $array['referencedUuid']);
+            $this->assertArrayHasKey('targetSchemaSlug', $array);
+            $this->assertArrayHasKey('targetRegister', $array);
+            $this->assertArrayHasKey('message', $array);
+            $this->assertSame(422, $array['code']);
+
+            // Backwards compatibility: subclass MUST still match `instanceof
+            // ValidationException` so existing 422 routing keeps working.
+            $this->assertInstanceOf(ValidationException::class, $e);
+        }
     }
 
     public function testNullReferenceIsAccepted(): void

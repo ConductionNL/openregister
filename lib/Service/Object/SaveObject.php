@@ -51,6 +51,7 @@ use OCA\OpenRegister\Service\Schemas\SchemaCacheHandler;
 use OCA\OpenRegister\Service\Schemas\FacetCacheHandler;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Service\SettingsService;
+use OCA\OpenRegister\Exception\ReferenceValidationException;
 use OCA\OpenRegister\Exception\ValidationException;
 use OCP\IURLGenerator;
 use OCP\IUserSession;
@@ -3620,11 +3621,18 @@ class SaveObject
                 _multitenancy: false
             );
         } catch (DoesNotExistException $e) {
-            // phpcs:ignore Generic.Files.LineLength.TooLong -- validation message with 3 dynamic parts cannot be shortened
-            $validMsg = "Referenced object '{$uuid}' not found in schema '{$targetSchemaSlug}' for property '{$propertyName}'";
-            throw new ValidationException(
-                message: $validMsg,
-                code: 422
+            // Throw a structured exception so API clients can render
+            // actionable error UI without parsing the message string —
+            // closes the spec's "structured diagnostic information"
+            // requirement. Subclasses ValidationException so existing
+            // 422 handlers route it correctly.
+            throw new ReferenceValidationException(
+                propertyName: $propertyName,
+                referencedUuid: $uuid,
+                targetSchemaSlug: $targetSchemaSlug,
+                targetRegister: $register,
+                code: 422,
+                previous: $e
             );
         } catch (Exception $e) {
             // Non-existence errors (e.g., database errors) — log warning but don't block.
