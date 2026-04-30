@@ -208,6 +208,7 @@ use OCA\OpenRegister\Service\Configuration\PreviewHandler;
 use OCA\OpenRegister\Service\Configuration\UploadHandler as ConfigurationUploadHandler;
 use OCA\OpenRegister\Service\LanguageService;
 use OCA\OpenRegister\Middleware\LanguageMiddleware;
+use OCA\OpenRegister\Capabilities\UrnCapability;
 
 /**
  * Class Application
@@ -294,6 +295,11 @@ class Application extends App implements IBootstrap
         // AnnotationNotificationDispatcher get a parsed subject — without
         // this Nextcloud silently drops the notification.
         $context->registerNotifierService(AnnotationNotifier::class);
+
+        // Surface URN identifier surface via Nextcloud capabilities API so
+        // clients can discover URN endpoints + the instance slug without
+        // probing routes.
+        $context->registerCapability(UrnCapability::class);
     }//end register()
 
     /**
