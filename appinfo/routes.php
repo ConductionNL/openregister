@@ -216,6 +216,10 @@ return [
         ['name' => 'urn#resolve', 'url' => '/api/urn/resolve', 'verb' => 'GET'],
         ['name' => 'urn#lookup',  'url' => '/api/urn/lookup',  'verb' => 'GET'],
         ['name' => 'urn#bulk',    'url' => '/api/urn/bulk',    'verb' => 'POST'],
+        // RBAC scope discovery endpoint — clients query effective (register,
+        // schema, action) scopes for the authenticated user without probing
+        // every endpoint individually.
+        ['name' => 'scopes#index', 'url' => '/api/scopes', 'verb' => 'GET'],
         // Realtime cursor-based polling endpoints.
         ['name' => 'realtime#events', 'url' => '/api/realtime/events', 'verb' => 'GET'],
         ['name' => 'realtime#cursor', 'url' => '/api/realtime/cursor', 'verb' => 'GET'],

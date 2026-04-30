@@ -1,6 +1,6 @@
 # Tasks: RBAC Scopes
 
-> **Status:** The core 3-level RBAC implementation (PermissionHandler / MagicRbacHandler / PropertyRbacHandler) is in production and verified by the unify-rbac-condition-matching + row-field-level-security integration tests. This spec extends that foundation with OAS scope generation + caching + audit. 7 of 13 tasks tickably complete via the existing implementation; 6 left open.
+> **Status (Phase 2):** The core 3-level RBAC implementation (PermissionHandler / MagicRbacHandler / PropertyRbacHandler) is in production and verified by the unify-rbac-condition-matching + row-field-level-security integration tests. This spec extends that foundation with OAS scope generation + caching + audit. 8 of 13 tasks tickably complete after Phase 2 added the scope discovery API; 5 left open.
 
 ## Implemented
 
@@ -24,6 +24,8 @@
 
 - [x] **Scope Inheritance (Register Permissions Cascade to Schemas).** `Schema::resolveAuthorization()` falls through to `Register::getAuthorization()` when a schema has no own authorization block.
 
+- [x] **Scope Documentation and Discovery API.** `lib/Controller/ScopesController.php` exposes `GET /apps/openregister/api/scopes` with optional `?register=…&schema=…` filters. The endpoint walks every (register, schema) pair the caller can see and probes `PermissionHandler::hasPermission` for each of the five canonical actions (`read`, `create`, `update`, `delete`, `list`), returning the truthy subset. Admin callers short-circuit to the full vocabulary, mirroring the bypass branch in `PermissionHandler::hasPermission`. Schemas where the user has zero actions are omitted (cleanly hides gated content). Verified live by `tests/Service/RbacScopeDiscoveryIntegrationTest` (5 tests): envelope-shape contract, non-admin-only-permitted-actions (creates a fresh Nextcloud user with public-only group membership and asserts admin-gated `update`/`delete` are stripped), admin-bypass returns all five actions, register-filter narrows the response, unknown-register filter yields zero scopes.
+
 ## Open / partial
 
 - [ ] **Role Definitions and Hierarchy.** Partial — rules reference Nextcloud groups directly (no separate "role" abstraction layer). The spec calls for named roles defined at register level + expandable in lower-level authorization blocks. **Open** — requires a `roles: {roleName: [groupIds]}` map on Register + role-expansion logic in PermissionHandler.
@@ -36,8 +38,6 @@
 
 - [ ] **OAuth 2.0 Token Scopes Integration.** Not implemented — Nextcloud's OAuth2 layer is separate; OR doesn't translate RBAC rules into OAuth2 token scope requirements. **Open** — gated on the broader auth-system spec.
 
-- [ ] **Scope Documentation and Discovery API.** Not implemented — there's no endpoint that returns "what scopes does this user have on this register?" for client-side feature gating. **Open** — additive endpoint; small effort.
-
 ## Test coverage
 
 The implemented portions are covered by the existing test suites:
@@ -46,3 +46,4 @@ The implemented portions are covered by the existing test suites:
 - `tests/Service/RowFieldLevelSecurityIntegrationTest` — 7 tests (FLS metadata + filtering, closed under row-field-level-security).
 - `tests/Unit/Service/Object/PermissionHandlerRbacTest` — 20 tests (mocked-user RBAC dispatch, all rule types).
 - `tests/Unit/Db/MagicMapper/MagicRbacHandlerTest` — 14 tests (SQL-emission RBAC + admin/owner bypass).
+- `tests/Service/RbacScopeDiscoveryIntegrationTest` — 5 tests covering the new scope discovery endpoint end-to-end (envelope shape, non-admin-only-permitted-actions, admin-bypass, register filter, unknown-register filter).
