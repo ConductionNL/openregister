@@ -1,6 +1,6 @@
 # Tasks: Register Internationalization
 
-> **Status (Phase 1 + 2 + 3):** 13 of 16 tasks tickably complete. Phase 1 shipped the unified translations sidecar + per-property fallback + completeness; Phase 2 added bulk translation via a provider abstraction + CSV codec + Content-Language verification; Phase 3 wired ImportService/ExportService for translatable column round-trip and added GraphQL parity. Phase 4 (frontend editor + RTL UI + admin language management UI) is the remaining work.
+> **Status (Phase 1 + 2 + 3 + 4a):** 15 of 16 tasks tickably complete. Phase 1 shipped the unified translations sidecar + per-property fallback + completeness; Phase 2 added bulk translation via a provider abstraction + CSV codec + Content-Language verification; Phase 3 wired ImportService/ExportService for translatable column round-trip and added GraphQL parity. Phase 4a delivered the frontend editor (`TranslationFieldEditor`), RTL direction handling, status chip + completeness badge, bulk-translate dialog, and a Pinia store wrapping the REST API. Admin UI for register language management is the remaining work.
 
 ## Implemented
 
@@ -17,12 +17,12 @@
 - [x] **Content-Language vs UI language MUST be clearly distinguished.** Phase 2: `LanguageMiddleware` adds `Content-Language` header (object content language) + `X-Content-Language-Fallback`.
 - [x] **Import and export MUST preserve translations.** Phase 3: `ExportService::exportToCsv` emits `field_lang` columns for each translatable property × register language (fallback `[nl, en]` when register has no `languages` config). `ImportService::importFromCsv::transformCsvRowToObject` calls `TranslationCsvCodec::unflattenFromCsv` before the per-key processing loop, so flat `field_lang` columns become nested `{lang: value}` JSON. **Verified live** by 4 export tests + 2 codec round-trip tests in `RegisterI18nPhase3IntegrationTest`.
 - [x] **GraphQL API MUST support language negotiation.** Phase 3: `GraphQLResolver::filterProperties` now applies `TranslationHandler::resolveTranslationsForRender` after the property-level RBAC pass. GraphQL responses honour the same `LanguageService` chain that REST honours, so a query made with `Accept-Language: en` collapses language-keyed values to their EN variant. Verified by `testGraphQLResolverApplyTranslationsToFilterPropertiesOutput`.
+- [x] **The UI MUST provide a language-aware object editor with translation status.** Phase 4a: Pinia store `src/store/modules/translations.js` wraps `GET /object/{uuid}`, `POST /{property}/{language}/status`, `POST /bulk-translate`, and `GET /search`. Vue components `TranslationFieldEditor` (per-language inputs/textarea with status chip), `TranslationStatusChip` (NL Design System status badge), `TranslationCompletenessBadge` (per-language ratio pills consuming `@self.translationCompleteness`), and `BulkTranslateDialog` (modal calling the bulk-translate endpoint).
+- [x] **RTL language support MUST be handled in the UI.** Phase 4a: `RTL_LANGUAGES` set + `isRtlLanguage()` BCP 47 helper in the translations store; `TranslationFieldEditor.dirFor()` applies `dir="rtl"` per input/textarea for Arabic, Hebrew, Persian, Urdu, Kurdish, etc.
 
-## Open / Phase 4
+## Open / Phase 4b
 
-- [ ] **The UI MUST provide a language-aware object editor with translation status.** Phase 4 (frontend Vue editor consuming `GET /api/translations/object/{uuid}?schema={ref}`).
-- [ ] **RTL language support MUST be handled in the UI.** Phase 4 (frontend CSS).
-- [ ] **Admin UI MUST provide register language management.** Phase 4 (frontend; backend `Register::setLanguages` already there).
+- [ ] **Admin UI MUST provide register language management.** Frontend admin form for `Register::languages` ordered list (backend `Register::setLanguages` already there).
 
 ## Architecture (decisions taken across all phases)
 
@@ -37,6 +37,8 @@
 | Phase 2 — CSV column shape | Flat `field_lang` for translatable properties; `field_und` for legacy single-language data |
 | Phase 3 — Export language list | Register's `languages` config; falls back to `[nl, en]` org-wide minimum |
 | Phase 3 — GraphQL i18n | Same TranslationHandler call as REST, applied alongside property RBAC in `filterProperties` |
+| Phase 4a — Frontend status display | NL Design System CSS custom properties (`--utrecht-status-badge-*`) with hard-coded fallbacks; per-language ratio bucketed into complete/partial/low pills |
+| Phase 4a — RTL handling | Per-input `dir="rtl"` driven by BCP 47 base-tag lookup against a frozen `RTL_LANGUAGES` set |
 
 ## Test coverage
 
@@ -49,5 +51,11 @@
   - Import wire-in unflattens row data before processing (codec contract)
   - Import empty cells are omitted from translation slots
   - GraphQL resolver applies translations to filterProperties output
+- [x] `src/store/modules/translations.spec.js` + `src/components/i18n/*.spec.js` — 65 Jest unit tests (Phase 4a):
+  - Translations store: actions (fetchByObject, setStatus, bulkTranslate, search), getters, RTL helpers, status constants
+  - TranslationStatusChip: prop validator, meta map, tooltip composition
+  - TranslationCompletenessBadge: language ordering, ratio bucketing, percentage rendering
+  - TranslationFieldEditor: hideEmpty filter, RTL direction, empty-slot pruning on input
+  - BulkTranslateDialog: canSubmit guard, watch reset on open, error fallback chain
 
-29 integration tests total across all three phases.
+29 backend integration tests + 65 frontend unit tests = 94 total tests across all four phases.
