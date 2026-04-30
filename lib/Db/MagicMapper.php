@@ -367,6 +367,7 @@ class MagicMapper extends AbstractObjectMapper
             groupManager: $this->groupManager,
             userManager: $this->userManager,
             appConfig: $this->appConfig,
+            conditionMatcher: $this->container->get(\OCA\OpenRegister\Service\ConditionMatcher::class),
             container: $this->container,
             logger: $this->logger
         );
