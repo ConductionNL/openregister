@@ -144,6 +144,7 @@ use OCA\OpenRegister\Listener\WebhookEventListener;
 use OCA\OpenRegister\Listener\FilesSidebarListener;
 use OCA\OpenRegister\Listener\AggregationCacheInvalidationListener;
 use OCA\OpenRegister\Listener\AggregationThresholdListener;
+use OCA\OpenRegister\Listener\RealtimeEventListener;
 use OCA\OpenRegister\Listener\AnnotationNotificationListener;
 use OCA\OpenRegister\Service\Notification\NotificationsAnnotationInstaller;
 use OCA\OpenRegister\Notification\AnnotationNotifier;
@@ -798,6 +799,12 @@ class Application extends App implements IBootstrap
         $context->registerEventListener(ObjectCreatedEvent::class, AggregationCacheInvalidationListener::class);
         $context->registerEventListener(ObjectUpdatedEvent::class, AggregationCacheInvalidationListener::class);
         $context->registerEventListener(ObjectDeletedEvent::class, AggregationCacheInvalidationListener::class);
+
+        // Realtime event log — append-only CloudEvent records for SSE/polling clients.
+        $context->registerEventListener(ObjectCreatedEvent::class,      RealtimeEventListener::class);
+        $context->registerEventListener(ObjectUpdatedEvent::class,      RealtimeEventListener::class);
+        $context->registerEventListener(ObjectDeletedEvent::class,      RealtimeEventListener::class);
+        $context->registerEventListener(ObjectTransitionedEvent::class, RealtimeEventListener::class);
         $context->registerEventListener(ObjectTransitionedEvent::class, AggregationCacheInvalidationListener::class);
 
         // Webhook auto-create installer for x-openregister-notifications with webhook.persistent: true.

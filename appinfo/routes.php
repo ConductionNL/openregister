@@ -216,6 +216,9 @@ return [
         ['name' => 'urn#resolve', 'url' => '/api/urn/resolve', 'verb' => 'GET'],
         ['name' => 'urn#lookup',  'url' => '/api/urn/lookup',  'verb' => 'GET'],
         ['name' => 'urn#bulk',    'url' => '/api/urn/bulk',    'verb' => 'POST'],
+        // Realtime cursor-based polling endpoints.
+        ['name' => 'realtime#events', 'url' => '/api/realtime/events', 'verb' => 'GET'],
+        ['name' => 'realtime#cursor', 'url' => '/api/realtime/cursor', 'verb' => 'GET'],
         // Names - Ultra-fast object name lookup endpoints (specific routes first).
         ['name' => 'names#stats', 'url' => '/api/names/stats', 'verb' => 'GET'],
         ['name' => 'names#warmup', 'url' => '/api/names/warmup', 'verb' => 'POST'],
