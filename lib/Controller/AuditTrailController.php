@@ -413,63 +413,21 @@ class AuditTrailController extends Controller
     }//end destroy()
 
     /**
-     * Delete multiple audit trail logs based on filters or specific IDs
+     * Reject audit trail bulk deletion (immutability enforcement).
+     *
+     * @return JSONResponse HTTP 405 Method Not Allowed
      *
      * @NoAdminRequired
-     *
      * @NoCSRFRequired
-     *
-     * @return JSONResponse JSON response with deletion results or error
      *
      * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-8
      */
     public function destroyMultiple(): JSONResponse
     {
-        // Extract request parameters.
-        $params = $this->extractRequestParameters();
-
-        // Get specific parameters for mass deletion.
-        $ids = $this->request->getParam('ids', null);
-
-        try {
-            // Build deletion configuration.
-            $deleteConfig = [
-                'filters' => $params['filters'],
-                'search'  => $params['search'],
-            ];
-
-            // Add specific IDs if provided.
-            if ($ids !== null) {
-                // Handle both comma-separated string and array.
-                if (is_string($ids) === true) {
-                    $deleteConfig['ids'] = array_map('intval', explode(',', $ids));
-                } else if (is_array($ids) === true) {
-                    $deleteConfig['ids'] = array_map('intval', $ids);
-                }
-            }
-
-            // Delete logs using service.
-            $result = $this->logService->deleteLogs($deleteConfig);
-
-            return new JSONResponse(
-                data: [
-                    'success' => true,
-                    'results' => $result,
-                    'message' => sprintf(
-                        'Deleted %d audit trails successfully. %d failed.',
-                        $result['deleted'],
-                        $result['failed']
-                    ),
-                ]
-            );
-        } catch (\Exception $e) {
-            return new JSONResponse(
-                data: [
-                    'error' => 'Mass deletion failed: '.$e->getMessage(),
-                ],
-                statusCode: 500
-            );
-        }//end try
+        return new JSONResponse(
+            data: ['error' => 'Audit trail entries cannot be deleted'],
+            statusCode: Http::STATUS_METHOD_NOT_ALLOWED
+        );
     }//end destroyMultiple()
 
     /**
