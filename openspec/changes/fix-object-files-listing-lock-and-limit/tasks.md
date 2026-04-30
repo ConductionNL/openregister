@@ -1,3 +1,7 @@
+# Tasks: Fix Object Files Listing Lock & Limit
+
+> **Status:** Shipped — all 27 tasks ticked. Ownership probe replaced with `$file->isReadable()` (no more `getContent()` round-trip), `_limit` cap removed (uncapped on auth + anon paths), file-level lock metadata surfaced via `FileFormattingHandler` when `files_lock` is installed. End-to-end smoke verified at the API level + frontend audited (no regressions in opencatalogi / softwarecatalog consumers).
+
 ## 1. Ownership-probe rewrite
 
 - [x] 1.1 Replace `$file->getContent()` probe in `FileValidationHandler::checkOwnership()` with `$file->isReadable()`; preserve the `ownFile()` repair call for users who can read but are not recorded as owners

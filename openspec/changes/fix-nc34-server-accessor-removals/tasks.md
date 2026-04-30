@@ -1,3 +1,7 @@
+# Tasks: Fix NC34 Server Accessor Removals
+
+> **Status:** Shipped — all 56 tasks ticked. Every removed `\OC::$server->getX()` named accessor is now resolved via constructor DI; a custom PHPCS sniff (`NoLegacyServerAccessorsSniff`) prevents regression. PHPStan baseline counts unchanged (48→48).
+
 ## 1. Fix the reported crash (OrganisationMapper)
 
 - [x] 1.1 Inject `\OCP\IConfig` into `lib/Db/OrganisationMapper.php` constructor as `private readonly IConfig $config`

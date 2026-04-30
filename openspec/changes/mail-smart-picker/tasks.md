@@ -1,5 +1,7 @@
 # Tasks: Mail Smart Picker
 
+> **Status:** Shipped — all 24 tasks ticked. `ObjectReferenceProvider` exposes OpenRegister objects through Nextcloud's Smart Picker so users can paste any of the three supported URL shapes (hash-routed UI, API endpoint, direct route — with or without `/index.php/`) into Mail compose / Text editor / Talk and have them rendered as a rich reference card. Cache prefix is content-addressed by `registerId/schemaId/uuid`; per-user partition keeps RBAC-resolved previews from leaking across users.
+
 ## Backend
 
 - [x] Create `lib/Reference/ObjectReferenceProvider.php` extending `ADiscoverableReferenceProvider` and implementing `ISearchableReferenceProvider` with constructor injection of `IURLGenerator`, `IL10N`, `ObjectService`, `DeepLinkRegistryService`, `SchemaMapper`, `RegisterMapper`, `?string $userId`

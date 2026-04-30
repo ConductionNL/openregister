@@ -1,5 +1,7 @@
 # Tasks: Activity Provider
 
+> **Status:** Shipped — all 52 tasks ticked. Object / register / schema lifecycle events flow into Nextcloud's Activity stream via `ActivityService::publish()` -> `IManager::publish()`. Dual-notification when object owner differs from author; system-context (no user session) falls back to owner as affected user. Provider + Filter + 3 Settings registered in `info.xml`; English + Dutch translations covered. Activity rows verified end-to-end in `tests/Service/ActivityProviderIntegrationTest`.
+
 ## Activity Service (Backend Core)
 
 - [x] Create `lib/Service/ActivityService.php` with constructor injection of `OCP\Activity\IManager`, `OCP\IUserSession`, `OCP\IURLGenerator`, `Psr\Log\LoggerInterface`

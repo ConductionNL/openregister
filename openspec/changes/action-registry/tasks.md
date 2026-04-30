@@ -1,5 +1,7 @@
 # Tasks: Action Registry
 
+> **Status:** Shipped — all 14 tasks ticked. Schema-level Action entity + ActionLog ledger backing the workflow-engine dispatch path. Coexists with `HookListener` without conflict (inline propagation-stop on hooks short-circuits ActionListener too). Cross-app regression covered against opencatalogi + softwarecatalog.
+
 - [x] Task 1: Database migration for oc_openregister_actions and oc_openregister_action_logs tables
   - Create `lib/Migration/Version1Date20260325000000.php`
   - Create `oc_openregister_actions` table with all columns from Requirement 1 (uuid, name, slug, description, version, status, event_type, engine, workflow_id, mode, execution_order, timeout, on_failure, on_timeout, on_engine_down, filter_condition, configuration, mapping, schemas, registers, schedule, max_retries, retry_policy, enabled, owner, application, organisation, last_executed_at, execution_count, success_count, failure_count, created, updated, deleted)

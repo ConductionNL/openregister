@@ -1,3 +1,7 @@
+# Tasks: TMLO Metadata
+
+> **Status:** Shipped — all 19 tasks ticked. `tmlo` JSON column added to `openregister_objects`; `ObjectEntity::getTmlo()` exposes the block; `TmloService` implements populate-defaults / status-transition / field-value validation. MDTO XML export covers single + batch + missing-metadata paths. Unit tests cover the validation primitives + XML export + entity hydration; PHPCS / PHPMD / PHPStan clean.
+
 ## 1. Database and Entity Layer
 
 - [x] 1.1 Create database migration to add `tmlo` JSON column to openregister_objects table

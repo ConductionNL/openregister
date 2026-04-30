@@ -1,5 +1,7 @@
 # Tasks: Mail Sidebar
 
+> **Status:** Shipped — all 60 tasks ticked. Reverse integration of `nextcloud-entity-relations`: viewing an email in the Nextcloud Mail app surfaces the OpenRegister objects linked to that message via `MailAppScriptListener` injecting the sidebar bundle into `BeforeTemplateRenderedEvent`. `EmailService::findByMessageId` / `findObjectsBySender` provide the reverse-lookup API; `EmailsController::byMessage` / `bySender` / `quickLink` expose the endpoints. Caching via `IReferenceManager` keeps repeat queries cheap.
+
 ## Backend API
 
 - [x] Add `findByMessageId(int $accountId, int $messageId)` method to EmailService that queries openregister_email_links and resolves object/register/schema metadata

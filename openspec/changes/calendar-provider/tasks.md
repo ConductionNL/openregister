@@ -1,5 +1,7 @@
 # Tasks: Calendar Provider
 
+> **Status:** Shipped — all 16 tasks ticked. Schemas with `calendarProvider.enabled: true` are surfaced as Nextcloud calendars via `RegisterCalendarProvider`; events are derived from object data per the configured `dtstart` / `dtend` / `titleTemplate` / `descriptionTemplate` / `color` / `allDay` fields. **Two production bugs caught and fixed during the review:** (1) `interpolateTemplate` regex matched single-brace `{title}` and silently corrupted Mustache `{{title}}`; aligned to `\{\{\s*([a-zA-Z0-9_.-]+)\s*\}\}`. (2) `buildTimerangeFilters` used unrecognised `'startsAt>='` keys; switched to the canonical `['startsAt' => ['gte' => …, 'lte' => …]]` operator-filter shape used by the rest of the magic-table grammar.
+
 ## Provider Registration & Bootstrap
 
 - [x] Create `lib/Calendar/RegisterCalendarProvider.php` implementing `OCP\Calendar\ICalendarProvider`
