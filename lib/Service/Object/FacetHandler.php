@@ -22,6 +22,9 @@
  * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-33
  * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-34
  * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-36
+ * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-43
+ * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-44
+ * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-45
  */
 
 declare(strict_types=1);
@@ -163,6 +166,7 @@ class FacetHandler
      * @phpstan-return array<string, mixed>
      *
      * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-33
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-43
      */
     public function getFacetsForObjects(array $query=[]): array
     {
@@ -252,6 +256,7 @@ class FacetHandler
      * @phpstan-return array<string, mixed>
      *
      * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-32
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-44
      */
     public function getFacetableFields(array $baseQuery=[], int $_sampleSize=100): array
     {
@@ -290,6 +295,7 @@ class FacetHandler
      * @phpstan-return array<int, string>
      *
      * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-32
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-45
      */
     public function getMetadataFacetableFields(): array
     {

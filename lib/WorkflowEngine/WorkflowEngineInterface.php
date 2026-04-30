@@ -15,6 +15,8 @@
  * @link https://OpenRegister.app
  *
  * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-81
+ * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-90
+ * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-92
  */
 
 declare(strict_types=1);
@@ -37,6 +39,7 @@ interface WorkflowEngineInterface
      * @return string Engine-specific workflow ID
      *
      * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-81
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-90
      */
     public function deployWorkflow(array $workflowDefinition): string;
 
@@ -106,6 +109,7 @@ interface WorkflowEngineInterface
      * @return WorkflowResult Structured execution result
      *
      * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-81
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-92
      */
     public function executeWorkflow(string $workflowId, array $data, int $timeout=30): WorkflowResult;
 

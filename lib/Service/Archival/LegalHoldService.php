@@ -16,6 +16,8 @@
  * @version GIT: <git_id>
  *
  * @link https://www.OpenRegister.app
+ *
+ * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-8
  */
 
 declare(strict_types=1);
@@ -110,6 +112,7 @@ class LegalHoldService
      * @return ObjectEntity The updated object with legal hold applied.
      *
      * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-5
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-8
      */
     public function placeHold(ObjectEntity $object, string $reason): ObjectEntity
     {
@@ -152,6 +155,7 @@ class LegalHoldService
      * @return ObjectEntity The updated object with legal hold released.
      *
      * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-5
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-8
      */
     public function releaseHold(ObjectEntity $object, string $reason): ObjectEntity
     {
@@ -239,6 +243,7 @@ class LegalHoldService
      * @return void
      *
      * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-5
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-8
      */
     public function bulkPlaceHold(int $schemaId, int $registerId, string $reason): void
     {

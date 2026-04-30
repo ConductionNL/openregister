@@ -22,6 +22,9 @@
  * @version GIT: <git_id>
  *
  * @link https://www.OpenRegister.app
+ *
+ * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-30
+ * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-29
  */
 
 namespace OCA\OpenRegister\Service\Object;
@@ -164,6 +167,7 @@ class DeleteObject
      * @psalm-suppress UndefinedInterfaceMethod Array access on JsonSerializable handled by type check
      *
      * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-30
      */
     public function delete(array | JsonSerializable $object, ?array $cascadeContext=null, bool $permanent=false): bool
     {
@@ -344,6 +348,7 @@ class DeleteObject
      * @return DeletionAnalysis The analysis result.
      *
      * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-29
      */
     public function canDelete(ObjectEntity $object): DeletionAnalysis
     {

@@ -18,6 +18,7 @@
  * @link https://www.OpenRegister.app
  *
  * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-6
+ * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-2
  */
 
 declare(strict_types=1);
@@ -80,6 +81,7 @@ class ArchiefactiedatumCalculator
      * @return DateTime|null The calculated archiefactiedatum, or null if calculation is not possible.
      *
      * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-6
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-2
      */
     public function calculate(array $archiveConfig, array $objectData, ?DateTime $closureDate=null): ?DateTime
     {

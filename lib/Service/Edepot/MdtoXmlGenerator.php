@@ -19,6 +19,7 @@
  * @link https://www.OpenRegister.app
  *
  * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-20
+ * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-32
  */
 
 declare(strict_types=1);
@@ -90,6 +91,7 @@ class MdtoXmlGenerator
      * @throws InvalidArgumentException If required fields are missing.
      *
      * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-20
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-32
      */
     public function generate(ObjectEntity $object, array $files=[]): string
     {

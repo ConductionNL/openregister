@@ -19,6 +19,8 @@
  * @link https://www.OpenRegister.app
  *
  * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-89
+ * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-95
+ * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-96
  */
 
 declare(strict_types=1);
@@ -92,6 +94,7 @@ class SearchQueryHandler
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Handles extensive parameter processing for query building
      *
      * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-10
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-95
      */
     public function buildSearchQuery(
         array $requestParams,
@@ -480,6 +483,7 @@ class SearchQueryHandler
      * @return void
      *
      * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-10
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-96
      */
     public function addPaginationUrls(array &$paginatedResults, int $page, int $pages): void
     {
