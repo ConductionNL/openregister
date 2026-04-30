@@ -12,6 +12,8 @@
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  * @version   GIT: <git-id>
  * @link      https://OpenRegister.app
+ *
+ * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-58
  */
 
 declare(strict_types=1);
@@ -132,6 +134,8 @@ class FilesController extends Controller
      * @NoCSRFRequired
      *
      * @PublicPage
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-58
      */
     public function index(
         string $register,
@@ -280,6 +284,8 @@ class FilesController extends Controller
      * @NoCSRFRequired
      *
      * @psalm-return JSONResponse<200|400|404, array{error?: mixed|string, labels?: list<string>,...}, array<never, never>>
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-58
      */
     public function create(
         string $register,
@@ -824,6 +830,8 @@ class FilesController extends Controller
      * @psalm-return JSONResponse<200|400|404,
      *     array{error?: string, success?: bool},
      *     array<never, never>>
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-58
      */
     public function delete(
         string $register,
@@ -871,6 +879,8 @@ class FilesController extends Controller
      * @psalm-return JSONResponse<200|400|404,
      *     array{error?: mixed|string, labels?: list<string>,...},
      *     array<never, never>>
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-58
      */
     public function publish(
         string $register,

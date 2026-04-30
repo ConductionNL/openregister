@@ -16,6 +16,10 @@
  * @version GIT: <git-id>
  *
  * @link https://OpenRegister.app
+ *
+ * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-28
+ * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-30
+ * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-31
  */
 
 namespace OCA\OpenRegister\Controller;
@@ -185,6 +189,8 @@ class DeletedController extends Controller
      *     results?: list<\OCA\OpenRegister\Db\ObjectEntity>, total?: int,
      *     page?: int, pages?: 1|float, limit?: int|null, offset?: int|null},
      *     array<never, never>>
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-30
      */
     public function index(): JSONResponse
     {
@@ -345,6 +351,8 @@ class DeletedController extends Controller
      * @NoCSRFRequired
      *
      * @return JSONResponse JSON response with restore result
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-31
      */
     public function restore(string $id): JSONResponse
     {
@@ -396,6 +404,8 @@ class DeletedController extends Controller
      * @NoCSRFRequired
      *
      * @return JSONResponse JSON response with multiple restore result
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-31
      */
     public function restoreMultiple(): JSONResponse
     {
@@ -481,6 +491,8 @@ class DeletedController extends Controller
      * @NoCSRFRequired
      *
      * @return JSONResponse JSON response with deletion result
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-28
      */
     public function destroy(string $id): JSONResponse
     {
@@ -527,6 +539,8 @@ class DeletedController extends Controller
      * @NoCSRFRequired
      *
      * @return JSONResponse JSON response with multiple deletion result
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-28
      */
     public function destroyMultiple(): JSONResponse
     {
