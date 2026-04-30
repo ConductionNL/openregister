@@ -227,6 +227,11 @@ return [
         ['name' => 'verwerkingsactiviteiten#update',         'url' => '/api/avg/verwerkingsactiviteiten/{id}',   'verb' => 'PUT',    'requirements' => ['id' => '[^/]+']],
         ['name' => 'verwerkingsactiviteiten#destroy',        'url' => '/api/avg/verwerkingsactiviteiten/{id}',   'verb' => 'DELETE', 'requirements' => ['id' => '[^/]+']],
         ['name' => 'verwerkingsactiviteiten#verantwoording', 'url' => '/api/avg/verantwoording',                 'verb' => 'GET'],
+        // AVG / GDPR data-subject rights endpoints (Phase 2b).
+        ['name' => 'dsar#inzage',         'url' => '/api/avg/inzage',         'verb' => 'GET'],
+        ['name' => 'dsar#portabiliteit',  'url' => '/api/avg/portabiliteit',  'verb' => 'GET'],
+        ['name' => 'dsar#vergetelheid',   'url' => '/api/avg/vergetelheid',   'verb' => 'POST'],
+        ['name' => 'dsar#rectificatie',   'url' => '/api/avg/rectificatie',   'verb' => 'POST'],
         // Realtime cursor-based polling endpoints.
         ['name' => 'realtime#events', 'url' => '/api/realtime/events', 'verb' => 'GET'],
         ['name' => 'realtime#cursor', 'url' => '/api/realtime/cursor', 'verb' => 'GET'],
