@@ -487,6 +487,34 @@ class ObjectEntity extends Entity implements JsonSerializable
     protected ?float $relevance = null;
 
     /**
+     * RFC 8141 URN identifier for this object.
+     *
+     * Transient property set by `RenderObject` (or `UrnService::buildForObject`)
+     * during render so the @self envelope can carry a stable, system-
+     * independent identifier. Not persisted to the DB — derived from
+     * registerSlug + schemaSlug + uuid at render time.
+     *
+     * @var string|null The RFC 8141 URN, or null when not yet computed
+     */
+    protected ?string $urn = null;
+
+    /**
+     * Get the URN for this object.
+     */
+    public function getUrn(): ?string
+    {
+        return $this->urn;
+    }
+
+    /**
+     * Set the URN for this object (transient, not persisted).
+     */
+    public function setUrn(?string $urn): void
+    {
+        $this->urn = $urn;
+    }
+
+    /**
      * Initialize the entity and define field types
      */
     public function __construct()
@@ -782,6 +810,14 @@ class ObjectEntity extends Entity implements JsonSerializable
         // Only included when a search was performed with _fuzzy=true.
         if ($this->relevance !== null) {
             $objectArray['relevance'] = $this->relevance;
+        }
+
+        // Add the RFC 8141 URN identifier if computed by the renderer.
+        // The renderer populates $this->urn via UrnService::buildForObject;
+        // when absent (e.g. raw entity not run through RenderObject) the
+        // field is simply omitted from @self.
+        if ($this->urn !== null) {
+            $objectArray['urn'] = $this->urn;
         }
 
         // Check for '@self' in the provided object array (this is the case if the object metadata is extended).

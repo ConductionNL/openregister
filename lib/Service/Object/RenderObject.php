@@ -147,6 +147,7 @@ class RenderObject
         private readonly TranslationHandler $translationHandler,
         private readonly LinkedEntityEnricher $linkedEntityEnricher,
         private readonly \OCA\OpenRegister\Service\Calculation\CalculationEvaluator $calculationEvaluator,
+        private readonly \OCA\OpenRegister\Service\UrnService $urnService,
     ) {
     }//end __construct()
 
@@ -1123,6 +1124,19 @@ class RenderObject
         }
 
         $entity->setObject($objectData);
+
+        // Compute the RFC 8141 URN once per render. UrnService resolves
+        // the entity's register/schema references to slugs and builds
+        // the canonical urn:nl-or:{instance}:{register-slug}:{schema-slug}:{uuid}
+        // identifier, which then surfaces in @self.urn via getObjectArray.
+        try {
+            $entity->setUrn($this->urnService->buildForObject($entity));
+        } catch (\Throwable $e) {
+            // URN derivation MUST NOT break rendering; log + skip on failure.
+            $this->logger->debug(
+                sprintf('[RenderObject] URN derivation failed for object %s: %s', (string) $entity->getUuid(), $e->getMessage())
+            );
+        }
 
         return $entity;
     }//end renderEntity()

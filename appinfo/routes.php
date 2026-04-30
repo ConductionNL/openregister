@@ -212,6 +212,10 @@ return [
         ['name' => 'metrics#index', 'url' => '/api/metrics', 'verb' => 'GET'],
         // Health check endpoint.
         ['name' => 'health#index', 'url' => '/api/health', 'verb' => 'GET'],
+        // URN resolution endpoints (RFC 8141 system-independent identifiers).
+        ['name' => 'urn#resolve', 'url' => '/api/urn/resolve', 'verb' => 'GET'],
+        ['name' => 'urn#lookup',  'url' => '/api/urn/lookup',  'verb' => 'GET'],
+        ['name' => 'urn#bulk',    'url' => '/api/urn/bulk',    'verb' => 'POST'],
         // Names - Ultra-fast object name lookup endpoints (specific routes first).
         ['name' => 'names#stats', 'url' => '/api/names/stats', 'verb' => 'GET'],
         ['name' => 'names#warmup', 'url' => '/api/names/warmup', 'verb' => 'POST'],
