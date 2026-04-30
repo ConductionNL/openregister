@@ -28,6 +28,8 @@ import EntityDetail from '../views/entities/EntityDetail.vue'
 import TemplatesIndex from '../views/templates/TemplatesIndex.vue'
 import MyAccount from '../views/account/MyAccount.vue'
 import AvgIndex from '../views/avg/AvgIndex.vue'
+import ReportsIndex from '../views/reports/ReportsIndex.vue'
+import ReportView from '../views/reports/ReportView.vue'
 
 Vue.use(Router)
 
@@ -50,6 +52,7 @@ export const routeKeyByPath = {
 	'/search-trails': 'searchTrails',
 	'/endpoints': 'endpoints',
 	'/avg': 'avg',
+	'/reports': 'reports',
 	'/mijn-account': 'myAccount',
 }
 
@@ -83,6 +86,8 @@ const router = new Router({
 		{ path: '/templates', component: TemplatesIndex },
 		{ path: '/mijn-account', name: 'myAccount', component: MyAccount },
 		{ path: '/avg', name: 'avg', component: AvgIndex },
+		{ path: '/reports', name: 'reports', component: ReportsIndex },
+		{ path: '/reports/:id', name: 'reportView', component: ReportView },
 		{ path: '*', redirect: '/' },
 	],
 })
