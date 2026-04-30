@@ -232,6 +232,7 @@ return [
         ['name' => 'dsar#portabiliteit',  'url' => '/api/avg/portabiliteit',  'verb' => 'GET'],
         ['name' => 'dsar#vergetelheid',   'url' => '/api/avg/vergetelheid',   'verb' => 'POST'],
         ['name' => 'dsar#rectificatie',   'url' => '/api/avg/rectificatie',   'verb' => 'POST'],
+        ['name' => 'dsar#compliance',     'url' => '/api/avg/compliance',     'verb' => 'GET'],
         // Realtime cursor-based polling endpoints.
         ['name' => 'realtime#events', 'url' => '/api/realtime/events', 'verb' => 'GET'],
         ['name' => 'realtime#cursor', 'url' => '/api/realtime/cursor', 'verb' => 'GET'],

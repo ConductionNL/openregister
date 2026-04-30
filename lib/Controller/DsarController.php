@@ -33,6 +33,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
+use OCA\OpenRegister\Service\AvgComplianceService;
 use OCA\OpenRegister\Service\DsarService;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
@@ -49,16 +50,18 @@ class DsarController extends Controller
     /**
      * Constructor.
      *
-     * @param string        $appName      App identifier.
-     * @param IRequest      $request      Active request.
-     * @param DsarService   $dsarService  Composition service.
-     * @param IUserSession  $userSession  Current user (admin gate).
-     * @param IGroupManager $groupManager Group manager (admin gate).
+     * @param string               $appName           App identifier.
+     * @param IRequest             $request           Active request.
+     * @param DsarService          $dsarService       DSAR composition service.
+     * @param AvgComplianceService $complianceService AVG compliance auditor.
+     * @param IUserSession         $userSession       Current user (admin gate).
+     * @param IGroupManager        $groupManager      Group manager (admin gate).
      */
     public function __construct(
         string $appName,
         IRequest $request,
         private readonly DsarService $dsarService,
+        private readonly AvgComplianceService $complianceService,
         private readonly IUserSession $userSession,
         private readonly IGroupManager $groupManager,
     ) {
@@ -254,6 +257,32 @@ class DsarController extends Controller
         return new JSONResponse(data: $updated);
 
     }//end rectificatie()
+
+    /**
+     * GET /api/avg/compliance — run compliance checks.
+     *
+     * Currently exposes a single check: schemas where PII has been
+     * detected via the GdprEntity layer but no
+     * `x-openregister-processing-activity` annotation exists on the
+     * schema (or its enclosing register). More checks can land here
+     * as new compliance scenarios surface.
+     *
+     * Admin-only — compliance issues span the whole register surface
+     * and bypass per-schema RBAC.
+     *
+     * @return JSONResponse Compliance envelope.
+     *
+     * @NoCSRFRequired
+     */
+    public function compliance(): JSONResponse
+    {
+        if ($this->isAdmin() === false) {
+            return $this->forbidden();
+        }
+
+        return new JSONResponse(data: $this->complianceService->runAllChecks());
+
+    }//end compliance()
 
     /**
      * Whether the active user is in the `admin` group.
