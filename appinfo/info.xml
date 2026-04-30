@@ -97,6 +97,7 @@ Vrij en open source onder de EUPL-licentie.
 		<job>OCA\OpenRegister\BackgroundJob\TenantUsageSyncJob</job>
 		<job>OCA\OpenRegister\BackgroundJob\ExecutionHistoryCleanupJob</job>
 		<job>OCA\OpenRegister\BackgroundJob\RealtimeEventRetentionJob</job>
+		<job>OCA\OpenRegister\BackgroundJob\AvgRetentionJob</job>
 	</background-jobs>
 
     <navigations>
