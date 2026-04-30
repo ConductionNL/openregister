@@ -1,6 +1,6 @@
 # Tasks: Realtime Updates
 
-> **Status (v1):** Cursor-based polling shipped. Append-only event log table + listener subscribed to all four object-write events + `RealtimeService::record` building CloudEvent-shaped rows + cursor-based polling endpoint at `/api/realtime/events?since={cursor}` with subscription filters. **8 of 14 tasks tickably complete.** SSE long-lived streaming + notify_push + frontend reactive store wiring are explicit v1.1 follow-ups (PHP-FPM is unfriendly to long-lived connections; the right architectural answer for production is `notify_push` or a Node sidecar).
+> **Status (v1.1):** Cursor-based polling shipped. Append-only event log table + listener subscribed to all four object-write events + `RealtimeService::record` building CloudEvent-shaped rows + cursor-based polling endpoint at `/api/realtime/events?since={cursor}` with subscription filters. **9 of 14 tasks tickably complete after Phase 2 wired the daily retention job.** SSE long-lived streaming + notify_push + frontend reactive store wiring remain explicit v1.1 follow-ups (PHP-FPM is unfriendly to long-lived connections; the right architectural answer for production is `notify_push` or a Node sidecar).
 
 ## Implemented (v1)
 
@@ -19,6 +19,8 @@
 - [x] **The system MUST debounce and batch rapid changes.** Cursor-based polling is naturally batched (one HTTP roundtrip per poll cycle returns up to `limit` events). Per-event debouncing within the listener path is deliberately not implemented — debounce is a client-side concern in the polling model. SSE-mode debouncing is a v1.1 concern alongside SSE itself.
 
 - [x] **The system MUST support cursor-based reconnection.** Clients fetch `/api/realtime/cursor` on initial connect to fast-forward past historical events, then poll with `?since={cursor}`. Reconnections after network drops just resume from the last received cursor — no event replay is lost as long as the event log retention window covers the gap. **Verified live** by `testGetMaxIdReflectsLatestInsertedEvent`.
+
+- [x] **The event log MUST be retention-pruned to keep its size bounded.** `lib/BackgroundJob/RealtimeEventRetentionJob.php` is a daily TimedJob (24h interval) that reads the operator-configurable `realtime_event_retention_seconds` app-config key (default `7 * 86400` = 7 days) and calls `RealtimeEventMapper::deleteOlderThan()`. Setting the key to `0` disables the prune entirely (the job ticks but skips the delete). Registered in `appinfo/info.xml` so Nextcloud's cron picks it up automatically. Verified by `tests/Service/RealtimeEventRetentionJobTest` (3 tests): default 7-day window prunes a 10-day-old event but keeps a 1-day-old one; `value=0` disables the prune; custom 1-day override prunes a 2-day-old event.
 
 ## Open / partial (deferred to v1.1)
 
@@ -40,7 +42,7 @@
 
 ## Architecture notes
 
-- **Event log retention** — `RealtimeEventMapper::deleteOlderThan(int $retentionSeconds)` is the cleanup primitive; wire a daily TimedJob that calls `deleteOlderThan(7 * 86400)` for default 7-day retention. (Not yet wired; `realtime-updates` is sufficient without retention pruning at small volumes.)
+- **Event log retention** — `RealtimeEventMapper::deleteOlderThan(int $retentionSeconds)` is the cleanup primitive. Wired via `RealtimeEventRetentionJob` (daily TimedJob, default 7-day window, `realtime_event_retention_seconds` app-config override).
 
 - **Subject is URN** — every event carries the object's URN (built via `UrnService::buildForObject`). This means clients can resolve a subject reference into a canonical URL via the URN endpoints, regardless of the instance the subscriber is talking to.
 
@@ -58,3 +60,4 @@
   - `testRecordDoesNotCrashWhenObjectLacksRequiredFields` (defensive: realtime MUST NOT break the actual save)
   - `testDeleteOlderThanPrunes` (retention-pruning primitive)
 - [x] **Live API verification** — `/api/realtime/cursor` returns `{cursor: int}`; `/api/realtime/events?since=...&limit=...` returns `{events, cursor, hasMore}`.
+- [x] `tests/Service/RealtimeEventRetentionJobTest` — 3 integration tests for the retention TimedJob (default-window prune, zero-disable, custom-window override).
