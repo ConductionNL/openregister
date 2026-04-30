@@ -8,6 +8,7 @@ use OCA\OpenRegister\Db\MagicMapper\MagicOrganizationHandler;
 use OCA\OpenRegister\Db\MagicMapper\MagicRbacHandler;
 use OCA\OpenRegister\Db\MagicMapper\MagicSearchHandler;
 use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Service\Object\SchemaTypeConverter;
 use OCP\IDBConnection;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
@@ -44,16 +45,17 @@ class MagicSearchHandlerTest extends TestCase
 
     protected function setUp(): void
     {
-        $this->db                  = $this->createMock(IDBConnection::class);
-        $this->logger              = $this->createMock(LoggerInterface::class);
-        $this->rbacHandler         = $this->createMock(MagicRbacHandler::class);
+        $this->db          = $this->createMock(IDBConnection::class);
+        $this->logger      = $this->createMock(LoggerInterface::class);
+        $this->rbacHandler = $this->createMock(MagicRbacHandler::class);
         $this->organizationHandler = $this->createMock(MagicOrganizationHandler::class);
 
         $this->handler = new MagicSearchHandler(
             db: $this->db,
             logger: $this->logger,
             rbacHandler: $this->rbacHandler,
-            organizationHandler: $this->organizationHandler
+            organizationHandler: $this->organizationHandler,
+            schemaTypeConverter: new SchemaTypeConverter()
         );
     }//end setUp()
 
@@ -90,7 +92,6 @@ class MagicSearchHandlerTest extends TestCase
     // -------------------------------------------------------------------------
     // [gte] / [lte] — the original bug report
     // -------------------------------------------------------------------------
-
     public function testGteProducesGreaterThanOrEqualCondition(): void
     {
         $conditions = $this->invokeMethod(
@@ -131,7 +132,6 @@ class MagicSearchHandlerTest extends TestCase
     // -------------------------------------------------------------------------
     // [gt] / [lt]
     // -------------------------------------------------------------------------
-
     public function testGtProducesStrictGreaterThanCondition(): void
     {
         $conditions = $this->invokeMethod(
@@ -159,7 +159,6 @@ class MagicSearchHandlerTest extends TestCase
     // -------------------------------------------------------------------------
     // [in] as an operator key
     // -------------------------------------------------------------------------
-
     public function testInOperatorKeyProducesInClause(): void
     {
         $conditions = $this->invokeMethod(
@@ -187,7 +186,6 @@ class MagicSearchHandlerTest extends TestCase
     // -------------------------------------------------------------------------
     // Plain array values (backward compatibility — must still produce IN clause)
     // -------------------------------------------------------------------------
-
     public function testPlainArrayValueStillProducesInClause(): void
     {
         $conditions = $this->invokeMethod(
@@ -203,7 +201,6 @@ class MagicSearchHandlerTest extends TestCase
     // -------------------------------------------------------------------------
     // Simple scalar equality (unchanged behaviour)
     // -------------------------------------------------------------------------
-
     public function testScalarValueProducesEqualityCondition(): void
     {
         $conditions = $this->invokeMethod(
@@ -219,7 +216,6 @@ class MagicSearchHandlerTest extends TestCase
     // -------------------------------------------------------------------------
     // Unknown property must still produce the 1=0 guard condition
     // -------------------------------------------------------------------------
-
     public function testUnknownPropertyProducesImpossibleCondition(): void
     {
         $conditions = $this->invokeMethod(
@@ -231,5 +227,4 @@ class MagicSearchHandlerTest extends TestCase
         $this->assertCount(1, $conditions);
         $this->assertSame('1=0', $conditions[0]);
     }//end testUnknownPropertyProducesImpossibleCondition()
-
 }//end class
