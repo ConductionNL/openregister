@@ -189,6 +189,8 @@ Each mock register MUST be delivered as a `*_register.json` file in `lib/Setting
 
 ### Requirement: Idempotent Import via ConfigurationService Pipeline
 
+> **Status: deferred** — No MockRegisterService or mock seed JSON files found in codebase as of 2026-04-30 coverage scan. ConfigurationService import pipeline exists but mock-specific idempotent seeding is not implemented.
+
 Mock register import MUST be idempotent. The ImportHandler MUST skip creation of registers, schemas, and objects that already exist (matched by slug) when `force` is `false`. Re-importing the same file MUST NOT create duplicate records. A `force: true` flag MUST allow re-importing to update existing records. The ObjectService `searchObjects` method SHALL be used with `_rbac: false` and `_multitenancy: false` to find existing objects regardless of organisation context, preventing duplicates across tenants.
 
 #### Scenario: First-time import creates all records

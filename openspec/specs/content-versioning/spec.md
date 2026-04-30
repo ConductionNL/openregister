@@ -39,6 +39,9 @@ Each create or update operation on an object MUST increment the object's semanti
 - **THEN** the response MUST include `"version": "1.0.4"` in the JSON body
 
 ### Requirement: Objects MUST support a draft/published lifecycle
+
+> **Status: deferred** — No DraftService or draft version entity found in codebase as of 2026-04-30 coverage scan. Track separately before implementing.
+
 Each object MUST have a published version (the current live data) and support one or more named draft versions for work-in-progress changes. Drafts MUST store only the delta (changed fields) relative to the published version to optimize storage. The published version MUST remain accessible and unmodified while drafts exist.
 
 #### Scenario: Create a draft version
@@ -73,6 +76,9 @@ Each object MUST have a published version (the current live data) and support on
 - **AND** rendering the draft MUST resolve the relation to `contact-2`
 
 ### Requirement: Drafts MUST be promotable to published version
+
+> **Status: deferred** — Depends on draft/published lifecycle (see above). Not implemented as of 2026-04-30.
+
 A draft version MUST be mergeable into the published version, replacing the current live data with the draft changes. Promotion MUST create a new version entry in the audit trail and MUST increment the MINOR version number.
 
 #### Scenario: Promote a draft to published
@@ -103,6 +109,9 @@ A draft version MUST be mergeable into the published version, replacing the curr
 - **AND** the audit trail MUST record that the promotion was forced with details of overwritten fields
 
 ### Requirement: The system MUST support version comparison with visual diffs
+
+> **Status: deferred** — No diffing service found in codebase as of 2026-04-30 coverage scan. Track separately before implementing.
+
 Users MUST be able to compare any two versions (draft vs published, any two historical versions) with field-level diffs. The diff MUST identify added, removed, and modified fields with their old and new values.
 
 #### Scenario: Compare draft with published version
@@ -228,6 +237,9 @@ Every version (audit trail entry) MUST record who made the change, when, from wh
 - **AND** the `changed` field MUST include the trigger context as documented in the deletion-audit-trail spec: `{"triggerObject": "person-1", "triggerSchema": "person"}`
 
 ### Requirement: Version storage MUST use a delta strategy for drafts and full snapshots for published versions
+
+> **Status: deferred** — Draft delta storage not implemented as of 2026-04-30. Audit trail stores full diffs (implemented); draft-specific delta storage is not.
+
 Published version history MUST store the full changed-field diff (old and new values) in the audit trail as currently implemented by `AuditTrailMapper.createAuditTrail()`. Draft versions MUST store only the delta (changed fields with new values only) relative to the current published version to minimize storage overhead.
 
 #### Scenario: Audit trail stores full diff for published versions
