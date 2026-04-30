@@ -145,6 +145,7 @@ use OCA\OpenRegister\Listener\FilesSidebarListener;
 use OCA\OpenRegister\Listener\AggregationCacheInvalidationListener;
 use OCA\OpenRegister\Listener\AggregationThresholdListener;
 use OCA\OpenRegister\Listener\RealtimeEventListener;
+use OCA\OpenRegister\Listener\TranslationProjectionListener;
 use OCA\OpenRegister\Listener\AnnotationNotificationListener;
 use OCA\OpenRegister\Service\Notification\NotificationsAnnotationInstaller;
 use OCA\OpenRegister\Notification\AnnotationNotifier;
@@ -805,6 +806,12 @@ class Application extends App implements IBootstrap
         $context->registerEventListener(ObjectUpdatedEvent::class,      RealtimeEventListener::class);
         $context->registerEventListener(ObjectDeletedEvent::class,      RealtimeEventListener::class);
         $context->registerEventListener(ObjectTransitionedEvent::class, RealtimeEventListener::class);
+
+        // Translation sidecar projection — keeps oc_openregister_translations in sync with JSONB property data.
+        $context->registerEventListener(ObjectCreatedEvent::class,      TranslationProjectionListener::class);
+        $context->registerEventListener(ObjectUpdatedEvent::class,      TranslationProjectionListener::class);
+        $context->registerEventListener(ObjectDeletedEvent::class,      TranslationProjectionListener::class);
+        $context->registerEventListener(ObjectTransitionedEvent::class, TranslationProjectionListener::class);
         $context->registerEventListener(ObjectTransitionedEvent::class, AggregationCacheInvalidationListener::class);
 
         // Webhook auto-create installer for x-openregister-notifications with webhook.persistent: true.

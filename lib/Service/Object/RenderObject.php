@@ -148,6 +148,7 @@ class RenderObject
         private readonly LinkedEntityEnricher $linkedEntityEnricher,
         private readonly \OCA\OpenRegister\Service\Calculation\CalculationEvaluator $calculationEvaluator,
         private readonly \OCA\OpenRegister\Service\UrnService $urnService,
+        private readonly \OCA\OpenRegister\Service\TranslationStatusService $translationStatusService,
     ) {
     }//end __construct()
 
@@ -1135,6 +1136,30 @@ class RenderObject
             // URN derivation MUST NOT break rendering; log + skip on failure.
             $this->logger->debug(
                 sprintf('[RenderObject] URN derivation failed for object %s: %s', (string) $entity->getUuid(), $e->getMessage())
+            );
+        }
+
+        // Per-language translation completeness (Decision 4 from
+        // register-i18n). Compute-on-read against the translations
+        // sidecar; skipped when the schema has no translatable
+        // properties (returns []).
+        try {
+            if ($renderSchema !== null && $entity->getUuid() !== null) {
+                $completeness = $this->translationStatusService->completenessForObject(
+                    (string) $entity->getUuid(),
+                    $renderSchema
+                );
+                if (count($completeness) > 0) {
+                    $entity->setTranslationCompleteness($completeness);
+                }
+            }
+        } catch (\Throwable $e) {
+            $this->logger->debug(
+                sprintf(
+                    '[RenderObject] translation completeness lookup failed for %s: %s',
+                    (string) $entity->getUuid(),
+                    $e->getMessage()
+                )
             );
         }
 

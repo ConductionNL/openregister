@@ -499,6 +499,18 @@ class ObjectEntity extends Entity implements JsonSerializable
     protected ?string $urn = null;
 
     /**
+     * Per-language translation completeness (Decision 4 from register-i18n).
+     *
+     * Transient property populated by RenderObject during render — shape:
+     *   `[language => ['translated' => int, 'total' => int, 'ratio' => float]]`.
+     * Computed-on-read via TranslationStatusService::completenessForObject;
+     * skipped (null) when the schema has no translatable properties.
+     *
+     * @var array<string, array{translated: int, total: int, ratio: float}>|null
+     */
+    protected ?array $translationCompleteness = null;
+
+    /**
      * Get the URN for this object.
      */
     public function getUrn(): ?string
@@ -512,6 +524,16 @@ class ObjectEntity extends Entity implements JsonSerializable
     public function setUrn(?string $urn): void
     {
         $this->urn = $urn;
+    }
+
+    public function getTranslationCompleteness(): ?array
+    {
+        return $this->translationCompleteness;
+    }
+
+    public function setTranslationCompleteness(?array $translationCompleteness): void
+    {
+        $this->translationCompleteness = $translationCompleteness;
     }
 
     /**
@@ -818,6 +840,13 @@ class ObjectEntity extends Entity implements JsonSerializable
         // field is simply omitted from @self.
         if ($this->urn !== null) {
             $objectArray['urn'] = $this->urn;
+        }
+
+        // Add per-language translation completeness when computed by the
+        // renderer. Skipped (omitted from @self) when the schema has no
+        // translatable properties or the object hasn't been rendered yet.
+        if ($this->translationCompleteness !== null) {
+            $objectArray['translationCompleteness'] = $this->translationCompleteness;
         }
 
         // Check for '@self' in the provided object array (this is the case if the object metadata is extended).
