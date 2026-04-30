@@ -97,6 +97,11 @@
 					<Webhook :size="20" />
 				</template>
 			</NcAppNavigationItem>
+			<NcAppNavigationItem :active="$route.path.startsWith('/avg')" :name="t('openregister', 'AVG / Verwerkingsregister')" @click="handleNavigate('/avg')">
+				<template #icon>
+					<ShieldLockOutline :size="20" />
+				</template>
+			</NcAppNavigationItem>
 			<NcAppNavigationItem :active="$route.path.startsWith('/endpoints')" :name="t('openregister', 'Endpoints')" @click="handleNavigate('/endpoints')">
 				<template #icon>
 					<Api :size="20" />
@@ -132,6 +137,7 @@ import DeleteRestore from 'vue-material-design-icons/DeleteRestore.vue'
 import TextBoxOutline from 'vue-material-design-icons/TextBoxOutline.vue'
 import MagnifyPlus from 'vue-material-design-icons/MagnifyPlus.vue'
 import Webhook from 'vue-material-design-icons/Webhook.vue'
+import ShieldLockOutline from 'vue-material-design-icons/ShieldLockOutline.vue'
 import Api from 'vue-material-design-icons/Api.vue'
 import AccountOutline from 'vue-material-design-icons/AccountOutline.vue'
 import FileOutline from 'vue-material-design-icons/FileOutline.vue'
@@ -164,6 +170,7 @@ export default {
 		TextBoxOutline,
 		MagnifyPlus,
 		Webhook,
+		ShieldLockOutline,
 		Api,
 		AccountOutline,
 		FileOutline,

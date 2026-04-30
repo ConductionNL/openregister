@@ -426,6 +426,29 @@ class UiController extends Controller
     }//end entitiesDetails()
 
     /**
+     * Render the AVG / Verwerkingsregister UI.
+     *
+     * Serves the SPA shell for the AVG management surface (CRUD over
+     * verwerkingsactiviteiten, verantwoordingsdocument, DSAR flows,
+     * compliance audit). Frontend routing inside the SPA picks the
+     * right view based on the URL path.
+     *
+     * @NoAdminRequired
+     *
+     * @NoCSRFRequired
+     *
+     * @phpstan-return TemplateResponse
+     *
+     * @psalm-return TemplateResponse<200|500, array<string, mixed>>
+     *
+     * @return TemplateResponse The SPA template response
+     */
+    public function avg(): TemplateResponse
+    {
+        return $this->makeSpaResponse();
+    }//end avg()
+
+    /**
      * Render endpoints UI
      *
      * Serves the Single Page Application template for the endpoints management interface.

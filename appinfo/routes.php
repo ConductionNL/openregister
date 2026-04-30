@@ -546,6 +546,7 @@ return [
 		['name' => 'ui#endpointLogs', 'url' => '/endpoints/logs', 'verb' => 'GET'],
 		['name' => 'ui#entities', 'url' => '/entities', 'verb' => 'GET'],
 		['name' => 'ui#entitiesDetails', 'url' => '/entities/{id}', 'verb' => 'GET', 'requirements' => ['id' => '\d+']],
+		['name' => 'ui#avg', 'url' => '/avg', 'verb' => 'GET'],
 		['name' => 'files#page', 'url' => '/files', 'verb' => 'GET'],
 
 		// User - Profile management and authentication.
