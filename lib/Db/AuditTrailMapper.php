@@ -334,6 +334,16 @@ class AuditTrailMapper extends QBMapper
         $auditTrail->setCreated(new DateTime());
         $auditTrail->setRegister($objectEntity->getRegister());
         $auditTrail->setSchema($objectEntity->getSchema());
+
+        // AVG / GDPR Art 30 trigger contract — resolve the
+        // processing-activity reference and tag the audit row. Resolution
+        // order is action-override > schema-default > register-default;
+        // see openspec/changes/avg-verwerkingsregister/design.md.
+        $processingActivityId = $this->resolveProcessingActivityId(objectEntity: $objectEntity);
+        if ($processingActivityId !== null) {
+            $auditTrail->setProcessingActivityId($processingActivityId);
+        }
+
         // Set the size to the byte size of the serialized object, with a minimum default of 14 bytes.
         $serializedSize = strlen(serialize($objectEntity->jsonSerialize()));
         $auditTrail->setSize(max($serializedSize, 14));
@@ -344,6 +354,179 @@ class AuditTrailMapper extends QBMapper
         // Insert the new AuditTrail into the database and return it.
         return $this->insert(entity: $auditTrail);
     }//end createAuditTrail()
+
+    /**
+     * Resolve the AVG / GDPR Art 30 processing-activity uuid for this
+     * write.
+     *
+     * Order of precedence (action > schema > register):
+     *
+     *   1. Transient override on the `ObjectEntity` itself
+     *      (`getProcessingActivityId()`).
+     *   2. Schema configuration key
+     *      `x-openregister-processing-activity`.
+     *   3. Register configuration key (same key).
+     *
+     * Each candidate is run through
+     * `VerwerkingsactiviteitMapper::resolveReference` so operators can
+     * use either the short readable `code` or the canonical `uuid`. A
+     * miss is logged at debug level (typo guard) and falls through to
+     * the next candidate; a fully-unresolved chain returns `null` and
+     * the audit row's `processing_activity_id` stays unset — preserves
+     * the existing behaviour for callers that haven't opted in.
+     *
+     * @param ObjectEntity $objectEntity The entity being audited.
+     *
+     * @return string|null Resolved verwerkingsactiviteit uuid, or null.
+     */
+    private function resolveProcessingActivityId(ObjectEntity $objectEntity): ?string
+    {
+        try {
+            /*
+             * @var VerwerkingsactiviteitMapper $vrwMapper
+             */
+
+            $vrwMapper = $this->container->get(VerwerkingsactiviteitMapper::class);
+        } catch (\Throwable $e) {
+            // Mapper not registered yet (e.g. during migration before
+            // service registration completes). Fail open — audit-trail
+            // tagging is additive, not required.
+            return null;
+        }
+
+        // 1. Per-action override on the ObjectEntity itself.
+        $override = $objectEntity->getProcessingActivityId();
+        if ($override !== null && $override !== '') {
+            $resolved = $vrwMapper->resolveReference(reference: $override);
+            if ($resolved !== null) {
+                return $resolved->getUuid();
+            }
+
+            $this->logger->debug(
+                message: '[AVG] Per-action processing-activity override did not resolve',
+                context: ['reference' => $override]
+            );
+        }
+
+        // 2. Schema-level annotation.
+        $schemaRef = $this->readProcessingActivityFromSchema(schemaId: $objectEntity->getSchema());
+        if ($schemaRef !== null && $schemaRef !== '') {
+            $resolved = $vrwMapper->resolveReference(reference: $schemaRef);
+            if ($resolved !== null) {
+                return $resolved->getUuid();
+            }
+
+            $this->logger->warning(
+                message: '[AVG] Schema annotation references unknown verwerkingsactiviteit',
+                context: ['reference' => $schemaRef, 'schemaId' => $objectEntity->getSchema()]
+            );
+        }
+
+        // 3. Register-level fallback.
+        $registerRef = $this->readProcessingActivityFromRegister(registerId: $objectEntity->getRegister());
+        if ($registerRef !== null && $registerRef !== '') {
+            $resolved = $vrwMapper->resolveReference(reference: $registerRef);
+            if ($resolved !== null) {
+                return $resolved->getUuid();
+            }
+
+            $this->logger->warning(
+                message: '[AVG] Register annotation references unknown verwerkingsactiviteit',
+                context: ['reference' => $registerRef, 'registerId' => $objectEntity->getRegister()]
+            );
+        }
+
+        return null;
+
+    }//end resolveProcessingActivityId()
+
+    /**
+     * Read the `x-openregister-processing-activity` annotation from a
+     * schema's configuration column. Null when not set or the schema
+     * cannot be loaded.
+     *
+     * @param string|int|null $schemaId Schema identifier (numeric id or uuid).
+     *
+     * @return string|null Annotation value (code or uuid), or null.
+     */
+    private function readProcessingActivityFromSchema($schemaId): ?string
+    {
+        if ($schemaId === null || $schemaId === '' || $schemaId === 0) {
+            return null;
+        }
+
+        try {
+            /*
+             * @var SchemaMapper $schemaMapper
+             */
+
+            $schemaMapper = $this->container->get(SchemaMapper::class);
+            $schema       = $schemaMapper->find(
+                $schemaId,
+                _rbac: false,
+                _multitenancy: false
+            );
+        } catch (\Throwable $e) {
+            return null;
+        }
+
+        $config = $schema->getConfiguration();
+        if (is_array($config) === false) {
+            return null;
+        }
+
+        $ref = $config['x-openregister-processing-activity'] ?? null;
+        if (is_string($ref) === true && $ref !== '') {
+            return $ref;
+        }
+
+        return null;
+
+    }//end readProcessingActivityFromSchema()
+
+    /**
+     * Read the `x-openregister-processing-activity` annotation from a
+     * register's configuration column. Null when not set or the
+     * register cannot be loaded.
+     *
+     * @param string|int|null $registerId Register identifier (numeric id or uuid).
+     *
+     * @return string|null Annotation value (code or uuid), or null.
+     */
+    private function readProcessingActivityFromRegister($registerId): ?string
+    {
+        if ($registerId === null || $registerId === '' || $registerId === 0) {
+            return null;
+        }
+
+        try {
+            /*
+             * @var RegisterMapper $registerMapper
+             */
+
+            $registerMapper = $this->container->get(RegisterMapper::class);
+            $register       = $registerMapper->find(
+                $registerId,
+                _rbac: false,
+                _multitenancy: false
+            );
+        } catch (\Throwable $e) {
+            return null;
+        }
+
+        $config = $register->getConfiguration();
+        if (is_array($config) === false) {
+            return null;
+        }
+
+        $ref = $config['x-openregister-processing-activity'] ?? null;
+        if (is_string($ref) === true && $ref !== '') {
+            return $ref;
+        }
+
+        return null;
+
+    }//end readProcessingActivityFromRegister()
 
 
     /**
@@ -399,10 +582,12 @@ class AuditTrailMapper extends QBMapper
             $resultsQb->andWhere($resultsQb->expr()->eq('action', $resultsQb->createNamedParameter($action, IQueryBuilder::PARAM_STR)));
             $countQb->andWhere($countQb->expr()->eq('action', $countQb->createNamedParameter($action, IQueryBuilder::PARAM_STR)));
         }
+
         if ($from !== null && $from !== '') {
             $resultsQb->andWhere($resultsQb->expr()->gte('created', $resultsQb->createNamedParameter($from, IQueryBuilder::PARAM_STR)));
             $countQb->andWhere($countQb->expr()->gte('created', $countQb->createNamedParameter($from, IQueryBuilder::PARAM_STR)));
         }
+
         if ($to !== null && $to !== '') {
             $resultsQb->andWhere($resultsQb->expr()->lte('created', $resultsQb->createNamedParameter($to, IQueryBuilder::PARAM_STR)));
             $countQb->andWhere($countQb->expr()->lte('created', $countQb->createNamedParameter($to, IQueryBuilder::PARAM_STR)));
@@ -410,8 +595,8 @@ class AuditTrailMapper extends QBMapper
 
         $results = $this->findEntities(query: $resultsQb);
 
-        $stmt  = $countQb->executeQuery();
-        $row   = $stmt->fetch();
+        $stmt = $countQb->executeQuery();
+        $row  = $stmt->fetch();
         $stmt->closeCursor();
         $total = (int) ($row['total'] ?? 0);
 

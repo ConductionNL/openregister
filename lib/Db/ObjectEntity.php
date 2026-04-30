@@ -511,12 +511,51 @@ class ObjectEntity extends Entity implements JsonSerializable
     protected ?array $translationCompleteness = null;
 
     /**
+     * AVG / GDPR Art 30 processing-activity override.
+     *
+     * Transient field — set by callers that want to tag an upcoming
+     * write to a specific verwerkingsactiviteit (highest precedence in
+     * the audit-trail trigger contract; beats schema and register
+     * defaults). Used by data-subject access endpoints
+     * (`/api/avg/inzage`, `/api/avg/vergetelheid`,
+     * `/api/avg/portabiliteit`) so reads/writes performed under a DSAR
+     * are correctly attributed to that processing activity.
+     *
+     * Not persisted to the object itself — the audit trail is the
+     * canonical record. Accepted as either a `code` or a `uuid`; the
+     * audit hook resolves both forms via
+     * `VerwerkingsactiviteitMapper::resolveReference`.
+     *
+     * @var string|null Transient processing-activity reference.
+     */
+    protected ?string $processingActivityId = null;
+
+    /**
      * Get the URN for this object.
      */
     public function getUrn(): ?string
     {
         return $this->urn;
-    }
+    }//end getUrn()
+
+    /**
+     * Get the transient processing-activity override used by the
+     * audit-trail trigger contract. Null when no override is set.
+     */
+    public function getProcessingActivityId(): ?string
+    {
+        return $this->processingActivityId;
+    }//end getProcessingActivityId()
+
+    /**
+     * Set the transient processing-activity override (code or uuid).
+     * Not persisted to the object — read by `AuditTrailMapper` at
+     * write time only.
+     */
+    public function setProcessingActivityId(?string $processingActivityId): void
+    {
+        $this->processingActivityId = $processingActivityId;
+    }//end setProcessingActivityId()
 
     /**
      * Set the URN for this object (transient, not persisted).
@@ -524,17 +563,17 @@ class ObjectEntity extends Entity implements JsonSerializable
     public function setUrn(?string $urn): void
     {
         $this->urn = $urn;
-    }
+    }//end setUrn()
 
     public function getTranslationCompleteness(): ?array
     {
         return $this->translationCompleteness;
-    }
+    }//end getTranslationCompleteness()
 
     public function setTranslationCompleteness(?array $translationCompleteness): void
     {
         $this->translationCompleteness = $translationCompleteness;
-    }
+    }//end setTranslationCompleteness()
 
     /**
      * Initialize the entity and define field types
