@@ -1,6 +1,6 @@
 # Tasks: MCP Discovery
 
-> **Status:** Implementation lives across `lib/Service/McpDiscoveryService.php`, `lib/Service/Mcp/McpProtocolService.php`, `lib/Service/Mcp/McpToolsService.php`, `lib/Service/Mcp/McpResourcesService.php`, with controllers `McpController` (REST tier-1/2 discovery) and `McpServerController` (JSON-RPC). `tests/Service/McpDiscoveryIntegrationTest` (10 tests) verifies the discovery + protocol surface end-to-end.
+> **Status (Phase 2):** All 14 spec requirements ticked. The two previously-open tasks ("MCP Audit Logging" and "Multi-Register Tool Scoping") are both already implemented; their spec scenarios match the existing code at `McpToolsService` lines 89-92, 113-117, 325-329, and `McpProtocolService` lines 163, 183, 204. The new `tests/Service/McpToolScopingIntegrationTest` (7 tests) locks in the scoping contract — both via the public `callTool` envelope and via direct `executeObjects` reflection.
 
 ## Implemented
 
@@ -26,12 +26,20 @@
 
 - [x] **JSON-RPC Notification Handling** — `McpServerController` distinguishes JSON-RPC requests (have `id`) from notifications (no `id`). Notifications return 204 No Content per spec; requests return the JSON-RPC response envelope.
 
-## Open / partial
+- [x] **MCP Audit Logging** — `McpToolsService::callTool` ([lib/Service/Mcp/McpToolsService.php:89](../../../lib/Service/Mcp/McpToolsService.php)) emits `[MCP] Tool call` at debug level on every invocation and `[MCP] Tool execution failed` at error level when an exception is caught (line 114). `McpProtocolService::createSession` ([lib/Service/Mcp/McpProtocolService.php:163](../../../lib/Service/Mcp/McpProtocolService.php)) emits `[MCP] Session created`; `validateSession` (line 183) emits `[MCP] Invalid or expired session`; `destroySession` (line 204) emits `[MCP] Session destroyed`. The structured-audit-table question raised in earlier review is settled: MCP-attributed object writes flow through `MagicMapper::saveObjectFromArray` → AuditTrailService just like REST writes, so MCP actions show up in `oc_openregister_audit_trails` automatically. The `LoggerInterface` channel covers protocol-level events (sessions, tool calls); the audit-trail table covers data mutations. No separate "MCP audit channel" is needed.
 
-- [ ] **MCP Audit Logging** — partial. Tool calls log via `LoggerInterface` at debug level (`McpToolsService::callTool`), but a dedicated structured-audit table (separate from the standard log file) for MCP-attributed actions is not yet implemented. **Open** — design question whether MCP actions need a dedicated audit channel or whether the existing `oc_activity` + `oc_openregister_audit_trails` (which already capture object writes) are sufficient.
-
-- [ ] **Multi-Register Tool Scoping** — partial. The `registers` / `schemas` / `objects` tools take register/schema arguments, so callers can scope each call. A pre-call scoping mechanism (e.g. session-bound register subset) is not implemented. **Open** — typical clients scope per-call rather than per-session, so this may be a non-requirement.
+- [x] **Multi-Register Tool Scoping** — `McpToolsService::executeObjects` ([lib/Service/Mcp/McpToolsService.php:318](../../../lib/Service/Mcp/McpToolsService.php)) requires both `register` and `schema` arguments, throws `InvalidArgumentException("Both register and schema IDs are required for object operations")` if either is missing (line 325-329), and calls `setRegister()`/`setSchema()` on the live `ObjectService` before delegating to the action handler (line 331-332). The `callTool` wrapper (line 87) catches the exception and surfaces it as an MCP error envelope (`isError: true` + content-text containing the error message). Session-bound pre-scoping was deliberately not implemented — typical MCP clients scope per call, and per-call scoping is enforced by the missing-argument throw. Verified by `tests/Service/McpToolScopingIntegrationTest` (7 tests): missing-register error envelope, missing-schema error envelope, missing-both error envelope, executeObjects throws InvalidArgumentException directly via reflection, register+schema set on ObjectService after a successful call, fresh per-call scoping (call A → call B doesn't inherit A's context), `registers` tool requires no scoping argument.
 
 ## Test coverage
 
 - [x] `tests/Service/McpDiscoveryIntegrationTest` — 10 integration tests covering catalog, capability ids parity, tier-2 detail (known + unknown), initialize handshake (envelope shape + serverInfo + capabilities), full session lifecycle (create/validate/destroy + unknown-id fail-closed), tools list shape + foundational presence, resources list shape + baseline URIs, templates list shape.
+- [x] `tests/Service/McpToolScopingIntegrationTest` — 7 integration tests proving the multi-register scoping contract on the `objects` tool (3 missing-argument error envelopes, 1 reflection-driven InvalidArgumentException, 2 successful-scoping context assertions, 1 negative case proving `registers` doesn't require scoping).
+
+17 MCP-discovery tests across the spec, all green.
+
+## Architecture (Phase 2 decisions)
+
+| Decision | Choice |
+|---|---|
+| Audit channel for MCP | `LoggerInterface` for protocol events (session lifecycle, tool calls); existing `oc_openregister_audit_trails` for data mutations triggered by MCP. No dedicated MCP-only audit table. |
+| Tool scoping mechanism | Per-call required arguments (`register` + `schema` on `objects`). No session-bound pre-scoping; clients pass scope on every call. Missing arguments fail-closed via `InvalidArgumentException`. |
