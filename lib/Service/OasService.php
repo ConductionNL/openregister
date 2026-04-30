@@ -22,6 +22,8 @@ namespace OCA\OpenRegister\Service;
 use Exception;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Exception\OasValidationException;
+use OCA\OpenRegister\Service\Oas\OasValidationReport;
 use OCP\IURLGenerator;
 use OCP\IConfig;
 use Psr\Log\LoggerInterface;
@@ -86,21 +88,61 @@ class OasService
     private readonly IURLGenerator $urlGenerator;
 
     /**
+     * Logger for validation messages (optional).
+     *
+     * @var LoggerInterface|null Logger or null
+     */
+    private readonly ?LoggerInterface $logger;
+
+    /**
+     * Validation report for the most recent createOas() invocation.
+     *
+     * @var OasValidationReport The current report
+     */
+    private OasValidationReport $report;
+
+    /**
+     * NLGov-permitted HTTP methods on documented operations (API-01).
+     */
+    private const ALLOWED_HTTP_METHODS = ['get', 'post', 'put', 'delete', 'parameters'];
+
+    /**
+     * NLGov-permitted HTTP response status codes (API-03).
+     *
+     * @var list<string>
+     */
+    private const ALLOWED_STATUS_CODES = ['200', '201', '204', '400', '401', '403', '404', '422', '500', 'default'];
+
+    /**
      * Constructor for OasService
      *
-     * @param RegisterMapper $registerMapper Register mapper for database operations
-     * @param SchemaMapper   $schemaMapper   Schema mapper for database operations
-     * @param IURLGenerator  $urlGenerator   URL generator for absolute URLs
+     * @param RegisterMapper       $registerMapper Register mapper for database operations
+     * @param SchemaMapper         $schemaMapper   Schema mapper for database operations
+     * @param IURLGenerator        $urlGenerator   URL generator for absolute URLs
+     * @param LoggerInterface|null $logger         PSR-3 logger for surfacing validation issues
      */
     public function __construct(
         RegisterMapper $registerMapper,
         SchemaMapper $schemaMapper,
-        IURLGenerator $urlGenerator
+        IURLGenerator $urlGenerator,
+        ?LoggerInterface $logger=null
     ) {
         $this->registerMapper = $registerMapper;
         $this->schemaMapper   = $schemaMapper;
         $this->urlGenerator   = $urlGenerator;
+        $this->logger         = $logger;
+        $this->report         = new OasValidationReport();
     }//end __construct()
+
+    /**
+     * Returns the validation report from the most recent createOas() call.
+     *
+     * @return OasValidationReport The current report
+     */
+    public function getLastValidationReport(): OasValidationReport
+    {
+        return $this->report;
+    }//end getLastValidationReport()
 
     /**
      * Create OpenAPI Specification for register(s)
@@ -111,18 +153,25 @@ class OasService
      *
      * @param string|null $registerId Optional register ID to generate OAS for specific register.
      *                                If null, generates OAS for all registers.
+     * @param bool        $strict     When true, throws OasValidationException if any validation
+     *                                error is detected. When false (default), errors are auto-
+     *                                corrected where possible and logged via the report.
      *
      * @return array<string, mixed> The complete OpenAPI specification array
      *
-     * @throws \Exception When base OAS file cannot be read or parsed
+     * @throws \Exception                When base OAS file cannot be read or parsed
+     * @throws OasValidationException    In strict mode, when the generated OAS has validation errors
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)  Complex OAS generation with multiple schema and path operations
      * @SuppressWarnings(PHPMD.NPathComplexity)       Multiple conditional paths for register and schema processing
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength) OAS generation requires multiple steps: setup, schema loading,
      *                                               CRUD paths, validation
      */
-    public function createOas(?string $registerId=null): array
+    public function createOas(?string $registerId=null, bool $strict=false): array
     {
+        // Reset the validation report at the start of every generation pass.
+        $this->report = new OasValidationReport();
+
         // Step 1: Reset OAS to base state from template file.
         $this->oas = $this->getBaseOas();
 
@@ -277,8 +326,41 @@ class OasService
         // Validate the final OpenAPI specification before returning.
         $this->validateOasIntegrity();
 
+        // Log validation issues so operators see them in the standard logs.
+        $this->logValidationIssues();
+
+        // Strict mode: refuse to return invalid output. The report is still
+        // available via getLastValidationReport() so the caller can render it.
+        if ($strict === true && $this->report->hasErrors() === true) {
+            throw new OasValidationException(
+                message: 'Generated OAS failed strict validation: '.count($this->report->getErrors()).' error(s)',
+                report: $this->report,
+            );
+        }
+
         return $this->oas;
     }//end createOas()
+
+    /**
+     * Log every validation issue once at the appropriate severity level.
+     *
+     * @return void
+     */
+    private function logValidationIssues(): void
+    {
+        if ($this->logger === null || $this->report->isEmpty() === true) {
+            return;
+        }
+
+        foreach ($this->report->getIssues() as $issue) {
+            $context = ['path' => $issue['path'], 'code' => $issue['code']];
+            if ($issue['severity'] === OasValidationReport::SEVERITY_ERROR) {
+                $this->logger->error('OAS validation: '.$issue['message'], $context);
+            } else {
+                $this->logger->warning('OAS validation: '.$issue['message'], $context);
+            }
+        }
+    }//end logValidationIssues()
 
     /**
      * Get the base OAS file as array
@@ -1675,27 +1757,27 @@ class OasService
      */
     private function validateOasIntegrity(): void
     {
-        // Check for invalid $ref references in schemas.
+        // Pass 1: $ref / allOf integrity inside component schemas.
         if (isset($this->oas['components']['schemas']) === true) {
             $schemaNames = array_keys($this->oas['components']['schemas']);
             foreach ($schemaNames as $schemaName) {
                 if (is_array($this->oas['components']['schemas'][$schemaName]) === true) {
                     $this->validateSchemaReferences(
                         schema: $this->oas['components']['schemas'][$schemaName],
-                        context: $schemaName
+                        context: 'components.schemas.'.$schemaName
                     );
                 }
             }
         }
 
-        // Check for invalid allOf constructs in paths.
+        // Pass 2: $ref integrity inside path response schemas.
         if (isset($this->oas['paths']) === true) {
             $pathNames = array_keys($this->oas['paths']);
             foreach ($pathNames as $pathName) {
                 $methods = array_keys($this->oas['paths'][$pathName]);
                 foreach ($methods as $method) {
                     $operation = &$this->oas['paths'][$pathName][$method];
-                    if (isset($operation['responses']) === true) {
+                    if (is_array($operation) === true && isset($operation['responses']) === true) {
                         $statusCodes = array_keys($operation['responses']);
                         foreach ($statusCodes as $statusCode) {
                             $respContent = ($operation['responses'][$statusCode]['content'] ?? []);
@@ -1703,7 +1785,7 @@ class OasService
                             if ($respSchema !== null) {
                                 $this->validateSchemaReferences(
                                     schema: $respSchema,
-                                    context: "path:{$pathName}:{$method}:response:{$statusCode}"
+                                    context: 'paths.'.$pathName.'.'.$method.'.responses.'.$statusCode
                                 );
                             }
                         }
@@ -1713,7 +1795,225 @@ class OasService
                 }
             }//end foreach
         }//end if
+
+        // Pass 3: server URL must be absolute.
+        $this->validateServerUrls();
+
+        // Pass 4: operationId uniqueness with auto-suffix de-duplication.
+        $this->validateOperationIdUniqueness();
+
+        // Pass 5: tag consistency — referenced tags must be defined; defined tags must be used.
+        $this->validateTagConsistency();
+
+        // Pass 6: NLGov rules — HTTP method whitelist (API-01) and status code whitelist (API-03).
+        $this->validateNlGovRules();
     }//end validateOasIntegrity()
+
+    /**
+     * Verify every entry in `servers` uses an absolute URL.
+     *
+     * @return void
+     */
+    private function validateServerUrls(): void
+    {
+        $servers = ($this->oas['servers'] ?? []);
+        if (is_array($servers) === false) {
+            return;
+        }
+
+        foreach ($servers as $idx => $server) {
+            $url = (string) ($server['url'] ?? '');
+            if ($url === '' || preg_match('#^https?://#i', $url) !== 1) {
+                $this->report->addError(
+                    path: 'servers.'.$idx.'.url',
+                    message: 'Server URL must be absolute (http:// or https://). Got: '.$url,
+                    code: OasValidationReport::CODE_RELATIVE_SERVER_URL,
+                );
+            }
+        }
+    }//end validateServerUrls()
+
+    /**
+     * Walk every operation and ensure operationIds are unique. Collisions are
+     * deduplicated in place by appending a numeric suffix (`_2`, `_3`, ...).
+     *
+     * @return void
+     */
+    private function validateOperationIdUniqueness(): void
+    {
+        if (isset($this->oas['paths']) === false || is_array($this->oas['paths']) === false) {
+            return;
+        }
+
+        $seen = [];
+        foreach ($this->oas['paths'] as $pathName => &$pathItem) {
+            if (is_array($pathItem) === false) {
+                continue;
+            }
+
+            foreach ($pathItem as $method => &$operation) {
+                if (is_array($operation) === false || isset($operation['operationId']) === false) {
+                    continue;
+                }
+
+                $original = (string) $operation['operationId'];
+                if ($original === '') {
+                    continue;
+                }
+
+                if (isset($seen[$original]) === false) {
+                    $seen[$original] = 1;
+                    continue;
+                }
+
+                // Collision — auto-suffix until unique.
+                $seen[$original]++;
+                $candidate = $original.'_'.$seen[$original];
+                while (isset($seen[$candidate]) === true) {
+                    $seen[$original]++;
+                    $candidate = $original.'_'.$seen[$original];
+                }
+
+                $seen[$candidate] = 1;
+
+                $operation['operationId'] = $candidate;
+                $this->report->addAutoCorrection(
+                    path: 'paths.'.$pathName.'.'.$method.'.operationId',
+                    message: 'Duplicate operationId "'.$original.'" auto-renamed to "'.$candidate.'".',
+                    code: OasValidationReport::CODE_DUPLICATE_OPERATION_ID,
+                );
+            }//end foreach
+
+            unset($operation);
+        }//end foreach
+
+        unset($pathItem);
+    }//end validateOperationIdUniqueness()
+
+    /**
+     * Cross-check declared `tags` against tag references in path operations.
+     *
+     * - Every tag referenced by an operation MUST exist in the top-level tags array
+     *   (orphan tag → auto-injected with a generated description, warning logged).
+     * - Every tag defined at the top level SHOULD be referenced by at least one
+     *   operation (unused tag → warning only, not auto-removed).
+     *
+     * @return void
+     */
+    private function validateTagConsistency(): void
+    {
+        $declaredTags = [];
+        foreach (($this->oas['tags'] ?? []) as $idx => $tagDef) {
+            if (is_array($tagDef) === true && isset($tagDef['name']) === true) {
+                $declaredTags[(string) $tagDef['name']] = $idx;
+            }
+        }
+
+        $usedTags = [];
+        foreach (($this->oas['paths'] ?? []) as $pathName => $pathItem) {
+            if (is_array($pathItem) === false) {
+                continue;
+            }
+
+            foreach ($pathItem as $method => $operation) {
+                if (is_array($operation) === false) {
+                    continue;
+                }
+
+                foreach (($operation['tags'] ?? []) as $tagName) {
+                    if (is_string($tagName) === false || $tagName === '') {
+                        continue;
+                    }
+
+                    $usedTags[$tagName][] = 'paths.'.$pathName.'.'.$method;
+                }
+            }
+        }
+
+        // Orphan tags — used in operations but not declared.
+        foreach ($usedTags as $tagName => $usages) {
+            if (isset($declaredTags[$tagName]) === true) {
+                continue;
+            }
+
+            $this->oas['tags'][] = [
+                'name'        => $tagName,
+                'description' => 'Operations for '.$tagName,
+            ];
+            $this->report->addAutoCorrection(
+                path: $usages[0],
+                message: 'Tag "'.$tagName.'" used by operations but not declared in top-level tags; auto-added.',
+                code: OasValidationReport::CODE_ORPHAN_TAG,
+            );
+        }
+
+        // Unused tags — declared but never referenced.
+        foreach (array_keys($declaredTags) as $tagName) {
+            if (isset($usedTags[$tagName]) === true) {
+                continue;
+            }
+
+            $this->report->addWarning(
+                path: 'tags['.$declaredTags[$tagName].'].name',
+                message: 'Top-level tag "'.$tagName.'" is declared but not referenced by any operation.',
+                code: OasValidationReport::CODE_UNUSED_TAG,
+            );
+        }
+    }//end validateTagConsistency()
+
+    /**
+     * NLGov API Design Rules — narrow checks that are verifiable from the
+     * OAS document alone:
+     *
+     * - API-01: only GET, POST, PUT, DELETE on documented operations.
+     * - API-03: only standard HTTP status codes on responses.
+     *
+     * @return void
+     */
+    private function validateNlGovRules(): void
+    {
+        if (isset($this->oas['paths']) === false || is_array($this->oas['paths']) === false) {
+            return;
+        }
+
+        $allowedMethods = array_flip(self::ALLOWED_HTTP_METHODS);
+        $allowedCodes   = array_flip(self::ALLOWED_STATUS_CODES);
+
+        foreach ($this->oas['paths'] as $pathName => $pathItem) {
+            if (is_array($pathItem) === false) {
+                continue;
+            }
+
+            foreach ($pathItem as $method => $operation) {
+                $methodKey = strtolower((string) $method);
+                if (isset($allowedMethods[$methodKey]) === false) {
+                    $reason  = 'violates NLGov API-01 (only GET, POST, PUT, DELETE allowed).';
+                    $message = sprintf('Non-standard HTTP method "%s" %s', (string) $method, $reason);
+                    $this->report->addError(
+                        path: 'paths.'.$pathName.'.'.$method,
+                        message: $message,
+                        code: OasValidationReport::CODE_INVALID_HTTP_METHOD,
+                    );
+                    continue;
+                }
+
+                if ($methodKey === 'parameters' || is_array($operation) === false) {
+                    continue;
+                }
+
+                foreach (($operation['responses'] ?? []) as $statusCode => $_response) {
+                    $statusKey = (string) $statusCode;
+                    if (isset($allowedCodes[$statusKey]) === false) {
+                        $this->report->addWarning(
+                            path: 'paths.'.$pathName.'.'.$method.'.responses.'.$statusCode,
+                            message: 'Non-standard HTTP status code "'.$statusCode.'" violates NLGov API-03 conventions.',
+                            code: OasValidationReport::CODE_INVALID_STATUS_CODE,
+                        );
+                    }
+                }
+            }//end foreach
+        }//end foreach
+    }//end validateNlGovRules()
 
     /**
      * Validate schema references recursively
@@ -1760,6 +2060,11 @@ class OasService
                 // If no valid items remain, remove allOf.
                 if (empty($validAllOfItems) === true) {
                     unset($schema['allOf']);
+                    $this->report->addAutoCorrection(
+                        path: $context.'.allOf',
+                        message: 'allOf with no valid items was removed.',
+                        code: OasValidationReport::CODE_INVALID_ALLOF,
+                    );
                 }
 
                 if (empty($validAllOfItems) === false) {
@@ -1797,8 +2102,14 @@ class OasService
                             $schema['type']        = 'string';
                             $schema['description'] = $schema['description'] ?? 'Reference to '.$refPath;
                         }
+
+                        $this->report->addError(
+                            path: $context.'.$ref',
+                            message: 'Dangling $ref to "#/components/schemas/'.$refPath.'"; substituted with type=string.',
+                            code: OasValidationReport::CODE_DANGLING_REF,
+                        );
                     }
-                }
+                }//end if
             }//end if
         }//end if
 
