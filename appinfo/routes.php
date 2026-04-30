@@ -549,6 +549,9 @@ return [
 		['name' => 'ui#avg', 'url' => '/avg', 'verb' => 'GET'],
 		['name' => 'ui#reports', 'url' => '/reports', 'verb' => 'GET'],
 		['name' => 'ui#reportView', 'url' => '/reports/{id}', 'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
+		// Rapportage on-demand render endpoints (Phase 2).
+		['name' => 'reports#render',  'url' => '/api/reports/{id}/render',  'verb' => 'POST', 'requirements' => ['id' => '[^/]+']],
+		['name' => 'reports#preview', 'url' => '/api/reports/{id}/preview', 'verb' => 'GET',  'requirements' => ['id' => '[^/]+']],
 		['name' => 'files#page', 'url' => '/files', 'verb' => 'GET'],
 
 		// User - Profile management and authentication.

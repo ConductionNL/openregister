@@ -18,6 +18,35 @@
 							<Refresh v-else :size="20" />
 						</template>
 					</NcButton>
+					<NcActions :force-name="true" :inline="0" menu-name="Export">
+						<template #icon>
+							<Download :size="20" />
+						</template>
+						<NcActionButton close-after-click @click="downloadAs('xlsx')">
+							<template #icon>
+								<MicrosoftExcel :size="20" />
+							</template>
+							{{ t('openregister', 'Excel (.xlsx)') }}
+						</NcActionButton>
+						<NcActionButton close-after-click @click="downloadAs('ods')">
+							<template #icon>
+								<FileDocumentOutline :size="20" />
+							</template>
+							{{ t('openregister', 'OpenDocument (.ods)') }}
+						</NcActionButton>
+						<NcActionButton close-after-click @click="downloadAs('csv')">
+							<template #icon>
+								<FileDelimitedOutline :size="20" />
+							</template>
+							{{ t('openregister', 'CSV') }}
+						</NcActionButton>
+						<NcActionButton close-after-click @click="openHtmlPreview">
+							<template #icon>
+								<Printer :size="20" />
+							</template>
+							{{ t('openregister', 'HTML preview (print to PDF)') }}
+						</NcActionButton>
+					</NcActions>
 				</div>
 				<p v-if="dashboard?.beschrijving">
 					{{ dashboard.beschrijving }}
@@ -130,8 +159,10 @@
 
 <script>
 import { translate as t } from '@nextcloud/l10n'
-import { NcAppContent, NcButton, NcEmptyContent, NcLoadingIcon } from '@nextcloud/vue'
+import { generateUrl } from '@nextcloud/router'
+import { NcAppContent, NcButton, NcEmptyContent, NcLoadingIcon, NcActions, NcActionButton } from '@nextcloud/vue'
 import { CnChartWidget, CnTableWidget } from '@conduction/nextcloud-vue'
+import axios from '@nextcloud/axios'
 
 import Refresh from 'vue-material-design-icons/Refresh.vue'
 import ChevronLeft from 'vue-material-design-icons/ChevronLeft.vue'
@@ -140,6 +171,10 @@ import ChartBoxOutline from 'vue-material-design-icons/ChartBoxOutline.vue'
 import AccountGroupOutline from 'vue-material-design-icons/AccountGroupOutline.vue'
 import FileDocumentOutline from 'vue-material-design-icons/FileDocumentOutline.vue'
 import DatabaseOutline from 'vue-material-design-icons/DatabaseOutline.vue'
+import Download from 'vue-material-design-icons/Download.vue'
+import MicrosoftExcel from 'vue-material-design-icons/MicrosoftExcel.vue'
+import FileDelimitedOutline from 'vue-material-design-icons/FileDelimitedOutline.vue'
+import Printer from 'vue-material-design-icons/Printer.vue'
 
 import { reportsStore } from '../../store/store.js'
 
@@ -158,6 +193,8 @@ export default {
 		NcButton,
 		NcEmptyContent,
 		NcLoadingIcon,
+		NcActions,
+		NcActionButton,
 		CnChartWidget,
 		CnTableWidget,
 		Refresh,
@@ -167,6 +204,10 @@ export default {
 		AccountGroupOutline,
 		FileDocumentOutline,
 		DatabaseOutline,
+		Download,
+		MicrosoftExcel,
+		FileDelimitedOutline,
+		Printer,
 	},
 
 	data() {
@@ -242,6 +283,41 @@ export default {
 
 		async refresh() {
 			await this.load(this.$route.params.id)
+		},
+
+		async downloadAs(format) {
+			const id = this.$route.params.id
+			if (!id) return
+			try {
+				const response = await axios.post(
+					generateUrl(`/apps/openregister/api/reports/${encodeURIComponent(id)}/render`),
+					null,
+					{ params: { format }, responseType: 'blob' },
+				)
+				const filename = this._extractFilename(response) || `${this.dashboard?.titel || 'dashboard'}.${format}`
+				const url = URL.createObjectURL(response.data)
+				const a = document.createElement('a')
+				a.href = url
+				a.download = filename
+				a.click()
+				URL.revokeObjectURL(url)
+			} catch (e) {
+				// eslint-disable-next-line no-console
+				console.error('[ReportView.downloadAs]', e)
+			}
+		},
+
+		openHtmlPreview() {
+			const id = this.$route.params.id
+			if (!id) return
+			const url = generateUrl(`/apps/openregister/api/reports/${encodeURIComponent(id)}/preview`)
+			window.open(url, '_blank')
+		},
+
+		_extractFilename(response) {
+			const cd = response.headers?.['content-disposition'] || ''
+			const m = cd.match(/filename="?([^";]+)"?/i)
+			return m ? m[1] : null
 		},
 
 		widgetState(index) {

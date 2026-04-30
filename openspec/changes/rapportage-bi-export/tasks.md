@@ -1,6 +1,6 @@
 # Tasks: Rapportage en BI Export
 
-> **Status (planning):** Architectural reframe — instead of building a heavy "BI subsystem" (OData v4, ODBC bridge, dedicated PDF engine, scheduled-report tables), we treat **dashboards and reports as operator-defined schemas in a `reports` register** and compose existing primitives (`AggregationRunner`, `GraphQL`, `ExportService`, `CnDashboardPage` + nextcloud-vue widgets). 9 of 15 spec requirements already covered by existing primitives; 4 land in Phase 1; 2 land in Phase 2; 1 (OData) is intentionally out of scope. See `design.md` for the full architecture.
+> **Status (Phase 2):** 14 of 15 spec requirements implemented. Phase 1 shipped declarative dashboards (operator-imported `reports` register + `dashboard` schema + Vue renderer mapping widget types to CnChartWidget / CnTableWidget / etc.). Phase 2 adds CSV/XLSX/ODS/HTML server-side rendering + Files-folder delivery via `ReportRenderJob` daily TimedJob. PDF (via Dompdf) is the only remaining bullet — deferred to Phase 2b as a small dep-add. OData v4 stays out of scope. 6 integration tests covering all four formats + unresolvable-widget graceful degradation, all green. See `design.md` for the full architecture.
 
 ## Already covered by existing primitives
 
@@ -32,9 +32,12 @@
 
 ## Phase 2 — export + scheduling
 
-- [ ] **PDF and ODS export formats.** Extend `ExportService::exportTo*` with PDF (via `Browsershot` headless-Chrome wrapper; falls back to "PDF unavailable" envelope when the dep is missing) + ODS (PhpSpreadsheet already supports this writer; trivial add). CSV + XLSX already shipped.
+- [x] **CSV / XLSX / ODS / HTML export formats (Phase 2).** `lib/Service/Reporting/ReportRenderService.php` composes a dashboard into rendered bytes by resolving every widget's data via the existing `AggregationRunner` / `GraphQLService`, then dispatching to the matching writer:
+  - `lib/Service/Reporting/SpreadsheetReportWriter.php` — XLSX / ODS / CSV via PhpSpreadsheet. One sheet per widget plus a cover "Overview" sheet listing each widget with its top-level value or row count.
+  - `lib/Service/Reporting/HtmlReportWriter.php` — self-contained HTML document with print-friendly CSS (`@media print` page-break-inside guards) so operators can browser-print to PDF without a server-side PDF backend.
+  Endpoint: `POST /api/reports/{id}/render?format=…` returns the file as a `DataDownloadResponse`. Unsupported formats yield 422; the controller falls through to the JSON envelope on errors. Browser-tested end-to-end — Export dropdown in `ReportView.vue` triggers downloads for all four formats. **PDF intentionally deferred** to Phase 2b — needs adding Dompdf as a dep (~3MB); HTML preview + browser print covers the immediate "render to PDF" need.
 
-- [ ] **Scheduled report generation.** `lib/BackgroundJob/ReportRenderJob.php` daily TimedJob walks objects in the `reports` register with a `schedule` field (intervalSec format, mirroring notifications-v2 deferral), computes "is it time to fire?", calls `ReportRenderService::render(dashboard, format)`, and dispatches via the existing notification path or `FileService` based on the dashboard's `delivery` field. Each render writes an audit row tagged with a dedicated `rapportage-rendering` processing-activity (Phase 2 seeds this activity in the migration).
+- [x] **Scheduled report generation (Phase 2).** `lib/BackgroundJob/ReportRenderJob.php` daily TimedJob walks every dashboard object in the `reports` register, evaluates `schedule.active` + `schedule.intervalSec` against the object's `lastRenderedAt` timestamp (using object metadata, no schema-side migration), calls `ReportRenderService::render(dashboard, format)` with the configured `delivery.format`, and writes the result into the dashboard's `delivery.filesFolder` (defaults to `/Reports/<dashboard-slug>/<filename>` under the dashboard owner's home) via the existing `IRootFolder` API. Operator overrides: `rapportage_scheduled_renders_enabled` (kill switch). Email channel deferred to Phase 2b.
 
 ## Phase 3 — pre-built templates
 
