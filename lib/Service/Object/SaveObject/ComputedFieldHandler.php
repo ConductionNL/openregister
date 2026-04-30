@@ -99,7 +99,14 @@ class ComputedFieldHandler
         }
 
         $loader     = new ArrayLoader();
-        $this->twig = new Environment($loader);
+        // autoescape:false — Twig's default autoescaping injects the
+        // `escape` filter into every `{{ var }}` output, but our
+        // sandbox SecurityPolicy doesn't allow that filter (and HTML
+        // escape isn't meaningful for computed property values that
+        // return strings/numbers/dates back into the object data).
+        // Without this flag, every Twig expression silently fails
+        // with `Filter "escape" is not allowed`.
+        $this->twig = new Environment($loader, ['autoescape' => false]);
 
         // Add the mapping extension for custom filters and functions.
         $this->twig->addExtension($this->mappingExtension);
