@@ -204,32 +204,22 @@ class DsarServiceIntegrationTest extends TestCase
         $subject  = 'phpunit-subject-'.uniqid().'@example.com';
         $object   = $this->makeObjectFixture();
         $entityId = $this->insertGdprEntity(type: 'email', value: $subject);
-        $this->insertEntityRelation(entityId: $entityId, objectId: (int) $object->getId());
+        $this->insertEntityRelation(entityId: $entityId, objectId: (int) $object->getId(), object: $object);
 
         $results = $this->dsar->findObjectsForSubject(subject: $subject, type: 'email');
 
-        $this->assertGreaterThanOrEqual(
-            1,
-            count($results),
-            'inzage MUST find at least one matching object for the subject'
+        // With the post-foundation-fix entity_relations now carrying
+        // object_uuid, lookup is deterministic — exactly one envelope
+        // for the fixture, pointing at the fixture's own object uuid.
+        $this->assertCount(1, $results);
+        $this->assertSame(
+            $object->getUuid(),
+            $results[0]['object']['id'] ?? null,
+            'foundation fix: object_uuid lookup MUST resolve to the exact fixture object'
         );
-
-        // The GdprEntity surface is the unambiguous part of the
-        // composition: the row whose `value` matched our unique-per-test
-        // subject MUST appear in the response with the right type.
-        $values = [];
-        foreach ($results as $entry) {
-            foreach ($entry['gdprEntities'] as $hit) {
-                $values[] = $hit['value'];
-                $this->assertSame('email', $hit['type'], 'type filter MUST be honoured');
-            }
-        }
-
-        $this->assertContains(
-            $subject,
-            $values,
-            'the subject value MUST appear in at least one envelope.gdprEntities row'
-        );
+        $this->assertCount(1, $results[0]['gdprEntities']);
+        $this->assertSame('email', $results[0]['gdprEntities'][0]['type']);
+        $this->assertSame($subject, $results[0]['gdprEntities'][0]['value']);
 
     }//end testFindObjectsForSubjectJoinsGdprIndex()
 
@@ -244,8 +234,8 @@ class DsarServiceIntegrationTest extends TestCase
 
         $emailId = $this->insertGdprEntity(type: 'email', value: $subjectEmail);
         $nameId  = $this->insertGdprEntity(type: 'name', value: $subjectName);
-        $this->insertEntityRelation(entityId: $emailId, objectId: (int) $object->getId());
-        $this->insertEntityRelation(entityId: $nameId, objectId: (int) $object->getId());
+        $this->insertEntityRelation(entityId: $emailId, objectId: (int) $object->getId(), object: $object);
+        $this->insertEntityRelation(entityId: $nameId, objectId: (int) $object->getId(), object: $object);
 
         $results = $this->dsar->findObjectsForSubject(
             subject: $subjectEmail,
@@ -293,7 +283,7 @@ class DsarServiceIntegrationTest extends TestCase
         $subject  = 'phpunit-dryrun-'.uniqid().'@example.com';
         $object   = $this->makeObjectFixture();
         $entityId = $this->insertGdprEntity(type: 'email', value: $subject);
-        $this->insertEntityRelation(entityId: $entityId, objectId: (int) $object->getId());
+        $this->insertEntityRelation(entityId: $entityId, objectId: (int) $object->getId(), object: $object);
 
         $summary = $this->dsar->eraseObjectsForSubject(
             subject: $subject,
@@ -334,7 +324,7 @@ class DsarServiceIntegrationTest extends TestCase
         $subject  = 'phpunit-erase-'.uniqid().'@example.com';
         $object   = $this->makeObjectFixture();
         $entityId = $this->insertGdprEntity(type: 'email', value: $subject);
-        $this->insertEntityRelation(entityId: $entityId, objectId: (int) $object->getId());
+        $this->insertEntityRelation(entityId: $entityId, objectId: (int) $object->getId(), object: $object);
 
         // Tag the object with the DSAR activity directly so the audit
         // hook (Phase 1) writes the right processing_activity_id. This
@@ -490,20 +480,27 @@ class DsarServiceIntegrationTest extends TestCase
 
     }//end insertGdprEntity()
 
-    private function insertEntityRelation(int $entityId, int $objectId): int
+    private function insertEntityRelation(int $entityId, int $objectId, ?ObjectEntity $object=null): int
     {
-        $qb = $this->db->getQueryBuilder();
-        $qb->insert('openregister_entity_relations')
-            ->values(
-                [
-                    'entity_id'        => $qb->createNamedParameter($entityId, IQueryBuilder::PARAM_INT),
-                    'chunk_id'         => $qb->createNamedParameter(0, IQueryBuilder::PARAM_INT),
-                    'object_id'        => $qb->createNamedParameter($objectId, IQueryBuilder::PARAM_INT),
-                    'confidence'       => $qb->createNamedParameter('0.99'),
-                    'detection_method' => $qb->createNamedParameter('phpunit'),
-                    'created_at'       => $qb->createNamedParameter((new DateTime())->format('Y-m-d H:i:s')),
-                ]
-            );
+        $qb     = $this->db->getQueryBuilder();
+        $values = [
+            'entity_id'        => $qb->createNamedParameter($entityId, IQueryBuilder::PARAM_INT),
+            'chunk_id'         => $qb->createNamedParameter(0, IQueryBuilder::PARAM_INT),
+            'object_id'        => $qb->createNamedParameter($objectId, IQueryBuilder::PARAM_INT),
+            'confidence'       => $qb->createNamedParameter('0.99'),
+            'detection_method' => $qb->createNamedParameter('phpunit'),
+            'created_at'       => $qb->createNamedParameter((new DateTime())->format('Y-m-d H:i:s')),
+        ];
+
+        // Populate the disambiguating columns so DsarService can resolve
+        // the owning object deterministically across magic-tables.
+        if ($object !== null) {
+            $values['object_uuid'] = $qb->createNamedParameter((string) $object->getUuid());
+            $values['register_id'] = $qb->createNamedParameter((string) $object->getRegister());
+            $values['schema_id']   = $qb->createNamedParameter((string) $object->getSchema());
+        }
+
+        $qb->insert('openregister_entity_relations')->values($values);
         $qb->executeStatement();
         $id                            = (int) $this->db->lastInsertId('oc_openregister_entity_relations_id_seq');
         $this->insertedRelationIds[]   = $id;

@@ -146,21 +146,24 @@ class DsarService
             return [];
         }
 
-        // Group entity hits by object_id so we render each affected
-        // object once, with its full set of PII matches alongside.
+        // Group entity hits by the canonical object key. We prefer
+        // `object_uuid` (globally unique across magic-tables) when
+        // present, falling back to the legacy int `object_id` for rows
+        // predating the disambiguation migration.
         $groupedByObject = [];
         foreach ($hits as $hit) {
-            $objectId = (int) $hit['object_id'];
-            if ($objectId === 0) {
+            $key = $this->buildObjectKey(hit: $hit);
+            if ($key === null) {
                 continue;
             }
 
-            $groupedByObject[$objectId] ??= [
-                'object_id'    => $objectId,
+            $groupedByObject[$key] ??= [
+                'object_id'    => (int) ($hit['object_id'] ?? 0),
+                'object_uuid'  => (string) ($hit['object_uuid'] ?? ''),
                 'gdprEntities' => [],
             ];
 
-            $groupedByObject[$objectId]['gdprEntities'][] = [
+            $groupedByObject[$key]['gdprEntities'][] = [
                 'type'       => (string) ($hit['type'] ?? ''),
                 'value'      => (string) ($hit['value'] ?? ''),
                 'category'   => (string) ($hit['category'] ?? ''),
@@ -170,19 +173,8 @@ class DsarService
 
         $envelopes = [];
         foreach ($groupedByObject as $entry) {
-            try {
-                $object = $this->objectMapper->find(
-                    $entry['object_id'],
-                    _rbac: false,
-                    _multitenancy: false
-                );
-            } catch (DoesNotExistException $e) {
-                continue;
-            } catch (\Throwable $e) {
-                $this->logger->debug(
-                    message: '[DSAR] Failed to load object for subject lookup',
-                    context: ['objectId' => $entry['object_id'], 'error' => $e->getMessage()]
-                );
+            $object = $this->loadObjectByEntry(entry: $entry);
+            if ($object === null) {
                 continue;
             }
 
@@ -226,26 +218,31 @@ class DsarService
      */
     public function eraseObjectsForSubject(string $subject, ?string $type=null, bool $dryRun=false): array
     {
-        $hits      = $this->matchEntities(subject: $subject, type: $type, mode: 'exact');
-        $objectIds = array_values(
-                array_unique(
-                array_map(
-            static fn (array $h) => (int) ($h['object_id'] ?? 0),
-            $hits
-                )
-                )
-                );
-        $objectIds = array_values(array_filter($objectIds, static fn ($v) => $v > 0));
+        $hits = $this->matchEntities(subject: $subject, type: $type, mode: 'exact');
+
+        // Dedupe by canonical key — uuid (preferred) or int id (legacy).
+        $entries = [];
+        foreach ($hits as $hit) {
+            $key = $this->buildObjectKey(hit: $hit);
+            if ($key === null) {
+                continue;
+            }
+
+            $entries[$key] ??= [
+                'object_id'   => (int) ($hit['object_id'] ?? 0),
+                'object_uuid' => (string) ($hit['object_uuid'] ?? ''),
+            ];
+        }
 
         $summary = [
             'subject'      => $subject,
             'type'         => $type,
             'dryRun'       => $dryRun,
-            'matchedCount' => count($objectIds),
+            'matchedCount' => count($entries),
             'erased'       => [],
         ];
 
-        if ($dryRun === true || $objectIds === []) {
+        if ($dryRun === true || $entries === []) {
             return $summary;
         }
 
@@ -258,14 +255,9 @@ class DsarService
             'subject'   => $subject,
         ];
 
-        foreach ($objectIds as $objectId) {
-            try {
-                $object = $this->objectMapper->find(
-                    $objectId,
-                    _rbac: false,
-                    _multitenancy: false
-                );
-            } catch (\Throwable $e) {
+        foreach ($entries as $entry) {
+            $object = $this->loadObjectByEntry(entry: $entry);
+            if ($object === null) {
                 continue;
             }
 
@@ -284,7 +276,7 @@ class DsarService
             } catch (\Throwable $e) {
                 $this->logger->warning(
                     message: '[DSAR] Soft-delete failed during vergetelheid',
-                    context: ['objectId' => $objectId, 'error' => $e->getMessage()]
+                    context: ['object' => $entry, 'error' => $e->getMessage()]
                 );
             }
         }//end foreach
@@ -292,6 +284,69 @@ class DsarService
         return $summary;
 
     }//end eraseObjectsForSubject()
+
+    /**
+     * Build a dedup key for a relation hit row.
+     *
+     * Prefers `object_uuid` when present (post-disambiguation migration);
+     * falls back to `object_id` for legacy rows. Returns null when the
+     * row carries neither — the hit is dropped.
+     *
+     * @param array<string, mixed> $hit Single SQL row from matchEntities.
+     *
+     * @return string|null Dedup key, or null when the row is unusable.
+     */
+    private function buildObjectKey(array $hit): ?string
+    {
+        $uuid = (string) ($hit['object_uuid'] ?? '');
+        if ($uuid !== '') {
+            return 'uuid:'.$uuid;
+        }
+
+        $id = (int) ($hit['object_id'] ?? 0);
+        if ($id > 0) {
+            return 'id:'.$id;
+        }
+
+        return null;
+
+    }//end buildObjectKey()
+
+    /**
+     * Load the owning ObjectEntity for a deduplicated hit entry.
+     *
+     * Uses uuid lookup when the relation row carries one (deterministic
+     * across magic-tables), otherwise falls back to the int id (best
+     * effort, may collide on the legacy schema).
+     *
+     * @param array{object_id: int, object_uuid: string} $entry Dedup entry.
+     *
+     * @return ObjectEntity|null
+     */
+    private function loadObjectByEntry(array $entry): ?ObjectEntity
+    {
+        $identifier = ($entry['object_uuid'] !== '') ? $entry['object_uuid'] : $entry['object_id'];
+        if ($identifier === 0 || $identifier === '') {
+            return null;
+        }
+
+        try {
+            return $this->objectMapper->find(
+                $identifier,
+                _rbac: false,
+                _multitenancy: false
+            );
+        } catch (DoesNotExistException $e) {
+            return null;
+        } catch (\Throwable $e) {
+            $this->logger->debug(
+                message: '[DSAR] Failed to load object',
+                context: ['identifier' => $identifier, 'error' => $e->getMessage()]
+            );
+            return null;
+        }
+
+    }//end loadObjectByEntry()
 
     /**
      * Update a single object with DSAR attribution (Art 16 rectificatie).
@@ -392,7 +447,19 @@ class DsarService
     {
         try {
             $qb = $this->db->getQueryBuilder();
-            $qb->selectDistinct(['e.id', 'e.type', 'e.value', 'e.category', 'e.detected_at', 'r.object_id'])
+            $qb->selectDistinct(
+                [
+                    'e.id',
+                    'e.type',
+                    'e.value',
+                    'e.category',
+                    'e.detected_at',
+                    'r.object_id',
+                    'r.object_uuid',
+                    'r.register_id',
+                    'r.schema_id',
+                ]
+            )
                 ->from('openregister_entities', 'e')
                 ->innerJoin(
                     'e',

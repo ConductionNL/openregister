@@ -321,6 +321,16 @@ class EntityRecognitionHandler
                     $relation->setFileId($chunk->getSourceId());
                 } else if ($chunk->getSourceType() === 'object') {
                     $relation->setObjectId($chunk->getSourceId());
+
+                    // Populate disambiguating columns so DSAR /
+                    // retention-enforcement composition can resolve the
+                    // owning object deterministically across magic-tables.
+                    // The int `object_id` alone collides because magic-table
+                    // sequences are scoped per-table.
+                    $this->populateObjectContextOnRelation(
+                        relation: $relation,
+                        objectId: $chunk->getSourceId()
+                    );
                 }
 
                 $this->entityRelationMapper->insert($relation);
@@ -968,4 +978,41 @@ class EntityRecognitionHandler
 
         return substr($text, $start, $end - $start);
     }//end extractContext()
+
+    /**
+     * Populate the disambiguating object-context columns on a relation.
+     *
+     * Magic-table id sequences are scoped per-table, so the same
+     * `object_id` int can collide across tables. Storing the owning
+     * register slug + schema slug + object uuid makes downstream
+     * lookups (DSAR composition, retention enforcement) deterministic.
+     *
+     * Best-effort: on any failure (object not found, mapper throws,
+     * etc.) the legacy `object_id` is still set and the new columns
+     * stay null — preserves current behaviour.
+     *
+     * @param EntityRelation $relation Relation being persisted.
+     * @param int            $objectId Magic-table object id.
+     *
+     * @return void
+     */
+    private function populateObjectContextOnRelation(EntityRelation $relation, int $objectId): void
+    {
+        try {
+            $objectMapper = \OC::$server->get(\OCA\OpenRegister\Db\MagicMapper::class);
+            $object       = $objectMapper->find(
+                $objectId,
+                _rbac: false,
+                _multitenancy: false
+            );
+        } catch (\Throwable $e) {
+            // Best-effort enrichment; leave the new columns null.
+            return;
+        }
+
+        $relation->setRegisterId((string) $object->getRegister());
+        $relation->setSchemaId((string) $object->getSchema());
+        $relation->setObjectUuid((string) $object->getUuid());
+
+    }//end populateObjectContextOnRelation()
 }//end class
