@@ -15,6 +15,8 @@
  * @version GIT: <git_id>
  *
  * @link https://www.OpenRegister.app
+ *
+ * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-34
  */
 
 declare(strict_types=1);
@@ -53,6 +55,7 @@ class SftpTransport implements TransportInterface
      * @return TransportResult The result of the transport.
      *
      * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-21
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-34
      */
     public function send(string $sipFilePath, array $config): TransportResult
     {

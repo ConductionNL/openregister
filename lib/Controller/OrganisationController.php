@@ -17,6 +17,11 @@
  * @version GIT: <git-id>
  *
  * @link https://OpenRegister.app
+ *
+ * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-76
+ * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-75
+ * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-73
+ * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-72
  */
 
 namespace OCA\OpenRegister\Controller;
@@ -1117,6 +1122,7 @@ class OrganisationController extends Controller
      * @NoCSRFRequired
      *
      * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-16
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-76
      */
     public function suspend(string $uuid): JSONResponse
     {
@@ -1148,6 +1154,7 @@ class OrganisationController extends Controller
      * @NoCSRFRequired
      *
      * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-16
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-76
      */
     public function activate(string $uuid): JSONResponse
     {
@@ -1182,6 +1189,7 @@ class OrganisationController extends Controller
      * @NoCSRFRequired
      *
      * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-16
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-75
      */
     public function deprovision(string $uuid): JSONResponse
     {
@@ -1277,6 +1285,7 @@ class OrganisationController extends Controller
      * @NoCSRFRequired
      *
      * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-16
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-73
      */
     public function isolationVerify(): JSONResponse
     {
@@ -1314,6 +1323,7 @@ class OrganisationController extends Controller
      * @NoCSRFRequired
      *
      * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-16
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-72
      */
     public function isolationMetrics(): JSONResponse
     {

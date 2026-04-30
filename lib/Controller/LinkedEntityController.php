@@ -11,6 +11,8 @@
  *
  * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-44
  * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-45
+ * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-48
+ * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-49
  */
 
 namespace OCA\OpenRegister\Controller;
@@ -66,6 +68,8 @@ class LinkedEntityController extends Controller
      *
      * @NoAdminRequired
      * @NoCSRFRequired
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-48
      */
     #[NoAdminRequired]
     #[NoCSRFRequired]
@@ -107,6 +111,7 @@ class LinkedEntityController extends Controller
      * @NoCSRFRequired
      *
      * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-45
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-48
      */
     #[NoAdminRequired]
     #[NoCSRFRequired]
@@ -206,6 +211,7 @@ class LinkedEntityController extends Controller
      * @NoCSRFRequired
      *
      * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-44
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-49
      */
     #[NoAdminRequired]
     #[NoCSRFRequired]

@@ -19,6 +19,7 @@
  *
  * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-22
  * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-24
+ * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-38
  */
 
 declare(strict_types=1);
@@ -103,6 +104,7 @@ class EdepotTransferService
      * @return array<string,mixed> The updated transfer list with results.
      *
      * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-22
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-38
      */
     public function executeTransfer(array $transferList, TransportInterface $transport): array
     {

@@ -16,6 +16,8 @@
  * @version GIT: <git-id>
  *
  * @link https://OpenRegister.app
+ *
+ * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-18
  */
 
 declare(strict_types=1);
@@ -130,6 +132,7 @@ class RegisterCalendarProvider implements ICalendarProvider
      * @return array Array of ICalendar instances
      *
      * @spec openspec/changes/retrofit-calendar-integration-2026-04-28/tasks.md#task-1
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-18
      */
     public function getCalendars(string $principalUri, array $calendarUris=[]): array
     {

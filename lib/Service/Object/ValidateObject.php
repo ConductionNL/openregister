@@ -22,6 +22,8 @@
  * @version GIT: <git_id>
  *
  * @link https://www.OpenRegister.app
+ *
+ * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-63
  */
 
 namespace OCA\OpenRegister\Service\Object;
@@ -1295,6 +1297,7 @@ class ValidateObject
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Complete validation logic requires extensive handling
      *
      * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-2
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-63
      */
     public function validateObject(
         array $object,

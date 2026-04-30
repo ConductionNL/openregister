@@ -19,6 +19,7 @@
  *
  * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-2
  * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-63
+ * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-4
  */
 
 declare(strict_types=1);
@@ -95,6 +96,7 @@ class DestructionCheckJob extends TimedJob
      *
      * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-8
      * @spec openspec/changes/retrofit-archival-destruction-workflow-2026-04-24/tasks.md#task-1
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-4
      */
     protected function run($argument): void
     {

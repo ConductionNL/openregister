@@ -18,6 +18,9 @@
  *
  * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-18
  * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-19
+ * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-25
+ * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-26
+ * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-27
  */
 
 declare(strict_types=1);
@@ -125,6 +128,7 @@ class DeepLinkRegistryService
      * @return void
      *
      * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-19
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-25
      */
     public function register(
         string $appId,
@@ -179,6 +183,7 @@ class DeepLinkRegistryService
      * @return DeepLinkRegistration|null The registration, or null if none exists
      *
      * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-18
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-26
      */
     public function resolve(int $registerId, int $schemaId): ?DeepLinkRegistration
     {
@@ -211,6 +216,7 @@ class DeepLinkRegistryService
      * @return string|null The resolved URL, or null to use default
      *
      * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-18
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-27
      */
     public function resolveUrl(
         int $registerId,
@@ -238,6 +244,7 @@ class DeepLinkRegistryService
      * @return string|null The icon identifier, or null
      *
      * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-18
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-26
      */
     public function resolveIcon(int $registerId, int $schemaId): ?string
     {
