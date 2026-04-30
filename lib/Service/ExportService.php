@@ -105,19 +105,24 @@ class ExportService
      *
      * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      */
+    private readonly \OCA\OpenRegister\Service\Object\TranslationHandler $translationHandler;
+    private ?Register $contextRegister = null;
+
     public function __construct(
         RegisterMapper $registerMapper,
         IUserManager $_userManager,
         IGroupManager $groupManager,
         ObjectService $objectService,
         CacheHandler $cacheHandler,
-        PropertyRbacHandler $propertyRbacHandler
+        PropertyRbacHandler $propertyRbacHandler,
+        \OCA\OpenRegister\Service\Object\TranslationHandler $translationHandler
     ) {
         $this->registerMapper      = $registerMapper;
         $this->groupManager        = $groupManager;
         $this->objectService       = $objectService;
         $this->cacheHandler        = $cacheHandler;
         $this->propertyRbacHandler = $propertyRbacHandler;
+        $this->translationHandler  = $translationHandler;
     }//end __construct()
 
     /**
@@ -256,6 +261,10 @@ class ExportService
         array $filters=[],
         ?IUser $currentUser=null
     ): void {
+        // Capture register context so getHeaders / getObjectValue can
+        // emit / read per-language `field_lang` columns for translatable
+        // properties (register-i18n Phase 3 wire-in).
+        $this->contextRegister = $register;
         $sheet = $spreadsheet->createSheet();
 
         $sheetTitle = 'data';
@@ -547,6 +556,19 @@ class ExportService
                     continue;
                 }
 
+                // Translatable property: emit one column per configured
+                // language so the CSV round-trips through TranslationCsvCodec.
+                // Falls back to ['nl', 'en'] when the register isn't
+                // resolvable (org-wide minimum per CLAUDE.md memory).
+                if (($properties[$fieldName]['translatable'] ?? false) === true) {
+                    $languages = $this->resolveExportLanguages();
+                    foreach ($languages as $lang) {
+                        $headers[$col] = $fieldName . '_' . $lang;
+                        $col++;
+                    }
+                    continue;
+                }
+
                 // Always use the property key as the header to ensure consistent data access.
                 $headers[$col] = $fieldName;
                 $col++;
@@ -704,10 +726,67 @@ class ExportService
             default:
                 // Get value from object data and convert to string.
                 $objectData = $object->getObject();
-                $value      = $objectData[$header] ?? null;
+
+                // Translatable `field_lang` column — extract the
+                // language-keyed slot from the JSONB property
+                // (register-i18n Phase 3 wire-in).
+                $langValue = $this->extractLanguageSlot($objectData, $header);
+                if ($langValue !== null) {
+                    return $langValue;
+                }
+
+                $value = $objectData[$header] ?? null;
                 return $this->convertValueToString(value: $value);
         }
     }//end getObjectValue()
+
+
+    /**
+     * Resolve the language list to use for translatable column emission.
+     *
+     * Priority: contextRegister languages → org-wide minimum [nl, en].
+     *
+     * @return string[]
+     */
+    private function resolveExportLanguages(): array
+    {
+        if ($this->contextRegister !== null) {
+            $registerLanguages = $this->contextRegister->getLanguages();
+            if (is_array($registerLanguages) === true && count($registerLanguages) > 0) {
+                return array_values(array_unique($registerLanguages));
+            }
+        }
+        return ['nl', 'en'];
+    }//end resolveExportLanguages()
+
+
+    /**
+     * Extract `objectData[field][lang]` for a `field_lang` header.
+     * Returns null when the header doesn't match a known
+     * translatable-property + language pair.
+     *
+     * @param array<string, mixed> $objectData
+     */
+    private function extractLanguageSlot(array $objectData, string $header): ?string
+    {
+        $underscore = strrpos($header, '_');
+        if ($underscore === false || $underscore === 0) {
+            return null;
+        }
+        $field = substr($header, 0, $underscore);
+        $lang  = substr($header, $underscore + 1);
+        if ($field === '' || $lang === ''
+            || preg_match('/^[a-zA-Z][a-zA-Z0-9-]{0,15}$/', $lang) !== 1
+        ) {
+            return null;
+        }
+        $value = $objectData[$field] ?? null;
+        if (is_array($value) === false || isset($value[$lang]) === false) {
+            return null;
+        }
+        $slotValue = $value[$lang];
+        return is_scalar($slotValue) === true ? (string) $slotValue : null;
+    }//end extractLanguageSlot()
 
     /**
      * Convert a value to a string representation

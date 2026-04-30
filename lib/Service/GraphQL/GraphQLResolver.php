@@ -100,6 +100,7 @@ class GraphQLResolver
         private readonly AuditTrailMapper $auditTrailMapper,
         private readonly RegisterMapper $registerMapper,
         private readonly LoggerInterface $logger,
+        private readonly \OCA\OpenRegister\Service\Object\TranslationHandler $translationHandler,
     ) {
     }//end __construct()
 
@@ -555,8 +556,28 @@ class GraphQLResolver
      */
     private function filterProperties(Schema $schema, array $data): array
     {
-        return $this->propertyRbac->filterReadableProperties($schema, $data);
+        // Apply property-level RBAC first (drops fields the caller can't read).
+        $data = $this->propertyRbac->filterReadableProperties($schema, $data);
 
+        // Apply translation resolution: language-keyed JSONB property
+        // values collapse to a single string per the request-scoped
+        // LanguageService chain (Decision 2 → per-property fallback).
+        // The register lookup is best-effort; null register falls back
+        // to the [nl, en] default chain inside the handler.
+        $register = null;
+        try {
+            $register = $this->findRegisterForSchema(schema: $schema);
+        } catch (\Throwable $e) {
+            $this->logger->debug(
+                sprintf('[GraphQLResolver] register lookup for translation context failed: %s', $e->getMessage())
+            );
+        }
+
+        return $this->translationHandler->resolveTranslationsForRender(
+            objectData: $data,
+            schema: $schema,
+            register: $register
+        );
     }//end filterProperties()
 
     /**

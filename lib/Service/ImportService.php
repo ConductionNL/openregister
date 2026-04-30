@@ -148,18 +148,22 @@ class ImportService
      * @param IGroupManager   $groupManager  The group manager
      * @param IJobList        $jobList       The background job list
      */
+    private readonly \OCA\OpenRegister\Service\Translation\TranslationCsvCodec $translationCsvCodec;
+
     public function __construct(
         SchemaMapper $schemaMapper,
         ObjectService $objectService,
         LoggerInterface $logger,
         IGroupManager $groupManager,
-        IJobList $jobList
+        IJobList $jobList,
+        \OCA\OpenRegister\Service\Translation\TranslationCsvCodec $translationCsvCodec
     ) {
-        $this->schemaMapper  = $schemaMapper;
-        $this->objectService = $objectService;
-        $this->logger        = $logger;
-        $this->groupManager  = $groupManager;
-        $this->jobList       = $jobList;
+        $this->schemaMapper        = $schemaMapper;
+        $this->objectService       = $objectService;
+        $this->logger              = $logger;
+        $this->groupManager        = $groupManager;
+        $this->jobList             = $jobList;
+        $this->translationCsvCodec = $translationCsvCodec;
 
         // Initialize cache arrays to prevent issues.
         $this->schemaPropertiesCache = [];
@@ -967,6 +971,13 @@ class ImportService
                     'username' => $importUsername,
                 ]
                 );
+
+        // Translatable-property pre-pass (register-i18n Phase 3 wire-in):
+        // turn flat `field_lang` columns into the nested `field: {lang: value}`
+        // shape the rest of the save pipeline expects. The codec is
+        // tolerant of empty cells and unrelated underscore-suffixed
+        // columns; the rest of this loop sees the un-flattened shape.
+        $rowData = $this->translationCsvCodec->unflattenFromCsv($rowData, $schema);
 
         foreach ($rowData as $key => $value) {
             // Skip empty values early.
