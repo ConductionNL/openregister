@@ -128,8 +128,125 @@ class MetricsController extends Controller
         $lines[]     = 'openregister_search_requests_total '.$searchCount;
         $lines[]     = '';
 
+        // CRUD operation counters sourced from the audit-trail ledger.
+        // Lifetime counters reset only on audit-trail truncation, so they
+        // satisfy Prometheus counter monotonicity for typical operations.
+        $crudCounts = $this->getCrudCountsByAction();
+        $lines[]    = '# HELP openregister_objects_created_total Total object create operations recorded in the audit trail';
+        $lines[]    = '# TYPE openregister_objects_created_total counter';
+        $lines[]    = 'openregister_objects_created_total '.($crudCounts['create'] ?? 0);
+        $lines[]    = '';
+        $lines[]    = '# HELP openregister_objects_updated_total Total object update operations recorded in the audit trail';
+        $lines[]    = '# TYPE openregister_objects_updated_total counter';
+        $lines[]    = 'openregister_objects_updated_total '.($crudCounts['update'] ?? 0);
+        $lines[]    = '';
+        $lines[]    = '# HELP openregister_objects_deleted_total Total object delete operations recorded in the audit trail';
+        $lines[]    = '# TYPE openregister_objects_deleted_total counter';
+        $lines[]    = 'openregister_objects_deleted_total '.($crudCounts['delete'] ?? 0);
+        $lines[]    = '';
+        $lines[]    = '# HELP openregister_objects_read_total Total object read operations recorded in the audit trail';
+        $lines[]    = '# TYPE openregister_objects_read_total counter';
+        $lines[]    = 'openregister_objects_read_total '.($crudCounts['read'] ?? 0);
+        $lines[]    = '';
+
+        // Webhook delivery counters from the webhook log table.
+        $webhookCounts = $this->getWebhookCountsByStatus();
+        $lines[]       = '# HELP openregister_webhook_deliveries_total Total webhook delivery attempts grouped by status';
+        $lines[]       = '# TYPE openregister_webhook_deliveries_total counter';
+        foreach ($webhookCounts as $status => $count) {
+            $statusLabel = $this->sanitizeLabel(value: (string) $status);
+            $lines[]     = 'openregister_webhook_deliveries_total{status="'.$statusLabel.'"} '.$count;
+        }
+
+        $lines[] = '';
+
         return implode("\n", $lines)."\n";
     }//end collectMetrics()
+
+    /**
+     * Aggregate audit-trail rows by action.
+     *
+     * Returns a map keyed by action ('create', 'update', 'delete', 'read',
+     * etc.) where each value is the lifetime count for that action. Used
+     * as the data source for `openregister_objects_{action}_total`
+     * counters. Failures (table missing, permission denied) collapse to
+     * an empty array — the counter then emits 0.
+     *
+     * @return array<string, int> Map action => count
+     */
+    private function getCrudCountsByAction(): array
+    {
+        try {
+            $qb = $this->db->getQueryBuilder();
+            $qb->select('action')
+                ->selectAlias($qb->func()->count('*'), 'cnt')
+                ->from('openregister_audit_trails')
+                ->groupBy('action');
+
+            $result = $qb->executeQuery();
+            $rows   = $result->fetchAll();
+            $result->closeCursor();
+
+            $out = [];
+            foreach ($rows as $row) {
+                $action       = (string) ($row['action'] ?? '');
+                $out[$action] = (int) ($row['cnt'] ?? 0);
+            }
+
+            return $out;
+        } catch (\Exception $e) {
+            $this->logger->warning(
+                '[MetricsController] Failed to aggregate audit trails by action',
+                ['error' => $e->getMessage()]
+            );
+            return [];
+        }//end try
+    }//end getCrudCountsByAction()
+
+    /**
+     * Aggregate webhook delivery log rows by status.
+     *
+     * The webhook log stores delivery outcome as a boolean `success`
+     * column; this method projects that into the conventional Prometheus
+     * status label vocabulary ('success' / 'failure'). Used as the data
+     * source for the labelled
+     * `openregister_webhook_deliveries_total{status}` counter so
+     * operators can alert on rising failure rates without label
+     * cardinality explosions. Failures (table missing, permission
+     * denied) collapse to an empty array.
+     *
+     * @return array<string, int> Map status => count
+     */
+    private function getWebhookCountsByStatus(): array
+    {
+        try {
+            $qb = $this->db->getQueryBuilder();
+            $qb->select('success')
+                ->selectAlias($qb->func()->count('*'), 'cnt')
+                ->from('openregister_webhook_logs')
+                ->groupBy('success');
+
+            $result = $qb->executeQuery();
+            $rows   = $result->fetchAll();
+            $result->closeCursor();
+
+            $out = [];
+            foreach ($rows as $row) {
+                $isSuccess = (bool) ($row['success'] ?? false);
+                if ($isSuccess === true) {
+                    $status = 'success';
+                } else {
+                    $status = 'failure';
+                }
+
+                $out[$status] = (int) ($row['cnt'] ?? 0);
+            }
+
+            return $out;
+        } catch (\Exception $e) {
+            return [];
+        }//end try
+    }//end getWebhookCountsByStatus()
 
     /**
      * Count rows in a database table.

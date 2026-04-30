@@ -100,6 +100,64 @@ class ProductionObservabilityIntegrationTest extends TestCase
         }
     }
 
+    public function testMetricsExposeCrudOperationCounters(): void
+    {
+        $body = $this->extractResponseBody($this->metricsController->index());
+
+        // CRUD operation counters sourced from the audit-trail ledger —
+        // closes the spec's "CRUD Operation Counters" task.
+        foreach (['created', 'updated', 'deleted', 'read'] as $action) {
+            $metric = 'openregister_objects_'.$action.'_total';
+            $this->assertStringContainsString(
+                '# HELP '.$metric,
+                $body,
+                "metrics output MUST advertise '$metric' with a HELP comment"
+            );
+            $this->assertStringContainsString(
+                '# TYPE '.$metric.' counter',
+                $body,
+                "metrics output MUST type '$metric' as a Prometheus counter"
+            );
+            $this->assertMatchesRegularExpression(
+                '/'.preg_quote($metric, '/').' \d+/',
+                $body,
+                "'$metric' MUST emit a non-negative integer value"
+            );
+        }
+    }
+
+    public function testMetricsExposeWebhookDeliveryCountersWithStatusLabel(): void
+    {
+        $body = $this->extractResponseBody($this->metricsController->index());
+
+        $metric = 'openregister_webhook_deliveries_total';
+        $this->assertStringContainsString(
+            '# HELP '.$metric,
+            $body,
+            "metrics output MUST advertise '$metric' with a HELP comment"
+        );
+        $this->assertStringContainsString(
+            '# TYPE '.$metric.' counter',
+            $body,
+            "metrics output MUST type '$metric' as a Prometheus counter"
+        );
+
+        // The webhook counter MUST be labelled with status; the label
+        // vocabulary is bounded to {success, failure} so cardinality
+        // stays predictable. We don't assert any concrete count because
+        // the dev env may have zero webhook deliveries — only that when
+        // a labelled line is present, it uses the documented vocabulary.
+        if (preg_match_all('/openregister_webhook_deliveries_total\{status="([^"]+)"\}/', $body, $matches) > 0) {
+            foreach ($matches[1] as $status) {
+                $this->assertContains(
+                    $status,
+                    ['success', 'failure'],
+                    'webhook status label vocabulary MUST be bounded to {success, failure}'
+                );
+            }
+        }
+    }
+
     public function testMetricsContentTypeIsPrometheus(): void
     {
         $response = $this->metricsController->index();

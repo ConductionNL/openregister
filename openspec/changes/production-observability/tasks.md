@@ -1,6 +1,6 @@
 # Tasks: Production Observability
 
-> **Status:** `MetricsController` + `MetricsService` + `HealthController` are in production. `tests/Service/ProductionObservabilityIntegrationTest` (6 tests) verifies both endpoints end-to-end. 8 of 15 spec tasks are tickably complete; 7 are partial / open with notes.
+> **Status (Phase 2):** `MetricsController` + `MetricsService` + `HealthController` are in production. `tests/Service/ProductionObservabilityIntegrationTest` (8 tests) verifies both endpoints end-to-end. 10 of 15 spec tasks are tickably complete after Phase 2 added per-action CRUD counters + the labelled webhook delivery counter; 5 remain open with notes.
 
 ## Implemented
 
@@ -20,11 +20,11 @@
 
 - [x] **Metrics Storage Strategy.** `MetricsService::cleanOldMetrics(int $retentionDays = 90)` retains 90 days of point-in-time metrics and deletes older rows on schedule. Used by the cleanup TimedJob.
 
+- [x] **CRUD Operation Counters.** `MetricsController::collectMetrics` aggregates `openregister_audit_trails` rows by `action` and emits four Prometheus counters: `openregister_objects_created_total`, `openregister_objects_updated_total`, `openregister_objects_deleted_total`, `openregister_objects_read_total`. The audit ledger is the source of truth — counters reflect every persisted lifecycle event regardless of which handler triggered it. Verified live by `testMetricsExposeCrudOperationCounters` (HELP + TYPE + non-negative-integer assertions for all four actions).
+
+- [x] **Webhook Delivery Monitoring.** `MetricsController::collectMetrics` aggregates `openregister_webhook_logs` rows by the boolean `success` column and emits the labelled counter `openregister_webhook_deliveries_total{status="success|failure"}`. The status label vocabulary is bounded to two values so cardinality stays predictable for Prometheus. Verified live by `testMetricsExposeWebhookDeliveryCountersWithStatusLabel` (HELP + TYPE + label-vocabulary assertion).
+
 ## Open / partial
-
-- [ ] **CRUD Operation Counters.** Partial — counters for object create/update/delete are recorded by `MetricsService::recordMetric` from the relevant handlers, but the Prometheus endpoint doesn't yet aggregate them into per-action counters (`openregister_objects_created_total`, etc.). **Open** — additive change to `collectMetrics()`.
-
-- [ ] **Webhook Delivery Monitoring.** Partial — `WebhookDeliveryJob` already logs delivery outcomes per webhook, but Prometheus-side `openregister_webhook_deliveries_total{status}` aggregates aren't exposed yet. **Open** — additive metric.
 
 - [ ] **Readiness Endpoint.** Partial — health does liveness; a separate `/api/ready` endpoint that surfaces "ready to serve traffic" (DB pool warm, cache warmed, migrations applied) isn't implemented. **Open** — typically only matters under k8s-style orchestration.
 
@@ -38,10 +38,12 @@
 
 ## Test coverage
 
-- [x] `tests/Service/ProductionObservabilityIntegrationTest` — 6 integration tests:
+- [x] `tests/Service/ProductionObservabilityIntegrationTest` — 8 integration tests:
   - `testHealthEndpointReturnsOkStructure` (200 + status/version/checks shape)
   - `testHealthVersionMatchesAppVersion` (semver-shaped version)
   - `testMetricsEndpointReturnsPrometheusTextFormat` (`# HELP`/`# TYPE` comments + labelled `openregister_info` gauge)
   - `testMetricsExposeStandardCanonicalCounters` (5 canonical metric names present)
   - `testMetricsContentTypeIsPrometheus` (text/plain version=0.0.4)
   - `testMetricsCountsAreNonNegativeIntegers` (registers/schemas counters parse as ≥0)
+  - `testMetricsExposeCrudOperationCounters` (per-action CRUD counters: created / updated / deleted / read each emit a properly-typed counter line)
+  - `testMetricsExposeWebhookDeliveryCountersWithStatusLabel` (webhook delivery counter is labelled with the bounded `{success, failure}` vocabulary)
