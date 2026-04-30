@@ -1591,6 +1591,16 @@ class ImportHandler
                     $registerData['schemas'] = $schemaIds;
                 }//end if
 
+                // Propagate parent-level x-openregister.type onto the register
+                // so consuming apps can filter mock/demo data via
+                // `GET /api/registers?filters[type]=mock`. Per-register
+                // overrides on `$registerData['type']` take precedence so a
+                // single configuration file can mix register types.
+                $parentType = ($data['x-openregister']['type'] ?? null);
+                if (isset($registerData['type']) === false && $parentType !== null && $parentType !== '') {
+                    $registerData['type'] = (string) $parentType;
+                }
+
                 $register = $this->importRegister(
                     data: $registerData,
                     owner: $owner,
