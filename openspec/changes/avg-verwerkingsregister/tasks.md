@@ -1,6 +1,6 @@
 # Tasks: AVG Verwerkingsregister
 
-> **Status (Phase 3):** Full operator surface shipped. Phase 3 closes out the foundation gap (entity_relations now carries `register_id` + `schema_id` + `object_uuid` for deterministic DSAR composition across magic-tables), wires the daily retention TimedJob (`AvgRetentionJob` driving `AvgRetentionService` — soft-deletes objects past their bewaartermijn), adds the compliance auditor (`AvgComplianceService` flags schemas where PII has been detected but no processing-activity annotation exists), and ships the verwerker / consent / dpia object types as **operator-importable schemas** under a single `lib/Resources/AvgSchemas/avg-bundle.json` configuration bundle (per the architectural pointer: object types live as schemas, not hardcoded tables). 33 integration tests across five suites. Frontend management UI is the only remaining open task.
+> **Status (Phase 4):** Spec complete. Phase 4 ships the operator UI — a tabbed dashboard at `/avg` covering Activities (CRUD), Verantwoording (Art 30 §4 audit aggregation report), DSAR (inzage / preview erasure / erase / portabiliteit JSON download), and Compliance (unannotated-PII scan). All 15 spec requirements implemented. 33 backend integration tests across five suites + browser-tested end-to-end UI flows.
 
 ## Implemented (Phase 1)
 
@@ -40,8 +40,15 @@
 
 - [x] **Foundation gap: entity_relations disambiguation (Phase 3).** `Version1Date20260430180000` adds `register_id` + `schema_id` + `object_uuid` columns + indexes to `oc_openregister_entity_relations`. `EntityRecognitionHandler::storeDetectedEntities` populates them when source is `object` (best-effort: loads the object via MagicMapper to get register/schema/uuid). `DsarService::buildObjectKey` + `loadObjectByEntry` prefer uuid lookup when present (deterministic across magic-tables), falling back to int id for legacy rows. The DsarService test fixture re-tightens its identity assertion now that lookup is deterministic.
 
-## Open (Phase 4 — UI)
-- [ ] **Frontend management UI.** Vue management screens for operators to maintain the catalog + drive DSAR flows (Phase 2a + 2b ship the REST surface; the UI layer is a separate effort). Verwerker / Consent / DPIA records use the standard schema/object UI once the bundle is imported — no separate UI needed.
+- [x] **Frontend management UI (Phase 4).** Tabbed dashboard at `/avg` with four sections backed by the REST surface:
+  - **Activities** — list + create + edit + soft-archive of catalog entries with controlled-vocabulary badges (`rechtsgrond` + `status`). Modal form (`src/dialogs/avg/EditActivityDialog.vue`) covers all AVG Art 30 §1 fields including the `categorieen_betrokkenen` / `categorieen_persoonsgegevens` arrays via line-per-item textareas.
+  - **Verantwoording** — Art 30 §4 supervisory report rendering audit-trail aggregation per processing activity (`totalEvents` + per-action breakdown table).
+  - **DSAR** — subject identifier + type filter + four action buttons (Inzage Art 15 / Preview erasure dry-run / Erase Art 17 / Portabiliteit JSON download Art 20). Erase requires the operator to run a dry-run preview first as a confirmation gate.
+  - **Compliance** — runs the unannotated-PII scan + renders flagged schemas with their PII counts and per-layer annotation status.
+
+  Navigation entry added to the side menu with `ShieldLockOutline` icon. Pinia store at `src/store/modules/avg.js` wraps the full REST surface. Browser-verified end-to-end: created an activity, generated the verantwoordingsdocument, confirmed DSAR form renders, confirmed Compliance empty state.
+
+  Verwerker / Consent / DPIA records continue to use the standard schema/object UI from the Phase 3 schema bundle import — no separate UI surface needed per the architectural pointer (object types live as schemas).
 
 ## Test coverage
 
@@ -82,3 +89,4 @@
 | Object types via schemas (Phase 3) | Verwerker / Consent / DPIA live as **operator-importable schemas** (`lib/Resources/AvgSchemas/avg-bundle.json`) rather than hardcoded tables. Operators get the standard schema/object UI for free; can extend the schemas with custom properties; can RBAC them per the existing schema-level rules. The dedicated catalog (`oc_openregister_verwerkingsactiviteiten`) stays a hardcoded table because its shape is fixed by AVG Art 30 §1 and the audit-trail FK depends on a stable `uuid` target. |
 | Retention soft-delete attribution (Phase 3) | Bewaartermijn expiry sets `deleted` metadata with `reason='avg-bewaartermijn'` + activityUuid + bewaartermijn so it's distinguishable from Art 17 vergetelheid (`reason='avg-vergetelheid'`) and manual operator deletes. The audit ledger itself is NEVER pruned — retention erases the OBJECT, not the legal record. |
 | Foundation gap fix (Phase 3) | Added `register_id` + `schema_id` + `object_uuid` columns to `oc_openregister_entity_relations`. Rationale: int `object_id` alone collides across magic-tables (per-table sequences), making DSAR composition non-deterministic. The new columns are nullable for backwards compatibility; `EntityRecognitionHandler` populates them best-effort on new writes. |
+| Single-page tabbed UI (Phase 4) | One Vue component (`AvgIndex.vue`) with four tab sections rather than separate routes. Rationale: the four AVG flows are tightly related (an operator running a DSAR often jumps to the Activities tab to verify the configured processing-activity, then back to DSAR to attribute the action), and the dataset is bounded enough that a tabbed layout keeps the operator close to the data without a router round-trip. |
