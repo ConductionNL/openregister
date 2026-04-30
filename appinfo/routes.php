@@ -220,9 +220,10 @@ return [
         ['name' => 'realtime#events', 'url' => '/api/realtime/events', 'verb' => 'GET'],
         ['name' => 'realtime#cursor', 'url' => '/api/realtime/cursor', 'verb' => 'GET'],
         // Translation sidecar — search, per-object slots + completeness, status updates.
-        ['name' => 'translation#search',       'url' => '/api/translations/search',                                          'verb' => 'GET'],
-        ['name' => 'translation#showByObject', 'url' => '/api/translations/object/{uuid}',                                   'verb' => 'GET'],
-        ['name' => 'translation#setStatus',    'url' => '/api/translations/object/{uuid}/{property}/{language}/status',      'verb' => 'POST'],
+        ['name' => 'translation#search',        'url' => '/api/translations/search',                                          'verb' => 'GET'],
+        ['name' => 'translation#showByObject',  'url' => '/api/translations/object/{uuid}',                                   'verb' => 'GET'],
+        ['name' => 'translation#setStatus',     'url' => '/api/translations/object/{uuid}/{property}/{language}/status',      'verb' => 'POST'],
+        ['name' => 'translation#bulkTranslate', 'url' => '/api/translations/object/{uuid}/bulk-translate',                    'verb' => 'POST'],
         // Names - Ultra-fast object name lookup endpoints (specific routes first).
         ['name' => 'names#stats', 'url' => '/api/names/stats', 'verb' => 'GET'],
         ['name' => 'names#warmup', 'url' => '/api/names/warmup', 'verb' => 'POST'],

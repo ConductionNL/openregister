@@ -267,6 +267,16 @@ class Application extends App implements IBootstrap
         // Register the LanguageMiddleware for Accept-Language header parsing.
         $context->registerMiddleware(LanguageMiddleware::class);
 
+        // Register the default no-op TranslationProvider. Operators replace
+        // this binding with a real provider (LibreTranslate / DeepL / etc.)
+        // by overriding it in their own app's registration.
+        $context->registerService(
+            \OCA\OpenRegister\Service\Translation\TranslationProviderInterface::class,
+            function () {
+                return new \OCA\OpenRegister\Service\Translation\IdentityTranslationProvider();
+            }
+        );
+
         // Register the TenantQuotaMiddleware for tenant quota enforcement and status checks.
         $context->registerMiddleware(\OCA\OpenRegister\Middleware\TenantQuotaMiddleware::class);
 

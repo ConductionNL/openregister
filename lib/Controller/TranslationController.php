@@ -18,10 +18,13 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Controller;
 
 use InvalidArgumentException;
+use OCA\OpenRegister\Db\MagicMapper;
+use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Db\Translation;
 use OCA\OpenRegister\Db\TranslationMapper;
+use OCA\OpenRegister\Service\BulkTranslationService;
 use OCA\OpenRegister\Service\TranslationStatusService;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -37,7 +40,9 @@ class TranslationController extends Controller
         IRequest $request,
         private readonly TranslationStatusService $statusService,
         private readonly TranslationMapper $translationMapper,
-        private readonly SchemaMapper $schemaMapper
+        private readonly SchemaMapper $schemaMapper,
+        private readonly BulkTranslationService $bulkService,
+        private readonly MagicMapper $objectMapper
     ) {
         parent::__construct(appName: $appName, request: $request);
     }//end __construct()
@@ -122,6 +127,63 @@ class TranslationController extends Controller
 
         return new JSONResponse($row->jsonSerialize());
     }//end setStatus()
+
+
+    /**
+     * Bulk-translate one object's translatable properties from `from`
+     * to `to` using the configured TranslationProvider.
+     *
+     * Body: `{from: "nl", to: "en", properties?: ["title", "body"]}`.
+     * Returns `{translated: {prop: value}, skipped: {prop: reason}}`.
+     * Caller must persist the returned `translated` map onto the
+     * object to make the JSONB authoritative; the sidecar is updated
+     * in-place by the service so search sees the new translations
+     * before persistence.
+     *
+     * @NoCSRFRequired
+     */
+    public function bulkTranslate(
+        string $uuid,
+        ?string $from=null,
+        ?string $to=null,
+        ?array $properties=null
+    ): JSONResponse {
+        if ($from === null || $from === '' || $to === null || $to === '') {
+            return new JSONResponse(['error' => 'from and to are required'], Http::STATUS_BAD_REQUEST);
+        }
+
+        $object = $this->loadObject($uuid);
+        if ($object === null) {
+            return new JSONResponse(['error' => 'object not found', 'uuid' => $uuid], Http::STATUS_NOT_FOUND);
+        }
+
+        $result = $this->bulkService->translateObject(
+            object: $object,
+            fromLang: $from,
+            toLang: $to,
+            properties: $properties
+        );
+
+        return new JSONResponse([
+            'uuid'       => $uuid,
+            'from'       => $from,
+            'to'         => $to,
+            'translated' => $result['translated'],
+            'skipped'    => $result['skipped'],
+        ]);
+    }//end bulkTranslate()
+
+
+    private function loadObject(string $uuid): ?ObjectEntity
+    {
+        try {
+            return $this->objectMapper->find($uuid);
+        } catch (DoesNotExistException $e) {
+            return null;
+        } catch (\Throwable $e) {
+            return null;
+        }
+    }
 
 
     private function resolveSchema(string $ref): ?Schema

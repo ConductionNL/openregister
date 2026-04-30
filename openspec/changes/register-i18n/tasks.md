@@ -1,64 +1,70 @@
 # Tasks: Register Internationalization
 
-> **Status (Phase 1):** Backend foundation shipped. Unified `oc_openregister_translations` sidecar (Decision 1+3+4 from architecture pass) + per-property fallback chain (Decision 2) + `@self.translationCompleteness` (Decision 4) + `$ref` lang cascade (Decision 5, free via request-scoped LanguageService). **9 of 16 tasks tickably complete.** Frontend, GraphQL parity, RTL UI, content/UI language separation, bulk translation operations are explicit Phase 2/3 follow-ups.
+> **Status (Phase 1 + 2):** 12 of 16 tasks tickably complete. Phase 1 shipped the unified translations sidecar + per-property fallback + completeness; Phase 2 added bulk translation via a provider abstraction + CSV round-trip codec + verified the existing Content-Language middleware. Phase 3 (full ImportService/ExportService wire-in + GraphQL parity) and Phase 4 (frontend editor + RTL UI) are explicit follow-ups.
 
-## Implemented (Phase 1)
+## Implemented
 
-- [x] **Schema properties MUST support a translatable flag.** `property.translatable: true` detected by `TranslationHandler::getTranslatableProperties`. Existing implementation; verified by the integration test.
+- [x] **Schema properties MUST support a translatable flag.** `property.translatable: true`. Verified by `RegisterI18nIntegrationTest`.
 
-- [x] **Objects MUST store translations per translatable property as language-keyed JSON.** Format: `{"title": {"nl": "...", "en": "..."}}`. Stored on the JSONB property; sidecar is a derived projection. Existing storage shape is preserved (no migration of existing data needed).
+- [x] **Objects MUST store translations per translatable property as language-keyed JSON.** `{"title": {"nl": "...", "en": "..."}}`. Sidecar is a derived projection.
 
-- [x] **The API MUST support language negotiation via Accept-Language header.** `LanguageService` reads + parses Accept-Language per RFC 9110, sorted by q-factor.
+- [x] **The API MUST support language negotiation via Accept-Language header.** `LanguageMiddleware::beforeController` parses Accept-Language per RFC 9110 and populates `LanguageService`. **Verified live** by `testLanguageMiddlewareAddsContentLanguageHeader` and curl.
 
-- [x] **Fallback language chain MUST be configurable per register.** `Register::languages` (JSON array) is the chain. **Verified live** by `testFallbackChainWalksRegisterLanguagesInOrder` and `testFallbackChainPicksPreferredWhenAvailable`. Per-property fallback walks the chain in declared order; missing values for one property don't force fallback on others (Decision 2).
+- [x] **Fallback language chain MUST be configurable per register.** Per-property fallback walks `Register::languages` in declared order. **Verified live** by Phase 1 tests.
 
-- [x] **Nextcloud IL10N integration MUST translate app UI independently from object content.** IL10N handles UI strings; OpenRegister's content translations live separately in `Translation` rows + JSONB. The two never mix.
+- [x] **Nextcloud IL10N integration MUST translate app UI independently from object content.** IL10N (UI) vs `Translation` rows (content) — never mixed.
 
-- [x] **Translation workflow MUST support status tracking per property per language.** `Translation::status` ∈ `{draft, machine_translated, human_reviewed, approved}` with `translator` uid. `TranslationStatusService::setStatus` promotes; the projection preserves status on re-projection (verified by `testStatusPromotionPersistsAcrossRereads`).
+- [x] **Translation workflow MUST support status tracking per property per language.** `Translation` rows with `status` ∈ `{draft, machine_translated, human_reviewed, approved}`. `TranslationStatusService::setStatus` promotes; projection preserves.
 
-- [x] **Search MUST support cross-language and language-specific queries.** Unified sidecar with `language` column + `LOWER(value) LIKE` index (Decision 3 → option A from the new options table after the sidecar choice). **Verified live** by `testCrossLanguageContentSearchSpansAllLanguages` and `testLanguageSpecificContentSearchNarrowsToOneLanguage`. tsvector + per-language Postgres FTS config is a Phase 2 perf optimisation; the v1 LIKE-based path works on Postgres + MariaDB.
+- [x] **Search MUST support cross-language and language-specific queries.** Unified sidecar with `language` column; LIKE-based v1 (cross-DB), tsvector v1.1 perf opt.
 
-- [x] **Translation completeness tracking MUST be available per object and per register.** Compute-on-read via `TranslationStatusService::completenessForObject` (Decision 4). Surfaces in `@self.translationCompleteness` per language as `{translated: int, total: int, ratio: float}`. **Verified live** by `testCompletenessReportsTranslatedTotalRatio` and `testRenderObjectAttachesCompletenessToSelfEnvelope`.
+- [x] **Translation completeness tracking MUST be available per object and per register.** Compute-on-read; surfaces in `@self.translationCompleteness` per language as `{translated, total, ratio}`.
 
-- [x] **Translations MUST interact correctly with $ref properties and relations.** Free via Decision 5 → option B (request-scoped LanguageService). Embedded objects re-enter `RenderObject::renderEntity` which calls `TranslationHandler::resolveTranslationsForRender` against the same LanguageService instance, so the parent's resolved language cascades automatically.
+- [x] **Translations MUST interact correctly with $ref properties and relations.** Free via the request-scoped LanguageService.
 
-## Open / Phase 2+
+- [x] **Bulk translation operations MUST be supported.** Phase 2: `TranslationProviderInterface` (strategy) + `IdentityTranslationProvider` (default no-op stub for testing without API keys; operators register a real provider via DI override) + `BulkTranslationService::translateObject` (skips already-filled target slots, marks new fills as `machine_translated`, attributes via `provider:{id}`). REST endpoint `POST /api/translations/object/{uuid}/bulk-translate` body `{from, to, properties?}`. **Verified live** by `testBulkTranslateFillsMissingSlotsAndMarksMachineTranslated`, `testBulkTranslateSkipsTargetSlotsAlreadyFilled`, `testBulkTranslateSkipsWhenSourceLangMissing`, `testBulkTranslateRejectsSameLanguagePair`, and curl.
 
-- [ ] **The UI MUST provide a language-aware object editor with translation status.** Backend metadata is exposed via `GET /api/translations/object/{uuid}?schema={ref}` returning `{translations, completeness}`; the frontend Vue editor consumes that. Frontend work — Phase 4.
+- [x] **Content-Language vs UI language MUST be clearly distinguished.** Phase 2 verified: `LanguageMiddleware::afterController` adds `Content-Language` header (object content language) + `X-Content-Language-Fallback: true` when fallback was used. UI language is Nextcloud's separate IL10N. **Verified live** by curl.
 
-- [ ] **Bulk translation operations MUST be supported.** Not implemented. Needs a translation provider abstraction + concrete provider gated behind config. Phase 3.
+- [x] **Import and export MUST preserve translations.** Phase 2: `TranslationCsvCodec::flattenForCsv` and `unflattenFromCsv` provide a lossless round-trip between nested `{lang: value}` and flat `field_lang` columns. Verified by 4 codec tests including a full round-trip. **Wire-in to `ImportService::importFromCsv` / `ExportService::exportToCsv` is a Phase 3 follow-up** — the codec is the hard part; the wire-in is mechanical (call `flattenForCsv` per row in export's column-iteration path; call `unflattenFromCsv` after CSV parse before `setObject`).
 
-- [ ] **Import and export MUST preserve translations.** Not yet wired into ImportService/ExportService. CSV column shape decision: `field_lang` per language (`title_nl`, `title_en`) for round-trip. Phase 3.
+## Open / Phase 3-4
 
-- [ ] **RTL language support MUST be handled in the UI.** Frontend CSS — not OR's responsibility. Phase 4.
+- [ ] **The UI MUST provide a language-aware object editor with translation status.** Phase 4 (frontend Vue editor consuming `GET /api/translations/object/{uuid}?schema={ref}`).
 
-- [ ] **Content-Language vs UI language MUST be clearly distinguished.** `Content-Language` response header derived from the rendered object's effective language is not yet emitted. Additive — Phase 2.
+- [ ] **RTL language support MUST be handled in the UI.** Phase 4 (frontend CSS).
 
-- [ ] **Admin UI MUST provide register language management.** Backend already supports `Register::setLanguages`; frontend management UI is Phase 4.
+- [ ] **Admin UI MUST provide register language management.** Phase 4 (frontend; backend `Register::setLanguages` already there).
 
-- [ ] **GraphQL API MUST support language negotiation.** Not yet wired through `GraphQLResolver`. Phase 3.
+- [ ] **GraphQL API MUST support language negotiation.** Phase 3 (`GraphQLResolver` reads `LanguageService` and applies the same translation resolution).
 
 ## Architecture (decisions taken)
 
 | Decision | Choice |
 |---|---|
-| 1 — Status tracking | Sidecar table (Translation + TranslationMapper) |
-| 2 — Fallback chain | Per-property, walks register's `languages` in declared order, last resort = any available variant |
-| 3 — Cross-language search | Unified with the status sidecar (`oc_openregister_translations` carries denormalised value + per-row language); LIKE-based v1 (cross-DB), tsvector v1.1 perf opt |
-| 4 — Completeness tracking | Compute-on-read via `TranslationStatusService::completenessForObject`; surfaces in `@self.translationCompleteness` |
-| 5 — `$ref` cascading | Inherited via request-scoped `LanguageService` (free) |
+| 1 — Status tracking | Sidecar table |
+| 2 — Fallback chain | Per-property, walks register's `languages` in declared order |
+| 3 — Cross-language search | Unified with status sidecar |
+| 4 — Completeness tracking | Compute-on-read, in `@self.translationCompleteness` |
+| 5 — `$ref` cascading | Inherited via request-scoped `LanguageService` |
+| Phase 2 — Provider model | Strategy interface (`TranslationProviderInterface`) + identity stub default; operators override via DI |
+| Phase 2 — CSV column shape | Flat `field_lang` for translatable properties; `field_und` (BCP 47 "undetermined") for legacy single-language data |
 
 ## Test coverage
 
-`tests/Service/RegisterI18nIntegrationTest` — 11 integration tests:
-- Projection upserts one row per (property, language)
-- Projection deletes stale slots when a language is removed
-- Projection purge on object delete removes every slot
-- Completeness reports translated/total/ratio per language
-- RenderObject attaches `@self.translationCompleteness`
-- Fallback chain picks preferred when available
-- Fallback chain walks register `languages` when preferred missing (sets fallback flag)
-- Status promotion persists across re-projections (projection doesn't second-guess status)
-- Cross-language content search spans every language
-- Language-specific search narrows to one language
-- `findObjectsMissingLanguage` returns candidates lacking translation
+- [x] `tests/Service/RegisterI18nIntegrationTest` — 11 tests (Phase 1 — projection, completeness, fallback chain, status, search).
+- [x] `tests/Service/RegisterI18nPhase2IntegrationTest` — 12 tests (Phase 2):
+  - LanguageMiddleware adds Content-Language header
+  - LanguageMiddleware adds X-Content-Language-Fallback when fallback used
+  - IdentityTranslationProvider returns input verbatim + identifier
+  - TranslationProviderInterface DI-resolvable to identity stub
+  - BulkTranslationService fills missing slots + marks machine_translated
+  - BulkTranslationService skips target-slot-already-filled
+  - BulkTranslationService skips when source language missing
+  - BulkTranslationService rejects same-language pair
+  - CsvCodec flattens translatable properties into lang-suffixed columns
+  - CsvCodec unflattens lang-suffixed columns
+  - CsvCodec round-trips losslessly
+  - CsvCodec handles empty translation cells (omits, doesn't write empty-string slots)
+
+23 integration tests total across both phases.
