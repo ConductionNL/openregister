@@ -176,7 +176,7 @@ export default {
 			const newSchema = {
 				title: `Extended ${currentItem.title}`,
 				description: `Schema extending ${currentItem.title}`,
-				extend: currentItem.id,
+				allOf: [currentItem.id],
 				properties: {},
 				required: [],
 			}
