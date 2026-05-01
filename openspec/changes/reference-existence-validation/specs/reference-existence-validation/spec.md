@@ -11,7 +11,7 @@ Add configurable validation that ensures objects referenced via `$ref` propertie
 
 **Cross-references**: referential-integrity (delete-time enforcement), deletion-audit-trail (audit logging), content-versioning (version impact), bulk-object-operations (import pipeline), graphql-api (mutation validation).
 
-## Requirements
+## ADDED Requirements
 
 ### Requirement: Schema properties MUST support a validateReference configuration
 Schema property definitions MUST accept a `validateReference` boolean flag that controls whether referenced object existence is checked on save. When not specified, it MUST default to `false` (eventual consistency pattern). The flag MUST be supported on both scalar `$ref` properties and array properties with `items.$ref`.

@@ -367,7 +367,19 @@ return [
 		['name' => 'files#delete', 'url' => '/api/objects/{register}/{schema}/{id}/files/{fileId}', 'verb' => 'DELETE', 'requirements' => ['id' => '[^/]+', 'fileId' => '\d+']],
 		['name' => 'files#publish', 'url' => '/api/objects/{register}/{schema}/{id}/files/{fileId}/publish', 'verb' => 'POST', 'requirements' => ['id' => '[^/]+', 'fileId' => '\d+']],
 		['name' => 'files#depublish', 'url' => '/api/objects/{register}/{schema}/{id}/files/{fileId}/depublish', 'verb' => 'POST', 'requirements' => ['id' => '[^/]+', 'fileId' => '\d+']],
-        
+
+		// File-actions (rename / copy / move / versions / lock / batch / preview / labels).
+		['name' => 'files#rename',         'url' => '/api/objects/{register}/{schema}/{id}/files/{fileId}/rename',                       'verb' => 'PUT',  'requirements' => ['id' => '[^/]+', 'fileId' => '\d+']],
+		['name' => 'files#copy',           'url' => '/api/objects/{register}/{schema}/{id}/files/{fileId}/copy',                         'verb' => 'POST', 'requirements' => ['id' => '[^/]+', 'fileId' => '\d+']],
+		['name' => 'files#move',           'url' => '/api/objects/{register}/{schema}/{id}/files/{fileId}/move',                         'verb' => 'POST', 'requirements' => ['id' => '[^/]+', 'fileId' => '\d+']],
+		['name' => 'files#listVersions',   'url' => '/api/objects/{register}/{schema}/{id}/files/{fileId}/versions',                     'verb' => 'GET',  'requirements' => ['id' => '[^/]+', 'fileId' => '\d+']],
+		['name' => 'files#restoreVersion', 'url' => '/api/objects/{register}/{schema}/{id}/files/{fileId}/versions/{versionId}/restore', 'verb' => 'POST', 'requirements' => ['id' => '[^/]+', 'fileId' => '\d+', 'versionId' => '[^/]+']],
+		['name' => 'files#lock',           'url' => '/api/objects/{register}/{schema}/{id}/files/{fileId}/lock',                         'verb' => 'POST', 'requirements' => ['id' => '[^/]+', 'fileId' => '\d+']],
+		['name' => 'files#unlock',         'url' => '/api/objects/{register}/{schema}/{id}/files/{fileId}/unlock',                       'verb' => 'POST', 'requirements' => ['id' => '[^/]+', 'fileId' => '\d+']],
+		['name' => 'files#batch',          'url' => '/api/objects/{register}/{schema}/{id}/files/batch',                                 'verb' => 'POST', 'requirements' => ['id' => '[^/]+']],
+		['name' => 'files#preview',        'url' => '/api/objects/{register}/{schema}/{id}/files/{fileId}/preview',                      'verb' => 'GET',  'requirements' => ['id' => '[^/]+', 'fileId' => '\d+']],
+		['name' => 'files#updateLabels',   'url' => '/api/objects/{register}/{schema}/{id}/files/{fileId}/labels',                       'verb' => 'PUT',  'requirements' => ['id' => '[^/]+', 'fileId' => '\d+']],
+
         // Direct file access by ID (authenticated).
         ['name' => 'files#downloadById', 'url' => '/api/files/{fileId}/download', 'verb' => 'GET', 'requirements' => ['fileId' => '\d+']],
 
