@@ -10,6 +10,7 @@ use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\DateTimeNormalizer;
+use OCA\OpenRegister\Service\Object\SchemaTypeConverter;
 use OCP\IDBConnection;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
@@ -39,8 +40,8 @@ class MagicStatisticsHandlerTest extends TestCase
 
     protected function setUp(): void
     {
-        $this->db             = $this->createMock(IDBConnection::class);
-        $this->logger         = $this->createMock(LoggerInterface::class);
+        $this->db     = $this->createMock(IDBConnection::class);
+        $this->logger = $this->createMock(LoggerInterface::class);
         $this->registerMapper = $this->createMock(RegisterMapper::class);
         $this->schemaMapper   = $this->createMock(SchemaMapper::class);
 
@@ -49,7 +50,8 @@ class MagicStatisticsHandlerTest extends TestCase
             logger: $this->logger,
             registerMapper: $this->registerMapper,
             schemaMapper: $this->schemaMapper,
-            dateTimeNormalizer: new DateTimeNormalizer($this->logger)
+            dateTimeNormalizer: new DateTimeNormalizer($this->logger),
+            schemaTypeConverter: new SchemaTypeConverter()
         );
     }//end setUp()
 
@@ -59,7 +61,7 @@ class MagicStatisticsHandlerTest extends TestCase
      * Entity::getId() is final on the framework base class, so mocking it
      * fails; using the concrete class keeps the test focused on the handler.
      */
-    private function makeRegister(int $id = 1): Register
+    private function makeRegister(int $id=1): Register
     {
         $register = new Register();
         $register->setId($id);
@@ -69,7 +71,7 @@ class MagicStatisticsHandlerTest extends TestCase
     /**
      * Build a real Schema with the given properties map and a fixed id.
      */
-    private function makeSchema(array $properties, int $id = 1): Schema
+    private function makeSchema(array $properties, int $id=1): Schema
     {
         $schema = new Schema();
         $schema->setId($id);
@@ -201,5 +203,4 @@ class MagicStatisticsHandlerTest extends TestCase
             'Whitespace-only stored date-time value must render as null'
         );
     }//end testWhitespaceOnlyDateTimePropertyRendersAsNull()
-
 }//end class
