@@ -1224,12 +1224,21 @@ class RegistersController extends Controller
                     break;
             }//end switch
 
-            return new JSONResponse(
-                data: [
-                    'message' => 'Import successful',
-                    'summary' => $summary,
-                ]
-            );
+            // Attach a downloadable per-row error CSV when the summary
+            // surfaces row-level failures. Base64 keeps the artefact in the
+            // existing JSON envelope so the frontend can offer a download
+            // without a second round-trip.
+            $errorsCsv    = $this->importService->serializeErrorsToCsv(summary: $summary);
+            $responseData = [
+                'message' => 'Import successful',
+                'summary' => $summary,
+            ];
+            if ($errorsCsv !== '') {
+                $responseData['errors_csv']          = base64_encode($errorsCsv);
+                $responseData['errors_csv_filename'] = 'import_errors.csv';
+            }
+
+            return new JSONResponse(data: $responseData);
         } catch (Exception $e) {
             return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 400);
         }//end try

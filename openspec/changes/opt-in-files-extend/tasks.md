@@ -1,8 +1,6 @@
-> **Status (2026-05-01):** All in-repo openregister work shipped. Sections 1–6 + 8.1 are complete (24/32 ticked). Remaining 8 items split into two non-actionable groups:
-> - **Section 7 (4 items):** opencatalogi public-API doc updates — explicitly DEFERRED to a cross-repo issue (`ConductionNL/opencatalogi#TBD`). Cannot land in openregister.
-> - **Section 8.2–8.5 (4 items):** manual smoke checklists + `/opsx:verify` invocation — for the user post-merge, not agent-actionable.
+> **Status (2026-05-01):** All in-repo openregister work shipped. Sections 1–7 + 8.1 are complete (28/32 ticked). Section 7 doc work landed in opencatalogi PR `docs/public-api-files-extend-2026-05-01` (`docs/features/public-api-files-extend.md` + features README link). Remaining 4 items live in Section 8.2–8.5 — manual smoke checklists + `/opsx:verify` invocation — for the user post-merge, not agent-actionable.
 >
-> Recommend marking this change ready for archive after the cross-repo opencatalogi issue is opened.
+> Recommend marking this change ready for archive after the user runs the smoke checklist.
 
 ## 1. FileMapper batched lookup
 
@@ -70,14 +68,18 @@
 - [x] 6.4 Verify ADR-002 (REST API conventions) does not need an amendment. The `_extend` mechanism predates this change; we are extending its applicability, not introducing new convention.
   - Confirmed. ADR-002 covers URL structure, HTTP methods, pagination, error responses, CORS, and authentication. The `_extend` query parameter is a pre-existing convention; this change only adds a new recognized key (`@self.files`/`_files`) — no new convention. No ADR amendment required.
 
-## 7. Documentation — opencatalogi (DOCS-ONLY follow-up)
+## 7. Documentation — opencatalogi (DOCS-ONLY)
 
-> **DEFERRED to a separate cross-repo issue against opencatalogi.** This change cannot land opencatalogi commits in the openregister repo. The following bullets are documentation-only updates that opencatalogi must publish to reflect the new inherited contract. Recommend opening `ConductionNL/opencatalogi#TBD` to track them.
+> **Shipped in opencatalogi PR `docs/public-api-files-extend-2026-05-01`.** New doc at `docs/features/public-api-files-extend.md` plus link from `docs/features/README.md`. Inherited-contract framing: opencatalogi adopts the openregister `@self.files` opt-in directly without code changes.
 
-- [ ] 7.1 Update opencatalogi public API docs for `GET /publications/{catalogSlug}/{id}`: document the BREAKING change. Default `@self.files` is now a list of file IDs; full metadata requires `?_extend[]=@self.files` or `?_extend[]=_files`.
-- [ ] 7.2 Update opencatalogi public API docs for `GET /publications/{catalogSlug}`: document the new `@self.files` field in list responses (lightweight IDs by default; opt-in for full metadata; perf warning).
-- [ ] 7.3 Add the same perf warning verbatim to opencatalogi list-endpoint documentation: list-with-extend on files is heavily discouraged and causes degraded performance.
-- [ ] 7.4 Confirm `PublicationsController::attachments()` documentation explicitly notes it is the recommended path for full attachment metadata when many publications need files at once (existing endpoint, unchanged).
+- [x] 7.1 Update opencatalogi public API docs for `GET /publications/{catalogSlug}/{id}`: document the BREAKING change. Default `@self.files` is now a list of file IDs; full metadata requires `?_extend[]=@self.files` or `?_extend[]=_files`.
+  - Documented in the new `docs/features/public-api-files-extend.md` ("Default response shape" + "Opt-in response shape" + "Show endpoint — both shapes are cheap" sections).
+- [x] 7.2 Update opencatalogi public API docs for `GET /publications/{catalogSlug}`: document the new `@self.files` field in list responses (lightweight IDs by default; opt-in for full metadata; perf warning).
+  - Documented in the same file ("List endpoints — performance warning" section, with default vs opt-in curl examples).
+- [x] 7.3 Add the same perf warning verbatim to opencatalogi list-endpoint documentation: list-with-extend on files is heavily discouraged and causes degraded performance.
+  - Verbatim warning included in the "List endpoints — performance warning" section.
+- [x] 7.4 Confirm `PublicationsController::attachments()` documentation explicitly notes it is the recommended path for full attachment metadata when many publications need files at once (existing endpoint, unchanged).
+  - "When to use the dedicated `attachments` endpoint" section calls it out as the recommended path; cross-references the attachments controller as unchanged.
 
 ## 8. Verification
 
