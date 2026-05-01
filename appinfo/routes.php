@@ -370,6 +370,8 @@ return [
         ['name' => 'auditTrail#update', 'url' => '/api/audit-trails/{id}', 'verb' => 'PUT', 'requirements' => ['id' => '[^/]+']],
         ['name' => 'auditTrail#destroy', 'url' => '/api/audit-trails/{id}', 'verb' => 'DELETE', 'requirements' => ['id' => '[^/]+']],
         ['name' => 'auditTrail#destroyMultiple', 'url' => '/api/audit-trails', 'verb' => 'DELETE'],
+        // Notification History — read-only audit trail of every dispatch.
+        ['name' => 'notificationHistory#index', 'url' => '/api/notification-history', 'verb' => 'GET'],
         // Search Trails - specific routes first, then general ones.
         ['name' => 'searchTrail#index', 'url' => '/api/search-trails', 'verb' => 'GET'],
         ['name' => 'searchTrail#statistics', 'url' => '/api/search-trails/statistics', 'verb' => 'GET'],
