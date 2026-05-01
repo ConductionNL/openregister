@@ -28,13 +28,15 @@ namespace OCA\OpenRegister\Service\Notification;
  * - `trigger`: { type: created|updated|transition, action?: string }
  * - `recipients`: [{ kind: users|field, users?: [...] | field?: "name" }]
  * - `channels`: ["nc-notification"]   (v1)
- * - `subject`: string  (template; supports {{field}} interpolation later)
+ * - `subject`: string template OR per-locale map
+ *   ({nl: "...", en: "...", defaultLocale?: "nl"}; supports {{field}}
+ *   interpolation; recipient locale via `core.lang` user preference)
  * - optional `message`: string
  */
 final class NotificationAnnotationValidator
 {
 
-    private const VALID_TRIGGERS  = ['created', 'updated', 'transition', 'scheduled', 'threshold'];
+    private const VALID_TRIGGERS = ['created', 'updated', 'transition', 'scheduled', 'threshold'];
 
     private const VALID_RECIPIENT_KINDS = ['users', 'field', 'groups', 'relation', 'object-acl', 'expression'];
 
@@ -65,6 +67,7 @@ final class NotificationAnnotationValidator
                 $errors[] = ['code' => 'notification-bad-name', 'message' => 'Notification names must be non-empty strings.'];
                 continue;
             }
+
             if (is_array($spec) === false) {
                 $errors[] = ['code' => 'notification-malformed', 'message' => sprintf('Notification "%s" must be an object.', $name)];
                 continue;
@@ -75,21 +78,25 @@ final class NotificationAnnotationValidator
             if (in_array($triggerType, self::VALID_TRIGGERS, true) === false) {
                 $errors[] = ['code' => 'notification-bad-trigger', 'message' => sprintf('Notification "%s" trigger.type must be one of [%s].', $name, implode(', ', self::VALID_TRIGGERS))];
             }
+
             if ($triggerType === 'scheduled') {
                 $intervalSec = is_array($trigger) === true ? ($trigger['intervalSec'] ?? null) : null;
                 if (is_int($intervalSec) === false || $intervalSec < 60) {
                     $errors[] = ['code' => 'notification-scheduled-bad-interval', 'message' => sprintf('Notification "%s" trigger.type=scheduled requires trigger.intervalSec (integer >= 60).', $name)];
                 }
             }
+
             if ($triggerType === 'threshold') {
                 $aggregation = is_array($trigger) === true ? (string) ($trigger['aggregation'] ?? '') : '';
                 $op          = is_array($trigger) === true ? (string) ($trigger['op'] ?? '') : '';
                 if ($aggregation === '') {
                     $errors[] = ['code' => 'notification-threshold-no-aggregation', 'message' => sprintf('Notification "%s" trigger.type=threshold requires trigger.aggregation referencing a declared aggregation.', $name)];
                 }
+
                 if (in_array($op, ['gt', 'gte', 'lt', 'lte', 'eq', 'ne'], true) === false) {
                     $errors[] = ['code' => 'notification-threshold-bad-op', 'message' => sprintf('Notification "%s" trigger.type=threshold trigger.op must be one of [gt, gte, lt, lte, eq, ne]; got "%s".', $name, $op)];
                 }
+
                 if (is_array($trigger) === true && array_key_exists('value', $trigger) === false) {
                     $errors[] = ['code' => 'notification-threshold-no-value', 'message' => sprintf('Notification "%s" trigger.type=threshold requires trigger.value.', $name)];
                 }
@@ -106,10 +113,40 @@ final class NotificationAnnotationValidator
                 }
             }
 
+            // `subject` accepts either a single template string OR a
+            // per-locale map ({nl: "...", en: "..."} optionally prefixed
+            // with `defaultLocale: <code>`). The dispatcher resolves
+            // the active recipient's locale at delivery time; the
+            // broadcast channels (webhook/talk) use the default locale
+            // fallback chain.
             $subject = ($spec['subject'] ?? null);
-            if (is_string($subject) === false || $subject === '') {
-                $errors[] = ['code' => 'notification-no-subject', 'message' => sprintf('Notification "%s" requires a subject string.', $name)];
-            }
+            if (is_string($subject) === true) {
+                if ($subject === '') {
+                    $errors[] = ['code' => 'notification-no-subject', 'message' => sprintf('Notification "%s" requires a non-empty subject string.', $name)];
+                }
+            } else if (is_array($subject) === true) {
+                $localeKeys = array_filter(
+                    array_keys($subject),
+                    static fn ($key): bool => $key !== 'defaultLocale' && is_string($key) === true
+                );
+                if (count($localeKeys) === 0) {
+                    $errors[] = ['code' => 'notification-no-subject', 'message' => sprintf('Notification "%s" subject map must declare at least one locale (e.g. nl, en).', $name)];
+                }
+
+                foreach ($localeKeys as $localeKey) {
+                    if (is_string($subject[$localeKey]) === false || $subject[$localeKey] === '') {
+                        $errors[] = ['code' => 'notification-bad-subject-locale', 'message' => sprintf('Notification "%s" subject for locale "%s" must be a non-empty string.', $name, $localeKey)];
+                    }
+                }
+
+                if (isset($subject['defaultLocale']) === true) {
+                    if (is_string($subject['defaultLocale']) === false || isset($subject[$subject['defaultLocale']]) === false) {
+                        $errors[] = ['code' => 'notification-bad-default-locale', 'message' => sprintf('Notification "%s" defaultLocale "%s" is not declared in the subject map.', $name, (string) $subject['defaultLocale'])];
+                    }
+                }
+            } else {
+                $errors[] = ['code' => 'notification-no-subject', 'message' => sprintf('Notification "%s" requires a subject string or per-locale map.', $name)];
+            }//end if
 
             // When the `webhook` channel is declared, the spec MUST include a `webhook.url` value.
             if (is_array($channels) === true && in_array('webhook', $channels, true) === true) {
@@ -138,6 +175,7 @@ final class NotificationAnnotationValidator
                     $errors[] = ['code' => 'notification-recipient-malformed', 'message' => sprintf('Notification "%s" recipient[%d] must be an object.', $name, $i)];
                     continue;
                 }
+
                 $kind = (string) ($recipient['kind'] ?? '');
                 if (in_array($kind, self::VALID_RECIPIENT_KINDS, true) === false) {
                     $errors[] = ['code' => 'notification-bad-recipient-kind', 'message' => sprintf('Notification "%s" recipient[%d] kind "%s" not in [%s].', $name, $i, $kind, implode(', ', self::VALID_RECIPIENT_KINDS))];
@@ -150,22 +188,23 @@ final class NotificationAnnotationValidator
                         $errors[] = ['code' => 'notification-recipient-field-unknown', 'message' => sprintf('Notification "%s" recipient[%d] field "%s" is not declared on the schema.', $name, $i, $field)];
                     }
                 }
+
                 if ($kind === 'object-acl') {
                     $perm = (string) ($recipient['permission'] ?? '');
                     if (in_array($perm, ['read', 'manage'], true) === false) {
                         $errors[] = ['code' => 'notification-recipient-acl-bad-permission', 'message' => sprintf('Notification "%s" recipient[%d] kind=object-acl requires permission in [read, manage]; got "%s".', $name, $i, $perm)];
                     }
                 }
+
                 if ($kind === 'expression') {
                     $resolver = (string) ($recipient['resolver'] ?? '');
                     if ($resolver === '') {
                         $errors[] = ['code' => 'notification-recipient-expression-no-resolver', 'message' => sprintf('Notification "%s" recipient[%d] kind=expression requires a resolver string (DI tag or FQCN).', $name, $i)];
                     }
                 }
-            }
-        }
+            }//end foreach
+        }//end foreach
 
         return $errors;
     }//end validate()
-
 }//end class
