@@ -10,6 +10,7 @@ import { schemaStore, navigationStore, registerStore } from '../../store/store.j
 		:dialog-title="schemaStore.schemaItem?.id ? t('openregister', 'Edit Schema') : t('openregister', 'Add Schema')"
 		:available-schemas="computedAvailableSchemas"
 		:available-registers="computedAvailableRegisters"
+		:inherited-properties="computedInheritedProperties"
 		:user-groups="userGroups"
 		:loading-groups="loadingGroups"
 		:available-tags="availableTags"
@@ -85,6 +86,22 @@ export default {
 				id: register.id,
 				label: register.title || register.name || register.id,
 			}))
+		},
+		computedInheritedProperties() {
+			const allOf = schemaStore.schemaItem?.allOf || []
+			if (!allOf.length) return {}
+
+			const merged = {}
+			for (const ref of allOf) {
+				const schemaId = typeof ref === 'object' ? ref.id : ref
+				const parentSchema = schemaStore.schemaList.find(s =>
+					s.id === schemaId || s.uuid === schemaId || s.slug === schemaId,
+				)
+				if (parentSchema?.properties) {
+					Object.assign(merged, parentSchema.properties)
+				}
+			}
+			return merged
 		},
 	},
 	mounted() {
