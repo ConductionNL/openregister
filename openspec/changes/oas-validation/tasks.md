@@ -1,6 +1,6 @@
 # Tasks: OAS Validation Specification
 
-> **Status (Phase 1):** Validation engine extended with operationId uniqueness (auto-deduplication), tag consistency cross-checks, server-URL absoluteness, and NLGov API-01/API-03 rules. Strict mode (`?strict=true` → HTTP 422) and validation summary surface (`?validate=true` → `x-validation-summary` extension) shipped via `OasController`. Twelve integration tests cover the structural invariants and known regression cases. Deferred to Phase 2: Redocly CLI in CI, schema-import-time validation, ETag/cache layer for OAS responses, RFC 7807 problem-detail enrichment, and `opis/json-schema`-based meta-schema validation.
+> **Status (Phase 1, retriaged 2026-05-01):** Validation engine extended with operationId uniqueness (auto-deduplication), tag consistency cross-checks, server-URL absoluteness, and NLGov API-01/API-03 rules. Strict mode (`?strict=true` → HTTP 422) and validation summary surface (`?validate=true` → `x-validation-summary` extension) shipped via `OasController`. Twelve integration tests cover the structural invariants and known regression cases. **13 of 19 tasks tickably complete; 6 left in Phase 2 — every one is external-blocked, retriaged today and confirmed: runtime request/response validation (depends on middleware design), ETag/cache (deferred until load signal), Redocly CI (needs stable register fixture), schema validation on import (separate `data-import-export` spec scope), RFC 7807 problem details (coordinated structural change to `Error` schema affecting every error response), and meta-schema validation (vendoring blocker tracked in [issue #1378](https://github.com/ConductionNL/openregister/issues/1378)).**
 
 ## Implemented (Phase 1)
 
@@ -24,7 +24,7 @@
 - [ ] **CI Redocly Lint Integration** — running `npx @redocly/cli lint` in CI is deferred until a stable test register fixture (or snapshot) exists in the repo so the lint result is reproducible. The PHPUnit integration suite covers the same invariants without external tooling.
 - [ ] **Schema Validation on Import** — pre-validating imported schemas in `ImportHandler` for OAS compatibility is a separate spec scope (see `data-import-export`); we already auto-correct on generation, so imports cannot break OAS output.
 - [ ] **API-46 Problem Details (RFC 7807)** — enriching the `Error` schema with `type`, `title`, `status`, `detail`, `instance` is a structural change to `BaseOas.json` and affects every error response; deferred to a coordinated update.
-- [ ] **Strict-mode meta-schema validation** — running the generated OAS through the OpenAPI 3.1.0 JSON-Schema meta-schema (via `opis/json-schema`) gives the broadest possible structural check. Deferred until the meta-schema document is vendored or a network-fetchable copy is wired in.
+- [ ] **Strict-mode meta-schema validation** — running the generated OAS through the OpenAPI 3.1.0 JSON-Schema meta-schema (via `opis/json-schema`) gives the broadest possible structural check. `opis/json-schema` already lives in `composer.json`. The blocker is vendoring the meta-schema document under `lib/Service/Resources/meta/` so the validator runs offline. Tracked in [issue #1378](https://github.com/ConductionNL/openregister/issues/1378) — estimated 2-4h once a maintainer takes it on.
 
 ## Architecture (Phase 1 decisions)
 

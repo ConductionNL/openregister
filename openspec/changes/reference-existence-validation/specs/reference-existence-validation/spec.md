@@ -497,7 +497,7 @@ Schemas MUST support a `validationStrictness` configuration that controls the se
 - Async validation for large batches via `BackgroundValidationJob`
 - Validation events via `IEventDispatcher` (`ReferenceValidationFailedEvent`, `ReferenceValidationSucceededEvent`)
 - `_skipValidation` admin bypass parameter
-- `validationStrictness` levels (warn, off) -- currently only strict behavior
+- ~~`validationStrictness` levels (warn, off)~~ -- shipped Phase 5: `validateReference` accepts string-shorthand `'warn' | 'error' | 'strict' | 'block' | 'off'`, plus the canonical `validationStrictness: 'strict' | 'warn' | 'off'` companion field. Warn-mode logs a warning and dispatches `ReferenceValidationFailedEvent` but does not throw HTTP 422. Resolution lives in `SaveObject::resolveReferenceStrictness()`
 - `validateExternalReference` for URL-based references
 - Multiple validation error collection (currently throws on first invalid reference)
 - Request-scoped existence result caching (schema resolution is cached, but individual UUID existence is not)

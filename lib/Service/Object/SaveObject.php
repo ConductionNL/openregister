@@ -3646,8 +3646,11 @@ class SaveObject
         }
 
         foreach ($properties as $propertyName => $property) {
-            // Check if validateReference is enabled for this property.
-            if (($property['validateReference'] ?? false) !== true) {
+            // Resolve the configured strictness level for this property.
+            // Returns null when validation is not enabled — short-circuit
+            // so legacy `validateReference: false` (or absent) costs zero.
+            $strictness = $this->resolveReferenceStrictness(property: $property);
+            if ($strictness === null) {
                 continue;
             }
 
@@ -3689,15 +3692,119 @@ class SaveObject
                     continue;
                 }
 
-                $this->validateReferenceExists(
-                    propertyName: $propertyName,
-                    uuid: (string) $uuid,
-                    schemaRef: $ref,
-                    register: $targetRegister
-                );
-            }
+                try {
+                    $this->validateReferenceExists(
+                        propertyName: $propertyName,
+                        uuid: (string) $uuid,
+                        schemaRef: $ref,
+                        register: $targetRegister
+                    );
+                } catch (ReferenceValidationException $exception) {
+                    // Strict mode (`error`) re-raises the 422 so the save
+                    // is rejected. `warn` mode swallows the exception
+                    // after the failure event has already fired in
+                    // `validateReferenceExists()` — listeners still see
+                    // the miss, the warning is logged for ops visibility,
+                    // and the save proceeds. This lets schema authors
+                    // adopt reference validation gradually on registers
+                    // with known dirty data without forcing every save
+                    // through an HTTP 422.
+                    if ($strictness === 'warn') {
+                        $this->logger->warning(
+                            message: '[SaveObject] Reference validation failed (warn-only)',
+                            context: [
+                                'file'           => __FILE__,
+                                'line'           => __LINE__,
+                                'property'       => $propertyName,
+                                'uuid'           => $uuid,
+                                'targetSchema'   => $exception->getTargetSchemaSlug(),
+                                'targetRegister' => $exception->getTargetRegister(),
+                            ]
+                        );
+                        continue;
+                    }
+
+                    throw $exception;
+                }//end try
+            }//end foreach
         }//end foreach
     }//end validateReferences()
+
+    /**
+     * Resolve the configured strictness level for a schema property.
+     *
+     * Schema authors declare reference validation in two related fields:
+     *
+     * - `validateReference` — the on/off toggle (boolean) or a shorthand
+     *   string carrying both the on/off bit AND the severity:
+     *   `true` / `'error'` / `'strict'` / `'block'` enable strict
+     *   validation; `'warn'` enables warn-only mode; `false` or
+     *   `'off'` disables validation entirely.
+     * - `validationStrictness` — optional explicit severity field
+     *   (`'strict'`, `'warn'`, `'off'`) that overrides the default
+     *   strict severity when `validateReference` is just the boolean
+     *   `true`. Matches the spec's documented schema shape.
+     *
+     * Returns `'error'` when validation is strict, `'warn'` when
+     * warn-only, and `null` when validation is disabled — the caller
+     * uses `null` as the short-circuit signal to skip the property
+     * without paying for the database round trip.
+     *
+     * @param array $property The schema property definition.
+     *
+     * @return string|null Returns `'error'` for strict mode, `'warn'` for
+     *                     warn-only, `null` when validation is disabled.
+     *
+     * @spec openspec/changes/reference-existence-validation/tasks.md
+     */
+    private function resolveReferenceStrictness(array $property): ?string
+    {
+        $configured = ($property['validateReference'] ?? false);
+        $explicit   = ($property['validationStrictness'] ?? null);
+
+        // Explicit strictness field can disable validation outright,
+        // mirroring the spec's "off" level even when the boolean toggle
+        // is true.
+        if (is_string($explicit) === true && strtolower($explicit) === 'off') {
+            return null;
+        }
+
+        // Map the optional explicit strictness onto our internal verdict.
+        $explicitNormalized = null;
+        if (is_string($explicit) === true) {
+            $candidate = strtolower($explicit);
+            if ($candidate === 'strict' || $candidate === 'error' || $candidate === 'block') {
+                $explicitNormalized = 'error';
+            } else if ($candidate === 'warn') {
+                $explicitNormalized = 'warn';
+            }
+        }
+
+        // Boolean true: validation enabled, default strict, but defer
+        // to explicit strictness when present.
+        if ($configured === true) {
+            return $explicitNormalized ?? 'error';
+        }
+
+        // String shorthand on `validateReference` carries both the
+        // on/off bit and the severity.
+        if (is_string($configured) === true) {
+            $normalized = strtolower($configured);
+            if ($normalized === 'off' || $normalized === 'false') {
+                return null;
+            }
+
+            if ($normalized === 'error' || $normalized === 'block' || $normalized === 'strict') {
+                return $explicitNormalized ?? 'error';
+            }
+
+            if ($normalized === 'warn') {
+                return $explicitNormalized ?? 'warn';
+            }
+        }
+
+        return null;
+    }//end resolveReferenceStrictness()
 
     /**
      * Validate that a referenced object exists in the target schema.

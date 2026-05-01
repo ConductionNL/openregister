@@ -85,6 +85,20 @@ class AnnotationNotificationDispatcher
                 continue;
             }
 
+            // Organisation pinning: when the rule declares an
+            // `organisation` field, the dispatch is skipped unless the
+            // object lives in that organisation. Closes the spec's
+            // "Notifications MUST be scoped to organisations for
+            // multi-tenant deployments" requirement — RBAC already
+            // implicitly scopes the recipient resolver, but explicit
+            // org-pinning lets schema authors declare "this rule only
+            // fires for objects belonging to org X" without writing a
+            // custom expression resolver. Accepts a string (single org
+            // UUID/slug) or an array of strings (any-of matching).
+            if ($this->organisationGateAllows(spec: $spec, object: $object) === false) {
+                continue;
+            }
+
             $recipients = $this->resolveRecipients(($spec['recipients'] ?? []), $data, $object, $context);
             if (count($recipients) === 0) {
                 continue;
@@ -205,6 +219,58 @@ class AnnotationNotificationDispatcher
         return $this->rateLimiter->tryConsume(ruleId: $ruleId, recipient: $recipient, perRuleOverride: $rateLimit);
 
     }//end rateLimitAllows()
+
+    /**
+     * Decide whether the rule's organisation gate (if declared) lets
+     * the current object through.
+     *
+     * The rule may declare:
+     * - no `organisation` field — the gate is open and every object passes.
+     * - a single string — must match the object's organisation exactly.
+     * - an array of strings — any-of match: at least one entry must equal
+     *   the object's organisation.
+     *
+     * Matching is loose-equal-string (the saved organisation column may
+     * be a UUID or a slug; schema authors typically pin by the same
+     * representation they store). When the object has no organisation
+     * set, only rules without a gate (or rules whose gate explicitly
+     * lists `null`/empty-string) match — guarantees that org-pinned
+     * rules never fire for legacy un-tenanted data.
+     *
+     * @param array<string, mixed> $spec   The notification spec block.
+     * @param ObjectEntity         $object The object the event happened on.
+     *
+     * @return bool True when dispatch may proceed.
+     */
+    private function organisationGateAllows(array $spec, ObjectEntity $object): bool
+    {
+        $pinned = ($spec['organisation'] ?? null);
+        if ($pinned === null) {
+            return true;
+        }
+
+        $objectOrg = (string) ($object->getOrganisation() ?? '');
+
+        if (is_string($pinned) === true) {
+            return $pinned === $objectOrg;
+        }
+
+        if (is_array($pinned) === true) {
+            foreach ($pinned as $candidate) {
+                if (is_string($candidate) === true && $candidate === $objectOrg) {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        // Malformed gate (not string / array) — fail closed so an
+        // accidental misconfiguration doesn't silently leak the
+        // notification cross-tenant.
+        return false;
+
+    }//end organisationGateAllows()
 
     /**
      * POST a JSON payload to the configured webhook URL.

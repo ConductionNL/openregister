@@ -464,4 +464,120 @@ class NotificationAnnotationValidatorTest extends TestCase
         $codes = array_column($errors, 'code');
         $this->assertContains('notification-no-subject', $codes);
     }
+
+    // ====================================================================
+    // Organisation gate — Open spec item:
+    // "Notifications MUST be scoped to organisations for multi-tenant
+    //  deployments." The dispatcher honours an optional `organisation`
+    //  field at the rule level (string OR array of strings); the
+    //  validator accepts both shapes and surfaces a single
+    //  `notification-bad-organisation` error code for malformed inputs.
+    // ====================================================================
+    public function testOrganisationGateAcceptsSingleStringUuid(): void
+    {
+        $errors = $this->v->validate([
+            'x-openregister-notifications' => [
+                'pinned' => [
+                    'trigger' => ['type' => 'created'],
+                    'recipients' => [['kind' => 'users', 'users' => ['admin']]],
+                    'channels' => ['nc-notification'],
+                    'subject' => 'hi',
+                    'organisation' => 'org-uuid-123',
+                ],
+            ],
+            'properties' => [],
+        ]);
+        $codes = array_column($errors, 'code');
+        $this->assertNotContains('notification-bad-organisation', $codes);
+    }
+
+    public function testOrganisationGateAcceptsArrayOfStrings(): void
+    {
+        $errors = $this->v->validate([
+            'x-openregister-notifications' => [
+                'pinned' => [
+                    'trigger' => ['type' => 'created'],
+                    'recipients' => [['kind' => 'users', 'users' => ['admin']]],
+                    'channels' => ['nc-notification'],
+                    'subject' => 'hi',
+                    'organisation' => ['org-a', 'org-b'],
+                ],
+            ],
+            'properties' => [],
+        ]);
+        $codes = array_column($errors, 'code');
+        $this->assertNotContains('notification-bad-organisation', $codes);
+    }
+
+    public function testOrganisationGateRejectsEmptyString(): void
+    {
+        $errors = $this->v->validate([
+            'x-openregister-notifications' => [
+                'pinned' => [
+                    'trigger' => ['type' => 'created'],
+                    'recipients' => [['kind' => 'users', 'users' => ['admin']]],
+                    'channels' => ['nc-notification'],
+                    'subject' => 'hi',
+                    'organisation' => '',
+                ],
+            ],
+            'properties' => [],
+        ]);
+        $codes = array_column($errors, 'code');
+        $this->assertContains('notification-bad-organisation', $codes);
+    }
+
+    public function testOrganisationGateRejectsEmptyArray(): void
+    {
+        $errors = $this->v->validate([
+            'x-openregister-notifications' => [
+                'pinned' => [
+                    'trigger' => ['type' => 'created'],
+                    'recipients' => [['kind' => 'users', 'users' => ['admin']]],
+                    'channels' => ['nc-notification'],
+                    'subject' => 'hi',
+                    'organisation' => [],
+                ],
+            ],
+            'properties' => [],
+        ]);
+        $codes = array_column($errors, 'code');
+        $this->assertContains('notification-bad-organisation', $codes);
+    }
+
+    public function testOrganisationGateRejectsArrayWithEmptyEntry(): void
+    {
+        $errors = $this->v->validate([
+            'x-openregister-notifications' => [
+                'pinned' => [
+                    'trigger' => ['type' => 'created'],
+                    'recipients' => [['kind' => 'users', 'users' => ['admin']]],
+                    'channels' => ['nc-notification'],
+                    'subject' => 'hi',
+                    'organisation' => ['org-a', ''],
+                ],
+            ],
+            'properties' => [],
+        ]);
+        $codes = array_column($errors, 'code');
+        $this->assertContains('notification-bad-organisation', $codes);
+    }
+
+    public function testOrganisationGateRejectsNonStringNonArray(): void
+    {
+        $errors = $this->v->validate([
+            'x-openregister-notifications' => [
+                'pinned' => [
+                    'trigger' => ['type' => 'created'],
+                    'recipients' => [['kind' => 'users', 'users' => ['admin']]],
+                    'channels' => ['nc-notification'],
+                    'subject' => 'hi',
+                    'organisation' => 12345,
+                ],
+            ],
+            'properties' => [],
+        ]);
+        $codes = array_column($errors, 'code');
+        $this->assertContains('notification-bad-organisation', $codes);
+    }
 }
