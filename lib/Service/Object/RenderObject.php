@@ -444,8 +444,15 @@ class RenderObject
     /**
      * Decide whether the request opts in to full @self.files metadata.
      *
-     * Recognizes the canonical form `@self.files`, the shorthand `_files`, and the
-     * blanket `all` token. Accepts both array and comma-separated string forms.
+     * Recognizes the canonical form `@self.files` and the equivalent shorthand
+     * `_files`. Accepts both array and comma-separated string forms.
+     *
+     * The blanket `all` token is intentionally NOT recognized here. The
+     * proposal pins `@self.files` as a strict, explicit opt-in — and `all`
+     * is propagated to sub-entity renders via `array_merge(['all'], $keyExtends)`,
+     * which would silently pay full file-metadata cost on every linked
+     * sub-object whenever a top-level request used `_extend[]=all`. Consumers
+     * that want full file metadata must spell it explicitly.
      *
      * @param array|string|null $extend Extend parameter from the request.
      *
@@ -464,8 +471,7 @@ class RenderObject
         // Type-system invariant: by here, $extend is `array` (the null/empty cases
         // already returned, and string was converted above).
         return in_array('@self.files', $extend, true) === true
-            || in_array('_files', $extend, true) === true
-            || in_array('all', $extend, true) === true;
+            || in_array('_files', $extend, true) === true;
     }//end shouldExtendFiles()
 
     /**
@@ -487,8 +493,14 @@ class RenderObject
             return $entity;
         }
 
-        if ($this->batchFileIdsCache !== null) {
-            $entity->setFiles($this->batchFileIdsCache[$uuid] ?? []);
+        // Distinguish "UUID was in the batch and had zero files" from "UUID was not
+        // in the batch at all". The batch cache is populated by renderEntities()
+        // with only the top-level page entity UUIDs; sub-entities reached via
+        // relation extends are NOT in it. For a sub-entity we must fall through
+        // to a single-UUID lookup, otherwise its `@self.files` would silently
+        // emit `[]` even when the entity has attached files.
+        if ($this->batchFileIdsCache !== null && array_key_exists(key: $uuid, array: $this->batchFileIdsCache) === true) {
+            $entity->setFiles($this->batchFileIdsCache[$uuid]);
             return $entity;
         }
 

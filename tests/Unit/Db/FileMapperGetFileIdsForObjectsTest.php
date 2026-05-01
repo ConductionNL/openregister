@@ -102,6 +102,12 @@ class FileMapperGetFileIdsForObjectsTest extends TestCase
         // Non-string and empty-string values are filtered out before any DB call.
         $this->db->expects($this->never())->method('getQueryBuilder');
 
+        // Deliberate off-contract input — exercises the `is_string` guard on
+        // every non-string path (int, null, bool) plus the empty-string path.
+        // The method's docblock declares `string[]`, so static analysis would
+        // otherwise flag this; the guard exists exactly to defend against
+        // sloppy callers, and that defence deserves coverage.
+        /** @psalm-suppress InvalidArgument */
         $result = $this->mapper->getFileIdsForObjects(uuids: ['', 0, null, false]);
         $this->assertSame(expected: [], actual: $result);
 
