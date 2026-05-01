@@ -19,7 +19,7 @@ Achieve 100% API route coverage with Newman integration tests and measure server
   - `tests/newman/agent-cms-testing.postman_collection.json` (469 lines)
   - `tests/performance/performance-test-collection.json` (274 lines)
 - **Dual-storage testing** in CI: `run-dual-storage-tests.sh` runs collections against both Normal (JSON blob) and Magic Mapper (SQL) storage modes
-- **CI pipeline** defined in `.github/workflows/quality.yml` -- Newman runs are delegated to a database-tests workflow matrix (PostgreSQL/MySQL x Normal/MagicMapper)
+- **CI pipeline** defined in `.github/workflows/code-quality.yml` -- Newman runs are delegated to a database-tests workflow matrix (PostgreSQL/MySQL x Normal/MagicMapper)
 - **0% PCOV coverage measurement** from integration tests -- no `coverage-prepend.php` exists
 - **50 controllers** identified in `lib/Controller/` (38 root + 12 Settings sub-controllers)
 - **Public endpoints** exist on: ObjectsController, GraphQLController, McpController, OasController, NamesController, UserController, FilesController (annotated with `@PublicPage`)
@@ -628,8 +628,8 @@ Tests SHALL be organized in separate Postman collections by domain, stored consi
   - Agent CMS testing collection in `tests/newman/`
   - Performance test collection in `tests/performance/`
   - Dual-storage runner script (`run-dual-storage-tests.sh`)
-  - CI pipeline in `.github/workflows/quality.yml` with `enable-newman: false` (delegated to database-tests workflow)
-  - Coverage guard integration (`enable-coverage-guard: true` in quality.yml)
+  - CI pipeline in `.github/workflows/code-quality.yml` with `enable-newman: false` (delegated to database-tests workflow)
+  - Coverage guard integration (`enable-coverage-guard: true` in code-quality.yml)
 - **NOT implemented:**
   - PCOV coverage collection during Newman/API test runs (no `coverage-prepend.php`)
   - Coverage merge or dual reporting (unit + API)
