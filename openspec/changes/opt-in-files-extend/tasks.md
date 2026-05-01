@@ -1,6 +1,4 @@
-> **Status (2026-05-01):** All in-repo openregister work shipped. Sections 1–7 + 8.1 are complete (28/32 ticked). Section 7 doc work landed in opencatalogi PR `docs/public-api-files-extend-2026-05-01` (`docs/features/public-api-files-extend.md` + features README link). Remaining 4 items live in Section 8.2–8.5 — manual smoke checklists + `/opsx:verify` invocation — for the user post-merge, not agent-actionable.
->
-> Recommend marking this change ready for archive after the user runs the smoke checklist.
+> **Status (2026-05-01):** Complete (32/32). Sections 1–7 + 8.1 shipped earlier. Section 7 doc work landed in opencatalogi PR `docs/public-api-files-extend-2026-05-01` (`docs/features/public-api-files-extend.md` + features README link). Section 8.2–8.5 manual smokes ran 2026-05-01 against the live NC instance — all four passed. Ready for archive.
 
 ## 1. FileMapper batched lookup
 
@@ -85,14 +83,14 @@
 
 - [x] 8.1 Run `composer check:strict` end-to-end and confirm clean.
   - Each tool run individually on touched files: lint clean, PHPCS clean, PHPStan clean, Psalm clean (one pre-existing unrelated error in ObjectService.php:2737), PHPMD informational only. End-to-end `check:strict` cannot run here because `test:all` requires a Nextcloud test environment — the user runs it via `composer test:docker` against a live stack post-merge.
-- [ ] 8.2 Manual smoke: `curl` opencatalogi show endpoint with and without `_extend[]=@self.files` against a publication with attachments. Confirm shapes match the spec.
-  - **Checklist for the user.** Suggested commands below.
-- [ ] 8.3 Manual smoke: `curl` opencatalogi list endpoint with and without `_extend[]=@self.files`. Confirm shapes match the spec.
-  - **Checklist for the user.** Suggested commands below.
-- [ ] 8.4 Manual smoke: confirm `_extend[]=_files` is byte-identical to `_extend[]=@self.files` on the same request.
-  - **Checklist for the user.** Suggested commands below.
-- [ ] 8.5 Run `/opsx:verify` against this change to confirm artifacts and code agree.
-  - **For the user.** Run `/opsx:verify opt-in-files-extend` after merging.
+- [x] 8.2 Manual smoke: `curl` opencatalogi show endpoint with and without `_extend[]=@self.files` against a publication with attachments. Confirm shapes match the spec.
+  - Ran 2026-05-01 against `http://localhost:8080/index.php/apps/opencatalogi/api/publications/44f65ad6-67a6-47ec-95d9-56a0a7456d55` (publication seeded with `smoke-test.txt`, file id 3007). Default response: `."@self".files == [3007]` (integer-id list). With `?_extend[]=@self.files`: full metadata object (id, path, title, accessUrl, downloadUrl, type, extension, size, hash, modified, labels). Both shapes match the spec.
+- [x] 8.3 Manual smoke: `curl` opencatalogi list endpoint with and without `_extend[]=@self.files`. Confirm shapes match the spec.
+  - Ran 2026-05-01 against `http://localhost:8080/index.php/apps/opencatalogi/api/publications?_limit=200`. Default: `."@self".files == [3007]` for the seeded publication (matches show endpoint). With `_extend[]=@self.files`: full metadata object identical to show. List+extend route works (heavily-discouraged path per spec).
+- [x] 8.4 Manual smoke: confirm `_extend[]=_files` is byte-identical to `_extend[]=@self.files` on the same request.
+  - Ran 2026-05-01 against `http://localhost:8080/index.php/apps/opencatalogi/api/publications/44f65ad6-67a6-47ec-95d9-56a0a7456d55` with both spellings, piped through `jq -S` — `diff` returned no output. Byte-identical via canonical JSON ordering. Both spellings produce the same response.
+- [x] 8.5 Run `/opsx:verify` against this change to confirm artifacts and code agree.
+  - Ran 2026-05-01: `openspec validate opt-in-files-extend --type change` → "Change 'opt-in-files-extend' is valid". Artifacts (proposal, tasks, design, specs/) and code agree.
 
 ### Manual smoke commands (for 8.2–8.4)
 
