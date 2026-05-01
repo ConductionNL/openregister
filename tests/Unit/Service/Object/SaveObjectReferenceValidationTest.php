@@ -99,7 +99,7 @@ class SaveObjectReferenceValidationTest extends TestCase
         return $reflection->invokeArgs($handler, array_values($args));
     }//end invoke()
 
-    private function buildSchemaWithReference(): Schema
+    private function buildSchemaWithReference(mixed $validateReference=true): Schema
     {
         $schema = $this->getMockBuilder(Schema::class)
             ->onlyMethods(['getProperties'])
@@ -111,7 +111,7 @@ class SaveObjectReferenceValidationTest extends TestCase
                     'organisation' => [
                         'type'              => 'string',
                         '$ref'              => '#/components/schemas/organisations',
-                        'validateReference' => true,
+                        'validateReference' => $validateReference,
                     ],
                 ]
                 );
@@ -600,4 +600,306 @@ class SaveObjectReferenceValidationTest extends TestCase
             ]
         );
     }//end testClearReferenceValidationCacheForcesRevalidation()
+
+    // ====================================================================
+    // 4. Schema-configurable validation strictness levels — Open spec item:
+    // "Schema-configurable validation strictness levels."
+    // The `validateReference` flag now accepts 'warn' / 'error' / 'block'
+    // alongside the historical boolean `true`. Warn-mode logs the failure
+    // and dispatches the failure event but does NOT throw the 422, so
+    // schema authors can adopt validation gradually on registers with
+    // known dirty data.
+    // ====================================================================
+
+    /**
+     * Warn-mode short-circuits the throw so the save proceeds.
+     */
+    public function testStrictnessWarnDoesNotThrowOnMissingReference(): void
+    {
+        // The mapper is consulted (validation is enabled) and reports
+        // "not found", but the warn-mode short-circuits the throw so
+        // the save proceeds without raising HTTP 422.
+        $unifiedMapper = $this->createMock(MagicMapper::class);
+        $unifiedMapper->expects($this->once())
+            ->method('find')
+            ->willThrowException(new DoesNotExistException('not found'));
+
+        $logger = $this->createMock(LoggerInterface::class);
+        $logger->expects($this->atLeastOnce())
+            ->method('warning')
+            ->with(
+                $this->stringContains('warn-only'),
+                $this->arrayHasKey('uuid')
+            );
+
+        $handler = new SaveObject(
+            objectEntityMapper: $this->createMock(MagicMapper::class),
+            unifiedObjectMapper: $unifiedMapper,
+            metaHydrationHandler: $this->createMock(\OCA\OpenRegister\Service\Object\SaveObject\MetadataHydrationHandler::class),
+            filePropertyHandler: $this->createMock(\OCA\OpenRegister\Service\Object\SaveObject\FilePropertyHandler::class),
+            linkedEntityHandler: $this->createMock(\OCA\OpenRegister\Service\Object\SaveObject\LinkedEntityPropertyHandler::class),
+            userSession: $this->makeNonAdminSession(),
+            auditTrailMapper: $this->createMock(AuditTrailMapper::class),
+            schemaMapper: $this->makeSchemaMapperResolvingTarget(),
+            registerMapper: $this->createMock(RegisterMapper::class),
+            urlGenerator: $this->createMock(IURLGenerator::class),
+            organisationService: $this->createMock(OrganisationService::class),
+            cacheHandler: $this->createMock(CacheHandler::class),
+            settingsService: $this->createMock(SettingsService::class),
+            propertyRbacHandler: $this->createMock(PropertyRbacHandler::class),
+            computedFieldHandler: $this->createMock(\OCA\OpenRegister\Service\Object\SaveObject\ComputedFieldHandler::class),
+            translationHandler: $this->createMock(\OCA\OpenRegister\Service\Object\TranslationHandler::class),
+            logger: $logger,
+            tmloService: $this->createMock(\OCA\OpenRegister\Service\TmloService::class),
+            arrayLoader: new ArrayLoader(),
+            groupManager: $this->makeAdminGroupManager(false),
+            appConfig: $this->makeAppConfig('true'),
+            eventDispatcher: $this->createMock(IEventDispatcher::class),
+        );
+
+        // Should NOT throw — warn mode swallows the missing-reference
+        // exception and lets the save proceed.
+        $this->invoke(
+            $handler,
+            'validateReferences',
+            [
+                'schema'   => $this->buildSchemaWithReference('warn'),
+                'data'     => ['organisation' => 'missing-uuid'],
+                'register' => null,
+                'oldData'  => null,
+            ]
+        );
+    }//end testStrictnessWarnDoesNotThrowOnMissingReference()
+
+    /**
+     * Warn-mode still dispatches the failure event so listeners observe the miss.
+     */
+    public function testStrictnessWarnStillDispatchesFailureEvent(): void
+    {
+        // Listeners must observe every miss regardless of strictness:
+        // monitoring + analytics need to count dangling references in
+        // warn-mode registers too.
+        $unifiedMapper = $this->createMock(MagicMapper::class);
+        $unifiedMapper->method('find')
+            ->willThrowException(new DoesNotExistException('not found'));
+
+        $eventDispatcher = $this->createMock(IEventDispatcher::class);
+        $eventDispatcher->expects($this->once())
+            ->method('dispatchTyped')
+            ->with($this->isInstanceOf(ReferenceValidationFailedEvent::class));
+
+        $handler = $this->buildHandler(
+            userSession: $this->makeNonAdminSession(),
+            groupManager: $this->makeAdminGroupManager(false),
+            appConfig: $this->makeAppConfig('true'),
+            eventDispatcher: $eventDispatcher,
+            unifiedObjectMapper: $unifiedMapper,
+            schemaMapper: $this->makeSchemaMapperResolvingTarget(),
+        );
+
+        $this->invoke(
+            $handler,
+            'validateReferences',
+            [
+                'schema'   => $this->buildSchemaWithReference('warn'),
+                'data'     => ['organisation' => 'missing-uuid'],
+                'register' => null,
+                'oldData'  => null,
+            ]
+        );
+    }//end testStrictnessWarnStillDispatchesFailureEvent()
+
+    /**
+     * `validateReference: 'error'` matches legacy boolean-true semantics.
+     */
+    public function testStrictnessErrorRejectsOnMissingReference(): void
+    {
+        // The string 'error' must behave identically to the legacy
+        // boolean `true`: HTTP 422 is raised on a missing target.
+        $unifiedMapper = $this->createMock(MagicMapper::class);
+        $unifiedMapper->method('find')
+            ->willThrowException(new DoesNotExistException('not found'));
+
+        $handler = $this->buildHandler(
+            userSession: $this->makeNonAdminSession(),
+            groupManager: $this->makeAdminGroupManager(false),
+            appConfig: $this->makeAppConfig('true'),
+            eventDispatcher: $this->createMock(IEventDispatcher::class),
+            unifiedObjectMapper: $unifiedMapper,
+            schemaMapper: $this->makeSchemaMapperResolvingTarget(),
+        );
+
+        $this->expectException(ReferenceValidationException::class);
+        $this->invoke(
+            $handler,
+            'validateReferences',
+            [
+                'schema'   => $this->buildSchemaWithReference('error'),
+                'data'     => ['organisation' => 'missing-uuid'],
+                'register' => null,
+                'oldData'  => null,
+            ]
+        );
+    }//end testStrictnessErrorRejectsOnMissingReference()
+
+    /**
+     * `validateReference: 'block'` is an alias of `'error'`.
+     */
+    public function testStrictnessBlockRejectsOnMissingReference(): void
+    {
+        // 'block' is an alias of 'error' — same throw semantics, no
+        // database round trips skipped, no event suppressed.
+        $unifiedMapper = $this->createMock(MagicMapper::class);
+        $unifiedMapper->method('find')
+            ->willThrowException(new DoesNotExistException('not found'));
+
+        $handler = $this->buildHandler(
+            userSession: $this->makeNonAdminSession(),
+            groupManager: $this->makeAdminGroupManager(false),
+            appConfig: $this->makeAppConfig('true'),
+            eventDispatcher: $this->createMock(IEventDispatcher::class),
+            unifiedObjectMapper: $unifiedMapper,
+            schemaMapper: $this->makeSchemaMapperResolvingTarget(),
+        );
+
+        $this->expectException(ReferenceValidationException::class);
+        $this->invoke(
+            $handler,
+            'validateReferences',
+            [
+                'schema'   => $this->buildSchemaWithReference('block'),
+                'data'     => ['organisation' => 'missing-uuid'],
+                'register' => null,
+                'oldData'  => null,
+            ]
+        );
+    }//end testStrictnessBlockRejectsOnMissingReference()
+
+    /**
+     * `validationStrictness: 'warn'` overrides default strict severity.
+     */
+    public function testStrictnessFieldDowngradesBooleanTrueToWarn(): void
+    {
+        // The canonical spec shape: keep `validateReference: true` and
+        // declare severity via `validationStrictness: 'warn'`. Should
+        // behave identically to validateReference: 'warn'.
+        $unifiedMapper = $this->createMock(MagicMapper::class);
+        $unifiedMapper->method('find')
+            ->willThrowException(new DoesNotExistException('not found'));
+
+        $handler = $this->buildHandler(
+            userSession: $this->makeNonAdminSession(),
+            groupManager: $this->makeAdminGroupManager(false),
+            appConfig: $this->makeAppConfig('true'),
+            eventDispatcher: $this->createMock(IEventDispatcher::class),
+            unifiedObjectMapper: $unifiedMapper,
+            schemaMapper: $this->makeSchemaMapperResolvingTarget(),
+        );
+
+        $schema = $this->getMockBuilder(Schema::class)
+            ->onlyMethods(['getProperties'])
+            ->getMock();
+        $schema->setId(1);
+        $schema->setSlug('referrer');
+        $schema->method('getProperties')->willReturn(
+                [
+                    'organisation' => [
+                        'type'                 => 'string',
+                        '$ref'                 => '#/components/schemas/organisations',
+                        'validateReference'    => true,
+                        'validationStrictness' => 'warn',
+                    ],
+                ]
+                );
+
+        // Should NOT throw — warn severity overrides default strict.
+        $this->invoke(
+            $handler,
+            'validateReferences',
+            [
+                'schema'   => $schema,
+                'data'     => ['organisation' => 'missing-uuid'],
+                'register' => null,
+                'oldData'  => null,
+            ]
+        );
+
+        // Reaching here proves no exception was thrown.
+        $this->assertTrue(true);
+    }//end testStrictnessFieldDowngradesBooleanTrueToWarn()
+
+    /**
+     * `validationStrictness: 'off'` disables validation even when
+     * `validateReference: true` is present.
+     */
+    public function testStrictnessFieldOffDisablesValidationEvenWhenBooleanTrue(): void
+    {
+        $unifiedMapper = $this->createMock(MagicMapper::class);
+        $unifiedMapper->expects($this->never())->method('find');
+
+        $handler = $this->buildHandler(
+            userSession: $this->makeNonAdminSession(),
+            groupManager: $this->makeAdminGroupManager(false),
+            appConfig: $this->makeAppConfig('true'),
+            eventDispatcher: $this->createMock(IEventDispatcher::class),
+            unifiedObjectMapper: $unifiedMapper,
+        );
+
+        $schema = $this->getMockBuilder(Schema::class)
+            ->onlyMethods(['getProperties'])
+            ->getMock();
+        $schema->setId(1);
+        $schema->setSlug('referrer');
+        $schema->method('getProperties')->willReturn(
+                [
+                    'organisation' => [
+                        'type'                 => 'string',
+                        '$ref'                 => '#/components/schemas/organisations',
+                        'validateReference'    => true,
+                        'validationStrictness' => 'off',
+                    ],
+                ]
+                );
+
+        $this->invoke(
+            $handler,
+            'validateReferences',
+            [
+                'schema'   => $schema,
+                'data'     => ['organisation' => 'never-checked-uuid'],
+                'register' => null,
+                'oldData'  => null,
+            ]
+        );
+    }//end testStrictnessFieldOffDisablesValidationEvenWhenBooleanTrue()
+
+    /**
+     * `validateReference: false` disables validation entirely.
+     */
+    public function testStrictnessFalseDisablesValidation(): void
+    {
+        // The historical disable-by-omission semantics must continue:
+        // validateReference: false (or absent) skips the mapper entirely.
+        $unifiedMapper = $this->createMock(MagicMapper::class);
+        $unifiedMapper->expects($this->never())->method('find');
+
+        $handler = $this->buildHandler(
+            userSession: $this->makeNonAdminSession(),
+            groupManager: $this->makeAdminGroupManager(false),
+            appConfig: $this->makeAppConfig('true'),
+            eventDispatcher: $this->createMock(IEventDispatcher::class),
+            unifiedObjectMapper: $unifiedMapper,
+        );
+
+        $this->invoke(
+            $handler,
+            'validateReferences',
+            [
+                'schema'   => $this->buildSchemaWithReference(false),
+                'data'     => ['organisation' => 'never-checked-uuid'],
+                'register' => null,
+                'oldData'  => null,
+            ]
+        );
+    }//end testStrictnessFalseDisablesValidation()
 }//end class

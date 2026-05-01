@@ -1,6 +1,6 @@
 # Tasks: reference-existence-validation Specification
 
-> **Status (Phase 4):** 11 of 16 tasks tickably complete. Phase 4 ships explicit soft-delete handling (`includeDeleted: false` pinned at the `validateReferenceExists()` call site + threaded through `MagicMapper::find()` → `findInRegisterSchemaTable()`), a request-scoped reference-existence cache keyed on `(targetSchemaId, uuid)` with a `clearReferenceValidationCache()` entry point for long-running CLI processes, and the matching unit test coverage. 5 open: circular detection, external URL refs, GraphQL mutations, async validation, schema-configurable strictness levels.
+> **Status (Phase 5):** 15 of 19 tasks tickably complete. Phase 5 ships schema-configurable validation strictness levels (`'warn' | 'error' | 'block' | 'off'`) on the `validateReference` field, plus the canonical `validationStrictness` companion field documented in the spec capability — warn-mode logs the failure and dispatches `ReferenceValidationFailedEvent` so listeners observe every miss, but the save proceeds. Lets schema authors adopt reference validation gradually on registers with known dirty data without forcing every save through HTTP 422. 4 open: circular detection, external URL refs, GraphQL mutations, async validation.
 
 ## Implemented
 
@@ -23,7 +23,7 @@
 - [ ] Reference validation works in GraphQL mutations. **Open** — GraphQL mutation handler doesn't currently route through the same `SaveObject::saveObject` path; needs alignment.
 - [ ] Async validation supported for large batch operations. **Open** — depends on batch optimisation + a way to surface async errors.
 - [x] Validation events dispatched for notification and extensibility. Added `lib/Event/ReferenceValidatedEvent.php` and `lib/Event/ReferenceValidationFailedEvent.php` siblings (both `OCP\EventDispatcher\Event` subclasses, both expose typed `propertyName` / `referencedUuid` / `targetSchemaSlug` / `targetRegister` fields). Dispatched from `SaveObject::validateReferenceExists()` via the optional `IEventDispatcher` dependency: `ReferenceValidatedEvent` fires on every successful UUID lookup; `ReferenceValidationFailedEvent` fires immediately BEFORE the `ReferenceValidationException` is thrown, so listeners observe every rejection regardless of whether the controller layer recovers or surfaces the 422. Listener exceptions are caught and logged as warnings — a misbehaving listener cannot block a save or mask the underlying validation failure. **Verified** by `tests/Unit/Service/Object/SaveObjectReferenceValidationTest` (3 tests: failure event carries the typed fields; success event carries the typed fields; no-op when `IEventDispatcher` is absent) plus `tests/Unit/Event/ReferenceValidationEventsTest` (7 tests covering both event classes' field shape, default-null target register, and that the two events are sibling types so listeners can subscribe independently).
-- [ ] Schema-configurable validation strictness levels. **Open** — currently it's binary (`validateReference: true` or absent). Strictness levels (`warn` / `error` / `block`) are a separate UX feature.
+- [x] Schema-configurable validation strictness levels. The `validateReference` field now accepts string-shorthand values (`'warn'`, `'error'`, `'strict'`, `'block'`, `'off'`) alongside the historical boolean `true`/`false`, and the canonical `validationStrictness` companion field is honoured per the spec (`'strict'`, `'warn'`, `'off'`). `validateReferences()` short-circuits via a single `resolveReferenceStrictness()` helper, then catches `ReferenceValidationException` when the resolved verdict is `'warn'` and downgrades it to a logged warning — listeners still observe the miss via `ReferenceValidationFailedEvent` because the dispatch happens INSIDE `validateReferenceExists()` before the throw. Strict mode (`'error'` / `'block'` / `'strict'` / boolean `true`) is unchanged. **Verified** by 6 new tests in `SaveObjectReferenceValidationTest`: warn-mode swallows the throw + logs warning; warn-mode still dispatches the failure event; `'error'` rejects; `'block'` rejects; `validationStrictness: 'warn'` downgrades a `validateReference: true` property; `validationStrictness: 'off'` disables a `validateReference: true` property; `validateReference: false` skips the mapper entirely.
 
 ## Test coverage
 
@@ -39,7 +39,7 @@
   - both events expose every typed field on the constructor
   - both events default `targetRegister` to `null` when omitted
   - the two events are sibling types so listeners can subscribe independently
-- [x] `tests/Unit/Service/Object/SaveObjectReferenceValidationTest` — 7 tests against the SaveObject extension hooks:
+- [x] `tests/Unit/Service/Object/SaveObjectReferenceValidationTest` — 14 tests against the SaveObject extension hooks:
   - admin user bypasses validation when the bypass flag defaults to on
   - admin user does NOT bypass when the bypass flag is disabled
   - non-admin user never bypasses even with the flag on
@@ -47,3 +47,13 @@
   - `ReferenceValidationFailedEvent` dispatched (with typed fields populated) immediately before the `ReferenceValidationException` is thrown
   - `ReferenceValidatedEvent` dispatched (with typed fields populated) on every successful lookup
   - no events dispatched when `IEventDispatcher` is absent
+  - request-scoped cache prevents duplicate lookups (5 saves → 1 mapper call)
+  - request-scoped cache replays negative verdict without duplicate events
+  - `clearReferenceValidationCache()` forces revalidation
+  - strictness `'warn'` swallows the throw and logs a warning
+  - strictness `'warn'` still dispatches the failure event
+  - strictness `'error'` rejects with `ReferenceValidationException`
+  - strictness `'block'` (alias) rejects with `ReferenceValidationException`
+  - `validationStrictness: 'warn'` downgrades default-strict severity
+  - `validationStrictness: 'off'` disables a `validateReference: true` property
+  - `validateReference: false` disables validation entirely (legacy semantic)

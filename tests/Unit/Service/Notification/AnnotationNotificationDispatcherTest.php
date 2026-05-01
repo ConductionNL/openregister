@@ -473,6 +473,135 @@ class AnnotationNotificationDispatcherTest extends TestCase
         $this->assertSame('EN broadcast', $payload['subject'] ?? null);
     }
 
+    public function testOrganisationGateBlocksWhenOrgsDoNotMatch(): void
+    {
+        // Rule pinned to org-A — object lives in org-B → no dispatch.
+        $schema = $this->schemaWithNotification([
+            'pinnedToA' => [
+                'trigger'      => ['type' => 'updated'],
+                'channels'     => ['nc-notification'],
+                'recipients'   => [['kind' => 'users', 'users' => ['admin']]],
+                'subject'      => 'pinned',
+                'organisation' => 'org-A',
+            ],
+        ]);
+        $this->schemaMapper->method('find')->willReturn($schema);
+
+        // No notify() call when the gate blocks.
+        $this->notificationManager->expects($this->never())->method('createNotification');
+
+        $object = $this->object($schema);
+        $object->setOrganisation('org-B');
+
+        $dispatcher = $this->makeDispatcher();
+        $dispatcher->dispatch($object, 'updated');
+    }
+
+    public function testOrganisationGateAllowsWhenOrgsMatch(): void
+    {
+        $schema = $this->schemaWithNotification([
+            'pinnedToA' => [
+                'trigger'      => ['type' => 'updated'],
+                'channels'     => ['nc-notification'],
+                'recipients'   => [['kind' => 'users', 'users' => ['admin']]],
+                'subject'      => 'pinned',
+                'organisation' => 'org-A',
+            ],
+        ]);
+        $this->schemaMapper->method('find')->willReturn($schema);
+
+        $delivered = [];
+        $this->expectNotificationManagerCalls($delivered);
+        $this->notificationManager->expects($this->once())->method('notify');
+
+        $object = $this->object($schema);
+        $object->setOrganisation('org-A');
+
+        $dispatcher = $this->makeDispatcher();
+        $dispatcher->dispatch($object, 'updated');
+
+        $this->assertSame(['admin'], $delivered);
+    }
+
+    public function testOrganisationGateAllowsWhenObjectOrgInDeclaredArray(): void
+    {
+        $schema = $this->schemaWithNotification([
+            'pinnedToAB' => [
+                'trigger'      => ['type' => 'updated'],
+                'channels'     => ['nc-notification'],
+                'recipients'   => [['kind' => 'users', 'users' => ['admin']]],
+                'subject'      => 'pinned-multi',
+                'organisation' => ['org-A', 'org-B'],
+            ],
+        ]);
+        $this->schemaMapper->method('find')->willReturn($schema);
+
+        $delivered = [];
+        $this->expectNotificationManagerCalls($delivered);
+        $this->notificationManager->expects($this->once())->method('notify');
+
+        $object = $this->object($schema);
+        $object->setOrganisation('org-B');
+
+        $dispatcher = $this->makeDispatcher();
+        $dispatcher->dispatch($object, 'updated');
+
+        $this->assertSame(['admin'], $delivered);
+    }
+
+    public function testOrganisationGateBlocksUntenantedObjectsByDefault(): void
+    {
+        // Object has no organisation set → org-pinned rules MUST NOT
+        // fire (would otherwise leak cross-tenant for legacy un-tenanted
+        // data). Closes the spec's "fail closed" intent.
+        $schema = $this->schemaWithNotification([
+            'pinnedToA' => [
+                'trigger'      => ['type' => 'updated'],
+                'channels'     => ['nc-notification'],
+                'recipients'   => [['kind' => 'users', 'users' => ['admin']]],
+                'subject'      => 'pinned',
+                'organisation' => 'org-A',
+            ],
+        ]);
+        $this->schemaMapper->method('find')->willReturn($schema);
+
+        $this->notificationManager->expects($this->never())->method('createNotification');
+
+        $object = $this->object($schema);
+        // Note: no setOrganisation() call → null/empty.
+
+        $dispatcher = $this->makeDispatcher();
+        $dispatcher->dispatch($object, 'updated');
+    }
+
+    public function testNoOrganisationGateLeavesDispatchUnchanged(): void
+    {
+        // Without a `organisation` field on the rule, dispatch happens
+        // for any object regardless of organisation — guarantees the
+        // new field is fully opt-in and back-compat is preserved.
+        $schema = $this->schemaWithNotification([
+            'unpinned' => [
+                'trigger'    => ['type' => 'updated'],
+                'channels'   => ['nc-notification'],
+                'recipients' => [['kind' => 'users', 'users' => ['admin']]],
+                'subject'    => 'global',
+            ],
+        ]);
+        $this->schemaMapper->method('find')->willReturn($schema);
+
+        $delivered = [];
+        $this->expectNotificationManagerCalls($delivered);
+        $this->notificationManager->expects($this->once())->method('notify');
+
+        $object = $this->object($schema);
+        $object->setOrganisation('any-org');
+
+        $dispatcher = $this->makeDispatcher();
+        $dispatcher->dispatch($object, 'updated');
+
+        $this->assertSame(['admin'], $delivered);
+    }
+
     /**
      * @param array<string, mixed> $notifications
      */

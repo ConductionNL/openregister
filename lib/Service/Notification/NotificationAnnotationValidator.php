@@ -164,6 +164,20 @@ final class NotificationAnnotationValidator
                 }
             }
 
+            // Optional `organisation` gate — the dispatcher skips this
+            // notification unless the saved object's organisation
+            // matches. Accepts a single string (UUID or slug) or an
+            // array of strings (any-of). Closes the spec's
+            // "Notifications MUST be scoped to organisations" item by
+            // letting schema authors pin a rule explicitly without
+            // writing a custom expression resolver.
+            if (array_key_exists('organisation', $spec) === true) {
+                $orgError = $this->validateOrganisationGate(org: $spec['organisation'], name: $name);
+                if ($orgError !== null) {
+                    $errors[] = $orgError;
+                }
+            }
+
             $recipients = ($spec['recipients'] ?? []);
             if (is_array($recipients) === false || count($recipients) === 0) {
                 $errors[] = ['code' => 'notification-no-recipients', 'message' => sprintf('Notification "%s" must declare at least one recipient.', $name)];
@@ -207,4 +221,70 @@ final class NotificationAnnotationValidator
 
         return $errors;
     }//end validate()
+
+    /**
+     * Validate the optional `organisation` rule-level gate.
+     *
+     * Accepts either a single non-empty string (one tenant) or an
+     * array of non-empty strings (any-of). Returns an error envelope
+     * for malformed shapes and null when the gate is well-formed.
+     *
+     * @param mixed  $org  Raw value of the `organisation` key.
+     * @param string $name The notification name (for error messages).
+     *
+     * @return array{code: string, message: string}|null
+     */
+    private function validateOrganisationGate(mixed $org, string $name): ?array
+    {
+        $code = 'notification-bad-organisation';
+
+        if (is_string($org) === true) {
+            if ($org === '') {
+                return [
+                    'code'    => $code,
+                    'message' => sprintf(
+                        'Notification "%s" organisation must be a non-empty string.',
+                        $name
+                    ),
+                ];
+            }
+
+            return null;
+        }
+
+        if (is_array($org) === true) {
+            if (count($org) === 0) {
+                return [
+                    'code'    => $code,
+                    'message' => sprintf(
+                        'Notification "%s" organisation array must declare at least one entry.',
+                        $name
+                    ),
+                ];
+            }
+
+            foreach ($org as $candidate) {
+                if (is_string($candidate) === false || $candidate === '') {
+                    return [
+                        'code'    => $code,
+                        'message' => sprintf(
+                            'Notification "%s" organisation array entries must be non-empty strings.',
+                            $name
+                        ),
+                    ];
+                }
+            }//end foreach
+
+            return null;
+        }//end if
+
+        return [
+            'code'    => $code,
+            'message' => sprintf(
+                'Notification "%s" organisation must be a string or an array of strings.',
+                $name
+            ),
+        ];
+
+    }//end validateOrganisationGate()
 }//end class
