@@ -58,7 +58,7 @@
 ## 8. Documentation and rollout
 
 - [x] 8.1 Update `docs/` if there's an "API response types" or "data types" section that documented the buggy behaviour.
-- [ ] 8.2 Add a release-notes entry mentioning the type-coercion fix and the consumer-impact note (booleans now arrive as PHP bool, not int).
+- [x] 8.2 Add a release-notes entry mentioning the type-coercion fix and the consumer-impact note (booleans now arrive as PHP bool, not int).
 - [ ] 8.3 Mention the OpenConnector knock-on effect in the OC release notes for the next OC release.
 
 ## 9. PR and archive
