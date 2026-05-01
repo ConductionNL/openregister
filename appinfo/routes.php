@@ -283,6 +283,44 @@ return [
         ['name' => 'emails#create',   'url' => '/api/objects/{register}/{schema}/{id}/emails',     'verb' => 'POST',   'requirements' => ['id' => '[^/]+']],
         ['name' => 'emails#destroy',  'url' => '/api/objects/{register}/{schema}/{id}/emails/{emailId}', 'verb' => 'DELETE', 'requirements' => ['id' => '[^/]+', 'emailId' => '[0-9]+']],
 
+        // Contacts — object↔NC contact links + reverse lookup. Match is app-global.
+        ['name' => 'contacts#index',   'url' => '/api/objects/{register}/{schema}/{id}/contacts',                 'verb' => 'GET',    'requirements' => ['id' => '[^/]+']],
+        ['name' => 'contacts#create',  'url' => '/api/objects/{register}/{schema}/{id}/contacts',                 'verb' => 'POST',   'requirements' => ['id' => '[^/]+']],
+        ['name' => 'contacts#update',  'url' => '/api/objects/{register}/{schema}/{id}/contacts/{contactUid}',    'verb' => 'PUT',    'requirements' => ['id' => '[^/]+', 'contactUid' => '[^/]+']],
+        ['name' => 'contacts#destroy', 'url' => '/api/objects/{register}/{schema}/{id}/contacts/{contactUid}',    'verb' => 'DELETE', 'requirements' => ['id' => '[^/]+', 'contactUid' => '[^/]+']],
+        ['name' => 'contacts#objects', 'url' => '/api/contacts/{contactUid}/objects',                              'verb' => 'GET',    'requirements' => ['contactUid' => '[^/]+']],
+
+        // Calendar events — object↔CalDAV event links via DAV principal.
+        ['name' => 'calendarEvents#index',   'url' => '/api/objects/{register}/{schema}/{id}/events',             'verb' => 'GET',    'requirements' => ['id' => '[^/]+']],
+        ['name' => 'calendarEvents#create',  'url' => '/api/objects/{register}/{schema}/{id}/events',             'verb' => 'POST',   'requirements' => ['id' => '[^/]+']],
+        ['name' => 'calendarEvents#link',    'url' => '/api/objects/{register}/{schema}/{id}/events/link',        'verb' => 'POST',   'requirements' => ['id' => '[^/]+']],
+        ['name' => 'calendarEvents#destroy', 'url' => '/api/objects/{register}/{schema}/{id}/events/{eventId}',   'verb' => 'DELETE', 'requirements' => ['id' => '[^/]+', 'eventId' => '[^/]+']],
+
+        // Deck — object↔Deck card links + reverse lookup.
+        ['name' => 'deck#index',   'url' => '/api/objects/{register}/{schema}/{id}/deck',                  'verb' => 'GET',    'requirements' => ['id' => '[^/]+']],
+        ['name' => 'deck#create',  'url' => '/api/objects/{register}/{schema}/{id}/deck',                  'verb' => 'POST',   'requirements' => ['id' => '[^/]+']],
+        ['name' => 'deck#destroy', 'url' => '/api/objects/{register}/{schema}/{id}/deck/{deckRef}',        'verb' => 'DELETE', 'requirements' => ['id' => '[^/]+', 'deckRef' => '[^/]+']],
+        ['name' => 'deck#objects', 'url' => '/api/deck/boards/{boardId}/objects',                          'verb' => 'GET',    'requirements' => ['boardId' => '[^/]+']],
+
+        // Unified relations endpoint — aggregates emails/contacts/calendar/deck for an object.
+        ['name' => 'relations#index', 'url' => '/api/objects/{register}/{schema}/{id}/relations',          'verb' => 'GET',    'requirements' => ['id' => '[^/]+']],
+
+        // Linked-entity-types — generic per-{type} link API (mail / event / contact / deck).
+        ['name' => 'linkedEntity#addObjectLink',    'url' => '/api/objects/{uuid}/_{type}',           'verb' => 'POST',   'requirements' => ['uuid' => '[^/]+', 'type' => '[a-z]+']],
+        ['name' => 'linkedEntity#removeObjectLink', 'url' => '/api/objects/{uuid}/_{type}/{entityId}','verb' => 'DELETE', 'requirements' => ['uuid' => '[^/]+', 'type' => '[a-z]+', 'entityId' => '[^/]+']],
+        ['name' => 'linkedEntity#addRegisterLink',  'url' => '/api/registers/{uuid}/_{type}',         'verb' => 'POST',   'requirements' => ['uuid' => '[^/]+', 'type' => '[a-z]+']],
+        ['name' => 'linkedEntity#addSchemaLink',    'url' => '/api/schemas/{uuid}/_{type}',           'verb' => 'POST',   'requirements' => ['uuid' => '[^/]+', 'type' => '[a-z]+']],
+        ['name' => 'linkedEntity#reverseLookup',    'url' => '/api/linked/_{type}/{entityId}',        'verb' => 'GET',    'requirements' => ['type' => '[a-z]+', 'entityId' => '[^/]+']],
+
+        // TMLO metadata export endpoints (declarative archival metadata per Dutch TMLO standard).
+        ['name' => 'tmlo#summary',      'url' => '/api/tmlo/{register}/{schema}/summary',                'verb' => 'GET'],
+        ['name' => 'tmlo#exportSingle', 'url' => '/api/tmlo/{register}/{schema}/{id}/export',            'verb' => 'GET',  'requirements' => ['id' => '[^/]+']],
+        ['name' => 'tmlo#exportBatch',  'url' => '/api/tmlo/{register}/{schema}/export',                 'verb' => 'GET'],
+
+        // FileSidebar — list OR objects connected to a Files entry + show extraction state.
+        ['name' => 'fileSidebar#getObjectsForFile',    'url' => '/api/files/{fileId}/objects',           'verb' => 'GET',  'requirements' => ['fileId' => '[0-9]+']],
+        ['name' => 'fileSidebar#getExtractionStatus',  'url' => '/api/files/{fileId}/extraction-status', 'verb' => 'GET',  'requirements' => ['fileId' => '[0-9]+']],
+
         // Action registry CRUD + utilities.
         ['name' => 'actions#index',            'url' => '/api/actions',                          'verb' => 'GET'],
         ['name' => 'actions#create',           'url' => '/api/actions',                          'verb' => 'POST'],
@@ -392,6 +430,7 @@ return [
         // Notes operations under objects (Nextcloud Comments wrapper).
         ['name' => 'notes#index', 'url' => '/api/objects/{register}/{schema}/{id}/notes', 'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
         ['name' => 'notes#create', 'url' => '/api/objects/{register}/{schema}/{id}/notes', 'verb' => 'POST', 'requirements' => ['id' => '[^/]+']],
+        ['name' => 'notes#update', 'url' => '/api/objects/{register}/{schema}/{id}/notes/{noteId}', 'verb' => 'PUT', 'requirements' => ['id' => '[^/]+', 'noteId' => '[^/]+']],
         ['name' => 'notes#destroy', 'url' => '/api/objects/{register}/{schema}/{id}/notes/{noteId}', 'verb' => 'DELETE', 'requirements' => ['id' => '[^/]+', 'noteId' => '[^/]+']],
         
         // Schemas.
@@ -483,6 +522,9 @@ return [
         ['name' => 'organisation#isolationMetrics', 'url' => '/api/admin/isolation-metrics', 'verb' => 'GET'],
 		// Tags.
 		['name' => 'tags#getAllTags', 'url' => '/api/tags', 'verb' => 'GET'],
+		['name' => 'tags#index',     'url' => '/api/objects/{register}/{schema}/{id}/tags',         'verb' => 'GET',    'requirements' => ['id' => '[^/]+']],
+		['name' => 'tags#add',       'url' => '/api/objects/{register}/{schema}/{id}/tags',         'verb' => 'POST',   'requirements' => ['id' => '[^/]+']],
+		['name' => 'tags#remove',    'url' => '/api/objects/{register}/{schema}/{id}/tags/{tag}',   'verb' => 'DELETE', 'requirements' => ['id' => '[^/]+', 'tag' => '[^/]+']],
 		
 		// Views - Saved search configurations.
 		['name' => 'views#index', 'url' => '/api/views', 'verb' => 'GET'],
@@ -577,6 +619,21 @@ return [
 		['name' => 'user#updateMe', 'url' => '/api/user/me', 'verb' => 'PUT'],
 		['name' => 'user#login', 'url' => '/api/user/login', 'verb' => 'POST'],
 		['name' => 'user#logout', 'url' => '/api/user/logout', 'verb' => 'POST'],
+
+		// profile-actions — self-service endpoints for the current user (/api/user/me).
+		['name' => 'user#changePassword',                  'url' => '/api/user/me/password',             'verb' => 'PUT'],
+		['name' => 'user#uploadAvatar',                    'url' => '/api/user/me/avatar',               'verb' => 'POST'],
+		['name' => 'user#deleteAvatar',                    'url' => '/api/user/me/avatar',               'verb' => 'DELETE'],
+		['name' => 'user#exportData',                      'url' => '/api/user/me/export',               'verb' => 'GET'],
+		['name' => 'user#getNotificationPreferences',      'url' => '/api/user/me/notifications',        'verb' => 'GET'],
+		['name' => 'user#updateNotificationPreferences',   'url' => '/api/user/me/notifications',        'verb' => 'PUT'],
+		['name' => 'user#getActivity',                     'url' => '/api/user/me/activity',             'verb' => 'GET'],
+		['name' => 'user#listTokens',                      'url' => '/api/user/me/tokens',               'verb' => 'GET'],
+		['name' => 'user#createToken',                     'url' => '/api/user/me/tokens',               'verb' => 'POST'],
+		['name' => 'user#revokeToken',                     'url' => '/api/user/me/tokens/{id}',          'verb' => 'DELETE', 'requirements' => ['id' => '[^/]+']],
+		['name' => 'user#requestDeactivation',             'url' => '/api/user/me/deactivate',           'verb' => 'POST'],
+		['name' => 'user#getDeactivationStatus',           'url' => '/api/user/me/deactivation-status',  'verb' => 'GET'],
+		['name' => 'user#cancelDeactivation',              'url' => '/api/user/me/deactivate',           'verb' => 'DELETE'],
 
 		// Webhooks.
 		['name' => 'webhooks#index', 'url' => '/api/webhooks', 'verb' => 'GET'],
