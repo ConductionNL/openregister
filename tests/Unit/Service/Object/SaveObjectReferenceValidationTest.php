@@ -5,10 +5,13 @@ declare(strict_types=1);
 /**
  * SaveObject reference-validation extension behaviour.
  *
- * Covers the spec item added in the
+ * Covers two spec items added in the
  * `reference-existence-validation` change:
- *   Admin users can bypass reference validation when the
- *   `reference_validation_admin_bypass` app-config flag is on.
+ *   1. Admin users can bypass reference validation when the
+ *      `reference_validation_admin_bypass` app-config flag is on.
+ *   2. The save pipeline emits `ReferenceValidatedEvent` /
+ *      `ReferenceValidationFailedEvent` so listeners can hook into
+ *      validation outcomes.
  *
  * @category Tests
  * @package  OCA\OpenRegister\Tests\Unit\Service\Object
@@ -24,6 +27,8 @@ use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Event\ReferenceValidatedEvent;
+use OCA\OpenRegister\Event\ReferenceValidationFailedEvent;
 use OCA\OpenRegister\Exception\ReferenceValidationException;
 use OCA\OpenRegister\Service\Object\CacheHandler;
 use OCA\OpenRegister\Service\Object\SaveObject;
@@ -31,6 +36,7 @@ use OCA\OpenRegister\Service\OrganisationService;
 use OCA\OpenRegister\Service\PropertyRbacHandler;
 use OCA\OpenRegister\Service\SettingsService;
 use OCP\AppFramework\Db\DoesNotExistException;
+use OCP\EventDispatcher\IEventDispatcher;
 use OCP\IAppConfig;
 use OCP\IGroupManager;
 use OCP\IURLGenerator;
@@ -42,20 +48,21 @@ use ReflectionMethod;
 use Twig\Loader\ArrayLoader;
 
 /**
- * Unit tests for the admin-bypass behaviour added to SaveObject's
- * reference-existence validation pipeline.
+ * Unit tests for the admin-bypass + event dispatch behaviour added to
+ * SaveObject's reference-existence validation pipeline.
  */
 class SaveObjectReferenceValidationTest extends TestCase
 {
     /**
      * Build a SaveObject under test with all dependencies mocked. Lets
-     * each test override the user, group manager, and app-config to
-     * assert the new behaviours in isolation.
+     * each test override the user, group manager, app-config and event
+     * dispatcher to assert the new behaviours in isolation.
      */
     private function buildHandler(
         IUserSession $userSession,
         ?IGroupManager $groupManager,
         ?IAppConfig $appConfig,
+        ?IEventDispatcher $eventDispatcher,
         ?MagicMapper $unifiedObjectMapper = null,
         ?SchemaMapper $schemaMapper = null
     ): SaveObject {
@@ -81,6 +88,7 @@ class SaveObjectReferenceValidationTest extends TestCase
             arrayLoader: new ArrayLoader(),
             groupManager: $groupManager,
             appConfig: $appConfig,
+            eventDispatcher: $eventDispatcher,
         );
     }
 
@@ -161,7 +169,7 @@ class SaveObjectReferenceValidationTest extends TestCase
     }
 
     // ====================================================================
-    // Admin bypass — Open spec item:
+    // 1. Admin bypass — Open spec item:
     //    "Admin users able to bypass reference validation."
     // ====================================================================
 
@@ -175,6 +183,7 @@ class SaveObjectReferenceValidationTest extends TestCase
             userSession: $this->makeAdminSession(),
             groupManager: $this->makeAdminGroupManager(true),
             appConfig: $this->makeAppConfig('true'),
+            eventDispatcher: $this->createMock(IEventDispatcher::class),
             unifiedObjectMapper: $unifiedMapper,
         );
 
@@ -203,6 +212,7 @@ class SaveObjectReferenceValidationTest extends TestCase
             userSession: $this->makeAdminSession(),
             groupManager: $this->makeAdminGroupManager(true),
             appConfig: $this->makeAppConfig('false'),
+            eventDispatcher: $this->createMock(IEventDispatcher::class),
             unifiedObjectMapper: $unifiedMapper,
             schemaMapper: $this->makeSchemaMapperResolvingTarget(),
         );
@@ -231,6 +241,7 @@ class SaveObjectReferenceValidationTest extends TestCase
             userSession: $this->makeNonAdminSession(),
             groupManager: $this->makeAdminGroupManager(false),
             appConfig: $this->makeAppConfig('true'),
+            eventDispatcher: $this->createMock(IEventDispatcher::class),
             unifiedObjectMapper: $unifiedMapper,
             schemaMapper: $this->makeSchemaMapperResolvingTarget(),
         );
@@ -262,6 +273,7 @@ class SaveObjectReferenceValidationTest extends TestCase
             userSession: $this->makeAdminSession(),
             groupManager: null,
             appConfig: null,
+            eventDispatcher: null,
             unifiedObjectMapper: $unifiedMapper,
             schemaMapper: $this->makeSchemaMapperResolvingTarget(),
         );
@@ -277,5 +289,125 @@ class SaveObjectReferenceValidationTest extends TestCase
                 'oldData' => null,
             ]
         );
+    }
+
+    // ====================================================================
+    // 2. Validation events — Open spec item:
+    //    "Validation events dispatched for notification and extensibility."
+    // ====================================================================
+
+    public function testReferenceValidationFailedEventDispatchedOnMissingTarget(): void
+    {
+        $unifiedMapper = $this->createMock(MagicMapper::class);
+        $unifiedMapper->method('find')->willThrowException(new DoesNotExistException('not found'));
+
+        $eventDispatcher = $this->createMock(IEventDispatcher::class);
+        $captured = null;
+        $eventDispatcher->expects($this->once())
+            ->method('dispatchTyped')
+            ->willReturnCallback(function ($event) use (&$captured): void {
+                $captured = $event;
+            });
+
+        $handler = $this->buildHandler(
+            userSession: $this->makeNonAdminSession(),
+            groupManager: $this->makeAdminGroupManager(false),
+            appConfig: $this->makeAppConfig('true'),
+            eventDispatcher: $eventDispatcher,
+            unifiedObjectMapper: $unifiedMapper,
+            schemaMapper: $this->makeSchemaMapperResolvingTarget(),
+        );
+
+        try {
+            $this->invoke(
+                $handler,
+                'validateReferences',
+                [
+                    'schema' => $this->buildSchemaWithReference(),
+                    'data' => ['organisation' => 'missing-uuid'],
+                    'register' => '1',
+                    'oldData' => null,
+                ]
+            );
+            $this->fail('Expected ReferenceValidationException');
+        } catch (ReferenceValidationException $e) {
+            // expected
+        }
+
+        $this->assertInstanceOf(ReferenceValidationFailedEvent::class, $captured);
+        $this->assertSame('organisation', $captured->getPropertyName());
+        $this->assertSame('missing-uuid', $captured->getReferencedUuid());
+        $this->assertSame('organisations', $captured->getTargetSchemaSlug());
+        $this->assertSame('1', $captured->getTargetRegister());
+    }
+
+    public function testReferenceValidatedEventDispatchedOnSuccessfulLookup(): void
+    {
+        // Mapper find succeeds (returns silently) → success event must fire.
+        $unifiedMapper = $this->createMock(MagicMapper::class);
+        $unifiedMapper->expects($this->once())->method('find');
+
+        $eventDispatcher = $this->createMock(IEventDispatcher::class);
+        $captured = null;
+        $eventDispatcher->expects($this->once())
+            ->method('dispatchTyped')
+            ->willReturnCallback(function ($event) use (&$captured): void {
+                $captured = $event;
+            });
+
+        $handler = $this->buildHandler(
+            userSession: $this->makeNonAdminSession(),
+            groupManager: $this->makeAdminGroupManager(false),
+            appConfig: $this->makeAppConfig('true'),
+            eventDispatcher: $eventDispatcher,
+            unifiedObjectMapper: $unifiedMapper,
+            schemaMapper: $this->makeSchemaMapperResolvingTarget(),
+        );
+
+        $this->invoke(
+            $handler,
+            'validateReferences',
+            [
+                'schema' => $this->buildSchemaWithReference(),
+                'data' => ['organisation' => 'existing-uuid'],
+                'register' => '1',
+                'oldData' => null,
+            ]
+        );
+
+        $this->assertInstanceOf(ReferenceValidatedEvent::class, $captured);
+        $this->assertSame('organisation', $captured->getPropertyName());
+        $this->assertSame('existing-uuid', $captured->getReferencedUuid());
+        $this->assertSame('organisations', $captured->getTargetSchemaSlug());
+        $this->assertSame('1', $captured->getTargetRegister());
+    }
+
+    public function testNoEventsDispatchedWhenDispatcherMissing(): void
+    {
+        // No exception, no fatals, no dispatch calls — graceful no-op.
+        $unifiedMapper = $this->createMock(MagicMapper::class);
+        $unifiedMapper->method('find'); // succeeds
+
+        $handler = $this->buildHandler(
+            userSession: $this->makeNonAdminSession(),
+            groupManager: $this->makeAdminGroupManager(false),
+            appConfig: $this->makeAppConfig('true'),
+            eventDispatcher: null,
+            unifiedObjectMapper: $unifiedMapper,
+            schemaMapper: $this->makeSchemaMapperResolvingTarget(),
+        );
+
+        $this->invoke(
+            $handler,
+            'validateReferences',
+            [
+                'schema' => $this->buildSchemaWithReference(),
+                'data' => ['organisation' => 'existing-uuid'],
+                'register' => '1',
+                'oldData' => null,
+            ]
+        );
+
+        $this->assertTrue(true, 'No-op when event dispatcher absent');
     }
 }

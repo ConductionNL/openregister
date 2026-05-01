@@ -1,6 +1,6 @@
 # Tasks: reference-existence-validation Specification
 
-> **Status (Phase 3):** 7 of 16 tasks tickably complete. Phase 3 wired the operator-controlled admin bypass (`reference_validation_admin_bypass` app-config flag, default `true`) into `SaveObject::validateReferences()`. 9 open: soft-deleted refs, batch optimisation, circular detection, external URL refs, request-scoped cache, GraphQL mutations, async validation, validation events, schema-configurable strictness levels.
+> **Status (Phase 3):** 8 of 16 tasks tickably complete. Phase 3 wired the operator-controlled admin bypass (`reference_validation_admin_bypass` app-config flag, default `true`) and the side-channel validation event family (`ReferenceValidatedEvent` / `ReferenceValidationFailedEvent`) into `SaveObject::validateReferences()`. 8 open: soft-deleted refs, batch optimisation, circular detection, external URL refs, request-scoped cache, GraphQL mutations, async validation, schema-configurable strictness levels.
 
 ## Implemented
 
@@ -22,7 +22,7 @@
 - [x] Admin users able to bypass reference validation. `SaveObject::shouldBypassValidationForAdmin()` short-circuits `validateReferences()` when the current session user is in the `admin` group AND the `reference_validation_admin_bypass` app-config flag (default `true`) is on. Operators can flip the flag off via `occ config:app:set openregister reference_validation_admin_bypass --value=false` to enforce validation for every user. The optional `IGroupManager` + `IAppConfig` constructor parameters keep older test fixtures working — when either dependency is absent the method returns `false` and validation runs as before. **Verified** by `tests/Unit/Service/Object/SaveObjectReferenceValidationTest` (4 tests covering: admin bypasses with default-on flag; admin does NOT bypass when flag disabled; non-admin never bypasses; missing optional dependencies fall back to running validation).
 - [ ] Reference validation works in GraphQL mutations. **Open** — GraphQL mutation handler doesn't currently route through the same `SaveObject::saveObject` path; needs alignment.
 - [ ] Async validation supported for large batch operations. **Open** — depends on batch optimisation + a way to surface async errors.
-- [ ] Validation events dispatched for notification and extensibility. **Open** — would add `ReferenceValidatedEvent` / `ReferenceValidationFailedEvent` to the event family.
+- [x] Validation events dispatched for notification and extensibility. Added `lib/Event/ReferenceValidatedEvent.php` and `lib/Event/ReferenceValidationFailedEvent.php` siblings (both `OCP\EventDispatcher\Event` subclasses, both expose typed `propertyName` / `referencedUuid` / `targetSchemaSlug` / `targetRegister` fields). Dispatched from `SaveObject::validateReferenceExists()` via the optional `IEventDispatcher` dependency: `ReferenceValidatedEvent` fires on every successful UUID lookup; `ReferenceValidationFailedEvent` fires immediately BEFORE the `ReferenceValidationException` is thrown, so listeners observe every rejection regardless of whether the controller layer recovers or surfaces the 422. Listener exceptions are caught and logged as warnings — a misbehaving listener cannot block a save or mask the underlying validation failure. **Verified** by `tests/Unit/Service/Object/SaveObjectReferenceValidationTest` (3 tests: failure event carries the typed fields; success event carries the typed fields; no-op when `IEventDispatcher` is absent) plus `tests/Unit/Event/ReferenceValidationEventsTest` (7 tests covering both event classes' field shape, default-null target register, and that the two events are sibling types so listeners can subscribe independently).
 - [ ] Schema-configurable validation strictness levels. **Open** — currently it's binary (`validateReference: true` or absent). Strictness levels (`warn` / `error` / `block`) are a separate UX feature.
 
 ## Test coverage
@@ -34,8 +34,16 @@
   - null reference accepted (optional)
   - empty-string reference accepted (defence in depth)
   - update with unchanged reference skips validation
-- [x] `tests/Unit/Service/Object/SaveObjectReferenceValidationTest` — 4 tests against the SaveObject admin-bypass hook:
+- [x] `tests/Unit/Event/ReferenceValidationEventsTest` — 7 tests against the event classes themselves:
+  - both events extend `OCP\EventDispatcher\Event`
+  - both events expose every typed field on the constructor
+  - both events default `targetRegister` to `null` when omitted
+  - the two events are sibling types so listeners can subscribe independently
+- [x] `tests/Unit/Service/Object/SaveObjectReferenceValidationTest` — 7 tests against the SaveObject extension hooks:
   - admin user bypasses validation when the bypass flag defaults to on
   - admin user does NOT bypass when the bypass flag is disabled
   - non-admin user never bypasses even with the flag on
   - bypass disabled when optional `IGroupManager` / `IAppConfig` are absent
+  - `ReferenceValidationFailedEvent` dispatched (with typed fields populated) immediately before the `ReferenceValidationException` is thrown
+  - `ReferenceValidatedEvent` dispatched (with typed fields populated) on every successful lookup
+  - no events dispatched when `IEventDispatcher` is absent

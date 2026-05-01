@@ -50,9 +50,12 @@ use OCA\OpenRegister\Service\TmloService;
 use OCA\OpenRegister\Service\Schemas\SchemaCacheHandler;
 use OCA\OpenRegister\Service\Schemas\FacetCacheHandler;
 use OCA\OpenRegister\Db\AuditTrailMapper;
+use OCA\OpenRegister\Event\ReferenceValidatedEvent;
+use OCA\OpenRegister\Event\ReferenceValidationFailedEvent;
 use OCA\OpenRegister\Service\SettingsService;
 use OCA\OpenRegister\Exception\ReferenceValidationException;
 use OCA\OpenRegister\Exception\ValidationException;
+use OCP\EventDispatcher\IEventDispatcher;
 use OCP\IAppConfig;
 use OCP\IGroupManager;
 use OCP\IURLGenerator;
@@ -218,6 +221,7 @@ class SaveObject
      * @param ArrayLoader                 $arrayLoader          Twig array loader for template rendering
      * @param IGroupManager|null          $groupManager         Group manager for admin-bypass detection
      * @param IAppConfig|null             $appConfig            App-config reader for the admin-bypass toggle
+     * @param IEventDispatcher|null       $eventDispatcher      Event dispatcher for reference validation events
      *
      * @SuppressWarnings(PHPMD.ExcessiveParameterList) Nextcloud DI requires constructor injection
      */
@@ -243,6 +247,7 @@ class SaveObject
         ArrayLoader $arrayLoader,
         private readonly ?IGroupManager $groupManager=null,
         private readonly ?IAppConfig $appConfig=null,
+        private readonly ?IEventDispatcher $eventDispatcher=null,
     ) {
         $this->twig = new Environment($arrayLoader);
     }//end __construct()
@@ -3658,6 +3663,17 @@ class SaveObject
                 _multitenancy: false
             );
         } catch (DoesNotExistException $e) {
+            // Side-channel notification for monitoring / extensibility.
+            // Dispatched BEFORE the exception so listeners observe every
+            // failure regardless of whether the controller layer
+            // recovers or surfaces the 422.
+            $this->dispatchReferenceValidationFailedEvent(
+                propertyName: $propertyName,
+                referencedUuid: $uuid,
+                targetSchemaSlug: $targetSchemaSlug,
+                targetRegister: $register
+            );
+
             // Throw a structured exception so API clients can render
             // actionable error UI without parsing the message string —
             // closes the spec's "structured diagnostic information"
@@ -3683,7 +3699,18 @@ class SaveObject
                     'error'    => $e->getMessage(),
                 ]
             );
+            return;
         }//end try
+
+        // Lookup succeeded — emit a success event so listeners can hook
+        // into accepted references (analytics, cache warming, etc.)
+        // without changing the save flow.
+        $this->dispatchReferenceValidatedEvent(
+            propertyName: $propertyName,
+            referencedUuid: $uuid,
+            targetSchemaSlug: $targetSchemaSlug,
+            targetRegister: $register
+        );
     }//end validateReferenceExists()
 
     /**
@@ -3724,6 +3751,102 @@ class SaveObject
         return $this->groupManager->isAdmin($user->getUID());
 
     }//end shouldBypassValidationForAdmin()
+
+    /**
+     * Dispatch a `ReferenceValidatedEvent` if a dispatcher is wired.
+     *
+     * Encapsulates the null-check so call-sites stay readable. Failures
+     * inside listeners are caught and logged so a misbehaving listener
+     * cannot block a save.
+     *
+     * @param string      $propertyName     Schema property name.
+     * @param string      $referencedUuid   UUID that resolved.
+     * @param string      $targetSchemaSlug Target schema slug.
+     * @param string|null $targetRegister   Register the lookup ran in.
+     *
+     * @return void
+     */
+    private function dispatchReferenceValidatedEvent(
+        string $propertyName,
+        string $referencedUuid,
+        string $targetSchemaSlug,
+        ?string $targetRegister
+    ): void {
+        if ($this->eventDispatcher === null) {
+            return;
+        }
+
+        try {
+            $this->eventDispatcher->dispatchTyped(
+                new ReferenceValidatedEvent(
+                    propertyName: $propertyName,
+                    referencedUuid: $referencedUuid,
+                    targetSchemaSlug: $targetSchemaSlug,
+                    targetRegister: $targetRegister
+                )
+            );
+        } catch (Exception $e) {
+            $this->logger->warning(
+                message: '[SaveObject] ReferenceValidatedEvent dispatch failed',
+                context: [
+                    'file'     => __FILE__,
+                    'line'     => __LINE__,
+                    'property' => $propertyName,
+                    'uuid'     => $referencedUuid,
+                    'error'    => $e->getMessage(),
+                ]
+            );
+        }//end try
+
+    }//end dispatchReferenceValidatedEvent()
+
+    /**
+     * Dispatch a `ReferenceValidationFailedEvent` if a dispatcher is wired.
+     *
+     * Encapsulates the null-check so call-sites stay readable. Failures
+     * inside listeners are caught and logged so a misbehaving listener
+     * cannot mask the underlying validation failure.
+     *
+     * @param string      $propertyName     Schema property name.
+     * @param string      $referencedUuid   UUID that did not resolve.
+     * @param string      $targetSchemaSlug Target schema slug.
+     * @param string|null $targetRegister   Register the lookup ran in.
+     *
+     * @return void
+     */
+    private function dispatchReferenceValidationFailedEvent(
+        string $propertyName,
+        string $referencedUuid,
+        string $targetSchemaSlug,
+        ?string $targetRegister
+    ): void {
+        if ($this->eventDispatcher === null) {
+            return;
+        }
+
+        try {
+            $this->eventDispatcher->dispatchTyped(
+                new ReferenceValidationFailedEvent(
+                    propertyName: $propertyName,
+                    referencedUuid: $referencedUuid,
+                    targetSchemaSlug: $targetSchemaSlug,
+                    targetRegister: $targetRegister
+                )
+            );
+        } catch (Exception $e) {
+            $this->logger->warning(
+                message: '[SaveObject] ReferenceValidationFailedEvent dispatch failed',
+                context: [
+                    'file'     => __FILE__,
+                    'line'     => __LINE__,
+                    'property' => $propertyName,
+                    'uuid'     => $referencedUuid,
+                    'error'    => $e->getMessage(),
+                ]
+            );
+        }//end try
+
+    }//end dispatchReferenceValidationFailedEvent()
 
     /**
      * Prepares object data by applying all necessary transformations.
