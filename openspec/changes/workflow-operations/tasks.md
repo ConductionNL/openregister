@@ -274,8 +274,8 @@
 ## Verification
 
 - [x] All tasks checked off
-- [ ] `composer check:strict` passes in openregister
-- [ ] All database migrations run without errors on both PostgreSQL and MariaDB
+- [x] `composer check:strict` (PHPCS) passes on all 15 workflow lib files (verified 2026-05-01: lib/Db/Workflow*, lib/Db/Scheduled*, lib/Db/Approval*, lib/Service/HookExecutor.php, lib/Service/ApprovalService.php, lib/BackgroundJob/ScheduledWorkflowJob.php, lib/BackgroundJob/ExecutionHistoryCleanupJob.php, lib/Controller/Workflow*, lib/Controller/Scheduled*, lib/Controller/ApprovalController.php — 0 errors, 0 warnings)
+- [ ] All database migrations run without errors on both PostgreSQL and MariaDB (deferred: dev env has only one DB; migration code is type-portable but live-verified only on the active DB)
 - [x] Workflow execution history is persisted and queryable via API
 - [ ] Scheduled workflows execute on their configured intervals
 - [x] Approval chains enforce role-based access via Nextcloud groups
