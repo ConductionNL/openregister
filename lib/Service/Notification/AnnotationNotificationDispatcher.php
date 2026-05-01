@@ -24,6 +24,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Notification;
 
+use OCA\OpenRegister\Db\NotificationHistoryMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
@@ -51,7 +52,9 @@ class AnnotationNotificationDispatcher
         private readonly IActivityManager $activityManager,
         private readonly IClientService $httpClient,
         private readonly ?RateLimiter $rateLimiter=null,
-        private readonly ?IConfig $config=null
+        private readonly ?IConfig $config=null,
+        private readonly ?NotificationHistoryMapper $historyMapper=null,
+        private readonly ?NotificationCoalescer $coalescer=null
     ) {
     }//end __construct()
 
@@ -119,37 +122,59 @@ class AnnotationNotificationDispatcher
             $channels         = (array) ($spec['channels'] ?? ['nc-notification']);
 
             $rateLimit = is_array($spec['rateLimit'] ?? null) === true ? $spec['rateLimit'] : null;
+            $coalesce  = is_array($spec['coalesce'] ?? null) === true ? $spec['coalesce'] : null;
             $ruleId    = (string) $name;
 
             // Webhook is fired once per dispatch, not once per recipient,
             // and includes the recipient list in the payload.
             if (in_array('webhook', $channels, true) === true) {
-                $allowed = $this->rateLimitAllows(ruleId: $ruleId, recipient: '__webhook__', rateLimit: $rateLimit);
-                if ($allowed === true) {
-                    $this->emitWebhook(
-                        spec: $spec,
-                        object: $object,
-                        notificationName: (string) $name,
-                        subject: $broadcastSubject,
-                        recipients: $recipients,
-                        context: $context
-                    );
-                }
+                $this->dispatchBroadcastChannel(
+                    channel: 'webhook',
+                    ruleId: $ruleId,
+                    recipientKey: '__webhook__',
+                    rateLimit: $rateLimit,
+                    coalesce: $coalesce,
+                    object: $object,
+                    spec: $spec,
+                    notificationName: (string) $name,
+                    broadcastSubject: $broadcastSubject,
+                    recipients: $recipients,
+                    context: $context
+                );
             }
 
             // Talk channel is fired once per dispatch (chat message goes
             // to the configured Talk room, recipients aren't @-mentioned).
             if (in_array('talk', $channels, true) === true) {
-                $allowed = $this->rateLimitAllows(ruleId: $ruleId, recipient: '__talk__', rateLimit: $rateLimit);
-                if ($allowed === true) {
-                    $this->emitTalk(spec: $spec, message: $broadcastSubject);
-                }
+                $this->dispatchBroadcastChannel(
+                    channel: 'talk',
+                    ruleId: $ruleId,
+                    recipientKey: '__talk__',
+                    rateLimit: $rateLimit,
+                    coalesce: $coalesce,
+                    object: $object,
+                    spec: $spec,
+                    notificationName: (string) $name,
+                    broadcastSubject: $broadcastSubject,
+                    recipients: $recipients,
+                    context: $context
+                );
             }
 
             foreach ($recipients as $uid) {
                 // Per-recipient rate limit gates every channel for this uid.
                 $allowed = $this->rateLimitAllows(ruleId: $ruleId, recipient: $uid, rateLimit: $rateLimit);
                 if ($allowed === false) {
+                    $this->recordHistoryAcrossChannels(
+                        ruleId: $ruleId,
+                        recipient: $uid,
+                        channels: $channels,
+                        broadcastChannels: ['webhook', 'talk'],
+                        status: 'rate-limited',
+                        object: $object,
+                        subject: null,
+                        locale: null
+                    );
                     continue;
                 }
 
@@ -166,6 +191,25 @@ class AnnotationNotificationDispatcher
                     fallbackName: (string) $name
                 );
 
+                // Per-recipient coalesce: silences duplicate dispatches
+                // inside the configured window. Applied to every
+                // per-recipient channel (nc-notification, email,
+                // activity) at once because the user-facing noise is
+                // what we're collapsing.
+                if ($this->coalesceAllows(ruleId: $ruleId, recipient: $uid, coalesce: $coalesce) === false) {
+                    $this->recordHistoryAcrossChannels(
+                        ruleId: $ruleId,
+                        recipient: $uid,
+                        channels: $channels,
+                        broadcastChannels: ['webhook', 'talk'],
+                        status: 'coalesced',
+                        object: $object,
+                        subject: $recipientSubject,
+                        locale: $recipientLocale
+                    );
+                    continue;
+                }
+
                 if (in_array('nc-notification', $channels, true) === true) {
                     $this->emitNotification(
                         uid: $uid,
@@ -174,6 +218,15 @@ class AnnotationNotificationDispatcher
                         subject: $recipientSubject,
                         parameters: $context
                     );
+                    $this->recordHistory(
+                        ruleId: $ruleId,
+                        channel: 'nc-notification',
+                        recipient: $uid,
+                        status: 'dispatched',
+                        object: $object,
+                        subject: $recipientSubject,
+                        locale: $recipientLocale
+                    );
                 }
 
                 if (in_array('email', $channels, true) === true) {
@@ -181,6 +234,15 @@ class AnnotationNotificationDispatcher
                         uid: $uid,
                         subject: $recipientSubject,
                         body: $recipientSubject
+                    );
+                    $this->recordHistory(
+                        ruleId: $ruleId,
+                        channel: 'email',
+                        recipient: $uid,
+                        status: 'dispatched',
+                        object: $object,
+                        subject: $recipientSubject,
+                        locale: $recipientLocale
                     );
                 }
 
@@ -191,11 +253,108 @@ class AnnotationNotificationDispatcher
                         name: (string) $name,
                         subject: $recipientSubject
                     );
+                    $this->recordHistory(
+                        ruleId: $ruleId,
+                        channel: 'activity',
+                        recipient: $uid,
+                        status: 'dispatched',
+                        object: $object,
+                        subject: $recipientSubject,
+                        locale: $recipientLocale
+                    );
                 }
             }//end foreach
         }//end foreach
 
     }//end dispatch()
+
+
+    /**
+     * Helper to dispatch a broadcast-style channel (webhook / talk).
+     *
+     * Centralises the rate-limit + coalesce + history-recording
+     * pattern that webhook and talk share — they both go to a single
+     * shared endpoint, so they're rate-limited once per dispatch
+     * (not once per recipient) and recorded as a single
+     * `__webhook__` / `__talk__` history row.
+     *
+     * @param string                    $channel          'webhook' | 'talk'.
+     * @param string                    $ruleId           The rule id.
+     * @param string                    $recipientKey     '__webhook__' | '__talk__'.
+     * @param array<string, mixed>|null $rateLimit        Per-rule rate-limit override.
+     * @param array<string, mixed>|null $coalesce         Per-rule coalesce override.
+     * @param ObjectEntity              $object           The triggering object.
+     * @param array<string, mixed>      $spec             The full notification spec.
+     * @param string                    $notificationName The annotation key.
+     * @param string                    $broadcastSubject Pre-rendered broadcast subject.
+     * @param array<int, string>        $recipients       Resolved recipient uids.
+     * @param array<string, mixed>      $context          Trigger context (action, from, to).
+     *
+     * @return void
+     */
+    private function dispatchBroadcastChannel(
+        string $channel,
+        string $ruleId,
+        string $recipientKey,
+        ?array $rateLimit,
+        ?array $coalesce,
+        ObjectEntity $object,
+        array $spec,
+        string $notificationName,
+        string $broadcastSubject,
+        array $recipients,
+        array $context
+    ): void {
+        if ($this->rateLimitAllows(ruleId: $ruleId, recipient: $recipientKey, rateLimit: $rateLimit) === false) {
+            $this->recordHistory(
+                ruleId: $ruleId,
+                channel: $channel,
+                recipient: $recipientKey,
+                status: 'rate-limited',
+                object: $object,
+                subject: $broadcastSubject,
+                locale: null
+            );
+            return;
+        }
+
+        if ($this->coalesceAllows(ruleId: $ruleId, recipient: $recipientKey, coalesce: $coalesce) === false) {
+            $this->recordHistory(
+                ruleId: $ruleId,
+                channel: $channel,
+                recipient: $recipientKey,
+                status: 'coalesced',
+                object: $object,
+                subject: $broadcastSubject,
+                locale: null
+            );
+            return;
+        }
+
+        if ($channel === 'webhook') {
+            $this->emitWebhook(
+                spec: $spec,
+                object: $object,
+                notificationName: $notificationName,
+                subject: $broadcastSubject,
+                recipients: $recipients,
+                context: $context
+            );
+        } else if ($channel === 'talk') {
+            $this->emitTalk(spec: $spec, message: $broadcastSubject);
+        }
+
+        $this->recordHistory(
+            ruleId: $ruleId,
+            channel: $channel,
+            recipient: $recipientKey,
+            status: 'dispatched',
+            object: $object,
+            subject: $broadcastSubject,
+            locale: null
+        );
+
+    }//end dispatchBroadcastChannel()
 
     /**
      * Apply the (optional) rate limiter. Returns true when the
@@ -219,6 +378,146 @@ class AnnotationNotificationDispatcher
         return $this->rateLimiter->tryConsume(ruleId: $ruleId, recipient: $recipient, perRuleOverride: $rateLimit);
 
     }//end rateLimitAllows()
+
+
+    /**
+     * Apply the (optional) coalescer. Returns true when the dispatch
+     * may proceed.
+     *
+     * A null coalescer (test contexts where the dependency wasn't
+     * injected) always allows, as does a missing per-rule
+     * `coalesce` config block (the rule simply opted out of grouping).
+     *
+     * @param string                    $ruleId    Rule identifier (notification annotation key).
+     * @param string                    $recipient Recipient identifier.
+     * @param array<string, mixed>|null $coalesce  Per-rule coalesce block.
+     *
+     * @return bool True when the dispatch may proceed.
+     *
+     * @spec openspec/changes/notificatie-engine/tasks.md
+     */
+    private function coalesceAllows(string $ruleId, string $recipient, ?array $coalesce): bool
+    {
+        if ($this->coalescer === null) {
+            return true;
+        }
+
+        return $this->coalescer->shouldDispatch(ruleId: $ruleId, recipient: $recipient, perRuleOverride: $coalesce);
+
+    }//end coalesceAllows()
+
+
+    /**
+     * Persist a row in `openregister_notification_history`.
+     *
+     * Best-effort: a null mapper (older test fixtures) or a database
+     * failure must never block the actual dispatch. When the mapper
+     * is missing or throws we log at debug level + return — the
+     * notification user-experience takes precedence over audit
+     * completeness.
+     *
+     * @param string       $ruleId    The annotation key.
+     * @param string       $channel   'nc-notification' | 'email' | 'activity' | 'webhook' | 'talk'.
+     * @param string       $recipient Recipient identifier.
+     * @param string       $status    'dispatched' | 'rate-limited' | 'coalesced' | 'failed'.
+     * @param ObjectEntity $object    The object the event happened on.
+     * @param string|null  $subject   The interpolated subject (null when no subject was rendered).
+     * @param string|null  $locale    Recipient locale (null for broadcast channels).
+     *
+     * @return void
+     *
+     * @spec openspec/changes/notificatie-engine/tasks.md
+     */
+    private function recordHistory(
+        string $ruleId,
+        string $channel,
+        string $recipient,
+        string $status,
+        ObjectEntity $object,
+        ?string $subject,
+        ?string $locale
+    ): void {
+        if ($this->historyMapper === null) {
+            return;
+        }
+
+        try {
+            $this->historyMapper->record(
+                ruleId: $ruleId,
+                channel: $channel,
+                recipient: $recipient,
+                status: $status,
+                schemaId: ($object->getSchema() !== null && $object->getSchema() !== '') ? (string) $object->getSchema() : null,
+                registerId: ($object->getRegister() !== null && $object->getRegister() !== '') ? (string) $object->getRegister() : null,
+                objectUuid: ($object->getUuid() !== null && $object->getUuid() !== '') ? (string) $object->getUuid() : null,
+                subject: $subject,
+                errorMessage: null,
+                locale: $locale
+            );
+        } catch (\Throwable $e) {
+            $this->logger->debug(
+                sprintf(
+                    '[AnnotationNotificationDispatcher] history record failed (rule=%s channel=%s): %s',
+                    $ruleId,
+                    $channel,
+                    $e->getMessage()
+                )
+            );
+        }//end try
+
+    }//end recordHistory()
+
+
+    /**
+     * Record a per-recipient short-circuit (rate-limit / coalesce)
+     * across every per-recipient channel declared on the rule.
+     *
+     * When the per-recipient gate fails, no individual emit is called
+     * — but the audit trail should still show that each declared
+     * channel was suppressed. We skip channels listed in
+     * `$broadcastChannels` because those have their own broadcast
+     * row recorded by `dispatchBroadcastChannel()`.
+     *
+     * @param string             $ruleId            The rule id.
+     * @param string             $recipient         Recipient identifier.
+     * @param array<int, string> $channels          Channels declared on the rule.
+     * @param array<int, string> $broadcastChannels Channels that are recorded once per dispatch (not per recipient).
+     * @param string             $status            'rate-limited' | 'coalesced'.
+     * @param ObjectEntity       $object            The triggering object.
+     * @param string|null        $subject           Subject when one has been rendered.
+     * @param string|null        $locale            Recipient locale.
+     *
+     * @return void
+     *
+     * @spec openspec/changes/notificatie-engine/tasks.md
+     */
+    private function recordHistoryAcrossChannels(
+        string $ruleId,
+        string $recipient,
+        array $channels,
+        array $broadcastChannels,
+        string $status,
+        ObjectEntity $object,
+        ?string $subject,
+        ?string $locale
+    ): void {
+        foreach ($channels as $channel) {
+            if (in_array($channel, $broadcastChannels, true) === true) {
+                continue;
+            }
+
+            $this->recordHistory(
+                ruleId: $ruleId,
+                channel: (string) $channel,
+                recipient: $recipient,
+                status: $status,
+                object: $object,
+                subject: $subject,
+                locale: $locale
+            );
+        }
+
+    }//end recordHistoryAcrossChannels()
 
     /**
      * Decide whether the rule's organisation gate (if declared) lets
