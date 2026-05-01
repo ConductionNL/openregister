@@ -112,6 +112,18 @@ class RenderObject
     private array $inverseRelationCache = [];
 
     /**
+     * Transient cache of lightweight file IDs keyed by entity UUID.
+     *
+     * @var array<string, int[]>|null
+     *
+     * Populated by renderEntities() before its per-entity loop so renderEntity()
+     * does not need to issue one FileMapper query per row when extend does NOT
+     * cover `\@self.files`. Reset to null after the loop. When null, renderEntity
+     * falls back to a single-UUID FileMapper call.
+     */
+    private ?array $batchFileIdsCache = null;
+
+    /**
      * Constructor for RenderObject handler.
      *
      * @param FileMapper             $fileMapper           File mapper for database operations.
@@ -324,6 +336,178 @@ class RenderObject
 
         return $result;
     }//end getObjectsCache()
+
+    /**
+     * Attach the lightweight `\@self.files` ID list to a batch of un-rendered rows.
+     *
+     * @param array $rows Result rows by reference. Each row is mutated in place.
+     *
+     * @return void
+     *
+     * Used by list pipelines that bypass the full renderEntity pipeline (the
+     * cheap-path when no extend/fields/filter/unset is requested, or the SOLR/index
+     * path which never renders rows). Walks rows, collects UUIDs, issues a single
+     * batched FileMapper lookup, and writes the lightweight ID list onto each row's
+     * `\@self.files` (or the equivalent property on an ObjectEntity).
+     *
+     * Shape-tolerant: rows may be ObjectEntity instances or arrays. Rows whose UUID
+     * cannot be resolved get `\@self.files` set to []. Guarantees the spec contract
+     * that the field is always present on rendered list rows.
+     *
+     * Caller must not call this when rows already have full file metadata from
+     * renderEntities() — this method overwrites with IDs.
+     */
+    public function attachLightweightFilesToRows(array &$rows): void
+    {
+        if (empty($rows) === true) {
+            return;
+        }
+
+        // Collect UUIDs from heterogeneous row shapes.
+        $uuidByIndex = [];
+        foreach ($rows as $index => $row) {
+            $uuidByIndex[$index] = self::extractRowUuid(row: $row);
+        }
+
+        $uniqueUuids = array_values(array_unique(array_filter($uuidByIndex, static fn($uid) => $uid !== null)));
+        $idsByUuid   = [];
+        if (empty($uniqueUuids) === false) {
+            $idsByUuid = $this->fileMapper->getFileIdsForObjects($uniqueUuids);
+        }
+
+        foreach ($rows as $index => &$row) {
+            $uuid = $uuidByIndex[$index] ?? null;
+            $ids  = ($uuid !== null) ? ($idsByUuid[$uuid] ?? []) : [];
+            self::writeFilesToRow(row: $row, ids: $ids);
+        }
+
+        unset($row);
+    }//end attachLightweightFilesToRows()
+
+    /**
+     * Extract the UUID from a list-row of unknown shape (ObjectEntity or array).
+     *
+     * @param mixed $row The row to inspect.
+     *
+     * @return string|null Resolved UUID or null when unrecognized.
+     */
+    private static function extractRowUuid($row): ?string
+    {
+        if ($row instanceof ObjectEntity === true) {
+            return $row->getUuid();
+        }
+
+        if (is_array($row) === false) {
+            return null;
+        }
+
+        // Magic-mapper rows expose the UUID at @self.id.
+        if (isset($row['@self']['id']) === true && is_string($row['@self']['id']) === true) {
+            return $row['@self']['id'];
+        }
+
+        if (isset($row['@self']['uuid']) === true && is_string($row['@self']['uuid']) === true) {
+            return $row['@self']['uuid'];
+        }
+
+        if (isset($row['id']) === true && is_string($row['id']) === true) {
+            return $row['id'];
+        }
+
+        return null;
+    }//end extractRowUuid()
+
+    /**
+     * Write the lightweight file-IDs list to a row's @self.files of unknown shape.
+     *
+     * @param mixed $row Row by reference.
+     * @param int[] $ids File IDs to attach.
+     *
+     * @return void
+     */
+    private static function writeFilesToRow(&$row, array $ids): void
+    {
+        if ($row instanceof ObjectEntity === true) {
+            $row->setFiles($ids);
+            return;
+        }
+
+        if (is_array($row) === true) {
+            if (isset($row['@self']) === false || is_array($row['@self']) === false) {
+                $row['@self'] = [];
+            }
+
+            $row['@self']['files'] = $ids;
+        }
+    }//end writeFilesToRow()
+
+    /**
+     * Decide whether the request opts in to full @self.files metadata.
+     *
+     * Recognizes the canonical form `@self.files` and the equivalent shorthand
+     * `_files`. Accepts both array and comma-separated string forms.
+     *
+     * The blanket `all` token is intentionally NOT recognized here. The
+     * proposal pins `@self.files` as a strict, explicit opt-in — and `all`
+     * is propagated to sub-entity renders via `array_merge(['all'], $keyExtends)`,
+     * which would silently pay full file-metadata cost on every linked
+     * sub-object whenever a top-level request used `_extend[]=all`. Consumers
+     * that want full file metadata must spell it explicitly.
+     *
+     * @param array|string|null $extend Extend parameter from the request.
+     *
+     * @return bool True when full file metadata should be rendered.
+     */
+    private static function shouldExtendFiles(array | string | null $extend): bool
+    {
+        if ($extend === null || $extend === '' || $extend === []) {
+            return false;
+        }
+
+        if (is_string($extend) === true) {
+            $extend = array_filter(array_map('trim', explode(',', $extend)));
+        }
+
+        // Type-system invariant: by here, $extend is `array` (the null/empty cases
+        // already returned, and string was converted above).
+        return in_array('@self.files', $extend, true) === true
+            || in_array('_files', $extend, true) === true;
+    }//end shouldExtendFiles()
+
+    /**
+     * Attach the lightweight default for @self.files: a list of integer file IDs.
+     *
+     * Uses the renderEntities batch cache when available (populated before the
+     * per-entity loop for list endpoints) to avoid per-row FileMapper queries.
+     * Falls back to a single-UUID FileMapper call for one-off renders (show paths).
+     *
+     * @param ObjectEntity $entity The entity to attach the lightweight file IDs to.
+     *
+     * @return ObjectEntity The same entity with $entity->setFiles($ids) applied.
+     */
+    private function setLightweightFileIds(ObjectEntity $entity): ObjectEntity
+    {
+        $uuid = $entity->getUuid();
+        if ($uuid === null) {
+            $entity->setFiles([]);
+            return $entity;
+        }
+
+        // Distinguish "UUID was in the batch and had zero files" from "UUID was not
+        // in the batch at all". The batch cache is populated by renderEntities()
+        // with only the top-level page entity UUIDs; sub-entities reached via
+        // relation extends are NOT in it. For a sub-entity we must fall through
+        // to a single-UUID lookup, otherwise its `@self.files` would silently
+        // emit `[]` even when the entity has attached files.
+        if ($this->batchFileIdsCache !== null && array_key_exists(key: $uuid, array: $this->batchFileIdsCache) === true) {
+            $entity->setFiles($this->batchFileIdsCache[$uuid]);
+            return $entity;
+        }
+
+        $idsByUuid = $this->fileMapper->getFileIdsForObjects([$uuid]);
+        $entity->setFiles($idsByUuid[$uuid] ?? []);
+        return $entity;
+    }//end setLightweightFileIds()
 
     /**
      * Add formatted files to the files array in the entity using FileMapper.
@@ -905,7 +1089,15 @@ class RenderObject
             }
         }
 
-        $entity = $this->renderFiles(object: $entity);
+        // @self.files is opt-in via _extend (see capability files-render-extension):
+        // - default: lightweight list of file IDs only
+        // - _extend[]=@self.files OR _extend[]=_files OR _extend[]=all: full file metadata
+        // Both extend spellings are equivalent (see normalizeMap below).
+        if (self::shouldExtendFiles(extend: $_extend) === true) {
+            $entity = $this->renderFiles(object: $entity);
+        } else {
+            $entity = $this->setLightweightFileIds(entity: $entity);
+        }
 
         // Hydrate file properties (replace file IDs with file objects).
         $entity = $this->renderFileProperties(entity: $entity);
@@ -1015,6 +1207,7 @@ class RenderObject
             $normalizeMap = [
                 '_schema'   => '@self.schema',
                 '_register' => '@self.register',
+                '_files'    => '@self.files',
             ];
             foreach ($normalizeMap as $shorthand => $full) {
                 $key = array_search($shorthand, $_extend, true);
@@ -2453,28 +2646,52 @@ class RenderObject
             $this->preloadInverseRelationships(entities: $entities, extend: $_extend);
         }//end if
 
+        // Batch-prefetch lightweight @self.files IDs once for the entire page so that
+        // renderEntity does not issue one FileMapper query per row when extend does
+        // NOT cover @self.files. When extend opts in to full file metadata, the
+        // per-entity renderFiles() runs instead and this cache is unused.
+        if (self::shouldExtendFiles(extend: $_extend) === false && empty($entities) === false) {
+            $uuids = [];
+            foreach ($entities as $entity) {
+                if ($entity instanceof ObjectEntity === true) {
+                    $uuid = $entity->getUuid();
+                    if ($uuid !== null) {
+                        $uuids[] = $uuid;
+                    }
+                }
+            }
+
+            if (empty($uuids) === false) {
+                $this->batchFileIdsCache = $this->fileMapper->getFileIdsForObjects($uuids);
+            }
+        }
+
         $renderedEntities = [];
 
-        // Render each entity (now using warm cache for forward relations).
-        foreach ($entities as $entity) {
-            $renderedEntity = $this->renderEntity(
-                entity: $entity,
-                _extend: $_extend,
-                depth: 0,
-                filter: $_filter,
-                fields: $_fields,
-                unset: $_unset,
-                _rbac: $_rbac,
-                _multitenancy: $_multitenancy
-            );
+        try {
+            // Render each entity (now using warm cache for forward relations).
+            foreach ($entities as $entity) {
+                $renderedEntity = $this->renderEntity(
+                    entity: $entity,
+                    _extend: $_extend,
+                    depth: 0,
+                    filter: $_filter,
+                    fields: $_fields,
+                    unset: $_unset,
+                    _rbac: $_rbac,
+                    _multitenancy: $_multitenancy
+                );
 
-            // Remove source from @self in list responses.
-            // The source property is only included in individual object responses,
-            // not in collection/list responses for cleaner output.
-            $renderedEntity->setSource(null);
+                // Remove source from @self in list responses.
+                // The source property is only included in individual object responses,
+                // not in collection/list responses for cleaner output.
+                $renderedEntity->setSource(null);
 
-            $renderedEntities[] = $renderedEntity;
-        }
+                $renderedEntities[] = $renderedEntity;
+            }
+        } finally {
+            $this->batchFileIdsCache = null;
+        }//end try
 
         return $renderedEntities;
     }//end renderEntities()

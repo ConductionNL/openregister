@@ -1971,6 +1971,31 @@ class ObjectService
             $result['@self']['multi']   = $_multitenancy;
             $result['@self']['deleted'] = $deleted;
 
+            // Per the files-render-extension capability, every list row MUST carry
+            // @self.files. The SOLR/index path does not route rows through renderEntities,
+            // so attach the lightweight ID list via a single batched FileMapper lookup.
+            // Note: the SOLR path does not currently support _extend[]=@self.files for
+            // full metadata; consumers needing full metadata should query the DB path.
+            if (isset($result['results']) === true && is_array($result['results']) === true) {
+                $this->renderHandler->attachLightweightFilesToRows(rows: $result['results']);
+            }
+
+            // Surface a machine-readable signal when the consumer asked for an
+            // extend value the SOLR path cannot honour, so they can detect the
+            // shape mismatch programmatically instead of diffing the response.
+            // Today this only applies to @self.files (and its shorthand _files).
+            $extendForSignal = $query['_extend'] ?? [];
+            if (is_string($extendForSignal) === true) {
+                $extendForSignal = array_filter(array_map('trim', explode(',', $extendForSignal)));
+            }
+
+            if (is_array($extendForSignal) === true
+                && (in_array('@self.files', $extendForSignal, true) === true
+                || in_array('_files', $extendForSignal, true) === true)
+            ) {
+                $result['@self']['extend_unsupported'] = ['@self.files'];
+            }
+
             // Add extended objects only if _extend is requested.
             // Normalize _extend to array (handles comma-separated string from URL).
             $extend = $query['_extend'] ?? [];

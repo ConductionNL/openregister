@@ -474,7 +474,15 @@ class QueryHandler
                 _multitenancy: $_multitenancy
             );
             $metrics['render'] = round((microtime(true) - $renderStart) * 1000, 2);
-        }
+        } else if ($hasComplexRendering === false && is_array($results) === true) {
+            // Cheap path: rows did not go through renderEntities, so @self.files is
+            // absent or stale. Per the files-render-extension capability, every list
+            // row MUST carry @self.files (lightweight ID list by default). Issue a
+            // single batched FileMapper lookup and attach IDs to each row.
+            $filesStart = microtime(true);
+            $this->renderHandler->attachLightweightFilesToRows(rows: $results);
+            $metrics['lightweightFiles'] = round((microtime(true) - $filesStart) * 1000, 2);
+        }//end if
 
         // Calculate total pages (avoid division by zero when limit=0).
         $pages = 0;

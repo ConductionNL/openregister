@@ -42,8 +42,10 @@ Retrieves a paginated list of objects that match the specified register and sche
   - Special values:
     - `_registers`: Include full register object(s) in `@self.registers`
     - `_schemas`: Include full schema object(s) in `@self.schemas`
+    - `_files` (or canonical `@self.files`): Include full file metadata in `@self.files`. Equivalent spellings, normalized internally. **Default behavior:** when this extension is NOT requested, `@self.files` is a lightweight list of integer file IDs (`[123, 456]`). When requested, `@self.files` is an array of full file objects with `id`, `path`, `title`, `accessUrl`, `downloadUrl`, `type`, `extension`, `size`, `hash`, `published`, `modified`, `labels`. The lightweight default uses a single batched query regardless of page size.
   - When any `_extend` is requested, `@self.objects` will contain all extended objects indexed by UUID
   - **Performance note**: Using `_extend` adds approximately 300ms overhead per request due to additional database queries for related objects. For performance-critical applications, consider fetching related objects separately or using caching strategies.
+  - **Heavily discouraged on list endpoints: `_extend[]=@self.files` (or `_files`).** This extension causes one file lookup and one tag lookup *per row* on the page (N+1 queries scaling with page size) and will result in degraded performance. Use it only when full file metadata is genuinely required for every row of the list. For single-object reads (show endpoints), the cost is fixed (one extra request) and acceptable. For lists, prefer the lightweight default and look up full metadata for specific objects on demand.
 - **`_fields`**: Fields to include (comma-separated)
 - **`_filter`**: Fields to filter (comma-separated)
 - **`_unset`**: Fields to exclude (comma-separated)
@@ -285,6 +287,7 @@ Retrieves a single object by ID.
   - Special values:
     - `_registers`: Include full register object in `@self.registers`
     - `_schemas`: Include full schema object in `@self.schemas`
+    - `_files` (or canonical `@self.files`): Include full file metadata in `@self.files`. Equivalent spellings, normalized internally. Without this extension, `@self.files` is a lightweight list of integer file IDs.
   - When any `_extend` is requested, `@self.objects` will contain all extended objects indexed by UUID
 - **`_fields`**: Fields to include
 - **`_filter`**: Fields to filter
@@ -301,6 +304,10 @@ GET /api/objects/1/3/uuid?_extend=aanbieder
 
 # Get single object with register and schema metadata
 GET /api/objects/1/3/uuid?_extend=_registers,_schemas
+
+# Get single object with full file metadata (both spellings work)
+GET /api/objects/1/3/uuid?_extend=@self.files
+GET /api/objects/1/3/uuid?_extend=_files
 
 # Combine property extension with metadata
 GET /api/objects/1/3/uuid?_extend=aanbieder,_registers,_schemas
