@@ -1,6 +1,6 @@
 # Tasks: Deprecate Published/Depublished Object Metadata
 
-> **Status (2026-05-01):** All OpenRegister-scope work is complete (Phases 1–3, 8 in-repo testing). Remaining 19 `[ ]` items live entirely in **Phases 4–7**, all explicitly marked **OUT OF SCOPE** in their headers (opencatalogi backend + frontend, softwarecatalogus frontend, schema migration guide). Plus 2 cross-repo testing items in Phase 8 (lines 95–96). **Nothing actionable remains in this repo.**
+> **Status (2026-05-01):** All OpenRegister-scope work is complete (Phases 1–3, 8 in-repo testing). Cross-repo Phase 4 partially shipped against opencatalogi (PublicationsController `_universalOrderFields` cleanup + PublicationService docblock cleanup landed in opencatalogi PR `docs/public-api-files-extend-2026-05-01`). The remaining items live in **Phases 4–7**, marked **OUT OF SCOPE** in their headers (opencatalogi event listeners, opencatalogi frontend, softwarecatalogus frontend, schema migration guide). The deeper Phase 4 work (EventService / Object*EventListener publish-state checks) needs a careful migration to RBAC `$now` rules — not a mechanical drop — and is left for a dedicated follow-up issue.
 >
 > Recommend opening cross-repo follow-up issues for the 5 deferred phases and archiving this change. The OpenRegister production code paths no longer reference `_published` / `_depublished` columns, magic-table migration is shipped, and frontend cleanup landed in the referenced PRs (#1129, #1130, #1131).
 
@@ -62,14 +62,20 @@
 - [x] Remove published CSS classes from schema modals (#1130)
 - [x] Remove published from type definitions and mock data (#1130)
 
-## Phase 4: OpenCatalogi Backend (OUT OF SCOPE - separate repo)
+## Phase 4: OpenCatalogi Backend (PARTIAL — see follow-up issue)
 
 - [ ] Remove `isObjectPublished()` from `EventService`; replace published-state checks with RBAC-based logic
+  - **Deferred** — `EventService::handleObjectCreateEvents` / `handleObjectUpdateEvents` use `isObjectPublished` to gate auto-publish-attachments. Replacing with RBAC `$now` rules is a behaviour migration, not a delete; needs a dedicated review of the publication workflow. Tracked in opencatalogi follow-up issue.
 - [ ] Remove `@self.published`/`@self.depublished` reads from `ObjectCreatedEventListener`
+  - **Deferred** — same rationale as above; the listener feeds EventService.
 - [ ] Remove `isObjectEntityPublished()` and `isObjectPublished()` from `ObjectUpdatedEventListener`
+  - **Deferred** — same rationale.
 - [ ] Remove `@self.published`/`@self.depublished` reads from `ObjectUpdatedEventListener`
-- [ ] Remove `'published'` and `'depublished'` from `$universalOrderFields` in `PublicationsController`
-- [ ] Update `PublicationService` docblock examples referencing `@self.published` ordering
+  - **Deferred** — same rationale.
+- [x] Remove `'published'` and `'depublished'` from `$universalOrderFields` in `PublicationsController`
+  - **Shipped** — `_published` / `_depublished` removed from the multi-register universal-order allowlist (opencatalogi PR `docs/public-api-files-extend-2026-05-01`). Trailing comment points readers at this openregister change for context.
+- [x] Update `PublicationService` docblock examples referencing `@self.published` ordering
+  - **Shipped** — three docblock / inline-comment references replaced with `@self.created` (same opencatalogi PR).
 
 ## Phase 5: OpenCatalogi Frontend (OUT OF SCOPE - separate repo)
 

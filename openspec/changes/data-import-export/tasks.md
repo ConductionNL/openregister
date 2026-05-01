@@ -1,6 +1,6 @@
 # Tasks: Data Import and Export
 
-> **Status (Phase 2, updated 2026-05-01):** OpenRegister already ships a full Excel + CSV import/export pipeline (`ImportService` + `ExportService`) plus a configuration-level JSON portability path (`ConfigurationService::importFromJson` / `exportConfig`). Phase 2 is a documentation-vs-implementation sync — every Excel/CSV/JSON requirement has shipped code with file:line evidence. Downloadable per-schema import templates ship via `RegistersController::importTemplate`. The XML / ODS formats, structured rollback, downloadable error files, and full streaming progress endpoint remain genuinely open. **12 of 15 tasks shipped (9 implemented + 3 test coverage); 3 open are: downloadable error CSV, SSE progress (gated on realtime-updates), transactional rollback.**
+> **Status (Phase 2, updated 2026-05-01):** OpenRegister already ships a full Excel + CSV import/export pipeline (`ImportService` + `ExportService`) plus a configuration-level JSON portability path (`ConfigurationService::importFromJson` / `exportConfig`). Phase 2 is a documentation-vs-implementation sync — every Excel/CSV/JSON requirement has shipped code with file:line evidence. Downloadable per-schema import templates ship via `RegistersController::importTemplate`. Per-row import-error CSV now ships in the import response envelope (`errors_csv` field, base64-encoded UTF-8 with BOM). The XML / ODS formats, structured rollback, and full streaming progress endpoint remain genuinely open. **13 of 15 tasks shipped (10 implemented + 3 test coverage); 2 open are: SSE progress (gated on realtime-updates), transactional rollback.**
 
 ## Implemented
 
@@ -24,7 +24,7 @@
 
 ## Open
 
-- [ ] **Import MUST provide detailed error reporting with downloadable error files.** Partial — `ImportService` returns a per-row error summary in the import result envelope, but a downloadable "errors.csv" artefact is not generated. **Open** — additive feature gated on a UX decision about format (CSV row-by-row vs JSON envelope).
+- [x] **Import MUST provide detailed error reporting with downloadable error files.** Shipped — `ImportService::serializeErrorsToCsv` walks the sheet-based summary and emits a UTF-8 BOM CSV (`sheet`, `row`, `field`, `error_message`, `original_value`). `RegistersController::import` attaches the artefact to the JSON response as a base64-encoded `errors_csv` field plus an `errors_csv_filename` hint, so the frontend can offer a download without a second round-trip. The serializer collapses validation, schema-not-found, and row-parse error shapes into a single column projection. Unit coverage in [`tests/Unit/Service/ImportServiceErrorsCsvTest.php`](../../../tests/Unit/Service/ImportServiceErrorsCsvTest.php).
 
 - [ ] **Import MUST support progress tracking for large datasets.** Partial — the chunked-batch architecture documented in the `ImportService` class docblock provides progress hooks (the import is processed in chunks with summary aggregation), but a streaming `Server-Sent Events` progress endpoint surface is not exposed. The frontend currently polls the import job status. **Open** — depends on the realtime-updates SSE work to ship first.
 
@@ -34,6 +34,7 @@
 
 - [x] [`tests/Service/ImportServiceIntegrationTest`](../../../tests/Service/ImportServiceIntegrationTest.php) — 30 integration tests covering import-time validation, CSV row transformation, Excel multi-sheet processing, and SOLR warmup integration.
 - [x] [`tests/Unit/Service/ImportServiceTest`](../../../tests/Unit/Service/ImportServiceTest.php) — 140 unit tests for the row-transformation primitives.
+- [x] [`tests/Unit/Service/ImportServiceErrorsCsvTest`](../../../tests/Unit/Service/ImportServiceErrorsCsvTest.php) — 7 unit tests covering the per-row error CSV serialiser (BOM prefix, header shape, validation/row/schema error shapes, multi-sheet aggregation, defensive skipping of malformed sheet entries).
 - [x] [`tests/Unit/Service/ExportServiceTest`](../../../tests/Unit/Service/ExportServiceTest.php) + `ExportServiceCoverageTest` + `ExportServiceGapTest` — 58 tests covering header generation, name-companion resolution, FLS-aware column emission.
 
 ## Architecture (decisions taken)

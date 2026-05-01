@@ -141,16 +141,22 @@ class ImportService
     private readonly IJobList $jobList;
 
     /**
-     * Constructor for the ImportService
+     * Translation CSV codec for column projection on import/export.
      *
-     * @param SchemaMapper    $schemaMapper  The schema mapper
-     * @param ObjectService   $objectService The object service
-     * @param LoggerInterface $logger        The logger interface
-     * @param IGroupManager   $groupManager  The group manager
-     * @param IJobList        $jobList       The background job list
+     * @var \OCA\OpenRegister\Service\Translation\TranslationCsvCodec
      */
     private readonly \OCA\OpenRegister\Service\Translation\TranslationCsvCodec $translationCsvCodec;
 
+    /**
+     * Constructor for the ImportService
+     *
+     * @param SchemaMapper                                              $schemaMapper        The schema mapper
+     * @param ObjectService                                             $objectService       The object service
+     * @param LoggerInterface                                           $logger              The logger interface
+     * @param IGroupManager                                             $groupManager        The group manager
+     * @param IJobList                                                  $jobList             The background job list
+     * @param \OCA\OpenRegister\Service\Translation\TranslationCsvCodec $translationCsvCodec Translation CSV codec
+     */
     public function __construct(
         SchemaMapper $schemaMapper,
         ObjectService $objectService,
@@ -159,11 +165,11 @@ class ImportService
         IJobList $jobList,
         \OCA\OpenRegister\Service\Translation\TranslationCsvCodec $translationCsvCodec
     ) {
-        $this->schemaMapper        = $schemaMapper;
-        $this->objectService       = $objectService;
-        $this->logger              = $logger;
-        $this->groupManager        = $groupManager;
-        $this->jobList             = $jobList;
+        $this->schemaMapper  = $schemaMapper;
+        $this->objectService = $objectService;
+        $this->logger        = $logger;
+        $this->groupManager  = $groupManager;
+        $this->jobList       = $jobList;
         $this->translationCsvCodec = $translationCsvCodec;
 
         // Initialize cache arrays to prevent issues.
@@ -1723,4 +1729,124 @@ class ImportService
             maxObjects: $maxObjects
         );
     }//end scheduleSmartSolrWarmup()
+
+    /**
+     * Serialize per-row import errors to a UTF-8 CSV blob with BOM.
+     *
+     * Walks the sheet-based import summary, extracting any `errors` entries
+     * and emitting one row per failure. Columns: `sheet`, `row`, `field`,
+     * `error_message`, `original_value`. Output is UTF-8 with BOM so Excel
+     * opens it cleanly (matches the existing template-export pattern).
+     *
+     * Returns an empty string when the summary contains no errors so callers
+     * can cheaply skip attaching the artefact.
+     *
+     * @param array<string, mixed> $summary The sheet-based import summary as
+     *                                      returned by importFromExcel /
+     *                                      importFromCsv.
+     *
+     * @return string The CSV payload (UTF-8 BOM prefixed) or empty string.
+     *
+     * @phpstan-param array<string, array{errors?: array<int, mixed>}> $summary
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity) Error envelopes carry several optional shapes.
+     *
+     * @spec openspec/changes/data-import-export/tasks.md#task-error-csv
+     */
+    public function serializeErrorsToCsv(array $summary): string
+    {
+        $errors = [];
+
+        foreach ($summary as $sheetTitle => $sheetData) {
+            if (is_array($sheetData) === false) {
+                continue;
+            }
+
+            $sheetErrors = $sheetData['errors'] ?? [];
+            if (is_array($sheetErrors) === false || count($sheetErrors) === 0) {
+                continue;
+            }
+
+            foreach ($sheetErrors as $error) {
+                if (is_array($error) === false) {
+                    $error = ['error' => (string) $error];
+                }
+
+                $originalValue = ($error['object'] ?? ($error['original_value'] ?? ''));
+                $errors[]      = [
+                    'sheet'          => (string) ($error['sheet'] ?? $sheetTitle),
+                    'row'            => (string) ($error['row'] ?? ''),
+                    'field'          => (string) ($error['field'] ?? ($error['type'] ?? '')),
+                    'error_message'  => (string) ($error['error'] ?? ''),
+                    'original_value' => $this->stringifyOriginalValue(value: $originalValue),
+                ];
+            }//end foreach
+        }//end foreach
+
+        if (count($errors) === 0) {
+            return '';
+        }
+
+        $headers = ['sheet', 'row', 'field', 'error_message', 'original_value'];
+
+        $stream = fopen('php://temp', 'r+');
+        if ($stream === false) {
+            return '';
+        }
+
+        // Excel needs the UTF-8 BOM to detect encoding.
+        fwrite($stream, "\xEF\xBB\xBF");
+        fputcsv($stream, $headers);
+
+        foreach ($errors as $row) {
+            fputcsv(
+                $stream,
+                [
+                    $row['sheet'],
+                    $row['row'],
+                    $row['field'],
+                    $row['error_message'],
+                    $row['original_value'],
+                ]
+            );
+        }
+
+        rewind($stream);
+        $csv = stream_get_contents($stream);
+        fclose($stream);
+
+        return $csv === false ? '' : $csv;
+
+    }//end serializeErrorsToCsv()
+
+    /**
+     * Stringify the `original_value` carried by an error entry.
+     *
+     * Errors collected by the import pipeline embed either a row-level scalar
+     * (e.g. a malformed cell), an associative array (the parsed object that
+     * failed validation), or nothing at all. A single CSV cell needs a stable
+     * string projection of all three.
+     *
+     * @param mixed $value The raw value lifted off the error envelope.
+     *
+     * @return string Compact string representation suitable for a CSV cell.
+     */
+    private function stringifyOriginalValue(mixed $value): string
+    {
+        if ($value === null || $value === '') {
+            return '';
+        }
+
+        if (is_scalar($value) === true) {
+            return (string) $value;
+        }
+
+        if (is_array($value) === true || is_object($value) === true) {
+            $encoded = json_encode($value, (JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES));
+            return $encoded === false ? '' : $encoded;
+        }
+
+        return '';
+
+    }//end stringifyOriginalValue()
 }//end class
