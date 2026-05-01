@@ -1980,6 +1980,22 @@ class ObjectService
                 $this->renderHandler->attachLightweightFilesToRows(rows: $result['results']);
             }
 
+            // Surface a machine-readable signal when the consumer asked for an
+            // extend value the SOLR path cannot honour, so they can detect the
+            // shape mismatch programmatically instead of diffing the response.
+            // Today this only applies to @self.files (and its shorthand _files).
+            $extendForSignal = $query['_extend'] ?? [];
+            if (is_string($extendForSignal) === true) {
+                $extendForSignal = array_filter(array_map('trim', explode(',', $extendForSignal)));
+            }
+
+            if (is_array($extendForSignal) === true
+                && (in_array('@self.files', $extendForSignal, true) === true
+                || in_array('_files', $extendForSignal, true) === true)
+            ) {
+                $result['@self']['extend_unsupported'] = ['@self.files'];
+            }
+
             // Add extended objects only if _extend is requested.
             // Normalize _extend to array (handles comma-separated string from URL).
             $extend = $query['_extend'] ?? [];
