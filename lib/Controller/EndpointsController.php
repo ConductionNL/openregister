@@ -408,6 +408,30 @@ class EndpointsController extends Controller
      *     array{error: 'Endpoint not found'|'Failed to delete endpoint'},
      *     array<never, never>>
      */
+    /**
+     * Partially update an endpoint by ID.
+     *
+     * The route `endpoints#patch` (`PATCH /api/endpoints/{id}`) delegates to
+     * the same body as `update()` because Nextcloud routes PATCH and PUT to
+     * separate methods even when the handler is identical. Mirrors the same
+     * shape used on `ApplicationsController::patch`.
+     *
+     * @param int $id The ID of the endpoint to patch.
+     *
+     * @return JSONResponse JSON response containing patched endpoint.
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     */
+    #[NoAdminRequired]
+    #[NoCSRFRequired]
+    public function patch(int $id): JSONResponse
+    {
+        return $this->update(id: $id);
+
+    }//end patch()
+
+
     #[NoAdminRequired]
     #[NoCSRFRequired]
     public function destroy(int $id): JSONResponse

@@ -489,7 +489,6 @@ return [
         ['name' => 'userSettings#removeGitHubToken', 'url' => '/api/user-settings/github/token', 'verb' => 'DELETE'],
         // Applications.
         ['name' => 'applications#page', 'url' => '/applications', 'verb' => 'GET'],
-        ['name' => 'applications#stats', 'url' => '/api/applications/stats', 'verb' => 'GET'],
         // Agents.
         ['name' => 'agents#page', 'url' => '/agents', 'verb' => 'GET'],
         ['name' => 'agents#stats', 'url' => '/api/agents/stats', 'verb' => 'GET'],
