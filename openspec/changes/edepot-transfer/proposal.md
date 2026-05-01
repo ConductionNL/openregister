@@ -1,5 +1,21 @@
 # Proposal: edepot-transfer
 
+## Why
+
+Dutch government bodies are legally obliged under Archiefwet 1995 (Article 12) to transfer permanent records to a regional or national archive — typically an e-Depot. Tender intelligence shows 273 tenders with 547 requirements explicitly demanding e-Depot/MDTO/TMLO support across NL local government (Berkelland, Hilversum, Winterswijk, Zeist, Omgevingsdienst). Without an SIP-based transfer pipeline, OpenRegister cannot be the system-of-record for permanent records, and Conduction loses qualifying eligibility on those tenders. This change delivers MDTO-compliant SIP packaging, durable format conversion, and configurable e-Depot connectors — closing a regulatory and commercial gap.
+
+## What Changes
+
+- New `EdepotTransferService` orchestrating object selection, SIP build, transport, and status tracking.
+- MDTO XML generator mapping OpenRegister object metadata to MDTO fields with configurable mapping; TMLO fallback for legacy regional profiles (e.g. TMLO-Achterhoek).
+- SIP package builder producing OAIS-compliant Submission Information Packages (objects + files + metadata XML).
+- Durable format conversion before packaging: PDF/A-1b/PDF/A-2b for documents, ODF for spreadsheets, TIFF for images (Docudesk integration).
+- Pluggable transports: REST API (Preservica-style), SFTP, and OpenConnector — extensible interface for additional e-Depot vendors.
+- Pre-transfer metadata-completeness validation that blocks transfer with field-level errors when required MDTO/TMLO fields are missing.
+- Per-object transfer status (pending/submitted/accepted/rejected) surfaced in the object detail view; failed transfers retried without duplication.
+- Bulk selection by schema, register, or retention category.
+- Settings controller for configuring the e-Depot endpoint, credentials, and metadata mapping per installation.
+
 ## Summary
 
 Implement the ability to transfer OpenRegister objects and their associated files to e-Depot (regional digital archive) systems, with full MDTO/TMLO metadata compliance and durable format conversion (PDF/A, ODF). This enables Dutch government organisations to meet their legal obligation to transfer permanent records to a regional or national archive.
