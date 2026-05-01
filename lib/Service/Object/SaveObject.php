@@ -198,6 +198,27 @@ class SaveObject
     private array $schemaReferenceCache = [];
 
     /**
+     * Request-scoped cache for reference-existence verdicts.
+     *
+     * Caches the result of `validateReferenceExists()` keyed on
+     * `{targetSchemaId}:{uuid}`. Stores `true` for "exists" and `false`
+     * for "does not exist". Closes the spec's
+     * "Validation results cached within a request scope" + bulk-import
+     * batch optimisation requirements: a 1000-row import that points at
+     * the same 50 organisations now hits the database 50 times instead
+     * of 1000.
+     *
+     * The verdict is intentionally request-scoped (no distributed
+     * cache): cross-request consistency is enforced by re-running
+     * validation on every save, and an in-flight cascade can rely on
+     * the cache covering the lifetime of the cascade. Listeners only
+     * fire on cache misses to avoid duplicate event emission.
+     *
+     * @var array<string, bool>
+     */
+    private array $referenceValidationCache = [];
+
+    /**
      * Constructor for SaveObject handler.
      *
      * @param MagicMapper                 $objectEntityMapper   Object entity mapper
@@ -3713,6 +3734,29 @@ class SaveObject
             return;
         }
 
+        // Request-scoped cache short-circuit: if we already validated this
+        // (targetSchemaId, uuid) pair during this request — typically
+        // during a bulk import or cascade save — skip the database round
+        // trip and replay the verdict. We still raise/return without
+        // re-emitting events so listeners observe each unique reference
+        // exactly once per request.
+        $cacheKey = $targetSchemaId.':'.$uuid;
+        if (array_key_exists($cacheKey, $this->referenceValidationCache) === true) {
+            if ($this->referenceValidationCache[$cacheKey] === true) {
+                return;
+            }
+
+            // Cached negative verdict — re-raise without dispatching the
+            // failure event again (already dispatched on first miss).
+            throw new ReferenceValidationException(
+                propertyName: $propertyName,
+                referencedUuid: $uuid,
+                targetSchemaSlug: $schemaRef,
+                targetRegister: $register,
+                code: 422
+            );
+        }
+
         // Get the target schema for the error message.
         $targetSchemaSlug = $schemaRef;
         try {
@@ -3744,15 +3788,27 @@ class SaveObject
         $targetSchemaEntity = $targetSchema ?? null;
 
         // Check if the object exists.
+        // Explicitly pass `includeDeleted: false` so soft-deleted target
+        // objects are treated as nonexistent — closes the spec's
+        // "Soft-deleted references treated as nonexistent" requirement.
+        // The MagicMapper default is already `false`, but pinning it
+        // here keeps the validation contract local + survives mapper
+        // signature changes.
         try {
             $this->unifiedObjectMapper->find(
                 identifier: $uuid,
                 register: $registerEntity,
                 schema: $targetSchemaEntity,
+                includeDeleted: false,
                 _rbac: false,
                 _multitenancy: false
             );
         } catch (DoesNotExistException $e) {
+            // Cache the negative verdict before the throw so subsequent
+            // checks for the same UUID short-circuit cheaply (and don't
+            // re-dispatch the failure event).
+            $this->referenceValidationCache[$cacheKey] = false;
+
             // Side-channel notification for monitoring / extensibility.
             // Dispatched BEFORE the exception so listeners observe every
             // failure regardless of whether the controller layer
@@ -3792,6 +3848,11 @@ class SaveObject
             return;
         }//end try
 
+        // Cache the positive verdict so subsequent checks for the same
+        // (target schema, UUID) inside the same request — bulk imports,
+        // cascading saves — skip the database round trip.
+        $this->referenceValidationCache[$cacheKey] = true;
+
         // Lookup succeeded — emit a success event so listeners can hook
         // into accepted references (analytics, cache warming, etc.)
         // without changing the save flow.
@@ -3802,6 +3863,20 @@ class SaveObject
             targetRegister: $register
         );
     }//end validateReferenceExists()
+
+    /**
+     * Clear the request-scoped reference-existence cache.
+     *
+     * Provided for long-running CLI processes (e.g. background jobs that
+     * iterate over hundreds of objects) that should not let cached
+     * verdicts leak across logical request boundaries.
+     *
+     * @return void
+     */
+    public function clearReferenceValidationCache(): void
+    {
+        $this->referenceValidationCache = [];
+    }//end clearReferenceValidationCache()
 
     /**
      * Decide whether the current user should bypass reference validation.
