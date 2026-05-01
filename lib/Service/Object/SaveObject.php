@@ -53,6 +53,8 @@ use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Service\SettingsService;
 use OCA\OpenRegister\Exception\ReferenceValidationException;
 use OCA\OpenRegister\Exception\ValidationException;
+use OCP\IAppConfig;
+use OCP\IGroupManager;
 use OCP\IURLGenerator;
 use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
@@ -127,6 +129,24 @@ class SaveObject
     private const URL_PATH_IDENTIFIER = 'openregister.objects.show';
 
     /**
+     * App identifier used for `IAppConfig` lookups.
+     *
+     * @var string
+     */
+    private const APP_ID = 'openregister';
+
+    /**
+     * App-config key controlling whether admins bypass reference
+     * existence validation. When the stored value parses to `true`
+     * (default), members of the `admin` group skip the check; when
+     * `false`, admins are validated like any other user. Operators
+     * can flip the flag at runtime via `occ config:app:set`.
+     *
+     * @var string
+     */
+    private const CONFIG_KEY_REFERENCE_VALIDATION_ADMIN_BYPASS = 'reference_validation_admin_bypass';
+
+    /**
      * Twig template engine instance
      *
      * @var Environment
@@ -196,6 +216,8 @@ class SaveObject
      * @param LoggerInterface             $logger               Logger interface for logging operations
      * @param TmloService                 $tmloService          TMLO archival metadata service
      * @param ArrayLoader                 $arrayLoader          Twig array loader for template rendering
+     * @param IGroupManager|null          $groupManager         Group manager for admin-bypass detection
+     * @param IAppConfig|null             $appConfig            App-config reader for the admin-bypass toggle
      *
      * @SuppressWarnings(PHPMD.ExcessiveParameterList) Nextcloud DI requires constructor injection
      */
@@ -219,6 +241,8 @@ class SaveObject
         private readonly LoggerInterface $logger,
         private readonly TmloService $tmloService,
         ArrayLoader $arrayLoader,
+        private readonly ?IGroupManager $groupManager=null,
+        private readonly ?IAppConfig $appConfig=null,
     ) {
         $this->twig = new Environment($arrayLoader);
     }//end __construct()
@@ -3489,6 +3513,19 @@ class SaveObject
         ?string $register,
         ?array $oldData=null
     ): void {
+        // Operator-controlled admin bypass: when the current user is in
+        // the admin group AND the bypass flag is on (default true), skip
+        // reference existence validation entirely. Mirrors the
+        // `MultiTenancyTrait::isCurrentUserAdmin()` short-circuit so
+        // admins can repair broken cross-references during migrations or
+        // bulk imports without tripping 422s. Operators can flip the
+        // flag off via `occ config:app:set openregister
+        // reference_validation_admin_bypass --value=false` to enforce
+        // validation for every user.
+        if ($this->shouldBypassValidationForAdmin() === true) {
+            return;
+        }
+
         $properties = $schema->getProperties();
         if ($properties === null) {
             return;
@@ -3648,6 +3685,45 @@ class SaveObject
             );
         }//end try
     }//end validateReferenceExists()
+
+    /**
+     * Decide whether the current user should bypass reference validation.
+     *
+     * Returns true when the current session user is in the `admin`
+     * group AND the `reference_validation_admin_bypass` app-config flag
+     * resolves to `true` (the default). The dependencies are optional
+     * to keep older test fixtures working — when either is missing the
+     * method returns false so validation runs as before.
+     *
+     * @return bool True when admin bypass applies.
+     */
+    private function shouldBypassValidationForAdmin(): bool
+    {
+        if ($this->groupManager === null || $this->appConfig === null) {
+            return false;
+        }
+
+        $bypassEnabled = filter_var(
+            $this->appConfig->getValueString(
+                app: self::APP_ID,
+                key: self::CONFIG_KEY_REFERENCE_VALIDATION_ADMIN_BYPASS,
+                default: 'true'
+            ),
+            FILTER_VALIDATE_BOOLEAN
+        );
+
+        if ($bypassEnabled === false) {
+            return false;
+        }
+
+        $user = $this->userSession->getUser();
+        if ($user === null) {
+            return false;
+        }
+
+        return $this->groupManager->isAdmin($user->getUID());
+
+    }//end shouldBypassValidationForAdmin()
 
     /**
      * Prepares object data by applying all necessary transformations.

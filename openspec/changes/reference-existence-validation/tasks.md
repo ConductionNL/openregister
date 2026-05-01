@@ -1,6 +1,6 @@
 # Tasks: reference-existence-validation Specification
 
-> **Status (Phase 2):** Core (6 of 16) implemented in `SaveObject::validateReferences()` and verified by `tests/Service/ReferenceExistenceValidationIntegrationTest` (now 6 tests). Phase 2 added structured diagnostic information by introducing `ReferenceValidationException` (subclass of `ValidationException`) with typed fields. The remaining 10 are extensions — batch optimisation, circular detection, GraphQL/async/events/strictness — left open as separate work.
+> **Status (Phase 3):** 7 of 16 tasks tickably complete. Phase 3 wired the operator-controlled admin bypass (`reference_validation_admin_bypass` app-config flag, default `true`) into `SaveObject::validateReferences()`. 9 open: soft-deleted refs, batch optimisation, circular detection, external URL refs, request-scoped cache, GraphQL mutations, async validation, validation events, schema-configurable strictness levels.
 
 ## Implemented
 
@@ -19,7 +19,7 @@
 - [ ] Circular reference chains detected during validation. **Open** — would need a per-save visited-set to detect cycles like A→B→A.
 - [ ] External URL references support configurable validation. Today only `#/components/schemas/{slug}` refs are validated; HTTP/HTTPS refs aren't. **Open** — design question whether to fetch + verify external URLs at save time (latency) or accept them.
 - [ ] Validation results cached within a request scope. **Open** — see batch optimisation above.
-- [ ] Admin users able to bypass reference validation. **Open** — would mirror `MultiTenancyTrait::isCurrentUserAdmin()` short-circuit.
+- [x] Admin users able to bypass reference validation. `SaveObject::shouldBypassValidationForAdmin()` short-circuits `validateReferences()` when the current session user is in the `admin` group AND the `reference_validation_admin_bypass` app-config flag (default `true`) is on. Operators can flip the flag off via `occ config:app:set openregister reference_validation_admin_bypass --value=false` to enforce validation for every user. The optional `IGroupManager` + `IAppConfig` constructor parameters keep older test fixtures working — when either dependency is absent the method returns `false` and validation runs as before. **Verified** by `tests/Unit/Service/Object/SaveObjectReferenceValidationTest` (4 tests covering: admin bypasses with default-on flag; admin does NOT bypass when flag disabled; non-admin never bypasses; missing optional dependencies fall back to running validation).
 - [ ] Reference validation works in GraphQL mutations. **Open** — GraphQL mutation handler doesn't currently route through the same `SaveObject::saveObject` path; needs alignment.
 - [ ] Async validation supported for large batch operations. **Open** — depends on batch optimisation + a way to surface async errors.
 - [ ] Validation events dispatched for notification and extensibility. **Open** — would add `ReferenceValidatedEvent` / `ReferenceValidationFailedEvent` to the event family.
@@ -34,3 +34,8 @@
   - null reference accepted (optional)
   - empty-string reference accepted (defence in depth)
   - update with unchanged reference skips validation
+- [x] `tests/Unit/Service/Object/SaveObjectReferenceValidationTest` — 4 tests against the SaveObject admin-bypass hook:
+  - admin user bypasses validation when the bypass flag defaults to on
+  - admin user does NOT bypass when the bypass flag is disabled
+  - non-admin user never bypasses even with the flag on
+  - bypass disabled when optional `IGroupManager` / `IAppConfig` are absent
