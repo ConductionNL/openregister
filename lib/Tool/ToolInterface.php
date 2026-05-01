@@ -39,6 +39,8 @@ interface ToolInterface
      * It's also used in the Agent's tools array to enable/disable tools.
      *
      * @return string Tool name (e.g., 'register', 'schema', 'objects')
+     *
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-29
      */
     public function getName(): string;
 
@@ -49,6 +51,8 @@ interface ToolInterface
      * Should clearly describe the tool's purpose and capabilities.
      *
      * @return string Tool description for LLM
+     *
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-29
      */
     public function getDescription(): string;
 
@@ -75,6 +79,8 @@ interface ToolInterface
      * ]
      *
      * @return array Array of function definitions
+     *
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-29
      */
     public function getFunctions(): array;
 
@@ -91,6 +97,8 @@ interface ToolInterface
      * @return array Result of the function execution
      *
      * @throws \Exception If function execution fails
+     *
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-29
      */
     public function executeFunction(string $functionName, array $parameters, ?string $userId=null): array;
 
@@ -103,6 +111,8 @@ interface ToolInterface
      * @param \OCA\OpenRegister\Db\Agent|null $agent The agent using this tool
      *
      * @return void
+     *
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-29
      */
     public function setAgent(?\OCA\OpenRegister\Db\Agent $agent): void;
 }//end interface

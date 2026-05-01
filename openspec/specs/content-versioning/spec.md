@@ -1,5 +1,6 @@
 ---
 status: implemented
+retrofit_extensions: [REQ-017]
 ---
 # Content Versioning
 
@@ -38,6 +39,9 @@ Each create or update operation on an object MUST increment the object's semanti
 - **THEN** the response MUST include `"version": "1.0.4"` in the JSON body
 
 ### Requirement: Objects MUST support a draft/published lifecycle
+
+> **Status: deferred** — No DraftService or draft version entity found in codebase as of 2026-04-30 coverage scan. Track separately before implementing.
+
 Each object MUST have a published version (the current live data) and support one or more named draft versions for work-in-progress changes. Drafts MUST store only the delta (changed fields) relative to the published version to optimize storage. The published version MUST remain accessible and unmodified while drafts exist.
 
 #### Scenario: Create a draft version
@@ -72,6 +76,9 @@ Each object MUST have a published version (the current live data) and support on
 - **AND** rendering the draft MUST resolve the relation to `contact-2`
 
 ### Requirement: Drafts MUST be promotable to published version
+
+> **Status: deferred** — Depends on draft/published lifecycle (see above). Not implemented as of 2026-04-30.
+
 A draft version MUST be mergeable into the published version, replacing the current live data with the draft changes. Promotion MUST create a new version entry in the audit trail and MUST increment the MINOR version number.
 
 #### Scenario: Promote a draft to published
@@ -102,6 +109,9 @@ A draft version MUST be mergeable into the published version, replacing the curr
 - **AND** the audit trail MUST record that the promotion was forced with details of overwritten fields
 
 ### Requirement: The system MUST support version comparison with visual diffs
+
+> **Status: deferred** — No diffing service found in codebase as of 2026-04-30 coverage scan. Track separately before implementing.
+
 Users MUST be able to compare any two versions (draft vs published, any two historical versions) with field-level diffs. The diff MUST identify added, removed, and modified fields with their old and new values.
 
 #### Scenario: Compare draft with published version
@@ -227,6 +237,9 @@ Every version (audit trail entry) MUST record who made the change, when, from wh
 - **AND** the `changed` field MUST include the trigger context as documented in the deletion-audit-trail spec: `{"triggerObject": "person-1", "triggerSchema": "person"}`
 
 ### Requirement: Version storage MUST use a delta strategy for drafts and full snapshots for published versions
+
+> **Status: deferred** — Draft delta storage not implemented as of 2026-04-30. Audit trail stores full diffs (implemented); draft-specific delta storage is not.
+
 Published version history MUST store the full changed-field diff (old and new values) in the audit trail as currently implemented by `AuditTrailMapper.createAuditTrail()`. Draft versions MUST store only the delta (changed fields with new values only) relative to the current published version to minimize storage overhead.
 
 #### Scenario: Audit trail stores full diff for published versions
@@ -484,3 +497,31 @@ The key `main` MUST always refer to the current published version of an object. 
 - **Existing Implementation**: `ObjectEntity.version` field stores semantic version strings. `AuditTrailMapper` provides the complete audit infrastructure (create, query, revert, statistics, retention). `RevertHandler` orchestrates rollback with lock checking and event dispatch. `RevertController` exposes the revert API. `AuditHandler` provides filtered log retrieval. The `AuditTrail` entity captures comprehensive metadata including GDPR/WOO-relevant fields (organisationId, processingActivityId, confidentiality, retentionPeriod).
 - **Nextcloud Core Integration**: Uses NC's `Entity`/`QBMapper` patterns for all database entities. Fires events via `IEventDispatcher` (currently `ObjectRevertedEvent`). Integrates with NC's session and request infrastructure for audit metadata. Could implement NC's `IProvider` for the Activity app to surface version changes in the NC activity stream. Draft storage should use NC's file versioning patterns conceptually but store structured data in the database.
 - **Recommendation**: The version history and rollback foundation is solid and production-ready. The primary gaps are: (1) named draft versions with delta storage and promotion workflow, (2) a dedicated diff comparison API endpoint, (3) per-register retention configuration, and (4) version-specific events beyond revert. These enhancements would bring OpenRegister to feature parity with Directus and Strapi's versioning capabilities while adding government-compliance features (WOO export, confidentiality filtering) that neither competitor offers.
+
+### REQ-017: The system MUST support listing and restoring file versions via Nextcloud files_versions
+
+When Nextcloud's `files_versions` app is enabled, the system MUST expose version history and restore operations for files attached to register objects. The `FileVersioningHandler` MUST wrap `IVersionManager` to list all historical snapshots with metadata (versionId, timestamp, size, author, isCurrent flag) and MUST support restoring a specific version by its timestamp-based identifier. When `files_versions` is disabled, listing MUST degrade gracefully by returning an empty version array with a warning, while restoring MUST throw an Exception.
+
+#### Scenario: List versions when files_versions is enabled
+- **GIVEN** the `files_versions` Nextcloud app is enabled
+- **WHEN** `FileVersioningHandler::listVersions($file)` is called
+- **THEN** the response MUST include a `versions` array where the first entry represents the current file version (`isCurrent: true`) with fields `versionId`, `timestamp`, `size`, `author`, `authorDisplayName`, `label`, and `isCurrent`
+- **AND** each historical version MUST have `versionId` in the format `v-{unix_timestamp}` and `isCurrent: false`
+
+#### Scenario: Graceful degradation when files_versions is disabled
+- **GIVEN** the `files_versions` Nextcloud app is NOT enabled
+- **WHEN** `FileVersioningHandler::listVersions($file)` is called
+- **THEN** the response MUST return `{versions: [], warning: "File versioning is not enabled on this instance"}`
+- **AND** `FileVersioningHandler::restoreVersion($file, $versionId)` MUST throw an Exception with the same message
+
+#### Scenario: Restore a specific file version
+- **GIVEN** the `files_versions` app is enabled and file `/user/files/report.pdf` has a historical version with `versionId: "v-1710892800"`
+- **WHEN** `FileVersioningHandler::restoreVersion($file, "v-1710892800")` is called
+- **THEN** the system MUST locate the version whose timestamp matches `1710892800`
+- **AND** call `IVersionManager::rollback($version)` to restore the file content
+- **AND** return `true` on success
+- **AND** throw an Exception with message `"Version not found"` if no matching timestamp exists
+
+#### Notes
+- The `IVersionManager` is resolved via `\OCP\Server::get()` with a class_exists guard since `OCA\Files_Versions\Versions\IVersionManager` is not always available (depends on enabled apps). This is an observed runtime resolution pattern, not dependency injection.
+- The `getCurrentUserId()` private method falls back to the literal string `'system'` when no authenticated session exists (background job context).

@@ -56,6 +56,8 @@ class RelationCascadeHandler
      * @param SchemaMapper    $schemaMapper       Schema mapper for schema operations.
      * @param RegisterMapper  $registerMapper     Register mapper for register operations.
      * @param LoggerInterface $logger             Logger interface for logging operations.
+     *
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-6
      */
     public function __construct(
         private readonly MagicMapper $objectEntityMapper,
@@ -81,6 +83,8 @@ class RelationCascadeHandler
      * @return null|numeric-string The resolved schema ID or null if not found.
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Multiple reference format handling paths
+     *
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-6
      */
     public function resolveSchemaReference(string $reference): string|null
     {
@@ -138,6 +142,8 @@ class RelationCascadeHandler
      * @param string $reference The reference string to clean.
      *
      * @return string The cleaned reference without query parameters.
+     *
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-6
      */
     private function removeQueryParameters(string $reference): string
     {
@@ -164,6 +170,8 @@ class RelationCascadeHandler
      * @return null|numeric-string The resolved register ID or null if not found.
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Multiple reference format handling paths
+     *
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-6
      */
     public function resolveRegisterReference(string $reference): string|null
     {
@@ -228,6 +236,8 @@ class RelationCascadeHandler
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Recursive relation scanning with multiple reference types
      * @SuppressWarnings(PHPMD.NPathComplexity)      Multiple conditional paths for different relation patterns
+     *
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-6
      */
     public function scanForRelations(array $data, string $prefix='', ?Schema $schema=null): array
     {
@@ -284,6 +294,8 @@ class RelationCascadeHandler
      * @param array $propertyPath The property path parts.
      *
      * @return array The property definition or empty array.
+     *
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-6
      */
     private function getPropertyDefinition(array $properties, array $propertyPath): array
     {
@@ -305,6 +317,8 @@ class RelationCascadeHandler
      * @param array $array The array to check.
      *
      * @return bool True if array contains references.
+     *
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-6
      */
     private function isArrayOfReferences(array $array): bool
     {
@@ -323,6 +337,8 @@ class RelationCascadeHandler
      * @param string $value The value to check.
      *
      * @return bool True if it looks like a reference.
+     *
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-6
      */
     private function looksLikeObjectReference(string $value): bool
     {
@@ -367,6 +383,8 @@ class RelationCascadeHandler
      * @param string $value The value to check.
      *
      * @return bool True if value is a reference.
+     *
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-6
      */
     public function isReference(string $value): bool
     {
@@ -412,6 +430,8 @@ class RelationCascadeHandler
      * @param null|Schema  $schema       The schema for validation.
      *
      * @return ObjectEntity The updated object entity.
+     *
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-6
      */
     public function updateObjectRelations(ObjectEntity $objectEntity, array $data, ?Schema $schema=null): ObjectEntity
     {
@@ -444,6 +464,8 @@ class RelationCascadeHandler
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Navigating nested arrays and handling
      *                                               multiple reference types requires complex logic
+     *
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-6
      */
     private function resolveRelationPath(array &$objectData, string $relationPath): void
     {
@@ -499,6 +521,8 @@ class RelationCascadeHandler
      * @return string|null The extracted UUID or null.
      *
      * @SuppressWarnings(PHPMD.StaticAccess) Uuid::isValid is standard Symfony UID pattern
+     *
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-6
      */
     private function extractUuidFromReference(string $reference): ?string
     {
@@ -544,6 +568,8 @@ class RelationCascadeHandler
      * @return array The updated data with created object UUIDs.
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Complex cascading logic for different property types
+     *
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-6
      */
     public function cascadeObjects(ObjectEntity $objectEntity, Schema $schema, array $data): array
     {
@@ -594,6 +620,8 @@ class RelationCascadeHandler
      * @param array $array The array to check.
      *
      * @return bool True if all values are scalar.
+     *
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-6
      */
     private function isArrayOfScalars(array $array): bool
     {
@@ -619,6 +647,8 @@ class RelationCascadeHandler
      *
      * @SuppressWarnings(PHPMD.StaticAccess)
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+     *
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-6
      */
     public function cascadeMultipleObjects(ObjectEntity $objectEntity, array $property, array $propData): array
     {
@@ -647,6 +677,8 @@ class RelationCascadeHandler
      * @param array        $_object       The nested object data to create.
      *
      * @return null The UUID of the created object or null.
+     *
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-6
      */
     public function cascadeSingleObject(ObjectEntity $_objectEntity, array $_definition, array $_object)
     {
@@ -672,6 +704,8 @@ class RelationCascadeHandler
      * @param array        $data          The object data.
      *
      * @return array The updated data after write-back operations.
+     *
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-6
      */
     public function handleInverseRelationsWriteBack(ObjectEntity $_objectEntity, Schema $_schema, array $data): array
     {

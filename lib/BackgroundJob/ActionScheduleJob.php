@@ -48,6 +48,8 @@ class ActionScheduleJob extends TimedJob
      * @param ActionMapper    $actionMapper   Action mapper
      * @param ActionExecutor  $actionExecutor Action executor
      * @param LoggerInterface $logger         Logger
+     *
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-6
      */
     public function __construct(
         ITimeFactory $time,
@@ -67,6 +69,8 @@ class ActionScheduleJob extends TimedJob
      * @return void
      *
      * @SuppressWarnings(PHPMD.UnusedFormalParameter)
+     *
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-6
      */
     protected function run($argument): void
     {

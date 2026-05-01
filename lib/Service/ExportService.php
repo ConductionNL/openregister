@@ -19,6 +19,7 @@
  * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-11
  * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-12
  * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-16
+ * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-21
  */
 
 namespace OCA\OpenRegister\Service;
@@ -162,6 +163,7 @@ class ExportService
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Export requires handling multiple input combinations
      *
      * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-11
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-21
      */
     public function exportToExcel(
         ?Register $register=null,
@@ -214,6 +216,8 @@ class ExportService
      * @return string CSV content
      *
      * @throws \InvalidArgumentException If trying to export multiple schemas to CSV
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-21
      */
     public function exportToCsv(
         ?Register $register=null,

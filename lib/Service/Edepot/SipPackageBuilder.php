@@ -18,6 +18,7 @@
  * @link https://www.OpenRegister.app
  *
  * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-20
+ * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-35
  */
 
 declare(strict_types=1);
@@ -93,6 +94,8 @@ class SipPackageBuilder
      * @return array<int, string> Array of file paths to generated SIP ZIP archives.
      *
      * @throws InvalidArgumentException If no objects are provided.
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-35
      */
     public function build(string $transferId, array $objectsWithFiles, int $maxPackageSize=0): array
     {

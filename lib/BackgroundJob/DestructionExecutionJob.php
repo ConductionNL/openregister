@@ -20,6 +20,7 @@
  *
  * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-2
  * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-5
+ * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-5
  */
 
 declare(strict_types=1);
@@ -77,6 +78,7 @@ class DestructionExecutionJob extends QueuedJob
      * @SuppressWarnings(PHPMD.NPathComplexity)
      *
      * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-2
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-5
      */
     protected function run($argument): void
     {

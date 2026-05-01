@@ -16,6 +16,8 @@
  * @version GIT: <git-id>
  *
  * @link https://OpenRegister.app
+ *
+ * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-18
  */
 
 declare(strict_types=1);
@@ -132,6 +134,8 @@ class RegisterCalendar implements ICalendar
      * Get the unique key for this calendar
      *
      * @return string The calendar key
+     *
+     * @spec openspec/changes/retrofit-calendar-integration-2026-04-28/tasks.md#task-1
      */
     public function getKey(): string
     {
@@ -142,6 +146,8 @@ class RegisterCalendar implements ICalendar
      * Get the URI for this calendar
      *
      * @return string The calendar URI
+     *
+     * @spec openspec/changes/retrofit-calendar-integration-2026-04-28/tasks.md#task-1
      */
     public function getUri(): string
     {
@@ -152,6 +158,8 @@ class RegisterCalendar implements ICalendar
      * Get the display name for this calendar
      *
      * @return string|null The display name
+     *
+     * @spec openspec/changes/retrofit-calendar-integration-2026-04-28/tasks.md#task-1
      */
     public function getDisplayName(): ?string
     {
@@ -162,6 +170,8 @@ class RegisterCalendar implements ICalendar
      * Get the display color for this calendar
      *
      * @return string|null The CSS hex color
+     *
+     * @spec openspec/changes/retrofit-calendar-integration-2026-04-28/tasks.md#task-1
      */
     public function getDisplayColor(): ?string
     {
@@ -172,6 +182,8 @@ class RegisterCalendar implements ICalendar
      * Get the permissions for this calendar (read-only)
      *
      * @return int The permission bitmask
+     *
+     * @spec openspec/changes/retrofit-calendar-integration-2026-04-28/tasks.md#task-1
      */
     public function getPermissions(): int
     {
@@ -182,6 +194,8 @@ class RegisterCalendar implements ICalendar
      * Check if this calendar is deleted
      *
      * @return bool Always false for virtual calendars
+     *
+     * @spec openspec/changes/retrofit-calendar-integration-2026-04-28/tasks.md#task-1
      */
     public function isDeleted(): bool
     {
@@ -203,6 +217,9 @@ class RegisterCalendar implements ICalendar
      * @return array Array of VEVENT-compatible arrays
      *
      * @SuppressWarnings(PHPMD.UnusedFormalParameter)
+     *
+     * @spec openspec/changes/retrofit-calendar-integration-2026-04-28/tasks.md#task-1
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-18
      */
     public function search(
         string $pattern='',
@@ -282,6 +299,8 @@ class RegisterCalendar implements ICalendar
      * @param string $principalUri The principal URI (e.g., principals/users/admin)
      *
      * @return string|null The user ID or null if not a valid user principal
+     *
+     * @spec openspec/changes/retrofit-calendar-integration-2026-04-28/tasks.md#task-1
      */
     private function extractUserId(string $principalUri): ?string
     {
@@ -298,6 +317,8 @@ class RegisterCalendar implements ICalendar
      * @param array $options The search options
      *
      * @return array|null The filters array, or null if no timerange
+     *
+     * @spec openspec/changes/retrofit-calendar-integration-2026-04-28/tasks.md#task-1
      */
     private function buildTimerangeFilters(array $options): ?array
     {
@@ -346,6 +367,8 @@ class RegisterCalendar implements ICalendar
      * @param Schema $schema The schema to look for
      *
      * @return array Array of Register entities
+     *
+     * @spec openspec/changes/retrofit-calendar-integration-2026-04-28/tasks.md#task-1
      */
     private function findRegistersForSchema(Schema $schema): array
     {
@@ -379,6 +402,8 @@ class RegisterCalendar implements ICalendar
      * @param string $pattern The text pattern
      *
      * @return bool True if the event matches
+     *
+     * @spec openspec/changes/retrofit-calendar-integration-2026-04-28/tasks.md#task-1
      */
     private function matchesPattern(array $event, string $pattern): bool
     {

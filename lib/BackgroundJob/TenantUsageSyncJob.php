@@ -14,6 +14,8 @@
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
  * @link https://OpenRegister.app
+ *
+ * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-80
  */
 
 declare(strict_types=1);
@@ -62,6 +64,9 @@ class TenantUsageSyncJob extends TimedJob
      * @return void
      *
      * @SuppressWarnings(PHPMD.UnusedFormalParameter)
+     *
+     * @spec openspec/changes/retrofit-tenant-isolation-audit-2026-04-28/tasks.md#task-2
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-80
      */
     protected function run(mixed $argument): void
     {

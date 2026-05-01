@@ -22,6 +22,11 @@
  * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-2
  * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-3
  * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-4
+ * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-4
+ * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-6
+ * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-1
+ * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-5
+ * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-3
  */
 
 declare(strict_types=1);
@@ -177,6 +182,7 @@ class DestructionService
      * @return array<int, array<string, mixed>> Array of eligible object data.
      *
      * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-1
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-4
      */
     public function findEligibleObjects(array $existingListObjectIds=[]): array
     {
@@ -258,6 +264,7 @@ class DestructionService
      * @return array<string, mixed> The created destruction list data.
      *
      * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-2
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-6
      */
     public function createDestructionList(array $eligibleObjects): array
     {
@@ -307,6 +314,7 @@ class DestructionService
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Configuration-driven dual approval toggle
      *
      * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-2
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-1
      */
     public function approveList(
         array $destructionList,
@@ -454,6 +462,7 @@ class DestructionService
      * @return array<string, mixed> The updated destruction list.
      *
      * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-2
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-1
      */
     public function rejectList(array $destructionList, string $reason): array
     {
@@ -508,6 +517,7 @@ class DestructionService
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Multiple checks per object during destruction
      *
      * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-2
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-5
      */
     public function executeDestruction(array $destructionList, string $approvedBy): array
     {
@@ -598,6 +608,7 @@ class DestructionService
      * @return array<string, mixed> The destruction certificate data.
      *
      * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-4
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-3
      */
     public function generateCertificate(array $destructionList, array $executionResult): array
     {
@@ -710,6 +721,8 @@ class DestructionService
      * @param string $reason          The reason for extension.
      *
      * @return void
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-6
      */
     private function extendArchiefactiedatum(string $uuid, string $extensionPeriod, string $reason): void
     {

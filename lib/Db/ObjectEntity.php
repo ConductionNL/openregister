@@ -792,12 +792,6 @@ class ObjectEntity extends Entity implements JsonSerializable
             $object['id'] = $this->uuid;
         }
 
-        // Ensure organisation is always accessible at top level (not just in @self).
-        // Organisation should NEVER be null - it should always have at least the default organisation.
-        if (($this->organisation ?? null) !== null) {
-            $object['organisation'] = $this->organisation;
-        }
-
         // Let's merge and return.
         return $object;
     }//end jsonSerialize()

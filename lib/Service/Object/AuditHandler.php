@@ -18,6 +18,7 @@
  * @link https://www.OpenRegister.nl
  *
  * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-8
+ * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-16
  */
 
 declare(strict_types=1);
@@ -47,6 +48,8 @@ class AuditHandler
      *
      * @param AuditTrailMapper $auditTrailMapper Audit trail mapper
      * @param LoggerInterface  $logger           PSR-3 logger
+     *
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-8
      */
     public function __construct(
         private readonly AuditTrailMapper $auditTrailMapper,
@@ -67,6 +70,9 @@ class AuditHandler
      * @throws \Exception If retrieval fails
      *
      * @psalm-return array<\OCA\OpenRegister\Db\AuditTrail>
+     *
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-8
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-16
      */
     public function getLogs(string $uuid, array $filters=[]): array
     {
@@ -122,6 +128,8 @@ class AuditHandler
      * @param string       $requestedSchema   Requested schema ID or slug
      *
      * @return bool True if object belongs to register/schema
+     *
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-8
      */
     public function validateObjectOwnership(object|array $object, string $requestedRegister, string $requestedSchema): bool
     {
@@ -211,6 +219,8 @@ class AuditHandler
      * @param mixed $schema Schema data (array, object, or string)
      *
      * @return string Schema ID
+     *
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-8
      */
     private function extractSchemaId(mixed $schema): string
     {
@@ -231,6 +241,8 @@ class AuditHandler
      * @param mixed $schema Schema data (array, object, or string)
      *
      * @return null|string Schema slug
+     *
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-8
      */
     private function extractSchemaSlug(mixed $schema): string|null
     {
