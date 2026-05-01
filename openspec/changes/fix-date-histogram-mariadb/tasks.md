@@ -8,9 +8,9 @@
 
 ## 2. Phase 2 — Correctness follow-ups
 
-- [ ] 2.1 Change `MariaDbFacetHandler::getDateFormatForInterval()` week case from `'%Y-%u'` to `'%x-%v'` (ISO year + ISO week).
-- [ ] 2.2 Change `MetaDataFacetHandler::getDateFormatForInterval()` week case from `'%Y-%u'` to `'%x-%v'` (same parity).
-- [ ] 2.3 Replace the buggy `strtotime($dateKey)` week-bounds code in `MagicFacetHandler::getDateBoundsForBucket()` (lines ~1411–1419) with `DateTime::setISODate()` matching the correct implementation already present in `MariaDbFacetHandler::getDateBoundsForBucket()` (lines ~435–445).
+- [x] 2.1 Change `MariaDbFacetHandler::getDateFormatForInterval()` week case from `'%Y-%u'` to `'%x-%v'` (ISO year + ISO week).
+- [x] 2.2 Change `MetaDataFacetHandler::getDateFormatForInterval()` week case from `'%Y-%u'` to `'%x-%v'` (same parity).
+- [x] 2.3 Replace the buggy `strtotime($dateKey)` week-bounds code in `MagicFacetHandler::getDateBoundsForBucket()` (lines ~1411–1419) with `DateTime::setISODate()` matching the correct implementation already present in `MariaDbFacetHandler::getDateBoundsForBucket()` (lines ~435–445).
 - [ ] 2.4 Confirm `MariaDbFacetHandler::getDateBoundsForBucket()` week regex still accepts 2-digit ISO week from `%x-%v` output (pattern `/^(\d{4})-(\d{1,2})$/`); widen/pad if needed to handle 2-digit week consistently.
 - [ ] 2.5 Audit `MagicFacetHandler::getDateHistogramFacet()` lines 1306–1325: remove the dead "Fallback: Build query manually (legacy behavior)" `$queryBuilder` block that is unconditionally overwritten at line 1328. Confirm no private caller bypasses `searchHandler`/`$schema`.
 
@@ -22,8 +22,8 @@
 - [ ] 3.4 Add `testDateHistogramWeekIsoOnMariaDB()` — inserts a row dated 2023-01-01 (Sunday, ISO week 52 of 2022), asserts bucket key `'2022-52'`.
 - [ ] 3.5 Add `testDateHistogramQuarterOnMariaDB()` — asserts keys `'2024-Q1'`, `'2024-Q3'` via `CONCAT(YEAR(...), '-Q', QUARTER(...))`.
 - [ ] 3.6 Add `testDateHistogramYearOnPostgresUnchanged()` — regression guard: SQL still uses `TO_CHAR(..., 'YYYY')`.
-- [ ] 3.7 Add `testWeekBoundsUseIsoWeek()` — unit test: `getDateBoundsForBucket('2025-12', 'week')` returns `{from: '2025-03-17', to: '2025-03-23'}`, not December 2025.
-- [ ] 3.8 Add `testWeekBoundsWeekOneOfIsoYear()` — `getDateBoundsForBucket('2024-01', 'week')` returns `{from: '2024-01-01', to: '2024-01-07'}`.
+- [x] 3.7 Add `testWeekBoundsUseIsoWeek()` — unit test: `getDateBoundsForBucket('2025-12', 'week')` returns `{from: '2025-03-17', to: '2025-03-23'}`, not December 2025.
+- [x] 3.8 Add `testWeekBoundsWeekOneOfIsoYear()` — `getDateBoundsForBucket('2024-01', 'week')` returns `{from: '2024-01-01', to: '2024-01-07'}`.
 - [ ] 3.9 Gate DB-specific assertions with `markTestSkipped()` when `getDatabasePlatform()` does not match.
 
 ## 4. Verification

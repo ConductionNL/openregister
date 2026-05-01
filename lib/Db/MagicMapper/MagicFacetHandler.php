@@ -1427,13 +1427,26 @@ class MagicFacetHandler
                     'to'   => date('Y-m-t', $timestamp),
                 ];
             case 'week':
-                $timestamp = strtotime($dateKey);
-                if ($timestamp === false) {
+                // ISO 8601 week buckets are keyed as `<iso-year>-<iso-week>`
+                // (e.g. `2025-12`). PHP's strtotime() parses that string as
+                // "December 2025", not "ISO week 12 of 2025"; we must use
+                // DateTime::setISODate() to get the correct Monday/Sunday
+                // bounds. Matches the implementation in MariaDbFacetHandler
+                // and MetaDataFacetHandler.
+                if (preg_match('/^(\d{4})-(\d{1,2})$/', $dateKey, $matches) !== 1) {
                     return null;
                 }
+
+                $isoYear = (int) $matches[1];
+                $isoWeek = (int) $matches[2];
+                $date    = new DateTime();
+                $date->setISODate($isoYear, $isoWeek, 1);
+                $from = $date->format('Y-m-d');
+                $date->setISODate($isoYear, $isoWeek, 7);
+                $to = $date->format('Y-m-d');
                 return [
-                    'from' => date('Y-m-d', $timestamp),
-                    'to'   => date('Y-m-d', strtotime('+6 days', $timestamp)),
+                    'from' => $from,
+                    'to'   => $to,
                 ];
             case 'day':
                 return [
