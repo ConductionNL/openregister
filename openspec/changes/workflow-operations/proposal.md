@@ -1,5 +1,26 @@
 # Proposal: workflow-operations
 
+## Why
+
+The shipped `workflow-engine-abstraction`, `workflow-integration`, `event-driven-architecture`, and `schema-hooks` capabilities give OpenRegister a working backend pipeline (HookExecutor, n8n/Windmill adapters, registry, typed events). What's still missing is the operator-facing surface government beheerders need: a configuration UI on schemas, scheduled triggers, multi-step approval chains, execution history with monitoring, and a safe dry-run. 38% of analysed tenders require workflow/process automation with these operator capabilities; without them, workflows can only be configured by developers and approval logic must be re-implemented per project.
+
+## What Changes
+
+- Add `WorkflowExecution` entity, mapper, and migration to persist hook execution results (status, durationMs, errors, payload, executedAt) — already implemented and tested
+- Modify `HookExecutor` to persist execution history alongside its existing logger calls without failing the original hook on persistence error — already implemented
+- Add `WorkflowExecutionController` with list/show endpoints (filter by objectUuid, schemaId, hookId, status, engine, since) and admin-only delete — already implemented
+- Add `ScheduledWorkflow` entity, migration, and `ScheduledWorkflowJob` (TimedJob) that triggers workflows via the engine adapter on a configurable interval, with disabled/errored schedules skipped gracefully
+- Add `ApprovalChain` and `ApprovalStep` entities for multi-step approval state per object with role-based step assignment and reject/advance hooks
+- Add `ApprovalController` with chain CRUD and step approve/reject/status endpoints
+- Add `WorkflowEngineController::testHook()` dry-run endpoint that executes a hook with sample data derived from the schema without database persistence
+- Add Vue components: `SchemaWorkflowTab`, `HookForm`, `WorkflowExecutionPanel`, `ApprovalChainPanel`, `TestHookDialog`
+- Note: 49 of 56 tasks complete; remaining 7 are the approval-chain UI, test-hook UI, and final integration polish
+
+## Capabilities
+
+### Modified Capabilities
+- `workflow-integration`: Adds the operator-facing capabilities (configuration UI, scheduling, approval chains, execution history, dry-run) listed as "Not yet implemented" in the canonical spec
+
 ## Summary
 
 Add the missing operational capabilities for OpenRegister's workflow integration: a workflow configuration UI for schema settings, scheduled workflow triggers via Nextcloud TimedJobs, a multi-step approval chain state machine, workflow execution history with a monitoring dashboard, and a "test hook" dry-run facility. These features close the gap between the implemented backend pipeline (HookExecutor, adapters, registry) and the end-user/admin experience needed for production use in government environments.
