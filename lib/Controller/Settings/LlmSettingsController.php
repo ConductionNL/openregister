@@ -503,39 +503,4 @@ class LlmSettingsController extends Controller
             );
         }
     }//end clearAllEmbeddings()
-
-    /**
-     * Get vector embedding statistics
-     *
-     * @NoCSRFRequired
-     *
-     * @return JSONResponse JSON response with vector statistics
-     */
-    public function getVectorStats(): JSONResponse
-    {
-        try {
-            // Use VectorizationService.
-            $vectorService = $this->vectorizationService;
-
-            // Get statistics.
-            $stats = $vectorService->getVectorStats();
-
-            return new JSONResponse(
-                data: [
-                    'success'   => true,
-                    'stats'     => $stats,
-                    'timestamp' => date('c'),
-                ]
-            );
-        } catch (Exception $e) {
-            return new JSONResponse(
-                data: [
-                    'success' => false,
-                    'error'   => $e->getMessage(),
-                    'trace'   => $e->getTraceAsString(),
-                ],
-                statusCode: 500
-            );
-        }//end try
-    }//end getVectorStats()
 }//end class
