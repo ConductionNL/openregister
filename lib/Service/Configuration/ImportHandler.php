@@ -1729,9 +1729,39 @@ class ImportHandler
                 // This is CRITICAL - passing objects avoids organisation filter in find().
                 $registerObject = $this->registersMap[$rawRegister] ?? null;
                 $schemaObject   = $this->schemasMap[$rawSchema] ?? null;
+
+                // Fallback for object-only bundles that reference pre-existing
+                // registers/schemas (e.g. the rapportage templates that ship a
+                // dashboard against the already-imported reports/dashboard).
+                if ($registerObject === null && is_string($rawRegister) === true && $rawRegister !== '') {
+                    try {
+                        $registerObject = $this->registerMapper->find(
+                            $rawRegister,
+                            _rbac: false,
+                            _multitenancy: false
+                        );
+                        $this->registersMap[$rawRegister] = $registerObject;
+                    } catch (\Throwable $e) {
+                        $registerObject = null;
+                    }
+                }
+
+                if ($schemaObject === null && is_string($rawSchema) === true && $rawSchema !== '') {
+                    try {
+                        $schemaObject = $this->schemaMapper->find(
+                            $rawSchema,
+                            _rbac: false,
+                            _multitenancy: false
+                        );
+                        $this->schemasMap[$rawSchema] = $schemaObject;
+                    } catch (\Throwable $e) {
+                        $schemaObject = null;
+                    }
+                }
+
                 if ($registerObject === null || $schemaObject === null) {
                     $this->logger->warning(
-                        message: '[ImportHandler] Skipping object import - register or schema not found in maps',
+                        message: '[ImportHandler] Skipping object import - register or schema not found in maps or DB',
                         context: [
                             'file'          => __FILE__,
                             'line'          => __LINE__,
@@ -3211,13 +3241,13 @@ class ImportHandler
         $this->logger->info(
             message: '[ImportHandler] Seed data import complete',
             context: [
-                'file'           => __FILE__,
-                'line'           => __LINE__,
-                'config_title'   => $configData['info']['title'] ?? 'unknown',
-                'imported'       => count($result['objects']),
-                'related_files'  => $result['relatedFiles'] ?? 0,
-                'related_notes'  => $result['relatedNotes'] ?? 0,
-                'related_tasks'  => $result['relatedTasks'] ?? 0,
+                'file'          => __FILE__,
+                'line'          => __LINE__,
+                'config_title'  => $configData['info']['title'] ?? 'unknown',
+                'imported'      => count($result['objects']),
+                'related_files' => $result['relatedFiles'] ?? 0,
+                'related_notes' => $result['relatedNotes'] ?? 0,
+                'related_tasks' => $result['relatedTasks'] ?? 0,
             ]
         );
     }//end importSeedData()
@@ -3246,12 +3276,12 @@ class ImportHandler
         $this->logger->info(
             message: '[ImportHandler] Processing related items for seed object',
             context: [
-                'file'         => __FILE__,
-                'line'         => __LINE__,
-                'object_uuid'  => $object->getUuid(),
-                'files_count'  => count($files),
-                'notes_count'  => count($notes),
-                'tasks_count'  => count($tasks),
+                'file'        => __FILE__,
+                'line'        => __LINE__,
+                'object_uuid' => $object->getUuid(),
+                'files_count' => count($files),
+                'notes_count' => count($notes),
+                'tasks_count' => count($tasks),
             ]
         );
 
@@ -3266,8 +3296,9 @@ class ImportHandler
                 if ($name === '' || is_string($content) === false) {
                     continue;
                 }
-                $tags  = (array) ($fileSpec['tags']  ?? []);
-                $share = (bool)  ($fileSpec['share'] ?? false);
+
+                $tags  = (array) ($fileSpec['tags'] ?? []);
+                $share = (bool) ($fileSpec['share'] ?? false);
 
                 // `base64:` prefix means the content was encoded; strip + decode.
                 if (str_starts_with($content, 'base64:') === true) {
@@ -3279,6 +3310,7 @@ class ImportHandler
                         );
                         continue;
                     }
+
                     $content = $decoded;
                 }
 
@@ -3295,8 +3327,8 @@ class ImportHandler
                         ]
                     );
                 }
-            }
-        }
+            }//end foreach
+        }//end if
 
         if (count($notes) > 0 && $this->noteService !== null) {
             if ($hasUserContext === false) {
@@ -3310,6 +3342,7 @@ class ImportHandler
                     if ($message === '') {
                         continue;
                     }
+
                     try {
                         $this->noteService->createNote((string) $object->getUuid(), $message);
                         $notesCreated++;
@@ -3323,8 +3356,8 @@ class ImportHandler
                         );
                     }
                 }
-            }
-        }
+            }//end if
+        }//end if
 
         if (count($tasks) > 0 && $this->taskService !== null) {
             if ($hasUserContext === false) {
@@ -3338,6 +3371,7 @@ class ImportHandler
                     if ($summary === '') {
                         continue;
                     }
+
                     $taskData = [
                         'summary'     => $summary,
                         'description' => (string) ($taskSpec['description'] ?? ''),
@@ -3364,9 +3398,9 @@ class ImportHandler
                             ]
                         );
                     }
-                }
-            }
-        }
+                }//end foreach
+            }//end if
+        }//end if
 
         $result['relatedFiles'] = ($result['relatedFiles'] ?? 0) + $filesCreated;
         $result['relatedNotes'] = ($result['relatedNotes'] ?? 0) + $notesCreated;
@@ -3375,12 +3409,12 @@ class ImportHandler
         $this->logger->debug(
             message: '[ImportHandler] Related items processed for seed object',
             context: [
-                'file'           => __FILE__,
-                'line'           => __LINE__,
-                'object_uuid'    => $object->getUuid(),
-                'files_created'  => $filesCreated,
-                'notes_created'  => $notesCreated,
-                'tasks_created'  => $tasksCreated,
+                'file'          => __FILE__,
+                'line'          => __LINE__,
+                'object_uuid'   => $object->getUuid(),
+                'files_created' => $filesCreated,
+                'notes_created' => $notesCreated,
+                'tasks_created' => $tasksCreated,
             ]
         );
     }//end processRelatedItems()
