@@ -88,6 +88,25 @@ class PermissionHandler
     private array $cachedRegisterConfig = [];
 
     /**
+     * Per-request memoisation cache for hasPermission() verdicts.
+     *
+     * Hot list endpoints invoke `hasPermission()` once per row. The schema-level
+     * authorization plus user/group membership is identical across rows, so we
+     * cache the verdict keyed on the inputs that actually influence it:
+     * `(userId|null, schemaId, action, objectOwner|null, objectUuid|null)`.
+     *
+     * Object UUID is part of the key so conditional rules with `match` clauses
+     * still re-evaluate per object — same UUID within a request guarantees same
+     * underlying object data, which is the only safe reuse window.
+     *
+     * Implements the "scope caching for performance" requirement of the
+     * rbac-scopes spec (see openspec/changes/rbac-scopes/specs/rbac-scopes/spec.md).
+     *
+     * @var array<string, bool>
+     */
+    private array $permissionCache = [];
+
+    /**
      * PermissionHandler constructor.
      *
      * @param IUserSession       $userSession        User session for getting current user.
@@ -151,6 +170,113 @@ class PermissionHandler
             return true;
         }
 
+        // Build a per-request cache key. The object UUID (when present) is part
+        // of the key so conditional rules with `match` clauses are still
+        // re-evaluated per object — the cache only deduplicates repeated calls
+        // with the exact same inputs within a request lifecycle.
+        //
+        // SAFETY: when an object is supplied without a UUID (e.g. transient
+        // in-memory entity, draft, or unit-test stub), the cache is bypassed
+        // entirely. Conditional rules read from $object->getObject(), which can
+        // differ between calls for objects that share no stable identity.
+        $cacheKey = $this->buildPermissionCacheKey(
+            schemaId: $schema->getId(),
+            action: $action,
+            userId: $userId,
+            objectOwner: $objectOwner,
+            object: $object
+        );
+        if ($cacheKey !== null && array_key_exists($cacheKey, $this->permissionCache) === true) {
+            return $this->permissionCache[$cacheKey];
+        }
+
+        $verdict = $this->evaluatePermission(
+            schema: $schema,
+            action: $action,
+            userId: $userId,
+            objectOwner: $objectOwner,
+            object: $object
+        );
+
+        if ($cacheKey !== null) {
+            $this->permissionCache[$cacheKey] = $verdict;
+        }
+
+        return $verdict;
+    }//end hasPermission()
+
+    /**
+     * Build a stable cache key for hasPermission().
+     *
+     * Returns null when caching is unsafe:
+     *  - schema has no ID (unsaved entity);
+     *  - an object is supplied without a UUID (transient/in-memory entity whose
+     *    data could differ between calls and whose conditional-rule verdict
+     *    therefore cannot be reused).
+     *
+     * @param int|null          $schemaId    Schema ID.
+     * @param string            $action      CRUD action.
+     * @param string|null       $userId      User ID (null = anonymous).
+     * @param string|null       $objectOwner Object owner (null = no owner check).
+     * @param ObjectEntity|null $object      Object entity (UUID is the cache scope).
+     *
+     * @return string|null Cache key, or null to bypass cache.
+     */
+    private function buildPermissionCacheKey(
+        ?int $schemaId,
+        string $action,
+        ?string $userId,
+        ?string $objectOwner,
+        ?ObjectEntity $object
+    ): ?string {
+        if ($schemaId === null) {
+            return null;
+        }
+
+        $objectUuid = null;
+        if ($object !== null) {
+            $objectUuid = $object->getUuid();
+            if ($objectUuid === null || $objectUuid === '') {
+                // Object supplied but has no stable identity — caching is unsafe.
+                return null;
+            }
+        }
+
+        return sprintf(
+            's%d|a%s|u%s|o%s|i%s',
+            $schemaId,
+            $action,
+            $userId ?? '_',
+            $objectOwner ?? '_',
+            $objectUuid ?? '_'
+        );
+    }//end buildPermissionCacheKey()
+
+    /**
+     * Evaluate the full RBAC rule chain for a permission check.
+     *
+     * This is the uncached implementation of {@see hasPermission()} — extracted
+     * so the public entry point can short-circuit on a per-request memoisation
+     * cache without obscuring the evaluation order.
+     *
+     * @param Schema            $schema      Schema being checked.
+     * @param string            $action      CRUD action.
+     * @param string|null       $userId      User ID, or null to resolve from session.
+     * @param string|null       $objectOwner Object owner UID, for ownership bypass.
+     * @param ObjectEntity|null $object      Object entity for conditional matching.
+     *
+     * @return bool True if the user has permission.
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity) RBAC permission checks require multiple conditional paths
+     * @SuppressWarnings(PHPMD.NPathComplexity)      User/group/owner permission combinations create many paths
+     */
+    private function evaluatePermission(
+        Schema $schema,
+        string $action,
+        ?string $userId,
+        ?string $objectOwner,
+        ?ObjectEntity $object
+    ): bool {
         // Resolve object context for conditional authorization matching.
         // $activeOrganisation is resolved by ConditionMatcher itself (via OrganisationService);
         // no per-call lookup is needed here anymore.
@@ -237,7 +363,23 @@ class PermissionHandler
         }
 
         return false;
-    }//end hasPermission()
+    }//end evaluatePermission()
+
+    /**
+     * Reset the per-request permission verdict cache.
+     *
+     * Long-running CLI processes (e.g. background jobs that span multiple
+     * requests within a single PHP process) can call this to invalidate the
+     * memoised verdicts without instantiating a new handler.
+     *
+     * @return void
+     *
+     * @spec openspec/changes/rbac-scopes/specs/rbac-scopes/spec.md#requirement-scope-caching-for-performance
+     */
+    public function clearPermissionCache(): void
+    {
+        $this->permissionCache = [];
+    }//end clearPermissionCache()
 
     /**
      * Check permission and throw exception if not granted
