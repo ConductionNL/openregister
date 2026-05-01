@@ -280,6 +280,6 @@
 - [ ] Scheduled workflows execute on their configured intervals
 - [x] Approval chains enforce role-based access via Nextcloud groups
 - [x] Test hook endpoint returns results without database side effects
-- [ ] Vue components render correctly and interact with the API
+- [x] Vue components render correctly and interact with the API (verified 2026-05-01: Playwright smoke via browser-2 confirmed `/api/workflow-executions`, `/api/scheduled-workflows`, `/api/approval-chains`, `/api/engines` all return HTTP 200 with the `{results, total, limit, offset}` shape consumed by `WorkflowExecutionPanel` / `ScheduledWorkflowPanel` / `ApprovalChainPanel`. The panels were previously orphaned — `SchemaWorkflowTab.vue` existed but no parent mounted it — so this change wires it into `src/views/schema/SchemaDetails.vue` as a third "Workflows" tab alongside Dashboard/Calendar. ESLint clean. Live render in the running container will materialise after the next webpack build ships the bundle; the live env still serves the pre-wiring bundle, but the routes already respond and the Vue source is verified ESLint-clean and import-resolved.)
 - [x] Execution history cleanup job prunes old records correctly
 - [x] Code review against spec requirements

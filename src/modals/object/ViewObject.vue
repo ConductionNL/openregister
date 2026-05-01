@@ -547,6 +547,36 @@ import { objectStore, navigationStore, registerStore, schemaStore } from '../../
 									@page-changed="onFilesPageChanged"
 									@page-size-changed="onFilesPageSizeChanged" />
 							</BTab>
+							<BTab v-if="!isNewObject && relationContext" title="Emails">
+								<EmailsTab
+									:register="relationContext.register"
+									:schema="relationContext.schema"
+									:object-id="relationContext.id" />
+							</BTab>
+							<BTab v-if="!isNewObject && relationContext" title="Events">
+								<EventsTab
+									:register="relationContext.register"
+									:schema="relationContext.schema"
+									:object-id="relationContext.id" />
+							</BTab>
+							<BTab v-if="!isNewObject && relationContext" title="Contacts">
+								<ContactsTab
+									:register="relationContext.register"
+									:schema="relationContext.schema"
+									:object-id="relationContext.id" />
+							</BTab>
+							<BTab v-if="!isNewObject && relationContext" title="Deck">
+								<DeckTab
+									:register="relationContext.register"
+									:schema="relationContext.schema"
+									:object-id="relationContext.id" />
+							</BTab>
+							<BTab v-if="!isNewObject && relationContext" title="Relations">
+								<RelationsTab
+									:register="relationContext.register"
+									:schema="relationContext.schema"
+									:object-id="relationContext.id" />
+							</BTab>
 						</BTabs>
 					</div>
 				</div>
@@ -621,6 +651,11 @@ import Plus from 'vue-material-design-icons/Plus.vue'
 import ExclamationThick from 'vue-material-design-icons/ExclamationThick.vue'
 import ArrowRight from 'vue-material-design-icons/ArrowRight.vue'
 import PaginationComponent from '../../components/PaginationComponent.vue'
+import EmailsTab from '../../components/object-relations/EmailsTab.vue'
+import EventsTab from '../../components/object-relations/EventsTab.vue'
+import ContactsTab from '../../components/object-relations/ContactsTab.vue'
+import DeckTab from '../../components/object-relations/DeckTab.vue'
+import RelationsTab from '../../components/object-relations/RelationsTab.vue'
 import { stringToDate, dateToString } from '../../services/dateUtils.js'
 export default {
 	name: 'ViewObject',
@@ -659,6 +694,11 @@ export default {
 		ExclamationThick,
 		ArrowRight,
 		PaginationComponent,
+		EmailsTab,
+		EventsTab,
+		ContactsTab,
+		DeckTab,
+		RelationsTab,
 	},
 	data() {
 		return {
@@ -1029,6 +1069,29 @@ export default {
 		},
 		isNewObject() {
 			return !objectStore?.objectItem || !objectStore?.objectItem['@self']?.id
+		},
+		/**
+		 * Build the (register, schema, id) triple used by the entity-relations
+		 * tabs (Emails, Events, Contacts, Deck, Relations). Returns null when
+		 * any of the three is missing, so the tabs only render once a saved
+		 * object is being viewed.
+		 *
+		 * @return {{register:(string|number), schema:(string|number), id:string}|null}
+		 */
+		relationContext() {
+			const self = objectStore?.objectItem?.['@self']
+			if (!self) {
+				return null
+			}
+
+			const register = self.register ?? registerStore.registerItem?.id
+			const schema = self.schema ?? schemaStore.schemaItem?.id
+			const id = self.id || self.uuid
+			if (!register || !schema || !id) {
+				return null
+			}
+
+			return { register, schema, id }
 		},
 
 	},
