@@ -20,9 +20,11 @@ use DateTime;
 use Exception;
 use OCA\OpenRegister\Db\AuditTrail;
 use OCA\OpenRegister\Db\AuditTrailMapper;
+use OCA\OpenRegister\Db\ObjectEntity;
 use OCP\IRequest;
 use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
+use Symfony\Component\Uid\Uuid;
 
 /**
  * Handles file download audit logging.
@@ -126,6 +128,76 @@ class FileAuditHandler
             );
         }//end try
     }//end logBulkDownload()
+
+    /**
+     * Log a file-action audit trail entry tied to the parent object.
+     *
+     * Creates an `AuditTrail` row whose `action` field is the namespaced
+     * file event (e.g. `file.renamed`, `file.locked`, `file.version_restored`)
+     * and whose `changed` payload carries action-specific metadata.
+     *
+     * The audit row is keyed off the parent ObjectEntity (object/objectUuid/
+     * register/schema columns) so file events surface in the same audit
+     * timeline as object updates -- this matches how the existing
+     * `createAuditTrail` flow stamps rows.
+     *
+     * Failures are swallowed and logged: audit logging must never break
+     * the underlying file operation.
+     *
+     * @param ObjectEntity $object The parent object the file belongs to.
+     * @param int          $fileId The file ID the action targeted.
+     * @param string       $action The namespaced action (e.g. 'file.renamed').
+     * @param array        $data   Action-specific metadata (newName, targetUuid, etc.).
+     *
+     * @return AuditTrail|null The persisted audit row, or null on failure.
+     */
+    public function logFileAction(
+        ObjectEntity $object,
+        int $fileId,
+        string $action,
+        array $data=[]
+    ): ?AuditTrail {
+        try {
+            $auditTrail = new AuditTrail();
+            $auditTrail->setUuid((string) Uuid::v4());
+            $auditTrail->setObject($object->getId());
+            $auditTrail->setObjectUuid($object->getUuid());
+            $auditTrail->setRegister($object->getRegister());
+            $auditTrail->setSchema($object->getSchema());
+            $auditTrail->setAction($action);
+            $auditTrail->setChanged(
+                [
+                    'fileId' => $fileId,
+                    'data'   => $data,
+                ]
+            );
+
+            // User context.
+            $user = $this->userSession->getUser();
+            if ($user !== null) {
+                $auditTrail->setUser($user->getUID());
+                $auditTrail->setUserName($user->getDisplayName());
+            } else {
+                $auditTrail->setUser('System');
+                $auditTrail->setUserName('System');
+            }
+
+            $auditTrail->setCreated(new DateTime());
+            $auditTrail->setExpires(new DateTime('+30 days'));
+            // Minimum default size from AuditTrailMapper::createAuditTrail.
+            $auditTrail->setSize(14);
+
+            return $this->auditTrailMapper->insert($auditTrail);
+        } catch (Exception $e) {
+            // Audit logging should never break the file operation.
+            $this->logger->warning(
+                message: '[FileAuditHandler] Failed to log file action '.$action.': '.$e->getMessage(),
+                context: ['file' => __FILE__, 'line' => __LINE__]
+            );
+            return null;
+        }//end try
+
+    }//end logFileAction()
 
     /**
      * Get the current user ID.
