@@ -30,7 +30,6 @@ use RuntimeException;
 
 class AggregationController extends Controller
 {
-
     public function __construct(
         string $appName,
         IRequest $request,
@@ -41,6 +40,13 @@ class AggregationController extends Controller
 
     /**
      * Run a named aggregation declared on the schema.
+     *
+     * Surfaces an `X-OR-Cache: hit|miss` response header in addition
+     * to the `cached: true` field in the body, closing the deferred
+     * "controller-response header" follow-up from
+     * `aggregations-backend-native` task 6.3. Reverse proxies and
+     * downstream observability stacks can grep the header without
+     * parsing the JSON envelope.
      *
      * @NoAdminRequired
      * @NoCSRFRequired
@@ -53,7 +59,11 @@ class AggregationController extends Controller
             return new JSONResponse(['error' => $e->getMessage()], Http::STATUS_NOT_FOUND);
         }
 
-        return new JSONResponse($result);
+        $response = new JSONResponse($result);
+        $response->addHeader(
+            'X-OR-Cache',
+            ($result['cached'] ?? false) === true ? 'hit' : 'miss'
+        );
+        return $response;
     }//end aggregate()
-
 }//end class

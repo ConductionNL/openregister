@@ -29,6 +29,7 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCP\Activity\IManager as IActivityManager;
 use OCP\Http\Client\IClientService;
+use OCP\IConfig;
 use OCP\IGroupManager;
 use OCP\IUserManager;
 use OCP\Mail\IMailer;
@@ -40,7 +41,6 @@ use Psr\Log\LoggerInterface;
  */
 class AnnotationNotificationDispatcher
 {
-
     public function __construct(
         private readonly SchemaMapper $schemaMapper,
         private readonly INotificationManager $notificationManager,
@@ -50,8 +50,10 @@ class AnnotationNotificationDispatcher
         private readonly IMailer $mailer,
         private readonly IActivityManager $activityManager,
         private readonly IClientService $httpClient,
-        private readonly ?RateLimiter $rateLimiter=null
-    ) {}//end __construct()
+        private readonly ?RateLimiter $rateLimiter=null,
+        private readonly ?IConfig $config=null
+    ) {
+    }//end __construct()
 
     /**
      * Fire any notifications declared on the schema whose trigger matches.
@@ -60,7 +62,7 @@ class AnnotationNotificationDispatcher
      * @param string               $trigger 'created' | 'updated' | 'transition'.
      * @param array<string, mixed> $context Trigger-specific extras (e.g. `action`, `from`, `to`).
      */
-    public function dispatch(ObjectEntity $object, string $trigger, array $context = []): void
+    public function dispatch(ObjectEntity $object, string $trigger, array $context=[]): void
     {
         $schema = $this->loadSchema($object);
         if ($schema === null) {
@@ -78,6 +80,7 @@ class AnnotationNotificationDispatcher
             if (is_array($spec) === false) {
                 continue;
             }
+
             if ($this->matches($spec['trigger'] ?? [], $trigger, $context) === false) {
                 continue;
             }
@@ -87,9 +90,19 @@ class AnnotationNotificationDispatcher
                 continue;
             }
 
-            $subject  = (string) ($spec['subject'] ?? (string) $name);
-            $rendered = $this->interpolate($subject, $data, $context);
-            $channels = (array) ($spec['channels'] ?? ['nc-notification']);
+            $subjectTemplate = $spec['subject'] ?? (string) $name;
+            // Pre-render the broadcast (webhook/talk) subject using the
+            // default locale fallback chain — these channels don't have
+            // a per-recipient locale, so they use the spec's `defaultLocale`
+            // (or the first available locale, or the legacy string form).
+            $broadcastSubject = $this->resolveLocalizedSubject(
+                template: $subjectTemplate,
+                locale: null,
+                data: $data,
+                context: $context,
+                fallbackName: (string) $name
+            );
+            $channels         = (array) ($spec['channels'] ?? ['nc-notification']);
 
             $rateLimit = is_array($spec['rateLimit'] ?? null) === true ? $spec['rateLimit'] : null;
             $ruleId    = (string) $name;
@@ -103,7 +116,7 @@ class AnnotationNotificationDispatcher
                         spec: $spec,
                         object: $object,
                         notificationName: (string) $name,
-                        subject: $rendered,
+                        subject: $broadcastSubject,
                         recipients: $recipients,
                         context: $context
                     );
@@ -115,7 +128,7 @@ class AnnotationNotificationDispatcher
             if (in_array('talk', $channels, true) === true) {
                 $allowed = $this->rateLimitAllows(ruleId: $ruleId, recipient: '__talk__', rateLimit: $rateLimit);
                 if ($allowed === true) {
-                    $this->emitTalk(spec: $spec, message: $rendered);
+                    $this->emitTalk(spec: $spec, message: $broadcastSubject);
                 }
             }
 
@@ -126,12 +139,25 @@ class AnnotationNotificationDispatcher
                     continue;
                 }
 
+                // Resolve the recipient's locale (NL/EN supported by
+                // default; spec's `defaultLocale` falls back when the
+                // user has no preference set or set a locale not
+                // declared in the subject map).
+                $recipientLocale  = $this->resolveUserLocale(uid: $uid);
+                $recipientSubject = $this->resolveLocalizedSubject(
+                    template: $subjectTemplate,
+                    locale: $recipientLocale,
+                    data: $data,
+                    context: $context,
+                    fallbackName: (string) $name
+                );
+
                 if (in_array('nc-notification', $channels, true) === true) {
                     $this->emitNotification(
                         uid: $uid,
                         objectId: (string) ($object->getUuid() ?? ''),
                         name: (string) $name,
-                        subject: $rendered,
+                        subject: $recipientSubject,
                         parameters: $context
                     );
                 }
@@ -139,8 +165,8 @@ class AnnotationNotificationDispatcher
                 if (in_array('email', $channels, true) === true) {
                     $this->emitEmail(
                         uid: $uid,
-                        subject: $rendered,
-                        body: $rendered
+                        subject: $recipientSubject,
+                        body: $recipientSubject
                     );
                 }
 
@@ -149,11 +175,11 @@ class AnnotationNotificationDispatcher
                         uid: $uid,
                         objectId: (string) ($object->getUuid() ?? ''),
                         name: (string) $name,
-                        subject: $rendered
+                        subject: $recipientSubject
                     );
                 }
-            }
-        }
+            }//end foreach
+        }//end foreach
 
     }//end dispatch()
 
@@ -190,6 +216,7 @@ class AnnotationNotificationDispatcher
      * @param array<int, string>   $recipients Resolved recipient uids.
      * @param array<string, mixed> $context    Trigger context (action, from, to).
      */
+
     /**
      * Post a chat message into a Talk room.
      *
@@ -209,6 +236,7 @@ class AnnotationNotificationDispatcher
         if (is_array($talk) === false) {
             return;
         }
+
         $token = (string) ($talk['token'] ?? '');
         if ($token === '') {
             return;
@@ -243,7 +271,7 @@ class AnnotationNotificationDispatcher
             $this->logger->warning(
                 sprintf('[AnnotationNotificationDispatcher] talk to "%s" failed: %s', $token, $e->getMessage())
             );
-        }
+        }//end try
     }//end emitTalk()
 
     private function emitWebhook(
@@ -258,6 +286,7 @@ class AnnotationNotificationDispatcher
         if (is_array($hook) === false) {
             return;
         }
+
         // When the webhook is declared persistent, NotificationsAnnotationInstaller
         // has already provisioned a Webhook entity that the standard webhook
         // delivery pipeline (retry, HMAC, dead-letter) handles on the same
@@ -266,10 +295,12 @@ class AnnotationNotificationDispatcher
         if (($hook['persistent'] ?? false) === true) {
             return;
         }
+
         $url = (string) ($hook['url'] ?? '');
         if ($url === '' || filter_var($url, FILTER_VALIDATE_URL) === false) {
             return;
         }
+
         $method  = strtoupper((string) ($hook['method'] ?? 'POST'));
         $headers = is_array($hook['headers'] ?? null) === true ? $hook['headers'] : [];
 
@@ -314,6 +345,7 @@ class AnnotationNotificationDispatcher
         if ((string) ($triggerSpec['type'] ?? '') !== $trigger) {
             return false;
         }
+
         // Optional action filter for `transition` triggers.
         if ($trigger === 'transition' && isset($triggerSpec['action']) === true) {
             $expected = $triggerSpec['action'];
@@ -326,6 +358,7 @@ class AnnotationNotificationDispatcher
                 return false;
             }
         }
+
         return true;
     }//end matches()
 
@@ -335,13 +368,14 @@ class AnnotationNotificationDispatcher
      *
      * @return array<int, string>
      */
-    private function resolveRecipients(array $recipientsSpec, array $data, ?ObjectEntity $object = null, array $context = []): array
+    private function resolveRecipients(array $recipientsSpec, array $data, ?ObjectEntity $object=null, array $context=[]): array
     {
         $uids = [];
         foreach ($recipientsSpec as $r) {
             if (is_array($r) === false) {
                 continue;
             }
+
             $kind = (string) ($r['kind'] ?? '');
             if ($kind === 'users') {
                 foreach ((array) ($r['users'] ?? []) as $u) {
@@ -349,16 +383,20 @@ class AnnotationNotificationDispatcher
                         $uids[] = $u;
                     }
                 }
+
                 continue;
             }
+
             if ($kind === 'field') {
                 $field = (string) ($r['field'] ?? '');
                 $value = ($data[$field] ?? null);
                 if (is_string($value) === true && $value !== '') {
                     $uids[] = $value;
                 }
+
                 continue;
             }
+
             if ($kind === 'relation') {
                 // Resolve a typed relation (declared via x-openregister-relations).
                 // Reads $data[<relationFieldName>] which by convention holds
@@ -368,12 +406,15 @@ class AnnotationNotificationDispatcher
                 if ($relName === '') {
                     continue;
                 }
+
                 $value = ($data[$relName] ?? null);
                 foreach ($this->extractUidsFromRelation($value) as $uid) {
                     $uids[] = $uid;
                 }
+
                 continue;
             }
+
             if ($kind === 'object-acl') {
                 if ($object !== null) {
                     $perm = (string) ($r['permission'] ?? 'read');
@@ -381,8 +422,10 @@ class AnnotationNotificationDispatcher
                         $uids[] = $uid;
                     }
                 }
+
                 continue;
             }
+
             if ($kind === 'expression') {
                 if ($object !== null) {
                     $resolverTag = (string) ($r['resolver'] ?? '');
@@ -390,18 +433,22 @@ class AnnotationNotificationDispatcher
                         $uids[] = $uid;
                     }
                 }
+
                 continue;
             }
+
             if ($kind === 'groups') {
                 foreach ((array) ($r['groups'] ?? []) as $gid) {
                     if (is_string($gid) === false || $gid === '') {
                         continue;
                     }
+
                     try {
                         $group = $this->groupManager->get($gid);
                         if ($group === null) {
                             continue;
                         }
+
                         foreach ($group->getUsers() as $user) {
                             $uids[] = $user->getUID();
                         }
@@ -411,8 +458,9 @@ class AnnotationNotificationDispatcher
                         );
                     }
                 }
-            }
-        }
+            }//end if
+        }//end foreach
+
         return array_values(array_unique($uids));
     }//end resolveRecipients()
 
@@ -439,9 +487,11 @@ class AnnotationNotificationDispatcher
         if (is_string($owner) === true && $owner !== '') {
             $uids[] = $owner;
         }
+
         if ($permission === 'manage') {
             return $uids;
         }
+
         // Read permission: also include groups via getGroups(). The
         // Entity base uses __call magic for accessors, so method_exists()
         // is unreliable — fall through and let the magic call surface
@@ -453,10 +503,12 @@ class AnnotationNotificationDispatcher
                     if (is_string($gid) === false || $gid === '') {
                         continue;
                     }
+
                     $group = $this->groupManager->get($gid);
                     if ($group === null) {
                         continue;
                     }
+
                     foreach ($group->getUsers() as $user) {
                         $uids[] = $user->getUID();
                     }
@@ -466,7 +518,8 @@ class AnnotationNotificationDispatcher
             $this->logger->warning(
                 sprintf('[AnnotationNotificationDispatcher] object-acl read resolution failed: %s', $e->getMessage())
             );
-        }
+        }//end try
+
         return $uids;
     }//end resolveObjectAclRecipients()
 
@@ -478,7 +531,7 @@ class AnnotationNotificationDispatcher
      * its dependencies. Skips silently when the resolver doesn't exist
      * or doesn't implement the interface.
      *
-     * @param array<string, mixed> $context
+     * @param  array<string, mixed> $context
      * @return array<int, string>
      */
     private function resolveExpressionRecipients(string $resolverTag, ObjectEntity $object, array $context): array
@@ -486,6 +539,7 @@ class AnnotationNotificationDispatcher
         if ($resolverTag === '') {
             return [];
         }
+
         try {
             $resolver = \OC::$server->get($resolverTag);
             if (($resolver instanceof RecipientResolverInterface) === false) {
@@ -494,6 +548,7 @@ class AnnotationNotificationDispatcher
                 );
                 return [];
             }
+
             return array_values($resolver->resolve($object, $context));
         } catch (\Throwable $e) {
             $this->logger->warning(
@@ -518,18 +573,22 @@ class AnnotationNotificationDispatcher
         if ($value === null) {
             return [];
         }
+
         if (is_string($value) === true && $value !== '') {
             return [$value];
         }
+
         if (is_array($value) === false) {
             return [];
         }
+
         $out = [];
         foreach ($value as $entry) {
             if (is_string($entry) === true && $entry !== '') {
                 $out[] = $entry;
                 continue;
             }
+
             if (is_array($entry) === true) {
                 $candidate = ($entry['userId'] ?? $entry['uid'] ?? $entry['user_id'] ?? null);
                 if (is_string($candidate) === true && $candidate !== '') {
@@ -537,8 +596,134 @@ class AnnotationNotificationDispatcher
                 }
             }
         }
+
         return $out;
     }//end extractUidsFromRelation()
+
+    /**
+     * Resolve a localized subject template against a recipient locale.
+     *
+     * Subject templates can be declared in three shapes:
+     *
+     *   1. Legacy single-language string:
+     *        subject: "Object {{title}} updated"
+     *   2. Per-locale map:
+     *        subject:
+     *          nl: "Object {{title}} bijgewerkt"
+     *          en: "Object {{title}} updated"
+     *   3. Per-locale map with explicit default:
+     *        subject:
+     *          defaultLocale: nl
+     *          nl: "..."
+     *          en: "..."
+     *
+     * The resolver picks the recipient's locale when present in the
+     * map, then falls back to:
+     *   a. the explicit `defaultLocale` key if set,
+     *   b. `nl` (Dutch — the primary language for Conduction's NL
+     *      government audience),
+     *   c. `en`,
+     *   d. the first non-default key in declaration order,
+     *   e. the rule's annotation name (last-resort identifier).
+     *
+     * Closes the spec's NL/EN i18n requirement; new locales beyond the
+     * NL/EN minimum just need to be added under their ISO 639-1 code in
+     * the schema annotation — no code change required.
+     *
+     * @param mixed                $template     Raw subject value (string or array).
+     * @param string|null          $locale       Recipient locale, or null for broadcast channels.
+     * @param array<string, mixed> $data         Object data for `{{prop}}` interpolation.
+     * @param array<string, mixed> $context      Trigger-specific context.
+     * @param string               $fallbackName Annotation name (last-resort fallback).
+     */
+    private function resolveLocalizedSubject(
+        mixed $template,
+        ?string $locale,
+        array $data,
+        array $context,
+        string $fallbackName
+    ): string {
+        if (is_string($template) === true && $template !== '') {
+            // Legacy single-language path — no per-locale map declared.
+            return $this->interpolate(template: $template, data: $data, context: $context);
+        }
+
+        if (is_array($template) === true) {
+            $defaultLocale = isset($template['defaultLocale']) === true && is_string($template['defaultLocale']) === true ? $template['defaultLocale'] : 'nl';
+
+            // Recipient locale wins when declared.
+            if ($locale !== null && isset($template[$locale]) === true && is_string($template[$locale]) === true) {
+                return $this->interpolate(template: $template[$locale], data: $data, context: $context);
+            }
+
+            // Explicit default locale next.
+            if (isset($template[$defaultLocale]) === true && is_string($template[$defaultLocale]) === true) {
+                return $this->interpolate(template: $template[$defaultLocale], data: $data, context: $context);
+            }
+
+            // NL/EN baseline.
+            foreach (['nl', 'en'] as $candidate) {
+                if (isset($template[$candidate]) === true && is_string($template[$candidate]) === true) {
+                    return $this->interpolate(template: $template[$candidate], data: $data, context: $context);
+                }
+            }
+
+            // First locale in declaration order (skip the meta key).
+            foreach ($template as $key => $value) {
+                if ($key === 'defaultLocale') {
+                    continue;
+                }
+
+                if (is_string($value) === true) {
+                    return $this->interpolate(template: $value, data: $data, context: $context);
+                }
+            }
+        }//end if
+
+        return $fallbackName;
+
+    }//end resolveLocalizedSubject()
+
+    /**
+     * Resolve a Nextcloud user's preferred locale.
+     *
+     * Reads `core.lang` from the user's NC config — the same value
+     * Nextcloud's own UI consults for translations. Returns the bare
+     * 2-letter language code (`nl`, `en`, …) so the result aligns with
+     * the per-locale subject map keys. Returns null when the IConfig
+     * dependency is absent (older test fixtures) or when the user has
+     * no preference set; callers fall through to the default locale
+     * fallback chain in `resolveLocalizedSubject()`.
+     *
+     * @param string $uid Nextcloud user identifier.
+     */
+    private function resolveUserLocale(string $uid): ?string
+    {
+        if ($this->config === null) {
+            return null;
+        }
+
+        try {
+            $raw = $this->config->getUserValue($uid, 'core', 'lang', '');
+        } catch (\Throwable $e) {
+            return null;
+        }
+
+        if (is_string($raw) === false || $raw === '') {
+            return null;
+        }
+
+        // NC stores values like `nl`, `en_GB`, `de_DE` — strip the
+        // region suffix so the lookup matches the simple ISO 639-1
+        // keys we expect in the per-locale subject map.
+        $sep = strpos($raw, '_');
+        if ($sep !== false) {
+            $raw = substr($raw, 0, $sep);
+        }
+
+        return strtolower($raw);
+
+    }//end resolveUserLocale()
 
     /**
      * Replace {{prop}} tokens with values from $data, then $context.
@@ -555,9 +740,11 @@ class AnnotationNotificationDispatcher
                 if (array_key_exists($key, $data) === true) {
                     return is_scalar($data[$key]) === true ? (string) $data[$key] : '';
                 }
+
                 if (array_key_exists($key, $context) === true) {
                     return is_scalar($context[$key]) === true ? (string) $context[$key] : '';
                 }
+
                 return '';
             },
             $template
@@ -599,6 +786,7 @@ class AnnotationNotificationDispatcher
             if ($user === null) {
                 return;
             }
+
             $to = $user->getEMailAddress();
             if ($to === null || $to === '') {
                 return;
@@ -615,7 +803,7 @@ class AnnotationNotificationDispatcher
             $this->logger->debug(
                 sprintf('[AnnotationNotificationDispatcher] email to "%s" failed (%s)', $uid, $e->getMessage())
             );
-        }
+        }//end try
     }//end emitEmail()
 
     /**
@@ -646,6 +834,7 @@ class AnnotationNotificationDispatcher
         if ($ref === null || $ref === '') {
             return null;
         }
+
         try {
             return $this->schemaMapper->find($ref, _multitenancy: false);
         } catch (\Throwable) {
@@ -662,5 +851,4 @@ class AnnotationNotificationDispatcher
         $value  = ($config['x-openregister-notifications'] ?? null);
         return is_array($value) === true ? $value : null;
     }//end getAnnotation()
-
 }//end class

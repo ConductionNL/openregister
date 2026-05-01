@@ -6515,7 +6515,8 @@ class MagicMapper extends AbstractObjectMapper
                 register: $register,
                 schema: $schema,
                 _rbac: $_rbac,
-                _multitenancy: $_multitenancy
+                _multitenancy: $_multitenancy,
+                includeDeleted: $includeDeleted
             );
             $entity->setSource('orm');
             return $entity;

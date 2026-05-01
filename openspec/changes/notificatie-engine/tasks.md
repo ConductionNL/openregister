@@ -1,6 +1,6 @@
 # Tasks: Notificatie Engine
 
-> **Status:** This spec overlaps with `notifications-v2` (closed). The foundational notification rule engine is shipped; advanced delivery features (batching/digest, preferences UI, VNG API, history table, grouping, read/unread, NL/EN i18n, org-pinning) are not. 6 of 14 tasks are tickably complete; 8 left open.
+> **Status:** This spec overlaps with `notifications-v2` (closed). The foundational notification rule engine is shipped; the NL/EN i18n requirement now ships via per-locale subject templates (string OR `{nl, en, defaultLocale?}` map; recipient locale resolved from `core.lang`). Advanced delivery features (batching/digest, preferences UI, VNG API, history table, grouping, read/unread, org-pinning) remain open. 7 of 14 tasks are tickably complete; 7 left open.
 
 ## Implemented (via notifications-v2)
 
@@ -26,7 +26,7 @@
 
 - [ ] **Notification history MUST be stored and queryable for audit purposes.** Partial — webhook deliveries are logged in `oc_openregister_webhook_logs`; in-app / email / talk dispatches aren't recorded in a dedicated history table. The `oc_activity` stream captures *what* happened to the object but not which notification rules fired. **Open** — `oc_openregister_notification_history` table + query API.
 
-- [ ] **Notification messages MUST support i18n in Dutch and English.** Partial — `subject` template is a single-language string. Mustache interpolation (`{{title}}`) works, but no per-locale subject variants are supported. **Open** — gated on the `register-i18n` spec.
+- [x] **Notification messages MUST support i18n in Dutch and English.** `subject` now accepts either the legacy single-template string OR a per-locale map (e.g. `{nl: "Object {{title}} bijgewerkt", en: "Object {{title}} updated"}` optionally prefixed with `defaultLocale: <code>`). `AnnotationNotificationDispatcher::resolveLocalizedSubject()` walks a deterministic fallback chain — recipient locale (from NC's `core.lang` user preference) → explicit `defaultLocale` → `nl` → `en` → first declared locale → annotation name — so a recipient with `core.lang = nl_NL` receives the Dutch subject and a recipient with `en` receives the English subject. Broadcast channels (`webhook`, `talk`) emit a single message per dispatch using the default-locale fallback (no per-recipient locale resolution because the broadcast goes once to a shared endpoint). `IConfig` is an optional constructor dependency so older test fixtures keep working — when absent the user-locale lookup short-circuits to `null` and the dispatcher falls through the same default-locale chain. The validator (`NotificationAnnotationValidator`) accepts both shapes and surfaces three new error codes for malformed locale maps: `notification-bad-subject-locale` (empty/non-string per-locale value), `notification-bad-default-locale` (`defaultLocale` references a locale that isn't declared), and the existing `notification-no-subject` for empty maps. **Verified** by 5 new dispatcher tests (NL user → Dutch subject; EN user → English subject; missing user preference → defaultLocale fallback; legacy string compatibility; webhook broadcast uses defaultLocale not recipient locale) plus 5 new validator tests (locale map accepted; defaultLocale accepted; empty locale rejected; missing-defaultLocale-target rejected; map with only `defaultLocale` key rejected).
 
 - [ ] **Notification grouping MUST reduce noise for related events.** Not implemented — every event fires its own notification. **Open** — would need a debounce/coalesce layer (e.g. "5 actions in 1 minute → one digest notification").
 
@@ -38,8 +38,8 @@
 
 The implemented portions are covered by the `notifications-v2` test suite:
 
-- `tests/Unit/Service/Notification/NotificationAnnotationValidatorTest` — 21 tests covering all trigger types, recipient kinds, and channels.
-- `tests/Unit/Service/Notification/AnnotationNotificationDispatcherTest` — 9 tests covering dispatch logic per channel.
+- `tests/Unit/Service/Notification/NotificationAnnotationValidatorTest` — 26 tests covering all trigger types, recipient kinds, channels, and the per-locale subject map (5 new i18n tests).
+- `tests/Unit/Service/Notification/AnnotationNotificationDispatcherTest` — 14 tests covering dispatch logic per channel + per-locale subject rendering for nc-notification recipients and webhook broadcast (5 new i18n tests).
 - `tests/Unit/Service/Notification/NotificationsAnnotationInstallerTest` — 8 tests covering webhook auto-create.
 - `tests/Unit/BackgroundJob/ScheduledNotificationJobTest` — 8 tests covering scheduled trigger evaluation.
 - `tests/Unit/Listener/AggregationThresholdListenerTest` — 5 tests covering threshold transition logic.

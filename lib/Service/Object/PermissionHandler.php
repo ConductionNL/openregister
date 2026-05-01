@@ -940,13 +940,23 @@ class PermissionHandler
             return $authorization;
         }
 
-        // Build a lookup map: roleName => actions array.
-        $roleMap = [];
+        // Build the lookup map with role-hierarchy support. A role
+        // definition can declare `extends: <otherRoleName>` to inherit
+        // that role's action set; the union is computed once and cached
+        // so circular `extends` chains can't recurse forever. This is
+        // the smallest expression of the spec's "Role Definitions and
+        // Hierarchy" requirement: register-level roles declare an
+        // optional `extends` reference, schemas keep their compact
+        // `roles: {assignedRole: [groups]}` syntax, and the resolved
+        // action set composes inherited + own actions transparently.
+        $rawRoleMap = [];
         foreach ($roleDefinitions as $roleDef) {
-            if (isset($roleDef['name']) === true && isset($roleDef['actions']) === true) {
-                $roleMap[$roleDef['name']] = $roleDef['actions'];
+            if (isset($roleDef['name']) === true) {
+                $rawRoleMap[$roleDef['name']] = $roleDef;
             }
         }
+
+        $roleMap = $this->resolveRoleHierarchy(rawRoleMap: $rawRoleMap, schema: $schema);
 
         // Expand each role assignment into action-level entries.
         foreach ($roleAssignments as $roleName => $groups) {
@@ -980,6 +990,115 @@ class PermissionHandler
 
         return $authorization;
     }//end expandRoles()
+
+    /**
+     * Flatten a role hierarchy into a `name => actions` map.
+     *
+     * Supports an optional `extends: <roleName>` (string) or `extends: [<roleName>, ...]`
+     * (array of role names) on each role definition. Inherited actions
+     * are merged with the role's own actions; cycles abort safely
+     * (a `WARN`-logged shorter chain wins) so a misconfigured register
+     * can't deadlock the request.
+     *
+     * @param array<string, array<string, mixed>> $rawRoleMap Role definitions keyed by name.
+     * @param Schema                              $schema     Schema for diagnostic context.
+     *
+     * @return array<string, array<int, string>> Flat `name => actions` map.
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+     */
+    private function resolveRoleHierarchy(array $rawRoleMap, Schema $schema): array
+    {
+        $resolved = [];
+
+        foreach (array_keys($rawRoleMap) as $roleName) {
+            $resolved[$roleName] = $this->collectRoleActions(
+                roleName: $roleName,
+                rawRoleMap: $rawRoleMap,
+                visited: [],
+                schema: $schema
+            );
+        }
+
+        return $resolved;
+
+    }//end resolveRoleHierarchy()
+
+    /**
+     * Walk the `extends` chain for a role and return the combined action set.
+     *
+     * @param string                              $roleName   Name of the role being resolved.
+     * @param array<string, array<string, mixed>> $rawRoleMap Full role-definition map.
+     * @param array<string, true>                 $visited    Roles already visited in this chain (cycle guard).
+     * @param Schema                              $schema     Schema for diagnostic context.
+     *
+     * @return array<int, string> Deduplicated action list.
+     */
+    private function collectRoleActions(
+        string $roleName,
+        array $rawRoleMap,
+        array $visited,
+        Schema $schema
+    ): array {
+        if (isset($rawRoleMap[$roleName]) === false) {
+            return [];
+        }
+
+        if (isset($visited[$roleName]) === true) {
+            $this->logger->warning(
+                message: '[PermissionHandler] Cyclic role-hierarchy reference; ignoring repeat',
+                context: [
+                    'file'     => __FILE__,
+                    'line'     => __LINE__,
+                    'roleName' => $roleName,
+                    'schemaId' => $schema->getId(),
+                ]
+            );
+            return [];
+        }
+
+        $visited[$roleName] = true;
+        $definition         = $rawRoleMap[$roleName];
+
+        $actions = [];
+
+        // Inherit from `extends` first, so the role's own actions can
+        // override (or just live alongside) inherited entries.
+        $extends = $definition['extends'] ?? null;
+        if ($extends !== null) {
+            $parents = is_array($extends) === true ? $extends : [$extends];
+            foreach ($parents as $parent) {
+                if (is_string($parent) === false || $parent === '') {
+                    continue;
+                }
+
+                $inherited = $this->collectRoleActions(
+                    roleName: $parent,
+                    rawRoleMap: $rawRoleMap,
+                    visited: $visited,
+                    schema: $schema
+                );
+                foreach ($inherited as $inheritedAction) {
+                    if (in_array($inheritedAction, $actions, true) === false) {
+                        $actions[] = $inheritedAction;
+                    }
+                }
+            }
+        }
+
+        // Own actions on top.
+        $ownActions = $definition['actions'] ?? [];
+        if (is_array($ownActions) === true) {
+            foreach ($ownActions as $ownAction) {
+                if (is_string($ownAction) === true && in_array($ownAction, $actions, true) === false) {
+                    $actions[] = $ownAction;
+                }
+            }
+        }
+
+        return $actions;
+
+    }//end collectRoleActions()
 
     /**
      * Get role definitions for a schema from its parent register.

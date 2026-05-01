@@ -360,4 +360,108 @@ class NotificationAnnotationValidatorTest extends TestCase
         ]);
         $this->assertSame([], $errors);
     }
+
+    // ====================================================================
+    // NL/EN i18n — Open spec item:
+    //   "Notification messages MUST support i18n in Dutch and English."
+    // ====================================================================
+
+    public function testPerLocaleSubjectMapAccepted(): void
+    {
+        $errors = $this->v->validate([
+            'x-openregister-notifications' => [
+                'localized' => [
+                    'trigger' => ['type' => 'updated'],
+                    'recipients' => [['kind' => 'users', 'users' => ['admin']]],
+                    'channels' => ['nc-notification'],
+                    'subject' => [
+                        'nl' => 'Object {{title}} bijgewerkt',
+                        'en' => 'Object {{title}} updated',
+                    ],
+                ],
+            ],
+            'properties' => [],
+        ]);
+        $this->assertSame([], $errors);
+    }
+
+    public function testPerLocaleSubjectMapWithDefaultLocaleAccepted(): void
+    {
+        $errors = $this->v->validate([
+            'x-openregister-notifications' => [
+                'localized' => [
+                    'trigger' => ['type' => 'updated'],
+                    'recipients' => [['kind' => 'users', 'users' => ['admin']]],
+                    'channels' => ['nc-notification'],
+                    'subject' => [
+                        'defaultLocale' => 'nl',
+                        'nl' => 'NL',
+                        'en' => 'EN',
+                    ],
+                ],
+            ],
+            'properties' => [],
+        ]);
+        $this->assertSame([], $errors);
+    }
+
+    public function testPerLocaleSubjectMapWithEmptyLocaleRejected(): void
+    {
+        $errors = $this->v->validate([
+            'x-openregister-notifications' => [
+                'localized' => [
+                    'trigger' => ['type' => 'updated'],
+                    'recipients' => [['kind' => 'users', 'users' => ['admin']]],
+                    'channels' => ['nc-notification'],
+                    'subject' => [
+                        'nl' => '',
+                        'en' => 'EN',
+                    ],
+                ],
+            ],
+            'properties' => [],
+        ]);
+        $codes = array_column($errors, 'code');
+        $this->assertContains('notification-bad-subject-locale', $codes);
+    }
+
+    public function testPerLocaleSubjectMapMissingDefaultLocaleRejected(): void
+    {
+        $errors = $this->v->validate([
+            'x-openregister-notifications' => [
+                'localized' => [
+                    'trigger' => ['type' => 'updated'],
+                    'recipients' => [['kind' => 'users', 'users' => ['admin']]],
+                    'channels' => ['nc-notification'],
+                    'subject' => [
+                        'defaultLocale' => 'fr',
+                        'nl' => 'NL',
+                        'en' => 'EN',
+                    ],
+                ],
+            ],
+            'properties' => [],
+        ]);
+        $codes = array_column($errors, 'code');
+        $this->assertContains('notification-bad-default-locale', $codes);
+    }
+
+    public function testPerLocaleSubjectMapWithOnlyDefaultLocaleKeyRejected(): void
+    {
+        $errors = $this->v->validate([
+            'x-openregister-notifications' => [
+                'localized' => [
+                    'trigger' => ['type' => 'updated'],
+                    'recipients' => [['kind' => 'users', 'users' => ['admin']]],
+                    'channels' => ['nc-notification'],
+                    'subject' => [
+                        'defaultLocale' => 'nl',
+                    ],
+                ],
+            ],
+            'properties' => [],
+        ]);
+        $codes = array_column($errors, 'code');
+        $this->assertContains('notification-no-subject', $codes);
+    }
 }

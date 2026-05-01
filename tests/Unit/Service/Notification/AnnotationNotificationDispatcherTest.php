@@ -13,6 +13,7 @@ use OCP\Activity\IEvent as IActivityEvent;
 use OCP\Activity\IManager as IActivityManager;
 use OCP\Http\Client\IClient;
 use OCP\Http\Client\IClientService;
+use OCP\IConfig;
 use OCP\IGroup;
 use OCP\IGroupManager;
 use OCP\IUser;
@@ -302,6 +303,176 @@ class AnnotationNotificationDispatcherTest extends TestCase
         $dispatcher->dispatch($this->object($schema), 'updated');
     }
 
+    // ====================================================================
+    // NL/EN i18n — Open spec item:
+    //   "Notification messages MUST support i18n in Dutch and English."
+    // ====================================================================
+
+    public function testPerLocaleSubjectRendersDutchForDutchUser(): void
+    {
+        $schema = $this->schemaWithNotification(
+            [
+                'localized' => [
+                    'trigger'    => ['type' => 'updated'],
+                    'channels'   => ['nc-notification'],
+                    'recipients' => [['kind' => 'users', 'users' => ['nl-user']]],
+                    'subject'    => [
+                        'nl' => 'Object {{title}} bijgewerkt',
+                        'en' => 'Object {{title}} updated',
+                    ],
+                ],
+            ]
+        );
+        $this->schemaMapper->method('find')->willReturn($schema);
+
+        $config = $this->createMock(IConfig::class);
+        $config->method('getUserValue')
+            ->willReturnMap(
+                [
+                    ['nl-user', 'core', 'lang', '', 'nl_NL'],
+                ]
+            );
+
+        $captured = [];
+        $this->captureNotificationSubjects($captured);
+
+        $dispatcher = $this->makeDispatcher(config: $config);
+        $dispatcher->dispatch($this->object($schema), 'updated');
+
+        $this->assertCount(1, $captured);
+        $this->assertSame('Object demo bijgewerkt', $captured[0]['_text']);
+    }
+
+    public function testPerLocaleSubjectRendersEnglishForEnglishUser(): void
+    {
+        $schema = $this->schemaWithNotification(
+            [
+                'localized' => [
+                    'trigger'    => ['type' => 'updated'],
+                    'channels'   => ['nc-notification'],
+                    'recipients' => [['kind' => 'users', 'users' => ['en-user']]],
+                    'subject'    => [
+                        'nl' => 'Object {{title}} bijgewerkt',
+                        'en' => 'Object {{title}} updated',
+                    ],
+                ],
+            ]
+        );
+        $this->schemaMapper->method('find')->willReturn($schema);
+
+        $config = $this->createMock(IConfig::class);
+        $config->method('getUserValue')
+            ->willReturnMap(
+                [
+                    ['en-user', 'core', 'lang', '', 'en'],
+                ]
+            );
+
+        $captured = [];
+        $this->captureNotificationSubjects($captured);
+
+        $dispatcher = $this->makeDispatcher(config: $config);
+        $dispatcher->dispatch($this->object($schema), 'updated');
+
+        $this->assertSame('Object demo updated', $captured[0]['_text']);
+    }
+
+    public function testPerLocaleSubjectFallsBackToDefaultLocaleWhenUserHasNoPreference(): void
+    {
+        // User has no `core.lang` set → fall back to defaultLocale, not
+        // the first declared locale.
+        $schema = $this->schemaWithNotification(
+            [
+                'localized' => [
+                    'trigger'    => ['type' => 'updated'],
+                    'channels'   => ['nc-notification'],
+                    'recipients' => [['kind' => 'users', 'users' => ['unknown']]],
+                    'subject'    => [
+                        'defaultLocale' => 'en',
+                        'nl'            => 'NL fallback',
+                        'en'            => 'EN default',
+                    ],
+                ],
+            ]
+        );
+        $this->schemaMapper->method('find')->willReturn($schema);
+
+        $config = $this->createMock(IConfig::class);
+        $config->method('getUserValue')->willReturn('');
+
+        $captured = [];
+        $this->captureNotificationSubjects($captured);
+
+        $dispatcher = $this->makeDispatcher(config: $config);
+        $dispatcher->dispatch($this->object($schema), 'updated');
+
+        $this->assertSame('EN default', $captured[0]['_text']);
+    }
+
+    public function testLegacyStringSubjectStillRenders(): void
+    {
+        // Backwards compatibility: string subject still works without
+        // any IConfig involvement.
+        $schema = $this->schemaWithNotification(
+            [
+                'legacy' => [
+                    'trigger'    => ['type' => 'updated'],
+                    'channels'   => ['nc-notification'],
+                    'recipients' => [['kind' => 'users', 'users' => ['admin']]],
+                    'subject'    => 'plain {{title}}',
+                ],
+            ]
+        );
+        $this->schemaMapper->method('find')->willReturn($schema);
+
+        $captured = [];
+        $this->captureNotificationSubjects($captured);
+
+        $dispatcher = $this->makeDispatcher();
+        $dispatcher->dispatch($this->object($schema), 'updated');
+
+        $this->assertSame('plain demo', $captured[0]['_text']);
+    }
+
+    public function testWebhookBroadcastUsesDefaultLocaleNotRecipientLocale(): void
+    {
+        // Webhook is fired once per dispatch — recipients' locales
+        // differ but the broadcast uses the spec's default.
+        $schema = $this->schemaWithNotification(
+            [
+                'broadcast' => [
+                    'trigger'    => ['type' => 'updated'],
+                    'channels'   => ['webhook'],
+                    'webhook'    => ['url' => 'https://example.com/h'],
+                    'recipients' => [['kind' => 'users', 'users' => ['nl-user', 'en-user']]],
+                    'subject'    => [
+                        'defaultLocale' => 'en',
+                        'nl'            => 'NL broadcast',
+                        'en'            => 'EN broadcast',
+                    ],
+                ],
+            ]
+        );
+        $this->schemaMapper->method('find')->willReturn($schema);
+
+        $captured = null;
+        $client   = $this->createMock(IClient::class);
+        $client->method('request')
+            ->willReturnCallback(function (string $method, string $url, array $opts) use (&$captured) {
+                $captured = $opts;
+                return $this->createMock(\OCP\Http\Client\IResponse::class);
+            });
+        $this->httpClient->method('newClient')->willReturn($client);
+
+        $dispatcher = $this->makeDispatcher();
+        $dispatcher->dispatch($this->object($schema), 'updated');
+
+        $this->assertNotNull($captured);
+        $payload = $captured['json'] ?? [];
+        $this->assertIsArray($payload);
+        $this->assertSame('EN broadcast', $payload['subject'] ?? null);
+    }
+
     /**
      * @param array<string, mixed> $notifications
      */
@@ -324,7 +495,7 @@ class AnnotationNotificationDispatcherTest extends TestCase
         return $object;
     }
 
-    private function makeDispatcher(): AnnotationNotificationDispatcher
+    private function makeDispatcher(?IConfig $config = null): AnnotationNotificationDispatcher
     {
         return new AnnotationNotificationDispatcher(
             $this->schemaMapper,
@@ -334,8 +505,36 @@ class AnnotationNotificationDispatcherTest extends TestCase
             $this->userManager,
             $this->mailer,
             $this->activityManager,
-            $this->httpClient
+            $this->httpClient,
+            null,
+            $config
         );
+    }
+
+    /**
+     * Capture the `setSubject` `_text` parameter for each notification
+     * fired through INotificationManager. Lets tests assert the
+     * recipient-specific subject without traversing the verbose
+     * INotification builder.
+     *
+     * @param array<int, array<string, mixed>> $captured Out-param.
+     */
+    private function captureNotificationSubjects(array &$captured): void
+    {
+        $this->notificationManager->method('createNotification')
+            ->willReturnCallback(function () use (&$captured) {
+                $notif = $this->createMock(INotification::class);
+                $notif->method('setApp')->willReturnSelf();
+                $notif->method('setUser')->willReturnSelf();
+                $notif->method('setDateTime')->willReturnSelf();
+                $notif->method('setObject')->willReturnSelf();
+                $notif->method('setSubject')->willReturnCallback(function (string $name, array $params) use ($notif, &$captured) {
+                    $captured[] = $params;
+                    return $notif;
+                });
+                $notif->method('setMessage')->willReturnSelf();
+                return $notif;
+            });
     }
 
     /**
