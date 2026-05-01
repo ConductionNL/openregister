@@ -1,6 +1,6 @@
 # Tasks — Aggregations Backend-Native Execution
 
-> **Status:** Postgres native path + 60s cache shipped (commits `3f72c0e5f`, `86b3a5e18`, `523fa8b5b`, `72c79c9d2`). Solr + ES paths and the formal `SearchBackendInterface::aggregate()` extraction are deferred — see open items below.
+> **Status:** Postgres native path + 60s cache shipped (commits `3f72c0e5f`, `86b3a5e18`, `523fa8b5b`, `72c79c9d2`); the `X-OR-Cache: hit|miss` controller-response header now surfaces the cache verdict for downstream observability + reverse proxies (closes the deferred follow-up under task 6.3). Solr + ES paths and the formal `SearchBackendInterface::aggregate()` extraction remain deferred — gated on Solr + ES availability in the dev container.
 
 ## Interface
 
@@ -40,7 +40,7 @@
 
 - [x] 6.1 `lib/Service/Aggregation/AggregationCache.php` shipped. Uses `ICacheFactory::createDistributed('openregister_aggregations')` with `TTL = 60`. Fail-closes when the cache backend is unavailable.
 - [x] 6.2 Key shape `agg:{registerSlug}:{schemaSlug}:{name}:{sha1(resolvedFilters)}:{sha1(rbacScopeHash)}`. RBAC scope is `sha1($currentUid ?? 'anonymous')`. Filter is `ksort`-stable so order doesn't break cache hits. (Spec said sha256 — sha1 is functionally equivalent for cache keying and matches the rest of the cache-key conventions in the codebase.)
-- [x] 6.3 Wired at the top of `AggregationRunner::run()` — `$cached = $this->cache->get(...)` returns the result with `cached: true` on hit. `X-OR-Cache: hit|miss` controller-response header **not implemented** — the `cached` flag in the result body is the source of truth for clients; adding the header is a small follow-up if downstream consumers want it.
+- [x] 6.3 Wired at the top of `AggregationRunner::run()` — `$cached = $this->cache->get(...)` returns the result with `cached: true` on hit. `AggregationController::aggregate()` now also surfaces an `X-OR-Cache: hit|miss` response header so reverse proxies + observability stacks can inspect the cache verdict without parsing the JSON body. Verified by 3 unit tests in `tests/Unit/Controller/AggregationControllerTest`: header `miss` on fresh computation, header `hit` on `cached: true`, and no header on the 404 path (the lookup never touched the cache layer).
 - [x] 6.4 `AggregationCacheInvalidationListener` evicts on `ObjectCreated` / `ObjectUpdated` / `ObjectDeleted` / `ObjectTransitioned` events for the affected `(register, schema)`. Eviction uses `ICache::clear()` (the underlying cache backend has no prefix-delete) — coarse, but the 60s TTL bounds staleness even when a clear is missed.
 
 ## Documentation
