@@ -818,7 +818,23 @@ export default {
 			return registerStore.registerItem
 		},
 		currentSchema() {
-			return schemaStore.schemaItem
+			const schema = schemaStore.schemaItem
+			if (!schema) return schema
+			const allOf = schema.allOf || []
+			if (!allOf.length) return schema
+			// Merge inherited properties from allOf parent schemas so extended schemas
+			// expose the full property set (own + inherited) in the form dialog.
+			const inherited = {}
+			for (const ref of allOf) {
+				const schemaId = typeof ref === 'object' ? ref.id : ref
+				const parentSchema = schemaStore.schemaList.find(s =>
+					s.id === schemaId || s.uuid === schemaId || String(s.id) === String(schemaId),
+				)
+				if (parentSchema?.properties) {
+					Object.assign(inherited, parentSchema.properties)
+				}
+			}
+			return { ...schema, properties: { ...inherited, ...(schema.properties || {}) } }
 		},
 		selectedPublishedCount() {
 			return this.selectedAttachments.filter((a) => {
