@@ -15,6 +15,7 @@
  * @link https://OpenRegister.app
  *
  * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-82
+ * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-94
  */
 
 declare(strict_types=1);

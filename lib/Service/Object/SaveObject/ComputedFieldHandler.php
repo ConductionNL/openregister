@@ -73,6 +73,8 @@ class ComputedFieldHandler
      * @param MappingExtension     $mappingExtension     Twig extension with custom filters and functions.
      * @param MappingRuntimeLoader $mappingRuntimeLoader Twig runtime loader for mapping functions.
      * @param LoggerInterface      $logger               Logger for error and debug messages.
+     *
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-5
      */
     public function __construct(
         private readonly MagicMapper $objectMapper,
@@ -91,6 +93,8 @@ class ComputedFieldHandler
      * - SandboxExtension for security (restricts available tags, filters, functions)
      *
      * @return Environment The configured Twig environment
+     *
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-5
      */
     private function getTwig(): Environment
     {
@@ -160,6 +164,8 @@ class ComputedFieldHandler
      * @param string $evaluateOn The evaluation mode: 'save' or 'read'.
      *
      * @return array The object data with computed field values added/updated.
+     *
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-5
      */
     public function evaluateComputedFields(array $data, Schema $schema, string $evaluateOn='save'): array
     {
@@ -208,6 +214,8 @@ class ComputedFieldHandler
      * @param string $propertyName The property name (for logging).
      *
      * @return mixed The computed value, or null on error.
+     *
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-5
      */
     private function evaluateExpression(
         string $expression,
@@ -263,6 +271,8 @@ class ComputedFieldHandler
      * @param int    $depth  Current resolution depth (for circular reference prevention).
      *
      * @return array The Twig context with data and resolved references.
+     *
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-5
      */
     private function buildTwigContext(array $data, Schema $schema, int $depth=0): array
     {
@@ -290,6 +300,8 @@ class ComputedFieldHandler
      * @param int    $depth  Current resolution depth.
      *
      * @return array Resolved reference data indexed by property name.
+     *
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-5
      */
     private function resolveReferences(array $data, Schema $schema, int $depth): array
     {
@@ -367,6 +379,8 @@ class ComputedFieldHandler
      * @param string $result The rendered template result.
      *
      * @return mixed The cast result.
+     *
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-5
      */
     private function castResult(string $result): mixed
     {
@@ -397,6 +411,8 @@ class ComputedFieldHandler
      * @param Schema $schema The schema to check.
      *
      * @return bool True if the schema has at least one computed property.
+     *
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-5
      */
     public function hasComputedProperties(Schema $schema): bool
     {
@@ -418,6 +434,8 @@ class ComputedFieldHandler
      * @param string $evaluateOn The evaluation mode: 'save' or 'read'.
      *
      * @return array List of property names that are computed for the given mode.
+     *
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-5
      */
     public function getComputedPropertyNames(Schema $schema, string $evaluateOn='save'): array
     {

@@ -46,6 +46,8 @@ class LanguageMiddleware extends Middleware
      *
      * @param IRequest        $request         The incoming request
      * @param LanguageService $languageService The request-scoped language service
+     *
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-17
      */
     public function __construct(
         private readonly IRequest $request,
@@ -65,6 +67,8 @@ class LanguageMiddleware extends Middleware
      * @return void
      *
      * @SuppressWarnings(PHPMD.UnusedFormalParameter)
+     *
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-17
      */
     public function beforeController($controller, $methodName): void
     {
@@ -101,6 +105,8 @@ class LanguageMiddleware extends Middleware
      * @return Response The modified response with Content-Language header
      *
      * @SuppressWarnings(PHPMD.UnusedFormalParameter)
+     *
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-17
      */
     public function afterController($controller, $methodName, Response $response): Response
     {

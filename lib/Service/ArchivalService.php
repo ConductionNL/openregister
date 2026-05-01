@@ -143,6 +143,8 @@ class ArchivalService
      * @param string|null   $schemaUuid    Optional schema UUID for override lookup
      *
      * @return DateTime The calculated archival action date
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-6
      */
     public function calculateArchivalDate(
         SelectionList $selectionList,
@@ -172,6 +174,8 @@ class ArchivalService
      * JSON field indicates they are due for destruction.
      *
      * @return ObjectEntity[] Array of objects due for destruction
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-1
      */
     public function findObjectsDueForDestruction(): array
     {

@@ -61,6 +61,8 @@ class FileVersioningHandler
      * Check if the files_versions app is enabled.
      *
      * @return bool True if files_versions is enabled.
+     *
+     * @spec openspec/changes/retrofit-content-versioning-2026-04-28/tasks.md#task-1
      */
     public function isVersioningEnabled(): bool
     {
@@ -76,6 +78,8 @@ class FileVersioningHandler
      * @param File $file The file to list versions for.
      *
      * @return array{versions: array, warning?: string} Version listing.
+     *
+     * @spec openspec/changes/retrofit-content-versioning-2026-04-28/tasks.md#task-1
      */
     public function listVersions(File $file): array
     {
@@ -147,6 +151,8 @@ class FileVersioningHandler
      * @return bool True if the version was restored.
      *
      * @throws Exception If versioning is not enabled or version not found.
+     *
+     * @spec openspec/changes/retrofit-content-versioning-2026-04-28/tasks.md#task-1
      */
     public function restoreVersion(File $file, string $versionId): bool
     {
@@ -193,6 +199,8 @@ class FileVersioningHandler
      * Get the current user ID.
      *
      * @return string The current user ID or 'system'.
+     *
+     * @spec openspec/changes/retrofit-content-versioning-2026-04-28/tasks.md#task-1
      */
     private function getCurrentUserId(): string
     {

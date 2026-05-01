@@ -59,6 +59,8 @@ class TransferCheckJob extends TimedJob
      * @param TransferListService $transferListService The transfer list service.
      * @param IAppConfig          $appConfig           The app configuration.
      * @param LoggerInterface     $logger              Logger.
+     *
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-12
      */
     public function __construct(
         ITimeFactory $time,
@@ -83,6 +85,8 @@ class TransferCheckJob extends TimedJob
      * @param mixed $argument Job arguments (unused).
      *
      * @return void
+     *
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-12
      */
     protected function run(mixed $argument): void
     {
@@ -129,6 +133,8 @@ class TransferCheckJob extends TimedJob
      * Check if e-Depot is configured.
      *
      * @return bool True if e-Depot endpoint is configured.
+     *
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-12
      */
     private function isEdepotConfigured(): bool
     {

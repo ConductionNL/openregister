@@ -19,6 +19,7 @@
  *
  * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-22
  * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-24
+ * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-38
  */
 
 declare(strict_types=1);
@@ -103,6 +104,7 @@ class EdepotTransferService
      * @return array<string,mixed> The updated transfer list with results.
      *
      * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-22
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-38
      */
     public function executeTransfer(array $transferList, TransportInterface $transport): array
     {
@@ -180,6 +182,8 @@ class EdepotTransferService
      * @param array<string,mixed> $config      Transport configuration.
      *
      * @return TransportResult The transport result.
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-21
      */
     private function sendWithRetry(
         TransportInterface $transport,
@@ -275,6 +279,8 @@ class EdepotTransferService
      *     path: string,
      *     isRendition: bool
      * }> File metadata array.
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-21
      */
     private function getObjectFiles(ObjectEntity $object): array
     {
@@ -472,6 +478,8 @@ class EdepotTransferService
      * Get the transport configuration from app settings.
      *
      * @return array<string,mixed> The transport configuration.
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-23
      */
     public function getTransportConfig(): array
     {
@@ -498,6 +506,8 @@ class EdepotTransferService
      * Get available SIP profile names.
      *
      * @return array<string, string> Map of profile ID to display name.
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-23
      */
     public function getAvailableProfiles(): array
     {
@@ -510,6 +520,8 @@ class EdepotTransferService
      * @param string $profileName The profile name to validate.
      *
      * @return bool True if valid.
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-23
      */
     public function isValidProfile(string $profileName): bool
     {

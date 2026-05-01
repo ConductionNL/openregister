@@ -85,6 +85,8 @@ class NotificationService
      * @return int Number of notifications successfully sent (0 or positive integer)
      *
      * @psalm-return int<0, max>
+     *
+     * @spec openspec/changes/retrofit-notificatie-engine-2026-04-28/tasks.md#task-1
      */
     public function notifyConfigurationUpdate(Configuration $configuration): int
     {
@@ -174,6 +176,8 @@ class NotificationService
      * @return void
      *
      * @throws \Exception If notification creation or sending fails
+     *
+     * @spec openspec/changes/retrofit-notificatie-engine-2026-04-28/tasks.md#task-1
      */
     private function sendUpdateNotification(
         string $userId,
@@ -210,6 +214,8 @@ class NotificationService
      * @param Configuration $configuration The configuration that was updated
      *
      * @return void
+     *
+     * @spec openspec/changes/retrofit-notificatie-engine-2026-04-28/tasks.md#task-1
      */
     public function markConfigurationUpdated(Configuration $configuration): void
     {

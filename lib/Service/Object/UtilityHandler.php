@@ -41,6 +41,8 @@ class UtilityHandler
      *
      * @param RegisterMapper $registerMapper Mapper for register entities.
      * @param SchemaMapper   $schemaMapper   Mapper for schema entities.
+     *
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
      */
     public function __construct(
         private readonly RegisterMapper $registerMapper,
@@ -59,6 +61,8 @@ class UtilityHandler
      *
      * @psalm-return   bool
      * @phpstan-return bool
+     *
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
      */
     public function isUuid($value): bool
     {
@@ -97,6 +101,8 @@ class UtilityHandler
      *
      * @psalm-return   array
      * @phpstan-return array
+     *
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
      */
     public function normalizeToArray($value): array
     {
@@ -119,6 +125,8 @@ class UtilityHandler
      *
      * @psalm-return   '&'|'?'
      * @phpstan-return '&'|'?'
+     *
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
      */
     public function getUrlSeparator(string $url): string
     {
@@ -142,6 +150,8 @@ class UtilityHandler
      *
      * @psalm-return   mixed
      * @phpstan-return mixed
+     *
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
      */
     public function normalizeEntity($entity, string $type)
     {
@@ -172,6 +182,8 @@ class UtilityHandler
      *
      * @psalm-return   string
      * @phpstan-return string
+     *
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
      */
     public function calculateEfficiency(array $lookupMap, float $totalTime): string
     {
@@ -197,6 +209,8 @@ class UtilityHandler
      * @phpstan-param  array<string, mixed> $parameters
      * @psalm-return   array<string, mixed>
      * @phpstan-return array<string, mixed>
+     *
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
      */
     public function cleanQuery(array $parameters): array
     {

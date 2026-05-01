@@ -84,6 +84,8 @@ class TransportResult
      * Check if the transport succeeded.
      *
      * @return bool True if successful.
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-21
      */
     public function isSuccess(): bool
     {
@@ -94,6 +96,8 @@ class TransportResult
      * Check if the result is a partial success (some objects accepted, some rejected).
      *
      * @return bool True if partially successful.
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-21
      */
     public function isPartialSuccess(): bool
     {
@@ -118,6 +122,8 @@ class TransportResult
      * Get per-object results.
      *
      * @return array<string, array{accepted: bool, reference: string|null, error: string|null}> Object results.
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-21
      */
     public function getObjectResults(): array
     {
@@ -128,6 +134,8 @@ class TransportResult
      * Get the error message.
      *
      * @return string|null The error message.
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-21
      */
     public function getErrorMessage(): ?string
     {
@@ -148,6 +156,8 @@ class TransportResult
      * Get UUIDs of accepted objects.
      *
      * @return array<int, string> UUIDs of accepted objects.
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-21
      */
     public function getAcceptedUuids(): array
     {
@@ -165,6 +175,8 @@ class TransportResult
      * Get UUIDs of rejected objects.
      *
      * @return array<int, string> UUIDs of rejected objects.
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-21
      */
     public function getRejectedUuids(): array
     {
@@ -182,6 +194,8 @@ class TransportResult
      * Serialize to array.
      *
      * @return array<string,mixed> Serialized result.
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-21
      */
     public function toArray(): array
     {

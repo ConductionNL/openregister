@@ -95,6 +95,8 @@ class GraphQLService
      * @param string|null               $operationName Operation name
      *
      * @return array<string, mixed> The execution result
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-38
      */
     public function execute(string $query, ?array $variables=null, ?string $operationName=null): array
     {
@@ -187,6 +189,8 @@ class GraphQLService
      * @param string|null $operationName The operation name
      *
      * @return array<string, mixed> The context
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-37
      */
     private function createContext(?string $operationName): array
     {
@@ -213,6 +217,8 @@ class GraphQLService
      * @return void
      *
      * @throws Error If introspection is not allowed
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-39
      */
     private function checkIntrospection(\GraphQL\Language\AST\DocumentNode $document): void
     {
@@ -279,6 +285,8 @@ class GraphQLService
      * @param \GraphQL\Language\AST\SelectionSetNode $selectionSet The selection set
      *
      * @return bool True if introspection fields are present
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-39
      */
     private function selectionSetHasIntrospection(
         \GraphQL\Language\AST\SelectionSetNode $selectionSet
@@ -307,6 +315,8 @@ class GraphQLService
      * @return void
      *
      * @throws Error If rate limited
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-39
      */
     private function checkRateLimit(): void
     {
