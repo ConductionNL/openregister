@@ -10,7 +10,7 @@ Bridge Nextcloud's Contacts/CardDAV ecosystem with OpenRegister entity data by p
 
 **Source**: Case handlers, CRM users, and records managers need to see OpenRegister context (cases, leads, documents) when interacting with contacts in Nextcloud. Without this integration, users must manually switch to OpenRegister and search by email or name, breaking workflow continuity.
 
-## Requirements
+## ADDED Requirements
 
 ### Requirement: OpenRegister MUST register a ContactsMenu provider
 

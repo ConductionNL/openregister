@@ -11,9 +11,9 @@ The Action Registry introduces a first-class `Action` entity that decouples auto
 
 **Cross-references**: schema-hooks (current inline hook system, to be augmented), workflow-integration (engine adapters and execution), event-driven-architecture (event dispatch infrastructure), webhook-payload-mapping (mapping transformations for action payloads).
 
-## Requirements
+## ADDED Requirements
 
-### Requirement 1: Action MUST be a first-class Nextcloud database entity with full CRUD lifecycle
+### Requirement: Action MUST be a first-class Nextcloud database entity with full CRUD lifecycle
 The `Action` entity MUST be stored in the `oc_openregister_actions` table with a complete set of fields covering identity, trigger configuration, execution parameters, lifecycle state, and audit metadata. The entity MUST extend `OCP\AppFramework\Db\Entity` and implement `JsonSerializable`. A corresponding `ActionMapper` MUST extend Nextcloud's `QBMapper` for database operations.
 
 #### Scenario: Create a new Action entity
@@ -87,7 +87,7 @@ The `Action` entity MUST be stored in the `oc_openregister_actions` table with a
 - **AND** all other fields MUST remain unchanged
 - **AND** the `updated` timestamp MUST be refreshed
 
-### Requirement 2: Actions MUST support binding to multiple schemas via a many-to-many relationship
+### Requirement: Actions MUST support binding to multiple schemas via a many-to-many relationship
 An action MUST be bindable to zero or more schemas. When bound to a schema, the action fires on object lifecycle events for that schema. When bound to no schemas and the event_type is an object event, the action fires for ALL schemas (global action). The `schemas` field stores an array of schema identifiers.
 
 #### Scenario: Action bound to specific schemas
@@ -116,7 +116,7 @@ An action MUST be bindable to zero or more schemas. When bound to a schema, the 
 - **AND** when the event fires for schema `vergunningen-uuid` in a DIFFERENT register
 - **THEN** the action MUST NOT be executed (register filter does not match)
 
-### Requirement 3: Actions MUST support all entity event types including non-object events
+### Requirement: Actions MUST support all entity event types including non-object events
 Actions MUST not be limited to object lifecycle events. They MUST support binding to any of the 39+ event types dispatched by OpenRegister, including register, schema, source, configuration, view, agent, application, conversation, and organisation lifecycle events. The `event_type` field supports exact class names and `fnmatch()` wildcard patterns.
 
 #### Scenario: Action responds to RegisterUpdatedEvent
@@ -142,7 +142,7 @@ Actions MUST not be limited to object lifecycle events. They MUST support bindin
 - **THEN** the action MUST match
 - **AND** when an `ObjectDeletedEvent` fires, the action MUST NOT match
 
-### Requirement 4: ActionListener MUST replace/augment HookListener for action-based event handling
+### Requirement: ActionListener MUST replace/augment HookListener for action-based event handling
 A new `ActionListener` MUST be registered in `Application::registerEventListeners()` for all event types. When an event is dispatched, `ActionListener` MUST query `ActionMapper` for all enabled, active actions matching the event type, filter by schema/register scope, apply filter conditions, sort by `execution_order`, and delegate execution to the existing `HookExecutor` infrastructure (or a new `ActionExecutor` that wraps it).
 
 #### Scenario: ActionListener resolves matching actions for ObjectCreatingEvent
@@ -181,7 +181,7 @@ A new `ActionListener` MUST be registered in `Application::registerEventListener
 - **THEN** the action MUST execute in fire-and-forget mode
 - **AND** failure of the async action MUST NOT affect the already-persisted object
 
-### Requirement 5: Actions MUST support filter conditions for fine-grained event matching
+### Requirement: Actions MUST support filter conditions for fine-grained event matching
 Beyond schema/register binding, actions MUST support a `filter_condition` JSON object that matches against the event payload using dot-notation keys. An action only fires if ALL filter conditions match. This uses the same mechanism as webhook filters (`WebhookService::matchesFilters()`).
 
 #### Scenario: Filter by object property value
@@ -207,7 +207,7 @@ Beyond schema/register binding, actions MUST support a `filter_condition` JSON o
 - **THEN** the action MUST match
 - **AND** when register ID is 8, the action MUST NOT match
 
-### Requirement 6: Actions MUST support scheduled (cron-based) execution
+### Requirement: Actions MUST support scheduled (cron-based) execution
 Actions with a `schedule` field (cron expression) MUST be executable on a time-based schedule via a Nextcloud `TimedJob`. The `ActionScheduleJob` MUST evaluate all actions with non-null `schedule` fields and execute them at the appropriate intervals. Scheduled actions do not respond to events -- they run independently on a timer.
 
 #### Scenario: Action with cron schedule
@@ -228,7 +228,7 @@ Actions with a `schedule` field (cron expression) MUST be executable on a time-b
 - **THEN** the workflow MUST receive `data.registers: ["register-uuid-1"]` so it knows which register to operate on
 - **AND** the action MUST execute even though no event was dispatched
 
-### Requirement 7: Actions MUST have full CRUD API with pagination, search, and filtering
+### Requirement: Actions MUST have full CRUD API with pagination, search, and filtering
 An `ActionsController` MUST expose RESTful CRUD endpoints under `/api/actions` following the same patterns as other OpenRegister resources (Registers, Schemas, etc.). The controller MUST support listing with pagination, searching by name/slug, filtering by status/event_type/engine, and full resource CRUD.
 
 #### Scenario: List all actions with pagination
@@ -267,7 +267,7 @@ An `ActionsController` MUST expose RESTful CRUD endpoints under `/api/actions` f
 - **THEN** the action MUST be soft-deleted (deleted timestamp set, status changed to archived)
 - **AND** HTTP 200 MUST be returned
 
-### Requirement 8: Actions MUST support a dry-run (test) endpoint
+### Requirement: Actions MUST support a dry-run (test) endpoint
 A test endpoint MUST allow administrators to simulate action execution against a sample payload without triggering actual side effects. This enables validation of filter conditions, payload transformation, and workflow reachability before activating an action.
 
 #### Scenario: Dry-run action execution
@@ -286,7 +286,7 @@ A test endpoint MUST allow administrators to simulate action execution against a
 - **THEN** the response MUST indicate `matched: false`
 - **AND** MUST include the reason: `"filter_condition mismatch: data.object.type expected 'person', got 'organization'"`
 
-### Requirement 9: Action execution MUST be logged and tracked with statistics
+### Requirement: Action execution MUST be logged and tracked with statistics
 Every action execution MUST be logged in the `oc_openregister_action_logs` table via an `ActionLog` entity. The action entity itself MUST track aggregate statistics (execution_count, success_count, failure_count, last_executed_at).
 
 #### Scenario: Successful action execution creates a log entry
@@ -323,7 +323,7 @@ Every action execution MUST be logged in the `oc_openregister_action_logs` table
 - **WHEN** a GET request is sent to `/api/actions/5/logs?limit=10&offset=0`
 - **THEN** the 10 most recent log entries MUST be returned with pagination metadata
 
-### Requirement 10: Action retry MUST use the existing retry infrastructure
+### Requirement: Action retry MUST use the existing retry infrastructure
 When an action execution fails and `on_failure` is `'queue'` or `on_engine_down` is `'queue'`, the action MUST be re-queued using Nextcloud's `IJobList` with an `ActionRetryJob` (QueuedJob). The retry logic MUST follow the action's `retry_policy` and `max_retries` configuration, using the same backoff calculation patterns as `WebhookRetryJob`.
 
 #### Scenario: Exponential backoff retry for failed action
@@ -340,7 +340,7 @@ When an action execution fails and `on_failure` is `'queue'` or `on_engine_down`
 - **AND** the `ActionLog` MUST record `status: 'abandoned'` with the final error
 - **AND** a warning MUST be logged indicating retry limit exceeded
 
-### Requirement 11: Action events MUST be dispatched for action lifecycle changes
+### Requirement: Action events MUST be dispatched for action lifecycle changes
 The system MUST dispatch typed events for action entity lifecycle changes, following the same pattern as all other OpenRegister entities. This enables external apps and webhooks to respond to action configuration changes.
 
 #### Scenario: ActionCreatedEvent dispatched on creation
@@ -358,7 +358,7 @@ The system MUST dispatch typed events for action entity lifecycle changes, follo
 - **WHEN** the deletion is processed
 - **THEN** an `ActionDeletedEvent` MUST be dispatched with the pre-deletion entity snapshot
 
-### Requirement 12: Schema migration from inline hooks to Action entities MUST be supported
+### Requirement: Schema migration from inline hooks to Action entities MUST be supported
 A migration utility MUST convert existing inline hook configurations (from `Schema::getHooks()`) into Action entities. This enables gradual adoption without breaking existing configurations.
 
 #### Scenario: Migrate inline hooks to actions
@@ -384,7 +384,7 @@ A migration utility MUST convert existing inline hook configurations (from `Sche
 - **AND** MUST skip creation of duplicates
 - **AND** MUST return a report indicating which actions were skipped vs created
 
-### Requirement 13: Multi-tenancy and RBAC MUST be enforced on Action entities
+### Requirement: Multi-tenancy and RBAC MUST be enforced on Action entities
 Actions MUST respect the existing multi-tenancy model (owner, application, organisation fields) and RBAC authorization. Only users with appropriate permissions can create, modify, or delete actions. The `MultiTenancyTrait` MUST be applied to `ActionMapper`.
 
 #### Scenario: Tenant isolation for actions

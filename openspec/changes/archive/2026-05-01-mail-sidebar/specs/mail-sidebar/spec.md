@@ -13,7 +13,7 @@ Provide a sidebar panel inside the Nextcloud Mail app that displays OpenRegister
 
 ---
 
-## Requirements
+## ADDED Requirements
 
 ### Requirement: Reverse-lookup API to find objects by mail message ID
 
