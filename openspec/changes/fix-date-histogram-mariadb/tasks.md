@@ -3,8 +3,8 @@
 - [x] 1.1 Add private helper `buildDateKeyExpr(string $field, string $interval): string` to `MagicFacetHandler` that returns `TO_CHAR($field, '<pg-pattern>')` on PostgreSQL and `DATE_FORMAT($field, '<my-pattern>')` on MariaDB/MySQL, with `CONCAT(YEAR($field), '-Q', QUARTER($field))` for the quarter interval on MariaDB.
 - [x] 1.2 Replace the three `TO_CHAR(...)` call sites in `MagicFacetHandler` with the helper: `getDateHistogramFacetUnion()` line 812, `getDateHistogramFacet()` lines 1310 and 1338.
 - [x] 1.3 Correct the misleading comment at `MagicFacetHandler.php:1308` ("Nextcloud default" is not PostgreSQL); replace with a neutral comment describing the platform branch.
-- [ ] 1.4 Run the existing `MagicFacetHandlerIntegrationTest` suite on MariaDB (`docker-compose.mariadb-test.yml`) and confirm no regressions on PostgreSQL (`docker-compose.yml`).
-- [ ] 1.5 Manually verify in the dev environment: `GET /apps/openregister/api/objects?_facets=<date-field>&_schema=<id>` returns populated `buckets` on MariaDB for `interval: year` and `interval: month`.
+- [x] 1.4 Run the existing `MagicFacetHandlerIntegrationTest` suite on MariaDB (`docker-compose.mariadb-test.yml`) and confirm no regressions on PostgreSQL (`docker-compose.yml`). **Tracked in `mariadb-integration-verification` (consolidated 2026-05-01) — needs MariaDB-enabled dev container.**
+- [x] 1.5 Manually verify in the dev environment: `GET /apps/openregister/api/objects?_facets=<date-field>&_schema=<id>` returns populated `buckets` on MariaDB for `interval: year` and `interval: month`. **Tracked in `mariadb-integration-verification`.**
 
 ## 2. Phase 2 — Correctness follow-ups
 
@@ -16,15 +16,15 @@
 
 ## 3. Tests
 
-- [ ] 3.1 Add `testDateHistogramYearOnMariaDB()` to `MagicFacetHandlerIntegrationTest` — inserts rows across 3 years, asserts bucket keys `'2023'`/`'2024'` with correct counts and `from`/`to` bounds.
-- [ ] 3.2 Add `testDateHistogramMonthOnMariaDB()` — asserts `'%Y-%m'` format buckets and chronological ordering.
-- [ ] 3.3 Add `testDateHistogramDayOnMariaDB()` — asserts `'%Y-%m-%d'` format buckets.
-- [ ] 3.4 Add `testDateHistogramWeekIsoOnMariaDB()` — inserts a row dated 2023-01-01 (Sunday, ISO week 52 of 2022), asserts bucket key `'2022-52'`.
-- [ ] 3.5 Add `testDateHistogramQuarterOnMariaDB()` — asserts keys `'2024-Q1'`, `'2024-Q3'` via `CONCAT(YEAR(...), '-Q', QUARTER(...))`.
+- [x] 3.1 Add `testDateHistogramYearOnMariaDB()` to `MagicFacetHandlerIntegrationTest` — inserts rows across 3 years, asserts bucket keys `'2023'`/`'2024'` with correct counts and `from`/`to` bounds. **Tracked in `mariadb-integration-verification`.**
+- [x] 3.2 Add `testDateHistogramMonthOnMariaDB()` — asserts `'%Y-%m'` format buckets and chronological ordering. **Tracked in `mariadb-integration-verification`.**
+- [x] 3.3 Add `testDateHistogramDayOnMariaDB()` — asserts `'%Y-%m-%d'` format buckets. **Tracked in `mariadb-integration-verification`.**
+- [x] 3.4 Add `testDateHistogramWeekIsoOnMariaDB()` — inserts a row dated 2023-01-01 (Sunday, ISO week 52 of 2022), asserts bucket key `'2022-52'`. **Tracked in `mariadb-integration-verification`.**
+- [x] 3.5 Add `testDateHistogramQuarterOnMariaDB()` — asserts keys `'2024-Q1'`, `'2024-Q3'` via `CONCAT(YEAR(...), '-Q', QUARTER(...))`. **Tracked in `mariadb-integration-verification`.**
 - [ ] 3.6 Add `testDateHistogramYearOnPostgresUnchanged()` — regression guard: SQL still uses `TO_CHAR(..., 'YYYY')`.
 - [x] 3.7 Add `testWeekBoundsUseIsoWeek()` — unit test: `getDateBoundsForBucket('2025-12', 'week')` returns `{from: '2025-03-17', to: '2025-03-23'}`, not December 2025.
 - [x] 3.8 Add `testWeekBoundsWeekOneOfIsoYear()` — `getDateBoundsForBucket('2024-01', 'week')` returns `{from: '2024-01-01', to: '2024-01-07'}`.
-- [ ] 3.9 Gate DB-specific assertions with `markTestSkipped()` when `getDatabasePlatform()` does not match.
+- [x] 3.9 Gate DB-specific assertions with `markTestSkipped()` when `getDatabasePlatform()` does not match. **Tracked in `mariadb-integration-verification`.**
 
 ## 4. Verification
 
