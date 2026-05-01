@@ -23,37 +23,16 @@ Remove the dedicated `published`/`depublished` object metadata system from OpenR
 - Object publish/depublish API routes (already removed)
 - ObjectEntity published/depublished properties (already removed)
 
-## Requirements
+## REMOVED Requirements
 
-### REQ-1: ImportService Published Date Removal
-- GIVEN an import operation with `publish=true`
-- WHEN objects are imported via JSON or CSV
-- THEN the `addPublishedDateToObjects()` logic is removed
-- AND the `$publish` parameter is ignored with a deprecation log warning
-- AND existing import functionality continues to work without published date injection
+### Requirement: Object Published / Depublished Metadata System
+The system MUST no longer support per-object `published` / `depublished` metadata fields. RBAC rules using the `$now` dynamic variable replace this functionality.
 
-### REQ-2: Frontend Copy Modal Cleanup
-- GIVEN a user copies an object via CopyObject or MassCopyObjects modal
-- WHEN the `@self` metadata is stripped from the copy
-- THEN `published` and `depublished` keys are no longer deleted (they don't exist)
-
-### REQ-3: Frontend Stats Cleanup
-- GIVEN dashboard, register detail, or schema detail views
-- WHEN object statistics are displayed
-- THEN the "published" count row/column is removed from the stats display
-
-### REQ-4: Import UI Cleanup
-- GIVEN the ImportRegister modal
-- WHEN a user configures an import
-- THEN the "Auto-publish imported objects" toggle is removed
-
-### REQ-5: MultiTenancyTrait Documentation
-- GIVEN the MultiTenancyTrait docblock
-- WHEN describing multi-tenancy bypass
-- THEN object-level published bypass references are removed
-- AND Register/Schema published bypass documentation remains
-
-### REQ-6: Deprecation Warnings
-- GIVEN a schema with `objectPublishedField`, `objectDepublishedField`, or `autoPublish` config keys
-- WHEN an object is saved using that schema
-- THEN a deprecation warning is logged suggesting migration to RBAC rules with `$now`
+- `addPublishedDateToObjects()` is removed from `ImportService`; the `$publish` parameter on import methods is a deprecated no-op that logs a deprecation warning.
+- `objectPublishedField`, `objectDepublishedField`, and `autoPublish` schema config keys are deprecated; `MetadataHydrationHandler` logs a deprecation warning when they are encountered.
+- `@self.published` / `@self.depublished` reads are removed from the frontend `CopyObject` and `MassCopyObjects` modals.
+- Object "published" stat rows and columns are removed from the dashboard, register detail, and schema detail views.
+- The "Auto-publish imported objects" toggle is removed from the `ImportRegister` modal.
+- Object-level published bypass references are removed from the `MultiTenancyTrait` documentation; Register / Schema-level bypass documentation remains intact.
+- `MagicMapper` no longer registers `_published` / `_depublished` magic columns or indexes; `SaveObject`, `SearchQueryHandler`, `IndexService`, the search backends, and the Solr `ObjectHandler` no longer emit or consume the field.
+- Object publish / depublish methods are removed from `BulkController`; the related routes are gone.
