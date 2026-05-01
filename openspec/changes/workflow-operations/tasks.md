@@ -276,10 +276,10 @@
 - [x] All tasks checked off
 - [ ] `composer check:strict` passes in openregister
 - [ ] All database migrations run without errors on both PostgreSQL and MariaDB
-- [ ] Workflow execution history is persisted and queryable via API
+- [x] Workflow execution history is persisted and queryable via API
 - [ ] Scheduled workflows execute on their configured intervals
-- [ ] Approval chains enforce role-based access via Nextcloud groups
+- [x] Approval chains enforce role-based access via Nextcloud groups
 - [x] Test hook endpoint returns results without database side effects
 - [ ] Vue components render correctly and interact with the API
-- [ ] Execution history cleanup job prunes old records correctly
+- [x] Execution history cleanup job prunes old records correctly
 - [x] Code review against spec requirements
