@@ -50,9 +50,14 @@ use OCA\OpenRegister\Service\TmloService;
 use OCA\OpenRegister\Service\Schemas\SchemaCacheHandler;
 use OCA\OpenRegister\Service\Schemas\FacetCacheHandler;
 use OCA\OpenRegister\Db\AuditTrailMapper;
+use OCA\OpenRegister\Event\ReferenceValidatedEvent;
+use OCA\OpenRegister\Event\ReferenceValidationFailedEvent;
 use OCA\OpenRegister\Service\SettingsService;
 use OCA\OpenRegister\Exception\ReferenceValidationException;
 use OCA\OpenRegister\Exception\ValidationException;
+use OCP\EventDispatcher\IEventDispatcher;
+use OCP\IAppConfig;
+use OCP\IGroupManager;
 use OCP\IURLGenerator;
 use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
@@ -127,6 +132,24 @@ class SaveObject
     private const URL_PATH_IDENTIFIER = 'openregister.objects.show';
 
     /**
+     * App identifier used for `IAppConfig` lookups.
+     *
+     * @var string
+     */
+    private const APP_ID = 'openregister';
+
+    /**
+     * App-config key controlling whether admins bypass reference
+     * existence validation. When the stored value parses to `true`
+     * (default), members of the `admin` group skip the check; when
+     * `false`, admins are validated like any other user. Operators
+     * can flip the flag at runtime via `occ config:app:set`.
+     *
+     * @var string
+     */
+    private const CONFIG_KEY_REFERENCE_VALIDATION_ADMIN_BYPASS = 'reference_validation_admin_bypass';
+
+    /**
      * Twig template engine instance
      *
      * @var Environment
@@ -196,6 +219,9 @@ class SaveObject
      * @param LoggerInterface             $logger               Logger interface for logging operations
      * @param TmloService                 $tmloService          TMLO archival metadata service
      * @param ArrayLoader                 $arrayLoader          Twig array loader for template rendering
+     * @param IGroupManager|null          $groupManager         Group manager for admin-bypass detection
+     * @param IAppConfig|null             $appConfig            App-config reader for the admin-bypass toggle
+     * @param IEventDispatcher|null       $eventDispatcher      Event dispatcher for reference validation events
      *
      * @SuppressWarnings(PHPMD.ExcessiveParameterList) Nextcloud DI requires constructor injection
      *
@@ -221,6 +247,9 @@ class SaveObject
         private readonly LoggerInterface $logger,
         private readonly TmloService $tmloService,
         ArrayLoader $arrayLoader,
+        private readonly ?IGroupManager $groupManager=null,
+        private readonly ?IAppConfig $appConfig=null,
+        private readonly ?IEventDispatcher $eventDispatcher=null,
     ) {
         $this->twig = new Environment($arrayLoader);
     }//end __construct()
@@ -3577,6 +3606,19 @@ class SaveObject
         ?string $register,
         ?array $oldData=null
     ): void {
+        // Operator-controlled admin bypass: when the current user is in
+        // the admin group AND the bypass flag is on (default true), skip
+        // reference existence validation entirely. Mirrors the
+        // `MultiTenancyTrait::isCurrentUserAdmin()` short-circuit so
+        // admins can repair broken cross-references during migrations or
+        // bulk imports without tripping 422s. Operators can flip the
+        // flag off via `occ config:app:set openregister
+        // reference_validation_admin_bypass --value=false` to enforce
+        // validation for every user.
+        if ($this->shouldBypassValidationForAdmin() === true) {
+            return;
+        }
+
         $properties = $schema->getProperties();
         if ($properties === null) {
             return;
@@ -3711,6 +3753,17 @@ class SaveObject
                 _multitenancy: false
             );
         } catch (DoesNotExistException $e) {
+            // Side-channel notification for monitoring / extensibility.
+            // Dispatched BEFORE the exception so listeners observe every
+            // failure regardless of whether the controller layer
+            // recovers or surfaces the 422.
+            $this->dispatchReferenceValidationFailedEvent(
+                propertyName: $propertyName,
+                referencedUuid: $uuid,
+                targetSchemaSlug: $targetSchemaSlug,
+                targetRegister: $register
+            );
+
             // Throw a structured exception so API clients can render
             // actionable error UI without parsing the message string —
             // closes the spec's "structured diagnostic information"
@@ -3736,8 +3789,154 @@ class SaveObject
                     'error'    => $e->getMessage(),
                 ]
             );
+            return;
         }//end try
+
+        // Lookup succeeded — emit a success event so listeners can hook
+        // into accepted references (analytics, cache warming, etc.)
+        // without changing the save flow.
+        $this->dispatchReferenceValidatedEvent(
+            propertyName: $propertyName,
+            referencedUuid: $uuid,
+            targetSchemaSlug: $targetSchemaSlug,
+            targetRegister: $register
+        );
     }//end validateReferenceExists()
+
+    /**
+     * Decide whether the current user should bypass reference validation.
+     *
+     * Returns true when the current session user is in the `admin`
+     * group AND the `reference_validation_admin_bypass` app-config flag
+     * resolves to `true` (the default). The dependencies are optional
+     * to keep older test fixtures working — when either is missing the
+     * method returns false so validation runs as before.
+     *
+     * @return bool True when admin bypass applies.
+     */
+    private function shouldBypassValidationForAdmin(): bool
+    {
+        if ($this->groupManager === null || $this->appConfig === null) {
+            return false;
+        }
+
+        $bypassEnabled = filter_var(
+            $this->appConfig->getValueString(
+                app: self::APP_ID,
+                key: self::CONFIG_KEY_REFERENCE_VALIDATION_ADMIN_BYPASS,
+                default: 'true'
+            ),
+            FILTER_VALIDATE_BOOLEAN
+        );
+
+        if ($bypassEnabled === false) {
+            return false;
+        }
+
+        $user = $this->userSession->getUser();
+        if ($user === null) {
+            return false;
+        }
+
+        return $this->groupManager->isAdmin($user->getUID());
+
+    }//end shouldBypassValidationForAdmin()
+
+    /**
+     * Dispatch a `ReferenceValidatedEvent` if a dispatcher is wired.
+     *
+     * Encapsulates the null-check so call-sites stay readable. Failures
+     * inside listeners are caught and logged so a misbehaving listener
+     * cannot block a save.
+     *
+     * @param string      $propertyName     Schema property name.
+     * @param string      $referencedUuid   UUID that resolved.
+     * @param string      $targetSchemaSlug Target schema slug.
+     * @param string|null $targetRegister   Register the lookup ran in.
+     *
+     * @return void
+     */
+    private function dispatchReferenceValidatedEvent(
+        string $propertyName,
+        string $referencedUuid,
+        string $targetSchemaSlug,
+        ?string $targetRegister
+    ): void {
+        if ($this->eventDispatcher === null) {
+            return;
+        }
+
+        try {
+            $this->eventDispatcher->dispatchTyped(
+                new ReferenceValidatedEvent(
+                    propertyName: $propertyName,
+                    referencedUuid: $referencedUuid,
+                    targetSchemaSlug: $targetSchemaSlug,
+                    targetRegister: $targetRegister
+                )
+            );
+        } catch (Exception $e) {
+            $this->logger->warning(
+                message: '[SaveObject] ReferenceValidatedEvent dispatch failed',
+                context: [
+                    'file'     => __FILE__,
+                    'line'     => __LINE__,
+                    'property' => $propertyName,
+                    'uuid'     => $referencedUuid,
+                    'error'    => $e->getMessage(),
+                ]
+            );
+        }//end try
+
+    }//end dispatchReferenceValidatedEvent()
+
+    /**
+     * Dispatch a `ReferenceValidationFailedEvent` if a dispatcher is wired.
+     *
+     * Encapsulates the null-check so call-sites stay readable. Failures
+     * inside listeners are caught and logged so a misbehaving listener
+     * cannot mask the underlying validation failure.
+     *
+     * @param string      $propertyName     Schema property name.
+     * @param string      $referencedUuid   UUID that did not resolve.
+     * @param string      $targetSchemaSlug Target schema slug.
+     * @param string|null $targetRegister   Register the lookup ran in.
+     *
+     * @return void
+     */
+    private function dispatchReferenceValidationFailedEvent(
+        string $propertyName,
+        string $referencedUuid,
+        string $targetSchemaSlug,
+        ?string $targetRegister
+    ): void {
+        if ($this->eventDispatcher === null) {
+            return;
+        }
+
+        try {
+            $this->eventDispatcher->dispatchTyped(
+                new ReferenceValidationFailedEvent(
+                    propertyName: $propertyName,
+                    referencedUuid: $referencedUuid,
+                    targetSchemaSlug: $targetSchemaSlug,
+                    targetRegister: $targetRegister
+                )
+            );
+        } catch (Exception $e) {
+            $this->logger->warning(
+                message: '[SaveObject] ReferenceValidationFailedEvent dispatch failed',
+                context: [
+                    'file'     => __FILE__,
+                    'line'     => __LINE__,
+                    'property' => $propertyName,
+                    'uuid'     => $referencedUuid,
+                    'error'    => $e->getMessage(),
+                ]
+            );
+        }//end try
+
+    }//end dispatchReferenceValidationFailedEvent()
 
     /**
      * Prepares object data by applying all necessary transformations.
