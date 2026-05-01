@@ -1154,6 +1154,14 @@ class FileService
      */
     public function updateFile(string|int $filePath, mixed $content=null, array $tags=[], ?ObjectEntity $object=null): File
     {
+        // Reject content/metadata writes when the file is locked by another
+        // user. Only resolve the lock check when we can identify a numeric
+        // file ID -- string paths fall through (the lock map is keyed on ID
+        // and unresolvable paths cannot be safely guarded here).
+        if (is_int($filePath) === true) {
+            $this->fileLockHandler->assertCanModify($filePath);
+        }
+
         return $this->updateFileHandler->updateFile(
             filePath: $filePath,
             content: $content,
@@ -1889,8 +1897,10 @@ class FileService
             content: $content
         );
 
+        $sourceUuid = $sourceObject->getUuid();
+        $targetUuid = $targetObject->getUuid();
         $this->logger->info(
-            message: "[FileService] Copied file {$fileId} from object {".$sourceObject->getUuid()."} to {".$targetObject->getUuid()."}",
+            message: "[FileService] Copied file {$fileId} from object {$sourceUuid} to {$targetUuid}",
             context: ["file" => __FILE__, "line" => __LINE__]
         );
 
@@ -1919,8 +1929,10 @@ class FileService
         // Delete source.
         $this->deleteFile(file: $fileId, object: $sourceObject);
 
+        $sourceUuid = $sourceObject->getUuid();
+        $targetUuid = $targetObject->getUuid();
         $this->logger->info(
-            message: "[FileService] Moved file {$fileId} from object {".$sourceObject->getUuid()."} to {".$targetObject->getUuid()."}",
+            message: "[FileService] Moved file {$fileId} from object {$sourceUuid} to {$targetUuid}",
             context: ["file" => __FILE__, "line" => __LINE__]
         );
 

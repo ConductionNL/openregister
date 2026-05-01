@@ -1,6 +1,10 @@
 # Tasks: File Actions
 
-> **Status (2026-05-01 audit):** routes for all file-action endpoints registered in commit 9c1b70533. Spot-check of "[x]" ticks identified two phantom claims that are now corrected:
+> **Status (2026-05-01 v2 audit):** Re-spot-checked all `[x]` items across 10 phases. Routes (11) all registered, controller methods (10) all implemented, handlers (5) all wired through DI, events (6) all dispatched at controller layer, unit tests for handlers all present. Two follow-up wins this batch:
+> - Phase 5 line 72 ticked: `FileService::updateFile()` now calls `fileLockHandler->assertCanModify()` for numeric file IDs (the rename / copy / move / delete paths were already integrated). Test added: `FileLockHandlerTest::testAssertCanModifyByNonOwnerThrows`.
+> - Phase 4 line 55 ticked: version JSON shape already complete in `FileVersioningHandler::listVersions` (six fields + `authorDisplayName`).
+>
+> **Earlier audit (preserved for context):** routes for all file-action endpoints registered in commit 9c1b70533. Spot-check of "[x]" ticks identified two phantom claims that are now corrected:
 >
 > - **Phase 5 lock unit tests (lines 73 / 74 / 75 originally ticked)** — `FileLockHandlerTest` was missing the non-owner-unlock, admin-force-unlock, and TTL-expiry cases. Controller-level `testUnlockNonOwner` exists in `FilesControllerFileActionsTest`, but the handler-level cases were absent. Added in this batch (`testUnlockByNonOwnerThrows`, `testAdminForceUnlockSucceeds`, `testTtlExpiryAutoClears`).
 > - **Phase 4 version-restore unit test (line 56 was correctly `[ ]`)** — added `testRestoreVersionRejectsMalformedId` to cover the parse-side defensive path.
@@ -52,7 +56,8 @@
 
 - [x] Implement `FileVersioningHandler::listVersions()` using `IVersionManager::getVersionsForFile()`
 - [x] Handle graceful degradation when `files_versions` app is disabled
-- [ ] Format version data as JSON with versionId, timestamp, size, author, label, isCurrent
+- [x] Format version data as JSON with versionId, timestamp, size, author, label, isCurrent
+  - Already implemented in `FileVersioningHandler::listVersions` (lines 100-108 for the `current` entry; lines 119-127 for each historical version). All six fields plus `authorDisplayName` are emitted. Verified during 2026-05-01 audit pass.
 - [x] Implement `FileVersioningHandler::restoreVersion()` using `IVersionManager::rollback()`
 - [x] Add `FilesController::listVersions()` endpoint
 - [x] Add `FilesController::restoreVersion()` endpoint
@@ -69,7 +74,10 @@
 - [x] Implement `FileLockHandler::unlockFile()` with owner/admin check
 - [x] Implement `FileLockHandler::isLocked()` with TTL expiry check
 - [x] Implement `FileLockHandler::forceUnlock()` for admin users
-- [ ] Integrate lock checking into UpdateFileHandler, rename, move, and delete operations
+- [x] Integrate lock checking into UpdateFileHandler, rename, move, and delete operations
+  - rename / copy-source / move-source / delete already wired through `FileService::renameFile / copyFile / moveFile / deleteFile` (each calls `fileLockHandler->assertCanModify($fileId)`).
+  - Update path now wired in `FileService::updateFile()` -- numeric file-IDs are checked before delegating to `UpdateFileHandler`. String-path updates remain unguarded (the lock map is ID-keyed; resolving path -> ID would re-hit the filesystem ahead of the actual write and is deferred).
+  - Coverage: `FileLockHandlerTest::testAssertCanModifyByNonOwnerThrows` proves the assertion contract used by `updateFile`.
 - [x] Add `FilesController::lock()` and `FilesController::unlock()` endpoints
 - [x] Register routes: `POST .../files/{fileId}/lock` and `POST .../files/{fileId}/unlock`
 - [ ] Include lock metadata in file formatting output (formatFile)
