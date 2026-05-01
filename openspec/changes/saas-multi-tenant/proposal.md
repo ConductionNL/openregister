@@ -1,5 +1,26 @@
 # Proposal: saas-multi-tenant
 
+## Why
+
+OpenRegister already has core multi-tenancy through Organisation entities, the `MultiTenancyTrait`, and `MagicOrganizationHandler` -- and the canonical capabilities `tenant-lifecycle`, `environment-otap`, `tenant-quotas`, and `tenant-isolation-audit` are already shipped. However, the SaaS deployment story still needs operational glue: a portable configuration export/import for OTAP promotion, a SaaS-grade health check surface, a tenant admin dashboard, and explicit decommissioning rules that preserve the audit trail. Government tenders (378 unique tenders, 1385 requirements across SaaS/OTAP clusters) consistently require this end-to-end SaaS readiness; this change ties the existing tenant primitives together into a deployable SaaS offering.
+
+## What Changes
+
+- Add a portable environment configuration package (schemas, registers, sources, settings) with export/import for OTAP promotion (test → acceptance → production)
+- Add per-tenant admin dashboard surfacing usage, quota consumption, and configuration overview backed by `tenant-quotas`
+- Add tenant provisioning/decommissioning APIs that wire into the existing `tenant-lifecycle` state machine and ensure audit records survive deprovisioning
+- Add SaaS operational endpoints: tenant-aware health checks, readiness probes, and graceful degradation hints
+- Document the recommended isolation model (shared-database row-level via `MultiTenancyTrait` + Organisation scoping) and tighten the cross-tenant audit guarantees from `tenant-isolation-audit`
+- Add request-context resolution (subdomain/header/Nextcloud instance) so tenant scoping is automatic across REST, GraphQL, and MCP
+
+## Capabilities
+
+### Modified Capabilities
+- `tenant-lifecycle`: Adds provisioning/decommissioning HTTP API and audit-preserving deprovisioning rules
+- `environment-otap`: Adds the configuration package format and promotion workflow between OTAP environments
+- `tenant-quotas`: Adds admin dashboard, usage metrics surface, and per-tenant overage handling
+- `tenant-isolation-audit`: Documents end-to-end SaaS isolation guarantees and request-context resolution
+
 ## Summary
 
 Implement multi-tenant data isolation, OTAP (Ontwikkel/Test/Acceptatie/Productie) environment support, and SaaS deployment readiness for OpenRegister. This enables Conduction to offer OpenRegister as a hosted SaaS service with proper tenant separation, environment promotion workflows, and the operational characteristics required by Dutch government SaaS procurement.

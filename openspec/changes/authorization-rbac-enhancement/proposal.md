@@ -1,5 +1,27 @@
 # Proposal: authorization-rbac-enhancement
 
+## Why
+
+OpenRegister's three-level RBAC (schema-level via `PermissionHandler`, row-level via `MagicRbacHandler`, field-level via `PropertyRbacHandler`) is already the highest-demand capability across all analysed tender clusters (1505 combined requirements in 405 tenders). The shipped `rbac-scopes` and `row-field-level-security` capabilities cover the engine and condition matching; what's still missing is the administrative surface that municipalities ask for: a central admin UI for roles and permissions, named role definitions, delegation workflows, automatic LDAP/AD group mapping, and explicit public access scopes. This change layers admin tooling and named roles on top of the existing RBAC engine so beheerders kunnen zonder programmeerkennis autorisaties beheren.
+
+## What Changes
+
+- Add named role definitions (Viewer, Editor, Manager, Archivist, custom) as first-class entities mapped to permission sets reusable across registers/schemas
+- Add a central authorization admin UI listing all assignments with search, filter, and bulk-edit
+- Add CRUD+L (Create, Read, Update, Delete, List) granularity at register and schema levels by extending the existing `authorization` block on Register/Schema
+- Add register/schema permission inheritance with explicit override semantics (register defaults cascade until a schema sets its own block)
+- Add delegation: a register manager can grant/revoke roles within their scope without system-admin access
+- Add an LDAP/AD group mapping configuration so external directory groups resolve to OpenRegister roles automatically
+- Add explicit public-access toggles per register/schema separate from authenticated user permissions
+- Add field-level visibility rules driven by named roles (extends existing `PropertyRbacHandler`)
+- Acceptance: row-level filtering must add < 50ms overhead to typical list queries (matches existing `MagicRbacHandler` performance budget)
+
+## Capabilities
+
+### Modified Capabilities
+- `rbac-scopes`: Adds named role definitions, admin UI, delegation, LDAP/AD mapping, and explicit public-access toggles on top of the existing scope engine
+- `row-field-level-security`: Adds named-role-driven field visibility configuration on top of the existing handler
+
 ## Summary
 
 Implement fine-grained role-based access control (RBAC) for OpenRegister, enabling per-schema, per-register, and per-object authorization with row-level security and team-based access control. This extends Nextcloud's built-in group system with OpenRegister-specific permission scopes that match the granularity required by Dutch government organisations.

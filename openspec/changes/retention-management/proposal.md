@@ -1,5 +1,25 @@
 # Proposal: retention-management
 
+## Why
+
+Dutch government organisations are legally required to manage retention periods (bewaartermijnen) and destruction of records per the Archiefwet 1995. OpenRegister already has a basic `retention` field on `ObjectEntity`, an `archive` block on `Schema`, and an `AvgRetentionJob` background job, but lacks the configurable lifecycle management that municipalities expect: selectielijsten configuration, derived archiefactiedatum calculation, multi-step destruction approval, legal holds, and a retention dashboard. Market intelligence shows 154+ tenders require retention management and 189 tenders require the destruction workflow that depends on it; this proposal adds the missing per-schema/per-register configuration surface and the operational tooling around the existing job.
+
+## What Changes
+
+- Add MDTO-aligned archival metadata fields to the object `retention` JSON (`archiefnominatie`, `archiefactiedatum`, `archiefstatus`, `bewaartermijn`, `vernietigingsdatum`)
+- Add per-schema and per-register retention configuration with inheritance (register defaults, schema overrides) and resultaattype-aware periods
+- Add configurable retention start triggers (creation date, modification date, closure date, custom field) with automatic archiefactiedatum calculation
+- Add a retention dashboard listing upcoming expirations, overdue items, and held items grouped by register/schema
+- Add manual override endpoints so authorised users can adjust retention period and destruction date per object
+- Add VNG Selectielijst category mapping to schemas/registers so resultaattypen drive retention
+- Extend the existing `AvgRetentionJob` to flag (not destroy) objects past their retention date for review
+- Document integration with the shipped `archival-destruction-workflow` so destruction execution stays out of scope
+
+## Capabilities
+
+### Modified Capabilities
+- `retention-management`: Adds per-schema configuration surface, retention dashboard, manual overrides, selectielijst mapping, and start-trigger derivation on top of the existing MDTO metadata model
+
 ## Summary
 
 Implement configurable retention period management for OpenRegister objects, enabling organisations to assign, track, and enforce retention schedules (bewaartermijnen) per object type, schema, or register. Includes automatic flagging when retention expires and integration with selectielijsten from the VNG.

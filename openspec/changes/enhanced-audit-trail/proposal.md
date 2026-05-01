@@ -1,5 +1,26 @@
 # Proposal: enhanced-audit-trail
 
+## Why
+
+Government tenders (56-58% of analysed 39K tenders) require both immutable audit trails with tamper-evidence and GDPR Article 30 processing registers (verwerkingsregister). OpenRegister already has a functional `AuditTrail` entity with verwerkingenlogging fields (`processingActivityId`, `organisationId`, etc.) and the canonical `audit-trail-immutable` and `audit-hash-chain` capabilities are already shipped. This proposal captures the remaining audit UX gaps: a field-level diff viewer, bulk-operation summary entries, audit export endpoints, optional read-access logging, and a stable verwerkingenlogging API for external compliance reporting.
+
+## What Changes
+
+- Add a chronological audit trail viewer in the object detail UI with expandable old/new value diffs
+- Persist field-level change records (old value, new value) for every create/update/delete via the existing `AuditTrail` entity
+- Add bulk-operation summary audit entries that link to individual change records for imports, mass updates, and mass deletes
+- Add audit trail export endpoints (JSON and CSV) for compliance reporting and AP audits
+- Add optional read-access logging per schema for objects containing personal data (AVG Article 30 read events)
+- Add API mutation logging that records the calling Consumer/token identity alongside the user
+- Make audit retention configurable per register/schema with a default of 10 years
+- Surface the verwerkingenlogging API as a documented public capability for external compliance systems
+
+## Capabilities
+
+### Modified Capabilities
+- `audit-trail-immutable`: Adds field-level diff metadata, bulk summary linkage, and read-access events
+- `verwerkingsregister-api`: Documents the externally consumable surface, JSON/CSV export, and Consumer attribution
+
 ## Summary
 
 Implement a complete, immutable audit trail on all object mutations in OpenRegister, recording who changed what, when, with old/new values. Includes verwerkingenlogging for AVG/GDPR compliance and integration with BIO logging requirements. This is distinct from the archived `audit-trail-immutable` change by focusing on the practical audit UX, verwerkingenlogging API, and zaak-history integration rather than the cryptographic storage layer.
