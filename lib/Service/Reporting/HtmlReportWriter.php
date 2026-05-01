@@ -4,9 +4,9 @@
  * HTML report writer.
  *
  * Produces a self-contained HTML document showing each widget as a
- * styled card. Operators can browser-print to PDF directly; a future
- * Phase 2b can pipe this through Dompdf for server-side PDF output
- * without changing the writer itself.
+ * styled card. Operators can browser-print to PDF directly. Phase 2b
+ * pipes this same output through `PdfReportWriter` (Dompdf) for
+ * server-side PDF rendering — the writer itself stays unchanged.
  *
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.

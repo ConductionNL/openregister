@@ -147,6 +147,26 @@ class ReportRenderServiceIntegrationTest extends TestCase
     }//end testRenderHtmlProducesPrintableDocument()
 
     /**
+     * PDF output: bytes start with the `%PDF-` magic header and MIME
+     * matches.
+     *
+     * @return void
+     */
+    public function testRenderPdfProducesPdfDocument(): void
+    {
+        $rendered = $this->service->render(
+            dashboard: $this->makeDashboardFixture(),
+            format: 'pdf'
+        );
+
+        $this->assertSame(expected: 'application/pdf', actual: $rendered['mime']);
+        $this->assertStringEndsWith(suffix: '.pdf', string: $rendered['filename']);
+        // PDF files start with the `%PDF-` signature.
+        $this->assertSame(expected: '%PDF-', actual: substr($rendered['bytes'], 0, 5));
+
+    }//end testRenderPdfProducesPdfDocument()
+
+    /**
      * Unsupported formats raise InvalidArgumentException (422 in the
      * controller).
      *
@@ -159,7 +179,7 @@ class ReportRenderServiceIntegrationTest extends TestCase
 
         $this->service->render(
             dashboard: $this->makeDashboardFixture(),
-            format: 'pdf'
+            format: 'docx'
         );
 
     }//end testRenderRejectsUnsupportedFormat()

@@ -40,11 +40,17 @@
 							</template>
 							{{ t('openregister', 'CSV') }}
 						</NcActionButton>
+						<NcActionButton close-after-click @click="downloadAs('pdf')">
+							<template #icon>
+								<FilePdfBox :size="20" />
+							</template>
+							{{ t('openregister', 'PDF') }}
+						</NcActionButton>
 						<NcActionButton close-after-click @click="openHtmlPreview">
 							<template #icon>
 								<Printer :size="20" />
 							</template>
-							{{ t('openregister', 'HTML preview (print to PDF)') }}
+							{{ t('openregister', 'HTML preview') }}
 						</NcActionButton>
 					</NcActions>
 				</div>
@@ -175,6 +181,7 @@ import Download from 'vue-material-design-icons/Download.vue'
 import MicrosoftExcel from 'vue-material-design-icons/MicrosoftExcel.vue'
 import FileDelimitedOutline from 'vue-material-design-icons/FileDelimitedOutline.vue'
 import Printer from 'vue-material-design-icons/Printer.vue'
+import FilePdfBox from 'vue-material-design-icons/FilePdfBox.vue'
 
 import { reportsStore } from '../../store/store.js'
 
@@ -208,6 +215,7 @@ export default {
 		MicrosoftExcel,
 		FileDelimitedOutline,
 		Printer,
+		FilePdfBox,
 	},
 
 	data() {

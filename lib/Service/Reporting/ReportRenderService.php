@@ -10,6 +10,7 @@
  *
  *   - csv  / xlsx / ods  -> SpreadsheetReportWriter (one sheet per widget)
  *   - html               -> HtmlReportWriter (browser print-to-PDF works on this)
+ *   - pdf                -> PdfReportWriter (HTML pipeline routed through Dompdf)
  *
  * Usage from a controller:
  *
@@ -54,7 +55,7 @@ class ReportRenderService
      *
      * @var array<int, string>
      */
-    public const FORMATS = ['csv', 'xlsx', 'ods', 'html'];
+    public const FORMATS = ['csv', 'xlsx', 'ods', 'html', 'pdf'];
 
     /**
      * Constructor.
@@ -63,6 +64,7 @@ class ReportRenderService
      * @param GraphQLService          $graphqlService    GraphQL executor.
      * @param SpreadsheetReportWriter $spreadsheetWriter CSV / XLSX / ODS writer.
      * @param HtmlReportWriter        $htmlWriter        HTML writer.
+     * @param PdfReportWriter         $pdfWriter         PDF writer (Dompdf).
      * @param LoggerInterface         $logger            Logger.
      */
     public function __construct(
@@ -70,6 +72,7 @@ class ReportRenderService
         private readonly GraphQLService $graphqlService,
         private readonly SpreadsheetReportWriter $spreadsheetWriter,
         private readonly HtmlReportWriter $htmlWriter,
+        private readonly PdfReportWriter $pdfWriter,
         private readonly LoggerInterface $logger,
     ) {
 
@@ -120,6 +123,18 @@ class ReportRenderService
             );
             return [
                 'mime'     => 'text/html; charset=utf-8',
+                'filename' => $filename,
+                'bytes'    => $bytes,
+            ];
+        }
+
+        if ($format === 'pdf') {
+            $bytes = $this->pdfWriter->write(
+                dashboard: $payload,
+                resolvedWidgets: $resolvedWidgets
+            );
+            return [
+                'mime'     => 'application/pdf',
                 'filename' => $filename,
                 'bytes'    => $bytes,
             ];
@@ -256,6 +271,10 @@ class ReportRenderService
 
         if ($format === 'html') {
             return 'text/html; charset=utf-8';
+        }
+
+        if ($format === 'pdf') {
+            return 'application/pdf';
         }
 
         return 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';

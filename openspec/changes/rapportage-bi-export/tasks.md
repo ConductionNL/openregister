@@ -1,6 +1,6 @@
 # Tasks: Rapportage en BI Export
 
-> **Status (Phase 2):** 15 of 15 spec requirements implemented. Phase 1 shipped declarative dashboards (operator-imported `reports` register + `dashboard` schema + Vue renderer mapping widget types to CnChartWidget / CnTableWidget / etc.) plus the schema-save `WidgetAnnotationValidator`. Phase 2 adds CSV/XLSX/ODS/HTML server-side rendering + Files-folder delivery via `ReportRenderJob` daily TimedJob. PDF (via Dompdf) is the only remaining Phase-2-adjacent item — deferred to Phase 2b as a small dep-add. OData v4 stays out of scope. 6 render integration tests + 12 widget-annotation unit tests, all green. See `design.md` for the full architecture.
+> **Status (Phase 2 + 2b):** 15 of 15 spec requirements implemented. Phase 1 shipped declarative dashboards (operator-imported `reports` register + `dashboard` schema + Vue renderer mapping widget types to CnChartWidget / CnTableWidget / etc.) plus the schema-save `WidgetAnnotationValidator`. Phase 2 added CSV/XLSX/ODS/HTML server-side rendering + Files-folder delivery via `ReportRenderJob` daily TimedJob. Phase 2b adds PDF rendering via Dompdf (`PdfReportWriter` reuses the HtmlReportWriter pipeline). OData v4 stays out of scope. 7 render integration tests + 12 widget-annotation unit tests, all green. See `design.md` for the full architecture.
 
 ## Already covered by existing primitives
 
@@ -32,10 +32,11 @@
 
 ## Phase 2 — export + scheduling
 
-- [x] **CSV / XLSX / ODS / HTML export formats (Phase 2).** `lib/Service/Reporting/ReportRenderService.php` composes a dashboard into rendered bytes by resolving every widget's data via the existing `AggregationRunner` / `GraphQLService`, then dispatching to the matching writer:
+- [x] **CSV / XLSX / ODS / HTML / PDF export formats (Phase 2 + 2b).** `lib/Service/Reporting/ReportRenderService.php` composes a dashboard into rendered bytes by resolving every widget's data via the existing `AggregationRunner` / `GraphQLService`, then dispatching to the matching writer:
   - `lib/Service/Reporting/SpreadsheetReportWriter.php` — XLSX / ODS / CSV via PhpSpreadsheet. One sheet per widget plus a cover "Overview" sheet listing each widget with its top-level value or row count.
-  - `lib/Service/Reporting/HtmlReportWriter.php` — self-contained HTML document with print-friendly CSS (`@media print` page-break-inside guards) so operators can browser-print to PDF without a server-side PDF backend.
-  Endpoint: `POST /api/reports/{id}/render?format=…` returns the file as a `DataDownloadResponse`. Unsupported formats yield 422; the controller falls through to the JSON envelope on errors. Browser-tested end-to-end — Export dropdown in `ReportView.vue` triggers downloads for all four formats. **PDF intentionally deferred** to Phase 2b — needs adding Dompdf as a dep (~3MB); HTML preview + browser print covers the immediate "render to PDF" need.
+  - `lib/Service/Reporting/HtmlReportWriter.php` — self-contained HTML document with print-friendly CSS (`@media print` page-break-inside guards). Operators can browser-print directly.
+  - `lib/Service/Reporting/PdfReportWriter.php` (Phase 2b) — runs the HTML output through Dompdf 3.x with `isRemoteEnabled=false` + `isPhpEnabled=false` (hermetic + safe) and A4 portrait paper. Reuses the same widget-resolution path so PDF output matches HTML preview exactly.
+  Endpoint: `POST /api/reports/{id}/render?format=…` returns the file as a `DataDownloadResponse`. Unsupported formats yield 422; the controller falls through to the JSON envelope on errors. Browser-tested end-to-end — Export dropdown in `ReportView.vue` triggers downloads for all five formats.
 
 - [x] **Scheduled report generation (Phase 2).** `lib/BackgroundJob/ReportRenderJob.php` daily TimedJob walks every dashboard object in the `reports` register, evaluates `schedule.active` + `schedule.intervalSec` against the object's `lastRenderedAt` timestamp (using object metadata, no schema-side migration), calls `ReportRenderService::render(dashboard, format)` with the configured `delivery.format`, and writes the result into the dashboard's `delivery.filesFolder` (defaults to `/Reports/<dashboard-slug>/<filename>` under the dashboard owner's home) via the existing `IRootFolder` API. Operator overrides: `rapportage_scheduled_renders_enabled` (kill switch). Email channel deferred to Phase 2b.
 

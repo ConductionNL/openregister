@@ -85,8 +85,11 @@ into Files (existing FileService).
 
 ### Phase 2 — export + scheduling
 
-- Extend `ExportService` with PDF (via `Browsershot` / wkhtmltopdf
-  fallback) + ODS (PhpSpreadsheet already supports it).
+- Render server-side via `ReportRenderService` + format-specific
+  writers: `SpreadsheetReportWriter` (XLSX / ODS / CSV via
+  PhpSpreadsheet), `HtmlReportWriter` (print-friendly HTML), and
+  `PdfReportWriter` (Phase 2b — Dompdf 3.x running on the HTML
+  pipeline with `isRemoteEnabled=false`, `isPhpEnabled=false`).
 - New `lib/BackgroundJob/ReportRenderJob.php` — daily TimedJob that
   walks objects in the `reports` register with a `schedule` field,
   computes "is it time to fire?", renders the dashboard to the chosen
@@ -120,7 +123,7 @@ into Files (existing FileService).
 | Dashboard model | Single `dashboard` schema with nested `widgets` json array | Avoids cross-table joins; operator edits the whole dashboard atomically; widget add/remove is a single PATCH. |
 | Widget data fetch | Frontend calls `/api/objects/aggregations/{register}/{schema}/{name}` per widget | Each widget gets its own RBAC-scoped query; no fan-out server-side; AggregationCache makes repeated calls cheap. |
 | Cross-register widgets | GraphQL queries (the dashboard's `dataSource` accepts a `graphql` mode) | The aggregation API is per-(register, schema); for cross-register a GraphQL query is the right shape. |
-| Export format engine | PhpSpreadsheet (Excel + ODS already, CSV via existing path) + Browsershot (PDF) | PhpSpreadsheet is already a dep; Browsershot wraps headless Chrome and is the standard NC pattern for PDF. |
+| Export format engine | PhpSpreadsheet (XLSX / ODS / CSV) + custom HtmlReportWriter + Dompdf 3.x for PDF | PhpSpreadsheet was already a dep; Dompdf is a small (~3 MB) pure-PHP renderer that needs no headless Chrome and lets PDF reuse the print-styled HTML output verbatim. |
 | Report scheduling cadence | `intervalSec` (mirrors notifications-v2 deferral) — not cron | Notifications-v2 already deferred cron parsing; same call here. |
 | Audit attribution | Each scheduled-render writes an audit row tagged with a `rapportage-rendering` processing-activity (created by Phase 2 migration) | Closes the loop — AVG verantwoording shows "this register was rendered N times for the WOO dashboard." |
 
@@ -130,7 +133,7 @@ into Files (existing FileService).
 |---|---|
 | Widget config drift — schema property `widgets` is a free-form json that operators could fill with garbage | Validate widget shape at save time via `WidgetAnnotationValidator` (mirrors `LifecycleAnnotationValidator` pattern); surface errors in the standard schema-validation error envelope. |
 | Widget data fetch waterfalls (10 widgets = 10 round-trips) | Frontend can batch via the existing GraphQL endpoint when widgets share register/schema; AggregationCache handles repeats. |
-| PDF rendering pulls a heavy headless-Chrome dep | Make Browsershot optional; fall back to "PDF rendering not available — install Browsershot to enable" when missing. CSV/Excel/ODS are always available. |
+| PDF rendering dep weight | Mitigated by switching from Browsershot/headless-Chrome to Dompdf 3.x (~3 MB pure PHP). Hermetic by config — `isRemoteEnabled=false` blocks remote stylesheet fetches; `isPhpEnabled=false` blocks template execution. CSV / XLSX / ODS / HTML stay independent of the PDF path. |
 | Operator-defined widgets bypass RBAC | They can't — every aggregation request goes through `MagicMapper::find` / `aggregate` which enforces RBAC + multi-tenancy. A widget that the caller can't read returns empty. |
 
 ## Test coverage strategy
