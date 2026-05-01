@@ -240,4 +240,34 @@ class FileLockHandlerTest extends TestCase
         $this->assertFalse($this->handler->isLocked(7));
         $this->assertNull($this->handler->getLockInfo(7));
     }
+
+    /**
+     * Test that assertCanModify rejects a write attempt by a non-owner.
+     *
+     * This is the contract that FileService::updateFile() now relies on
+     * to refuse content/tag updates while another user holds the lock.
+     * Covers tasks.md Phase 5 line 72: "Integrate lock checking into
+     * UpdateFileHandler" -- the integration is in FileService::updateFile
+     * (single gateway for content updates) and uses this assertion.
+     */
+    public function testAssertCanModifyByNonOwnerThrows(): void
+    {
+        $owner = $this->createMock(IUser::class);
+        $owner->method('getUID')->willReturn('owner');
+        $other = $this->createMock(IUser::class);
+        $other->method('getUID')->willReturn('other');
+
+        // Owner locks first; subsequent assertCanModify call is from
+        // a different user and must throw.
+        $this->userSession->method('getUser')->willReturnOnConsecutiveCalls(
+            $owner,
+            $other
+        );
+
+        $this->handler->lockFile(55);
+
+        $this->expectException(\Exception::class);
+        $this->expectExceptionMessage('File is locked by owner');
+        $this->handler->assertCanModify(55);
+    }
 }
