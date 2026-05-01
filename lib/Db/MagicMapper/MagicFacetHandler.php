@@ -1315,52 +1315,37 @@ class MagicFacetHandler
             ];
         }
 
-        // Build date histogram query based on interval. The date-key SQL
-        // expression is platform-specific (TO_CHAR on PostgreSQL, DATE_FORMAT
-        // on MariaDB/MySQL); buildDateKeyExpr() encapsulates the branch.
-        $dateKeyExpr = $this->buildDateKeyExpr(field: $field, interval: $interval);
+        // Build the filtered query via MagicSearchHandler (single source of truth
+        // for filter SQL). Both private callers (getMagicTableFacets and
+        // getMagicTableFacetsUnion) always pass a non-null Schema, and the
+        // constructor in MagicMapper always wires a non-null searchHandler, so
+        // these are real preconditions — fail loudly if they ever drift. The
+        // previously-present "manual fallback" block on this method was dead
+        // code: it was unconditionally overwritten by the searchHandler branch
+        // and produced unfiltered counts that no caller could reach.
+        if ($this->searchHandler === null || $schema === null) {
+            $msg = 'MagicFacetHandler::getDateHistogramFacet requires a wired searchHandler and a non-null schema.';
+            throw new \LogicException($msg);
+        }
 
-        // Fallback: Build query manually (legacy behavior).
-        $queryBuilder = $this->db->getQueryBuilder();
-
-        $queryBuilder->selectAlias(
-            $queryBuilder->createFunction($dateKeyExpr),
-            'date_key'
-        )
-            ->selectAlias($queryBuilder->createFunction('COUNT(*)'), 'doc_count')
-            ->from($tableName)
-            ->where($queryBuilder->expr()->isNotNull($field))
-            ->groupBy('date_key')
-            ->orderBy('date_key', 'ASC');
-
-        // Apply base filters (including object field filters for facet filtering).
-        $this->applyBaseFilters(
-            queryBuilder: $queryBuilder,
-            baseQuery: $baseQuery,
-            tableName: $tableName,
-            schema: $schema
+        $queryBuilder = $this->searchHandler->buildFilteredQuery(
+            query: $baseQuery,
+            schema: $schema,
+            tableName: $tableName
         );
 
-        // Use shared query builder from MagicSearchHandler (single source of truth for filters).
-        if ($this->searchHandler !== null && $schema !== null) {
-            $queryBuilder = $this->searchHandler->buildFilteredQuery(
-                query: $baseQuery,
-                schema: $schema,
-                tableName: $tableName
-            );
-
-            // Add date histogram-specific SELECT and GROUP BY.
-            // Note: buildFilteredQuery uses alias 't' for table.
-            $tDateKeyExpr = $this->buildDateKeyExpr(field: "t.{$field}", interval: $interval);
-            $queryBuilder->selectAlias(
-                $queryBuilder->createFunction($tDateKeyExpr),
-                'date_key'
-            )
-                ->addSelect($queryBuilder->createFunction('COUNT(*) as doc_count'))
-                ->andWhere($queryBuilder->expr()->isNotNull("t.{$field}"))
-                ->groupBy('date_key')
-                ->orderBy('date_key', 'ASC');
-        }//end if
+        // The date-key SQL expression is platform-specific (TO_CHAR on
+        // PostgreSQL, DATE_FORMAT on MariaDB/MySQL); buildDateKeyExpr()
+        // encapsulates the branch. buildFilteredQuery aliases the table as 't'.
+        $tDateKeyExpr = $this->buildDateKeyExpr(field: "t.{$field}", interval: $interval);
+        $queryBuilder->selectAlias(
+            $queryBuilder->createFunction($tDateKeyExpr),
+            'date_key'
+        )
+            ->addSelect($queryBuilder->createFunction('COUNT(*) as doc_count'))
+            ->andWhere($queryBuilder->expr()->isNotNull("t.{$field}"))
+            ->groupBy('date_key')
+            ->orderBy('date_key', 'ASC');
 
         $result  = $queryBuilder->executeQuery();
         $buckets = [];
