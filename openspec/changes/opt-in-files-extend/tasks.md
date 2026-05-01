@@ -1,3 +1,9 @@
+> **Status (2026-05-01):** All in-repo openregister work shipped. Sections 1–6 + 8.1 are complete (24/32 ticked). Remaining 8 items split into two non-actionable groups:
+> - **Section 7 (4 items):** opencatalogi public-API doc updates — explicitly DEFERRED to a cross-repo issue (`ConductionNL/opencatalogi#TBD`). Cannot land in openregister.
+> - **Section 8.2–8.5 (4 items):** manual smoke checklists + `/opsx:verify` invocation — for the user post-merge, not agent-actionable.
+>
+> Recommend marking this change ready for archive after the cross-repo opencatalogi issue is opened.
+
 ## 1. FileMapper batched lookup
 
 - [x] 1.1 Add `getFileIdsForObjects(array $uuids): array<string, int[]>` to `lib/Db/FileMapper.php` (or the appropriate file-lookup component if it lives elsewhere). Implementation MUST issue a single SQL query for the entire input set and return a map keyed by object UUID with an array of file IDs as the value. UUIDs with no files MUST be present in the result with an empty array.

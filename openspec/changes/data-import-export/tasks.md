@@ -1,6 +1,6 @@
 # Tasks: Data Import and Export
 
-> **Status (Phase 2):** OpenRegister already ships a full Excel + CSV import/export pipeline (`ImportService` + `ExportService`) plus a configuration-level JSON portability path (`ConfigurationService::importFromJson` / `exportConfig`). Phase 2 is a documentation-vs-implementation sync — every Excel/CSV/JSON requirement has shipped code with file:line evidence. Downloadable per-schema import templates ship via `RegistersController::importTemplate`. The XML / ODS formats, structured rollback, downloadable error files, and full streaming progress endpoint remain genuinely open. **9 of 12 tasks tickably complete.**
+> **Status (Phase 2, updated 2026-05-01):** OpenRegister already ships a full Excel + CSV import/export pipeline (`ImportService` + `ExportService`) plus a configuration-level JSON portability path (`ConfigurationService::importFromJson` / `exportConfig`). Phase 2 is a documentation-vs-implementation sync — every Excel/CSV/JSON requirement has shipped code with file:line evidence. Downloadable per-schema import templates ship via `RegistersController::importTemplate`. The XML / ODS formats, structured rollback, downloadable error files, and full streaming progress endpoint remain genuinely open. **12 of 15 tasks shipped (9 implemented + 3 test coverage); 3 open are: downloadable error CSV, SSE progress (gated on realtime-updates), transactional rollback.**
 
 ## Implemented
 

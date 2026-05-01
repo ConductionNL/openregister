@@ -1,5 +1,9 @@
 # Tasks: Deprecate Published/Depublished Object Metadata
 
+> **Status (2026-05-01):** All OpenRegister-scope work is complete (Phases 1–3, 8 in-repo testing). Remaining 19 `[ ]` items live entirely in **Phases 4–7**, all explicitly marked **OUT OF SCOPE** in their headers (opencatalogi backend + frontend, softwarecatalogus frontend, schema migration guide). Plus 2 cross-repo testing items in Phase 8 (lines 95–96). **Nothing actionable remains in this repo.**
+>
+> Recommend opening cross-repo follow-up issues for the 5 deferred phases and archiving this change. The OpenRegister production code paths no longer reference `_published` / `_depublished` columns, magic-table migration is shipped, and frontend cleanup landed in the referenced PRs (#1129, #1130, #1131).
+
 ## Phase 1: OpenRegister Core Cleanup (COMPLETED - already done prior to this change)
 
 ### MagicMapper Column and Metadata Removal
