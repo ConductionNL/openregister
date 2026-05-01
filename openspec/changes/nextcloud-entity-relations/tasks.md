@@ -61,11 +61,12 @@
 
 ## Frontend
 - [x] Create EmailsTab.vue component for object detail (`src/components/object-relations/EmailsTab.vue` — list/unlink linked emails, 501 graceful degradation when Mail app missing, ESLint clean)
-- [ ] Create EventsTab.vue component for object detail
-- [ ] Create ContactsTab.vue component for object detail
-- [ ] Create DeckTab.vue component for object detail
+- [x] Create EventsTab.vue component for object detail (`src/components/object-relations/EventsTab.vue` — list/create/link/unlink linked calendar events, 501 graceful when Calendar app missing, mirrors EmailsTab structure, ESLint clean)
+- [x] Create ContactsTab.vue component for object detail (`src/components/object-relations/ContactsTab.vue` — list/add/remove linked contacts, 501 graceful when Contacts app missing, ESLint clean)
+- [x] Create DeckTab.vue component for object detail (`src/components/object-relations/DeckTab.vue` — list/link/unlink Deck cards, 501 graceful when Deck app missing — verified live: Deck app not installed in dev env returns 501 with `code: APP_NOT_AVAILABLE`, ESLint clean)
 - [x] Create RelationsTab.vue unified timeline component (`src/components/object-relations/RelationsTab.vue` — type filter chips, normalises both flat-timeline and typed-envelope responses from RelationsController, ESLint clean)
-- [ ] Add entity stores for email/event/contact/deck links
+- [x] Add entity stores for email/event/contact/deck links (`src/store/modules/object-relations/{emails,events,contacts,deck}.js` — Pinia `defineStore` per entity with per-(register,schema,id) cache, fetch/create/link/unlink actions, 501-graceful flag, ESLint clean. Each new tab consumes its store via `useXRelationsStore()` instead of inlining axios calls.)
+- [x] Wire new tabs into ViewObject modal + ObjectDetails view (`src/modals/object/ViewObject.vue` + `src/views/object/ObjectDetails.vue` — added Emails/Events/Contacts/Deck/Relations BTabs gated on `relationContext` computed; tabs only render once a saved object provides register/schema/id triple)
 
 ## Testing
 - [x] Unit tests for EmailService
