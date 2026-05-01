@@ -20,6 +20,11 @@
  *
  * @category Test
  * @package  OCA\OpenRegister\Tests\Service
+ *
+ * @author  Conduction Development Team <dev@conduction.nl>
+ * @license EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ *
+ * @link https://OpenRegister.app
  */
 
 declare(strict_types=1);
@@ -31,13 +36,25 @@ use OCA\OpenRegister\Service\Reporting\ReportRenderService;
 use PHPUnit\Framework\TestCase;
 
 /**
+ * Phase 2 render-pipeline integration suite.
+ *
  * @group DB
  */
 class ReportRenderServiceIntegrationTest extends TestCase
 {
 
+    /**
+     * Renderer under test.
+     *
+     * @var ReportRenderService
+     */
     private ReportRenderService $service;
 
+    /**
+     * Resolve the renderer from the DI container.
+     *
+     * @return void
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -45,6 +62,11 @@ class ReportRenderServiceIntegrationTest extends TestCase
 
     }//end setUp()
 
+    /**
+     * XLSX output: bytes start with the ZIP header and MIME matches.
+     *
+     * @return void
+     */
     public function testRenderXlsxProducesValidWorkbook(): void
     {
         $rendered = $this->service->render(
@@ -53,15 +75,20 @@ class ReportRenderServiceIntegrationTest extends TestCase
         );
 
         $this->assertSame(
-            'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-            $rendered['mime']
+            expected: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            actual: $rendered['mime']
         );
-        $this->assertStringEndsWith('.xlsx', $rendered['filename']);
+        $this->assertStringEndsWith(suffix: '.xlsx', string: $rendered['filename']);
         // XLSX is a ZIP container — first 2 bytes are PK.
-        $this->assertSame('PK', substr($rendered['bytes'], 0, 2));
+        $this->assertSame(expected: 'PK', actual: substr($rendered['bytes'], 0, 2));
 
     }//end testRenderXlsxProducesValidWorkbook()
 
+    /**
+     * ODS output: bytes start with the ZIP header and MIME matches.
+     *
+     * @return void
+     */
     public function testRenderOdsProducesValidWorkbook(): void
     {
         $rendered = $this->service->render(
@@ -69,13 +96,21 @@ class ReportRenderServiceIntegrationTest extends TestCase
             format: 'ods'
         );
 
-        $this->assertSame('application/vnd.oasis.opendocument.spreadsheet', $rendered['mime']);
-        $this->assertStringEndsWith('.ods', $rendered['filename']);
+        $this->assertSame(
+            expected: 'application/vnd.oasis.opendocument.spreadsheet',
+            actual: $rendered['mime']
+        );
+        $this->assertStringEndsWith(suffix: '.ods', string: $rendered['filename']);
         // ODS is also a ZIP container.
-        $this->assertSame('PK', substr($rendered['bytes'], 0, 2));
+        $this->assertSame(expected: 'PK', actual: substr($rendered['bytes'], 0, 2));
 
     }//end testRenderOdsProducesValidWorkbook()
 
+    /**
+     * CSV output: emits one section per sheet with a `# Sheet:` header.
+     *
+     * @return void
+     */
     public function testRenderCsvIncludesEachSheetAsSection(): void
     {
         $rendered = $this->service->render(
@@ -83,14 +118,19 @@ class ReportRenderServiceIntegrationTest extends TestCase
             format: 'csv'
         );
 
-        $this->assertStringContainsString('text/csv', $rendered['mime']);
-        $this->assertStringEndsWith('.csv', $rendered['filename']);
+        $this->assertStringContainsString(needle: 'text/csv', haystack: $rendered['mime']);
+        $this->assertStringEndsWith(suffix: '.csv', string: $rendered['filename']);
         // CSV writer emits a `# Sheet: Overview` header before the
         // overview-sheet rows + one section per widget sheet.
-        $this->assertStringContainsString('# Sheet: Overview', $rendered['bytes']);
+        $this->assertStringContainsString(needle: '# Sheet: Overview', haystack: $rendered['bytes']);
 
     }//end testRenderCsvIncludesEachSheetAsSection()
 
+    /**
+     * HTML output: well-formed document with print stylesheet baked in.
+     *
+     * @return void
+     */
     public function testRenderHtmlProducesPrintableDocument(): void
     {
         $rendered = $this->service->render(
@@ -98,18 +138,24 @@ class ReportRenderServiceIntegrationTest extends TestCase
             format: 'html'
         );
 
-        $this->assertStringStartsWith('text/html', $rendered['mime']);
-        $this->assertStringStartsWith('<!DOCTYPE html>', $rendered['bytes']);
-        $this->assertStringContainsString('phpunit-rapportage', $rendered['bytes']);
+        $this->assertStringStartsWith(prefix: 'text/html', string: $rendered['mime']);
+        $this->assertStringStartsWith(prefix: '<!DOCTYPE html>', string: $rendered['bytes']);
+        $this->assertStringContainsString(needle: 'phpunit-rapportage', haystack: $rendered['bytes']);
         // Print stylesheet baked in.
-        $this->assertStringContainsString('@media print', $rendered['bytes']);
+        $this->assertStringContainsString(needle: '@media print', haystack: $rendered['bytes']);
 
     }//end testRenderHtmlProducesPrintableDocument()
 
+    /**
+     * Unsupported formats raise InvalidArgumentException (422 in the
+     * controller).
+     *
+     * @return void
+     */
     public function testRenderRejectsUnsupportedFormat(): void
     {
-        $this->expectException(InvalidArgumentException::class);
-        $this->expectExceptionMessage('Unsupported render format');
+        $this->expectException(exception: InvalidArgumentException::class);
+        $this->expectExceptionMessage(message: 'Unsupported render format');
 
         $this->service->render(
             dashboard: $this->makeDashboardFixture(),
@@ -118,11 +164,17 @@ class ReportRenderServiceIntegrationTest extends TestCase
 
     }//end testRenderRejectsUnsupportedFormat()
 
+    /**
+     * A widget whose data-source can't resolve renders an inline error
+     * envelope rather than aborting the whole render.
+     *
+     * @return void
+     */
     public function testRenderHandlesUnresolvableWidgetGracefully(): void
     {
         $dashboard = [
-            'titel'    => 'phpunit-rapportage-broken',
-            'widgets'  => [
+            'titel'   => 'phpunit-rapportage-broken',
+            'widgets' => [
                 [
                     'type'       => 'kpi',
                     'title'      => 'Bogus',
@@ -140,7 +192,7 @@ class ReportRenderServiceIntegrationTest extends TestCase
 
         // The widget renders its inline error envelope rather than the
         // whole render aborting.
-        $this->assertStringContainsString('No data available', $rendered['bytes']);
+        $this->assertStringContainsString(needle: 'No data available', haystack: $rendered['bytes']);
 
     }//end testRenderHandlesUnresolvableWidgetGracefully()
 

@@ -540,22 +540,25 @@ class Application extends App implements IBootstrap
             try {
                 $importHandler->setFileService($container->get(\OCA\OpenRegister\Service\FileService::class));
             } catch (\Throwable $e) {
-                $logger->debug('[Application] FileService unavailable for ImportHandler: ' . $e->getMessage());
+                $logger->debug('[Application] FileService unavailable for ImportHandler: '.$e->getMessage());
             }
+
             try {
                 $importHandler->setNoteService($container->get(\OCA\OpenRegister\Service\NoteService::class));
             } catch (\Throwable $e) {
-                $logger->debug('[Application] NoteService unavailable for ImportHandler: ' . $e->getMessage());
+                $logger->debug('[Application] NoteService unavailable for ImportHandler: '.$e->getMessage());
             }
+
             try {
                 $importHandler->setTaskService($container->get(\OCA\OpenRegister\Service\TaskService::class));
             } catch (\Throwable $e) {
-                $logger->debug('[Application] TaskService unavailable for ImportHandler: ' . $e->getMessage());
+                $logger->debug('[Application] TaskService unavailable for ImportHandler: '.$e->getMessage());
             }
+
             try {
                 $importHandler->setUserSession($container->get('OCP\IUserSession'));
             } catch (\Throwable $e) {
-                $logger->debug('[Application] IUserSession unavailable for ImportHandler: ' . $e->getMessage());
+                $logger->debug('[Application] IUserSession unavailable for ImportHandler: '.$e->getMessage());
             }
 
             return $importHandler;
