@@ -15,6 +15,11 @@
  * @version GIT: <git_id>
  *
  * @link https://www.OpenRegister.nl
+ *
+ * @spec openspec/changes/retrofit-chat-ai-2026-04-30/tasks.md#task-1
+ * @spec openspec/changes/retrofit-chat-ai-2026-04-30/tasks.md#task-2
+ * @spec openspec/changes/retrofit-chat-ai-2026-04-30/tasks.md#task-3
+ * @spec openspec/changes/retrofit-chat-ai-2026-04-30/tasks.md#task-5
  */
 
 namespace OCA\OpenRegister\Controller;
@@ -408,6 +413,8 @@ class ChatController extends Controller
      * @psalm-suppress InvalidReturnType
      *
      * @return JSONResponse JSON response with AI response or error
+     *
+     * @spec openspec/changes/retrofit-chat-ai-2026-04-30/tasks.md#task-1
      */
     public function sendMessage(): JSONResponse
     {
@@ -517,6 +524,8 @@ class ChatController extends Controller
      *     created: null|string, id: int, role: null|string, sources: array|null,
      *     uuid: null|string}>, total?: int, conversationId?: int},
      *     array<never, never>>
+     *
+     * @spec openspec/changes/retrofit-chat-ai-2026-04-30/tasks.md#task-3
      */
     public function getHistory(): JSONResponse
     {
@@ -606,6 +615,8 @@ class ChatController extends Controller
      *     array{error?: 'Access denied'|'Failed to clear conversation'|
      *     'Missing conversationId', message: string, conversationId?: int},
      *     array<never, never>>
+     *
+     * @spec openspec/changes/retrofit-chat-ai-2026-04-30/tasks.md#task-2
      */
     public function clearHistory(): JSONResponse
     {
@@ -693,6 +704,8 @@ class ChatController extends Controller
      * @return JSONResponse JSON response with feedback confirmation or error
      *
      * @suppressWarnings(PHPMD.ExcessiveMethodLength)
+     *
+     * @spec openspec/changes/retrofit-chat-ai-2026-04-30/tasks.md#task-5
      */
     public function sendFeedback(string $conversationUuid, int $messageId): JSONResponse
     {
@@ -829,6 +842,8 @@ class ChatController extends Controller
      *     array{error?: 'Failed to get chat statistics', message?: string,
      *     total_agents?: int, total_conversations?: int, total_messages?: int},
      *     array<never, never>>
+     *
+     * @spec openspec/changes/retrofit-chat-ai-2026-04-30/tasks.md#task-5
      */
     public function getChatStats(): JSONResponse
     {

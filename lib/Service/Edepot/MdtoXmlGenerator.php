@@ -19,6 +19,7 @@
  * @link https://www.OpenRegister.app
  *
  * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-20
+ * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-32
  */
 
 declare(strict_types=1);
@@ -90,6 +91,7 @@ class MdtoXmlGenerator
      * @throws InvalidArgumentException If required fields are missing.
      *
      * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-20
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-32
      */
     public function generate(ObjectEntity $object, array $files=[]): string
     {
@@ -179,6 +181,8 @@ class MdtoXmlGenerator
      * @param ObjectEntity $object The source object.
      *
      * @return void
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-20
      */
     private function addIdentificatie(DOMDocument $dom, DOMElement $parent, ObjectEntity $object): void
     {
@@ -204,6 +208,8 @@ class MdtoXmlGenerator
      * @param ObjectEntity $object The source object.
      *
      * @return void
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-20
      */
     private function addNaam(DOMDocument $dom, DOMElement $parent, ObjectEntity $object): void
     {
@@ -220,6 +226,8 @@ class MdtoXmlGenerator
      * @param array<string,mixed> $retention The retention metadata.
      *
      * @return void
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-20
      */
     private function addWaardering(DOMDocument $dom, DOMElement $parent, array $retention): void
     {
@@ -236,6 +244,8 @@ class MdtoXmlGenerator
      * @param array<string,mixed> $retention The retention metadata.
      *
      * @return void
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-20
      */
     private function addBewaartermijn(DOMDocument $dom, DOMElement $parent, array $retention): void
     {
@@ -251,6 +261,8 @@ class MdtoXmlGenerator
      * @param array<string,mixed> $retention The retention metadata.
      *
      * @return void
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-20
      */
     private function addInformatiecategorie(DOMDocument $dom, DOMElement $parent, array $retention): void
     {
@@ -265,6 +277,8 @@ class MdtoXmlGenerator
      * @param DOMElement  $parent The parent element.
      *
      * @return void
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-20
      */
     private function addArchiefvormer(DOMDocument $dom, DOMElement $parent): void
     {
@@ -299,6 +313,8 @@ class MdtoXmlGenerator
      * @param array{name: string, size: int, format: string, checksum: string} $file   The file metadata.
      *
      * @return void
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-20
      */
     private function addBestand(DOMDocument $dom, DOMElement $parent, array $file): void
     {
@@ -331,6 +347,8 @@ class MdtoXmlGenerator
      * @param string      $content The text content.
      *
      * @return void
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-20
      */
     private function addTextElement(DOMDocument $dom, DOMElement $parent, string $name, string $content): void
     {

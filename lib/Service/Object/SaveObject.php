@@ -197,6 +197,8 @@ class SaveObject
      * @param ArrayLoader                 $arrayLoader          Twig array loader for template rendering
      *
      * @SuppressWarnings(PHPMD.ExcessiveParameterList) Nextcloud DI requires constructor injection
+     *
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
      */
     public function __construct(
         private readonly MagicMapper $objectEntityMapper,
@@ -229,6 +231,8 @@ class SaveObject
      * inclusion in the parent object's @self.objects property.
      *
      * @return array<string, array> Sub-objects indexed by UUID
+     *
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
      */
     public function getCreatedSubObjects(): array
     {
@@ -242,6 +246,8 @@ class SaveObject
      * sub-objects from previous operations are not included.
      *
      * @return void
+     *
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
      */
     public function clearCreatedSubObjects(): void
     {
@@ -259,6 +265,8 @@ class SaveObject
      * - Schema reference cache
      *
      * @return void
+     *
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
      */
     public function clearAllCaches(): void
     {
@@ -276,6 +284,8 @@ class SaveObject
      * @return Schema The schema entity
      *
      * @throws DoesNotExistException If schema not found
+     *
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
      */
     private function getCachedSchema(int|string $schemaId): Schema
     {
@@ -295,6 +305,8 @@ class SaveObject
      * @return Register The register entity
      *
      * @throws DoesNotExistException If register not found
+     *
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
      */
     private function getCachedRegister(int|string $registerId): Register
     {
@@ -316,6 +328,8 @@ class SaveObject
      * @param array  $objectData The serialized object data
      *
      * @return void
+     *
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
      */
     public function trackCreatedSubObject(string $uuid, array $objectData): void
     {
@@ -338,6 +352,8 @@ class SaveObject
      * @return null|numeric-string The resolved schema ID or null if not found
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Multiple resolution strategies require branching
+     *
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
      */
     private function resolveSchemaReference(string $reference): string|null
     {
@@ -429,6 +445,8 @@ class SaveObject
      * @param string $reference The reference string that may contain query parameters
      *
      * @return string The reference string without query parameters
+     *
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
      */
     private function removeQueryParameters(string $reference): string
     {
@@ -455,6 +473,8 @@ class SaveObject
      * @return null|numeric-string The resolved register ID or null if not found
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Multiple resolution strategies require branching
+     *
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
      */
     private function resolveRegisterReference(string $reference): string|null
     {
@@ -523,6 +543,8 @@ class SaveObject
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)  Complex relation detection logic
      * @SuppressWarnings(PHPMD.NPathComplexity)       Multiple detection paths for different value types
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Comprehensive relation scanning requires extended logic
+     *
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
      */
     public function scanForRelations(array $data, string $prefix='', ?Schema $schema=null): array
     {
@@ -645,6 +667,8 @@ class SaveObject
      * @return bool True if the value should be treated as a reference
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Multiple reference pattern checks required
+     *
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
      */
     private function isReference(string $value): bool
     {
@@ -710,6 +734,8 @@ class SaveObject
      * @param Schema|null  $schema       The schema to check property definitions against
      *
      * @return ObjectEntity The updated object entity
+     *
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
      */
     private function updateObjectRelations(ObjectEntity $objectEntity, array $data, ?Schema $schema=null): ObjectEntity
     {
@@ -736,6 +762,8 @@ class SaveObject
      * @return void
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Inverse relation handling requires per-type branching
+     *
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
      */
     private function updateInverseRelations(ObjectEntity $savedEntity, Register $register, Schema $schema): void
     {
@@ -933,6 +961,8 @@ class SaveObject
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)  Complex metadata extraction from multiple sources
      * @SuppressWarnings(PHPMD.NPathComplexity)       Multiple field types and formats require branching
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Comprehensive metadata hydration logic
+     *
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
      */
     public function hydrateObjectMetadata(ObjectEntity $entity, Schema $schema): void
     {
@@ -1050,6 +1080,8 @@ class SaveObject
      * @param string $path The dot notation path (e.g., 'user.profile.name')
      *
      * @return mixed The value at the path or null if not found
+     *
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
      */
     private function getValueFromPath(array $data, string $path)
     {
@@ -1090,6 +1122,8 @@ class SaveObject
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)  Complex default value logic with multiple behaviors
      * @SuppressWarnings(PHPMD.NPathComplexity)       Multiple property types and behaviors require branching
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Comprehensive default value handling
+     *
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
      */
     private function setDefaultValues(ObjectEntity $objectEntity, Schema $schema, array $data): array
     {
@@ -1242,6 +1276,8 @@ class SaveObject
      * @return array The transformed data with "always" defaults applied.
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Default value resolution requires template + type branching
+     *
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
      */
     public function applyAlwaysDefaults(Schema $schema, array $data): array
     {
@@ -1298,6 +1334,8 @@ class SaveObject
      * @param array  $data   The object data to apply defaults to.
      *
      * @return array The data with defaults applied.
+     *
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
      */
     public function applyPropertyDefaults(Schema $schema, array $data): array
     {
@@ -1352,6 +1390,8 @@ class SaveObject
      * @param string $key      The property key to check.
      *
      * @return bool True if the default should be applied.
+     *
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
      */
     private function shouldApplyDefault(string $behavior, array $data, string $key): bool
     {
@@ -1384,6 +1424,8 @@ class SaveObject
      * @param array $schemaProperties The schema properties for template rendering.
      *
      * @return mixed The resolved value, or null if resolution failed.
+     *
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
      */
     private function resolveDefaultTemplateValue($defaultValue, array $context, array $schemaProperties)
     {
@@ -1430,6 +1472,8 @@ class SaveObject
      * @param Schema $schema The schema containing the configuration
      *
      * @return null|string The generated slug or null if no slug could be generated
+     *
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
      */
     private function generateSlug(array $data, Schema $schema): string|null
     {
@@ -1466,6 +1510,8 @@ class SaveObject
      * @param string $text The text to convert to a slug
      *
      * @return string The generated slug
+     *
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
      */
     private function createSlug(string $text): string
     {
@@ -1511,6 +1557,8 @@ class SaveObject
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)  Complex cascading logic with multiple property types
      * @SuppressWarnings(PHPMD.NPathComplexity)       Multiple cascading paths and configurations
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Comprehensive cascading for objects and arrays
+     *
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
      */
     private function cascadeObjects(ObjectEntity $objectEntity, Schema $schema, array $data): array
     {
@@ -1825,6 +1873,8 @@ class SaveObject
      * @SuppressWarnings(PHPMD.StaticAccess)         Uuid::isValid is standard Symfony UID pattern
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Complex array object cascading logic
      * @SuppressWarnings(PHPMD.NPathComplexity)      Multiple validation and processing paths
+     *
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
      */
     private function cascadeMultipleObjects(ObjectEntity $objectEntity, array $property, array $propData): array
     {
@@ -1954,6 +2004,8 @@ class SaveObject
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Complex single object cascading with relation handling
      * @SuppressWarnings(PHPMD.NPathComplexity)      Multiple configuration and validation paths
+     *
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
      */
     private function cascadeSingleObject(ObjectEntity $objectEntity, array $definition, array $object): ?string
     {
@@ -2068,6 +2120,8 @@ class SaveObject
      * @param Schema|null   $schema        Optional schema to scope the lookup.
      *
      * @return void
+     *
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
      */
     private function deleteOrphanedRelatedObjects(
         array $orphanedUuids,
@@ -2145,6 +2199,8 @@ class SaveObject
      * @param int|string $schemaId The schema ID to look up properties.
      *
      * @return array The data with all schema properties present (missing ones set to null).
+     *
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
      */
     private function fillMissingSchemaPropertiesWithNull(array $data, int|string $schemaId): array
     {
@@ -2187,6 +2243,8 @@ class SaveObject
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)  Complex write-back logic with multiple configurations
      * @SuppressWarnings(PHPMD.NPathComplexity)       Multiple property and item level configurations
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Comprehensive write-back handling for all relation types
+     *
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
      */
     private function handleInverseRelationsWriteBack(ObjectEntity $objectEntity, Schema $schema, array $data): array
     {
@@ -2399,6 +2457,8 @@ class SaveObject
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Complex sanitization logic for multiple property types
      * @SuppressWarnings(PHPMD.NPathComplexity)      Multiple property types and required states
+     *
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
      */
     private function sanitizeEmptyStringsForObjectProperties(array $data, Schema $schema): array
     {
@@ -2505,6 +2565,8 @@ class SaveObject
      *
      * @SuppressWarnings(PHPMD.ExcessiveParameterList) Required for flexible save options
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag)    Boolean flags needed for flexible save behavior
+     *
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
      */
     public function saveObject(
         Register | int | string | null $register,
@@ -2666,6 +2728,8 @@ class SaveObject
      * @param array|null  $uploadedFiles Uploaded files
      *
      * @return array{0: string|null, 1: array, 2: array} [uuid, selfData, cleanedData]
+     *
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
      */
     private function extractUuidAndSelfData(
         array $data,
@@ -2714,6 +2778,8 @@ class SaveObject
      * @throws Exception If schema or register cannot be resolved
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Multiple type resolution paths for schema and register
+     *
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
      */
     private function resolveSchemaAndRegister(
         Schema | int | string $schema,
@@ -2782,6 +2848,8 @@ class SaveObject
      * @return ObjectEntity|null Existing object or null if not found.
      *
      * @throws Exception If object is locked by another user.
+     *
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
      */
     private function findAndValidateExistingObject(
         string $uuid,
@@ -2838,6 +2906,8 @@ class SaveObject
      * @param bool         $silent         Whether to skip audit trail
      *
      * @return ObjectEntity Updated object
+     *
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
      */
     private function handleObjectUpdate(
         ObjectEntity $existingObject,
@@ -2918,6 +2988,8 @@ class SaveObject
      * @throws Exception If file processing fails
      *
      * @SuppressWarnings(PHPMD.ExcessiveParameterList) Required for flexible object creation
+     *
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
      */
     private function handleObjectCreation(
         int $registerId,
@@ -3021,6 +3093,8 @@ class SaveObject
      * @return ObjectEntity Updated object with file IDs
      *
      * @throws Exception If file processing fails
+     *
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
      */
     private function processFilePropertiesWithRollback(
         ObjectEntity $savedEntity,
@@ -3143,6 +3217,8 @@ class SaveObject
      * @param Schema       $schema      Schema entity
      *
      * @return void
+     *
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
      */
     private function clearImageMetadataIfFileProperty(
         ObjectEntity $savedEntity,
@@ -3182,6 +3258,8 @@ class SaveObject
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)  Complex preparation with multiple transformations
      * @SuppressWarnings(PHPMD.NPathComplexity)       Multiple optional configuration paths
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Comprehensive preparation requires extended logic
+     *
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
      */
     private function prepareObjectForCreation(
         ObjectEntity $objectEntity,
@@ -3279,6 +3357,8 @@ class SaveObject
      * @return ObjectEntity The prepared object entity.
      *
      * @throws Exception If there is an error during preparation.
+     *
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
      */
     private function prepareObjectForUpdate(
         ObjectEntity $existingObject,
@@ -3356,6 +3436,8 @@ class SaveObject
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Complex metadata extraction from multiple sources
      * @SuppressWarnings(PHPMD.NPathComplexity)      Multiple optional metadata fields with validation
+     *
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
      */
     private function setSelfMetadata(ObjectEntity $objectEntity, array $selfData, array $data=[]): void
     {
@@ -3387,6 +3469,8 @@ class SaveObject
      * @param array        $selfData     The @self metadata from the request
      *
      * @return void
+     *
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
      */
     private function populateTmloDefaults(ObjectEntity $objectEntity, Schema $schema, array $selfData): void
     {
@@ -3431,6 +3515,8 @@ class SaveObject
      * @return void
      *
      * @throws Exception If TMLO validation fails
+     *
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
      */
     private function validateTmloOnUpdate(ObjectEntity $existingObject, array $selfData): void
     {
@@ -3481,6 +3567,8 @@ class SaveObject
      * @throws ValidationException If a referenced object does not exist.
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Multiple property type checks
+     *
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
      */
     private function validateReferences(
         Schema $schema,
@@ -3558,6 +3646,8 @@ class SaveObject
      * @return void
      *
      * @throws ValidationException If the referenced object does not exist (HTTP 422).
+     *
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
      */
     private function validateReferenceExists(
         string $propertyName,
@@ -3651,6 +3741,8 @@ class SaveObject
      * @return array The prepared object data.
      *
      * @throws Exception If there is an error during preparation.
+     *
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
      */
     private function prepareObjectData(ObjectEntity $objectEntity, Schema $schema, array $data): array
     {
@@ -3711,6 +3803,8 @@ class SaveObject
      * @param array        $data         The parent object's data.
      *
      * @return void
+     *
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
      */
     private function preCacheParentName(ObjectEntity $objectEntity, Schema $schema, array $data): void
     {
@@ -3773,6 +3867,8 @@ class SaveObject
      * @SuppressWarnings(PHPMD.NPathComplexity)       Multiple update paths and file processing
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Comprehensive update with file handling
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag)   Silent flag needed for audit trail control
+     *
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
      */
     public function updateObject(
         Register | int | string $register,
@@ -3942,6 +4038,8 @@ class SaveObject
      * @param array $object The object data to check
      *
      * @return bool True if the object is effectively empty, false otherwise
+     *
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
      */
     private function isEffectivelyEmptyObject(array $object): bool
     {
@@ -3975,6 +4073,8 @@ class SaveObject
      * @return bool True if the value is not empty, false otherwise
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Multiple value type checks required
+     *
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
      */
     private function isValueNotEmpty($value): bool
     {
@@ -4018,6 +4118,8 @@ class SaveObject
      * Check if audit trails are enabled in the settings
      *
      * @return bool True if audit trails are enabled, false otherwise
+     *
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
      */
     private function isAuditTrailsEnabled(): bool
     {

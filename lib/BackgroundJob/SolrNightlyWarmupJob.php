@@ -68,6 +68,8 @@ class SolrNightlyWarmupJob extends TimedJob
      * Initializes the timed job with the time factory and sets the interval.
      *
      * @param ITimeFactory $time Time factory for parent class
+     *
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-10
      */
     public function __construct(ITimeFactory $time)
     {
@@ -84,6 +86,8 @@ class SolrNightlyWarmupJob extends TimedJob
      *
      * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
+     *
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-10
      */
     protected function run($argument): void
     {
@@ -239,6 +243,8 @@ class SolrNightlyWarmupJob extends TimedJob
      * @return float Objects indexed per second
      *
      * @psalm-suppress UnusedMethod
+     *
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-10
      */
     private function calculateObjectsPerSecond(array $result, float $executionTime): float
     {
@@ -261,6 +267,8 @@ class SolrNightlyWarmupJob extends TimedJob
      * @psalm-suppress UnusedMethod
      *
      * @psalm-return int<0, max>
+     *
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-10
      */
     private function countSuccessfulWarmupQueries(array $operations): int
     {
@@ -283,6 +291,8 @@ class SolrNightlyWarmupJob extends TimedJob
      * @return float Efficiency percentage
      *
      * @psalm-suppress UnusedMethod
+     *
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-10
      */
     private function calculateWarmupEfficiency(array $result): float
     {
@@ -317,6 +327,8 @@ class SolrNightlyWarmupJob extends TimedJob
      * @param LoggerInterface $logger          Logger instance
      *
      * @return bool True if SOLR is enabled and available, false otherwise
+     *
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-10
      */
     private function isSolrEnabledAndAvailable(
         IndexService $solrService,
@@ -350,6 +362,8 @@ class SolrNightlyWarmupJob extends TimedJob
      * @return array Warmup configuration array
      *
      * @SuppressWarnings(PHPMD.UnusedFormalParameter)
+     *
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-10
      */
     private function getWarmupConfiguration(
         SettingsService $_settingsService,
@@ -381,6 +395,8 @@ class SolrNightlyWarmupJob extends TimedJob
      * @return (float|int)[]
      *
      * @psalm-return array{total: int<0, max>, successful: int<0, max>, efficiency: float}
+     *
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-10
      */
     private function summarizeOperations(array $operations): array
     {
@@ -399,6 +415,8 @@ class SolrNightlyWarmupJob extends TimedJob
      * @param LoggerInterface $logger        Logger instance
      *
      * @return void
+     *
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-10
      */
     private function logPerformanceStats(array $result, float $executionTime, LoggerInterface $logger): void
     {

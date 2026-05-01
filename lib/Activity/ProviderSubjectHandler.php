@@ -53,6 +53,8 @@ class ProviderSubjectHandler
      * @param array  $params The subject parameters.
      *
      * @return void
+     *
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-2
      */
     public function applySubjectText(IEvent $event, object $l, array $params): void
     {
@@ -83,6 +85,8 @@ class ProviderSubjectHandler
      * @param string $title The entity title.
      *
      * @return array The rich parameters.
+     *
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-2
      */
     private function buildRichParams(IEvent $event, string $title): array
     {
@@ -106,6 +110,8 @@ class ProviderSubjectHandler
      * @param array  $richParams The rich parameters.
      *
      * @return void
+     *
+     * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-2
      */
     private function applySimpleSubject(
         IEvent $event,

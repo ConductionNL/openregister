@@ -60,6 +60,8 @@ class MetadataHydrationHandler
      *
      * @param LoggerInterface $logger       Logger interface for logging operations.
      * @param CacheHandler    $cacheHandler Cache handler for UUID-to-name resolution.
+     *
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-5
      */
     public function __construct(
         private readonly LoggerInterface $logger,
@@ -89,6 +91,8 @@ class MetadataHydrationHandler
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)
      * @SuppressWarnings(PHPMD.NPathComplexity)
+     *
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-5
      */
     public function hydrateObjectMetadata(ObjectEntity $entity, Schema $schema): void
     {
@@ -209,6 +213,8 @@ class MetadataHydrationHandler
      * @param array $fieldNames Array of field names to try in order of preference.
      *
      * @return string|null The first non-empty value found, or null.
+     *
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-5
      */
     private function tryCommonFields(array $data, array $fieldNames): ?string
     {
@@ -234,6 +240,8 @@ class MetadataHydrationHandler
      * @param string $path The dot notation path (e.g., 'name', 'contact.email', 'address.street').
      *
      * @return mixed The value at the path, or null if not found.
+     *
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-5
      */
     public function getValueFromPath(array $data, string $path)
     {
@@ -274,6 +282,8 @@ class MetadataHydrationHandler
      * @param array  $schemaProperties Optional schema properties for relation field detection.
      *
      * @return string|null The extracted/concatenated value, or null if not found.
+     *
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-5
      */
     public function extractMetadataValue(array $data, string $fieldPath, array $schemaProperties=[]): ?string
     {
@@ -309,6 +319,8 @@ class MetadataHydrationHandler
      * @param array  $schemaProperties Optional schema properties for relation field detection.
      *
      * @return string|null The first non-empty value found, or null if none found.
+     *
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-5
      */
     public function processFieldWithFallbacks(array $data, string $fieldChain, array $schemaProperties=[]): ?string
     {
@@ -361,6 +373,8 @@ class MetadataHydrationHandler
      * @param array  $schemaProperties Optional schema properties for relation field detection.
      *
      * @return null|string The processed result or null if no values found.
+     *
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-5
      */
     public function processTwigLikeTemplate(array $data, string $template, array $schemaProperties=[]): string|null
     {
@@ -456,6 +470,8 @@ class MetadataHydrationHandler
      * @param string $mapDefinition The map definition string (e.g., "key1=val1, key2=val2").
      *
      * @return string|null The mapped value, the raw field value as fallback, or null if field is empty.
+     *
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-5
      */
     public function processMapFilter(array $data, string $fieldName, string $mapDefinition): ?string
     {
@@ -503,6 +519,8 @@ class MetadataHydrationHandler
      * @param string $definition The comma-separated pair "valueIfFilled, valueIfEmpty".
      *
      * @return string|null The selected value based on whether the field is filled or empty.
+     *
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-5
      */
     public function processIfFilledFilter(array $data, string $fieldName, string $definition): ?string
     {
@@ -539,6 +557,8 @@ class MetadataHydrationHandler
      * @param array  $schemaProperties The schema properties for relation detection.
      *
      * @return string|null The resolved name, or the original value if not a relation.
+     *
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-5
      */
     private function resolveRelationValue(string $fieldName, mixed $value, array $schemaProperties): ?string
     {
@@ -599,6 +619,8 @@ class MetadataHydrationHandler
      * @param array $property The schema property definition.
      *
      * @return bool True if the property is a relation.
+     *
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-5
      */
     private function isRelationProperty(array $property): bool
     {
@@ -649,6 +671,8 @@ class MetadataHydrationHandler
      * @param mixed $value The value to extract a UUID from.
      *
      * @return string|null The extracted UUID or null.
+     *
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-5
      */
     private function extractUuidFromValue(mixed $value): ?string
     {
@@ -678,6 +702,8 @@ class MetadataHydrationHandler
      * @param string $value The value to convert to a slug.
      *
      * @return string|null The generated slug or null if value is empty.
+     *
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-5
      */
     public function createSlugFromValue(string $value): ?string
     {
@@ -706,6 +732,8 @@ class MetadataHydrationHandler
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Multiple fallback paths for slug source determination
      * @SuppressWarnings(PHPMD.NPathComplexity)      Multiple nested conditional paths for evaluating different field options
+     *
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-5
      */
     public function generateSlug(array $data, Schema $schema): string|null
     {
@@ -760,6 +788,8 @@ class MetadataHydrationHandler
      * @param string $text The text to convert to a slug.
      *
      * @return string The generated slug.
+     *
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-5
      */
     public function createSlug(string $text): string
     {

@@ -57,6 +57,8 @@ class GetObject
      * @param MagicMapper      $objectMapper     Object entity data mapper.
      * @param AuditTrailMapper $auditTrailMapper Audit trail mapper for logs.
      * @param SettingsService  $settingsService  Settings service for accessing trail settings.
+     *
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
      */
     public function __construct(
         private readonly MagicMapper $objectMapper,
@@ -84,6 +86,8 @@ class GetObject
      *
      * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag)   Boolean flags required for flexible API filtering
+     *
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
      */
     public function find(
         string $id,
@@ -137,6 +141,8 @@ class GetObject
      *
      * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag)   Boolean flags required for flexible API filtering
+     *
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
      */
     public function findSilent(
         string $id,
@@ -188,6 +194,8 @@ class GetObject
      * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      * @SuppressWarnings(PHPMD.ExcessiveParameterList) Required for flexible query interface
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag)    Boolean flags required for flexible API filtering
+     *
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
      */
     public function findAll(
         ?int $limit=null,
@@ -235,6 +243,8 @@ class GetObject
      * @param array        $files  The files to add to the object.
      *
      * @return ObjectEntity The hydrated object.
+     *
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
      */
     private function hydrateFiles(ObjectEntity $object, array $files): ObjectEntity
     {
@@ -276,6 +286,8 @@ class GetObject
      *
      * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag)   Boolean flags required for flexible API filtering
+     *
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
      */
     public function findLogs(
         ObjectEntity $object,
@@ -304,6 +316,8 @@ class GetObject
      * Check if audit trails are enabled in the settings
      *
      * @return bool True if audit trails are enabled, false otherwise
+     *
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-1
      */
     private function isAuditTrailsEnabled(): bool
     {

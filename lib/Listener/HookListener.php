@@ -15,6 +15,8 @@
  * @version GIT: <git-id>
  *
  * @link https://www.OpenRegister.app
+ *
+ * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-71
  */
 
 declare(strict_types=1);
@@ -66,6 +68,9 @@ class HookListener implements IEventListener
      * @param Event $event The lifecycle event
      *
      * @return void
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-65
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-71
      */
     public function handle(Event $event): void
     {
@@ -106,6 +111,8 @@ class HookListener implements IEventListener
      * @param Event $event The lifecycle event
      *
      * @return ObjectEntity|null The object entity or null
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-65
      */
     private function getObjectFromEvent(Event $event): ?ObjectEntity
     {

@@ -54,6 +54,8 @@ class OpenConnectorTransport implements TransportInterface
      * @param array<string,mixed> $config      OpenConnector configuration: sourceId, baseUrl.
      *
      * @return TransportResult The result of the transport.
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-21
      */
     public function send(string $sipFilePath, array $config): TransportResult
     {
@@ -123,6 +125,8 @@ class OpenConnectorTransport implements TransportInterface
      * @param array<string,mixed> $config OpenConnector configuration.
      *
      * @return bool True if connection test succeeds.
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-21
      */
     public function testConnection(array $config): bool
     {
@@ -151,6 +155,8 @@ class OpenConnectorTransport implements TransportInterface
      * Get transport name.
      *
      * @return string The transport name.
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-21
      */
     public function getName(): string
     {
@@ -165,6 +171,8 @@ class OpenConnectorTransport implements TransportInterface
      * @return void
      *
      * @throws RuntimeException If required configuration is missing.
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-21
      */
     private function validateConfig(array $config): void
     {

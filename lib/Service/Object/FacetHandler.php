@@ -22,6 +22,9 @@
  * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-33
  * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-34
  * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-36
+ * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-43
+ * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-44
+ * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-45
  */
 
 declare(strict_types=1);
@@ -100,6 +103,8 @@ class FacetHandler
      * @param LoggerInterface $logger              Logger for debugging and monitoring.
      *
      * @return void
+     *
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-9
      */
     public function __construct(
         private readonly MagicMapper $unifiedObjectMapper,
@@ -161,6 +166,7 @@ class FacetHandler
      * @phpstan-return array<string, mixed>
      *
      * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-33
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-43
      */
     public function getFacetsForObjects(array $query=[]): array
     {
@@ -250,6 +256,7 @@ class FacetHandler
      * @phpstan-return array<string, mixed>
      *
      * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-32
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-44
      */
     public function getFacetableFields(array $baseQuery=[], int $_sampleSize=100): array
     {
@@ -288,6 +295,7 @@ class FacetHandler
      * @phpstan-return array<int, string>
      *
      * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-32
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-45
      */
     public function getMetadataFacetableFields(): array
     {
@@ -892,6 +900,8 @@ class FacetHandler
      * @param string $field The field name.
      *
      * @return string The sanitized field name.
+     *
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-9
      */
     private function sanitizeFieldName(string $field): string
     {
@@ -908,6 +918,8 @@ class FacetHandler
      * @param array $facetData The facet data with type and buckets.
      *
      * @return string The inferred data type.
+     *
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-9
      */
     private function inferDataType(array $facetData): string
     {
@@ -944,6 +956,8 @@ class FacetHandler
      * @param array $facetConfig Facet configuration.
      *
      * @return string Cache key.
+     *
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-9
      */
     private function generateFacetCacheKey(array $facetQuery, array $facetConfig): string
     {
@@ -979,6 +993,8 @@ class FacetHandler
      * @param string $cacheKey Cache key to lookup.
      *
      * @return array|null Cached response or null if not found.
+     *
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-9
      */
     private function getCachedFacetResponse(string $cacheKey): ?array
     {
@@ -1011,6 +1027,8 @@ class FacetHandler
      * @param array  $result   Facet result to cache.
      *
      * @return void
+     *
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-9
      */
     private function cacheFacetResponse(string $cacheKey, array $result): void
     {
@@ -1077,6 +1095,8 @@ class FacetHandler
      * @param array $query Query parameters.
      *
      * @return bool True if query has restrictive filters.
+     *
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-9
      */
     private function hasRestrictiveFilters(array $query): bool
     {
@@ -1103,6 +1123,8 @@ class FacetHandler
      * @return Schema[] Array of Schema objects.
      *
      * @psalm-return array<Schema>
+     *
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-9
      */
     private function getSchemasForQuery(array $baseQuery): array
     {
@@ -1151,6 +1173,8 @@ class FacetHandler
      * @param mixed $facetable The facetable value from a schema property.
      *
      * @return array|null Normalized config or null if not facetable.
+     *
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-9
      */
     private function normalizeFacetConfig(mixed $facetable): ?array
     {

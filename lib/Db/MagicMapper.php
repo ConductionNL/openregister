@@ -384,7 +384,8 @@ class MagicMapper extends AbstractObjectMapper
             db: $this->db,
             logger: $this->logger,
             rbacHandler: $this->rbacHandler,
-            organizationHandler: $this->organizationHandler
+            organizationHandler: $this->organizationHandler,
+            schemaTypeConverter: $this->container->get(\OCA\OpenRegister\Service\Object\SchemaTypeConverter::class)
         );
 
         $this->bulkHandler = new MagicBulkHandler(
@@ -417,7 +418,8 @@ class MagicMapper extends AbstractObjectMapper
             logger: $this->logger,
             registerMapper: $this->registerMapper,
             schemaMapper: $this->schemaMapper,
-            dateTimeNormalizer: $this->container->get(\OCA\OpenRegister\Service\DateTimeNormalizer::class)
+            dateTimeNormalizer: $this->container->get(\OCA\OpenRegister\Service\DateTimeNormalizer::class),
+            schemaTypeConverter: $this->container->get(\OCA\OpenRegister\Service\Object\SchemaTypeConverter::class)
         );
 
         // Use setter injection for the count callback to avoid circular dependency.

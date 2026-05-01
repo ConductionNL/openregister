@@ -85,6 +85,8 @@ class RevertHandler
      * @throws \Exception If reversion fails
      *
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Boolean needed to control version overwrite behavior
+     *
+     * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-12
      */
     public function revert(
         string $register,

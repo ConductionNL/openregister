@@ -632,7 +632,7 @@ export default {
 					return {
 						id: schema.id,
 						title: schema.title || schema.name || `Schema ${schema.id}`,
-						properties: schema.properties,
+						properties: this.resolveInheritedProperties(schema),
 					}
 				})
 				.filter(Boolean) // Remove null entries
@@ -996,6 +996,27 @@ export default {
 			this.updateRouteQueryFromState()
 		},
 
+		/**
+		 * Merge inherited properties from allOf parent schemas into the given schema's own properties.
+		 * Own properties take precedence over inherited ones.
+		 * @param {object} schema - Schema object with optional allOf and properties
+		 * @return {object} Merged properties object
+		 */
+		resolveInheritedProperties(schema) {
+			const allOf = schema?.allOf || []
+			const inherited = {}
+			for (const ref of allOf) {
+				const schemaId = typeof ref === 'object' ? ref.id : ref
+				const parentSchema = schemaStore.schemaList.find(s =>
+					s.id === schemaId || s.uuid === schemaId || String(s.id) === String(schemaId),
+				)
+				if (parentSchema?.properties) {
+					Object.assign(inherited, parentSchema.properties)
+				}
+			}
+			return { ...inherited, ...(schema?.properties || {}) }
+		},
+
 		/** Load facet options for type 'search' via _facets=extend; facet data then comes from objectStore.searchFacets. */
 		async discoverFacets() {
 			if (!objectStore.searchParams.register || !objectStore.searchParams.schema) return
@@ -1004,8 +1025,9 @@ export default {
 				this.facetableFields = null
 				await objectStore.refetchSearchCollection({ _facets: 'extend', _limit: 0 })
 				this.facetData = objectStore.searchFacets || null
-				this.facetableFields = objectStore.searchSchema?.properties
-					? { object_fields: objectStore.searchSchema.properties }
+				const searchSchema = objectStore.searchSchema
+				this.facetableFields = searchSchema?.properties
+					? { object_fields: this.resolveInheritedProperties(searchSchema) }
 					: {}
 			} catch (error) {
 				console.error('Error loading complete faceting data:', error)

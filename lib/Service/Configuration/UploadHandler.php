@@ -82,6 +82,8 @@ class UploadHandler
      * @psalm-return JSONResponse<400, array{error?: string, 'MIME-type'?: string,
      *     message?: 'Expected only 1 file.', 'Content-Type'?: string},
      *     array<never, never>>|array
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-29
      */
     public function getUploadedJson(array $data, ?array $uploadedFiles): array|JSONResponse
     {
@@ -126,6 +128,8 @@ class UploadHandler
      * @return array|null The decoded data or null.
      *
      * @SuppressWarnings(PHPMD.StaticAccess) Yaml::parse is standard Symfony Yaml pattern
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-29
      */
     private function decode(string $data, ?string $type): ?array
     {
@@ -165,6 +169,8 @@ class UploadHandler
      * @param mixed $data The data to convert.
      *
      * @return array The converted array data.
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-29
      */
     private function ensureArrayStructure(mixed $data): array
     {
@@ -196,6 +202,8 @@ class UploadHandler
      * @psalm-return JSONResponse<400, array{error: string, 'MIME-type'?: string}, array<never, never>>|array
      *
      * @SuppressWarnings(PHPMD.UnusedFormalParameter)
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-29
      */
     private function getJSONfromFile(array $uploadedFile, ?string $_type=null): array|JSONResponse
     {
@@ -231,6 +239,8 @@ class UploadHandler
      * @throws GuzzleException
      *
      * @psalm-return JSONResponse<400, array{error: string, 'Content-Type'?: string}, array<never, never>>|array
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-29
      */
     private function getJSONfromURL(string $url): array|JSONResponse
     {
@@ -267,6 +277,8 @@ class UploadHandler
      * @return array|JSONResponse A PHP array with the uploaded json data or a JSONResponse in case of an error.
      *
      * @psalm-return JSONResponse<400, array{error: 'Failed to decode JSON input'}, array<never, never>>|array
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-29
      */
     private function getJSONfromBody(array | string $phpArray): array|JSONResponse
     {

@@ -16,6 +16,7 @@
  *
  * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-9
  * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-10
+ * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-23
  */
 
 declare(strict_types=1);
@@ -257,6 +258,7 @@ class ImportService
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Boolean flags control import behavior options
      *
      * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-9
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-23
      */
     public function importFromExcel(
         string $filePath,
@@ -341,6 +343,8 @@ class ImportService
      * @return array Import results by schema
      *
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Boolean flags control import behavior options
+     *
+     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-23
      */
     public function importFromCsv(
         string $filePath,
