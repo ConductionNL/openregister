@@ -24,11 +24,11 @@
 
 ## Phase 1 — declarative dashboards (MVP)
 
-- [ ] **Configurable report templates.** Ship a `report-bundle.json` configuration import (`lib/Resources/RapportageSchemas/report-bundle.json`) containing the `reports` register + `dashboard` schema with the documented widget shape (`{type, title, dataSource: {register, schema, aggregation}, options}`). Operators import once via `POST /api/configurations/import`, then create dashboards as standard objects.
+- [x] **Configurable report templates.** Ship a `report-bundle.json` configuration import (`lib/Resources/RapportageSchemas/report-bundle.json`) containing the `reports` register + `dashboard` schema with the documented widget shape (`{type, title, dataSource: {register, schema, aggregation}, options}`). Operators import once via `POST /api/configurations/import`, then create dashboards as standard objects.
 
-- [ ] **Frontend dashboard renderer.** `src/views/reports/ReportView.vue` renders a single dashboard via `CnDashboardPage` + maps each widget's `type` to the matching `Cn*Widget` (`CnChartWidget` / `CnTableWidget` / `CnKpiGrid` / `CnSparklineWidget` / `CnTileWidget`), feeding it from the AggregationRunner output. `src/views/reports/ReportsIndex.vue` lists dashboards in the `reports` register; `src/store/modules/reports.js` Pinia store wraps the aggregation API + caches widget responses per session.
+- [x] **Frontend dashboard renderer.** `src/views/reports/ReportView.vue` renders a single dashboard via `CnDashboardPage` + maps each widget's `type` to the matching `Cn*Widget` (`CnChartWidget` / `CnTableWidget` / `CnKpiGrid` / `CnSparklineWidget` / `CnTileWidget`), feeding it from the AggregationRunner output. `src/views/reports/ReportsIndex.vue` lists dashboards in the `reports` register; `src/store/modules/reports.js` Pinia store wraps the aggregation API + caches widget responses per session.
 
-- [ ] **Widget annotation validator.** `lib/Service/Aggregation/WidgetAnnotationValidator.php` validates the `widgets[]` array shape at schema-save time (mirrors `LifecycleAnnotationValidator` pattern); surfaces shape errors via the standard schema-validation error envelope.
+- [ ] **Widget annotation validator.** `lib/Service/Aggregation/WidgetAnnotationValidator.php` validates the `widgets[]` array shape at schema-save time (mirrors `LifecycleAnnotationValidator` pattern); surfaces shape errors via the standard schema-validation error envelope. *(Outstanding — Phase 1 shipped without this; widgets currently validate at render time inside `ReportRenderService::resolveWidgetData` which silently drops malformed widgets. Operator-facing schema-save validation is the gap.)*
 
 ## Phase 2 — export + scheduling
 
