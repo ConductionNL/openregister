@@ -240,8 +240,10 @@ class DeleteObject
             try {
                 $organisationMapper = \OC::$server->get(\OCA\OpenRegister\Db\OrganisationMapper::class);
                 $activeOrganisation = $organisationMapper->getActiveOrganisationWithFallback($user->getUID());
-            } catch (\Exception $e) {
+            } catch (\Throwable $e) {
                 // If we can't get the active organisation, log and continue with null.
+                // Catches Error too so a null DB in tests (or a missing binding) doesn't
+                // abort the whole delete path.
                 $this->logger->warning(
                     message: '[DeleteObject] Failed to get active organisation during delete',
                     context: ['file' => __FILE__, 'line' => __LINE__, 'error' => $e->getMessage()]

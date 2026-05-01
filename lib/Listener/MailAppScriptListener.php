@@ -24,9 +24,11 @@ namespace OCA\OpenRegister\Listener;
 
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCP\App\IAppManager;
+use OCP\AppFramework\Http\TemplateResponse;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventListener;
 use OCP\IUserSession;
+use OCP\AppFramework\Http\Events\BeforeTemplateRenderedEvent;
 use OCP\Util;
 use Psr\Log\LoggerInterface;
 
@@ -72,10 +74,14 @@ class MailAppScriptListener implements IEventListener
      */
     public function handle(Event $event): void
     {
-        // Only handle BeforeTemplateRenderedEvent from the Mail app.
-        // We use string comparison to avoid a hard dependency on the Mail app classes.
-        $eventClass = get_class($event);
-        if (str_contains($eventClass, 'OCA\\Mail\\') === false) {
+        /*
+         * Handle two shapes of "mail app is rendering" events:
+         * 1. An OCA\Mail\* custom event (legacy Mail-app-specific events).
+         * 2. Nextcloud core BeforeTemplateRenderedEvent whose response->getApp()
+         *    is 'mail' (what Mail actually dispatches today).
+         */
+
+        if ($this->isMailRenderEvent(event: $event) === false) {
             return;
         }
 
@@ -126,4 +132,30 @@ class MailAppScriptListener implements IEventListener
             return false;
         }
     }//end userHasRegisterAccess()
+
+    /**
+     * Whether $event signals that the Mail app is about to render a template.
+     *
+     * Accepts OCA\Mail\* custom events (legacy) AND Nextcloud core
+     * BeforeTemplateRenderedEvent whose response app is 'mail'.
+     *
+     * @param Event $event The dispatched event.
+     *
+     * @return bool True if this is a mail-app render event.
+     */
+    private function isMailRenderEvent(Event $event): bool
+    {
+        if (str_contains(get_class($event), 'OCA\\Mail\\') === true) {
+            return true;
+        }
+
+        if ($event instanceof BeforeTemplateRenderedEvent) {
+            $response = $event->getResponse();
+            if ($response instanceof TemplateResponse && $response->getApp() === 'mail') {
+                return true;
+            }
+        }
+
+        return false;
+    }//end isMailRenderEvent()
 }//end class

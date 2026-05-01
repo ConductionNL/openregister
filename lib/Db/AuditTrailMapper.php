@@ -272,19 +272,27 @@ class AuditTrailMapper extends QBMapper
             $objectEntity = $new;
         }
 
-        if ($action === 'delete') {
+        if ($action === 'delete' || str_starts_with((string) $action, 'referential_integrity.') === true) {
             $objectEntity = $old;
         }
 
         // Initialize an array to store changed fields.
         $changed = [];
-        if ($action !== 'delete' && $action !== 'read') {
+        // Treat delete-ish actions (including referential_integrity.*_delete /
+        // set_null / set_default / restrict_blocked) as "no new state" — $new
+        // is legitimately null here and the per-field diff below would blow up.
+        $isDeleteAction = (
+            $action === 'delete'
+            || $action === 'read'
+            || str_starts_with($action, 'referential_integrity.') === true
+        );
+        if ($isDeleteAction === false) {
             $oldArray = [];
             if ($old !== null) {
                 $oldArray = $old->jsonSerialize();
             }
 
-            $newArray = $new->jsonSerialize();
+            $newArray = ($new !== null) ? $new->jsonSerialize() : [];
 
             // Compare old and new values to detect changes.
             foreach ($newArray as $key => $value) {
@@ -1470,6 +1478,175 @@ class AuditTrailMapper extends QBMapper
 
         return $this->insert(entity: $auditTrail);
     }//end createAuditTrailEntry()
+
+
+    /**
+     * Get processing activities from audit trail entries.
+     *
+     * Groups audit trail entries by processing activity ID and returns
+     * summary statistics for each activity.
+     *
+     * @param string|null $organisationId Optional organisation filter
+     *
+     * @return array List of processing activity summaries
+     */
+    public function getProcessingActivities(?string $organisationId=null): array
+    {
+        $qb = $this->db->getQueryBuilder();
+
+        $qb->select('*')
+            ->from($this->getTableName())
+            ->orderBy('created', 'DESC');
+
+        if ($organisationId !== null) {
+            $qb->andWhere($qb->expr()->eq('organisation', $qb->createNamedParameter($organisationId)));
+        }
+
+        $result = $qb->executeQuery();
+        $rows   = $result->fetchAll();
+        $result->closeCursor();
+
+        // Group by action type as processing activities.
+        $activities = [];
+        foreach ($rows as $row) {
+            $action = $row['action'] ?? 'unknown';
+            if (isset($activities[$action]) === false) {
+                $activities[$action] = [
+                    'processingActivityId' => $action,
+                    'entryCount'           => 0,
+                    'firstSeen'            => $row['created'] ?? null,
+                    'lastSeen'             => $row['created'] ?? null,
+                ];
+            }
+
+            $activities[$action]['entryCount']++;
+            if (($row['created'] ?? null) !== null) {
+                if ($activities[$action]['firstSeen'] === null || $row['created'] < $activities[$action]['firstSeen']) {
+                    $activities[$action]['firstSeen'] = $row['created'];
+                }
+
+                if ($activities[$action]['lastSeen'] === null || $row['created'] > $activities[$action]['lastSeen']) {
+                    $activities[$action]['lastSeen'] = $row['created'];
+                }
+            }
+        }//end foreach
+
+        return array_values($activities);
+    }//end getProcessingActivities()
+
+
+    /**
+     * Find audit trail entries by identifier.
+     *
+     * Searches the changed JSON field for entries matching the given identifier,
+     * grouped by schema.
+     *
+     * @param string $identifier The identifier to search for
+     *
+     * @return array Matching audit trail entries grouped by schema
+     */
+    public function findByIdentifier(string $identifier): array
+    {
+        $qb = $this->db->getQueryBuilder();
+
+        $likeParam = $qb->createNamedParameter('%'.$this->db->escapeLikeParameter($identifier).'%');
+        $qb->select('*')
+            ->from($this->getTableName())
+            ->where($qb->expr()->like('changed', $likeParam))
+            ->orderBy('created', 'DESC');
+
+        $result = $qb->executeQuery();
+        $rows   = $result->fetchAll();
+        $result->closeCursor();
+
+        // Group results by schema.
+        $grouped = [];
+        foreach ($rows as $row) {
+            $schemaId = $row['schema'] ?? 'unknown';
+            if (isset($grouped[$schemaId]) === false) {
+                $grouped[$schemaId] = [];
+            }
+
+            $grouped[$schemaId][] = $row;
+        }
+
+        return $grouped;
+    }//end findByIdentifier()
+
+
+    /**
+     * Find audit trail entries by the actor (user UID) that produced them.
+     *
+     * Returns an associative array with `results` (array of AuditTrail entities)
+     * and `total` (unbounded count matching the filters).
+     *
+     * @param string      $userId The actor UID to filter on.
+     * @param int         $limit  Maximum number of rows to return.
+     * @param int         $offset Row offset for pagination.
+     * @param string|null $action Optional action filter (create|update|delete).
+     * @param string|null $from   Optional ISO-8601 start date (inclusive).
+     * @param string|null $to     Optional ISO-8601 end date (inclusive).
+     *
+     * @return array{results: array<int, AuditTrail>, total: int}
+     */
+    public function findByActor(
+        string $userId,
+        int $limit=25,
+        int $offset=0,
+        ?string $action=null,
+        ?string $from=null,
+        ?string $to=null
+    ): array {
+        $qb = $this->db->getQueryBuilder();
+
+        $qb->select('*')
+            ->from($this->getTableName())
+            ->where($qb->expr()->eq('user', $qb->createNamedParameter($userId)))
+            ->orderBy('created', 'DESC')
+            ->setMaxResults($limit)
+            ->setFirstResult($offset);
+
+        if ($action !== null && $action !== '') {
+            $qb->andWhere($qb->expr()->eq('action', $qb->createNamedParameter($action)));
+        }
+
+        if ($from !== null && $from !== '') {
+            $qb->andWhere($qb->expr()->gte('created', $qb->createNamedParameter($from)));
+        }
+
+        if ($to !== null && $to !== '') {
+            $qb->andWhere($qb->expr()->lte('created', $qb->createNamedParameter($to)));
+        }
+
+        $results = $this->findEntities(query: $qb);
+
+        // Count total matches (unbounded).
+        $count = $this->db->getQueryBuilder();
+        $count->select($count->func()->count('*', 'total_count'))
+            ->from($this->getTableName())
+            ->where($count->expr()->eq('user', $count->createNamedParameter($userId)));
+
+        if ($action !== null && $action !== '') {
+            $count->andWhere($count->expr()->eq('action', $count->createNamedParameter($action)));
+        }
+
+        if ($from !== null && $from !== '') {
+            $count->andWhere($count->expr()->gte('created', $count->createNamedParameter($from)));
+        }
+
+        if ($to !== null && $to !== '') {
+            $count->andWhere($count->expr()->lte('created', $count->createNamedParameter($to)));
+        }
+
+        $result = $count->executeQuery();
+        $row    = $result->fetch();
+        $result->closeCursor();
+
+        return [
+            'results' => $results,
+            'total'   => (int) ($row['total_count'] ?? 0),
+        ];
+    }//end findByActor()
 
 
 }//end class

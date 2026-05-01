@@ -43,8 +43,6 @@ class UserServiceProfileActionsTest extends TestCase
     private IAvatarManager&MockObject $avatarManager;
     private AuditTrailMapper&MockObject $auditTrailMapper;
     private ISecureRandom&MockObject $secureRandom;
-    private IDBConnection&MockObject $db;
-    private IFactory&MockObject $l10nFactory;
 
     protected function setUp(): void
     {
@@ -61,8 +59,6 @@ class UserServiceProfileActionsTest extends TestCase
         $this->avatarManager = $this->createMock(IAvatarManager::class);
         $this->auditTrailMapper = $this->createMock(AuditTrailMapper::class);
         $this->secureRandom = $this->createMock(ISecureRandom::class);
-        $this->db = $this->createMock(IDBConnection::class);
-        $this->l10nFactory = $this->createMock(IFactory::class);
 
         $this->service = new UserService(
             $this->userManager,
@@ -76,8 +72,8 @@ class UserServiceProfileActionsTest extends TestCase
             $this->avatarManager,
             $this->auditTrailMapper,
             $this->secureRandom,
-            $this->db,
-            $this->l10nFactory
+            $this->createMock(IDBConnection::class),
+            $this->createMock(IFactory::class)
         );
     }
 

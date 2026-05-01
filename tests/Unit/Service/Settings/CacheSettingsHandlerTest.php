@@ -16,9 +16,8 @@ declare(strict_types=1);
  * in the same process. Tests that need specific object stats values must account
  * for this.
  *
- * NOTE: clearDistributedCache() returns 'cleared' => 'all' (string), which causes
- * a TypeError when clearCache() tries to sum it in totalCleared. Tests for 'all'
- * and 'distributed' types expect this TypeError.
+ * NOTE: clearDistributedCache() returns 'cleared' => 'all' (string). The handler
+ * guards with is_int() so totalCleared only sums integer values safely.
  */
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Settings;
@@ -35,7 +34,6 @@ use OCP\ICacheFactory;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use RuntimeException;
-use TypeError;
 
 /**
  * Unit tests for CacheSettingsHandler
@@ -316,14 +314,14 @@ class CacheSettingsHandlerTest extends TestCase
     // =========================================================================
 
     /**
-     * Test clearCache with type 'all' triggers TypeError due to distributed 'cleared' => 'all' string
+     * Test clearCache with type 'all' skips non-integer cleared values safely
      *
-     * This is a known bug in the source: clearDistributedCache returns 'cleared' => 'all'
-     * (string) but totalCleared calculation tries to += it with int.
+     * clearDistributedCache returns 'cleared' => 'all' (string), but the handler
+     * now guards with is_int() so totalCleared only sums integer values.
      *
      * @return void
      */
-    public function testClearCacheAllTriggersTypeError(): void
+    public function testClearCacheAllSkipsNonIntCleared(): void
     {
         $this->cacheHandler->method('getStats')
             ->willReturn([
@@ -348,16 +346,18 @@ class CacheSettingsHandlerTest extends TestCase
         $this->cacheFactory->method('createDistributed')
             ->willReturn($distributedCache);
 
-        // Known bug: 'cleared' => 'all' (string) causes TypeError in += operation
-        $this->expectException(TypeError::class);
+        $result = $this->handler->clearCache('all');
 
-        $this->handler->clearCache('all');
+        // Distributed 'cleared' => 'all' (string) is skipped by is_int guard.
+        $this->assertSame('all', $result['type']);
+        $this->assertArrayHasKey('results', $result);
+        $this->assertIsInt($result['totalCleared']);
     }
 
     /**
-     * Test clearCache with type 'all' calls all clear methods before TypeError
+     * Test clearCache with type 'all' calls all clear methods
      *
-     * Verify all clear methods are called even though totalCleared fails
+     * Verify all clear methods are called for every cache type.
      *
      * @return void
      */
@@ -386,14 +386,15 @@ class CacheSettingsHandlerTest extends TestCase
         $this->cacheFactory->method('createDistributed')
             ->willReturn($distributedCache);
 
-        try {
-            $this->handler->clearCache('all');
-        } catch (TypeError $e) {
-            // Expected - all clear methods were still called (verified by expects)
-            return;
-        }
+        $result = $this->handler->clearCache('all');
 
-        $this->fail('Expected TypeError was not thrown');
+        // All clear methods were called (verified by expects above).
+        $this->assertSame('all', $result['type']);
+        $this->assertArrayHasKey('object', $result['results']);
+        $this->assertArrayHasKey('schema', $result['results']);
+        $this->assertArrayHasKey('facet', $result['results']);
+        $this->assertArrayHasKey('distributed', $result['results']);
+        $this->assertArrayHasKey('names', $result['results']);
     }
 
     /**
@@ -454,21 +455,23 @@ class CacheSettingsHandlerTest extends TestCase
     }
 
     /**
-     * Test clearCache with type 'distributed' triggers TypeError in totalCleared
+     * Test clearCache with type 'distributed' skips non-integer cleared value
      *
      * @return void
      */
-    public function testClearCacheDistributedTriggersTypeError(): void
+    public function testClearCacheDistributedSkipsNonIntCleared(): void
     {
         $distributedCache = $this->createMock(ICache::class);
         $distributedCache->expects($this->once())->method('clear');
         $this->cacheFactory->method('createDistributed')
             ->willReturn($distributedCache);
 
-        // Known bug: 'cleared' => 'all' causes TypeError
-        $this->expectException(TypeError::class);
+        $result = $this->handler->clearCache('distributed');
 
-        $this->handler->clearCache('distributed');
+        // 'cleared' => 'all' is a string, skipped by is_int guard.
+        $this->assertSame('distributed', $result['type']);
+        $this->assertSame('all', $result['results']['distributed']['cleared']);
+        $this->assertSame(0, $result['totalCleared']);
     }
 
     /**
@@ -641,11 +644,11 @@ class CacheSettingsHandlerTest extends TestCase
     }
 
     /**
-     * Test clearCache default (no args) triggers TypeError due to distributed
+     * Test clearCache default (no args) clears all types safely
      *
      * @return void
      */
-    public function testClearCacheDefaultTypeTriggersTypeError(): void
+    public function testClearCacheDefaultTypeClearsAll(): void
     {
         $this->cacheHandler->method('getStats')
             ->willReturn(['entries' => 0, 'name_cache_size' => 0, 'name_hits' => 0, 'name_misses' => 0]);
@@ -665,9 +668,10 @@ class CacheSettingsHandlerTest extends TestCase
         $this->cacheFactory->method('createDistributed')
             ->willReturn($distributedCache);
 
-        $this->expectException(TypeError::class);
+        $result = $this->handler->clearCache();
 
-        $this->handler->clearCache();
+        $this->assertSame('all', $result['type']);
+        $this->assertIsInt($result['totalCleared']);
     }
 
     // =========================================================================

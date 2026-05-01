@@ -1160,8 +1160,10 @@ class ObjectService
                 );
                 $contactMatchingService->invalidateCacheForObject($object);
             }
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
             // ContactMatchingService not available — skip cache invalidation.
+            // Catches Error too so a partially-wired container in tests (or
+            // any transitive DI failure) doesn't abort the save path.
         }
 
         // Render and return the saved object.

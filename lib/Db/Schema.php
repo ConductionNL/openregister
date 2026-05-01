@@ -1601,7 +1601,7 @@ class Schema extends Entity implements JsonSerializable
     {
         $validatedConfig = [];
         $stringFields    = ['objectNameField', 'objectDescriptionField', 'objectSummaryField', 'objectImageField'];
-        $boolFields      = ['allowFiles'];
+        $boolFields      = ['allowFiles', 'autoPublish'];
         $passThrough     = ['unique', 'facetCacheTtl', 'calendarProvider'];
 
         foreach ($configuration as $key => $value) {

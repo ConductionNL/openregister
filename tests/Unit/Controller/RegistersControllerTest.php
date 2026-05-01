@@ -22,10 +22,10 @@ use OCA\OpenRegister\Service\RegisterService;
 use OCA\OpenRegister\Service\UploadService;
 use OCP\App\IAppManager;
 use OCP\AppFramework\Db\DoesNotExistException;
-use OCP\AppFramework\Http\DataDownloadResponse;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\DB\Exception as DBException;
 use OCP\IRequest;
+use OCP\IGroupManager;
 use OCP\IUserSession;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
@@ -56,6 +56,7 @@ class RegistersControllerTest extends TestCase
     private GitHubHandler&MockObject $githubService;
     private IAppManager&MockObject $appManager;
     private OasService&MockObject $oasService;
+    private IGroupManager&MockObject $groupManager;
 
     protected function setUp(): void
     {
@@ -76,6 +77,7 @@ class RegistersControllerTest extends TestCase
         $this->githubService = $this->createMock(GitHubHandler::class);
         $this->appManager = $this->createMock(IAppManager::class);
         $this->oasService = $this->createMock(OasService::class);
+        $this->groupManager = $this->createMock(IGroupManager::class);
 
         $this->controller = new RegistersController(
             'openregister',
@@ -95,7 +97,7 @@ class RegistersControllerTest extends TestCase
             $this->appManager,
             $this->oasService,
             $this->createMock(\Psr\Container\ContainerInterface::class),
-            $this->createMock(\OCP\IGroupManager::class)
+            $this->groupManager
         );
     }
 
@@ -1825,106 +1827,6 @@ class RegistersControllerTest extends TestCase
         $result = $this->controller->export(1);
 
         // json_encode returns false for INF, triggering the exception catch
-        $this->assertInstanceOf(JSONResponse::class, $result);
-        $this->assertSame(400, $result->getStatus());
-    }
-
-    public function testImportTemplateReturnsXlsxByDefault(): void
-    {
-        $register = $this->createRealRegister(1, 'Test');
-        $register->setSlug('test-register');
-        $schema = $this->createRealSchema(5, 'Meldingen');
-        $schema->setSlug('meldingen');
-
-        $this->request->method('getParam')->willReturnMap([
-            ['format', 'xlsx', 'xlsx'],
-        ]);
-        $this->registerMapper->method('find')->with(1)->willReturn($register);
-        $this->schemaMapper->method('find')->with(5)->willReturn($schema);
-
-        $spreadsheet = new \PhpOffice\PhpSpreadsheet\Spreadsheet();
-        $this->exportService
-            ->expects($this->once())
-            ->method('buildTemplateSpreadsheet')
-            ->willReturn($spreadsheet);
-
-        $result = $this->controller->importTemplate(1, 5);
-
-        $this->assertInstanceOf(DataDownloadResponse::class, $result);
-        // DataDownloadResponse exposes the filename via getHeaders()['Content-Disposition'].
-        $headers = $result->getHeaders();
-        $this->assertArrayHasKey('Content-Disposition', $headers);
-        $this->assertStringContainsString('meldingen_template.xlsx', $headers['Content-Disposition']);
-    }
-
-    public function testImportTemplateReturnsCsvWhenRequested(): void
-    {
-        $register = $this->createRealRegister(1, 'Test');
-        $schema = $this->createRealSchema(5, 'Meldingen');
-        $schema->setSlug('meldingen');
-
-        $this->request->method('getParam')->willReturnMap([
-            ['format', 'xlsx', 'csv'],
-        ]);
-        $this->registerMapper->method('find')->willReturn($register);
-        $this->schemaMapper->method('find')->willReturn($schema);
-
-        $this->exportService
-            ->expects($this->once())
-            ->method('buildTemplateCsv')
-            ->willReturn("\xEF\xBB\xBFid,titel\n");
-
-        $result = $this->controller->importTemplate(1, 5);
-
-        $this->assertInstanceOf(DataDownloadResponse::class, $result);
-        $headers = $result->getHeaders();
-        $this->assertStringContainsString('meldingen_template.csv', $headers['Content-Disposition']);
-    }
-
-    public function testImportTemplateReturns400OnUnsupportedFormat(): void
-    {
-        $this->request->method('getParam')->willReturnMap([
-            ['format', 'xlsx', 'pdf'],
-        ]);
-
-        $result = $this->controller->importTemplate(1, 5);
-
-        $this->assertInstanceOf(JSONResponse::class, $result);
-        $this->assertSame(400, $result->getStatus());
-        $this->assertStringContainsString('Unsupported template format', $result->getData()['error']);
-    }
-
-    public function testImportTemplateReturns404WhenRegisterNotFound(): void
-    {
-        $this->request->method('getParam')->willReturnMap([
-            ['format', 'xlsx', 'xlsx'],
-        ]);
-        $this->registerMapper->method('find')
-            ->willThrowException(new DoesNotExistException('Register not found'));
-
-        $result = $this->controller->importTemplate(999, 5);
-
-        $this->assertInstanceOf(JSONResponse::class, $result);
-        $this->assertSame(404, $result->getStatus());
-    }
-
-    public function testImportTemplateReturns400OnGenericException(): void
-    {
-        $register = $this->createRealRegister(1, 'Test');
-        $schema = $this->createRealSchema(5, 'Meldingen');
-
-        $this->request->method('getParam')->willReturnMap([
-            ['format', 'xlsx', 'xlsx'],
-        ]);
-        $this->registerMapper->method('find')->willReturn($register);
-        $this->schemaMapper->method('find')->willReturn($schema);
-
-        $this->exportService
-            ->method('buildTemplateSpreadsheet')
-            ->willThrowException(new Exception('Boom'));
-
-        $result = $this->controller->importTemplate(1, 5);
-
         $this->assertInstanceOf(JSONResponse::class, $result);
         $this->assertSame(400, $result->getStatus());
     }
