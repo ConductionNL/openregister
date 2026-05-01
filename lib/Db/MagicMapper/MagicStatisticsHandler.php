@@ -39,6 +39,7 @@ use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\DateTimeNormalizer;
+use OCA\OpenRegister\Service\Object\SchemaTypeConverter;
 use OCP\IDBConnection;
 use Psr\Log\LoggerInterface;
 
@@ -75,18 +76,20 @@ class MagicStatisticsHandler
     /**
      * Constructor for MagicStatisticsHandler
      *
-     * @param IDBConnection      $db                 Database connection for table discovery
-     * @param LoggerInterface    $logger             Logger for debugging and error reporting
-     * @param RegisterMapper     $registerMapper     Mapper for register lookups
-     * @param SchemaMapper       $schemaMapper       Mapper for schema lookups
-     * @param DateTimeNormalizer $dateTimeNormalizer Normaliser for user-supplied datetime values
+     * @param IDBConnection       $db                  Database connection for table discovery
+     * @param LoggerInterface     $logger              Logger for debugging and error reporting
+     * @param RegisterMapper      $registerMapper      Mapper for register lookups
+     * @param SchemaMapper        $schemaMapper        Mapper for schema lookups
+     * @param DateTimeNormalizer  $dateTimeNormalizer  Normaliser for user-supplied datetime values
+     * @param SchemaTypeConverter $schemaTypeConverter Schema-driven type converter for row values
      */
     public function __construct(
         private readonly IDBConnection $db,
         private readonly LoggerInterface $logger,
         private readonly RegisterMapper $registerMapper,
         private readonly SchemaMapper $schemaMapper,
-        private readonly DateTimeNormalizer $dateTimeNormalizer
+        private readonly DateTimeNormalizer $dateTimeNormalizer,
+        private readonly SchemaTypeConverter $schemaTypeConverter
     ) {
     }//end __construct()
 
@@ -569,17 +572,19 @@ class MagicStatisticsHandler
                 $mappedName   = $columnToPropertyMap[$columnName] ?? null;
                 $propertyName = $mappedName ?? $this->columnNameToPropertyName(columnName: $columnName);
 
-                // Apply type conversion based on schema type.
-                // This ensures values match the expected schema type (e.g., numeric strings stay as strings).
+                // Apply schema-driven type coercion. The converter is the single
+                // source of truth for "DB column value → JSON-Schema-typed PHP value"
+                // — see lib/Service/Object/SchemaTypeConverter.php and
+                // openspec/specs/schema-driven-read-coercion/spec.md.
                 $schemaType = $propertyTypes[$propertyName] ?? 'string';
-                if ($schemaType === 'string' && (is_int($value) === true || is_float($value) === true)) {
-                    // Schema expects string but database returned numeric - cast to string.
-                    $value = (string) $value;
-                }
+                $value      = $this->schemaTypeConverter->convertValue(value: $value, schemaType: $schemaType);
 
-                // Format date/datetime values based on schema format.
-                // Empty-string / whitespace-only input normalises to null via DateTimeNormalizer
-                // instead of PHP's "new DateTime('')" silently returning the current timestamp.
+                // Format date/datetime values based on schema format. Runs after type
+                // coercion because the converter does not (and per design D5 should
+                // not) handle format-specific normalisation.
+                // Empty-string / whitespace-only input normalises to null via
+                // DateTimeNormalizer instead of PHP's "new DateTime('')" silently
+                // returning the current timestamp.
                 $propertyFormat = $propertyFormats[$propertyName] ?? null;
                 if ($value !== null && is_string($value) === true && $propertyFormat !== null) {
                     if ($propertyFormat === 'date') {
@@ -590,14 +595,7 @@ class MagicStatisticsHandler
                     }
                 }
 
-                // Decode JSON values if they're JSON strings.
                 $objectData[$propertyName] = $value;
-                if (is_string($value) === true && $this->isJsonString(string: $value) === true) {
-                    $decodedValue = json_decode($value, true);
-                    if ($decodedValue !== null) {
-                        $objectData[$propertyName] = $decodedValue;
-                    }
-                }
             }//end foreach
 
             // Set metadata fields on ObjectEntity.
@@ -744,20 +742,4 @@ class MagicStatisticsHandler
         // Convert snake_case to camelCase.
         return lcfirst(str_replace('_', '', ucwords($columnName, '_')));
     }//end columnNameToPropertyName()
-
-    /**
-     * Check if a string is valid JSON
-     *
-     * @param string $string The string to check
-     *
-     * @return bool True if the string is valid JSON
-     */
-    private function isJsonString(string $string): bool
-    {
-        // Decode JSON to check for errors via json_last_error().
-        // Note: We only care about json_last_error(), not the decoded value.
-        $decoded = json_decode($string);
-        unset($decoded);
-        return json_last_error() === JSON_ERROR_NONE;
-    }//end isJsonString()
 }//end class
