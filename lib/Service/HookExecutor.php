@@ -879,7 +879,7 @@ class HookExecutor
                         'durationMs' => $durationMs,
                         'errors'     => $error !== null ? json_encode([['message' => $error]]) : null,
                         'metadata'   => json_encode($context),
-                        'payload'    => ($payload !== null || $success === false) && $payload !== null ? json_encode($payload) : null,
+                        'payload'    => $payload !== null ? json_encode($payload) : null,
                         'executedAt' => new \DateTime(),
                     ]
                     );

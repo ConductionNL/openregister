@@ -1,7 +1,7 @@
 # Tasks: Nextcloud Entity Relations
 
-> **Status (2026-05-01):** All backend work shipped — tables (`Version1Date20260326000000`), entities/mappers, services, controllers, routes, cleanup listeners, CloudEvents, audit trails, and unit tests are in place (44/53). The 9 open items split into:
-> - **Frontend Vue components (6 items):** `EmailsTab.vue`, `EventsTab.vue`, `ContactsTab.vue`, `DeckTab.vue`, `RelationsTab.vue`, entity stores. Frontend-Vue work, separate scope from this PHP-backend pass.
+> **Status (2026-05-01):** All backend work shipped (44/53). Frontend pass landed `EmailsTab.vue` + `RelationsTab.vue` under `src/components/object-relations/` (46/53). 7 open items remain:
+> - **Frontend Vue components (4 items):** `EventsTab.vue`, `ContactsTab.vue`, `DeckTab.vue`, entity stores — covered next pass.
 > - **Integration tests (3 items):** Greenmail (mail), CalDAV (events), CardDAV (contacts) — require live Nextcloud services and a fixture stack the unit-test pass cannot reach.
 
 ## Database & Infrastructure
@@ -60,11 +60,11 @@
 - [x] Register event listeners for cleanup
 
 ## Frontend
-- [ ] Create EmailsTab.vue component for object detail
+- [x] Create EmailsTab.vue component for object detail (`src/components/object-relations/EmailsTab.vue` — list/unlink linked emails, 501 graceful degradation when Mail app missing, ESLint clean)
 - [ ] Create EventsTab.vue component for object detail
 - [ ] Create ContactsTab.vue component for object detail
 - [ ] Create DeckTab.vue component for object detail
-- [ ] Create RelationsTab.vue unified timeline component
+- [x] Create RelationsTab.vue unified timeline component (`src/components/object-relations/RelationsTab.vue` — type filter chips, normalises both flat-timeline and typed-envelope responses from RelationsController, ESLint clean)
 - [ ] Add entity stores for email/event/contact/deck links
 
 ## Testing

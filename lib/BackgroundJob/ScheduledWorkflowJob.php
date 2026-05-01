@@ -122,7 +122,8 @@ class ScheduledWorkflowJob extends TimedJob
         try {
             $engines = $this->engineRegistry->getEnginesByType($engineType);
             if (empty($engines) === true) {
-                $this->handleError(schedule: $schedule, startTime: $startTime, error: "No engine found for type '$engineType'");
+                $errorMessage = "No engine found for type '$engineType'";
+                $this->handleError(schedule: $schedule, startTime: $startTime, error: $errorMessage);
                 return;
             }
 
