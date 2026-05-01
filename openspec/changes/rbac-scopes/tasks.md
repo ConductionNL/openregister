@@ -1,6 +1,6 @@
 # Tasks: RBAC Scopes
 
-> **Status (Phase 2):** The core 3-level RBAC implementation (PermissionHandler / MagicRbacHandler / PropertyRbacHandler) is in production and verified by the unify-rbac-condition-matching + row-field-level-security integration tests. This spec extends that foundation with OAS scope generation + caching + audit. 8 of 13 tasks tickably complete after Phase 2 added the scope discovery API; 5 left open.
+> **Status (Phase 3):** The core 3-level RBAC implementation (PermissionHandler / MagicRbacHandler / PropertyRbacHandler) is in production and verified by the unify-rbac-condition-matching + row-field-level-security integration tests. Phase 3 adds request-scoped scope caching in PermissionHandler and per-operation OAS `security` blocks emitting OAuth2 scopes from RBAC. 10 of 13 tasks tickably complete; 3 left open: Role Definitions and Hierarchy, Custom Scope Definitions, OAuth 2.0 Token Scopes Integration.
 
 ## Implemented
 
@@ -30,9 +30,9 @@
 
 - [ ] **Role Definitions and Hierarchy.** Partial — rules reference Nextcloud groups directly (no separate "role" abstraction layer). The spec calls for named roles defined at register level + expandable in lower-level authorization blocks. **Open** — requires a `roles: {roleName: [groupIds]}` map on Register + role-expansion logic in PermissionHandler.
 
-- [ ] **OAS Scope Generation from RBAC Configuration.** Not implemented — `OasService::createOas` includes a top-level `securitySchemes` block (Basic auth) but doesn't translate per-schema RBAC rules into per-endpoint `security: [{ openregister: [scope1, scope2] }]` requirements. **Open** — additive change to `OasService` to walk the schema's authorization config and emit OAuth2-flavour scope strings (e.g. `register.{slug}.schema.{slug}.read`).
+- [x] **OAS Scope Generation from RBAC Configuration.** `OasService::createOas` already populates the `components.securitySchemes.oauth2.flows.authorizationCode.scopes` map from the union of every schema's groups. Phase 3 extends `OasService::applyRbacToOperation()` to also emit per-operation `security: [{ "oauth2": [groups] }, { "basicAuth": [] }]` requirements, which makes the OAS a machine-readable access audit (consumed by Swagger UI, generated SDKs, and reverse proxies). The existing description-rendering and 403 response are preserved. Verified by 5 new unit tests in `tests/Unit/Service/OasServiceTest` (Oauth2 block emission, admin-when-empty, dedup, admin-first ordering, no mutation of unrelated keys).
 
-- [ ] **Scope Caching for Performance.** Not implemented — every `hasPermission` call re-evaluates the full rule chain. For hot paths (list endpoints), a per-request cache keyed on (user, schema, action) would reduce evaluator work. **Open** — request-scoped memoisation.
+- [x] **Scope Caching for Performance.** `PermissionHandler::hasPermission()` now short-circuits on a per-request memoisation cache keyed on `(schemaId, action, userId|null, objectOwner|null, objectUuid|null)`. The first call resolves the user via `IUserManager` + `IGroupManager` and walks the rule chain; subsequent calls within the same request reuse the verdict directly. Caching is bypassed when the schema has no ID, or when an object is supplied without a UUID (transient/in-memory entity whose data could differ between calls). The `_rbac=false` bypass short-circuits before the cache lookup, so RBAC disablement remains free. A `clearPermissionCache()` entry point is provided for long-running CLI processes that span multiple logical requests. Verified by 7 new unit tests in `tests/Unit/Service/Object/PermissionHandlerCacheTest`.
 
 - [ ] **Custom Scope Definitions.** Not implemented — the scope vocabulary is fixed (action × entity-level). No support for app-defined custom scopes. **Open** — design question.
 
@@ -44,6 +44,8 @@ The implemented portions are covered by the existing test suites:
 
 - `tests/Service/RbacOperatorMatchingIntegrationTest` — 4 tests (schema-level RLS via `ConditionMatcher`, closed under unify-rbac-condition-matching).
 - `tests/Service/RowFieldLevelSecurityIntegrationTest` — 7 tests (FLS metadata + filtering, closed under row-field-level-security).
-- `tests/Unit/Service/Object/PermissionHandlerRbacTest` — 20 tests (mocked-user RBAC dispatch, all rule types).
+- `tests/Unit/Service/Object/PermissionHandlerRbacTest` — 30 tests (mocked-user RBAC dispatch, all rule types).
+- `tests/Unit/Service/Object/PermissionHandlerCacheTest` — 7 tests (Phase 3: request-scoped permission verdict cache, conditional-rule per-UUID re-evaluation, RBAC bypass short-circuit, clearPermissionCache invalidation).
+- `tests/Unit/Service/OasServiceTest` — 190 tests including 5 new `applyRbacToOperation` tests for the per-operation OAS `security` block emission (Phase 3).
 - `tests/Unit/Db/MagicMapper/MagicRbacHandlerTest` — 14 tests (SQL-emission RBAC + admin/owner bypass).
-- `tests/Service/RbacScopeDiscoveryIntegrationTest` — 5 tests covering the new scope discovery endpoint end-to-end (envelope shape, non-admin-only-permitted-actions, admin-bypass, register filter, unknown-register filter).
+- `tests/Service/RbacScopeDiscoveryIntegrationTest` — 5 tests covering the scope discovery endpoint end-to-end (envelope shape, non-admin-only-permitted-actions, admin-bypass, register filter, unknown-register filter).

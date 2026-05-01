@@ -489,10 +489,24 @@ class OasService
     }//end getScopeDescription()
 
     /**
-     * Apply RBAC information to an operation by appending group info to description and adding 403 response
+     * Apply RBAC information to an operation
      *
      * Always includes `admin` since admin users have access to all endpoints.
-     * Merges in any schema-specific groups for this CRUD action.
+     * Merges in any schema-specific groups for this CRUD action and:
+     *  - appends a human-readable `**Required scopes:**` block to the operation
+     *    description (Markdown rendered by Swagger UI / Redoc);
+     *  - adds a 403 response definition pointing at the standard Error schema;
+     *  - emits a per-operation OpenAPI 3.0 `security` requirement enumerating
+     *    the groups as OAuth2 scopes alongside `basicAuth` as fallback. This
+     *    makes the OAS a machine-readable access audit (see the Scope Audit
+     *    requirement in the rbac-scopes spec) and lets generated client SDKs
+     *    request the right scope set.
+     *
+     * The `security` block is OR-semantics across alternatives in the array
+     * (per the OpenAPI 3.0 spec), so a caller can either present a Bearer token
+     * with one of the listed oauth2 scopes OR fall back to Basic auth. The
+     * registered Nextcloud OAuth2 scope vocabulary is populated globally from
+     * the union of every schema's groups in createOas().
      *
      * @param array    $operation The operation array (passed by reference)
      * @param string[] $groups    The schema-specific groups that have access to this operation
@@ -505,6 +519,9 @@ class OasService
         if (in_array('admin', $groups, true) === false) {
             array_unshift($groups, 'admin');
         }
+
+        // Deduplicate while preserving order — admin first, then schema groups.
+        $groups = array_values(array_unique($groups));
 
         // Build scope list as inline code fragments.
         $scopeList = implode(
@@ -527,6 +544,14 @@ class OasService
                     'schema' => ['$ref' => '#/components/schemas/Error'],
                 ],
             ],
+        ];
+
+        // Emit per-operation security requirement: oauth2 with the resolved
+        // scope set, OR basicAuth fallback. Two array entries = OR semantics
+        // in OpenAPI 3.0.
+        $operation['security'] = [
+            ['oauth2' => $groups],
+            ['basicAuth' => []],
         ];
     }//end applyRbacToOperation()
 
