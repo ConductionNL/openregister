@@ -395,6 +395,12 @@ return [
         // Registers
         ['name' => 'registers#export', 'url' => '/api/registers/{id}/export', 'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
         ['name' => 'registers#import', 'url' => '/api/registers/{id}/import', 'verb' => 'POST', 'requirements' => ['id' => '[^/]+']],
+        [
+            'name'         => 'registers#importTemplate',
+            'url'          => '/api/registers/{id}/schemas/{schema}/import-template',
+            'verb'         => 'GET',
+            'requirements' => ['id' => '[^/]+', 'schema' => '[^/]+'],
+        ],
         ['name' => 'registers#publishToGitHub', 'url' => '/api/registers/{id}/publish/github', 'verb' => 'POST', 'requirements' => ['id' => '[^/]+']],
         ['name' => 'registers#publish', 'url' => '/api/registers/{id}/publish', 'verb' => 'POST', 'requirements' => ['id' => '[^/]+']],
         ['name' => 'registers#depublish', 'url' => '/api/registers/{id}/depublish', 'verb' => 'POST', 'requirements' => ['id' => '[^/]+']],

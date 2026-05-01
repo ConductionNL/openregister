@@ -243,6 +243,72 @@ class ExportService
     }//end exportToCsv()
 
     /**
+     * Build an empty import template spreadsheet for a schema
+     *
+     * Generates a spreadsheet that contains only the header row derived from the
+     * schema's properties (the same headers `exportToExcel` would emit), with no
+     * data rows. The returned spreadsheet can be written to either XLSX or CSV.
+     *
+     * @param Register|null $register    Optional register context (used for translation column expansion)
+     * @param Schema        $schema      Schema whose property keys become the header row
+     * @param IUser|null    $currentUser Current user (drives admin metadata column inclusion)
+     *
+     * @return Spreadsheet Spreadsheet with a single sheet containing only header cells
+     */
+    public function buildTemplateSpreadsheet(
+        ?Register $register,
+        Schema $schema,
+        ?IUser $currentUser=null
+    ): Spreadsheet {
+        // Capture register context so getHeaders can emit per-language
+        // `field_lang` columns for translatable properties.
+        $this->contextRegister = $register;
+
+        $spreadsheet = new Spreadsheet();
+        $spreadsheet->removeSheetByIndex(0);
+        $sheet = $spreadsheet->createSheet();
+        $sheet->setTitle($schema->getSlug() ?? 'data');
+
+        $headers = $this->getHeaders(schema: $schema, currentUser: $currentUser);
+        foreach ($headers as $col => $header) {
+            $sheet->setCellValue(coordinate: $col.'1', value: $header);
+        }
+
+        return $spreadsheet;
+    }//end buildTemplateSpreadsheet()
+
+    /**
+     * Render an empty CSV import template for a schema
+     *
+     * Emits a UTF-8 BOM-prefixed CSV string containing only the header row
+     * derived from the schema's properties. Mirrors the BOM convention used
+     * by the export pipeline so Excel opens the file with the correct encoding.
+     *
+     * @param Register|null $register    Optional register context
+     * @param Schema        $schema      Schema whose property keys become the header row
+     * @param IUser|null    $currentUser Current user (drives admin metadata column inclusion)
+     *
+     * @return string CSV content with a UTF-8 BOM prefix and a single header row
+     */
+    public function buildTemplateCsv(
+        ?Register $register,
+        Schema $schema,
+        ?IUser $currentUser=null
+    ): string {
+        $spreadsheet = $this->buildTemplateSpreadsheet(
+            register: $register,
+            schema: $schema,
+            currentUser: $currentUser
+        );
+        $writer      = new Csv($spreadsheet);
+        $writer->setUseBOM(true);
+
+        ob_start();
+        $writer->save('php://output');
+        return ob_get_clean();
+    }//end buildTemplateCsv()
+
+    /**
      * Populate a worksheet with data
      *
      * Uses a two-pass approach for optimal UUID-to-name resolution:
