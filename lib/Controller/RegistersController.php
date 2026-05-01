@@ -797,6 +797,77 @@ class RegistersController extends Controller
     }//end export()
 
     /**
+     * Download an empty import template for a schema
+     *
+     * Returns a spreadsheet (XLSX by default, CSV when `format=csv` is supplied)
+     * containing only the schema's header row, so users can fill it in and
+     * upload it via the existing import endpoint. The resulting file uses the
+     * same column layout that `ExportService::exportToExcel()` would emit, so a
+     * round-trip export/import keeps headers stable.
+     *
+     * @param int|string $id     The register slug or numeric id
+     * @param int|string $schema The schema slug or numeric id
+     *
+     * @return DataDownloadResponse|JSONResponse Spreadsheet on success, JSON error otherwise
+     *
+     * @NoAdminRequired
+     *
+     * @NoCSRFRequired
+     */
+    public function importTemplate(int|string $id, int|string $schema): JSONResponse|DataDownloadResponse
+    {
+        try {
+            $format = strtolower((string) $this->request->getParam(key: 'format', default: 'xlsx'));
+            if (in_array($format, ['xlsx', 'csv'], true) === false) {
+                return new JSONResponse(
+                    data: ['error' => 'Unsupported template format: '.$format.'. Supported formats: xlsx, csv.'],
+                    statusCode: 400
+                );
+            }
+
+            // RBAC is enforced inside both find() calls (default _rbac=true).
+            $register     = $this->registerMapper->find($id);
+            $schemaEntity = $this->schemaMapper->find($schema);
+
+            $schemaSlug  = $schemaEntity->getSlug() ?? 'schema';
+            $currentUser = $this->userSession->getUser();
+
+            if ($format === 'csv') {
+                $content  = $this->exportService->buildTemplateCsv(
+                    register: $register,
+                    schema: $schemaEntity,
+                    currentUser: $currentUser
+                );
+                $filename = sprintf('%s_template.csv', $schemaSlug);
+                return new DataDownloadResponse($content, $filename, 'text/csv');
+            }
+
+            $spreadsheet = $this->exportService->buildTemplateSpreadsheet(
+                register: $register,
+                schema: $schemaEntity,
+                currentUser: $currentUser
+            );
+            $writer      = new Xlsx($spreadsheet);
+            ob_start();
+            $writer->save('php://output');
+            $content  = ob_get_clean();
+            $filename = sprintf('%s_template.xlsx', $schemaSlug);
+            $mime     = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+            return new DataDownloadResponse($content, $filename, $mime);
+        } catch (DoesNotExistException $e) {
+            return new JSONResponse(
+                data: ['error' => 'Register or schema not found: '.$e->getMessage()],
+                statusCode: 404
+            );
+        } catch (Exception $e) {
+            return new JSONResponse(
+                data: ['error' => 'Failed to generate import template: '.$e->getMessage()],
+                statusCode: 400
+            );
+        }//end try
+    }//end importTemplate()
+
+    /**
      * Publish register OAS specification to GitHub
      *
      * Exports the register as OpenAPI Specification and publishes it to a GitHub repository.
