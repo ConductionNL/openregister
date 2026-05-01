@@ -49,7 +49,8 @@ class AnnotationNotificationDispatcher
         private readonly IUserManager $userManager,
         private readonly IMailer $mailer,
         private readonly IActivityManager $activityManager,
-        private readonly IClientService $httpClient
+        private readonly IClientService $httpClient,
+        private readonly ?RateLimiter $rateLimiter=null
     ) {}//end __construct()
 
     /**
@@ -90,26 +91,41 @@ class AnnotationNotificationDispatcher
             $rendered = $this->interpolate($subject, $data, $context);
             $channels = (array) ($spec['channels'] ?? ['nc-notification']);
 
+            $rateLimit = is_array($spec['rateLimit'] ?? null) === true ? $spec['rateLimit'] : null;
+            $ruleId    = (string) $name;
+
             // Webhook is fired once per dispatch, not once per recipient,
             // and includes the recipient list in the payload.
             if (in_array('webhook', $channels, true) === true) {
-                $this->emitWebhook(
-                    spec: $spec,
-                    object: $object,
-                    notificationName: (string) $name,
-                    subject: $rendered,
-                    recipients: $recipients,
-                    context: $context
-                );
+                $allowed = $this->rateLimitAllows(ruleId: $ruleId, recipient: '__webhook__', rateLimit: $rateLimit);
+                if ($allowed === true) {
+                    $this->emitWebhook(
+                        spec: $spec,
+                        object: $object,
+                        notificationName: (string) $name,
+                        subject: $rendered,
+                        recipients: $recipients,
+                        context: $context
+                    );
+                }
             }
 
             // Talk channel is fired once per dispatch (chat message goes
             // to the configured Talk room, recipients aren't @-mentioned).
             if (in_array('talk', $channels, true) === true) {
-                $this->emitTalk(spec: $spec, message: $rendered);
+                $allowed = $this->rateLimitAllows(ruleId: $ruleId, recipient: '__talk__', rateLimit: $rateLimit);
+                if ($allowed === true) {
+                    $this->emitTalk(spec: $spec, message: $rendered);
+                }
             }
 
             foreach ($recipients as $uid) {
+                // Per-recipient rate limit gates every channel for this uid.
+                $allowed = $this->rateLimitAllows(ruleId: $ruleId, recipient: $uid, rateLimit: $rateLimit);
+                if ($allowed === false) {
+                    continue;
+                }
+
                 if (in_array('nc-notification', $channels, true) === true) {
                     $this->emitNotification(
                         uid: $uid,
@@ -119,6 +135,7 @@ class AnnotationNotificationDispatcher
                         parameters: $context
                     );
                 }
+
                 if (in_array('email', $channels, true) === true) {
                     $this->emitEmail(
                         uid: $uid,
@@ -126,6 +143,7 @@ class AnnotationNotificationDispatcher
                         body: $rendered
                     );
                 }
+
                 if (in_array('activity', $channels, true) === true) {
                     $this->emitActivity(
                         uid: $uid,
@@ -136,7 +154,31 @@ class AnnotationNotificationDispatcher
                 }
             }
         }
+
     }//end dispatch()
+
+    /**
+     * Apply the (optional) rate limiter. Returns true when the
+     * dispatch may proceed. A null limiter (test contexts where the
+     * dependency wasn't injected) always allows — keeps existing
+     * tests passing without forcing every test to construct a
+     * RateLimiter.
+     *
+     * @param string                    $ruleId    Rule identifier (notification annotation key).
+     * @param string                    $recipient Recipient identifier.
+     * @param array<string, mixed>|null $rateLimit Per-rule override block.
+     *
+     * @return bool True when the dispatch may proceed.
+     */
+    private function rateLimitAllows(string $ruleId, string $recipient, ?array $rateLimit): bool
+    {
+        if ($this->rateLimiter === null) {
+            return true;
+        }
+
+        return $this->rateLimiter->tryConsume(ruleId: $ruleId, recipient: $recipient, perRuleOverride: $rateLimit);
+
+    }//end rateLimitAllows()
 
     /**
      * POST a JSON payload to the configured webhook URL.
