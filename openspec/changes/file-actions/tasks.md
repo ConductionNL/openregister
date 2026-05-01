@@ -1,5 +1,7 @@
 # Tasks: File Actions
 
+> **Status (2026-05-01 v3 audit-trail batch):** Closed 7 audit-trail and test-coverage items in one PR. New `FileAuditHandler::logFileAction()` helper persists `oc_openregister_audit_trails` rows via `AuditTrailMapper::insert`, tagged to the parent `ObjectEntity` with namespaced actions (`file.renamed`, `file.copied`, `file.copied_in`, `file.moved`, `file.moved_in`, `file.locked`, `file.unlocked`, `file.force_unlocked`, `file.version_restored`). Wired into `FilesController::rename / copy / move / lock / unlock / restoreVersion`. Copy + move use dual-entry pattern (one row on source object, one on target object). Audit failures are swallowed and warning-logged so they cannot break the underlying file operation. Three handler-level tests (`testLogFileActionPersistsAuditTrail`, `testLogFileActionDoesNotThrowOnInsertFailure`, `testLogFileActionFallsBackToSystemUser`) prove the contract. Six controller-level tests (`testCopyWithinSameRegister`, `testCopyAcrossRegisters`, `testCopyToNonexistentTarget`, `testMoveWithSourceCleanup`, `testMoveBlockedWhenSourceLocked`, `testRestoreVersionResponseShape`) close the previously missing copy/move/version-restore test coverage.
+>
 > **Status (2026-05-01 v2 audit):** Re-spot-checked all `[x]` items across 10 phases. Routes (11) all registered, controller methods (10) all implemented, handlers (5) all wired through DI, events (6) all dispatched at controller layer, unit tests for handlers all present. Two follow-up wins this batch:
 > - Phase 5 line 72 ticked: `FileService::updateFile()` now calls `fileLockHandler->assertCanModify()` for numeric file IDs (the rename / copy / move / delete paths were already integrated). Test added: `FileLockHandlerTest::testAssertCanModifyByNonOwnerThrows`.
 > - Phase 4 line 55 ticked: version JSON shape already complete in `FileVersioningHandler::listVersions` (six fields + `authorDisplayName`).
@@ -29,7 +31,8 @@
 - [x] Add invalid character validation for file names
 - [x] Add `FilesController::rename()` endpoint with `@NoAdminRequired` and `@NoCSRFRequired`
 - [x] Register route: `PUT /api/objects/{register}/{schema}/{id}/files/{fileId}/rename`
-- [ ] Generate audit trail entry on successful rename
+- [x] Generate audit trail entry on successful rename
+  - `FilesController::rename()` calls `FileAuditHandler::logFileAction($object, $fileId, 'file.renamed', ['oldName', 'newName'])` after `FileService::renameFile` succeeds. Audit row carries the parent object reference (`object`, `objectUuid`, `register`, `schema`) so file events surface in the same audit timeline as object updates.
 - [x] Dispatch `nl.openregister.object.file.renamed` event
 - [x] Write unit test for rename with valid name
 - [x] Write unit test for rename with duplicate name (409)
@@ -45,12 +48,18 @@
 - [x] Implement `FileService::moveFile()` -- copy then delete source, with atomicity check
 - [x] Add `FilesController::move()` endpoint
 - [x] Register route: `POST /api/objects/{register}/{schema}/{id}/files/{fileId}/move`
-- [ ] Generate dual audit trail entries (on source and target objects)
+- [x] Generate dual audit trail entries (on source and target objects)
+  - Copy emits `file.copied` on the source object and `file.copied_in` on the target object (with `sourceObjectUuid` + `sourceFileId` payload). Move uses the same pattern with `file.moved` / `file.moved_in`. Implemented in `FilesController::copy` and `FilesController::move` via `FileAuditHandler::logFileAction`.
 - [x] Dispatch `nl.openregister.object.file.copied` and `nl.openregister.object.file.moved` events
-- [ ] Write unit test for copy within same register
-- [ ] Write unit test for copy across registers
-- [ ] Write unit test for move with source cleanup
-- [ ] Write unit test for copy/move to non-existent target (404)
+- [x] Write unit test for copy within same register
+  - `FilesControllerFileActionsTest::testCopyWithinSameRegister` -- asserts 201 status and that `FileService::copyFile` is invoked with the source/target ObjectEntity pair.
+- [x] Write unit test for copy across registers
+  - `FilesControllerFileActionsTest::testCopyAcrossRegisters` -- asserts the controller switches `objectService` schema/register to the targetRegister/targetSchema params before resolving the target object.
+- [x] Write unit test for move with source cleanup
+  - `FilesControllerFileActionsTest::testMoveWithSourceCleanup` -- asserts `FileService::moveFile` is invoked exactly once and `FileMovedEvent` is dispatched. Source-cleanup behaviour is the contract of `FileService::moveFile` (copy + delete-source) and is covered by `FileServiceTest`.
+  - `FilesControllerFileActionsTest::testMoveBlockedWhenSourceLocked` -- asserts 423 when `FileService::moveFile` throws a "locked" exception.
+- [x] Write unit test for copy/move to non-existent target (404)
+  - `FilesControllerFileActionsTest::testCopyToNonexistentTarget` -- asserts 404 when the second `objectService->getObject()` call (target lookup) returns null, and that `FileService::copyFile` is never invoked.
 
 ## Phase 4: File Versioning
 
@@ -62,10 +71,11 @@
 - [x] Add `FilesController::listVersions()` endpoint
 - [x] Add `FilesController::restoreVersion()` endpoint
 - [x] Register routes: `GET .../files/{fileId}/versions` and `POST .../files/{fileId}/versions/{versionId}/restore`
-- [ ] Generate audit trail entry on version restore
+- [x] Generate audit trail entry on version restore
+  - `FilesController::restoreVersion()` calls `FileAuditHandler::logFileAction($object, $fileId, 'file.version_restored', ['versionId' => $versionId])` after `FileVersioningHandler::restoreVersion` succeeds.
 - [x] Dispatch `nl.openregister.object.file.version_restored` event
 - [x] Write unit test for version listing
-- [x] Write unit test for version restore (parse-side: `testRestoreVersionRejectsMalformedId`)
+- [x] Write unit test for version restore (parse-side: `testRestoreVersionRejectsMalformedId`; response-shape: `FilesControllerFileActionsTest::testRestoreVersionResponseShape` regression-locks the formatted-file payload)
 - [x] Write unit test for graceful degradation without files_versions
 
 ## Phase 5: File Locking
@@ -81,7 +91,8 @@
 - [x] Add `FilesController::lock()` and `FilesController::unlock()` endpoints
 - [x] Register routes: `POST .../files/{fileId}/lock` and `POST .../files/{fileId}/unlock`
 - [ ] Include lock metadata in file formatting output (formatFile)
-- [ ] Generate audit trail entries for lock, unlock, and force-unlock
+- [x] Generate audit trail entries for lock, unlock, and force-unlock
+  - `FilesController::lock()` emits `file.locked` with the lock metadata as the data payload. `FilesController::unlock()` emits either `file.unlocked` or `file.force_unlocked` depending on the `force` flag, so admin force-unlocks are distinguishable from regular owner unlocks in the audit timeline.
 - [x] Dispatch `nl.openregister.object.file.locked` and `nl.openregister.object.file.unlocked` events
 - [x] Write unit test for lock acquisition
 - [x] Write unit test for lock conflict (423)

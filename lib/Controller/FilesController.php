@@ -1131,6 +1131,14 @@ class FilesController extends Controller
 
             $file = $this->fileService->renameFile(object: $object, fileId: $fileId, newName: $newName);
 
+            // Audit trail entry (best-effort -- handler swallows failures).
+            $this->fileService->getAuditHandler()->logFileAction(
+                object: $object,
+                fileId: $fileId,
+                action: 'file.renamed',
+                data: ["oldName" => $data["oldName"] ?? "", "newName" => $newName]
+            );
+
             // Dispatch event.
             $this->eventDispatcher->dispatchTyped(
                 new FileRenamedEvent(
@@ -1203,6 +1211,28 @@ class FilesController extends Controller
                 targetObject: $targetObject
             );
 
+            // Dual audit trail: source object (file copied OUT) and target object (file copied IN).
+            $auditHandler = $this->fileService->getAuditHandler();
+            $auditHandler->logFileAction(
+                object: $sourceObject,
+                fileId: $fileId,
+                action: 'file.copied',
+                data: [
+                    "targetObjectUuid" => $targetObject->getUuid(),
+                    "targetRegister"   => $targetRegister,
+                    "targetSchema"     => $targetSchema,
+                ]
+            );
+            $auditHandler->logFileAction(
+                object: $targetObject,
+                fileId: (int) $newFile->getId(),
+                action: 'file.copied_in',
+                data: [
+                    "sourceObjectUuid" => $sourceObject->getUuid(),
+                    "sourceFileId"     => $fileId,
+                ]
+            );
+
             $this->eventDispatcher->dispatchTyped(
                 new FileCopiedEvent(
                     objectUuid: $sourceObject->getUuid(),
@@ -1264,6 +1294,28 @@ class FilesController extends Controller
                 sourceObject: $sourceObject,
                 fileId: $fileId,
                 targetObject: $targetObject
+            );
+
+            // Dual audit trail: source object (file moved OUT) and target object (file moved IN).
+            $auditHandler = $this->fileService->getAuditHandler();
+            $auditHandler->logFileAction(
+                object: $sourceObject,
+                fileId: $fileId,
+                action: 'file.moved',
+                data: [
+                    "targetObjectUuid" => $targetObject->getUuid(),
+                    "targetRegister"   => $targetRegister,
+                    "targetSchema"     => $targetSchema,
+                ]
+            );
+            $auditHandler->logFileAction(
+                object: $targetObject,
+                fileId: (int) $movedFile->getId(),
+                action: 'file.moved_in',
+                data: [
+                    "sourceObjectUuid" => $sourceObject->getUuid(),
+                    "sourceFileId"     => $fileId,
+                ]
             );
 
             $this->eventDispatcher->dispatchTyped(
@@ -1362,6 +1414,14 @@ class FilesController extends Controller
 
             $this->fileService->getVersioningHandler()->restoreVersion($file, $versionId);
 
+            // Audit trail entry (best-effort -- handler swallows failures).
+            $this->fileService->getAuditHandler()->logFileAction(
+                object: $object,
+                fileId: $fileId,
+                action: 'file.version_restored',
+                data: ["versionId" => $versionId]
+            );
+
             $this->eventDispatcher->dispatchTyped(
                 new FileVersionRestoredEvent(
                     objectUuid: $object->getUuid(),
@@ -1403,6 +1463,14 @@ class FilesController extends Controller
             }
 
             $result = $this->fileService->getLockHandler()->lockFile($fileId);
+
+            // Audit trail entry (best-effort -- handler swallows failures).
+            $this->fileService->getAuditHandler()->logFileAction(
+                object: $object,
+                fileId: $fileId,
+                action: 'file.locked',
+                data: $result
+            );
 
             $this->eventDispatcher->dispatchTyped(
                 new FileLockedEvent(
@@ -1448,6 +1516,14 @@ class FilesController extends Controller
             $force = $this->parseBool(value: $data["force"] ?? false);
 
             $result = $this->fileService->getLockHandler()->unlockFile($fileId, $force);
+
+            // Audit trail entry: distinguish force-unlock from regular unlock.
+            $this->fileService->getAuditHandler()->logFileAction(
+                object: $object,
+                fileId: $fileId,
+                action: $force === true ? 'file.force_unlocked' : 'file.unlocked',
+                data: ["force" => $force]
+            );
 
             $this->eventDispatcher->dispatchTyped(
                 new FileUnlockedEvent(
