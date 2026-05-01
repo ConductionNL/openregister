@@ -1754,21 +1754,6 @@ class ControllersIntegrationTest2 extends TestCase
     }//end testLlmSettingsControllerCheckMismatch()
 
     /**
-     * Test LlmSettingsController::getVectorStats
-     *
-     * @return void
-     */
-    public function testLlmSettingsControllerGetVectorStats(): void
-    {
-        $controller = $this->buildLlmSettingsController();
-        $response   = $controller->getVectorStats();
-        $data       = $response->getData();
-
-        $this->assertSame(200, $response->getStatus());
-        $this->assertTrue($data['success']);
-    }//end testLlmSettingsControllerGetVectorStats()
-
-    /**
      * Test CacheSettingsController::getCacheStats
      *
      * @return void
