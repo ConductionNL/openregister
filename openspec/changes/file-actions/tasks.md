@@ -1,5 +1,12 @@
 # Tasks: File Actions
 
+> **Status (2026-05-01 audit):** routes for all file-action endpoints registered in commit 9c1b70533. Spot-check of "[x]" ticks identified two phantom claims that are now corrected:
+>
+> - **Phase 5 lock unit tests (lines 73 / 74 / 75 originally ticked)** — `FileLockHandlerTest` was missing the non-owner-unlock, admin-force-unlock, and TTL-expiry cases. Controller-level `testUnlockNonOwner` exists in `FilesControllerFileActionsTest`, but the handler-level cases were absent. Added in this batch (`testUnlockByNonOwnerThrows`, `testAdminForceUnlockSucceeds`, `testTtlExpiryAutoClears`).
+> - **Phase 4 version-restore unit test (line 56 was correctly `[ ]`)** — added `testRestoreVersionRejectsMalformedId` to cover the parse-side defensive path.
+>
+> **Genuine architectural gap surfaced (NOT silently fixed):** `FileLockHandler` stores locks in a private in-memory `$locks` array (no `FileMapper` write-through, no `oc_openregister_files.locked_by`/`locked_at`/`lock_expires` persistence). The migration columns from Phase 1 are present but unused. **Locks evaporate between requests.** This makes Phase 1 line 7 (FileLockHandler creation) and Phase 5 lock-acquisition checks structurally insufficient for production use. Tracked as a follow-up; no fix in this batch because it requires a `FileMapper` File-entity that does not yet exist (Phase 1 line 6 still `[ ]`).
+
 ## Phase 1: Database and Infrastructure
 
 - [x] Migration: Add `description`, `category`, `locked_by`, `locked_at`, `lock_expires`, `download_count` columns to `oc_openregister_files` table
@@ -53,7 +60,7 @@
 - [ ] Generate audit trail entry on version restore
 - [x] Dispatch `nl.openregister.object.file.version_restored` event
 - [x] Write unit test for version listing
-- [ ] Write unit test for version restore
+- [x] Write unit test for version restore (parse-side: `testRestoreVersionRejectsMalformedId`)
 - [x] Write unit test for graceful degradation without files_versions
 
 ## Phase 5: File Locking

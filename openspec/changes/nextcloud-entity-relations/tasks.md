@@ -1,5 +1,9 @@
 # Tasks: Nextcloud Entity Relations
 
+> **Status (2026-05-01):** All backend work shipped — tables (`Version1Date20260326000000`), entities/mappers, services, controllers, routes, cleanup listeners, CloudEvents, audit trails, and unit tests are in place (44/53). The 9 open items split into:
+> - **Frontend Vue components (6 items):** `EmailsTab.vue`, `EventsTab.vue`, `ContactsTab.vue`, `DeckTab.vue`, `RelationsTab.vue`, entity stores. Frontend-Vue work, separate scope from this PHP-backend pass.
+> - **Integration tests (3 items):** Greenmail (mail), CalDAV (events), CardDAV (contacts) — require live Nextcloud services and a fixture stack the unit-test pass cannot reach.
+
 ## Database & Infrastructure
 - [x] Create database migration for openregister_email_links, openregister_contact_links, openregister_deck_links tables
 - [x] Create EmailLink entity and EmailLinkMapper
