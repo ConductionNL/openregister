@@ -1,6 +1,6 @@
 # Tasks: Notificatie Engine
 
-> **Status:** This spec overlaps with `notifications-v2` (closed). The foundational notification rule engine is shipped; advanced delivery features (batching, digest, preferences, VNG API, history table, grouping, rate limiting, NL/EN i18n) are not. 5 of 14 tasks are tickably complete from the v2 implementation; the rest are explicit follow-ups.
+> **Status:** This spec overlaps with `notifications-v2` (closed). The foundational notification rule engine is shipped; advanced delivery features (batching/digest, preferences UI, VNG API, history table, grouping, read/unread, NL/EN i18n, org-pinning) are not. 6 of 14 tasks are tickably complete; 8 left open.
 
 ## Implemented (via notifications-v2)
 
@@ -32,7 +32,7 @@
 
 - [ ] **Read/unread tracking MUST be maintained per user per notification.** Nextcloud's INotificationManager handles this for the `nc-notification` channel — read/unread state is tracked in `oc_notifications`. Other channels (email, activity, webhook, talk) don't have a per-user-per-notification read state because they're fire-and-forget. **Open** — depends on whether read/unread for non-in-app channels is meaningful.
 
-- [ ] **Notification rate limiting MUST prevent abuse and system overload.** Not implemented — there's no per-recipient or per-rule rate limit. A misconfigured threshold rule that fires every second would happily flood the dispatcher. **Open** — rate-limit token bucket per (rule, recipient).
+- [x] **Notification rate limiting MUST prevent abuse and system overload.** `RateLimiter` (`lib/Service/Notification/RateLimiter.php`) implements a token-bucket rate limit per (rule, recipient) pair, backed by the distributed cache. Default bucket size 10, refill 1 token/60s; per-rule overrides via `rateLimit: {bucketSize, refillSecondsPerToken}` on the notification spec; operator overrides via app-config keys `notification_rate_limit_default_bucket_size` and `notification_rate_limit_default_refill_seconds`; kill switch `notification_rate_limit_enabled = false`. Drops are logged at info level. Wired into `AnnotationNotificationDispatcher` per recipient (and once per dispatch for one-shot webhook/talk channels). Verified by `tests/Unit/Service/Notification/RateLimiterTest` (8 tests covering bucket-drain, refill, per-(rule,recipient) isolation, kill switch, app-config defaults, fail-open paths, info-not-warning logging).
 
 ## Test coverage
 
@@ -43,3 +43,4 @@ The implemented portions are covered by the `notifications-v2` test suite:
 - `tests/Unit/Service/Notification/NotificationsAnnotationInstallerTest` — 8 tests covering webhook auto-create.
 - `tests/Unit/BackgroundJob/ScheduledNotificationJobTest` — 8 tests covering scheduled trigger evaluation.
 - `tests/Unit/Listener/AggregationThresholdListenerTest` — 5 tests covering threshold transition logic.
+- `tests/Unit/Service/Notification/RateLimiterTest` — 8 tests covering token-bucket drain/refill, per-(rule, recipient) isolation, kill switch, app-config defaults, fail-open behaviour on cache failure / empty inputs, and info-level (not warning) drop logging.
