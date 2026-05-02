@@ -133,7 +133,7 @@
 - [x] Add action validation (only publish/depublish/delete/label)
 - [x] Add `FilesController::batch()` endpoint returning HTTP 200 (all success) or 207 (partial)
 - [x] Register route: `POST /api/objects/{register}/{schema}/{id}/files/batch`
-- [ ] Update `ViewObject.vue` to use batch endpoint instead of N sequential calls
+- [x] Update `ViewObject.vue` to use batch endpoint instead of N sequential calls. **Shipped 2026-05-02:** new `_runBatchAction(action, perFileFallback)` helper in `src/modals/object/ViewObject.vue` calls the shared-store `objectStore.batchFiles(type, objectId, action, fileIds)` (one POST to `/files/batch`) when the runtime store exposes it, and falls back to the legacy per-file loop when an older `@conduction/nextcloud-vue` is installed (defensive `typeof batchFiles === 'function'` check). `publishSelectedFiles`, `depublishSelectedFiles`, `deleteSelectedFiles` all delegate to `_runBatchAction` — so the moment the dep bumps to a beta containing the batchFiles action, mass actions become single-round-trip without further frontend changes. The shared-store `batchFiles` action lives in [`@conduction/nextcloud-vue` PR #112](https://github.com/ConductionNL/nextcloud-vue/pull/112) (opened 2026-05-02): adds `batchFiles(type, objectId, action, fileIds, params?)` to `src/store/plugins/files.js`, treats 200 + 207 both as valid responses, 384/384 tests green.
 - [x] Write unit test for batch publish
 - [x] Write unit test for batch with partial failure (207)
 - [x] Write unit test for batch size limit (400)

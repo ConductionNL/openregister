@@ -1597,21 +1597,36 @@ export default {
 			this.closeModal()
 			this.$router.push('/audit-trails')
 		},
+		// Apply a batch action across the selected files. Prefers the
+		// shared-store batchFiles action (one POST to /files/batch); falls
+		// back to N sequential single-file calls when the runtime store
+		// doesn't expose batchFiles yet (older @conduction/nextcloud-vue).
+		// Per-action callbacks let callers swap in publishFile / unpublishFile
+		// / deleteFile for the legacy fallback path.
+		async _runBatchAction(action, perFileFallback) {
+			if (this.selectedAttachments.length === 0) return
+			const { type, objectId } = this._getFileParams()
+			const fileIds = [...this.selectedAttachments]
+
+			if (typeof objectStore.batchFiles === 'function') {
+				await objectStore.batchFiles(type, objectId, action, fileIds)
+				return
+			}
+
+			// Legacy fallback: loop the per-file action.
+			for (const fileId of fileIds) {
+				await perFileFallback(type, objectId, fileId)
+			}
+		},
 		async publishSelectedFiles() {
 			if (this.selectedAttachments.length === 0) return
 
 			try {
 				this.publishLoading = [...this.selectedAttachments]
-				const { type, objectId } = this._getFileParams()
-
-				const selectedFiles = objectStore.files.results.filter(file =>
-					this.selectedAttachments.includes(file.id),
+				await this._runBatchAction(
+					'publish',
+					(type, objectId, fileId) => objectStore.publishFile(type, objectId, fileId),
 				)
-
-				for (const file of selectedFiles) {
-					await objectStore.publishFile(type, objectId, file.id)
-				}
-
 				this.selectedAttachments = []
 			} catch (error) {
 				// eslint-disable-next-line no-console
@@ -1625,16 +1640,10 @@ export default {
 
 			try {
 				this.depublishLoading = [...this.selectedAttachments]
-				const { type, objectId } = this._getFileParams()
-
-				const selectedFiles = objectStore.files.results.filter(file =>
-					this.selectedAttachments.includes(file.id),
+				await this._runBatchAction(
+					'depublish',
+					(type, objectId, fileId) => objectStore.unpublishFile(type, objectId, fileId),
 				)
-
-				for (const file of selectedFiles) {
-					await objectStore.unpublishFile(type, objectId, file.id)
-				}
-
 				this.selectedAttachments = []
 			} catch (error) {
 				// eslint-disable-next-line no-console
@@ -1648,16 +1657,10 @@ export default {
 
 			try {
 				this.fileIdsLoading = [...this.selectedAttachments]
-				const { type, objectId } = this._getFileParams()
-
-				const selectedFiles = objectStore.files.results?.filter(item =>
-					this.selectedAttachments.includes(item.id),
-				) || []
-
-				for (const file of selectedFiles) {
-					await objectStore.deleteFile(type, objectId, file.id)
-				}
-
+				await this._runBatchAction(
+					'delete',
+					(type, objectId, fileId) => objectStore.deleteFile(type, objectId, fileId),
+				)
 				this.selectedAttachments = []
 			} catch (error) {
 				// eslint-disable-next-line no-console
