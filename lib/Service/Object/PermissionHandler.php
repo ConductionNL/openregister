@@ -107,16 +107,34 @@ class PermissionHandler
     private array $permissionCache = [];
 
     /**
+     * The five canonical action verbs the static rule chain knows.
+     * Anything outside this set is treated as a custom verb and
+     * routed through `CustomScopeEvaluatingEvent` so consuming apps
+     * can contribute a verdict (per the rbac-scopes change, decision
+     * 2026-05-02 option A).
+     *
+     * @var string[]
+     */
+    private const CANONICAL_ACTIONS = [
+        'read',
+        'create',
+        'update',
+        'delete',
+        'list',
+    ];
+
+    /**
      * PermissionHandler constructor.
      *
-     * @param IUserSession       $userSession        User session for getting current user.
-     * @param IUserManager       $userManager        User manager for getting user objects.
-     * @param IGroupManager      $groupManager       Group manager for checking user groups.
-     * @param SchemaMapper       $schemaMapper       Mapper for schema operations.
-     * @param MagicMapper        $objectEntityMapper Mapper for object entity operations.
-     * @param ConditionMatcher   $conditionMatcher   Shared PHP-side match evaluator (ADR-011).
-     * @param LoggerInterface    $logger             Logger for permission auditing.
-     * @param ContainerInterface $container          Container for lazy loading services.
+     * @param IUserSession                       $userSession        User session for getting current user.
+     * @param IUserManager                       $userManager        User manager for getting user objects.
+     * @param IGroupManager                      $groupManager       Group manager for checking user groups.
+     * @param SchemaMapper                       $schemaMapper       Mapper for schema operations.
+     * @param MagicMapper                        $objectEntityMapper Mapper for object entity operations.
+     * @param ConditionMatcher                   $conditionMatcher   Shared PHP-side match evaluator (ADR-011).
+     * @param LoggerInterface                    $logger             Logger for permission auditing.
+     * @param ContainerInterface                 $container          Container for lazy loading services.
+     * @param \OCP\EventDispatcher\IEventDispatcher|null $eventDispatcher Optional dispatcher for custom-scope events.
      *
      * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-7
      */
@@ -128,7 +146,8 @@ class PermissionHandler
         private readonly MagicMapper $objectEntityMapper,
         private readonly ConditionMatcher $conditionMatcher,
         private readonly LoggerInterface $logger,
-        private readonly ContainerInterface $container
+        private readonly ContainerInterface $container,
+        private readonly ?\OCP\EventDispatcher\IEventDispatcher $eventDispatcher=null
     ) {
     }//end __construct()
 
@@ -336,6 +355,28 @@ class PermissionHandler
             return true;
         }
 
+        // Custom action verbs (anything outside the canonical 5) are
+        // routed through a listener-driven dispatch so consuming apps
+        // can contribute verdicts for verbs they own (e.g. ZGW
+        // `besluit_nemen`). Listeners vote via
+        // `CustomScopeEvaluatingEvent::allow() / deny()`; the first
+        // verdict wins. When no listener votes, fall through to the
+        // standard rule chain — most schemas won't have rules for
+        // custom verbs, so this typically denies.
+        $isCanonical = in_array(needle: $action, haystack: self::CANONICAL_ACTIONS, strict: true);
+        if ($isCanonical === false && $this->eventDispatcher !== null) {
+            $verdict = $this->dispatchCustomScopeEvaluation(
+                schema: $schema,
+                action: $action,
+                userId: $userId,
+                userGroups: $userGroups,
+                object: $object
+            );
+            if ($verdict !== null) {
+                return $verdict;
+            }
+        }
+
         // Check schema permissions for each user group.
         foreach ($userGroups as $groupId) {
             if ($this->hasGroupPermission(
@@ -368,6 +409,122 @@ class PermissionHandler
 
         return false;
     }//end evaluatePermission()
+
+    /**
+     * Dispatch `CustomScopeEvaluatingEvent` and collect a listener
+     * verdict. Returns null when no listener voted so the caller can
+     * fall through to the standard rule chain.
+     *
+     * Always pairs with a `CustomScopeEvaluatedEvent` for telemetry
+     * regardless of which path produced the verdict (listener vs
+     * standard chain) — that's why this helper does not dispatch the
+     * paired telemetry event itself; the caller emits it after the
+     * final verdict is known.
+     *
+     * @param Schema            $schema     Schema being checked.
+     * @param string            $action     Custom action verb.
+     * @param string|null       $userId     User ID under evaluation.
+     * @param string[]          $userGroups User group memberships.
+     * @param ObjectEntity|null $object     Optional target object.
+     *
+     * @return bool|null Listener verdict, or null when no listener voted.
+     */
+    private function dispatchCustomScopeEvaluation(
+        Schema $schema,
+        string $action,
+        ?string $userId,
+        array $userGroups,
+        ?ObjectEntity $object
+    ): ?bool {
+        if ($this->eventDispatcher === null) {
+            return null;
+        }
+
+        $event = new \OCA\OpenRegister\Event\CustomScopeEvaluatingEvent(
+            schema: $schema,
+            action: $action,
+            userId: $userId,
+            userGroups: $userGroups,
+            object: $object
+        );
+
+        try {
+            $this->eventDispatcher->dispatchTyped($event);
+        } catch (Exception $e) {
+            $this->logger->warning(
+                message: '[PermissionHandler] CustomScopeEvaluatingEvent dispatch failed',
+                context: [
+                    'file'   => __FILE__,
+                    'line'   => __LINE__,
+                    'action' => $action,
+                    'error'  => $e->getMessage(),
+                ]
+            );
+            return null;
+        }
+
+        if ($event->hasVerdict() === false) {
+            return null;
+        }
+
+        $verdict = $event->getVerdict();
+        $this->dispatchCustomScopeEvaluated(
+            schema: $schema,
+            action: $action,
+            userId: $userId,
+            verdict: $verdict,
+            fromListener: true
+        );
+
+        return $verdict;
+    }//end dispatchCustomScopeEvaluation()
+
+    /**
+     * Dispatch the paired telemetry event. Best-effort; listener
+     * exceptions are caught and logged so telemetry can never block
+     * the permission verdict.
+     *
+     * @param Schema      $schema       Schema that was evaluated.
+     * @param string      $action       Custom action verb.
+     * @param string|null $userId       User ID under evaluation.
+     * @param bool        $verdict      Final verdict.
+     * @param bool        $fromListener True when the verdict came from a listener.
+     *
+     * @return void
+     */
+    private function dispatchCustomScopeEvaluated(
+        Schema $schema,
+        string $action,
+        ?string $userId,
+        bool $verdict,
+        bool $fromListener
+    ): void {
+        if ($this->eventDispatcher === null) {
+            return;
+        }
+
+        try {
+            $this->eventDispatcher->dispatchTyped(
+                new \OCA\OpenRegister\Event\CustomScopeEvaluatedEvent(
+                    schema: $schema,
+                    action: $action,
+                    userId: $userId,
+                    verdict: $verdict,
+                    fromListener: $fromListener
+                )
+            );
+        } catch (Exception $e) {
+            $this->logger->warning(
+                message: '[PermissionHandler] CustomScopeEvaluatedEvent dispatch failed',
+                context: [
+                    'file'   => __FILE__,
+                    'line'   => __LINE__,
+                    'action' => $action,
+                    'error'  => $e->getMessage(),
+                ]
+            );
+        }//end try
+    }//end dispatchCustomScopeEvaluated()
 
     /**
      * Reset the per-request permission verdict cache.
