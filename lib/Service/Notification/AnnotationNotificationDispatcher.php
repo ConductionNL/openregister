@@ -54,7 +54,8 @@ class AnnotationNotificationDispatcher
         private readonly ?RateLimiter $rateLimiter=null,
         private readonly ?IConfig $config=null,
         private readonly ?NotificationHistoryMapper $historyMapper=null,
-        private readonly ?NotificationCoalescer $coalescer=null
+        private readonly ?NotificationCoalescer $coalescer=null,
+        private readonly ?\OCA\OpenRegister\Db\NotificationSubscriptionMapper $subscriptionMapper=null
     ) {
     }//end __construct()
 
@@ -103,6 +104,19 @@ class AnnotationNotificationDispatcher
             }
 
             $recipients = $this->resolveRecipients(($spec['recipients'] ?? []), $data, $object, $context);
+            // Subscription gate: when the rule opts into subscription
+            // filtering via `requiresSubscription: true`, intersect
+            // the resolved recipients with the set of users who have
+            // subscribed to this object's (register, schema). Anonymous
+            // / non-uid recipients are passed through unchanged because
+            // subscriptions are user-scoped only.
+            if (($spec['requiresSubscription'] ?? false) === true) {
+                $recipients = $this->filterBySubscription(
+                    recipients: $recipients,
+                    object: $object
+                );
+            }
+
             if (count($recipients) === 0) {
                 continue;
             }
@@ -268,7 +282,6 @@ class AnnotationNotificationDispatcher
 
     }//end dispatch()
 
-
     /**
      * Helper to dispatch a broadcast-style channel (webhook / talk).
      *
@@ -379,7 +392,6 @@ class AnnotationNotificationDispatcher
 
     }//end rateLimitAllows()
 
-
     /**
      * Apply the (optional) coalescer. Returns true when the dispatch
      * may proceed.
@@ -405,7 +417,6 @@ class AnnotationNotificationDispatcher
         return $this->coalescer->shouldDispatch(ruleId: $ruleId, recipient: $recipient, perRuleOverride: $coalesce);
 
     }//end coalesceAllows()
-
 
     /**
      * Persist a row in `openregister_notification_history`.
@@ -466,7 +477,6 @@ class AnnotationNotificationDispatcher
         }//end try
 
     }//end recordHistory()
-
 
     /**
      * Record a per-recipient short-circuit (rate-limit / coalesce)
@@ -1216,4 +1226,69 @@ class AnnotationNotificationDispatcher
         $value  = ($config['x-openregister-notifications'] ?? null);
         return is_array($value) === true ? $value : null;
     }//end getAnnotation()
+
+    /**
+     * Filter resolved recipients down to users who have subscribed to
+     * the object's (register, schema). Non-uid recipients (email
+     * literals, webhook urls, etc) pass through unchanged because the
+     * subscription store is user-scoped only.
+     *
+     * Null-safe: when the SubscriptionMapper isn't wired (legacy
+     * fixtures) or the object lacks register/schema metadata, the
+     * filter is a no-op and every recipient is kept.
+     *
+     * @param array<int, array> $recipients The resolved recipient list.
+     * @param ObjectEntity      $object     The object the event fired on.
+     *
+     * @return array<int, array>
+     */
+    private function filterBySubscription(array $recipients, ObjectEntity $object): array
+    {
+        if ($this->subscriptionMapper === null) {
+            return $recipients;
+        }
+
+        $registerId = $object->getRegister();
+        $schemaId   = $object->getSchema();
+        if (is_numeric($registerId) === false || is_numeric($schemaId) === false) {
+            return $recipients;
+        }
+
+        try {
+            $subscribed = $this->subscriptionMapper->findSubscribedUids(
+                registerId: (int) $registerId,
+                schemaId: (int) $schemaId
+            );
+        } catch (\Throwable $e) {
+            // A query failure MUST NOT block dispatch — log and pass
+            // every recipient through.
+            $this->logger->warning(
+                '[AnnotationNotificationDispatcher] subscription lookup failed: '.$e->getMessage(),
+                ['file' => __FILE__, 'line' => __LINE__]
+            );
+            return $recipients;
+        }
+
+        $subscribedSet = array_flip($subscribed);
+
+        return array_values(
+                array_filter(
+            $recipients,
+            static function (array $recipient) use ($subscribedSet): bool {
+                $kind = ($recipient['kind'] ?? null);
+                $uid  = ($recipient['uid'] ?? null);
+                if ($kind !== 'user' || is_string($uid) === false || $uid === '') {
+                    // Non-user recipients (email literal, webhook url,
+                    // talk room, group expansion that already produced
+                    // a user) bypass the subscription filter so legacy
+                    // wire shapes still receive notifications.
+                    return true;
+                }
+
+                return isset($subscribedSet[$uid]);
+            }
+        )
+                );
+
+    }//end filterBySubscription()
 }//end class
