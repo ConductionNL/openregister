@@ -26,6 +26,7 @@ namespace OCA\OpenRegister\Controller;
 
 use OCA\OpenRegister\Exception\OasValidationException;
 use OCA\OpenRegister\Service\OasService;
+use OCA\OpenRegister\Service\Oas\OasETagComputer;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
@@ -51,14 +52,16 @@ class OasController extends Controller
     /**
      * OasController constructor
      *
-     * @param string     $appName    Application name
-     * @param IRequest   $request    Request object
-     * @param OasService $oasService OAS service instance
+     * @param string               $appName       Application name
+     * @param IRequest             $request       Request object
+     * @param OasService           $oasService    OAS service instance
+     * @param ?OasETagComputer     $etagComputer  Optional ETag computer for If-None-Match short-circuit
      */
     public function __construct(
         string $appName,
         IRequest $request,
-        OasService $oasService
+        OasService $oasService,
+        private readonly ?OasETagComputer $etagComputer=null
     ) {
         parent::__construct(appName: $appName, request: $request);
         $this->oasService = $oasService;
@@ -135,6 +138,26 @@ class OasController extends Controller
 
         if ($emitSummary === true) {
             $oasData['x-validation-summary'] = $this->oasService->getLastValidationReport()->toSummary();
+        }
+
+        // ETag short-circuit (RFC 7232): when the client sends an
+        // If-None-Match that matches the current spec hash, return 304
+        // without the (large) body. Skipped when ?validate=true so the
+        // validation summary is always fresh.
+        if ($this->etagComputer !== null && $emitSummary === false) {
+            $etag        = $this->etagComputer->computeETag(oas: $oasData);
+            $ifNoneMatch = (string) ($this->request->getHeader('IF_NONE_MATCH') ?? '');
+            if ($ifNoneMatch !== ''
+                && $this->etagComputer->matches(ifNoneMatch: $ifNoneMatch, currentETag: $etag) === true
+            ) {
+                $response = new JSONResponse(data: null, statusCode: 304);
+                $response->addHeader('ETag', $etag);
+                return $response;
+            }
+
+            $response = new JSONResponse(data: $oasData);
+            $response->addHeader('ETag', $etag);
+            return $response;
         }
 
         return new JSONResponse(data: $oasData);

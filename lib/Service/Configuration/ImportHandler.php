@@ -254,17 +254,18 @@ class ImportHandler
     /**
      * Constructor for ImportHandler.
      *
-     * @param SchemaMapper        $schemaMapper        The schema mapper.
-     * @param RegisterMapper      $registerMapper      The register mapper.
-     * @param MagicMapper         $objectEntityMapper  The object entity mapper.
-     * @param ConfigurationMapper $configurationMapper The configuration mapper.
-     * @param MappingMapper       $mappingMapper       The mapping mapper.
-     * @param Client              $client              The HTTP client for URL fetching.
-     * @param IAppConfig          $appConfig           The app config.
-     * @param LoggerInterface     $logger              The logger interface.
-     * @param string              $appDataPath         The app data path.
-     * @param UploadHandler       $uploadHandler       The upload handler.
-     * @param ObjectService       $objectService       The object service.
+     * @param SchemaMapper                                       $schemaMapper         The schema mapper.
+     * @param RegisterMapper                                     $registerMapper       The register mapper.
+     * @param MagicMapper                                        $objectEntityMapper   The object entity mapper.
+     * @param ConfigurationMapper                                $configurationMapper  The configuration mapper.
+     * @param MappingMapper                                      $mappingMapper        The mapping mapper.
+     * @param Client                                             $client               The HTTP client for URL fetching.
+     * @param IAppConfig                                         $appConfig            The app config.
+     * @param LoggerInterface                                    $logger               The logger interface.
+     * @param string                                             $appDataPath          The app data path.
+     * @param UploadHandler                                      $uploadHandler        The upload handler.
+     * @param ObjectService                                      $objectService        The object service.
+     * @param ?\OCA\OpenRegister\Service\Oas\OasRequestValidator $schemaShapeValidator Optional schema-shape validator used at import time.
      */
     public function __construct(
         SchemaMapper $schemaMapper,
@@ -277,7 +278,8 @@ class ImportHandler
         LoggerInterface $logger,
         string $appDataPath,
         UploadHandler $uploadHandler,
-        ObjectService $objectService
+        ObjectService $objectService,
+        private readonly ?\OCA\OpenRegister\Service\Oas\OasRequestValidator $schemaShapeValidator=null
     ) {
         $this->schemaMapper        = $schemaMapper;
         $this->registerMapper      = $registerMapper;
@@ -982,6 +984,29 @@ class ImportHandler
         ?string $version=null,
         bool $force=false
     ): Schema {
+        // Pre-validate the schema's shape against a minimal meta-schema
+        // before we mutate it. Catches structurally-invalid imports
+        // (no `properties` map, wrong type) early, before persistence,
+        // so the import API returns a clear error instead of a deep
+        // mapper failure later. Validator is null-safe: when not wired,
+        // import proceeds on the legacy path.
+        if ($this->schemaShapeValidator !== null) {
+            $shapeErrors = $this->schemaShapeValidator->validate(
+                body: $data,
+                schema: $this->minimalSchemaShapeMetaSchema()
+            );
+            if ($shapeErrors !== []) {
+                $msg = 'imported schema fails OAS-shape validation: '.implode(
+                            '; ',
+                            array_map(
+                        static fn($e) => ($e['path'].' '.$e['message']),
+                        $shapeErrors
+                    )
+                            );
+                throw new \RuntimeException($msg);
+            }
+        }
+
         try {
             // Remove id, uuid, and organisation from the data.
             unset($data['id'], $data['uuid'], $data['organisation']);
@@ -3599,4 +3624,43 @@ class ImportHandler
     {
         $this->ensureDependenciesForSeedData(configData: $configData);
     }//end handleNextcloudAppDependencies()
+
+    /**
+     * Minimal meta-schema describing the structural shape an OR schema
+     * MUST satisfy at import time. Stricter shapes (per-property type
+     * validation, RBAC sigil presence) belong in `SchemaService` after
+     * the import succeeds — this pass only catches the cases that
+     * would fail catastrophically downstream (non-object, missing
+     * `properties`, wrong type for `properties`).
+     *
+     * The full OpenAPI 3.1 meta-schema is vendored at
+     * `lib/Service/Resources/meta/openapi-3.1.0.json` (closes #1378). It
+     * is used by `OasService::validateOas()` for the generated OAS
+     * document; for imported OR register schemas we keep using the
+     * smaller shape check here because OR schemas are not full OAS
+     * documents — they are JSON-Schema-with-OR-extensions, and the
+     * OpenAPI meta would over-reject them.
+     *
+     * @return array<string, mixed>
+     */
+    private function minimalSchemaShapeMetaSchema(): array
+    {
+        return [
+            'type'       => 'object',
+            'required'   => ['properties'],
+            'properties' => [
+                'title'       => ['type' => 'string'],
+                'description' => ['type' => 'string'],
+                'slug'        => ['type' => 'string'],
+                'properties'  => [
+                    'type' => 'object',
+                ],
+                'required'    => [
+                    'type'  => 'array',
+                    'items' => ['type' => 'string'],
+                ],
+            ],
+        ];
+
+    }//end minimalSchemaShapeMetaSchema()
 }//end class

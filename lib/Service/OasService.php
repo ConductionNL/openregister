@@ -23,6 +23,7 @@ use Exception;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Exception\OasValidationException;
+use OCA\OpenRegister\Service\Oas\OasRequestValidator;
 use OCA\OpenRegister\Service\Oas\OasValidationReport;
 use OCP\IURLGenerator;
 use OCP\IConfig;
@@ -120,12 +121,14 @@ class OasService
      * @param SchemaMapper         $schemaMapper   Schema mapper for database operations
      * @param IURLGenerator        $urlGenerator   URL generator for absolute URLs
      * @param LoggerInterface|null $logger         PSR-3 logger for surfacing validation issues
+     * @param ?OasRequestValidator $metaValidator  Optional validator used at strict mode for the vendored OAS 3.1 meta-schema check.
      */
     public function __construct(
         RegisterMapper $registerMapper,
         SchemaMapper $schemaMapper,
         IURLGenerator $urlGenerator,
-        ?LoggerInterface $logger=null
+        ?LoggerInterface $logger=null,
+        private readonly ?OasRequestValidator $metaValidator=null
     ) {
         $this->registerMapper = $registerMapper;
         $this->schemaMapper   = $schemaMapper;
@@ -1832,7 +1835,57 @@ class OasService
 
         // Pass 6: NLGov rules — HTTP method whitelist (API-01) and status code whitelist (API-03).
         $this->validateNlGovRules();
+
+        // Pass 7: Strict-mode meta-schema validation against the
+        // vendored OpenAPI 3.1 meta-schema. Best-effort: missing
+        // validator (DI not wired in older fixtures) or missing meta
+        // file (vendoring not run) silently skips this pass.
+        $this->validateAgainstMetaSchema();
     }//end validateOasIntegrity()
+
+    /**
+     * Validate the generated OAS document against the vendored OpenAPI 3.1
+     * meta-schema. Closes oas-validation issue #1378.
+     *
+     * @return void
+     */
+    private function validateAgainstMetaSchema(): void
+    {
+        if ($this->metaValidator === null) {
+            return;
+        }
+
+        $metaPath = __DIR__.'/Resources/meta/openapi-3.1.0.json';
+        if (file_exists($metaPath) === false) {
+            return;
+        }
+
+        $metaJson = (string) file_get_contents($metaPath);
+        $meta     = json_decode($metaJson, true);
+        if (is_array($meta) === false) {
+            return;
+        }
+
+        try {
+            $errors = $this->metaValidator->validate(body: $this->oas, schema: $meta);
+            foreach ($errors as $err) {
+                $this->report->addError(
+                    path: $err['path'],
+                    message: 'OpenAPI 3.1 meta-schema violation: '.$err['message'],
+                    code: 'meta-schema-violation'
+                );
+            }
+        } catch (\Throwable $e) {
+            // Validator errors MUST NOT block OAS generation — log and move on.
+            if ($this->logger !== null) {
+                $this->logger->warning(
+                    '[OasService] meta-schema validation pass errored: '.$e->getMessage(),
+                    ['file' => __FILE__, 'line' => __LINE__]
+                );
+            }
+        }
+
+    }//end validateAgainstMetaSchema()
 
     /**
      * Verify every entry in `servers` uses an absolute URL.
