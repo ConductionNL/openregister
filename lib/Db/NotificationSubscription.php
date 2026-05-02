@@ -13,15 +13,6 @@
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
  * @link https://www.OpenRegister.app
- *
- * @method void          setUserId(string $userId)
- * @method string|null   getUserId()
- * @method void          setRegisterId(?int $registerId)
- * @method int|null      getRegisterId()
- * @method void          setSchemaId(?int $schemaId)
- * @method int|null      getSchemaId()
- * @method void          setCreated(\DateTime $created)
- * @method \DateTime|null getCreated()
  */
 
 declare(strict_types=1);
@@ -30,6 +21,16 @@ namespace OCA\OpenRegister\Db;
 
 use OCP\AppFramework\Db\Entity;
 
+/**
+ * @method void           setUserId(string $userId)
+ * @method string|null    getUserId()
+ * @method void           setRegisterId(?int $registerId)
+ * @method int|null       getRegisterId()
+ * @method void           setSchemaId(?int $schemaId)
+ * @method int|null       getSchemaId()
+ * @method void           setCreated(\DateTime $created)
+ * @method \DateTime|null getCreated()
+ */
 class NotificationSubscription extends Entity
 {
 

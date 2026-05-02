@@ -39,6 +39,9 @@ namespace OCA\OpenRegister\Service\Geo;
 
 /**
  * Pure-PHP spatial-filter matcher.
+ *
+ * @SuppressWarnings(PHPMD.ExcessiveClassComplexity) Spatial-filter algorithms (ray-casting point-in-polygon, Haversine distance, Polygon/MultiPolygon coordinate extraction) are inherently branchy. Splitting across classes would obscure the algorithmic flow without reducing real complexity.
+ * @SuppressWarnings(PHPMD.ShortVariable) `$x` / `$y` are mathematical convention for ray-casting; `$xi` / `$yi` / `$xj` / `$yj` are the standard ring-vertex names from Bevis & Chatelain's algorithm.
  */
 class GeoSpatialEvaluator
 {
@@ -215,6 +218,9 @@ class GeoSpatialEvaluator
      * @param array $geometry The geometry.
      *
      * @return ?array `[lon, lat]` or null when the shape is unsupported.
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity) One branch per supported GeoJSON geometry type (Point / Polygon / MultiPolygon / LineString) plus shape-validity guards.
+     * @SuppressWarnings(PHPMD.NPathComplexity)      Same: each geometry type is one branch.
      */
     private function extractRepresentativePoint(array $geometry): ?array
     {
@@ -322,6 +328,8 @@ class GeoSpatialEvaluator
      * @param array $ring  The ring vertices.
      *
      * @return bool
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity) Standard Bevis & Chatelain ray-casting algorithm; the branches are inherent to the geometry test.
      */
     private function pointInRing(array $point, array $ring): bool
     {

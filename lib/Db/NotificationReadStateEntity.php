@@ -17,13 +17,6 @@
  * @link https://www.OpenRegister.app
  *
  * @spec openspec/changes/notificatie-engine/tasks.md "Read/unread tracking MUST be maintained per user per notification"
- *
- * @method void          setUserId(string $userId)
- * @method string|null   getUserId()
- * @method void          setNotificationId(string $notificationId)
- * @method string|null   getNotificationId()
- * @method void          setReadAt(\DateTime $readAt)
- * @method \DateTime|null getReadAt()
  */
 
 declare(strict_types=1);
@@ -34,6 +27,13 @@ use OCP\AppFramework\Db\Entity;
 
 /**
  * Notification-read-state row.
+ *
+ * @method void           setUserId(string $userId)
+ * @method string|null    getUserId()
+ * @method void           setNotificationId(string $notificationId)
+ * @method string|null    getNotificationId()
+ * @method void           setReadAt(\DateTime $readAt)
+ * @method \DateTime|null getReadAt()
  */
 class NotificationReadStateEntity extends Entity
 {

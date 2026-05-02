@@ -1309,7 +1309,7 @@ class ObjectsController extends Controller
 
         // Reuse the standard listing path, then post-filter.
         $listing = $this->index(register: $register, schema: $schema, objectService: $objectService);
-        $payload = (array) ($listing->getData() ?? []);
+        $payload = (array) $listing->getData();
         $rows    = ($payload['results'] ?? []);
         if (is_array($rows) === false) {
             return $listing;

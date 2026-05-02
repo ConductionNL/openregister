@@ -146,7 +146,7 @@ class OasController extends Controller
         // validation summary is always fresh.
         if ($this->etagComputer !== null && $emitSummary === false) {
             $etag        = $this->etagComputer->computeETag(oas: $oasData);
-            $ifNoneMatch = (string) ($this->request->getHeader('IF_NONE_MATCH') ?? '');
+            $ifNoneMatch = (string) $this->request->getHeader('IF_NONE_MATCH');
             if ($ifNoneMatch !== ''
                 && $this->etagComputer->matches(ifNoneMatch: $ifNoneMatch, currentETag: $etag) === true
             ) {

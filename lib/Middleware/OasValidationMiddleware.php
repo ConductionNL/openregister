@@ -111,6 +111,8 @@ class OasValidationMiddleware extends Middleware
      * @return \OCP\AppFramework\Http\Response
      *
      * @throws \Throwable When the exception is not ours; rethrown for upstream handling.
+     *
+     * @SuppressWarnings(PHPMD.UnusedFormalParameter) NC Middleware interface requires $controller + $methodName.
      */
     public function afterException(mixed $controller, string $methodName, \Throwable $exception): \OCP\AppFramework\Http\Response
     {
@@ -142,6 +144,10 @@ class OasValidationMiddleware extends Middleware
      * @param string $methodName The method being invoked.
      *
      * @return array|null The JSON-Schema, or null when no schema was found.
+     *
+     * @SuppressWarnings(PHPMD.UnusedFormalParameter) Stub method until OasService exposes a per-operation schema lookup; the controller + methodName params are the contract the future resolver will use.
+     *
+     * @phpstan-ignore-next-line return-type narrows when the resolver lookup is implemented; until then it always returns null.
      */
     private function resolveOperationSchema(mixed $controller, string $methodName): ?array
     {

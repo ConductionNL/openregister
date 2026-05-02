@@ -34,6 +34,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Db;
 
+use DateTime;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Db\QBMapper;
 use OCP\DB\Exception as DbException;
@@ -81,10 +82,12 @@ class NotificationReadStateMapper extends QBMapper
         $entity = new NotificationReadStateEntity();
         $entity->setUserId($userId);
         $entity->setNotificationId($notificationId);
-        $entity->setReadAt(new \DateTime());
+        $entity->setReadAt(new DateTime());
 
         try {
-            return $this->insert($entity);
+            /** @var NotificationReadStateEntity $inserted */
+            $inserted = $this->insert($entity);
+            return $inserted;
         } catch (DbException $e) {
             // Race: another request inserted between the find and insert.
             // The unique index protects us — return the existing row.
@@ -175,7 +178,9 @@ class NotificationReadStateMapper extends QBMapper
             )
             ->setMaxResults(1);
 
-        return $this->findEntity(query: $qb);
+        /** @var NotificationReadStateEntity $entity */
+        $entity = $this->findEntity(query: $qb);
+        return $entity;
 
     }//end findByUserAndNotification()
 }//end class

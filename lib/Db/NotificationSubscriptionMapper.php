@@ -30,6 +30,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Db;
 
+use DateTime;
+use InvalidArgumentException;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Db\QBMapper;
 use OCP\DB\Exception as DbException;
@@ -71,7 +73,7 @@ class NotificationSubscriptionMapper extends QBMapper
     public function subscribe(string $userId, ?int $registerId, ?int $schemaId): NotificationSubscription
     {
         if ($registerId === null && $schemaId === null) {
-            throw new \InvalidArgumentException(
+            throw new InvalidArgumentException(
                 'subscribe() requires at least one of registerId / schemaId'
             );
         }
@@ -86,10 +88,12 @@ class NotificationSubscriptionMapper extends QBMapper
         $entity->setUserId($userId);
         $entity->setRegisterId($registerId);
         $entity->setSchemaId($schemaId);
-        $entity->setCreated(new \DateTime());
+        $entity->setCreated(new DateTime());
 
         try {
-            return $this->insert($entity);
+            /** @var NotificationSubscription $inserted */
+            $inserted = $this->insert($entity);
+            return $inserted;
         } catch (DbException) {
             // Race: parallel insert won. Return the existing row.
             return $this->findExisting(userId: $userId, registerId: $registerId, schemaId: $schemaId);
@@ -138,7 +142,9 @@ class NotificationSubscriptionMapper extends QBMapper
             )
             ->orderBy('created', 'DESC');
 
-        return $this->findEntities(query: $qb);
+        /** @var NotificationSubscription[] $rows */
+        $rows = $this->findEntities(query: $qb);
+        return $rows;
 
     }//end findByUser()
 
@@ -210,7 +216,9 @@ class NotificationSubscriptionMapper extends QBMapper
         $this->whereNullableEq(qb: $qb, column: 'schema_id', value: $schemaId);
         $qb->setMaxResults(1);
 
-        return $this->findEntity(query: $qb);
+        /** @var NotificationSubscription $entity */
+        $entity = $this->findEntity(query: $qb);
+        return $entity;
 
     }//end findExisting()
 

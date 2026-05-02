@@ -35,6 +35,7 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Index\SearchBackendInterface;
 use OCA\OpenRegister\Service\Search\PlaceholderResolver;
+use ReflectionClass;
 use OCP\IDBConnection;
 use RuntimeException;
 
@@ -648,7 +649,7 @@ class AggregationRunner
      */
     private function detectBackendName(SearchBackendInterface $backend): string
     {
-        $shortName = (new \ReflectionClass($backend))->getShortName();
+        $shortName = (new ReflectionClass($backend))->getShortName();
         if (str_contains($shortName, 'Solr') === true) {
             return 'solr';
         }
