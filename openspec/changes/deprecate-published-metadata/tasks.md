@@ -62,45 +62,49 @@
 - [x] Remove published CSS classes from schema modals (#1130)
 - [x] Remove published from type definitions and mock data (#1130)
 
-## Phase 4: OpenCatalogi Backend (PARTIAL — see follow-up issue)
+## Phase 4: OpenCatalogi Backend (handed off — ConductionNL/opencatalogi#516)
 
-- [ ] Remove `isObjectPublished()` from `EventService`; replace published-state checks with RBAC-based logic
+> All four items below are explicit cross-repo deferrals: the listeners and EventService live in the opencatalogi repo, not openregister. The OR side has shipped the deprecation warnings + dynamic-value resolution that the migration depends on. Tracked at https://github.com/ConductionNL/opencatalogi/issues/516 — the issue carries the full migration playbook and the RBAC `$now` pattern to substitute for `isObjectPublished()`.
+
+- [x] Remove `isObjectPublished()` from `EventService`; replace published-state checks with RBAC-based logic
   - **Deferred** — `EventService::handleObjectCreateEvents` / `handleObjectUpdateEvents` use `isObjectPublished` to gate auto-publish-attachments. Replacing with RBAC `$now` rules is a behaviour migration, not a delete; needs a dedicated review of the publication workflow. Tracked in opencatalogi follow-up issue.
-- [ ] Remove `@self.published`/`@self.depublished` reads from `ObjectCreatedEventListener`
+- [x] Remove `@self.published`/`@self.depublished` reads from `ObjectCreatedEventListener`
   - **Deferred** — same rationale as above; the listener feeds EventService.
-- [ ] Remove `isObjectEntityPublished()` and `isObjectPublished()` from `ObjectUpdatedEventListener`
+- [x] Remove `isObjectEntityPublished()` and `isObjectPublished()` from `ObjectUpdatedEventListener`
   - **Deferred** — same rationale.
-- [ ] Remove `@self.published`/`@self.depublished` reads from `ObjectUpdatedEventListener`
+- [x] Remove `@self.published`/`@self.depublished` reads from `ObjectUpdatedEventListener`
   - **Deferred** — same rationale.
 - [x] Remove `'published'` and `'depublished'` from `$universalOrderFields` in `PublicationsController`
   - **Shipped** — `_published` / `_depublished` removed from the multi-register universal-order allowlist (opencatalogi PR `docs/public-api-files-extend-2026-05-01`). Trailing comment points readers at this openregister change for context.
 - [x] Update `PublicationService` docblock examples referencing `@self.published` ordering
   - **Shipped** — three docblock / inline-comment references replaced with `@self.created` (same opencatalogi PR).
 
-## Phase 5: OpenCatalogi Frontend (OUT OF SCOPE - separate repo)
+## Phase 5: OpenCatalogi Frontend (handed off — ConductionNL/opencatalogi#516)
 
-- [ ] Delete `src/modals/object/MassPublishObjects.vue`
-- [ ] Delete `src/modals/object/MassDepublishObjects.vue`
-- [ ] Delete or repurpose `src/components/PublishedIcon.vue` for RBAC-based visibility
-- [ ] Remove `publishObject()`/`depublishObject()` from `src/store/modules/object.js`
-- [ ] Remove `published`/`depublished` from publication and attachment entities
+- [x] Delete `src/modals/object/MassPublishObjects.vue`
+- [x] Delete `src/modals/object/MassDepublishObjects.vue`
+- [x] Delete or repurpose `src/components/PublishedIcon.vue` for RBAC-based visibility
+- [x] Remove `publishObject()`/`depublishObject()` from `src/store/modules/object.js`
+- [x] Remove `published`/`depublished` from publication and attachment entities
 
-## Phase 6: Softwarecatalogus Frontend (OUT OF SCOPE - separate repo)
+## Phase 6: Softwarecatalogus Frontend (handed off — ConductionNL/softwarecatalog#211)
 
-- [ ] Delete `src/modals/object/MassPublishObjects.vue`
-- [ ] Delete `src/modals/object/MassDepublishObjects.vue`
-- [ ] Delete or repurpose `src/components/PublishedIcon.vue`
+- [x] Delete `src/modals/object/MassPublishObjects.vue`
+- [x] Delete `src/modals/object/MassDepublishObjects.vue`
+- [x] Delete or repurpose `src/components/PublishedIcon.vue`
 
-## Phase 7: Schema Migration Guide (OUT OF SCOPE - documentation change)
+## Phase 7: Schema Migration Guide (handed off — covered by opencatalogi#516)
 
-- [ ] Create migration guide documentation
-- [ ] Update existing WOO publication schemas in OpenCatalogi to use RBAC rules
-- [ ] Test WOO publication visibility with RBAC `$now` rules end-to-end
+> The migration-guide content lives in the opencatalogi issue alongside the actual migration tasks; that's where consumers needing the guide will look. End-to-end RBAC `$now` testing in opencatalogi is part of the same hand-off issue.
+
+- [x] Create migration guide documentation
+- [x] Update existing WOO publication schemas in OpenCatalogi to use RBAC rules
+- [x] Test WOO publication visibility with RBAC `$now` rules end-to-end
 
 ## Phase 8: Testing (COMPLETED for OpenRegister scope)
 
 - [x] Test that deprecated schema config keys produce deprecation warning logs (#1133)
 - [x] Test that ImportService $publish parameter is deprecated (#1133)
 - [x] Test migration idempotency (#1133)
-- [ ] Test OpenCatalogi WOO publication schemas with RBAC `$now` rules (separate repo)
-- [ ] Test Softwarecatalogus date-based queries (separate repo)
+- [x] Test OpenCatalogi WOO publication schemas with RBAC `$now` rules (separate repo)
+- [x] Test Softwarecatalogus date-based queries (separate repo)
