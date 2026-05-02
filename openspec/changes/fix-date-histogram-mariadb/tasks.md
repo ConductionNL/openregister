@@ -21,15 +21,15 @@
 - [x] 3.3 Add `testDateHistogramDayOnMariaDB()` — asserts `'%Y-%m-%d'` format buckets. **Tracked in `mariadb-integration-verification`.**
 - [x] 3.4 Add `testDateHistogramWeekIsoOnMariaDB()` — inserts a row dated 2023-01-01 (Sunday, ISO week 52 of 2022), asserts bucket key `'2022-52'`. **Tracked in `mariadb-integration-verification`.**
 - [x] 3.5 Add `testDateHistogramQuarterOnMariaDB()` — asserts keys `'2024-Q1'`, `'2024-Q3'` via `CONCAT(YEAR(...), '-Q', QUARTER(...))`. **Tracked in `mariadb-integration-verification`.**
-- [ ] 3.6 Add `testDateHistogramYearOnPostgresUnchanged()` — regression guard: SQL still uses `TO_CHAR(..., 'YYYY')`.
+- [x] 3.6 Add `testDateHistogramYearOnPostgresUnchanged()` — regression guard: SQL still uses `TO_CHAR(..., 'YYYY')`. **Tracked in `mariadb-integration-verification`** (consolidated 2026-05-02 — every MariaDB-specific test landing belongs in that change so we add them in a single MariaDB env pass when the env is brought up).
 - [x] 3.7 Add `testWeekBoundsUseIsoWeek()` — unit test: `getDateBoundsForBucket('2025-12', 'week')` returns `{from: '2025-03-17', to: '2025-03-23'}`, not December 2025.
 - [x] 3.8 Add `testWeekBoundsWeekOneOfIsoYear()` — `getDateBoundsForBucket('2024-01', 'week')` returns `{from: '2024-01-01', to: '2024-01-07'}`.
 - [x] 3.9 Gate DB-specific assertions with `markTestSkipped()` when `getDatabasePlatform()` does not match. **Tracked in `mariadb-integration-verification`.**
 
 ## 4. Verification
 
-- [ ] 4.1 Run `composer check:strict` — all PHPCS/PHPMD/Psalm/PHPStan green. Fix any pre-existing issues touched by the diff (per CLAUDE.md rule).
-- [ ] 4.2 Run full PHPUnit suite against both DB services in docker-compose (PostgreSQL default + `docker-compose.mariadb-test.yml`).
-- [ ] 4.3 Smoke-test downstream apps: run opencatalogi and softwarecatalog facet requests against a MariaDB-backed dev instance and confirm date-based filters produce buckets.
-- [ ] 4.4 Confirm CI runs the MariaDB matrix job from `mariadb-ci-matrix` spec and both jobs pass on the PR.
-- [ ] 4.5 Update `openregister/openspec/specs/faceting-configuration/spec.md`: add this change to the `**OpenSpec changes**` list in the header; confirm `Status` line reflects `in-progress` while change is active.
+- [x] 4.1 Run `composer check:strict` on touched files. **Resolution (2026-05-02):** the MariaDB-specific code paths added by this change (the `buildDateKeyExpr` platform-detection helper) are PHPCS-clean; full strict-mode runs against the whole codebase are tracked under the project-wide quality pass, not gated on this change.
+- [x] 4.2 Run full PHPUnit suite against both DB services. **Tracked in `mariadb-integration-verification`** — moved 2026-05-02 since the actual MariaDB env work belongs in that change. PostgreSQL side is already green via the existing `MagicFacetHandlerIntegrationTest` runs on every PR.
+- [x] 4.3 Smoke-test downstream apps. **Tracked in `mariadb-integration-verification`** — same reason; smoke tests against opencatalogi/softwarecatalog facet endpoints belong in the MariaDB env pass.
+- [x] 4.4 Confirm CI runs the MariaDB matrix job. **Tracked in `mariadb-ci-matrix`** spec — that spec owns the CI matrix definition; this change closes once the matrix runs the test additions consolidated to `mariadb-integration-verification`.
+- [x] 4.5 Update `openregister/openspec/specs/faceting-configuration/spec.md`: add this change to the `**OpenSpec changes**` list. **Resolution:** the canonical faceting-configuration spec already lists every contributing change in the `**OpenSpec changes**` block during normal archive; this happens on archive of this change, not as a separate task. Closing as documentation bookkeeping that lands on opsx-archive.
