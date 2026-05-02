@@ -4198,6 +4198,136 @@ class SaveObject
     }//end clearReferenceValidationCache()
 
     /**
+     * Streaming bulk-upsert primitive — closes 2c on the
+     * `reference-existence-validation` change.
+     *
+     * Iterates `$rows` one-at-a-time through the standard
+     * `saveObject()` write path (NOT through MagicMapper's
+     * ultraFastBulkSave) so the request-scoped reference-validation
+     * cache is engaged for every row. The cache reduces per-row
+     * reference checks to O(1) lookup against the in-memory map for
+     * the second-and-subsequent occurrences of any given target UUID,
+     * eliminating the N×M database round-trips that the unstreamed
+     * bulk path incurs.
+     *
+     * The returned `BatchOperationStatus` aggregates per-row
+     * outcomes (created/updated/unchanged/failed) plus reference-
+     * cache hit/miss counters, suitable for surfacing as a job
+     * dashboard entry, a streaming response body, or telemetry.
+     *
+     * Failure isolation: per-row exceptions are caught and recorded
+     * on the status; the batch continues. Callers that need
+     * fail-fast semantics can iterate the `failed` array on the
+     * returned status and abort early.
+     *
+     * Out of scope (this is the prerequisite, not the feature):
+     * async dispatch of the streaming loop. Async post-save
+     * re-validation is sequenced after this primitive lands and is
+     * tracked separately.
+     *
+     * @param Register|null             $register Register context for the batch.
+     * @param Schema|int|string|null    $schema   Schema context for the batch.
+     * @param iterable                  $rows     Input rows (each is the same
+     *                                            shape `saveObject` accepts).
+     * @param BatchOperationStatus|null $status   Optional pre-existing status
+     *                                            (for callers that want to
+     *                                            accumulate across multiple
+     *                                            calls).
+     *
+     * @return BatchOperationStatus
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+     */
+    public function saveObjectsStreaming(
+        Register | int | string | null $register,
+        Schema | int | string | null $schema,
+        iterable $rows,
+        ?BatchOperationStatus $status=null
+    ): BatchOperationStatus {
+        $status ??= new BatchOperationStatus();
+        $status->start();
+
+        foreach ($rows as $row) {
+            $cacheBefore = count($this->referenceValidationCache);
+
+            try {
+                $entity = $this->saveObject(
+                    register: $register,
+                    schema: $schema,
+                    data: (is_array($row) === true ? $row : [])
+                );
+
+                $uuid = ((string) $entity->getUuid());
+
+                // Outcome bucket — distinguishing create vs update
+                // requires comparing the input UUID to the resulting
+                // entity's UUID. When the input has no UUID, the save
+                // path generates one — that's a create. When the
+                // input carries a UUID and an existing object was
+                // matched, that's an update. The unchanged bucket is
+                // a future enhancement (would need a deep diff against
+                // the previous state) and is out of scope here; for
+                // now treat all non-create paths as updates.
+                $hadUuid = (
+                    is_array($row) === true
+                    && (isset($row['@self']['id']) === true
+                    || isset($row['id']) === true
+                    || isset($row['uuid']) === true)
+                );
+                if ($hadUuid === true) {
+                    $status->recordUpdated(uuid: $uuid);
+                } else {
+                    $status->recordCreated(uuid: $uuid);
+                }
+            } catch (Exception $e) {
+                $rowUuid = null;
+                if (is_array($row) === true) {
+                    $rowUuid = (
+                        $row['@self']['id'] ?? $row['id'] ?? $row['uuid'] ?? null
+                    );
+                    if (is_string($rowUuid) === false) {
+                        $rowUuid = null;
+                    }
+                }
+
+                $status->recordFailed(
+                    uuid: $rowUuid,
+                    message: $e->getMessage(),
+                    exceptionClass: $e::class
+                );
+
+                $this->logger->warning(
+                    message: '[SaveObject] saveObjectsStreaming row failed',
+                    context: [
+                        'file'  => __FILE__,
+                        'line'  => __LINE__,
+                        'uuid'  => $rowUuid,
+                        'error' => $e->getMessage(),
+                    ]
+                );
+            }//end try
+
+            // Each row's reference checks either grew the cache (miss)
+            // or hit existing entries (hit). Comparing cache size
+            // before/after the row gives us a cheap proxy: any growth
+            // is a miss; rows that didn't grow the cache resolved
+            // their references via existing entries (hit).
+            $cacheAfter = count($this->referenceValidationCache);
+            $delta      = ($cacheAfter - $cacheBefore);
+            if ($delta > 0) {
+                for ($i = 0; $i < $delta; $i++) {
+                    $status->recordReferenceCacheMiss();
+                }
+            } else {
+                $status->recordReferenceCacheHit();
+            }
+        }//end foreach
+
+        $status->complete();
+        return $status;
+    }//end saveObjectsStreaming()
+
+    /**
      * Push an in-flight save onto the call stack used for circular
      * reference detection.
      *
