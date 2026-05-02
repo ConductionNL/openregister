@@ -3028,6 +3028,28 @@ class ObjectsController extends Controller
                 unlink($zipInfo['path']);
             }
 
+            // Audit the bulk download as ONE entry tied to the parent object.
+            // Best-effort: an audit-trail failure must not break the download.
+            try {
+                $files     = $fileService->getFiles($object);
+                $fileIds   = [];
+                $fileNames = [];
+                foreach ($files as $f) {
+                    $fileIds[]   = $f->getId();
+                    $fileNames[] = $f->getName();
+                }
+
+                $fileService->getAuditHandler()->logBulkDownload(
+                    $object,
+                    $fileIds,
+                    $fileNames,
+                    $zipInfo['filename'],
+                    $zipInfo['size'] ?? null
+                );
+            } catch (\Throwable $auditError) {
+                // Silently swallow — audit-trail must never break the response.
+            }
+
             // Return the ZIP file as a download response.
             return new DataDownloadResponse(
                 $zipContent,
