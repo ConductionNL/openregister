@@ -12,4 +12,12 @@ Defines how OpenRegister coerces database column values to JSON-Schema-typed PHP
 
 ## Requirements
 
+### Requirement: Read coercion is governed by the active change
+While this capability is in-progress, normative requirements MUST be sourced from the active change `fix-magic-table-type-coercion` under `openspec/changes/`. Implementers MUST treat this canonical spec as a placeholder until the change is archived and its delta is merged here.
+
+#### Scenario: Implementer needs the canonical contract
+- **WHEN** an implementer needs the normative behavior for schema-driven read coercion
+- **THEN** they MUST consult the active change `fix-magic-table-type-coercion`
+- **AND** they MUST NOT rely on this placeholder body for normative behavior
+
 _Requirements for this capability are introduced by the active change above and will be merged here on archive._
