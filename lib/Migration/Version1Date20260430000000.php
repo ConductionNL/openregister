@@ -21,7 +21,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Migration;
 
 use Closure;
-use Doctrine\DBAL\Types\Types;
+use OCP\DB\Types;
 use OCP\DB\ISchemaWrapper;
 use OCP\Migration\IOutput;
 use OCP\Migration\SimpleMigrationStep;
@@ -145,7 +145,7 @@ class Version1Date20260430000000 extends SimpleMigrationStep
 
         $table->addColumn(
                 'created',
-                Types::DATETIME_MUTABLE,
+                Types::DATETIME,
                 [
                     'notnull' => true,
                 ]
