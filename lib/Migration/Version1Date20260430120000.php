@@ -36,10 +36,11 @@ use OCP\Migration\SimpleMigrationStep;
  */
 class Version1Date20260430120000 extends SimpleMigrationStep
 {
-
     public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper
     {
-        /** @var ISchemaWrapper $schema */
+        /*
+         * @var ISchemaWrapper $schema
+         */
         $schema = $schemaClosure();
 
         if ($schema->hasTable('openregister_translations') === true) {
@@ -48,46 +49,78 @@ class Version1Date20260430120000 extends SimpleMigrationStep
 
         $table = $schema->createTable('openregister_translations');
 
-        $table->addColumn('id', Types::BIGINT, [
-            'autoincrement' => true,
-            'notnull'       => true,
-        ]);
+        $table->addColumn(
+                'id',
+                Types::BIGINT,
+                [
+                    'autoincrement' => true,
+                    'notnull'       => true,
+                ]
+                );
         $table->setPrimaryKey(['id']);
 
-        $table->addColumn('object_uuid', Types::STRING, [
-            'notnull' => true,
-            'length'  => 64,
-        ]);
-        $table->addColumn('property', Types::STRING, [
-            'notnull' => true,
-            'length'  => 128,
-        ]);
-        $table->addColumn('language', Types::STRING, [
-            'notnull' => true,
-            'length'  => 16,
-        ]);
+        $table->addColumn(
+                'object_uuid',
+                Types::STRING,
+                [
+                    'notnull' => true,
+                    'length'  => 64,
+                ]
+                );
+        $table->addColumn(
+                'property',
+                Types::STRING,
+                [
+                    'notnull' => true,
+                    'length'  => 128,
+                ]
+                );
+        $table->addColumn(
+                'language',
+                Types::STRING,
+                [
+                    'notnull' => true,
+                    'length'  => 16,
+                ]
+                );
 
         // Denormalised translation content from the JSONB property.
         // TEXT (no length cap) so long-form translatable bodies fit.
-        $table->addColumn('value', Types::TEXT, [
-            'notnull' => false,
-        ]);
+        $table->addColumn(
+                'value',
+                Types::TEXT,
+                [
+                    'notnull' => false,
+                ]
+                );
 
         // Workflow state. Default 'draft' on first projection;
         // human/automation paths can promote to machine_translated /
         // human_reviewed / approved via TranslationStatusService.
-        $table->addColumn('status', Types::STRING, [
-            'notnull' => true,
-            'length'  => 32,
-            'default' => 'draft',
-        ]);
-        $table->addColumn('translator', Types::STRING, [
-            'notnull' => false,
-            'length'  => 64,
-        ]);
-        $table->addColumn('updated', Types::DATETIME_MUTABLE, [
-            'notnull' => true,
-        ]);
+        $table->addColumn(
+                'status',
+                Types::STRING,
+                [
+                    'notnull' => true,
+                    'length'  => 32,
+                    'default' => 'draft',
+                ]
+                );
+        $table->addColumn(
+                'translator',
+                Types::STRING,
+                [
+                    'notnull' => false,
+                    'length'  => 64,
+                ]
+                );
+        $table->addColumn(
+                'updated',
+                Types::DATETIME_MUTABLE,
+                [
+                    'notnull' => true,
+                ]
+                );
 
         // One row per (object, property, language) — UPSERT key.
         $table->addUniqueIndex(['object_uuid', 'property', 'language'], 'idx_translations_slot');
@@ -100,5 +133,4 @@ class Version1Date20260430120000 extends SimpleMigrationStep
 
         return $schema;
     }//end changeSchema()
-
 }//end class

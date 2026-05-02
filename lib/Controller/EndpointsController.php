@@ -408,6 +408,7 @@ class EndpointsController extends Controller
      *     array{error: 'Endpoint not found'|'Failed to delete endpoint'},
      *     array<never, never>>
      */
+
     /**
      * Partially update an endpoint by ID.
      *
@@ -430,7 +431,6 @@ class EndpointsController extends Controller
         return $this->update(id: $id);
 
     }//end patch()
-
 
     #[NoAdminRequired]
     #[NoCSRFRequired]

@@ -51,8 +51,8 @@ class RealtimeService
         private readonly IURLGenerator $urlGenerator,
         private readonly UrnService $urnService,
         private readonly LoggerInterface $logger
-    ) {}//end __construct()
-
+    ) {
+    }//end __construct()
 
     /**
      * Record a CloudEvent-shaped change record for a register object.
@@ -74,7 +74,7 @@ class RealtimeService
             $payload = [
                 'specversion'     => '1.0',
                 'type'            => $eventType,
-                'source'          => $base . '/apps/openregister',
+                'source'          => $base.'/apps/openregister',
                 'subject'         => $urn ?? (string) $object->getUuid(),
                 'id'              => bin2hex(random_bytes(16)),
                 'time'            => (new \DateTimeImmutable())->format(\DateTimeInterface::ATOM),
@@ -93,7 +93,7 @@ class RealtimeService
 
             $event = new RealtimeEvent();
             $event->setEventType($eventType);
-            $event->setSource($base . '/apps/openregister');
+            $event->setSource($base.'/apps/openregister');
             $event->setSubject($urn ?? (string) $object->getUuid());
             $event->setRegisterId((string) $object->getRegister());
             $event->setSchemaId((string) $object->getSchema());
@@ -109,8 +109,6 @@ class RealtimeService
                 sprintf('[RealtimeService] failed to record %s: %s', $eventType, $e->getMessage())
             );
             return null;
-        }
+        }//end try
     }//end record()
-
-
 }//end class

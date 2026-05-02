@@ -343,6 +343,7 @@ class RegisterCalendar implements ICalendar
             if ($start instanceof \DateTimeInterface) {
                 $start = $start->format(\DateTimeInterface::ATOM);
             }
+
             $rangeOps['gte'] = (string) $start;
         }
 
@@ -351,6 +352,7 @@ class RegisterCalendar implements ICalendar
             if ($end instanceof \DateTimeInterface) {
                 $end = $end->format(\DateTimeInterface::ATOM);
             }
+
             $rangeOps['lte'] = (string) $end;
         }
 

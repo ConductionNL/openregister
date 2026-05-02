@@ -39,7 +39,6 @@ use Symfony\Component\Console\Output\OutputInterface;
 
 class RematerialiseCalculationsCommand extends Command
 {
-
     public function __construct(
         private readonly RegisterMapper $registerMapper,
         private readonly SchemaMapper $schemaMapper,
@@ -85,18 +84,21 @@ class RematerialiseCalculationsCommand extends Command
                 $materialiseNames[] = (string) $name;
             }
         }
+
         if (count($materialiseNames) === 0) {
             $output->writeln('<comment>No materialised calculations declared — nothing to do.</comment>');
             return Command::SUCCESS;
         }
 
-        $output->writeln(sprintf(
+        $output->writeln(
+                sprintf(
             '<info>Rematerialising %d calculation(s) on %s/%s%s</info>',
             count($materialiseNames),
             $register->getSlug() ?? $register->getId(),
             $schema->getSlug() ?? $schema->getId(),
             $dryRun ? ' (dry run)' : ''
-        ));
+        )
+                );
 
         $entities = $this->magicMapper->findAllInRegisterSchemaTable(
             register: $register,
@@ -109,7 +111,7 @@ class RematerialiseCalculationsCommand extends Command
         $failed    = 0;
 
         foreach ($entities as $entity) {
-            $data = $entity->getObject() ?? [];
+            $data    = $entity->getObject() ?? [];
             $payload = $this->withSelf($data, $entity);
 
             $changed = false;
@@ -117,25 +119,29 @@ class RematerialiseCalculationsCommand extends Command
                 if (is_array($spec) === false || ($spec['materialise'] ?? false) !== true) {
                     continue;
                 }
+
                 try {
                     $value = $this->evaluator->evaluate($payload, $spec['expression'] ?? null);
                     if ($value instanceof DateTimeInterface) {
                         $value = $value->format(DateTimeInterface::ATOM);
                     }
+
                     if (($data[(string) $name] ?? null) !== $value) {
                         $data[(string) $name] = $value;
                         $changed = true;
                     }
                 } catch (\Throwable $e) {
                     $failed++;
-                    $output->writeln(sprintf(
+                    $output->writeln(
+                            sprintf(
                         '  <error>! %s on %s: %s</error>',
                         (string) $name,
                         (string) $entity->getUuid(),
                         $e->getMessage()
-                    ));
-                }
-            }
+                    )
+                            );
+                }//end try
+            }//end foreach
 
             if ($changed === false) {
                 $unchanged++;
@@ -152,22 +158,26 @@ class RematerialiseCalculationsCommand extends Command
                         uuid: $entity->getUuid()
                     );
                 } catch (\Throwable $e) {
-                    $output->writeln(sprintf(
+                    $output->writeln(
+                            sprintf(
                         '  <error>save failed on %s: %s</error>',
                         (string) $entity->getUuid(),
                         $e->getMessage()
-                    ));
+                    )
+                            );
                     $failed++;
                 }
             }
-        }
+        }//end foreach
 
-        $output->writeln(sprintf(
+        $output->writeln(
+                sprintf(
             '<info>Touched %d, unchanged %d, failed %d</info>',
             $touched,
             $unchanged,
             $failed
-        ));
+        )
+                );
         return $failed > 0 ? Command::FAILURE : Command::SUCCESS;
     }//end execute()
 
@@ -176,8 +186,8 @@ class RematerialiseCalculationsCommand extends Command
      */
     private function withSelf(array $data, \OCA\OpenRegister\Db\ObjectEntity $entity): array
     {
-        $created = $entity->getCreated();
-        $updated = $entity->getUpdated();
+        $created       = $entity->getCreated();
+        $updated       = $entity->getUpdated();
         $data['@self'] = [
             'id'       => $entity->getUuid(),
             'uuid'     => $entity->getUuid(),
@@ -199,5 +209,4 @@ class RematerialiseCalculationsCommand extends Command
         $value  = ($config['x-openregister-calculations'] ?? null);
         return is_array($value) === true ? $value : null;
     }//end getCalculations()
-
 }//end class

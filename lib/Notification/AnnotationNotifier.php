@@ -29,8 +29,9 @@ use OCP\Notification\UnknownNotificationException;
 
 class AnnotationNotifier implements INotifier
 {
-
-    public function __construct() {}//end __construct()
+    public function __construct()
+    {
+    }//end __construct()
 
     public function getID(): string
     {
@@ -59,5 +60,4 @@ class AnnotationNotifier implements INotifier
 
         return $notification;
     }//end prepare()
-
 }//end class

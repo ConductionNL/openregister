@@ -40,13 +40,13 @@ use RuntimeException;
  */
 final class TransitionEngine
 {
-
     public function __construct(
         private readonly ObjectService $objectService,
         private readonly SchemaMapper $schemaMapper,
         private readonly IEventDispatcher $eventDispatcher,
         private readonly IUserSession $userSession
-    ) {}//end __construct()
+    ) {
+    }//end __construct()
 
     /**
      * Apply a named transition to an object.
@@ -92,7 +92,7 @@ final class TransitionEngine
         $to   = (string) ($spec['to'] ?? '');
         $from = (array) ($spec['from'] ?? []);
 
-        $data        = $object->getObject() ?? [];
+        $data         = $object->getObject() ?? [];
         $currentValue = (string) ($data[$field] ?? '');
 
         if (in_array($currentValue, $from, true) === false) {
@@ -167,10 +167,12 @@ final class TransitionEngine
             if (is_array($spec) === false) {
                 continue;
             }
+
             $from = (array) ($spec['from'] ?? []);
             if (in_array($currentValue, $from, true) === false) {
                 continue;
             }
+
             $available[] = [
                 'action'      => (string) $action,
                 'to'          => (string) ($spec['to'] ?? ''),
@@ -188,6 +190,7 @@ final class TransitionEngine
         if ($schemaRef === null || $schemaRef === '') {
             return null;
         }
+
         try {
             return $this->schemaMapper->find($schemaRef, _multitenancy: false);
         } catch (\Throwable $e) {
@@ -204,5 +207,4 @@ final class TransitionEngine
         $annotation = ($config['x-openregister-lifecycle'] ?? null);
         return is_array($annotation) === true ? $annotation : null;
     }//end getLifecycleAnnotation()
-
 }//end class

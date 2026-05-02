@@ -52,13 +52,13 @@ use Psr\Log\LoggerInterface;
  */
 class LifecycleValidationListener implements IEventListener
 {
-
     public function __construct(
         private readonly SchemaMapper $schemaMapper,
         private readonly LifecycleGuardRegistry $guardRegistry,
         private readonly IUserSession $userSession,
         private readonly LoggerInterface $logger
-    ) {}//end __construct()
+    ) {
+    }//end __construct()
 
     public function handle(Event $event): void
     {
@@ -97,12 +97,15 @@ class LifecycleValidationListener implements IEventListener
         }
 
         if (is_string($newValue) === false || $newValue === '') {
-            $this->reject($event, [
-                'code'      => 'lifecycle-invalid-value',
-                'field'     => $field,
-                'attempted' => $newValue,
-                'message'   => sprintf('Lifecycle field "%s" must be a non-empty string.', $field),
-            ]);
+            $this->reject(
+                    $event,
+                    [
+                        'code'      => 'lifecycle-invalid-value',
+                        'field'     => $field,
+                        'attempted' => $newValue,
+                        'message'   => sprintf('Lifecycle field "%s" must be a non-empty string.', $field),
+                    ]
+                    );
             return;
         }
 
@@ -110,34 +113,40 @@ class LifecycleValidationListener implements IEventListener
         $matched     = $this->findTransitionByTarget($transitions, (string) $oldValue, $newValue);
 
         if ($matched === null) {
-            $this->reject($event, [
-                'code'      => 'lifecycle-invalid-transition',
-                'field'     => $field,
-                'from'      => $oldValue,
-                'attempted' => $newValue,
-                'message'   => sprintf(
+            $this->reject(
+                    $event,
+                    [
+                        'code'      => 'lifecycle-invalid-transition',
+                        'field'     => $field,
+                        'from'      => $oldValue,
+                        'attempted' => $newValue,
+                        'message'   => sprintf(
                     'No transition allows moving "%s" from "%s" to "%s".',
                     $field,
                     (string) $oldValue,
                     $newValue
                 ),
-            ]);
+                    ]
+                    );
             return;
         }
 
         [$action, $spec] = $matched;
-        $requires = ($spec['requires'] ?? null);
+        $requires        = ($spec['requires'] ?? null);
         if (is_string($requires) === true && $requires !== '') {
             $userId = ($this->userSession->getUser()?->getUID() ?? '');
             $guard  = $this->guardRegistry->resolve($requires);
             $result = $guard->check($newData, $action, $userId);
             if ($result->isAllowed() === false) {
-                $this->reject($event, [
-                    'code'    => 'lifecycle-guard-denied',
-                    'field'   => $field,
-                    'action'  => $action,
-                    'message' => ($result->getMessage() ?? 'Transition denied by guard.'),
-                ]);
+                $this->reject(
+                        $event,
+                        [
+                            'code'    => 'lifecycle-guard-denied',
+                            'field'   => $field,
+                            'action'  => $action,
+                            'message' => ($result->getMessage() ?? 'Transition denied by guard.'),
+                        ]
+                        );
             }
         }
     }//end handle()
@@ -158,17 +167,21 @@ class LifecycleValidationListener implements IEventListener
             if (is_array($spec) === false) {
                 continue;
             }
+
             if (($spec['to'] ?? null) !== $newValue) {
                 continue;
             }
+
             $from = ($spec['from'] ?? []);
             if (is_array($from) === false) {
                 continue;
             }
+
             if (in_array($oldValue, $from, true) === true) {
                 return [(string) $action, $spec];
             }
         }
+
         return null;
     }//end findTransitionByTarget()
 
@@ -207,5 +220,4 @@ class LifecycleValidationListener implements IEventListener
         $event->setErrors($error);
         $event->stopPropagation();
     }//end reject()
-
 }//end class

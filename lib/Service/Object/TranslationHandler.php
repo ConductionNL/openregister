@@ -140,6 +140,7 @@ class TranslationHandler
                 $chain[] = $lang;
             }
         }
+
         if (in_array($defaultLanguage, $chain, true) === false) {
             $chain[] = $defaultLanguage;
         }
@@ -167,6 +168,7 @@ class TranslationHandler
                     if ($candidate !== $resolvedLanguage) {
                         $this->languageService->setFallbackUsed(true);
                     }
+
                     break;
                 }
             }

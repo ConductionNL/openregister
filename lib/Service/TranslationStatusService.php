@@ -32,13 +32,12 @@ use OCP\IUserSession;
 
 class TranslationStatusService
 {
-
     public function __construct(
         private readonly TranslationMapper $translationMapper,
         private readonly TranslationHandler $translationHandler,
         private readonly IUserSession $userSession
-    ) {}//end __construct()
-
+    ) {
+    }//end __construct()
 
     /**
      * Update the workflow status for a translation slot.
@@ -79,7 +78,6 @@ class TranslationStatusService
         );
     }//end setStatus()
 
-
     /**
      * Per-object completeness ratio per language.
      *
@@ -107,9 +105,9 @@ class TranslationStatusService
                 'ratio'      => round(min($count, $total) / $total, 2),
             ];
         }
+
         return $out;
     }//end completenessForObject()
-
 
     /**
      * @return array<string, mixed>[]
@@ -125,7 +123,6 @@ class TranslationStatusService
         return array_map(fn(Translation $t) => $t->jsonSerialize(), $rows);
     }//end search()
 
-
     /**
      * Find objects in `$candidateUuids` that are missing at least one
      * translatable-property value in `$language`.
@@ -139,6 +136,4 @@ class TranslationStatusService
         $properties = $this->translationHandler->getTranslatableProperties($schema);
         return $this->translationMapper->findObjectsMissingLanguage($language, $properties, $candidateUuids);
     }//end findObjectsMissingLanguage()
-
-
 }//end class

@@ -34,7 +34,7 @@ class EmailLinkMapper extends QBMapper
      * Cache for tableExists() result. The schema doesn't change at
      * runtime so we can memoise the check.
      *
-     * @var bool|null
+     * @var boolean|null
      */
     private ?bool $tableExistsCache = null;
 
@@ -62,6 +62,7 @@ class EmailLinkMapper extends QBMapper
         if ($this->tableExistsCache !== null) {
             return $this->tableExistsCache;
         }
+
         try {
             $schema = $this->db->createSchema();
             $this->tableExistsCache = $schema->hasTable('*PREFIX*'.$this->getTableName());
@@ -72,6 +73,7 @@ class EmailLinkMapper extends QBMapper
         } catch (\Throwable $e) {
             $this->tableExistsCache = false;
         }
+
         return $this->tableExistsCache;
     }//end tableExists()
 
@@ -86,7 +88,10 @@ class EmailLinkMapper extends QBMapper
      */
     public function findByObjectUuid(string $objectUuid, ?int $limit=null, ?int $offset=null): array
     {
-        if ($this->tableExists() === false) { return []; }
+        if ($this->tableExists() === false) {
+            return [];
+        }
+
         $qb = $this->db->getQueryBuilder();
         $qb->select('*')
             ->from($this->getTableName())
@@ -113,7 +118,10 @@ class EmailLinkMapper extends QBMapper
      */
     public function countByObjectUuid(string $objectUuid): int
     {
-        if ($this->tableExists() === false) { return 0; }
+        if ($this->tableExists() === false) {
+            return 0;
+        }
+
         $qb = $this->db->getQueryBuilder();
         $qb->select($qb->createFunction('COUNT(*)'))
             ->from($this->getTableName())
@@ -135,7 +143,10 @@ class EmailLinkMapper extends QBMapper
      */
     public function findBySender(string $sender): array
     {
-        if ($this->tableExists() === false) { return []; }
+        if ($this->tableExists() === false) {
+            return [];
+        }
+
         $qb = $this->db->getQueryBuilder();
         $qb->select('*')
             ->from($this->getTableName())
@@ -155,7 +166,10 @@ class EmailLinkMapper extends QBMapper
      */
     public function findByObjectAndMessage(string $objectUuid, int $mailMessageId): ?EmailLink
     {
-        if ($this->tableExists() === false) { return null; }
+        if ($this->tableExists() === false) {
+            return null;
+        }
+
         $qb = $this->db->getQueryBuilder();
         $qb->select('*')
             ->from($this->getTableName())
@@ -178,7 +192,10 @@ class EmailLinkMapper extends QBMapper
      */
     public function deleteByObjectUuid(string $objectUuid): int
     {
-        if ($this->tableExists() === false) { return 0; }
+        if ($this->tableExists() === false) {
+            return 0;
+        }
+
         $qb = $this->db->getQueryBuilder();
         $qb->delete($this->getTableName())
             ->where($qb->expr()->eq('object_uuid', $qb->createNamedParameter($objectUuid)));

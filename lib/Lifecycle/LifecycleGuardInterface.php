@@ -33,7 +33,6 @@ namespace OCA\OpenRegister\Lifecycle;
  */
 interface LifecycleGuardInterface
 {
-
     /**
      * Authorise (or deny) a transition.
      *
@@ -44,5 +43,4 @@ interface LifecycleGuardInterface
      * @return GuardResult Allow or deny + optional message.
      */
     public function check(array $object, string $action, string $userId): GuardResult;
-
 }//end interface

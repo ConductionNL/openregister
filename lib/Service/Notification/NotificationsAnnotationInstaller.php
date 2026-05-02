@@ -42,11 +42,11 @@ use Psr\Log\LoggerInterface;
  */
 class NotificationsAnnotationInstaller implements IEventListener
 {
-
     public function __construct(
         private readonly WebhookMapper $webhookMapper,
         private readonly LoggerInterface $logger
-    ) {}//end __construct()
+    ) {
+    }//end __construct()
 
     public function handle(Event $event): void
     {
@@ -56,6 +56,7 @@ class NotificationsAnnotationInstaller implements IEventListener
         } else if (method_exists($event, 'getNewSchema') === true) {
             $schema = $event->getNewSchema();
         }
+
         if (($schema instanceof Schema) === false) {
             return;
         }
@@ -80,14 +81,17 @@ class NotificationsAnnotationInstaller implements IEventListener
             if (is_array($spec) === false) {
                 continue;
             }
+
             $channels = (array) ($spec['channels'] ?? []);
             if (in_array('webhook', $channels, true) === false) {
                 continue;
             }
+
             $hook = ($spec['webhook'] ?? null);
             if (is_array($hook) === false || ($hook['persistent'] ?? false) !== true) {
                 continue;
             }
+
             $url = (string) ($hook['url'] ?? '');
             if ($url === '' || filter_var($url, FILTER_VALIDATE_URL) === false) {
                 continue;
@@ -98,7 +102,7 @@ class NotificationsAnnotationInstaller implements IEventListener
                 notificationName: (string) $name,
                 hookSpec: $hook
             );
-        }
+        }//end foreach
     }//end installSchema()
 
     /**
@@ -135,6 +139,7 @@ class NotificationsAnnotationInstaller implements IEventListener
                 );
                 return;
             }
+
             $this->webhookMapper->updateFromArray($existing->getId(), $payload);
             $this->logger->info(
                 sprintf('[NotificationsAnnotationInstaller] updated Webhook "%s"', $webhookName)
@@ -143,7 +148,7 @@ class NotificationsAnnotationInstaller implements IEventListener
             $this->logger->warning(
                 sprintf('[NotificationsAnnotationInstaller] upsert "%s" failed: %s', $webhookName, $e->getMessage())
             );
-        }
+        }//end try
     }//end upsertWebhook()
 
     private function findByName(string $name): ?Webhook
@@ -158,7 +163,7 @@ class NotificationsAnnotationInstaller implements IEventListener
         } catch (\Throwable $e) {
             // Fall through: treat as not-found.
         }
+
         return null;
     }//end findByName()
-
 }//end class

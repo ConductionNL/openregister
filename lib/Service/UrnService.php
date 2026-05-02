@@ -85,8 +85,8 @@ class UrnService
         private readonly IURLGenerator $urlGenerator,
         private readonly IAppConfig $appConfig,
         private readonly LoggerInterface $logger
-    ) {}//end __construct()
-
+    ) {
+    }//end __construct()
 
     /**
      * Build the URN for a given object.
@@ -117,7 +117,6 @@ class UrnService
         );
     }//end buildForObject()
 
-
     /**
      * Build a URN from its three identifying parts.
      *
@@ -136,7 +135,6 @@ class UrnService
             strtolower($uuid)
         );
     }//end build()
-
 
     /**
      * Parse a URN string into its components.
@@ -178,7 +176,6 @@ class UrnService
         ];
     }//end parse()
 
-
     /**
      * Resolve a URN to the canonical API URL of the underlying object.
      *
@@ -210,6 +207,7 @@ class UrnService
         } catch (\Throwable $e) {
             return null;
         }
+
         if ($register === null || $schema === null) {
             return null;
         }
@@ -224,7 +222,6 @@ class UrnService
         );
     }//end resolveUrl()
 
-
     /**
      * Reverse: extract a URN from an OpenRegister object URL.
      *
@@ -233,14 +230,14 @@ class UrnService
      */
     public function urnFromUrl(string $url): ?string
     {
-        $base = rtrim($this->urlGenerator->getAbsoluteURL('/'), '/');
+        $base        = rtrim($this->urlGenerator->getAbsoluteURL('/'), '/');
         $escapedBase = preg_quote($base, '/');
         $uuidPattern = '[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}';
 
         // Three URL shapes (mirrors ObjectReferenceProvider):
-        //   1. Hash-routed: /apps/openregister/#/registers/{id}/schemas/{id}/objects/{uuid}
-        //   2. API:         /apps/openregister/api/objects/{registerId|slug}/{schemaId|slug}/{uuid}
-        //   3. Direct:      /apps/openregister/objects/{registerId|slug}/{schemaId|slug}/{uuid}
+        // 1. Hash-routed: /apps/openregister/#/registers/{id}/schemas/{id}/objects/{uuid}
+        // 2. API:         /apps/openregister/api/objects/{registerId|slug}/{schemaId|slug}/{uuid}
+        // 3. Direct:      /apps/openregister/objects/{registerId|slug}/{schemaId|slug}/{uuid}
         $patterns = [
             '/^'.$escapedBase.'(?:\/index\.php)?\/apps\/openregister\/#\/registers\/([\w-]+)\/schemas\/([\w-]+)\/objects\/('.$uuidPattern.')$/i',
             '/^'.$escapedBase.'(?:\/index\.php)?\/apps\/openregister\/api\/objects\/([\w-]+)\/([\w-]+)\/('.$uuidPattern.')$/i',
@@ -260,6 +257,7 @@ class UrnService
                 } catch (\Throwable $e) {
                     return null;
                 }
+
                 if ($register === null || $schema === null) {
                     return null;
                 }
@@ -269,12 +267,11 @@ class UrnService
                     schemaSlug: (string) $schema->getSlug(),
                     uuid: $uuid
                 );
-            }
-        }
+            }//end if
+        }//end foreach
 
         return null;
     }//end urnFromUrl()
-
 
     /**
      * Bulk-resolve a list of URNs to their canonical URLs.
@@ -293,11 +290,12 @@ class UrnService
             if (is_string($urn) === false || $urn === '') {
                 continue;
             }
+
             $out[$urn] = $this->resolveUrl($urn);
         }
+
         return $out;
     }//end resolveBulk()
-
 
     /**
      * Get the instance slug used in URN construction.
@@ -318,19 +316,20 @@ class UrnService
         } catch (\Throwable $e) {
             $configured = '';
         }
+
         if ($configured !== '') {
             return $this->sanitiseSlug($configured);
         }
 
         try {
-            $base  = $this->urlGenerator->getAbsoluteURL('/');
-            $host  = parse_url($base, PHP_URL_HOST) ?: 'localhost';
+            $base = $this->urlGenerator->getAbsoluteURL('/');
+            $host = parse_url($base, PHP_URL_HOST) ?: 'localhost';
         } catch (\Throwable $e) {
             $host = 'localhost';
         }
+
         return $this->sanitiseSlug($host);
     }//end getInstanceSlug()
-
 
     /**
      * Lower-case + replace non-alnum with hyphens for slug-safe use
@@ -343,26 +342,25 @@ class UrnService
         return trim($slug, '-');
     }//end sanitiseSlug()
 
-
     private function resolveRegisterSlug(?string $registerRef): ?string
     {
         if ($registerRef === null || $registerRef === '') {
             return null;
         }
+
         $register = $this->findRegister($registerRef);
         return $register?->getSlug();
     }//end resolveRegisterSlug()
-
 
     private function resolveSchemaSlug(?string $schemaRef): ?string
     {
         if ($schemaRef === null || $schemaRef === '') {
             return null;
         }
+
         $schema = $this->findSchema($schemaRef);
         return $schema?->getSlug();
     }//end resolveSchemaSlug()
-
 
     /**
      * Find a register by id, uuid, or slug. Returns null on miss.
@@ -381,7 +379,6 @@ class UrnService
         }
     }//end findRegister()
 
-
     /**
      * Find a schema by id, uuid, or slug. Returns null on miss.
      */
@@ -398,6 +395,4 @@ class UrnService
             return null;
         }
     }//end findSchema()
-
-
 }//end class

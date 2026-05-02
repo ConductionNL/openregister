@@ -41,11 +41,11 @@ use Psr\Log\LoggerInterface;
  */
 class LifecycleInitialStateListener implements IEventListener
 {
-
     public function __construct(
         private readonly SchemaMapper $schemaMapper,
         private readonly LoggerInterface $logger
-    ) {}//end __construct()
+    ) {
+    }//end __construct()
 
     public function handle(Event $event): void
     {
@@ -111,5 +111,4 @@ class LifecycleInitialStateListener implements IEventListener
         $annotation = ($config['x-openregister-lifecycle'] ?? null);
         return is_array($annotation) === true ? $annotation : null;
     }//end getLifecycleAnnotation()
-
 }//end class

@@ -30,11 +30,10 @@ use OCP\EventDispatcher\IEventListener;
  */
 class TranslationProjectionListener implements IEventListener
 {
-
     public function __construct(
         private readonly TranslationProjectionService $projection
-    ) {}//end __construct()
-
+    ) {
+    }//end __construct()
 
     public function handle(Event $event): void
     {
@@ -43,6 +42,7 @@ class TranslationProjectionListener implements IEventListener
             if ($object instanceof ObjectEntity) {
                 $this->projection->project($object);
             }
+
             return;
         }
 
@@ -51,6 +51,7 @@ class TranslationProjectionListener implements IEventListener
             if ($object instanceof ObjectEntity) {
                 $this->projection->project($object);
             }
+
             return;
         }
 
@@ -59,6 +60,7 @@ class TranslationProjectionListener implements IEventListener
             if ($object instanceof ObjectEntity) {
                 $this->projection->purge($object);
             }
+
             return;
         }
 
@@ -69,6 +71,4 @@ class TranslationProjectionListener implements IEventListener
             }
         }
     }//end handle()
-
-
 }//end class

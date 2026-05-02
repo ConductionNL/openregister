@@ -34,7 +34,6 @@ use OCP\IRequest;
 
 class TranslationController extends Controller
 {
-
     public function __construct(
         string $appName,
         IRequest $request,
@@ -46,7 +45,6 @@ class TranslationController extends Controller
     ) {
         parent::__construct(appName: $appName, request: $request);
     }//end __construct()
-
 
     /**
      * Search the translations sidecar.
@@ -68,12 +66,13 @@ class TranslationController extends Controller
             limit: max(1, min(1000, (int) ($limit ?? 100)))
         );
 
-        return new JSONResponse([
-            'results' => $rows,
-            'count'   => count($rows),
-        ]);
+        return new JSONResponse(
+                [
+                    'results' => $rows,
+                    'count'   => count($rows),
+                ]
+                );
     }//end search()
-
 
     /**
      * List every translation slot for one object + completeness summary.
@@ -85,7 +84,7 @@ class TranslationController extends Controller
      */
     public function showByObject(string $uuid, ?string $schema=null): JSONResponse
     {
-        $rows = $this->translationMapper->findByObject($uuid);
+        $rows       = $this->translationMapper->findByObject($uuid);
         $serialised = array_map(fn(Translation $t) => $t->jsonSerialize(), $rows);
 
         $completeness = [];
@@ -96,12 +95,13 @@ class TranslationController extends Controller
             }
         }
 
-        return new JSONResponse([
-            'translations' => $serialised,
-            'completeness' => $completeness,
-        ]);
+        return new JSONResponse(
+                [
+                    'translations' => $serialised,
+                    'completeness' => $completeness,
+                ]
+                );
     }//end showByObject()
-
 
     /**
      * Promote / change the workflow status of one translation slot.
@@ -127,7 +127,6 @@ class TranslationController extends Controller
 
         return new JSONResponse($row->jsonSerialize());
     }//end setStatus()
-
 
     /**
      * Bulk-translate one object's translatable properties from `from`
@@ -164,15 +163,16 @@ class TranslationController extends Controller
             properties: $properties
         );
 
-        return new JSONResponse([
-            'uuid'       => $uuid,
-            'from'       => $from,
-            'to'         => $to,
-            'translated' => $result['translated'],
-            'skipped'    => $result['skipped'],
-        ]);
+        return new JSONResponse(
+                [
+                    'uuid'       => $uuid,
+                    'from'       => $from,
+                    'to'         => $to,
+                    'translated' => $result['translated'],
+                    'skipped'    => $result['skipped'],
+                ]
+                );
     }//end bulkTranslate()
-
 
     private function loadObject(string $uuid): ?ObjectEntity
     {
@@ -183,8 +183,7 @@ class TranslationController extends Controller
         } catch (\Throwable $e) {
             return null;
         }
-    }
-
+    }//end loadObject()
 
     private function resolveSchema(string $ref): ?Schema
     {
@@ -195,7 +194,5 @@ class TranslationController extends Controller
         } catch (\Throwable $e) {
             return null;
         }
-    }
-
-
+    }//end resolveSchema()
 }//end class

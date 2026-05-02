@@ -86,6 +86,7 @@ final class ScheduledNotificationJob extends TimedJob
             if (($schema instanceof Schema) === false) {
                 continue;
             }
+
             $this->processSchema(schema: $schema, now: $now);
         }
     }//end run()
@@ -102,10 +103,12 @@ final class ScheduledNotificationJob extends TimedJob
             if (is_array($spec) === false) {
                 continue;
             }
+
             $trigger = ($spec['trigger'] ?? null);
             if (is_array($trigger) === false || (string) ($trigger['type'] ?? '') !== 'scheduled') {
                 continue;
             }
+
             $intervalSec = (int) ($trigger['intervalSec'] ?? 0);
             if ($intervalSec < 60) {
                 continue;
@@ -120,7 +123,7 @@ final class ScheduledNotificationJob extends TimedJob
             // Mark as fired regardless of per-object errors; the dispatcher
             // already swallows + logs its own failures.
             $this->markFired(schemaId: (int) $schema->getId(), notificationName: (string) $name, now: $now);
-        }
+        }//end foreach
     }//end processSchema()
 
     private function isDue(int $schemaId, string $notificationName, int $intervalSec, int $now): bool
@@ -129,11 +132,13 @@ final class ScheduledNotificationJob extends TimedJob
             // Without state we'd fire every 60s — better to skip than spam.
             return false;
         }
+
         $key  = $this->stateKey(schemaId: $schemaId, notificationName: $notificationName);
         $last = $this->stateCache->get($key);
         if (is_int($last) === false && is_string($last) === false) {
             return true;
         }
+
         return ((int) $last + $intervalSec) <= $now;
     }//end isDue()
 
@@ -142,6 +147,7 @@ final class ScheduledNotificationJob extends TimedJob
         if ($this->stateCache === null) {
             return;
         }
+
         try {
             // 30 day TTL — long enough that even monthly schedules persist
             // through the worst-case eviction cycle.
@@ -187,9 +193,11 @@ final class ScheduledNotificationJob extends TimedJob
             if (($object instanceof ObjectEntity) === false) {
                 continue;
             }
+
             if ($this->matchesFilter($object, $filter) === false) {
                 continue;
             }
+
             try {
                 $this->dispatcher->dispatch(
                     $object,
@@ -206,7 +214,7 @@ final class ScheduledNotificationJob extends TimedJob
                     )
                 );
             }
-        }
+        }//end foreach
 
         $this->logger->info(
             sprintf(
@@ -231,6 +239,7 @@ final class ScheduledNotificationJob extends TimedJob
         if (count($filter) === 0) {
             return true;
         }
+
         $data = (array) ($object->getObject() ?? []);
         foreach ($filter as $key => $expected) {
             $actual = ($data[$key] ?? null);
@@ -238,7 +247,7 @@ final class ScheduledNotificationJob extends TimedJob
                 return false;
             }
         }
+
         return true;
     }//end matchesFilter()
-
 }//end class

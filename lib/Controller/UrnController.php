@@ -35,7 +35,6 @@ use OCP\IRequest;
  */
 class UrnController extends Controller
 {
-
     public function __construct(
         string $appName,
         IRequest $request,
@@ -43,7 +42,6 @@ class UrnController extends Controller
     ) {
         parent::__construct(appName: $appName, request: $request);
     }//end __construct()
-
 
     /**
      * Resolve a URN to its canonical API URL.
@@ -76,16 +74,17 @@ class UrnController extends Controller
             );
         }
 
-        return new JSONResponse([
-            'urn'      => $urn,
-            'url'      => $url,
-            'instance' => $parts['instance'],
-            'register' => $parts['register'],
-            'schema'   => $parts['schema'],
-            'uuid'     => $parts['uuid'],
-        ]);
+        return new JSONResponse(
+                [
+                    'urn'      => $urn,
+                    'url'      => $url,
+                    'instance' => $parts['instance'],
+                    'register' => $parts['register'],
+                    'schema'   => $parts['schema'],
+                    'uuid'     => $parts['uuid'],
+                ]
+                );
     }//end resolve()
-
 
     /**
      * Reverse: derive the URN that addresses an OpenRegister object URL.
@@ -106,12 +105,13 @@ class UrnController extends Controller
             );
         }
 
-        return new JSONResponse([
-            'url' => $url,
-            'urn' => $urn,
-        ]);
+        return new JSONResponse(
+                [
+                    'url' => $url,
+                    'urn' => $urn,
+                ]
+                );
     }//end lookup()
-
 
     /**
      * Batch URN resolution.
@@ -130,11 +130,11 @@ class UrnController extends Controller
 
         $resolved = $this->urnService->resolveBulk($urns);
 
-        return new JSONResponse([
-            'count'    => count($resolved),
-            'resolved' => $resolved,
-        ]);
+        return new JSONResponse(
+                [
+                    'count'    => count($resolved),
+                    'resolved' => $resolved,
+                ]
+                );
     }//end bulk()
-
-
 }//end class

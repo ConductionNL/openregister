@@ -92,6 +92,7 @@ class EmailService
      *
      * @return void
      */
+
     /**
      * Schema mapper for iterating over schemas with `_mail` linked-type column.
      */
@@ -113,9 +114,9 @@ class EmailService
     ) {
         $this->emailLinkMapper = $emailLinkMapper;
         $this->appManager      = $appManager;
-        $this->db          = $db;
-        $this->userSession = $userSession;
-        $this->logger      = $logger;
+        $this->db           = $db;
+        $this->userSession  = $userSession;
+        $this->logger       = $logger;
         $this->schemaMapper = $schemaMapper;
         $this->magicMapper  = $magicMapper;
     }//end __construct()
@@ -270,10 +271,10 @@ class EmailService
                 );
                 foreach ($entities as $entity) {
                     $results[] = [
-                        'objectUuid'    => (string) $entity->getUuid(),
-                        'register'      => (string) $entity->getRegister(),
-                        'schema'        => (string) $entity->getSchema(),
-                        'mailLinkedId'  => $linkedId,
+                        'objectUuid'   => (string) $entity->getUuid(),
+                        'register'     => (string) $entity->getRegister(),
+                        'schema'       => (string) $entity->getSchema(),
+                        'mailLinkedId' => $linkedId,
                     ];
                 }
             }
@@ -292,6 +293,7 @@ class EmailService
         if ($this->isMailAvailable() === false) {
             return [];
         }
+
         try {
             // mail_recipients.type=0 is "from"; mail_recipients.email is the address.
             $sql  = "SELECT mb.account_id, m.id AS message_id
@@ -302,10 +304,11 @@ class EmailService
                      LIMIT 200";
             $stmt = $this->db->prepare($sql);
             $stmt->execute([$sender]);
-            $ids  = [];
+            $ids = [];
             while (($row = $stmt->fetch()) !== false) {
                 $ids[] = ((int) $row['account_id']).'/'.((int) $row['message_id']);
             }
+
             return $ids;
         } catch (Exception $e) {
             $this->logger->warning('[EmailService] findMessageIdsBySender failed: '.$e->getMessage());
@@ -325,10 +328,13 @@ class EmailService
         } catch (\Throwable) {
             return [];
         }
-        return array_values(array_filter(
+
+        return array_values(
+                array_filter(
             $all,
             static fn($schema) => in_array('mail', $schema->getLinkedTypes(), true) === true
-        ));
+        )
+                );
     }//end getMailLinkedSchemas()
 
     /**

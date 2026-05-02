@@ -107,6 +107,7 @@ class ExportService
      * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      */
     private readonly \OCA\OpenRegister\Service\Object\TranslationHandler $translationHandler;
+
     private ?Register $contextRegister = null;
 
     public function __construct(
@@ -633,9 +634,10 @@ class ExportService
                 if (($properties[$fieldName]['translatable'] ?? false) === true) {
                     $languages = $this->resolveExportLanguages();
                     foreach ($languages as $lang) {
-                        $headers[$col] = $fieldName . '_' . $lang;
+                        $headers[$col] = $fieldName.'_'.$lang;
                         $col++;
                     }
+
                     continue;
                 }
 
@@ -810,7 +812,6 @@ class ExportService
         }
     }//end getObjectValue()
 
-
     /**
      * Resolve the language list to use for translatable column emission.
      *
@@ -826,9 +827,9 @@ class ExportService
                 return array_values(array_unique($registerLanguages));
             }
         }
+
         return ['nl', 'en'];
     }//end resolveExportLanguages()
-
 
     /**
      * Extract `objectData[field][lang]` for a `field_lang` header.
@@ -843,6 +844,7 @@ class ExportService
         if ($underscore === false || $underscore === 0) {
             return null;
         }
+
         $field = substr($header, 0, $underscore);
         $lang  = substr($header, $underscore + 1);
         if ($field === '' || $lang === ''
@@ -850,10 +852,12 @@ class ExportService
         ) {
             return null;
         }
+
         $value = $objectData[$field] ?? null;
         if (is_array($value) === false || isset($value[$lang]) === false) {
             return null;
         }
+
         $slotValue = $value[$lang];
         return is_scalar($slotValue) === true ? (string) $slotValue : null;
     }//end extractLanguageSlot()

@@ -287,7 +287,6 @@ class MappingsController extends Controller
 
     }//end patch()
 
-
     /**
      * Delete a mapping by ID.
      *

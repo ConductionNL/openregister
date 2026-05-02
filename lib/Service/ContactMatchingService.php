@@ -519,6 +519,7 @@ class ContactMatchingService
      *
      * @return array The filtered match results
      */
+
     /**
      * Per-request cache for the contact-linked-schemas check.
      */
@@ -537,6 +538,7 @@ class ContactMatchingService
         if ($this->hasContactLinkedSchemasCache !== null) {
             return $this->hasContactLinkedSchemasCache;
         }
+
         try {
             $schemas = $this->schemaMapper->findAll(_multitenancy: false);
             foreach ($schemas as $schema) {
@@ -548,6 +550,7 @@ class ContactMatchingService
         } catch (\Throwable $e) {
             // Fail closed — if we can't tell, skip the search.
         }
+
         return $this->hasContactLinkedSchemasCache = false;
     }//end hasContactLinkedSchemas()
 

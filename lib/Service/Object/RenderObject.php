@@ -1402,9 +1402,9 @@ class RenderObject
      * schema to the given data array. Materialised calculations are
      * persisted on save and skipped here.
      *
-     * @param ObjectEntity                $entity The object being rendered (used for @self.* refs).
-     * @param Schema|null                 $schema The schema definition (may be null).
-     * @param array<string, mixed>        $data   The current rendered data array.
+     * @param ObjectEntity         $entity The object being rendered (used for @self.* refs).
+     * @param Schema|null          $schema The schema definition (may be null).
+     * @param array<string, mixed> $data   The current rendered data array.
      *
      * @return array<string, mixed>
      */
@@ -1413,15 +1413,16 @@ class RenderObject
         if ($schema === null) {
             return $data;
         }
+
         $config = ($schema->getConfiguration() ?? []);
         $calcs  = ($config['x-openregister-calculations'] ?? null);
         if (is_array($calcs) === false || count($calcs) === 0) {
             return $data;
         }
 
-        $created = $entity->getCreated();
-        $updated = $entity->getUpdated();
-        $payload = $data;
+        $created          = $entity->getCreated();
+        $updated          = $entity->getUpdated();
+        $payload          = $data;
         $payload['@self'] = [
             'id'       => $entity->getUuid(),
             'uuid'     => $entity->getUuid(),
@@ -1436,22 +1437,25 @@ class RenderObject
             if (is_array($spec) === false) {
                 continue;
             }
+
             // Skip materialised — already in $data from save-time listener.
             if (($spec['materialise'] ?? false) === true) {
                 continue;
             }
+
             try {
                 $value = $this->calculationEvaluator->evaluate($payload, $spec['expression'] ?? null);
                 if ($value instanceof \DateTimeInterface) {
                     $value = $value->format(\DateTimeInterface::ATOM);
                 }
+
                 $data[(string) $name] = $value;
             } catch (\Throwable $e) {
                 $this->logger->debug(
                     sprintf('[RenderObject] Virtual calculation "%s" failed: %s', (string) $name, $e->getMessage())
                 );
             }
-        }
+        }//end foreach
 
         return $data;
     }//end applyVirtualCalculations()

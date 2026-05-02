@@ -24,7 +24,6 @@ use OCP\IRequest;
 
 class RealtimeController extends Controller
 {
-
     public function __construct(
         string $appName,
         IRequest $request,
@@ -33,7 +32,6 @@ class RealtimeController extends Controller
     ) {
         parent::__construct(appName: $appName, request: $request);
     }//end __construct()
-
 
     /**
      * Cursor-based polling. Returns events with `id > since`.
@@ -88,7 +86,7 @@ class RealtimeController extends Controller
             'organisation' => $orgUuid,
         ];
 
-        $events    = $this->eventMapper->findSince($since, $effectiveLimit, $filters);
+        $events     = $this->eventMapper->findSince($since, $effectiveLimit, $filters);
         $serialised = array_map(fn($event) => $event->jsonSerialize(), $events);
 
         $newCursor = $since ?? 0;
@@ -96,13 +94,14 @@ class RealtimeController extends Controller
             $newCursor = (int) $events[count($events) - 1]->getId();
         }
 
-        return new JSONResponse([
-            'events'  => $serialised,
-            'cursor'  => $newCursor,
-            'hasMore' => count($events) === $effectiveLimit,
-        ]);
+        return new JSONResponse(
+                [
+                    'events'  => $serialised,
+                    'cursor'  => $newCursor,
+                    'hasMore' => count($events) === $effectiveLimit,
+                ]
+                );
     }//end events()
-
 
     /**
      * Get the current head cursor (highest event id). Clients use this
@@ -114,10 +113,10 @@ class RealtimeController extends Controller
      */
     public function cursor(): JSONResponse
     {
-        return new JSONResponse([
-            'cursor' => $this->eventMapper->getMaxId(),
-        ]);
+        return new JSONResponse(
+                [
+                    'cursor' => $this->eventMapper->getMaxId(),
+                ]
+                );
     }//end cursor()
-
-
 }//end class

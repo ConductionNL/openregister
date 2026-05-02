@@ -126,15 +126,15 @@ class PermissionHandler
     /**
      * PermissionHandler constructor.
      *
-     * @param IUserSession                       $userSession        User session for getting current user.
-     * @param IUserManager                       $userManager        User manager for getting user objects.
-     * @param IGroupManager                      $groupManager       Group manager for checking user groups.
-     * @param SchemaMapper                       $schemaMapper       Mapper for schema operations.
-     * @param MagicMapper                        $objectEntityMapper Mapper for object entity operations.
-     * @param ConditionMatcher                   $conditionMatcher   Shared PHP-side match evaluator (ADR-011).
-     * @param LoggerInterface                    $logger             Logger for permission auditing.
-     * @param ContainerInterface                 $container          Container for lazy loading services.
-     * @param \OCP\EventDispatcher\IEventDispatcher|null $eventDispatcher Optional dispatcher for custom-scope events.
+     * @param IUserSession                               $userSession        User session for getting current user.
+     * @param IUserManager                               $userManager        User manager for getting user objects.
+     * @param IGroupManager                              $groupManager       Group manager for checking user groups.
+     * @param SchemaMapper                               $schemaMapper       Mapper for schema operations.
+     * @param MagicMapper                                $objectEntityMapper Mapper for object entity operations.
+     * @param ConditionMatcher                           $conditionMatcher   Shared PHP-side match evaluator (ADR-011).
+     * @param LoggerInterface                            $logger             Logger for permission auditing.
+     * @param ContainerInterface                         $container          Container for lazy loading services.
+     * @param \OCP\EventDispatcher\IEventDispatcher|null $eventDispatcher    Optional dispatcher for custom-scope events.
      *
      * @spec openspec/changes/retrofit-object-lifecycle-2026-04-28/tasks.md#task-7
      */

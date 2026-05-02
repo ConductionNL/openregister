@@ -33,15 +33,14 @@ use Psr\Log\LoggerInterface;
 
 class BulkTranslationService
 {
-
     public function __construct(
         private readonly TranslationProviderInterface $provider,
         private readonly TranslationMapper $translationMapper,
         private readonly TranslationHandler $translationHandler,
         private readonly SchemaMapper $schemaMapper,
         private readonly LoggerInterface $logger
-    ) {}//end __construct()
-
+    ) {
+    }//end __construct()
 
     /**
      * Translate an object's translatable properties from one language
@@ -88,7 +87,7 @@ class BulkTranslationService
         }
 
         $data       = (array) ($object->getObject() ?? []);
-        $translator = 'provider:' . $this->provider->getIdentifier();
+        $translator = 'provider:'.$this->provider->getIdentifier();
 
         foreach ($translatableProps as $property) {
             if (is_array($properties) === true && in_array($property, $properties, true) === false) {
@@ -105,6 +104,7 @@ class BulkTranslationService
                 // Legacy single-language fallback — treat plain string as NL.
                 $sourceValue = $existing;
             }
+
             if (is_string($sourceValue) === false || $sourceValue === '') {
                 $skipped[$property] = 'no-source-value';
                 continue;
@@ -135,7 +135,7 @@ class BulkTranslationService
                         $e->getMessage()
                     )
                 );
-                $skipped[$property] = 'provider-error: ' . $e->getMessage();
+                $skipped[$property] = 'provider-error: '.$e->getMessage();
                 continue;
             }
 
@@ -169,11 +169,10 @@ class BulkTranslationService
                     )
                 );
             }
-        }
+        }//end foreach
 
         return ['translated' => $translated, 'skipped' => $skipped];
     }//end translateObject()
-
 
     private function loadSchema(ObjectEntity $object): ?Schema
     {
@@ -181,12 +180,11 @@ class BulkTranslationService
         if ($ref === null || $ref === '') {
             return null;
         }
+
         try {
             return $this->schemaMapper->find($ref, _rbac: false, _multitenancy: false);
         } catch (\Throwable $e) {
             return null;
         }
-    }
-
-
+    }//end loadSchema()
 }//end class

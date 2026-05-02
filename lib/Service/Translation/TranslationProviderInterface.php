@@ -27,7 +27,6 @@ namespace OCA\OpenRegister\Service\Translation;
 
 interface TranslationProviderInterface
 {
-
     /**
      * Translate `$text` from `$fromLang` to `$toLang`.
      *
@@ -39,7 +38,6 @@ interface TranslationProviderInterface
      */
     public function translate(string $text, string $fromLang, string $toLang): ?string;
 
-
     /**
      * Identifier used for status attribution and logging.
      *
@@ -48,6 +46,4 @@ interface TranslationProviderInterface
      * vs human translations.
      */
     public function getIdentifier(): string;
-
-
 }//end interface

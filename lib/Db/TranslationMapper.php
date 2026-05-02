@@ -24,12 +24,10 @@ use OCP\IDBConnection;
  */
 class TranslationMapper extends QBMapper
 {
-
     public function __construct(IDBConnection $db)
     {
         parent::__construct($db, 'openregister_translations', Translation::class);
-    }
-
+    }//end __construct()
 
     /**
      * UPSERT a translation slot. Returns the persisted entity.
@@ -57,17 +55,19 @@ class TranslationMapper extends QBMapper
         } else if ($entity->getStatus() === null) {
             $entity->setStatus(Translation::STATUS_DRAFT);
         }
+
         if ($translator !== null) {
             $entity->setTranslator($translator);
         }
+
         $entity->setUpdated(new \DateTime());
 
         if ($existing === null) {
             return $this->insert($entity);
         }
-        return $this->update($entity);
-    }
 
+        return $this->update($entity);
+    }//end upsert()
 
     /**
      * Find a single translation slot by its natural key.
@@ -87,8 +87,7 @@ class TranslationMapper extends QBMapper
         } catch (DoesNotExistException $e) {
             return null;
         }
-    }
-
+    }//end findOne()
 
     /**
      * Find all translations for one object — all properties, all languages.
@@ -102,8 +101,7 @@ class TranslationMapper extends QBMapper
             ->from('openregister_translations')
             ->where($qb->expr()->eq('object_uuid', $qb->createNamedParameter($objectUuid)));
         return $this->findEntities($qb);
-    }
-
+    }//end findByObject()
 
     /**
      * Delete every row for an object — called on object delete.
@@ -114,8 +112,7 @@ class TranslationMapper extends QBMapper
         $qb->delete('openregister_translations')
             ->where($qb->expr()->eq('object_uuid', $qb->createNamedParameter($objectUuid)));
         return $qb->executeStatement();
-    }
-
+    }//end deleteByObject()
 
     /**
      * Per-language completeness count for a single object.
@@ -141,10 +138,10 @@ class TranslationMapper extends QBMapper
         while (($row = $stmt->fetch()) !== false) {
             $out[(string) $row['language']] = (int) $row['count'];
         }
+
         $stmt->closeCursor();
         return $out;
-    }
-
+    }//end getCompletenessByObject()
 
     /**
      * Search translations by content + optional filters.
@@ -176,23 +173,25 @@ class TranslationMapper extends QBMapper
             $qb->andWhere(
                 $qb->expr()->iLike(
                     'value',
-                    $qb->createNamedParameter('%' . $this->escapeLike($query) . '%')
+                    $qb->createNamedParameter('%'.$this->escapeLike($query).'%')
                 )
             );
         }
+
         if ($language !== null && $language !== '') {
             $qb->andWhere($qb->expr()->eq('language', $qb->createNamedParameter($language)));
         }
+
         if ($status !== null && $status !== '') {
             $qb->andWhere($qb->expr()->eq('status', $qb->createNamedParameter($status)));
         }
+
         if ($objectUuid !== null && $objectUuid !== '') {
             $qb->andWhere($qb->expr()->eq('object_uuid', $qb->createNamedParameter($objectUuid)));
         }
 
         return $this->findEntities($qb);
-    }
-
+    }//end search()
 
     /**
      * Find object UUIDs missing a translation in the given language for
@@ -225,6 +224,7 @@ class TranslationMapper extends QBMapper
         while (($row = $stmt->fetch()) !== false) {
             $present[(string) $row['object_uuid']][(string) $row['property']] = true;
         }
+
         $stmt->closeCursor();
 
         $missing = [];
@@ -236,9 +236,9 @@ class TranslationMapper extends QBMapper
                 }
             }
         }
-        return $missing;
-    }
 
+        return $missing;
+    }//end findObjectsMissingLanguage()
 
     /**
      * Escape `%` and `_` for use inside a LIKE pattern.
@@ -246,7 +246,5 @@ class TranslationMapper extends QBMapper
     private function escapeLike(string $value): string
     {
         return str_replace(['\\', '%', '_'], ['\\\\', '\\%', '\\_'], $value);
-    }
-
-
+    }//end escapeLike()
 }//end class

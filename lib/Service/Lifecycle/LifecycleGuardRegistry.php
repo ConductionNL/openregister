@@ -52,7 +52,8 @@ final class LifecycleGuardRegistry
     public function __construct(
         private readonly ContainerInterface $container,
         private readonly LoggerInterface $logger
-    ) {}//end __construct()
+    ) {
+    }//end __construct()
 
     /**
      * Resolve a guard tag to its registered implementation.
@@ -105,5 +106,4 @@ final class LifecycleGuardRegistry
         $this->cache[$tag] = $instance;
         return $instance;
     }//end resolve()
-
 }//end class

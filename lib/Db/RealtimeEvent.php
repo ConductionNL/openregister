@@ -56,14 +56,23 @@ class RealtimeEvent extends Entity implements JsonSerializable
 {
 
     protected ?string $eventType = null;
+
     protected ?string $source = null;
+
     protected ?string $subject = null;
+
     protected ?string $registerId = null;
+
     protected ?string $schemaId = null;
+
     protected ?string $objectUuid = null;
+
     protected ?string $actorUid = null;
+
     protected ?string $organisation = null;
+
     protected ?string $payload = null;
+
     protected ?DateTime $created = null;
 
     public function __construct()
@@ -78,7 +87,7 @@ class RealtimeEvent extends Entity implements JsonSerializable
         $this->addType('organisation', 'string');
         $this->addType('payload', 'string');
         $this->addType('created', 'datetime');
-    }
+    }//end __construct()
 
     /**
      * Serialize the event in CloudEvents-1.0-compatible shape.
@@ -96,8 +105,8 @@ class RealtimeEvent extends Entity implements JsonSerializable
         if (is_array($payload) === false) {
             $payload = [];
         }
+
         $payload['_cursor'] = $this->id;
         return $payload;
-    }
-
+    }//end jsonSerialize()
 }//end class

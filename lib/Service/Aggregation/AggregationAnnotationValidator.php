@@ -72,6 +72,7 @@ final class AggregationAnnotationValidator
                 ];
                 continue;
             }
+
             if (is_array($spec) === false) {
                 $errors[] = [
                     'code'    => 'aggregation-malformed',
@@ -134,7 +135,7 @@ final class AggregationAnnotationValidator
                         }
                     }
                 }
-            }
+            }//end if
 
             $groupBy = ($spec['groupBy'] ?? null);
             if ($groupBy !== null) {
@@ -158,5 +159,4 @@ final class AggregationAnnotationValidator
 
         return $errors;
     }//end validate()
-
 }//end class

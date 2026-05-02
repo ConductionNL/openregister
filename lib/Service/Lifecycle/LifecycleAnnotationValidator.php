@@ -33,7 +33,6 @@ namespace OCA\OpenRegister\Service\Lifecycle;
  */
 final class LifecycleAnnotationValidator
 {
-
     /**
      * Validate the annotation block on a schema definition.
      *
@@ -197,5 +196,4 @@ final class LifecycleAnnotationValidator
 
         return $errors;
     }//end validate()
-
 }//end class

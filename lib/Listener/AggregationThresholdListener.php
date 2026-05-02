@@ -81,6 +81,7 @@ class AggregationThresholdListener implements IEventListener
         } catch (\Throwable $e) {
             return;
         }
+
         if ($schema === null) {
             return;
         }
@@ -95,10 +96,12 @@ class AggregationThresholdListener implements IEventListener
             if (is_array($spec) === false) {
                 continue;
             }
+
             $trigger = ($spec['trigger'] ?? null);
             if (is_array($trigger) === false || (string) ($trigger['type'] ?? '') !== 'threshold') {
                 continue;
             }
+
             try {
                 $this->evaluate(schema: $schema, notificationName: (string) $name, trigger: $trigger, object: $object);
             } catch (\Throwable $e) {
@@ -110,7 +113,7 @@ class AggregationThresholdListener implements IEventListener
                     )
                 );
             }
-        }
+        }//end foreach
     }//end handle()
 
     /**
@@ -119,8 +122,8 @@ class AggregationThresholdListener implements IEventListener
     private function evaluate(Schema $schema, string $notificationName, array $trigger, ObjectEntity $object): void
     {
         $aggregationName = (string) ($trigger['aggregation'] ?? '');
-        $op              = (string) ($trigger['op'] ?? '');
-        $threshold       = ($trigger['value'] ?? null);
+        $op        = (string) ($trigger['op'] ?? '');
+        $threshold = ($trigger['value'] ?? null);
         if ($aggregationName === '' || $op === '' || $threshold === null) {
             return;
         }
@@ -134,7 +137,7 @@ class AggregationThresholdListener implements IEventListener
             return;
         }
 
-        $isAbove = $this->compare($value, $op, $threshold);
+        $isAbove  = $this->compare($value, $op, $threshold);
         $newState = $isAbove === true ? self::STATE_ABOVE : self::STATE_BELOW;
 
         $stateKey = sprintf('threshold:%d:%s', $schema->getId(), $notificationName);
@@ -172,6 +175,7 @@ class AggregationThresholdListener implements IEventListener
         if (is_numeric($expected) === false) {
             return false;
         }
+
         $rhs = (float) $expected;
         $lhs = (float) $actual;
         return match ($op) {
@@ -190,18 +194,21 @@ class AggregationThresholdListener implements IEventListener
         if ($event instanceof ObjectTransitionedEvent) {
             return $event->getObject();
         }
+
         if (method_exists($event, 'getObject') === true) {
             $obj = $event->getObject();
             if ($obj instanceof ObjectEntity) {
                 return $obj;
             }
         }
+
         if (method_exists($event, 'getNewObject') === true) {
             $obj = $event->getNewObject();
             if ($obj instanceof ObjectEntity) {
                 return $obj;
             }
         }
+
         return null;
     }//end extractObject()
 
@@ -211,6 +218,7 @@ class AggregationThresholdListener implements IEventListener
         if ($schemaRef === '') {
             return null;
         }
+
         // SchemaMapper resolves slug/uuid/id.
         try {
             return $this->schemaMapper->find($schemaRef);
@@ -218,5 +226,4 @@ class AggregationThresholdListener implements IEventListener
             return null;
         }
     }//end loadSchema()
-
 }//end class

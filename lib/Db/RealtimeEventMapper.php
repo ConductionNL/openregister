@@ -24,12 +24,10 @@ use OCP\IDBConnection;
  */
 class RealtimeEventMapper extends QBMapper
 {
-
     public function __construct(IDBConnection $db)
     {
         parent::__construct($db, 'openregister_realtime_events', RealtimeEvent::class);
-    }
-
+    }//end __construct()
 
     /**
      * Find events with id strictly greater than `$since` (or all events
@@ -70,6 +68,7 @@ class RealtimeEventMapper extends QBMapper
             if (isset($columnMap[$key]) === false || $value === null || $value === '') {
                 continue;
             }
+
             $qb->andWhere(
                 $qb->expr()->eq($columnMap[$key], $qb->createNamedParameter((string) $value))
             );
@@ -79,8 +78,7 @@ class RealtimeEventMapper extends QBMapper
         $qb->setMaxResults(max(1, min(1000, $limit)));
 
         return $this->findEntities($qb);
-    }
-
+    }//end findSince()
 
     /**
      * Get the highest id in the log — used by clients to fast-forward
@@ -93,8 +91,7 @@ class RealtimeEventMapper extends QBMapper
             ->from('openregister_realtime_events');
         $result = $qb->executeQuery()->fetch();
         return (int) ($result['max_id'] ?? 0);
-    }
-
+    }//end getMaxId()
 
     /**
      * Prune events older than `$retentionSeconds`. Used by a daily TimedJob
@@ -103,13 +100,11 @@ class RealtimeEventMapper extends QBMapper
     public function deleteOlderThan(int $retentionSeconds): int
     {
         $cutoff = (new \DateTime())->modify("-{$retentionSeconds} seconds");
-        $qb = $this->db->getQueryBuilder();
+        $qb     = $this->db->getQueryBuilder();
         $qb->delete('openregister_realtime_events')
             ->where(
                 $qb->expr()->lt('created', $qb->createNamedParameter($cutoff, IQueryBuilder::PARAM_DATE))
             );
         return $qb->executeStatement();
-    }
-
-
+    }//end deleteOlderThan()
 }//end class

@@ -46,10 +46,10 @@ use RuntimeException;
  */
 class CalculationEvaluator
 {
-
     public function __construct(
         private readonly PlaceholderResolver $placeholders
-    ) {}//end __construct()
+    ) {
+    }//end __construct()
 
     /**
      * Evaluate an expression against an object payload.
@@ -105,20 +105,24 @@ class CalculationEvaluator
         if ($name === '') {
             throw new EvaluationException('prop requires a non-empty field name.');
         }
+
         // Support dotted paths: `@self.created`, `parent.subfield`, etc.
         // The CalculationOnSaveListener injects `@self` system metadata so
         // calculations can reference `@self.created`, `@self.updated`, etc.
         if (strpos($name, '.') === false) {
             return ($object[$name] ?? null);
         }
+
         $parts   = explode('.', $name);
         $current = $object;
         foreach ($parts as $part) {
             if (is_array($current) === false || array_key_exists($part, $current) === false) {
                 return null;
             }
+
             $current = $current[$part];
         }
+
         return $current;
     }//end propValue()
 
@@ -131,10 +135,12 @@ class CalculationEvaluator
         if (is_array($args) === false) {
             return (string) $this->evaluate($object, $args);
         }
+
         $parts = [];
         foreach ($args as $a) {
             $parts[] = (string) ($this->evaluate($object, $a) ?? '');
         }
+
         return implode('', $parts);
     }//end concat()
 
@@ -146,10 +152,12 @@ class CalculationEvaluator
         if (is_array($args) === false || count($args) < 2) {
             throw new EvaluationException('if requires (cond, then[, else]).');
         }
+
         $cond = $this->boolEval($object, $args[0]);
         if ($cond === true) {
             return $this->evaluate($object, $args[1]);
         }
+
         return count($args) >= 3 ? $this->evaluate($object, $args[2]) : null;
     }//end ifExpr()
 
@@ -171,11 +179,18 @@ class CalculationEvaluator
         if (is_array($args) === false) {
             return $shortCircuit;
         }
+
         foreach ($args as $a) {
             $v = $this->boolEval($object, $a);
-            if ($shortCircuit === true && $v === false) { return false; }
-            if ($shortCircuit === false && $v === true)  { return true;  }
+            if ($shortCircuit === true && $v === false) {
+                return false;
+            }
+
+            if ($shortCircuit === false && $v === true) {
+                return true;
+            }
         }
+
         return $shortCircuit;
     }//end reduceBool()
 
@@ -187,14 +202,17 @@ class CalculationEvaluator
         if (is_array($args) === false) {
             throw new EvaluationException('Arithmetic requires an array of operands.');
         }
+
         $acc = $initial;
         foreach ($args as $a) {
             $v = $this->evaluate($object, $a);
             if (is_numeric($v) === false) {
                 throw new EvaluationException('Arithmetic operand is not numeric.');
             }
+
             $acc = $reducer($acc, $v + 0);
         }
+
         return $acc;
     }//end arith()
 
@@ -206,21 +224,26 @@ class CalculationEvaluator
         if (is_array($args) === false || count($args) === 0) {
             throw new EvaluationException('- requires at least one operand.');
         }
+
         $first = $this->evaluate($object, $args[0]);
         if (is_numeric($first) === false) {
             throw new EvaluationException('- first operand not numeric.');
         }
+
         if (count($args) === 1) {
             return -($first + 0);
         }
+
         $acc = $first + 0;
         for ($i = 1; $i < count($args); $i++) {
             $v = $this->evaluate($object, $args[$i]);
             if (is_numeric($v) === false) {
                 throw new EvaluationException('- operand not numeric.');
             }
+
             $acc -= $v + 0;
         }
+
         return $acc;
     }//end subOrNeg()
 
@@ -232,11 +255,13 @@ class CalculationEvaluator
         if (is_array($args) === false || count($args) < 2) {
             throw new EvaluationException('/ requires two operands.');
         }
+
         $a = $this->evaluate($object, $args[0]);
         $b = $this->evaluate($object, $args[1]);
         if (is_numeric($a) === false || is_numeric($b) === false || (float) $b === 0.0) {
             throw new EvaluationException('/ requires non-zero numeric operands.');
         }
+
         return ((float) $a) / ((float) $b);
     }//end divide()
 
@@ -248,11 +273,13 @@ class CalculationEvaluator
         if (is_array($args) === false || count($args) < 2) {
             throw new EvaluationException('% requires two operands.');
         }
+
         $a = $this->evaluate($object, $args[0]);
         $b = $this->evaluate($object, $args[1]);
         if (is_numeric($a) === false || is_numeric($b) === false || (float) $b === 0.0) {
             throw new EvaluationException('% requires non-zero numeric operands.');
         }
+
         return fmod((float) $a, (float) $b);
     }//end modulo()
 
@@ -264,6 +291,7 @@ class CalculationEvaluator
         if (is_array($args) === false || count($args) < 2) {
             throw new EvaluationException(sprintf('%s requires two operands.', $op));
         }
+
         $a = $this->normaliseForCompare($this->evaluate($object, $args[0]));
         $b = $this->normaliseForCompare($this->evaluate($object, $args[1]));
         return match ($op) {
@@ -287,6 +315,7 @@ class CalculationEvaluator
         if ($v instanceof \DateTimeInterface) {
             return $v->getTimestamp();
         }
+
         if (is_string($v) === true && preg_match('/^\d{4}-\d{2}-\d{2}/', $v) === 1) {
             try {
                 return (new \DateTimeImmutable($v))->getTimestamp();
@@ -294,6 +323,7 @@ class CalculationEvaluator
                 return $v;
             }
         }
+
         return $v;
     }//end normaliseForCompare()
 
@@ -310,11 +340,13 @@ class CalculationEvaluator
         if (is_array($args) === false || count($args) < 2) {
             throw new EvaluationException('diffDays requires (later, earlier).');
         }
+
         $later   = $this->toDateOrNull($this->evaluate($object, $args[0]));
         $earlier = $this->toDateOrNull($this->evaluate($object, $args[1]));
         if ($later === null || $earlier === null) {
             return null;
         }
+
         $diff = $later->getTimestamp() - $earlier->getTimestamp();
         return (int) floor($diff / 86400);
     }//end diffDays()
@@ -327,6 +359,7 @@ class CalculationEvaluator
         if (is_array($args) === false || count($args) < 2) {
             throw new EvaluationException('formatDate requires (date, fmt).');
         }
+
         $date = $this->toDateOrNull($this->evaluate($object, $args[0]));
         $fmt  = (string) $this->evaluate($object, $args[1]);
         return $date === null ? null : $date->format($fmt);
@@ -334,12 +367,22 @@ class CalculationEvaluator
 
     private function toDateOrNull(mixed $v): ?DateTimeImmutable
     {
-        if ($v instanceof DateTimeImmutable) { return $v; }
-        if ($v instanceof \DateTimeInterface) { return DateTimeImmutable::createFromInterface($v); }
-        if (is_string($v) === true && $v !== '') {
-            try { return new DateTimeImmutable($v); } catch (\Throwable) { return null; }
+        if ($v instanceof DateTimeImmutable) {
+            return $v;
         }
+
+        if ($v instanceof \DateTimeInterface) {
+            return DateTimeImmutable::createFromInterface($v);
+        }
+
+        if (is_string($v) === true && $v !== '') {
+            try {
+                return new DateTimeImmutable($v);
+            } catch (\Throwable) {
+                return null;
+            }
+        }
+
         return null;
     }//end toDateOrNull()
-
 }//end class

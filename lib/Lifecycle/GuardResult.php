@@ -31,7 +31,7 @@ final class GuardResult
     /**
      * Whether the transition is allowed.
      *
-     * @var bool
+     * @var boolean
      */
     private bool $allowed;
 
@@ -81,5 +81,4 @@ final class GuardResult
     {
         return $this->message;
     }//end getMessage()
-
 }//end class

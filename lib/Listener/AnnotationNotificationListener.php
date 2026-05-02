@@ -35,10 +35,10 @@ use OCP\EventDispatcher\IEventListener;
  */
 class AnnotationNotificationListener implements IEventListener
 {
-
     public function __construct(
         private readonly AnnotationNotificationDispatcher $dispatcher
-    ) {}//end __construct()
+    ) {
+    }//end __construct()
 
     public function handle(Event $event): void
     {
@@ -54,13 +54,16 @@ class AnnotationNotificationListener implements IEventListener
             );
             return;
         }
+
         if ($event instanceof ObjectCreatedEvent) {
             $object = $this->extractObject($event);
             if ($object !== null) {
                 $this->dispatcher->dispatch(object: $object, trigger: 'created');
             }
+
             return;
         }
+
         if ($event instanceof ObjectUpdatedEvent) {
             $object = $this->extractObject($event);
             if ($object !== null) {
@@ -81,13 +84,14 @@ class AnnotationNotificationListener implements IEventListener
                 return $obj;
             }
         }
+
         if (method_exists($event, 'getNewObject') === true) {
             $obj = $event->getNewObject();
             if ($obj instanceof \OCA\OpenRegister\Db\ObjectEntity) {
                 return $obj;
             }
         }
+
         return null;
     }//end extractObject()
-
 }//end class

@@ -1333,7 +1333,6 @@ class RegistersController extends Controller
      *     array<never, never>
      * >
      */
-
     public function stats(int $id): JSONResponse
     {
         try {

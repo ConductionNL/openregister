@@ -33,7 +33,6 @@ use RuntimeException;
 
 class TransitionController extends Controller
 {
-
     public function __construct(
         string $appName,
         IRequest $request,
@@ -107,5 +106,4 @@ class TransitionController extends Controller
 
         return new JSONResponse(['actions' => $actions]);
     }//end availableActions()
-
 }//end class

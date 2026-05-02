@@ -52,10 +52,10 @@ class OasController extends Controller
     /**
      * OasController constructor
      *
-     * @param string               $appName       Application name
-     * @param IRequest             $request       Request object
-     * @param OasService           $oasService    OAS service instance
-     * @param ?OasETagComputer     $etagComputer  Optional ETag computer for If-None-Match short-circuit
+     * @param string           $appName      Application name
+     * @param IRequest         $request      Request object
+     * @param OasService       $oasService   OAS service instance
+     * @param ?OasETagComputer $etagComputer Optional ETag computer for If-None-Match short-circuit
      */
     public function __construct(
         string $appName,

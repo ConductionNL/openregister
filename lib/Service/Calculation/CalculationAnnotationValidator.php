@@ -38,10 +38,27 @@ final class CalculationAnnotationValidator
 {
 
     private const VALID_OPS = [
-        'prop', 'lit', 'concat', 'if', 'not', 'and', 'or',
-        '+', '-', '*', '/', '%',
-        'eq', 'ne', 'lt', 'lte', 'gt', 'gte',
-        'now', 'diffDays', 'formatDate',
+        'prop',
+        'lit',
+        'concat',
+        'if',
+        'not',
+        'and',
+        'or',
+        '+',
+        '-',
+        '*',
+        '/',
+        '%',
+        'eq',
+        'ne',
+        'lt',
+        'lte',
+        'gt',
+        'gte',
+        'now',
+        'diffDays',
+        'formatDate',
     ];
 
     private const VALID_TYPES = ['string', 'integer', 'number', 'boolean', 'date'];
@@ -75,6 +92,7 @@ final class CalculationAnnotationValidator
                 $errors[] = ['code' => 'calculation-bad-name', 'message' => 'Calculation names must be non-empty strings.'];
                 continue;
             }
+
             if (is_array($spec) === false) {
                 $errors[] = ['code' => 'calculation-malformed', 'message' => sprintf('Calculation "%s" must be an object.', $name)];
                 continue;
@@ -92,7 +110,7 @@ final class CalculationAnnotationValidator
 
             $deps[$name] = [];
             $this->walk($spec['expression'], $name, $allRefs, $errors, $deps[$name]);
-        }
+        }//end foreach
 
         $cycle = $this->findCycle($deps);
         if ($cycle !== null) {
@@ -103,15 +121,17 @@ final class CalculationAnnotationValidator
     }//end validate()
 
     /**
-     * @param array<int, string>                                 $allRefs   Available property + calc names.
-     * @param array<int, array{code: string, message: string}>   $errors    Mutable error accumulator.
-     * @param array<int, string>                                 $deps      Mutable list of calc deps for the current calc.
+     * @param array<int, string>                               $allRefs Available property + calc names.
+     * @param array<int, array{code: string, message: string}> $errors  Mutable error accumulator.
+     * @param array<int, string>                               $deps    Mutable list of calc deps for the current calc.
      */
     private function walk(mixed $expr, string $owner, array $allRefs, array &$errors, array &$deps): void
     {
         if (is_array($expr) === false) {
-            return; // Bare scalar literal.
+            return;
+            // Bare scalar literal.
         }
+
         if (count($expr) !== 1) {
             $errors[] = ['code' => 'calculation-malformed-expr', 'message' => sprintf('Calculation "%s": expression must be single-key.', $owner)];
             return;
@@ -130,6 +150,7 @@ final class CalculationAnnotationValidator
                 $errors[] = ['code' => 'calculation-prop-unknown', 'message' => sprintf('Calculation "%s": prop "%s" is not a property or calculation.', $owner, $name)];
                 return;
             }
+
             // `@self.<known-system-field>` is always allowed — the listener
             // injects @self metadata at evaluation time. No dependency
             // tracking for @self refs since they don't participate in
@@ -140,20 +161,24 @@ final class CalculationAnnotationValidator
                 if (in_array($sysField, $allowed, true) === false) {
                     $errors[] = ['code' => 'calculation-self-unknown', 'message' => sprintf('Calculation "%s": @self.%s is not a known system field. Allowed: %s.', $owner, $sysField, implode(', ', $allowed))];
                 }
+
                 return;
             }
+
             if (in_array($name, $allRefs, true) === false) {
                 $errors[] = ['code' => 'calculation-prop-unknown', 'message' => sprintf('Calculation "%s": prop "%s" is not a property or calculation.', $owner, $name)];
                 return;
             }
+
             $deps[] = $name;
             return;
-        }
+        }//end if
 
         if (is_array($args) === false) {
             $this->walk($args, $owner, $allRefs, $errors, $deps);
             return;
         }
+
         foreach ($args as $sub) {
             $this->walk($sub, $owner, $allRefs, $errors, $deps);
         }
@@ -171,33 +196,44 @@ final class CalculationAnnotationValidator
         $path   = null;
 
         $visit = function (string $node) use (&$visit, &$colour, &$stack, &$deps, &$path) {
-            if ($path !== null) { return; }
+            if ($path !== null) {
+                return;
+            }
+
             if (($colour[$node] ?? 0) === 1) {
                 $idx = array_search($node, $stack, true);
                 if ($idx !== false) {
-                    $path = array_slice($stack, $idx);
+                    $path   = array_slice($stack, $idx);
                     $path[] = $node;
                 }
+
                 return;
             }
-            if (($colour[$node] ?? 0) === 2) { return; }
+
+            if (($colour[$node] ?? 0) === 2) {
+                return;
+            }
 
             $colour[$node] = 1;
-            $stack[] = $node;
+            $stack[]       = $node;
             foreach (($deps[$node] ?? []) as $next) {
-                if (isset($deps[$next]) === true) { // Only follow calc-to-calc edges.
+                if (isset($deps[$next]) === true) {
+                    // Only follow calc-to-calc edges.
                     $visit($next);
                 }
             }
+
             array_pop($stack);
             $colour[$node] = 2;
         };
 
         foreach (array_keys($deps) as $name) {
             $visit($name);
-            if ($path !== null) { return $path; }
+            if ($path !== null) {
+                return $path;
+            }
         }
+
         return null;
     }//end findCycle()
-
 }//end class

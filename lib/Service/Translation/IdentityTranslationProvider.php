@@ -19,20 +19,16 @@ namespace OCA\OpenRegister\Service\Translation;
 
 class IdentityTranslationProvider implements TranslationProviderInterface
 {
-
     public function translate(string $text, string $fromLang, string $toLang): ?string
     {
         // Same-language translation is a degenerate but valid request.
         // Different-language: passthrough (the operator should plug a
         // real provider in front of this for real translations).
         return $text;
-    }
-
+    }//end translate()
 
     public function getIdentifier(): string
     {
         return 'identity';
-    }
-
-
+    }//end getIdentifier()
 }//end class

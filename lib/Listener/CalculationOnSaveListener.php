@@ -47,12 +47,12 @@ use Psr\Log\LoggerInterface;
  */
 class CalculationOnSaveListener implements IEventListener
 {
-
     public function __construct(
         private readonly SchemaMapper $schemaMapper,
         private readonly CalculationEvaluator $evaluator,
         private readonly LoggerInterface $logger
-    ) {}//end __construct()
+    ) {
+    }//end __construct()
 
     public function handle(Event $event): void
     {
@@ -60,6 +60,7 @@ class CalculationOnSaveListener implements IEventListener
             $this->process($event->getObject(), false);
             return;
         }
+
         if ($event instanceof ObjectUpdatingEvent) {
             $this->process($event->getNewObject(), true);
             return;
@@ -85,8 +86,8 @@ class CalculationOnSaveListener implements IEventListener
         // `@self.created`, `@self.updated`, etc. via the CalculationEvaluator's
         // dotted prop path. ObjectEntity carries these on the entity itself,
         // not in the data array.
-        $created = $object->getCreated();
-        $updated = $object->getUpdated();
+        $created       = $object->getCreated();
+        $updated       = $object->getUpdated();
         $data['@self'] = [
             'id'       => $object->getUuid(),
             'uuid'     => $object->getUuid(),
@@ -101,10 +102,12 @@ class CalculationOnSaveListener implements IEventListener
             if (is_array($spec) === false) {
                 continue;
             }
+
             $materialise = ($spec['materialise'] ?? false);
             if ($materialise !== true) {
                 continue;
             }
+
             try {
                 $value = $this->evaluator->evaluate($data, $spec['expression'] ?? null);
             } catch (EvaluationException $e) {
@@ -119,7 +122,7 @@ class CalculationOnSaveListener implements IEventListener
                 $data[(string) $name] = $serialised;
                 $changed = true;
             }
-        }
+        }//end foreach
 
         // Strip the synthetic @self before persisting; it's a runtime aid
         // for the evaluator, not user data.
@@ -135,6 +138,7 @@ class CalculationOnSaveListener implements IEventListener
         if ($value instanceof DateTimeInterface) {
             return $value->format(DATE_ATOM);
         }
+
         return $value;
     }//end serialise()
 
@@ -144,6 +148,7 @@ class CalculationOnSaveListener implements IEventListener
         if ($ref === null || $ref === '') {
             return null;
         }
+
         try {
             return $this->schemaMapper->find($ref, _multitenancy: false);
         } catch (\Throwable $e) {
@@ -160,5 +165,4 @@ class CalculationOnSaveListener implements IEventListener
         $value  = ($config['x-openregister-calculations'] ?? null);
         return is_array($value) === true ? $value : null;
     }//end getCalculations()
-
 }//end class

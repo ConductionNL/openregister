@@ -134,5 +134,4 @@ class ObjectTransitionedEvent extends Event
     {
         return $this->schema;
     }//end getSchema()
-
 }//end class

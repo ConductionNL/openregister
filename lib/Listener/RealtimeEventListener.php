@@ -36,11 +36,10 @@ use OCP\EventDispatcher\IEventListener;
  */
 class RealtimeEventListener implements IEventListener
 {
-
     public function __construct(
         private readonly RealtimeService $realtimeService
-    ) {}//end __construct()
-
+    ) {
+    }//end __construct()
 
     public function handle(Event $event): void
     {
@@ -49,6 +48,7 @@ class RealtimeEventListener implements IEventListener
             if ($object instanceof ObjectEntity) {
                 $this->realtimeService->record(RealtimeService::TYPE_OBJECT_CREATED, $object);
             }
+
             return;
         }
 
@@ -57,6 +57,7 @@ class RealtimeEventListener implements IEventListener
             if ($object instanceof ObjectEntity) {
                 $this->realtimeService->record(RealtimeService::TYPE_OBJECT_UPDATED, $object);
             }
+
             return;
         }
 
@@ -65,6 +66,7 @@ class RealtimeEventListener implements IEventListener
             if ($object instanceof ObjectEntity) {
                 $this->realtimeService->record(RealtimeService::TYPE_OBJECT_DELETED, $object);
             }
+
             return;
         }
 
@@ -79,6 +81,4 @@ class RealtimeEventListener implements IEventListener
             }
         }
     }//end handle()
-
-
 }//end class

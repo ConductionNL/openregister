@@ -76,11 +76,13 @@ class AggregationCache
         if ($this->cache === null) {
             return null;
         }
+
         try {
             $blob = $this->cache->get($this->key($registerSlug, $schemaSlug, $name, $filter));
             if (is_string($blob) === false) {
                 return null;
             }
+
             $decoded = json_decode($blob, true);
             return is_array($decoded) === true ? $decoded : null;
         } catch (\Throwable $e) {
@@ -99,6 +101,7 @@ class AggregationCache
         if ($this->cache === null) {
             return;
         }
+
         try {
             $this->cache->set(
                 $this->key($registerSlug, $schemaSlug, $name, $filter),
@@ -124,6 +127,7 @@ class AggregationCache
         if ($this->cache === null) {
             return;
         }
+
         try {
             // ICache doesn't have prefix delete. Do a best-effort clear of
             // the whole openregister_aggregations cache — coarse but safe
@@ -155,5 +159,4 @@ class AggregationCache
         $uid = ($this->userSession->getUser()?->getUID() ?? 'anonymous');
         return sha1($uid);
     }//end rbacScopeHash()
-
 }//end class

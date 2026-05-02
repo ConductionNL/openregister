@@ -22,11 +22,10 @@ use OCA\OpenRegister\Service\Object\TranslationHandler;
 
 class TranslationCsvCodec
 {
-
     public function __construct(
         private readonly TranslationHandler $translationHandler
-    ) {}//end __construct()
-
+    ) {
+    }//end __construct()
 
     /**
      * Flatten an object's data into CSV-compatible columns.
@@ -45,15 +44,13 @@ class TranslationCsvCodec
     public function flattenForCsv(array $data, Schema $schema): array
     {
         $translatableProps = $this->translationHandler->getTranslatableProperties($schema);
-        $row               = [];
+        $row = [];
 
         foreach ($data as $key => $value) {
             // Untranslatable property: pass through as-is. Non-scalar
             // values get JSON-encoded so the CSV row stays single-cell-per-column.
             if (in_array($key, $translatableProps, true) === false) {
-                $row[$key] = is_scalar($value) === true || $value === null
-                    ? $value
-                    : json_encode($value, JSON_UNESCAPED_SLASHES);
+                $row[$key] = is_scalar($value) === true || $value === null ? $value : json_encode($value, JSON_UNESCAPED_SLASHES);
                 continue;
             }
 
@@ -64,8 +61,10 @@ class TranslationCsvCodec
                     if (is_string($lang) === false || $lang === '') {
                         continue;
                     }
-                    $row[$key . '_' . $lang] = is_scalar($langValue) === true ? $langValue : null;
+
+                    $row[$key.'_'.$lang] = is_scalar($langValue) === true ? $langValue : null;
                 }
+
                 continue;
             }
 
@@ -74,17 +73,16 @@ class TranslationCsvCodec
             // "und" = undetermined language) so the round-trip
             // preserves the variant without guessing.
             if (is_string($value) === true) {
-                $row[$key . '_und'] = $value;
+                $row[$key.'_und'] = $value;
                 continue;
             }
 
             // Anything else: pass through.
             $row[$key] = is_scalar($value) === true ? $value : null;
-        }
+        }//end foreach
 
         return $row;
     }//end flattenForCsv()
-
 
     /**
      * Reverse of `flattenForCsv`. Reconstructs the nested
@@ -102,43 +100,46 @@ class TranslationCsvCodec
     public function unflattenFromCsv(array $row, Schema $schema): array
     {
         $translatableProps = $this->translationHandler->getTranslatableProperties($schema);
-        $out               = [];
+        $out = [];
 
         foreach ($row as $column => $value) {
             // Check if this column matches a translatable-property + language suffix.
             $matched = false;
             foreach ($translatableProps as $prop) {
-                $prefix = $prop . '_';
+                $prefix = $prop.'_';
                 if (str_starts_with($column, $prefix) === true) {
                     $lang = substr($column, strlen($prefix));
                     if ($lang === '' || preg_match('/^[a-zA-Z][a-zA-Z0-9-]{0,15}$/', $lang) !== 1) {
                         continue;
                     }
+
                     if (is_string($value) === false || $value === '') {
                         // Empty cells: don't write a slot (lets the
                         // projection treat this as "not translated").
                         $matched = true;
                         break;
                     }
+
                     if (isset($out[$prop]) === false || is_array($out[$prop]) === false) {
                         $out[$prop] = [];
                     }
+
                     $out[$prop][$lang] = $value;
-                    $matched = true;
+                    $matched           = true;
                     break;
-                }
-            }
+                }//end if
+            }//end foreach
+
             if ($matched === true) {
                 continue;
             }
 
             // Untranslatable / unrecognised column: pass through.
             $out[$column] = $value;
-        }
+        }//end foreach
 
         return $out;
     }//end unflattenFromCsv()
-
 
     /**
      * @param array<mixed> $value
@@ -148,13 +149,13 @@ class TranslationCsvCodec
         if (count($value) === 0) {
             return false;
         }
+
         foreach (array_keys($value) as $key) {
             if (is_string($key) === false || preg_match('/^[a-zA-Z][a-zA-Z0-9-]{0,15}$/', $key) !== 1) {
                 return false;
             }
         }
+
         return true;
-    }
-
-
+    }//end isLanguageKeyed()
 }//end class

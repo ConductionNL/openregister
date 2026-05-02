@@ -146,8 +146,7 @@ class OasValidationMiddleware extends Middleware
     private function resolveOperationSchema(mixed $controller, string $methodName): ?array
     {
         if ($this->logger !== null) {
-            $msg = '[OasValidationMiddleware] no per-operation schema resolver wired yet; '
-                .'skipping validation for '.$controller::class.'::'.$methodName;
+            $msg = '[OasValidationMiddleware] no per-operation schema resolver wired yet; '.'skipping validation for '.$controller::class.'::'.$methodName;
             $this->logger->debug($msg, ['file' => __FILE__, 'line' => __LINE__]);
         }
 

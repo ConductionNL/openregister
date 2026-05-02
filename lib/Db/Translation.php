@@ -48,7 +48,7 @@ use OCP\AppFramework\Db\Entity;
 class Translation extends Entity implements JsonSerializable
 {
 
-    public const STATUS_DRAFT              = 'draft';
+    public const STATUS_DRAFT = 'draft';
     public const STATUS_MACHINE_TRANSLATED = 'machine_translated';
     public const STATUS_HUMAN_REVIEWED     = 'human_reviewed';
     public const STATUS_APPROVED           = 'approved';
@@ -61,11 +61,17 @@ class Translation extends Entity implements JsonSerializable
     ];
 
     protected ?string $objectUuid = null;
+
     protected ?string $property = null;
+
     protected ?string $language = null;
+
     protected ?string $value = null;
+
     protected ?string $status = null;
+
     protected ?string $translator = null;
+
     protected ?DateTime $updated = null;
 
     public function __construct()
@@ -77,7 +83,7 @@ class Translation extends Entity implements JsonSerializable
         $this->addType('status', 'string');
         $this->addType('translator', 'string');
         $this->addType('updated', 'datetime');
-    }
+    }//end __construct()
 
     /**
      * @return array<string, mixed>
@@ -94,6 +100,5 @@ class Translation extends Entity implements JsonSerializable
             'translator' => $this->translator,
             'updated'    => $this->updated?->format(\DateTimeInterface::ATOM),
         ];
-    }
-
+    }//end jsonSerialize()
 }//end class

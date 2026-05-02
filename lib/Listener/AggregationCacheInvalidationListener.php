@@ -38,10 +38,10 @@ use OCP\EventDispatcher\IEventListener;
  */
 class AggregationCacheInvalidationListener implements IEventListener
 {
-
     public function __construct(
         private readonly AggregationCache $cache
-    ) {}//end __construct()
+    ) {
+    }//end __construct()
 
     public function handle(Event $event): void
     {
@@ -49,6 +49,7 @@ class AggregationCacheInvalidationListener implements IEventListener
         if ($object === null) {
             return;
         }
+
         $this->cache->evictForSchema(
             registerSlug: (string) $object->getRegister(),
             schemaSlug: (string) $object->getSchema()
@@ -60,19 +61,21 @@ class AggregationCacheInvalidationListener implements IEventListener
         if ($event instanceof ObjectTransitionedEvent) {
             return $event->getObject();
         }
+
         if (method_exists($event, 'getObject') === true) {
             $obj = $event->getObject();
             if ($obj instanceof ObjectEntity) {
                 return $obj;
             }
         }
+
         if (method_exists($event, 'getNewObject') === true) {
             $obj = $event->getNewObject();
             if ($obj instanceof ObjectEntity) {
                 return $obj;
             }
         }
+
         return null;
     }//end extractObject()
-
 }//end class
