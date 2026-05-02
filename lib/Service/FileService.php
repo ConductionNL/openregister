@@ -1900,7 +1900,7 @@ class FileService
 
         // Resolve the target folder up front so we can detect name
         // conflicts before delegating to CreateFileHandler.
-        $targetFolder = $this->folderManagementHandler->getObjectFolder(object: $targetObject);
+        $targetFolder = $this->folderManagementHandler->getObjectFolder(objectEntity: $targetObject);
 
         // Name-conflict resolution (closes file-actions item 44):
         // when a node with the same name already exists in the target
@@ -1913,7 +1913,7 @@ class FileService
         );
 
         // Use CreateFileHandler to create the file in target object folder.
-        $newFile = $this->createFileHandler->createFile(
+        $newFile = $this->createFileHandler->addFile(
             objectEntity: $targetObject,
             fileName: $resolvedName,
             content: $content
