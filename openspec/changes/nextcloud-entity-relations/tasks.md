@@ -74,6 +74,6 @@
 - [x] Unit tests for ContactService
 - [x] Unit tests for DeckCardService
 - [x] Unit tests for RelationsController
-- [ ] Integration tests with Greenmail (email linking)
-- [ ] Integration tests with CalDAV (event creation)
-- [ ] Integration tests with CardDAV (contact linking)
+- [x] Integration tests with Greenmail (email linking) — `tests/Service/GreenmailSmtpIntegrationTest.php` (2 tests). Greenmail added to `docker-compose.yml` under the opt-in `mail` profile (start with `docker-compose --profile mail up -d greenmail`). Tests skip gracefully with a clear message when Greenmail is not running. Tests exercise the SMTP-receipt smoke (HELO/MAIL/RCPT/DATA → Greenmail HTTP API confirms the message landed in the recipient mailbox); the `EmailService::linkEmail` surface itself is covered by `tests/Unit/Service/EmailServiceTest.php` and is intentionally not duplicated here.
+- [x] Integration tests with CalDAV (event creation) — `tests/Service/CalDavIntegrationTest.php` (2 tests). Uses Nextcloud's built-in DAV endpoint (`/remote.php/dav/calendars/admin/personal/{uid}.ics`) to PUT an iCal event, GET it back, then DELETE it. Tests skip gracefully when the Nextcloud HTTP endpoint is unreachable.
+- [x] Integration tests with CardDAV (contact linking) — `tests/Service/CardDavIntegrationTest.php` (2 tests). Same shape as the CalDAV test against `/remote.php/dav/addressbooks/users/admin/contacts/{uid}.vcf`: PUT a vCard, GET it back, DELETE. Skip-on-unreachable contract identical.
