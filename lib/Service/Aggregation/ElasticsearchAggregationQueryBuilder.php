@@ -65,8 +65,25 @@ class ElasticsearchAggregationQueryBuilder
                 ];
             }
 
+            if ($query->hasDateBucket() === true) {
+                $bucket       = $query->dateBucket;
+                $field        = (string) $bucket['field'];
+                $body['aggs'] = [
+                    $field => [
+                        'date_histogram' => [
+                            'field'             => $field,
+                            'calendar_interval' => (string) $bucket['gap'],
+                            'extended_bounds'   => [
+                                'min' => (string) $bucket['start'],
+                                'max' => (string) $bucket['end'],
+                            ],
+                        ],
+                    ],
+                ];
+            }
+
             return $body;
-        }
+        }//end if
 
         // Non-count metrics use the matching ES metric aggregation.
         $field      = (string) $query->field;

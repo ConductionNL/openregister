@@ -33,6 +33,7 @@ use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Service\Index\SearchBackendInterface;
 use OCA\OpenRegister\Service\Search\PlaceholderResolver;
 use OCP\IDBConnection;
 use RuntimeException;
@@ -42,15 +43,16 @@ use RuntimeException;
  */
 class AggregationRunner
 {
-
     public function __construct(
         private readonly MagicMapper $magicMapper,
         private readonly RegisterMapper $registerMapper,
         private readonly SchemaMapper $schemaMapper,
         private readonly PlaceholderResolver $placeholders,
         private readonly IDBConnection $db,
-        private readonly AggregationCache $cache
-    ) {}//end __construct()
+        private readonly AggregationCache $cache,
+        private readonly ?SearchBackendInterface $searchBackend=null
+    ) {
+    }//end __construct()
 
     /**
      * Run the named aggregation on the given (register, schema).
@@ -100,7 +102,7 @@ class AggregationRunner
             'filter'  => $resolvedFilter,
             'groupBy' => $groupBy,
         ];
-        $cached = $this->cache->get(
+        $cached   = $this->cache->get(
             registerSlug: (string) $register->getSlug(),
             schemaSlug: (string) $schema->getSlug(),
             name: $name,
@@ -110,6 +112,43 @@ class AggregationRunner
             $cached['cached'] = true;
             return $cached;
         }
+
+        // Try the configured external search backend (Solr / ES) first
+        // when one is wired in. The backend returns null when it can't
+        // execute the query (unsupported metric, unreachable instance,
+        // etc) — we then fall through to the Postgres-native fast path
+        // and finally to the PHP fallback.
+        if ($this->searchBackend !== null) {
+            try {
+                $portableQuery = AggregationQuery::create(
+                    metric: $metric,
+                    field: is_string($field) === true ? $field : null,
+                    filter: $resolvedFilter,
+                    groupBy: is_array($groupBy) === true ? $groupBy : null
+                );
+                $external      = $this->searchBackend->aggregate(query: $portableQuery);
+                if ($external !== null) {
+                    $backendName = $this->detectBackendName(backend: $this->searchBackend);
+                    $result      = [
+                        'name'    => $name,
+                        'metric'  => $metric,
+                        'field'   => is_string($field) === true ? $field : null,
+                        'backend' => $backendName,
+                    ] + $external;
+                    $this->cache->set(
+                        registerSlug: (string) $register->getSlug(),
+                        schemaSlug: (string) $schema->getSlug(),
+                        name: $name,
+                        filter: $cacheKey,
+                        result: $result
+                    );
+                    return $result;
+                }
+            } catch (\Throwable $e) {
+                // External backend errored — fall through to native /
+                // PHP path so a flaky Solr/ES never breaks aggregations.
+            }//end try
+        }//end if
 
         // Try the Postgres-native fast path. Falls back to PHP when the
         // query shape isn't supported (operator filters, complex values,
@@ -173,6 +212,7 @@ class AggregationRunner
                 'value'   => $this->computeMetric($rows, $metric, $field),
             ];
         }
+
         $this->cache->set(
             registerSlug: (string) $register->getSlug(),
             schemaSlug: (string) $schema->getSlug(),
@@ -213,6 +253,7 @@ class AggregationRunner
             if (isset($buckets[$key]) === false) {
                 $buckets[$key] = ['key' => $bucket, 'rows' => []];
             }
+
             $buckets[$key]['rows'][] = $row;
         }
 
@@ -223,6 +264,7 @@ class AggregationRunner
                 'value' => $this->computeMetric($b['rows'], $metric, $field),
             ];
         }
+
         return $out;
     }//end computeGrouped()
 
@@ -238,12 +280,15 @@ class AggregationRunner
             if (is_numeric($value) === false) {
                 continue;
             }
+
             $count++;
             $acc = $acc === null ? (float) $value : $reducer((float) $acc, (float) $value);
         }
+
         if ($count === 0 && $acc === null) {
             return null;
         }
+
         return $acc;
     }//end reduceNumeric()
 
@@ -259,9 +304,11 @@ class AggregationRunner
             if (is_numeric($value) === false) {
                 continue;
             }
+
             $sum += (float) $value;
             $count++;
         }
+
         return $count === 0 ? null : ($sum / $count);
     }//end avg()
 
@@ -282,6 +329,7 @@ class AggregationRunner
                 $simple[$field] = $value;
             }
         }
+
         return $simple;
     }//end shapeFilters()
 
@@ -301,20 +349,27 @@ class AggregationRunner
             foreach ($filter as $field => $criterion) {
                 $value = $row[$field] ?? null;
                 if (is_array($criterion) === false) {
-                    if ($value !== $criterion) { $keep = false; break; }
+                    if ($value !== $criterion) {
+                        $keep = false;
+                        break;
+                    }
+
                     continue;
                 }
 
                 foreach ($criterion as $op => $opValue) {
                     if ($this->checkOp($value, (string) $op, $opValue) === false) {
-                        $keep = false; break 2;
+                        $keep = false;
+                        break 2;
                     }
                 }
             }
+
             if ($keep === true) {
                 $result[] = $row;
             }
-        }
+        }//end foreach
+
         return $result;
     }//end applyFilter()
 
@@ -339,6 +394,7 @@ class AggregationRunner
         if ($v instanceof DateTimeInterface) {
             return $v->getTimestamp();
         }
+
         if (is_string($v) === true && preg_match('/^\d{4}-\d{2}-\d{2}/', $v) === 1) {
             try {
                 return (new DateTimeImmutable($v))->getTimestamp();
@@ -346,6 +402,7 @@ class AggregationRunner
                 return $v;
             }
         }
+
         return $v;
     }//end normaliseForCompare()
 
@@ -381,10 +438,10 @@ class AggregationRunner
         }
 
         // Validate filter shapes are translatable. Supported:
-        //   {field: scalar}              → field = ?
-        //   {field: {in: [...]}}         → field IN (?, ?, ?)
-        //   {field: {gt|gte|lt|lte: x}}  → field > / >= / < / <= ?
-        //   {field: {ne: x}}             → field <> ?
+        // {field: scalar}              → field = ?
+        // {field: {in: [...]}}         → field IN (?, ?, ?)
+        // {field: {gt|gte|lt|lte: x}}  → field > / >= / < / <= ?
+        // {field: {ne: x}}             → field <> ?
         // Reject anything else.
         foreach ($filter as $value) {
             if (is_array($value) === true) {
@@ -403,10 +460,11 @@ class AggregationRunner
         if ($tableName === null || $tableName === '') {
             return null;
         }
+
         $fullTable = '"oc_'.$tableName.'"';
 
-        $whereParts  = ["(_deleted IS NULL OR _deleted = 'null'::jsonb)"];
-        $bindings    = [];
+        $whereParts = ["(_deleted IS NULL OR _deleted = 'null'::jsonb)"];
+        $bindings   = [];
         foreach ($filter as $f => $v) {
             $col = $this->sanitizeColumnName((string) $f);
             if (is_array($v) === false) {
@@ -414,6 +472,7 @@ class AggregationRunner
                 $bindings[]   = $this->bindValue($v);
                 continue;
             }
+
             foreach ($v as $op => $opValue) {
                 if ($op === 'in') {
                     $list = is_array($opValue) === true ? $opValue : [];
@@ -423,13 +482,16 @@ class AggregationRunner
                         $whereParts[] = '1 = 0';
                         continue;
                     }
+
                     $placeholders = implode(', ', array_fill(0, count($list), '?'));
                     $whereParts[] = '"'.$col.'" IN ('.$placeholders.')';
                     foreach ($list as $item) {
                         $bindings[] = $this->bindValue($item);
                     }
+
                     continue;
                 }
+
                 $sqlOp = match ((string) $op) {
                     'gt'  => '>',
                     'gte' => '>=',
@@ -438,13 +500,16 @@ class AggregationRunner
                     'ne'  => '<>',
                     default => null,
                 };
+
                 if ($sqlOp === null) {
                     continue;
                 }
+
                 $whereParts[] = '"'.$col.'" '.$sqlOp.' ?';
                 $bindings[]   = $this->bindValue($opValue);
-            }
-        }
+            }//end foreach
+        }//end foreach
+
         $whereSql = implode(' AND ', $whereParts);
 
         // Aggregate clause.
@@ -466,7 +531,7 @@ class AggregationRunner
                              GROUP BY {$groupCol}";
                 $stmt     = $this->db->prepare($sql);
                 $stmt->execute($bindings);
-                $groups   = [];
+                $groups = [];
                 while (($row = $stmt->fetch()) !== false) {
                     $value = $row['agg'];
                     if ($metric !== 'count' && is_string($value) === true) {
@@ -474,28 +539,32 @@ class AggregationRunner
                     } else if ($value !== null) {
                         $value = (int) $value;
                     }
+
                     $groups[] = ['key' => $row['bucket'], 'value' => $value];
                 }
+
                 return ['groups' => $groups];
-            }
+            }//end if
 
             $sql  = "SELECT {$aggSql} AS agg FROM {$fullTable} WHERE {$whereSql}";
             $stmt = $this->db->prepare($sql);
             $stmt->execute($bindings);
-            $row = $stmt->fetch();
+            $row   = $stmt->fetch();
             $value = $row !== false ? $row['agg'] : null;
             if ($metric === 'count') {
                 return ['value' => (int) ($value ?? 0)];
             }
+
             if ($value === null) {
                 return ['value' => null];
             }
+
             return ['value' => is_string($value) === true ? (float) $value : $value];
         } catch (\Throwable $e) {
             // Native path failed (table not found, column not found, etc) —
             // tell the caller to fall back to PHP.
             return null;
-        }
+        }//end try
     }//end tryNativeAggregation()
 
     /**
@@ -511,9 +580,11 @@ class AggregationRunner
         if ($value instanceof DateTimeInterface) {
             return $value->format(DateTimeInterface::ATOM);
         }
+
         if (is_bool($value) === true) {
             return $value ? 'true' : 'false';
         }
+
         return (string) $value;
     }//end bindValue()
 
@@ -529,6 +600,7 @@ class AggregationRunner
         if (preg_match('/^[a-z_]/', $name) === 0) {
             $name = 'col_'.$name;
         }
+
         $name = preg_replace('/_+/', '_', $name);
         return rtrim((string) $name, '_');
     }//end sanitizeColumnName()
@@ -552,6 +624,10 @@ class AggregationRunner
     }//end loadRegister()
 
     /**
+     * Read the `x-openregister-aggregations` annotation off a schema.
+     *
+     * @param Schema $schema The schema to read.
+     *
      * @return array<string, mixed>|null
      */
     private function getAnnotation(Schema $schema): ?array
@@ -561,4 +637,27 @@ class AggregationRunner
         return is_array($value) === true ? $value : null;
     }//end getAnnotation()
 
+    /**
+     * Map a SearchBackendInterface implementation to its short backend
+     * label for the result envelope. Falls back to `'external'` when the
+     * concrete class name doesn't match a known prefix.
+     *
+     * @param SearchBackendInterface $backend The backend instance.
+     *
+     * @return string
+     */
+    private function detectBackendName(SearchBackendInterface $backend): string
+    {
+        $shortName = (new \ReflectionClass($backend))->getShortName();
+        if (str_contains($shortName, 'Solr') === true) {
+            return 'solr';
+        }
+
+        if (str_contains($shortName, 'Elasticsearch') === true) {
+            return 'elasticsearch';
+        }
+
+        return 'external';
+
+    }//end detectBackendName()
 }//end class

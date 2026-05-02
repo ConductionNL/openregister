@@ -28,6 +28,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Index;
 
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Service\Aggregation\AggregationQuery;
 
 /**
  * Search Backend Interface
@@ -255,6 +256,28 @@ interface SearchBackendInterface
      * @return bool True if successful
      */
     public function index(array $documents): bool;
+
+    /**
+     * Run an aggregation against this backend.
+     *
+     * Cross-backend contract: every implementation translates the
+     * portable AggregationQuery value object into its native syntax
+     * (Postgres SQL, Solr facets, ES aggs) and returns the normalised
+     * `{value: int|float|null}` (ungrouped) or
+     * `{groups: [{key, value}, ...]}` (grouped) shape that
+     * AggregationRunner consumes.
+     *
+     * Returns `null` when this backend cannot execute the query (e.g.
+     * unsupported metric, unreachable backend) — the caller falls back
+     * to the PHP path.
+     *
+     * @param AggregationQuery $query The portable aggregation request.
+     *
+     * @return array|null The aggregation result, or null on a backend miss.
+     *
+     * @spec openspec/changes/aggregations-backend-native/tasks.md task 1.1
+     */
+    public function aggregate(AggregationQuery $query): ?array;
 
     /**
      * Perform a generic search query.

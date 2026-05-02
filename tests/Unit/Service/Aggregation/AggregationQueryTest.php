@@ -94,4 +94,68 @@ class AggregationQueryTest extends TestCase
     }//end testFilterIsCarriedThrough()
 
 
+    public function testDateBucketIsExposedThroughHasDateBucket(): void
+    {
+        $q = AggregationQuery::create(
+            metric: 'count',
+            dateBucket: [
+                'field' => 'created',
+                'start' => '2026-01-01T00:00:00Z',
+                'end'   => '2026-12-31T23:59:59Z',
+                'gap'   => 'month',
+            ]
+        );
+        $this->assertTrue($q->hasDateBucket());
+        $this->assertSame('created', $q->dateBucket['field']);
+
+    }//end testDateBucketIsExposedThroughHasDateBucket()
+
+
+    public function testDateBucketRequiresAllFourFields(): void
+    {
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage('dateBucket MUST include non-empty');
+        AggregationQuery::create(
+            metric: 'count',
+            dateBucket: ['field' => 'created', 'start' => '2026-01-01']
+        );
+
+    }//end testDateBucketRequiresAllFourFields()
+
+
+    public function testDateBucketGapMustBeKnownVocabulary(): void
+    {
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage('dateBucket gap MUST be one of');
+        AggregationQuery::create(
+            metric: 'count',
+            dateBucket: [
+                'field' => 'created',
+                'start' => '2026-01-01',
+                'end'   => '2026-12-31',
+                'gap'   => 'fortnight',
+            ]
+        );
+
+    }//end testDateBucketGapMustBeKnownVocabulary()
+
+
+    public function testGroupByAndDateBucketAreMutuallyExclusive(): void
+    {
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage('MUST NOT be combined');
+        AggregationQuery::create(
+            metric: 'count',
+            groupBy: ['field' => 'status'],
+            dateBucket: [
+                'field' => 'created',
+                'start' => '2026-01-01',
+                'end'   => '2026-12-31',
+                'gap'   => 'month',
+            ]
+        );
+
+    }//end testGroupByAndDateBucketAreMutuallyExclusive()
+
+
 }//end class

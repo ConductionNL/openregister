@@ -63,6 +63,15 @@ class SolrAggregationQueryBuilder
                 $params['facet.mincount'] = 1;
             }
 
+            if ($query->hasDateBucket() === true) {
+                $bucket          = $query->dateBucket;
+                $params['facet'] = 'true';
+                $params['facet.range']       = (string) $bucket['field'];
+                $params['facet.range.start'] = (string) $bucket['start'];
+                $params['facet.range.end']   = (string) $bucket['end'];
+                $params['facet.range.gap']   = '+1'.strtoupper((string) $bucket['gap']);
+            }
+
             return $params;
         }
 

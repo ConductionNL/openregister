@@ -145,4 +145,26 @@ class SolrAggregationQueryBuilderTest extends TestCase
     }//end testFiltersNeUsesNegation()
 
 
+    public function testDateBucketEmitsFacetRangeParams(): void
+    {
+        $params = $this->builder->build(
+            query: AggregationQuery::create(
+                metric: 'count',
+                dateBucket: [
+                    'field' => 'created',
+                    'start' => '2026-01-01T00:00:00Z',
+                    'end'   => '2026-12-31T23:59:59Z',
+                    'gap'   => 'month',
+                ]
+            )
+        );
+        $this->assertSame('true', $params['facet']);
+        $this->assertSame('created', $params['facet.range']);
+        $this->assertSame('2026-01-01T00:00:00Z', $params['facet.range.start']);
+        $this->assertSame('2026-12-31T23:59:59Z', $params['facet.range.end']);
+        $this->assertSame('+1MONTH', $params['facet.range.gap']);
+
+    }//end testDateBucketEmitsFacetRangeParams()
+
+
 }//end class

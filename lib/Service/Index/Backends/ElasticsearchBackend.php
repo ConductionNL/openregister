@@ -470,6 +470,30 @@ class ElasticsearchBackend implements SearchBackendInterface
     }//end index()
 
     /**
+     * Run an aggregation against this Elasticsearch backend.
+     *
+     * The translator already exists at
+     * `Aggregation\ElasticsearchAggregationQueryBuilder` — this method
+     * is the HTTP-client adapter on top. Returns null until the dev
+     * container ships an ES instance the runtime can talk to, so the
+     * caller falls back to the PHP path. Stub matches the interface
+     * contract so the AggregationRunner can already start dispatching
+     * by-backend.
+     *
+     * @param \OCA\OpenRegister\Service\Aggregation\AggregationQuery $query Portable aggregation request.
+     *
+     * @return array|null The aggregation result, or null when the backend cannot execute it.
+     */
+    public function aggregate(\OCA\OpenRegister\Service\Aggregation\AggregationQuery $query): ?array
+    {
+        $this->logger->info(
+            message: '[ElasticsearchBackend] aggregate() — HTTP client not yet wired; returning null so caller falls back to PHP path',
+            context: ['file' => __FILE__, 'line' => __LINE__]
+        );
+        return null;
+    }//end aggregate()
+
+    /**
      * Get field types.
      *
      * @param string $collection Collection name

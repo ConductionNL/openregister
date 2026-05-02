@@ -152,4 +152,27 @@ class ElasticsearchAggregationQueryBuilderTest extends TestCase
     }//end testFiltersNeBecomesMustNot()
 
 
+    public function testDateBucketEmitsDateHistogramAgg(): void
+    {
+        $body = $this->builder->build(
+            query: AggregationQuery::create(
+                metric: 'count',
+                dateBucket: [
+                    'field' => 'created',
+                    'start' => '2026-01-01T00:00:00Z',
+                    'end'   => '2026-12-31T23:59:59Z',
+                    'gap'   => 'month',
+                ]
+            )
+        );
+        $this->assertSame('created', $body['aggs']['created']['date_histogram']['field']);
+        $this->assertSame('month', $body['aggs']['created']['date_histogram']['calendar_interval']);
+        $this->assertSame(
+            ['min' => '2026-01-01T00:00:00Z', 'max' => '2026-12-31T23:59:59Z'],
+            $body['aggs']['created']['date_histogram']['extended_bounds']
+        );
+
+    }//end testDateBucketEmitsDateHistogramAgg()
+
+
 }//end class
