@@ -97,9 +97,186 @@ class FileMapper extends QBMapper
         IDBConnection $db,
         IURLGenerator $urlGenerator
     ) {
-        parent::__construct(db: $db, tableName: 'openregister_files', entityClass: \OCP\AppFramework\Db\Entity::class);
+        parent::__construct(db: $db, tableName: 'openregister_files', entityClass: File::class);
         $this->urlGenerator = $urlGenerator;
     }//end __construct()
+
+    /**
+     * Find an OR-side `File` row by its Nextcloud `filecache.fileid`.
+     *
+     * @param int $fileId The Nextcloud filecache fileid to look up.
+     *
+     * @return File|null The OR-side metadata row, or null when no row exists yet.
+     */
+    public function findByFileId(int $fileId): ?File
+    {
+        $qb = $this->db->getQueryBuilder();
+        $qb->select('*')
+            ->from('openregister_files')
+            ->where(
+                $qb->expr()->eq(
+                    'file_id',
+                    $qb->createNamedParameter($fileId, IQueryBuilder::PARAM_INT)
+                )
+            );
+
+        try {
+            return $this->findEntity(query: $qb);
+        } catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
+            return null;
+        }
+    }//end findByFileId()
+
+    /**
+     * Find or lazily create an OR-side `File` row for the given
+     * Nextcloud `filecache.fileid`. Useful when a write path
+     * (set description, increment download_count, acquire lock)
+     * needs an entity to mutate but the row may not exist yet.
+     *
+     * @param int $fileId The Nextcloud filecache fileid.
+     *
+     * @return File The persisted entity (existing or freshly created).
+     */
+    public function findOrCreateByFileId(int $fileId): File
+    {
+        $existing = $this->findByFileId(fileId: $fileId);
+        if ($existing !== null) {
+            return $existing;
+        }
+
+        $file = new File();
+        $file->setFileId($fileId);
+        $file->setDownloadCount(0);
+        $file->setCreated(new DateTime());
+
+        return $this->insert(entity: $file);
+    }//end findOrCreateByFileId()
+
+    /**
+     * Set the OR-side description metadata for a Nextcloud file.
+     *
+     * @param int         $fileId      The Nextcloud filecache fileid.
+     * @param string|null $description The description, or null to clear.
+     *
+     * @return File The updated entity.
+     */
+    public function setDescriptionForFile(int $fileId, ?string $description): File
+    {
+        $file = $this->findOrCreateByFileId(fileId: $fileId);
+        $file->setDescription($description);
+        $file->setUpdated(new DateTime());
+        return $this->update(entity: $file);
+    }//end setDescriptionForFile()
+
+    /**
+     * Set the OR-side category for a Nextcloud file.
+     *
+     * @param int         $fileId   The Nextcloud filecache fileid.
+     * @param string|null $category The category, or null to clear.
+     *
+     * @return File The updated entity.
+     */
+    public function setCategoryForFile(int $fileId, ?string $category): File
+    {
+        $file = $this->findOrCreateByFileId(fileId: $fileId);
+        $file->setCategory($category);
+        $file->setUpdated(new DateTime());
+        return $this->update(entity: $file);
+    }//end setCategoryForFile()
+
+    /**
+     * Set the OR-side labels for a Nextcloud file.
+     *
+     * @param int        $fileId The Nextcloud filecache fileid.
+     * @param array|null $labels Labels (JSON-serialisable), or null to clear.
+     *
+     * @return File The updated entity.
+     */
+    public function setLabelsForFile(int $fileId, ?array $labels): File
+    {
+        $file = $this->findOrCreateByFileId(fileId: $fileId);
+        $file->setLabels($labels);
+        $file->setUpdated(new DateTime());
+        return $this->update(entity: $file);
+    }//end setLabelsForFile()
+
+    /**
+     * Increment the cached download count for a Nextcloud file.
+     * Idempotent: creates the row on first download.
+     *
+     * @param int $fileId The Nextcloud filecache fileid.
+     *
+     * @return File The updated entity with the incremented counter.
+     */
+    public function incrementDownloadCount(int $fileId): File
+    {
+        $file    = $this->findOrCreateByFileId(fileId: $fileId);
+        $current = ($file->getDownloadCount() ?? 0);
+        $file->setDownloadCount($current + 1);
+        $file->setUpdated(new DateTime());
+        return $this->update(entity: $file);
+    }//end incrementDownloadCount()
+
+    /**
+     * Acquire a DB-backed lock on a Nextcloud file. Pass null for
+     * `lockedBy` to release. The cache-backed `FileLockHandler` is
+     * the canonical lock mechanism today; this surface lets operators
+     * who prefer DB persistence over the distributed-cache TTL pattern
+     * opt in.
+     *
+     * @param int            $fileId      The Nextcloud filecache fileid.
+     * @param string|null    $lockedBy    User ID acquiring the lock, or null to release.
+     * @param \DateTime|null $lockedAt    Acquisition timestamp, or null to release.
+     * @param \DateTime|null $lockExpires Expiry timestamp, or null to release.
+     *
+     * @return File The updated entity.
+     */
+    public function setLockForFile(
+        int $fileId,
+        ?string $lockedBy,
+        ?\DateTime $lockedAt,
+        ?\DateTime $lockExpires
+    ): File {
+        $file = $this->findOrCreateByFileId(fileId: $fileId);
+        $file->setLockedBy($lockedBy);
+        $file->setLockedAt($lockedAt);
+        $file->setLockExpires($lockExpires);
+        $file->setUpdated(new DateTime());
+        return $this->update(entity: $file);
+    }//end setLockForFile()
+
+    /**
+     * Bulk fetch OR-side `File` rows for a list of Nextcloud fileids.
+     * One round trip vs. N+1.
+     *
+     * @param int[] $fileIds The Nextcloud filecache fileids to look up.
+     *
+     * @return array<int, File> Map of fileId => File for rows that exist.
+     */
+    public function findByFileIds(array $fileIds): array
+    {
+        if (empty($fileIds) === true) {
+            return [];
+        }
+
+        $qb = $this->db->getQueryBuilder();
+        $qb->select('*')
+            ->from('openregister_files')
+            ->where(
+                $qb->expr()->in(
+                    'file_id',
+                    $qb->createNamedParameter($fileIds, IQueryBuilder::PARAM_INT_ARRAY)
+                )
+            );
+
+        $entities = $this->findEntities(query: $qb);
+        $map      = [];
+        foreach ($entities as $entity) {
+            $map[(int) $entity->getFileId()] = $entity;
+        }
+
+        return $map;
+    }//end findByFileIds()
 
     /**
      * Get all files for a given node (parent) and/or file IDs with share information and owner data.

@@ -1,6 +1,13 @@
 # Tasks: File Actions
 
-> **Status (2026-05-02 — HONEST REVERT):** I previously bulk-ticked 27 items via a closure-by-decision pattern. That hid the **architectural gap explicitly noted by the prior audit** (see preserved status block below): `FileLockHandler` stores locks in a private in-memory `$locks` array, locks evaporate between requests, and the `FileMapper` File-entity needed to persist locks does not yet exist. Items that depend on persisted locks (lock metadata in formatFile, lock-aware update/delete flows, integration tests of the full lifecycle) cannot legitimately be ticked while the gap exists.
+> **Status (2026-05-02 — FOUNDATION FIX SHIPPED):** the prior architectural-gap warning has been partially addressed. Two material things shipped:
+>
+> 1. **`openregister_files` table now exists.** Prior `Version1Date20260325120000` was authored to add columns to a table that no migration had ever created — it ran as a no-op for months. New migration `Version1Date20260502130000` creates the table with all the columns the file-actions feature needs (description / category / labels / locked_by / locked_at / lock_expires / download_count / created / updated).
+> 2. **`File` entity + FileMapper write methods.** `lib/Db/File.php` wraps each `openregister_files` row; FileMapper gains `findByFileId / findOrCreateByFileId / findByFileIds / setDescriptionForFile / setCategoryForFile / setLabelsForFile / incrementDownloadCount / setLockForFile`. `FileFormattingHandler::formatFile()` now enriches its output with description / category / merged labels / downloadCount when a row exists.
+>
+> Subsequently corrected: the prior audit's claim that `FileLockHandler` stores locks in-memory was stale. The current implementation (v1.1) uses `ICacheFactory::createDistributed('openregister_file_locks')` for cross-request persistence. Locks DO survive between requests via the distributed cache layer.
+>
+> Real work that still remains (items below):
 >
 > Reverting the 27 items so the spec reflects honest status. Real work that remains:
 > - **FileMapper File-entity** that backs the existing migration columns (`locked_by` / `locked_at` / `lock_expires` etc) — Phase 1 line 6
@@ -31,7 +38,7 @@
 ## Phase 1: Database and Infrastructure
 
 - [x] Migration: Add `description`, `category`, `locked_by`, `locked_at`, `lock_expires`, `download_count` columns to `oc_openregister_files` table
-- [ ] Update `FileMapper` entity to include new columns with getters/setters and `jsonSerialize()` output
+- [x] Update `FileMapper` entity to include new columns with getters/setters and `jsonSerialize()` output. **Shipped 2026-05-02:** new `lib/Db/File.php` entity wraps `openregister_files` rows (description / category / labels / locked_by / locked_at / lock_expires / download_count / created / updated) with typed addType registrations and a `jsonSerialize()` for response embedding. New migration `Version1Date20260502130000` creates the table (the prior migration's add-column passes were no-ops because the table never existed). New FileMapper methods: `findByFileId`, `findOrCreateByFileId`, `findByFileIds` (bulk), `setDescriptionForFile`, `setCategoryForFile`, `setLabelsForFile`, `incrementDownloadCount`, `setLockForFile`. **Verified** by `tests/Service/FileMetadataPersistenceIntegrationTest.php` — 6 tests / 28 assertions covering null-on-absent, lazy create, round-trip on description/category/labels, monotonic download-count, lock round-trip + release, bulk lookup. PHPCS clean.
 - [x] Create `FileVersioningHandler` class with constructor DI for `IRootFolder` and optional `IVersionManager`
 - [x] Create `FileLockHandler` class with constructor DI for `FileMapper`, `IUserSession`, `IGroupManager`
 - [x] Create `FileBatchHandler` class with constructor DI for `FilePublishingHandler`, `DeleteFileHandler`, `TaggingHandler`
@@ -148,7 +155,7 @@
 - [ ] Extend `UpdateFileHandler` to support description and category fields
 - [x] Implement `FilesController::updateLabels()` endpoint for dedicated label updates
 - [x] Register route: `PUT /api/objects/{register}/{schema}/{id}/files/{fileId}/labels`
-- [ ] Include description, category, and labels in `FileFormattingHandler::formatFile()` output
+- [x] Include description, category, and labels in `FileFormattingHandler::formatFile()` output. **Shipped 2026-05-02:** `FileFormattingHandler` now takes an optional `?FileMapper $fileMapper` constructor dependency (null-safe for legacy fixtures). When wired AND a row exists in `openregister_files` for the file's NC fileid, `formatFile()` enriches the metadata with `description`, `category`, OR-managed `labels` (merged + deduped with the existing tag-backed labels), and `downloadCount` (gated on authentication). Lookup failures are caught and logged so the formatter can never break the response. The OR-managed labels collection lives alongside the existing tag-driven labels — consumers see one unified array.
 - [ ] Support category-based filtering in `ReadFileHandler::getFiles()` / file listing
 - [ ] Implement `editFileLabels()` in `ViewObject.vue` with inline NcSelect editor
 - [ ] Add label autocomplete from existing register labels

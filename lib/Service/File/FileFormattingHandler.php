@@ -63,12 +63,13 @@ class FileFormattingHandler
     /**
      * Constructor for FileFormattingHandler.
      *
-     * @param TaggingHandler     $taggingHandler     Tagging handler for tag operations.
-     * @param FileSharingHandler $fileSharingHandler Sharing handler for share operations.
-     * @param IURLGenerator      $urlGenerator       URL generator for creating URLs.
-     * @param ILockManager       $lockManager        Lock manager for reading file lock state.
-     * @param IUserSession       $userSession        Session used to gate lock fields for authenticated callers only.
-     * @param LoggerInterface    $logger             Logger for logging operations.
+     * @param TaggingHandler                       $taggingHandler     Tagging handler for tag operations.
+     * @param FileSharingHandler                   $fileSharingHandler Sharing handler for share operations.
+     * @param IURLGenerator                        $urlGenerator       URL generator for creating URLs.
+     * @param ILockManager                         $lockManager        Lock manager for reading file lock state.
+     * @param IUserSession                         $userSession        Session used to gate lock fields for authenticated callers only.
+     * @param LoggerInterface                      $logger             Logger for logging operations.
+     * @param \OCA\OpenRegister\Db\FileMapper|null $fileMapper         Optional OR-side metadata mapper for description / category / labels / downloadCount enrichment. When null (test fixtures, legacy callers), enrichment is skipped silently.
      */
     public function __construct(
         private readonly TaggingHandler $taggingHandler,
@@ -76,7 +77,8 @@ class FileFormattingHandler
         private readonly IURLGenerator $urlGenerator,
         private readonly ILockManager $lockManager,
         private readonly IUserSession $userSession,
-        private readonly LoggerInterface $logger
+        private readonly LoggerInterface $logger,
+        private readonly ?\OCA\OpenRegister\Db\FileMapper $fileMapper=null
     ) {
     }//end __construct()
 
@@ -149,6 +151,44 @@ class FileFormattingHandler
                 $metadata['lock'] = $lockEnvelope;
             }
         }
+
+        // Append OR-side metadata enrichment (description / category /
+        // OR-managed labels / downloadCount) when the FileMapper is wired
+        // and a row exists for this fileId. Anonymous callers see the
+        // public-safe subset — description and category and labels are
+        // safe to expose, downloadCount is gated on authentication.
+        if ($this->fileMapper !== null) {
+            try {
+                $orFile = $this->fileMapper->findByFileId(fileId: (int) $file->getId());
+                if ($orFile !== null) {
+                    $metadata['description'] = $orFile->getDescription();
+                    $metadata['category']    = $orFile->getCategory();
+                    $orLabels = ($orFile->getLabels() ?? []);
+                    if (empty($orLabels) === false) {
+                        // Merge OR-managed labels into the existing tag-
+                        // backed labels array so consumers see one
+                        // labels collection. De-dupe by string identity.
+                        $metadata['labels'] = array_values(
+                            array_unique(array_merge($metadata['labels'], $orLabels))
+                        );
+                    }
+
+                    if ($this->userSession->getUser() !== null) {
+                        $metadata['downloadCount'] = $orFile->getDownloadCount();
+                    }
+                }
+            } catch (\Throwable $e) {
+                $this->logger->warning(
+                    message: '[FileFormattingHandler] OR-side metadata lookup failed; continuing without enrichment',
+                    context: [
+                        'file'   => __FILE__,
+                        'line'   => __LINE__,
+                        'fileId' => (int) $file->getId(),
+                        'error'  => $e->getMessage(),
+                    ]
+                );
+            }//end try
+        }//end if
 
         // Process labels that contain ':' to add as separate metadata fields.
         $remainingLabels = [];
