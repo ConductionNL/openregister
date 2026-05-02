@@ -285,6 +285,11 @@ class Application extends App implements IBootstrap
         // Register the TenantQuotaMiddleware for tenant quota enforcement and status checks.
         $context->registerMiddleware(\OCA\OpenRegister\Middleware\TenantQuotaMiddleware::class);
 
+        // Register the OasValidationMiddleware for opt-in request-body
+        // validation against per-operation OAS schemas. Activates only on
+        // POST/PUT/PATCH with `?_validate=true`; pass-through otherwise.
+        $context->registerMiddleware(\OCA\OpenRegister\Middleware\OasValidationMiddleware::class);
+
         // Register all services in phases to resolve circular dependencies.
         $this->registerMappersWithCircularDependencies(context: $context);
         $this->registerCacheAndFileHandlers(context: $context);
