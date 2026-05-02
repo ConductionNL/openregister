@@ -531,6 +531,24 @@ class ObjectEntity extends Entity implements JsonSerializable
     protected ?string $processingActivityId = null;
 
     /**
+     * Import-job tag transferred to the audit trail on save.
+     *
+     * Transient field — set by `ImportService` at the start of a bulk
+     * import so every object created during that import gets the same
+     * UUID stamped on its `create` audit row. Powers the
+     * `softDeleteByImportJobId` rollback contract: a critical failure
+     * (or explicit user request) hands the UUID back, the audit table
+     * is queried for `action = 'create' AND import_job_id = X`, and
+     * the resulting object UUIDs are soft-deleted as a unit.
+     *
+     * Not persisted to the object itself — the audit trail is the
+     * canonical record so per-magic-table migrations are avoided.
+     *
+     * @var string|null Transient import-job reference (UUID v4).
+     */
+    protected ?string $importJobId = null;
+
+    /**
      * Get the URN for this object.
      */
     public function getUrn(): ?string
@@ -556,6 +574,26 @@ class ObjectEntity extends Entity implements JsonSerializable
     {
         $this->processingActivityId = $processingActivityId;
     }//end setProcessingActivityId()
+
+    /**
+     * Get the transient import-job UUID that should be stamped on the
+     * next save's audit-trail `create` row. Null when the write is
+     * not part of a tagged bulk import.
+     */
+    public function getImportJobId(): ?string
+    {
+        return $this->importJobId;
+    }//end getImportJobId()
+
+    /**
+     * Set the transient import-job UUID. Not persisted to the object;
+     * read by `AuditTrailMapper::createAuditTrail()` at write time and
+     * stored on the audit row.
+     */
+    public function setImportJobId(?string $importJobId): void
+    {
+        $this->importJobId = $importJobId;
+    }//end setImportJobId()
 
     /**
      * Set the URN for this object (transient, not persisted).

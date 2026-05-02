@@ -23,6 +23,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service;
 
+use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
@@ -31,6 +32,7 @@ use OCP\IUserManager;
 use OCP\IGroupManager;
 use OCP\IUser;
 use OCP\BackgroundJob\IJobList;
+use Symfony\Component\Uid\Uuid;
 use PhpOffice\PhpSpreadsheet\Reader\Csv;
 use PhpOffice\PhpSpreadsheet\Reader\Xlsx;
 use DateTime;
@@ -163,7 +165,8 @@ class ImportService
         LoggerInterface $logger,
         IGroupManager $groupManager,
         IJobList $jobList,
-        \OCA\OpenRegister\Service\Translation\TranslationCsvCodec $translationCsvCodec
+        \OCA\OpenRegister\Service\Translation\TranslationCsvCodec $translationCsvCodec,
+        private readonly AuditTrailMapper $auditTrailMapper
     ) {
         $this->schemaMapper  = $schemaMapper;
         $this->objectService = $objectService;
@@ -175,6 +178,62 @@ class ImportService
         // Initialize cache arrays to prevent issues.
         $this->schemaPropertiesCache = [];
     }//end __construct()
+
+    /**
+     * Soft-delete every object whose `create` audit row carries the
+     * given import-job UUID. Implements the rollback contract added by
+     * the `data-import-export` change (decision 2026-05-02): on critical
+     * failure or explicit user request, the import-job UUID is handed
+     * back and every tagged object is soft-deleted as a unit.
+     *
+     * Out of scope (option A from the design — not shipped here):
+     * compensation pass for materialised relation rows. The objects are
+     * soft-deleted, so they remain recoverable via the standard restore
+     * path; relations on other objects pointing at the deleted ones
+     * stay live and surface as broken references on next read (the
+     * existing `referential-integrity` machinery already handles this).
+     *
+     * @param string $importJobId UUID v4 of the import job to roll back.
+     *
+     * @return array{importJobId: string, candidates: int, softDeleted: list<string>, errors: list<array{uuid: string, error: string}>}
+     */
+    public function softDeleteByImportJobId(string $importJobId): array
+    {
+        $auditRows = $this->auditTrailMapper->findByImportJobId(importJobId: $importJobId, action: 'create');
+        $report    = [
+            'importJobId' => $importJobId,
+            'candidates'  => count($auditRows),
+            'softDeleted' => [],
+            'errors'      => [],
+        ];
+
+        foreach ($auditRows as $row) {
+            $objectUuid = $row->getObjectUuid();
+            if ($objectUuid === null || $objectUuid === '') {
+                continue;
+            }
+
+            try {
+                $this->objectService->deleteObject(uuid: $objectUuid);
+                $report['softDeleted'][] = $objectUuid;
+            } catch (\Throwable $e) {
+                $report['errors'][] = [
+                    'uuid'  => $objectUuid,
+                    'error' => $e->getMessage(),
+                ];
+                $this->logger->warning(
+                    message: '[ImportService] Failed to soft-delete object during import rollback',
+                    context: [
+                        'importJobId' => $importJobId,
+                        'objectUuid'  => $objectUuid,
+                        'error'       => $e->getMessage(),
+                    ]
+                );
+            }
+        }//end foreach
+
+        return $report;
+    }//end softDeleteByImportJobId()
 
     /**
      * Check if the given user is in the admin group
@@ -285,15 +344,41 @@ class ImportService
         // Clear caches at the start of each import to prevent stale data issues.
         $this->clearCaches();
 
-        $reader = new Xlsx();
-        $reader->setReadDataOnly(true);
-        $spreadsheet = $reader->load($filePath);
+        // Generate a per-import UUID and stamp it on every audit row
+        // produced during this call. ImportService::softDeleteByImportJobId
+        // uses this UUID to roll the import back. Cleared in finally
+        // so the value never leaks across requests.
+        $importJobId = Uuid::v4()->toRfc4122();
+        $this->auditTrailMapper->setRequestImportJobId(importJobId: $importJobId);
 
-        // If we have a register but no schema, process each sheet as a different schema.
-        if ($register !== null && $schema === null) {
-            return $this->processMultiSchemaSpreadsheetAsync(
+        try {
+            $reader = new Xlsx();
+            $reader->setReadDataOnly(true);
+            $spreadsheet = $reader->load($filePath);
+
+            // If we have a register but no schema, process each sheet as a different schema.
+            if ($register !== null && $schema === null) {
+                $multi = $this->processMultiSchemaSpreadsheetAsync(
+                    spreadsheet: $spreadsheet,
+                    register: $register,
+                    validation: $validation,
+                    events: $events,
+                    _rbac: $_rbac,
+                    _multitenancy: $_multitenancy,
+                    publish: $publish,
+                    currentUser: $currentUser,
+                    enrich: $enrich
+                );
+                $multi['importJobId'] = $importJobId;
+                return $multi;
+            }
+
+            // Single schema processing - use batch processing for better performance.
+            $sheetTitle   = $spreadsheet->getActiveSheet()->getTitle();
+            $sheetSummary = $this->processSpreadsheetBatch(
                 spreadsheet: $spreadsheet,
                 register: $register,
+                schema: $schema,
                 validation: $validation,
                 events: $events,
                 _rbac: $_rbac,
@@ -302,38 +387,27 @@ class ImportService
                 currentUser: $currentUser,
                 enrich: $enrich
             );
-        }
 
-        // Single schema processing - use batch processing for better performance.
-        $sheetTitle   = $spreadsheet->getActiveSheet()->getTitle();
-        $sheetSummary = $this->processSpreadsheetBatch(
-            spreadsheet: $spreadsheet,
-            register: $register,
-            schema: $schema,
-            validation: $validation,
-            events: $events,
-            _rbac: $_rbac,
-            _multitenancy: $_multitenancy,
-            publish: $publish,
-            currentUser: $currentUser,
-            enrich: $enrich
-        );
+            // Add schema information to the summary (consistent with multi-sheet Excel import).
+            if ($schema !== null) {
+                $sheetSummary['schema'] = [
+                    'id'    => $schema->getId(),
+                    'title' => $schema->getTitle(),
+                    'slug'  => $schema->getSlug(),
+                ];
+            }
 
-        // Add schema information to the summary (consistent with multi-sheet Excel import).
-        if ($schema !== null) {
-            $sheetSummary['schema'] = [
-                'id'    => $schema->getId(),
-                'title' => $schema->getTitle(),
-                'slug'  => $schema->getSlug(),
+            // Schedule SOLR warmup job after successful Excel import.
+            $finalResult = [
+                $sheetTitle   => $sheetSummary,
+                'importJobId' => $importJobId,
             ];
-        }
+            $this->scheduleSmartSolrWarmup(importSummary: $finalResult);
 
-        // Schedule SOLR warmup job after successful Excel import.
-        $finalResult = [$sheetTitle => $sheetSummary];
-        $this->scheduleSmartSolrWarmup(importSummary: $finalResult);
-
-        // Return in sheet-based format for consistency.
-        return $finalResult;
+            return $finalResult;
+        } finally {
+            $this->auditTrailMapper->setRequestImportJobId(importJobId: null);
+        }//end try
     }//end importFromExcel()
 
     /**
@@ -376,41 +450,51 @@ class ImportService
             throw new InvalidArgumentException('CSV import requires a specific schema');
         }
 
-        // Use PhpSpreadsheet CSV reader (works perfectly for multiline fields).
-        $reader = new Csv();
-        $reader->setReadDataOnly(true);
-        $reader->setDelimiter(',');
-        $reader->setEnclosure('"');
-        $spreadsheet = $reader->load($filePath);
+        // Per-import UUID — see importFromExcel() for the rationale.
+        $importJobId = Uuid::v4()->toRfc4122();
+        $this->auditTrailMapper->setRequestImportJobId(importJobId: $importJobId);
 
-        // Get the sheet title for CSV (usually just 'Worksheet' or similar).
-        $sheetTitle   = $spreadsheet->getActiveSheet()->getTitle();
-        $sheetSummary = $this->processCsvSheet(
-            sheet: $spreadsheet->getActiveSheet(),
-            register: $register,
-            schema: $schema,
-            validation: $validation,
-            events: $events,
-            _rbac: $_rbac,
-            _multitenancy: $_multitenancy,
-            publish: $publish,
-            currentUser: $currentUser,
-            enrich: $enrich
-        );
+        try {
+            // Use PhpSpreadsheet CSV reader (works perfectly for multiline fields).
+            $reader = new Csv();
+            $reader->setReadDataOnly(true);
+            $reader->setDelimiter(',');
+            $reader->setEnclosure('"');
+            $spreadsheet = $reader->load($filePath);
 
-        // Add schema information to the summary (consistent with Excel import).
-        $sheetSummary['schema'] = [
-            'id'    => $schema->getId(),
-            'title' => $schema->getTitle(),
-            'slug'  => $schema->getSlug(),
-        ];
+            // Get the sheet title for CSV (usually just 'Worksheet' or similar).
+            $sheetTitle   = $spreadsheet->getActiveSheet()->getTitle();
+            $sheetSummary = $this->processCsvSheet(
+                sheet: $spreadsheet->getActiveSheet(),
+                register: $register,
+                schema: $schema,
+                validation: $validation,
+                events: $events,
+                _rbac: $_rbac,
+                _multitenancy: $_multitenancy,
+                publish: $publish,
+                currentUser: $currentUser,
+                enrich: $enrich
+            );
 
-        // Schedule SOLR warmup job after successful CSV import.
-        $finalResult = [$sheetTitle => $sheetSummary];
-        $this->scheduleSmartSolrWarmup(importSummary: $finalResult);
+            // Add schema information to the summary (consistent with Excel import).
+            $sheetSummary['schema'] = [
+                'id'    => $schema->getId(),
+                'title' => $schema->getTitle(),
+                'slug'  => $schema->getSlug(),
+            ];
 
-        // Return in sheet-based format for consistency.
-        return $finalResult;
+            // Schedule SOLR warmup job after successful CSV import.
+            $finalResult = [
+                $sheetTitle   => $sheetSummary,
+                'importJobId' => $importJobId,
+            ];
+            $this->scheduleSmartSolrWarmup(importSummary: $finalResult);
+
+            return $finalResult;
+        } finally {
+            $this->auditTrailMapper->setRequestImportJobId(importJobId: null);
+        }//end try
     }//end importFromCsv()
 
     /**

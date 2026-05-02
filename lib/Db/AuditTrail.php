@@ -276,6 +276,18 @@ class AuditTrail extends Entity implements JsonSerializable
     protected ?string $previousHash = null;
 
     /**
+     * Import-job tag attached to every `create` audit row generated
+     * during a bulk import. Powers the import-rollback contract: when
+     * a critical failure (or an explicit rollback request) hits, every
+     * object whose creation audit row carries this UUID can be
+     * soft-deleted as a unit. Null on rows produced by single-object
+     * writes outside of an import context.
+     *
+     * @var string|null UUID of the import job that produced this row.
+     */
+    protected ?string $importJobId = null;
+
+    /**
      * Constructor for the AuditTrail class
      *
      * Sets up field types for all properties
@@ -309,6 +321,7 @@ class AuditTrail extends Entity implements JsonSerializable
         $this->addType(fieldName: 'expires', type: 'datetime');
         $this->addType(fieldName: 'hash', type: 'string');
         $this->addType(fieldName: 'previousHash', type: 'string');
+        $this->addType(fieldName: 'importJobId', type: 'string');
     }//end __construct()
 
     /**

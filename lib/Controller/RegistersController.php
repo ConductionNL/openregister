@@ -1245,6 +1245,36 @@ class RegistersController extends Controller
     }//end import()
 
     /**
+     * Roll back an import by soft-deleting every object whose `create`
+     * audit row carries the given `importJobId`. Implements the
+     * rollback contract on the `data-import-export` change.
+     *
+     * @return JSONResponse Report with counts and per-object outcomes.
+     *
+     * @NoAdminRequired
+     */
+    public function rollbackImport(): JSONResponse
+    {
+        $importJobId = $this->request->getParam('importJobId');
+        if (is_string($importJobId) === false || $importJobId === '') {
+            return new JSONResponse(
+                data: ['error' => 'importJobId is required'],
+                statusCode: 422
+            );
+        }
+
+        try {
+            $report = $this->importService->softDeleteByImportJobId(importJobId: $importJobId);
+            return new JSONResponse(data: $report, statusCode: 200);
+        } catch (\Throwable $e) {
+            return new JSONResponse(
+                data: ['error' => $e->getMessage()],
+                statusCode: 500
+            );
+        }
+    }//end rollbackImport()
+
+    /**
      * Get statistics for a specific register
      *
      * @param int $id The register ID
@@ -1303,6 +1333,7 @@ class RegistersController extends Controller
      *     array<never, never>
      * >
      */
+
     public function stats(int $id): JSONResponse
     {
         try {
