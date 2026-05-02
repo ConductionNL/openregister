@@ -74,7 +74,7 @@ export class Agent implements TAgent {
 		this.isPrivate = agent.isPrivate || false
 		this.invitedUsers = agent.invitedUsers || []
 		this.tools = agent.tools || []
-		this.user = agent.user || null
+		this.user = agent.user || undefined
 		this.created = agent.created || ''
 		this.updated = agent.updated || ''
 	}

@@ -8,7 +8,7 @@ export type TAuditTrail = {
     registerUuid: string | null
     schemaUuid: string | null
     action: string
-    changed: object | array // JSON object or array for changes
+    changed: object | unknown[] // JSON object or array for changes
     user: string
     userName: string
     session: string
