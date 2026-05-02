@@ -112,7 +112,7 @@
   - Coverage: `FileLockHandlerTest::testAssertCanModifyByNonOwnerThrows` proves the assertion contract used by `updateFile`.
 - [x] Add `FilesController::lock()` and `FilesController::unlock()` endpoints
 - [x] Register routes: `POST .../files/{fileId}/lock` and `POST .../files/{fileId}/unlock`
-- [ ] Include lock metadata in file formatting output (formatFile)
+- [x] Include lock metadata in file formatting output (formatFile). **Shipped 2026-05-02:** `formatFile()` already includes the NC `ILockManager` lock state via `formatLock()` (gated on authenticated callers per existing design). On top of that, when an OR-side row exists in `openregister_files` AND the row has `locked_by` set, the handler now also emits an `orLock` envelope with `lockedBy`, `lockedAt` (ISO 8601), `lockExpires` (ISO 8601). Surfaced under a separate key from NC's `lock` so consumers can distinguish cache-backed vs DB-backed locks; both can coexist. Also gated on authentication.
 - [x] Generate audit trail entries for lock, unlock, and force-unlock
   - `FilesController::lock()` emits `file.locked` with the lock metadata as the data payload. `FilesController::unlock()` emits either `file.unlocked` or `file.force_unlocked` depending on the `force` flag, so admin force-unlocks are distinguishable from regular owner unlocks in the audit timeline.
 - [x] Dispatch `nl.openregister.object.file.locked` and `nl.openregister.object.file.unlocked` events

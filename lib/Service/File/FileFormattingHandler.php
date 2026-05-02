@@ -175,8 +175,29 @@ class FileFormattingHandler
 
                     if ($this->userSession->getUser() !== null) {
                         $metadata['downloadCount'] = $orFile->getDownloadCount();
-                    }
-                }
+
+                        // Surface the OR-side lock fields ALONGSIDE
+                        // the NC ILockManager state. They're separate
+                        // concerns: the cache-backed FileLockHandler
+                        // that powers ILockManager isn't the only path
+                        // — operators can also persist locks via
+                        // FileMapper::setLockForFile for cross-restart
+                        // durability. When both are set the consumer
+                        // sees both shapes; when neither is set the
+                        // keys are absent. Same auth-gating as
+                        // downloadCount + the NC lock envelope.
+                        $orLockedBy = $orFile->getLockedBy();
+                        if ($orLockedBy !== null) {
+                            $orLockedAt         = $orFile->getLockedAt();
+                            $orLockExpires      = $orFile->getLockExpires();
+                            $metadata['orLock'] = [
+                                'lockedBy'    => $orLockedBy,
+                                'lockedAt'    => $orLockedAt?->format('c'),
+                                'lockExpires' => $orLockExpires?->format('c'),
+                            ];
+                        }
+                    }//end if
+                }//end if
             } catch (\Throwable $e) {
                 $this->logger->warning(
                     message: '[FileFormattingHandler] OR-side metadata lookup failed; continuing without enrichment',
