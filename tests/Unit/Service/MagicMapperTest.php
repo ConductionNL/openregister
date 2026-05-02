@@ -225,10 +225,23 @@ class MagicMapperTest extends TestCase
         // — MagicMapper resolves it lazily from the container to construct
         // MagicBulkHandler, and the typed parameter rejects null.
         $dateTimeNormalizer = $this->createMock(DateTimeNormalizer::class);
-        $container          = $this->createMock(ContainerInterface::class);
+        $container           = $this->createMock(ContainerInterface::class);
+        $conditionMatcher    = $this->createMock(\OCA\OpenRegister\Service\ConditionMatcher::class);
+        $schemaTypeConverter = $this->createMock(\OCA\OpenRegister\Service\Object\SchemaTypeConverter::class);
         $container->method('get')->willReturnCallback(
-            function (string $id) use ($dateTimeNormalizer) {
-                return $id === DateTimeNormalizer::class ? $dateTimeNormalizer : null;
+            function (string $id) use ($dateTimeNormalizer, $conditionMatcher, $schemaTypeConverter) {
+                if ($id === DateTimeNormalizer::class
+                    || $id === \OCA\OpenRegister\Service\DateTimeNormalizer::class
+                ) {
+                    return $dateTimeNormalizer;
+                }
+                if ($id === \OCA\OpenRegister\Service\ConditionMatcher::class) {
+                    return $conditionMatcher;
+                }
+                if ($id === \OCA\OpenRegister\Service\Object\SchemaTypeConverter::class) {
+                    return $schemaTypeConverter;
+                }
+                return null;
             }
         );
 

@@ -74,7 +74,9 @@ class ImportServiceTest extends TestCase
             $this->objectService,
             $this->logger,
             $this->groupManager,
-            $this->jobList
+            $this->jobList,
+            $this->createMock(\OCA\OpenRegister\Service\Translation\TranslationCsvCodec::class),
+            $this->createMock(\OCA\OpenRegister\Db\AuditTrailMapper::class)
         );
     }
 

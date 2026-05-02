@@ -44,7 +44,7 @@ use RuntimeException;
  * Placeholders inside literal strings (e.g. "$now", "$currentUser") are
  * resolved via the shared PlaceholderResolver.
  */
-final class CalculationEvaluator
+class CalculationEvaluator
 {
 
     public function __construct(
