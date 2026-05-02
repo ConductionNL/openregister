@@ -159,7 +159,7 @@ class ScheduledWorkflowJob extends TimedJob
                     [
                         'hookId'     => 'scheduled-'.$schedule->getId(),
                         'eventType'  => 'scheduled',
-                        'objectUuid' => 'scheduled-'.$schedule->getUuid(),
+                        'objectUuid' => $schedule->getUuid(),
                         'schemaId'   => $schedule->getSchemaId(),
                         'registerId' => $schedule->getRegisterId(),
                         'engine'     => $engineType,
@@ -221,7 +221,7 @@ class ScheduledWorkflowJob extends TimedJob
                     [
                         'hookId'     => 'scheduled-'.$schedule->getId(),
                         'eventType'  => 'scheduled',
-                        'objectUuid' => 'scheduled-'.$schedule->getUuid(),
+                        'objectUuid' => $schedule->getUuid(),
                         'schemaId'   => $schedule->getSchemaId(),
                         'registerId' => $schedule->getRegisterId(),
                         'engine'     => $schedule->getEngine(),
