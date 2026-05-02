@@ -37,18 +37,31 @@ use Symfony\Component\Uid\Uuid;
  */
 class ReferenceExistenceValidationIntegrationTest extends TestCase
 {
+
     private SaveObject $saveHandler;
+
     private ObjectService $objectService;
+
     private RegisterMapper $registerMapper;
+
     private SchemaMapper $schemaMapper;
+
     private MagicMapper $objectMapper;
 
     private ?Register $testRegister = null;
+
     private ?Schema $targetSchema = null;
+
     private ?Schema $referrerSchema = null;
-    /** @var string[] */
+
+    /**
+     * @var string[]
+     */
     private array $createdObjectUuids = [];
-    /** @var string[] */
+
+    /**
+     * @var string[]
+     */
     private array $createdTables = [];
 
     protected function setUp(): void
@@ -61,7 +74,7 @@ class ReferenceExistenceValidationIntegrationTest extends TestCase
         $this->objectMapper   = \OC::$server->get(MagicMapper::class);
 
         $this->createTestFixture();
-    }
+    }//end setUp()
 
     protected function tearDown(): void
     {
@@ -78,6 +91,7 @@ class ReferenceExistenceValidationIntegrationTest extends TestCase
             if ($schema === null) {
                 continue;
             }
+
             try {
                 $qb = $db->getQueryBuilder();
                 $qb->delete('openregister_schemas')
@@ -87,6 +101,7 @@ class ReferenceExistenceValidationIntegrationTest extends TestCase
                 // best effort
             }
         }
+
         if ($this->testRegister !== null) {
             try {
                 $qb = $db->getQueryBuilder();
@@ -97,6 +112,7 @@ class ReferenceExistenceValidationIntegrationTest extends TestCase
                 // best effort
             }
         }
+
         foreach ($this->createdTables as $table) {
             try {
                 $db->prepare("DROP TABLE IF EXISTS \"$table\"")->execute();
@@ -106,7 +122,7 @@ class ReferenceExistenceValidationIntegrationTest extends TestCase
         }
 
         parent::tearDown();
-    }
+    }//end tearDown()
 
     public function testValidUuidReferencePassesValidation(): void
     {
@@ -118,7 +134,7 @@ class ReferenceExistenceValidationIntegrationTest extends TestCase
         $referrer = $this->saveReferrer(['title' => 'Referrer', 'targetUuid' => $target->getUuid()]);
 
         $this->assertSame($target->getUuid(), ($referrer->getObject() ?? [])['targetUuid'] ?? null);
-    }
+    }//end testValidUuidReferencePassesValidation()
 
     public function testNonExistentUuidReferenceIsRejected(): void
     {
@@ -127,11 +143,13 @@ class ReferenceExistenceValidationIntegrationTest extends TestCase
         // this would have silently saved the dangling reference.
         $this->expectException(ValidationException::class);
 
-        $this->saveReferrer([
-            'title'      => 'Referrer with bad UUID',
-            'targetUuid' => 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee',
-        ]);
-    }
+        $this->saveReferrer(
+                [
+                    'title'      => 'Referrer with bad UUID',
+                    'targetUuid' => 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee',
+                ]
+                );
+    }//end testNonExistentUuidReferenceIsRejected()
 
     public function testRejectionExceptionCarriesStructuredFields(): void
     {
@@ -141,10 +159,12 @@ class ReferenceExistenceValidationIntegrationTest extends TestCase
         // Closes the spec's "structured diagnostic information" task.
         $badUuid = 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee';
         try {
-            $this->saveReferrer([
-                'title'      => 'Referrer with bad UUID for structured assert',
-                'targetUuid' => $badUuid,
-            ]);
+            $this->saveReferrer(
+                    [
+                        'title'      => 'Referrer with bad UUID for structured assert',
+                        'targetUuid' => $badUuid,
+                    ]
+                    );
             $this->fail('expected ReferenceValidationException to be thrown for missing target');
         } catch (ReferenceValidationException $e) {
             $this->assertSame('targetUuid', $e->getPropertyName(), 'propertyName MUST identify the broken field');
@@ -163,8 +183,8 @@ class ReferenceExistenceValidationIntegrationTest extends TestCase
             // Backwards compatibility: subclass MUST still match `instanceof
             // ValidationException` so existing 422 routing keeps working.
             $this->assertInstanceOf(ValidationException::class, $e);
-        }
-    }
+        }//end try
+    }//end testRejectionExceptionCarriesStructuredFields()
 
     public function testNullReferenceIsAccepted(): void
     {
@@ -173,32 +193,111 @@ class ReferenceExistenceValidationIntegrationTest extends TestCase
         // path may default-fill the field with null/empty — both are
         // acceptable; what matters is that no ValidationException fires
         // and the save completes.
-        $referrer = $this->saveReferrer([
-            'title' => 'Referrer with no target',
+        $referrer = $this->saveReferrer(
+                [
+                    'title' => 'Referrer with no target',
             // no targetUuid key at all
-        ]);
+                ]
+                );
 
         $data = $referrer->getObject() ?? [];
         if (array_key_exists('targetUuid', $data) === true) {
             $this->assertEmpty($data['targetUuid'], 'absent reference must not be auto-populated');
         }
+
         $this->assertNotNull($referrer->getUuid());
-    }
+    }//end testNullReferenceIsAccepted()
 
     public function testEmptyStringReferenceIsAccepted(): void
     {
         // Defence-in-depth: explicit empty string for an optional ref
         // MUST NOT crash with a "uuid not found" error — the save path
         // treats empty strings as "no value".
-        $referrer = $this->saveReferrer([
-            'title'      => 'Referrer with empty target',
-            'targetUuid' => '',
-        ]);
+        $referrer = $this->saveReferrer(
+                [
+                    'title'      => 'Referrer with empty target',
+                    'targetUuid' => '',
+                ]
+                );
 
         // The empty string may or may not appear in stored data; what
         // matters is that the save did not fail with a validation error.
         $this->assertNotNull($referrer->getUuid());
-    }
+    }//end testEmptyStringReferenceIsAccepted()
+
+    public function testHttpsUrlReferencePassesSyntaxValidation(): void
+    {
+        // External URLs (https) MUST pass through with syntax-only
+        // validation. We do not fetch the URL — components are designed
+        // to operate individually and component A may not have read
+        // access to component B for security or tenancy reasons.
+        // Decision recorded in `reference-existence-validation`
+        // tasks.md (2026-05-02).
+        $referrer = $this->saveReferrer(
+            [
+                'title'      => 'Referrer with external URL',
+                'targetUuid' => 'https://other-app.example.com/api/objects/abc-123',
+            ]
+        );
+
+        $stored = ($referrer->getObject() ?? [])['targetUuid'] ?? null;
+        $this->assertSame(
+            'https://other-app.example.com/api/objects/abc-123',
+            $stored,
+            'valid https URL MUST pass through unchanged'
+        );
+    }//end testHttpsUrlReferencePassesSyntaxValidation()
+
+    public function testHttpUrlReferencePassesSyntaxValidation(): void
+    {
+        // http (not just https) MUST be accepted — many internal
+        // service-to-service deployments run cleartext on the LAN
+        // behind a reverse proxy.
+        $referrer = $this->saveReferrer(
+            [
+                'title'      => 'Referrer with http URL',
+                'targetUuid' => 'http://internal-svc.example.local/objects/123',
+            ]
+        );
+
+        $this->assertNotNull($referrer->getUuid());
+    }//end testHttpUrlReferencePassesSyntaxValidation()
+
+    public function testMalformedUrlReferenceIsRejected(): void
+    {
+        // A bare scheme prefix without a host MUST be rejected at
+        // syntax-validation time. This is the canonical "scheme is
+        // http/https but host MUST parse" rule.
+        $this->expectException(ReferenceValidationException::class);
+        $this->expectExceptionMessageMatches('/External URL reference.*malformed/');
+
+        $this->saveReferrer(
+            [
+                'title'      => 'Referrer with broken URL',
+                'targetUuid' => 'http://',
+            ]
+        );
+    }//end testMalformedUrlReferenceIsRejected()
+
+    public function testNonHttpUrlSchemeFallsThroughToUuidPath(): void
+    {
+        // A non-http scheme like `ftp://` is NOT detected as a URL
+        // reference and falls through to the UUID-existence path,
+        // which fails because the value is not a real UUID. The user-
+        // visible failure is still a ReferenceValidationException, so
+        // the overall contract (an unresolvable reference rejects the
+        // save) holds. We assert this fallthrough so a future loosener
+        // of `looksLikeHttpUrl` doesn't accidentally accept arbitrary
+        // schemes.
+        $this->expectException(ReferenceValidationException::class);
+
+        $this->saveReferrer(
+            [
+                'title'      => 'Referrer with ftp URL',
+                'targetUuid' => 'ftp://example.com/file.txt',
+            ]
+        );
+    }//end testNonHttpUrlSchemeFallsThroughToUuidPath()
 
     public function testUpdateWithUnchangedReferenceSkipsValidation(): void
     {
@@ -229,7 +328,7 @@ class ReferenceExistenceValidationIntegrationTest extends TestCase
         );
 
         $this->assertSame('V2 (updated)', ($updated->getObject() ?? [])['title']);
-    }
+    }//end testUpdateWithUnchangedReferenceSkipsValidation()
 
     private function saveTarget(array $data): ObjectEntity
     {
@@ -244,7 +343,7 @@ class ReferenceExistenceValidationIntegrationTest extends TestCase
         );
         $this->createdObjectUuids[] = $object->getUuid();
         return $object;
-    }
+    }//end saveTarget()
 
     private function saveReferrer(array $data): ObjectEntity
     {
@@ -259,46 +358,50 @@ class ReferenceExistenceValidationIntegrationTest extends TestCase
         );
         $this->createdObjectUuids[] = $object->getUuid();
         return $object;
-    }
+    }//end saveReferrer()
 
     private function createTestFixture(): void
     {
         $register = new Register();
-        $register->setTitle('phpunit-refexist-' . uniqid());
+        $register->setTitle('phpunit-refexist-'.uniqid());
         $register->setDescription('Reference existence validation tests');
         $register->setUuid(Uuid::v4()->toRfc4122());
-        $register->setSlug('phpunit-refexist-' . uniqid());
+        $register->setSlug('phpunit-refexist-'.uniqid());
         $register->setSchemas([]);
         $this->testRegister = $this->registerMapper->insert($register);
 
         // Target schema — the schema that referrers point AT.
         $target = new Schema();
-        $target->setTitle('phpunit-refexist-target-' . uniqid());
+        $target->setTitle('phpunit-refexist-target-'.uniqid());
         $target->setDescription('Target of reference validation');
         $target->setUuid(Uuid::v4()->toRfc4122());
-        $target->setSlug('phpunit-refexist-target-' . uniqid());
-        $target->setProperties([
-            'title' => ['type' => 'string', 'title' => 'Title'],
-        ]);
+        $target->setSlug('phpunit-refexist-target-'.uniqid());
+        $target->setProperties(
+                [
+                    'title' => ['type' => 'string', 'title' => 'Title'],
+                ]
+                );
         $this->targetSchema = $this->schemaMapper->insert($target);
 
         // Referrer schema — has a property pointing at target with
         // validateReference enabled. The save pipeline will check that
         // the UUID stored in `targetUuid` resolves to a real target object.
         $referrer = new Schema();
-        $referrer->setTitle('phpunit-refexist-referrer-' . uniqid());
+        $referrer->setTitle('phpunit-refexist-referrer-'.uniqid());
         $referrer->setDescription('Referrer schema with validateReference: true');
         $referrer->setUuid(Uuid::v4()->toRfc4122());
-        $referrer->setSlug('phpunit-refexist-referrer-' . uniqid());
-        $referrer->setProperties([
-            'title'      => ['type' => 'string', 'title' => 'Title'],
-            'targetUuid' => [
-                'type'              => 'string',
-                'title'             => 'Target reference',
-                '$ref'              => '#/components/schemas/' . $target->getSlug(),
-                'validateReference' => true,
-            ],
-        ]);
+        $referrer->setSlug('phpunit-refexist-referrer-'.uniqid());
+        $referrer->setProperties(
+                [
+                    'title'      => ['type' => 'string', 'title' => 'Title'],
+                    'targetUuid' => [
+                        'type'              => 'string',
+                        'title'             => 'Target reference',
+                        '$ref'              => '#/components/schemas/'.$target->getSlug(),
+                        'validateReference' => true,
+                    ],
+                ]
+                );
         $this->referrerSchema = $this->schemaMapper->insert($referrer);
 
         $this->testRegister->setSchemas([$this->targetSchema->getId(), $this->referrerSchema->getId()]);
@@ -306,7 +409,7 @@ class ReferenceExistenceValidationIntegrationTest extends TestCase
 
         $this->objectMapper->ensureTableForRegisterSchema($this->testRegister, $this->targetSchema);
         $this->objectMapper->ensureTableForRegisterSchema($this->testRegister, $this->referrerSchema);
-        $this->createdTables[] = 'oc_' . $this->objectMapper->getTableNameForRegisterSchema($this->testRegister, $this->targetSchema);
-        $this->createdTables[] = 'oc_' . $this->objectMapper->getTableNameForRegisterSchema($this->testRegister, $this->referrerSchema);
-    }
-}
+        $this->createdTables[] = 'oc_'.$this->objectMapper->getTableNameForRegisterSchema($this->testRegister, $this->targetSchema);
+        $this->createdTables[] = 'oc_'.$this->objectMapper->getTableNameForRegisterSchema($this->testRegister, $this->referrerSchema);
+    }//end createTestFixture()
+}//end class
