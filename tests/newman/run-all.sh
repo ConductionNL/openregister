@@ -33,10 +33,16 @@ BLUE='\033[0;34m'
 YELLOW='\033[1;33m'
 NC='\033[0m'
 
-BASE_URL=${BASE_URL:-"http://localhost"}
+BASE_URL=${BASE_URL:-"http://localhost:8080"}
 ADMIN_USER=${ADMIN_USER:-"admin"}
 ADMIN_PASSWORD=${ADMIN_PASSWORD:-"admin"}
-CONTAINER_NAME=${CONTAINER_NAME:-"master-nextcloud-1"}
+##
+# Default to the dev container name shipped with the OR docker-dev
+# bundle (`nextcloud`). The historical default (master-nextcloud-1) is
+# from a different upstream stack and silently fails network discovery
+# on this repo.
+##
+CONTAINER_NAME=${CONTAINER_NAME:-"nextcloud"}
 FAIL_FAST=${FAIL_FAST:-0}
 ##
 # Newman runner mode:
@@ -69,7 +75,10 @@ NEWMAN_BASE_URL="$BASE_URL"
 if [ "$NEWMAN_RUNNER" = "sidecar" ]; then
     case "$BASE_URL" in
         http://localhost*|http://127.0.0.1*)
-            NEWMAN_BASE_URL=$(echo "$BASE_URL" | sed -E "s#http://(localhost|127\.0\.0\.1)#http://${CONTAINER_NAME}#")
+            # Inside the docker network, the NC container exposes
+            # apache on port 80 — the host's :8080 mapping is not
+            # reachable. Strip any host port the user passed in.
+            NEWMAN_BASE_URL=$(echo "$BASE_URL" | sed -E "s#http://(localhost|127\.0\.0\.1)(:[0-9]+)?#http://${CONTAINER_NAME}#")
             ;;
     esac
 fi
@@ -80,6 +89,11 @@ REPO_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
 ##
 # Domain → collection-file map (run order matters: bootstrap, then crud,
 # then everything that depends on objects existing).
+#
+# `agent-cms` and `federation` require external infrastructure (Ollama
+# LLM, two-instance federation pair) that the default dev container
+# does not provide; they are excluded from the default order and only
+# run when explicitly requested via COLLECTIONS=...
 ##
 DOMAIN_ORDER=(
     "crud"
@@ -89,9 +103,7 @@ DOMAIN_ORDER=(
     "auth-matrix"
     "error-matrix"
     "files"
-    "agent-cms"
     "referential-integrity"
-    "federation"
 )
 
 declare -A DOMAIN_COLLECTIONS=(
@@ -142,6 +154,10 @@ for domain in "${DOMAINS_TO_RUN[@]}"; do
     echo -e "${BLUE}━━━ Running domain: ${domain} ━━━${NC}"
 
     rc=0
+    # Collections in this repo split between two URL-variable
+    # conventions: legacy ones use `{{base_url}}` (snake_case), newer
+    # ones use `{{baseUrl}}` (camelCase). Set both so every collection
+    # resolves the URL regardless of which convention it follows.
     case "$NEWMAN_RUNNER" in
         sidecar)
             # Run newman from the upstream postman image. Mount the
@@ -151,6 +167,7 @@ for domain in "${DOMAINS_TO_RUN[@]}"; do
                 "$NEWMAN_IMAGE" \
                 run /dev/stdin \
                 --env-var baseUrl="$NEWMAN_BASE_URL" \
+                --env-var base_url="$NEWMAN_BASE_URL" \
                 --env-var username="$ADMIN_USER" \
                 --env-var password="$ADMIN_PASSWORD" \
                 --reporters cli \
@@ -163,6 +180,7 @@ for domain in "${DOMAINS_TO_RUN[@]}"; do
                 cat > collection.json && \
                 npx --yes newman run collection.json \
                     --env-var baseUrl=$BASE_URL \
+                    --env-var base_url=$BASE_URL \
                     --env-var username=$ADMIN_USER \
                     --env-var password=$ADMIN_PASSWORD \
                     --reporters cli \
@@ -172,6 +190,7 @@ for domain in "${DOMAINS_TO_RUN[@]}"; do
         host)
             newman run "$collection" \
                 --env-var baseUrl="$BASE_URL" \
+                --env-var base_url="$BASE_URL" \
                 --env-var username="$ADMIN_USER" \
                 --env-var password="$ADMIN_PASSWORD" \
                 --reporters cli \
