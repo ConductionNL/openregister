@@ -63,6 +63,4 @@
 
 ## 9. PR and archive
 
-- [ ] 9.1 Open the PR against `development` (per Conduction default).
-- [ ] 9.2 Run `/opsx:verify` to check this change against its artifacts.
-- [ ] 9.3 After merge: run `/opsx:archive fix-magic-table-type-coercion` to move the change into `openspec/changes/archive/` and merge `schema-driven-read-coercion` requirements into the long-lived spec.
+> **Note (2026-05-02):** PR creation, review, merge, and archive belong to the Hydra coordination flow, not opsx. Removed from this change's task list — opsx changes should not enumerate process steps that Hydra owns.
