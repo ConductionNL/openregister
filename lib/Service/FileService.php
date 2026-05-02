@@ -1878,6 +1878,14 @@ class FileService
      */
     public function copyFile(ObjectEntity $sourceObject, int $fileId, ObjectEntity $targetObject): File
     {
+        // Target validation: target object MUST have a UUID (closes
+        // file-actions item 45 — cross-register/schema copy with target
+        // validation). Without a UUID, the target's folder cannot be
+        // resolved and the copy would land in the wrong place.
+        if ($targetObject->getUuid() === null || $targetObject->getUuid() === '') {
+            throw new Exception("Target object has no UUID; cannot resolve target folder for file copy");
+        }
+
         // Reject when the source is locked by someone else. Copying through
         // a lock would let a second user observe a half-written state.
         $this->fileLockHandler->assertCanModify($fileId);
@@ -1890,22 +1898,76 @@ class FileService
         $content  = $sourceFile->getContent();
         $fileName = $sourceFile->getName();
 
+        // Resolve the target folder up front so we can detect name
+        // conflicts before delegating to CreateFileHandler.
+        $targetFolder = $this->folderManagementHandler->getObjectFolder(object: $targetObject);
+
+        // Name-conflict resolution (closes file-actions item 44):
+        // when a node with the same name already exists in the target
+        // folder, append a numeric suffix `(1)`, `(2)`, … before the
+        // file extension until we find a free slot. Caps at 999 to
+        // avoid runaway loops on pathological inputs.
+        $resolvedName = $this->resolveCopyTargetName(
+            folder: $targetFolder,
+            desiredName: $fileName
+        );
+
         // Use CreateFileHandler to create the file in target object folder.
         $newFile = $this->createFileHandler->createFile(
             objectEntity: $targetObject,
-            fileName: $fileName,
+            fileName: $resolvedName,
             content: $content
         );
 
         $sourceUuid = $sourceObject->getUuid();
         $targetUuid = $targetObject->getUuid();
         $this->logger->info(
-            message: "[FileService] Copied file {$fileId} from object {$sourceUuid} to {$targetUuid}",
+            message: "[FileService] Copied file {$fileId} from object {$sourceUuid} to {$targetUuid} as {$resolvedName}",
             context: ["file" => __FILE__, "line" => __LINE__]
         );
 
         return $newFile;
     }//end copyFile()
+
+    /**
+     * Resolve a non-conflicting file name within a target folder.
+     *
+     * If `$desiredName` is free, returns it unchanged. Otherwise
+     * appends `(1)`, `(2)`, … before the extension until a free name
+     * is found. Caps at 999 attempts to avoid runaway loops.
+     *
+     * @param \OCP\Files\Folder $folder      The target folder to check.
+     * @param string            $desiredName The desired file name.
+     *
+     * @return string The resolved (possibly suffixed) file name.
+     *
+     * @throws Exception When 999 conflicts have been hit (pathological).
+     */
+    private function resolveCopyTargetName(\OCP\Files\Folder $folder, string $desiredName): string
+    {
+        if ($folder->nodeExists($desiredName) === false) {
+            return $desiredName;
+        }
+
+        $dotPos = strrpos($desiredName, '.');
+        if ($dotPos === false || $dotPos === 0) {
+            // No extension or hidden file (".env"); append suffix to whole name.
+            $stem = $desiredName;
+            $ext  = '';
+        } else {
+            $stem = substr($desiredName, 0, $dotPos);
+            $ext  = substr($desiredName, $dotPos);
+        }
+
+        for ($i = 1; $i <= 999; $i++) {
+            $candidate = $stem.' ('.$i.')'.$ext;
+            if ($folder->nodeExists($candidate) === false) {
+                return $candidate;
+            }
+        }
+
+        throw new Exception("Could not resolve a non-conflicting copy name for '{$desiredName}' after 999 attempts");
+    }//end resolveCopyTargetName()
 
     /**
      * Move a file to another object (copy + delete source).
