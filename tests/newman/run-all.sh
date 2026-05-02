@@ -38,6 +38,41 @@ ADMIN_USER=${ADMIN_USER:-"admin"}
 ADMIN_PASSWORD=${ADMIN_PASSWORD:-"admin"}
 CONTAINER_NAME=${CONTAINER_NAME:-"master-nextcloud-1"}
 FAIL_FAST=${FAIL_FAST:-0}
+##
+# Newman runner mode:
+#   sidecar (default) — pull the upstream postman/newman:alpine image
+#                       and run via `docker run` against the dev network.
+#                       No Node needed in the NC container.
+#   exec               — run via `docker exec $CONTAINER_NAME` using
+#                       npx (assumes the NC container ships Node — the
+#                       upstream nextcloud-dev image does NOT).
+#   host               — run `newman` from the host PATH (devs who
+#                       installed it via npm install -g newman).
+##
+NEWMAN_RUNNER=${NEWMAN_RUNNER:-"sidecar"}
+NEWMAN_IMAGE=${NEWMAN_IMAGE:-"postman/newman:alpine"}
+##
+# When NEWMAN_RUNNER=sidecar, the sidecar container needs to reach
+# the OR API. Default to the docker network the NC container is on.
+##
+NEWMAN_NETWORK=${NEWMAN_NETWORK:-""}
+if [ -z "$NEWMAN_NETWORK" ] && command -v docker >/dev/null 2>&1; then
+    NEWMAN_NETWORK=$(docker inspect "$CONTAINER_NAME" \
+        --format '{{range $k, $v := .NetworkSettings.Networks}}{{$k}}{{end}}' 2>/dev/null | head -1)
+fi
+##
+# When NEWMAN_RUNNER=sidecar and the test sidecar runs on the same
+# docker network as the NC container, the sidecar's `localhost` is
+# itself, not NC. Rewrite localhost in BASE_URL to the container name.
+##
+NEWMAN_BASE_URL="$BASE_URL"
+if [ "$NEWMAN_RUNNER" = "sidecar" ]; then
+    case "$BASE_URL" in
+        http://localhost*|http://127.0.0.1*)
+            NEWMAN_BASE_URL=$(echo "$BASE_URL" | sed -E "s#http://(localhost|127\.0\.0\.1)#http://${CONTAINER_NAME}#")
+            ;;
+    esac
+fi
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
@@ -107,16 +142,46 @@ for domain in "${DOMAINS_TO_RUN[@]}"; do
     echo -e "${BLUE}━━━ Running domain: ${domain} ━━━${NC}"
 
     rc=0
-    docker exec -i "$CONTAINER_NAME" sh -c "
-        cd /tmp && \
-        cat > collection.json && \
-        npx --yes newman run collection.json \
-            --env-var baseUrl=$BASE_URL \
-            --env-var username=$ADMIN_USER \
-            --env-var password=$ADMIN_PASSWORD \
-            --reporters cli \
-            --color on
-    " < "$collection" || rc=$?
+    case "$NEWMAN_RUNNER" in
+        sidecar)
+            # Run newman from the upstream postman image. Mount the
+            # collection in via a stdin pipe + temp path under /etc.
+            docker run --rm -i \
+                ${NEWMAN_NETWORK:+--network "$NEWMAN_NETWORK"} \
+                "$NEWMAN_IMAGE" \
+                run /dev/stdin \
+                --env-var baseUrl="$NEWMAN_BASE_URL" \
+                --env-var username="$ADMIN_USER" \
+                --env-var password="$ADMIN_PASSWORD" \
+                --reporters cli \
+                --color on \
+                < "$collection" || rc=$?
+            ;;
+        exec)
+            docker exec -i "$CONTAINER_NAME" sh -c "
+                cd /tmp && \
+                cat > collection.json && \
+                npx --yes newman run collection.json \
+                    --env-var baseUrl=$BASE_URL \
+                    --env-var username=$ADMIN_USER \
+                    --env-var password=$ADMIN_PASSWORD \
+                    --reporters cli \
+                    --color on
+            " < "$collection" || rc=$?
+            ;;
+        host)
+            newman run "$collection" \
+                --env-var baseUrl="$BASE_URL" \
+                --env-var username="$ADMIN_USER" \
+                --env-var password="$ADMIN_PASSWORD" \
+                --reporters cli \
+                --color on || rc=$?
+            ;;
+        *)
+            echo -e "${RED}✗ unknown NEWMAN_RUNNER: $NEWMAN_RUNNER (use: sidecar | exec | host)${NC}"
+            exit 2
+            ;;
+    esac
 
     if [ "$rc" -eq 0 ]; then
         echo -e "${GREEN}✓ $domain passed${NC}"
