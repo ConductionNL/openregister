@@ -816,6 +816,25 @@ class FileMapper extends QBMapper
     }//end depublishFile()
 
     /**
+     * Check whether a file has at least one active public share (share_type=3).
+     *
+     * Used by anonymous-accessible endpoints (e.g. preview, download)
+     * to gate access — only published files are exposed to unauthenticated
+     * callers.
+     *
+     * @param int $fileId The file ID to check.
+     *
+     * @return bool True when a public share exists, false otherwise.
+     *
+     * @phpstan-param  int $fileId
+     * @phpstan-return bool
+     */
+    public function isFilePublished(int $fileId): bool
+    {
+        return $this->getPublicShare(fileId: $fileId) !== null;
+    }//end isFilePublished()
+
+    /**
      * Get an existing public share for a file.
      *
      * @param int $fileId The file ID

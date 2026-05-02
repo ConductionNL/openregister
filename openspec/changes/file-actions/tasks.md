@@ -146,7 +146,7 @@
 - [x] Add cache headers (Cache-Control: max-age=3600)
 - [x] Add `FilesController::preview()` endpoint returning StreamResponse
 - [x] Register route: `GET /api/objects/{register}/{schema}/{id}/files/{fileId}/preview`
-- [ ] Support public preview for published files
+- [x] Support public preview for published files. **Shipped 2026-05-02:** new `FileMapper::isFilePublished(int $fileId): bool` checks for an active `share_type=3` (public link) row. `FilesController::preview()` now gates anonymous callers on that — when `IUserSession::getUser() === null`, the controller returns 403 unless `isFilePublished` is true. Authenticated callers bypass the gate entirely (preserves existing object-level RBAC). Verified by 3 new tests in `FilesControllerFileActionsTest`: `testPreviewAnonymousOnUnpublishedFileReturns403`, `testPreviewAnonymousOnPublishedFileFallsThrough`, `testPreviewAuthenticatedBypassesPublishedGate`. The `IUserSession` constructor dep is optional + null-safe so legacy fixtures continue to work.
 - [x] Write unit test for preview generation
 - [x] Write unit test for unsupported preview type (404)
 

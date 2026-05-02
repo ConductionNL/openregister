@@ -41,6 +41,7 @@ use OCA\OpenRegister\Event\FileVersionRestoredEvent;
 use OCP\EventDispatcher\IEventDispatcher;
 use OCP\IRequest;
 use OCP\IUserManager;
+use OCP\IUserSession;
 
 /**
  * FilesController handles file operations for objects in registers
@@ -100,8 +101,9 @@ class FilesController extends Controller
      * @param IRootFolder                                          $rootFolder       Root folder for file access
      * @param IUserManager                                         $userManager      User manager for user lookups
      * @param IEventDispatcher                                     $eventDispatcher  Event dispatcher for file events
-     * @param \OCA\OpenRegister\Db\FileMapper|null                 $fileMapper       Optional OR-side metadata mapper for download-count increments. Null-safe.
-     * @param \OCA\OpenRegister\Service\File\FileAuditHandler|null $fileAuditHandler Optional audit-trail writer for download events. Null-safe.
+     * @param \OCA\OpenRegister\Db\FileMapper|null                 $fileMapper       OR-side metadata mapper for download counts. Null-safe.
+     * @param \OCA\OpenRegister\Service\File\FileAuditHandler|null $fileAuditHandler Audit-trail writer for download events. Null-safe.
+     * @param IUserSession|null                                    $userSession      Session for anonymous-vs-authenticated gating.
      *
      * @return void
      */
@@ -114,7 +116,8 @@ class FilesController extends Controller
         private readonly IUserManager $userManager,
         private readonly IEventDispatcher $eventDispatcher,
         private readonly ?\OCA\OpenRegister\Db\FileMapper $fileMapper=null,
-        private readonly ?\OCA\OpenRegister\Service\File\FileAuditHandler $fileAuditHandler=null
+        private readonly ?\OCA\OpenRegister\Service\File\FileAuditHandler $fileAuditHandler=null,
+        private readonly ?IUserSession $userSession=null
     ) {
         // Call parent constructor to initialize base controller.
         parent::__construct(appName: $appName, request: $request);
@@ -134,7 +137,7 @@ class FilesController extends Controller
      * integration into FilesController::show() and downloadById().
      *
      * @param int                                    $fileId The Nextcloud filecache fileid being downloaded.
-     * @param \OCA\OpenRegister\Db\ObjectEntity|null $object The parent object whose folder hosts the file (null for free-floating downloads via downloadById).
+     * @param \OCA\OpenRegister\Db\ObjectEntity|null $object The parent object whose folder hosts the file (null for downloadById).
      *
      * @return void
      */
@@ -1663,6 +1666,19 @@ class FilesController extends Controller
         $this->objectService->setRegister($register);
 
         try {
+            // Gate anonymous callers on the file being publicly published.
+            // Authenticated callers fall through to the existing object-level
+            // RBAC path; anonymous callers MUST NOT be able to preview files
+            // that haven't been explicitly published with a public share link.
+            if ($this->userSession !== null && $this->userSession->getUser() === null) {
+                if ($this->fileMapper === null || $this->fileMapper->isFilePublished($fileId) === false) {
+                    return new JSONResponse(
+                        data: ["error" => "Preview not available for unpublished files"],
+                        statusCode: 403
+                    );
+                }
+            }
+
             $this->objectService->setObject($id);
             $object = $this->objectService->getObject();
             if ($object === null) {
