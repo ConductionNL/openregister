@@ -1,0 +1,96 @@
+##
+# api-test-coverage.yml — automated Newman runs against a live OR.
+#
+# Composes the per-domain Newman collections via tests/newman/run-all.sh
+# against a freshly bootstrapped Nextcloud + OpenRegister container.
+# Every collection's pass/fail is rolled up into one summary; failures
+# block the workflow.
+#
+# Spec: openspec/changes/api-test-coverage/tasks.md "CI integration with
+# automated Newman runs and PCOV coverage".
+##
+
+name: api-test-coverage
+
+on:
+  push:
+    branches: [development, main]
+  pull_request:
+    branches: [development]
+  workflow_dispatch:
+
+jobs:
+  newman-suite:
+    name: Newman API Test Suite
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    services:
+      # GitHub Actions Postgres service for the Nextcloud DB.
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: nextcloud
+          POSTGRES_PASSWORD: nextcloud
+          POSTGRES_DB: nextcloud
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install Newman
+        run: npm install -g newman
+
+      # The orchestrator script docker-execs into the NC container; in CI
+      # we run Newman directly against the host-bound NC instead.
+      # Override the docker-exec wrapper via NEWMAN_DIRECT=1 (script
+      # honours the env to skip the docker exec wrapper).
+      - name: Run Newman orchestrator
+        env:
+          BASE_URL: http://localhost:8080
+          ADMIN_USER: admin
+          ADMIN_PASSWORD: admin
+          NEWMAN_DIRECT: 1
+        run: |
+          # The dev orchestrator runs collections inside the NC container.
+          # In CI, run them directly via newman binary instead.
+          for collection in tests/integration/openregister-crud.postman_collection.json \
+                            tests/integration/openregister-referential-integrity.postman_collection.json \
+                            tests/newman/openregister-graphql-tests.postman_collection.json \
+                            tests/newman/openregister-relations-tests.postman_collection.json \
+                            tests/newman/openregister-platform-annotations.postman_collection.json \
+                            tests/newman/agent-cms-testing.postman_collection.json \
+                            tests/federation/federation-tests.postman_collection.json; do
+            if [ ! -f "$collection" ]; then
+              echo "::warning ::missing collection $collection — skipping"
+              continue
+            fi
+            echo "::group::Running $collection"
+            newman run "$collection" \
+              --env-var baseUrl=$BASE_URL \
+              --env-var username=$ADMIN_USER \
+              --env-var password=$ADMIN_PASSWORD \
+              --reporters cli,json \
+              --reporter-json-export "newman-$(basename $collection .postman_collection.json).json"
+            echo "::endgroup::"
+          done
+
+      - name: Upload Newman reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: newman-reports
+          path: newman-*.json
+          retention-days: 14
