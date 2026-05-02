@@ -167,11 +167,11 @@
 ## Phase 9: Download Audit Logging
 
 - [x] Implement `FileAuditHandler::logDownload()` creating audit trail entries
-- [ ] Integrate download logging into `FilesController::show()` endpoint
-- [ ] Integrate download logging into `FilesController::downloadById()` endpoint
+- [x] Integrate download logging into `FilesController::show()` endpoint. **Shipped 2026-05-02:** new private helper `FilesController::recordDownloadEvent(int $fileId, ?ObjectEntity $object)` runs `FileMapper::incrementDownloadCount` + `FileAuditHandler::logFileAction(action: 'file.downloaded')`. Called from `show()` after the StreamResponse is built so the download is already wired up. Best-effort — exceptions on either path are silently swallowed so a counter or audit failure never breaks the file response.
+- [x] Integrate download logging into `FilesController::downloadById()` endpoint. **Shipped 2026-05-02:** same helper called from `downloadById()` before `streamFile()` returns. The downloadById path doesn't carry a parent object reference, so the audit-trail call is skipped (helper short-circuits when `$object` is null) — only the OR-side counter increments. This matches the cross-object semantics: a free-floating fileId download has no parent-object audit timeline to write to.
 - [x] Log anonymous downloads with IP and user-agent
-- [ ] Implement download count caching in FileMapper (increment on download)
-- [ ] Include `downloadCount` in file metadata responses
+- [x] Implement download count caching in FileMapper (increment on download). **Shipped 2026-05-02:** `FileMapper::incrementDownloadCount(int $fileId)` is monotonic, lazy-create-on-miss, and idempotent across multiple calls. Verified by `testIncrementDownloadCountIsMonotonic` in `FileMetadataPersistenceIntegrationTest` (3 calls → counter 1/2/3).
+- [x] Include `downloadCount` in file metadata responses. **Shipped 2026-05-02:** `FileFormattingHandler::formatFile()` includes `downloadCount` from the OR-side row when authenticated (anonymous callers MUST NOT see download tallies — same gating as lock metadata). Wired together with the description / category / labels enrichment in the foundation commit.
 - [ ] Log bulk download (ZIP archive) as single audit entry
 - [x] Write unit test for download logging
 - [x] Write unit test for anonymous download logging

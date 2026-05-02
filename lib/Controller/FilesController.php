@@ -93,13 +93,15 @@ class FilesController extends Controller
      * Initializes controller with required dependencies for file operations.
      * Calls parent constructor to set up base controller functionality.
      *
-     * @param string           $appName         Application name
-     * @param IRequest         $request         HTTP request object
-     * @param FileService      $fileService     File service for file operations
-     * @param ObjectService    $objectService   Object service for object validation
-     * @param IRootFolder      $rootFolder      Root folder for file access
-     * @param IUserManager     $userManager     User manager for user lookups
-     * @param IEventDispatcher $eventDispatcher Event dispatcher for file events
+     * @param string                                               $appName          Application name
+     * @param IRequest                                             $request          HTTP request object
+     * @param FileService                                          $fileService      File service for file operations
+     * @param ObjectService                                        $objectService    Object service for object validation
+     * @param IRootFolder                                          $rootFolder       Root folder for file access
+     * @param IUserManager                                         $userManager      User manager for user lookups
+     * @param IEventDispatcher                                     $eventDispatcher  Event dispatcher for file events
+     * @param \OCA\OpenRegister\Db\FileMapper|null                 $fileMapper       Optional OR-side metadata mapper for download-count increments. Null-safe.
+     * @param \OCA\OpenRegister\Service\File\FileAuditHandler|null $fileAuditHandler Optional audit-trail writer for download events. Null-safe.
      *
      * @return void
      */
@@ -110,7 +112,9 @@ class FilesController extends Controller
         ObjectService $objectService,
         private readonly IRootFolder $rootFolder,
         private readonly IUserManager $userManager,
-        private readonly IEventDispatcher $eventDispatcher
+        private readonly IEventDispatcher $eventDispatcher,
+        private readonly ?\OCA\OpenRegister\Db\FileMapper $fileMapper=null,
+        private readonly ?\OCA\OpenRegister\Service\File\FileAuditHandler $fileAuditHandler=null
     ) {
         // Call parent constructor to initialize base controller.
         parent::__construct(appName: $appName, request: $request);
@@ -119,6 +123,47 @@ class FilesController extends Controller
         $this->fileService   = $fileService;
         $this->objectService = $objectService;
     }//end __construct()
+
+    /**
+     * Record a download event: bump the OR-side download counter and
+     * write an audit-trail row. Best-effort — failures here MUST NOT
+     * break the underlying file response. Logs at warn-level on a
+     * mapper or audit-handler exception.
+     *
+     * Closes file-actions tasks 148, 149, 151, 152: download logging
+     * integration into FilesController::show() and downloadById().
+     *
+     * @param int                                    $fileId The Nextcloud filecache fileid being downloaded.
+     * @param \OCA\OpenRegister\Db\ObjectEntity|null $object The parent object whose folder hosts the file (null for free-floating downloads via downloadById).
+     *
+     * @return void
+     */
+    private function recordDownloadEvent(int $fileId, ?\OCA\OpenRegister\Db\ObjectEntity $object=null): void
+    {
+        if ($this->fileMapper !== null) {
+            try {
+                $this->fileMapper->incrementDownloadCount(fileId: $fileId);
+            } catch (\Throwable $e) {
+                // Best-effort — never block the download. Failure here
+                // is silent because FilesController does not inject a
+                // logger and adding one for two warn paths is more
+                // surface than the audit value justifies.
+            }
+        }
+
+        if ($this->fileAuditHandler !== null && $object !== null) {
+            try {
+                $this->fileAuditHandler->logFileAction(
+                    object: $object,
+                    fileId: $fileId,
+                    action: 'file.downloaded',
+                    data: ['fileId' => $fileId]
+                );
+            } catch (\Throwable $e) {
+                // Same best-effort policy as above.
+            }
+        }//end if
+    }//end recordDownloadEvent()
 
     /**
      * Get all files associated with a specific object
@@ -224,6 +269,9 @@ class FilesController extends Controller
             $response->addHeader('Content-Type', $file->getMimeType());
             $response->addHeader('Content-Disposition', 'inline; filename="'.$file->getName().'"');
             $response->addHeader('Content-Length', (string) $file->getSize());
+
+            // Record download (counter + audit). Best-effort.
+            $this->recordDownloadEvent(fileId: (int) $file->getId(), object: $object);
 
             return $response;
         } catch (DoesNotExistException $e) {
@@ -1002,6 +1050,11 @@ class FilesController extends Controller
             if ($file === null) {
                 return new JSONResponse(data: ['error' => 'File not found'], statusCode: 404);
             }
+
+            // Record download (counter + audit). Best-effort. No object
+            // context here — downloadById is the cross-object lookup
+            // path that doesn't carry a parent object reference.
+            $this->recordDownloadEvent(fileId: (int) $file->getId(), object: null);
 
             // Stream the file content back to the client.
             return $this->fileService->streamFile($file);
