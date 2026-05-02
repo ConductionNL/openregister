@@ -632,6 +632,7 @@ import { json, jsonParseLinter } from '@codemirror/lang-json'
 import CodeMirror from 'vue-codemirror6'
 import { BTabs, BTab } from 'bootstrap-vue'
 import { getTheme } from '../../services/getTheme.js'
+import { updateFileLabels } from '../../services/fileMetadata.js'
 import Cancel from 'vue-material-design-icons/Cancel.vue'
 import FileOutline from 'vue-material-design-icons/FileOutline.vue'
 import OpenInNew from 'vue-material-design-icons/OpenInNew.vue'
@@ -1715,6 +1716,12 @@ export default {
 			this.editingLabelsFileId = null
 			this.editingLabels = []
 		},
+		// Persist label changes via the dedicated /files/{fileId}/labels
+		// endpoint with optimistic UI: the in-memory attachment.labels
+		// flips to the new value as soon as the user clicks save, and
+		// reverts on error so the UI never lies if the request fails.
+		// API call shape is implemented in services/fileMetadata.js so it
+		// can be unit-tested without mounting this modal.
 		async saveFileLabels(file) {
 			const { type, objectId } = this._getFileParams()
 			const rawRegister = objectStore.objectItem['@self']?.register
@@ -1722,18 +1729,30 @@ export default {
 			const registerId = typeof rawRegister === 'object' && rawRegister !== null ? rawRegister.id : rawRegister
 			const schemaId = typeof rawSchema === 'object' && rawSchema !== null ? rawSchema.id : rawSchema
 
+			// Snapshot the current value so we can revert on failure.
+			const previousLabels = Array.isArray(file.labels) ? [...file.labels] : []
+			const nextLabels = [...this.editingLabels]
+
+			// Optimistic update — flip the in-memory file row immediately.
+			file.labels = nextLabels
 			this.labelsLoading = true
+
 			try {
-				const url = `/index.php/apps/openregister/api/objects/${registerId}/${schemaId}/${objectId}/files/${file.id}`
-				const response = await fetch(url, {
-					method: 'PUT',
-					headers: { 'Content-Type': 'application/json' },
-					body: JSON.stringify({ tags: this.editingLabels }),
+				await updateFileLabels({
+					registerId,
+					schemaId,
+					objectId,
+					fileId: file.id,
+					labels: nextLabels,
 				})
-				if (!response.ok) throw new Error(`HTTP ${response.status}`)
+				// Re-fetch to pick up server-side normalisation (dedup, tag
+				// resolution) and any other fields that change as a side
+				// effect of the label update.
 				await objectStore.fetchFiles(type, objectId)
 				this.cancelFileLabels()
 			} catch (error) {
+				// Revert the optimistic update so the UI matches the server.
+				file.labels = previousLabels
 				// eslint-disable-next-line no-console
 				console.error('Failed to save file labels:', error)
 			} finally {
