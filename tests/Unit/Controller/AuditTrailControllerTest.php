@@ -445,40 +445,31 @@ class AuditTrailControllerTest extends TestCase
         $this->assertEquals(200, $result->getStatus());
     }
 
-    public function testDestroyMultipleSuccess(): void
+    public function testDestroyMultipleAlwaysReturns405Immutable(): void
     {
+        // Audit trails are immutable: bulk-delete endpoint must return
+        // 405 regardless of input. Replaces the legacy success/exception
+        // tests that asserted 200/500 — production was changed to enforce
+        // immutability per retrofit-annotate-openregister-2026-04-23 task 8.
         $this->request->method('getParams')->willReturn([]);
         $this->request->method('getParam')
             ->willReturnMap([
                 ['ids', null, '1,2,3'],
             ]);
 
-        $this->logService->method('deleteLogs')->willReturn([
-            'deleted' => 3,
-            'failed' => 0,
-        ]);
-
         $result = $this->controller->destroyMultiple();
 
-        $this->assertEquals(200, $result->getStatus());
-        $data = $result->getData();
-        $this->assertTrue($data['success']);
+        $this->assertEquals(405, $result->getStatus());
+        $this->assertArrayHasKey('error', $result->getData());
     }
 
     public function testDestroyMultipleException(): void
     {
-        $this->request->method('getParams')->willReturn([]);
-        $this->request->method('getParam')
-            ->willReturnMap([
-                ['ids', null, null],
-            ]);
-
-        $this->logService->method('deleteLogs')
-            ->willThrowException(new \Exception('Deletion failed'));
-
-        $result = $this->controller->destroyMultiple();
-
-        $this->assertEquals(500, $result->getStatus());
+        $this->markTestSkipped(
+            'Production destroyMultiple() always returns 405 (audit trails '
+            .'immutable); no exception path remains. Covered by '
+            .'testDestroyMultipleAlwaysReturns405Immutable.'
+        );
     }
 
     public function testClearAllSuccess(): void
@@ -517,20 +508,15 @@ class AuditTrailControllerTest extends TestCase
 
     public function testDestroyMultipleWithArrayIds(): void
     {
+        // Same immutability semantics — array form ids[] also gets 405.
         $this->request->method('getParams')->willReturn([]);
         $this->request->method('getParam')
             ->willReturnMap([
                 ['ids', null, ['1', '2', '3']],
             ]);
 
-        $this->logService->method('deleteLogs')->willReturn([
-            'deleted' => 3,
-            'failed'  => 0,
-        ]);
-
         $result = $this->controller->destroyMultiple();
 
-        $this->assertEquals(200, $result->getStatus());
-        $this->assertTrue($result->getData()['success']);
+        $this->assertEquals(405, $result->getStatus());
     }
 }
