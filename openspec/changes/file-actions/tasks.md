@@ -152,11 +152,11 @@
 
 ## Phase 8: Metadata Enrichment
 
-- [ ] Extend `UpdateFileHandler` to support description and category fields
+- [x] Extend `UpdateFileHandler` to support description and category fields. **Shipped 2026-05-02:** new public method `UpdateFileHandler::updateFileMetadata(int $fileId, ?string $description, ?string $category, ?array $labels)`. Each parameter is optional — null leaves the field untouched, explicit empty value clears. Delegates to FileMapper write methods (which are lazy-create-on-miss). Verified by 3 tests in `FileMetadataUpdateIntegrationTest`: full update writes all 3 fields; partial update only touches the named field; explicit empty/null values clear.
 - [x] Implement `FilesController::updateLabels()` endpoint for dedicated label updates
 - [x] Register route: `PUT /api/objects/{register}/{schema}/{id}/files/{fileId}/labels`
 - [x] Include description, category, and labels in `FileFormattingHandler::formatFile()` output. **Shipped 2026-05-02:** `FileFormattingHandler` now takes an optional `?FileMapper $fileMapper` constructor dependency (null-safe for legacy fixtures). When wired AND a row exists in `openregister_files` for the file's NC fileid, `formatFile()` enriches the metadata with `description`, `category`, OR-managed `labels` (merged + deduped with the existing tag-backed labels), and `downloadCount` (gated on authentication). Lookup failures are caught and logged so the formatter can never break the response. The OR-managed labels collection lives alongside the existing tag-driven labels — consumers see one unified array.
-- [ ] Support category-based filtering in `ReadFileHandler::getFiles()` / file listing
+- [x] Support category-based filtering in `ReadFileHandler::getFiles()` / file listing. **Shipped 2026-05-02:** `ReadFileHandler::getFiles()` accepts a new optional `?string $category` parameter. When set + the FileMapper dependency is wired, after fetching the file list the handler does ONE bulk `findByFileIds` lookup, builds a fileid → File map, and keeps only nodes whose OR-side row has the matching category. Files without an OR-side row are excluded (matching `WHERE category = :cat` left-join semantics). Lookup failures are skipped gracefully so a malformed node never breaks the listing.
 - [ ] Implement `editFileLabels()` in `ViewObject.vue` with inline NcSelect editor
 - [ ] Add label autocomplete from existing register labels
 - [ ] Wire label changes to API call with optimistic UI update

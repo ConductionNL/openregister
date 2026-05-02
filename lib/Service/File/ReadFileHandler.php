@@ -59,12 +59,13 @@ class ReadFileHandler
     /**
      * Constructor for ReadFileHandler.
      *
-     * @param IRootFolder             $rootFolder           Root folder for file operations.
-     * @param FolderManagementHandler $folderMgmtHandler    Folder management handler.
-     * @param FileValidationHandler   $fileValidHandler     File validation handler.
-     * @param FileOwnershipHandler    $fileOwnershipHandler File ownership handler.
-     * @param MagicMapper             $objectMapper         Object mapper for magic table operations.
-     * @param LoggerInterface         $logger               Logger for logging operations.
+     * @param IRootFolder                          $rootFolder           Root folder for file operations.
+     * @param FolderManagementHandler              $folderMgmtHandler    Folder management handler.
+     * @param FileValidationHandler                $fileValidHandler     File validation handler.
+     * @param FileOwnershipHandler                 $fileOwnershipHandler File ownership handler.
+     * @param MagicMapper                          $objectMapper         Object mapper for magic table operations.
+     * @param LoggerInterface                      $logger               Logger for logging operations.
+     * @param \OCA\OpenRegister\Db\FileMapper|null $fileMapper           Optional OR-side metadata mapper for category-based filtering. Null-safe so legacy fixtures keep working.
      */
     public function __construct(
         private readonly IRootFolder $rootFolder,
@@ -72,7 +73,8 @@ class ReadFileHandler
         private readonly FileValidationHandler $fileValidHandler,
         private readonly FileOwnershipHandler $fileOwnershipHandler,
         private readonly MagicMapper $objectMapper,
-        private readonly LoggerInterface $logger
+        private readonly LoggerInterface $logger,
+        private readonly ?\OCA\OpenRegister\Db\FileMapper $fileMapper=null
     ) {
     }//end __construct()
 
@@ -249,8 +251,11 @@ class ReadFileHandler
      *
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Boolean flag is intentional for simple filter toggle
      */
-    public function getFiles(ObjectEntity|string $object, ?bool $sharedFilesOnly=false): array
-    {
+    public function getFiles(
+        ObjectEntity|string $object,
+        ?bool $sharedFilesOnly=false,
+        ?string $category=null
+    ): array {
         // If string ID provided, try to find the object entity.
         // Use findAcrossAllSources to search across all magic tables.
         if (is_string($object) === true) {
@@ -262,7 +267,70 @@ class ReadFileHandler
             $object = $result['object'];
         }
 
-        // Use the new ID-based folder approach.
-        return $this->fileService->getFilesForEntity(entity: $object, sharedFilesOnly: $sharedFilesOnly);
+        $files = $this->fileService->getFilesForEntity(entity: $object, sharedFilesOnly: $sharedFilesOnly);
+
+        if ($category === null || $this->fileMapper === null) {
+            return $files;
+        }
+
+        return $this->filterByCategory(files: $files, category: $category);
     }//end getFiles()
+
+    /**
+     * Filter a node list by OR-side category metadata.
+     *
+     * Uses one bulk lookup to fetch the OR-side rows for every
+     * candidate fileId, then keeps only nodes whose row carries the
+     * requested category. Files without an OR-side row are excluded
+     * because they have no category — matching SQL `WHERE category =
+     * :cat` semantics on a left-join.
+     *
+     * @param array<int, mixed> $files    The candidate file nodes.
+     * @param string            $category The category to match exactly.
+     *
+     * @return array<int, mixed> The filtered nodes (sequential keys).
+     */
+    private function filterByCategory(array $files, string $category): array
+    {
+        if (empty($files) === true) {
+            return [];
+        }
+
+        $fileIds = [];
+        foreach ($files as $node) {
+            try {
+                if (is_object($node) === true && method_exists($node, 'getId') === true) {
+                    $fid = (int) $node->getId();
+                    if ($fid > 0) {
+                        $fileIds[] = $fid;
+                    }
+                }
+            } catch (\Throwable $e) {
+                // Node without a usable id — skip; it can't match.
+                continue;
+            }
+        }
+
+        if (empty($fileIds) === true) {
+            return [];
+        }
+
+        $orMap   = $this->fileMapper->findByFileIds(fileIds: $fileIds);
+        $matched = [];
+        foreach ($files as $node) {
+            try {
+                if (is_object($node) === true && method_exists($node, 'getId') === true) {
+                    $fid = (int) $node->getId();
+                    $row = ($orMap[$fid] ?? null);
+                    if ($row !== null && $row->getCategory() === $category) {
+                        $matched[] = $node;
+                    }
+                }
+            } catch (\Throwable $e) {
+                continue;
+            }
+        }
+
+        return $matched;
+    }//end filterByCategory()
 }//end class
