@@ -9,6 +9,14 @@
  *
  * @category Controller
  * @package  OCA\OpenRegister\Controller
+ *
+ * @author    Conduction Development Team <dev@conduction.nl>
+ * @copyright 2026 Conduction B.V.
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ *
+ * @version GIT: <git-id>
+ *
+ * @link https://OpenRegister.app
  */
 
 declare(strict_types=1);
@@ -24,6 +32,14 @@ use OCP\IRequest;
 
 class RealtimeController extends Controller
 {
+    /**
+     * Constructor.
+     *
+     * @param string              $appName             The application name.
+     * @param IRequest            $request             The current request.
+     * @param RealtimeEventMapper $eventMapper         The realtime event mapper.
+     * @param OrganisationService $organisationService The organisation service.
+     */
     public function __construct(
         string $appName,
         IRequest $request,
@@ -46,6 +62,15 @@ class RealtimeController extends Controller
      * Anonymous/unauthenticated callers get HTTP 401. Authenticated
      * callers see only events scoped to their active organisation
      * (multi-tenancy gate). Cross-org events MUST NOT leak.
+     *
+     * @param int|null    $since      The cursor (event id) to fetch events after.
+     * @param int|null    $limit      Maximum number of events to return.
+     * @param string|null $register   Optional register filter.
+     * @param string|null $schema     Optional schema filter.
+     * @param string|null $objectUuid Optional object UUID filter.
+     * @param string|null $eventType  Optional event type filter.
+     *
+     * @return JSONResponse JSON response with events, cursor, and hasMore.
      *
      * @NoCSRFRequired
      */
@@ -71,8 +96,8 @@ class RealtimeController extends Controller
 
         if ($orgUuid === null) {
             // No active org → return an empty result rather than 500.
-            // (Tests + CLI dev scripts would otherwise crash unless the
-            // session has resolved an org.)
+            // Tests + CLI dev scripts would otherwise crash unless the
+            // session has resolved an org.
             return new JSONResponse(
                 ['events' => [], 'cursor' => $since ?? 0, 'hasMore' => false]
             );
@@ -108,6 +133,8 @@ class RealtimeController extends Controller
      * to fast-forward past historical events on initial subscription —
      * GET /api/realtime/cursor → {cursor: 12345}, then start polling
      * with `?since=12345`.
+     *
+     * @return JSONResponse JSON response containing the current head cursor.
      *
      * @NoCSRFRequired
      */

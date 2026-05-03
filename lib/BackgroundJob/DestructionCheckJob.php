@@ -116,7 +116,11 @@ class DestructionCheckJob extends TimedJob
             }
 
             // Step 1: Send pre-destruction notifications.
-            $this->sendPreDestructionNotifications(retentionService: $retentionService, settings: $settings, logger: $logger);
+            $this->sendPreDestructionNotifications(
+                retentionService: $retentionService,
+                settings: $settings,
+                logger: $logger
+            );
 
             // Step 2: Find eligible objects and create destruction list.
             $excludeUuids = $retentionService->getObjectsOnPendingDestructionLists();
@@ -228,7 +232,11 @@ class DestructionCheckJob extends TimedJob
                     continue;
                 }
 
-                $subject = $nominatie === 'bewaren' ? 'Object requires e-Depot transfer' : 'Object approaching destruction date';
+                if ($nominatie === 'bewaren') {
+                    $subject = 'Object requires e-Depot transfer';
+                } else {
+                    $subject = 'Object approaching destruction date';
+                }
 
                 $this->sendObjectNotification(
                     uuid: $uuid,

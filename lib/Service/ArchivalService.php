@@ -91,8 +91,10 @@ class ArchivalService
         // Validate archiefnominatie.
         if (isset($retention['archiefnominatie']) === true) {
             if (in_array($retention['archiefnominatie'], self::VALID_NOMINATIONS, true) === false) {
+                $allowed = implode(', ', self::VALID_NOMINATIONS);
+                $value   = $retention['archiefnominatie'];
                 throw new InvalidArgumentException(
-                    "Invalid archiefnominatie '{$retention['archiefnominatie']}'. Must be one of: ".implode(', ', self::VALID_NOMINATIONS)
+                    "Invalid archiefnominatie '{$value}'. Must be one of: {$allowed}"
                 );
             }
         } else {
@@ -102,8 +104,10 @@ class ArchivalService
         // Validate archiefstatus.
         if (isset($retention['archiefstatus']) === true) {
             if (in_array($retention['archiefstatus'], self::VALID_STATUSES, true) === false) {
+                $allowed = implode(', ', self::VALID_STATUSES);
+                $value   = $retention['archiefstatus'];
                 throw new InvalidArgumentException(
-                    "Invalid archiefstatus '{$retention['archiefstatus']}'. Must be one of: ".implode(', ', self::VALID_STATUSES)
+                    "Invalid archiefstatus '{$value}'. Must be one of: {$allowed}"
                 );
             }
         } else {
@@ -436,7 +440,8 @@ class ArchivalService
                 if (count($selectionLists) > 0) {
                     $retentionYears = $selectionLists[0]->getRetentionYears();
 
-                    $currentDate = isset($retention['archiefactiedatum']) === true ? new DateTime($retention['archiefactiedatum']) : new DateTime();
+                    $rawActieDatum = ($retention['archiefactiedatum'] ?? null);
+                    $currentDate   = $rawActieDatum !== null ? new DateTime($rawActieDatum) : new DateTime();
 
                     $newDate = clone $currentDate;
                     $newDate->add(new DateInterval('P'.$retentionYears.'Y'));

@@ -64,6 +64,8 @@ class CustomScopeEvaluatedEvent extends Event
 
     /**
      * Schema that was evaluated.
+     *
+     * @return Schema The schema involved in the evaluation.
      */
     public function getSchema(): Schema
     {
@@ -72,6 +74,8 @@ class CustomScopeEvaluatedEvent extends Event
 
     /**
      * Custom action verb that was evaluated.
+     *
+     * @return string The custom action verb.
      */
     public function getAction(): string
     {
@@ -80,6 +84,8 @@ class CustomScopeEvaluatedEvent extends Event
 
     /**
      * User ID under evaluation (null for anonymous requests).
+     *
+     * @return string|null The user ID, or null when anonymous.
      */
     public function getUserId(): ?string
     {
@@ -88,6 +94,8 @@ class CustomScopeEvaluatedEvent extends Event
 
     /**
      * Final verdict the caller received.
+     *
+     * @return bool The boolean verdict that the caller received.
      */
     public function getVerdict(): bool
     {
@@ -97,6 +105,8 @@ class CustomScopeEvaluatedEvent extends Event
     /**
      * Whether the verdict was decided by a listener (true) or by the
      * standard rule chain after no listener voted (false).
+     *
+     * @return bool True when a listener decided the verdict.
      */
     public function isFromListener(): bool
     {

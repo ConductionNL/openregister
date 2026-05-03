@@ -117,7 +117,11 @@ class CalendarEventService
             }
 
             try {
-                $eventArray = $this->veventToArray(calendarData: $calendarData, calendarId: (string) $calendarId, uri: $calendarObject['uri']);
+                $eventArray = $this->veventToArray(
+                    calendarData: $calendarData,
+                    calendarId: (string) $calendarId,
+                    uri: $calendarObject['uri']
+                );
                 if ($eventArray !== null && $eventArray['objectUuid'] === $objectUuid) {
                     $events[] = $eventArray;
                 }

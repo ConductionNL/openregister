@@ -33,7 +33,10 @@ use InvalidArgumentException;
  * Wire-format adapter that turns HTTP query params and POST bodies
  * into GeoFilter value objects.
  *
- * @SuppressWarnings(PHPMD.StaticAccess) GeoFilter is an immutable value object built via the canonical static-factory pattern; PHPMD's StaticAccess warning is a false positive for that pattern.
+ * @SuppressWarnings(PHPMD.StaticAccess)
+ *   GeoFilter is an immutable value object built via the canonical
+ *   static-factory pattern; PHPMD's StaticAccess warning is a false
+ *   positive for that pattern.
  */
 class GeoFilterParser
 {

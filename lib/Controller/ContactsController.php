@@ -353,7 +353,10 @@ class ContactsController extends Controller
         } catch (\Exception $e) {
             $this->logger->error('[ContactsAPI] Match failed: {error}', ['error' => $e->getMessage(), 'exception' => $e]);
 
-            return new JSONResponse(['error' => $this->l10n->t('Internal server error'), 'matches' => [], 'total' => 0], 500);
+            return new JSONResponse(
+                ['error' => $this->l10n->t('Internal server error'), 'matches' => [], 'total' => 0],
+                500
+            );
         }
     }//end match()
 

@@ -43,6 +43,9 @@ use OCA\OpenRegister\Service\Object\SaveObject\ComputedFieldHandler;
 use OCA\OpenRegister\Service\Object\LinkedEntityEnricher;
 use OCA\OpenRegister\Service\Object\TranslationHandler;
 use OCA\OpenRegister\Service\PropertyRbacHandler;
+use OCA\OpenRegister\Service\Calculation\CalculationEvaluator;
+use OCA\OpenRegister\Service\UrnService;
+use OCA\OpenRegister\Service\TranslationStatusService;
 use OCP\SystemTag\ISystemTagManager;
 use OCP\SystemTag\ISystemTagObjectMapper;
 use Psr\Log\LoggerInterface;
@@ -126,20 +129,23 @@ class RenderObject
     /**
      * Constructor for RenderObject handler.
      *
-     * @param FileMapper             $fileMapper           File mapper for database operations.
-     * @param MagicMapper            $objectEntityMapper   Object entity mapper for database operations.
-     * @param RegisterMapper         $registerMapper       Register mapper for database operations.
-     * @param SchemaMapper           $schemaMapper         Schema mapper for database operations.
-     * @param ISystemTagManager      $systemTagManager     System tag manager for file tags.
-     * @param ISystemTagObjectMapper $systemTagMapper      System tag object mapper for file tags.
-     * @param CacheHandler           $cacheHandler         Cache service for performance optimization.
-     * @param CacheHandler           $objectCacheService   Object cache service for optimized loading.
-     * @param PropertyRbacHandler    $propertyRbacHandler  Property-level RBAC handler.
-     * @param LoggerInterface        $logger               Logger for performance monitoring.
-     * @param FileService            $fileService          File service for file operations.
-     * @param ComputedFieldHandler   $computedFieldHandler Handler for computed field evaluation.
-     * @param TranslationHandler     $translationHandler   Handler for translatable property resolution.
-     * @param LinkedEntityEnricher   $linkedEntityEnricher Enricher for linked entity metadata.
+     * @param FileMapper               $fileMapper               File mapper for database operations.
+     * @param MagicMapper              $objectEntityMapper       Object entity mapper for database operations.
+     * @param RegisterMapper           $registerMapper           Register mapper for database operations.
+     * @param SchemaMapper             $schemaMapper             Schema mapper for database operations.
+     * @param ISystemTagManager        $systemTagManager         System tag manager for file tags.
+     * @param ISystemTagObjectMapper   $systemTagMapper          System tag object mapper for file tags.
+     * @param CacheHandler             $cacheHandler             Cache service for performance optimization.
+     * @param CacheHandler             $objectCacheService       Object cache service for optimized loading.
+     * @param PropertyRbacHandler      $propertyRbacHandler      Property-level RBAC handler.
+     * @param LoggerInterface          $logger                   Logger for performance monitoring.
+     * @param FileService              $fileService              File service for file operations.
+     * @param ComputedFieldHandler     $computedFieldHandler     Handler for computed field evaluation.
+     * @param TranslationHandler       $translationHandler       Handler for translatable property resolution.
+     * @param LinkedEntityEnricher     $linkedEntityEnricher     Enricher for linked entity metadata.
+     * @param CalculationEvaluator     $calculationEvaluator     Evaluator for derived/computed properties.
+     * @param UrnService               $urnService               URN resolver for register/schema/object identifiers.
+     * @param TranslationStatusService $translationStatusService Service exposing per-object translation status metadata.
      *
      * @SuppressWarnings(PHPMD.ExcessiveParameterList) All parameters are DI-injected dependencies
      *
@@ -160,9 +166,9 @@ class RenderObject
         private readonly ComputedFieldHandler $computedFieldHandler,
         private readonly TranslationHandler $translationHandler,
         private readonly LinkedEntityEnricher $linkedEntityEnricher,
-        private readonly \OCA\OpenRegister\Service\Calculation\CalculationEvaluator $calculationEvaluator,
-        private readonly \OCA\OpenRegister\Service\UrnService $urnService,
-        private readonly \OCA\OpenRegister\Service\TranslationStatusService $translationStatusService,
+        private readonly CalculationEvaluator $calculationEvaluator,
+        private readonly UrnService $urnService,
+        private readonly TranslationStatusService $translationStatusService,
     ) {
     }//end __construct()
 

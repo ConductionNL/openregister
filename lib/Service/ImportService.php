@@ -158,6 +158,7 @@ class ImportService
      * @param IGroupManager                                             $groupManager        The group manager
      * @param IJobList                                                  $jobList             The background job list
      * @param \OCA\OpenRegister\Service\Translation\TranslationCsvCodec $translationCsvCodec Translation CSV codec
+     * @param AuditTrailMapper                                          $auditTrailMapper    The audit trail mapper
      */
     public function __construct(
         SchemaMapper $schemaMapper,
@@ -195,7 +196,12 @@ class ImportService
      *
      * @param string $importJobId UUID v4 of the import job to roll back.
      *
-     * @return array{importJobId: string, candidates: int, softDeleted: list<string>, errors: list<array{uuid: string, error: string}>}
+     * @return array{
+     *     importJobId: string,
+     *     candidates: int,
+     *     softDeleted: list<string>,
+     *     errors: list<array{uuid: string, error: string}>
+     * }
      */
     public function softDeleteByImportJobId(string $importJobId): array
     {

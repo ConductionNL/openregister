@@ -33,12 +33,19 @@ use RuntimeException;
 
 class TransitionController extends Controller
 {
+    /**
+     * Constructor.
+     *
+     * @param string           $appName The application name.
+     * @param IRequest         $request The current request.
+     * @param TransitionEngine $engine  The transition engine.
+     */
     public function __construct(
         string $appName,
         IRequest $request,
         private readonly TransitionEngine $engine
     ) {
-        parent::__construct($appName, $request);
+        parent::__construct(appName: $appName, request: $request);
     }//end __construct()
 
     /**
@@ -49,6 +56,8 @@ class TransitionController extends Controller
      * apps don't need a route per action.
      *
      * @param string $id Object id/uuid/slug.
+     *
+     * @return JSONResponse JSON response with the transitioned object or an error.
      *
      * @NoAdminRequired
      * @NoCSRFRequired
@@ -89,6 +98,8 @@ class TransitionController extends Controller
      * List actions allowed from the object's current state.
      *
      * @param string $id Object id/uuid/slug.
+     *
+     * @return JSONResponse JSON response with the list of allowed actions.
      *
      * @NoAdminRequired
      * @NoCSRFRequired

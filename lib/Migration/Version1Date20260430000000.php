@@ -37,6 +37,8 @@ use OCP\Migration\SimpleMigrationStep;
 class Version1Date20260430000000 extends SimpleMigrationStep
 {
     /**
+     * Apply the schema change for this migration.
+     *
      * @param IOutput              $output        Migration output
      * @param Closure              $schemaClosure Schema closure
      * @param array<string, mixed> $options       Migration options
@@ -48,6 +50,7 @@ class Version1Date20260430000000 extends SimpleMigrationStep
         /*
          * @var ISchemaWrapper $schema
          */
+
         $schema = $schemaClosure();
 
         if ($schema->hasTable('openregister_realtime_events') === true) {

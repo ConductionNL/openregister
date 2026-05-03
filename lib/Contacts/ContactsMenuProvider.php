@@ -264,7 +264,8 @@ class ContactsMenuProvider implements IProvider
                 ).'#/objects/'.urlencode($uuid);
             }
 
-            $icon = $this->deepLinkRegistry->resolveIcon($registerId, $schemaId) ?? $this->urlGenerator->imagePath('openregister', 'app-dark.svg');
+            $resolvedIcon = $this->deepLinkRegistry->resolveIcon($registerId, $schemaId);
+            $icon         = $resolvedIcon ?? $this->urlGenerator->imagePath('openregister', 'app-dark.svg');
 
             $label = $this->l10n->t('View in OpenRegister').' ('.($match['title'] ?? 'Unknown').')';
 

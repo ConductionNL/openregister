@@ -91,8 +91,11 @@ class NotificationSubscriptionMapper extends QBMapper
         $entity->setCreated(new DateTime());
 
         try {
-            /** @var NotificationSubscription $inserted */
-            $inserted = $this->insert($entity);
+            /*
+             * @var NotificationSubscription $inserted
+             */
+
+            $inserted = $this->insert(entity: $entity);
             return $inserted;
         } catch (DbException) {
             // Race: parallel insert won. Return the existing row.
@@ -142,7 +145,10 @@ class NotificationSubscriptionMapper extends QBMapper
             )
             ->orderBy('created', 'DESC');
 
-        /** @var NotificationSubscription[] $rows */
+        /*
+         * @var NotificationSubscription[] $rows
+         */
+
         $rows = $this->findEntities(query: $qb);
         return $rows;
 
@@ -216,7 +222,10 @@ class NotificationSubscriptionMapper extends QBMapper
         $this->whereNullableEq(qb: $qb, column: 'schema_id', value: $schemaId);
         $qb->setMaxResults(1);
 
-        /** @var NotificationSubscription $entity */
+        /*
+         * @var NotificationSubscription $entity
+         */
+
         $entity = $this->findEntity(query: $qb);
         return $entity;
 

@@ -85,8 +85,11 @@ class NotificationReadStateMapper extends QBMapper
         $entity->setReadAt(new DateTime());
 
         try {
-            /** @var NotificationReadStateEntity $inserted */
-            $inserted = $this->insert($entity);
+            /*
+             * @var NotificationReadStateEntity $inserted
+             */
+
+            $inserted = $this->insert(entity: $entity);
             return $inserted;
         } catch (DbException $e) {
             // Race: another request inserted between the find and insert.
@@ -178,7 +181,10 @@ class NotificationReadStateMapper extends QBMapper
             )
             ->setMaxResults(1);
 
-        /** @var NotificationReadStateEntity $entity */
+        /*
+         * @var NotificationReadStateEntity $entity
+         */
+
         $entity = $this->findEntity(query: $qb);
         return $entity;
 

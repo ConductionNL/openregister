@@ -51,6 +51,7 @@ class Version1Date20260502200000 extends SimpleMigrationStep
         /*
          * @var ISchemaWrapper $schema
          */
+
         $schema = $schemaClosure();
 
         if ($schema->hasTable(tableName: 'openregister_notification_subscriptions') === true) {

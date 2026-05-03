@@ -99,7 +99,7 @@ class FileLockHandler
         } catch (\Throwable $e) {
             $this->cache = null;
             $this->logger->warning(
-                message: '[FileLockHandler] Distributed cache unavailable; falling back to per-instance lock map. Locks will NOT persist across requests.',
+                message: '[FileLockHandler] Distributed cache unavailable; falling back to per-instance map (volatile).',
                 context: ['file' => __FILE__, 'line' => __LINE__, 'error' => $e->getMessage()]
             );
         }

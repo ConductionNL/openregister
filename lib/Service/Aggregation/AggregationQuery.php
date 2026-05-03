@@ -95,7 +95,10 @@ class AggregationQuery
      *
      * @throws InvalidArgumentException When the input is invalid.
      *
-     * @SuppressWarnings(PHPMD.CyclomaticComplexity) Fail-fast validation chain: each `if` is one independent guard against bad input. Extracting them would reduce the count but obscure the per-rule error messages.
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+     *   Fail-fast validation chain: each `if` is one independent guard
+     *   against bad input. Extracting them would reduce the count but
+     *   obscure the per-rule error messages.
      */
     public static function create(
         string $metric,

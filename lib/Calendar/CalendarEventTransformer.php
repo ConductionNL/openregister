@@ -92,7 +92,12 @@ class CalendarEventTransformer
         $dtstart = $this->formatDateValue(value: $dtstartValue, allDay: $allDay);
 
         // Build DTEND.
-        $dtend = $this->buildDtend(objectData: $objectData, calendarConfig: $calendarConfig, dtstartValue: $dtstartValue, allDay: $allDay);
+        $dtend = $this->buildDtend(
+            objectData: $objectData,
+            calendarConfig: $calendarConfig,
+            dtstartValue: $dtstartValue,
+            allDay: $allDay
+        );
 
         // Interpolate title.
         $summary = $this->interpolateTemplate(

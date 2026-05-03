@@ -32,6 +32,13 @@ use OCP\IUserSession;
 
 class TranslationStatusService
 {
+    /**
+     * Constructor.
+     *
+     * @param TranslationMapper  $translationMapper  The translation mapper.
+     * @param TranslationHandler $translationHandler The translation handler.
+     * @param IUserSession       $userSession        The user session.
+     */
     public function __construct(
         private readonly TranslationMapper $translationMapper,
         private readonly TranslationHandler $translationHandler,
@@ -45,12 +52,25 @@ class TranslationStatusService
      * Caller is the human/automation that knows the new status (e.g. a
      * translator's UI promotes draft → human_reviewed). The translator
      * uid is derived from the active session.
+     *
+     * @param string $objectUuid The object UUID.
+     * @param string $property   The property name.
+     * @param string $language   The language code.
+     * @param string $status     The new workflow status.
+     *
+     * @return Translation The persisted translation row.
+     *
+     * @throws InvalidArgumentException When status is invalid or no slot exists.
      */
     public function setStatus(string $objectUuid, string $property, string $language, string $status): Translation
     {
         if (in_array($status, Translation::ALL_STATUSES, true) === false) {
             throw new InvalidArgumentException(
-                sprintf('Invalid translation status "%s"; expected one of: %s', $status, implode(', ', Translation::ALL_STATUSES))
+                sprintf(
+                    'Invalid translation status "%s"; expected one of: %s',
+                    $status,
+                    implode(', ', Translation::ALL_STATUSES)
+                )
             );
         }
 
@@ -86,6 +106,9 @@ class TranslationStatusService
      * `translated` is the count of slots with non-empty values for the
      * given language. `ratio` is `translated / total` rounded to 2dp.
      *
+     * @param string $objectUuid The object UUID.
+     * @param Schema $schema     The schema entity.
+     *
      * @return array<string, array{translated: int, total: int, ratio: float}>
      */
     public function completenessForObject(string $objectUuid, Schema $schema): array
@@ -110,6 +133,14 @@ class TranslationStatusService
     }//end completenessForObject()
 
     /**
+     * Search translation rows.
+     *
+     * @param string|null $query      Optional full-text query.
+     * @param string|null $language   Optional language filter.
+     * @param string|null $status     Optional status filter.
+     * @param string|null $objectUuid Optional object UUID filter.
+     * @param int         $limit      Maximum number of results.
+     *
      * @return array<string, mixed>[]
      */
     public function search(
@@ -124,10 +155,14 @@ class TranslationStatusService
     }//end search()
 
     /**
-     * Find objects in `$candidateUuids` that are missing at least one
+     * Find objects missing translation slots in a language.
+     *
+     * Returns the subset of `$candidateUuids` missing at least one
      * translatable-property value in `$language`.
      *
-     * @param string[] $candidateUuids
+     * @param string   $language       The language code to check.
+     * @param Schema   $schema         The schema describing translatable properties.
+     * @param string[] $candidateUuids List of object UUIDs to consider.
      *
      * @return string[] Subset of `$candidateUuids` lacking the language.
      */

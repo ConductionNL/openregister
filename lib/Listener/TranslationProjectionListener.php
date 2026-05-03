@@ -10,6 +10,14 @@
  *
  * @category Listener
  * @package  OCA\OpenRegister\Listener
+ *
+ * @author    Conduction Development Team <dev@conduction.nl>
+ * @copyright 2026 Conduction B.V.
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ *
+ * @version GIT: <git-id>
+ *
+ * @link https://OpenRegister.app
  */
 
 declare(strict_types=1);
@@ -26,15 +34,31 @@ use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventListener;
 
 /**
+ * Listener that projects object changes into the translations sidecar.
+ *
  * @template-implements IEventListener<ObjectCreatedEvent|ObjectUpdatedEvent|ObjectDeletedEvent|ObjectTransitionedEvent>
  */
 class TranslationProjectionListener implements IEventListener
 {
+    /**
+     * Wire the translation-projection service.
+     *
+     * @param TranslationProjectionService $projection Projection service.
+     *
+     * @return void
+     */
     public function __construct(
         private readonly TranslationProjectionService $projection
     ) {
     }//end __construct()
 
+    /**
+     * Project (or purge) translation rows for the inbound event.
+     *
+     * @param Event $event Inbound dispatcher event.
+     *
+     * @return void
+     */
     public function handle(Event $event): void
     {
         if ($event instanceof ObjectCreatedEvent) {

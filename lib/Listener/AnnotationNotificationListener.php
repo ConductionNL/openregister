@@ -31,15 +31,31 @@ use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventListener;
 
 /**
+ * Listener that fires schema-declared notifications on object events.
+ *
  * @template-implements IEventListener<ObjectCreatedEvent|ObjectUpdatedEvent|ObjectTransitionedEvent>
  */
 class AnnotationNotificationListener implements IEventListener
 {
+    /**
+     * Wire the notification dispatcher.
+     *
+     * @param AnnotationNotificationDispatcher $dispatcher Dispatcher used to fire notifications.
+     *
+     * @return void
+     */
     public function __construct(
         private readonly AnnotationNotificationDispatcher $dispatcher
     ) {
     }//end __construct()
 
+    /**
+     * Dispatch any matching annotation notifications for the inbound event.
+     *
+     * @param Event $event Inbound dispatcher event.
+     *
+     * @return void
+     */
     public function handle(Event $event): void
     {
         if ($event instanceof ObjectTransitionedEvent) {
@@ -56,7 +72,7 @@ class AnnotationNotificationListener implements IEventListener
         }
 
         if ($event instanceof ObjectCreatedEvent) {
-            $object = $this->extractObject($event);
+            $object = $this->extractObject(event: $event);
             if ($object !== null) {
                 $this->dispatcher->dispatch(object: $object, trigger: 'created');
             }
@@ -65,7 +81,7 @@ class AnnotationNotificationListener implements IEventListener
         }
 
         if ($event instanceof ObjectUpdatedEvent) {
-            $object = $this->extractObject($event);
+            $object = $this->extractObject(event: $event);
             if ($object !== null) {
                 $this->dispatcher->dispatch(object: $object, trigger: 'updated');
             }
@@ -75,6 +91,10 @@ class AnnotationNotificationListener implements IEventListener
     /**
      * Different Object*Event classes expose the entity under different
      * accessors. Normalise to one.
+     *
+     * @param Event $event Inbound dispatcher event.
+     *
+     * @return \OCA\OpenRegister\Db\ObjectEntity|null Object instance, or null when none could be derived.
      */
     private function extractObject(Event $event): ?\OCA\OpenRegister\Db\ObjectEntity
     {

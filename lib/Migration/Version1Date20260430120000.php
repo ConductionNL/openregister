@@ -32,15 +32,27 @@ use OCP\Migration\IOutput;
 use OCP\Migration\SimpleMigrationStep;
 
 /**
+ * Migration class creating the openregister_translations sidecar table.
+ *
  * @SuppressWarnings(PHPMD.UnusedFormalParameter)
  */
 class Version1Date20260430120000 extends SimpleMigrationStep
 {
+    /**
+     * Apply the schema change for this migration.
+     *
+     * @param IOutput              $output        Migration output
+     * @param Closure              $schemaClosure Schema closure
+     * @param array<string, mixed> $options       Migration options
+     *
+     * @return null|ISchemaWrapper
+     */
     public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper
     {
         /*
          * @var ISchemaWrapper $schema
          */
+
         $schema = $schemaClosure();
 
         if ($schema->hasTable('openregister_translations') === true) {

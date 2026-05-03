@@ -41,16 +41,24 @@ use OCP\IUserSession;
  */
 final class PlaceholderResolver
 {
-
+    /**
+     * Constructor.
+     *
+     * @param IUserSession $userSession Session resolver for `$currentUser`.
+     */
     public function __construct(
         private readonly IUserSession $userSession
-    ) {}//end __construct()
+    ) {
+    }//end __construct()
 
     /**
      * Resolve a single value. Strings are parsed for placeholders;
      * non-strings are passed through.
      *
-     * @return mixed Resolved value (DateTimeImmutable for date placeholders, string for $currentUser).
+     * @param mixed $value The value to resolve (typically a string placeholder).
+     *
+     * @return mixed Resolved value: DateTimeImmutable for date placeholders,
+     *               string for $currentUser, original value otherwise.
      */
     public function resolve(mixed $value): mixed
     {
@@ -62,13 +70,13 @@ final class PlaceholderResolver
             return ($this->userSession->getUser()?->getUID() ?? '');
         }
 
-        return $this->resolveDate($value);
+        return $this->resolveDate(expr: $value);
     }//end resolve()
 
     /**
      * Recursively resolve placeholders inside an array.
      *
-     * @param array<string, mixed> $values
+     * @param array<string, mixed> $values The array whose leaf values may contain placeholders.
      *
      * @return array<string, mixed>
      */
@@ -77,28 +85,39 @@ final class PlaceholderResolver
         $resolved = [];
         foreach ($values as $key => $value) {
             if (is_array($value) === true) {
-                $resolved[$key] = $this->resolveArray($value);
+                $resolved[$key] = $this->resolveArray(values: $value);
                 continue;
             }
-            $resolved[$key] = $this->resolve($value);
+
+            $resolved[$key] = $this->resolve(value: $value);
         }
+
         return $resolved;
     }//end resolveArray()
 
+    /**
+     * Parse a date-style placeholder + optional offset into a DateTimeImmutable.
+     *
+     * @param string $expr The raw placeholder expression (e.g. `$now-7d`).
+     *
+     * @return mixed A DateTimeImmutable for known placeholders; the raw string when unknown.
+     */
     private function resolveDate(string $expr): mixed
     {
         // Split into base + optional offset (e.g. `$now-7d`, `$startOfMonth+1`).
-        $matched = preg_match('/^(\$[a-zA-Z]+)([+-]\d+)([dwmy]?)$/', $expr, $m);
+        $matched   = preg_match('/^(\$[a-zA-Z]+)([+-]\d+)([dwmy]?)$/', $expr, $m);
+        $datebases = ['$now', '$startOfDay', '$startOfWeek', '$startOfMonth', '$startOfYear'];
         if ($matched === 1) {
-            $base   = $m[1];
-            $sign   = (int) $m[2];
-            $unit   = ($m[3] !== '' ? $m[3] : $this->defaultUnitFor($base));
-        } else if (in_array($expr, ['$now', '$startOfDay', '$startOfWeek', '$startOfMonth', '$startOfYear'], true) === true) {
+            $base = $m[1];
+            $sign = (int) $m[2];
+            $unit = ($m[3] !== '' ? $m[3] : $this->defaultUnitFor(base: $base));
+        } else if (in_array($expr, $datebases, true) === true) {
             $base = $expr;
             $sign = 0;
-            $unit = $this->defaultUnitFor($expr);
+            $unit = $this->defaultUnitFor(base: $expr);
         } else {
-            return $expr; // Unknown placeholder — leave as-is for the caller to surface.
+            // Unknown placeholder — leave as-is for the caller to surface.
+            return $expr;
         }
 
         $now = new DateTimeImmutable('now', new DateTimeZone(date_default_timezone_get()));
@@ -112,19 +131,28 @@ final class PlaceholderResolver
         };
 
         if ($sign !== 0) {
-            $intervalSpec = sprintf('%s%d %s', ($sign < 0 ? '-' : '+'), abs($sign), match ($unit) {
-                'd' => 'days',
-                'w' => 'weeks',
-                'm' => 'months',
-                'y' => 'years',
+            $unitWord = match ($unit) {
+                'd'     => 'days',
+                'w'     => 'weeks',
+                'm'     => 'months',
+                'y'     => 'years',
                 default => 'days',
-            });
-            $dt = $dt->modify($intervalSpec);
+            };
+
+            $intervalSpec = sprintf('%s%d %s', ($sign < 0 ? '-' : '+'), abs($sign), $unitWord);
+            $dt           = $dt->modify($intervalSpec);
         }
 
         return $dt;
     }//end resolveDate()
 
+    /**
+     * Pick the natural unit suffix for a date placeholder.
+     *
+     * @param string $base The placeholder base (e.g. `$startOfWeek`).
+     *
+     * @return string One of `d`, `w`, `m`, `y`.
+     */
     private function defaultUnitFor(string $base): string
     {
         return match ($base) {
@@ -134,5 +162,4 @@ final class PlaceholderResolver
             default         => 'd',
         };
     }//end defaultUnitFor()
-
 }//end class

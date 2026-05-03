@@ -94,7 +94,10 @@ class OasRequestValidator
      *
      * @return void
      *
-     * @SuppressWarnings(PHPMD.CyclomaticComplexity) Defensive guards against opis ValidationError shape variability across versions; each method_exists branch is one independent fallback.
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity) Defensive guards against opis
+     *                                               ValidationError shape variability
+     *                                               across versions; each method_exists
+     *                                               branch is one independent fallback.
      * @SuppressWarnings(PHPMD.NPathComplexity)      Same: each fallback is one branch.
      */
     private function collectErrors(mixed $error, array &$errors): void

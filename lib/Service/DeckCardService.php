@@ -301,8 +301,9 @@ class DeckCardService
 
                 $fullDescription .= '[Object: '.$objectUuid.'](/apps/openregister/objects/'.$objectUuid.')';
 
-                $card = $cardService->create($title, $stackId, 'plain', 0, $this->userSession->getUser()->getUID());
-                $cardService->update($card->getId(), $title, $stackId, 'plain', 0, $fullDescription, $this->userSession->getUser()->getUID());
+                $userUid = $this->userSession->getUser()->getUID();
+                $card    = $cardService->create($title, $stackId, 'plain', 0, $userUid);
+                $cardService->update($card->getId(), $title, $stackId, 'plain', 0, $fullDescription, $userUid);
 
                 return $card->getId();
             }

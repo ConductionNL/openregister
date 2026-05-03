@@ -121,7 +121,7 @@ class OasService
      * @param SchemaMapper         $schemaMapper   Schema mapper for database operations
      * @param IURLGenerator        $urlGenerator   URL generator for absolute URLs
      * @param LoggerInterface|null $logger         PSR-3 logger for surfacing validation issues
-     * @param ?OasRequestValidator $metaValidator  Optional validator used at strict mode for the vendored OAS 3.1 meta-schema check.
+     * @param ?OasRequestValidator $metaValidator  Optional validator for the vendored OAS 3.1 meta-schema check.
      */
     public function __construct(
         RegisterMapper $registerMapper,

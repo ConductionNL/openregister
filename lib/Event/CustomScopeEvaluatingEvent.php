@@ -82,6 +82,8 @@ class CustomScopeEvaluatingEvent extends Event
 
     /**
      * Schema being checked.
+     *
+     * @return Schema The schema involved in this evaluation.
      */
     public function getSchema(): Schema
     {
@@ -90,6 +92,8 @@ class CustomScopeEvaluatingEvent extends Event
 
     /**
      * The custom action verb being evaluated.
+     *
+     * @return string The custom action verb.
      */
     public function getAction(): string
     {
@@ -98,6 +102,8 @@ class CustomScopeEvaluatingEvent extends Event
 
     /**
      * User ID under evaluation (null for anonymous requests).
+     *
+     * @return string|null The user ID, or null when anonymous.
      */
     public function getUserId(): ?string
     {
@@ -116,6 +122,8 @@ class CustomScopeEvaluatingEvent extends Event
 
     /**
      * Object the action is targeting, when one is supplied.
+     *
+     * @return ObjectEntity|null Target object, or null when none was supplied.
      */
     public function getObject(): ?ObjectEntity
     {
@@ -126,6 +134,8 @@ class CustomScopeEvaluatingEvent extends Event
      * Vote allow. The first listener to call this OR `deny()` wins;
      * subsequent calls are ignored so the verdict order remains
      * deterministic regardless of listener registration order.
+     *
+     * @return void
      */
     public function allow(): void
     {
@@ -136,6 +146,8 @@ class CustomScopeEvaluatingEvent extends Event
 
     /**
      * Vote deny. See `allow()` for verdict-order semantics.
+     *
+     * @return void
      */
     public function deny(): void
     {
@@ -146,6 +158,8 @@ class CustomScopeEvaluatingEvent extends Event
 
     /**
      * Resolved verdict, or null when no listener voted.
+     *
+     * @return bool|null The verdict, or null when no listener has voted.
      */
     public function getVerdict(): ?bool
     {
@@ -154,6 +168,8 @@ class CustomScopeEvaluatingEvent extends Event
 
     /**
      * Whether any listener has cast a verdict.
+     *
+     * @return bool True when at least one listener has voted.
      */
     public function hasVerdict(): bool
     {

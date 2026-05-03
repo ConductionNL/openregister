@@ -900,15 +900,16 @@ class Application extends App implements IBootstrap
         $context->registerEventListener(ObjectDeletedEvent::class, ObjectCleanupListener::class);
 
         // ActivityEventListener publishes Nextcloud Activity events for entity lifecycle.
-        $context->registerEventListener(ObjectCreatedEvent::class, \OCA\OpenRegister\Listener\ActivityEventListener::class);
-        $context->registerEventListener(ObjectUpdatedEvent::class, \OCA\OpenRegister\Listener\ActivityEventListener::class);
-        $context->registerEventListener(ObjectDeletedEvent::class, \OCA\OpenRegister\Listener\ActivityEventListener::class);
-        $context->registerEventListener(RegisterCreatedEvent::class, \OCA\OpenRegister\Listener\ActivityEventListener::class);
-        $context->registerEventListener(RegisterUpdatedEvent::class, \OCA\OpenRegister\Listener\ActivityEventListener::class);
-        $context->registerEventListener(RegisterDeletedEvent::class, \OCA\OpenRegister\Listener\ActivityEventListener::class);
-        $context->registerEventListener(SchemaCreatedEvent::class, \OCA\OpenRegister\Listener\ActivityEventListener::class);
-        $context->registerEventListener(SchemaUpdatedEvent::class, \OCA\OpenRegister\Listener\ActivityEventListener::class);
-        $context->registerEventListener(SchemaDeletedEvent::class, \OCA\OpenRegister\Listener\ActivityEventListener::class);
+        $activityListener = \OCA\OpenRegister\Listener\ActivityEventListener::class;
+        $context->registerEventListener(ObjectCreatedEvent::class, $activityListener);
+        $context->registerEventListener(ObjectUpdatedEvent::class, $activityListener);
+        $context->registerEventListener(ObjectDeletedEvent::class, $activityListener);
+        $context->registerEventListener(RegisterCreatedEvent::class, $activityListener);
+        $context->registerEventListener(RegisterUpdatedEvent::class, $activityListener);
+        $context->registerEventListener(RegisterDeletedEvent::class, $activityListener);
+        $context->registerEventListener(SchemaCreatedEvent::class, $activityListener);
+        $context->registerEventListener(SchemaUpdatedEvent::class, $activityListener);
+        $context->registerEventListener(SchemaDeletedEvent::class, $activityListener);
     }//end registerEventListeners()
 
     /**

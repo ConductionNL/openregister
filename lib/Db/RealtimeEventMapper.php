@@ -9,6 +9,14 @@
  *
  * @category Db
  * @package  OCA\OpenRegister\Db
+ *
+ * @author    Conduction Development Team <dev@conduction.nl>
+ * @copyright 2026 Conduction B.V.
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ *
+ * @version GIT: <git-id>
+ *
+ * @link https://OpenRegister.app
  */
 
 declare(strict_types=1);
@@ -20,13 +28,22 @@ use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\IDBConnection;
 
 /**
+ * Mapper for the realtime event log table.
+ *
  * @template-extends QBMapper<RealtimeEvent>
  */
 class RealtimeEventMapper extends QBMapper
 {
+    /**
+     * Construct the mapper bound to the realtime events table.
+     *
+     * @param IDBConnection $db Database connection handle.
+     *
+     * @return void
+     */
     public function __construct(IDBConnection $db)
     {
-        parent::__construct($db, 'openregister_realtime_events', RealtimeEvent::class);
+        parent::__construct(db: $db, tableName: 'openregister_realtime_events', entityClass: RealtimeEvent::class);
     }//end __construct()
 
     /**
@@ -39,7 +56,9 @@ class RealtimeEventMapper extends QBMapper
      * - `eventType`    — exact event-type match (e.g. `or.object.updated`)
      * - `organisation` — exact organisation match (multi-tenancy gate)
      *
-     * @param array<string, scalar> $filters
+     * @param int|null              $since   Lower-bound cursor; null returns from the beginning.
+     * @param int                   $limit   Maximum number of rows to return.
+     * @param array<string, scalar> $filters Optional filter map (see column map above).
      *
      * @return RealtimeEvent[]
      *
@@ -77,12 +96,14 @@ class RealtimeEventMapper extends QBMapper
         $qb->orderBy('id', 'ASC');
         $qb->setMaxResults(max(1, min(1000, $limit)));
 
-        return $this->findEntities($qb);
+        return $this->findEntities(query: $qb);
     }//end findSince()
 
     /**
      * Get the highest id in the log — used by clients to fast-forward
      * past historical events on initial subscription.
+     *
+     * @return int Highest event id, or 0 when the log is empty.
      */
     public function getMaxId(): int
     {
@@ -96,6 +117,10 @@ class RealtimeEventMapper extends QBMapper
     /**
      * Prune events older than `$retentionSeconds`. Used by a daily TimedJob
      * to keep the event log bounded.
+     *
+     * @param int $retentionSeconds Maximum age in seconds before rows are deleted.
+     *
+     * @return int Number of rows deleted.
      */
     public function deleteOlderThan(int $retentionSeconds): int
     {

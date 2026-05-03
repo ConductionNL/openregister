@@ -120,10 +120,13 @@ class TenantLifecycleService
         $allowedTransitions = self::STATE_TRANSITIONS[$currentStatus] ?? [];
 
         if (in_array($targetStatus, $allowedTransitions, true) === false) {
-            throw new Exception(
-                "Invalid state transition from '{$currentStatus}' to '{$targetStatus}'. ".'Valid transitions: '.implode(', ', $allowedTransitions),
-                Response::HTTP_CONFLICT
+            $message = sprintf(
+                "Invalid state transition from '%s' to '%s'. Valid transitions: %s",
+                $currentStatus,
+                $targetStatus,
+                implode(', ', $allowedTransitions)
             );
+            throw new Exception($message, Response::HTTP_CONFLICT);
         }
     }//end validateTransition()
 

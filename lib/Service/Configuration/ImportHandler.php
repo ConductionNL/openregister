@@ -354,6 +354,10 @@ class ImportHandler
 
     /**
      * Inject the TaskService used by seed-related-items to create VTODO tasks.
+     *
+     * @param TaskService|null $taskService Optional task service.
+     *
+     * @return void
      */
     public function setTaskService(?TaskService $taskService): void
     {
@@ -362,6 +366,10 @@ class ImportHandler
 
     /**
      * Inject the NoteService used by seed-related-items to attach comments.
+     *
+     * @param NoteService|null $noteService Optional note service.
+     *
+     * @return void
      */
     public function setNoteService(?NoteService $noteService): void
     {
@@ -370,6 +378,10 @@ class ImportHandler
 
     /**
      * Inject the FileService used by seed-related-items to attach files.
+     *
+     * @param FileService|null $fileService Optional file service.
+     *
+     * @return void
      */
     public function setFileService(?FileService $fileService): void
     {
@@ -379,6 +391,10 @@ class ImportHandler
     /**
      * Inject the IUserSession used to detect whether a logged-in actor
      * exists at seed time. Tasks + notes are skipped without one.
+     *
+     * @param IUserSession|null $userSession Optional user session.
+     *
+     * @return void
      */
     public function setUserSession(?IUserSession $userSession): void
     {
@@ -3302,8 +3318,15 @@ class ImportHandler
      * seeded object. Each item type is attempted independently so a
      * failure in one doesn't block the others.
      *
-     * @param array<string, mixed> $relatedItems The `_relatedItems` payload — keys: files, notes, tasks.
-     * @param array<string, mixed> $result       Result accumulator updated in place with related-item counts.
+     * @param ObjectEntity         $object         The freshly seeded object the related items belong to.
+     * @param array<string, mixed> $relatedItems   The `_relatedItems` payload — keys: files, notes, tasks.
+     * @param int                  $registerId     Register ID the object lives in.
+     * @param int                  $schemaId       Schema ID of the object.
+     * @param string               $objectTitle    Human-readable title used in note/task subjects.
+     * @param bool                 $hasUserContext Whether a logged-in user exists (gates note/task creation).
+     * @param array<string, mixed> $result         Result accumulator updated in place with related-item counts.
+     *
+     * @return void
      */
     private function processRelatedItems(
         ObjectEntity $object,

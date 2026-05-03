@@ -79,6 +79,15 @@ class UrnService
      */
     private const URN_REGEX = '/^urn:([a-zA-Z0-9][a-zA-Z0-9-]{1,31}):(.+)$/i';
 
+    /**
+     * Constructor.
+     *
+     * @param RegisterMapper  $registerMapper The register mapper.
+     * @param SchemaMapper    $schemaMapper   The schema mapper.
+     * @param IURLGenerator   $urlGenerator   The URL generator.
+     * @param IAppConfig      $appConfig      The app configuration.
+     * @param LoggerInterface $logger         The logger.
+     */
     public function __construct(
         private readonly RegisterMapper $registerMapper,
         private readonly SchemaMapper $schemaMapper,
@@ -96,6 +105,10 @@ class UrnService
      *
      * Example:
      *   `urn:nl-or:nextcloud-example-com:decidesk:meeting:1c1c970f-d50c-4943-8128-78999e240eec`
+     *
+     * @param ObjectEntity $object The object to build the URN for.
+     *
+     * @return string|null The URN, or null when identity is incomplete.
      */
     public function buildForObject(ObjectEntity $object): ?string
     {
@@ -104,8 +117,8 @@ class UrnService
             return null;
         }
 
-        $registerSlug = $this->resolveRegisterSlug($object->getRegister());
-        $schemaSlug   = $this->resolveSchemaSlug($object->getSchema());
+        $registerSlug = $this->resolveRegisterSlug(registerRef: $object->getRegister());
+        $schemaSlug   = $this->resolveSchemaSlug(schemaRef: $object->getSchema());
         if ($registerSlug === null || $schemaSlug === null) {
             return null;
         }
@@ -123,6 +136,12 @@ class UrnService
      * Lower-cases each component (URN comparison is case-insensitive
      * per RFC 8141 §3, but emitting in a single canonical case avoids
      * mismatch surprises in caches).
+     *
+     * @param string $registerSlug The register slug.
+     * @param string $schemaSlug   The schema slug.
+     * @param string $uuid         The object UUID.
+     *
+     * @return string The constructed URN.
      */
     public function build(string $registerSlug, string $schemaSlug, string $uuid): string
     {
@@ -143,6 +162,8 @@ class UrnService
      * (wrong NID, missing parts). Cross-instance URNs (different
      * `instance-slug`) parse successfully — federation resolution is
      * a separate concern and lives in v1.1.
+     *
+     * @param string $urn The URN to parse.
      *
      * @return array{instance: string, register: string, schema: string, uuid: string}|null
      */
@@ -187,10 +208,14 @@ class UrnService
      * The returned URL is the standard read-by-uuid REST endpoint
      * `/apps/openregister/api/objects/{register}/{schema}/{uuid}` —
      * same shape that `ObjectReferenceProvider` (Smart Picker) matches.
+     *
+     * @param string $urn The URN to resolve.
+     *
+     * @return string|null The absolute API URL, or null when not resolvable.
      */
     public function resolveUrl(string $urn): ?string
     {
-        $parts = $this->parse($urn);
+        $parts = $this->parse(urn: $urn);
         if ($parts === null) {
             return null;
         }
@@ -202,8 +227,8 @@ class UrnService
 
         // Resolve register + schema by slug to confirm they exist.
         try {
-            $register = $this->findRegister($parts['register']);
-            $schema   = $this->findSchema($parts['schema']);
+            $register = $this->findRegister(ref: $parts['register']);
+            $schema   = $this->findSchema(ref: $parts['schema']);
         } catch (\Throwable $e) {
             return null;
         }
@@ -227,6 +252,10 @@ class UrnService
      *
      * Accepts the same URL shapes the Smart Picker reference provider
      * accepts. Returns null when the URL doesn't match.
+     *
+     * @param string $url The OpenRegister object URL.
+     *
+     * @return string|null The URN, or null when the URL is not a valid OR object reference.
      */
     public function urnFromUrl(string $url): ?string
     {
@@ -235,13 +264,22 @@ class UrnService
         $uuidPattern = '[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}';
 
         // Three URL shapes (mirrors ObjectReferenceProvider):
-        // 1. Hash-routed: /apps/openregister/#/registers/{id}/schemas/{id}/objects/{uuid}
-        // 2. API:         /apps/openregister/api/objects/{registerId|slug}/{schemaId|slug}/{uuid}
-        // 3. Direct:      /apps/openregister/objects/{registerId|slug}/{schemaId|slug}/{uuid}
+        // 1. Hash-routed: /apps/openregister/#/registers/{id}/schemas/{id}/objects/{uuid}.
+        // 2. API:         /apps/openregister/api/objects/{registerId|slug}/{schemaId|slug}/{uuid}.
+        // 3. Direct:      /apps/openregister/objects/{registerId|slug}/{schemaId|slug}/{uuid}.
+        $tail = sprintf('([\w-]+)\/([\w-]+)\/(%s)$/i', $uuidPattern);
+        $hash = sprintf(
+            '/^%s(?:\/index\.php)?\/apps\/openregister\/#\/registers\/([\w-]+)\/schemas\/([\w-]+)\/objects\/(%s)$/i',
+            $escapedBase,
+            $uuidPattern
+        );
+        $api  = sprintf('/^%s(?:\/index\.php)?\/apps\/openregister\/api\/objects\/%s', $escapedBase, $tail);
+        $dir  = sprintf('/^%s(?:\/index\.php)?\/apps\/openregister\/objects\/%s', $escapedBase, $tail);
+
         $patterns = [
-            '/^'.$escapedBase.'(?:\/index\.php)?\/apps\/openregister\/#\/registers\/([\w-]+)\/schemas\/([\w-]+)\/objects\/('.$uuidPattern.')$/i',
-            '/^'.$escapedBase.'(?:\/index\.php)?\/apps\/openregister\/api\/objects\/([\w-]+)\/([\w-]+)\/('.$uuidPattern.')$/i',
-            '/^'.$escapedBase.'(?:\/index\.php)?\/apps\/openregister\/objects\/([\w-]+)\/([\w-]+)\/('.$uuidPattern.')$/i',
+            $hash,
+            $api,
+            $dir,
         ];
 
         foreach ($patterns as $pattern) {
@@ -252,8 +290,8 @@ class UrnService
 
                 // Resolve numeric ids to slugs (URLs may carry either).
                 try {
-                    $register = $this->findRegister($registerRef);
-                    $schema   = $this->findSchema($schemaRef);
+                    $register = $this->findRegister(ref: $registerRef);
+                    $schema   = $this->findSchema(ref: $schemaRef);
                 } catch (\Throwable $e) {
                     return null;
                 }
@@ -279,7 +317,7 @@ class UrnService
      * Unresolved URNs map to `null` in the returned array — the input
      * order is preserved as the array key shape `urn => url|null`.
      *
-     * @param array<int, string> $urns
+     * @param array<int, string> $urns The list of URNs to resolve.
      *
      * @return array<string, ?string> Map of urn → url-or-null.
      */
@@ -291,7 +329,7 @@ class UrnService
                 continue;
             }
 
-            $out[$urn] = $this->resolveUrl($urn);
+            $out[$urn] = $this->resolveUrl(urn: $urn);
         }
 
         return $out;
@@ -304,6 +342,8 @@ class UrnService
      *   1. App config `openregister.urn_instance` (operator override).
      *   2. Sanitised host portion of `overwrite.cli.url`.
      *   3. Fallback: `localhost`.
+     *
+     * @return string The instance slug.
      */
     public function getInstanceSlug(): string
     {
@@ -318,22 +358,28 @@ class UrnService
         }
 
         if ($configured !== '') {
-            return $this->sanitiseSlug($configured);
+            return $this->sanitiseSlug(value: $configured);
         }
 
         try {
             $base = $this->urlGenerator->getAbsoluteURL('/');
-            $host = parse_url($base, PHP_URL_HOST) ?: 'localhost';
+            $host = parse_url($base, PHP_URL_HOST);
+            if ($host === false || $host === null || $host === '') {
+                $host = 'localhost';
+            }
         } catch (\Throwable $e) {
             $host = 'localhost';
         }
 
-        return $this->sanitiseSlug($host);
+        return $this->sanitiseSlug(value: $host);
     }//end getInstanceSlug()
 
     /**
-     * Lower-case + replace non-alnum with hyphens for slug-safe use
-     * inside the URN body.
+     * Lower-case + replace non-alnum with hyphens for slug-safe use inside the URN body.
+     *
+     * @param string $value The raw value to sanitise.
+     *
+     * @return string The sanitised slug.
      */
     private function sanitiseSlug(string $value): string
     {
@@ -342,28 +388,46 @@ class UrnService
         return trim($slug, '-');
     }//end sanitiseSlug()
 
+    /**
+     * Resolve the register slug for a register reference.
+     *
+     * @param string|null $registerRef The register id/uuid/slug.
+     *
+     * @return string|null The slug, or null when not resolvable.
+     */
     private function resolveRegisterSlug(?string $registerRef): ?string
     {
         if ($registerRef === null || $registerRef === '') {
             return null;
         }
 
-        $register = $this->findRegister($registerRef);
+        $register = $this->findRegister(ref: $registerRef);
         return $register?->getSlug();
     }//end resolveRegisterSlug()
 
+    /**
+     * Resolve the schema slug for a schema reference.
+     *
+     * @param string|null $schemaRef The schema id/uuid/slug.
+     *
+     * @return string|null The slug, or null when not resolvable.
+     */
     private function resolveSchemaSlug(?string $schemaRef): ?string
     {
         if ($schemaRef === null || $schemaRef === '') {
             return null;
         }
 
-        $schema = $this->findSchema($schemaRef);
+        $schema = $this->findSchema(ref: $schemaRef);
         return $schema?->getSlug();
     }//end resolveSchemaSlug()
 
     /**
      * Find a register by id, uuid, or slug. Returns null on miss.
+     *
+     * @param string $ref The register reference.
+     *
+     * @return Register|null The register entity, or null on miss.
      */
     private function findRegister(string $ref): ?Register
     {
@@ -381,6 +445,10 @@ class UrnService
 
     /**
      * Find a schema by id, uuid, or slug. Returns null on miss.
+     *
+     * @param string $ref The schema reference.
+     *
+     * @return Schema|null The schema entity, or null on miss.
      */
     private function findSchema(string $ref): ?Schema
     {

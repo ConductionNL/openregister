@@ -252,7 +252,9 @@ class TmloService
             && $tmlo['archiefnominatie'] !== null
             && in_array($tmlo['archiefnominatie'], self::VALID_ARCHIEFNOMINATIE, true) === false
         ) {
-            $errors[] = 'archiefnominatie must be one of: '.implode(', ', self::VALID_ARCHIEFNOMINATIE).'. Got: '.$tmlo['archiefnominatie'];
+            $allowed  = implode(', ', self::VALID_ARCHIEFNOMINATIE);
+            $got      = $tmlo['archiefnominatie'];
+            $errors[] = "archiefnominatie must be one of: {$allowed}. Got: {$got}";
         }
 
         // Validate archiefstatus.
@@ -260,7 +262,9 @@ class TmloService
             && $tmlo['archiefstatus'] !== null
             && in_array($tmlo['archiefstatus'], self::VALID_ARCHIEFSTATUS, true) === false
         ) {
-            $errors[] = 'archiefstatus must be one of: '.implode(', ', self::VALID_ARCHIEFSTATUS).'. Got: '.$tmlo['archiefstatus'];
+            $allowed  = implode(', ', self::VALID_ARCHIEFSTATUS);
+            $got      = $tmlo['archiefstatus'];
+            $errors[] = "archiefstatus must be one of: {$allowed}. Got: {$got}";
         }
 
         // Validate bewaarTermijn as ISO-8601 duration.
@@ -268,7 +272,8 @@ class TmloService
             try {
                 new DateInterval($tmlo['bewaarTermijn']);
             } catch (Exception $e) {
-                $errors[] = 'bewaarTermijn must be a valid ISO-8601 duration (e.g., P7Y, P5Y6M). Got: '.$tmlo['bewaarTermijn'];
+                $got      = $tmlo['bewaarTermijn'];
+                $errors[] = "bewaarTermijn must be a valid ISO-8601 duration (e.g., P7Y, P5Y6M). Got: {$got}";
             }
         }
 
@@ -276,7 +281,8 @@ class TmloService
         if (isset($tmlo['archiefactiedatum']) === true && $tmlo['archiefactiedatum'] !== null) {
             $date = DateTime::createFromFormat('Y-m-d', $tmlo['archiefactiedatum']);
             if ($date === false || $date->format('Y-m-d') !== $tmlo['archiefactiedatum']) {
-                $errors[] = 'archiefactiedatum must be a valid ISO-8601 date (YYYY-MM-DD). Got: '.$tmlo['archiefactiedatum'];
+                $got      = $tmlo['archiefactiedatum'];
+                $errors[] = "archiefactiedatum must be a valid ISO-8601 date (YYYY-MM-DD). Got: {$got}";
             }
         }
 
@@ -310,7 +316,13 @@ class TmloService
         $allowedTargets = (self::VALID_TRANSITIONS[$oldStatus] ?? []);
         if (in_array($newStatus, $allowedTargets, true) === false) {
             $allowed  = (empty($allowedTargets) === true ? 'none (terminal state)' : implode(', ', $allowedTargets));
-            $errors[] = "Transition from '{$oldStatus}' to '{$newStatus}' is not allowed. Allowed transitions from '{$oldStatus}': {$allowed}";
+            $errors[] = sprintf(
+                "Transition from '%s' to '%s' is not allowed. Allowed transitions from '%s': %s",
+                $oldStatus,
+                $newStatus,
+                $oldStatus,
+                $allowed
+            );
             return $errors;
         }
 

@@ -29,20 +29,45 @@ use OCP\Notification\UnknownNotificationException;
 
 class AnnotationNotifier implements INotifier
 {
+    /**
+     * No-op constructor, kept explicit so DI can resolve the notifier.
+     *
+     * @return void
+     */
     public function __construct()
     {
     }//end __construct()
 
+    /**
+     * Return the unique identifier for this notifier.
+     *
+     * @return string Notifier identifier consumed by Nextcloud.
+     */
     public function getID(): string
     {
         return 'openregister';
     }//end getID()
 
+    /**
+     * Return the human-readable notifier name.
+     *
+     * @return string Notifier display name.
+     */
     public function getName(): string
     {
         return 'OpenRegister';
     }//end getName()
 
+    /**
+     * Render the notification subject for the given language.
+     *
+     * @param INotification $notification Notification to prepare.
+     * @param string        $languageCode Active language code.
+     *
+     * @return INotification Prepared notification.
+     *
+     * @throws UnknownNotificationException When the notification does not belong to OpenRegister.
+     */
     public function prepare(INotification $notification, string $languageCode): INotification
     {
         if ($notification->getApp() !== 'openregister') {

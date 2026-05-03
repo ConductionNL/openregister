@@ -45,8 +45,8 @@ final class GuardResult
     /**
      * Private constructor — use static factories.
      *
-     * @param bool        $allowed
-     * @param string|null $message
+     * @param bool        $allowed Whether the transition should be allowed.
+     * @param string|null $message Optional deny message.
      */
     private function __construct(bool $allowed, ?string $message)
     {
@@ -56,6 +56,8 @@ final class GuardResult
 
     /**
      * Allow the transition.
+     *
+     * @return self Allow verdict instance.
      */
     public static function allow(): self
     {
@@ -66,17 +68,29 @@ final class GuardResult
      * Deny the transition with a user-visible message.
      *
      * @param string $message Human-readable reason. Surfaced to the caller in the 403 response.
+     *
+     * @return self Deny verdict instance.
      */
     public static function deny(string $message): self
     {
         return new self(allowed: false, message: $message);
     }//end deny()
 
+    /**
+     * Read whether the verdict allows the transition.
+     *
+     * @return bool True when allowed, false when denied.
+     */
     public function isAllowed(): bool
     {
         return $this->allowed;
     }//end isAllowed()
 
+    /**
+     * Read the deny message, if any.
+     *
+     * @return string|null Deny message, or null when allowed or unset.
+     */
     public function getMessage(): ?string
     {
         return $this->message;

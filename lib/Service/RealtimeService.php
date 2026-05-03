@@ -23,6 +23,14 @@
  *
  * @category Service
  * @package  OCA\OpenRegister\Service
+ *
+ * @author    Conduction Development Team <dev@conduction.nl>
+ * @copyright 2026 Conduction B.V.
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ *
+ * @version GIT: <git-id>
+ *
+ * @link https://OpenRegister.app
  */
 
 declare(strict_types=1);
@@ -45,6 +53,15 @@ class RealtimeService
     public const TYPE_OBJECT_DELETED      = 'or.object.deleted';
     public const TYPE_OBJECT_TRANSITIONED = 'or.object.transitioned';
 
+    /**
+     * Constructor.
+     *
+     * @param RealtimeEventMapper $eventMapper  The realtime event mapper.
+     * @param IUserSession        $userSession  The user session.
+     * @param IURLGenerator       $urlGenerator The URL generator.
+     * @param UrnService          $urnService   The URN service.
+     * @param LoggerInterface     $logger       The logger.
+     */
     public function __construct(
         private readonly RealtimeEventMapper $eventMapper,
         private readonly IUserSession $userSession,
@@ -61,7 +78,11 @@ class RealtimeService
      * event listener which logs + continues; one missed realtime event
      * MUST NOT break the actual save pipeline.
      *
-     * @param array<string, mixed> $extra Trigger-specific extras (e.g. transition action/from/to).
+     * @param string               $eventType The event type (e.g. or.object.created).
+     * @param ObjectEntity         $object    The register object.
+     * @param array<string, mixed> $extra     Trigger-specific extras (e.g. transition action/from/to).
+     *
+     * @return RealtimeEvent|null The persisted event entity, or null on failure.
      */
     public function record(string $eventType, ObjectEntity $object, array $extra=[]): ?RealtimeEvent
     {

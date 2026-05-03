@@ -40,9 +40,11 @@ final class AggregationAnnotationValidator
     private const REQUIRES_FIELD = ['sum', 'avg', 'min', 'max', 'count_distinct'];
 
     /**
+     * Validate the `x-openregister-aggregations` annotation on a schema.
+     *
      * @param array<string, mixed> $schema Full schema definition (must include `properties`).
      *
-     * @return array<int, array{code: string, message: string}>
+     * @return array<int, array{code: string, message: string}> Validation error list.
      */
     public function validate(array $schema): array
     {

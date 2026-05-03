@@ -16,6 +16,14 @@
  *
  * @category Service
  * @package  OCA\OpenRegister\Service
+ *
+ * @author    Conduction Development Team <dev@conduction.nl>
+ * @copyright 2026 Conduction B.V.
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ *
+ * @version GIT: <git-id>
+ *
+ * @link https://OpenRegister.app
  */
 
 declare(strict_types=1);
@@ -33,6 +41,15 @@ use Psr\Log\LoggerInterface;
 
 class BulkTranslationService
 {
+    /**
+     * Constructor.
+     *
+     * @param TranslationProviderInterface $provider           The translation provider.
+     * @param TranslationMapper            $translationMapper  The translation mapper.
+     * @param TranslationHandler           $translationHandler The translation handler.
+     * @param SchemaMapper                 $schemaMapper       The schema mapper.
+     * @param LoggerInterface              $logger             The logger.
+     */
     public function __construct(
         private readonly TranslationProviderInterface $provider,
         private readonly TranslationMapper $translationMapper,
@@ -43,9 +60,9 @@ class BulkTranslationService
     }//end __construct()
 
     /**
-     * Translate an object's translatable properties from one language
-     * to another, filling only slots that are currently empty in the
-     * target language.
+     * Translate an object's translatable properties from one language to another.
+     *
+     * Fills only slots that are currently empty in the target language.
      *
      * Returns a per-property patch:
      *   `[propertyName => translatedValue]`
@@ -58,6 +75,9 @@ class BulkTranslationService
      * persists the object. Callers who don't want that immediate
      * write should invoke the provider directly.
      *
+     * @param ObjectEntity  $object     The object to translate.
+     * @param string        $fromLang   Source language code.
+     * @param string        $toLang     Target language code.
      * @param string[]|null $properties Optional whitelist of property
      *                                  names to translate; null = all.
      *
@@ -76,7 +96,7 @@ class BulkTranslationService
             return ['translated' => [], 'skipped' => ['_global' => 'fromLang === toLang']];
         }
 
-        $schema = $this->loadSchema($object);
+        $schema = $this->loadSchema(object: $object);
         if ($schema === null) {
             return ['translated' => [], 'skipped' => ['_global' => 'schema-not-resolvable']];
         }
@@ -174,6 +194,13 @@ class BulkTranslationService
         return ['translated' => $translated, 'skipped' => $skipped];
     }//end translateObject()
 
+    /**
+     * Resolve a schema entity from an object's schema reference.
+     *
+     * @param ObjectEntity $object The object whose schema reference should be resolved.
+     *
+     * @return Schema|null The resolved schema, or null when not resolvable.
+     */
     private function loadSchema(ObjectEntity $object): ?Schema
     {
         $ref = $object->getSchema();

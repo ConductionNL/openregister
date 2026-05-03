@@ -42,12 +42,25 @@ use Psr\Log\LoggerInterface;
  */
 class NotificationsAnnotationInstaller implements IEventListener
 {
+    /**
+     * Constructor.
+     *
+     * @param WebhookMapper   $webhookMapper Mapper used to upsert Webhook rows.
+     * @param LoggerInterface $logger        Logger for installer diagnostics.
+     */
     public function __construct(
         private readonly WebhookMapper $webhookMapper,
         private readonly LoggerInterface $logger
     ) {
     }//end __construct()
 
+    /**
+     * Listener entry point: dispatches schema-saved events to the installer.
+     *
+     * @param Event $event The event carrying the saved schema.
+     *
+     * @return void
+     */
     public function handle(Event $event): void
     {
         $schema = null;
@@ -61,11 +74,15 @@ class NotificationsAnnotationInstaller implements IEventListener
             return;
         }
 
-        $this->installSchema($schema);
+        $this->installSchema(schema: $schema);
     }//end handle()
 
     /**
      * Upsert a Webhook entity for every declared persistent webhook.
+     *
+     * @param Schema $schema The schema whose annotations should be installed.
+     *
+     * @return void
      */
     public function installSchema(Schema $schema): void
     {
@@ -106,14 +123,20 @@ class NotificationsAnnotationInstaller implements IEventListener
     }//end installSchema()
 
     /**
-     * @param array<string, mixed> $hookSpec
+     * Upsert a single Webhook row from one notification's `webhook` spec.
+     *
+     * @param string               $schemaSlug       Slug of the owning schema.
+     * @param string               $notificationName Name of the declared notification.
+     * @param array<string, mixed> $hookSpec         The `webhook` sub-document of the annotation.
+     *
+     * @return void
      */
     private function upsertWebhook(string $schemaSlug, string $notificationName, array $hookSpec): void
     {
         $webhookName = sprintf('or-notif-%s-%s', $schemaSlug, $notificationName);
 
         try {
-            $existing = $this->findByName($webhookName);
+            $existing = $this->findByName(name: $webhookName);
             $events   = (array) ($hookSpec['events'] ?? ['ObjectUpdatedEvent', 'ObjectTransitionedEvent']);
             $headers  = (array) ($hookSpec['headers'] ?? []);
             $secret   = ($hookSpec['secret'] ?? null);
@@ -151,6 +174,13 @@ class NotificationsAnnotationInstaller implements IEventListener
         }//end try
     }//end upsertWebhook()
 
+    /**
+     * Look up an existing Webhook row by its unique name.
+     *
+     * @param string $name The webhook's `name` field.
+     *
+     * @return Webhook|null The matching webhook, or null when none is found.
+     */
     private function findByName(string $name): ?Webhook
     {
         try {

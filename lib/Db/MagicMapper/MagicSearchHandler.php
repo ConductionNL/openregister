@@ -1377,8 +1377,11 @@ class MagicSearchHandler
                 // Delegates to the shared SchemaTypeConverter so this handler and
                 // MagicStatisticsHandler agree on type semantics across read paths.
                 $propertyType = $propertyTypes[$propertyName] ?? 'string';
-                $objectData[$propertyName] = $this->schemaTypeConverter->convertValue(value: $value, schemaType: $propertyType);
-            }
+                $objectData[$propertyName] = $this->schemaTypeConverter->convertValue(
+                    value: $value,
+                    schemaType: $propertyType
+                );
+            }//end foreach
 
             // Set metadata properties.
             if (($metadataData['uuid'] ?? null) !== null) {

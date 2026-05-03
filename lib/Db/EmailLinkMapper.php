@@ -56,6 +56,8 @@ class EmailLinkMapper extends QBMapper
      * Methods on this mapper short-circuit (returning empty / 0 / null)
      * when the table is missing, so callers don't have to wrap every
      * lookup in a try/catch.
+     *
+     * @return bool True when the link table exists in this deployment.
      */
     public function tableExists(): bool
     {
@@ -174,7 +176,12 @@ class EmailLinkMapper extends QBMapper
         $qb->select('*')
             ->from($this->getTableName())
             ->where($qb->expr()->eq('object_uuid', $qb->createNamedParameter($objectUuid)))
-            ->andWhere($qb->expr()->eq('mail_message_id', $qb->createNamedParameter($mailMessageId, IQueryBuilder::PARAM_INT)));
+            ->andWhere(
+                $qb->expr()->eq(
+                    'mail_message_id',
+                    $qb->createNamedParameter($mailMessageId, IQueryBuilder::PARAM_INT)
+                )
+            );
 
         try {
             return $this->findEntity(query: $qb);

@@ -29,6 +29,8 @@ use OCP\AppFramework\Db\Entity;
 use JsonSerializable;
 
 /**
+ * Append-only realtime event row.
+ *
  * @method int getId()
  * @method void setId(int $id)
  * @method string|null getEventType()
@@ -55,38 +57,93 @@ use JsonSerializable;
 class RealtimeEvent extends Entity implements JsonSerializable
 {
 
+    /**
+     * CloudEvent type, e.g. `nl.openregister.object.updated`.
+     *
+     * @var string|null
+     */
     protected ?string $eventType = null;
 
+    /**
+     * CloudEvent source URI for this event.
+     *
+     * @var string|null
+     */
     protected ?string $source = null;
 
+    /**
+     * Optional CloudEvent subject (typically the object UUID).
+     *
+     * @var string|null
+     */
     protected ?string $subject = null;
 
+    /**
+     * Register identifier (denormalised for filtering).
+     *
+     * @var string|null
+     */
     protected ?string $registerId = null;
 
+    /**
+     * Schema identifier (denormalised for filtering).
+     *
+     * @var string|null
+     */
     protected ?string $schemaId = null;
 
+    /**
+     * UUID of the object the event is about.
+     *
+     * @var string|null
+     */
     protected ?string $objectUuid = null;
 
+    /**
+     * UID of the actor that triggered the event.
+     *
+     * @var string|null
+     */
     protected ?string $actorUid = null;
 
+    /**
+     * Organisation identifier the event belongs to.
+     *
+     * @var string|null
+     */
     protected ?string $organisation = null;
 
+    /**
+     * Full CloudEvent payload as JSON string.
+     *
+     * @var string|null
+     */
     protected ?string $payload = null;
 
+    /**
+     * Creation timestamp for the event row.
+     *
+     * @var DateTime|null
+     */
     protected ?DateTime $created = null;
 
+    /**
+     * Configure typed columns for the entity.
+     *
+     * @return void
+     */
     public function __construct()
     {
-        $this->addType('eventType', 'string');
-        $this->addType('source', 'string');
-        $this->addType('subject', 'string');
-        $this->addType('registerId', 'string');
-        $this->addType('schemaId', 'string');
-        $this->addType('objectUuid', 'string');
-        $this->addType('actorUid', 'string');
-        $this->addType('organisation', 'string');
-        $this->addType('payload', 'string');
-        $this->addType('created', 'datetime');
+        $this->addType(fieldName: 'eventType', type: 'string');
+        $this->addType(fieldName: 'source', type: 'string');
+        $this->addType(fieldName: 'subject', type: 'string');
+        $this->addType(fieldName: 'registerId', type: 'string');
+        $this->addType(fieldName: 'schemaId', type: 'string');
+        $this->addType(fieldName: 'objectUuid', type: 'string');
+        $this->addType(fieldName: 'actorUid', type: 'string');
+        $this->addType(fieldName: 'organisation', type: 'string');
+        $this->addType(fieldName: 'payload', type: 'string');
+        $this->addType(fieldName: 'created', type: 'datetime');
     }//end __construct()
 
     /**

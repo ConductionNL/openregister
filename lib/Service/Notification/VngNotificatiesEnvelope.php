@@ -79,7 +79,9 @@ class VngNotificatiesEnvelope
      * @param ?DateTimeInterface $timestamp    Event timestamp; null = now.
      * @param array              $kenmerken    Extra discriminators (zaaktype, status, etc.).
      *
-     * @return array{kanaal: string, hoofdObject: string, resource: string, resourceUrl: string, actie: string, aanmaakdatum: string, kenmerken: array}
+     * @return array{kanaal: string, hoofdObject: string, resource: string,
+     *               resourceUrl: string, actie: string,
+     *               aanmaakdatum: string, kenmerken: array}
      *
      * @throws InvalidArgumentException When the action is not a recognised VNG actie.
      */

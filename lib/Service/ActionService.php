@@ -226,7 +226,13 @@ class ActionService
                 if (is_array($expected) === true) {
                     if (in_array($actual, $expected) === false) {
                         $filterMatch     = false;
-                        $filterReasons[] = "filter_condition mismatch: {$key} expected one of [".implode(', ', $expected)."], got '{$actual}'";
+                        $expectedList    = implode(', ', $expected);
+                        $filterReasons[] = sprintf(
+                            "filter_condition mismatch: %s expected one of [%s], got '%s'",
+                            $key,
+                            $expectedList,
+                            (string) $actual
+                        );
                     }
                 } else if ($actual !== $expected) {
                     $filterMatch     = false;

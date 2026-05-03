@@ -39,6 +39,17 @@ use Symfony\Component\Console\Output\OutputInterface;
 
 class RematerialiseCalculationsCommand extends Command
 {
+    /**
+     * Wire the mappers, evaluator, and object service used by the command.
+     *
+     * @param RegisterMapper       $registerMapper Register lookup mapper.
+     * @param SchemaMapper         $schemaMapper   Schema lookup mapper.
+     * @param MagicMapper          $magicMapper    Magic table mapper for objects.
+     * @param ObjectService        $objectService  Object persistence service.
+     * @param CalculationEvaluator $evaluator      Expression evaluator.
+     *
+     * @return void
+     */
     public function __construct(
         private readonly RegisterMapper $registerMapper,
         private readonly SchemaMapper $schemaMapper,
@@ -49,15 +60,30 @@ class RematerialiseCalculationsCommand extends Command
         parent::__construct();
     }//end __construct()
 
+    /**
+     * Define command name, description, and arguments.
+     *
+     * @return void
+     */
     protected function configure(): void
     {
-        $this->setName('openregister:rematerialise-calculations')
-            ->setDescription('Re-evaluate every materialised calculation on objects in a (register, schema) and persist the result.')
+        $this->setName(name: 'openregister:rematerialise-calculations')
+            ->setDescription(
+                'Re-evaluate every materialised calculation on objects in a (register, schema) and persist the result.'
+            )
             ->addArgument('register', InputArgument::REQUIRED, 'Register slug, uuid or id')
             ->addArgument('schema',   InputArgument::REQUIRED, 'Schema slug, uuid or id')
             ->addOption('dry-run',    null, InputOption::VALUE_NONE, 'Report changes without saving');
     }//end configure()
 
+    /**
+     * Iterate every object and re-materialise all declared calculations.
+     *
+     * @param InputInterface  $input  Console input.
+     * @param OutputInterface $output Console output stream.
+     *
+     * @return int Symfony command exit code.
+     */
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $registerRef = (string) $input->getArgument('register');
@@ -72,7 +98,7 @@ class RematerialiseCalculationsCommand extends Command
             return Command::FAILURE;
         }
 
-        $calcs = $this->getCalculations($schema);
+        $calcs = $this->getCalculations(schema: $schema);
         if ($calcs === null || count($calcs) === 0) {
             $output->writeln('<comment>Schema declares no x-openregister-calculations — nothing to do.</comment>');
             return Command::SUCCESS;
@@ -96,7 +122,7 @@ class RematerialiseCalculationsCommand extends Command
             count($materialiseNames),
             $register->getSlug() ?? $register->getId(),
             $schema->getSlug() ?? $schema->getId(),
-            $dryRun ? ' (dry run)' : ''
+            $dryRun === true ? ' (dry run)' : ''
         )
                 );
 
@@ -112,7 +138,7 @@ class RematerialiseCalculationsCommand extends Command
 
         foreach ($entities as $entity) {
             $data    = $entity->getObject() ?? [];
-            $payload = $this->withSelf($data, $entity);
+            $payload = $this->withSelf(data: $data, entity: $entity);
 
             $changed = false;
             foreach ($calcs as $name => $spec) {
@@ -182,7 +208,12 @@ class RematerialiseCalculationsCommand extends Command
     }//end execute()
 
     /**
-     * @param array<string, mixed> $data
+     * Inject the synthetic `@self` metadata into an evaluation payload.
+     *
+     * @param array<string, mixed>              $data   Object data.
+     * @param \OCA\OpenRegister\Db\ObjectEntity $entity Object entity providing metadata.
+     *
+     * @return array<string, mixed> Payload with `@self` injected.
      */
     private function withSelf(array $data, \OCA\OpenRegister\Db\ObjectEntity $entity): array
     {
@@ -201,7 +232,11 @@ class RematerialiseCalculationsCommand extends Command
     }//end withSelf()
 
     /**
-     * @return array<string, mixed>|null
+     * Read the `x-openregister-calculations` configuration block.
+     *
+     * @param Schema $schema Schema to inspect.
+     *
+     * @return array<string, mixed>|null Calculations map, or null when absent.
      */
     private function getCalculations(Schema $schema): ?array
     {

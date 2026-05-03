@@ -37,6 +37,9 @@ namespace OCA\OpenRegister\Service\Calculation;
 final class CalculationAnnotationValidator
 {
 
+    /**
+     * Operator vocabulary recognised by the v1 calculation evaluator.
+     */
     private const VALID_OPS = [
         'prop',
         'lit',
@@ -61,12 +64,17 @@ final class CalculationAnnotationValidator
         'formatDate',
     ];
 
+    /**
+     * Allowed `type` values for a calculation declaration.
+     */
     private const VALID_TYPES = ['string', 'integer', 'number', 'boolean', 'date'];
 
     /**
+     * Validate a schema's `x-openregister-calculations` annotation.
+     *
      * @param array<string, mixed> $schema Full schema (must include `properties`).
      *
-     * @return array<int, array{code: string, message: string}>
+     * @return array<int, array{code: string, message: string}> Validation error list.
      */
     public function validate(array $schema): array
     {
@@ -76,7 +84,12 @@ final class CalculationAnnotationValidator
 
         $calcs = $schema['x-openregister-calculations'];
         if (is_array($calcs) === false || count($calcs) === 0) {
-            return [['code' => 'calculations-empty', 'message' => 'x-openregister-calculations must declare at least one calculation.']];
+            return [
+                [
+                    'code'    => 'calculations-empty',
+                    'message' => 'x-openregister-calculations must declare at least one calculation.',
+                ],
+            ];
         }
 
         $properties = ($schema['properties'] ?? []);
@@ -89,41 +102,72 @@ final class CalculationAnnotationValidator
 
         foreach ($calcs as $name => $spec) {
             if (is_string($name) === false || $name === '') {
-                $errors[] = ['code' => 'calculation-bad-name', 'message' => 'Calculation names must be non-empty strings.'];
+                $errors[] = [
+                    'code'    => 'calculation-bad-name',
+                    'message' => 'Calculation names must be non-empty strings.',
+                ];
                 continue;
             }
 
             if (is_array($spec) === false) {
-                $errors[] = ['code' => 'calculation-malformed', 'message' => sprintf('Calculation "%s" must be an object.', $name)];
+                $errors[] = [
+                    'code'    => 'calculation-malformed',
+                    'message' => sprintf('Calculation "%s" must be an object.', $name),
+                ];
                 continue;
             }
 
             $type = (string) ($spec['type'] ?? '');
             if (in_array($type, self::VALID_TYPES, true) === false) {
-                $errors[] = ['code' => 'calculation-bad-type', 'message' => sprintf('Calculation "%s" type must be one of [%s].', $name, implode(', ', self::VALID_TYPES))];
+                $errors[] = [
+                    'code'    => 'calculation-bad-type',
+                    'message' => sprintf(
+                        'Calculation "%s" type must be one of [%s].',
+                        $name,
+                        implode(', ', self::VALID_TYPES)
+                    ),
+                ];
             }
 
             if (isset($spec['expression']) === false) {
-                $errors[] = ['code' => 'calculation-no-expression', 'message' => sprintf('Calculation "%s" requires an expression.', $name)];
+                $errors[] = [
+                    'code'    => 'calculation-no-expression',
+                    'message' => sprintf('Calculation "%s" requires an expression.', $name),
+                ];
                 continue;
             }
 
             $deps[$name] = [];
-            $this->walk($spec['expression'], $name, $allRefs, $errors, $deps[$name]);
+            $this->walk(
+                expr: $spec['expression'],
+                owner: $name,
+                allRefs: $allRefs,
+                errors: $errors,
+                deps: $deps[$name]
+            );
         }//end foreach
 
-        $cycle = $this->findCycle($deps);
+        $cycle = $this->findCycle(deps: $deps);
         if ($cycle !== null) {
-            $errors[] = ['code' => 'calculation-cycle', 'message' => sprintf('Calculation cycle detected: %s.', implode(' -> ', $cycle))];
+            $errors[] = [
+                'code'    => 'calculation-cycle',
+                'message' => sprintf('Calculation cycle detected: %s.', implode(' -> ', $cycle)),
+            ];
         }
 
         return $errors;
     }//end validate()
 
     /**
+     * Recursively walk an expression AST collecting errors and dependencies.
+     *
+     * @param mixed                                            $expr    Sub-expression to walk.
+     * @param string                                           $owner   Name of the calc currently being walked.
      * @param array<int, string>                               $allRefs Available property + calc names.
      * @param array<int, array{code: string, message: string}> $errors  Mutable error accumulator.
      * @param array<int, string>                               $deps    Mutable list of calc deps for the current calc.
+     *
+     * @return void
      */
     private function walk(mixed $expr, string $owner, array $allRefs, array &$errors, array &$deps): void
     {
@@ -133,13 +177,19 @@ final class CalculationAnnotationValidator
         }
 
         if (count($expr) !== 1) {
-            $errors[] = ['code' => 'calculation-malformed-expr', 'message' => sprintf('Calculation "%s": expression must be single-key.', $owner)];
+            $errors[] = [
+                'code'    => 'calculation-malformed-expr',
+                'message' => sprintf('Calculation "%s": expression must be single-key.', $owner),
+            ];
             return;
         }
 
         $op = (string) array_key_first($expr);
         if (in_array($op, self::VALID_OPS, true) === false) {
-            $errors[] = ['code' => 'calculation-unknown-op', 'message' => sprintf('Calculation "%s": unknown operator "%s".', $owner, $op)];
+            $errors[] = [
+                'code'    => 'calculation-unknown-op',
+                'message' => sprintf('Calculation "%s": unknown operator "%s".', $owner, $op),
+            ];
             return;
         }
 
@@ -147,7 +197,14 @@ final class CalculationAnnotationValidator
         if ($op === 'prop') {
             $name = is_string($args) === true ? $args : (is_array($args) === true ? (string) ($args[0] ?? '') : '');
             if ($name === '') {
-                $errors[] = ['code' => 'calculation-prop-unknown', 'message' => sprintf('Calculation "%s": prop "%s" is not a property or calculation.', $owner, $name)];
+                $errors[] = [
+                    'code'    => 'calculation-prop-unknown',
+                    'message' => sprintf(
+                        'Calculation "%s": prop "%s" is not a property or calculation.',
+                        $owner,
+                        $name
+                    ),
+                ];
                 return;
             }
 
@@ -159,14 +216,29 @@ final class CalculationAnnotationValidator
                 $sysField = substr($name, 6);
                 $allowed  = ['id', 'uuid', 'register', 'schema', 'owner', 'created', 'updated'];
                 if (in_array($sysField, $allowed, true) === false) {
-                    $errors[] = ['code' => 'calculation-self-unknown', 'message' => sprintf('Calculation "%s": @self.%s is not a known system field. Allowed: %s.', $owner, $sysField, implode(', ', $allowed))];
+                    $errors[] = [
+                        'code'    => 'calculation-self-unknown',
+                        'message' => sprintf(
+                            'Calculation "%s": @self.%s is not a known system field. Allowed: %s.',
+                            $owner,
+                            $sysField,
+                            implode(', ', $allowed)
+                        ),
+                    ];
                 }
 
                 return;
             }
 
             if (in_array($name, $allRefs, true) === false) {
-                $errors[] = ['code' => 'calculation-prop-unknown', 'message' => sprintf('Calculation "%s": prop "%s" is not a property or calculation.', $owner, $name)];
+                $errors[] = [
+                    'code'    => 'calculation-prop-unknown',
+                    'message' => sprintf(
+                        'Calculation "%s": prop "%s" is not a property or calculation.',
+                        $owner,
+                        $name
+                    ),
+                ];
                 return;
             }
 
@@ -175,16 +247,18 @@ final class CalculationAnnotationValidator
         }//end if
 
         if (is_array($args) === false) {
-            $this->walk($args, $owner, $allRefs, $errors, $deps);
+            $this->walk(expr: $args, owner: $owner, allRefs: $allRefs, errors: $errors, deps: $deps);
             return;
         }
 
         foreach ($args as $sub) {
-            $this->walk($sub, $owner, $allRefs, $errors, $deps);
+            $this->walk(expr: $sub, owner: $owner, allRefs: $allRefs, errors: $errors, deps: $deps);
         }
     }//end walk()
 
     /**
+     * Find a cycle in the calculation dependency graph using DFS colouring.
+     *
      * @param array<string, array<int, string>> $deps Dependency map.
      *
      * @return array<int, string>|null A cycle path if found, else null.

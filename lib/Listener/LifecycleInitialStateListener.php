@@ -41,12 +41,27 @@ use Psr\Log\LoggerInterface;
  */
 class LifecycleInitialStateListener implements IEventListener
 {
+    /**
+     * Wire collaborators used to look up schema lifecycle metadata.
+     *
+     * @param SchemaMapper    $schemaMapper Schema lookup mapper.
+     * @param LoggerInterface $logger       PSR logger for warnings.
+     *
+     * @return void
+     */
     public function __construct(
         private readonly SchemaMapper $schemaMapper,
         private readonly LoggerInterface $logger
     ) {
     }//end __construct()
 
+    /**
+     * Apply the schema-declared initial lifecycle value when missing.
+     *
+     * @param Event $event Inbound dispatcher event.
+     *
+     * @return void
+     */
     public function handle(Event $event): void
     {
         if (($event instanceof ObjectCreatingEvent) === false) {
@@ -54,12 +69,12 @@ class LifecycleInitialStateListener implements IEventListener
         }
 
         $object = $event->getObject();
-        $schema = $this->loadSchema($object);
+        $schema = $this->loadSchema(object: $object);
         if ($schema === null) {
             return;
         }
 
-        $annotation = $this->getLifecycleAnnotation($schema);
+        $annotation = $this->getLifecycleAnnotation(schema: $schema);
         if ($annotation === null) {
             return;
         }
@@ -81,6 +96,13 @@ class LifecycleInitialStateListener implements IEventListener
         $object->setObject($data);
     }//end handle()
 
+    /**
+     * Look up the schema referenced by an object instance.
+     *
+     * @param ObjectEntity $object Object whose schema reference to resolve.
+     *
+     * @return Schema|null Resolved schema, or null on lookup failure.
+     */
     private function loadSchema(ObjectEntity $object): ?Schema
     {
         $schemaRef = $object->getSchema();
@@ -103,7 +125,11 @@ class LifecycleInitialStateListener implements IEventListener
     }//end loadSchema()
 
     /**
-     * @return array<string, mixed>|null
+     * Read the `x-openregister-lifecycle` configuration block.
+     *
+     * @param Schema $schema Schema to inspect.
+     *
+     * @return array<string, mixed>|null Lifecycle annotation, or null when missing.
      */
     private function getLifecycleAnnotation(Schema $schema): ?array
     {

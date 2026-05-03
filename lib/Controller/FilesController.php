@@ -101,9 +101,9 @@ class FilesController extends Controller
      * @param IRootFolder                                          $rootFolder       Root folder for file access
      * @param IUserManager                                         $userManager      User manager for user lookups
      * @param IEventDispatcher                                     $eventDispatcher  Event dispatcher for file events
-     * @param \OCA\OpenRegister\Db\FileMapper|null                 $fileMapper       OR-side metadata mapper for download counts. Null-safe.
-     * @param \OCA\OpenRegister\Service\File\FileAuditHandler|null $fileAuditHandler Audit-trail writer for download events. Null-safe.
-     * @param IUserSession|null                                    $userSession      Session for anonymous-vs-authenticated gating.
+     * @param \OCA\OpenRegister\Db\FileMapper|null                 $fileMapper       OR-side metadata mapper. Null-safe.
+     * @param \OCA\OpenRegister\Service\File\FileAuditHandler|null $fileAuditHandler Audit-trail writer. Null-safe.
+     * @param IUserSession|null                                    $userSession      Session for auth gating.
      *
      * @return void
      */
@@ -137,7 +137,7 @@ class FilesController extends Controller
      * integration into FilesController::show() and downloadById().
      *
      * @param int                                    $fileId The Nextcloud filecache fileid being downloaded.
-     * @param \OCA\OpenRegister\Db\ObjectEntity|null $object The parent object whose folder hosts the file (null for downloadById).
+     * @param \OCA\OpenRegister\Db\ObjectEntity|null $object Parent object whose folder hosts the file.
      *
      * @return void
      */

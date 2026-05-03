@@ -31,10 +31,19 @@ use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
 
 /**
+ * URN resolution controller.
+ *
  * @psalm-suppress UnusedClass
  */
 class UrnController extends Controller
 {
+    /**
+     * Constructor.
+     *
+     * @param string     $appName    The application name.
+     * @param IRequest   $request    The current request.
+     * @param UrnService $urnService The URN resolution service.
+     */
     public function __construct(
         string $appName,
         IRequest $request,
@@ -49,6 +58,10 @@ class UrnController extends Controller
      * Returns 200 `{urn, url, instance, register, schema, uuid}` on success;
      * 400 when the URN doesn't parse; 404 when the URN parses but the
      * referenced register/schema doesn't exist on this instance.
+     *
+     * @param string|null $urn The URN to resolve.
+     *
+     * @return JSONResponse JSON response with the resolution result or error.
      *
      * @NoCSRFRequired
      */
@@ -89,6 +102,10 @@ class UrnController extends Controller
     /**
      * Reverse: derive the URN that addresses an OpenRegister object URL.
      *
+     * @param string|null $url The URL to reverse-resolve.
+     *
+     * @return JSONResponse JSON response with the URN or error.
+     *
      * @NoCSRFRequired
      */
     public function lookup(?string $url=null): JSONResponse
@@ -119,6 +136,10 @@ class UrnController extends Controller
      * Accepts JSON body `{urns: ["urn:nl-or:...", ...]}`. Returns a map
      * of `urn → url-or-null`, preserving the input list order via the
      * map keys.
+     *
+     * @param array|null $urns The list of URNs to resolve.
+     *
+     * @return JSONResponse JSON response with the bulk resolution result.
      *
      * @NoCSRFRequired
      */

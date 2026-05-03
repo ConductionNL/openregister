@@ -82,27 +82,30 @@ class EmailService
     private readonly LoggerInterface $logger;
 
     /**
-     * Constructor.
-     *
-     * @param EmailLinkMapper $emailLinkMapper Email link mapper
-     * @param IAppManager     $appManager      App manager
-     * @param IDBConnection   $db              Database connection
-     * @param IUserSession    $userSession     User session
-     * @param LoggerInterface $logger          Logger
-     *
-     * @return void
-     */
-
-    /**
      * Schema mapper for iterating over schemas with `_mail` linked-type column.
+     *
+     * @var SchemaMapper
      */
     private readonly SchemaMapper $schemaMapper;
 
     /**
      * Magic mapper for cross-table _mail JSONB containment queries.
+     *
+     * @var MagicMapper
      */
     private readonly MagicMapper $magicMapper;
 
+    /**
+     * Constructor.
+     *
+     * @param EmailLinkMapper $emailLinkMapper Email link mapper.
+     * @param IAppManager     $appManager      App manager.
+     * @param IDBConnection   $db              Database connection.
+     * @param IUserSession    $userSession     User session.
+     * @param LoggerInterface $logger          Logger.
+     * @param SchemaMapper    $schemaMapper    Schema mapper.
+     * @param MagicMapper     $magicMapper     Magic mapper.
+     */
     public function __construct(
         EmailLinkMapper $emailLinkMapper,
         IAppManager $appManager,
@@ -286,6 +289,8 @@ class EmailService
     /**
      * Query the Mail app's database for message IDs from a sender.
      *
+     * @param string $sender The sender email address to query.
+     *
      * @return array<int, string> List of "{accountId}/{messageId}" identifiers.
      */
     private function findMessageIdsBySender(string $sender): array
@@ -295,7 +300,7 @@ class EmailService
         }
 
         try {
-            // mail_recipients.type=0 is "from"; mail_recipients.email is the address.
+            // The mail_recipients.type=0 is "from"; mail_recipients.email is the address.
             $sql  = "SELECT mb.account_id, m.id AS message_id
                      FROM oc_mail_messages m
                      JOIN oc_mail_recipients r ON r.message_id = m.id AND r.type = 0
@@ -422,7 +427,8 @@ class EmailService
     private function buildMailboxSubquery(\OCP\DB\QueryBuilder\IQueryBuilder $qb, int $accountId): string
     {
         $param = $qb->createNamedParameter($accountId);
-        return '(SELECT mb.id FROM *PREFIX*mail_mailboxes mb WHERE mb.account_id = '.$param.' AND mb.id = m.mailbox_id LIMIT 1)';
+        $sql   = '(SELECT mb.id FROM *PREFIX*mail_mailboxes mb WHERE mb.account_id = '.$param;
+        return $sql.' AND mb.id = m.mailbox_id LIMIT 1)';
 
     }//end buildMailboxSubquery()
 }//end class

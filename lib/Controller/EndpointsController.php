@@ -432,6 +432,13 @@ class EndpointsController extends Controller
 
     }//end patch()
 
+    /**
+     * Delete an endpoint by ID.
+     *
+     * @param int $id The endpoint ID to delete.
+     *
+     * @return JSONResponse Empty response on success or error response on failure.
+     */
     #[NoAdminRequired]
     #[NoCSRFRequired]
     public function destroy(int $id): JSONResponse

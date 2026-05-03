@@ -153,7 +153,13 @@ class AuditHashService
      * @param int|null $from Start entry ID (inclusive), null for beginning
      * @param int|null $to   End entry ID (inclusive), null for end
      *
-     * @return array{valid: bool, entriesVerified: int, brokenAt: int|null, skippedNullHashes: int, range?: array{from: int, to: int}}
+     * @return array{
+     *     valid: bool,
+     *     entriesVerified: int,
+     *     brokenAt: int|null,
+     *     skippedNullHashes: int,
+     *     range?: array{from: int, to: int}
+     * }
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)
      *

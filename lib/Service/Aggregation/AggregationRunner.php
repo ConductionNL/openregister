@@ -44,6 +44,19 @@ use RuntimeException;
  */
 class AggregationRunner
 {
+    /**
+     * Constructor.
+     *
+     * @param MagicMapper                 $magicMapper    Magic-table mapper used for the PHP fallback path.
+     * @param RegisterMapper              $registerMapper Register loader.
+     * @param SchemaMapper                $schemaMapper   Schema loader.
+     * @param PlaceholderResolver         $placeholders   Resolves dynamic placeholders inside filters.
+     * @param IDBConnection               $db             Database connection for the Postgres-native fast path.
+     * @param AggregationCache            $cache          60s aggregation result cache.
+     * @param SearchBackendInterface|null $searchBackend  Optional Solr/ES backend for native aggregation.
+     *
+     * @return void
+     */
     public function __construct(
         private readonly MagicMapper $magicMapper,
         private readonly RegisterMapper $registerMapper,
@@ -74,9 +87,9 @@ class AggregationRunner
      */
     public function run(string $registerRef, string $schemaRef, string $name): array
     {
-        $schema     = $this->loadSchema($schemaRef);
-        $register   = $this->loadRegister($registerRef);
-        $annotation = $this->getAnnotation($schema);
+        $schema     = $this->loadSchema(schemaRef: $schemaRef);
+        $register   = $this->loadRegister(registerRef: $registerRef);
+        $annotation = $this->getAnnotation(schema: $schema);
         if ($annotation === null) {
             throw new RuntimeException(
                 sprintf('Schema "%s" does not declare x-openregister-aggregations.', $schemaRef)
@@ -194,7 +207,7 @@ class AggregationRunner
         // Apply post-filter for operator shapes the underlying mapper
         // doesn't natively support (e.g. gte/lte). Equality filters were
         // already applied above, so re-applying them is a no-op.
-        $rows = $this->applyFilter($rows, $resolvedFilter);
+        $rows = $this->applyFilter(rows: $rows, filter: $resolvedFilter);
 
         if (is_array($groupBy) === true && isset($groupBy['field']) === true) {
             $result = [
@@ -202,7 +215,12 @@ class AggregationRunner
                 'metric'  => $metric,
                 'field'   => is_string($field) === true ? $field : null,
                 'backend' => 'php-fallback',
-                'groups'  => $this->computeGrouped($rows, $metric, $field, (string) $groupBy['field']),
+                'groups'  => $this->computeGrouped(
+                    rows: $rows,
+                    metric: $metric,
+                    field: $field,
+                    groupField: (string) $groupBy['field']
+                ),
             ];
         } else {
             $result = [
@@ -210,9 +228,9 @@ class AggregationRunner
                 'metric'  => $metric,
                 'field'   => is_string($field) === true ? $field : null,
                 'backend' => 'php-fallback',
-                'value'   => $this->computeMetric($rows, $metric, $field),
+                'value'   => $this->computeMetric(rows: $rows, metric: $metric, field: $field),
             ];
-        }
+        }//end if
 
         $this->cache->set(
             registerSlug: (string) $register->getSlug(),
@@ -225,23 +243,45 @@ class AggregationRunner
     }//end run()
 
     /**
-     * @param array<int, array<string, mixed>> $rows
+     * Compute a single scalar metric over the given rows.
+     *
+     * @param array<int, array<string, mixed>> $rows   Already-filtered rows.
+     * @param string                           $metric One of count/sum/avg/min/max/count_distinct.
+     * @param mixed                            $field  Field name to aggregate over (ignored for count).
+     *
+     * @return int|float|null The metric result, or null when no rows match.
      */
     private function computeMetric(array $rows, string $metric, mixed $field): int|float|null
     {
+        $sumReducer = fn(float $a, float $b) => $a + $b;
+        $minReducer = fn(float $a, float $b) => min($a, $b);
+        $maxReducer = fn(float $a, float $b) => max($a, $b);
+        $distinct   = array_unique(
+            array_filter(
+                array_map(fn(array $r) => $r[(string) $field] ?? null, $rows),
+                fn($v) => $v !== null
+            ),
+            SORT_REGULAR
+        );
+
         return match ($metric) {
             'count'          => count($rows),
-            'sum'            => $this->reduceNumeric($rows, (string) $field, fn(float $a, float $b) => $a + $b, 0.0),
-            'avg'            => $this->avg($rows, (string) $field),
-            'min'            => $this->reduceNumeric($rows, (string) $field, fn(float $a, float $b) => min($a, $b), null),
-            'max'            => $this->reduceNumeric($rows, (string) $field, fn(float $a, float $b) => max($a, $b), null),
-            'count_distinct' => count(array_unique(array_filter(array_map(fn(array $r) => $r[(string) $field] ?? null, $rows), fn($v) => $v !== null), SORT_REGULAR)),
+            'sum'            => $this->reduceNumeric(rows: $rows, field: (string) $field, reducer: $sumReducer, initial: 0.0),
+            'avg'            => $this->avg(rows: $rows, field: (string) $field),
+            'min'            => $this->reduceNumeric(rows: $rows, field: (string) $field, reducer: $minReducer, initial: null),
+            'max'            => $this->reduceNumeric(rows: $rows, field: (string) $field, reducer: $maxReducer, initial: null),
+            'count_distinct' => count($distinct),
             default          => null,
         };
     }//end computeMetric()
 
     /**
-     * @param array<int, array<string, mixed>> $rows
+     * Compute a grouped metric, bucketing rows by `$groupField`.
+     *
+     * @param array<int, array<string, mixed>> $rows       Already-filtered rows.
+     * @param string                           $metric     One of count/sum/avg/min/max/count_distinct.
+     * @param mixed                            $field      Field to aggregate over.
+     * @param string                           $groupField Field used as the bucket key.
      *
      * @return array<int, array{key: mixed, value: int|float|null}>
      */
@@ -262,7 +302,7 @@ class AggregationRunner
         foreach ($buckets as $b) {
             $out[] = [
                 'key'   => $b['key'],
-                'value' => $this->computeMetric($b['rows'], $metric, $field),
+                'value' => $this->computeMetric(rows: $b['rows'], metric: $metric, field: $field),
             ];
         }
 
@@ -270,7 +310,14 @@ class AggregationRunner
     }//end computeGrouped()
 
     /**
-     * @param array<int, array<string, mixed>> $rows
+     * Reduce a numeric column using the given binary reducer.
+     *
+     * @param array<int, array<string, mixed>> $rows    Rows to reduce.
+     * @param string                           $field   Column to read.
+     * @param callable                         $reducer Binary reducer applied to (acc, value).
+     * @param mixed                            $initial Initial accumulator value (null is allowed).
+     *
+     * @return int|float|null The reduced value, or null when no numeric rows were seen.
      */
     private function reduceNumeric(array $rows, string $field, callable $reducer, mixed $initial): int|float|null
     {
@@ -294,7 +341,12 @@ class AggregationRunner
     }//end reduceNumeric()
 
     /**
-     * @param array<int, array<string, mixed>> $rows
+     * Compute the arithmetic mean of a numeric column.
+     *
+     * @param array<int, array<string, mixed>> $rows  Rows to average.
+     * @param string                           $field Column to read.
+     *
+     * @return float|null The mean, or null when no numeric rows were seen.
      */
     private function avg(array $rows, string $field): float|null
     {
@@ -318,9 +370,9 @@ class AggregationRunner
      * understands (equality only here; range/in operators are applied
      * in PHP via applyFilter).
      *
-     * @param array<string, mixed> $filter
+     * @param array<string, mixed> $filter Spec filter map.
      *
-     * @return array<string, mixed>
+     * @return array<string, mixed> Equality-only subset.
      */
     private function shapeFilters(array $filter): array
     {
@@ -337,10 +389,10 @@ class AggregationRunner
     /**
      * Apply operator-style filters (gte/lte/gt/lt/in/ne) in PHP.
      *
-     * @param array<int, array<string, mixed>> $rows
-     * @param array<string, mixed>             $filter
+     * @param array<int, array<string, mixed>> $rows   Rows to filter.
+     * @param array<string, mixed>             $filter Filter map (scalar = eq, array = operator map).
      *
-     * @return array<int, array<string, mixed>>
+     * @return array<int, array<string, mixed>> Filtered rows.
      */
     private function applyFilter(array $rows, array $filter): array
     {
@@ -359,7 +411,7 @@ class AggregationRunner
                 }
 
                 foreach ($criterion as $op => $opValue) {
-                    if ($this->checkOp($value, (string) $op, $opValue) === false) {
+                    if ($this->checkOp(value: $value, op: (string) $op, opValue: $opValue) === false) {
                         $keep = false;
                         break 2;
                     }
@@ -374,10 +426,19 @@ class AggregationRunner
         return $result;
     }//end applyFilter()
 
+    /**
+     * Apply a single operator check.
+     *
+     * @param mixed  $value   The value extracted from the row.
+     * @param string $op      Operator name ('eq','ne','gt','gte','lt','lte','in').
+     * @param mixed  $opValue The operand value to compare against.
+     *
+     * @return bool True when the value satisfies the operator.
+     */
     private function checkOp(mixed $value, string $op, mixed $opValue): bool
     {
-        $cmp = $this->normaliseForCompare($value);
-        $rhs = $this->normaliseForCompare($opValue);
+        $cmp = $this->normaliseForCompare(v: $value);
+        $rhs = $this->normaliseForCompare(v: $opValue);
         return match ($op) {
             'eq'  => $cmp === $rhs,
             'ne'  => $cmp !== $rhs,
@@ -390,6 +451,13 @@ class AggregationRunner
         };
     }//end checkOp()
 
+    /**
+     * Coerce date-like scalars to integer timestamps for ordered comparisons.
+     *
+     * @param mixed $v The value to normalise.
+     *
+     * @return mixed Integer timestamp for date-like values, original otherwise.
+     */
     private function normaliseForCompare(mixed $v): mixed
     {
         if ($v instanceof DateTimeInterface) {
@@ -416,8 +484,12 @@ class AggregationRunner
      * Returns the result fragment ('value' or 'groups') on success, null
      * to signal the caller should fall back to PHP-side aggregation.
      *
-     * @param array<string, mixed>      $filter  Already placeholder-resolved.
-     * @param array<string, mixed>|null $groupBy
+     * @param Register                  $register Register the schema belongs to.
+     * @param Schema                    $schema   Schema being aggregated.
+     * @param string                    $metric   Metric name (count/sum/avg/min/max).
+     * @param string|null               $field    Field to aggregate over (ignored for count).
+     * @param array<string, mixed>      $filter   Already placeholder-resolved filter map.
+     * @param array<string, mixed>|null $groupBy  Optional group spec ({field: ...}).
      *
      * @return array{value: int|float|null}|array{groups: array<int, array{key: mixed, value: int|float|null}>}|null
      */
@@ -467,10 +539,10 @@ class AggregationRunner
         $whereParts = ["(_deleted IS NULL OR _deleted = 'null'::jsonb)"];
         $bindings   = [];
         foreach ($filter as $f => $v) {
-            $col = $this->sanitizeColumnName((string) $f);
+            $col = $this->sanitizeColumnName(name: (string) $f);
             if (is_array($v) === false) {
                 $whereParts[] = '"'.$col.'" = ?';
-                $bindings[]   = $this->bindValue($v);
+                $bindings[]   = $this->bindValue(value: $v);
                 continue;
             }
 
@@ -487,7 +559,7 @@ class AggregationRunner
                     $placeholders = implode(', ', array_fill(0, count($list), '?'));
                     $whereParts[] = '"'.$col.'" IN ('.$placeholders.')';
                     foreach ($list as $item) {
-                        $bindings[] = $this->bindValue($item);
+                        $bindings[] = $this->bindValue(value: $item);
                     }
 
                     continue;
@@ -507,14 +579,14 @@ class AggregationRunner
                 }
 
                 $whereParts[] = '"'.$col.'" '.$sqlOp.' ?';
-                $bindings[]   = $this->bindValue($opValue);
+                $bindings[]   = $this->bindValue(value: $opValue);
             }//end foreach
         }//end foreach
 
         $whereSql = implode(' AND ', $whereParts);
 
         // Aggregate clause.
-        $aggCol = $field !== null ? '"'.$this->sanitizeColumnName($field).'"' : null;
+        $aggCol = $field !== null ? '"'.$this->sanitizeColumnName(name: $field).'"' : null;
         $aggSql = match ($metric) {
             'count' => 'COUNT(*)',
             'sum'   => 'SUM(NULLIF('.$aggCol.'::text, \'\')::numeric)',
@@ -525,7 +597,7 @@ class AggregationRunner
 
         try {
             if ($groupBy !== null && isset($groupBy['field']) === true) {
-                $groupCol = '"'.$this->sanitizeColumnName((string) $groupBy['field']).'"';
+                $groupCol = '"'.$this->sanitizeColumnName(name: (string) $groupBy['field']).'"';
                 $sql      = "SELECT {$groupCol} AS bucket, {$aggSql} AS agg
                              FROM {$fullTable}
                              WHERE {$whereSql}
@@ -575,6 +647,10 @@ class AggregationRunner
      * (e.g. `$startOfMonth`) — coerce them to ISO-8601 so they bind
      * cleanly against text/date columns. Other values pass through
      * as strings.
+     *
+     * @param mixed $value Raw value to bind.
+     *
+     * @return string SQL-ready string representation.
      */
     private function bindValue(mixed $value): string
     {
@@ -583,7 +659,7 @@ class AggregationRunner
         }
 
         if (is_bool($value) === true) {
-            return $value ? 'true' : 'false';
+            return $value === true ? 'true' : 'false';
         }
 
         return (string) $value;
@@ -592,6 +668,10 @@ class AggregationRunner
     /**
      * Convert a property name to its magic-table column name. Mirrors
      * MagicMapper::sanitizeColumnName so we don't expose a public API there.
+     *
+     * @param string $name Raw property name.
+     *
+     * @return string Sanitised column name.
      */
     private function sanitizeColumnName(string $name): string
     {
@@ -606,6 +686,15 @@ class AggregationRunner
         return rtrim((string) $name, '_');
     }//end sanitizeColumnName()
 
+    /**
+     * Load a schema by ref, throwing a RuntimeException when missing.
+     *
+     * @param string $schemaRef Schema slug/uuid/id.
+     *
+     * @return Schema The loaded schema.
+     *
+     * @throws RuntimeException When the schema can't be found.
+     */
     private function loadSchema(string $schemaRef): Schema
     {
         try {
@@ -615,6 +704,15 @@ class AggregationRunner
         }
     }//end loadSchema()
 
+    /**
+     * Load a register by ref, throwing a RuntimeException when missing.
+     *
+     * @param string $registerRef Register slug/uuid/id.
+     *
+     * @return Register The loaded register.
+     *
+     * @throws RuntimeException When the register can't be found.
+     */
     private function loadRegister(string $registerRef): \OCA\OpenRegister\Db\Register
     {
         try {
@@ -629,7 +727,7 @@ class AggregationRunner
      *
      * @param Schema $schema The schema to read.
      *
-     * @return array<string, mixed>|null
+     * @return array<string, mixed>|null The annotation map, or null when absent.
      */
     private function getAnnotation(Schema $schema): ?array
     {
@@ -645,7 +743,7 @@ class AggregationRunner
      *
      * @param SearchBackendInterface $backend The backend instance.
      *
-     * @return string
+     * @return string Short backend label ('solr', 'elasticsearch', or 'external').
      */
     private function detectBackendName(SearchBackendInterface $backend): string
     {

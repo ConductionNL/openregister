@@ -95,21 +95,32 @@ class ExportService
     private readonly PropertyRbacHandler $propertyRbacHandler;
 
     /**
-     * Constructor for the ExportService
+     * Translation handler for column projection during export.
      *
-     * @param RegisterMapper      $registerMapper      The register mapper
-     * @param IUserManager        $_userManager        The user manager (unused but kept for future use)
-     * @param IGroupManager       $groupManager        The group manager
-     * @param ObjectService       $objectService       The object service
-     * @param CacheHandler        $cacheHandler        The cache handler for name resolution
-     * @param PropertyRbacHandler $propertyRbacHandler The property RBAC handler
-     *
-     * @SuppressWarnings(PHPMD.UnusedFormalParameter)
+     * @var \OCA\OpenRegister\Service\Object\TranslationHandler
      */
     private readonly \OCA\OpenRegister\Service\Object\TranslationHandler $translationHandler;
 
+    /**
+     * Optional register context used during sheet population.
+     *
+     * @var Register|null
+     */
     private ?Register $contextRegister = null;
 
+    /**
+     * Constructor for the ExportService.
+     *
+     * @param RegisterMapper                                      $registerMapper      The register mapper.
+     * @param IUserManager                                        $_userManager        The user manager (unused).
+     * @param IGroupManager                                       $groupManager        The group manager.
+     * @param ObjectService                                       $objectService       The object service.
+     * @param CacheHandler                                        $cacheHandler        The cache handler for name resolution.
+     * @param PropertyRbacHandler                                 $propertyRbacHandler The property RBAC handler.
+     * @param \OCA\OpenRegister\Service\Object\TranslationHandler $translationHandler  The translation handler.
+     *
+     * @SuppressWarnings(PHPMD.UnusedFormalParameter)
+     */
     public function __construct(
         RegisterMapper $registerMapper,
         IUserManager $_userManager,
@@ -802,7 +813,7 @@ class ExportService
                 // Translatable `field_lang` column — extract the
                 // language-keyed slot from the JSONB property
                 // (register-i18n Phase 3 wire-in).
-                $langValue = $this->extractLanguageSlot($objectData, $header);
+                $langValue = $this->extractLanguageSlot(objectData: $objectData, header: $header);
                 if ($langValue !== null) {
                     return $langValue;
                 }
@@ -833,10 +844,14 @@ class ExportService
 
     /**
      * Extract `objectData[field][lang]` for a `field_lang` header.
+     *
      * Returns null when the header doesn't match a known
      * translatable-property + language pair.
      *
-     * @param array<string, mixed> $objectData
+     * @param array<string, mixed> $objectData The object data.
+     * @param string               $header     The header name (field_lang).
+     *
+     * @return string|null The language slot value, or null if not present.
      */
     private function extractLanguageSlot(array $objectData, string $header): ?string
     {

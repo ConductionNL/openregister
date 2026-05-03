@@ -51,6 +51,7 @@ class DeleteFileHandler
      * @param FileValidationHandler $fileValidHandler     File validation handler.
      * @param FileOwnershipHandler  $fileOwnershipHandler File ownership handler.
      * @param LoggerInterface       $logger               Logger for logging operations.
+     * @param FileLockHandler       $fileLockHandler      Lock handler used to release / verify file locks on delete.
      */
     public function __construct(
         private readonly IRootFolder $rootFolder,

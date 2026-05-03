@@ -434,7 +434,11 @@ class ObjectReferenceProvider extends ADiscoverableReferenceProvider implements 
 
         // Pattern 1: Hash-routed UI URL.
         // /apps/openregister/#/registers/{id}/schemas/{id}/objects/{uuid}.
-        $hashPattern = '/^'.$escapedBase.'(?:\/index\.php)?\/apps\/openregister\/#\/registers\/(\d+)\/schemas\/(\d+)\/objects\/('.$uuidPattern.')$/i';
+        $hashPattern = sprintf(
+            '/^%s(?:\/index\.php)?\/apps\/openregister\/#\/registers\/(\d+)\/schemas\/(\d+)\/objects\/(%s)$/i',
+            $escapedBase,
+            $uuidPattern
+        );
 
         if (preg_match($hashPattern, $referenceText, $matches) === 1) {
             return [
@@ -446,7 +450,11 @@ class ObjectReferenceProvider extends ADiscoverableReferenceProvider implements 
 
         // Pattern 2: API object URL.
         // /apps/openregister/api/objects/{registerId}/{schemaId}/{uuid}.
-        $apiPattern = '/^'.$escapedBase.'(?:\/index\.php)?\/apps\/openregister\/api\/objects\/(\d+)\/(\d+)\/('.$uuidPattern.')$/i';
+        $apiPattern = sprintf(
+            '/^%s(?:\/index\.php)?\/apps\/openregister\/api\/objects\/(\d+)\/(\d+)\/(%s)$/i',
+            $escapedBase,
+            $uuidPattern
+        );
 
         if (preg_match($apiPattern, $referenceText, $matches) === 1) {
             return [
@@ -458,7 +466,11 @@ class ObjectReferenceProvider extends ADiscoverableReferenceProvider implements 
 
         // Pattern 3: Direct object show route.
         // /apps/openregister/objects/{registerId}/{schemaId}/{uuid}.
-        $directPattern = '/^'.$escapedBase.'(?:\/index\.php)?\/apps\/openregister\/objects\/(\d+)\/(\d+)\/('.$uuidPattern.')$/i';
+        $directPattern = sprintf(
+            '/^%s(?:\/index\.php)?\/apps\/openregister\/objects\/(\d+)\/(\d+)\/(%s)$/i',
+            $escapedBase,
+            $uuidPattern
+        );
 
         if (preg_match($directPattern, $referenceText, $matches) === 1) {
             return [

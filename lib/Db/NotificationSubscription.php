@@ -22,6 +22,8 @@ namespace OCA\OpenRegister\Db;
 use OCP\AppFramework\Db\Entity;
 
 /**
+ * Notification subscription row.
+ *
  * @method void           setUserId(string $userId)
  * @method string|null    getUserId()
  * @method void           setRegisterId(?int $registerId)
@@ -34,20 +36,45 @@ use OCP\AppFramework\Db\Entity;
 class NotificationSubscription extends Entity
 {
 
+    /**
+     * User UID owning this subscription.
+     *
+     * @var string|null
+     */
     protected ?string $userId = null;
 
+    /**
+     * Register identifier scope; null means any register.
+     *
+     * @var integer|null
+     */
     protected ?int $registerId = null;
 
+    /**
+     * Schema identifier scope; null means any schema in the register.
+     *
+     * @var integer|null
+     */
     protected ?int $schemaId = null;
 
+    /**
+     * Creation timestamp for the subscription row.
+     *
+     * @var \DateTime|null
+     */
     protected ?\DateTime $created = null;
 
+    /**
+     * Configure typed columns for the entity.
+     *
+     * @return void
+     */
     public function __construct()
     {
-        $this->addType('userId', 'string');
-        $this->addType('registerId', 'integer');
-        $this->addType('schemaId', 'integer');
-        $this->addType('created', 'datetime');
+        $this->addType(fieldName: 'userId', type: 'string');
+        $this->addType(fieldName: 'registerId', type: 'integer');
+        $this->addType(fieldName: 'schemaId', type: 'integer');
+        $this->addType(fieldName: 'created', type: 'datetime');
 
     }//end __construct()
 

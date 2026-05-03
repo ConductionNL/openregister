@@ -38,17 +38,37 @@ use OCP\AppFramework\Db\Entity;
 class NotificationReadStateEntity extends Entity
 {
 
+    /**
+     * User UID.
+     *
+     * @var string|null
+     */
     protected ?string $userId = null;
 
+    /**
+     * Notification UUID this row tracks.
+     *
+     * @var string|null
+     */
     protected ?string $notificationId = null;
 
+    /**
+     * Timestamp at which the user read the notification.
+     *
+     * @var \DateTime|null
+     */
     protected ?\DateTime $readAt = null;
 
+    /**
+     * Configure typed columns for the entity.
+     *
+     * @return void
+     */
     public function __construct()
     {
-        $this->addType('userId', 'string');
-        $this->addType('notificationId', 'string');
-        $this->addType('readAt', 'datetime');
+        $this->addType(fieldName: 'userId', type: 'string');
+        $this->addType(fieldName: 'notificationId', type: 'string');
+        $this->addType(fieldName: 'readAt', type: 'datetime');
 
     }//end __construct()
 

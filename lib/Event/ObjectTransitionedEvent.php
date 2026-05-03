@@ -38,41 +38,57 @@ class ObjectTransitionedEvent extends Event
 {
 
     /**
-     * @var ObjectEntity Object after the transition (lifecycle field is `to`).
+     * Object after the transition (lifecycle field is `to`).
+     *
+     * @var ObjectEntity
      */
     private ObjectEntity $object;
 
     /**
-     * @var string Action name from the transition table (e.g. "publish").
+     * Action name from the transition table (e.g. "publish").
+     *
+     * @var string
      */
     private string $action;
 
     /**
-     * @var string Lifecycle state value before the transition.
+     * Lifecycle state value before the transition.
+     *
+     * @var string
      */
     private string $from;
 
     /**
-     * @var string Lifecycle state value after the transition.
+     * Lifecycle state value after the transition.
+     *
+     * @var string
      */
     private string $to;
 
     /**
-     * @var string|null Caller uid (null when the transition was applied by a system process).
+     * Caller uid (null when the transition was applied by a system process).
+     *
+     * @var string|null
      */
     private ?string $userId;
 
     /**
-     * @var string Register slug.
+     * Register slug.
+     *
+     * @var string
      */
     private string $register;
 
     /**
-     * @var string Schema slug.
+     * Schema slug.
+     *
+     * @var string
      */
     private string $schema;
 
     /**
+     * Capture the post-transition state for downstream listeners.
+     *
      * @param ObjectEntity $object   Object after the transition.
      * @param string       $action   Action name.
      * @param string       $from     State before.
@@ -100,36 +116,71 @@ class ObjectTransitionedEvent extends Event
         $this->schema   = $schema;
     }//end __construct()
 
+    /**
+     * Read the object after the transition.
+     *
+     * @return ObjectEntity Object whose lifecycle just changed.
+     */
     public function getObject(): ObjectEntity
     {
         return $this->object;
     }//end getObject()
 
+    /**
+     * Read the action name from the transition table.
+     *
+     * @return string Action name (e.g. "publish").
+     */
     public function getAction(): string
     {
         return $this->action;
     }//end getAction()
 
+    /**
+     * Read the lifecycle value before the transition.
+     *
+     * @return string Originating state value.
+     */
     public function getFrom(): string
     {
         return $this->from;
     }//end getFrom()
 
+    /**
+     * Read the lifecycle value after the transition.
+     *
+     * @return string Destination state value.
+     */
     public function getTo(): string
     {
         return $this->to;
     }//end getTo()
 
+    /**
+     * Read the caller uid that triggered the transition.
+     *
+     * @return string|null Caller uid, or null for system transitions.
+     */
     public function getUserId(): ?string
     {
         return $this->userId;
     }//end getUserId()
 
+    /**
+     * Read the register slug the object belongs to.
+     *
+     * @return string Register slug.
+     */
     public function getRegister(): string
     {
         return $this->register;
     }//end getRegister()
 
+    /**
+     * Read the schema slug the object belongs to.
+     *
+     * @return string Schema slug.
+     */
     public function getSchema(): string
     {
         return $this->schema;

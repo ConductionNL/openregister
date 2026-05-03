@@ -173,9 +173,9 @@ class TranslationHandler
                 }
             }
 
-            // Final fallback: any available variant. (Useful when an
+            // Final fallback: any available variant (useful when an
             // object carries a translation in a language not in the
-            // register's configured chain — e.g. legacy data.)
+            // register's configured chain — e.g. legacy data).
             if ($picked === null) {
                 $firstValue = reset($value);
                 if ($firstValue !== false) {

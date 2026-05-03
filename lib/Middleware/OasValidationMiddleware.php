@@ -114,8 +114,11 @@ class OasValidationMiddleware extends Middleware
      *
      * @SuppressWarnings(PHPMD.UnusedFormalParameter) NC Middleware interface requires $controller + $methodName.
      */
-    public function afterException(mixed $controller, string $methodName, \Throwable $exception): \OCP\AppFramework\Http\Response
-    {
+    public function afterException(
+        mixed $controller,
+        string $methodName,
+        \Throwable $exception
+    ): \OCP\AppFramework\Http\Response {
         if ($exception instanceof OasValidationFailureException === false) {
             throw $exception;
         }
@@ -145,14 +148,23 @@ class OasValidationMiddleware extends Middleware
      *
      * @return array|null The JSON-Schema, or null when no schema was found.
      *
-     * @SuppressWarnings(PHPMD.UnusedFormalParameter) Stub method until OasService exposes a per-operation schema lookup; the controller + methodName params are the contract the future resolver will use.
+     * @SuppressWarnings(PHPMD.UnusedFormalParameter) Stub method until OasService
+     *                                                exposes a per-operation schema
+     *                                                lookup; the controller + methodName
+     *                                                params are the contract the future
+     *                                                resolver will use.
      *
-     * @phpstan-ignore-next-line return-type narrows when the resolver lookup is implemented; until then it always returns null.
+     * @phpstan-ignore-next-line Return-type narrows when the resolver lookup is
+     *                           implemented; until then it always returns null.
      */
     private function resolveOperationSchema(mixed $controller, string $methodName): ?array
     {
         if ($this->logger !== null) {
-            $msg = '[OasValidationMiddleware] no per-operation schema resolver wired yet; '.'skipping validation for '.$controller::class.'::'.$methodName;
+            $msg = sprintf(
+                '[OasValidationMiddleware] no per-operation schema resolver wired yet; skipping validation for %s::%s',
+                $controller::class,
+                $methodName
+            );
             $this->logger->debug($msg, ['file' => __FILE__, 'line' => __LINE__]);
         }
 

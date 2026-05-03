@@ -41,13 +41,32 @@ use OCP\ICacheFactory;
 use Psr\Log\LoggerInterface;
 
 /**
+ * Scheduled notification background job.
+ *
  * @psalm-suppress UnusedClass
  */
 final class ScheduledNotificationJob extends TimedJob
 {
 
+    /**
+     * Distributed cache holding last-fire timestamps per (schema, notification).
+     *
+     * @var ICache|null
+     */
     private ?ICache $stateCache = null;
 
+    /**
+     * Wire collaborators and configure the timed-job interval.
+     *
+     * @param ITimeFactory                     $time         Nextcloud time factory.
+     * @param SchemaMapper                     $schemaMapper Schema lookup mapper.
+     * @param MagicMapper                      $objectMapper Magic object mapper.
+     * @param AnnotationNotificationDispatcher $dispatcher   Notification dispatcher.
+     * @param LoggerInterface                  $logger       PSR logger.
+     * @param ICacheFactory                    $cacheFactory Distributed cache factory.
+     *
+     * @return void
+     */
     public function __construct(
         ITimeFactory $time,
         private readonly SchemaMapper $schemaMapper,
@@ -67,6 +86,12 @@ final class ScheduledNotificationJob extends TimedJob
     }//end __construct()
 
     /**
+     * Iterate every schema and fire any due scheduled notifications.
+     *
+     * @param mixed $argument Background-job argument (unused).
+     *
+     * @return void
+     *
      * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      */
     protected function run($argument): void
@@ -91,6 +116,14 @@ final class ScheduledNotificationJob extends TimedJob
         }
     }//end run()
 
+    /**
+     * Inspect one schema's notification specs and fire those that are due.
+     *
+     * @param Schema $schema Schema being inspected.
+     * @param int    $now    Current epoch second.
+     *
+     * @return void
+     */
     private function processSchema(Schema $schema, int $now): void
     {
         $config        = ($schema->getConfiguration() ?? []);
@@ -114,7 +147,13 @@ final class ScheduledNotificationJob extends TimedJob
                 continue;
             }
 
-            if ($this->isDue(schemaId: (int) $schema->getId(), notificationName: (string) $name, intervalSec: $intervalSec, now: $now) === false) {
+            $due = $this->isDue(
+                schemaId: (int) $schema->getId(),
+                notificationName: (string) $name,
+                intervalSec: $intervalSec,
+                now: $now
+            );
+            if ($due === false) {
                 continue;
             }
 
@@ -126,6 +165,16 @@ final class ScheduledNotificationJob extends TimedJob
         }//end foreach
     }//end processSchema()
 
+    /**
+     * Determine whether enough time has elapsed since the last fire.
+     *
+     * @param int    $schemaId         Schema identifier.
+     * @param string $notificationName Notification key in the schema config.
+     * @param int    $intervalSec      Configured interval in seconds.
+     * @param int    $now              Current epoch second.
+     *
+     * @return bool True when due, false otherwise (including missing cache).
+     */
     private function isDue(int $schemaId, string $notificationName, int $intervalSec, int $now): bool
     {
         if ($this->stateCache === null) {
@@ -142,6 +191,15 @@ final class ScheduledNotificationJob extends TimedJob
         return ((int) $last + $intervalSec) <= $now;
     }//end isDue()
 
+    /**
+     * Persist the timestamp of the most recent fire for a notification.
+     *
+     * @param int    $schemaId         Schema identifier.
+     * @param string $notificationName Notification key in the schema config.
+     * @param int    $now              Current epoch second.
+     *
+     * @return void
+     */
     private function markFired(int $schemaId, string $notificationName, int $now): void
     {
         if ($this->stateCache === null) {
@@ -161,6 +219,14 @@ final class ScheduledNotificationJob extends TimedJob
         }
     }//end markFired()
 
+    /**
+     * Build the cache key used to track scheduled-notification state.
+     *
+     * @param int    $schemaId         Schema identifier.
+     * @param string $notificationName Notification key in the schema config.
+     *
+     * @return string Stable cache key for the (schema, notification) pair.
+     */
     private function stateKey(int $schemaId, string $notificationName): string
     {
         return sprintf('sched:%d:%s', $schemaId, $notificationName);
@@ -169,7 +235,11 @@ final class ScheduledNotificationJob extends TimedJob
     /**
      * Fetch matching objects for the schema and dispatch the notification.
      *
-     * @param array<string, mixed> $trigger
+     * @param Schema               $schema           Schema whose objects to scan.
+     * @param string               $notificationName Notification key in the schema config.
+     * @param array<string, mixed> $trigger          Trigger configuration including filters.
+     *
+     * @return void
      */
     private function fire(Schema $schema, string $notificationName, array $trigger): void
     {
@@ -194,7 +264,7 @@ final class ScheduledNotificationJob extends TimedJob
                 continue;
             }
 
-            if ($this->matchesFilter($object, $filter) === false) {
+            if ($this->matchesFilter(object: $object, filter: $filter) === false) {
                 continue;
             }
 
@@ -232,7 +302,10 @@ final class ScheduledNotificationJob extends TimedJob
      * For v1 we only support flat `{ field: value }` filters; richer
      * shapes (operators, nested paths) are a v1.1 extension.
      *
-     * @param array<string, mixed> $filter
+     * @param ObjectEntity         $object Object instance whose data is being inspected.
+     * @param array<string, mixed> $filter Flat key/value equality filter.
+     *
+     * @return bool True when every filter entry matches, false otherwise.
      */
     private function matchesFilter(ObjectEntity $object, array $filter): bool
     {

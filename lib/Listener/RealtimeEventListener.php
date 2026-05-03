@@ -32,15 +32,31 @@ use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventListener;
 
 /**
+ * Listener that records realtime events for object lifecycle changes.
+ *
  * @template-implements IEventListener<ObjectCreatedEvent|ObjectUpdatedEvent|ObjectDeletedEvent|ObjectTransitionedEvent>
  */
 class RealtimeEventListener implements IEventListener
 {
+    /**
+     * Wire the realtime service used to record events.
+     *
+     * @param RealtimeService $realtimeService Service that persists realtime events.
+     *
+     * @return void
+     */
     public function __construct(
         private readonly RealtimeService $realtimeService
     ) {
     }//end __construct()
 
+    /**
+     * Dispatch the inbound event onto the realtime event log.
+     *
+     * @param Event $event Inbound dispatcher event.
+     *
+     * @return void
+     */
     public function handle(Event $event): void
     {
         if ($event instanceof ObjectCreatedEvent) {

@@ -80,14 +80,15 @@ class GraphQLResolver
     /**
      * Constructor.
      *
-     * @param GetObject           $getObject         Object finder
-     * @param ObjectService       $objectService     Object service
-     * @param PermissionHandler   $permissionHandler Permission handler
-     * @param PropertyRbacHandler $propertyRbac      Property RBAC handler
-     * @param RelationHandler     $relationHandler   Relation handler
-     * @param AuditTrailMapper    $auditTrailMapper  Audit trail mapper
-     * @param RegisterMapper      $registerMapper    Register mapper
-     * @param LoggerInterface     $logger            Logger
+     * @param GetObject                                           $getObject          Object finder
+     * @param ObjectService                                       $objectService      Object service
+     * @param PermissionHandler                                   $permissionHandler  Permission handler
+     * @param PropertyRbacHandler                                 $propertyRbac       Property RBAC handler
+     * @param RelationHandler                                     $relationHandler    Relation handler
+     * @param AuditTrailMapper                                    $auditTrailMapper   Audit trail mapper
+     * @param RegisterMapper                                      $registerMapper     Register mapper
+     * @param LoggerInterface                                     $logger             Logger
+     * @param \OCA\OpenRegister\Service\Object\TranslationHandler $translationHandler Translation handler
      *
      * @SuppressWarnings(PHPMD.ExcessiveParameterList)
      */

@@ -47,6 +47,15 @@ use Psr\Log\LoggerInterface;
  */
 class CalculationOnSaveListener implements IEventListener
 {
+    /**
+     * Wire collaborators used to look up schema calculations.
+     *
+     * @param SchemaMapper         $schemaMapper Schema lookup mapper.
+     * @param CalculationEvaluator $evaluator    Expression evaluator.
+     * @param LoggerInterface      $logger       PSR logger for warnings.
+     *
+     * @return void
+     */
     public function __construct(
         private readonly SchemaMapper $schemaMapper,
         private readonly CalculationEvaluator $evaluator,
@@ -54,27 +63,42 @@ class CalculationOnSaveListener implements IEventListener
     ) {
     }//end __construct()
 
+    /**
+     * Run materialised calculations before the object is persisted.
+     *
+     * @param Event $event Inbound dispatcher event.
+     *
+     * @return void
+     */
     public function handle(Event $event): void
     {
         if ($event instanceof ObjectCreatingEvent) {
-            $this->process($event->getObject(), false);
+            $this->process(object: $event->getObject(), isUpdate: false);
             return;
         }
 
         if ($event instanceof ObjectUpdatingEvent) {
-            $this->process($event->getNewObject(), true);
+            $this->process(object: $event->getNewObject(), isUpdate: true);
             return;
         }
     }//end handle()
 
+    /**
+     * Apply each materialised calculation to the object data.
+     *
+     * @param ObjectEntity $object   Object being created or updated.
+     * @param bool         $isUpdate True when the object is being updated.
+     *
+     * @return void
+     */
     private function process(ObjectEntity $object, bool $isUpdate): void
     {
-        $schema = $this->loadSchema($object);
+        $schema = $this->loadSchema(object: $object);
         if ($schema === null) {
             return;
         }
 
-        $calcs = $this->getCalculations($schema);
+        $calcs = $this->getCalculations(schema: $schema);
         if ($calcs === null) {
             return;
         }
@@ -112,12 +136,17 @@ class CalculationOnSaveListener implements IEventListener
                 $value = $this->evaluator->evaluate($data, $spec['expression'] ?? null);
             } catch (EvaluationException $e) {
                 $this->logger->warning(
-                    sprintf('Calculation "%s" failed on %s: %s', (string) $name, (string) $object->getUuid(), $e->getMessage())
+                    sprintf(
+                        'Calculation "%s" failed on %s: %s',
+                        (string) $name,
+                        (string) $object->getUuid(),
+                        $e->getMessage()
+                    )
                 );
                 continue;
             }
 
-            $serialised = $this->serialise($value);
+            $serialised = $this->serialise(value: $value);
             if (($data[(string) $name] ?? null) !== $serialised) {
                 $data[(string) $name] = $serialised;
                 $changed = true;
@@ -133,6 +162,13 @@ class CalculationOnSaveListener implements IEventListener
         }
     }//end process()
 
+    /**
+     * Render a calculation result into a JSON-friendly value.
+     *
+     * @param mixed $value Raw value returned by the evaluator.
+     *
+     * @return mixed JSON-serialisable representation of the value.
+     */
     private function serialise(mixed $value): mixed
     {
         if ($value instanceof DateTimeInterface) {
@@ -142,6 +178,13 @@ class CalculationOnSaveListener implements IEventListener
         return $value;
     }//end serialise()
 
+    /**
+     * Look up the schema referenced by an object instance.
+     *
+     * @param ObjectEntity $object Object whose schema reference to resolve.
+     *
+     * @return Schema|null Resolved schema, or null on lookup failure.
+     */
     private function loadSchema(ObjectEntity $object): ?Schema
     {
         $ref = $object->getSchema();
@@ -157,7 +200,11 @@ class CalculationOnSaveListener implements IEventListener
     }//end loadSchema()
 
     /**
-     * @return array<string, mixed>|null
+     * Read the `x-openregister-calculations` configuration block.
+     *
+     * @param Schema $schema Schema to inspect.
+     *
+     * @return array<string, mixed>|null Calculations map, or null when absent.
      */
     private function getCalculations(Schema $schema): ?array
     {

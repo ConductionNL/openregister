@@ -58,26 +58,81 @@ use OCP\AppFramework\Db\Entity;
 class File extends Entity
 {
 
+    /**
+     * Nextcloud filecache file_id this row mirrors.
+     *
+     * @var integer|null
+     */
     protected ?int $fileId = null;
 
+    /**
+     * Optional descriptive text supplied via file-actions metadata.
+     *
+     * @var string|null
+     */
     protected ?string $description = null;
 
+    /**
+     * Operator-defined category label.
+     *
+     * @var string|null
+     */
     protected ?string $category = null;
 
+    /**
+     * Free-form label list for filtering and analytics.
+     *
+     * @var array<int, string>|null
+     */
     protected ?array $labels = null;
 
+    /**
+     * UID of the user holding the soft lock, or null when unlocked.
+     *
+     * @var string|null
+     */
     protected ?string $lockedBy = null;
 
+    /**
+     * Timestamp when the lock was acquired.
+     *
+     * @var \DateTime|null
+     */
     protected ?\DateTime $lockedAt = null;
 
+    /**
+     * Timestamp when the lock expires automatically.
+     *
+     * @var \DateTime|null
+     */
     protected ?\DateTime $lockExpires = null;
 
+    /**
+     * Cumulative download count for analytics and audit.
+     *
+     * @var integer
+     */
     protected int $downloadCount = 0;
 
+    /**
+     * Creation timestamp for the metadata row.
+     *
+     * @var \DateTime|null
+     */
     protected ?\DateTime $created = null;
 
+    /**
+     * Last-update timestamp for the metadata row.
+     *
+     * @var \DateTime|null
+     */
     protected ?\DateTime $updated = null;
 
+    /**
+     * Configure typed columns for the file metadata row.
+     *
+     * @return void
+     */
     public function __construct()
     {
         $this->addType(fieldName: 'fileId', type: 'integer');

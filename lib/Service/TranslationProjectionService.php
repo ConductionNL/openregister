@@ -38,6 +38,15 @@ use Psr\Log\LoggerInterface;
 
 class TranslationProjectionService
 {
+    /**
+     * Constructor.
+     *
+     * @param TranslationMapper  $translationMapper  The translation mapper.
+     * @param TranslationHandler $translationHandler The translation handler.
+     * @param SchemaMapper       $schemaMapper       The schema mapper.
+     * @param IUserSession       $userSession        The user session.
+     * @param LoggerInterface    $logger             The logger.
+     */
     public function __construct(
         private readonly TranslationMapper $translationMapper,
         private readonly TranslationHandler $translationHandler,
@@ -48,8 +57,7 @@ class TranslationProjectionService
     }//end __construct()
 
     /**
-     * Project the given object's translatable property data into the
-     * sidecar.
+     * Project the given object's translatable property data into the sidecar.
      *
      * Behaviour:
      *  - For each translatable property declared on the schema, walk
@@ -63,6 +71,10 @@ class TranslationProjectionService
      * Status defaults to `draft` on first projection; subsequent saves
      * preserve whatever status the slot already had (the projection
      * doesn't second-guess workflow state — that's `TranslationStatusService`'s job).
+     *
+     * @param ObjectEntity $object The object to project.
+     *
+     * @return void
      */
     public function project(ObjectEntity $object): void
     {
@@ -72,14 +84,14 @@ class TranslationProjectionService
         }
 
         try {
-            $schema = $this->loadSchema($object);
+            $schema = $this->loadSchema(object: $object);
             if ($schema === null) {
                 return;
             }
 
             $translatableProps = $this->translationHandler->getTranslatableProperties($schema);
             if (count($translatableProps) === 0) {
-                // Schema has no translatable properties — make sure no
+                // Schema has no translatable properties; make sure no
                 // stale rows remain (e.g. property used to be translatable).
                 $existing = $this->translationMapper->findByObject($uuid);
                 foreach ($existing as $row) {
@@ -87,7 +99,7 @@ class TranslationProjectionService
                         try {
                             $this->translationMapper->delete($row);
                         } catch (\Throwable $e) {
-                            // best effort
+                            // Best effort.
                         }
                     }
                 }
@@ -110,15 +122,15 @@ class TranslationProjectionService
                             continue;
                         }
 
-                        $stringValue = $this->valueToString($langValue);
+                        $stringValue = $this->valueToString(value: $langValue);
                         if ($stringValue !== null && $stringValue !== '') {
                             $desired[$property][$lang] = $stringValue;
                         }
                     }
                 } else if (is_string($value) === true && $value !== '') {
-                    // Legacy single-language shape — credit the register's default language.
-                    // (We don't have register here without an extra mapper hop; the projection
-                    // can be re-run after register language config changes if needed.)
+                    // Legacy single-language shape; credit the register's default language.
+                    // We don't have register here without an extra mapper hop; the projection
+                    // can be re-run after register language config changes if needed.
                     $defaultLang = 'nl';
                     $desired[$property][$defaultLang] = $value;
                 }
@@ -134,7 +146,7 @@ class TranslationProjectionService
                         language: $lang,
                         value: $stringValue,
                         status: null,
-                    // preserve existing or default to draft on insert
+                    // Preserve existing or default to draft on insert.
                         translator: $translator
                     );
                     $upsertedKeys[] = $property.'|'.$lang;
@@ -149,7 +161,7 @@ class TranslationProjectionService
                     try {
                         $this->translationMapper->delete($row);
                     } catch (\Throwable $e) {
-                        // best effort
+                        // Best effort.
                     }
                 }
             }
@@ -162,6 +174,10 @@ class TranslationProjectionService
 
     /**
      * Drop every translation row for the given object.
+     *
+     * @param ObjectEntity $object The object to purge translations for.
+     *
+     * @return void
      */
     public function purge(ObjectEntity $object): void
     {
@@ -179,6 +195,13 @@ class TranslationProjectionService
         }
     }//end purge()
 
+    /**
+     * Resolve a schema entity from an object's schema reference.
+     *
+     * @param ObjectEntity $object The object whose schema reference should be resolved.
+     *
+     * @return Schema|null The resolved schema, or null when not resolvable.
+     */
     private function loadSchema(ObjectEntity $object): ?Schema
     {
         $ref = $object->getSchema();
@@ -194,9 +217,14 @@ class TranslationProjectionService
     }//end loadSchema()
 
     /**
-     * Coerce a translatable value to a string for storage. Most properties
-     * are strings; we accept scalar / null / arrays-of-strings and return
+     * Coerce a translatable value to a string for storage.
+     *
+     * Most properties are strings; we accept scalar / null / arrays-of-strings and return
      * either a string or null.
+     *
+     * @param mixed $value The value to coerce.
+     *
+     * @return string|null The coerced string, or null when not coercible.
      */
     private function valueToString(mixed $value): ?string
     {
@@ -213,7 +241,7 @@ class TranslationProjectionService
         }
 
         if (is_array($value) === true) {
-            // Translatable-array property (rare) — flatten to JSON for searchability.
+            // Translatable-array property (rare); flatten to JSON for searchability.
             return json_encode($value, JSON_UNESCAPED_SLASHES);
         }
 

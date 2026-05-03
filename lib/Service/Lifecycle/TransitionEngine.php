@@ -40,6 +40,14 @@ use RuntimeException;
  */
 final class TransitionEngine
 {
+    /**
+     * Constructor.
+     *
+     * @param ObjectService    $objectService   Object CRUD service used to load + save the entity.
+     * @param SchemaMapper     $schemaMapper    Mapper to resolve the entity's schema.
+     * @param IEventDispatcher $eventDispatcher Dispatcher used to fire ObjectTransitionedEvent.
+     * @param IUserSession     $userSession     Current user session, for actor attribution.
+     */
     public function __construct(
         private readonly ObjectService $objectService,
         private readonly SchemaMapper $schemaMapper,
@@ -67,12 +75,12 @@ final class TransitionEngine
             throw new RuntimeException(sprintf('Object "%s" not found.', $objectId));
         }
 
-        $schema = $this->loadSchema($object);
+        $schema = $this->loadSchema(object: $object);
         if ($schema === null) {
             throw new RuntimeException('Object schema could not be resolved.');
         }
 
-        $annotation = $this->getLifecycleAnnotation($schema);
+        $annotation = $this->getLifecycleAnnotation(schema: $schema);
         if ($annotation === null) {
             throw new RuntimeException(
                 sprintf('Schema "%s" does not declare x-openregister-lifecycle.', (string) $schema->getSlug())
@@ -147,12 +155,12 @@ final class TransitionEngine
             throw new RuntimeException(sprintf('Object "%s" not found.', $objectId));
         }
 
-        $schema = $this->loadSchema($object);
+        $schema = $this->loadSchema(object: $object);
         if ($schema === null) {
             return [];
         }
 
-        $annotation = $this->getLifecycleAnnotation($schema);
+        $annotation = $this->getLifecycleAnnotation(schema: $schema);
         if ($annotation === null) {
             return [];
         }
@@ -184,6 +192,13 @@ final class TransitionEngine
         return $available;
     }//end availableActions()
 
+    /**
+     * Load the schema referenced by an object, returning null on failure.
+     *
+     * @param ObjectEntity $object The object whose schema should be resolved.
+     *
+     * @return Schema|null The resolved schema, or null when missing/unresolvable.
+     */
     private function loadSchema(ObjectEntity $object): ?Schema
     {
         $schemaRef = $object->getSchema();
@@ -199,7 +214,11 @@ final class TransitionEngine
     }//end loadSchema()
 
     /**
-     * @return array<string, mixed>|null
+     * Pull the `x-openregister-lifecycle` annotation off a schema.
+     *
+     * @param Schema $schema The schema to inspect.
+     *
+     * @return array<string, mixed>|null The decoded annotation, or null when absent.
      */
     private function getLifecycleAnnotation(Schema $schema): ?array
     {

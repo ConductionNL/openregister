@@ -272,8 +272,9 @@ class RelationsController extends Controller
                 $item['type'] = rtrim($type, 's');
 
                 // Normalize date for sorting.
-                $date = $item['date'] ?? $item['linkedAt'] ?? $item['createdAt'] ?? $item['dtstart'] ?? $item['created'] ?? null;
-                $item['_sortDate'] = $date;
+                $rawDate           = ($item['date'] ?? $item['linkedAt'] ?? null);
+                $rawDate           = ($rawDate ?? $item['createdAt'] ?? $item['dtstart'] ?? null);
+                $item['_sortDate'] = ($rawDate ?? $item['created'] ?? null);
 
                 $timeline[] = $item;
             }

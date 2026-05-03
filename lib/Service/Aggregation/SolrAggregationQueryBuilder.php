@@ -34,8 +34,13 @@ namespace OCA\OpenRegister\Service\Aggregation;
 /**
  * Builds Solr request parameters from an AggregationQuery.
  *
- * @SuppressWarnings(PHPMD.ElseExpression) Each branch in build() emits a *different* parameter shape (StatsComponent vs JSON Facet API); the alternative — early-returns with duplicated array assembly — is harder to read.
- * @SuppressWarnings(PHPMD.ShortVariable)  `$fq` is Solr's filter-query parameter name; `$s` is a one-line stringification accumulator.
+ * @SuppressWarnings(PHPMD.ElseExpression)
+ *   Each branch in build() emits a *different* parameter shape
+ *   (StatsComponent vs JSON Facet API); the alternative — early-returns
+ *   with duplicated array assembly — is harder to read.
+ * @SuppressWarnings(PHPMD.ShortVariable)
+ *   `$fq` is Solr's filter-query parameter name; `$s` is a one-line
+ *   stringification accumulator.
  */
 class SolrAggregationQueryBuilder
 {

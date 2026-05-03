@@ -65,7 +65,9 @@ class ReadFileHandler
      * @param FileOwnershipHandler                 $fileOwnershipHandler File ownership handler.
      * @param MagicMapper                          $objectMapper         Object mapper for magic table operations.
      * @param LoggerInterface                      $logger               Logger for logging operations.
-     * @param \OCA\OpenRegister\Db\FileMapper|null $fileMapper           Optional OR-side metadata mapper for category-based filtering. Null-safe so legacy fixtures keep working.
+     * @param \OCA\OpenRegister\Db\FileMapper|null $fileMapper           Optional OR-side metadata mapper for
+     *                                                                   category-based filtering. Null-safe so legacy
+     *                                                                   fixtures keep working.
      */
     public function __construct(
         private readonly IRootFolder $rootFolder,
@@ -241,6 +243,7 @@ class ReadFileHandler
      *
      * @param ObjectEntity|string $object          The object or object ID to fetch files for.
      * @param bool|null           $sharedFilesOnly Whether to return only shared files.
+     * @param string|null         $category        Optional FileMapper category to filter on.
      *
      * @return array Array of file nodes.
      *

@@ -3933,6 +3933,8 @@ class SaveObject
      * @param string      $schemaRef    The schema $ref the URL is supposed to address.
      * @param string|null $register     The register the URL is supposed to address.
      *
+     * @return void
+     *
      * @throws ReferenceValidationException When the URL syntax is invalid.
      */
     private function validateExternalUrlSyntax(
