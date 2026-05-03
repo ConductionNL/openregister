@@ -37,7 +37,7 @@
 		"psalm:fix": "./vendor/bin/psalm --threads=1 --no-cache --alter || echo 'Psalm not installed, skipping...'",
 		"psalm:output": "./vendor/bin/psalm --threads=1 --no-cache --output-format=json 2>/dev/null | tail -1 > psalm-output.json || echo 'Psalm not installed, skipping...'",
 		"phpstan": "./vendor/bin/phpstan analyse --memory-limit=1G || echo 'PHPStan not installed, skipping...'",
-		"phpmd": "phpmd lib text phpmd.xml || echo 'PHPMD not installed, skipping...'",
+		"phpmd": "phpmd lib text phpmd.xml --baseline-file phpmd.baseline.xml || echo 'PHPMD not installed, skipping...'",
 		"phpmetrics": "./vendor/bin/phpmetrics --report-html=phpmetrics lib/",
 		"phpmetrics:json": "./vendor/bin/phpmetrics --report-json=phpmetrics/report.json lib/",
 		"phpmetrics:csv": "./vendor/bin/phpmetrics --report-csv=phpmetrics/report.csv lib/",

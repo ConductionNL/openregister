@@ -105,6 +105,8 @@ class AuditTrailMapper extends QBMapper
      * `null` to clear (typically in the import's `finally` block).
      *
      * @param string|null $importJobId UUID v4 of the active import job, or null to clear.
+     *
+     * @return void
      */
     public function setRequestImportJobId(?string $importJobId): void
     {
@@ -114,6 +116,8 @@ class AuditTrailMapper extends QBMapper
     /**
      * Get the currently-active request-scoped import-job UUID. Returns
      * null when no import is in flight.
+     *
+     * @return string|null
      */
     public function getRequestImportJobId(): ?string
     {

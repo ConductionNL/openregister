@@ -41,7 +41,7 @@ namespace OCA\OpenRegister\Service\Geo;
  * Pure-PHP spatial-filter matcher.
  *
  * @SuppressWarnings(PHPMD.ExcessiveClassComplexity) Spatial-filter algorithms (ray-casting point-in-polygon, Haversine distance, Polygon/MultiPolygon coordinate extraction) are inherently branchy. Splitting across classes would obscure the algorithmic flow without reducing real complexity.
- * @SuppressWarnings(PHPMD.ShortVariable) `$x` / `$y` are mathematical convention for ray-casting; `$xi` / `$yi` / `$xj` / `$yj` are the standard ring-vertex names from Bevis & Chatelain's algorithm.
+ * @SuppressWarnings(PHPMD.ShortVariable)            `$x` / `$y` are mathematical convention for ray-casting; `$xi` / `$yi` / `$xj` / `$yj` are the standard ring-vertex names from Bevis & Chatelain's algorithm.
  */
 class GeoSpatialEvaluator
 {

@@ -34,7 +34,9 @@ namespace OCA\OpenRegister\Service\Aggregation;
 /**
  * Builds Elasticsearch query DSL from an AggregationQuery.
  *
- * @SuppressWarnings(PHPMD.ElseExpression) Each branch in build() emits a *different* aggs nesting shape (top-level metric vs. nested-under-terms); flattening would duplicate the metric-spec construction.
+ * @SuppressWarnings(PHPMD.ElseExpression) Each branch in build() emits a
+ * *different* aggs nesting shape (top-level metric vs. nested-under-terms);
+ * flattening would duplicate the metric-spec construction.
  */
 class ElasticsearchAggregationQueryBuilder
 {
