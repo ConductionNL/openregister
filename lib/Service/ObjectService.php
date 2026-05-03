@@ -158,6 +158,7 @@ use function React\Promise\all;
  * @SuppressWarnings(PHPMD.CyclomaticComplexity)
  * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
  * @SuppressWarnings(PHPMD.UnusedFormalParameter)
+ * @SuppressWarnings(PHPMD.LongVariable)
  */
 class ObjectService
 {
@@ -361,11 +362,7 @@ class ObjectService
                 if ($folderNode !== null) {
                     // Update the entity with the folder ID.
                     $folderIdValue = $folderNode->getId();
-                    if ($folderIdValue !== null) {
-                        $entity->setFolder((string) $folderIdValue);
-                    } else {
-                        $entity->setFolder(null);
-                    }
+                    $entity->setFolder($folderIdValue !== null ? (string) $folderIdValue : null);
 
                     // Save the entity with the new folder ID.
                     $this->objectMapper->update($entity);
@@ -529,7 +526,9 @@ class ObjectService
                     register: $this->currentRegister,
                     schema: $this->currentSchema
                 );
-            } else {
+            }
+
+            if ($hasContext === false) {
                 $object = $this->objectMapper->find($object);
             }
         }
@@ -1360,6 +1359,8 @@ class ObjectService
      * @param array $object The object data to normalize.
      *
      * @return array The normalized object data.
+     *
+     * @SuppressWarnings(PHPMD.NPathComplexity)
      */
     private function normalizeDateValues(array $object): array
     {
@@ -1536,7 +1537,7 @@ class ObjectService
 
             $retention = ($object->getRetention() ?? []);
             if (isset($retention['archiefstatus']) === true && $retention['archiefstatus'] === 'overgebracht') {
-                throw new \OCP\AppFramework\Db\DoesNotExistException(
+                throw new OcpDoesNotExistException(
                     'OBJECT_TRANSFERRED: This object has been transferred to the e-Depot and is read-only.'
                 );
             }

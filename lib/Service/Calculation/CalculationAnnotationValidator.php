@@ -75,6 +75,9 @@ final class CalculationAnnotationValidator
      * @param array<string, mixed> $schema Full schema (must include `properties`).
      *
      * @return array<int, array{code: string, message: string}> Validation error list.
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+     * @SuppressWarnings(PHPMD.NPathComplexity)
      */
     public function validate(array $schema): array
     {
@@ -168,6 +171,9 @@ final class CalculationAnnotationValidator
      * @param array<int, string>                               $deps    Mutable list of calc deps for the current calc.
      *
      * @return void
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+     * @SuppressWarnings(PHPMD.NPathComplexity)
      */
     private function walk(mixed $expr, string $owner, array $allRefs, array &$errors, array &$deps): void
     {

@@ -22,6 +22,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Db;
 
+use DateTime;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Db\QBMapper;
 use OCP\DB\QueryBuilder\IQueryBuilder;
@@ -86,7 +87,7 @@ class TranslationMapper extends QBMapper
             $entity->setTranslator($translator);
         }
 
-        $entity->setUpdated(new \DateTime());
+        $entity->setUpdated(new DateTime());
 
         if ($existing === null) {
             return $this->insert(entity: $entity);

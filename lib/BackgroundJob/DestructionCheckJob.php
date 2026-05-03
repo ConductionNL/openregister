@@ -117,7 +117,6 @@ class DestructionCheckJob extends TimedJob
 
             // Step 1: Send pre-destruction notifications.
             $this->sendPreDestructionNotifications(
-                retentionService: $retentionService,
                 settings: $settings,
                 logger: $logger
             );
@@ -168,18 +167,17 @@ class DestructionCheckJob extends TimedJob
     /**
      * Send pre-destruction notifications for approaching objects.
      *
-     * @param RetentionService $retentionService The retention service
-     * @param array            $settings         Archival settings
-     * @param LoggerInterface  $logger           Logger
+     * @param array           $settings Archival settings
+     * @param LoggerInterface $logger   Logger
      *
      * @return void
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+     * @SuppressWarnings(PHPMD.NPathComplexity)
      *
      * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-63
      */
     private function sendPreDestructionNotifications(
-        RetentionService $retentionService,
         array $settings,
         LoggerInterface $logger
     ): void {
@@ -232,10 +230,9 @@ class DestructionCheckJob extends TimedJob
                     continue;
                 }
 
+                $subject = 'Object approaching destruction date';
                 if ($nominatie === 'bewaren') {
                     $subject = 'Object requires e-Depot transfer';
-                } else {
-                    $subject = 'Object approaching destruction date';
                 }
 
                 $this->sendObjectNotification(

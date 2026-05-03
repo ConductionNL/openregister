@@ -62,8 +62,9 @@ use OCP\IUserSession;
  *
  * @psalm-suppress UnusedClass
  *
- * @suppressWarnings(PHPMD.TooManyPublicMethods)
- * @suppressWarnings(PHPMD.ExcessiveClassComplexity)
+ * @SuppressWarnings(PHPMD.TooManyPublicMethods)
+ * @SuppressWarnings(PHPMD.TooManyMethods)
+ * @SuppressWarnings(PHPMD.ExcessiveClassComplexity)
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)   Nextcloud controller DI requires many dependencies
  * @SuppressWarnings(PHPMD.ExcessiveClassLength)
  */
@@ -106,6 +107,8 @@ class FilesController extends Controller
      * @param IUserSession|null                                    $userSession      Session for auth gating.
      *
      * @return void
+     *
+     * @SuppressWarnings(PHPMD.ExcessiveParameterList)
      */
     public function __construct(
         string $appName,

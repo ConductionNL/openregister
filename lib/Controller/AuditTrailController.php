@@ -46,6 +46,7 @@ use OCP\IRequest;
  *
  * @SuppressWarnings(PHPMD.ExcessiveClassLength)   Controller covers audit trail, verification, verwerkingsregister
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects) Necessary service dependencies
+ * @SuppressWarnings(PHPMD.TooManyPublicMethods)   One public method per audit trail route
  */
 class AuditTrailController extends Controller
 {

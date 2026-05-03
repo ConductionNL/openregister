@@ -1839,7 +1839,8 @@ class ImportService
      *
      * @phpstan-param array<string, array{errors?: array<int, mixed>}> $summary
      *
-     * @SuppressWarnings(PHPMD.CyclomaticComplexity) Error envelopes carry several optional shapes.
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+     * @SuppressWarnings(PHPMD.NPathComplexity)
      *
      * @spec openspec/changes/data-import-export/tasks.md#task-error-csv
      */

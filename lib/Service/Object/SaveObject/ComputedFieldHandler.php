@@ -47,8 +47,9 @@ use Twig\Sandbox\SecurityPolicy;
  * @category Handler
  * @package  OCA\OpenRegister\Service\Objects\SaveObject
  *
- * @SuppressWarnings(PHPMD.CouplingBetweenObjects) Handler requires Twig and mapper dependencies
+ * @SuppressWarnings(PHPMD.CouplingBetweenObjects)   Handler requires Twig and mapper dependencies
  * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+ * @SuppressWarnings(PHPMD.ExcessiveClassComplexity)
  */
 class ComputedFieldHandler
 {
@@ -485,6 +486,8 @@ class ComputedFieldHandler
      * @param Schema $schema The schema to analyse.
      *
      * @return array<int, array<int, string>> Detected cycles.
+     *
+     * @SuppressWarnings(PHPMD.NPathComplexity)
      */
     public function detectCircularDependencies(Schema $schema): array
     {

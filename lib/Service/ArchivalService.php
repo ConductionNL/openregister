@@ -27,6 +27,7 @@ namespace OCA\OpenRegister\Service;
 use DateTime;
 use DateInterval;
 use InvalidArgumentException;
+use RuntimeException;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\DestructionList;
 use OCA\OpenRegister\Db\DestructionListMapper;
@@ -41,6 +42,7 @@ use Psr\Log\LoggerInterface;
  * Service for archival and destruction workflow operations.
  *
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects) Required for orchestrating multiple entities
+ * @SuppressWarnings(PHPMD.LongVariable)
  */
 class ArchivalService
 {
@@ -85,33 +87,35 @@ class ArchivalService
      * @return ObjectEntity The updated object
      *
      * @throws InvalidArgumentException If retention data is invalid
+     *
+     * @SuppressWarnings(PHPMD.StaticAccess)
      */
     public function setRetentionMetadata(ObjectEntity $object, array $retention): ObjectEntity
     {
         // Validate archiefnominatie.
-        if (isset($retention['archiefnominatie']) === true) {
-            if (in_array($retention['archiefnominatie'], self::VALID_NOMINATIONS, true) === false) {
-                $allowed = implode(', ', self::VALID_NOMINATIONS);
-                $value   = $retention['archiefnominatie'];
-                throw new InvalidArgumentException(
-                    "Invalid archiefnominatie '{$value}'. Must be one of: {$allowed}"
-                );
-            }
-        } else {
+        if (isset($retention['archiefnominatie']) === false) {
             $retention['archiefnominatie'] = 'nog_niet_bepaald';
         }
 
+        if (in_array($retention['archiefnominatie'], self::VALID_NOMINATIONS, true) === false) {
+            $allowed = implode(', ', self::VALID_NOMINATIONS);
+            $value   = $retention['archiefnominatie'];
+            throw new InvalidArgumentException(
+                "Invalid archiefnominatie '{$value}'. Must be one of: {$allowed}"
+            );
+        }
+
         // Validate archiefstatus.
-        if (isset($retention['archiefstatus']) === true) {
-            if (in_array($retention['archiefstatus'], self::VALID_STATUSES, true) === false) {
-                $allowed = implode(', ', self::VALID_STATUSES);
-                $value   = $retention['archiefstatus'];
-                throw new InvalidArgumentException(
-                    "Invalid archiefstatus '{$value}'. Must be one of: {$allowed}"
-                );
-            }
-        } else {
+        if (isset($retention['archiefstatus']) === false) {
             $retention['archiefstatus'] = 'nog_te_archiveren';
+        }
+
+        if (in_array($retention['archiefstatus'], self::VALID_STATUSES, true) === false) {
+            $allowed = implode(', ', self::VALID_STATUSES);
+            $value   = $retention['archiefstatus'];
+            throw new InvalidArgumentException(
+                "Invalid archiefstatus '{$value}'. Must be one of: {$allowed}"
+            );
         }
 
         // Validate archiefactiedatum format if provided.
@@ -183,8 +187,7 @@ class ArchivalService
      */
     public function findObjectsDueForDestruction(): array
     {
-        $now = (new DateTime())->format('c');
-        $qb  = $this->db->getQueryBuilder();
+        $qb = $this->db->getQueryBuilder();
 
         $qb->select('*')
             ->from('openregister_objects')
@@ -329,6 +332,8 @@ class ArchivalService
      * @param string $destructionListId The destruction list UUID for audit trail
      *
      * @return void
+     *
+     * @SuppressWarnings(PHPMD.UnusedFormalParameter) Reserved for future audit-trail correlation.
      */
     private function destroyObject(string $objectUuid, string $destructionListId): void
     {
@@ -344,7 +349,7 @@ class ArchivalService
         $result->closeCursor();
 
         if ($row === false) {
-            throw new \RuntimeException("Object {$objectUuid} not found");
+            throw new RuntimeException("Object {$objectUuid} not found");
         }
 
         // Create an ObjectEntity for audit trail.

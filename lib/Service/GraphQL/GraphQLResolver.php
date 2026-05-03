@@ -680,25 +680,33 @@ class GraphQLResolver
         $data['_register'] = $object->getRegister();
         $data['_schema']   = $object->getSchema();
 
-        $created = $object->getCreated();
-        if ($created instanceof \DateTimeInterface === true) {
-            $data['_created'] = $created->format(\DateTimeInterface::ATOM);
-        } else {
-            $data['_created'] = $created;
-        }
+        $created          = $object->getCreated();
+        $data['_created'] = $this->formatDateOrPassthrough(value: $created);
 
-        $updated = $object->getUpdated();
-        if ($updated instanceof \DateTimeInterface === true) {
-            $data['_updated'] = $updated->format(\DateTimeInterface::ATOM);
-        } else {
-            $data['_updated'] = $updated;
-        }
+        $updated          = $object->getUpdated();
+        $data['_updated'] = $this->formatDateOrPassthrough(value: $updated);
 
         $data['_owner'] = $object->getOwner();
 
         return $data;
 
     }//end objectToArray()
+
+    /**
+     * Format a DateTimeInterface as ATOM, or pass through unchanged.
+     *
+     * @param mixed $value The value to format.
+     *
+     * @return mixed The ATOM-formatted string or the original value.
+     */
+    private function formatDateOrPassthrough(mixed $value): mixed
+    {
+        if ($value instanceof \DateTimeInterface === true) {
+            return $value->format(\DateTimeInterface::ATOM);
+        }
+
+        return $value;
+    }//end formatDateOrPassthrough()
 
     /**
      * Find the register for a schema.

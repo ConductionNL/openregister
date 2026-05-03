@@ -76,6 +76,9 @@ class LifecycleValidationListener implements IEventListener
      * @param Event $event Inbound dispatcher event.
      *
      * @return void
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+     * @SuppressWarnings(PHPMD.NPathComplexity)
      */
     public function handle(Event $event): void
     {

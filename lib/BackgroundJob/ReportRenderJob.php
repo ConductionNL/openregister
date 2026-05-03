@@ -298,9 +298,10 @@ class ReportRenderJob extends TimedJob
         if ($folder->nodeExists(path: $filename) === true) {
             $existing = $folder->get(path: $filename);
             $existing->putContent(data: (string) $rendered['bytes']);
-        } else {
-            $folder->newFile(path: $filename, content: (string) $rendered['bytes']);
+            return;
         }
+
+        $folder->newFile(path: $filename, content: (string) $rendered['bytes']);
 
     }//end writeToFiles()
 

@@ -129,6 +129,8 @@ class DeckCardService
      * @return DeckLink The created link.
      *
      * @throws Exception If parameters are missing or Deck operations fail.
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
      */
     public function linkOrCreateCard(string $objectUuid, int $registerId, array $data): DeckLink
     {
@@ -142,7 +144,14 @@ class DeckCardService
         $boardId   = 0;
         $stackId   = 0;
 
-        if (empty($data['cardId']) === false) {
+        $hasCardId    = (empty($data['cardId']) === false);
+        $hasBoardData = (empty($data['boardId']) === false && empty($data['stackId']) === false);
+
+        if ($hasCardId === false && $hasBoardData === false) {
+            throw new Exception('Either cardId or boardId+stackId is required');
+        }
+
+        if ($hasCardId === true) {
             // Link existing card.
             $cardId   = (int) $data['cardId'];
             $cardInfo = $this->getDeckCardInfo(cardId: $cardId);
@@ -159,7 +168,9 @@ class DeckCardService
             if ($existing !== null) {
                 throw new Exception('Card already linked to this object', 409);
             }
-        } else if (empty($data['boardId']) === false && empty($data['stackId']) === false) {
+        }
+
+        if ($hasCardId === false && $hasBoardData === true) {
             // Create new card.
             $boardId   = (int) $data['boardId'];
             $stackId   = (int) $data['stackId'];
@@ -175,9 +186,7 @@ class DeckCardService
             if ($cardId === null) {
                 throw new Exception('Failed to create Deck card');
             }
-        } else {
-            throw new Exception('Either cardId or boardId+stackId is required');
-        }//end if
+        }
 
         $link = new DeckLink();
         $link->setObjectUuid($objectUuid);
@@ -282,6 +291,8 @@ class DeckCardService
      * @param string $objectUuid  The object UUID for the back-link.
      *
      * @return int|null The created card ID or null.
+     *
+     * @SuppressWarnings(PHPMD.UnusedFormalParameter) boardId reserved for future board-context APIs.
      */
     private function createDeckCard(
         int $boardId,

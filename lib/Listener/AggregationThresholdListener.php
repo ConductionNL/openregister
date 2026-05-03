@@ -93,6 +93,9 @@ class AggregationThresholdListener implements IEventListener
      * @param Event $event Inbound dispatcher event.
      *
      * @return void
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+     * @SuppressWarnings(PHPMD.NPathComplexity)
      */
     public function handle(Event $event): void
     {
@@ -150,6 +153,8 @@ class AggregationThresholdListener implements IEventListener
      * @param ObjectEntity         $object           Object that just changed.
      *
      * @return void
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
      */
     private function evaluate(Schema $schema, string $notificationName, array $trigger, ObjectEntity $object): void
     {

@@ -64,6 +64,10 @@ class TenantUsageSyncJob extends TimedJob
      * @return void
      *
      * @SuppressWarnings(PHPMD.UnusedFormalParameter)
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+     * @SuppressWarnings(PHPMD.NPathComplexity)
+     * @SuppressWarnings(PHPMD.StaticAccess)
+     * @SuppressWarnings(PHPMD.UndefinedVariable)
      *
      * @spec openspec/changes/retrofit-tenant-isolation-audit-2026-04-28/tasks.md#task-2
      * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-80

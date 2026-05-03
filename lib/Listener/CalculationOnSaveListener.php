@@ -90,6 +90,11 @@ class CalculationOnSaveListener implements IEventListener
      * @param bool         $isUpdate True when the object is being updated.
      *
      * @return void
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+     * @SuppressWarnings(PHPMD.NPathComplexity)
+     * @SuppressWarnings(PHPMD.UnusedFormalParameter)
+     * @SuppressWarnings(PHPMD.BooleanArgumentFlag)
      */
     private function process(ObjectEntity $object, bool $isUpdate): void
     {

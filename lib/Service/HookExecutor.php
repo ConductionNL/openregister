@@ -31,6 +31,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service;
 
+use DateTime;
 use Exception;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
@@ -880,7 +881,7 @@ class HookExecutor
                         'errors'     => $error !== null ? json_encode([['message' => $error]]) : null,
                         'metadata'   => json_encode($context),
                         'payload'    => $payload !== null ? json_encode($payload) : null,
-                        'executedAt' => new \DateTime(),
+                        'executedAt' => new DateTime(),
                     ]
                     );
         } catch (Exception $e) {

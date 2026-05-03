@@ -39,6 +39,10 @@ final class LifecycleAnnotationValidator
      * @param array<string, mixed> $schema Full schema definition (top-level shape — must include `properties`).
      *
      * @return array<int, array{code: string, message: string}> List of errors (empty = valid).
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+     * @SuppressWarnings(PHPMD.NPathComplexity)
+     * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
      */
     public function validate(array $schema): array
     {
@@ -138,24 +142,25 @@ final class LifecycleAnnotationValidator
             }
 
             // From: required, array of states all in the enum.
-            $from = ($spec['from'] ?? null);
-            if (is_array($from) === false || count($from) === 0) {
+            $from   = ($spec['from'] ?? null);
+            $fromOk = (is_array($from) === true && count($from) > 0);
+            if ($fromOk === false) {
                 $errors[] = [
                     'code'    => 'lifecycle-from-missing',
                     'message' => sprintf('Transition "%s" must declare a non-empty `from` array.', (string) $action),
                 ];
-            } else {
-                foreach ($from as $fromState) {
-                    if (isset($enumSet[(string) $fromState]) === false) {
-                        $errors[] = [
-                            'code'    => 'lifecycle-from-not-in-enum',
-                            'message' => sprintf(
-                                'Transition "%s" lists "from" state "%s" which is not in the field\'s enum.',
-                                (string) $action,
-                                (string) $fromState
-                            ),
-                        ];
-                    }
+            }
+
+            foreach (($fromOk === true ? $from : []) as $fromState) {
+                if (isset($enumSet[(string) $fromState]) === false) {
+                    $errors[] = [
+                        'code'    => 'lifecycle-from-not-in-enum',
+                        'message' => sprintf(
+                            'Transition "%s" lists "from" state "%s" which is not in the field\'s enum.',
+                            (string) $action,
+                            (string) $fromState
+                        ),
+                    ];
                 }
             }
 

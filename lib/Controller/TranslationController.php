@@ -40,6 +40,11 @@ use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
 
+/**
+ * Controller for translation operations.
+ *
+ * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
+ */
 class TranslationController extends Controller
 {
     /**

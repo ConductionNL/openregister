@@ -888,6 +888,8 @@ class TextExtractionService
      * @throws Exception If file cannot be read
      *
      * Else needed for multi-format extraction branching
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
      */
     private function performTextExtraction(int $fileId, array $ncFile): ?string
     {
@@ -1906,11 +1908,7 @@ class TextExtractionService
         $currentOffset = 0;
 
         foreach ($splits as $split) {
-            if ($currentChunk === '') {
-                $testChunk = $split;
-            } else {
-                $testChunk = $currentChunk.$separator.$split;
-            }
+            $testChunk = $currentChunk === '' ? $split : $currentChunk.$separator.$split;
 
             if (strlen($testChunk) <= $chunkSize) {
                 // Can add to current chunk.

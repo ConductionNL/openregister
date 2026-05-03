@@ -165,6 +165,8 @@ class AggregationCache
      * @param string $schemaSlug   Schema slug whose aggregations should be evicted.
      *
      * @return void
+     *
+     * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      */
     public function evictForSchema(string $registerSlug, string $schemaSlug): void
     {

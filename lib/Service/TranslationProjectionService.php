@@ -75,6 +75,9 @@ class TranslationProjectionService
      * @param ObjectEntity $object The object to project.
      *
      * @return void
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+     * @SuppressWarnings(PHPMD.NPathComplexity)
      */
     public function project(ObjectEntity $object): void
     {

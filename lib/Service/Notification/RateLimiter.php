@@ -123,6 +123,9 @@ class RateLimiter
      * @param array<string, mixed>|null $perRuleOverride Optional `rateLimit` block from the rule spec.
      *
      * @return bool True when the dispatch may proceed.
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+     * @SuppressWarnings(PHPMD.NPathComplexity)
      */
     public function tryConsume(string $ruleId, string $recipient, ?array $perRuleOverride=null): bool
     {
@@ -152,18 +155,14 @@ class RateLimiter
             return true;
         }//end try
 
+        $tokens     = (float) $bucketSize;
+        $lastRefill = $now;
         if (is_string($state) === true) {
             $decoded = json_decode($state, true);
             if (is_array($decoded) === true && isset($decoded['tokens'], $decoded['lastRefill']) === true) {
                 $tokens     = (float) $decoded['tokens'];
                 $lastRefill = (int) $decoded['lastRefill'];
-            } else {
-                $tokens     = (float) $bucketSize;
-                $lastRefill = $now;
             }
-        } else {
-            $tokens     = (float) $bucketSize;
-            $lastRefill = $now;
         }
 
         // Refill: one token every $refillSeconds. Cap at bucket size.
@@ -220,6 +219,8 @@ class RateLimiter
      * @param array<string, mixed>|null $perRuleOverride Per-rule rateLimit block.
      *
      * @return array{0:int,1:int} Tuple of (bucketSize, refillSeconds).
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
      */
     private function resolveLimits(?array $perRuleOverride): array
     {
@@ -249,18 +250,18 @@ class RateLimiter
         }//end try
 
         if (is_array($perRuleOverride) === true) {
-            $rb = ($perRuleOverride['bucketSize'] ?? null);
-            if (is_int($rb) === true && $rb > 0) {
-                $bucketSize = $rb;
-            } else if (is_string($rb) === true && ctype_digit($rb) === true && (int) $rb > 0) {
-                $bucketSize = (int) $rb;
+            $rawBucket = ($perRuleOverride['bucketSize'] ?? null);
+            if (is_int($rawBucket) === true && $rawBucket > 0) {
+                $bucketSize = $rawBucket;
+            } else if (is_string($rawBucket) === true && ctype_digit($rawBucket) === true && (int) $rawBucket > 0) {
+                $bucketSize = (int) $rawBucket;
             }
 
-            $rr = ($perRuleOverride['refillSecondsPerToken'] ?? null);
-            if (is_int($rr) === true && $rr > 0) {
-                $refillSeconds = $rr;
-            } else if (is_string($rr) === true && ctype_digit($rr) === true && (int) $rr > 0) {
-                $refillSeconds = (int) $rr;
+            $rawRefill = ($perRuleOverride['refillSecondsPerToken'] ?? null);
+            if (is_int($rawRefill) === true && $rawRefill > 0) {
+                $refillSeconds = $rawRefill;
+            } else if (is_string($rawRefill) === true && ctype_digit($rawRefill) === true && (int) $rawRefill > 0) {
+                $refillSeconds = (int) $rawRefill;
             }
         }
 

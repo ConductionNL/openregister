@@ -27,6 +27,7 @@
 namespace OCA\OpenRegister\Service\Configuration;
 
 use Exception;
+use RuntimeException;
 use stdClass;
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\GuzzleException;
@@ -1019,7 +1020,7 @@ class ImportHandler
                         $shapeErrors
                     )
                             );
-                throw new \RuntimeException($msg);
+                throw new RuntimeException($msg);
             }
         }
 
@@ -3398,76 +3399,72 @@ class ImportHandler
             }//end foreach
         }//end if
 
-        if (count($notes) > 0 && $this->noteService !== null) {
-            if ($hasUserContext === false) {
-                $this->logger->warning(
-                    message: '[ImportHandler] Skipping seed notes - no user session available',
-                    context: ['object_uuid' => $object->getUuid(), 'count' => count($notes)]
-                );
-            } else {
-                foreach ($notes as $noteSpec) {
-                    $message = (string) ($noteSpec['message'] ?? '');
-                    if ($message === '') {
-                        continue;
-                    }
-
-                    try {
-                        $this->noteService->createNote((string) $object->getUuid(), $message);
-                        $notesCreated++;
-                    } catch (\Throwable $e) {
-                        $this->logger->warning(
-                            message: '[ImportHandler] Seed note creation failed',
-                            context: [
-                                'object_uuid' => $object->getUuid(),
-                                'error'       => $e->getMessage(),
-                            ]
-                        );
-                    }
+        if (count($notes) > 0 && $this->noteService !== null && $hasUserContext === false) {
+            $this->logger->warning(
+                message: '[ImportHandler] Skipping seed notes - no user session available',
+                context: ['object_uuid' => $object->getUuid(), 'count' => count($notes)]
+            );
+        } else if (count($notes) > 0 && $this->noteService !== null) {
+            foreach ($notes as $noteSpec) {
+                $message = (string) ($noteSpec['message'] ?? '');
+                if ($message === '') {
+                    continue;
                 }
-            }//end if
+
+                try {
+                    $this->noteService->createNote((string) $object->getUuid(), $message);
+                    $notesCreated++;
+                } catch (\Throwable $e) {
+                    $this->logger->warning(
+                        message: '[ImportHandler] Seed note creation failed',
+                        context: [
+                            'object_uuid' => $object->getUuid(),
+                            'error'       => $e->getMessage(),
+                        ]
+                    );
+                }
+            }
         }//end if
 
-        if (count($tasks) > 0 && $this->taskService !== null) {
-            if ($hasUserContext === false) {
-                $this->logger->warning(
-                    message: '[ImportHandler] Skipping seed tasks - no user session available',
-                    context: ['object_uuid' => $object->getUuid(), 'count' => count($tasks)]
-                );
-            } else {
-                foreach ($tasks as $taskSpec) {
-                    $summary = (string) ($taskSpec['summary'] ?? '');
-                    if ($summary === '') {
-                        continue;
-                    }
+        if (count($tasks) > 0 && $this->taskService !== null && $hasUserContext === false) {
+            $this->logger->warning(
+                message: '[ImportHandler] Skipping seed tasks - no user session available',
+                context: ['object_uuid' => $object->getUuid(), 'count' => count($tasks)]
+            );
+        } else if (count($tasks) > 0 && $this->taskService !== null) {
+            foreach ($tasks as $taskSpec) {
+                $summary = (string) ($taskSpec['summary'] ?? '');
+                if ($summary === '') {
+                    continue;
+                }
 
-                    $taskData = [
-                        'summary'     => $summary,
-                        'description' => (string) ($taskSpec['description'] ?? ''),
-                        'status'      => (string) ($taskSpec['status'] ?? 'needs-action'),
-                        'priority'    => (int) ($taskSpec['priority'] ?? 0),
-                        'due'         => $taskSpec['due'] ?? null,
-                    ];
-                    try {
-                        $this->taskService->createTask(
-                            $registerId,
-                            $schemaId,
-                            (string) $object->getUuid(),
-                            $objectTitle,
-                            $taskData
-                        );
-                        $tasksCreated++;
-                    } catch (\Throwable $e) {
-                        $this->logger->warning(
-                            message: '[ImportHandler] Seed task creation failed',
-                            context: [
-                                'object_uuid' => $object->getUuid(),
-                                'summary'     => $summary,
-                                'error'       => $e->getMessage(),
-                            ]
-                        );
-                    }
-                }//end foreach
-            }//end if
+                $taskData = [
+                    'summary'     => $summary,
+                    'description' => (string) ($taskSpec['description'] ?? ''),
+                    'status'      => (string) ($taskSpec['status'] ?? 'needs-action'),
+                    'priority'    => (int) ($taskSpec['priority'] ?? 0),
+                    'due'         => $taskSpec['due'] ?? null,
+                ];
+                try {
+                    $this->taskService->createTask(
+                        $registerId,
+                        $schemaId,
+                        (string) $object->getUuid(),
+                        $objectTitle,
+                        $taskData
+                    );
+                    $tasksCreated++;
+                } catch (\Throwable $e) {
+                    $this->logger->warning(
+                        message: '[ImportHandler] Seed task creation failed',
+                        context: [
+                            'object_uuid' => $object->getUuid(),
+                            'summary'     => $summary,
+                            'error'       => $e->getMessage(),
+                        ]
+                    );
+                }
+            }//end foreach
         }//end if
 
         $result['relatedFiles'] = ($result['relatedFiles'] ?? 0) + $filesCreated;

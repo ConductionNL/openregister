@@ -46,6 +46,7 @@ use Psr\Log\LoggerInterface;
  *
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
  * @SuppressWarnings(PHPMD.ExcessiveClassLength)
+ * @SuppressWarnings(PHPMD.ExcessiveClassComplexity)
  */
 class TmloService
 {
@@ -173,6 +174,8 @@ class TmloService
      * @param Schema       $schema   The schema for default values
      *
      * @return ObjectEntity The object with populated TMLO metadata
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
      */
     public function populateDefaults(ObjectEntity $object, Register $register, Schema $schema): ObjectEntity
     {
@@ -242,6 +245,10 @@ class TmloService
      * @param array $tmlo The TMLO metadata to validate
      *
      * @return array Array of validation errors (empty if valid)
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+     * @SuppressWarnings(PHPMD.NPathComplexity)
+     * @SuppressWarnings(PHPMD.StaticAccess)
      */
     public function validateFieldValues(array $tmlo): array
     {
@@ -301,6 +308,9 @@ class TmloService
      * @param string $oldStatus The current/old archiefstatus
      *
      * @return array Array of validation errors (empty if valid)
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+     * @SuppressWarnings(PHPMD.NPathComplexity)
      */
     public function validateStatusTransition(array $tmlo, string $oldStatus): array
     {

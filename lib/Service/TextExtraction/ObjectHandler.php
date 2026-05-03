@@ -88,9 +88,10 @@ class ObjectHandler implements TextExtractionHandlerInterface
      *
      * @throws Exception When extraction fails.
      *
-     * @SuppressWarnings(PHPMD.BooleanArgumentFlag)  Force parameter follows interface contract
-     * @SuppressWarnings(PHPMD.CyclomaticComplexity) Object extraction requires multiple field checks
-     * @SuppressWarnings(PHPMD.NPathComplexity)      Multiple field extraction paths with optional data
+     * @SuppressWarnings(PHPMD.BooleanArgumentFlag)   Force parameter follows interface contract
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)  Object extraction requires multiple field checks
+     * @SuppressWarnings(PHPMD.NPathComplexity)       Multiple field extraction paths with optional data
+     * @SuppressWarnings(PHPMD.UnusedFormalParameter) $sourceMeta and $force kept to honour interface contract
      */
     public function extractText(int $sourceId, array $sourceMeta, bool $force=false): array
     {
@@ -300,11 +301,7 @@ class ObjectHandler implements TextExtractionHandlerInterface
 
         foreach ($data as $key => $value) {
             // Build context path.
-            if (($prefix !== null && $prefix !== '')) {
-                $contextKey = "{$prefix}.{$key}";
-            } else {
-                $contextKey = (string) $key;
-            }
+            $contextKey = ($prefix !== null && $prefix !== '') ? "{$prefix}.{$key}" : (string) $key;
 
             // Handle different value types.
             if (is_string($value) === true && trim($value) !== '' && trim($value) !== null) {
@@ -312,12 +309,7 @@ class ObjectHandler implements TextExtractionHandlerInterface
             } else if (is_numeric($value) === true) {
                 $textParts[] = "{$contextKey}: {$value}";
             } else if (is_bool($value) === true) {
-                if ($value === true) {
-                    $boolStr = 'true';
-                } else {
-                    $boolStr = 'false';
-                }
-
+                $boolStr     = $value === true ? 'true' : 'false';
                 $textParts[] = "{$contextKey}: {$boolStr}";
             } else if (is_array($value) === true && empty($value) === false) {
                 // Recursively process nested arrays.

@@ -217,6 +217,7 @@ class RegisterCalendar implements ICalendar
      * @return array Array of VEVENT-compatible arrays
      *
      * @SuppressWarnings(PHPMD.UnusedFormalParameter)
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
      *
      * @spec openspec/changes/retrofit-calendar-integration-2026-04-28/tasks.md#task-1
      * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-18

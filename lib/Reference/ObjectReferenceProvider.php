@@ -42,6 +42,7 @@ use Psr\Log\LoggerInterface;
  * Supports hash-routed UI URLs, API object URLs, and direct object routes.
  *
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
+ * @SuppressWarnings(PHPMD.ExcessiveClassComplexity)
  */
 class ObjectReferenceProvider extends ADiscoverableReferenceProvider implements ISearchableReferenceProvider
 {
@@ -265,6 +266,7 @@ class ObjectReferenceProvider extends ADiscoverableReferenceProvider implements 
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)
      * @SuppressWarnings(PHPMD.NPathComplexity)
+     * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
      *
      * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-3
      */
@@ -404,6 +406,8 @@ class ObjectReferenceProvider extends ADiscoverableReferenceProvider implements 
      * @param string $referenceId The reference URL
      *
      * @return string|null Cache key (user ID or empty string for anonymous)
+     *
+     * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      *
      * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-3
      */
@@ -556,6 +560,8 @@ class ObjectReferenceProvider extends ADiscoverableReferenceProvider implements 
      * @param array $objectData The full object data
      *
      * @return array<int, array{label: string, value: string}> Preview properties
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
      *
      * @spec openspec/changes/retrofit-b2b-crossrefs-2026-04-28/tasks.md#task-3
      */

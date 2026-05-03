@@ -105,11 +105,9 @@ class ActionScheduleJob extends TimedJob
                     $cron = new CronExpression($action->getSchedule());
 
                     $lastExecuted = $action->getLastExecutedAt();
-                    $isDue        = false;
+                    $isDue        = true;
 
-                    if ($lastExecuted === null) {
-                        $isDue = true;
-                    } else {
+                    if ($lastExecuted !== null) {
                         /*
                          * @psalm-suppress UndefinedClass
                          */

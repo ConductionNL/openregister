@@ -141,6 +141,8 @@ class SpreadsheetReportWriter
      * @param array<string, mixed>|null $data        Resolved widget data.
      *
      * @return void
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
      */
     private function writeWidgetSheet(Spreadsheet $spreadsheet, int $index, array $widget, ?array $data): void
     {
@@ -234,11 +236,7 @@ class SpreadsheetReportWriter
             return $bytes;
         }
 
-        if ($format === 'ods') {
-            $writer = new Ods($spreadsheet);
-        } else {
-            $writer = new Xlsx($spreadsheet);
-        }
+        $writer = $format === 'ods' ? new Ods($spreadsheet) : new Xlsx($spreadsheet);
 
         ob_start();
         $writer->save('php://output');
@@ -286,18 +284,18 @@ class SpreadsheetReportWriter
      */
     private function describeSource(array $widget): string
     {
-        $ds = ($widget['dataSource'] ?? null);
-        if (is_array($ds) === false) {
+        $source = ($widget['dataSource'] ?? null);
+        if (is_array($source) === false) {
             return '';
         }
 
-        $mode = (string) ($ds['mode'] ?? '');
+        $mode = (string) ($source['mode'] ?? '');
         if ($mode === 'aggregation') {
             return sprintf(
                 '%s/%s/%s',
-                $ds['register'] ?? '',
-                $ds['schema'] ?? '',
-                $ds['aggregation'] ?? ''
+                $source['register'] ?? '',
+                $source['schema'] ?? '',
+                $source['aggregation'] ?? ''
             );
         }
 

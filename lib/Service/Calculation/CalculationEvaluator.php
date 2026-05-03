@@ -24,8 +24,10 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Calculation;
 
 use DateTimeImmutable;
+use DateTimeInterface;
 use OCA\OpenRegister\Service\Search\PlaceholderResolver;
 use RuntimeException;
+use Throwable;
 
 /**
  * Expression AST evaluator.
@@ -43,6 +45,8 @@ use RuntimeException;
  *
  * Placeholders inside literal strings (e.g. "$now", "$currentUser") are
  * resolved via the shared PlaceholderResolver.
+ *
+ * @SuppressWarnings(PHPMD.ExcessiveClassComplexity)
  */
 class CalculationEvaluator
 {
@@ -287,8 +291,9 @@ class CalculationEvaluator
             return -($first + 0);
         }
 
-        $acc = $first + 0;
-        for ($i = 1; $i < count($args); $i++) {
+        $acc      = $first + 0;
+        $argCount = count($args);
+        for ($i = 1; $i < $argCount; $i++) {
             $v = $this->evaluate(object: $object, expression: $args[$i]);
             if (is_numeric($v) === false) {
                 throw new EvaluationException('- operand not numeric.');
@@ -360,6 +365,8 @@ class CalculationEvaluator
      * @return bool The comparison result.
      *
      * @throws EvaluationException When fewer than two operands.
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
      */
     private function compare(array $object, mixed $args, string $op): bool
     {
@@ -393,14 +400,14 @@ class CalculationEvaluator
      */
     private function normaliseForCompare(mixed $v): mixed
     {
-        if ($v instanceof \DateTimeInterface) {
+        if ($v instanceof DateTimeInterface) {
             return $v->getTimestamp();
         }
 
         if (is_string($v) === true && preg_match('/^\d{4}-\d{2}-\d{2}/', $v) === 1) {
             try {
-                return (new \DateTimeImmutable($v))->getTimestamp();
-            } catch (\Throwable) {
+                return (new DateTimeImmutable($v))->getTimestamp();
+            } catch (Throwable) {
                 return $v;
             }
         }
@@ -471,6 +478,8 @@ class CalculationEvaluator
      * @param mixed $v The value to coerce.
      *
      * @return DateTimeImmutable|null The parsed date, or null when not parseable.
+     *
+     * @SuppressWarnings(PHPMD.StaticAccess)
      */
     private function toDateOrNull(mixed $v): ?DateTimeImmutable
     {
@@ -478,14 +487,14 @@ class CalculationEvaluator
             return $v;
         }
 
-        if ($v instanceof \DateTimeInterface) {
+        if ($v instanceof DateTimeInterface) {
             return DateTimeImmutable::createFromInterface($v);
         }
 
         if (is_string($v) === true && $v !== '') {
             try {
                 return new DateTimeImmutable($v);
-            } catch (\Throwable) {
+            } catch (Throwable) {
                 return null;
             }
         }

@@ -156,6 +156,8 @@ class TenantLifecycleService
      *
      * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-74
      * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-77
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
      */
     public function provision(Organisation $organisation, string $adminUserId): Organisation
     {
@@ -200,7 +202,7 @@ class TenantLifecycleService
 
             // Set default authorization RBAC rules.
             $authorization = $organisation->getAuthorization();
-            foreach ($authorization as $entityType => &$permissions) {
+            foreach ($authorization as &$permissions) {
                 if (is_array($permissions) === false) {
                     continue;
                 }

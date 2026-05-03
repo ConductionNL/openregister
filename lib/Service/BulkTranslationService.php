@@ -82,6 +82,10 @@ class BulkTranslationService
      *                                  names to translate; null = all.
      *
      * @return array{translated: array<string, string>, skipped: array<string, string>}
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+     * @SuppressWarnings(PHPMD.NPathComplexity)
+     * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
      */
     public function translateObject(
         ObjectEntity $object,

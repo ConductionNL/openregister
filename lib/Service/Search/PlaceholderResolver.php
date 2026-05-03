@@ -105,23 +105,25 @@ final class PlaceholderResolver
     private function resolveDate(string $expr): mixed
     {
         // Split into base + optional offset (e.g. `$now-7d`, `$startOfMonth+1`).
-        $matched   = preg_match('/^(\$[a-zA-Z]+)([+-]\d+)([dwmy]?)$/', $expr, $m);
+        $matched   = preg_match('/^(\$[a-zA-Z]+)([+-]\d+)([dwmy]?)$/', $expr, $matches);
         $datebases = ['$now', '$startOfDay', '$startOfWeek', '$startOfMonth', '$startOfYear'];
         if ($matched === 1) {
-            $base = $m[1];
-            $sign = (int) $m[2];
-            $unit = ($m[3] !== '' ? $m[3] : $this->defaultUnitFor(base: $base));
+            $base = $matches[1];
+            $sign = (int) $matches[2];
+            $unit = ($matches[3] !== '' ? $matches[3] : $this->defaultUnitFor(base: $base));
         } else if (in_array($expr, $datebases, true) === true) {
             $base = $expr;
             $sign = 0;
             $unit = $this->defaultUnitFor(base: $expr);
-        } else {
+        }
+
+        if (isset($base) === false) {
             // Unknown placeholder — leave as-is for the caller to surface.
             return $expr;
         }
 
-        $now = new DateTimeImmutable('now', new DateTimeZone(date_default_timezone_get()));
-        $dt  = match ($base) {
+        $now      = new DateTimeImmutable('now', new DateTimeZone(date_default_timezone_get()));
+        $dateTime = match ($base) {
             '$now'          => $now,
             '$startOfDay'   => $now->modify('today'),
             '$startOfWeek'  => $now->modify('monday this week'),
@@ -140,10 +142,10 @@ final class PlaceholderResolver
             };
 
             $intervalSpec = sprintf('%s%d %s', ($sign < 0 ? '-' : '+'), abs($sign), $unitWord);
-            $dt           = $dt->modify($intervalSpec);
+            $dateTime     = $dateTime->modify($intervalSpec);
         }
 
-        return $dt;
+        return $dateTime;
     }//end resolveDate()
 
     /**

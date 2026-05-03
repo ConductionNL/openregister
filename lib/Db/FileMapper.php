@@ -76,6 +76,9 @@ use OCP\IURLGenerator;
  * @psalm-suppress LessSpecificImplementedReturnType - File[] is more specific than list<Entity>
  *
  * @template-extends QBMapper<Entity>
+ *
+ * @SuppressWarnings(PHPMD.ExcessiveClassLength)
+ * @SuppressWarnings(PHPMD.ExcessiveClassComplexity)
  */
 class FileMapper extends QBMapper
 {

@@ -96,6 +96,8 @@ class AvgRetentionService
      *                     actually soft-deleting anything.
      *
      * @return array<string, mixed>
+     *
+     * @SuppressWarnings(PHPMD.BooleanArgumentFlag)
      */
     public function runRetentionPass(bool $dryRun=false): array
     {

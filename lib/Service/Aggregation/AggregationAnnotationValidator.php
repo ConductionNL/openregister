@@ -45,6 +45,10 @@ final class AggregationAnnotationValidator
      * @param array<string, mixed> $schema Full schema definition (must include `properties`).
      *
      * @return array<int, array{code: string, message: string}> Validation error list.
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+     * @SuppressWarnings(PHPMD.NPathComplexity)
+     * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
      */
     public function validate(array $schema): array
     {
@@ -117,24 +121,22 @@ final class AggregationAnnotationValidator
             }
 
             $filter = ($spec['filter'] ?? null);
-            if ($filter !== null) {
-                if (is_array($filter) === false) {
-                    $errors[] = [
-                        'code'    => 'aggregation-filter-malformed',
-                        'message' => sprintf('Aggregation "%s" filter must be a map.', $name),
-                    ];
-                } else {
-                    foreach (array_keys($filter) as $filterField) {
-                        if (in_array((string) $filterField, $propKeys, true) === false) {
-                            $errors[] = [
-                                'code'    => 'aggregation-filter-field-unknown',
-                                'message' => sprintf(
-                                    'Aggregation "%s" filter references unknown field "%s".',
-                                    $name,
-                                    (string) $filterField
-                                ),
-                            ];
-                        }
+            if ($filter !== null && is_array($filter) === false) {
+                $errors[] = [
+                    'code'    => 'aggregation-filter-malformed',
+                    'message' => sprintf('Aggregation "%s" filter must be a map.', $name),
+                ];
+            } else if (is_array($filter) === true) {
+                foreach (array_keys($filter) as $filterField) {
+                    if (in_array((string) $filterField, $propKeys, true) === false) {
+                        $errors[] = [
+                            'code'    => 'aggregation-filter-field-unknown',
+                            'message' => sprintf(
+                                'Aggregation "%s" filter references unknown field "%s".',
+                                $name,
+                                (string) $filterField
+                            ),
+                        ];
                     }
                 }
             }//end if

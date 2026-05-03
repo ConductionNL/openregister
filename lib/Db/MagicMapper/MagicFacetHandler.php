@@ -39,6 +39,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Db\MagicMapper;
 
 use DateTime;
+use LogicException;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
 use OCP\DB\QueryBuilder\IQueryBuilder;
@@ -1325,7 +1326,7 @@ class MagicFacetHandler
         // and produced unfiltered counts that no caller could reach.
         if ($this->searchHandler === null || $schema === null) {
             $msg = 'MagicFacetHandler::getDateHistogramFacet requires a wired searchHandler and a non-null schema.';
-            throw new \LogicException($msg);
+            throw new LogicException($msg);
         }
 
         $queryBuilder = $this->searchHandler->buildFilteredQuery(

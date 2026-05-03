@@ -183,6 +183,9 @@ class RelationsController extends Controller
      * @param array|null $typesFilter Types to include, or null for all.
      *
      * @return array Relations grouped by type.
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+     * @SuppressWarnings(PHPMD.NPathComplexity)
      */
     private function gatherRelations(string $objectUuid, ?array $typesFilter): array
     {

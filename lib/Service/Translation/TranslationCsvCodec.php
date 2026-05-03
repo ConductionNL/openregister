@@ -54,6 +54,8 @@ class TranslationCsvCodec
      * @param Schema               $schema The schema describing translatable properties.
      *
      * @return array<string, scalar|null>
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
      */
     public function flattenForCsv(array $data, Schema $schema): array
     {
@@ -66,10 +68,10 @@ class TranslationCsvCodec
             if (in_array($key, $translatableProps, true) === false) {
                 if (is_scalar($value) === true || $value === null) {
                     $row[$key] = $value;
-                } else {
-                    $row[$key] = json_encode($value, JSON_UNESCAPED_SLASHES);
+                    continue;
                 }
 
+                $row[$key] = json_encode($value, JSON_UNESCAPED_SLASHES);
                 continue;
             }
 
@@ -116,6 +118,8 @@ class TranslationCsvCodec
      * @param Schema               $schema The schema describing translatable properties.
      *
      * @return array<string, mixed>
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
      */
     public function unflattenFromCsv(array $row, Schema $schema): array
     {

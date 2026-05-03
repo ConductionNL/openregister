@@ -113,8 +113,9 @@ class FileFormattingHandler
      *
      * @throws Exception If formatting fails.
      *
-     * @SuppressWarnings(PHPMD.CyclomaticComplexity) Label processing requires many conditional branches
-     * @SuppressWarnings(PHPMD.NPathComplexity)      Multiple paths for label key-value extraction
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+     * @SuppressWarnings(PHPMD.NPathComplexity)
+     * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
      */
     public function formatFile(Node $file): array
     {

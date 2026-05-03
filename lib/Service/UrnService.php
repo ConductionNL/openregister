@@ -283,10 +283,10 @@ class UrnService
         ];
 
         foreach ($patterns as $pattern) {
-            if (preg_match($pattern, $url, $m) === 1) {
-                $registerRef = $m[1];
-                $schemaRef   = $m[2];
-                $uuid        = $m[3];
+            if (preg_match($pattern, $url, $matches) === 1) {
+                $registerRef = $matches[1];
+                $schemaRef   = $matches[2];
+                $uuid        = $matches[3];
 
                 // Resolve numeric ids to slugs (URLs may carry either).
                 try {

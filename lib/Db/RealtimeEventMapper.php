@@ -23,6 +23,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Db;
 
+use DateTime;
 use OCP\AppFramework\Db\QBMapper;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\IDBConnection;
@@ -124,7 +125,7 @@ class RealtimeEventMapper extends QBMapper
      */
     public function deleteOlderThan(int $retentionSeconds): int
     {
-        $cutoff = (new \DateTime())->modify("-{$retentionSeconds} seconds");
+        $cutoff = (new DateTime())->modify("-{$retentionSeconds} seconds");
         $qb     = $this->db->getQueryBuilder();
         $qb->delete('openregister_realtime_events')
             ->where(

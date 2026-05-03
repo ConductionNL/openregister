@@ -67,6 +67,8 @@ class TransportResult
      * @param array<string, array{accepted: bool, reference: string|null, error: string|null}> $objectResults     Per-object results.
      * @param string|null                                                                      $errorMessage      Error message.
      * @param string|null                                                                      $transferReference Transfer reference.
+     *
+     * @SuppressWarnings(PHPMD.BooleanArgumentFlag)
      */
     public function __construct(
         bool $success=false,
@@ -110,9 +112,10 @@ class TransportResult
         foreach ($this->objectResults as $result) {
             if ($result['accepted'] === true) {
                 $accepted++;
-            } else {
-                $rejected++;
+                continue;
             }
+
+            $rejected++;
         }
 
         return ($accepted > 0 && $rejected > 0);

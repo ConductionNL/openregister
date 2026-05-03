@@ -67,6 +67,8 @@ class FileAuditHandler
      * @param string $objectUuid The UUID of the parent object.
      *
      * @return void
+     *
+     * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      */
     public function logDownload(
         int $fileId,
@@ -119,6 +121,8 @@ class FileAuditHandler
      * @param int|null     $totalBytes Total uncompressed bytes across included files (best-effort).
      *
      * @return AuditTrail|null The persisted audit row, or null on failure.
+     *
+     * @SuppressWarnings(PHPMD.StaticAccess)
      */
     public function logBulkDownload(
         ObjectEntity $object,
@@ -149,7 +153,9 @@ class FileAuditHandler
             if ($user !== null) {
                 $auditTrail->setUser($user->getUID());
                 $auditTrail->setUserName($user->getDisplayName());
-            } else {
+            }
+
+            if ($user === null) {
                 // Anonymous bulk downloads still get attributed by IP + UA so the
                 // download can be traced back even without a logged-in user.
                 $remote = $this->request->getRemoteAddress();
@@ -192,6 +198,8 @@ class FileAuditHandler
      * @param array        $data   Action-specific metadata (newName, targetUuid, etc.).
      *
      * @return AuditTrail|null The persisted audit row, or null on failure.
+     *
+     * @SuppressWarnings(PHPMD.StaticAccess)
      */
     public function logFileAction(
         ObjectEntity $object,
@@ -219,7 +227,9 @@ class FileAuditHandler
             if ($user !== null) {
                 $auditTrail->setUser($user->getUID());
                 $auditTrail->setUserName($user->getDisplayName());
-            } else {
+            }
+
+            if ($user === null) {
                 $auditTrail->setUser('System');
                 $auditTrail->setUserName('System');
             }

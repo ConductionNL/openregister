@@ -67,6 +67,8 @@ class AnnotationNotifier implements INotifier
      * @return INotification Prepared notification.
      *
      * @throws UnknownNotificationException When the notification does not belong to OpenRegister.
+     *
+     * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      */
     public function prepare(INotification $notification, string $languageCode): INotification
     {
@@ -74,14 +76,15 @@ class AnnotationNotifier implements INotifier
             throw new UnknownNotificationException();
         }
 
-        $params = $notification->getSubjectParameters();
-        $text   = ($params['_text'] ?? null);
+        $params        = $notification->getSubjectParameters();
+        $text          = ($params['_text'] ?? null);
+        $parsedSubject = $notification->getSubject();
 
         if (is_string($text) === true && $text !== '') {
-            $notification->setParsedSubject($text);
-        } else {
-            $notification->setParsedSubject($notification->getSubject());
+            $parsedSubject = $text;
         }
+
+        $notification->setParsedSubject($parsedSubject);
 
         return $notification;
     }//end prepare()

@@ -69,6 +69,8 @@ class Version1Date20260501100000 extends SimpleMigrationStep
      * @param array<string, mixed>      $options       Migration options (unused).
      *
      * @return ISchemaWrapper|null
+     *
+     * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
      */
     public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper
     {

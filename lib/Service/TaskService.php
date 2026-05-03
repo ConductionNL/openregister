@@ -25,6 +25,7 @@ namespace OCA\OpenRegister\Service;
 use DateTime;
 use Exception;
 use OCA\DAV\CalDAV\CalDavBackend;
+use OCA\OpenRegister\Exception\NoVtodoCalendarException;
 use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
 use Sabre\VObject\Reader;
@@ -355,11 +356,7 @@ class TaskService
                 } else if (is_iterable($components) === true) {
                     // If components is an array or other iterable.
                     foreach ($components as $comp) {
-                        if (is_string($comp) === true) {
-                            $compName = $comp;
-                        } else {
-                            $compName = (string) $comp;
-                        }
+                        $compName = is_string($comp) === true ? $comp : (string) $comp;
 
                         if (strtoupper($compName) === 'VTODO') {
                             $supportsVtodo = true;
@@ -377,7 +374,7 @@ class TaskService
             }//end if
         }//end foreach
 
-        throw new \OCA\OpenRegister\Exception\NoVtodoCalendarException($user->getUID());
+        throw new NoVtodoCalendarException(userId: $user->getUID());
     }//end findUserCalendar()
 
     /**

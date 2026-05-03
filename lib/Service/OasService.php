@@ -36,10 +36,11 @@ use Psr\Log\LoggerInterface;
  * Creates comprehensive API documentation including endpoints, schemas, parameters,
  * and examples based on register and schema definitions.
  *
- * @SuppressWarnings(PHPMD.ExcessiveClassLength)     OAS generation requires many endpoint and schema methods
- * @SuppressWarnings(PHPMD.ExcessiveClassComplexity) Complex OpenAPI schema generation logic
+ * @SuppressWarnings(PHPMD.ExcessiveClassLength)
+ * @SuppressWarnings(PHPMD.ExcessiveClassComplexity)
  * @SuppressWarnings(PHPMD.CyclomaticComplexity)
  * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
+ * @SuppressWarnings(PHPMD.TooManyMethods)
  */
 class OasService
 {
@@ -165,10 +166,10 @@ class OasService
      * @throws \Exception                When base OAS file cannot be read or parsed
      * @throws OasValidationException    In strict mode, when the generated OAS has validation errors
      *
-     * @SuppressWarnings(PHPMD.CyclomaticComplexity)  Complex OAS generation with multiple schema and path operations
-     * @SuppressWarnings(PHPMD.NPathComplexity)       Multiple conditional paths for register and schema processing
-     * @SuppressWarnings(PHPMD.ExcessiveMethodLength) OAS generation requires multiple steps: setup, schema loading,
-     *                                               CRUD paths, validation
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+     * @SuppressWarnings(PHPMD.NPathComplexity)
+     * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
+     * @SuppressWarnings(PHPMD.BooleanArgumentFlag)
      */
     public function createOas(?string $registerId=null, bool $strict=false): array
     {
@@ -359,9 +360,10 @@ class OasService
             $context = ['path' => $issue['path'], 'code' => $issue['code']];
             if ($issue['severity'] === OasValidationReport::SEVERITY_ERROR) {
                 $this->logger->error('OAS validation: '.$issue['message'], $context);
-            } else {
-                $this->logger->warning('OAS validation: '.$issue['message'], $context);
+                continue;
             }
+
+            $this->logger->warning('OAS validation: '.$issue['message'], $context);
         }
     }//end logValidationIssues()
 
@@ -829,12 +831,8 @@ class OasService
         if (isset($cleanDef['items']) === true) {
             if (is_array($cleanDef['items']) === true && array_is_list($cleanDef['items']) === true) {
                 // Sequential array (list) — not valid. Use first element or default.
-                $firstItem = $cleanDef['items'][0] ?? null;
-                if (empty($firstItem) === false) {
-                    $cleanDef['items'] = $firstItem;
-                } else {
-                    $cleanDef['items'] = ['type' => 'string'];
-                }
+                $firstItem         = $cleanDef['items'][0] ?? null;
+                $cleanDef['items'] = empty($firstItem) === false ? $firstItem : ['type' => 'string'];
             }
 
             if (is_array($cleanDef['items']) === false || empty($cleanDef['items']) === true) {
@@ -873,17 +871,15 @@ class OasService
     private function addCrudPaths(object $register, object $schema, array $rbac=[], string $operationIdPrefix=''): void
     {
         $registerSlugValue = $register->getSlug();
+        $registerSlug      = $this->slugify(string: $register->getTitle());
         if ($registerSlugValue !== null && $registerSlugValue !== '') {
             $registerSlug = $registerSlugValue;
-        } else {
-            $registerSlug = $this->slugify(string: $register->getTitle());
         }
 
         $schemaSlugValue = $schema->getSlug();
+        $schemaSlug      = $this->slugify(string: $schema->getTitle());
         if ($schemaSlugValue !== null && $schemaSlugValue !== '') {
             $schemaSlug = $schemaSlugValue;
-        } else {
-            $schemaSlug = $this->slugify(string: $schema->getTitle());
         }
 
         $basePath = '/objects/'.$registerSlug.'/'.$schemaSlug;
@@ -945,17 +941,15 @@ class OasService
     private function addExtendedPaths(object $register, object $schema): void
     {
         $registerSlugValue = $register->getSlug();
+        $registerSlug      = $this->slugify(string: $register->getTitle());
         if ($registerSlugValue !== null && $registerSlugValue !== '') {
             $registerSlug = $registerSlugValue;
-        } else {
-            $registerSlug = $this->slugify(string: $register->getTitle());
         }
 
         $schemaSlugValue = $schema->getSlug();
+        $schemaSlug      = $this->slugify(string: $schema->getTitle());
         if ($schemaSlugValue !== null && $schemaSlugValue !== '') {
             $schemaSlug = $schemaSlugValue;
-        } else {
-            $schemaSlug = $this->slugify(string: $schema->getTitle());
         }
 
         $basePath = '/objects/'.$registerSlug.'/'.$schemaSlug;
@@ -1977,6 +1971,8 @@ class OasService
      *   operation (unused tag → warning only, not auto-removed).
      *
      * @return void
+     *
+     * @SuppressWarnings(PHPMD.NPathComplexity)
      */
     private function validateTagConsistency(): void
     {
@@ -2079,7 +2075,7 @@ class OasService
                     continue;
                 }
 
-                foreach (($operation['responses'] ?? []) as $statusCode => $_response) {
+                foreach (array_keys(($operation['responses'] ?? [])) as $statusCode) {
                     $statusKey = (string) $statusCode;
                     if (isset($allowedCodes[$statusKey]) === false) {
                         $this->report->addWarning(
@@ -2270,6 +2266,7 @@ class OasService
      * @return array The authorization with roles expanded.
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+     * @SuppressWarnings(PHPMD.NPathComplexity)
      */
     private function expandRolesForOas(array $authorization, object $schema, ?object $register=null): array
     {

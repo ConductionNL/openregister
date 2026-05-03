@@ -96,6 +96,8 @@ class CustomScopeEvaluatedEvent extends Event
      * Final verdict the caller received.
      *
      * @return bool The boolean verdict that the caller received.
+     *
+     * @SuppressWarnings(PHPMD.BooleanGetMethodName)
      */
     public function getVerdict(): bool
     {

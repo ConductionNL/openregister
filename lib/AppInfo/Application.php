@@ -24,6 +24,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\AppInfo;
 
+use OCA\OpenRegister\Service\Translation\IdentityTranslationProvider;
+use OCA\OpenRegister\Service\Translation\TranslationProviderInterface;
 use OCA\OpenRegister\Db\SearchTrailMapper;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
@@ -276,9 +278,9 @@ class Application extends App implements IBootstrap
         // this binding with a real provider (LibreTranslate / DeepL / etc.)
         // by overriding it in their own app's registration.
         $context->registerService(
-            \OCA\OpenRegister\Service\Translation\TranslationProviderInterface::class,
+            TranslationProviderInterface::class,
             function () {
-                return new \OCA\OpenRegister\Service\Translation\IdentityTranslationProvider();
+                return new IdentityTranslationProvider();
             }
         );
 

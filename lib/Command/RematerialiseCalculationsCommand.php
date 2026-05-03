@@ -37,6 +37,11 @@ use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
+/**
+ * Re-evaluate every materialised calculation declared on a (register, schema).
+ *
+ * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
+ */
 class RematerialiseCalculationsCommand extends Command
 {
     /**
@@ -83,6 +88,10 @@ class RematerialiseCalculationsCommand extends Command
      * @param OutputInterface $output Console output stream.
      *
      * @return int Symfony command exit code.
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+     * @SuppressWarnings(PHPMD.NPathComplexity)
+     * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
      */
     protected function execute(InputInterface $input, OutputInterface $output): int
     {

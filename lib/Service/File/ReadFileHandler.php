@@ -292,6 +292,8 @@ class ReadFileHandler
      * @param string            $category The category to match exactly.
      *
      * @return array<int, mixed> The filtered nodes (sequential keys).
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
      */
     private function filterByCategory(array $files, string $category): array
     {

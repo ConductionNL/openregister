@@ -335,6 +335,8 @@ class LinkedEntityService
      * @return array Array of matching results
      *
      * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-43
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
      */
     private function scanEntityTables(string $columnName, string $entityId): array
     {

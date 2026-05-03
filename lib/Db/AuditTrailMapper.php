@@ -58,6 +58,7 @@ use Symfony\Component\Uid\Uuid;
  * @SuppressWarnings(PHPMD.ExcessiveClassLength)
  * @SuppressWarnings(PHPMD.ExcessiveClassComplexity)
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
+ * @SuppressWarnings(PHPMD.TooManyPublicMethods)
  */
 class AuditTrailMapper extends QBMapper
 {
@@ -333,9 +334,10 @@ class AuditTrailMapper extends QBMapper
      *
      * @return AuditTrail The created audit trail
      *
-     * @SuppressWarnings(PHPMD.StaticAccess)         Uuid::v4 is standard Symfony UID pattern
-     * @SuppressWarnings(PHPMD.NPathComplexity)      Audit trail creation requires handling many optional fields
+     * @SuppressWarnings(PHPMD.StaticAccess)          Uuid::v4 is standard Symfony UID pattern
+     * @SuppressWarnings(PHPMD.NPathComplexity)       Audit trail creation requires handling many optional fields
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+     * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
      */
     public function createAuditTrail(?ObjectEntity $old=null, ?ObjectEntity $new=null, ?string $action='update'): AuditTrail
     {
@@ -476,6 +478,8 @@ class AuditTrailMapper extends QBMapper
      * @param ObjectEntity $objectEntity The entity being audited.
      *
      * @return string|null Resolved verwerkingsactiviteit uuid, or null.
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
      */
     private function resolveProcessingActivityId(ObjectEntity $objectEntity): ?string
     {
@@ -1615,6 +1619,9 @@ class AuditTrailMapper extends QBMapper
      * @param string|null $to     Optional ISO-8601 end date (inclusive).
      *
      * @return array{results: array<int, AuditTrail>, total: int}
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+     * @SuppressWarnings(PHPMD.NPathComplexity)
      */
     public function findByActor(
         string $userId,

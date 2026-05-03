@@ -215,6 +215,8 @@ class DsarService
      * @param bool        $dryRun  When true, returns matches without erasing.
      *
      * @return array<string, mixed>
+     *
+     * @SuppressWarnings(PHPMD.BooleanArgumentFlag)
      */
     public function eraseObjectsForSubject(string $subject, ?string $type=null, bool $dryRun=false): array
     {
@@ -475,7 +477,9 @@ class DsarService
                 $qb->andWhere(
                     $qb->expr()->iLike('e.value', $qb->createNamedParameter('%'.$subject.'%'))
                 );
-            } else {
+            }
+
+            if ($mode !== 'ilike') {
                 $qb->andWhere(
                     $qb->expr()->iLike('e.value', $qb->createNamedParameter($subject))
                 );

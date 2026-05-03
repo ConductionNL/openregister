@@ -71,6 +71,8 @@ use Symfony\Component\Uid\Uuid;
  * @SuppressWarnings(PHPMD.CyclomaticComplexity)
  * @SuppressWarnings(PHPMD.NPathComplexity)
  * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
+ * @SuppressWarnings(PHPMD.TooManyMethods)
+ * @SuppressWarnings(PHPMD.LongVariable)
  */
 class RenderObject
 {
@@ -1142,7 +1144,9 @@ class RenderObject
         // Both extend spellings are equivalent (see normalizeMap below).
         if (self::shouldExtendFiles(extend: $_extend) === true) {
             $entity = $this->renderFiles(object: $entity);
-        } else {
+        }
+
+        if (self::shouldExtendFiles(extend: $_extend) === false) {
             $entity = $this->setLightweightFileIds(entity: $entity);
         }
 
@@ -1204,11 +1208,7 @@ class RenderObject
                 $inversePropertyNames = array_keys($inversedProperties);
 
                 // Normalize extend to array.
-                if (is_array($_extend) === true) {
-                    $extendArray = $_extend;
-                } else {
-                    $extendArray = explode(',', $_extend);
-                }
+                $extendArray = is_array($_extend) === true ? $_extend : explode(',', $_extend);
 
                 // Check if any inverse property is being extended (or 'all' is specified).
                 $shouldHandleInverse = in_array('all', $extendArray, true)
@@ -1288,7 +1288,7 @@ class RenderObject
                 $serialized = $entity->jsonSerialize();
                 $enriched   = $this->linkedEntityEnricher->enrich($serialized, $linkedExtend);
                 // Update the linked type values on the entity.
-                foreach ($linkedExtend as $key => $unused) {
+                foreach (array_keys($linkedExtend) as $key) {
                     if (isset($enriched[$key]) === true) {
                         $setter = 'set'.ucfirst(ltrim($key, '_'));
                         $entity->$setter($enriched[$key]);
@@ -2004,11 +2004,7 @@ class RenderObject
 
         // Normalize inversedBy to an array to support multi-field inverse relations.
         // Example: "inversedBy": ["moduleA", "moduleB"] means the entity can appear in either field.
-        if (is_array($inversedByField) === true) {
-            $inversedByFields = $inversedByField;
-        } else {
-            $inversedByFields = [$inversedByField];
-        }
+        $inversedByFields = is_array($inversedByField) === true ? $inversedByField : [$inversedByField];
 
         return [
             'targetSchemaRef'  => $targetSchemaRef,
@@ -2135,11 +2131,7 @@ class RenderObject
 
         // Pass additional field names for multi-field inversedBy so the SQL also searches
         // columns that may store references in {"value": "uuid"} format not in _relations.
-        if (count($inversedByFields) > 1) {
-            $additionalFields = array_slice($inversedByFields, 1);
-        } else {
-            $additionalFields = [];
-        }
+        $additionalFields = count($inversedByFields) > 1 ? array_slice($inversedByFields, 1) : [];
 
         $magicMapper = \OC::$server->get(\OCA\OpenRegister\Db\MagicMapper::class);
 
@@ -2450,10 +2442,9 @@ class RenderObject
             }
 
             // Normalize inversedBy to an array to support multi-field inverse relations.
+            $inversedByProperties = [$inversedByProperty];
             if (is_array($inversedByProperty) === true) {
                 $inversedByProperties = $inversedByProperty;
-            } else {
-                $inversedByProperties = [$inversedByProperty];
             }
 
             // Resolve schema reference to actual schema ID.
@@ -2471,11 +2462,7 @@ class RenderObject
 
             // Initialize the target property if not already set to preserve any existing values.
             if (isset($objectData[$targetProperty]) === false) {
-                if ($isArray === true) {
-                    $objectData[$targetProperty] = [];
-                } else {
-                    $objectData[$targetProperty] = null;
-                }
+                $objectData[$targetProperty] = $isArray === true ? [] : null;
             }
 
             // Find objects that have our UUID in ANY of their inversedBy fields.
@@ -2628,10 +2615,9 @@ class RenderObject
             }
 
             if ($isArray === false) {
+                $objectData[$targetProperty] = null;
                 if (empty($renderedObjects) === false) {
                     $objectData[$targetProperty] = end($renderedObjects);
-                } else {
-                    $objectData[$targetProperty] = null;
                 }
             }
         }//end foreach

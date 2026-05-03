@@ -79,6 +79,8 @@ class NotificationHistoryMapper extends QBMapper
      * @param string|null $locale       Recipient locale (null for broadcast).
      *
      * @return NotificationHistory The persisted row.
+     *
+     * @SuppressWarnings(PHPMD.ExcessiveParameterList)
      */
     public function record(
         string $ruleId,

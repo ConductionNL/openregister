@@ -51,6 +51,8 @@ use Psr\Log\LoggerInterface;
  * @link https://www.OpenRegister.app
  *
  * @psalm-suppress UnusedClass
+ *
+ * @SuppressWarnings(PHPMD.TooManyPublicMethods) One public method per endpoint route.
  */
 class EndpointsController extends Controller
 {

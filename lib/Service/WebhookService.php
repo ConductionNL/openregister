@@ -664,10 +664,9 @@ class WebhookService
         ];
 
         // For GET requests, use query parameters; for others, send JSON body.
+        $payloadKey = 'json';
         if (strtoupper($webhook->getMethod()) === 'GET') {
             $payloadKey = 'query';
-        } else {
-            $payloadKey = 'json';
         }
 
         $options[$payloadKey] = $payload;

@@ -118,15 +118,12 @@ class AuthorizationAuditService
         $userId   = $user !== null ? $user->getUID() : 'system';
 
         // Count schemas that will inherit this change.
+        // This is approximate -- we don't load each schema to check whether it has its own authorization.
         $affectedSchemaCount = 0;
         try {
             $register = $this->registerMapper->find($registerId);
             $schemas  = $register->getSchemas();
-            foreach ($schemas as $schemaId) {
-                // Count schemas without their own authorization (they cascade).
-                // This is approximate -- we don't load each schema to check.
-                $affectedSchemaCount++;
-            }
+            $affectedSchemaCount = is_array($schemas) === true ? count($schemas) : 0;
         } catch (\Throwable $e) {
             // Could not count affected schemas.
         }

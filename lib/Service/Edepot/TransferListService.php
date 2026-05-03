@@ -93,6 +93,8 @@ class TransferListService
      *
      * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-22
      * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-36
+     *
+     * @SuppressWarnings(PHPMD.StaticAccess)
      */
     public function createTransferList(array $objects): array
     {

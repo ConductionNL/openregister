@@ -35,6 +35,8 @@ use Psr\Log\LoggerInterface;
  * and organization (tertiary, 0.5) with APCu cache (TTL 60s).
  *
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
+ * @SuppressWarnings(PHPMD.ExcessiveClassComplexity)
+ * @SuppressWarnings(PHPMD.LongVariable)
  */
 class ContactMatchingService
 {
@@ -365,6 +367,9 @@ class ContactMatchingService
      * @param string|null $organization The organization name (optional)
      *
      * @return array Combined, deduplicated match results sorted by confidence
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+     * @SuppressWarnings(PHPMD.NPathComplexity)
      */
     public function matchContact(
         string $email,
@@ -555,6 +560,9 @@ class ContactMatchingService
      * @param array|null $schemaFilter     Optional schema name patterns to restrict results.
      *
      * @return array The filtered match results.
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+     * @SuppressWarnings(PHPMD.BooleanArgumentFlag)
      */
     private function searchAndFilter(
         string $searchTerm,
@@ -686,6 +694,8 @@ class ContactMatchingService
      * @param bool   $exactMatch       Whether to require exact match
      *
      * @return bool True if a matching property is found
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
      */
     private function hasMatchingProperty(
         array $result,
@@ -704,16 +714,14 @@ class ContactMatchingService
                     continue;
                 }
 
-                if ($exactMatch === true) {
-                    if (strtolower($value) === strtolower($searchTerm)) {
-                        return true;
-                    }
-                } else {
-                    if (stripos($value, $searchTerm) !== false
-                        || stripos($searchTerm, $value) !== false
-                    ) {
-                        return true;
-                    }
+                if ($exactMatch === true && strtolower($value) === strtolower($searchTerm)) {
+                    return true;
+                }
+
+                if ($exactMatch === false
+                    && (stripos($value, $searchTerm) !== false || stripos($searchTerm, $value) !== false)
+                ) {
+                    return true;
                 }
             }
         }//end foreach

@@ -80,6 +80,8 @@ class FileVersioningHandler
      * @return array{versions: array, warning?: string} Version listing.
      *
      * @spec openspec/changes/retrofit-content-versioning-2026-04-28/tasks.md#task-1
+     *
+     * @SuppressWarnings(PHPMD.StaticAccess)
      */
     public function listVersions(File $file): array
     {
@@ -113,7 +115,6 @@ class FileVersioningHandler
                 $versionManager = \OCP\Server::get('OCA\Files_Versions\Versions\IVersionManager');
                 $user           = $this->userSession->getUser();
                 if ($versionManager !== null && $user !== null) {
-                    $storage      = $file->getStorage();
                     $fileVersions = $versionManager->getVersionsForFile($user, $file);
                     foreach ($fileVersions as $version) {
                         $versions[] = [
@@ -153,6 +154,8 @@ class FileVersioningHandler
      * @throws Exception If versioning is not enabled or version not found.
      *
      * @spec openspec/changes/retrofit-content-versioning-2026-04-28/tasks.md#task-1
+     *
+     * @SuppressWarnings(PHPMD.StaticAccess)
      */
     public function restoreVersion(File $file, string $versionId): bool
     {

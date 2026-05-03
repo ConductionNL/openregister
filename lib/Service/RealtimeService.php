@@ -38,6 +38,8 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service;
 
 use DateTime;
+use DateTimeImmutable;
+use DateTimeInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\RealtimeEvent;
 use OCA\OpenRegister\Db\RealtimeEventMapper;
@@ -98,7 +100,7 @@ class RealtimeService
                 'source'          => $base.'/apps/openregister',
                 'subject'         => $urn ?? (string) $object->getUuid(),
                 'id'              => bin2hex(random_bytes(16)),
-                'time'            => (new \DateTimeImmutable())->format(\DateTimeInterface::ATOM),
+                'time'            => (new DateTimeImmutable())->format(DateTimeInterface::ATOM),
                 'datacontenttype' => 'application/json',
                 'data'            => [
                     'register'     => $object->getRegister(),

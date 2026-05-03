@@ -53,6 +53,7 @@ use React\EventLoop\Loop;
  * @package OCA\OpenRegister\Service
  *
  * @SuppressWarnings(PHPMD.ExcessiveClassComplexity)
+ * @SuppressWarnings(PHPMD.ExcessiveClassLength)
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
  * @SuppressWarnings(PHPMD.CyclomaticComplexity)
  */
@@ -588,7 +589,9 @@ class ExportService
      *
      * @psalm-return array<array-key>
      *
-     * @SuppressWarnings(PHPMD.CyclomaticComplexity) Header generation has multiple schema and permission conditions
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+     * @SuppressWarnings(PHPMD.NPathComplexity)
+     * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
      *
      * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-16
      */

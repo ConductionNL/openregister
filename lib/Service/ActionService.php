@@ -22,6 +22,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service;
 
 use DateTime;
+use InvalidArgumentException;
 use OCA\OpenRegister\Db\Action;
 use OCA\OpenRegister\Db\ActionMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
@@ -78,25 +79,25 @@ class ActionService
      *
      * @return Action The created action
      *
-     * @throws \InvalidArgumentException If required fields are missing
+     * @throws InvalidArgumentException If required fields are missing
      */
     public function createAction(array $data): Action
     {
         // Validate required fields.
         if (empty($data['name']) === true) {
-            throw new \InvalidArgumentException('Action name is required');
+            throw new InvalidArgumentException('Action name is required');
         }
 
         if (empty($data['eventType']) === true) {
-            throw new \InvalidArgumentException('Action eventType is required');
+            throw new InvalidArgumentException('Action eventType is required');
         }
 
         if (empty($data['engine']) === true) {
-            throw new \InvalidArgumentException('Action engine is required');
+            throw new InvalidArgumentException('Action engine is required');
         }
 
         if (empty($data['workflowId']) === true) {
-            throw new \InvalidArgumentException('Action workflowId is required');
+            throw new InvalidArgumentException('Action workflowId is required');
         }
 
         // Remove ID to ensure new record.
@@ -198,6 +199,8 @@ class ActionService
      * @param array $samplePayload Sample event payload
      *
      * @return array Test result with match info and payload
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
      */
     public function testAction(int $id, array $samplePayload): array
     {
@@ -353,7 +356,9 @@ class ActionService
 
             if ($status === 'success') {
                 $action->setSuccessCount($action->getSuccessCount() + 1);
-            } else {
+            }
+
+            if ($status !== 'success') {
                 $action->setFailureCount($action->getFailureCount() + 1);
             }
 
@@ -363,7 +368,7 @@ class ActionService
                 message: '[ActionService] Failed to update action statistics',
                 context: ['actionId' => $actionId, 'error' => $e->getMessage()]
             );
-        }
+        }//end try
     }//end updateStatistics()
 
     /**

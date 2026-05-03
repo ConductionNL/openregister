@@ -58,6 +58,7 @@ use Symfony\Component\Uid\Uuid;
  *
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
  * @SuppressWarnings(PHPMD.ExcessiveClassComplexity)
+ * @SuppressWarnings(PHPMD.TooManyPublicMethods)
  */
 class RetentionService
 {
@@ -151,15 +152,14 @@ class RetentionService
             $selectielijstEntry = $this->lookupSelectielijstEntry(categorie: $classificatie);
         }
 
-        // Determine nominatie and bewaartermijn.
+        // Determine nominatie and bewaartermijn (default to schema config).
+        $nominatie     = $archiveConfig['defaultNominatie'] ?? 'nog_niet_bepaald';
+        $bewaartermijn = $archiveConfig['defaultBewaartermijn'] ?? null;
+        $bron          = null;
         if ($selectielijstEntry !== null) {
             $nominatie     = $selectielijstEntry['archiefnominatie'] ?? 'nog_niet_bepaald';
             $bewaartermijn = $selectielijstEntry['bewaartermijn'] ?? null;
             $bron          = $selectielijstEntry['bron'] ?? null;
-        } else {
-            $nominatie     = $archiveConfig['defaultNominatie'] ?? 'nog_niet_bepaald';
-            $bewaartermijn = $archiveConfig['defaultBewaartermijn'] ?? null;
-            $bron          = null;
         }
 
         // Apply schema-level override if configured.
@@ -253,6 +253,8 @@ class RetentionService
      * @param string       $afleidingswijze The derivation method
      *
      * @return DateTime|null The source date or null
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
      */
     private function determineBrondatum(
         ObjectEntity $object,
@@ -308,6 +310,9 @@ class RetentionService
      * @return ObjectEntity The object with recalculated dates
      *
      * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-65
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+     * @SuppressWarnings(PHPMD.NPathComplexity)
      */
     public function recalculateArchiefactiedatum(
         ObjectEntity $object,
@@ -583,6 +588,8 @@ class RetentionService
      * @param array $excludeUuids UUIDs to exclude (already on pending lists)
      *
      * @return ObjectEntity[] Array of eligible objects
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
      */
     public function findEligibleForDestruction(array $excludeUuids=[]): array
     {

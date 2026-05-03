@@ -147,6 +147,8 @@ class FileLockHandler
      * @return array{locked: false} Unlock confirmation.
      *
      * @throws Exception If the current user is not the lock owner and not admin.
+     *
+     * @SuppressWarnings(PHPMD.BooleanArgumentFlag)
      */
     public function unlockFile(int $fileId, bool $force=false): array
     {

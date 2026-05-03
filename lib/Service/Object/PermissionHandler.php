@@ -34,6 +34,8 @@ use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Db\MagicMapper;
+use OCA\OpenRegister\Event\CustomScopeEvaluatedEvent;
+use OCA\OpenRegister\Event\CustomScopeEvaluatingEvent;
 use OCA\OpenRegister\Service\ConditionMatcher;
 use OCP\IUserSession;
 use OCP\IUserManager;
@@ -63,6 +65,7 @@ use Psr\Container\ContainerInterface;
  * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
  * @SuppressWarnings(PHPMD.NPathComplexity)
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
+ * @SuppressWarnings(PHPMD.ExcessiveClassLength)
  */
 class PermissionHandler
 {
@@ -440,7 +443,7 @@ class PermissionHandler
             return null;
         }
 
-        $event = new \OCA\OpenRegister\Event\CustomScopeEvaluatingEvent(
+        $event = new CustomScopeEvaluatingEvent(
             schema: $schema,
             action: $action,
             userId: $userId,
@@ -505,7 +508,7 @@ class PermissionHandler
 
         try {
             $this->eventDispatcher->dispatchTyped(
-                new \OCA\OpenRegister\Event\CustomScopeEvaluatedEvent(
+                new CustomScopeEvaluatedEvent(
                     schema: $schema,
                     action: $action,
                     userId: $userId,
@@ -1190,6 +1193,8 @@ class PermissionHandler
      * @param Schema                              $schema     Schema for diagnostic context.
      *
      * @return array<int, string> Deduplicated action list.
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
      */
     private function collectRoleActions(
         string $roleName,

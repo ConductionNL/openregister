@@ -1950,11 +1950,10 @@ class FileService
         }
 
         $dotPos = strrpos($desiredName, '.');
-        if ($dotPos === false || $dotPos === 0) {
-            // No extension or hidden file (".env"); append suffix to whole name.
-            $stem = $desiredName;
-            $ext  = '';
-        } else {
+        // No extension or hidden file (".env"); append suffix to whole name.
+        $stem = $desiredName;
+        $ext  = '';
+        if ($dotPos !== false && $dotPos !== 0) {
             $stem = substr($desiredName, 0, $dotPos);
             $ext  = substr($desiredName, $dotPos);
         }

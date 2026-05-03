@@ -120,6 +120,7 @@ use Twig\Loader\ArrayLoader;
  *
  * @SuppressWarnings(PHPMD.ExcessiveClassLength)     Object save logic requires comprehensive relationship handling
  * @SuppressWarnings(PHPMD.TooManyMethods)           Many methods required for full object save functionality
+ * @SuppressWarnings(PHPMD.TooManyPublicMethods)
  * @SuppressWarnings(PHPMD.ExcessiveClassComplexity) Complex cascading and relation logic
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)   Requires many service and mapper dependencies
  * @SuppressWarnings(PHPMD.BooleanArgumentFlag)
@@ -127,6 +128,7 @@ use Twig\Loader\ArrayLoader;
  * @SuppressWarnings(PHPMD.NPathComplexity)
  * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
  * @SuppressWarnings(PHPMD.UnusedFormalParameter)
+ * @SuppressWarnings(PHPMD.LongVariable)
  */
 class SaveObject
 {
@@ -851,10 +853,9 @@ class SaveObject
         $relations = $savedEntity->getRelations();
         $savedUuid = $savedEntity->getUuid();
 
+        $relationsCount = 0;
         if ($relations !== null) {
             $relationsCount = count($relations);
-        } else {
-            $relationsCount = 0;
         }
 
         $this->logger->debug(
@@ -1787,22 +1788,19 @@ class SaveObject
                 if (($isRelatedObject === true || $isCascade === true) && empty($oldUuids) === false) {
                     // Resolve the sub-object's schema and register for magic-mapped lookups.
                     $subSchemaRef = $definition['items']['$ref'] ?? $definition['$ref'] ?? null;
+                    $subSchemaId  = null;
                     if ($subSchemaRef !== null) {
                         $subSchemaId = $this->resolveSchemaReference(reference: $subSchemaRef);
-                    } else {
-                        $subSchemaId = null;
                     }
 
+                    $subSchema = null;
                     if ($subSchemaId !== null) {
                         $subSchema = $this->getCachedSchema(schemaId: $subSchemaId);
-                    } else {
-                        $subSchema = null;
                     }
 
+                    $subRegister = null;
                     if ($objectEntity->getRegister() !== null) {
                         $subRegister = $this->getCachedRegister(registerId: $objectEntity->getRegister());
-                    } else {
-                        $subRegister = null;
                     }
 
                     $this->deleteOrphanedRelatedObjects(
@@ -1873,22 +1871,19 @@ class SaveObject
                         if (empty($orphanedUuids) === false) {
                             // Resolve the sub-object's schema and register for magic-mapped lookups.
                             $subSchemaRef = $definition['items']['$ref'] ?? $definition['$ref'] ?? null;
+                            $subSchemaId  = null;
                             if ($subSchemaRef !== null) {
                                 $subSchemaId = $this->resolveSchemaReference(reference: $subSchemaRef);
-                            } else {
-                                $subSchemaId = null;
                             }
 
+                            $subSchema = null;
                             if ($subSchemaId !== null) {
                                 $subSchema = $this->getCachedSchema(schemaId: $subSchemaId);
-                            } else {
-                                $subSchema = null;
                             }
 
+                            $subRegister = null;
                             if ($objectEntity->getRegister() !== null) {
                                 $subRegister = $this->getCachedRegister(registerId: $objectEntity->getRegister());
-                            } else {
-                                $subRegister = null;
                             }
 
                             $this->deleteOrphanedRelatedObjects(
@@ -2221,11 +2216,10 @@ class SaveObject
                 );
 
                 // Soft delete: set deletion metadata and update (consistent with DeleteObject).
-                $user = $this->userSession->getUser();
+                $user   = $this->userSession->getUser();
+                $userId = 'system';
                 if ($user !== null) {
                     $userId = $user->getUID();
-                } else {
-                    $userId = 'system';
                 }
 
                 $deletionData = [
@@ -3744,10 +3738,9 @@ class SaveObject
             $targetRegister = $property['register'] ?? $register;
 
             // Normalize to array for uniform validation.
+            $uuidsToValidate = [$value];
             if ($isArray === true && is_array($value) === true) {
                 $uuidsToValidate = $value;
-            } else {
-                $uuidsToValidate = [$value];
             }
 
             foreach ($uuidsToValidate as $uuid) {
@@ -4278,7 +4271,9 @@ class SaveObject
                 );
                 if ($hadUuid === true) {
                     $status->recordUpdated(uuid: $uuid);
-                } else {
+                }
+
+                if ($hadUuid === false) {
                     $status->recordCreated(uuid: $uuid);
                 }
             } catch (Exception $e) {
@@ -4320,7 +4315,9 @@ class SaveObject
                 for ($i = 0; $i < $delta; $i++) {
                     $status->recordReferenceCacheMiss();
                 }
-            } else {
+            }
+
+            if ($delta <= 0) {
                 $status->recordReferenceCacheHit();
             }
         }//end foreach
@@ -4402,11 +4399,14 @@ class SaveObject
         // Pop only the frames at or above the recorded depth so
         // unbalanced finallys (e.g. an exception that skipped a pop
         // somewhere) self-heal instead of leaking entries forever.
-        while (count($this->saveCallStack) > $depth) {
+        $stackSize = count($this->saveCallStack);
+        while ($stackSize > $depth) {
             $frame = array_pop($this->saveCallStack);
             if ($frame === null) {
                 break;
             }
+
+            $stackSize--;
 
             $existing = $frame['schemaSlug'].':'.$frame['uuid'];
             if ($existing !== $key) {

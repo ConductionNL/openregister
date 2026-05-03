@@ -884,19 +884,17 @@ class ReferentialIntegrityService
 
         // Build the array/scalar SQL variant selector before accessing the database.
         // For array properties we need JSON_CONTAINS / jsonb @> operators; for scalars a simple = suffices.
+        $queryMode = 'scalar';
         if ($isArray === true) {
             $queryMode = 'array';
-        } else {
-            $queryMode = 'scalar';
         }
 
         $platform   = $this->db->getDatabasePlatform();
         $isPostgres = stripos(get_class($platform), 'PostgreSQL') !== false;
 
+        $deletedCheck = '_deleted IS NULL';
         if ($isPostgres === true) {
             $deletedCheck = "(_deleted IS NULL OR _deleted = 'null'::jsonb)";
-        } else {
-            $deletedCheck = '_deleted IS NULL';
         }
 
         $selectClause   = "SELECT _uuid, _register, _schema, _deleted, {$quotedCol} AS _prop FROM {$fullTableName}";
@@ -923,17 +921,12 @@ class ReferentialIntegrityService
 
             $deleted = $row['_deleted'] ?? null;
             if ($deleted !== null && $deleted !== 'null') {
+                $decoded = $deleted;
                 if (is_string($deleted) === true) {
                     $decoded = json_decode($deleted, true);
-                } else {
-                    $decoded = $deleted;
                 }
 
-                if (is_array($decoded) === true) {
-                    $entity->setDeleted($decoded);
-                } else {
-                    $entity->setDeleted([]);
-                }
+                $entity->setDeleted(is_array($decoded) === true ? $decoded : []);
             }
 
             // Set object with at least the property that matched.

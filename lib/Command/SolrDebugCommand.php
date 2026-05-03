@@ -40,6 +40,8 @@ use Symfony\Component\Console\Output\OutputInterface;
  * @author    OpenRegister Team
  * @copyright 2024 OpenRegister
  * @license   AGPL-3.0-or-later https://www.gnu.org/licenses/agpl-3.0.html
+ *
+ * @SuppressWarnings(PHPMD.ExcessiveClassComplexity)
  */
 class SolrDebugCommand extends Command
 {

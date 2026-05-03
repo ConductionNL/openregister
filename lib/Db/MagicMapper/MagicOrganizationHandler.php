@@ -112,7 +112,9 @@ class MagicOrganizationHandler
                     message: '[MagicOrganizationHandler] SaaS mode active — admin bypass disabled for org boundary',
                     context: ['file' => __FILE__, 'line' => __LINE__]
                 );
-            } else {
+            }
+
+            if ($saasMode !== true) {
                 $this->logger->debug(
                     message: '[MagicOrganizationHandler] Admin bypass enabled, skipping org filter',
                     context: ['file' => __FILE__, 'line' => __LINE__]

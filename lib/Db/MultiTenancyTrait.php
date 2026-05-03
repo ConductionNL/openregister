@@ -732,8 +732,9 @@ trait MultiTenancyTrait
      *
      * @return bool True if user has permission, false otherwise
      *
-     * @SuppressWarnings(PHPMD.NPathComplexity)      RBAC permission checking requires many conditional paths
+     * @SuppressWarnings(PHPMD.NPathComplexity)       RBAC permission checking requires many conditional paths
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+     * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
      */
     protected function hasRbacPermission(string $action, string $entityType): bool
     {

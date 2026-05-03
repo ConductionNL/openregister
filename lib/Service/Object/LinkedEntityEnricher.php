@@ -30,6 +30,7 @@ use Psr\Log\LoggerInterface;
  * @link     https://github.com/ConductionNL/openregister
  *
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects) Enrichment requires multiple NC APIs
+ * @SuppressWarnings(PHPMD.UnusedPrivateMethod)    Enricher methods dispatched via ENRICHER_MAP lookup
  */
 class LinkedEntityEnricher
 {
@@ -114,7 +115,7 @@ class LinkedEntityEnricher
                 continue;
             }
 
-            [$accountId, $messageId] = $parts;
+            [, $messageId] = $parts;
 
             try {
                 $sql  = "SELECT subject, `from` AS sender, sent_at FROM oc_mail_messages WHERE id = ? LIMIT 1";

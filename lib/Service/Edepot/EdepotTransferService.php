@@ -323,6 +323,9 @@ class EdepotTransferService
      * @param array<int,array<string,mixed>> $objectsWithFiles The objects with files.
      *
      * @return array<string,mixed> Updated transfer list.
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+     * @SuppressWarnings(PHPMD.NPathComplexity)
      */
     private function processResults(
         array $transferList,
@@ -372,20 +375,22 @@ class EdepotTransferService
                 $anySuccess = true;
                 $this->markObjectTransferred(object: $object, reference: ($objResult['reference'] ?? ''), timestamp: $now);
                 $this->logObjectTransferred(object: $object, transferUuid: $transferList['uuid'], reference: ($objResult['reference'] ?? ''));
-            } else {
-                $allSuccess = false;
-                $this->markObjectTransferFailed(object: $object, error: ($objResult['error'] ?? 'Unknown error'), timestamp: $now);
+                continue;
             }
+
+            $allSuccess = false;
+            $this->markObjectTransferFailed(object: $object, error: ($objResult['error'] ?? 'Unknown error'), timestamp: $now);
         }
 
         // Set final transfer list status.
-        if ($allSuccess === true) {
-            $transferList['status'] = TransferListService::STATUS_COMPLETED;
-        } else if ($anySuccess === true) {
-            $transferList['status'] = TransferListService::STATUS_PARTIALLY_FAILED;
-        } else {
-            $transferList['status'] = TransferListService::STATUS_FAILED;
-            $errorMessages          = [];
+        $transferList['status'] = match (true) {
+            $allSuccess === true => TransferListService::STATUS_COMPLETED,
+            $anySuccess === true => TransferListService::STATUS_PARTIALLY_FAILED,
+            default              => TransferListService::STATUS_FAILED,
+        };
+
+        if ($transferList['status'] === TransferListService::STATUS_FAILED) {
+            $errorMessages = [];
             foreach ($results as $result) {
                 if ($result->getErrorMessage() !== null) {
                     $errorMessages[] = $result->getErrorMessage();

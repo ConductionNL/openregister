@@ -481,7 +481,8 @@ class RegistersController extends Controller
      *
      * @NoCSRFRequired
      *
-     * @suppressWarnings(PHPMD.StaticAccess) DatabaseConstraintException factory method is standard pattern
+     * @SuppressWarnings(PHPMD.StaticAccess)
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
      *
      * @return JSONResponse JSON response with updated register or error
      *
@@ -1606,6 +1607,9 @@ class RegistersController extends Controller
      * @param Register $register The register to check manage permission for.
      *
      * @return bool True if user has manage permission.
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+     * @SuppressWarnings(PHPMD.NPathComplexity)
      */
     private function checkRegisterManagePermission(Register $register): bool
     {

@@ -24,6 +24,9 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Notification;
 
+use DateTime;
+use DateTimeImmutable;
+use DateTimeInterface;
 use OCA\OpenRegister\Db\NotificationHistoryMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
@@ -39,6 +42,10 @@ use Psr\Log\LoggerInterface;
 
 /**
  * Reads notification annotations and dispatches matching ones.
+ *
+ * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
+ * @SuppressWarnings(PHPMD.ExcessiveClassLength)
+ * @SuppressWarnings(PHPMD.ExcessiveClassComplexity)
  */
 class AnnotationNotificationDispatcher
 {
@@ -86,6 +93,10 @@ class AnnotationNotificationDispatcher
      * @param array<string, mixed> $context Trigger-specific extras (e.g. `action`, `from`, `to`).
      *
      * @return void
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+     * @SuppressWarnings(PHPMD.NPathComplexity)
+     * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
      */
     public function dispatch(ObjectEntity $object, string $trigger, array $context=[]): void
     {
@@ -335,6 +346,8 @@ class AnnotationNotificationDispatcher
      * @param array<string, mixed>      $context          Trigger context (action, from, to).
      *
      * @return void
+     *
+     * @SuppressWarnings(PHPMD.ExcessiveParameterList)
      */
     private function dispatchBroadcastChannel(
         string $channel,
@@ -724,7 +737,7 @@ class AnnotationNotificationDispatcher
             ],
             'recipients'   => $recipients,
             'context'      => $context,
-            'timestamp'    => (new \DateTimeImmutable())->format(\DateTimeInterface::ATOM),
+            'timestamp'    => (new DateTimeImmutable())->format(DateTimeInterface::ATOM),
         ];
 
         try {
@@ -785,6 +798,10 @@ class AnnotationNotificationDispatcher
      * @param array<string, mixed>             $context        Per-event context.
      *
      * @return array<int, string>
+     *
+     * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+     * @SuppressWarnings(PHPMD.NPathComplexity)
      */
     private function resolveRecipients(array $recipientsSpec, array $data, ?ObjectEntity $object=null, array $context=[]): array
     {
@@ -905,6 +922,8 @@ class AnnotationNotificationDispatcher
      * @param string       $permission The required permission (`read` or `manage`).
      *
      * @return array<int, string>
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
      */
     private function resolveObjectAclRecipients(ObjectEntity $object, string $permission): array
     {
@@ -998,6 +1017,8 @@ class AnnotationNotificationDispatcher
      * @param mixed $value The raw relation value.
      *
      * @return array<int, string>
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
      */
     private function extractUidsFromRelation(mixed $value): array
     {
@@ -1068,6 +1089,9 @@ class AnnotationNotificationDispatcher
      * @param string               $fallbackName Annotation name (last-resort fallback).
      *
      * @return string The interpolated subject string.
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+     * @SuppressWarnings(PHPMD.NPathComplexity)
      */
     private function resolveLocalizedSubject(
         mixed $template,
@@ -1174,8 +1198,8 @@ class AnnotationNotificationDispatcher
     {
         return preg_replace_callback(
             '/\{\{\s*([a-zA-Z0-9_.-]+)\s*\}\}/',
-            static function (array $m) use ($data, $context): string {
-                $key = $m[1];
+            static function (array $matches) use ($data, $context): string {
+                $key = $matches[1];
                 if (array_key_exists($key, $data) === true) {
                     return is_scalar($data[$key]) === true ? (string) $data[$key] : '';
                 }
@@ -1208,7 +1232,7 @@ class AnnotationNotificationDispatcher
             $notification
                 ->setApp('openregister')
                 ->setUser($uid)
-                ->setDateTime(new \DateTime())
+                ->setDateTime(new DateTime())
                 ->setObject('object', $objectId !== '' ? $objectId : $name)
                 ->setSubject($name, array_merge($parameters, ['_text' => $subject]));
             $this->notificationManager->notify($notification);

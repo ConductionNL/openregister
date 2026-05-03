@@ -130,6 +130,8 @@ class NotificationsAnnotationInstaller implements IEventListener
      * @param array<string, mixed> $hookSpec         The `webhook` sub-document of the annotation.
      *
      * @return void
+     *
+     * @SuppressWarnings(PHPMD.StaticAccess)
      */
     private function upsertWebhook(string $schemaSlug, string $notificationName, array $hookSpec): void
     {

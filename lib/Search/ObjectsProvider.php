@@ -43,6 +43,8 @@ use Psr\Log\LoggerInterface;
  * This class implements the IFilteringProvider interface to provide
  * search functionality for objects in the OpenRegister app using the
  * advanced searchObjectsPaginated method for optimal performance.
+ *
+ * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
  */
 class ObjectsProvider implements IFilteringProvider
 {

@@ -64,7 +64,6 @@ class BulkLegalHoldJob extends QueuedJob
 
         $schemaId = $argument['schemaId'] ?? null;
         $reason   = $argument['reason'] ?? '';
-        $userId   = $argument['userId'] ?? 'system';
 
         if ($schemaId === null) {
             $logger->error('[BulkLegalHoldJob] No schemaId provided');

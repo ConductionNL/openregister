@@ -56,6 +56,7 @@ use Psr\Log\LoggerInterface;
  * @SuppressWarnings(PHPMD.ExcessiveClassComplexity) Complex workflow state machine with multiple paths
  * @SuppressWarnings(PHPMD.ExcessiveClassLength)     Large service covering full destruction lifecycle
  * @SuppressWarnings(PHPMD.TooManyPublicMethods)     Public API surface for destruction workflow management
+ * @SuppressWarnings(PHPMD.LongVariable)
  */
 class DestructionService
 {
@@ -440,10 +441,11 @@ class DestructionService
                     extensionPeriod: $extensionPeriod,
                     reason: $objectEntry['exclusionReason']
                 );
-            } else {
-                $objectEntry['status'] = 'approved';
-                $approved[]            = $objectEntry;
+                continue;
             }
+
+            $objectEntry['status'] = 'approved';
+            $approved[]            = $objectEntry;
         }
 
         $destructionList['objects']         = $approved;

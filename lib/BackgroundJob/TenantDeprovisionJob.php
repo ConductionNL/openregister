@@ -32,6 +32,8 @@ use Psr\Log\LoggerInterface;
  * Processes deprovisioning organisations.
  *
  * @package OCA\OpenRegister\BackgroundJob
+ *
+ * @SuppressWarnings(PHPMD.LongVariable)
  */
 class TenantDeprovisionJob extends TimedJob
 {

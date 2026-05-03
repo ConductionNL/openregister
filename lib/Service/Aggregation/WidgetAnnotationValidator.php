@@ -119,6 +119,9 @@ final class WidgetAnnotationValidator
      * @param array<string, mixed> $widget Widget descriptor.
      *
      * @return array<int, array{code: string, message: string}>
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+     * @SuppressWarnings(PHPMD.NPathComplexity)
      */
     private function validateOne(string $label, array $widget): array
     {

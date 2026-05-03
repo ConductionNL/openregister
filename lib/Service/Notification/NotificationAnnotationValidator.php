@@ -32,6 +32,8 @@ namespace OCA\OpenRegister\Service\Notification;
  *   ({nl: "...", en: "...", defaultLocale?: "nl"}; supports {{field}}
  *   interpolation; recipient locale via `core.lang` user preference)
  * - optional `message`: string
+ *
+ * @SuppressWarnings(PHPMD.ExcessiveClassComplexity)
  */
 final class NotificationAnnotationValidator
 {
@@ -48,6 +50,10 @@ final class NotificationAnnotationValidator
      * @param array<string, mixed> $schema Full schema (must include `properties`).
      *
      * @return array<int, array{code: string, message: string}>
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+     * @SuppressWarnings(PHPMD.NPathComplexity)
+     * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
      */
     public function validate(array $schema): array
     {
@@ -156,21 +162,22 @@ final class NotificationAnnotationValidator
                         $name
                     ),
                 ];
-            } else {
-                foreach ($channels as $channel) {
-                    if (in_array((string) $channel, self::VALID_CHANNELS, true) === false) {
-                        $errors[] = [
-                            'code'    => 'notification-bad-channel',
-                            'message' => sprintf(
-                                'Notification "%s" channel "%s" is not in [%s].',
-                                $name,
-                                (string) $channel,
-                                implode(', ', self::VALID_CHANNELS)
-                            ),
-                        ];
-                    }
+                $channels = [];
+            }
+
+            foreach ($channels as $channel) {
+                if (in_array((string) $channel, self::VALID_CHANNELS, true) === false) {
+                    $errors[] = [
+                        'code'    => 'notification-bad-channel',
+                        'message' => sprintf(
+                            'Notification "%s" channel "%s" is not in [%s].',
+                            $name,
+                            (string) $channel,
+                            implode(', ', self::VALID_CHANNELS)
+                        ),
+                    ];
                 }
-            }//end if
+            }
 
             // `subject` accepts either a single template string OR a
             // per-locale map ({nl: "...", en: "..."} optionally prefixed
@@ -178,18 +185,30 @@ final class NotificationAnnotationValidator
             // the active recipient's locale at delivery time; the
             // broadcast channels (webhook/talk) use the default locale
             // fallback chain.
-            $subject = ($spec['subject'] ?? null);
-            if (is_string($subject) === true) {
-                if ($subject === '') {
-                    $errors[] = [
-                        'code'    => 'notification-no-subject',
-                        'message' => sprintf(
-                            'Notification "%s" requires a non-empty subject string.',
-                            $name
-                        ),
-                    ];
-                }
-            } else if (is_array($subject) === true) {
+            $subject       = ($spec['subject'] ?? null);
+            $subjectString = is_string($subject) === true;
+            $subjectArray  = is_array($subject) === true;
+            if ($subjectString === false && $subjectArray === false) {
+                $errors[] = [
+                    'code'    => 'notification-no-subject',
+                    'message' => sprintf(
+                        'Notification "%s" requires a subject string or per-locale map.',
+                        $name
+                    ),
+                ];
+            }
+
+            if ($subjectString === true && $subject === '') {
+                $errors[] = [
+                    'code'    => 'notification-no-subject',
+                    'message' => sprintf(
+                        'Notification "%s" requires a non-empty subject string.',
+                        $name
+                    ),
+                ];
+            }
+
+            if ($subjectArray === true) {
                 $localeKeys = array_filter(
                     array_keys($subject),
                     static fn ($key): bool => $key !== 'defaultLocale' && is_string($key) === true
@@ -232,14 +251,6 @@ final class NotificationAnnotationValidator
                         ];
                     }
                 }
-            } else {
-                $errors[] = [
-                    'code'    => 'notification-no-subject',
-                    'message' => sprintf(
-                        'Notification "%s" requires a subject string or per-locale map.',
-                        $name
-                    ),
-                ];
             }//end if
 
             // When the `webhook` channel is declared, the spec MUST include a `webhook.url` value.
