@@ -29,6 +29,9 @@ export class Schema implements TSchema {
 	public hardValidation: boolean
 	public maxDepth: number
 	public authorization?: Record<string, string[]>
+	public allOf?: string[]
+	public oneOf?: string[]
+	public anyOf?: string[]
 	public stats?: TSchema['stats']
 
 	constructor(schema: TSchema) {
@@ -58,6 +61,9 @@ export class Schema implements TSchema {
 		this.hardValidation = schema.hardValidation || false
 		this.maxDepth = schema.maxDepth || 0
 		this.authorization = schema.authorization || {}
+		this.allOf = schema.allOf
+		this.oneOf = schema.oneOf
+		this.anyOf = schema.anyOf
 		this.stats = schema.stats
 	}
 
