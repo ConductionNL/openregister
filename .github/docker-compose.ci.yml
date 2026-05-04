@@ -34,12 +34,13 @@ services:
       db:
         condition: service_healthy
     volumes:
-      # Named volume on /var/www/html so the official entrypoint can
-      # populate it from /usr/src/nextcloud — otherwise the bind mount
-      # below leaves /var/www/html/apps unwritable and the install
-      # bails with "Cannot write into apps directory".
+      # Named volume only — let the official entrypoint fully bootstrap
+      # without bind-mount interference. Openregister gets copied in via
+      # `docker cp` after install completes (see workflow). Bind-mounting
+      # custom_apps subdirs at compose-up time leaves /var/www/html/apps
+      # unwritable and the install bails with "Cannot write into apps
+      # directory".
       - nextcloud-data:/var/www/html:rw
-      - ..:/var/www/html/custom_apps/openregister:rw
     environment:
       POSTGRES_DB: nextcloud
       POSTGRES_USER: nextcloud

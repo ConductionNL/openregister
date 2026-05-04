@@ -75,9 +75,15 @@ jobs:
           done
           docker exec nextcloud su -s /bin/bash www-data -c "php /var/www/html/occ status"
 
+      - name: Copy openregister into container
+        run: |
+          docker exec nextcloud mkdir -p /var/www/html/custom_apps/openregister
+          # Stream the working tree (excluding heavy/local junk) into the container.
+          tar --exclude='.git' --exclude='node_modules' --exclude='.claude' --exclude='tests/e2e/playwright-report' --exclude='tests/e2e/test-results' -cf - . | docker exec -i nextcloud tar -xf - -C /var/www/html/custom_apps/openregister
+          docker exec nextcloud chown -R www-data:www-data /var/www/html/custom_apps/openregister
+
       - name: Enable openregister app
         run: |
-          docker exec nextcloud chown -R www-data:www-data /var/www/html/custom_apps/openregister
           docker exec nextcloud su -s /bin/bash www-data -c "php /var/www/html/occ app:enable openregister"
           docker exec nextcloud su -s /bin/bash www-data -c "php /var/www/html/occ app:list" | grep openregister
 
