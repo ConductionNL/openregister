@@ -1,13 +1,14 @@
 ##
 # api-test-coverage.yml — automated Newman runs against a live OR.
 #
-# Composes the per-domain Newman collections via tests/newman/run-all.sh
-# against a freshly bootstrapped Nextcloud + OpenRegister container.
-# Every collection's pass/fail is rolled up into one summary; failures
-# block the workflow.
+# Boots a minimal Nextcloud + Postgres stack via .github/docker-compose.ci.yml,
+# enables the openregister app, and runs the same orchestrator script
+# (tests/newman/run-all.sh) that developers use locally — single source
+# of truth for the API integration suite.
 #
-# Spec: openspec/changes/api-test-coverage/tasks.md "CI integration with
-# automated Newman runs and PCOV coverage".
+# The orchestrator excludes agent-cms (needs Ollama) and federation
+# (needs a 2nd NC) from the default domain list. To run extras
+# explicitly, override COLLECTIONS in workflow_dispatch.
 ##
 
 name: api-test-coverage
@@ -18,6 +19,11 @@ on:
   pull_request:
     branches: [development]
   workflow_dispatch:
+    inputs:
+      collections:
+        description: "Space-separated domain subset (default: all 8). Examples: 'crud relations', 'auth-matrix'."
+        required: false
+        type: string
 
 jobs:
   newman-suite:
@@ -25,25 +31,26 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30
 
-    services:
-      # GitHub Actions Postgres service for the Nextcloud DB.
-      postgres:
-        image: postgres:16
-        env:
-          POSTGRES_USER: nextcloud
-          POSTGRES_PASSWORD: nextcloud
-          POSTGRES_DB: nextcloud
-        ports:
-          - 5432:5432
-        options: >-
-          --health-cmd pg_isready
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-
     steps:
       - name: Checkout repo
         uses: actions/checkout@v4
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          tools: composer:v2
+          coverage: none
+
+      - name: Cache composer deps
+        uses: actions/cache@v4
+        with:
+          path: ~/.composer/cache
+          key: composer-${{ hashFiles('**/composer.lock') }}
+          restore-keys: composer-
+
+      - name: Install composer deps (production)
+        run: composer install --no-dev --no-interaction --no-progress --prefer-dist
 
       - name: Set up Node.js
         uses: actions/setup-node@v4
@@ -53,44 +60,64 @@ jobs:
       - name: Install Newman
         run: npm install -g newman
 
-      # The orchestrator script docker-execs into the NC container; in CI
-      # we run Newman directly against the host-bound NC instead.
-      # Override the docker-exec wrapper via NEWMAN_DIRECT=1 (script
-      # honours the env to skip the docker exec wrapper).
+      - name: Boot CI stack (db + Nextcloud)
+        run: docker compose -f .github/docker-compose.ci.yml up -d
+
+      - name: Wait for Nextcloud to be installed
+        run: |
+          for i in $(seq 1 60); do
+            if docker exec nextcloud su -s /bin/bash www-data -c "php /var/www/html/occ status" 2>/dev/null | grep -q "installed: true"; then
+              echo "✓ Nextcloud installed and ready"
+              break
+            fi
+            echo "Waiting for Nextcloud installation... ($i/60)"
+            sleep 5
+          done
+          docker exec nextcloud su -s /bin/bash www-data -c "php /var/www/html/occ status"
+
+      - name: Enable openregister app
+        run: |
+          docker exec nextcloud chown -R www-data:www-data /var/www/html/custom_apps/openregister
+          docker exec nextcloud su -s /bin/bash www-data -c "php /var/www/html/occ app:enable openregister"
+          docker exec nextcloud su -s /bin/bash www-data -c "php /var/www/html/occ app:list" | grep openregister
+
       - name: Run Newman orchestrator
         env:
           BASE_URL: http://localhost:8080
           ADMIN_USER: admin
           ADMIN_PASSWORD: admin
-          NEWMAN_DIRECT: 1
-        run: |
-          # The dev orchestrator runs collections inside the NC container.
-          # In CI, run them directly via newman binary instead.
-          for collection in tests/integration/openregister-crud.postman_collection.json \
-                            tests/integration/openregister-referential-integrity.postman_collection.json \
-                            tests/newman/openregister-graphql-tests.postman_collection.json \
-                            tests/newman/openregister-relations-tests.postman_collection.json \
-                            tests/newman/openregister-platform-annotations.postman_collection.json \
-                            tests/newman/agent-cms-testing.postman_collection.json \
-                            tests/federation/federation-tests.postman_collection.json; do
-            if [ ! -f "$collection" ]; then
-              echo "::warning ::missing collection $collection — skipping"
-              continue
-            fi
-            echo "::group::Running $collection"
-            newman run "$collection" \
-              --env-var baseUrl=$BASE_URL \
-              --env-var username=$ADMIN_USER \
-              --env-var password=$ADMIN_PASSWORD \
-              --reporters cli,json \
-              --reporter-json-export "newman-$(basename $collection .postman_collection.json).json"
-            echo "::endgroup::"
-          done
+          CONTAINER_NAME: nextcloud
+          NEWMAN_RUNNER: host
+          FAIL_FAST: "0"
+          COLLECTIONS: ${{ inputs.collections }}
+        run: bash tests/newman/run-all.sh
 
       - name: Upload Newman reports
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: newman-reports
-          path: newman-*.json
+          path: |
+            tests/newman/reports/
+            newman-*.json
           retention-days: 14
+          if-no-files-found: ignore
+
+      - name: Collect docker logs on failure
+        if: failure()
+        run: |
+          mkdir -p ci-logs
+          docker compose -f .github/docker-compose.ci.yml logs --no-color > ci-logs/docker-compose.log
+          docker exec nextcloud cat /var/www/html/data/nextcloud.log > ci-logs/nextcloud.log 2>&1 || true
+
+      - name: Upload docker logs
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ci-logs
+          path: ci-logs/
+          retention-days: 14
+
+      - name: Tear down CI stack
+        if: always()
+        run: docker compose -f .github/docker-compose.ci.yml down -v

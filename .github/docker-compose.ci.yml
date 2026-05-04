@@ -1,0 +1,49 @@
+# Minimal docker-compose stack for CI Newman runs.
+#
+# Brings up Postgres + Nextcloud with the working tree mounted at
+# /var/www/html/custom_apps/openregister so the orchestrator script
+# (tests/newman/run-all.sh) can talk to a real OR install over HTTP.
+#
+# Paths are relative to this file: `..` resolves to the repo root.
+
+services:
+  db:
+    image: pgvector/pgvector:pg16
+    container_name: openregister-ci-db
+    environment:
+      POSTGRES_DB: nextcloud
+      POSTGRES_USER: nextcloud
+      POSTGRES_PASSWORD: nextcloud
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U nextcloud -d nextcloud"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+
+  nextcloud:
+    image: nextcloud:30-apache
+    container_name: nextcloud
+    user: root
+    restart: unless-stopped
+    ports:
+      - "8080:80"
+    depends_on:
+      db:
+        condition: service_healthy
+    volumes:
+      - ..:/var/www/html/custom_apps/openregister:rw
+    environment:
+      POSTGRES_DB: nextcloud
+      POSTGRES_USER: nextcloud
+      POSTGRES_PASSWORD: nextcloud
+      POSTGRES_HOST: db
+      NEXTCLOUD_ADMIN_USER: admin
+      NEXTCLOUD_ADMIN_PASSWORD: admin
+      NEXTCLOUD_TRUSTED_DOMAINS: localhost nextcloud
+      PHP_MEMORY_LIMIT: 2G
+      PHP_UPLOAD_LIMIT: 1G
+      PHP_POST_MAX_SIZE: 1G
+
+networks:
+  default:
+    name: openregister-ci-network
